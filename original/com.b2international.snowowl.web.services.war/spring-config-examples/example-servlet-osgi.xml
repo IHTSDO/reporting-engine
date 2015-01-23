@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:compendium="http://www.eclipse.org/gemini/blueprint/schema/blueprint-compendium"
+	xmlns:bean="http://www.springframework.org/schema/beans" 
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:util="http://www.springframework.org/schema/util"  
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.eclipse.org/gemini/blueprint/schema/blueprint-compendium
+	http://www.eclipse.org/gemini/blueprint/schema/blueprint-compendium/gemini-blueprint-compendium.xsd
+	http://www.osgi.org/xmlns/blueprint/v1.0.0
+  	http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd
+  	http://www.eclipse.org/gemini/blueprint/schema/blueprint
+	http://www.eclipse.org/gemini/blueprint/schema/blueprint/gemini-blueprint.xsd 
+  	http://www.springframework.org/schema/context
+  	http://www.springframework.org/schema/context/spring-context-3.0.xsd 
+  	http://www.springframework.org/schema/beans 
+    http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+    http://www.springframework.org/schema/mvc 
+    http://www.springframework.org/schema/mvc/spring-mvc-3.0.xsd
+    http://www.springframework.org/schema/util  
+    http://www.springframework.org/schema/util/spring-util-3.0.xsd"
+	default-activation="eager">
+
+	<mvc:annotation-driven/>  
+      <!--  
+            Setup spring to pull in @Controller, @RequestMapping, etc Configuration scans specified packages  
+            for classes configured as Spring managed beans and automatically sets up objects annotated with  
+            @Controller, @Service etc.  
+      -->  
+      <context:component-scan base-package="rest" />  
+      <bean class="org.springframework.web.servlet.mvc.annotation.DefaultAnnotationHandlerMapping" />  
+      <!--  
+            Configures view for returning JSON to the client  
+      -->  
+      <bean class="org.springframework.web.servlet.view.json.MappingJacksonJsonView">  
+           <property name="contentType" value="text/plain"/>  
+      </bean>  
+      <!--  
+            maps handler methods based on HTTP paths
+      -->  
+      <bean class="org.springframework.web.servlet.mvc.annotation.AnnotationMethodHandlerAdapter">  
+           <property name="messageConverters">  
+                <util:list id="beanList">  
+                     <bean:ref bean="jsonMessageConverter"/>  
+                </util:list>  
+           </property>  
+      </bean>  
+      <!--  
+            Converts JSON to POJO and vice versa  
+      -->  
+      <bean id="jsonMessageConverter" class="org.springframework.http.converter.json.MappingJacksonHttpMessageConverter"/>  
+
+</blueprint>

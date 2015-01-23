@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:mvc="http://www.springframework.org/schema/mvc" xmlns:bean="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:sec="http://www.springframework.org/schema/security"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+	http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+	http://www.springframework.org/schema/context
+	http://www.springframework.org/schema/context/spring-context-3.1.xsd
+    http://www.springframework.org/schema/mvc 
+    http://www.springframework.org/schema/mvc/spring-mvc-3.1.xsd
+    http://www.springframework.org/schema/util  
+    http://www.springframework.org/schema/util/spring-util-3.1.xsd
+    http://www.springframework.org/schema/security 
+    http://www.springframework.org/schema/security/spring-security-3.1.xsd">
+	
+	<!-- 
+		Singleton is the default scope, hence no need to declare it for each of these services.
+		In this context, singleton means: one instance per bean per container.
+	-->
+	<!-- create the application context via the getInstance static factory method -->
+	<bean id="applicationContext" class="com.b2international.snowowl.core.ApplicationContext"
+		factory-method="getInstance" />
+		
+	<!-- create the SNOMED editing context via the createInstance static factory method -->
+	<bean id="snomedEditingContext" class="com.b2international.snowowl.snomed.datastore.SnomedEditingContext"
+		factory-method="createInstance" />
+		
+	<!-- create the refset editing context via the createInstance static factory method -->
+	<bean id="refsetEditingContext" class="com.b2international.snowowl.snomed.datastore.SnomedRefSetEditingContext"
+		factory-method="createInstance" />
+
+	<!-- create the SNOMED terminology browser service via the application context non-static factory -->
+	<bean id="snomedTerminologyBrowser"
+		class="com.b2international.snowowl.snomed.datastore.snor.SnomedTerminologyBrowser"
+		factory-bean="applicationContext" factory-method="getService">
+		<constructor-arg type="java.lang.Class"
+			value="com.b2international.snowowl.snomed.datastore.snor.SnomedTerminologyBrowser" />
+	</bean>
+	 
+	<!--  Create the SNOMED statement browser via the application context -->
+	<bean id="snomedStatementBrowser"
+		class="com.b2international.snowowl.snomed.datastore.snor.SnomedStatementBrowser"
+		factory-bean="applicationContext" factory-method="getService">
+		<constructor-arg type="java.lang.Class"
+			value="com.b2international.snowowl.snomed.datastore.snor.SnomedStatementBrowser" />
+	</bean>
+	
+	<!-- create the SNOMED index searcher service via the application context non-static factory -->
+	<bean id="snomedLuceneIndexService"
+		class="com.b2international.snowowl.snomed.datastore.index.SnomedLuceneIndexService"
+		factory-bean="applicationContext" factory-method="getService">
+		<constructor-arg type="java.lang.Class"
+			value="com.b2international.snowowl.snomed.datastore.index.SnomedLuceneIndexService" />
+	</bean>
+	
+	<!--  ATC -->
+	<!-- create the ATC editing context via the createInstance static factory method -->
+	<bean id="atcEditingContext" class="com.b2international.snowowl.atc.datastore.AtcEditingContext"
+		factory-method="createInstance" />
+		
+	<!-- create the ATC terminology browser service via the application context non-static factory -->
+	<bean id="atcTerminologyBrowser"
+		class="com.b2international.snowowl.atc.datastore.AtcTerminologyBrowser"
+		factory-bean="applicationContext" factory-method="getService">
+		<constructor-arg type="java.lang.Class"
+			value="com.b2international.snowowl.atc.datastore.AtcTerminologyBrowser" />
+	</bean>
+	
+	<!-- create the ATC index searcher service via the application context non-static factory -->
+	<bean id="atcLuceneIndexService"
+		class="com.b2international.snowowl.atc.datastore.AtcLuceneIndexService"
+		factory-bean="applicationContext" factory-method="getService">
+		<constructor-arg type="java.lang.Class"
+			value="com.b2international.snowowl.atc.datastore.AtcLuceneIndexService" />
+	</bean>
+
+	<!-- Uncomment to register JAXB annotation handlers to enable the JAXB annotations -->
+	<!-- 
+	<bean id="jaxbAnnIntrospector" class="org.codehaus.jackson.xc.JaxbAnnotationIntrospector" />
+	<bean id="jacksonObjectMapper" class="org.codehaus.jackson.map.ObjectMapper"> 
+		<property name="serializationConfig.annotationIntrospector"
+			ref="jaxbAnnIntrospector" />
+		<property name="deserializationConfig.annotationIntrospector"
+			ref="jaxbAnnIntrospector" />
+	</bean>
+	<mvc:annotation-driven>
+	<mvc:message-converters register-defaults="false">
+			<bean class="org.springframework.http.converter.json.MappingJacksonHttpMessageConverter"
+				p:objectMapper-ref="jacksonObjectMapper">
+			</bean>
+	</mvc:message-converters>
+	....
+	-->
+	
+	<!--  XStream marshaller definition -->
+	<bean id="xstreamMarshaller" class="org.springframework.oxm.xstream.XStreamMarshaller">
+		<property name="autodetectAnnotations" value="true" /> 
+	</bean>
+
+	<!-- Spring magic, only available since 3.1 (Virgo 3.6) -->
+	<mvc:annotation-driven>
+		<mvc:message-converters register-defaults="false">
+			
+			<!--  Jackson converter for JSON -->
+			<bean class="org.springframework.http.converter.json.MappingJacksonHttpMessageConverter"/>
+
+			<!--  XStream is not the default converter for XML, needs to be registered -->
+			<bean id="marshallingHttpMessageConverter"
+				class="org.springframework.http.converter.xml.MarshallingHttpMessageConverter">
+				<property name="marshaller" ref="xstreamMarshaller" />
+				<property name="unmarshaller" ref="xstreamMarshaller" />
+			</bean>
+		</mvc:message-converters>
+	</mvc:annotation-driven>
+	
+	<context:component-scan base-package="com.b2international.snowowl.web.services" />
+	
+	<mvc:default-servlet-handler />
+	<!--  enable security annotations -->
+   <sec:global-method-security secured-annotations="enabled" proxy-target-class="true"/>
+
+</beans>

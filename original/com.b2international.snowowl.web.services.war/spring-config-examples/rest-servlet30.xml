@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:mvc="http://www.springframework.org/schema/mvc" xmlns:bean="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+	http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+	http://www.springframework.org/schema/context
+	http://www.springframework.org/schema/context/spring-context-3.0.xsd
+    http://www.springframework.org/schema/mvc 
+    http://www.springframework.org/schema/mvc/spring-mvc-3.0.xsd
+    http://www.springframework.org/schema/util  
+    http://www.springframework.org/schema/util/spring-util-3.0.xsd">
+
+
+	<!-- create the application context via the getInstance static factory method -->
+	<bean id="applicationContext" class="com.b2international.snowowl.core.ApplicationContext"
+		factory-method="getInstance" />
+
+	<!--  create the SNOMED terminology browser service via the application context non-static factory -->
+	<bean id="terminologyBrowser"
+		class="com.b2international.snowowl.snomed.datastore.snor.SnomedTerminologyBrowser"
+		factory-bean="applicationContext" factory-method="getService">
+		<constructor-arg type="java.lang.Class"
+			value="com.b2international.snowowl.snomed.datastore.snor.SnomedTerminologyBrowser" />
+	</bean>
+
+	<mvc:annotation-driven />
+	<context:component-scan base-package="com.b2international.snowowl.web.services" />
+	<mvc:default-servlet-handler />
+
+	<!--Basic application beans. -->
+	<bean id="viewResolver"
+		class="org.springframework.web.servlet.view.ContentNegotiatingViewResolver">
+		<property name="mediaTypes">
+			<map>
+				<entry key="json" value="application/json" />
+			</map>
+		</property>
+		<property name="viewResolvers">
+			<bean
+				class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+				<property name="prefix" value="/WEB-INF/jsp/"></property>
+				<property name="suffix" value=".jsp"></property>
+			</bean>
+		</property>
+		<property name="defaultViews">
+			<bean
+				class="org.springframework.web.servlet.view.json.MappingJacksonJsonView">
+				<!-- property name="extractValueFromSingleKeyModel" value="true" / -->
+			</bean>
+		</property>
+	</bean>
+
+</beans>

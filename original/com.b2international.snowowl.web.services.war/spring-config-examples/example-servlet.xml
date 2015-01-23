@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:p="http://www.springframework.org/schema/p"
+    xmlns:mvc="http://www.springframework.org/schema/mvc"
+    xmlns:bean="http://www.springframework.org/schema/beans"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:util="http://www.springframework.org/schema/util"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+	http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+	http://www.springframework.org/schema/context
+	http://www.springframework.org/schema/context/spring-context-3.0.xsd
+    http://www.springframework.org/schema/mvc 
+    http://www.springframework.org/schema/mvc/spring-mvc-3.0.xsd
+    http://www.springframework.org/schema/util  
+    http://www.springframework.org/schema/util/spring-util-3.0.xsd">
+	
+	<mvc:annotation-driven/>  
+      <!--  
+            Setup spring to pull in @Controller, @RequestMapping, etc Configuration scans specified packages  
+            for classes configured as Spring managed beans and automatically sets up objects annotated with  
+            @Controller, @Service etc.  
+      -->  
+      <context:component-scan base-package="rest" />  
+      <bean class="org.springframework.web.servlet.mvc.annotation.DefaultAnnotationHandlerMapping" />  
+      <!--  
+            Configures view for returning JSON to the client  
+      -->  
+      <bean class="org.springframework.web.servlet.view.json.MappingJacksonJsonView">  
+           <property name="contentType" value="text/plain"/>  
+      </bean>  
+      <!--  
+            maps handler methods based on HTTP paths
+      -->  
+      <bean class="org.springframework.web.servlet.mvc.annotation.AnnotationMethodHandlerAdapter">  
+           <property name="messageConverters">  
+                <util:list id="beanList">  
+                     <bean:ref bean="jsonMessageConverter"/>  
+                </util:list>  
+           </property>  
+      </bean>  
+      <!--  
+            Converts JSON to POJO and vice versa  
+      -->  
+      <bean id="jsonMessageConverter" class="org.springframework.http.converter.json.MappingJacksonHttpMessageConverter"/>  
+</beans>
