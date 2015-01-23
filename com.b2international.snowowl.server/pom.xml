@@ -1,0 +1,75 @@
+<?xml version="1.0"?>
+<project
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
+	xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>com.b2international.snowowl.server</groupId>
+	<artifactId>com.b2international.snowowl.server</artifactId>
+	<packaging>pom</packaging>
+
+	<parent>
+		<artifactId>com.b2international.snowowl</artifactId>
+		<groupId>com.b2international.snowowl</groupId>
+		<version>3.9.0-SNAPSHOT</version>
+		<relativePath>../com.b2international.snowowl</relativePath>
+	</parent>
+
+	<properties>
+		<!-- Virgo based properties -->
+		<custom.virgo.config.project>com.b2international.snowowl.virgo.configuration</custom.virgo.config.project>
+		<custom.virgo.config.path>${basedir}/../${custom.virgo.config.project}</custom.virgo.config.path>
+		<virgo.download.path>${hal.url}/Shared/snowowl/virgo/</virgo.download.path>
+		<virgo.server.name>virgo-tomcat-server-3.6.2.RELEASE</virgo.server.name>
+		<virgo.server.zip>${virgo.server.name}.zip</virgo.server.zip>
+		<virgo.tmp.dir>${project.build.directory}/${virgo.server.name}</virgo.tmp.dir>
+	</properties>
+
+	<repositories>
+		<repository>
+			<id>snowowl</id>
+			<url>${baseline.repository}</url>
+			<layout>p2</layout>
+		</repository>
+	</repositories>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.eclipse.tycho</groupId>
+				<artifactId>target-platform-configuration</artifactId>
+				<version>${tycho.version}</version>
+				<configuration combine.self="override">
+					<resolver>p2</resolver>
+					<filters>
+						<!-- work around Equinox bug 348045 -->
+						<!-- Removes the extension bundle from the available bundles for the javax.servlet package -->
+						<filter>
+							<type>java-package</type>
+							<id>javax.servlet</id>
+							<restrictTo>
+								<type>osgi-bundle</type>
+								<id>javax.servlet</id>
+								<versionRange>[2.6.0,3.1.0)</versionRange>
+							</restrictTo>
+						</filter>
+						<filter>
+							<type>eclipse-plugin</type>
+							<id>org.codehaus.groovy</id>
+							<restrictTo>
+								<versionRange>[2.0.0,2.1.0)</versionRange>
+							</restrictTo>
+						</filter>
+					</filters>
+					<environments>
+						<environment>
+							<os>linux</os>
+							<ws>gtk</ws>
+							<arch>x86_64</arch>
+						</environment>
+					</environments>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
+</project>
