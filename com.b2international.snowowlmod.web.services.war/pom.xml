@@ -8,7 +8,7 @@
 		<relativePath>../com.b2international.snowowl.server</relativePath>
 	</parent>
 
-	<artifactId>com.b2international.snowowl.web.services.war</artifactId>
+	<artifactId>com.b2international.snowowlmod.web.services.war</artifactId>
 	<packaging>war</packaging>
 
 	<properties>

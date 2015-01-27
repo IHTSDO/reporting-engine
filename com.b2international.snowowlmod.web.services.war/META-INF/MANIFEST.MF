@@ -4,15 +4,15 @@ Bundle-ActivationPolicy: lazy
 Built-By: jenkins
 Bundle-Name: Snow Owl REST Web Services
 Created-By: Apache Maven
-Web-ContextPath: /extra
+Web-ContextPath: /snowowlmod
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Require-Bundle: com.google.guava;bundle-version="14.9.9",org.eclipse.e
  quinox.security;bundle-version="1.1.100"
 Build-Jdk: 1.7.0_45
 Bundle-Version: 3.9.0.20150110-1553
 Bundle-ManifestVersion: 2
-Bundle-SymbolicName: com.b2international.snowowl.web.services2.war;sin
- gleton:=true
+Bundle-SymbolicName: com.b2international.snowowlmod.web.services.war;s
+ ingleton:=true
 Import-Package: com.b2international.snowowl.rest.domain,com.b2internat
  ional.snowowl.rest.domain.codesystem,com.b2international.snowowl.rest
  .domain.elasticsearch,com.b2international.snowowl.rest.domain.history
