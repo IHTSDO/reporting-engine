@@ -1,0 +1,7 @@
+#
+# Copyright (c) 2012 B2i Healthcare. All rights reserved.
+# Last build trigger date: 2014-08-27
+# 
+output.. = target/classes/
+bin.includes = META-INF/,\
+               .
