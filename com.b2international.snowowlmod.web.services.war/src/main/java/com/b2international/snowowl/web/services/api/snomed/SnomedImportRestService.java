@@ -62,7 +62,37 @@ public class SnomedImportRestService extends AbstractSnomedRestService {
 			@RequestBody
 			final SnomedImportRestConfiguration importConfiguration) {
 
-		final UUID importId = delegate.create(version, convertToConfiguration(version, importConfiguration));
+		final UUID importId = delegate.create(version, convertToConfiguration(version, null, importConfiguration));
+		return Responses.created(linkTo(methodOn(SnomedImportRestService.class).getImportDetails(version, importId)).toUri()).build();
+	}
+
+	@ApiOperation(
+			value="Import SNOMED CT content on a task",
+			notes="Configures processes to import RF2 based archives. The configured process will wait until the archive actually uploaded via the <em>/archive</em> endpoint. "
+					+ "The actual import process will start after the file upload completed.")
+	@ApiResponses({
+			@ApiResponse(code = 201, message = "Created"),
+			@ApiResponse(code = 404, message = "Code system version not found"),
+	})
+	@RequestMapping(value="/tasks/{taskId}/imports",
+			method=RequestMethod.POST,
+			consumes={ AbstractRestService.V1_MEDIA_TYPE, MediaType.APPLICATION_JSON_VALUE })
+	@ResponseStatus(HttpStatus.CREATED)
+	public ResponseEntity<Void> createOnTask(
+			@ApiParam(value="The code system version")
+			@PathVariable(value="version")
+			final String version,
+
+			@ApiParam(value="The task")
+			@PathVariable(value="taskId")
+			final String taskId,
+
+			@ApiParam(value="Import parameters")
+			@RequestBody
+			final SnomedImportRestConfiguration importConfiguration) {
+
+		ISnomedImportConfiguration iSnomedImportConfiguration = convertToConfiguration(version, taskId, importConfiguration);
+		final UUID importId = delegate.create(version, iSnomedImportConfiguration);
 		return Responses.created(linkTo(methodOn(SnomedImportRestService.class).getImportDetails(version, importId)).toUri()).build();
 	}
 
@@ -151,14 +181,15 @@ public class SnomedImportRestService extends AbstractSnomedRestService {
 		details.setStartDate(configuration.getStartDate());
 		return details;
 	}
-	
+
 	private ISnomedImportConfiguration convertToConfiguration(final String version,
-			final SnomedImportRestConfiguration configuration) {
-		
+			final String taskId, final SnomedImportRestConfiguration configuration) {
+
 		return new SnomedImportConfiguration(
-				configuration.getType(), 
+				configuration.getType(),
 				version,
-				configuration.getLanguageRefSetId(), 
+				taskId,
+				configuration.getLanguageRefSetId(),
 				configuration.getCreateVersions());
 	}
 	
