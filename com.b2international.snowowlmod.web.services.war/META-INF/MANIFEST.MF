@@ -29,8 +29,8 @@ Import-Package: com.b2international.snowowl.rest.domain,com.b2internat
  e,com.b2international.snowowl.rest.service.admin,com.b2international.
  snowowl.rest.service.codesystem,com.b2international.snowowl.rest.snom
  ed.domain,com.b2international.snowowl.rest.snomed.domain.classificati
- on,com.b2international.snowowl.rest.snomed.impl.domain,com.b2internat
- ional.snowowl.rest.snomed.impl.service,com.b2international.snowowl.re
- st.snomed.service,org.osgi.framework,org.slf4j
+ on,com.b2international.snowowlmod.rest.snomed.impl.domain,com.b2inter
+ national.snowowlmod.rest.snomed.impl.service,com.b2international.snow
+ owl.rest.snomed.service,org.osgi.framework,org.slf4j
 Archiver-Version: Plexus Archiver
 

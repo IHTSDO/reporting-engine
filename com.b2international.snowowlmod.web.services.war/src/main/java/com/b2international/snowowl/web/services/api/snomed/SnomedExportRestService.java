@@ -1,7 +1,22 @@
 package com.b2international.snowowl.web.services.api.snomed;
 
-import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
-import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
+import com.b2international.snowowl.rest.service.codesystem.ICodeSystemVersionService;
+import com.b2international.snowowl.rest.snomed.service.ISnomedExportService;
+import com.b2international.snowowl.web.services.api.AbstractRestService;
+import com.b2international.snowowl.web.services.domain.snomed.SnomedExportRestConfiguration;
+import com.b2international.snowowl.web.services.domain.snomed.SnomedExportRestRun;
+import com.b2international.snowowl.web.services.util.Responses;
+import com.b2international.snowowlmod.rest.snomed.impl.domain.SnomedExportConfiguration;
+import com.google.common.collect.MapMaker;
+import com.wordnik.swagger.annotations.*;
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.util.StreamUtils;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -11,36 +26,10 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
-
 import javax.servlet.http.HttpServletResponse;
 
-import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.util.StreamUtils;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
-
-import com.b2international.snowowl.rest.service.codesystem.ICodeSystemVersionService;
-import com.b2international.snowowl.rest.snomed.impl.domain.SnomedExportConfiguration;
-import com.b2international.snowowl.rest.snomed.service.ISnomedExportService;
-import com.b2international.snowowl.web.services.api.AbstractRestService;
-import com.b2international.snowowl.web.services.domain.snomed.SnomedExportRestConfiguration;
-import com.b2international.snowowl.web.services.domain.snomed.SnomedExportRestRun;
-import com.b2international.snowowl.web.services.util.Responses;
-import com.google.common.collect.MapMaker;
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
-import com.wordnik.swagger.annotations.ApiResponse;
-import com.wordnik.swagger.annotations.ApiResponses;
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
 /**
  * @author mczotter

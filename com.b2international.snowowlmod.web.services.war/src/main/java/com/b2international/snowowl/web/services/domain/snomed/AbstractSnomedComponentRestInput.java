@@ -5,9 +5,9 @@ package com.b2international.snowowl.web.services.domain.snomed;
 
 import com.b2international.snowowl.rest.domain.ComponentCategory;
 import com.b2international.snowowl.rest.snomed.domain.IdGenerationStrategy;
-import com.b2international.snowowl.rest.snomed.impl.domain.AbstractSnomedComponentInput;
-import com.b2international.snowowl.rest.snomed.impl.domain.NamespaceIdGenerationStrategy;
-import com.b2international.snowowl.rest.snomed.impl.domain.UserIdGenerationStrategy;
+import com.b2international.snowowlmod.rest.snomed.impl.domain.AbstractSnomedComponentInput;
+import com.b2international.snowowlmod.rest.snomed.impl.domain.NamespaceIdGenerationStrategy;
+import com.b2international.snowowlmod.rest.snomed.impl.domain.UserIdGenerationStrategy;
 
 /**
  * @author apeteri

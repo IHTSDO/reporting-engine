@@ -3,40 +3,29 @@
  *******************************************************************************/
 package com.b2international.snowowl.web.services.api.snomed;
 
-import static com.b2international.snowowl.web.services.domain.snomed.SnomedImportStatus.getImportStatus;
-import static com.google.common.base.Preconditions.checkNotNull;
-import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
-import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.UUID;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
-
 import com.b2international.snowowl.rest.snomed.domain.ISnomedImportConfiguration;
-import com.b2international.snowowl.rest.snomed.impl.domain.SnomedImportConfiguration;
 import com.b2international.snowowl.rest.snomed.service.ISnomedRf2ImportService;
 import com.b2international.snowowl.web.services.api.AbstractRestService;
 import com.b2international.snowowl.web.services.domain.snomed.SnomedImportDetails;
 import com.b2international.snowowl.web.services.domain.snomed.SnomedImportRestConfiguration;
 import com.b2international.snowowl.web.services.util.Responses;
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
-import com.wordnik.swagger.annotations.ApiResponse;
-import com.wordnik.swagger.annotations.ApiResponses;
+import com.b2international.snowowlmod.rest.snomed.impl.domain.SnomedImportConfiguration;
+import com.wordnik.swagger.annotations.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.UUID;
+
+import static com.b2international.snowowl.web.services.domain.snomed.SnomedImportStatus.getImportStatus;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 
 /**
  * @author apeteri
@@ -50,27 +39,27 @@ import com.wordnik.swagger.annotations.ApiResponses;
 public class SnomedImportRestService extends AbstractSnomedRestService {
 
 	@Autowired
-	private ISnomedRf2ImportService delegate; 
-	
+	private ISnomedRf2ImportService delegate;
+
 	@ApiOperation(
-			value="Import SNOMED CT content", 
+			value="Import SNOMED CT content",
 			notes="Configures processes to import RF2 based archives. The configured process will wait until the archive actually uploaded via the <em>/archive</em> endpoint. "
 					+ "The actual import process will start after the file upload completed.")
 	@ApiResponses({
 		@ApiResponse(code = 201, message = "Created"),
 		@ApiResponse(code = 404, message = "Code system version not found"),
 	})
-	@RequestMapping(value="/imports", 
+	@RequestMapping(value="/imports",
 		method=RequestMethod.POST,
 		consumes={ AbstractRestService.V1_MEDIA_TYPE, MediaType.APPLICATION_JSON_VALUE })
 	@ResponseStatus(HttpStatus.CREATED)
 	public ResponseEntity<Void> create(
 			@ApiParam(value="The code system version")
-			@PathVariable(value="version") 
+			@PathVariable(value="version")
 			final String version,
-			
+
 			@ApiParam(value="Import parameters")
-			@RequestBody 
+			@RequestBody
 			final SnomedImportRestConfiguration importConfiguration) {
 
 		final UUID importId = delegate.create(version, convertToConfiguration(version, importConfiguration));
@@ -163,12 +152,12 @@ public class SnomedImportRestService extends AbstractSnomedRestService {
 		return details;
 	}
 	
-	private ISnomedImportConfiguration convertToConfiguration(final String version, 
+	private ISnomedImportConfiguration convertToConfiguration(final String version,
 			final SnomedImportRestConfiguration configuration) {
 		
 		return new SnomedImportConfiguration(
 				configuration.getType(), 
-				version, 
+				version,
 				configuration.getLanguageRefSetId(), 
 				configuration.getCreateVersions());
 	}

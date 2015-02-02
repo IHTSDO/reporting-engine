@@ -7,7 +7,7 @@ import java.util.Map;
 
 import com.b2international.snowowl.rest.snomed.domain.Acceptability;
 import com.b2international.snowowl.rest.snomed.domain.CaseSignificance;
-import com.b2international.snowowl.rest.snomed.impl.domain.SnomedDescriptionUpdate;
+import com.b2international.snowowlmod.rest.snomed.impl.domain.SnomedDescriptionUpdate;
 
 /**
  * @author apeteri

@@ -7,7 +7,7 @@ import com.b2international.snowowl.rest.snomed.domain.AssociationType;
 import com.b2international.snowowl.rest.snomed.domain.DefinitionStatus;
 import com.b2international.snowowl.rest.snomed.domain.InactivationIndicator;
 import com.b2international.snowowl.rest.snomed.domain.SubclassDefinitionStatus;
-import com.b2international.snowowl.rest.snomed.impl.domain.SnomedConceptUpdate;
+import com.b2international.snowowlmod.rest.snomed.impl.domain.SnomedConceptUpdate;
 import com.google.common.collect.Multimap;
 
 /**

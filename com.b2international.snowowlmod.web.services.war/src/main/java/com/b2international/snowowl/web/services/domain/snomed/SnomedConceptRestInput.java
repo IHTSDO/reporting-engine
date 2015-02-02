@@ -10,8 +10,8 @@ import java.util.Collections;
 import java.util.List;
 
 import com.b2international.snowowl.rest.domain.ComponentCategory;
-import com.b2international.snowowl.rest.snomed.impl.domain.SnomedConceptInput;
-import com.b2international.snowowl.rest.snomed.impl.domain.SnomedDescriptionInput;
+import com.b2international.snowowlmod.rest.snomed.impl.domain.SnomedConceptInput;
+import com.b2international.snowowlmod.rest.snomed.impl.domain.SnomedDescriptionInput;
 
 /**
  * @author apeteri

@@ -3,12 +3,12 @@
  *******************************************************************************/
 package com.b2international.snowowl.web.services.domain.snomed;
 
-import static com.b2international.snowowl.rest.domain.ComponentCategory.RELATIONSHIP;
-
 import com.b2international.snowowl.rest.domain.ComponentCategory;
 import com.b2international.snowowl.rest.snomed.domain.CharacteristicType;
 import com.b2international.snowowl.rest.snomed.domain.RelationshipModifier;
-import com.b2international.snowowl.rest.snomed.impl.domain.SnomedRelationshipInput;
+import com.b2international.snowowlmod.rest.snomed.impl.domain.SnomedRelationshipInput;
+
+import static com.b2international.snowowl.rest.domain.ComponentCategory.RELATIONSHIP;
 
 /**
  * @author apeteri

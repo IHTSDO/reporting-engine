@@ -22,16 +22,16 @@
 	<bean class="com.b2international.snowowl.rest.impl.service.codesystem.CodeSystemServiceImpl" />
 	<bean class="com.b2international.snowowl.rest.impl.service.codesystem.CodeSystemVersionServiceImpl" />
 	
-	<bean class="com.b2international.snowowl.rest.snomed.impl.service.SnomedConceptHistoryServiceImpl" />
-	<bean class="com.b2international.snowowl.rest.snomed.impl.service.SnomedConceptServiceImpl" />
-	<bean class="com.b2international.snowowl.rest.snomed.impl.service.SnomedDescriptionServiceImpl" />
-	<bean class="com.b2international.snowowl.rest.snomed.impl.service.SnomedReferenceSetHistoryServiceImpl" />
-	<bean class="com.b2international.snowowl.rest.snomed.impl.service.SnomedRelationshipServiceImpl" />
-	<bean class="com.b2international.snowowl.rest.snomed.impl.service.SnomedStatementBrowserServiceImpl" />
-	<bean class="com.b2international.snowowl.rest.snomed.impl.service.SnomedTerminologyBrowserServiceImpl" />
-	<bean class="com.b2international.snowowl.rest.snomed.impl.service.SnomedTaskServiceImpl" />
-	<bean class="com.b2international.snowowl.rest.snomed.impl.service.SnomedExportService" />
-	<bean class="com.b2international.snowowl.rest.snomed.impl.service.SnomedRf2ImportService" />
+	<bean class="com.b2international.snowowlmod.rest.snomed.impl.service.SnomedConceptHistoryServiceImpl" />
+	<bean class="com.b2international.snowowlmod.rest.snomed.impl.service.SnomedConceptServiceImpl" />
+	<bean class="com.b2international.snowowlmod.rest.snomed.impl.service.SnomedDescriptionServiceImpl" />
+	<!--<bean class="com.b2international.snowowlmod.rest.snomed.impl.service.SnomedReferenceSetHistoryServiceImpl" />-->
+	<bean class="com.b2international.snowowlmod.rest.snomed.impl.service.SnomedRelationshipServiceImpl" />
+	<bean class="com.b2international.snowowlmod.rest.snomed.impl.service.SnomedStatementBrowserServiceImpl" />
+	<bean class="com.b2international.snowowlmod.rest.snomed.impl.service.SnomedTerminologyBrowserServiceImpl" />
+	<bean class="com.b2international.snowowlmod.rest.snomed.impl.service.SnomedTaskServiceImpl" />
+	<bean class="com.b2international.snowowlmod.rest.snomed.impl.service.SnomedExportService" />
+	<bean class="com.b2international.snowowlmod.rest.snomed.impl.service.SnomedRf2ImportService" />
 
 	<!-- Classifier service disabled, otherwise competes with original bundle for file lock -->
 	<!--<bean class="com.b2international.snowowl.rest.snomed.impl.service.SnomedClassificationServiceImpl" />-->

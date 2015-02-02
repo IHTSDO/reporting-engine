@@ -3,7 +3,7 @@
  *******************************************************************************/
 package com.b2international.snowowl.web.services.domain.snomed;
 
-import com.b2international.snowowl.rest.snomed.impl.domain.AbstractSnomedComponentUpdate;
+import com.b2international.snowowlmod.rest.snomed.impl.domain.AbstractSnomedComponentUpdate;
 
 /**
  * @author apeteri
