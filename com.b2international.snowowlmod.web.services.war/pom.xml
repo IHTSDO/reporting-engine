@@ -146,6 +146,21 @@
 		</dependency>
 	</dependencies>
 
+	<repositories>
+		<repository>
+			<id>snowowl-temp-snapshot</id>
+			<releases><enabled>false</enabled></releases>
+			<snapshots><enabled>true</enabled></snapshots>
+			<url>https://nexus.ihtsdotools.org/content/repositories/snowowl-temp-snapshot</url>
+		</repository>
+		<repository>
+			<id>snowowl-temp-release</id>
+			<releases><enabled>true</enabled></releases>
+			<snapshots><enabled>false</enabled></snapshots>
+			<url>https://nexus.ihtsdotools.org/content/repositories/snowowl-temp-release</url>
+		</repository>
+	</repositories>
+
 	<build>
 		<plugins>
 			<plugin>
