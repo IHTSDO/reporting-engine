@@ -155,7 +155,7 @@
       <groupId>snowowl</groupId>
       <artifactId>pcj</artifactId>
       <version>1.2.0</version>
-    </dependency>
+    </dependency>  
   </dependencies>
 
 	<repositories>
@@ -184,7 +184,9 @@
             <manifestFile>src/main/resources/META-INF/MANIFEST.MF</manifestFile>
           </archive>
         </configuration>
-      </plugin>
+      </plugin>     
+      
+      
     </plugins>
   </build>
 
