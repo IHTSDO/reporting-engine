@@ -32,6 +32,7 @@
 	<bean class="com.b2international.snowowlmod.rest.snomed.impl.service.SnomedTaskServiceImpl" />
 	<bean class="com.b2international.snowowlmod.rest.snomed.impl.service.SnomedExportService" />
 	<bean class="com.b2international.snowowlmod.rest.snomed.impl.service.SnomedRf2ImportService" />
+	<bean class="com.b2international.snowowlmod.rest.snomed.impl.service.SnomedRefsetServiceImpl" />
 
 	<!-- Classifier service disabled, otherwise competes with original bundle for file lock -->
 	<!--<bean class="com.b2international.snowowl.rest.snomed.impl.service.SnomedClassificationServiceImpl" />-->
