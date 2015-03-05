@@ -177,7 +177,7 @@
 	
 	
 	<distributionManagement>
-		<repository>
+		<!-- <repository>
 			<id>ihtsdo-public-nexus</id>
 			<name>IHTSDO Public Nexus Releases</name>
 			<url>https://maven.ihtsdotools.org/content/repositories/releases/</url>
@@ -186,7 +186,17 @@
 			<id>ihtsdo-public-nexus</id>
 			<name>IHTSDO Public Nexus Snapshots</name>
 			<url>https://maven.ihtsdotools.org/content/repositories/snapshots/</url>
-		</snapshotRepository>
+		</snapshotRepository>  -->
+		<repository>
+			<id>snowowl-temp-release</id>
+			<name>snowowl-temp-release</name>
+			<url>https://nexus.ihtsdotools.org/content/repositories/snowowl-temp-release/</url>
+		</repository>
+		<snapshotRepository>
+			<id>snowowl-temp-snapshot</id>
+			<name>snowowl-temp-snapshot</name>
+			<url>https://nexus.ihtsdotools.org/content/repositories/snowowl-temp-snapshot/</url>
+		</snapshotRepository>	
 	</distributionManagement>
 	
 
