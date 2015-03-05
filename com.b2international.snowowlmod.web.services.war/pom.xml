@@ -9,8 +9,8 @@
 	</parent>
 
 	<artifactId>com.b2international.snowowlmod.web.services.war</artifactId>
-	<packaging>war</packaging>
-
+	<!-- <packaging>war</packaging>  -->
+   <packaging>jar</packaging>
 	
 	<properties>
 		<spring.version>4.0.5.RELEASE</spring.version>
