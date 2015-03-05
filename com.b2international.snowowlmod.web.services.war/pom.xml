@@ -10,7 +10,7 @@
 
 	<artifactId>com.b2international.snowowlmod.web.services.war</artifactId>
 	<!-- <packaging>war</packaging>  -->
-   <packaging>jar</packaging>
+   <packaging>war</packaging>
 	
 	<properties>
 		<spring.version>4.0.5.RELEASE</spring.version>
@@ -216,7 +216,7 @@
 				</executions>
 			</plugin>
 
-			<!-- <plugin>
+			 <plugin>
 				<artifactId>maven-war-plugin</artifactId>
 				<version>2.4</version>
 				<executions>
@@ -235,7 +235,7 @@
 				<configuration>
 					<webappDirectory>${project.build.directory}/maven-war</webappDirectory>
 				</configuration>
-			</plugin> -->
+			</plugin> 
 
 			<plugin>
 				<groupId>com.google.code.maven-replacer-plugin</groupId>
@@ -258,7 +258,7 @@
 				</configuration>
 			</plugin>
 
-		<!--  <plugin>
+		  <plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
 				<version>2.5</version>
@@ -278,7 +278,7 @@
 						</configuration>
 					</execution>
 				</executions>
-			</plugin> -->
+			</plugin>
 		</plugins> 
 	</build>
 
