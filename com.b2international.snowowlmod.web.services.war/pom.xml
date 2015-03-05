@@ -162,18 +162,6 @@
 			<snapshots><enabled>false</enabled></snapshots>
 			<url>https://nexus.ihtsdotools.org/content/repositories/snowowl-temp-release</url>
 		</repository>
-		<repository>
-			<id>ihtsdo-public-nexus-snapshot</id>
-			<releases><enabled>false</enabled></releases>
-			<snapshots><enabled>true</enabled></snapshots>
-			<url>https://maven.ihtsdotools.org/content/repositories/snapshots/</url>
-		</repository>
-		<repository>
-			<id>ihtsdo-public-nexus-release</id>
-			<releases><enabled>true</enabled></releases>
-			<snapshots><enabled>false</enabled></snapshots>
-			<url>https://maven.ihtsdotools.org/content/repositories/releases/</url>
-		</repository>
 	</repositories> -->
 	
 	<repositories>
