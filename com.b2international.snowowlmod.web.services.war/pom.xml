@@ -11,6 +11,7 @@
 	<artifactId>com.b2international.snowowlmod.web.services.war</artifactId>
 	<packaging>war</packaging>
 
+	
 	<properties>
 		<spring.version>4.0.5.RELEASE</spring.version>
 		<spring.security.version>3.2.5.RELEASE</spring.security.version>
@@ -146,7 +147,9 @@
 		</dependency>
 	</dependencies>
 
-	<repositories>
+	<!-- commented and added distributionManagement as required to conform build/release setup-->
+	<!--
+	repositories>
 		<repository>
 			<id>snowowl-temp-snapshot</id>
 			<releases><enabled>false</enabled></releases>
@@ -159,7 +162,21 @@
 			<snapshots><enabled>false</enabled></snapshots>
 			<url>https://nexus.ihtsdotools.org/content/repositories/snowowl-temp-release</url>
 		</repository>
-	</repositories>
+	</repositories -->
+	
+	<distributionManagement>
+		<repository>
+			<id>ihtsdo-public-nexus</id>
+			<name>IHTSDO Public Nexus Releases</name>
+			<url>https://maven.ihtsdotools.org/content/repositories/releases/</url>
+		</repository>
+		<snapshotRepository>
+			<id>ihtsdo-public-nexus</id>
+			<name>IHTSDO Public Nexus Snapshots</name>
+			<url>https://maven.ihtsdotools.org/content/repositories/snapshots/</url>
+		</snapshotRepository>
+	</distributionManagement>
+	
 
 	<build>
 		<plugins>
