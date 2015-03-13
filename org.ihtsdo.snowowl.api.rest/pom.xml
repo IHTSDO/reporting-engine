@@ -171,10 +171,10 @@
 			<url>https://nexus.ihtsdotools.org/content/groups/public/</url>
 		</repository>
 		<repository>
-			<id>ihtsdo-public</id>
-			<releases><enabled>true</enabled></releases>
+			<id>snowowl-temp-snapshot</id>
+			<releases><enabled>false</enabled></releases>
 			<snapshots><enabled>true</enabled></snapshots>
-			<url>https://nexus.ihtsdotools.org/content/repositories/snowowl-temp-snapshot</url>
+			<url>https://nexus.ihtsdotools.org/content/repositories/snowowl-temp-snapshot/</url>
 		</repository>
 	</repositories>
 
