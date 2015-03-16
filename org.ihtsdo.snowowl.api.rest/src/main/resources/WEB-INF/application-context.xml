@@ -28,6 +28,7 @@
 	<bean class="com.b2international.snowowl.snomed.api.impl.SnomedRf2ImportService" />
 	
 	<bean class="com.b2international.snowowl.snomed.api.impl.browser.SnomedBrowserService" />
+	<bean class="org.ihtsdo.snowowl.api.rest.impl.refset.SnomedRefsetServiceImpl" />
 	
 	<mvc:default-servlet-handler />
 	
