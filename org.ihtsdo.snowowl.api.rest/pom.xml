@@ -8,7 +8,6 @@
 	</parent>
 
 	<artifactId>org.ihtsdo.snowowl.api.rest</artifactId>
-	<version>4.0.0-SNAPSHOT</version>
 
 	<properties>
 		<spring.version>4.0.5.RELEASE</spring.version>
@@ -18,6 +17,11 @@
 		<servlet.api.version>3.0.1</servlet.api.version>
 		<xstream.version>1.4.3</xstream.version>
 		<jackson.version>2.1.5</jackson.version><!-- This version is what spring-web pulls in -->
+		
+		<!-- manifest properties -->
+    	<bundle.symbolicName>org.ihtsdo.snowowl.api.rest;singleton:=true</bundle.symbolicName>
+    	<bundle.namespace>org.ihtsdo.snowowl.api.rest</bundle.namespace>		
+		
 	</properties>
 
 	<dependencies>
@@ -47,7 +51,37 @@
 			<version>${project.version}</version>
 			<scope>provided</scope>
 		</dependency>
-
+		<dependency>
+			<groupId>com.b2international.snowowl</groupId>
+			<artifactId>com.b2international.snowowl.snomed.refset.model</artifactId>
+			<version>${project.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.b2international.snowowl</groupId>
+			<artifactId>com.b2international.snowowl.datastore</artifactId>
+			<version>${project.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.b2international.snowowl</groupId>
+			<artifactId>com.b2international.snowowl.core</artifactId>
+			<version>${project.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.b2international.snowowl</groupId>
+			<artifactId>com.b2international.snowowl.snomed.common</artifactId>
+			<version>${project.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.b2international.snowowl</groupId>
+			<artifactId>com.b2international.snowowl.snomed.datastore</artifactId>
+			<version>${project.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		
 		<!-- The Servlet specification is implemented by the web container -->
 		<dependency>
 			<groupId>javax.servlet</groupId>
@@ -192,6 +226,7 @@
 	</distributionManagement>
 
 	<build>
+
 		<plugins>
 			<plugin>
 				<artifactId>maven-compiler-plugin</artifactId>
@@ -227,13 +262,15 @@
 					</execution>
 				</executions>
 				<configuration>
-					<file>${basedir}/src/main/resources/META-INF/MANIFEST.MF</file>
+					<file>${project.build.directory}/generated/MANIFEST.MF</file>
 					<outputFile>${project.build.directory}/manifest/MANIFEST.MF</outputFile>
 					<regex>true</regex>
 					<token>Bundle-Version: .*\.qualifier</token>
 					<value>Bundle-Version: ${unqualifiedVersion}.${buildQualifier}</value>
 				</configuration>
 			</plugin>
+			
+			
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
@@ -249,16 +286,107 @@
 							<goal>jar</goal>
 						</goals>
 						<configuration>
+
 							<classesDirectory>${project.build.directory}/classes</classesDirectory>
 							<outputDirectory>${project.build.directory}</outputDirectory>
 							<archive>
 								<manifestFile>${project.build.directory}/manifest/MANIFEST.MF</manifestFile>
 							</archive>
+						
 						</configuration>
 					</execution>
 				</executions>
 			</plugin>
+		<!-- Generate Manifest -->
+			<plugin>
+	        <groupId>org.apache.felix</groupId>
+	        <artifactId>maven-bundle-plugin</artifactId>
+        	<version>2.5.3</version>
+        	<dependencies>
+	          <dependency>
+	            <groupId>biz.aQute.bnd</groupId>
+	            <artifactId>bndlib</artifactId>
+	            <version>2.4.0</version>
+	          </dependency>
+	        </dependencies>
+	        <executions>
+	          <execution>
+	            <id>bundle-manifest</id>
+	            <phase>process-classes</phase>
+	            <goals>
+	              <goal>manifest</goal>
+	            </goals>
+	          </execution>
+	        </executions>
+	        <configuration>
+	          <supportedProjectTypes>
+	          	<supportedProjectType>jar</supportedProjectType>
+	          </supportedProjectTypes>
+              <manifestLocation>${project.build.directory}/generated/</manifestLocation>
+
+	          <instructions>
+	          	<Build-Name>IHTSDO Snow Owl REST Service</Build-Name>
+	            <Bundle-SymbolicName>${project.artifactId};singleton:=true</Bundle-SymbolicName>
+	            <Bundle-Version>1.0.0.qualifier</Bundle-Version>
+	            <Bundle-ManifestVersion>2</Bundle-ManifestVersion>
+                <Bundle-ClassPath>.,WEB-INF/classes,{maven-dependencies}</Bundle-ClassPath>
+                <Embed-Directory>WEB-INF/lib</Embed-Directory>
+    			<Embed-Dependency>*;scope=compile|runtime</Embed-Dependency>
+    			<Embed-Transitive>true</Embed-Transitive>
+                <Web-ContextPath>/snowowl/ihtsdo</Web-ContextPath>
+                <!-- this plugin automatically replaces full packages by scanning import statements in classes.
+                However package configured in spring bean classes and not used as import within java classes needs to mention separately
+                hence com.b2international.snowowl.api.impl etc -->
+    			<Import-Package>*;resolution:=optional,
+					 com.b2international.snowowl.api.impl,
+					 com.b2international.snowowl.api.impl.codesystem,
+					 com.b2international.snowowl.snomed.api.impl.browser,
+					 org.slf4j;version="1.7.2",
+					 org.eclipse.core.runtime;version="3.4.0",
+					 org.osgi.framework;version="1.7.0",
+			 	</Import-Package>
+   	          </instructions>
+	        </configuration>
+	      </plugin>
+	      <plugin>
+	           <groupId>org.apache.maven.plugins</groupId>
+	           <artifactId>maven-dependency-plugin</artifactId>
+	           <executions>
+	               <execution>
+	                   <id>copy-dependencies</id>
+					   <phase>process-resources</phase>
+	                   <goals>
+	                       <goal>copy-dependencies</goal>
+	                   </goals>
+	                   <configuration>
+	                       <outputDirectory>${project.build.directory}/classes/WEB-INF/lib</outputDirectory>
+	                       <overWriteReleases>false</overWriteReleases>
+	                       <overWriteSnapshots>false</overWriteSnapshots>
+	                       <overWriteIfNewer>true</overWriteIfNewer>
+	                       <excludeScope>provided</excludeScope>
+	                   </configuration>
+	               </execution>
+	           </executions>
+	       </plugin>	      
 		</plugins>
 	</build>
+	<reporting>
+	    <plugins>
+	      <plugin>
+	        <groupId>org.apache.maven.plugins</groupId>
+	        <artifactId>maven-project-info-reports-plugin</artifactId>
+	        <version>2.8</version>
+	        <reportSets>
+	          <reportSet>
+	            <reports>
+	              <report>dependencies</report>
+	              <report>license</report>
+	              <report>scm</report>
+	            </reports>
+	          </reportSet>
+	        </reportSets>
+	      </plugin>
+	    </plugins>
+  	</reporting>
 
 </project>

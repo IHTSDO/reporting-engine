@@ -16,7 +16,6 @@
 package org.ihtsdo.snowowl.api.rest;
 
 import org.ihtsdo.snowowl.api.rest.domain.RestApiError;
-import org.ihtsdo.snowowl.api.rest.domain.RestApiError;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -29,7 +28,6 @@ import com.b2international.snowowl.api.exception.BadRequestException;
 import com.b2international.snowowl.api.exception.ConflictException;
 import com.b2international.snowowl.api.exception.IllegalQueryParameterException;
 import com.b2international.snowowl.api.exception.NotFoundException;
-import org.ihtsdo.snowowl.api.rest.domain.RestApiError;
 import com.fasterxml.jackson.databind.JsonMappingException;
 
 /**
