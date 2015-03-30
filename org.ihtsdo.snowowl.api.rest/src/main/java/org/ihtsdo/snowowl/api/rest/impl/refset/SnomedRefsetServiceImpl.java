@@ -17,15 +17,17 @@ import java.util.Collection;
 
 import com.b2international.snowowl.core.ApplicationContext;
 import com.b2international.snowowl.core.api.IBranchPath;
+import com.b2international.snowowl.core.terminology.ComponentCategory;
 import com.b2international.snowowl.datastore.editor.service.ComponentNotFoundException;
-import com.b2international.snowowl.api.domain.ComponentCategory;
 import com.b2international.snowowl.snomed.datastore.SnomedConceptIndexEntry;
 import com.b2international.snowowl.snomed.datastore.SnomedRefSetBrowser;
 import com.b2international.snowowl.snomed.datastore.SnomedTerminologyBrowser;
 import com.b2international.snowowl.snomed.datastore.index.refset.SnomedRefSetIndexEntry;
 import com.b2international.snowowl.snomed.datastore.services.SnomedBranchRefSetMembershipLookupService;
+
 import org.ihtsdo.snowowl.api.rest.domain.RefSet;
 import org.ihtsdo.snowowl.api.rest.domain.RefSetComponent;
+
 import com.google.common.collect.Collections2;
 
 /**Service to retrieve {@link RefSet} header details and Concept details.
