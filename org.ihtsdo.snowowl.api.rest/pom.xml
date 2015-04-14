@@ -178,6 +178,11 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
+		<dependency>
+			<groupId>org.apache.lucene</groupId>
+			<artifactId>lucene-core</artifactId>
+			<version>4.10.2</version>
+		</dependency>
 	</dependencies>
 
 	<!-- commented and added distributionManagement as required to conform build/release setup-->

@@ -29,6 +29,7 @@
 	
 	<bean class="com.b2international.snowowl.snomed.api.impl.browser.SnomedBrowserService" />
 	<bean class="org.ihtsdo.snowowl.api.rest.impl.refset.SnomedRefsetServiceImpl" />
+	<bean class="org.ihtsdo.snowowl.api.rest.authoring.AuthoringService"/>
 	
 	<mvc:default-servlet-handler />
 	
