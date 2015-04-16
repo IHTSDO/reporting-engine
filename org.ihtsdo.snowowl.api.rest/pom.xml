@@ -2,26 +2,17 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
-		<groupId>com.b2international.snowowl</groupId>
-		<artifactId>snomed-parent</artifactId>
+		<groupId>org.ihtsdo.snowowl</groupId>
+		<artifactId>ihtsdo-snowowl-parent</artifactId>
 		<version>4.1.0-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>org.ihtsdo.snowowl.api.rest</artifactId>
 
 	<properties>
-		<spring.version>4.0.5.RELEASE</spring.version>
-		<spring.security.version>3.2.5.RELEASE</spring.security.version>
-		<spring.hateoas.version>0.11.0.RELEASE</spring.hateoas.version>
-		<swagger.springmvc.version>0.9.3</swagger.springmvc.version>
-		<servlet.api.version>3.0.1</servlet.api.version>
-		<xstream.version>1.4.3</xstream.version>
-		<jackson.version>2.1.5</jackson.version><!-- This version is what spring-web pulls in -->
-		
 		<!-- manifest properties -->
     	<bundle.symbolicName>org.ihtsdo.snowowl.api.rest;singleton:=true</bundle.symbolicName>
-    	<bundle.namespace>org.ihtsdo.snowowl.api.rest</bundle.namespace>		
-		
+    	<bundle.namespace>org.ihtsdo.snowowl.api.rest</bundle.namespace>				
 	</properties>
 
 	<dependencies>
@@ -202,45 +193,9 @@
 		</repository>
 	</repositories> -->
 
-	<repositories>
-		<repository>
-			<id>ihtsdo-public</id>
-			<releases><enabled>true</enabled></releases>
-			<snapshots><enabled>true</enabled></snapshots>
-			<url>https://nexus.ihtsdotools.org/content/groups/public/</url>
-		</repository>
-		<repository>
-			<id>snowowl-temp-snapshot</id>
-			<releases><enabled>false</enabled></releases>
-			<snapshots><enabled>true</enabled></snapshots>
-			<url>https://nexus.ihtsdotools.org/content/repositories/snowowl-temp-snapshot/</url>
-		</repository>
-	</repositories>
-
-	<distributionManagement>
-		<repository>
-			<id>ihtsdo-public-nexus</id>
-			<name>IHTSDO Public Nexus Releases</name>
-			<url>https://maven.ihtsdotools.org/content/repositories/releases/</url>
-		</repository>
-		<snapshotRepository>
-			<id>ihtsdo-public-nexus</id>
-			<name>IHTSDO Public Nexus Snapshots</name>
-			<url>https://maven.ihtsdotools.org/content/repositories/snapshots/</url>
-		</snapshotRepository>
-	</distributionManagement>
-
 	<build>
 
 		<plugins>
-			<plugin>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.2</version>
-				<configuration>
-					<source>1.7</source>
-					<target>1.7</target>
-				</configuration>
-			</plugin>
 			<plugin>
 				<groupId>org.eclipse.tycho</groupId>
 				<artifactId>tycho-packaging-plugin</artifactId>
@@ -375,23 +330,5 @@
 	       </plugin>	      
 		</plugins>
 	</build>
-	<reporting>
-	    <plugins>
-	      <plugin>
-	        <groupId>org.apache.maven.plugins</groupId>
-	        <artifactId>maven-project-info-reports-plugin</artifactId>
-	        <version>2.8</version>
-	        <reportSets>
-	          <reportSet>
-	            <reports>
-	              <report>dependencies</report>
-	              <report>license</report>
-	              <report>scm</report>
-	            </reports>
-	          </reportSet>
-	        </reportSets>
-	      </plugin>
-	    </plugins>
-  	</reporting>
 
 </project>
