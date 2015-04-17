@@ -12,15 +12,14 @@
 
 	<bean class="org.ihtsdo.snowowl.authoring.api.services.AuthoringService"/>
 
-	<bean class="com.fasterxml.jackson.databind.ObjectMapper"/>
-
 	<mvc:default-servlet-handler />
 	
 	<context:property-placeholder
 		location="classpath:WEB-INF/service_configuration.properties"
 		ignore-resource-not-found="true" ignore-unresolvable="true" order="0" />
 
-	<mvc:annotation-driven/>
 	<context:component-scan base-package="org.ihtsdo.snowowl.authoring.api.rest" />
+
+	<bean class="org.ihtsdo.snowowl.api.rest.common.ServicesConfiguration" />
 
 </beans>

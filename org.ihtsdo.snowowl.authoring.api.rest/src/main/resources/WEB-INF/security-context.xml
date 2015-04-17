@@ -10,7 +10,7 @@
 	<!-- REST should have no state, each request is re-authenticated -->
 	<http create-session="stateless">
 		<intercept-url pattern="/api-docs/**" access="IS_AUTHENTICATED_ANONYMOUSLY" />
-		<intercept-url pattern="/org/ihtsdo/snowowl/api/rest/authoring" access="ROLE_USER" />
+		<intercept-url pattern="/org/ihtsdo/snowowl/authoring/api/rest" access="ROLE_USER" />
 		<http-basic />
 	</http>
 
