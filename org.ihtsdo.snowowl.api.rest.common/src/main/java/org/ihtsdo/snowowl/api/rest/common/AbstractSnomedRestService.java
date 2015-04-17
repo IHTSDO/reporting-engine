@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.ihtsdo.snowowl.api.rest;
+package org.ihtsdo.snowowl.api.rest.common;
 
 import com.b2international.snowowl.api.domain.IComponentRef;
 import com.b2international.snowowl.api.impl.domain.ComponentRef;

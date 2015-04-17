@@ -1,11 +1,9 @@
-package org.ihtsdo.snowowl.api.rest.authoring;
+package org.ihtsdo.snowowl.authoring.api.rest;
 
 import com.b2international.snowowl.api.domain.IComponentRef;
 import com.wordnik.swagger.annotations.*;
-import org.ihtsdo.snowowl.api.rest.AbstractRestService;
-import org.ihtsdo.snowowl.api.rest.AbstractSnomedRestService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.ihtsdo.snowowl.api.rest.common.AbstractRestService;
+import org.ihtsdo.snowowl.api.rest.common.AbstractSnomedRestService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -22,8 +20,6 @@ public class AuthoringController extends AbstractSnomedRestService {
 
 	@Autowired
 	private AuthoringService service;
-
-	private Logger logger = LoggerFactory.getLogger(getClass());
 
 	@ApiOperation(value="Validates a batch of authoring content against a logical model.", notes="")
 	@ApiResponses({

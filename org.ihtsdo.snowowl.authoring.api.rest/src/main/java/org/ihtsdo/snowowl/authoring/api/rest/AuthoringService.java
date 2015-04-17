@@ -1,4 +1,4 @@
-package org.ihtsdo.snowowl.api.rest.authoring;
+package org.ihtsdo.snowowl.authoring.api.rest;
 
 import com.b2international.snowowl.api.domain.IComponentRef;
 import com.b2international.snowowl.api.impl.domain.InternalStorageRef;

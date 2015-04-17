@@ -13,9 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.ihtsdo.snowowl.api.rest;
+package org.ihtsdo.snowowl.api.rest.common;
 
-import org.ihtsdo.snowowl.api.rest.domain.RestApiError;
+import com.b2international.snowowl.api.exception.BadRequestException;
+import com.b2international.snowowl.api.exception.ConflictException;
+import com.b2international.snowowl.api.exception.IllegalQueryParameterException;
+import com.b2international.snowowl.api.exception.NotFoundException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -23,12 +27,6 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
-
-import com.b2international.snowowl.api.exception.BadRequestException;
-import com.b2international.snowowl.api.exception.ConflictException;
-import com.b2international.snowowl.api.exception.IllegalQueryParameterException;
-import com.b2international.snowowl.api.exception.NotFoundException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 
 /**
  * @since 1.0
@@ -47,7 +45,7 @@ public abstract class AbstractRestService {
 	 * Generic <b>Internal Server Error</b> exception handler, serving as a fallback for RESTful client calls.
 	 * 
 	 * @param ex
-	 * @return {@link org.ihtsdo.snowowl.api.rest.domain.RestApiError} instance with detailed messages
+	 * @return {@link org.ihtsdo.snowowl.api.rest.common.RestApiError} instance with detailed messages
 	 */
 	@ExceptionHandler
 	@ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)

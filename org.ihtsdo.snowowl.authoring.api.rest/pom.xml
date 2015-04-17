@@ -7,13 +7,13 @@
 		<version>4.1.0-SNAPSHOT</version>
 	</parent>
 
-	<artifactId>org.ihtsdo.snowowl.api.rest</artifactId>
+	<artifactId>org.ihtsdo.snowowl.authoring.api.rest</artifactId>
 
 	<properties>
 		<!-- manifest properties -->
-    	<bundle.symbolicName>org.ihtsdo.snowowl.api.rest;singleton:=true</bundle.symbolicName>
-    	<bundle.namespace>org.ihtsdo.snowowl.api.rest</bundle.namespace>
-		<bundle.webcontext>/snowowl/ihtsdo</bundle.webcontext>
+    	<bundle.symbolicName>${project.artifactId};singleton:=true</bundle.symbolicName>
+    	<bundle.namespace>${project.artifactId}</bundle.namespace>
+    	<bundle.webcontext>/snowowl/ihtsdo-authoring</bundle.webcontext>
 	</properties>
 
 	<dependencies>
@@ -78,7 +78,7 @@
 			<version>${project.version}</version>
 			<scope>provided</scope>
 		</dependency>
-		
+
 		<!-- The Servlet specification is implemented by the web container -->
 		<dependency>
 			<groupId>javax.servlet</groupId>
@@ -171,25 +171,7 @@
 		</dependency>
 	</dependencies>
 
-	<!-- commented and added distributionManagement as required to conform build/release setup-->
-
-	<!--  <repositories>
-		<repository>
-			<id>snowowl-temp-snapshot</id>
-			<releases><enabled>false</enabled></releases>
-			<snapshots><enabled>true</enabled></snapshots>
-			<url>https://nexus.ihtsdotools.org/content/repositories/snowowl-temp-snapshot</url>
-		</repository>
-		<repository>
-			<id>snowowl-temp-release</id>
-			<releases><enabled>true</enabled></releases>
-			<snapshots><enabled>false</enabled></snapshots>
-			<url>https://nexus.ihtsdotools.org/content/repositories/snowowl-temp-release</url>
-		</repository>
-	</repositories> -->
-
 	<build>
-
 		<plugins>
 			<plugin>
 				<groupId>org.eclipse.tycho</groupId>
@@ -280,7 +262,7 @@
               <manifestLocation>${project.build.directory}/generated/</manifestLocation>
 
 	          <instructions>
-	          	<Build-Name>IHTSDO Snow Owl REST Service</Build-Name>
+	          	<Build-Name>IHTSDO Snow Owl REST Authoring Service</Build-Name>
 	            <Bundle-SymbolicName>${project.artifactId};singleton:=true</Bundle-SymbolicName>
 	            <Bundle-Version>1.0.0.qualifier</Bundle-Version>
 	            <Bundle-ManifestVersion>2</Bundle-ManifestVersion>
@@ -293,12 +275,12 @@
                 However package configured in spring bean classes and not used as import within java classes needs to mention separately
                 hence com.b2international.snowowl.api.impl etc -->
     			<Import-Package>*;resolution:=optional,
-					 com.b2international.snowowl.api.impl,
-					 com.b2international.snowowl.api.impl.codesystem,
-					 com.b2international.snowowl.snomed.api.impl.browser,
-					 org.slf4j;version="1.7.2",
-					 org.eclipse.core.runtime;version="3.4.0",
-					 org.osgi.framework;version="1.7.0",
+					com.b2international.snowowl.api.impl,
+					com.b2international.snowowl.api.impl.codesystem,
+					com.b2international.snowowl.snomed.api.impl.browser,
+					org.slf4j;version="1.7.2",
+					org.eclipse.core.runtime;version="3.4.0",
+					org.osgi.framework;version="1.7.0",
 			 	</Import-Package>
    	          </instructions>
 	        </configuration>

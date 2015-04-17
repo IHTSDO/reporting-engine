@@ -9,7 +9,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-package org.ihtsdo.snowowl.api.rest.impl.refset;
+package org.ihtsdo.snowowl.api.rest.refset.common;
 
 import com.b2international.snowowl.snomed.api.domain.ISnomedConcept;
 import com.b2international.snowowl.snomed.api.impl.AbstractSnomedComponentConverter;

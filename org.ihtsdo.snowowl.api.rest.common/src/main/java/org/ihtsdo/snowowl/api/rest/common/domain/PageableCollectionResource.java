@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.ihtsdo.snowowl.api.rest.domain;
-
-import java.util.List;
+package org.ihtsdo.snowowl.api.rest.common.domain;
 
 import com.google.common.base.Objects;
 import com.wordnik.swagger.annotations.ApiModel;
 import com.wordnik.swagger.annotations.ApiModelProperty;
+
+import java.util.List;
 
 /**
  * {@link CollectionResource} containing paging information like offset, limit and total.

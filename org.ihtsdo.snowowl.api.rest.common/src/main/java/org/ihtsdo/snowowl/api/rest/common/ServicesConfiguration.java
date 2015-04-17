@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.ihtsdo.snowowl.api.rest;
+package org.ihtsdo.snowowl.api.rest.common;
 
 import com.b2international.snowowl.snomed.api.domain.ISnomedComponent;
 import com.b2international.snowowl.snomed.api.domain.browser.ISnomedBrowserComponent;
@@ -30,7 +30,7 @@ import com.mangofactory.swagger.paths.RelativeSwaggerPathProvider;
 import com.mangofactory.swagger.plugin.EnableSwagger;
 import com.mangofactory.swagger.plugin.SwaggerSpringMvcPlugin;
 import com.wordnik.swagger.model.ApiInfo;
-import org.ihtsdo.snowowl.api.rest.domain.ISnomedComponentMixin;
+import org.ihtsdo.snowowl.api.rest.common.domain.ISnomedComponentMixin;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
