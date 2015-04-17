@@ -38,4 +38,25 @@ public class AttributeRestriction {
 				", rangeConceptId='" + rangeConceptId + '\'' +
 				'}';
 	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+
+		AttributeRestriction that = (AttributeRestriction) o;
+
+		if (domainConceptId != null ? !domainConceptId.equals(that.domainConceptId) : that.domainConceptId != null) return false;
+		if (rangeRelationType != that.rangeRelationType) return false;
+		return !(rangeConceptId != null ? !rangeConceptId.equals(that.rangeConceptId) : that.rangeConceptId != null);
+
+	}
+
+	@Override
+	public int hashCode() {
+		int result = domainConceptId != null ? domainConceptId.hashCode() : 0;
+		result = 31 * result + (rangeRelationType != null ? rangeRelationType.hashCode() : 0);
+		result = 31 * result + (rangeConceptId != null ? rangeConceptId.hashCode() : 0);
+		return result;
+	}
 }

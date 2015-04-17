@@ -25,13 +25,15 @@ import com.b2international.snowowl.api.impl.domain.ComponentRef;
  */
 public class AbstractSnomedRestService extends AbstractRestService {
 
+	private final ComponentRefHelper componentRefHelper;
+
+	public AbstractSnomedRestService() {
+		componentRefHelper = new ComponentRefHelper();
+	}
+
 	protected IComponentRef createComponentRef(final String version, final String taskId, final String componentId) {
-		final ComponentRef conceptRef = new ComponentRef();
-		conceptRef.setShortName("SNOMEDCT");
-		conceptRef.setVersion(version);
-		conceptRef.setTaskId(taskId);
-		conceptRef.setComponentId(componentId);
-		conceptRef.checkStorageExists();
-		return conceptRef;
+		IComponentRef componentRef = componentRefHelper.createComponentRef(version, taskId, componentId);
+		((ComponentRef)componentRef).checkStorageExists();
+		return componentRef;
 	}
 }

@@ -9,8 +9,9 @@
     http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-3.1.xsd">
 
 	<bean class="com.b2international.snowowl.api.impl.AuthenticationServiceImpl" />
+	<bean class="org.ihtsdo.snowowl.authoring.api.services.ContentServiceImpl"/>
 
-	<bean class="org.ihtsdo.snowowl.authoring.api.services.AuthoringService"/>
+	<import resource="services-context.xml" />
 
 	<mvc:default-servlet-handler />
 	
