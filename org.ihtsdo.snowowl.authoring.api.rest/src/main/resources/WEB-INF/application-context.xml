@@ -10,8 +10,10 @@
 
 	<bean class="com.b2international.snowowl.api.impl.AuthenticationServiceImpl" />
 
-	<bean class="org.ihtsdo.snowowl.authoring.api.rest.AuthoringService"/>
-	
+	<bean class="org.ihtsdo.snowowl.authoring.api.services.AuthoringService"/>
+
+	<bean class="com.fasterxml.jackson.databind.ObjectMapper"/>
+
 	<mvc:default-servlet-handler />
 	
 	<context:property-placeholder
