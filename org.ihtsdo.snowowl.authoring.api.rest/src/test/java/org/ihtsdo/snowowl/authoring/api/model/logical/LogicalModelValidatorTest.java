@@ -24,7 +24,7 @@ public class LogicalModelValidatorTest {
 
 	@Test
 	public void testValidateContentSingleIsASelfValid() throws Exception {
-		LogicalModel logicalModel = new LogicalModel(new IsARestriction("123", RangeRelationType.SELF));
+		LogicalModel logicalModel = new LogicalModel("", new IsARestriction("123", RangeRelationType.SELF));
 		AuthoringContent content = new AuthoringContent().addIsA("123");
 
 		AuthoringContentValidationResult result = validator.validate(content, logicalModel);
@@ -34,7 +34,7 @@ public class LogicalModelValidatorTest {
 
 	@Test
 	public void testValidateContentSingleIsASelfInvalid() throws Exception {
-		LogicalModel logicalModel = new LogicalModel(new IsARestriction("123", RangeRelationType.SELF));
+		LogicalModel logicalModel = new LogicalModel("", new IsARestriction("123", RangeRelationType.SELF));
 		AuthoringContent content = new AuthoringContent().addIsA("124");
 
 		AuthoringContentValidationResult result = validator.validate(content, logicalModel);
@@ -44,7 +44,7 @@ public class LogicalModelValidatorTest {
 
 	@Test
 	public void testValidateContentSingleIsADescendantsValid() throws Exception {
-		LogicalModel logicalModel = new LogicalModel(new IsARestriction("123", RangeRelationType.DESCENDANTS));
+		LogicalModel logicalModel = new LogicalModel("", new IsARestriction("123", RangeRelationType.DESCENDANTS));
 		testContentService.putDescendantIds("123", new String[]{"1234", "12345", "123456"});
 		AuthoringContent content = new AuthoringContent().addIsA("12345");
 
@@ -55,7 +55,7 @@ public class LogicalModelValidatorTest {
 
 	@Test
 	public void testValidateContentSingleIsADescendantsInvalid() throws Exception {
-		LogicalModel logicalModel = new LogicalModel(new IsARestriction("123", RangeRelationType.DESCENDANTS));
+		LogicalModel logicalModel = new LogicalModel("", new IsARestriction("123", RangeRelationType.DESCENDANTS));
 		testContentService.putDescendantIds("123", new String[]{"1234", "12345", "123456"});
 		AuthoringContent content = new AuthoringContent().addIsA("12377");
 
@@ -66,7 +66,7 @@ public class LogicalModelValidatorTest {
 
 	@Test
 	public void testValidateContentSingleIsADescendantOrSelfValid() throws Exception {
-		LogicalModel logicalModel = new LogicalModel(new IsARestriction("123", RangeRelationType.DESCENDANTS_AND_SELF));
+		LogicalModel logicalModel = new LogicalModel("", new IsARestriction("123", RangeRelationType.DESCENDANTS_AND_SELF));
 		testContentService.putDescendantIds("123", new String[]{"1234", "12345", "123456"});
 		AuthoringContent content = new AuthoringContent().addIsA("123");
 
@@ -77,7 +77,7 @@ public class LogicalModelValidatorTest {
 
 	@Test
 	public void testValidateContentSingleIsADescendantOrSelfInvalid() throws Exception {
-		LogicalModel logicalModel = new LogicalModel(new IsARestriction("123", RangeRelationType.DESCENDANTS_AND_SELF));
+		LogicalModel logicalModel = new LogicalModel("", new IsARestriction("123", RangeRelationType.DESCENDANTS_AND_SELF));
 		testContentService.putDescendantIds("123", new String[]{"1234", "12345", "123456"});
 		AuthoringContent content = new AuthoringContent().addIsA("12377");
 
@@ -88,7 +88,7 @@ public class LogicalModelValidatorTest {
 
 	@Test
 	public void testValidateContentNotEnoughIsA() throws Exception {
-		LogicalModel logicalModel = new LogicalModel(new IsARestriction("123", RangeRelationType.SELF))
+		LogicalModel logicalModel = new LogicalModel("", new IsARestriction("123", RangeRelationType.SELF))
 				.addIsARestriction(new IsARestriction("12345", RangeRelationType.SELF));
 		AuthoringContent content = new AuthoringContent().addIsA("124");
 
@@ -100,7 +100,7 @@ public class LogicalModelValidatorTest {
 
 	@Test
 	public void testValidateContentTooManyIsA() throws Exception {
-		LogicalModel logicalModel = new LogicalModel(new IsARestriction("123", RangeRelationType.SELF));
+		LogicalModel logicalModel = new LogicalModel("", new IsARestriction("123", RangeRelationType.SELF));
 		AuthoringContent content = new AuthoringContent()
 				.addIsA("124")
 				.addIsA("125");

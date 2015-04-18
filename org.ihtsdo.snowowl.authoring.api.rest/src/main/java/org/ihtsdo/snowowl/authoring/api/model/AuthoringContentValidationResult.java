@@ -14,6 +14,25 @@ public class AuthoringContentValidationResult {
 		attributesMessages = new LinkedHashMap<>();
 	}
 
+	public boolean isAnyErrors() {
+		for (String isARelationshipsMessage : isARelationshipsMessages) {
+			if (!isARelationshipsMessage.isEmpty()) {
+				return true;
+			}
+		}
+		for (String s : attributesMessages.keySet()) {
+			if (!s.isEmpty()) {
+				return true;
+			}
+		}
+		for (String s : attributesMessages.values()) {
+			if (!s.isEmpty()) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public void addIsARelationshipsMessage(String message) {
 		isARelationshipsMessages.add(message);
 	}

@@ -12,7 +12,9 @@ import org.ihtsdo.snowowl.authoring.api.services.AuthoringService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -34,11 +36,19 @@ public class AuthoringController extends AbstractSnomedRestService {
 			@ApiResponse(code = 201, message = "CREATED")
 	})
 	@RequestMapping(value="/models/logical", method= RequestMethod.POST)
-	public void saveLogicalModel(@PathVariable final String logicalModelName,
-			@RequestBody final LogicalModel logicalModel) throws IOException {
-
+	public ResponseEntity<LogicalModel> saveLogicalModel(@RequestBody final LogicalModel logicalModel) throws IOException {
 		logger.info("Create/update logicalModel {}", logicalModel);
-		service.saveLogicalModel(logicalModelName, logicalModel);
+		service.saveLogicalModel(logicalModel);
+		return new ResponseEntity<>(logicalModel, HttpStatus.CREATED);
+	}
+
+	@ApiOperation(value="List logical model names.", notes="")
+	@ApiResponses({
+			@ApiResponse(code = 200, message = "OK", response = LogicalModel.class)
+	})
+	@RequestMapping(value="/models/logical", method= RequestMethod.GET)
+	public List<String> listLogicalModelNames() throws IOException {
+		return service.listLogicalModelNames();
 	}
 
 	@ApiOperation(value="Retrieve a logical model.", notes="")
@@ -48,19 +58,29 @@ public class AuthoringController extends AbstractSnomedRestService {
 
 	})
 	@RequestMapping(value="/models/logical/{logicalModelName}", method= RequestMethod.GET)
-	public LogicalModel loadLogicalModel(@PathVariable final String name) throws IOException {
-		return service.loadLogicalModel(name);
+	public LogicalModel loadLogicalModel(@PathVariable final String logicalModelName) throws IOException {
+		return service.loadLogicalModel(logicalModelName);
 	}
 
 	@ApiOperation(value="Validate content.", notes="")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "Content is valid", response = AuthoringContentValidationResult.class),
-			@ApiResponse(code = 422, message = "Content is not valid", response = AuthoringContentValidationResult.class),
+			@ApiResponse(code = 406, message = "Content is not valid", response = AuthoringContentValidationResult.class),
 			@ApiResponse(code = 404, message = "Logical model not found")
 	})
 	@RequestMapping(value="/models/logical/{logicalModelName}/valid-content", method= RequestMethod.POST)
-	public List<AuthoringContentValidationResult> validateContent(@PathVariable final String logicalModelName, @RequestBody List<AuthoringContent> content) throws IOException {
-		return service.validateContent(logicalModelName, content);
+	public ResponseEntity<List<AuthoringContentValidationResult>> validateContent(@PathVariable final String logicalModelName, @RequestBody List<AuthoringContent> content) throws IOException {
+		List<AuthoringContentValidationResult> results = service.validateContent(logicalModelName, content);
+		return new ResponseEntity<>(results, isAnyErrors(results) ? HttpStatus.NOT_ACCEPTABLE : HttpStatus.OK);
+	}
+
+	private boolean isAnyErrors(List<AuthoringContentValidationResult> results) {
+		for (AuthoringContentValidationResult result : results) {
+			if (result.isAnyErrors()) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	@ApiOperation(value="Retrieve descendant concept ids.", notes="")

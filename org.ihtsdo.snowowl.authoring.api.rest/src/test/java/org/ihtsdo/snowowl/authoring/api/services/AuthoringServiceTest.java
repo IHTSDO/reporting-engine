@@ -29,8 +29,8 @@ public class AuthoringServiceTest {
 	@Test
 	public void testSaveLoadLogicalModel() throws IOException {
 		String modelName = "isAOnlyModel";
-		LogicalModel logicalModel = new LogicalModel(new IsARestriction("123", RangeRelationType.SELF));
-		authoringService.saveLogicalModel(modelName, logicalModel);
+		LogicalModel logicalModel = new LogicalModel(modelName, new IsARestriction("123", RangeRelationType.SELF));
+		authoringService.saveLogicalModel(logicalModel);
 
 		LogicalModel logicalModel1 = authoringService.loadLogicalModel(modelName);
 

@@ -5,21 +5,31 @@ import java.util.List;
 
 public class LogicalModel {
 
+	private String name;
 	private List<IsARestriction> isARestrictions;
-	private List<AttributeRestriction> attributeRestriction;
+	private List<AttributeRestriction> attributeRestrictions;
 
 	public LogicalModel() {
 		isARestrictions = new ArrayList<>();
 	}
 
-	public LogicalModel(IsARestriction isARestriction) {
+	public LogicalModel(String name, IsARestriction isARestriction) {
 		this();
+		this.name = name;
 		isARestrictions.add(isARestriction);
 	}
 
 	public LogicalModel addIsARestriction(IsARestriction isARestriction) {
 		isARestrictions.add(isARestriction);
 		return this;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
 	}
 
 	public List<IsARestriction> getIsARestrictions() {
@@ -30,19 +40,20 @@ public class LogicalModel {
 		this.isARestrictions = isARestrictions;
 	}
 
-	public List<AttributeRestriction> getAttributeRestriction() {
-		return attributeRestriction;
+	public List<AttributeRestriction> getAttributeRestrictions() {
+		return attributeRestrictions;
 	}
 
-	public void setAttributeRestriction(List<AttributeRestriction> attributeRestriction) {
-		this.attributeRestriction = attributeRestriction;
+	public void setAttributeRestrictions(List<AttributeRestriction> attributeRestrictions) {
+		this.attributeRestrictions = attributeRestrictions;
 	}
 
 	@Override
 	public String toString() {
 		return "LogicalModel{" +
-				"isARestrictions=" + isARestrictions +
-				", attributeRestriction=" + attributeRestriction +
+				"name='" + name + '\'' +
+				", isARestrictions=" + isARestrictions +
+				", attributeRestrictions=" + attributeRestrictions +
 				'}';
 	}
 
@@ -54,14 +65,14 @@ public class LogicalModel {
 		LogicalModel that = (LogicalModel) o;
 
 		if (isARestrictions != null ? !isARestrictions.equals(that.isARestrictions) : that.isARestrictions != null) return false;
-		return !(attributeRestriction != null ? !attributeRestriction.equals(that.attributeRestriction) : that.attributeRestriction != null);
+		return !(attributeRestrictions != null ? !attributeRestrictions.equals(that.attributeRestrictions) : that.attributeRestrictions != null);
 
 	}
 
 	@Override
 	public int hashCode() {
 		int result = isARestrictions != null ? isARestrictions.hashCode() : 0;
-		result = 31 * result + (attributeRestriction != null ? attributeRestriction.hashCode() : 0);
+		result = 31 * result + (attributeRestrictions != null ? attributeRestrictions.hashCode() : 0);
 		return result;
 	}
 }
