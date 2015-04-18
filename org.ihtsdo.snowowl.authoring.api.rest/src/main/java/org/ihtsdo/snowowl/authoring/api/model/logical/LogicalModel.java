@@ -7,7 +7,7 @@ public class LogicalModel {
 
 	private String name;
 	private List<IsARestriction> isARestrictions;
-	private List<AttributeRestriction> attributeRestrictions;
+	private List<List<AttributeRestriction>> attributeRestrictionGroups;
 
 	public LogicalModel() {
 		isARestrictions = new ArrayList<>();
@@ -40,12 +40,12 @@ public class LogicalModel {
 		this.isARestrictions = isARestrictions;
 	}
 
-	public List<AttributeRestriction> getAttributeRestrictions() {
-		return attributeRestrictions;
+	public List<List<AttributeRestriction>> getAttributeRestrictionGroups() {
+		return attributeRestrictionGroups;
 	}
 
-	public void setAttributeRestrictions(List<AttributeRestriction> attributeRestrictions) {
-		this.attributeRestrictions = attributeRestrictions;
+	public void setAttributeRestrictionGroups(List<List<AttributeRestriction>> attributeRestrictionGroups) {
+		this.attributeRestrictionGroups = attributeRestrictionGroups;
 	}
 
 	@Override
@@ -53,7 +53,7 @@ public class LogicalModel {
 		return "LogicalModel{" +
 				"name='" + name + '\'' +
 				", isARestrictions=" + isARestrictions +
-				", attributeRestrictions=" + attributeRestrictions +
+				", attributeRestrictionGroups=" + attributeRestrictionGroups +
 				'}';
 	}
 
@@ -65,14 +65,14 @@ public class LogicalModel {
 		LogicalModel that = (LogicalModel) o;
 
 		if (isARestrictions != null ? !isARestrictions.equals(that.isARestrictions) : that.isARestrictions != null) return false;
-		return !(attributeRestrictions != null ? !attributeRestrictions.equals(that.attributeRestrictions) : that.attributeRestrictions != null);
+		return !(attributeRestrictionGroups != null ? !attributeRestrictionGroups.equals(that.attributeRestrictionGroups) : that.attributeRestrictionGroups != null);
 
 	}
 
 	@Override
 	public int hashCode() {
 		int result = isARestrictions != null ? isARestrictions.hashCode() : 0;
-		result = 31 * result + (attributeRestrictions != null ? attributeRestrictions.hashCode() : 0);
+		result = 31 * result + (attributeRestrictionGroups != null ? attributeRestrictionGroups.hashCode() : 0);
 		return result;
 	}
 }
