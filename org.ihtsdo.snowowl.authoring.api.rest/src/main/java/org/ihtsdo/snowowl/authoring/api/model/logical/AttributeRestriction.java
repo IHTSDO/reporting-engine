@@ -6,6 +6,12 @@ public class AttributeRestriction {
 	private RangeRelationType rangeRelationType;
 	private String rangeConceptId;
 
+	public AttributeRestriction(String domainConceptId, RangeRelationType rangeRelationType, String rangeConceptId) {
+		this.domainConceptId = domainConceptId;
+		this.rangeRelationType = rangeRelationType;
+		this.rangeConceptId = rangeConceptId;
+	}
+
 	public String getDomainConceptId() {
 		return domainConceptId;
 	}

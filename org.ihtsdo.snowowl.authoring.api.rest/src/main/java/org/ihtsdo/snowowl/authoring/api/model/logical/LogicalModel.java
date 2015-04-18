@@ -11,6 +11,7 @@ public class LogicalModel {
 
 	public LogicalModel() {
 		isARestrictions = new ArrayList<>();
+		attributeRestrictionGroups = new ArrayList<>();
 	}
 
 	public LogicalModel(String name, IsARestriction isARestriction) {
@@ -19,9 +20,21 @@ public class LogicalModel {
 		isARestrictions.add(isARestriction);
 	}
 
+	public LogicalModel(AttributeRestriction attributeRestriction) {
+		this();
+		List<AttributeRestriction> attributeRestrictions = newAttributeGroup();
+		attributeRestrictions.add(attributeRestriction);
+	}
+
 	public LogicalModel addIsARestriction(IsARestriction isARestriction) {
 		isARestrictions.add(isARestriction);
 		return this;
+	}
+
+	public List<AttributeRestriction> newAttributeGroup() {
+		List<AttributeRestriction> attributeRestrictions = new ArrayList<>();
+		attributeRestrictionGroups.add(attributeRestrictions);
+		return attributeRestrictions;
 	}
 
 	public String getName() {

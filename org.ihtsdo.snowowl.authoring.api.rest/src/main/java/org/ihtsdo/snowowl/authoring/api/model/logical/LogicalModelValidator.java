@@ -2,15 +2,13 @@ package org.ihtsdo.snowowl.authoring.api.model.logical;
 
 import org.ihtsdo.snowowl.api.rest.common.ComponentRefHelper;
 import org.ihtsdo.snowowl.authoring.api.Constants;
+import org.ihtsdo.snowowl.authoring.api.model.AttributeValidationResult;
 import org.ihtsdo.snowowl.authoring.api.model.AuthoringContent;
 import org.ihtsdo.snowowl.authoring.api.model.AuthoringContentValidationResult;
 import org.ihtsdo.snowowl.authoring.api.services.ContentService;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class LogicalModelValidator {
 
@@ -23,7 +21,13 @@ public class LogicalModelValidator {
 	public AuthoringContentValidationResult validate(AuthoringContent content, LogicalModel logicalModel) {
 		AuthoringContentValidationResult result = new AuthoringContentValidationResult();
 		Map<String, Set<String>> descendantsCache = new HashMap<>();
+		validateIsARelationships(content, logicalModel, result, descendantsCache);
+		validateAttributes(content, logicalModel, result, descendantsCache);
 
+		return result;
+	}
+
+	private void validateIsARelationships(AuthoringContent content, LogicalModel logicalModel, AuthoringContentValidationResult result, Map<String, Set<String>> descendantsCache) {
 		List<String> isARelationships = content.getIsARelationships();
 		List<IsARestriction> isARestrictions = logicalModel.getIsARestrictions();
 		boolean tooManyIsARelationships = isARelationships.size() > isARestrictions.size();
@@ -34,7 +38,7 @@ public class LogicalModelValidator {
 			if (isARestrictions.size() > i) {
 				IsARestriction isARestriction = isARestrictions.get(i);
 				String isARelationship = isARelationships.get(i);
-				message = validate(isARelationship, isARestriction, descendantsCache);
+				message = validateIsARelationship(isARelationship, isARestriction, descendantsCache);
 			}
 			result.addIsARelationshipsMessage(message);
 		}
@@ -55,31 +59,60 @@ public class LogicalModelValidator {
 			message += "There are " + (notEnoughIsARelationships ? "less" : "more") + " isA relationships than in the logical model.";
 			isARelationshipsMessages.add(message);
 		}
-
-		return result;
 	}
 
-	private String validate(String isARelationship, IsARestriction isARestriction, Map<String, Set<String>> descendantsCache) {
+	private String validateIsARelationship(String isARelationship, IsARestriction isARestriction, Map<String, Set<String>> descendantsCache) {
+		return relatedConceptTest(isARelationship, isARestriction.getRangeRelationType(), isARestriction.getConceptId(), "IsA relation", descendantsCache);
+	}
+
+	private void validateAttributes(AuthoringContent content, LogicalModel logicalModel, AuthoringContentValidationResult result, Map<String, Set<String>> descendantsCache) {
+		List<LinkedHashMap<String, String>> attributeGroups = content.getAttributeGroups();
+		List<List<AttributeRestriction>> attributeRestrictionGroups = logicalModel.getAttributeRestrictionGroups();
+
+		for (int i = 0; i < attributeGroups.size(); i++) {
+			LinkedHashMap<String, String> attributeGroup = attributeGroups.get(i);
+
+			Map<String, AttributeRestriction> attributeRestrictionMap = getAttributeRestrictionMap(attributeRestrictionGroups.get(i));
+			List<AttributeValidationResult> attributeGroupResults = result.createAttributeGroup();
+			List<String> attributeDomains = new ArrayList<>(attributeGroup.keySet());
+			for (int groupIndex = 0; groupIndex < attributeGroup.size(); groupIndex++) {
+				String attributeDomain = attributeDomains.get(groupIndex);
+				String attributeValue = attributeGroup.get(attributeDomain);
+				AttributeRestriction attributeRestriction = attributeRestrictionMap.get(attributeDomain);
+				if (attributeRestriction != null) {
+					validateAttributeValue(attributeValue, attributeRestriction, attributeGroupResults, descendantsCache);
+				} else {
+					attributeGroupResults.add(new AttributeValidationResult("This attribute was not found in this group (position " + (groupIndex + 1), ")."));
+				}
+			}
+
+		}
+	}
+
+	private void validateAttributeValue(String attributeValue, AttributeRestriction attributeRestriction, List<AttributeValidationResult> attributeGroupResults, Map<String, Set<String>> descendantsCache) {
+		String valueMessage = relatedConceptTest(attributeValue, attributeRestriction.getRangeRelationType(), attributeRestriction.getRangeConceptId(), "Attribute value", descendantsCache);
+		attributeGroupResults.add(new AttributeValidationResult("", valueMessage));
+	}
+
+	private String relatedConceptTest(String conceptToTest, RangeRelationType rangeRelationType, String modelConceptId, String testConceptDescription, Map<String, Set<String>> descendantsCache) {
 		String message = "";
-		String conceptId = isARestriction.getConceptId();
-		switch (isARestriction.getRangeRelationType()) {
+		switch (rangeRelationType) {
 			case SELF:
-				if (!conceptId.equals(isARelationship)) {
-					message = "IsA relation must be '" + conceptId + "'";
+				if (!modelConceptId.equals(conceptToTest)) {
+					message = testConceptDescription + " must be '" + modelConceptId + "'.";
 				}
 				break;
 			case DESCENDANTS:
-				if (!isDescendant(isARelationship, conceptId, descendantsCache)) {
-					message = "IsA relation must be a descendant of '" + conceptId + "'";
+				if (!isDescendant(conceptToTest, modelConceptId, descendantsCache)) {
+					message = testConceptDescription + " must be a descendant of '" + modelConceptId + "'.";
 				}
 				break;
 			case DESCENDANTS_AND_SELF:
-				if (!conceptId.equals(isARelationship) && !isDescendant(isARelationship, conceptId, descendantsCache)) {
-					message = "IsA relation must be a descendant of or equal to '" + conceptId + "'";
+				if (!modelConceptId.equals(conceptToTest) && !isDescendant(conceptToTest, modelConceptId, descendantsCache)) {
+					message = testConceptDescription + " must be a descendant of or equal to '" + modelConceptId + "'.";
 				}
 				break;
 		}
-
 		return message;
 	}
 
@@ -89,6 +122,14 @@ public class LogicalModelValidator {
 		}
 		Set<String> descendantIds = descendantsCache.get(conceptId);
 		return descendantIds.contains(isARelationship);
+	}
+
+	private Map<String, AttributeRestriction> getAttributeRestrictionMap(List<AttributeRestriction> attributeRestrictions) {
+		HashMap<String, AttributeRestriction> map = new HashMap<>();
+		for (AttributeRestriction attributeRestriction : attributeRestrictions) {
+			map.put(attributeRestriction.getDomainConceptId(), attributeRestriction);
+		}
+		return map;
 	}
 
 }

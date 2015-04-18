@@ -14,7 +14,7 @@ import java.util.List;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations={"/test-context.xml"})
-public class LogicalModelValidatorTest {
+public class LogicalModelValidatorIsATest {
 
 	@Autowired
 	private LogicalModelValidator validator;
@@ -39,7 +39,7 @@ public class LogicalModelValidatorTest {
 
 		AuthoringContentValidationResult result = validator.validate(content, logicalModel);
 
-		Assert.assertEquals("IsA relation must be '123'", result.getIsARelationshipsMessages().get(0));
+		Assert.assertEquals("IsA relation must be '123'.", result.getIsARelationshipsMessages().get(0));
 	}
 
 	@Test
@@ -61,7 +61,7 @@ public class LogicalModelValidatorTest {
 
 		AuthoringContentValidationResult result = validator.validate(content, logicalModel);
 
-		Assert.assertEquals("IsA relation must be a descendant of '123'", result.getIsARelationshipsMessages().get(0));
+		Assert.assertEquals("IsA relation must be a descendant of '123'.", result.getIsARelationshipsMessages().get(0));
 	}
 
 	@Test
@@ -83,7 +83,7 @@ public class LogicalModelValidatorTest {
 
 		AuthoringContentValidationResult result = validator.validate(content, logicalModel);
 
-		Assert.assertEquals("IsA relation must be a descendant of or equal to '123'", result.getIsARelationshipsMessages().get(0));
+		Assert.assertEquals("IsA relation must be a descendant of or equal to '123'.", result.getIsARelationshipsMessages().get(0));
 	}
 
 	@Test
@@ -94,7 +94,7 @@ public class LogicalModelValidatorTest {
 
 		AuthoringContentValidationResult result = validator.validate(content, logicalModel);
 
-		Assert.assertEquals("IsA relation must be '123'\n" +
+		Assert.assertEquals("IsA relation must be '123'.\n" +
 				"There are less isA relationships than in the logical model.", result.getIsARelationshipsMessages().get(0));
 	}
 
@@ -109,7 +109,7 @@ public class LogicalModelValidatorTest {
 
 		List<String> isARelationshipsMessages = result.getIsARelationshipsMessages();
 		Assert.assertEquals(2, isARelationshipsMessages.size());
-		Assert.assertEquals("IsA relation must be '123'", isARelationshipsMessages.get(0));
+		Assert.assertEquals("IsA relation must be '123'.", isARelationshipsMessages.get(0));
 		Assert.assertEquals("There are more isA relationships than in the logical model.", isARelationshipsMessages.get(1));
 	}
 

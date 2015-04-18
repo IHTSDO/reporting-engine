@@ -7,16 +7,22 @@ import java.util.List;
 public class AuthoringContent {
 
 	private List<String> isARelationships;
-	private LinkedHashMap<String, String> attributes;
+	private List<LinkedHashMap<String, String>> attributeGroups;
 
 	public AuthoringContent() {
 		isARelationships = new ArrayList<>();
-		attributes = new LinkedHashMap<>();
+		attributeGroups = new ArrayList<>();
 	}
 
 	public AuthoringContent addIsA(String isARelationship) {
 		isARelationships.add(isARelationship);
 		return this;
+	}
+
+	public LinkedHashMap<String, String> newAttributeGroup() {
+		LinkedHashMap<String, String> attributeGroup = new LinkedHashMap<>();
+		attributeGroups.add(attributeGroup);
+		return attributeGroup;
 	}
 
 	public List<String> getIsARelationships() {
@@ -27,11 +33,11 @@ public class AuthoringContent {
 		this.isARelationships = isARelationships;
 	}
 
-	public LinkedHashMap<String, String> getAttributes() {
-		return attributes;
+	public List<LinkedHashMap<String, String>> getAttributeGroups() {
+		return attributeGroups;
 	}
 
-	public void setAttributes(LinkedHashMap<String, String> attributes) {
-		this.attributes = attributes;
+	public void setAttributeGroups(List<LinkedHashMap<String, String>> attributeGroups) {
+		this.attributeGroups = attributeGroups;
 	}
 }

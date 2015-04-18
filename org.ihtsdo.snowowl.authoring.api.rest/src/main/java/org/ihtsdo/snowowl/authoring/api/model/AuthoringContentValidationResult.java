@@ -1,17 +1,16 @@
 package org.ihtsdo.snowowl.authoring.api.model;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 
 public class AuthoringContentValidationResult {
 
 	private List<String> isARelationshipsMessages;
-	private LinkedHashMap<String, String> attributesMessages;
+	private List<List<AttributeValidationResult>> attributeGroupsMessages;
 
 	public AuthoringContentValidationResult() {
 		isARelationshipsMessages = new ArrayList<>();
-		attributesMessages = new LinkedHashMap<>();
+		attributeGroupsMessages = new ArrayList<>();
 	}
 
 	public boolean isAnyErrors() {
@@ -20,14 +19,14 @@ public class AuthoringContentValidationResult {
 				return true;
 			}
 		}
-		for (String s : attributesMessages.keySet()) {
-			if (!s.isEmpty()) {
-				return true;
-			}
-		}
-		for (String s : attributesMessages.values()) {
-			if (!s.isEmpty()) {
-				return true;
+		for (List<AttributeValidationResult> attributeGroupMessages : attributeGroupsMessages) {
+			for (AttributeValidationResult attributeMessages : attributeGroupMessages) {
+				if (!attributeMessages.getDomainMessage().isEmpty()) {
+					return true;
+				}
+				if (!attributeMessages.getValueMessage().isEmpty()) {
+					return true;
+				}
 			}
 		}
 		return false;
@@ -35,6 +34,12 @@ public class AuthoringContentValidationResult {
 
 	public void addIsARelationshipsMessage(String message) {
 		isARelationshipsMessages.add(message);
+	}
+
+	public List<AttributeValidationResult> createAttributeGroup() {
+		List<AttributeValidationResult> group = new ArrayList<>();
+		attributeGroupsMessages.add(group);
+		return group;
 	}
 
 	public List<String> getIsARelationshipsMessages() {
@@ -45,11 +50,11 @@ public class AuthoringContentValidationResult {
 		this.isARelationshipsMessages = isARelationshipsMessages;
 	}
 
-	public LinkedHashMap<String, String> getAttributesMessages() {
-		return attributesMessages;
+	public List<List<AttributeValidationResult>> getAttributeGroupsMessages() {
+		return attributeGroupsMessages;
 	}
 
-	public void setAttributesMessages(LinkedHashMap<String, String> attributesMessages) {
-		this.attributesMessages = attributesMessages;
+	public void setAttributeGroupsMessages(List<List<AttributeValidationResult>> attributeGroupsMessages) {
+		this.attributeGroupsMessages = attributeGroupsMessages;
 	}
 }
