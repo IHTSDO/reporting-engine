@@ -36,13 +36,24 @@ public class LogicalModelValidator {
 				String isARelationship = isARelationships.get(i);
 				message = validate(isARelationship, isARestriction, descendantsCache);
 			}
-			if ((notEnoughIsARelationships || tooManyIsARelationships) && i == isARelationships.size() - 1) {
-				if(!message.isEmpty()) {
-					message += "\n";
-				}
-				message += "There are " + (notEnoughIsARelationships ? "less" : "more") + " isA relationships than in the logical model.";
-			}
 			result.addIsARelationshipsMessage(message);
+		}
+
+		if ((notEnoughIsARelationships || tooManyIsARelationships)) {
+			List<String> isARelationshipsMessages = result.getIsARelationshipsMessages();
+			String message;
+			if (!isARelationshipsMessages.isEmpty()) {
+				int lastIndex = isARelationshipsMessages.size() - 1;
+				message = isARelationshipsMessages.get(lastIndex);
+				isARelationshipsMessages.remove(lastIndex);
+			} else {
+				message = "";
+			}
+			if(!message.isEmpty()) {
+				message += "\n";
+			}
+			message += "There are " + (notEnoughIsARelationships ? "less" : "more") + " isA relationships than in the logical model.";
+			isARelationshipsMessages.add(message);
 		}
 
 		return result;
