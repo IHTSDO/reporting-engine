@@ -35,7 +35,7 @@ public class LogicalModelValidatorAttributesTest {
 		List<AttributeValidationResult> attributeGroupMessages = result.getAttributeGroupsMessages().get(0);
 		Assert.assertEquals(1, attributeGroupMessages.size());
 		AttributeValidationResult attributeMessages = attributeGroupMessages.get(0);
-		Assert.assertEquals("", attributeMessages.getDomainMessage());
+		Assert.assertEquals("", attributeMessages.getTypeMessage());
 		Assert.assertEquals("", attributeMessages.getValueMessage());
 	}
 
@@ -50,7 +50,7 @@ public class LogicalModelValidatorAttributesTest {
 		List<AttributeValidationResult> attributeGroupMessages = result.getAttributeGroupsMessages().get(0);
 		Assert.assertEquals(1, attributeGroupMessages.size());
 		AttributeValidationResult attributeMessages = attributeGroupMessages.get(0);
-		Assert.assertEquals("", attributeMessages.getDomainMessage());
+		Assert.assertEquals("", attributeMessages.getTypeMessage());
 		Assert.assertEquals("Attribute value must be '123'.", attributeMessages.getValueMessage());
 	}
 
@@ -66,7 +66,7 @@ public class LogicalModelValidatorAttributesTest {
 		List<AttributeValidationResult> attributeGroupMessages = result.getAttributeGroupsMessages().get(0);
 		Assert.assertEquals(1, attributeGroupMessages.size());
 		AttributeValidationResult attributeMessages = attributeGroupMessages.get(0);
-		Assert.assertEquals("", attributeMessages.getDomainMessage());
+		Assert.assertEquals("", attributeMessages.getTypeMessage());
 		Assert.assertEquals("", attributeMessages.getValueMessage());
 	}
 
@@ -82,7 +82,7 @@ public class LogicalModelValidatorAttributesTest {
 		List<AttributeValidationResult> attributeGroupMessages = result.getAttributeGroupsMessages().get(0);
 		Assert.assertEquals(1, attributeGroupMessages.size());
 		AttributeValidationResult attributeMessages = attributeGroupMessages.get(0);
-		Assert.assertEquals("", attributeMessages.getDomainMessage());
+		Assert.assertEquals("", attributeMessages.getTypeMessage());
 		Assert.assertEquals("Attribute value must be a descendant of '123'.", attributeMessages.getValueMessage());
 	}
 
@@ -103,10 +103,10 @@ public class LogicalModelValidatorAttributesTest {
 		List<AttributeValidationResult> attributeGroupMessages = result.getAttributeGroupsMessages().get(0);
 		Assert.assertEquals(2, attributeGroupMessages.size());
 		AttributeValidationResult attributeMessages1 = attributeGroupMessages.get(0);
-		Assert.assertEquals("", attributeMessages1.getDomainMessage());
+		Assert.assertEquals("", attributeMessages1.getTypeMessage());
 		Assert.assertEquals("", attributeMessages1.getValueMessage());
 		AttributeValidationResult attributeMessages2 = attributeGroupMessages.get(1);
-		Assert.assertEquals("", attributeMessages2.getDomainMessage());
+		Assert.assertEquals("", attributeMessages2.getTypeMessage());
 		Assert.assertEquals("", attributeMessages2.getValueMessage());
 	}
 
@@ -127,10 +127,10 @@ public class LogicalModelValidatorAttributesTest {
 		List<AttributeValidationResult> attributeGroupMessages = result.getAttributeGroupsMessages().get(0);
 		Assert.assertEquals(2, attributeGroupMessages.size());
 		AttributeValidationResult attributeMessages1 = attributeGroupMessages.get(0);
-		Assert.assertEquals("", attributeMessages1.getDomainMessage());
+		Assert.assertEquals("", attributeMessages1.getTypeMessage());
 		Assert.assertEquals("Attribute value must be a descendant of or equal to '123'.", attributeMessages1.getValueMessage());
 		AttributeValidationResult attributeMessages2 = attributeGroupMessages.get(1);
-		Assert.assertEquals("", attributeMessages2.getDomainMessage());
+		Assert.assertEquals("", attributeMessages2.getTypeMessage());
 		Assert.assertEquals("Attribute value must be a descendant of or equal to '300'.", attributeMessages2.getValueMessage());
 	}
 

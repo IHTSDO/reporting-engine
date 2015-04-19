@@ -2,20 +2,20 @@ package org.ihtsdo.snowowl.authoring.api.model;
 
 public class AttributeValidationResult {
 
-	private String domainMessage;
+	private String typeMessage;
 	private String valueMessage;
 
-	public AttributeValidationResult(String domainMessage, String valueMessage) {
-		this.domainMessage = domainMessage;
+	public AttributeValidationResult(String typeMessage, String valueMessage) {
+		this.typeMessage = typeMessage;
 		this.valueMessage = valueMessage;
 	}
 
-	public String getDomainMessage() {
-		return domainMessage;
+	public String getTypeMessage() {
+		return typeMessage;
 	}
 
-	public void setDomainMessage(String domainMessage) {
-		this.domainMessage = domainMessage;
+	public void setTypeMessage(String typeMessage) {
+		this.typeMessage = typeMessage;
 	}
 
 	public String getValueMessage() {

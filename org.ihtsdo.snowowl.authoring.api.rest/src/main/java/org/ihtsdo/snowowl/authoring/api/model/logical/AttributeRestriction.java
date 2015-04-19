@@ -2,22 +2,25 @@ package org.ihtsdo.snowowl.authoring.api.model.logical;
 
 public class AttributeRestriction {
 
-	private String domainConceptId;
+	private String typeConceptId;
 	private RangeRelationType rangeRelationType;
 	private String rangeConceptId;
 
-	public AttributeRestriction(String domainConceptId, RangeRelationType rangeRelationType, String rangeConceptId) {
-		this.domainConceptId = domainConceptId;
+	public AttributeRestriction() {
+	}
+
+	public AttributeRestriction(String typeConceptId, RangeRelationType rangeRelationType, String rangeConceptId) {
+		this.typeConceptId = typeConceptId;
 		this.rangeRelationType = rangeRelationType;
 		this.rangeConceptId = rangeConceptId;
 	}
 
-	public String getDomainConceptId() {
-		return domainConceptId;
+	public String getTypeConceptId() {
+		return typeConceptId;
 	}
 
-	public void setDomainConceptId(String domainConceptId) {
-		this.domainConceptId = domainConceptId;
+	public void setTypeConceptId(String typeConceptId) {
+		this.typeConceptId = typeConceptId;
 	}
 
 	public RangeRelationType getRangeRelationType() {
@@ -39,7 +42,7 @@ public class AttributeRestriction {
 	@Override
 	public String toString() {
 		return "AttributeRestriction{" +
-				"domainConceptId='" + domainConceptId + '\'' +
+				"typeConceptId='" + typeConceptId + '\'' +
 				", rangeType=" + rangeRelationType +
 				", rangeConceptId='" + rangeConceptId + '\'' +
 				'}';
@@ -52,7 +55,7 @@ public class AttributeRestriction {
 
 		AttributeRestriction that = (AttributeRestriction) o;
 
-		if (domainConceptId != null ? !domainConceptId.equals(that.domainConceptId) : that.domainConceptId != null) return false;
+		if (typeConceptId != null ? !typeConceptId.equals(that.typeConceptId) : that.typeConceptId != null) return false;
 		if (rangeRelationType != that.rangeRelationType) return false;
 		return !(rangeConceptId != null ? !rangeConceptId.equals(that.rangeConceptId) : that.rangeConceptId != null);
 
@@ -60,7 +63,7 @@ public class AttributeRestriction {
 
 	@Override
 	public int hashCode() {
-		int result = domainConceptId != null ? domainConceptId.hashCode() : 0;
+		int result = typeConceptId != null ? typeConceptId.hashCode() : 0;
 		result = 31 * result + (rangeRelationType != null ? rangeRelationType.hashCode() : 0);
 		result = 31 * result + (rangeConceptId != null ? rangeConceptId.hashCode() : 0);
 		return result;

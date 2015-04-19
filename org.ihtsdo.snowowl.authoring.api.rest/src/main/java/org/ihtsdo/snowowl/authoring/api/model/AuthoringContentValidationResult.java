@@ -21,7 +21,7 @@ public class AuthoringContentValidationResult {
 		}
 		for (List<AttributeValidationResult> attributeGroupMessages : attributeGroupsMessages) {
 			for (AttributeValidationResult attributeMessages : attributeGroupMessages) {
-				if (!attributeMessages.getDomainMessage().isEmpty()) {
+				if (!attributeMessages.getTypeMessage().isEmpty()) {
 					return true;
 				}
 				if (!attributeMessages.getValueMessage().isEmpty()) {

@@ -74,11 +74,11 @@ public class LogicalModelValidator {
 
 			Map<String, AttributeRestriction> attributeRestrictionMap = getAttributeRestrictionMap(attributeRestrictionGroups.get(i));
 			List<AttributeValidationResult> attributeGroupResults = result.createAttributeGroup();
-			List<String> attributeDomains = new ArrayList<>(attributeGroup.keySet());
+			List<String> attributeTypes = new ArrayList<>(attributeGroup.keySet());
 			for (int groupIndex = 0; groupIndex < attributeGroup.size(); groupIndex++) {
-				String attributeDomain = attributeDomains.get(groupIndex);
-				String attributeValue = attributeGroup.get(attributeDomain);
-				AttributeRestriction attributeRestriction = attributeRestrictionMap.get(attributeDomain);
+				String attributeType = attributeTypes.get(groupIndex);
+				String attributeValue = attributeGroup.get(attributeType);
+				AttributeRestriction attributeRestriction = attributeRestrictionMap.get(attributeType);
 				if (attributeRestriction != null) {
 					validateAttributeValue(attributeValue, attributeRestriction, attributeGroupResults, descendantsCache);
 				} else {
@@ -127,7 +127,7 @@ public class LogicalModelValidator {
 	private Map<String, AttributeRestriction> getAttributeRestrictionMap(List<AttributeRestriction> attributeRestrictions) {
 		HashMap<String, AttributeRestriction> map = new HashMap<>();
 		for (AttributeRestriction attributeRestriction : attributeRestrictions) {
-			map.put(attributeRestriction.getDomainConceptId(), attributeRestriction);
+			map.put(attributeRestriction.getTypeConceptId(), attributeRestriction);
 		}
 		return map;
 	}
