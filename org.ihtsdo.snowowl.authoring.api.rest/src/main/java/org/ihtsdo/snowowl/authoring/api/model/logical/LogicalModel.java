@@ -1,11 +1,14 @@
 package org.ihtsdo.snowowl.authoring.api.model.logical;
 
+import org.ihtsdo.snowowl.authoring.api.terminology.DefinitionStatus;
+
 import java.util.ArrayList;
 import java.util.List;
 
 public class LogicalModel {
 
 	private String name;
+	private DefinitionStatus definitionStatus;
 	private List<IsARestriction> isARestrictions;
 	private List<List<AttributeRestriction>> attributeRestrictionGroups;
 
@@ -45,6 +48,14 @@ public class LogicalModel {
 		this.name = name;
 	}
 
+	public DefinitionStatus getDefinitionStatus() {
+		return definitionStatus;
+	}
+
+	public void setDefinitionStatus(DefinitionStatus definitionStatus) {
+		this.definitionStatus = definitionStatus;
+	}
+
 	public List<IsARestriction> getIsARestrictions() {
 		return isARestrictions;
 	}
@@ -65,6 +76,7 @@ public class LogicalModel {
 	public String toString() {
 		return "LogicalModel{" +
 				"name='" + name + '\'' +
+				", definitionStatus=" + definitionStatus +
 				", isARestrictions=" + isARestrictions +
 				", attributeRestrictionGroups=" + attributeRestrictionGroups +
 				'}';
