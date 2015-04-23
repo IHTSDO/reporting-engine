@@ -5,6 +5,7 @@ public class AttributeRestriction {
 	private String typeConceptId;
 	private RangeRelationType rangeRelationType;
 	private String rangeConceptId;
+	private String defaultValue;
 
 	public AttributeRestriction() {
 	}
@@ -39,12 +40,21 @@ public class AttributeRestriction {
 		this.rangeConceptId = rangeConceptId;
 	}
 
+	public String getDefaultValue() {
+		return defaultValue;
+	}
+
+	public void setDefaultValue(String defaultValue) {
+		this.defaultValue = defaultValue;
+	}
+
 	@Override
 	public String toString() {
 		return "AttributeRestriction{" +
 				"typeConceptId='" + typeConceptId + '\'' +
 				", rangeType=" + rangeRelationType +
 				", rangeConceptId='" + rangeConceptId + '\'' +
+				", defaultValue='" + defaultValue + '\'' +
 				'}';
 	}
 
