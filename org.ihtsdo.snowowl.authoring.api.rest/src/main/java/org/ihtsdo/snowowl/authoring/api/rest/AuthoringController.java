@@ -7,8 +7,10 @@ import org.ihtsdo.snowowl.api.rest.common.AbstractSnomedRestService;
 import org.ihtsdo.snowowl.authoring.api.Constants;
 import org.ihtsdo.snowowl.authoring.api.model.AuthoringContent;
 import org.ihtsdo.snowowl.authoring.api.model.AuthoringContentValidationResult;
+import org.ihtsdo.snowowl.authoring.api.model.lexical.LexicalModel;
 import org.ihtsdo.snowowl.authoring.api.model.logical.LogicalModel;
 import org.ihtsdo.snowowl.authoring.api.services.AuthoringService;
+import org.ihtsdo.snowowl.authoring.api.services.LexicalModelService;
 import org.ihtsdo.snowowl.authoring.api.services.LogicalModelService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,9 +35,12 @@ public class AuthoringController extends AbstractSnomedRestService {
 	@Autowired
 	private LogicalModelService logicalModelService;
 
+	@Autowired
+	private LexicalModelService lexicalModelService;
+
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
-	@ApiOperation(value="Create / update a logical model with validation.", notes="")
+	@ApiOperation(value="Create / update a lexical model with validation.", notes="")
 	@ApiResponses({
 			@ApiResponse(code = 201, message = "CREATED", response = LogicalModel.class),
 			@ApiResponse(code = 406, message = "Logical model is not valid", response = List.class),
@@ -82,6 +87,43 @@ public class AuthoringController extends AbstractSnomedRestService {
 	public ResponseEntity<List<AuthoringContentValidationResult>> validateContent(@PathVariable final String logicalModelName, @RequestBody List<AuthoringContent> content) throws IOException {
 		List<AuthoringContentValidationResult> results = authoringService.validateContent(logicalModelName, content);
 		return new ResponseEntity<>(results, isAnyErrors(results) ? HttpStatus.NOT_ACCEPTABLE : HttpStatus.OK);
+	}
+
+	@ApiOperation(value="Create / update a lexical model with validation.", notes="")
+	@ApiResponses({
+			@ApiResponse(code = 201, message = "CREATED", response = LexicalModel.class),
+			@ApiResponse(code = 406, message = "Lexical model is not valid", response = List.class),
+	})
+	@RequestMapping(value="/models/lexical", method= RequestMethod.POST)
+	public ResponseEntity saveLexicalModel(@RequestBody final LexicalModel lexicalModel) throws IOException {
+		logger.info("Create/update lexicalModel {}", lexicalModel);
+		List<String> errorMessages = lexicalModelService.validateModel(lexicalModel);
+		if (errorMessages.isEmpty()) {
+			lexicalModelService.saveModel(lexicalModel);
+			return new ResponseEntity<>(lexicalModel, HttpStatus.CREATED);
+		} else {
+			return new ResponseEntity<>(errorMessages, HttpStatus.NOT_ACCEPTABLE);
+		}
+	}
+
+	@ApiOperation(value="List lexical model names.", notes="")
+	@ApiResponses({
+			@ApiResponse(code = 200, message = "OK", response = LogicalModel.class)
+	})
+	@RequestMapping(value="/models/lexical", method= RequestMethod.GET)
+	public List<String> listLexicalModelNames() throws IOException {
+		return lexicalModelService.listModelNames();
+	}
+
+	@ApiOperation(value="Retrieve a lexical model.", notes="")
+	@ApiResponses({
+			@ApiResponse(code = 200, message = "OK", response = LexicalModel.class),
+			@ApiResponse(code = 404, message = "Lexical model not found")
+
+	})
+	@RequestMapping(value="/models/lexical/{lexicalModelName}", method= RequestMethod.GET)
+	public LexicalModel loadLexicalModel(@PathVariable final String lexicalModelName) throws IOException {
+		return lexicalModelService.loadModel(lexicalModelName);
 	}
 
 	private boolean isAnyErrors(List<AuthoringContentValidationResult> results) {

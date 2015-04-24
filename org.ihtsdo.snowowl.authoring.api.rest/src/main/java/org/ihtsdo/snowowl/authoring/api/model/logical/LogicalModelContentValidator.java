@@ -10,7 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.*;
 
-public class LogicalModelValidator {
+public class LogicalModelContentValidator {
 
 	@Autowired
 	private ContentService contentService;

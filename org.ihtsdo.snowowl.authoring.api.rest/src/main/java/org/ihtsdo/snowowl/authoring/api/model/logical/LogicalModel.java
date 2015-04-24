@@ -1,11 +1,12 @@
 package org.ihtsdo.snowowl.authoring.api.model.logical;
 
+import org.ihtsdo.snowowl.authoring.api.model.Model;
 import org.ihtsdo.snowowl.authoring.api.terminology.DefinitionStatus;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class LogicalModel {
+public class LogicalModel implements Model {
 
 	private String name;
 	private String domainName; // TODO: change this to ID if appropriate

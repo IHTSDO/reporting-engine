@@ -16,10 +16,10 @@ import java.util.List;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations={"/test-context.xml"})
-public class LogicalModelValidatorAttributesTest {
+public class LogicalModelContentValidatorAttributesTest {
 
 	@Autowired
-	private LogicalModelValidator validator;
+	private LogicalModelContentValidator validator;
 
 	@Autowired
 	private TestContentServiceImpl testContentService;

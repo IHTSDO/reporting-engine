@@ -4,9 +4,11 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd">
 
-	<bean class="org.ihtsdo.snowowl.authoring.api.model.logical.LogicalModelValidator"/>
+	<bean class="org.ihtsdo.snowowl.authoring.api.model.logical.LogicalModelContentValidator"/>
 	<bean class="org.ihtsdo.snowowl.authoring.api.services.AuthoringService"/>
+	<bean class="org.ihtsdo.snowowl.authoring.api.services.ModelDAO"/>
 	<bean class="org.ihtsdo.snowowl.authoring.api.services.LogicalModelService"/>
+	<bean class="org.ihtsdo.snowowl.authoring.api.services.LexicalModelService"/>
 	<bean class="org.ihtsdo.snowowl.api.rest.common.ComponentRefHelper"/>
 	<bean class="org.ihtsdo.snowowl.authoring.api.terminology.DomainService"/>
 
