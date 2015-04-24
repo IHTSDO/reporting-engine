@@ -9,6 +9,7 @@ import org.ihtsdo.snowowl.authoring.api.model.AuthoringContent;
 import org.ihtsdo.snowowl.authoring.api.model.AuthoringContentValidationResult;
 import org.ihtsdo.snowowl.authoring.api.model.logical.LogicalModel;
 import org.ihtsdo.snowowl.authoring.api.services.AuthoringService;
+import org.ihtsdo.snowowl.authoring.api.services.LogicalModelService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,19 +28,28 @@ import java.util.Set;
 public class AuthoringController extends AbstractSnomedRestService {
 
 	@Autowired
-	private AuthoringService service;
+	private AuthoringService authoringService;
+
+	@Autowired
+	private LogicalModelService logicalModelService;
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
-	@ApiOperation(value="Create / update a logical model.", notes="")
+	@ApiOperation(value="Create / update a logical model with validation.", notes="")
 	@ApiResponses({
-			@ApiResponse(code = 201, message = "CREATED")
+			@ApiResponse(code = 201, message = "CREATED", response = LogicalModel.class),
+			@ApiResponse(code = 406, message = "Logical model is not valid", response = List.class),
 	})
 	@RequestMapping(value="/models/logical", method= RequestMethod.POST)
-	public ResponseEntity<LogicalModel> saveLogicalModel(@RequestBody final LogicalModel logicalModel) throws IOException {
+	public ResponseEntity saveLogicalModel(@RequestBody final LogicalModel logicalModel) throws IOException {
 		logger.info("Create/update logicalModel {}", logicalModel);
-		service.saveLogicalModel(logicalModel);
-		return new ResponseEntity<>(logicalModel, HttpStatus.CREATED);
+		List<String> errorMessages = logicalModelService.validateLogicalModel(logicalModel);
+		if (errorMessages.isEmpty()) {
+			logicalModelService.saveLogicalModel(logicalModel);
+			return new ResponseEntity<>(logicalModel, HttpStatus.CREATED);
+		} else {
+			return new ResponseEntity<>(errorMessages, HttpStatus.NOT_ACCEPTABLE);
+		}
 	}
 
 	@ApiOperation(value="List logical model names.", notes="")
@@ -48,7 +58,7 @@ public class AuthoringController extends AbstractSnomedRestService {
 	})
 	@RequestMapping(value="/models/logical", method= RequestMethod.GET)
 	public List<String> listLogicalModelNames() throws IOException {
-		return service.listLogicalModelNames();
+		return logicalModelService.listLogicalModelNames();
 	}
 
 	@ApiOperation(value="Retrieve a logical model.", notes="")
@@ -59,7 +69,7 @@ public class AuthoringController extends AbstractSnomedRestService {
 	})
 	@RequestMapping(value="/models/logical/{logicalModelName}", method= RequestMethod.GET)
 	public LogicalModel loadLogicalModel(@PathVariable final String logicalModelName) throws IOException {
-		return service.loadLogicalModel(logicalModelName);
+		return logicalModelService.loadLogicalModel(logicalModelName);
 	}
 
 	@ApiOperation(value="Validate content.", notes="")
@@ -70,7 +80,7 @@ public class AuthoringController extends AbstractSnomedRestService {
 	})
 	@RequestMapping(value="/models/logical/{logicalModelName}/valid-content", method= RequestMethod.POST)
 	public ResponseEntity<List<AuthoringContentValidationResult>> validateContent(@PathVariable final String logicalModelName, @RequestBody List<AuthoringContent> content) throws IOException {
-		List<AuthoringContentValidationResult> results = service.validateContent(logicalModelName, content);
+		List<AuthoringContentValidationResult> results = authoringService.validateContent(logicalModelName, content);
 		return new ResponseEntity<>(results, isAnyErrors(results) ? HttpStatus.NOT_ACCEPTABLE : HttpStatus.OK);
 	}
 
@@ -95,7 +105,7 @@ public class AuthoringController extends AbstractSnomedRestService {
 			final String conceptId) {
 
 		final IComponentRef ref = createComponentRef(Constants.MAIN, null, conceptId);
-		return service.getDescendantIds(ref);
+		return authoringService.getDescendantIds(ref);
 	}
 
 }

@@ -16,23 +16,23 @@ import java.io.IOException;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations={"/test-context.xml"})
-public class AuthoringServiceTest {
+public class LogicalModelServiceTest {
 
 	@Autowired
-	private AuthoringService authoringService;
+	private LogicalModelService logicalModelService;
 
 	@Before
 	public void setUp() throws Exception {
-		authoringService.setBaseFilesDirectory(Files.createTempDir());
+		logicalModelService.setBaseFilesDirectory(Files.createTempDir());
 	}
 
 	@Test
 	public void testSaveLoadLogicalModel() throws IOException {
 		String modelName = "isAOnlyModel";
 		LogicalModel logicalModel = new LogicalModel(modelName, new IsARestriction("123", RangeRelationType.SELF));
-		authoringService.saveLogicalModel(logicalModel);
+		logicalModelService.saveLogicalModel(logicalModel);
 
-		LogicalModel logicalModel1 = authoringService.loadLogicalModel(modelName);
+		LogicalModel logicalModel1 = logicalModelService.loadLogicalModel(modelName);
 
 		Assert.assertNotSame(logicalModel, logicalModel1);
 		Assert.assertTrue(logicalModel.equals(logicalModel1));

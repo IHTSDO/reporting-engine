@@ -6,6 +6,8 @@
 
 	<bean class="org.ihtsdo.snowowl.authoring.api.model.logical.LogicalModelValidator"/>
 	<bean class="org.ihtsdo.snowowl.authoring.api.services.AuthoringService"/>
+	<bean class="org.ihtsdo.snowowl.authoring.api.services.LogicalModelService"/>
 	<bean class="org.ihtsdo.snowowl.api.rest.common.ComponentRefHelper"/>
+	<bean class="org.ihtsdo.snowowl.authoring.api.terminology.DomainService"/>
 
 </beans>
