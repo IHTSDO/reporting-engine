@@ -8,6 +8,7 @@ import java.util.List;
 public class LogicalModel {
 
 	private String name;
+	private String domainName; // TODO: change this to ID if appropriate
 	private DefinitionStatus definitionStatus;
 	private List<IsARestriction> isARestrictions;
 	private List<List<AttributeRestriction>> attributeRestrictionGroups;
@@ -48,6 +49,14 @@ public class LogicalModel {
 		this.name = name;
 	}
 
+	public String getDomainName() {
+		return domainName;
+	}
+
+	public void setDomainName(String domainName) {
+		this.domainName = domainName;
+	}
+
 	public DefinitionStatus getDefinitionStatus() {
 		return definitionStatus;
 	}
@@ -76,6 +85,7 @@ public class LogicalModel {
 	public String toString() {
 		return "LogicalModel{" +
 				"name='" + name + '\'' +
+				", domainName=" + domainName +
 				", definitionStatus=" + definitionStatus +
 				", isARestrictions=" + isARestrictions +
 				", attributeRestrictionGroups=" + attributeRestrictionGroups +
