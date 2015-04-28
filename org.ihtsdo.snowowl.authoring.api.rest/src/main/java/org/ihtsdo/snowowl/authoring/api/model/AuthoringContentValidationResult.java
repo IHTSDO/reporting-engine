@@ -5,6 +5,7 @@ import java.util.List;
 
 public class AuthoringContentValidationResult {
 
+	private String termMessage;
 	private List<String> isARelationshipsMessages;
 	private List<List<AttributeValidationResult>> attributeGroupsMessages;
 
@@ -14,6 +15,9 @@ public class AuthoringContentValidationResult {
 	}
 
 	public boolean isAnyErrors() {
+		if (!termMessage.isEmpty()) {
+			return true;
+		}
 		for (String isARelationshipsMessage : isARelationshipsMessages) {
 			if (!isARelationshipsMessage.isEmpty()) {
 				return true;
@@ -40,6 +44,14 @@ public class AuthoringContentValidationResult {
 		List<AttributeValidationResult> group = new ArrayList<>();
 		attributeGroupsMessages.add(group);
 		return group;
+	}
+
+	public String getTermMessage() {
+		return termMessage;
+	}
+
+	public void setTermMessage(String termMessage) {
+		this.termMessage = termMessage;
 	}
 
 	public List<String> getIsARelationshipsMessages() {

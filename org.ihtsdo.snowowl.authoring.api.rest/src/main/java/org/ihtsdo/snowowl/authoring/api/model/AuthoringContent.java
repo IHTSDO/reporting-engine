@@ -6,6 +6,7 @@ import java.util.List;
 
 public class AuthoringContent {
 
+	private String term;
 	private List<String> isARelationships;
 	private List<LinkedHashMap<String, String>> attributeGroups;
 
@@ -23,6 +24,14 @@ public class AuthoringContent {
 		LinkedHashMap<String, String> attributeGroup = new LinkedHashMap<>();
 		attributeGroups.add(attributeGroup);
 		return attributeGroup;
+	}
+
+	public String getTerm() {
+		return term;
+	}
+
+	public void setTerm(String term) {
+		this.term = term;
 	}
 
 	public List<String> getIsARelationships() {

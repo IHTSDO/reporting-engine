@@ -7,11 +7,13 @@ import org.ihtsdo.snowowl.api.rest.common.AbstractSnomedRestService;
 import org.ihtsdo.snowowl.authoring.api.Constants;
 import org.ihtsdo.snowowl.authoring.api.model.AuthoringContent;
 import org.ihtsdo.snowowl.authoring.api.model.AuthoringContentValidationResult;
+import org.ihtsdo.snowowl.authoring.api.model.Template;
 import org.ihtsdo.snowowl.authoring.api.model.lexical.LexicalModel;
 import org.ihtsdo.snowowl.authoring.api.model.logical.LogicalModel;
 import org.ihtsdo.snowowl.authoring.api.services.AuthoringService;
 import org.ihtsdo.snowowl.authoring.api.services.LexicalModelService;
 import org.ihtsdo.snowowl.authoring.api.services.LogicalModelService;
+import org.ihtsdo.snowowl.authoring.api.services.TemplateService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +21,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.util.List;
@@ -38,9 +41,15 @@ public class AuthoringController extends AbstractSnomedRestService {
 	@Autowired
 	private LexicalModelService lexicalModelService;
 
+	@Autowired
+	private TemplateService templateService;
+
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
-	@ApiOperation(value="Create / update a lexical model with validation.", notes="")
+
+	// Logical Model Endpoints
+
+	@ApiOperation(value="Create / update a logical model with validation.", notes="")
 	@ApiResponses({
 			@ApiResponse(code = 201, message = "CREATED", response = LogicalModel.class),
 			@ApiResponse(code = 406, message = "Logical model is not valid", response = List.class),
@@ -59,7 +68,7 @@ public class AuthoringController extends AbstractSnomedRestService {
 
 	@ApiOperation(value="List logical model names.", notes="")
 	@ApiResponses({
-			@ApiResponse(code = 200, message = "OK", response = LogicalModel.class)
+			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/models/logical", method= RequestMethod.GET)
 	public List<String> listLogicalModelNames() throws IOException {
@@ -77,17 +86,8 @@ public class AuthoringController extends AbstractSnomedRestService {
 		return logicalModelService.loadLogicalModel(logicalModelName);
 	}
 
-	@ApiOperation(value="Validate content.", notes="")
-	@ApiResponses({
-			@ApiResponse(code = 200, message = "Content is valid", response = AuthoringContentValidationResult.class),
-			@ApiResponse(code = 406, message = "Content is not valid", response = AuthoringContentValidationResult.class),
-			@ApiResponse(code = 404, message = "Logical model not found")
-	})
-	@RequestMapping(value="/models/logical/{logicalModelName}/valid-content", method= RequestMethod.POST)
-	public ResponseEntity<List<AuthoringContentValidationResult>> validateContent(@PathVariable final String logicalModelName, @RequestBody List<AuthoringContent> content) throws IOException {
-		List<AuthoringContentValidationResult> results = authoringService.validateContent(logicalModelName, content);
-		return new ResponseEntity<>(results, isAnyErrors(results) ? HttpStatus.NOT_ACCEPTABLE : HttpStatus.OK);
-	}
+
+	// Lexical Model Endpoints
 
 	@ApiOperation(value="Create / update a lexical model with validation.", notes="")
 	@ApiResponses({
@@ -108,7 +108,7 @@ public class AuthoringController extends AbstractSnomedRestService {
 
 	@ApiOperation(value="List lexical model names.", notes="")
 	@ApiResponses({
-			@ApiResponse(code = 200, message = "OK", response = LogicalModel.class)
+			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/models/lexical", method= RequestMethod.GET)
 	public List<String> listLexicalModelNames() throws IOException {
@@ -126,14 +126,62 @@ public class AuthoringController extends AbstractSnomedRestService {
 		return lexicalModelService.loadModel(lexicalModelName);
 	}
 
-	private boolean isAnyErrors(List<AuthoringContentValidationResult> results) {
-		for (AuthoringContentValidationResult result : results) {
-			if (result.isAnyErrors()) {
-				return true;
-			}
+
+	// Template Endpoints
+
+	@ApiOperation(value="Create / update template.")
+	@ApiResponses({
+			@ApiResponse(code = 201, message = "CREATED", response = Template.class),
+			@ApiResponse(code = 406, message = "Template is not valid", response = String.class)
+	})
+	@RequestMapping(value="/templates", method= RequestMethod.POST)
+	public ResponseEntity validateContent(@RequestBody Template template) throws IOException {
+		String errorMessage = templateService.saveTemplate(template);
+		if (errorMessage != null) {
+			return new ResponseEntity<>(template, HttpStatus.CREATED);
+		} else {
+			return new ResponseEntity<>(errorMessage, HttpStatus.NOT_ACCEPTABLE);
 		}
-		return false;
 	}
+
+	@ApiOperation(value="List template names.", notes="")
+	@ApiResponses({
+			@ApiResponse(code = 200, message = "OK")
+	})
+	@RequestMapping(value="/templates", method= RequestMethod.GET)
+	public List<String> listTemplateNames() throws IOException {
+		return templateService.listModelNames();
+	}
+
+	@ApiOperation(value="Retrieve a template.", notes="")
+	@ApiResponses({
+			@ApiResponse(code = 200, message = "OK", response = Template.class),
+			@ApiResponse(code = 404, message = "Template not found")
+
+	})
+	@RequestMapping(value="/templates/{templateName}", method= RequestMethod.GET)
+	public Template loadTemplateModel(@PathVariable final String templateName) throws IOException {
+		return templateService.loadTemplate(templateName);
+	}
+
+
+	// Matrix Endpoints
+
+	@ApiOperation(value="Validate matrix content (in the future this will also save the matrix).")
+	@ApiResponses({
+			@ApiResponse(code = 201, message = "CREATED", response = AuthoringContent.class),
+			@ApiResponse(code = 406, message = "Content is not valid", response = AuthoringContentValidationResult.class),
+			@ApiResponse(code = 404, message = "Template not found")
+	})
+	@RequestMapping(value="/templates/{templateName}/matrices", method= RequestMethod.POST)
+	public ResponseEntity<List<AuthoringContentValidationResult>> validateContent(@PathVariable final String templateName,
+			@RequestBody List<AuthoringContent> content, UriComponentsBuilder uriBuilder) throws IOException {
+		List<AuthoringContentValidationResult> results = authoringService.validateContent(templateName, content);
+		return new ResponseEntity<>(results, isAnyErrors(results) ? HttpStatus.NOT_ACCEPTABLE : HttpStatus.CREATED);
+	}
+
+
+	// Not currently used
 
 	@ApiOperation(value="Retrieve descendant concept ids.", notes="")
 	@ApiResponses({
@@ -150,4 +198,12 @@ public class AuthoringController extends AbstractSnomedRestService {
 		return authoringService.getDescendantIds(ref);
 	}
 
+	private boolean isAnyErrors(List<AuthoringContentValidationResult> results) {
+		for (AuthoringContentValidationResult result : results) {
+			if (result.isAnyErrors()) {
+				return true;
+			}
+		}
+		return false;
+	}
 }
