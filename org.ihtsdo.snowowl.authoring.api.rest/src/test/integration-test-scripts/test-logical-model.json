@@ -1,0 +1,32 @@
+{
+  "name" : "test-logical-model",
+  "definitionStatus": "PRIMITIVE",
+  "domainName": "Procedure (procedure)",
+  "isARestrictions" : [ {
+    "conceptId" : "71388002",
+    "rangeRelationType" : "DESCENDANTS"
+  } ],
+  "attributeRestrictionGroups" : [
+    [ {
+      "typeConceptId" : "260686004",
+      "rangeRelationType" : "SELF",
+      "rangeConceptId" : "312251004"
+    }, {
+      "typeConceptId" : "405813007",
+      "rangeRelationType" : "DESCENDANTS_AND_SELF",
+      "rangeConceptId" : "442083009"
+    } ],
+    [ {
+      "typeConceptId" : "260686004",
+      "rangeRelationType" : "SELF",
+      "rangeConceptId" : "312251004"
+    }, {
+      "typeConceptId" : "405813007",
+      "rangeRelationType" : "DESCENDANTS_AND_SELF",
+      "rangeConceptId" : "442083009"
+    }, {
+      "typeConceptId" : "363703001",
+      "rangeRelationType" : "DESCENDANTS",
+      "rangeConceptId" : "262202000"
+    } ] ]
+}

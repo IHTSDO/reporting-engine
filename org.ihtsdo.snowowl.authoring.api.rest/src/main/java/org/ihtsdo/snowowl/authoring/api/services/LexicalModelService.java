@@ -1,10 +1,12 @@
 package org.ihtsdo.snowowl.authoring.api.services;
 
 import org.ihtsdo.snowowl.authoring.api.model.lexical.LexicalModel;
+import org.ihtsdo.snowowl.authoring.api.model.lexical.Term;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 public class LexicalModelService {
@@ -18,9 +20,23 @@ public class LexicalModelService {
 		modelDAO.writeModel(lexicalModel);
 	}
 
-	// TODO
 	public List<String> validateModel(LexicalModel lexicalModel) {
-		return null;
+		List<String> messages = new ArrayList<>();
+
+		String name = lexicalModel.getName();
+		if (name == null || name.isEmpty()) {
+			messages.add("Name is required.");
+		}
+		Term fsn = lexicalModel.getFsn();
+		if (fsn == null) {
+			messages.add("FSN is required.");
+		}
+		Term synonom = lexicalModel.getSynonom();
+		if (synonom == null) {
+			messages.add("Synonom is required.");
+		}
+
+		return messages;
 	}
 
 	public LexicalModel loadModel(String name) throws IOException {

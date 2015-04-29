@@ -1,12 +1,19 @@
 package org.ihtsdo.snowowl.authoring.api.model.lexical;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.ihtsdo.snowowl.authoring.api.model.Model;
 
 public class LexicalModel implements Model {
 
+	@JsonProperty(required = true)
 	private String name;
+
+	@JsonProperty(required = true)
 	private Term fsn;
+
+	@JsonProperty(required = true)
 	private Term preferredTerm;
+
 	private Term synonom;
 
 	public LexicalModel() {
@@ -42,5 +49,15 @@ public class LexicalModel implements Model {
 
 	public void setSynonom(Term synonom) {
 		this.synonom = synonom;
+	}
+
+	@Override
+	public String toString() {
+		return "LexicalModel{" +
+				"name='" + name + '\'' +
+				", fsn=" + fsn +
+				", preferredTerm=" + preferredTerm +
+				", synonom=" + synonom +
+				'}';
 	}
 }

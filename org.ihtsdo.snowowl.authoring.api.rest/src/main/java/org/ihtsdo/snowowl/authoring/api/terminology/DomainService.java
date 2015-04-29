@@ -29,7 +29,7 @@ public class DomainService {
 	}
 
 	private List<Domain> loadDomains() {
-		try (InputStream inputStream = getClass().getResourceAsStream("/WEB-INF/snomed-domains.json")) {
+		try (InputStream inputStream = getClass().getResourceAsStream("/snomed-domains.json")) {
 			return objectMapper.readValue(inputStream, DOMAIN_LIST_TYPE_REF);
 		} catch (IOException e) {
 			logger.error("Failed to close stream.", e);

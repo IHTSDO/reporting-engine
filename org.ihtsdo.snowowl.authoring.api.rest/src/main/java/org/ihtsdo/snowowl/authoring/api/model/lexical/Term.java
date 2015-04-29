@@ -9,6 +9,12 @@ public class Term {
 	public Term() {
 	}
 
+	public Term(String prefix, String postfix, boolean firstLetterCaseSensitive) {
+		this.prefix = prefix;
+		this.postfix = postfix;
+		this.firstLetterCaseSensitive = firstLetterCaseSensitive;
+	}
+
 	public String getPrefix() {
 		return prefix;
 	}
@@ -31,5 +37,14 @@ public class Term {
 
 	public void setFirstLetterCaseSensitive(boolean firstLetterCaseSensitive) {
 		this.firstLetterCaseSensitive = firstLetterCaseSensitive;
+	}
+
+	@Override
+	public String toString() {
+		return "Term{" +
+				"prefix='" + prefix + '\'' +
+				", postfix='" + postfix + '\'' +
+				", firstLetterCaseSensitive=" + firstLetterCaseSensitive +
+				'}';
 	}
 }

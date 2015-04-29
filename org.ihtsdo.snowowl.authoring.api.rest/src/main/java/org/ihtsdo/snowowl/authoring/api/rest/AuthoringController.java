@@ -137,7 +137,7 @@ public class AuthoringController extends AbstractSnomedRestService {
 	@RequestMapping(value="/templates", method= RequestMethod.POST)
 	public ResponseEntity validateContent(@RequestBody Template template) throws IOException {
 		String errorMessage = templateService.saveTemplate(template);
-		if (errorMessage != null) {
+		if (errorMessage == null || errorMessage.isEmpty()) {
 			return new ResponseEntity<>(template, HttpStatus.CREATED);
 		} else {
 			return new ResponseEntity<>(errorMessage, HttpStatus.NOT_ACCEPTABLE);
