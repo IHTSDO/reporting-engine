@@ -1,15 +1,15 @@
-package org.ihtsdo.snowowl.authoring.api.model;
+package org.ihtsdo.snowowl.authoring.api.model.work;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class AuthoringContentValidationResult {
+public class ConceptValidationResult {
 
 	private String termMessage;
 	private List<String> isARelationshipsMessages;
 	private List<List<AttributeValidationResult>> attributeGroupsMessages;
 
-	public AuthoringContentValidationResult() {
+	public ConceptValidationResult() {
 		isARelationshipsMessages = new ArrayList<>();
 		attributeGroupsMessages = new ArrayList<>();
 	}

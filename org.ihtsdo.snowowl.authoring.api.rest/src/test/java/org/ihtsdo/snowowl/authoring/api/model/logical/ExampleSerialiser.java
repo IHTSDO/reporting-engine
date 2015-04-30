@@ -2,7 +2,7 @@ package org.ihtsdo.snowowl.authoring.api.model.logical;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import org.ihtsdo.snowowl.authoring.api.model.AuthoringContent;
+import org.ihtsdo.snowowl.authoring.api.model.work.WorkingConcept;
 import org.ihtsdo.snowowl.authoring.api.model.Template;
 import org.ihtsdo.snowowl.authoring.api.model.lexical.LexicalModel;
 import org.ihtsdo.snowowl.authoring.api.model.lexical.Term;
@@ -72,8 +72,8 @@ public class ExampleSerialiser {
 
 	@Test
 	public void serialiseContentExample() throws IOException {
-		List<AuthoringContent> list = new ArrayList<>();
-		AuthoringContent content = new AuthoringContent();
+		List<WorkingConcept> list = new ArrayList<>();
+		WorkingConcept content = new WorkingConcept();
 		content.setTerm("Test");
 		content.addIsA("128927009");
 		Map<String, String> attributeGroupA = content.newAttributeGroup();

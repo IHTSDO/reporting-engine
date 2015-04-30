@@ -1,4 +1,4 @@
-package org.ihtsdo.snowowl.authoring.api;
+package org.ihtsdo.snowowl.authoring.api.util;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;

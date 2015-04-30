@@ -2,9 +2,7 @@ package org.ihtsdo.snowowl.authoring.api.model.logical;
 
 import org.ihtsdo.snowowl.api.rest.common.ComponentRefHelper;
 import org.ihtsdo.snowowl.authoring.api.Constants;
-import org.ihtsdo.snowowl.authoring.api.model.AttributeValidationResult;
-import org.ihtsdo.snowowl.authoring.api.model.AuthoringContent;
-import org.ihtsdo.snowowl.authoring.api.model.AuthoringContentValidationResult;
+import org.ihtsdo.snowowl.authoring.api.model.work.*;
 import org.ihtsdo.snowowl.authoring.api.services.ContentService;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -18,16 +16,17 @@ public class LogicalModelContentValidator {
 	@Autowired
 	private ComponentRefHelper componentRefHelper;
 
-	public AuthoringContentValidationResult validate(AuthoringContent content, LogicalModel logicalModel) {
-		AuthoringContentValidationResult result = new AuthoringContentValidationResult();
+	public void validate(WorkingContent content, LogicalModel logicalModel, ContentValidationResult results) {
+		ConceptResultFactory resultFactory = results.getConceptResultFactory();
 		Map<String, Set<String>> descendantsCache = new HashMap<>();
-		validateIsARelationships(content, logicalModel, result, descendantsCache);
-		validateAttributes(content, logicalModel, result, descendantsCache);
-
-		return result;
+		for (WorkingConcept concept : content.getConcepts()) {
+			ConceptValidationResult conceptResult = resultFactory.next();
+			validateIsARelationships(concept, logicalModel, conceptResult, descendantsCache);
+			validateAttributes(concept, logicalModel, conceptResult, descendantsCache);
+		}
 	}
 
-	private void validateIsARelationships(AuthoringContent content, LogicalModel logicalModel, AuthoringContentValidationResult result, Map<String, Set<String>> descendantsCache) {
+	private void validateIsARelationships(WorkingConcept content, LogicalModel logicalModel, ConceptValidationResult result, Map<String, Set<String>> descendantsCache) {
 		List<String> isARelationships = content.getIsARelationships();
 		List<IsARestriction> isARestrictions = logicalModel.getIsARestrictions();
 		boolean tooManyIsARelationships = isARelationships.size() > isARestrictions.size();
@@ -65,7 +64,7 @@ public class LogicalModelContentValidator {
 		return relatedConceptTest(isARelationship, isARestriction.getRangeRelationType(), isARestriction.getConceptId(), "IsA relation", descendantsCache);
 	}
 
-	private void validateAttributes(AuthoringContent content, LogicalModel logicalModel, AuthoringContentValidationResult result, Map<String, Set<String>> descendantsCache) {
+	private void validateAttributes(WorkingConcept content, LogicalModel logicalModel, ConceptValidationResult result, Map<String, Set<String>> descendantsCache) {
 		List<LinkedHashMap<String, String>> attributeGroups = content.getAttributeGroups();
 		List<List<AttributeRestriction>> attributeRestrictionGroups = logicalModel.getAttributeRestrictionGroups();
 

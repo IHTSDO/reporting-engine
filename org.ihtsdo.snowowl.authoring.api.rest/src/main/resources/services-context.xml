@@ -14,5 +14,7 @@
 	<bean class="org.ihtsdo.snowowl.authoring.api.services.TemplateService"/>
 	<bean class="org.ihtsdo.snowowl.api.rest.common.ComponentRefHelper"/>
 	<bean class="org.ihtsdo.snowowl.authoring.api.terminology.DomainService"/>
+	<bean class="org.ihtsdo.snowowl.authoring.api.services.WorkingContentService"/>
+	<bean class="org.ihtsdo.snowowl.authoring.api.util.RandomShaGenerator"/>
 
 </beans>

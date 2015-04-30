@@ -2,7 +2,8 @@ package org.ihtsdo.snowowl.authoring.api.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.ihtsdo.snowowl.authoring.api.model.Model;
-import org.ihtsdo.snowowl.authoring.api.model.logical.LogicalModel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.File;
@@ -21,8 +22,10 @@ public class ModelDAO {
 
 	private File baseFilesDirectory;
 
+	private Logger logger = LoggerFactory.getLogger(getClass());
+
 	public ModelDAO() {
-		this(new File(""));
+		this(new File(".").getParentFile());
 	}
 
 	public ModelDAO(File baseFilesDirectory) {
@@ -30,7 +33,16 @@ public class ModelDAO {
 	}
 
 	public void writeModel(Model model) throws IOException {
-		try (FileWriter writer = new FileWriter(getModelFile(model))) {
+		writeModel(model, getModelFile(model));
+	}
+
+	public void writeModel(Model parentModel, Model model) throws IOException {
+		writeModel(model, getModelFile(parentModel, model.getClass(), model.getName()));
+	}
+
+	private void writeModel(Model model, File modelFile) throws IOException {
+		logger.info("Writing model {}:{} to {}", model.getClass().getSimpleName(), model.getName(), modelFile.getAbsolutePath());
+		try (FileWriter writer = new FileWriter(modelFile)) {
 			jsonMapper.writeValue(writer, model);
 		}
 	}
@@ -50,18 +62,32 @@ public class ModelDAO {
 	}
 
 	public <T extends Model> T loadModel(Class<T> modelClass, String name) throws IOException {
-		File modelFile = getModelFile(modelClass, name);
+		return readModelFile(modelClass, getModelFile(modelClass, name));
+	}
+
+	public <T extends Model> T loadModel(Model parentModel, Class<T> modelClass, String name) throws IOException {
+		return readModelFile(modelClass, getModelFile(parentModel, modelClass, name));
+	}
+
+	private <T extends Model> T readModelFile(Class<T> modelClass, File modelFile) throws IOException {
 		if (modelFile.isFile()) {
 			try (FileReader src = new FileReader(modelFile)) {
 				return jsonMapper.readValue(src, modelClass);
 			}
 		} else {
-			throw (modelClass.equals(LogicalModel.class)) ? new LogicalModelNotFoundException(name) : new LexicalModelNotFoundException(name);
+			return null;
 		}
 	}
 
 	private File getModelFile(Model model) {
 		return getModelFile(model.getClass(), model.getName());
+	}
+
+	private File getModelFile(Model parentModel, Class<? extends Model> modelClass, String modelName) {
+		File parentModelsDir = getModelsDirectory(parentModel.getClass());
+		File parentModelDir = new File(parentModelsDir, parentModel.getName() + "/" + modelClass.getSimpleName());
+		parentModelDir.mkdirs();
+		return new File(parentModelDir, modelName + JSON_EXTENSION);
 	}
 
 	private File getModelFile(Class<? extends Model> modelClass, String modelName) {

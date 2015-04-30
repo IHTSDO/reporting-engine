@@ -1,21 +1,21 @@
-package org.ihtsdo.snowowl.authoring.api.model;
+package org.ihtsdo.snowowl.authoring.api.model.work;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 
-public class AuthoringContent {
+public class WorkingConcept {
 
 	private String term;
 	private List<String> isARelationships;
 	private List<LinkedHashMap<String, String>> attributeGroups;
 
-	public AuthoringContent() {
+	public WorkingConcept() {
 		isARelationships = new ArrayList<>();
 		attributeGroups = new ArrayList<>();
 	}
 
-	public AuthoringContent addIsA(String isARelationship) {
+	public WorkingConcept addIsA(String isARelationship) {
 		isARelationships.add(isARelationship);
 		return this;
 	}

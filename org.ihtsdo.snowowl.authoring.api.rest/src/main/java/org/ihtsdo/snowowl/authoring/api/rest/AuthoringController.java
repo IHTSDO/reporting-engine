@@ -5,11 +5,13 @@ import com.wordnik.swagger.annotations.*;
 import org.ihtsdo.snowowl.api.rest.common.AbstractRestService;
 import org.ihtsdo.snowowl.api.rest.common.AbstractSnomedRestService;
 import org.ihtsdo.snowowl.authoring.api.Constants;
-import org.ihtsdo.snowowl.authoring.api.model.AuthoringContent;
-import org.ihtsdo.snowowl.authoring.api.model.AuthoringContentValidationResult;
+import org.ihtsdo.snowowl.authoring.api.model.work.ContentValidationResult;
+import org.ihtsdo.snowowl.authoring.api.model.work.WorkingConcept;
+import org.ihtsdo.snowowl.authoring.api.model.work.ConceptValidationResult;
 import org.ihtsdo.snowowl.authoring.api.model.Template;
 import org.ihtsdo.snowowl.authoring.api.model.lexical.LexicalModel;
 import org.ihtsdo.snowowl.authoring.api.model.logical.LogicalModel;
+import org.ihtsdo.snowowl.authoring.api.model.work.WorkingContent;
 import org.ihtsdo.snowowl.authoring.api.services.AuthoringService;
 import org.ihtsdo.snowowl.authoring.api.services.LexicalModelService;
 import org.ihtsdo.snowowl.authoring.api.services.LogicalModelService;
@@ -17,6 +19,7 @@ import org.ihtsdo.snowowl.authoring.api.services.TemplateService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -165,19 +168,57 @@ public class AuthoringController extends AbstractSnomedRestService {
 	}
 
 
-	// Matrix Endpoints
+	// Content work Endpoints
 
-	@ApiOperation(value="Validate matrix content (in the future this will also save the matrix).")
+	@ApiOperation(value="Create content work.")
 	@ApiResponses({
-			@ApiResponse(code = 201, message = "CREATED", response = AuthoringContent.class),
-			@ApiResponse(code = 406, message = "Content is not valid", response = AuthoringContentValidationResult.class),
+			@ApiResponse(code = 201, message = "CREATED", response = WorkingConcept.class),
 			@ApiResponse(code = 404, message = "Template not found")
 	})
-	@RequestMapping(value="/templates/{templateName}/matrices", method= RequestMethod.POST)
-	public ResponseEntity<List<AuthoringContentValidationResult>> validateContent(@PathVariable final String templateName,
-			@RequestBody List<AuthoringContent> content, UriComponentsBuilder uriBuilder) throws IOException {
-		List<AuthoringContentValidationResult> results = authoringService.validateContent(templateName, content);
-		return new ResponseEntity<>(results, isAnyErrors(results) ? HttpStatus.NOT_ACCEPTABLE : HttpStatus.CREATED);
+	@RequestMapping(value="/templates/{templateName}/work", method= RequestMethod.POST)
+	public ResponseEntity<WorkingContent> saveWork(@PathVariable final String templateName,
+			@RequestBody WorkingContent content, UriComponentsBuilder uriBuilder) throws IOException {
+		authoringService.persistWork(templateName, content);
+		HttpHeaders headers = new HttpHeaders();
+		headers.setLocation(uriBuilder.path("/templates/{templateName}/work/{workId}").buildAndExpand(templateName, content.getName()).toUri());
+		return new ResponseEntity<>(content, headers, HttpStatus.CREATED);
+	}
+
+	@ApiOperation(value="Update content work.")
+	@ApiResponses({
+			@ApiResponse(code = 200, message = "OK", response = WorkingConcept.class),
+			@ApiResponse(code = 404, message = "Template not found")
+	})
+	@RequestMapping(value="/templates/{templateName}/work/{workId}", method= RequestMethod.PUT)
+	public WorkingContent updateWork(@PathVariable final String templateName,
+			@PathVariable final String workId,
+			@RequestBody WorkingContent content) throws IOException {
+		content.setName(workId);
+		authoringService.persistWork(templateName, content);
+		return content;
+	}
+
+	@ApiOperation(value="Retrieve working content.")
+	@ApiResponses({
+			@ApiResponse(code = 200, message = "OK", response = Template.class),
+			@ApiResponse(code = 404, message = "Content work not found")
+
+	})
+	@RequestMapping(value="/templates/{templateName}/work/{workId}", method= RequestMethod.GET)
+	public WorkingContent loadWork(@PathVariable final String templateName, @PathVariable final String workId) throws IOException {
+		return authoringService.loadWork(templateName, workId);
+	}
+
+	@ApiOperation(value="Validate working content.")
+	@ApiResponses({
+			@ApiResponse(code = 200, message = "OK", response = WorkingConcept.class),
+			@ApiResponse(code = 404, message = "Template or working content not found")
+	})
+	@RequestMapping(value="/templates/{templateName}/work/{workId}/validation", method= RequestMethod.GET)
+	public ContentValidationResult validateContent(@PathVariable final String templateName,
+			@PathVariable final String workId) throws IOException {
+
+		return authoringService.validateWorkingContent(templateName, workId);
 	}
 
 
@@ -198,9 +239,9 @@ public class AuthoringController extends AbstractSnomedRestService {
 		return authoringService.getDescendantIds(ref);
 	}
 
-	private boolean isAnyErrors(List<AuthoringContentValidationResult> results) {
-		for (AuthoringContentValidationResult result : results) {
-			if (result.isAnyErrors()) {
+	private boolean isAnyErrors(ContentValidationResult results) {
+		for (ConceptValidationResult conceptResult : results.getConceptResults()) {
+			if (conceptResult.isAnyErrors()) {
 				return true;
 			}
 		}

@@ -1,4 +1,4 @@
-package org.ihtsdo.snowowl.authoring.api.model;
+package org.ihtsdo.snowowl.authoring.api.model.work;
 
 public class AttributeValidationResult {
 

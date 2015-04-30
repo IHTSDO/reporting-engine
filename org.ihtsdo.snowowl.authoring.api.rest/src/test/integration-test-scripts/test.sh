@@ -35,14 +35,23 @@ echo "Create template"
 curl -is -X POST -H 'Content-Type:application/json' --data-binary "`cat test-template.json`" "$baseUrl/templates" > ${response}
 checkResponse
 
-echo "Validate matrix, expect error"
-curl -is -X POST -H 'Content-Type:application/json' --data-binary "`cat matrix-bad-last-attribute-value.json`" "$baseUrl/templates/test-template/matrices" > ${response}
-cat ${response}; echo
-grep "HTTP/1.1 406" ${response} && echo " - as expected" || fail
-echo
+echo "Save matrix with invalid data"
+curl -is -X POST -H 'Content-Type:application/json' --data-binary "`cat matrix-bad-last-attribute-value.json`" "$baseUrl/templates/test-template/work" > ${response}
+checkResponse
+matrixLocation=`grep 'Location' .response.txt | cut -f2 -d ' ' | tr -d '\r'`
 
-echo "Validate matrix, with decent data"
-curl -is -X POST -H 'Content-Type:application/json' --data-binary "`cat matrix-valid.json`" "$baseUrl/templates/test-template/matrices" > ${response}
+echo "Validate matrix, expect error"
+curl -is "$matrixLocation/validation" > ${response}
+grep '"anyErrors":true' ${response}
+checkResponse
+
+echo "Update matrix, with decent data"
+curl -is -X PUT -H 'Content-Type:application/json' --data-binary "`cat matrix-valid.json`" "$matrixLocation" > ${response}
+checkResponse
+
+echo "Validate matrix, expect no errors"
+curl -is -H 'Content-Type:application/json' "$matrixLocation/validation" > ${response}
+grep '"anyErrors":false' ${response}
 checkResponse
 
 echo "Done"
