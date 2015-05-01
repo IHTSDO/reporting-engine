@@ -15,6 +15,10 @@ public class Term {
 		this.firstLetterCaseSensitive = firstLetterCaseSensitive;
 	}
 
+	public String buildTerm(String term) {
+		return (prefix != null ? prefix : "") + term + (postfix != null ? postfix : "");
+	}
+
 	public String getPrefix() {
 		return prefix;
 	}

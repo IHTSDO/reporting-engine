@@ -35,23 +35,29 @@ echo "Create template"
 curl -is -X POST -H 'Content-Type:application/json' --data-binary "`cat test-template.json`" "$baseUrl/templates" > ${response}
 checkResponse
 
-echo "Save matrix with invalid data"
-curl -is -X POST -H 'Content-Type:application/json' --data-binary "`cat matrix-bad-last-attribute-value.json`" "$baseUrl/templates/test-template/work" > ${response}
+echo "Save content work with invalid data"
+curl -is -X POST -H 'Content-Type:application/json' --data-binary "`cat work-bad-last-attribute-value.json`" "$baseUrl/templates/test-template/work" > ${response}
 checkResponse
-matrixLocation=`grep 'Location' .response.txt | cut -f2 -d ' ' | tr -d '\r'`
+workLocation=`grep 'Location' .response.txt | cut -f2 -d ' ' | tr -d '\r'`
+echo "workLocation = $workLocation"
 
-echo "Validate matrix, expect error"
-curl -is "$matrixLocation/validation" > ${response}
+echo "Validate content work, expect error"
+curl -is "$workLocation/validation" > ${response}
 grep '"anyErrors":true' ${response}
 checkResponse
 
-echo "Update matrix, with decent data"
-curl -is -X PUT -H 'Content-Type:application/json' --data-binary "`cat matrix-valid.json`" "$matrixLocation" > ${response}
+echo "Update content work, with decent data"
+curl -is -X PUT -H 'Content-Type:application/json' --data-binary "`cat work-valid.json`" "$workLocation" > ${response}
 checkResponse
 
-echo "Validate matrix, expect no errors"
-curl -is -H 'Content-Type:application/json' "$matrixLocation/validation" > ${response}
+echo "Validate content work, expect no errors"
+curl -is -H 'Content-Type:application/json' "$workLocation/validation" > ${response}
 grep '"anyErrors":false' ${response}
+checkResponse
+
+echo "Commit content work to create concepts in SnowOwl"
+curl -is -X POST -H 'Content-Type:application/json' "$workLocation/commit" > ${response}
+cat ${response}
 checkResponse
 
 echo "Done"

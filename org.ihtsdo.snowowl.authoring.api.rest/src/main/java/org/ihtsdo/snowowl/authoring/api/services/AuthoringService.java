@@ -89,4 +89,12 @@ public class AuthoringService {
 	private LexicalModel getLexicalModel(String lexicalModelName) throws IOException {
 		return lexicalModelService.loadModel(lexicalModelName);
 	}
+
+	public WorkingContent commitWorkingContent(String templateName, String workId) throws IOException {
+		WorkingContent content = loadWork(templateName, workId);
+		Template template = templateService.loadTemplate(templateName);
+		String taskId = "batch-test"; // TODO - create a Jira ticket and use its id as the taskId.
+		contentService.createConcepts(template, content, taskId);
+		return content;
+	}
 }

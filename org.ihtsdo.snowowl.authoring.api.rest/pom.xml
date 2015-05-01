@@ -78,6 +78,18 @@
 			<version>${project.version}</version>
 			<scope>provided</scope>
 		</dependency>
+		<dependency>
+			<groupId>com.b2international.snowowl</groupId>
+			<artifactId>com.b2international.snowowl.snomed.model</artifactId>
+			<version>${project.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.b2international.snowowl</groupId>
+			<artifactId>com.b2international.snowowl.snomed.api.rest</artifactId>
+			<version>${project.version}</version>
+			<!-- TODO - make the b2i rest module export it's classes so the scope here may be 'provided'-->
+		</dependency>
 
 		<!-- The Servlet specification is implemented by the web container -->
 		<dependency>
@@ -218,8 +230,8 @@
 					<value>Bundle-Version: ${unqualifiedVersion}.${buildQualifier}</value>
 				</configuration>
 			</plugin>
-			
-			
+
+
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
@@ -241,7 +253,7 @@
 							<archive>
 								<manifestFile>${project.build.directory}/manifest/MANIFEST.MF</manifestFile>
 							</archive>
-						
+
 						</configuration>
 					</execution>
 				</executions>
@@ -316,7 +328,7 @@
 	                   </configuration>
 	               </execution>
 	           </executions>
-	       </plugin>	      
+	       </plugin>
 		</plugins>
 	</build>
 

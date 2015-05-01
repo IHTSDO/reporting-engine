@@ -6,6 +6,7 @@ import java.util.List;
 
 public class WorkingConcept {
 
+	private String id;
 	private String term;
 	private List<String> isARelationships;
 	private List<LinkedHashMap<String, String>> attributeGroups;
@@ -24,6 +25,14 @@ public class WorkingConcept {
 		LinkedHashMap<String, String> attributeGroup = new LinkedHashMap<>();
 		attributeGroups.add(attributeGroup);
 		return attributeGroup;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
+
+	public String getId() {
+		return id;
 	}
 
 	public String getTerm() {

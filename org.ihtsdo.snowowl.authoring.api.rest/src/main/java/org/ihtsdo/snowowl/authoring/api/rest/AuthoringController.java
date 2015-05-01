@@ -221,6 +221,25 @@ public class AuthoringController extends AbstractSnomedRestService {
 		return authoringService.validateWorkingContent(templateName, workId);
 	}
 
+	@ApiOperation(value="Commit working content.")
+	@ApiResponses({
+			@ApiResponse(code = 200, message = "Content committed. Response will contain new ids.", response = WorkingConcept.class),
+			@ApiResponse(code = 406, message = "Working content not acceptable because it does not validate", response = ContentValidationResult.class),
+			@ApiResponse(code = 404, message = "Template or working content not found")
+	})
+	@RequestMapping(value="/templates/{templateName}/work/{workId}/commit", method= RequestMethod.POST)
+	public ResponseEntity commitContent(@PathVariable final String templateName,
+			@PathVariable final String workId) throws IOException {
+
+		ContentValidationResult validationResult = authoringService.validateWorkingContent(templateName, workId);
+		if (!validationResult.isAnyError()) {
+			WorkingContent workingContent = authoringService.commitWorkingContent(templateName, workId);
+			return new ResponseEntity(workingContent, HttpStatus.OK);
+		} else {
+			return new ResponseEntity(validationResult, HttpStatus.NOT_ACCEPTABLE);
+		}
+	}
+
 
 	// Not currently used
 

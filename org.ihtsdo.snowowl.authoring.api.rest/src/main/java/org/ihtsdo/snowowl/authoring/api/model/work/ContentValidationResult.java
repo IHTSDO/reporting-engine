@@ -25,4 +25,13 @@ public class ContentValidationResult {
 	public void setConceptResults(List<ConceptValidationResult> conceptResults) {
 		this.conceptResults = conceptResults;
 	}
+
+	public boolean isAnyError() {
+		for (ConceptValidationResult conceptResult : conceptResults) {
+			if (conceptResult.isAnyErrors()) {
+				return true;
+			}
+		}
+		return false;
+	}
 }
