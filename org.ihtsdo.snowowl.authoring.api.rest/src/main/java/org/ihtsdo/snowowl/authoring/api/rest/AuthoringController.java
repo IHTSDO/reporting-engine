@@ -86,7 +86,7 @@ public class AuthoringController extends AbstractSnomedRestService {
 	})
 	@RequestMapping(value="/models/logical/{logicalModelName}", method= RequestMethod.GET)
 	public LogicalModel loadLogicalModel(@PathVariable final String logicalModelName) throws IOException {
-		return logicalModelService.loadLogicalModel(logicalModelName);
+		return logicalModelService.loadLogicalModelOrThrow(logicalModelName);
 	}
 
 
@@ -126,7 +126,7 @@ public class AuthoringController extends AbstractSnomedRestService {
 	})
 	@RequestMapping(value="/models/lexical/{lexicalModelName}", method= RequestMethod.GET)
 	public LexicalModel loadLexicalModel(@PathVariable final String lexicalModelName) throws IOException {
-		return lexicalModelService.loadModel(lexicalModelName);
+		return lexicalModelService.loadModelOrThrow(lexicalModelName);
 	}
 
 
@@ -164,7 +164,7 @@ public class AuthoringController extends AbstractSnomedRestService {
 	})
 	@RequestMapping(value="/templates/{templateName}", method= RequestMethod.GET)
 	public Template loadTemplateModel(@PathVariable final String templateName) throws IOException {
-		return templateService.loadTemplate(templateName);
+		return templateService.loadTemplateOrThrow(templateName);
 	}
 
 
@@ -206,7 +206,7 @@ public class AuthoringController extends AbstractSnomedRestService {
 	})
 	@RequestMapping(value="/templates/{templateName}/work/{workId}", method= RequestMethod.GET)
 	public WorkingContent loadWork(@PathVariable final String templateName, @PathVariable final String workId) throws IOException {
-		return authoringService.loadWork(templateName, workId);
+		return authoringService.loadWorkOrThrow(templateName, workId);
 	}
 
 	@ApiOperation(value="Validate working content.")

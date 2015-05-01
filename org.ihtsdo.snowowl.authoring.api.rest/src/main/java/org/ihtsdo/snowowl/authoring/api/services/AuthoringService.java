@@ -1,6 +1,7 @@
 package org.ihtsdo.snowowl.authoring.api.services;
 
 import com.b2international.snowowl.api.domain.IComponentRef;
+import com.b2international.snowowl.api.exception.BadRequestException;
 import org.ihtsdo.snowowl.authoring.api.model.Template;
 import org.ihtsdo.snowowl.authoring.api.model.lexical.LexicalModel;
 import org.ihtsdo.snowowl.authoring.api.model.lexical.LexicalModelContentValidator;
@@ -10,7 +11,6 @@ import org.ihtsdo.snowowl.authoring.api.model.work.ContentValidationResult;
 import org.ihtsdo.snowowl.authoring.api.model.work.WorkingContent;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Set;
 
@@ -38,22 +38,18 @@ public class AuthoringService {
 	private WorkingContentService workingContentService;
 
 	public ContentValidationResult validateWorkingContent(String templateName, String workId) throws IOException {
-		Template template = getTemplate(templateName);
-		if (template != null) {
-			WorkingContent content = workingContentService.load(template, workId);
-			if (content != null) {
-				LogicalModel logicalModel = getLogicalModel(template.getLogicalModelName());
-				LexicalModel lexicalModel = getLexicalModel(template.getLexicalModelName());
-				ContentValidationResult result = new ContentValidationResult();
-				logicalModelContentValidator.validate(content, logicalModel, result);
-				lexicalModelContentValidator.validate(content, lexicalModel, result);
-				return result;
-			} else {
-				throw new FileNotFoundException("Working content '" + workId + "' not found under template '" + templateName + "'.");
-			}
-		} else {
-			throw new FileNotFoundException("Template '" + templateName + "' not found.");
-		}
+		Template template = templateService.loadTemplateOrThrow(templateName);
+		WorkingContent content = workingContentService.loadOrThrow(template, workId);
+		return validateWorkingContent(template, content);
+	}
+
+	private ContentValidationResult validateWorkingContent(Template template, WorkingContent content) throws IOException {
+		LogicalModel logicalModel = getLogicalModel(template.getLogicalModelName());
+		LexicalModel lexicalModel = getLexicalModel(template.getLexicalModelName());
+		ContentValidationResult result = new ContentValidationResult();
+		logicalModelContentValidator.validate(content, logicalModel, result);
+		lexicalModelContentValidator.validate(content, lexicalModel, result);
+		return result;
 	}
 
 	/**
@@ -63,23 +59,25 @@ public class AuthoringService {
 	 * @return
 	 */
 	public void persistWork(String templateName, WorkingContent content) throws IOException {
-		Template template = getTemplate(templateName);
-		if (template != null) {
-			workingContentService.saveOrUpdate(template, content);
-		}
+		Template template = templateService.loadTemplateOrThrow(templateName);
+		workingContentService.saveOrUpdate(template, content);
 	}
 
-	public WorkingContent loadWork(String templateName, String workId) throws IOException {
-		Template template = getTemplate(templateName);
-		return workingContentService.load(template, workId);
+	public WorkingContent commitWorkingContent(String templateName, String workId) throws IOException {
+		Template template = templateService.loadTemplateOrThrow(templateName);
+		WorkingContent content = workingContentService.loadOrThrow(template, workId);
+		String taskId = "batch-test"; // TODO - create a Jira ticket and use its id as the taskId.
+		contentService.createConcepts(template, content, taskId);
+		return content;
 	}
 
 	public Set<String> getDescendantIds(final IComponentRef ref) {
 		return contentService.getDescendantIds(ref);
 	}
 
-	private Template getTemplate(String templateName) throws IOException {
-		return templateService.loadTemplate(templateName);
+	public WorkingContent loadWorkOrThrow(String templateName, String workId) throws IOException {
+		Template template = templateService.loadTemplateOrThrow(templateName);
+		return workingContentService.loadOrThrow(template, workId);
 	}
 
 	private LogicalModel getLogicalModel(String logicalModelName) throws IOException {
@@ -88,13 +86,5 @@ public class AuthoringService {
 
 	private LexicalModel getLexicalModel(String lexicalModelName) throws IOException {
 		return lexicalModelService.loadModel(lexicalModelName);
-	}
-
-	public WorkingContent commitWorkingContent(String templateName, String workId) throws IOException {
-		WorkingContent content = loadWork(templateName, workId);
-		Template template = templateService.loadTemplate(templateName);
-		String taskId = "batch-test"; // TODO - create a Jira ticket and use its id as the taskId.
-		contentService.createConcepts(template, content, taskId);
-		return content;
 	}
 }

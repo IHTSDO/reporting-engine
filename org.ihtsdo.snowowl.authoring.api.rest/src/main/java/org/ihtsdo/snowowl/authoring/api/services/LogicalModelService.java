@@ -53,6 +53,12 @@ public class LogicalModelService {
 		return messages;
 	}
 
+	public LogicalModel loadLogicalModelOrThrow(String name) throws IOException {
+		LogicalModel logicalModel = loadLogicalModel(name);
+		if (logicalModel == null) throw new SomethingNotFoundException(LogicalModel.class.getSimpleName(), name);
+		return logicalModel;
+	}
+
 	public LogicalModel loadLogicalModel(String name) throws IOException {
 		Assert.notNull(name, "Logical model name can not be null.");
 		return modelDAO.loadModel(LogicalModel.class, name);

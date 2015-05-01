@@ -26,8 +26,14 @@ public class WorkingContentService {
 		modelDAO.writeModel(template, content);
 	}
 
-	public WorkingContent load(Template template, String sha) throws IOException {
-		return modelDAO.loadModel(template, WorkingContent.class, sha);
+	public WorkingContent loadOrThrow(Template template, String name) throws IOException {
+		WorkingContent content = load(template, name);
+		if (content == null) throw new SomethingNotFoundException(WorkingContent.class.getSimpleName(), name + ", part of template " + template.getName() + ",");
+		return content;
+	}
+
+	public WorkingContent load(Template template, String name) throws IOException {
+		return modelDAO.loadModel(template, WorkingContent.class, name);
 	}
 
 }

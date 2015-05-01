@@ -42,6 +42,12 @@ public class TemplateService {
 		return null;
 	}
 
+	public Template loadTemplateOrThrow(String templateName) throws IOException {
+		Template template = loadTemplate(templateName);
+		if (template == null) throw new SomethingNotFoundException(Template.class.getSimpleName(), templateName);
+		return template;
+	}
+
 	public Template loadTemplate(String name) throws IOException {
 		Assert.notNull(name, "Template name can not be null.");
 		return modelDAO.loadModel(Template.class, name);

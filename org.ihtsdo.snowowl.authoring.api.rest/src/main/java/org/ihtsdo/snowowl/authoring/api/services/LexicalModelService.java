@@ -39,6 +39,12 @@ public class LexicalModelService {
 		return messages;
 	}
 
+	public LexicalModel loadModelOrThrow(String lexicalModelName) throws IOException {
+		LexicalModel lexicalModel = loadModel(lexicalModelName);
+		if (lexicalModel == null) throw new SomethingNotFoundException(LexicalModel.class.getSimpleName(), lexicalModelName);
+		return lexicalModel;
+	}
+
 	public LexicalModel loadModel(String name) throws IOException {
 		Assert.notNull(name, "Lexical model name can not be null.");
 		return modelDAO.loadModel(LexicalModel.class, name);
