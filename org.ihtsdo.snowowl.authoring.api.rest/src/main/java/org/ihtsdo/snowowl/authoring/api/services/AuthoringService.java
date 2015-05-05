@@ -1,7 +1,7 @@
 package org.ihtsdo.snowowl.authoring.api.services;
 
 import com.b2international.snowowl.api.domain.IComponentRef;
-import com.b2international.snowowl.api.exception.BadRequestException;
+import net.rcarz.jiraclient.JiraException;
 import org.ihtsdo.snowowl.authoring.api.model.Template;
 import org.ihtsdo.snowowl.authoring.api.model.lexical.LexicalModel;
 import org.ihtsdo.snowowl.authoring.api.model.lexical.LexicalModelContentValidator;
@@ -37,6 +37,9 @@ public class AuthoringService {
 	@Autowired
 	private WorkingContentService workingContentService;
 
+	@Autowired
+	private JiraProjectService jiraProjectService;
+
 	public ContentValidationResult validateWorkingContent(String templateName, String workId) throws IOException {
 		Template template = templateService.loadTemplateOrThrow(templateName);
 		WorkingContent content = workingContentService.loadOrThrow(template, workId);
@@ -63,11 +66,13 @@ public class AuthoringService {
 		workingContentService.saveOrUpdate(template, content);
 	}
 
-	public WorkingContent commitWorkingContent(String templateName, String workId) throws IOException {
+	public WorkingContent commitWorkingContent(String templateName, String workId) throws IOException, JiraException {
 		Template template = templateService.loadTemplateOrThrow(templateName);
 		WorkingContent content = workingContentService.loadOrThrow(template, workId);
-		String taskId = "batch-test"; // TODO - create a Jira ticket and use its id as the taskId.
+		String taskId = jiraProjectService.createJiraTask();
+		content.setTaskId(taskId);
 		contentService.createConcepts(template, content, taskId);
+		workingContentService.saveOrUpdate(template, content);
 		return content;
 	}
 

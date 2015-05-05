@@ -18,4 +18,16 @@
 	<bean class="org.ihtsdo.snowowl.authoring.api.util.RandomShaGenerator"/>
 	<bean class="org.ihtsdo.snowowl.authoring.api.services.ContentMapper"/>
 
+	<bean class="org.ihtsdo.snowowl.authoring.api.services.JiraProjectService">
+		<constructor-arg value="+{jira.url}"/>
+		<constructor-arg value="+{jira.project}"/>
+		<constructor-arg value="+{jira.username}"/>
+		<constructor-arg value="+{jira.password}"/>
+	</bean>
+
+	<bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="location" value="authoring_config.properties"/>
+		<property name="placeholderPrefix" value="+{"/>
+	</bean>
+
 </beans>

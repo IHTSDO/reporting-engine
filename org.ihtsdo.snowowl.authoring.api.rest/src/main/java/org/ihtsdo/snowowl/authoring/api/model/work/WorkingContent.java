@@ -9,6 +9,7 @@ public class WorkingContent implements Model {
 
 	private String name;
 	private List<WorkingConcept> concepts;
+	private String taskId;
 
 	public WorkingContent() {
 		concepts = new ArrayList<>();
@@ -45,5 +46,13 @@ public class WorkingContent implements Model {
 
 	public void setConcepts(List<WorkingConcept> concepts) {
 		this.concepts = concepts;
+	}
+
+	public void setTaskId(String taskId) {
+		this.taskId = taskId;
+	}
+
+	public String getTaskId() {
+		return taskId;
 	}
 }

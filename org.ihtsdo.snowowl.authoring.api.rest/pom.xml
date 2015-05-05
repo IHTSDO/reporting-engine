@@ -186,6 +186,11 @@
 			<artifactId>lucene-core</artifactId>
 			<version>4.10.2</version>
 		</dependency>
+		<dependency>
+			<groupId>net.rcarz</groupId>
+			<artifactId>jira-client</artifactId>
+			<version>0.5</version>
+		</dependency>
 		<!-- Testing -->
 		<dependency>
 			<groupId>org.slf4j</groupId>

@@ -2,6 +2,7 @@ package org.ihtsdo.snowowl.authoring.api.rest;
 
 import com.b2international.snowowl.api.domain.IComponentRef;
 import com.wordnik.swagger.annotations.*;
+import net.rcarz.jiraclient.JiraException;
 import org.ihtsdo.snowowl.api.rest.common.AbstractRestService;
 import org.ihtsdo.snowowl.api.rest.common.AbstractSnomedRestService;
 import org.ihtsdo.snowowl.authoring.api.Constants;
@@ -223,13 +224,13 @@ public class AuthoringController extends AbstractSnomedRestService {
 
 	@ApiOperation(value="Commit working content.")
 	@ApiResponses({
-			@ApiResponse(code = 200, message = "Content committed. Response will contain new ids.", response = WorkingConcept.class),
+			@ApiResponse(code = 200, message = "Content committed. Response will contain new concept ids and term server taskId.", response = WorkingConcept.class),
 			@ApiResponse(code = 406, message = "Working content not acceptable because it does not validate", response = ContentValidationResult.class),
 			@ApiResponse(code = 404, message = "Template or working content not found")
 	})
 	@RequestMapping(value="/templates/{templateName}/work/{workId}/commit", method= RequestMethod.POST)
 	public ResponseEntity commitContent(@PathVariable final String templateName,
-			@PathVariable final String workId) throws IOException {
+			@PathVariable final String workId) throws IOException, JiraException {
 
 		ContentValidationResult validationResult = authoringService.validateWorkingContent(templateName, workId);
 		if (!validationResult.isAnyError()) {
