@@ -27,67 +27,67 @@
 		<dependency>
 			<groupId>com.b2international.snowowl</groupId>
 			<artifactId>com.b2international.snowowl.api</artifactId>
-			<version>${project.version}</version>
+			<version>${snowowl.version}</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.b2international.snowowl</groupId>
 			<artifactId>com.b2international.snowowl.snomed.api</artifactId>
-			<version>${project.version}</version>
+			<version>${snowowl.version}</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.b2international.snowowl</groupId>
 			<artifactId>com.b2international.snowowl.api.impl</artifactId>
-			<version>${project.version}</version>
+			<version>${snowowl.version}</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.b2international.snowowl</groupId>
 			<artifactId>com.b2international.snowowl.snomed.api.impl</artifactId>
-			<version>${project.version}</version>
+			<version>${snowowl.version}</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.b2international.snowowl</groupId>
 			<artifactId>com.b2international.snowowl.snomed.refset.model</artifactId>
-			<version>${project.version}</version>
+			<version>${snowowl.version}</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.b2international.snowowl</groupId>
 			<artifactId>com.b2international.snowowl.datastore</artifactId>
-			<version>${project.version}</version>
+			<version>${snowowl.version}</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.b2international.snowowl</groupId>
 			<artifactId>com.b2international.snowowl.core</artifactId>
-			<version>${project.version}</version>
+			<version>${snowowl.version}</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.b2international.snowowl</groupId>
 			<artifactId>com.b2international.snowowl.snomed.common</artifactId>
-			<version>${project.version}</version>
+			<version>${snowowl.version}</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.b2international.snowowl</groupId>
 			<artifactId>com.b2international.snowowl.snomed.datastore</artifactId>
-			<version>${project.version}</version>
+			<version>${snowowl.version}</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.b2international.snowowl</groupId>
 			<artifactId>com.b2international.snowowl.snomed.model</artifactId>
-			<version>${project.version}</version>
+			<version>${snowowl.version}</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.b2international.snowowl</groupId>
 			<artifactId>com.b2international.snowowl.snomed.api.rest</artifactId>
-			<version>${project.version}</version>
+			<version>${snowowl.version}</version>
 			<!-- TODO - make the b2i rest module export it's classes so the scope here may be 'provided'-->
 		</dependency>
 
