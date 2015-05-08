@@ -23,11 +23,11 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import org.ihtsdo.snowowl.api.rest.AbstractRestService;
-import org.ihtsdo.snowowl.api.rest.AbstractSnomedRestService;
+import org.ihtsdo.snowowl.api.rest.common.AbstractRestService;
+import org.ihtsdo.snowowl.api.rest.common.AbstractSnomedRestService;
 import org.ihtsdo.snowowl.api.rest.domain.RefSet;
 import org.ihtsdo.snowowl.api.rest.domain.RefSetComponent;
-import org.ihtsdo.snowowl.api.rest.impl.refset.SnomedRefsetServiceImpl;
+import org.ihtsdo.snowowl.api.rest.refset.common.SnomedRefsetServiceImpl;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;

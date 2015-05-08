@@ -1,0 +1,5 @@
+{
+  "name" : "test-template",
+  "logicalModelName" : "test-logical-model",
+  "lexicalModelName" : "test-lexical-model"
+}
