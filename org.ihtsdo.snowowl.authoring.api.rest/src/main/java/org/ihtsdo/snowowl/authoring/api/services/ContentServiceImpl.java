@@ -11,9 +11,10 @@ import com.b2international.snowowl.datastore.index.IndexQueryBuilder;
 import com.b2international.snowowl.datastore.index.IndexUtils;
 import com.b2international.snowowl.snomed.api.domain.ISnomedConcept;
 import com.b2international.snowowl.snomed.api.impl.SnomedConceptServiceImpl;
+import com.b2international.snowowl.snomed.api.impl.SnomedRelationshipServiceImpl;
 import com.b2international.snowowl.snomed.api.impl.SnomedTaskServiceImpl;
-import com.b2international.snowowl.snomed.api.rest.domain.ChangeRequest;
 import com.b2international.snowowl.snomed.api.rest.domain.SnomedConceptRestInput;
+import com.b2international.snowowl.snomed.api.rest.domain.SnomedRelationshipRestInput;
 import com.b2international.snowowl.snomed.datastore.SnomedConceptIndexEntry;
 import com.b2international.snowowl.snomed.datastore.browser.SnomedIndexBrowserConstants;
 import com.b2international.snowowl.snomed.datastore.index.SnomedConceptIndexQueryAdapter;
@@ -30,7 +31,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -45,6 +45,9 @@ public class ContentServiceImpl implements ContentService {
 
 	@Autowired
 	private SnomedConceptServiceImpl snomedConceptService;
+
+	@Autowired
+	private SnomedRelationshipServiceImpl snomedRelationshipService;
 
 	@Autowired
 	private SnomedTaskServiceImpl taskService;
@@ -89,18 +92,24 @@ public class ContentServiceImpl implements ContentService {
 		LexicalModel lexicalModel = lexicalModelService.loadModel(template.getLexicalModelName());
 		Assert.isTrue(lexicalModel != null, "Lexical model not found.");
 
+		logger.info("snomedConceptService {}", snomedConceptService);
+		logger.info("snomedRelationshipService {}", snomedRelationshipService);
+
 		List<WorkingConcept> concepts = content.getConcepts();
-		List<ChangeRequest<SnomedConceptRestInput>> changeRequests = new ArrayList<>();
-		for (WorkingConcept concept : concepts) {
-			ChangeRequest<SnomedConceptRestInput> changeRequest = contentMapper.getSnomedConceptRestInputChangeRequest(lexicalModel, concept);
-			changeRequests.add(changeRequest);
-		}
-		for (int i = 0; i < changeRequests.size(); i++) {
-			ChangeRequest<SnomedConceptRestInput> changeRequest = changeRequests.get(i);
-			String commitComment = "Batch create from template '" + template.getName() + "', concept " + (i + 1) + " of " + changeRequests.size();
-			logger.info("snomedConceptService {}", snomedConceptService);
-			ISnomedConcept iSnomedConcept = snomedConceptService.create(changeRequest.getChange().toComponentInput(MAIN_BRANCH, taskId), SNOWOWL_USER_ID, commitComment);
-			concepts.get(i).setId(iSnomedConcept.getId());
+		for (int i = 0; i < concepts.size(); i++) {
+			WorkingConcept concept = concepts.get(i);
+			String commitComment = "Batch create from template '" + template.getName() + "', concept " + (i + 1) + " of " + concepts.size();
+
+			// Create concept
+			SnomedConceptRestInput changeInput = contentMapper.getConceptInput(lexicalModel, concept);
+			ISnomedConcept iSnomedConcept = snomedConceptService.create(changeInput.toComponentInput(MAIN_BRANCH, taskId), SNOWOWL_USER_ID, commitComment);
+			concept.setId(iSnomedConcept.getId());
+
+			// Create relationships
+			List<SnomedRelationshipRestInput> relationshipInputs = contentMapper.getRelationshipInputs(concept);
+			for (SnomedRelationshipRestInput relationshipInput : relationshipInputs) {
+				snomedRelationshipService.create(relationshipInput.toComponentInput(MAIN_BRANCH, taskId), SNOWOWL_USER_ID, commitComment + " (relationship)");
+			}
 		}
 	}
 
