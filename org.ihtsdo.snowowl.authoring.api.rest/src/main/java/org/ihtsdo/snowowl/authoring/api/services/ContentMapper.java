@@ -2,9 +2,10 @@ package org.ihtsdo.snowowl.authoring.api.services;
 
 import com.b2international.snowowl.snomed.SnomedConstants;
 import com.b2international.snowowl.snomed.api.domain.Acceptability;
-import com.b2international.snowowl.snomed.api.rest.domain.ChangeRequest;
+import com.b2international.snowowl.snomed.api.domain.CharacteristicType;
 import com.b2international.snowowl.snomed.api.rest.domain.SnomedConceptRestInput;
 import com.b2international.snowowl.snomed.api.rest.domain.SnomedDescriptionRestInput;
+import com.b2international.snowowl.snomed.api.rest.domain.SnomedRelationshipRestInput;
 import org.ihtsdo.snowowl.authoring.api.model.lexical.LexicalModel;
 import org.ihtsdo.snowowl.authoring.api.model.work.WorkingConcept;
 import org.springframework.util.Assert;
@@ -16,7 +17,7 @@ import java.util.Map;
 
 public class ContentMapper {
 
-	public ChangeRequest<SnomedConceptRestInput> getSnomedConceptRestInputChangeRequest(LexicalModel lexicalModel, WorkingConcept concept) {
+	public SnomedConceptRestInput getConceptInput(LexicalModel lexicalModel, WorkingConcept concept) {
 		SnomedConceptRestInput change = new SnomedConceptRestInput();
 
 		List<String> isARelationships = concept.getIsARelationships();
@@ -24,8 +25,6 @@ public class ContentMapper {
 		String isAId = isARelationships.get(0);
 		change.setIsAId(isAId);
 		change.setParentId(isAId);
-		// TODO: Store other parents
-
 		change.setModuleId(SnomedConstants.Concepts.MODULE_SCT_CORE);
 
 		List<SnomedDescriptionRestInput> descriptions = new ArrayList<>();
@@ -36,9 +35,42 @@ public class ContentMapper {
 
 		change.setDescriptions(descriptions);
 
-		ChangeRequest<SnomedConceptRestInput> changeRequest = new ChangeRequest<>();
-		changeRequest.setChange(change);
-		return changeRequest;
+		return change;
+	}
+
+	public List<SnomedRelationshipRestInput> getRelationshipInputs(WorkingConcept concept) {
+		List<SnomedRelationshipRestInput> relationshipInputs = new ArrayList<>();
+
+		// Parents other than the first
+		List<String> isARelationships = concept.getIsARelationships();
+		for (int i = 1; i < isARelationships.size(); i++) {
+			String isARelationship = isARelationships.get(i);
+			SnomedRelationshipRestInput input = new SnomedRelationshipRestInput();
+			input.setCharacteristicType(CharacteristicType.STATED_RELATIONSHIP);
+			input.setTypeId(SnomedConstants.Concepts.IS_A);
+			input.setSourceId(concept.getId());
+			input.setDestinationId(isARelationship);
+			input.setModuleId(SnomedConstants.Concepts.MODULE_SCT_CORE);
+			relationshipInputs.add(input);
+		}
+
+		// Attributes
+		for (int group = 0; group < concept.getAttributeGroups().size(); group++) {
+			Map<String, String> attributes = concept.getAttributeGroups().get(group);
+			for (String attributeType : attributes.keySet()) {
+				String attributeValue = attributes.get(attributeType);
+				SnomedRelationshipRestInput input = new SnomedRelationshipRestInput();
+				input.setCharacteristicType(CharacteristicType.STATED_RELATIONSHIP);
+				input.setTypeId(attributeType);
+				input.setSourceId(concept.getId());
+				input.setDestinationId(attributeValue);
+				input.setGroup(group);
+				input.setModuleId(SnomedConstants.Concepts.MODULE_SCT_CORE);
+				relationshipInputs.add(input);
+			}
+		}
+
+		return relationshipInputs;
 	}
 
 	private SnomedDescriptionRestInput getFsn(LexicalModel lexicalModel, String term) {
@@ -70,5 +102,4 @@ public class ContentMapper {
 		fsn.setTerm(builtTerm);
 		return fsn;
 	}
-
 }

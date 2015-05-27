@@ -8,6 +8,7 @@
 	<bean class="org.ihtsdo.snowowl.authoring.api.services.ContentServiceImpl"/>
 	<bean class="com.b2international.snowowl.snomed.api.impl.SnomedConceptServiceImpl" />
 	<bean class="com.b2international.snowowl.snomed.api.impl.SnomedDescriptionServiceImpl" />
+	<bean class="com.b2international.snowowl.snomed.api.impl.SnomedRelationshipServiceImpl" />
 	<bean class="com.b2international.snowowl.snomed.api.impl.SnomedTaskServiceImpl" />
 
 	<import resource="web-context.xml" />
