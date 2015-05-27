@@ -13,7 +13,9 @@
     	<bundle.symbolicName>${project.artifactId};singleton:=true</bundle.symbolicName>
     	<bundle.namespace>${project.artifactId}</bundle.namespace>
     	<bundle.webcontext>/snowowl/ihtsdo-authoring</bundle.webcontext>
+    	
 		<org.ihtsdo.otf.im-version>0.0.1-SNAPSHOT</org.ihtsdo.otf.im-version>
+		
 	</properties>
 
 	<dependencies>
@@ -193,18 +195,18 @@
 		</dependency>
 		<!-- IMS -->
 		<dependency>
-		  <groupId>org.ihtsdo.otf</groupId>
-		  <artifactId>ihtsdo-crowd-resources</artifactId>
-		  <version>${org.ihtsdo.otf.im-version}</version>
-      	  <classifier>resources</classifier>
-          <type>zip</type>
-          <scope>provided</scope>		  
+		  	<groupId>org.ihtsdo.otf</groupId>
+		  	<artifactId>ihtsdo-crowd-resources</artifactId>
+		  	<version>${org.ihtsdo.otf.im-version}</version>
+      	  	<classifier>resources</classifier>
+          	<type>zip</type>
+          	<scope>provided</scope>		  
 		</dependency>
 		
 		<dependency>
-		  <groupId>org.ihtsdo.otf</groupId>
-		  <artifactId>ihtsdo-crowd-bridge</artifactId>
-		  <version>${org.ihtsdo.otf.im-version}</version>
+		  	<groupId>org.ihtsdo.otf</groupId>
+		  	<artifactId>ihtsdo-crowd-bridge</artifactId>
+		  	<version>${org.ihtsdo.otf.im-version}</version>
 		</dependency>
 		
 		
@@ -221,14 +223,15 @@
 	<build>
 	
 		<resources>
-	      <resource>
-	        <directory>${basedir}/src/main/resources</directory>
-	      </resource>
-	      <resource>
-	        <directory>${project.build.directory}/generated-resources</directory>
-	        <filtering>true</filtering>
-	      </resource>
-	    </resources>  
+	      	<resource>
+	        	<directory>${basedir}/src/main/resources</directory>
+	      	</resource>
+	      	<resource>
+	        	<directory>${project.build.directory}/generated-resources</directory>
+	        	<filtering>true</filtering>
+	      	</resource>
+	    </resources> 
+	     
 		<plugins>
 			<plugin>
 				<groupId>org.eclipse.tycho</groupId>
@@ -382,14 +385,6 @@
 			      	</execution>	               
 	           </executions>
 	       </plugin>
-			<plugin>
-		       <groupId>org.apache.maven.plugins</groupId>
-		       <artifactId>maven-dependency-plugin</artifactId>
-		       <executions>
-
-		       </executions>
-		     </plugin>	       
-	       
 		</plugins>
 	</build>
 	
