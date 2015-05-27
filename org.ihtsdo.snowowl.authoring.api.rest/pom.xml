@@ -13,6 +13,7 @@
     	<bundle.symbolicName>${project.artifactId};singleton:=true</bundle.symbolicName>
     	<bundle.namespace>${project.artifactId}</bundle.namespace>
     	<bundle.webcontext>/snowowl/ihtsdo-authoring</bundle.webcontext>
+		<org.ihtsdo.otf.im-version>0.0.1-SNAPSHOT</org.ihtsdo.otf.im-version>
 	</properties>
 
 	<dependencies>
@@ -190,6 +191,24 @@
 			<artifactId>jira-client</artifactId>
 			<version>0.5</version>
 		</dependency>
+		<!-- IMS -->
+		<dependency>
+		  <groupId>org.ihtsdo.otf</groupId>
+		  <artifactId>ihtsdo-crowd-resources</artifactId>
+		  <version>${org.ihtsdo.otf.im-version}</version>
+      	  <classifier>resources</classifier>
+          <type>zip</type>
+          <scope>provided</scope>		  
+		</dependency>
+		
+		<dependency>
+		  <groupId>org.ihtsdo.otf</groupId>
+		  <artifactId>ihtsdo-crowd-bridge</artifactId>
+		  <version>${org.ihtsdo.otf.im-version}</version>
+		</dependency>
+		
+		
+		
 		<!-- Testing -->
 		<dependency>
 			<groupId>org.slf4j</groupId>
@@ -200,6 +219,16 @@
 	</dependencies>
 
 	<build>
+	
+		<resources>
+	      <resource>
+	        <directory>${basedir}/src/main/resources</directory>
+	      </resource>
+	      <resource>
+	        <directory>${project.build.directory}/generated-resources</directory>
+	        <filtering>true</filtering>
+	      </resource>
+	    </resources>  
 		<plugins>
 			<plugin>
 				<groupId>org.eclipse.tycho</groupId>
@@ -331,9 +360,115 @@
 	                       <excludeScope>provided</excludeScope>
 	                   </configuration>
 	               </execution>
+		           <execution>
+	            		<id>unpack-crowd-resources</id>
+	   		          	<goals>
+			           		<goal>unpack-dependencies</goal>
+			           	</goals>
+			           	<phase>generate-resources</phase>
+			           	<configuration>
+				          	<outputDirectory>${project.build.directory}/generated-resources</outputDirectory>
+				          	<includeGroupIds>org.ihtsdo.otf</includeGroupIds>
+				          	<includeArtifacIds>ihtsdo-crowd-resources</includeArtifacIds>
+				          	<excludeArtifactIds>*</excludeArtifactIds>
+				          	<excludeTransitive>true</excludeTransitive>
+				          	<scope>provided</scope>
+				          	<includes>crowd*.properties,
+				          		application-im-common-security-config.xml,
+				          		applicationContext-CrowdClient.xml,
+				          		crowd-ehcache.xml
+	  			          	</includes>
+			           	</configuration>
+			      	</execution>	               
 	           </executions>
 	       </plugin>
+			<plugin>
+		       <groupId>org.apache.maven.plugins</groupId>
+		       <artifactId>maven-dependency-plugin</artifactId>
+		       <executions>
+
+		       </executions>
+		     </plugin>	       
+	       
 		</plugins>
 	</build>
+	
+    <profiles>
+        <profile>
+            <id>dev</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <phase>generate-resources</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <tasks>
+                                        <delete file="${project.build.directory}/generated-resources/crowd.properties" />
+                                        <copy file="${project.build.directory}/generated-resources/crowd-dev.properties" tofile="${project.build.directory}/generated-resources/crowd.properties" />
+                                    </tasks>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>prod</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <phase>generate-resources</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <tasks>
+                                        <delete file="${project.build.directory}/generated-resources/crowd.properties" />
+                                        <copy file="${project.build.directory}/generated-resources/crowd-prod.properties" tofile="${project.build.directory}/generated-resources/crowd.properties" />
+                                    </tasks>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
 
+        <profile>
+            <id>uat</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <phase>generate-resources</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <tasks>
+                                        <delete file="${project.build.directory}/generated-resources/crowd.properties" />
+                                        <copy file="${project.build.directory}/generated-resources/crowd-uat.properties" tofile="${project.build.directory}/generated-resources/crowd.properties" />
+                                    </tasks>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
