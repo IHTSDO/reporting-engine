@@ -20,7 +20,7 @@ public class ContentMapper {
 	public SnomedConceptRestInput getConceptInput(LexicalModel lexicalModel, WorkingConcept concept) {
 		SnomedConceptRestInput change = new SnomedConceptRestInput();
 
-		List<String> isARelationships = concept.getIsARelationships();
+		List<String> isARelationships = concept.getParents();
 		Assert.isTrue(!isARelationships.isEmpty(), "At least one parent concept is required.");
 		String isAId = isARelationships.get(0);
 		change.setIsAId(isAId);
@@ -42,7 +42,7 @@ public class ContentMapper {
 		List<SnomedRelationshipRestInput> relationshipInputs = new ArrayList<>();
 
 		// Parents other than the first
-		List<String> isARelationships = concept.getIsARelationships();
+		List<String> isARelationships = concept.getParents();
 		for (int i = 1; i < isARelationships.size(); i++) {
 			String isARelationship = isARelationships.get(i);
 			SnomedRelationshipRestInput input = new SnomedRelationshipRestInput();

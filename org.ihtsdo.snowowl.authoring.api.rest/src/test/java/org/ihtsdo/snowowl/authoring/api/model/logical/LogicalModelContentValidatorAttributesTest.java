@@ -30,7 +30,7 @@ public class LogicalModelContentValidatorAttributesTest {
 		attributeGroup.put("100", "123");
 
 		ConceptValidationResult result = validateSingle(logicalModel, content);
-		List<AttributeValidationResult> attributeGroupMessages = result.getAttributeGroupsMessages().get(0);
+		List<AttributeValidationResult> attributeGroupMessages = result.getAttributesMessages().get(0);
 		Assert.assertEquals(1, attributeGroupMessages.size());
 		AttributeValidationResult attributeMessages = attributeGroupMessages.get(0);
 		Assert.assertEquals("", attributeMessages.getTypeMessage());
@@ -45,7 +45,7 @@ public class LogicalModelContentValidatorAttributesTest {
 		attributeGroup.put("100", "1234");
 
 		ConceptValidationResult result = validateSingle(logicalModel, content);
-		List<AttributeValidationResult> attributeGroupMessages = result.getAttributeGroupsMessages().get(0);
+		List<AttributeValidationResult> attributeGroupMessages = result.getAttributesMessages().get(0);
 		Assert.assertEquals(1, attributeGroupMessages.size());
 		AttributeValidationResult attributeMessages = attributeGroupMessages.get(0);
 		Assert.assertEquals("", attributeMessages.getTypeMessage());
@@ -61,7 +61,7 @@ public class LogicalModelContentValidatorAttributesTest {
 		attributeGroup.put("100", "1234");
 
 		ConceptValidationResult result = validateSingle(logicalModel, content);
-		List<AttributeValidationResult> attributeGroupMessages = result.getAttributeGroupsMessages().get(0);
+		List<AttributeValidationResult> attributeGroupMessages = result.getAttributesMessages().get(0);
 		Assert.assertEquals(1, attributeGroupMessages.size());
 		AttributeValidationResult attributeMessages = attributeGroupMessages.get(0);
 		Assert.assertEquals("", attributeMessages.getTypeMessage());
@@ -77,7 +77,7 @@ public class LogicalModelContentValidatorAttributesTest {
 		attributeGroup.put("100", "12444");
 
 		ConceptValidationResult result = validateSingle(logicalModel, content);
-		List<AttributeValidationResult> attributeGroupMessages = result.getAttributeGroupsMessages().get(0);
+		List<AttributeValidationResult> attributeGroupMessages = result.getAttributesMessages().get(0);
 		Assert.assertEquals(1, attributeGroupMessages.size());
 		AttributeValidationResult attributeMessages = attributeGroupMessages.get(0);
 		Assert.assertEquals("", attributeMessages.getTypeMessage());
@@ -98,7 +98,7 @@ public class LogicalModelContentValidatorAttributesTest {
 		attributeGroup.put("200", "302"); // Descendant
 
 		ConceptValidationResult result = validateSingle(logicalModel, content);
-		List<AttributeValidationResult> attributeGroupMessages = result.getAttributeGroupsMessages().get(0);
+		List<AttributeValidationResult> attributeGroupMessages = result.getAttributesMessages().get(0);
 		Assert.assertEquals(2, attributeGroupMessages.size());
 		AttributeValidationResult attributeMessages1 = attributeGroupMessages.get(0);
 		Assert.assertEquals("", attributeMessages1.getTypeMessage());
@@ -122,7 +122,7 @@ public class LogicalModelContentValidatorAttributesTest {
 		attributeGroup.put("200", "3000");
 
 		ConceptValidationResult result = validateSingle(logicalModel, content);
-		List<AttributeValidationResult> attributeGroupMessages = result.getAttributeGroupsMessages().get(0);
+		List<AttributeValidationResult> attributeGroupMessages = result.getAttributesMessages().get(0);
 		Assert.assertEquals(2, attributeGroupMessages.size());
 		AttributeValidationResult attributeMessages1 = attributeGroupMessages.get(0);
 		Assert.assertEquals("", attributeMessages1.getTypeMessage());

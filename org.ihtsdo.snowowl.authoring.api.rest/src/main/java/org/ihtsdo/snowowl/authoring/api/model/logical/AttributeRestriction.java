@@ -1,5 +1,7 @@
 package org.ihtsdo.snowowl.authoring.api.model.logical;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class AttributeRestriction {
 
 	private String typeConceptId;
@@ -16,6 +18,7 @@ public class AttributeRestriction {
 		this.rangeConceptId = rangeConceptId;
 	}
 
+	@JsonProperty(value = "attribute")
 	public String getTypeConceptId() {
 		return typeConceptId;
 	}
@@ -24,6 +27,7 @@ public class AttributeRestriction {
 		this.typeConceptId = typeConceptId;
 	}
 
+	@JsonProperty(value = "range")
 	public RangeRelationType getRangeRelationType() {
 		return rangeRelationType;
 	}
@@ -32,6 +36,7 @@ public class AttributeRestriction {
 		this.rangeRelationType = rangeRelationType;
 	}
 
+	@JsonProperty(value = "value")
 	public String getRangeConceptId() {
 		return rangeConceptId;
 	}

@@ -2,8 +2,8 @@
   "concepts": [
     {
       "term": "Test",
-      "isARelationships": ["128927009"],
-      "attributeGroups": [
+      "parents": ["128927009"],
+      "attributes": [
         {
           "260686004": "312251004",
           "405813007": "442083009"

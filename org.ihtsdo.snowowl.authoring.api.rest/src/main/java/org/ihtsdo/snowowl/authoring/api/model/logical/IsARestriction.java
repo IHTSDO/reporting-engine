@@ -1,5 +1,7 @@
 package org.ihtsdo.snowowl.authoring.api.model.logical;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class IsARestriction {
 
 	private String conceptId;
@@ -13,6 +15,7 @@ public class IsARestriction {
 		this.rangeRelationType = rangeRelationType;
 	}
 
+	@JsonProperty(value = "parent")
 	public String getConceptId() {
 		return conceptId;
 	}
