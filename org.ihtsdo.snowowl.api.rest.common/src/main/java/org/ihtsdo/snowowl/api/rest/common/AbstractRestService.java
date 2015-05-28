@@ -20,10 +20,12 @@ import com.b2international.snowowl.api.exception.ConflictException;
 import com.b2international.snowowl.api.exception.IllegalQueryParameterException;
 import com.b2international.snowowl.api.exception.NotFoundException;
 import com.fasterxml.jackson.databind.JsonMappingException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -35,6 +37,7 @@ public abstract class AbstractRestService {
 
 	private static final Logger LOG = LoggerFactory.getLogger(AbstractRestService.class);
 	private static final String GENERIC_USER_MESSAGE = "Something went wrong during the processing of your request.";
+	private static final String ACCESS_DENIED_MESSAGE = "You does not have required privileges to perform this operation.";
 
 	/**
 	 * The currently supported versioned media type of the snowowl RESTful API.
@@ -132,6 +135,19 @@ public abstract class AbstractRestService {
 			return ex.getMessage() == null ? "Not implemented" : ex.getMessage();
 		}
 		return ex.getMessage();
+	}
+	
+	/**
+	 *  org.springframework.security.access.AccessDeniedException 
+	 * @param ex
+	 * @return {@link org.ihtsdo.snowowl.api.rest.common.RestApiError} instance with detailed messages
+	 */
+	@ExceptionHandler
+	@ResponseStatus(HttpStatus.UNAUTHORIZED)
+	public @ResponseBody
+	RestApiError handle(final AccessDeniedException ex) {
+		LOG.error("Exception during processing of a request", ex);
+		return RestApiError.of(HttpStatus.UNAUTHORIZED.value()).message(ACCESS_DENIED_MESSAGE).developerMessage(getDeveloperMessage(ex)).build();
 	}
 
 }
