@@ -37,7 +37,7 @@ public abstract class AbstractRestService {
 
 	private static final Logger LOG = LoggerFactory.getLogger(AbstractRestService.class);
 	private static final String GENERIC_USER_MESSAGE = "Something went wrong during the processing of your request.";
-	private static final String ACCESS_DENIED_MESSAGE = "You does not have required privileges to perform this operation.";
+	private static final String ACCESS_DENIED_MESSAGE = "You do not have required privileges to perform this operation.";
 
 	/**
 	 * The currently supported versioned media type of the snowowl RESTful API.
