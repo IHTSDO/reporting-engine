@@ -12,13 +12,13 @@
 			auto-config="false" 				
 			entry-point-ref="crowdAuthenticationProcessingFilterEntryPoint"
 		>
-		<intercept-url pattern="/api-docs/**" access="IS_AUTHENTICATED_ANONYMOUSLY" />
-		<intercept-url pattern="/org/ihtsdo/snowowl/authoring/api/rest" access="ROLE_USER" />
+		<intercept-url pattern="/api-docs/**" access="ROLE_ANONYMOUS" />
+		<intercept-url pattern="/org/ihtsdo/snowowl/authoring/api/rest" access="ROLE_ihtsdo-tba-user" /> <!-- specific function more advanced role. See controller methods -->
 	</http>
 
 	<global-method-security secured-annotations="enabled" proxy-target-class="true" />
 	
- 	<import resource="classpath:applicationContext-CrowdClient.xml" />
- 	<import resource="classpath:application-im-common-security-config.xml" />
+ 	<beans:import resource="classpath:applicationContext-CrowdClient.xml" />
+ 	<beans:import resource="classpath:application-im-common-security-config.xml" />
 
 </beans:beans>

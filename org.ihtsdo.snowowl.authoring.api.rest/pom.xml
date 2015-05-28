@@ -208,8 +208,11 @@
 		  	<artifactId>ihtsdo-crowd-bridge</artifactId>
 		  	<version>${org.ihtsdo.otf.im-version}</version>
 		</dependency>
-		
-		
+       <dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>httpclient</artifactId>
+			<version>4.3.6</version>
+	   </dependency>		
 		
 		<!-- Testing -->
 		<dependency>

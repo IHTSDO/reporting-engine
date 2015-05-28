@@ -2,7 +2,9 @@ package org.ihtsdo.snowowl.authoring.api.rest;
 
 import com.b2international.snowowl.api.domain.IComponentRef;
 import com.wordnik.swagger.annotations.*;
+
 import net.rcarz.jiraclient.JiraException;
+
 import org.ihtsdo.snowowl.api.rest.common.AbstractRestService;
 import org.ihtsdo.snowowl.api.rest.common.AbstractSnomedRestService;
 import org.ihtsdo.snowowl.authoring.api.Constants;
@@ -24,6 +26,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -59,6 +62,7 @@ public class AuthoringController extends AbstractSnomedRestService {
 			@ApiResponse(code = 406, message = "Logical model is not valid", response = List.class),
 	})
 	@RequestMapping(value="/models/logical", method= RequestMethod.POST)
+	@PreAuthorize("hasRole('ROLE_ihtsdo-author')")
 	public ResponseEntity saveLogicalModel(@RequestBody final LogicalModel logicalModel) throws IOException {
 		logger.info("Create/update logicalModel {}", logicalModel);
 		List<String> errorMessages = logicalModelService.validateLogicalModel(logicalModel);

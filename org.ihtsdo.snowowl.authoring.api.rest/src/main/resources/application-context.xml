@@ -14,5 +14,6 @@
 	<import resource="web-context.xml" />
 
 	<bean class="org.ihtsdo.snowowl.api.rest.common.ServicesConfiguration" />
+	<bean class="com.mangofactory.swagger.configuration.JacksonSwaggerSupport" init-method="setup" /> <!-- to fix object mapper initialization post SSO -->
 
 </beans>
