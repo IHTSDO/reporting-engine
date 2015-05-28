@@ -62,7 +62,7 @@ public class AuthoringController extends AbstractSnomedRestService {
 			@ApiResponse(code = 406, message = "Logical model is not valid", response = List.class),
 	})
 	@RequestMapping(value="/models/logical", method= RequestMethod.POST)
-	@PreAuthorize("hasRole('ROLE_ihtsdo-author')")
+	@PreAuthorize("hasRole('ROLE_ihtsdo-tba-author')")
 	public ResponseEntity saveLogicalModel(@RequestBody final LogicalModel logicalModel) throws IOException {
 		logger.info("Create/update logicalModel {}", logicalModel);
 		List<String> errorMessages = logicalModelService.validateLogicalModel(logicalModel);
@@ -79,7 +79,7 @@ public class AuthoringController extends AbstractSnomedRestService {
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/models/logical", method= RequestMethod.GET)
-	@PreAuthorize("hasRole('ROLE_ihtsdo-author')")
+	@PreAuthorize("hasRole('ROLE_ihtsdo-tba-author')")
 	public List<String> listLogicalModelNames() throws IOException {
 		return logicalModelService.listLogicalModelNames();
 	}
@@ -91,7 +91,7 @@ public class AuthoringController extends AbstractSnomedRestService {
 
 	})
 	@RequestMapping(value="/models/logical/{logicalModelName}", method= RequestMethod.GET)
-	@PreAuthorize("hasRole('ROLE_ihtsdo-author')")
+	@PreAuthorize("hasRole('ROLE_ihtsdo-tba-author')")
 	public LogicalModel loadLogicalModel(@PathVariable final String logicalModelName) throws IOException {
 		return logicalModelService.loadLogicalModelOrThrow(logicalModelName);
 	}
@@ -105,7 +105,7 @@ public class AuthoringController extends AbstractSnomedRestService {
 			@ApiResponse(code = 406, message = "Lexical model is not valid", response = List.class),
 	})
 	@RequestMapping(value="/models/lexical", method= RequestMethod.POST)
-	@PreAuthorize("hasRole('ROLE_ihtsdo-author')")
+	@PreAuthorize("hasRole('ROLE_ihtsdo-tba-author')")
 	public ResponseEntity saveLexicalModel(@RequestBody final LexicalModel lexicalModel) throws IOException {
 		logger.info("Create/update lexicalModel {}", lexicalModel);
 		List<String> errorMessages = lexicalModelService.validateModel(lexicalModel);
@@ -122,7 +122,7 @@ public class AuthoringController extends AbstractSnomedRestService {
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/models/lexical", method= RequestMethod.GET)
-	@PreAuthorize("hasRole('ROLE_ihtsdo-author')")
+	@PreAuthorize("hasRole('ROLE_ihtsdo-tba-author')")
 	public List<String> listLexicalModelNames() throws IOException {
 		return lexicalModelService.listModelNames();
 	}
@@ -134,7 +134,7 @@ public class AuthoringController extends AbstractSnomedRestService {
 
 	})
 	@RequestMapping(value="/models/lexical/{lexicalModelName}", method= RequestMethod.GET)
-	@PreAuthorize("hasRole('ROLE_ihtsdo-author')")
+	@PreAuthorize("hasRole('ROLE_ihtsdo-tba-author')")
 	public LexicalModel loadLexicalModel(@PathVariable final String lexicalModelName) throws IOException {
 		return lexicalModelService.loadModelOrThrow(lexicalModelName);
 	}
@@ -148,7 +148,7 @@ public class AuthoringController extends AbstractSnomedRestService {
 			@ApiResponse(code = 406, message = "Template is not valid", response = String.class)
 	})
 	@RequestMapping(value="/templates", method= RequestMethod.POST)
-	@PreAuthorize("hasRole('ROLE_ihtsdo-author')")
+	@PreAuthorize("hasRole('ROLE_ihtsdo-tba-author')")
 	public ResponseEntity validateContent(@RequestBody Template template) throws IOException {
 		String errorMessage = templateService.saveTemplate(template);
 		if (errorMessage == null || errorMessage.isEmpty()) {
@@ -163,7 +163,7 @@ public class AuthoringController extends AbstractSnomedRestService {
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/templates", method= RequestMethod.GET)
-	@PreAuthorize("hasRole('ROLE_ihtsdo-author')")
+	@PreAuthorize("hasRole('ROLE_ihtsdo-tba-author')")
 	public List<String> listTemplateNames() throws IOException {
 		return templateService.listModelNames();
 	}
@@ -175,7 +175,7 @@ public class AuthoringController extends AbstractSnomedRestService {
 
 	})
 	@RequestMapping(value="/templates/{templateName}", method= RequestMethod.GET)
-	@PreAuthorize("hasRole('ROLE_ihtsdo-author')")
+	@PreAuthorize("hasRole('ROLE_ihtsdo-tba-author')")
 	public Template loadTemplateModel(@PathVariable final String templateName) throws IOException {
 		return templateService.loadTemplateOrThrow(templateName);
 	}
@@ -189,7 +189,7 @@ public class AuthoringController extends AbstractSnomedRestService {
 			@ApiResponse(code = 404, message = "Template not found")
 	})
 	@RequestMapping(value="/templates/{templateName}/work", method= RequestMethod.POST)
-	@PreAuthorize("hasRole('ROLE_ihtsdo-author')")
+	@PreAuthorize("hasRole('ROLE_ihtsdo-tba-author')")
 	public ResponseEntity<WorkingContent> saveWork(@PathVariable final String templateName,
 			@RequestBody WorkingContent content, UriComponentsBuilder uriBuilder) throws IOException {
 		authoringService.persistWork(templateName, content);
@@ -204,7 +204,7 @@ public class AuthoringController extends AbstractSnomedRestService {
 			@ApiResponse(code = 404, message = "Template not found")
 	})
 	@RequestMapping(value="/templates/{templateName}/work/{workId}", method= RequestMethod.PUT)
-	@PreAuthorize("hasRole('ROLE_ihtsdo-author')")
+	@PreAuthorize("hasRole('ROLE_ihtsdo-tba-author')")
 	public WorkingContent updateWork(@PathVariable final String templateName,
 			@PathVariable final String workId,
 			@RequestBody WorkingContent content) throws IOException {
@@ -220,7 +220,7 @@ public class AuthoringController extends AbstractSnomedRestService {
 
 	})
 	@RequestMapping(value="/templates/{templateName}/work/{workId}", method= RequestMethod.GET)
-	@PreAuthorize("hasRole('ROLE_ihtsdo-author')")
+	@PreAuthorize("hasRole('ROLE_ihtsdo-tba-author')")
 	public WorkingContent loadWork(@PathVariable final String templateName, @PathVariable final String workId) throws IOException {
 		return authoringService.loadWorkOrThrow(templateName, workId);
 	}
@@ -231,7 +231,7 @@ public class AuthoringController extends AbstractSnomedRestService {
 			@ApiResponse(code = 404, message = "Template or working content not found")
 	})
 	@RequestMapping(value="/templates/{templateName}/work/{workId}/validation", method= RequestMethod.GET)
-	@PreAuthorize("hasRole('ROLE_ihtsdo-author')")
+	@PreAuthorize("hasRole('ROLE_ihtsdo-tba-author')")
 	public ContentValidationResult validateContent(@PathVariable final String templateName,
 			@PathVariable final String workId) throws IOException {
 
@@ -245,7 +245,7 @@ public class AuthoringController extends AbstractSnomedRestService {
 			@ApiResponse(code = 404, message = "Template or working content not found")
 	})
 	@RequestMapping(value="/templates/{templateName}/work/{workId}/commit", method= RequestMethod.POST)
-	@PreAuthorize("hasRole('ROLE_ihtsdo-author')")
+	@PreAuthorize("hasRole('ROLE_ihtsdo-tba-author')")
 	public ResponseEntity commitContent(@PathVariable final String templateName,
 			@PathVariable final String workId) throws IOException, JiraException {
 
@@ -267,7 +267,7 @@ public class AuthoringController extends AbstractSnomedRestService {
 			@ApiResponse(code = 404, message = "Concept not found")
 	})
 	@RequestMapping(value="/descendants/{conceptId}", method= RequestMethod.GET)
-	@PreAuthorize("hasRole('ROLE_ihtsdo-author')")
+	@PreAuthorize("hasRole('ROLE_ihtsdo-tba-author')")
 	public Set<String> getConcepts(
 			@ApiParam(value = "The concept identifier")
 			@PathVariable(value = "conceptId")
