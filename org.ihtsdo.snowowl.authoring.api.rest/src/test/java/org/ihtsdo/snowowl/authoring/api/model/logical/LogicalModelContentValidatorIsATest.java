@@ -31,7 +31,7 @@ public class LogicalModelContentValidatorIsATest {
 
 		ConceptValidationResult result = validateSingle(logicalModel, content);
 
-		Assert.assertEquals("", result.getIsARelationshipsMessages().get(0));
+		Assert.assertEquals("", result.getParentsMessages().get(0));
 	}
 
 	@Test
@@ -41,7 +41,7 @@ public class LogicalModelContentValidatorIsATest {
 
 		ConceptValidationResult result = validateSingle(logicalModel, content);
 
-		Assert.assertEquals("IsA relation must be '123'.", result.getIsARelationshipsMessages().get(0));
+		Assert.assertEquals("IsA relation must be '123'.", result.getParentsMessages().get(0));
 	}
 
 	@Test
@@ -52,7 +52,7 @@ public class LogicalModelContentValidatorIsATest {
 
 		ConceptValidationResult result = validateSingle(logicalModel, content);
 
-		Assert.assertEquals("", result.getIsARelationshipsMessages().get(0));
+		Assert.assertEquals("", result.getParentsMessages().get(0));
 	}
 
 	@Test
@@ -63,7 +63,7 @@ public class LogicalModelContentValidatorIsATest {
 
 		ConceptValidationResult result = validateSingle(logicalModel, content);
 
-		Assert.assertEquals("IsA relation must be a descendant of '123'.", result.getIsARelationshipsMessages().get(0));
+		Assert.assertEquals("IsA relation must be a descendant of '123'.", result.getParentsMessages().get(0));
 	}
 
 	@Test
@@ -74,7 +74,7 @@ public class LogicalModelContentValidatorIsATest {
 
 		ConceptValidationResult result = validateSingle(logicalModel, content);
 
-		Assert.assertEquals("", result.getIsARelationshipsMessages().get(0));
+		Assert.assertEquals("", result.getParentsMessages().get(0));
 	}
 
 	@Test
@@ -85,7 +85,7 @@ public class LogicalModelContentValidatorIsATest {
 
 		ConceptValidationResult result = validateSingle(logicalModel, content);
 
-		Assert.assertEquals("IsA relation must be a descendant of or equal to '123'.", result.getIsARelationshipsMessages().get(0));
+		Assert.assertEquals("IsA relation must be a descendant of or equal to '123'.", result.getParentsMessages().get(0));
 	}
 
 	@Test
@@ -97,7 +97,7 @@ public class LogicalModelContentValidatorIsATest {
 		ConceptValidationResult result = validateSingle(logicalModel, content);
 
 		Assert.assertEquals("IsA relation must be '123'.\n" +
-				"There are less isA relationships than in the logical model.", result.getIsARelationshipsMessages().get(0));
+				"There are less isA relationships than in the logical model.", result.getParentsMessages().get(0));
 	}
 
 	@Test
@@ -109,7 +109,7 @@ public class LogicalModelContentValidatorIsATest {
 
 		ConceptValidationResult result = validateSingle(logicalModel, content);
 
-		List<String> isARelationshipsMessages = result.getIsARelationshipsMessages();
+		List<String> isARelationshipsMessages = result.getParentsMessages();
 		Assert.assertEquals(2, isARelationshipsMessages.size());
 		Assert.assertEquals("IsA relation must be '123'.", isARelationshipsMessages.get(0));
 		Assert.assertEquals("There are more isA relationships than in the logical model.", isARelationshipsMessages.get(1));

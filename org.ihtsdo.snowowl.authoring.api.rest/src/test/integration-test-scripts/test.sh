@@ -2,6 +2,7 @@
 set -e
 
 baseUrl="http://localhost:8080/snowowl/ihtsdo-authoring"
+# baseUrl="https://uat-term.ihtsdotools.org/snowowl/ihtsdo-authoring"
 response=".response.txt"
 
 function runTest {

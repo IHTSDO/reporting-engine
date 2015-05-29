@@ -1,5 +1,5 @@
 {
-  "name" : "test-lexical-model",
+  "modelName" : "test-lexical-model",
   "fsn" : {
     "prefix" : "Computed tomography of ",
     "postfix" : " (procedure)",
