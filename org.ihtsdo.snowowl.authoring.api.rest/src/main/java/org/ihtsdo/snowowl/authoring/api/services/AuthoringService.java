@@ -12,6 +12,7 @@ import org.ihtsdo.snowowl.authoring.api.model.work.WorkingContent;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Set;
 
 public class AuthoringService {
@@ -83,6 +84,11 @@ public class AuthoringService {
 	public WorkingContent loadWorkOrThrow(String templateName, String workId) throws IOException {
 		Template template = templateService.loadTemplateOrThrow(templateName);
 		return workingContentService.loadOrThrow(template, workId);
+	}
+
+	public List<String> listWork(String templateName) throws IOException {
+		Template template = templateService.loadTemplateOrThrow(templateName);
+		return workingContentService.list(template);
 	}
 
 	private LogicalModel getLogicalModel(String logicalModelName) throws IOException {

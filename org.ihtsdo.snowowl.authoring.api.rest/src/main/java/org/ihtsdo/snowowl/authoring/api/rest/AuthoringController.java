@@ -173,7 +173,7 @@ public class AuthoringController extends AbstractSnomedRestService {
 
 	@ApiOperation(value="Create content work.")
 	@ApiResponses({
-			@ApiResponse(code = 201, message = "CREATED", response = WorkingConcept.class),
+			@ApiResponse(code = 201, message = "CREATED", response = WorkingContent.class),
 			@ApiResponse(code = 404, message = "Template not found")
 	})
 	@RequestMapping(value="/templates/{templateName}/work", method= RequestMethod.POST)
@@ -187,7 +187,7 @@ public class AuthoringController extends AbstractSnomedRestService {
 
 	@ApiOperation(value="Update content work.")
 	@ApiResponses({
-			@ApiResponse(code = 200, message = "OK", response = WorkingConcept.class),
+			@ApiResponse(code = 200, message = "OK", response = WorkingContent.class),
 			@ApiResponse(code = 404, message = "Template not found")
 	})
 	@RequestMapping(value="/templates/{templateName}/work/{workId}", method= RequestMethod.PUT)
@@ -201,7 +201,7 @@ public class AuthoringController extends AbstractSnomedRestService {
 
 	@ApiOperation(value="Retrieve working content.")
 	@ApiResponses({
-			@ApiResponse(code = 200, message = "OK", response = Template.class),
+			@ApiResponse(code = 200, message = "OK", response = WorkingContent.class),
 			@ApiResponse(code = 404, message = "Content work not found")
 
 	})
@@ -210,9 +210,19 @@ public class AuthoringController extends AbstractSnomedRestService {
 		return authoringService.loadWorkOrThrow(templateName, workId);
 	}
 
+	@ApiOperation(value="List working content.")
+	@ApiResponses({
+			@ApiResponse(code = 200, message = "OK", response = List.class)
+
+	})
+	@RequestMapping(value="/templates/{templateName}/work", method= RequestMethod.GET)
+	public List<String> listWork(@PathVariable final String templateName) throws IOException {
+		return authoringService.listWork(templateName);
+	}
+
 	@ApiOperation(value="Validate working content.")
 	@ApiResponses({
-			@ApiResponse(code = 200, message = "OK", response = WorkingConcept.class),
+			@ApiResponse(code = 200, message = "OK", response = WorkingContent.class),
 			@ApiResponse(code = 404, message = "Template or working content not found")
 	})
 	@RequestMapping(value="/templates/{templateName}/work/{workId}/validation", method= RequestMethod.GET)
