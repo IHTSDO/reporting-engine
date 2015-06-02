@@ -3,7 +3,7 @@
 	<parent>
 		<groupId>org.ihtsdo.snowowl</groupId>
 		<artifactId>ihtsdo-snowowl-parent</artifactId>
-		<version>4.1.4-SNAPSHOT</version>
+		<version>4.1.5-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>org.ihtsdo.snowowl.authoring.api.rest</artifactId>
