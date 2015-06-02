@@ -6,6 +6,7 @@ import org.ihtsdo.snowowl.authoring.api.util.RandomShaGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
+import java.util.List;
 
 public class WorkingContentService {
 
@@ -36,4 +37,7 @@ public class WorkingContentService {
 		return modelDAO.loadModel(template, WorkingContent.class, name);
 	}
 
+	public List<String> list(Template template) {
+		return modelDAO.listModelNames(template, WorkingContent.class);
+	}
 }

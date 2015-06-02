@@ -24,6 +24,8 @@ public class ModelDAO {
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
+	// Used by Spring
+	@SuppressWarnings("unused")
 	public ModelDAO() {
 		this(new File(".").getParentFile());
 	}
@@ -48,14 +50,22 @@ public class ModelDAO {
 	}
 
 	public List<String> listModelNames(Class<? extends Model> modelClass) {
-		File modelsDirectory = getModelsDirectory(modelClass);
-		File[] files = modelsDirectory.listFiles();
+		return listModelNames(getModelsDirectory(modelClass));
+	}
 
+	public List<String> listModelNames(Model parentModel, Class<? extends Model> modelClass) {
+		return listModelNames(getModelsDirectory(parentModel, modelClass));
+	}
+
+	private List<String> listModelNames(File modelsDirectory) {
+		File[] files = modelsDirectory.listFiles();
 		List<String> names = new ArrayList<>();
-		for (File file : files) {
-			String name = file.getName();
-			if (name.endsWith(JSON_EXTENSION)) {
-				names.add(name.replaceFirst("\\.json$", ""));
+		if (files != null) {
+			for (File file : files) {
+				String name = file.getName();
+				if (name.endsWith(JSON_EXTENSION)) {
+					names.add(name.replaceFirst("\\.json$", ""));
+				}
 			}
 		}
 		return names;
@@ -84,14 +94,19 @@ public class ModelDAO {
 	}
 
 	private File getModelFile(Model parentModel, Class<? extends Model> modelClass, String modelName) {
-		File parentModelsDir = getModelsDirectory(parentModel.getClass());
-		File parentModelDir = new File(parentModelsDir, parentModel.getName() + "/" + modelClass.getSimpleName());
-		parentModelDir.mkdirs();
+		File parentModelDir = getModelsDirectory(parentModel, modelClass);
 		return new File(parentModelDir, modelName + JSON_EXTENSION);
 	}
 
 	private File getModelFile(Class<? extends Model> modelClass, String modelName) {
 		return new File(getModelsDirectory(modelClass), modelName + JSON_EXTENSION);
+	}
+
+	private File getModelsDirectory(Model parentModel, Class<? extends Model> modelClass) {
+		File parentModelsDir = getModelsDirectory(parentModel.getClass());
+		File parentModelDir = new File(parentModelsDir, parentModel.getName() + "/" + modelClass.getSimpleName());
+		parentModelDir.mkdirs();
+		return parentModelDir;
 	}
 
 	public File getModelsDirectory(Class<? extends Model> modelClass) {
