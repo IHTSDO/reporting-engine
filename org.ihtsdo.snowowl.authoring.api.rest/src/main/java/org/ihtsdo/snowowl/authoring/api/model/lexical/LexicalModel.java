@@ -19,6 +19,7 @@ public class LexicalModel implements Model {
 	public LexicalModel() {
 	}
 
+	@JsonProperty(value = "modelName")
 	public String getName() {
 		return name;
 	}

@@ -27,7 +27,7 @@ public class LogicalModelContentValidator {
 	}
 
 	private void validateIsARelationships(WorkingConcept content, LogicalModel logicalModel, ConceptValidationResult result, Map<String, Set<String>> descendantsCache) {
-		List<String> isARelationships = content.getIsARelationships();
+		List<String> isARelationships = content.getParents();
 		List<IsARestriction> isARestrictions = logicalModel.getIsARestrictions();
 		boolean tooManyIsARelationships = isARelationships.size() > isARestrictions.size();
 		boolean notEnoughIsARelationships = isARelationships.size() < isARestrictions.size();
@@ -43,7 +43,7 @@ public class LogicalModelContentValidator {
 		}
 
 		if ((notEnoughIsARelationships || tooManyIsARelationships)) {
-			List<String> isARelationshipsMessages = result.getIsARelationshipsMessages();
+			List<String> isARelationshipsMessages = result.getParentsMessages();
 			String message;
 			if (!isARelationshipsMessages.isEmpty()) {
 				int lastIndex = isARelationshipsMessages.size() - 1;

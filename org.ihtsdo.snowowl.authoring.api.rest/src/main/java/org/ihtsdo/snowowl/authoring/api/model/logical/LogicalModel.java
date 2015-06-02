@@ -1,5 +1,6 @@
 package org.ihtsdo.snowowl.authoring.api.model.logical;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.ihtsdo.snowowl.authoring.api.model.Model;
 import org.ihtsdo.snowowl.authoring.api.terminology.DefinitionStatus;
 
@@ -42,6 +43,7 @@ public class LogicalModel implements Model {
 		return attributeRestrictions;
 	}
 
+	@JsonProperty(value = "modelName")
 	public String getName() {
 		return name;
 	}
@@ -66,6 +68,7 @@ public class LogicalModel implements Model {
 		this.definitionStatus = definitionStatus;
 	}
 
+	@JsonProperty(value = "parents")
 	public List<IsARestriction> getIsARestrictions() {
 		return isARestrictions;
 	}
@@ -74,6 +77,7 @@ public class LogicalModel implements Model {
 		this.isARestrictions = isARestrictions;
 	}
 
+	@JsonProperty(value = "attributes")
 	public List<List<AttributeRestriction>> getAttributeRestrictionGroups() {
 		return attributeRestrictionGroups;
 	}
