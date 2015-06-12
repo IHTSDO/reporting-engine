@@ -1,6 +1,6 @@
 package org.ihtsdo.snowowl.authoring.api.services;
 
-import com.b2international.snowowl.api.exception.NotFoundException;
+import com.b2international.snowowl.core.exceptions.NotFoundException;
 
 public class LogicalModelNotFoundException extends NotFoundException {
 	/**

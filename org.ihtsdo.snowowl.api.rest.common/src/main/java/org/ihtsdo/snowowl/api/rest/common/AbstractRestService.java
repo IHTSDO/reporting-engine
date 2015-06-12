@@ -15,12 +15,11 @@
  */
 package org.ihtsdo.snowowl.api.rest.common;
 
-import com.b2international.snowowl.api.exception.BadRequestException;
-import com.b2international.snowowl.api.exception.ConflictException;
-import com.b2international.snowowl.api.exception.IllegalQueryParameterException;
-import com.b2international.snowowl.api.exception.NotFoundException;
+import com.b2international.snowowl.core.exceptions.ApiError;
+import com.b2international.snowowl.core.exceptions.BadRequestException;
+import com.b2international.snowowl.core.exceptions.ConflictException;
+import com.b2international.snowowl.core.exceptions.NotFoundException;
 import com.fasterxml.jackson.databind.JsonMappingException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -74,14 +73,18 @@ public abstract class AbstractRestService {
 	/**
 	 * <b>Not Found</b> exception handler. All {@link NotFoundException not found exception}s are mapped to {@link HttpStatus#NOT_FOUND
 	 * <em>404 Not Found</em>} in case of the absence of an instance resource.
-	 * 
+	 *
 	 * @param ex
 	 * @return {@link RestApiError} instance with detailed messages
 	 */
 	@ExceptionHandler
 	@ResponseStatus(HttpStatus.NOT_FOUND)
 	public @ResponseBody RestApiError handle(final NotFoundException ex) {
-		return RestApiError.of(HttpStatus.NOT_FOUND.value()).message(ex.getMessage()).developerMessage(getDeveloperMessage(ex)).build();
+		return getRestApiError(ex.toApiError(), HttpStatus.NOT_FOUND);
+	}
+
+	private RestApiError getRestApiError(ApiError apiError, HttpStatus httpStatus) {
+		return RestApiError.of(httpStatus.value()).message(apiError.getMessage()).developerMessage(apiError.getDeveloperMessage()).build();
 	}
 
 	/**
@@ -99,44 +102,35 @@ public abstract class AbstractRestService {
 
 	/**
 	 * Exception handler to return <b>Bad Request</b> when an {@link BadRequestException} is thrown from the underlying system.
-	 * 
+	 *
 	 * @param ex
 	 * @return {@link RestApiError} instance with detailed messages
 	 */
 	@ExceptionHandler
 	@ResponseStatus(HttpStatus.BAD_REQUEST)
 	public @ResponseBody RestApiError handle(final BadRequestException ex) {
-		return RestApiError.of(HttpStatus.BAD_REQUEST.value()).message(ex.getMessage())
-				.developerMessage(getDeveloperMessage(ex)).build();
+		return getRestApiError(ex.toApiError(), HttpStatus.BAD_REQUEST);
 	}
-	
+
 	/**
 	 * Exception handler to return <b>Bad Request</b> when an {@link BadRequestException} is thrown from the underlying system.
-	 * 
+	 *
 	 * @param ex
 	 * @return {@link RestApiError} instance with detailed messages
 	 */
 	@ExceptionHandler
 	@ResponseStatus(HttpStatus.CONFLICT)
 	public @ResponseBody RestApiError handle(final ConflictException ex) {
-		return RestApiError.of(HttpStatus.CONFLICT.value()).message(ex.getMessage())
-				.developerMessage(getDeveloperMessage(ex)).build();
+		return getRestApiError(ex.toApiError(), HttpStatus.CONFLICT);
 	}
 
 	private String getDeveloperMessage(Exception ex) {
-		if (ex instanceof NotFoundException) {
-			return String.format("The requested instance resource (id = %s, type = %s) is not exists and/or not yet created.",
-					((NotFoundException) ex).getKey(), ((NotFoundException) ex).getType());
-		} else if (ex instanceof IllegalQueryParameterException) {
-			return "One or more supplied query parameters were invalid. Check input values.";
-		} else if (ex instanceof BadRequestException) {
-			return "Input representation syntax or validation errors. Check input values.";
-		} else if (ex instanceof UnsupportedOperationException) {
-			return ex.getMessage() == null ? "Not implemented" : ex.getMessage();
+		if (ex instanceof UnsupportedOperationException) {
+			return ex.getMessage() == null ? "Unsupported Operation" : ex.getMessage();
 		}
 		return ex.getMessage();
 	}
-	
+
 	/**
 	 *  org.springframework.security.access.AccessDeniedException 
 	 * @param ex

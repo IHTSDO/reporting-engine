@@ -31,8 +31,8 @@ public class AbstractSnomedRestService extends AbstractRestService {
 		componentRefHelper = new ComponentRefHelper();
 	}
 
-	protected IComponentRef createComponentRef(final String version, final String taskId, final String componentId) {
-		IComponentRef componentRef = componentRefHelper.createComponentRef(version, taskId, componentId);
+	protected IComponentRef createComponentRef(final String branchPath, final String componentId) {
+		IComponentRef componentRef = componentRefHelper.createComponentRef(branchPath, componentId);
 		((ComponentRef)componentRef).checkStorageExists();
 		return componentRef;
 	}
