@@ -25,7 +25,7 @@
 	<modules>
 		<module>org.ihtsdo.snowowl.api.rest.common</module>
 		<module>org.ihtsdo.snowowl.api.rest</module>
-		<module>org.ihtsdo.snowowl.authoring.api.rest</module>
+		<!--<module>org.ihtsdo.snowowl.authoring.api.rest</module>-->
 	</modules>
 
 	<dependencies>
