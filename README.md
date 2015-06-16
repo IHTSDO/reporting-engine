@@ -9,7 +9,9 @@ This project is built on top of SNOWOWL® Term server. It has number of modules 
 		
 	`org.ihtsdo.snowowl.api.rest` This module has commong utility service used within Refset tool. May be some scope to rename this and divide in different 		 module based on their utility
 	
-	`org.ihtsdo.snowowl.authoring.api.rest` Module used solely for Template based authoring.
+	`org.ihtsdo.snowowl.authoring.single.api.rest` Module used for single concept authoring.
+	
+	`org.ihtsdo.snowowl.authoring.template.api.rest` Module was used for template based authoring but is not currently enabled.
 
 
 Build

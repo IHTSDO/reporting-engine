@@ -17,6 +17,11 @@
 		</dependency>
 		<dependency>
 			<groupId>com.b2international.snowowl</groupId>
+			<artifactId>com.b2international.commons</artifactId>
+			<version>${snowowl.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.b2international.snowowl</groupId>
 			<artifactId>com.b2international.snowowl.api</artifactId>
 			<version>${snowowl.version}</version>
 		</dependency>

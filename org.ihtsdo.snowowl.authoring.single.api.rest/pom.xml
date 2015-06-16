@@ -6,13 +6,14 @@
 		<version>4.1.5-SNAPSHOT</version>
 	</parent>
 
-	<artifactId>org.ihtsdo.snowowl.api.rest</artifactId>
+	<artifactId>org.ihtsdo.snowowl.authoring.single.api.rest</artifactId>
 
 	<properties>
+		<org.ihtsdo.otf.im-version>0.0.1-SNAPSHOT</org.ihtsdo.otf.im-version>
 		<!-- manifest properties -->
-    	<bundle.symbolicName>org.ihtsdo.snowowl.api.rest;singleton:=true</bundle.symbolicName>
-    	<bundle.namespace>org.ihtsdo.snowowl.api.rest</bundle.namespace>
-		<bundle.webcontext>/snowowl/ihtsdo</bundle.webcontext>
+    	<bundle.symbolicName>${project.artifactId};singleton:=true</bundle.symbolicName>
+    	<bundle.namespace>${project.artifactId}</bundle.namespace>
+    	<bundle.webcontext>/snowowl/ihtsdo-authoring</bundle.webcontext>
 	</properties>
 
 	<dependencies>
@@ -77,7 +78,37 @@
 			<version>${snowowl.version}</version>
 			<scope>provided</scope>
 		</dependency>
-		
+		<dependency>
+			<groupId>com.b2international.snowowl</groupId>
+			<artifactId>com.b2international.snowowl.snomed.datastore.server</artifactId>
+			<version>${snowowl.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.b2international.snowowl</groupId>
+			<artifactId>com.b2international.snowowl.snomed.model</artifactId>
+			<version>${snowowl.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.b2international.snowowl</groupId>
+			<artifactId>com.b2international.snowowl.snomed.api.rest</artifactId>
+			<version>${snowowl.version}</version>
+			<!-- TODO - make the b2i rest module export it's classes so the scope here may be 'provided'-->
+		</dependency>
+		<dependency>
+			<groupId>com.b2international.snowowl</groupId>
+			<artifactId>org.eclipse.emf.cdo</artifactId>
+			<version>${snowowl.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.b2international.snowowl</groupId>
+			<artifactId>org.eclipse.emf.cdo.common</artifactId>
+			<version>${snowowl.version}</version>
+			<scope>provided</scope>
+		</dependency>
+
 		<!-- The Servlet specification is implemented by the web container -->
 		<dependency>
 			<groupId>javax.servlet</groupId>
@@ -111,6 +142,11 @@
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-oxm</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-test</artifactId>
 			<version>${spring.version}</version>
 		</dependency>
 		<dependency>
@@ -168,27 +204,53 @@
 			<artifactId>lucene-core</artifactId>
 			<version>4.10.2</version>
 		</dependency>
+		<dependency>
+			<groupId>net.rcarz</groupId>
+			<artifactId>jira-client</artifactId>
+			<version>0.5</version>
+		</dependency>
+		<!-- IMS -->
+		<dependency>
+		  	<groupId>org.ihtsdo.otf</groupId>
+		  	<artifactId>ihtsdo-crowd-resources</artifactId>
+		  	<version>${org.ihtsdo.otf.im-version}</version>
+      	  	<classifier>resources</classifier>
+          	<type>zip</type>
+          	<scope>provided</scope>		  
+		</dependency>
+		
+		<dependency>
+		  	<groupId>org.ihtsdo.otf</groupId>
+		  	<artifactId>ihtsdo-crowd-bridge</artifactId>
+		  	<version>${org.ihtsdo.otf.im-version}</version>
+		</dependency>
+       <dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>httpclient</artifactId>
+			<version>4.3.6</version>
+	   </dependency>		
+		
+		<!-- Testing -->
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-log4j12</artifactId>
+			<version>1.7.10</version>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
-	<!-- commented and added distributionManagement as required to conform build/release setup-->
-
-	<!--  <repositories>
-		<repository>
-			<id>snowowl-temp-snapshot</id>
-			<releases><enabled>false</enabled></releases>
-			<snapshots><enabled>true</enabled></snapshots>
-			<url>https://nexus.ihtsdotools.org/content/repositories/snowowl-temp-snapshot</url>
-		</repository>
-		<repository>
-			<id>snowowl-temp-release</id>
-			<releases><enabled>true</enabled></releases>
-			<snapshots><enabled>false</enabled></snapshots>
-			<url>https://nexus.ihtsdotools.org/content/repositories/snowowl-temp-release</url>
-		</repository>
-	</repositories> -->
-
 	<build>
-
+	
+		<resources>
+	      	<resource>
+	        	<directory>${basedir}/src/main/resources</directory>
+	      	</resource>
+	      	<resource>
+	        	<directory>${project.build.directory}/generated-resources</directory>
+	        	<filtering>true</filtering>
+	      	</resource>
+	    </resources> 
+	     
 		<plugins>
 			<plugin>
 				<groupId>org.eclipse.tycho</groupId>
@@ -223,8 +285,8 @@
 					<value>Bundle-Version: ${unqualifiedVersion}.${buildQualifier}</value>
 				</configuration>
 			</plugin>
-			
-			
+
+
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
@@ -246,7 +308,7 @@
 							<archive>
 								<manifestFile>${project.build.directory}/manifest/MANIFEST.MF</manifestFile>
 							</archive>
-						
+
 						</configuration>
 					</execution>
 				</executions>
@@ -279,7 +341,7 @@
               <manifestLocation>${project.build.directory}/generated/</manifestLocation>
 
 	          <instructions>
-	          	<Build-Name>IHTSDO Snow Owl REST Service</Build-Name>
+	          	<Build-Name>IHTSDO Snow Owl REST Single Concept Authoring Service</Build-Name>
 	            <Bundle-SymbolicName>${project.artifactId};singleton:=true</Bundle-SymbolicName>
 	            <Bundle-Version>1.0.0.qualifier</Bundle-Version>
 	            <Bundle-ManifestVersion>2</Bundle-ManifestVersion>
@@ -292,10 +354,10 @@
                 However package configured in spring bean classes and not used as import within java classes needs to mention separately
                 hence com.b2international.snowowl.api.impl etc -->
     			<Import-Package>*;resolution:=optional,
-					 com.b2international.snowowl.api.impl,
-					 com.b2international.snowowl.api.impl.codesystem,
-					 com.b2international.snowowl.snomed.api.impl.browser,
-					 org.slf4j;version="1.7.2",
+					com.b2international.snowowl.api.impl,
+					com.b2international.snowowl.api.impl.codesystem,
+					com.b2international.snowowl.snomed.api.impl.browser,
+					org.slf4j;version="1.7.2",
 			 	</Import-Package>
    	          </instructions>
 	        </configuration>
@@ -318,9 +380,107 @@
 	                       <excludeScope>provided</excludeScope>
 	                   </configuration>
 	               </execution>
+		           <execution>
+	            		<id>unpack-crowd-resources</id>
+	   		          	<goals>
+			           		<goal>unpack-dependencies</goal>
+			           	</goals>
+			           	<phase>generate-resources</phase>
+			           	<configuration>
+				          	<outputDirectory>${project.build.directory}/generated-resources</outputDirectory>
+				          	<includeGroupIds>org.ihtsdo.otf</includeGroupIds>
+				          	<includeArtifacIds>ihtsdo-crowd-resources</includeArtifacIds>
+				          	<excludeArtifactIds>*</excludeArtifactIds>
+				          	<excludeTransitive>true</excludeTransitive>
+				          	<scope>provided</scope>
+				          	<includes>crowd*.properties,
+				          		application-im-common-security-config.xml,
+				          		applicationContext-CrowdClient.xml,
+				          		crowd-ehcache.xml
+	  			          	</includes>
+			           	</configuration>
+			      	</execution>	               
 	           </executions>
-	       </plugin>	      
+	       </plugin>
 		</plugins>
 	</build>
+	
+    <profiles>
+        <profile>
+            <id>dev</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <phase>generate-resources</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <tasks>
+                                        <delete file="${project.build.directory}/generated-resources/crowd.properties" />
+                                        <copy file="${project.build.directory}/generated-resources/crowd-dev.properties" tofile="${project.build.directory}/generated-resources/crowd.properties" />
+                                    </tasks>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>prod</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <phase>generate-resources</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <tasks>
+                                        <delete file="${project.build.directory}/generated-resources/crowd.properties" />
+                                        <copy file="${project.build.directory}/generated-resources/crowd-prod.properties" tofile="${project.build.directory}/generated-resources/crowd.properties" />
+                                    </tasks>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
 
+        <profile>
+            <id>uat</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <phase>generate-resources</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <tasks>
+                                        <delete file="${project.build.directory}/generated-resources/crowd.properties" />
+                                        <copy file="${project.build.directory}/generated-resources/crowd-uat.properties" tofile="${project.build.directory}/generated-resources/crowd.properties" />
+                                    </tasks>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
