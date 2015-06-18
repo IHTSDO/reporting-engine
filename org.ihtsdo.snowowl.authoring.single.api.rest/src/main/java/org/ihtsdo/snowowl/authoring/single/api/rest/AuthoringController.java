@@ -25,7 +25,7 @@ public class AuthoringController extends AbstractSnomedRestService {
 	@Autowired
 	private TaskService taskService;
 
-	@ApiOperation(value="Playing with MRCM rules.", notes="")
+	@ApiOperation(value="List authoring projects", notes="")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
 	})
