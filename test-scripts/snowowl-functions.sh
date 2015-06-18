@@ -59,3 +59,9 @@ function requestClassificationOnBranch {
 	echo "> Requesting classification on branch ${branch}"
 	curl -isS -H "$auth" -H "$contentType" -X POST "$snowOwlUrl/"${branch}"/classifications" -d '{ "reasonerId": "au.csiro.snorocket.owlapi3.snorocket.factory" }'
 }
+
+function requestELKClassificationOnBranch {
+	branch=$1
+	echo "> Requesting classification on branch ${branch}"
+	curl -isS -H "$auth" -H "$contentType" -X POST "$snowOwlUrl/"${branch}"/classifications" -d '{ "reasonerId": "org.semanticweb.elk.elk.reasoner.factory" }'
+}
