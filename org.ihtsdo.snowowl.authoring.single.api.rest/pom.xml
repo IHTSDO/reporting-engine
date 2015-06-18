@@ -13,7 +13,7 @@
 		<!-- manifest properties -->
     	<bundle.symbolicName>${project.artifactId};singleton:=true</bundle.symbolicName>
     	<bundle.namespace>${project.artifactId}</bundle.namespace>
-    	<bundle.webcontext>/snowowl/ihtsdo-authoring</bundle.webcontext>
+    	<bundle.webcontext>/snowowl/ihtsdo-sca</bundle.webcontext>
 	</properties>
 
 	<dependencies>
