@@ -1,3 +1,4 @@
+<!--suppress MavenModelInspection -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
@@ -11,9 +12,9 @@
 	<properties>
 		<org.ihtsdo.otf.im-version>0.0.1-SNAPSHOT</org.ihtsdo.otf.im-version>
 		<!-- manifest properties -->
-    	<bundle.symbolicName>${project.artifactId};singleton:=true</bundle.symbolicName>
-    	<bundle.namespace>${project.artifactId}</bundle.namespace>
-    	<bundle.webcontext>/snowowl/ihtsdo-sca</bundle.webcontext>
+		<bundle.symbolicName>${project.artifactId};singleton:=true</bundle.symbolicName>
+		<bundle.namespace>${project.artifactId}</bundle.namespace>
+		<bundle.webcontext>/snowowl/ihtsdo-sca</bundle.webcontext>
 	</properties>
 
 	<dependencies>
@@ -211,25 +212,25 @@
 		</dependency>
 		<!-- IMS -->
 		<dependency>
-		  	<groupId>org.ihtsdo.otf</groupId>
-		  	<artifactId>ihtsdo-crowd-resources</artifactId>
-		  	<version>${org.ihtsdo.otf.im-version}</version>
-      	  	<classifier>resources</classifier>
-          	<type>zip</type>
-          	<scope>provided</scope>		  
+			<groupId>org.ihtsdo.otf</groupId>
+			<artifactId>ihtsdo-crowd-resources</artifactId>
+			<version>${org.ihtsdo.otf.im-version}</version>
+			<classifier>resources</classifier>
+			<type>zip</type>
+			<scope>provided</scope>
 		</dependency>
-		
+
 		<dependency>
-		  	<groupId>org.ihtsdo.otf</groupId>
-		  	<artifactId>ihtsdo-crowd-bridge</artifactId>
-		  	<version>${org.ihtsdo.otf.im-version}</version>
+			<groupId>org.ihtsdo.otf</groupId>
+			<artifactId>ihtsdo-crowd-bridge</artifactId>
+			<version>${org.ihtsdo.otf.im-version}</version>
 		</dependency>
-       <dependency>
+		<dependency>
 			<groupId>org.apache.httpcomponents</groupId>
 			<artifactId>httpclient</artifactId>
 			<version>4.3.6</version>
-	   </dependency>		
-		
+		</dependency>
+
 		<!-- Testing -->
 		<dependency>
 			<groupId>org.slf4j</groupId>
@@ -240,17 +241,17 @@
 	</dependencies>
 
 	<build>
-	
+
 		<resources>
-	      	<resource>
-	        	<directory>${basedir}/src/main/resources</directory>
-	      	</resource>
-	      	<resource>
-	        	<directory>${project.build.directory}/generated-resources</directory>
-	        	<filtering>true</filtering>
-	      	</resource>
-	    </resources> 
-	     
+			<resource>
+				<directory>${basedir}/src/main/resources</directory>
+			</resource>
+			<resource>
+				<directory>${project.build.directory}/generated-resources</directory>
+				<filtering>true</filtering>
+			</resource>
+		</resources>
+
 		<plugins>
 			<plugin>
 				<groupId>org.eclipse.tycho</groupId>
@@ -313,113 +314,112 @@
 					</execution>
 				</executions>
 			</plugin>
-		<!-- Generate Manifest -->
+			<!-- Generate Manifest -->
 			<plugin>
-	        <groupId>org.apache.felix</groupId>
-	        <artifactId>maven-bundle-plugin</artifactId>
-        	<version>2.5.3</version>
-        	<dependencies>
-	          <dependency>
-	            <groupId>biz.aQute.bnd</groupId>
-	            <artifactId>bndlib</artifactId>
-	            <version>2.4.0</version>
-	          </dependency>
-	        </dependencies>
-	        <executions>
-	          <execution>
-	            <id>bundle-manifest</id>
-	            <phase>process-classes</phase>
-	            <goals>
-	              <goal>manifest</goal>
-	            </goals>
-	          </execution>
-	        </executions>
-	        <configuration>
-	          <supportedProjectTypes>
-	          	<supportedProjectType>jar</supportedProjectType>
-	          </supportedProjectTypes>
-              <manifestLocation>${project.build.directory}/generated/</manifestLocation>
+				<groupId>org.apache.felix</groupId>
+				<artifactId>maven-bundle-plugin</artifactId>
+				<version>2.5.3</version>
+				<dependencies>
+					<dependency>
+						<groupId>biz.aQute.bnd</groupId>
+						<artifactId>bndlib</artifactId>
+						<version>2.4.0</version>
+					</dependency>
+				</dependencies>
+				<executions>
+					<execution>
+						<id>bundle-manifest</id>
+						<phase>process-classes</phase>
+						<goals>
+							<goal>manifest</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<supportedProjectTypes>
+						<supportedProjectType>jar</supportedProjectType>
+					</supportedProjectTypes>
+					<manifestLocation>${project.build.directory}/generated/</manifestLocation>
 
-	          <instructions>
-	          	<Build-Name>IHTSDO Snow Owl REST Single Concept Authoring Service</Build-Name>
-	            <Bundle-SymbolicName>${project.artifactId};singleton:=true</Bundle-SymbolicName>
-	            <Bundle-Version>1.0.0.qualifier</Bundle-Version>
-	            <Bundle-ManifestVersion>2</Bundle-ManifestVersion>
-                <Bundle-ClassPath>.,WEB-INF/classes,{maven-dependencies}</Bundle-ClassPath>
-                <Embed-Directory>WEB-INF/lib</Embed-Directory>
-    			<Embed-Dependency>*;scope=compile|runtime</Embed-Dependency>
-    			<Embed-Transitive>true</Embed-Transitive>
-                <Web-ContextPath>${bundle.webcontext}</Web-ContextPath>
-                <!-- this plugin automatically replaces full packages by scanning import statements in classes.
-                However package configured in spring bean classes and not used as import within java classes needs to mention separately
-                hence com.b2international.snowowl.api.impl etc -->
-    			<Import-Package>*;resolution:=optional,
-					com.b2international.snowowl.api.impl,
-					com.b2international.snowowl.api.impl.codesystem,
-					com.b2international.snowowl.snomed.api.impl.browser,
-					org.slf4j;version="1.7.2",
-			 	</Import-Package>
-   	          </instructions>
-	        </configuration>
-	      </plugin>
-	      <plugin>
-	           <groupId>org.apache.maven.plugins</groupId>
-	           <artifactId>maven-dependency-plugin</artifactId>
-	           <executions>
-	               <execution>
-	                   <id>copy-dependencies</id>
-					   <phase>process-resources</phase>
-	                   <goals>
-	                       <goal>copy-dependencies</goal>
-	                   </goals>
-	                   <configuration>
-	                       <outputDirectory>${project.build.directory}/classes/WEB-INF/lib</outputDirectory>
-	                       <overWriteReleases>false</overWriteReleases>
-	                       <overWriteSnapshots>false</overWriteSnapshots>
-	                       <overWriteIfNewer>true</overWriteIfNewer>
-	                       <excludeScope>provided</excludeScope>
-	                   </configuration>
-	               </execution>
-		           <execution>
-	            		<id>unpack-crowd-resources</id>
-	   		          	<goals>
-			           		<goal>unpack-dependencies</goal>
-			           	</goals>
-			           	<phase>generate-resources</phase>
-			           	<configuration>
-				          	<outputDirectory>${project.build.directory}/generated-resources</outputDirectory>
-				          	<includeGroupIds>org.ihtsdo.otf</includeGroupIds>
-				          	<includeArtifacIds>ihtsdo-crowd-resources</includeArtifacIds>
-				          	<excludeArtifactIds>*</excludeArtifactIds>
-				          	<excludeTransitive>true</excludeTransitive>
-				          	<scope>provided</scope>
-				          	<includes>crowd*.properties,
-				          		application-im-common-security-config.xml,
-				          		applicationContext-CrowdClient.xml,
-				          		crowd-ehcache.xml
-	  			          	</includes>
-			           	</configuration>
-			      	</execution>
-				   <execution>
-					   <id>unpack-swagger-ui-files</id>
-					   <phase>generate-resources</phase>
-					   <goals>
-						   <goal>unpack</goal>
-					   </goals>
-					   <configuration>
-						   <artifactItems>
-							   <artifactItem>
-								   <groupId>org.webjars</groupId>
-								   <artifactId>swagger-ui</artifactId>
-								   <version>2.1.8-M1</version>
-								   <outputDirectory>${project.build.directory}/generated-resources/swagger-extract</outputDirectory>
-							   </artifactItem>
-						   </artifactItems>
-						   <excludes>**/index.html</excludes>
-					   </configuration>
-				   </execution>
-	           </executions>
-	       </plugin>
+					<instructions>
+						<Build-Name>IHTSDO Snow Owl REST Single Concept Authoring Service</Build-Name>
+						<Bundle-SymbolicName>${project.artifactId};singleton:=true</Bundle-SymbolicName>
+						<Bundle-Version>1.0.0.qualifier</Bundle-Version>
+						<Bundle-ManifestVersion>2</Bundle-ManifestVersion>
+						<Bundle-ClassPath>.,WEB-INF/classes,{maven-dependencies}</Bundle-ClassPath>
+						<Embed-Directory>WEB-INF/lib</Embed-Directory>
+						<Embed-Dependency>*;scope=compile|runtime</Embed-Dependency>
+						<Embed-Transitive>true</Embed-Transitive>
+						<Web-ContextPath>${bundle.webcontext}</Web-ContextPath>
+						<!-- this plugin automatically replaces full packages by scanning import statements in classes.
+						However package configured in spring bean classes and not used as import within java classes needs to mention separately
+						hence com.b2international.snowowl.api.impl etc -->
+						<Import-Package>*;resolution:=optional,
+							com.b2international.snowowl.api.impl,
+							com.b2international.snowowl.api.impl.codesystem,
+							com.b2international.snowowl.snomed.api.impl.browser,
+							org.slf4j;version="1.7.2",
+						</Import-Package>
+					</instructions>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>copy-dependencies</id>
+						<phase>process-resources</phase>
+						<goals>
+							<goal>copy-dependencies</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${project.build.directory}/classes/WEB-INF/lib</outputDirectory>
+							<overWriteReleases>false</overWriteReleases>
+							<overWriteSnapshots>false</overWriteSnapshots>
+							<overWriteIfNewer>true</overWriteIfNewer>
+							<excludeScope>provided</excludeScope>
+						</configuration>
+					</execution>
+					<execution>
+						<id>unpack-crowd-resources</id>
+						<goals>
+							<goal>unpack-dependencies</goal>
+						</goals>
+						<phase>generate-resources</phase>
+						<configuration>
+							<outputDirectory>${project.build.directory}/generated-resources</outputDirectory>
+							<includeGroupIds>org.ihtsdo.otf</includeGroupIds>
+							<includeArtifactIds>ihtsdo-crowd-resources</includeArtifactIds>
+							<excludeArtifactIds>*</excludeArtifactIds>
+							<excludeTransitive>true</excludeTransitive>
+							<includes>crowd*.properties,
+								application-im-common-security-config.xml,
+								applicationContext-CrowdClient.xml,
+								crowd-ehcache.xml
+							</includes>
+						</configuration>
+					</execution>
+					<execution>
+						<id>unpack-swagger-ui-files</id>
+						<phase>generate-resources</phase>
+						<goals>
+							<goal>unpack</goal>
+						</goals>
+						<configuration>
+							<artifactItems>
+								<artifactItem>
+									<groupId>org.webjars</groupId>
+									<artifactId>swagger-ui</artifactId>
+									<version>2.1.8-M1</version>
+									<outputDirectory>${project.build.directory}/generated-resources/swagger-extract</outputDirectory>
+								</artifactItem>
+							</artifactItems>
+							<excludes>**/index.html</excludes>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 			<plugin>
 				<artifactId>maven-antrun-plugin</artifactId>
 				<version>1.7</version>
@@ -452,83 +452,83 @@
 			</plugin>
 		</plugins>
 	</build>
-	
-    <profiles>
-        <profile>
-            <id>dev</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-antrun-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <phase>generate-resources</phase>
-                                <goals>
-                                    <goal>run</goal>
-                                </goals>
-                                <configuration>
-                                    <tasks>
-                                        <delete file="${project.build.directory}/generated-resources/crowd.properties" />
-                                        <copy file="${project.build.directory}/generated-resources/crowd-dev.properties" tofile="${project.build.directory}/generated-resources/crowd.properties" />
-                                    </tasks>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
-            <id>prod</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-antrun-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <phase>generate-resources</phase>
-                                <goals>
-                                    <goal>run</goal>
-                                </goals>
-                                <configuration>
-                                    <tasks>
-                                        <delete file="${project.build.directory}/generated-resources/crowd.properties" />
-                                        <copy file="${project.build.directory}/generated-resources/crowd-prod.properties" tofile="${project.build.directory}/generated-resources/crowd.properties" />
-                                    </tasks>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
 
-        <profile>
-            <id>uat</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-antrun-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <phase>generate-resources</phase>
-                                <goals>
-                                    <goal>run</goal>
-                                </goals>
-                                <configuration>
-                                    <tasks>
-                                        <delete file="${project.build.directory}/generated-resources/crowd.properties" />
-                                        <copy file="${project.build.directory}/generated-resources/crowd-uat.properties" tofile="${project.build.directory}/generated-resources/crowd.properties" />
-                                    </tasks>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
+	<profiles>
+		<profile>
+			<id>dev</id>
+			<activation>
+				<activeByDefault>true</activeByDefault>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<artifactId>maven-antrun-plugin</artifactId>
+						<executions>
+							<execution>
+								<phase>generate-resources</phase>
+								<goals>
+									<goal>run</goal>
+								</goals>
+								<configuration>
+									<tasks>
+										<delete file="${project.build.directory}/generated-resources/crowd.properties" />
+										<copy file="${project.build.directory}/generated-resources/crowd-dev.properties" tofile="${project.build.directory}/generated-resources/crowd.properties" />
+									</tasks>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<id>prod</id>
+			<build>
+				<plugins>
+					<plugin>
+						<artifactId>maven-antrun-plugin</artifactId>
+						<executions>
+							<execution>
+								<phase>generate-resources</phase>
+								<goals>
+									<goal>run</goal>
+								</goals>
+								<configuration>
+									<tasks>
+										<delete file="${project.build.directory}/generated-resources/crowd.properties" />
+										<copy file="${project.build.directory}/generated-resources/crowd-prod.properties" tofile="${project.build.directory}/generated-resources/crowd.properties" />
+									</tasks>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+
+		<profile>
+			<id>uat</id>
+			<build>
+				<plugins>
+					<plugin>
+						<artifactId>maven-antrun-plugin</artifactId>
+						<executions>
+							<execution>
+								<phase>generate-resources</phase>
+								<goals>
+									<goal>run</goal>
+								</goals>
+								<configuration>
+									<tasks>
+										<delete file="${project.build.directory}/generated-resources/crowd.properties" />
+										<copy file="${project.build.directory}/generated-resources/crowd-uat.properties" tofile="${project.build.directory}/generated-resources/crowd.properties" />
+									</tasks>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 </project>
