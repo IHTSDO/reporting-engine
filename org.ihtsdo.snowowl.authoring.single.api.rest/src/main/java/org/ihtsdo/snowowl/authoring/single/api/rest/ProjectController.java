@@ -8,31 +8,52 @@ import net.rcarz.jiraclient.JiraException;
 import org.ihtsdo.snowowl.api.rest.common.AbstractRestService;
 import org.ihtsdo.snowowl.api.rest.common.AbstractSnomedRestService;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringProject;
+import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTask;
+import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskCreateRequest;
 import org.ihtsdo.snowowl.authoring.single.api.service.TaskService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@Api("Authoring Service")
+@Api("Authoring Projects")
 @RestController
 @RequestMapping(produces={AbstractRestService.V1_MEDIA_TYPE, MediaType.APPLICATION_JSON_VALUE})
-public class AuthoringController extends AbstractSnomedRestService {
+public class ProjectController extends AbstractSnomedRestService {
 
 	@Autowired
 	private TaskService taskService;
 
-	@ApiOperation(value="List authoring projects", notes="")
+	@ApiOperation(value="List authoring projects")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/projects", method= RequestMethod.GET)
-//	@PreAuthorize("hasRole('ROLE_ihtsdo-tba-author')")
+	@PreAuthorize("hasRole('ROLE_ihtsdo-sca-author')")
 	public List<AuthoringProject> listProjects() throws JiraException {
 		return taskService.listProjects();
+	}
+
+	@ApiOperation(value="List tasks within a project")
+	@ApiResponses({
+			@ApiResponse(code = 200, message = "OK")
+	})
+	@RequestMapping(value="/projects/{projectKey}/tasks", method= RequestMethod.GET)
+	@PreAuthorize("hasRole('ROLE_ihtsdo-sca-author')")
+	public List<AuthoringTask> listTasks(@PathVariable final String projectKey) throws JiraException {
+		return taskService.listTasks(projectKey);
+	}
+
+	@ApiOperation(value="Create a task within a project")
+	@ApiResponses({
+			@ApiResponse(code = 200, message = "OK")
+	})
+	@RequestMapping(value="/projects/{projectKey}/tasks", method= RequestMethod.POST)
+	@PreAuthorize("hasRole('ROLE_ihtsdo-sca-author')")
+	public AuthoringTask createTask(@PathVariable final String projectKey, @RequestBody final AuthoringTaskCreateRequest taskCreateRequest) throws JiraException {
+		return taskService.createTask(projectKey, taskCreateRequest);
 	}
 
 	/** This is planned for a future sprint
@@ -41,7 +62,7 @@ public class AuthoringController extends AbstractSnomedRestService {
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/mrcm", method= RequestMethod.GET)
-//	@PreAuthorize("hasRole('ROLE_ihtsdo-tba-author')")
+//	@PreAuthorize("hasRole('ROLE_ihtsdo-sca-author')")
 	public int listMRCMRules() throws IOException {
 		SnomedPredicateBrowser predicateBrowser = ApplicationContext.getInstance().getService(SnomedPredicateBrowser.class);
 		IBranchPath mainPath = BranchPathUtils.createMainPath();

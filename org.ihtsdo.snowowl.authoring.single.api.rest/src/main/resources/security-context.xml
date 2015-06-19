@@ -8,7 +8,7 @@
  	http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd">
 
 	<!-- REST should have no state, each request is re-authenticated -->
-	<http create-session="stateless" 
+	<http create-session="stateless"
 			auto-config="false" 				
 			entry-point-ref="crowdAuthenticationProcessingFilterEntryPoint"
 		>
@@ -17,7 +17,7 @@
 		<!--<intercept-url pattern="/**" access="ROLE_ihtsdo-tba-user" />&lt;!&ndash; this pattern seems misplaced. Requires revisiting if we want to have resource based security &ndash;&gt; &lt;!&ndash; specific function more advanced role. See controller methods &ndash;&gt;-->
 	</http>
 
-	<global-method-security pre-post-annotations="enabled" secured-annotations="enabled" proxy-target-class="true" />
+	<!--<global-method-security pre-post-annotations="enabled" secured-annotations="enabled" proxy-target-class="true" />-->
 	
  	<beans:import resource="classpath:applicationContext-CrowdClient.xml" />
  	<beans:import resource="classpath:application-im-common-security-config.xml" />
