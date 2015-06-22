@@ -6,7 +6,6 @@ import com.b2international.snowowl.core.events.Event;
 import com.b2international.snowowl.core.events.util.AsyncSupport;
 import com.b2international.snowowl.eventbus.IEventBus;
 
-import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 
 public class SnowOwlBusHelper {
@@ -31,9 +30,7 @@ public class SnowOwlBusHelper {
 	}
 
 	private IEventBus getSnowOwlBackendEventBus() {
-		ApplicationContext instance = ApplicationContext.getInstance();
-		Collection<ApplicationContext.ServiceRegistryEntry<?>> serviceRegistryEntries = instance.checkServices();
-		return instance.getService(IEventBus.class);
+		return ApplicationContext.getInstance().getService(IEventBus.class);
 	}
 
 	private static class AsyncResult<T> {
