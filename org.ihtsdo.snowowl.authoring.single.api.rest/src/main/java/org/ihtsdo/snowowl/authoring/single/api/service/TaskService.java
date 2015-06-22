@@ -45,11 +45,10 @@ public class TaskService {
 	}
 
 	public AuthoringTask createTask(String projectKey, AuthoringTaskCreateRequest taskCreateRequest) throws JiraException, ServiceException {
-//		Issue jiraIssue = jiraClient.createIssue(projectKey, AUTHORING_TASK_TYPE)
-//				.field(Field.SUMMARY, taskCreateRequest.getSummary())
-//				.field(Field.DESCRIPTION, taskCreateRequest.getDescription())
-//				.execute();
-		Issue jiraIssue = jiraClient.getIssue("WRPAS-9");
+		Issue jiraIssue = jiraClient.createIssue(projectKey, AUTHORING_TASK_TYPE)
+				.field(Field.SUMMARY, taskCreateRequest.getSummary())
+				.field(Field.DESCRIPTION, taskCreateRequest.getDescription())
+				.execute();
 		AuthoringTask authoringTask = new AuthoringTask(jiraIssue);
 		branchService.createTaskBranchAndProjectBranchIfNeeded(authoringTask.getProjectKey(), authoringTask.getKey());
 		return authoringTask;
