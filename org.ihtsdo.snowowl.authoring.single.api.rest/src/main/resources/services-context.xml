@@ -28,4 +28,8 @@
 
 	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.SnowOwlBusHelper"/>
 
+	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.UiStateService"/>
+
+	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.dao.ArbitraryJsonService"/>
+
 </beans>

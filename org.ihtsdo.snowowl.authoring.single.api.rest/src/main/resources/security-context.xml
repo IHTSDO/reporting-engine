@@ -21,5 +21,6 @@
 	
  	<beans:import resource="classpath:applicationContext-CrowdClient.xml" />
  	<beans:import resource="classpath:application-im-common-security-config.xml" />
+	<debug/>
 
 </beans:beans>
