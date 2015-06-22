@@ -14,10 +14,10 @@
 		>
 		<custom-filter ref="authenticationProcessingFilter" position="FORM_LOGIN_FILTER"/>
 		<intercept-url pattern="/api-docs/**" access="ROLE_ANONYMOUS" />
-		<!--<intercept-url pattern="/**" access="ROLE_ihtsdo-tba-user" />&lt;!&ndash; this pattern seems misplaced. Requires revisiting if we want to have resource based security &ndash;&gt; &lt;!&ndash; specific function more advanced role. See controller methods &ndash;&gt;-->
+		<intercept-url pattern="/**" access="ROLE_ihtsdo-sca-author" /><!-- this pattern seems misplaced. Requires revisiting if we want to have resource based security --> <!-- specific function more advanced role. See controller methods -->
 	</http>
 
-	<!--<global-method-security pre-post-annotations="enabled" secured-annotations="enabled" proxy-target-class="true" />-->
+	<global-method-security pre-post-annotations="enabled" secured-annotations="enabled" proxy-target-class="true" />
 	
  	<beans:import resource="classpath:applicationContext-CrowdClient.xml" />
  	<beans:import resource="classpath:application-im-common-security-config.xml" />
