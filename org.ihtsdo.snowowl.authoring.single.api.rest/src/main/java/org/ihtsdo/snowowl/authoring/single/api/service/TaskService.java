@@ -5,12 +5,15 @@ import net.rcarz.jiraclient.*;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringProject;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTask;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskCreateRequest;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class TaskService {
 
+	@Autowired
+	private BranchService branchService;
 	private final JiraClient jiraClient;
 	private static final String AUTHORING_TASK_TYPE = "SCA Authoring Task";
 
@@ -41,11 +44,14 @@ public class TaskService {
 		return tasks;
 	}
 
-	public AuthoringTask createTask(String projectKey, AuthoringTaskCreateRequest taskCreateRequest) throws JiraException {
-		Issue execute = jiraClient.createIssue(projectKey, AUTHORING_TASK_TYPE)
-				.field(Field.SUMMARY, taskCreateRequest.getSummary())
-				.field(Field.DESCRIPTION, taskCreateRequest.getDescription())
-				.execute();
-		return new AuthoringTask(execute);
+	public AuthoringTask createTask(String projectKey, AuthoringTaskCreateRequest taskCreateRequest) throws JiraException, ServiceException {
+//		Issue jiraIssue = jiraClient.createIssue(projectKey, AUTHORING_TASK_TYPE)
+//				.field(Field.SUMMARY, taskCreateRequest.getSummary())
+//				.field(Field.DESCRIPTION, taskCreateRequest.getDescription())
+//				.execute();
+		Issue jiraIssue = jiraClient.getIssue("WRPAS-9");
+		AuthoringTask authoringTask = new AuthoringTask(jiraIssue);
+		branchService.createTaskBranchAndProjectBranchIfNeeded(authoringTask.getProjectKey(), authoringTask.getKey());
+		return authoringTask;
 	}
 }

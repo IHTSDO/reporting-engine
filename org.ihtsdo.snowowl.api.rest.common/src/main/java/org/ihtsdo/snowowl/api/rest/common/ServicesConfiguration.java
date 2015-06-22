@@ -72,7 +72,7 @@ public class ServicesConfiguration extends WebMvcConfigurerAdapter {
 	private String apiContact;
 	private String apiLicense;
 	private String apiLicenseUrl;
-	
+
 	@Autowired
 	public void setServletContext(final ServletContext servletContext) {
 		this.servletContext = servletContext;

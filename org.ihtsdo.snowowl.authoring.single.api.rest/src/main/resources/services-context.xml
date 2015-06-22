@@ -19,9 +19,13 @@
 		</constructor-arg>
 	</bean>
 
+	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.BranchService"/>
+
 	<bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
 		<property name="location" value="#{systemProperties['osgi.sharedConfiguration.area']}/single_authoring.properties"/>
 		<property name="placeholderPrefix" value="+{"/>
 	</bean>
+
+	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.SnowOwlBusHelper"/>
 
 </beans>

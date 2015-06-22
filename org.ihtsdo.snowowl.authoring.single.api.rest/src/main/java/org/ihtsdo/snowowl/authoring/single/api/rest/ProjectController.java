@@ -10,6 +10,7 @@ import org.ihtsdo.snowowl.api.rest.common.AbstractSnomedRestService;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringProject;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTask;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskCreateRequest;
+import org.ihtsdo.snowowl.authoring.single.api.service.ServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.service.TaskService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -52,7 +53,7 @@ public class ProjectController extends AbstractSnomedRestService {
 	})
 	@RequestMapping(value="/projects/{projectKey}/tasks", method= RequestMethod.POST)
 	@PreAuthorize("hasRole('ROLE_ihtsdo-sca-author')")
-	public AuthoringTask createTask(@PathVariable final String projectKey, @RequestBody final AuthoringTaskCreateRequest taskCreateRequest) throws JiraException {
+	public AuthoringTask createTask(@PathVariable final String projectKey, @RequestBody final AuthoringTaskCreateRequest taskCreateRequest) throws JiraException, ServiceException {
 		return taskService.createTask(projectKey, taskCreateRequest);
 	}
 

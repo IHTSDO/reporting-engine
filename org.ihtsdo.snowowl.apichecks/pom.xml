@@ -7,14 +7,14 @@
 		<version>4.1.5-SNAPSHOT</version>
 	</parent>
 
-	<artifactId>org.ihtsdo.snowowl.authoring.single.api.rest</artifactId>
+	<artifactId>org.ihtsdo.snowowl.apichecks</artifactId>
 
 	<properties>
 		<org.ihtsdo.otf.im-version>0.0.1-SNAPSHOT</org.ihtsdo.otf.im-version>
 		<!-- manifest properties -->
 		<bundle.symbolicName>${project.artifactId};singleton:=true</bundle.symbolicName>
 		<bundle.namespace>${project.artifactId}</bundle.namespace>
-		<bundle.webcontext>/snowowl/ihtsdo-sca</bundle.webcontext>
+		<bundle.webcontext>/snowowl/ihtsdo-apichecks</bundle.webcontext>
 	</properties>
 
 	<dependencies>
@@ -55,79 +55,6 @@
 			<version>${snowowl.version}</version>
 			<scope>provided</scope>
 		</dependency>
-
-		<!--<dependency>-->
-			<!--<groupId>com.b2international.snowowl</groupId>-->
-			<!--<artifactId>com.b2international.snowowl.api</artifactId>-->
-			<!--<version>${snowowl.version}</version>-->
-			<!--<scope>provided</scope>-->
-		<!--</dependency>-->
-		<!--<dependency>-->
-			<!--<groupId>com.b2international.snowowl</groupId>-->
-			<!--<artifactId>com.b2international.snowowl.snomed.api</artifactId>-->
-			<!--<version>${snowowl.version}</version>-->
-			<!--<scope>provided</scope>-->
-		<!--</dependency>-->
-		<!--<dependency>-->
-			<!--<groupId>com.b2international.snowowl</groupId>-->
-			<!--<artifactId>com.b2international.snowowl.api.impl</artifactId>-->
-			<!--<version>${snowowl.version}</version>-->
-			<!--<scope>provided</scope>-->
-		<!--</dependency>-->
-		<!--<dependency>-->
-			<!--<groupId>com.b2international.snowowl</groupId>-->
-			<!--<artifactId>com.b2international.snowowl.snomed.api.impl</artifactId>-->
-			<!--<version>${snowowl.version}</version>-->
-			<!--<scope>provided</scope>-->
-		<!--</dependency>-->
-		<!--<dependency>-->
-			<!--<groupId>com.b2international.snowowl</groupId>-->
-			<!--<artifactId>com.b2international.snowowl.snomed.refset.model</artifactId>-->
-			<!--<version>${snowowl.version}</version>-->
-			<!--<scope>provided</scope>-->
-		<!--</dependency>-->
-		<!--<dependency>-->
-			<!--<groupId>com.b2international.snowowl</groupId>-->
-			<!--<artifactId>com.b2international.snowowl.datastore</artifactId>-->
-			<!--<version>${snowowl.version}</version>-->
-			<!--<scope>provided</scope>-->
-		<!--</dependency>-->
-		<!--<dependency>-->
-			<!--<groupId>com.b2international.snowowl</groupId>-->
-			<!--<artifactId>com.b2international.snowowl.core</artifactId>-->
-			<!--<version>${snowowl.version}</version>-->
-			<!--<scope>provided</scope>-->
-		<!--</dependency>-->
-		<!--<dependency>-->
-			<!--<groupId>com.b2international.snowowl</groupId>-->
-			<!--<artifactId>com.b2international.snowowl.snomed.common</artifactId>-->
-			<!--<version>${snowowl.version}</version>-->
-			<!--<scope>provided</scope>-->
-		<!--</dependency>-->
-		<!--<dependency>-->
-			<!--<groupId>com.b2international.snowowl</groupId>-->
-			<!--<artifactId>com.b2international.snowowl.snomed.datastore</artifactId>-->
-			<!--<version>${snowowl.version}</version>-->
-			<!--<scope>provided</scope>-->
-		<!--</dependency>-->
-		<!--<dependency>-->
-			<!--<groupId>com.b2international.snowowl</groupId>-->
-			<!--<artifactId>com.b2international.snowowl.snomed.datastore.server</artifactId>-->
-			<!--<version>${snowowl.version}</version>-->
-			<!--<scope>provided</scope>-->
-		<!--</dependency>-->
-		<!--<dependency>-->
-			<!--<groupId>com.b2international.snowowl</groupId>-->
-			<!--<artifactId>com.b2international.snowowl.snomed.model</artifactId>-->
-			<!--<version>${snowowl.version}</version>-->
-			<!--<scope>provided</scope>-->
-		<!--</dependency>-->
-		<!--<dependency>-->
-			<!--<groupId>com.b2international.snowowl</groupId>-->
-			<!--<artifactId>com.b2international.snowowl.snomed.api.rest</artifactId>-->
-			<!--<version>${snowowl.version}</version>-->
-			<!-- TODO - make the b2i rest module export it's classes so the scope here may be 'provided'-->
-		<!--</dependency>-->
 		<dependency>
 			<groupId>com.b2international.snowowl</groupId>
 			<artifactId>org.eclipse.emf.cdo</artifactId>

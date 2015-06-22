@@ -2,6 +2,7 @@
 
 set -e;
 
+# snowOwlUrl="https://dev-term.ihtsdotools.org/snowowl/snomed-ct/v2"
 snowOwlUrl="http://localhost:8080/snowowl/snomed-ct/v2"
 
 response=".temp-http-response.txt"
@@ -40,7 +41,7 @@ function mergeBranch {
 	echo "> - getting status of $target"
 	getBranchStatus ${target}
 	echo "> - performing merge"
-	curl -isS -H "$auth" -H "$contentType" -X POST "$snowOwlUrl/merges" -d '{"source": "'${source}'", "target": "'${target}'", "commitComment": "'"Merging $source to $target"'"}' > "${response}" && checkResponseCode
+	curl -ivS -H "$auth" -H "$contentType" -X POST "$snowOwlUrl/merges" -d '{"source": "'${source}'", "target": "'${target}'", "commitComment": "'"Merging $source to $target"'"}' > "${response}" && checkResponseCode
 }
 
 function addDescription {
