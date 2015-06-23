@@ -32,16 +32,26 @@ public class TaskService {
 
 	public List<AuthoringTask> listTasks(String projectKey) throws JiraException {
 		List<AuthoringTask> tasks = new ArrayList<>();
-		try {
-			jiraClient.getProject(projectKey);
-		} catch (JiraException e) {
-			throw new NotFoundException("Project", projectKey);
-		}
-		List<Issue> issues = jiraClient.searchIssues("project = " + projectKey + " AND type = \"" + AUTHORING_TASK_TYPE + "\"").issues;
+		getProjectOrThrow(projectKey);
+		List<Issue> issues = jiraClient.searchIssues(getProjectJQL(projectKey)).issues;
 		for (Issue issue : issues) {
 			tasks.add(new AuthoringTask(issue));
 		}
 		return tasks;
+	}
+
+	public AuthoringTask retrieveTask(String projectKey, String taskKey) throws JiraException {
+		getProjectOrThrow(projectKey);
+		List<Issue> issues = jiraClient.searchIssues(getProjectJQL(projectKey) + " AND key = " + taskKey).issues;
+		if (!issues.isEmpty()) {
+			return new AuthoringTask(issues.get(0));
+		} else {
+			throw new NotFoundException("Task", taskKey);
+		}
+	}
+
+	private String getProjectJQL(String projectKey) {
+		return "project = " + projectKey + " AND type = \"" + AUTHORING_TASK_TYPE + "\"";
 	}
 
 	public AuthoringTask createTask(String projectKey, AuthoringTaskCreateRequest taskCreateRequest) throws JiraException, ServiceException {
@@ -52,5 +62,13 @@ public class TaskService {
 		AuthoringTask authoringTask = new AuthoringTask(jiraIssue);
 		branchService.createTaskBranchAndProjectBranchIfNeeded(authoringTask.getProjectKey(), authoringTask.getKey());
 		return authoringTask;
+	}
+
+	private void getProjectOrThrow(String projectKey) {
+		try {
+			jiraClient.getProject(projectKey);
+		} catch (JiraException e) {
+			throw new NotFoundException("Project", projectKey);
+		}
 	}
 }

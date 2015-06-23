@@ -44,6 +44,15 @@ public class ProjectController extends AbstractSnomedRestService {
 		return taskService.listTasks(projectKey);
 	}
 
+	@ApiOperation(value="Retrieve a task within a project")
+	@ApiResponses({
+			@ApiResponse(code = 200, message = "OK")
+	})
+	@RequestMapping(value="/projects/{projectKey}/tasks/{taskKey}", method= RequestMethod.GET)
+	public AuthoringTask listTasks(@PathVariable final String projectKey, @PathVariable final String taskKey) throws JiraException {
+		return taskService.retrieveTask(projectKey, taskKey);
+	}
+
 	@ApiOperation(value="Create a task within a project")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
