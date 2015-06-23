@@ -14,7 +14,6 @@ import org.ihtsdo.snowowl.authoring.single.api.service.ServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.service.TaskService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -32,7 +31,6 @@ public class ProjectController extends AbstractSnomedRestService {
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/projects", method= RequestMethod.GET)
-	@PreAuthorize("hasRole('ROLE_ihtsdo-sca-author')")
 	public List<AuthoringProject> listProjects() throws JiraException {
 		return taskService.listProjects();
 	}
@@ -42,7 +40,6 @@ public class ProjectController extends AbstractSnomedRestService {
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/projects/{projectKey}/tasks", method= RequestMethod.GET)
-	@PreAuthorize("hasRole('ROLE_ihtsdo-sca-author')")
 	public List<AuthoringTask> listTasks(@PathVariable final String projectKey) throws JiraException {
 		return taskService.listTasks(projectKey);
 	}
@@ -52,7 +49,6 @@ public class ProjectController extends AbstractSnomedRestService {
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/projects/{projectKey}/tasks", method= RequestMethod.POST)
-	@PreAuthorize("hasRole('ROLE_ihtsdo-sca-author')")
 	public AuthoringTask createTask(@PathVariable final String projectKey, @RequestBody final AuthoringTaskCreateRequest taskCreateRequest) throws JiraException, ServiceException {
 		return taskService.createTask(projectKey, taskCreateRequest);
 	}
@@ -63,7 +59,6 @@ public class ProjectController extends AbstractSnomedRestService {
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/mrcm", method= RequestMethod.GET)
-//	@PreAuthorize("hasRole('ROLE_ihtsdo-sca-author')")
 	public int listMRCMRules() throws IOException {
 		SnomedPredicateBrowser predicateBrowser = ApplicationContext.getInstance().getService(SnomedPredicateBrowser.class);
 		IBranchPath mainPath = BranchPathUtils.createMainPath();

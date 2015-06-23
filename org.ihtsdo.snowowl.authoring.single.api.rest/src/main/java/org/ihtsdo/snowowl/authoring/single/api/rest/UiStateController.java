@@ -9,7 +9,6 @@ import org.ihtsdo.snowowl.api.rest.common.AbstractSnomedRestService;
 import org.ihtsdo.snowowl.authoring.single.api.service.UiStateService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -31,7 +30,6 @@ public class UiStateController extends AbstractSnomedRestService {
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/projects/{projectKey}/tasks/{taskKey}/ui-state/{panelId}", method= RequestMethod.POST)
-	@PreAuthorize("hasRole('ROLE_ihtsdo-sca-author')")
 	public void persistUiPanelState(@PathVariable final String projectKey, @PathVariable final String taskKey,
 			@PathVariable final String panelId, @RequestBody final String jsonState) throws IOException {
 
@@ -45,7 +43,6 @@ public class UiStateController extends AbstractSnomedRestService {
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/projects/{projectKey}/tasks/{taskKey}/ui-state/{panelId}", method= RequestMethod.GET)
-	@PreAuthorize("hasRole('ROLE_ihtsdo-sca-author')")
 	public String retrieveUiPanelState(@PathVariable final String projectKey, @PathVariable final String taskKey,
 			@PathVariable final String panelId) throws IOException {
 
