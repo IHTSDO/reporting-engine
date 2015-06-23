@@ -1,9 +1,11 @@
 package org.ihtsdo.snowowl.authoring.single.api.service;
 
+import com.b2international.snowowl.core.exceptions.NotFoundException;
 import org.ihtsdo.snowowl.authoring.single.api.service.dao.ArbitraryJsonService;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 
 public class UiStateService {
 
@@ -15,7 +17,11 @@ public class UiStateService {
 	}
 
 	public String retrievePanelState(String projectKey, String taskKey, String username, String panelId) throws IOException {
-		return arbitraryJsonService.read(getUserPanelPath(projectKey, taskKey, username, panelId));
+		try {
+			return arbitraryJsonService.read(getUserPanelPath(projectKey, taskKey, username, panelId));
+		} catch (NoSuchFileException e) {
+			throw new NotFoundException("ui-state", panelId);
+		}
 	}
 
 	private String getUserPanelPath(String projectKey, String taskKey, String username, String panelId) {
