@@ -10,7 +10,7 @@
 	<artifactId>org.ihtsdo.snowowl.authoring.single.api.rest</artifactId>
 
 	<properties>
-		<org.ihtsdo.otf.im-version>0.0.1-SNAPSHOT</org.ihtsdo.otf.im-version>
+		<org.ihtsdo.otf.im-version>0.0.3</org.ihtsdo.otf.im-version>
 		<!-- manifest properties -->
 		<bundle.symbolicName>${project.artifactId};singleton:=true</bundle.symbolicName>
 		<bundle.namespace>${project.artifactId}</bundle.namespace>
@@ -484,7 +484,7 @@
 		</plugins>
 	</build>
 
-	<profiles>
+	<!--profiles>
 		<profile>
 			<id>dev</id>
 			<activation>
@@ -561,5 +561,5 @@
 				</plugins>
 			</build>
 		</profile>
-	</profiles>
+	</profiles-->
 </project>
