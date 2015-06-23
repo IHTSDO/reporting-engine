@@ -14,6 +14,7 @@ import org.ihtsdo.snowowl.authoring.single.api.service.ServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.service.TaskService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -44,12 +45,22 @@ public class ProjectController extends AbstractSnomedRestService {
 		return taskService.listTasks(projectKey);
 	}
 
+	@ApiOperation(value="List authenticated user's tasks across projects")
+	@ApiResponses({
+			@ApiResponse(code = 200, message = "OK")
+	})
+	@RequestMapping(value="/projects/my-tasks", method= RequestMethod.GET)
+	public List<AuthoringTask> listMyTasks() throws JiraException {
+		UserDetails details = ControllerHelper.getUserDetails();
+		return taskService.listMyTasks(details.getUsername());
+	}
+
 	@ApiOperation(value="Retrieve a task within a project")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/projects/{projectKey}/tasks/{taskKey}", method= RequestMethod.GET)
-	public AuthoringTask listTasks(@PathVariable final String projectKey, @PathVariable final String taskKey) throws JiraException {
+	public AuthoringTask retrieveTask(@PathVariable final String projectKey, @PathVariable final String taskKey) throws JiraException {
 		return taskService.retrieveTask(projectKey, taskKey);
 	}
 

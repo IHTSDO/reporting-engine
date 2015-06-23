@@ -33,8 +33,7 @@ public class UiStateController extends AbstractSnomedRestService {
 	public void persistUiPanelState(@PathVariable final String projectKey, @PathVariable final String taskKey,
 			@PathVariable final String panelId, @RequestBody final String jsonState) throws IOException {
 
-		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-		UserDetails details = (UserDetails) authentication.getPrincipal();
+		UserDetails details = ControllerHelper.getUserDetails();
 		uiStateService.persistPanelState(projectKey, taskKey, details.getUsername(), panelId, jsonState);
 	}
 
