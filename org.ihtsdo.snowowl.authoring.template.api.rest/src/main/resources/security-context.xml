@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans 
+	xmlns="http://www.springframework.org/schema/security"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xmlns:beans="http://www.springframework.org/schema/beans"
+	xsi:schemaLocation="
+	http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-3.2.xsd
+ 	http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd">
+
+	<!-- REST should have no state, each request is re-authenticated -->
+	<http create-session="stateless" 
+			auto-config="false" 				
+			entry-point-ref="crowdAuthenticationProcessingFilterEntryPoint"
+		>
+		<custom-filter ref="authenticationProcessingFilter" position="FORM_LOGIN_FILTER"/>
+		<intercept-url pattern="/api-docs/**" access="ROLE_ANONYMOUS" />
+		<intercept-url pattern="/org/ihtsdo/snowowl/authoring/api/rest" access="ROLE_ihtsdo-tba-user" /><!-- this pattern seems misplaced. Requires revisiting if we want to have resource based security --> <!-- specific function more advanced role. See controller methods -->
+	</http>
+
+	<global-method-security pre-post-annotations="enabled" secured-annotations="enabled" proxy-target-class="true" />
+	
+ 	<beans:import resource="classpath:applicationContext-CrowdClient.xml" />
+ 	<beans:import resource="classpath:application-im-common-security-config.xml" />
+
+</beans:beans>

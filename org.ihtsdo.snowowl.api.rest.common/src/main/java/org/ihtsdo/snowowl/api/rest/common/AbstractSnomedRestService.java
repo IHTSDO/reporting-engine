@@ -15,8 +15,7 @@
  */
 package org.ihtsdo.snowowl.api.rest.common;
 
-import com.b2international.snowowl.api.domain.IComponentRef;
-import com.b2international.snowowl.api.impl.domain.ComponentRef;
+import com.b2international.snowowl.eventbus.IEventBus;
 
 /**
  * Abstract SNOMED CT REST service base class.
@@ -25,15 +24,5 @@ import com.b2international.snowowl.api.impl.domain.ComponentRef;
  */
 public class AbstractSnomedRestService extends AbstractRestService {
 
-	private final ComponentRefHelper componentRefHelper;
-
-	public AbstractSnomedRestService() {
-		componentRefHelper = new ComponentRefHelper();
-	}
-
-	protected IComponentRef createComponentRef(final String version, final String taskId, final String componentId) {
-		IComponentRef componentRef = componentRefHelper.createComponentRef(version, taskId, componentId);
-		((ComponentRef)componentRef).checkStorageExists();
-		return componentRef;
-	}
+	IEventBus iEventBus;
 }

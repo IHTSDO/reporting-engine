@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans 
+	xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd">
+
+	<bean class="com.b2international.snowowl.api.impl.AuthenticationServiceImpl" />
+	<bean class="org.ihtsdo.snowowl.authoring.single.api.services.ContentServiceImpl"/>
+	<bean class="com.b2international.snowowl.snomed.api.impl.SnomedConceptServiceImpl" />
+	<bean class="com.b2international.snowowl.snomed.api.impl.SnomedDescriptionServiceImpl" />
+	<bean class="com.b2international.snowowl.snomed.api.impl.SnomedRelationshipServiceImpl" />
+	<bean class="com.b2international.snowowl.snomed.api.impl.SnomedTaskServiceImpl" />
+
+	<import resource="web-context.xml" />
+
+	<bean class="org.ihtsdo.snowowl.api.rest.common.ServicesConfiguration" />
+	<bean class="com.mangofactory.swagger.configuration.JacksonSwaggerSupport" init-method="setup" /> <!-- to fix object mapper initialization post SSO -->
+
+</beans>

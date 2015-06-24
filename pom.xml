@@ -8,7 +8,7 @@
 
 	<groupId>org.ihtsdo.snowowl</groupId>
 	<artifactId>ihtsdo-snowowl-parent</artifactId>
-	<version>4.1.4</version>
+	<version>4.1.6-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
 	<properties>
@@ -23,9 +23,11 @@
 	</properties>
 	
 	<modules>
+		<module>org.ihtsdo.snowowl.apichecks</module>
 		<module>org.ihtsdo.snowowl.api.rest.common</module>
 		<module>org.ihtsdo.snowowl.api.rest</module>
-		<module>org.ihtsdo.snowowl.authoring.api.rest</module>
+		<module>org.ihtsdo.snowowl.authoring.single.api.rest</module>
+		<!--<module>org.ihtsdo.snowowl.authoring.template.api.rest</module>-->
 	</modules>
 
 	<dependencies>
@@ -39,16 +41,16 @@
 
 	<repositories>
 		<repository>
-			<id>ihtsdo-public</id>
+			<id>ihtsdo-releases</id>
 			<releases><enabled>true</enabled></releases>
-			<snapshots><enabled>true</enabled></snapshots>
-			<url>https://nexus.ihtsdotools.org/content/groups/public/</url>
+			<snapshots><enabled>false</enabled></snapshots>
+			<url>https://maven.ihtsdotools.org/content/repositories/releases/</url>
 		</repository>
 		<repository>
-			<id>snowowl-temp-snapshot</id>
+			<id>ihtsdo-snapshots</id>
 			<releases><enabled>false</enabled></releases>
 			<snapshots><enabled>true</enabled></snapshots>
-			<url>https://nexus.ihtsdotools.org/content/repositories/snowowl-temp-snapshot/</url>
+			<url>https://maven.ihtsdotools.org/content/repositories/snapshots/</url>
 		</repository>
 	</repositories>
 

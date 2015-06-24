@@ -3,7 +3,7 @@
 	<parent>
 		<groupId>org.ihtsdo.snowowl</groupId>
 		<artifactId>ihtsdo-snowowl-parent</artifactId>
-		<version>4.1.4</version>
+		<version>4.1.6-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>org.ihtsdo.snowowl.api.rest</artifactId>
@@ -296,8 +296,6 @@
 					 com.b2international.snowowl.api.impl.codesystem,
 					 com.b2international.snowowl.snomed.api.impl.browser,
 					 org.slf4j;version="1.7.2",
-					 org.eclipse.core.runtime;version="3.4.0",
-					 org.osgi.framework;version="1.7.0",
 			 	</Import-Package>
    	          </instructions>
 	        </configuration>
