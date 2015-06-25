@@ -10,7 +10,7 @@
 	<!-- REST should have no state, each request is re-authenticated -->
 	<http create-session="stateless"
 			auto-config="false" 				
-			entry-point-ref="crowdAuthenticationProcessingFilterEntryPoint"
+			entry-point-ref="http403EntryPoint"
 			use-expressions="true"
 		>
 		<custom-filter ref="authenticationProcessingFilter" position="FORM_LOGIN_FILTER"/>
