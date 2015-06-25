@@ -15,6 +15,12 @@
 		>
 		<custom-filter ref="authenticationProcessingFilter" position="FORM_LOGIN_FILTER"/>
 		<intercept-url pattern="/api-docs/**" access="permitAll" />
+		<intercept-url pattern="/**/*.html" access="permitAll" />
+		<intercept-url pattern="/**/*.js" access="permitAll" />
+		<intercept-url pattern="/**/*.css" access="permitAll" />
+		<intercept-url pattern="/**/*.png" access="permitAll" />
+		<intercept-url pattern="/**/*.jpg" access="permitAll" />
+	
 		<intercept-url pattern="/**" access="hasAnyRole('ROLE_ihtsdo-sca-author')" />
 	</http>
 
@@ -22,5 +28,6 @@
 	
  	<beans:import resource="classpath:applicationContext-CrowdClient.xml" />
  	<beans:import resource="classpath:application-im-common-security-config.xml" />
-
+	<beans:bean id="http403EntryPoint" class="org.springframework.security.web.authentication.Http403ForbiddenEntryPoint" />
+	
 </beans:beans>
