@@ -387,7 +387,7 @@
 						<phase>generate-resources</phase>
 						<configuration>
 							<target>
-								<move file="target/generated-resources/swagger-extract/META-INF/resources/webjars/swagger-ui/2.1.8-M1" tofile="target/generated-resources/swagger"/>
+								<move file="target/generated-resources/swagger-extract/META-INF/resources/webjars/swagger-ui/2.1.8-M1" tofile="target/generated-resources/swagger" />
 							</target>
 						</configuration>
 						<goals>
@@ -399,7 +399,7 @@
 						<phase>generate-resources</phase>
 						<configuration>
 							<target>
-								<delete dir="target/generated-resources/swagger-extract"/>
+								<delete dir="target/generated-resources/swagger-extract" />
 							</target>
 						</configuration>
 						<goals>
