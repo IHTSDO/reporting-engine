@@ -31,5 +31,22 @@
 	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.UiStateService"/>
 
 	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.dao.ArbitraryJsonService"/>
+	
+	<bean factory-bean="securityServiceFactory" factory-method="getSecurityService">
+		<constructor-arg ref="securityServiceStubMode" />
+	</bean>
+
+	<bean class="org.ihtsdo.otf.im.utility.SecurityServiceFactory" name="securityServiceFactory">
+		<property name="onlineImplementation">
+			<bean class="org.ihtsdo.otf.im.utility.SecurityServiceImpl"/>
+		</property>
+		<property name="stubImplementation">
+			<bean class="org.ihtsdo.otf.im.utility.SecurityServiceStub"/>
+		</property>
+	</bean>
+	
+	<bean class="java.lang.Boolean" id="securityServiceStubMode" >
+		<constructor-arg value="+{securityServiceStubMode}"/>
+	</bean>
 
 </beans>
