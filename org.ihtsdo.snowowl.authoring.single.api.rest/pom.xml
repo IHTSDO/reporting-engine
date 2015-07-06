@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>org.ihtsdo.snowowl</groupId>
 		<artifactId>ihtsdo-snowowl-parent</artifactId>
-		<version>4.1.6</version>
+		<version>4.1.7</version>
 	</parent>
 
 	<artifactId>org.ihtsdo.snowowl.authoring.single.api.rest</artifactId>
@@ -388,7 +388,7 @@
 						<Import-Package>*;resolution:=optional,
 							com.b2international.snowowl.api.impl,
 							com.b2international.snowowl.api.impl.codesystem,
-							com.b2international.snowowl.snomed.api.impl.browser,
+							com.b2international.snowowl.snomed.api.impl,
 							org.slf4j;version="1.7.2",
 						</Import-Package>
 					</instructions>

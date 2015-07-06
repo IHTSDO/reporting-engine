@@ -1,7 +1,10 @@
 package org.ihtsdo.snowowl.authoring.single.api.service;
 
 import com.b2international.snowowl.core.exceptions.NotFoundException;
+
 import net.rcarz.jiraclient.*;
+
+import org.ihtsdo.otf.im.utility.SecurityService;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringProject;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTask;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskCreateRequest;
@@ -14,6 +17,10 @@ public class TaskService {
 
 	@Autowired
 	private BranchService branchService;
+	
+	@Autowired
+	SecurityService ims;
+	
 	private final JiraClient jiraClient;
 	private static final String AUTHORING_TASK_TYPE = "SCA Authoring Task";
 
@@ -56,10 +63,15 @@ public class TaskService {
 	}
 
 	public AuthoringTask createTask(String projectKey, AuthoringTaskCreateRequest taskCreateRequest) throws JiraException, ServiceException {
+		//The task should be assigned to the currently logged in user
+		String currentUser = ims.getCurrentLogin();
+		
 		Issue jiraIssue = jiraClient.createIssue(projectKey, AUTHORING_TASK_TYPE)
 				.field(Field.SUMMARY, taskCreateRequest.getSummary())
 				.field(Field.DESCRIPTION, taskCreateRequest.getDescription())
+				.field(Field.ASSIGNEE, currentUser)
 				.execute();
+
 		AuthoringTask authoringTask = new AuthoringTask(jiraIssue);
 		branchService.createTaskBranchAndProjectBranchIfNeeded(authoringTask.getProjectKey(), authoringTask.getKey());
 		return authoringTask;

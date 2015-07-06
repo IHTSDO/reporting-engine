@@ -1,3 +1,5 @@
 jira.url=
 jira.username=
 jira.password=
+
+securityServiceStubMode=
