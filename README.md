@@ -49,13 +49,11 @@ OSGI
 ## Deployment
 Place the changed file in pickup directory
 
-Verify deployment 
-In order to test your deployment is good or not your should be able to browse api docs http://localhost:8080/snowowl/admin/api-viewer/ and invoke relevant services.
+###Verify deployment 
+When the IHTSDO End-points are combined with modules in this project such as Authoring (Single Concept Authoring - SCA), two main end points are provided:
+1.  An enhanced SnowOwl endpoint:  http://localhost:8080/snowowl/snomed-ct/v2/  which can be seen on the development server as https://dev-term.ihtsdotools.org/snowowl/snomed-ct/v2/
 
-API Documentation is listed based on required realm. So chnage the realm on http://localhost:8080/snowowl/admin/api-viewer/
-
-http://localhost:8080/snowowl/ihtsdo/api-docs -- Documentation for IHTSDO Snow Owl REST API
-http://localhost:8080/snowowl/snomed-ct/api-docs -- Snow Owl Terminology Services API
+2.  An authoring endpoint more tightly integrated with Jira and authoring workflow:  http://localhost:8080/snowowl/ihtsdo-sca/ which can be seen in development at https://dev-term.ihtsdotools.org/snowowl/ihtsdo-sca/
 
 ##Logging
 Application logs are written in serviceability/logs
