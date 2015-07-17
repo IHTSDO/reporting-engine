@@ -4,9 +4,15 @@ import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
+
 import org.ihtsdo.snowowl.api.rest.common.AbstractRestService;
 import org.ihtsdo.snowowl.api.rest.common.AbstractSnomedRestService;
+import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskStateTransition;
+import org.ihtsdo.snowowl.authoring.single.api.service.TaskService;
 import org.ihtsdo.snowowl.authoring.single.api.service.UiStateService;
+import org.ihtsdo.snowowl.authoring.single.api.service.dao.ArbitraryJsonService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
@@ -23,6 +29,11 @@ public class UiStateController extends AbstractSnomedRestService {
 
 	@Autowired
 	private UiStateService uiStateService;
+	
+	@Autowired
+	private TaskService taskService;
+	
+	private Logger logger = LoggerFactory.getLogger(UiStateController.class);
 
 	@ApiOperation(value="Persist UI panel state", notes="This endpoint may be used to persist UI state using any json object. " +
 			"State is stored and retrieved under project, task, user and panel.")
@@ -34,6 +45,15 @@ public class UiStateController extends AbstractSnomedRestService {
 			@PathVariable final String panelId, @RequestBody final String jsonState) throws IOException {
 
 		UserDetails details = ControllerHelper.getUserDetails();
+		
+		//If ticket state is "New" move it to "In Progress".   Don't worry about result, but do log it
+		AuthoringTaskStateTransition st = new AuthoringTaskStateTransition(AuthoringTaskStateTransition.STATE_NEW, 
+																			AuthoringTaskStateTransition.TRANSITION_NEW_TO_IN_PROGRESS);
+		taskService.doStateTransition(projectKey,taskKey, st);
+		if (!st.transitionSuccessful()) {
+			logger.warn(st.getErrorMessage());
+		}
+		
 		uiStateService.persistPanelState(projectKey, taskKey, details.getUsername(), panelId, jsonState);
 	}
 
@@ -47,6 +67,7 @@ public class UiStateController extends AbstractSnomedRestService {
 
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 		UserDetails details = (UserDetails) authentication.getPrincipal();
+		
 		return uiStateService.retrievePanelState(projectKey, taskKey, details.getUsername(), panelId);
 	}
 
