@@ -7,7 +7,7 @@ import com.wordnik.swagger.annotations.ApiResponses;
 
 import org.ihtsdo.snowowl.api.rest.common.AbstractRestService;
 import org.ihtsdo.snowowl.api.rest.common.AbstractSnomedRestService;
-import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskStateTransition;
+import org.ihtsdo.snowowl.authoring.single.api.pojo.StateTransition;
 import org.ihtsdo.snowowl.authoring.single.api.service.TaskService;
 import org.ihtsdo.snowowl.authoring.single.api.service.UiStateService;
 import org.ihtsdo.snowowl.authoring.single.api.service.dao.ArbitraryJsonService;
@@ -47,8 +47,8 @@ public class UiStateController extends AbstractSnomedRestService {
 		UserDetails details = ControllerHelper.getUserDetails();
 		
 		//If ticket state is "New" move it to "In Progress".   Don't worry about result, but do log it
-		AuthoringTaskStateTransition st = new AuthoringTaskStateTransition(AuthoringTaskStateTransition.STATE_NEW, 
-																			AuthoringTaskStateTransition.TRANSITION_NEW_TO_IN_PROGRESS);
+		StateTransition st = new StateTransition(StateTransition.STATE_NEW, 
+																			StateTransition.TRANSITION_NEW_TO_IN_PROGRESS);
 		taskService.doStateTransition(projectKey,taskKey, st);
 		if (!st.transitionSuccessful()) {
 			logger.warn(st.getErrorMessage());

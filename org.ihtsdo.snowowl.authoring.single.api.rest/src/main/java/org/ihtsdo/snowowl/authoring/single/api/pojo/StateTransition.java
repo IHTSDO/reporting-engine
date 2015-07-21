@@ -1,12 +1,14 @@
 package org.ihtsdo.snowowl.authoring.single.api.pojo;
 
-public class AuthoringTaskStateTransition {
+public class StateTransition {
 	
 	public final static String STATE_NEW = "New";
-	public final static String STATE_IN_PROGRESS = "IN PROGRESS";
+	public final static String STATE_IN_PROGRESS = "In Progress";
+	public final static String STATE_IN_CLASSIFICATION = "In Classification";
 	
-	
-	public final static String	TRANSITION_NEW_TO_IN_PROGRESS = "Start Work"; 
+	public final static String TRANSITION_NEW_TO_IN_PROGRESS = "Start Work";
+	public static final String TRANSITION_IN_PROGRESS_TO_IN_CLASSIFICATION = "Classify";
+	public static final String TRANSITION_IN_CLASSIFICATION_TO_IN_PROGRESS = "Classification Finished"; 
 	
 	private String initialState;
 	private String transition;
@@ -14,7 +16,7 @@ public class AuthoringTaskStateTransition {
 	private String errorMessage;
 	private String finalState;
 	
-	public AuthoringTaskStateTransition (String initialState, String transition) {
+	public StateTransition (String initialState, String transition) {
 		this.initialState = initialState;
 		this.transition = transition;
 	}
@@ -31,8 +33,9 @@ public class AuthoringTaskStateTransition {
 	public void setTransition(String transition) {
 		this.transition = transition;
 	}
-	public Boolean transitionSuccessful() {
-		return transitionSuccessful;
+
+	public boolean transitionSuccessful() {
+		return transitionSuccessful == null ? false : transitionSuccessful.booleanValue();
 	}
 	public void transitionSuccessful(Boolean transitionSuccessful) {
 		this.transitionSuccessful = transitionSuccessful;

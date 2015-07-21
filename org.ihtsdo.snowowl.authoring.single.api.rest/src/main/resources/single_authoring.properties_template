@@ -3,3 +3,5 @@ jira.username=
 jira.password=
 
 securityServiceStubMode=
+
+snowowlUser=

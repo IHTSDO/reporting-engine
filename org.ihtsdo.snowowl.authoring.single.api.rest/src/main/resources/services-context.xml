@@ -21,6 +21,19 @@
 
 	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.BranchService"/>
 
+	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.ClassificationService"/>
+
+	<bean class="org.ihtsdo.otf.rest.client.SnowOwlRestClient">
+		<constructor-arg value="+{snowowl.url}"/>
+		<constructor-arg value="+{snowowl.username}"/>
+		<constructor-arg value="+{snowowl.password}"/>
+		<property name="reasonerId" value="+{snowowl.reasonerId}"/>
+		<property name="logPath" value="+{snowowl.log.path}"/>
+		<property name="rolloverLogPath" value="+{snowowl.rolloverLog.path}"/>
+		<property name="importTimeoutMinutes" value="+{snowowl.import.timeout}"/>
+		<property name="classificationTimeoutMinutes" value="+{snowowl.classification.timeout}"/>
+	</bean>
+	
 	<bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
 		<property name="location" value="#{systemProperties['osgi.sharedConfiguration.area']}/single_authoring.properties"/>
 		<property name="placeholderPrefix" value="+{"/>

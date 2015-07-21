@@ -8,7 +8,7 @@ import org.ihtsdo.otf.im.utility.SecurityService;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringProject;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTask;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskCreateRequest;
-import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskStateTransition;
+import org.ihtsdo.snowowl.authoring.single.api.pojo.StateTransition;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.ArrayList;
@@ -99,9 +99,15 @@ public class TaskService {
 			throw new NotFoundException("Project", projectKey);
 		}
 	}
+	
+	public boolean taskIsState(String projectKey, String taskKey, String targetState) throws JiraException {
+		Issue issue = getIssue (projectKey, taskKey);
+		String currentState = issue.getStatus().getName();
+		return currentState.equals(targetState);
+	}
 
 	public void doStateTransition(String projectKey, String taskKey,
-			AuthoringTaskStateTransition stateTransition) {
+			StateTransition stateTransition) {
 		
 		try {
 			Issue issue = getIssue (projectKey, taskKey);
@@ -114,7 +120,7 @@ public class TaskService {
 				stateTransition.transitionSuccessful(true);
 			} else {
 				StringBuilder sb = getTransitionError(projectKey, taskKey, stateTransition) ;
-				sb.append ( " currently being in state ")
+				sb.append("currently being in state ")
 					.append(issue.getStatus().getName());
 				stateTransition.transitionSuccessful(false);
 				stateTransition.setErrorMessage(sb.toString());;
@@ -128,7 +134,7 @@ public class TaskService {
 		
 	}
 	
-	private StringBuilder getTransitionError (String projectKey, String taskKey, AuthoringTaskStateTransition stateTransition) {
+	private StringBuilder getTransitionError (String projectKey, String taskKey, StateTransition stateTransition) {
 		StringBuilder sb = new StringBuilder ();
 		sb.append("Failed to transition issue ")
 		.append (toString(projectKey, taskKey))
