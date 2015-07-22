@@ -8,7 +8,7 @@ public class StateTransition {
 	
 	public final static String TRANSITION_NEW_TO_IN_PROGRESS = "Start Work";
 	public static final String TRANSITION_IN_PROGRESS_TO_IN_CLASSIFICATION = "Classify";
-	public static final String TRANSITION_IN_CLASSIFICATION_TO_IN_PROGRESS = "Classification Finished"; 
+	public static final String TRANSITION_IN_CLASSIFICATION_TO_IN_PROGRESS = "Classification finished"; 
 	
 	private String initialState;
 	private String transition;

@@ -105,6 +105,13 @@ public class TaskService {
 		String currentState = issue.getStatus().getName();
 		return currentState.equals(targetState);
 	}
+	
+	public void addComment(String projectKey, String taskKey, String commentString)
+			throws JiraException {
+		Issue issue = getIssue (projectKey, taskKey);
+		issue.addComment(commentString);
+		issue.update(); // Pick up new comment locally too
+	}
 
 	public void doStateTransition(String projectKey, String taskKey,
 			StateTransition stateTransition) {
