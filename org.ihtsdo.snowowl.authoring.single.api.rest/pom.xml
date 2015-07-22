@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>org.ihtsdo.snowowl</groupId>
 		<artifactId>ihtsdo-snowowl-parent</artifactId>
-		<version>4.1.7</version>
+		<version>4.1.8</version>
 	</parent>
 
 	<artifactId>org.ihtsdo.snowowl.authoring.single.api.rest</artifactId>
@@ -62,21 +62,21 @@
 			<!--<version>${snowowl.version}</version>-->
 			<!--<scope>provided</scope>-->
 		<!--</dependency>-->
-		<!--<dependency>-->
-			<!--<groupId>com.b2international.snowowl</groupId>-->
-			<!--<artifactId>com.b2international.snowowl.snomed.api</artifactId>-->
-			<!--<version>${snowowl.version}</version>-->
-			<!--<scope>provided</scope>-->
-		<!--</dependency>-->
+		<dependency>
+			<groupId>com.b2international.snowowl</groupId>
+			<artifactId>com.b2international.snowowl.snomed.api</artifactId>
+			<version>${snowowl.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.b2international.snowowl</groupId>
+			<artifactId>com.b2international.snowowl.snomed.api.impl</artifactId>
+			<version>${snowowl.version}</version>
+			<scope>provided</scope>
+		</dependency>
 		<!--<dependency>-->
 			<!--<groupId>com.b2international.snowowl</groupId>-->
 			<!--<artifactId>com.b2international.snowowl.api.impl</artifactId>-->
-			<!--<version>${snowowl.version}</version>-->
-			<!--<scope>provided</scope>-->
-		<!--</dependency>-->
-		<!--<dependency>-->
-			<!--<groupId>com.b2international.snowowl</groupId>-->
-			<!--<artifactId>com.b2international.snowowl.snomed.api.impl</artifactId>-->
 			<!--<version>${snowowl.version}</version>-->
 			<!--<scope>provided</scope>-->
 		<!--</dependency>-->
@@ -250,7 +250,6 @@
 			<type>zip</type>
 			<scope>provided</scope>
 		</dependency>
-
 		<dependency>
 			<groupId>org.ihtsdo.otf</groupId>
 			<artifactId>ihtsdo-crowd-bridge</artifactId>
@@ -261,7 +260,17 @@
 			<artifactId>httpclient</artifactId>
 			<version>4.3.6</version>
 		</dependency>
-
+		<dependency>
+			<groupId>org.ihtsdo.otf.common</groupId>
+			<artifactId>otf-common</artifactId>
+			<version>0.0.12</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>spring-beans</artifactId>
+					<groupId>org.springframework</groupId>
+				</exclusion>
+			</exclusions>
+		</dependency>
 		<!-- Testing -->
 		<dependency>
 			<groupId>org.slf4j</groupId>
@@ -345,6 +354,7 @@
 					</execution>
 				</executions>
 			</plugin>
+
 			<!-- Generate Manifest -->
 			<plugin>
 				<groupId>org.apache.felix</groupId>
@@ -389,7 +399,7 @@
 							com.b2international.snowowl.api.impl,
 							com.b2international.snowowl.api.impl.codesystem,
 							com.b2international.snowowl.snomed.api.impl,
-							org.slf4j;version="1.7.2",
+							org.slf4j;version="1.7.2"
 						</Import-Package>
 					</instructions>
 				</configuration>

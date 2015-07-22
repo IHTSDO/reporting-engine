@@ -29,5 +29,9 @@ public class BranchService {
 	private String getBranchPath(String projectKey) {
 		return MAIN + "/" + projectKey;
 	}
+	
+	public String getTaskPath(String projectKey, String taskKey) {
+		return getBranchPath(projectKey + "/" + taskKey);
+	}
 
 }

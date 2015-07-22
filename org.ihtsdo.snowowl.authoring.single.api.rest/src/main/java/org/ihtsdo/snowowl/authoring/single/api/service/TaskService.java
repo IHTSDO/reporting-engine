@@ -8,6 +8,7 @@ import org.ihtsdo.otf.im.utility.SecurityService;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringProject;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTask;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskCreateRequest;
+import org.ihtsdo.snowowl.authoring.single.api.pojo.StateTransition;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.ArrayList;
@@ -44,13 +45,19 @@ public class TaskService {
 	}
 
 	public AuthoringTask retrieveTask(String projectKey, String taskKey) throws JiraException {
+		Issue issue = getIssue (projectKey, taskKey);
+		return new AuthoringTask(issue);
+	}
+	
+	private Issue getIssue(String projectKey, String taskKey) throws JiraException {
 		getProjectOrThrow(projectKey);
 		List<Issue> issues = jiraClient.searchIssues(getProjectJQL(projectKey) + " AND key = " + taskKey).issues;
 		if (!issues.isEmpty()) {
-			return new AuthoringTask(issues.get(0));
+			return issues.get(0);
 		} else {
 			throw new NotFoundException("Task", taskKey);
-		}
+		}		
+		
 	}
 
 	public List<AuthoringTask> listMyTasks(String username) throws JiraException {
@@ -92,4 +99,67 @@ public class TaskService {
 			throw new NotFoundException("Project", projectKey);
 		}
 	}
+	
+	public boolean taskIsState(String projectKey, String taskKey, String targetState) throws JiraException {
+		Issue issue = getIssue (projectKey, taskKey);
+		String currentState = issue.getStatus().getName();
+		return currentState.equals(targetState);
+	}
+	
+	public void addComment(String projectKey, String taskKey, String commentString)
+			throws JiraException {
+		Issue issue = getIssue (projectKey, taskKey);
+		issue.addComment(commentString);
+		issue.update(); // Pick up new comment locally too
+	}
+
+	public void doStateTransition(String projectKey, String taskKey,
+			StateTransition stateTransition) {
+		
+		try {
+			Issue issue = getIssue (projectKey, taskKey);
+			String currentState = issue.getStatus().getName();
+			
+			//If the currentState isn't the expected initial state, then refuse
+			if (stateTransition.hasInitialState(currentState)) {
+				issue.transition().execute(stateTransition.getTransition());
+				issue.refresh(); // Synchronize the issue to pick up the new status.
+				stateTransition.transitionSuccessful(true);
+			} else {
+				StringBuilder sb = getTransitionError(projectKey, taskKey, stateTransition) ;
+				sb.append("currently being in state ")
+					.append(issue.getStatus().getName());
+				stateTransition.transitionSuccessful(false);
+				stateTransition.setErrorMessage(sb.toString());;
+			}
+		} catch (JiraException je) {
+			StringBuilder sb = getTransitionError (projectKey, taskKey, stateTransition);
+			sb.append (je.getMessage());
+			stateTransition.transitionSuccessful(false);	
+			stateTransition.setErrorMessage(sb.toString());
+		}
+		
+	}
+	
+	private StringBuilder getTransitionError (String projectKey, String taskKey, StateTransition stateTransition) {
+		StringBuilder sb = new StringBuilder ();
+		sb.append("Failed to transition issue ")
+		.append (toString(projectKey, taskKey))
+		.append (" from status " )
+		.append ( stateTransition.getInitialState())
+		.append (" via transition " )
+		.append ( stateTransition.getTransition())
+		.append ( " due to ");
+		return sb;
+	}
+	
+	private String toString (String projectKey, String taskKey) {
+		StringBuilder sb = new StringBuilder();
+		sb.append (projectKey)
+			.append ("/")
+			.append (taskKey);
+		return sb.toString();
+	}
+	
+	
 }
