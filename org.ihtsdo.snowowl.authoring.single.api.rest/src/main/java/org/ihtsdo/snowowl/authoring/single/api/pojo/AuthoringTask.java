@@ -1,5 +1,6 @@
 package org.ihtsdo.snowowl.authoring.single.api.pojo;
 
+import com.fasterxml.jackson.annotation.JsonRawValue;
 import net.rcarz.jiraclient.Issue;
 
 public class AuthoringTask implements AuthoringTaskCreateRequest {
@@ -12,6 +13,7 @@ public class AuthoringTask implements AuthoringTaskCreateRequest {
 	private User assignee;
 	private String created;
 	private String updated;
+	private String latestClassificationJson;
 
 	public AuthoringTask() {
 	}
@@ -28,6 +30,11 @@ public class AuthoringTask implements AuthoringTaskCreateRequest {
 		}
 		created = (String) issue.getField("created");
 		updated = (String) issue.getField("updated");
+	}
+
+	public AuthoringTask(Issue issue, String latestClassificationJson) {
+		this(issue);
+		this.latestClassificationJson = latestClassificationJson;
 	}
 
 	public String getKey() {
@@ -96,5 +103,10 @@ public class AuthoringTask implements AuthoringTaskCreateRequest {
 
 	public void setUpdated(String updated) {
 		this.updated = updated;
+	}
+
+	@JsonRawValue
+	public String getLatestClassificationJson() {
+		return latestClassificationJson;
 	}
 }

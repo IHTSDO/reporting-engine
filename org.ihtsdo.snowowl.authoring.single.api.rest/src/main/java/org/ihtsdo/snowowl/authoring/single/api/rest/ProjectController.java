@@ -5,6 +5,7 @@ import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
 import net.rcarz.jiraclient.JiraException;
+import org.ihtsdo.otf.rest.client.SnowOwlRestClientException;
 import org.ihtsdo.snowowl.api.rest.common.AbstractRestService;
 import org.ihtsdo.snowowl.api.rest.common.AbstractSnomedRestService;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringProject;
@@ -41,7 +42,7 @@ public class ProjectController extends AbstractSnomedRestService {
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/projects/{projectKey}/tasks", method= RequestMethod.GET)
-	public List<AuthoringTask> listTasks(@PathVariable final String projectKey) throws JiraException {
+	public List<AuthoringTask> listTasks(@PathVariable final String projectKey) throws JiraException, SnowOwlRestClientException {
 		return taskService.listTasks(projectKey);
 	}
 
@@ -50,7 +51,7 @@ public class ProjectController extends AbstractSnomedRestService {
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/projects/my-tasks", method= RequestMethod.GET)
-	public List<AuthoringTask> listMyTasks() throws JiraException {
+	public List<AuthoringTask> listMyTasks() throws JiraException, SnowOwlRestClientException {
 		UserDetails details = ControllerHelper.getUserDetails();
 		return taskService.listMyTasks(details.getUsername());
 	}
@@ -60,7 +61,7 @@ public class ProjectController extends AbstractSnomedRestService {
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/projects/{projectKey}/tasks/{taskKey}", method= RequestMethod.GET)
-	public AuthoringTask retrieveTask(@PathVariable final String projectKey, @PathVariable final String taskKey) throws JiraException {
+	public AuthoringTask retrieveTask(@PathVariable final String projectKey, @PathVariable final String taskKey) throws JiraException, SnowOwlRestClientException {
 		return taskService.retrieveTask(projectKey, taskKey);
 	}
 
