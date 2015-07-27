@@ -1,10 +1,9 @@
 package org.ihtsdo.snowowl.authoring.single.api.service;
 
 import com.b2international.snowowl.core.exceptions.NotFoundException;
-
 import net.rcarz.jiraclient.*;
-
 import org.ihtsdo.otf.im.utility.SecurityService;
+import org.ihtsdo.otf.rest.client.SnowOwlRestClientException;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringProject;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTask;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskCreateRequest;
@@ -19,6 +18,9 @@ public class TaskService {
 	@Autowired
 	private BranchService branchService;
 	
+	@Autowired
+	private ClassificationService classificationService;
+
 	@Autowired
 	SecurityService ims;
 	
@@ -38,15 +40,15 @@ public class TaskService {
 		return authoringProjects;
 	}
 
-	public List<AuthoringTask> listTasks(String projectKey) throws JiraException {
+	public List<AuthoringTask> listTasks(String projectKey) throws JiraException, SnowOwlRestClientException {
 		getProjectOrThrow(projectKey);
 		List<Issue> issues = jiraClient.searchIssues(getProjectJQL(projectKey)).issues;
 		return convertToAuthoringTasks(issues);
 	}
 
-	public AuthoringTask retrieveTask(String projectKey, String taskKey) throws JiraException {
+	public AuthoringTask retrieveTask(String projectKey, String taskKey) throws JiraException, SnowOwlRestClientException {
 		Issue issue = getIssue (projectKey, taskKey);
-		return new AuthoringTask(issue);
+		return getAuthoringTask(issue);
 	}
 	
 	private Issue getIssue(String projectKey, String taskKey) throws JiraException {
@@ -60,7 +62,7 @@ public class TaskService {
 		
 	}
 
-	public List<AuthoringTask> listMyTasks(String username) throws JiraException {
+	public List<AuthoringTask> listMyTasks(String username) throws JiraException, SnowOwlRestClientException {
 		List<Issue> issues = jiraClient.searchIssues("assignee = \"" + username + "\" AND type = \"" + AUTHORING_TASK_TYPE + "\"").issues;
 		return convertToAuthoringTasks(issues);
 	}
@@ -84,12 +86,17 @@ public class TaskService {
 		return authoringTask;
 	}
 
-	private List<AuthoringTask> convertToAuthoringTasks(List<Issue> issues) {
+	private List<AuthoringTask> convertToAuthoringTasks(List<Issue> issues) throws SnowOwlRestClientException {
 		List<AuthoringTask> tasks = new ArrayList<>();
 		for (Issue issue : issues) {
-			tasks.add(new AuthoringTask(issue));
+			tasks.add(getAuthoringTask(issue));
 		}
 		return tasks;
+	}
+
+	private AuthoringTask getAuthoringTask(Issue issue) throws SnowOwlRestClientException {
+		final String latestClassificationJson = classificationService.getLatestClassification(issue.getProject().getKey(), issue.getKey());
+		return new AuthoringTask(issue, latestClassificationJson);
 	}
 
 	private void getProjectOrThrow(String projectKey) {

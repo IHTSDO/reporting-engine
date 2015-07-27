@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>org.ihtsdo.snowowl</groupId>
 		<artifactId>ihtsdo-snowowl-parent</artifactId>
-		<version>4.1.8</version>
+		<version>4.1.9</version>
 	</parent>
 
 	<artifactId>org.ihtsdo.snowowl.authoring.single.api.rest</artifactId>
@@ -225,6 +225,12 @@
 			<groupId>org.springframework.hateoas</groupId>
 			<artifactId>spring-hateoas</artifactId>
 			<version>${spring.hateoas.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-api</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.scala-lang</groupId>
@@ -263,7 +269,7 @@
 		<dependency>
 			<groupId>org.ihtsdo.otf.common</groupId>
 			<artifactId>otf-common</artifactId>
-			<version>0.0.12</version>
+			<version>0.0.13</version>
 			<exclusions>
 				<exclusion>
 					<artifactId>spring-beans</artifactId>

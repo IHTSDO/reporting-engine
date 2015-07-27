@@ -69,17 +69,21 @@ public class ClassificationService {
 		return result;
 	}
 
+	public String getLatestClassification(String projectKey, String taskKey) throws SnowOwlRestClientException {
+		return snowOwlClient.getLatestClassificationOnBranch("MAIN/" + projectKey + "/" + taskKey);
+	}
+
 	private Classification callClassification(String projectKey, String taskKey) throws InterruptedException, SnowOwlRestClientException {
 		ClassificationResults results = snowOwlClient.startClassification(branchService.getTaskPath(projectKey, taskKey));
 		//If we started the classification without an exception then it's state will be RUNNING (or queued)
 		results.setStatus(ClassificationStatus.RUNNING.toString());
-		
+
 		//Now start an asynchronous thread to wait for the results
 		(new Thread(new ClassificationPoller(projectKey, taskKey, results))).start();
-		
+
 		return new Classification(results);
 	}
-	
+
 	private class ClassificationPoller implements Runnable {
 		
 		ClassificationResults results;
