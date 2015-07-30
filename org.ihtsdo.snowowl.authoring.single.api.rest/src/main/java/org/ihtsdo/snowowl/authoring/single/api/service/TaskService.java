@@ -8,6 +8,8 @@ import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringProject;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTask;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskCreateRequest;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.StateTransition;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.ArrayList;
@@ -25,6 +27,9 @@ public class TaskService {
 	SecurityService ims;
 	
 	private final JiraClient jiraClient;
+
+	private final Logger logger = LoggerFactory.getLogger(getClass());
+
 	private static final String AUTHORING_TASK_TYPE = "SCA Authoring Task";
 
 	public TaskService(JiraClient jiraClient) {
@@ -38,6 +43,14 @@ public class TaskService {
 			authoringProjects.add(new AuthoringProject(project.getKey(), project.getName()));
 		}
 		return authoringProjects;
+	}
+
+	public Issue getProjectTicket(String projectKey) throws JiraException {
+		final List<Issue> issues = jiraClient.searchIssues("project = " + projectKey + " AND type = \"SCA Authoring Project\"").issues;
+		if (issues.isEmpty()) {
+			return issues.get(0);
+		}
+		return null;
 	}
 
 	public List<AuthoringTask> listTasks(String projectKey) throws JiraException, RestClientException {
@@ -113,9 +126,27 @@ public class TaskService {
 		return currentState.equals(targetState);
 	}
 	
+	public void addCommentLogErrors(String projectKey, String commentString) {
+		try {
+			final Issue projectTicket = getProjectTicket(projectKey);
+			projectTicket.addComment(commentString);
+			projectTicket.update();
+		} catch (JiraException e) {
+			logger.error("Failed to set message on jira ticket {}/{}: {}", projectKey, commentString, e);
+		}
+	}
+
+	public void addCommentLogErrors(String projectKey, String taskKey, String commentString) {
+		try {
+			addComment(projectKey, taskKey, commentString);
+		} catch (JiraException e) {
+			logger.error("Failed to set message on jira ticket {}/{}: {}", projectKey, taskKey, commentString, e);
+		}
+	}
+
 	public void addComment(String projectKey, String taskKey, String commentString)
 			throws JiraException {
-		Issue issue = getIssue (projectKey, taskKey);
+		Issue issue = getIssue(projectKey, taskKey);
 		issue.addComment(commentString);
 		issue.update(); // Pick up new comment locally too
 	}
