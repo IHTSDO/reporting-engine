@@ -52,6 +52,8 @@
 	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.ValidationService"/>
 
 	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.dao.ArbitraryJsonService"/>
+
+	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.NotificationService"/>
 	
 	<bean factory-bean="securityServiceFactory" factory-method="getSecurityService">
 		<constructor-arg ref="securityServiceStubMode" />

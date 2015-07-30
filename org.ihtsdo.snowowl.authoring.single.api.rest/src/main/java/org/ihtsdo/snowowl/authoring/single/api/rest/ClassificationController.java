@@ -31,7 +31,7 @@ public class ClassificationController extends AbstractSnomedRestService {
 	})
 	@RequestMapping(value="/projects/{projectKey}/tasks/{taskKey}/classifications", method= RequestMethod.POST)
 	public Classification startClassificationOfTask(@PathVariable final String projectKey, @PathVariable final String taskKey) throws JiraException {
-		return classificationService.startClassificationOfTask(projectKey, taskKey);
+		return classificationService.startClassificationOfTask(projectKey, taskKey, ControllerHelper.getUsername());
 	}
 
 	@ApiOperation(value="Initiate the classifier on a project")
@@ -40,7 +40,7 @@ public class ClassificationController extends AbstractSnomedRestService {
 	})
 	@RequestMapping(value="/projects/{projectKey}/classifications", method= RequestMethod.POST)
 	public Classification startClassificationOfProject(@PathVariable final String projectKey) throws JiraException, RestClientException, JSONException {
-		return classificationService.startClassificationOfProject(projectKey);
+		return classificationService.startClassificationOfProject(projectKey, ControllerHelper.getUsername());
 	}
 
 }

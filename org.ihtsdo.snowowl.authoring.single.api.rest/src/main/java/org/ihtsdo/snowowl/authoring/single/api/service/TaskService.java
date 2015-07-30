@@ -47,7 +47,7 @@ public class TaskService {
 
 	public Issue getProjectTicket(String projectKey) throws JiraException {
 		final List<Issue> issues = jiraClient.searchIssues("project = " + projectKey + " AND type = \"SCA Authoring Project\"").issues;
-		if (issues.isEmpty()) {
+		if (!issues.isEmpty()) {
 			return issues.get(0);
 		}
 		return null;
@@ -129,8 +129,12 @@ public class TaskService {
 	public void addCommentLogErrors(String projectKey, String commentString) {
 		try {
 			final Issue projectTicket = getProjectTicket(projectKey);
-			projectTicket.addComment(commentString);
-			projectTicket.update();
+			if (projectTicket != null) {
+				projectTicket.addComment(commentString);
+				projectTicket.update();
+			} else {
+				throw new IllegalArgumentException("Authoring project with key " + projectKey + " is not accessible.");
+			}
 		} catch (JiraException e) {
 			logger.error("Failed to set message on jira ticket {}/{}: {}", projectKey, commentString, e);
 		}

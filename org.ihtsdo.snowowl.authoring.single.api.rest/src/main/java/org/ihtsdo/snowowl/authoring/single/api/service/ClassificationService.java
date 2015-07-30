@@ -5,6 +5,8 @@ import org.ihtsdo.otf.rest.client.ClassificationResults;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.client.SnowOwlRestClient;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.Classification;
+import org.ihtsdo.snowowl.authoring.single.api.pojo.EntityType;
+import org.ihtsdo.snowowl.authoring.single.api.pojo.Notification;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.StateTransition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,9 +24,12 @@ public class ClassificationService {
 	@Autowired
 	private SnowOwlRestClient snowOwlClient;
 
+	@Autowired
+	private NotificationService notificationService;
+
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
-	public Classification startClassificationOfTask(String projectKey, String taskKey) {
+	public Classification startClassificationOfTask(String projectKey, String taskKey, String username) {
 		Classification result;
 		//Can we transition from In Progress to In Classification?
 		StateTransition startClassification = new StateTransition ( StateTransition.STATE_IN_PROGRESS,
@@ -34,7 +39,7 @@ public class ClassificationService {
 
 		if (startClassification.transitionSuccessful()) {
 			try {
-				result = callClassification(projectKey, taskKey);
+				result = callClassification(projectKey, taskKey, username);
 			} catch (Exception e) {
 				String errorMessage = "Classification failed because: " + e.getMessage();
 				logger.error(errorMessage, e);
@@ -54,9 +59,9 @@ public class ClassificationService {
 		return result;
 	}
 
-	public synchronized Classification startClassificationOfProject(String projectKey) throws RestClientException, JSONException {
+	public synchronized Classification startClassificationOfProject(String projectKey, String username) throws RestClientException, JSONException {
 		if (!snowOwlClient.isClassificationInProgressOnBranch(getBranchPath(projectKey))) {
-			return callClassification(projectKey, null);
+			return callClassification(projectKey, null, username);
 		} else {
 			throw new IllegalStateException("Classification already in progress on this branch.");
 		}
@@ -70,7 +75,7 @@ public class ClassificationService {
 		return "MAIN/" + projectKey;
 	}
 
-	private Classification callClassification(String projectKey, String taskKey) throws RestClientException {
+	private Classification callClassification(String projectKey, String taskKey, String callerUsername) throws RestClientException {
 		String path;
 		if (taskKey != null) {
 			path = branchService.getTaskPath(projectKey, taskKey);
@@ -82,21 +87,23 @@ public class ClassificationService {
 		results.setStatus(ClassificationStatus.RUNNING.toString());
 
 		//Now start an asynchronous thread to wait for the results
-		(new Thread(new ClassificationPoller(projectKey, taskKey, results))).start();
+		(new Thread(new ClassificationPoller(projectKey, taskKey, results, callerUsername))).start();
 
 		return new Classification(results);
 	}
 
 	private class ClassificationPoller implements Runnable {
-		
-		ClassificationResults results;
-		String projectKey;
-		String taskKey;
-		
-		ClassificationPoller (String projectKey, String taskKey, ClassificationResults results) {
+
+		private ClassificationResults results;
+		private String projectKey;
+		private String taskKey;
+		private final String callerUsername;
+
+		ClassificationPoller(String projectKey, String taskKey, ClassificationResults results, String callerUsername) {
 			this.results = results;
 			this.projectKey = projectKey;
 			this.taskKey = taskKey;
+			this.callerUsername = callerUsername;
 		}
 
 		@Override
@@ -124,6 +131,7 @@ public class ClassificationService {
 				// Comment on project magic ticket
 				taskService.addCommentLogErrors(projectKey, resultMessage);
 			}
+			notificationService.queueNotification(callerUsername, new Notification(projectKey, taskKey, EntityType.Classification, resultMessage));
 		}
 
 		private void returnToInProgress(String projectKey, String taskKey) {
