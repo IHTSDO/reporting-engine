@@ -7,10 +7,10 @@ import net.rcarz.jiraclient.JiraException;
 import org.ihtsdo.otf.im.utility.SecurityService;
 import org.ihtsdo.otf.rest.client.ClassificationResults;
 import org.ihtsdo.otf.rest.client.SnowOwlRestClient;
-import org.ihtsdo.otf.rest.client.SnowOwlRestClientException;
+import org.ihtsdo.otf.rest.client.RestClientException;
 //import org.ihtsdo.otf.rest.client.ClassificationResults;
 //import org.ihtsdo.otf.rest.client.SnowOwlRestClient;
-//import org.ihtsdo.otf.rest.client.SnowOwlRestClientException;
+//import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.Classification;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.StateTransition;
 import org.slf4j.Logger;
@@ -69,11 +69,11 @@ public class ClassificationService {
 		return result;
 	}
 
-	public String getLatestClassification(String projectKey, String taskKey) throws SnowOwlRestClientException {
+	public String getLatestClassification(String projectKey, String taskKey) throws RestClientException {
 		return snowOwlClient.getLatestClassificationOnBranch("MAIN/" + projectKey + "/" + taskKey);
 	}
 
-	private Classification callClassification(String projectKey, String taskKey) throws InterruptedException, SnowOwlRestClientException {
+	private Classification callClassification(String projectKey, String taskKey) throws InterruptedException, RestClientException {
 		ClassificationResults results = snowOwlClient.startClassification(branchService.getTaskPath(projectKey, taskKey));
 		//If we started the classification without an exception then it's state will be RUNNING (or queued)
 		results.setStatus(ClassificationStatus.RUNNING.toString());

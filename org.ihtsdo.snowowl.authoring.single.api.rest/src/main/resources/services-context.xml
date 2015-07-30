@@ -34,6 +34,12 @@
 		<property name="classificationTimeoutMinutes" value="+{snowowl.classification.timeout}"/>
 	</bean>
 	
+	<bean class="org.ihtsdo.otf.rest.client.OrchestrationRestClient">
+		<constructor-arg value="+{orchestration.url}"/>
+		<constructor-arg value="+{orchestration.username}"/>
+		<constructor-arg value="+{orchestration.password}"/>
+	</bean>
+	
 	<bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
 		<property name="location" value="#{systemProperties['osgi.sharedConfiguration.area']}/single_authoring.properties"/>
 		<property name="placeholderPrefix" value="+{"/>
@@ -42,6 +48,8 @@
 	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.SnowOwlBusHelper"/>
 
 	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.UiStateService"/>
+	
+	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.ValidationService"/>
 
 	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.dao.ArbitraryJsonService"/>
 	
