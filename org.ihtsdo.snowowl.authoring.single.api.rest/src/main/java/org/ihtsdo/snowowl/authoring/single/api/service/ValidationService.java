@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import org.ihtsdo.otf.im.utility.SecurityService;
 import org.ihtsdo.otf.rest.client.OrchestrationRestClient;
+import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.Validation;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -18,7 +19,7 @@ public class ValidationService {
 	OrchestrationRestClient orchestrationClient;
 	
 
-	public Validation startValidation(String projectKey, String taskKey) throws JSONException, IOException {
+	public Validation startValidation(String projectKey, String taskKey) throws JSONException, IOException, BusinessServiceException {
 		orchestrationClient.validate("MAIN/" + projectKey + "/" + taskKey);
 		return new Validation (Validation.STATUS_SCHEDULED, "");
 	}
@@ -28,7 +29,7 @@ public class ValidationService {
 		return new Validation ("NOT YET IMPLEMENTED", "");
 	}
 
-	public Validation startValidation(String projectKey) throws JSONException, IOException {
+	public Validation startValidation(String projectKey) throws JSONException, IOException, BusinessServiceException {
 		orchestrationClient.validate("MAIN/" + projectKey);
 		return new Validation(Validation.STATUS_SCHEDULED, "");
 	}

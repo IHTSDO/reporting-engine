@@ -5,3 +5,7 @@ jira.password=
 securityServiceStubMode=
 
 snowowlUser=
+
+orchestration.url=
+orchestration.username=
+orchestration.password=

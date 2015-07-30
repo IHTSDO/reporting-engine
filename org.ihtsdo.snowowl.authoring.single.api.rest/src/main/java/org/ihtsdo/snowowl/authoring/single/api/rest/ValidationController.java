@@ -9,6 +9,7 @@ import com.wordnik.swagger.annotations.ApiResponses;
 
 import net.rcarz.jiraclient.JiraException;
 
+import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.api.rest.common.AbstractRestService;
 import org.ihtsdo.snowowl.api.rest.common.AbstractSnomedRestService;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.Validation;
@@ -31,7 +32,7 @@ public class ValidationController extends AbstractSnomedRestService {
 	@ApiResponses({ @ApiResponse(code = 200, message = "OK") })
 	@RequestMapping(value = "/projects/{projectKey}/tasks/{taskKey}/validation", method = RequestMethod.POST)
 	public Validation startValidation(@PathVariable final String projectKey, @PathVariable final String taskKey) throws JiraException,
-			JSONException, IOException {
+			JSONException, IOException, BusinessServiceException {
 		return validationService.startValidation(projectKey, taskKey);
 	}
 
@@ -47,7 +48,8 @@ public class ValidationController extends AbstractSnomedRestService {
 	@ApiOperation(value = "Initiate validation on a project")
 	@ApiResponses({ @ApiResponse(code = 200, message = "OK") })
 	@RequestMapping(value = "/projects/{projectKey}/validation", method = RequestMethod.POST)
-	public Validation startValidation(@PathVariable final String projectKey) throws JiraException, JSONException, IOException {
+	public Validation startValidation(@PathVariable final String projectKey) throws JiraException, JSONException, IOException,
+			BusinessServiceException {
 		return validationService.startValidation(projectKey);
 	}
 
