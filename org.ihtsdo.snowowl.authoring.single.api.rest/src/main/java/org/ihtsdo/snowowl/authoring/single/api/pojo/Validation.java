@@ -1,10 +1,13 @@
 package org.ihtsdo.snowowl.authoring.single.api.pojo;
 
+import com.fasterxml.jackson.annotation.JsonRawValue;
+
 public class Validation {
 
 	public static final String STATUS_SCHEDULED = "SCHEDULED";
 	private String message;
 	private String status;
+	private String validationJson;
 	
 	public Validation(String errorMsg) {
 		message = errorMsg;
@@ -25,6 +28,12 @@ public class Validation {
 
 	public void setMessage(String message) {
 		this.message = message;
+	}
+
+	@JsonRawValue
+	public String getValidationJson() {
+
+		return validationJson;
 	}
 
 }
