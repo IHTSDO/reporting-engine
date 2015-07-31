@@ -13,6 +13,7 @@ public class StateTransition {
 	private String initialState;
 	private String transition;
 	private Boolean transitionSuccessful = null;
+	private boolean experiencedException = false;
 	private String errorMessage;
 	private String finalState;
 	
@@ -55,6 +56,14 @@ public class StateTransition {
 
 	public boolean hasInitialState(String currentState) {
 		return initialState.equals(currentState);
+	}
+
+	public boolean experiencedException() {
+		return experiencedException;
+	}
+
+	public void experiencedException(boolean experiencedException) {
+		this.experiencedException = experiencedException;
 	}
 
 }

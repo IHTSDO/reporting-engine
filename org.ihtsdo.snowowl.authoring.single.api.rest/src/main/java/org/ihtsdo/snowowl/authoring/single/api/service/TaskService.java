@@ -1,7 +1,9 @@
 package org.ihtsdo.snowowl.authoring.single.api.service;
 
 import com.b2international.snowowl.core.exceptions.NotFoundException;
+
 import net.rcarz.jiraclient.*;
+
 import org.ihtsdo.otf.im.utility.SecurityService;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringProject;
@@ -177,7 +179,8 @@ public class TaskService {
 		} catch (JiraException je) {
 			StringBuilder sb = getTransitionError (projectKey, taskKey, stateTransition);
 			sb.append (je.getMessage());
-			stateTransition.transitionSuccessful(false);	
+			stateTransition.transitionSuccessful(false);
+			stateTransition.experiencedException(true);
 			stateTransition.setErrorMessage(sb.toString());
 		}
 		
@@ -202,6 +205,7 @@ public class TaskService {
 			.append (taskKey);
 		return sb.toString();
 	}
+
 	
 	
 }
