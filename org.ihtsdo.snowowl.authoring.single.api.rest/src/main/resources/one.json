@@ -1,0 +1,1230 @@
+{
+  "executionStatus": "COMPLETED",
+  "report": {
+    "Status": "COMPLETE",
+    "RVF Validation Result": {
+      "ARCHIVE_STRUCTURAL test result": {
+        "totalTestsRun": 1.81192678E8,
+        "testType": "ARCHIVE_STRUCTURAL",
+        "executionId": 1.438380283882E12,
+        "timeTakenInSeconds": 147,
+        "totalFailures": 0
+      },
+      "End time": "Jul 31, 2015 10:30:47 PM",
+      "Validation config": {
+        "testFileName": "TS_Daily_Build_20150731.zip",
+        "writeSucceses": false,
+        "prevIntReleaseVersion": "int_20150131",
+        "groupsList": [
+          "component-centric-validation",
+          "file-centric-validation",
+          "release-type-validation"
+        ],
+        "firstTimeRelease": false,
+        "runId": 1.438380283882E12,
+        "storageLocation": "international/main_wrpas_wrpas22/2015-07-31T21:48:54"
+      },
+      "Start time": "Jul 31, 2015 10:04:54 PM",
+      "SQL test result": {
+        "assertionsFailed": [
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "The first letter of the FSN should be capitalized.",
+            "failureCount": 5,
+            "runTimeInMilliSeconds": 13,
+            "firstNInstances": [
+              "DESC: id=8698772017:First letter of the active FSN of active concept not capitalized.",
+              "DESC: id=39628308019:First letter of the active FSN of active concept not capitalized.",
+              "DESC: id=53022099010:First letter of the active FSN of active concept not capitalized.",
+              "DESC: id=59487538015:First letter of the active FSN of active concept not capitalized.",
+              "DESC: id=59601537012:First letter of the active FSN of active concept not capitalized."
+            ],
+            "assertionUuid": "dd0d0406-7481-444a-9f04-b6fc7db49039"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "All FSNs end in closing parentheses.",
+            "failureCount": 14,
+            "runTimeInMilliSeconds": 1179,
+            "firstNInstances": [
+              "DESC: Term=fsn:Fully Specified Name not ending with closing parantheses.",
+              "DESC: Term=FSN:Fully Specified Name not ending with closing parantheses.",
+              "DESC: Term=FSN!:Fully Specified Name not ending with closing parantheses.",
+              "DESC: Term=Testing FSN:Fully Specified Name not ending with closing parantheses.",
+              "DESC: Term=I'm an FSN:Fully Specified Name not ending with closing parantheses.",
+              "DESC: Term=lalala:Fully Specified Name not ending with closing parantheses.",
+              "DESC: Term=FSN:Fully Specified Name not ending with closing parantheses.",
+              "DESC: Term=FSN:Fully Specified Name not ending with closing parantheses.",
+              "DESC: Term=fsn:Fully Specified Name not ending with closing parantheses.",
+              "DESC: Term=FSN!:Fully Specified Name not ending with closing parantheses."
+            ],
+            "assertionUuid": "5a605c09-db1e-453f-aa4a-064faab2d310"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "For a given concept, all description terms are unique.",
+            "failureCount": 3,
+            "runTimeInMilliSeconds": 19,
+            "firstNInstances": [
+              "DESC: Id=54772598008: non-unique term within concept.",
+              "DESC: Id=77208079002: non-unique term within concept.",
+              "DESC: Id=91419617004: non-unique term within concept."
+            ],
+            "assertionUuid": "2e0eb135-fd7d-4f24-83c1-0cba797ee766"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "For each active FSN there is a synonym that has the same text.",
+            "failureCount": 11,
+            "runTimeInMilliSeconds": 52,
+            "firstNInstances": [
+              "5201776001 |FSN!|",
+              "13651972004 |FSN|",
+              "21844056005 |FSN!|",
+              "28887925008 |FSN|",
+              "32961698003 |FSN|",
+              "55222790002 |fsn|",
+              "83650816007 |FSN|",
+              "90918250004 |FSN|",
+              "92028688005 |Testing FSN|",
+              "96885130000 |I'm an FSN|"
+            ],
+            "assertionUuid": "19423070-7118-45bd-98ba-6d0dc18bc619"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "All FSNs have a space before the semantic tag.",
+            "failureCount": 14,
+            "runTimeInMilliSeconds": 1487,
+            "firstNInstances": [
+              "DESCRIPTION: id=8698772017 : The FSN has no space before the semantic tag.",
+              "DESCRIPTION: id=9820835017 : The FSN has no space before the semantic tag.",
+              "DESCRIPTION: id=14680280012 : The FSN has no space before the semantic tag.",
+              "DESCRIPTION: id=30149554018 : The FSN has no space before the semantic tag.",
+              "DESCRIPTION: id=32062319011 : The FSN has no space before the semantic tag.",
+              "DESCRIPTION: id=39628308019 : The FSN has no space before the semantic tag.",
+              "DESCRIPTION: id=41679880014 : The FSN has no space before the semantic tag.",
+              "DESCRIPTION: id=42999976011 : The FSN has no space before the semantic tag.",
+              "DESCRIPTION: id=53022099010 : The FSN has no space before the semantic tag.",
+              "DESCRIPTION: id=56442839012 : The FSN has no space before the semantic tag."
+            ],
+            "assertionUuid": "32369add-8d9f-48de-a129-29b32c79a9d7"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "Active Fully Specified Name associated with active concepts is unique in DESCRIPTION snapshot.",
+            "failureCount": 5,
+            "runTimeInMilliSeconds": 9378,
+            "firstNInstances": [
+              "DESC: Active FSN =FSN: is not unique in DESCRIPTION snapshot.",
+              "DESC: Active FSN =FSN!: is not unique in DESCRIPTION snapshot.",
+              "DESC: Active FSN =Honey Roast Ham (substance): is not unique in DESCRIPTION snapshot.",
+              "DESC: Active FSN =fsn: is not unique in DESCRIPTION snapshot.",
+              "DESC: Active FSN =test: is not unique in DESCRIPTION snapshot."
+            ],
+            "assertionUuid": "8ea2e5d9-5c35-4436-b67d-c5268b5da06c"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "All active FSNs have a semantic tag.",
+            "failureCount": 14,
+            "runTimeInMilliSeconds": 1333,
+            "firstNInstances": [
+              "DESC: Term=fsn:Fully Specified Name without semantic tag.",
+              "DESC: Term=FSN:Fully Specified Name without semantic tag.",
+              "DESC: Term=FSN!:Fully Specified Name without semantic tag.",
+              "DESC: Term=Testing FSN:Fully Specified Name without semantic tag.",
+              "DESC: Term=I'm an FSN:Fully Specified Name without semantic tag.",
+              "DESC: Term=lalala:Fully Specified Name without semantic tag.",
+              "DESC: Term=FSN:Fully Specified Name without semantic tag.",
+              "DESC: Term=FSN:Fully Specified Name without semantic tag.",
+              "DESC: Term=fsn:Fully Specified Name without semantic tag.",
+              "DESC: Term=FSN!:Fully Specified Name without semantic tag."
+            ],
+            "assertionUuid": "a4ed3a89-170e-4d9c-995a-716447c4fe64"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "There are no duplicate Definition terms in the DEFINITION snapshot file.",
+            "failureCount": 5,
+            "runTimeInMilliSeconds": 57,
+            "firstNInstances": [
+              "Definition id =2884622019: Term=[An immune system procedure that observes for evidence of hypersensitivity] is duplicate in the DEFINITION snapshot file.",
+              "Definition id =2884605016: Term=[An observation that generates a recording made from energy of the light spectrum] is duplicate in the DEFINITION snapshot file.",
+              "Definition id =2884805019: Term=[Disorder resulting from physical damage to the body] is duplicate in the DEFINITION snapshot file.",
+              "Definition id =3027632016: Term=[Intimate partner abuse is defined as physical, sexual or psychological harm perpetrated by a current or former partner. The abuse can occur among heterosexual or same-sex couples and does not require sexual intimacy.] is duplicate in the DEFINITION snapshot file.",
+              "Definition id =2884491012: Term=[Skin lesion, greater than 2 cm, flat, colored; differs from a macule only in size] is duplicate in the DEFINITION snapshot file."
+            ],
+            "assertionUuid": "3b2c1824-8445-410e-8ae2-d943be01c33f"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "Reference componentId and valueId pair is unique in the ATTRIBUTE VALUE snapshot.",
+            "failureCount": 164,
+            "runTimeInMilliSeconds": 4298,
+            "firstNInstances": [
+              "Reference component id:2921327010 valueid=900000000000495008 pair is not unique in the Attribute Value snapshot",
+              "Reference component id:2922175013 valueid=900000000000495008 pair is not unique in the Attribute Value snapshot",
+              "Reference component id:2923148011 valueid=900000000000495008 pair is not unique in the Attribute Value snapshot",
+              "Reference component id:2923322011 valueid=900000000000495008 pair is not unique in the Attribute Value snapshot",
+              "Reference component id:2923327017 valueid=900000000000495008 pair is not unique in the Attribute Value snapshot",
+              "Reference component id:2923464010 valueid=900000000000495008 pair is not unique in the Attribute Value snapshot",
+              "Reference component id:2923647017 valueid=900000000000495008 pair is not unique in the Attribute Value snapshot",
+              "Reference component id:2951748012 valueid=900000000000495008 pair is not unique in the Attribute Value snapshot",
+              "Reference component id:2951860016 valueid=900000000000495008 pair is not unique in the Attribute Value snapshot",
+              "Reference component id:2955542016 valueid=900000000000495008 pair is not unique in the Attribute Value snapshot"
+            ],
+            "assertionUuid": "eff30fb0-7856-11e1-b0c4-0800200c9a60"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "Active historical association refset members have active concepts as targets.",
+            "failureCount": 2,
+            "runTimeInMilliSeconds": 1224,
+            "firstNInstances": [
+              "AssociationRefset id=d8a72c8a-a747-51ed-81a3-f83151e773bb is active  but the target component is an inactive concept: 416972005",
+              "AssociationRefset id=67563fb7-a783-5305-b318-f7e00d834c0b is active  but the target component is an inactive concept: 6408001"
+            ],
+            "assertionUuid": "eb940ee0-7cd6-11e1-b0c4-0800200c9a66"
+          }
+        ],
+        "totalTestsRun": 157,
+        "testType": "SQL",
+        "executionId": 1.438380283882E12,
+        "timeTakenInSeconds": 1068,
+        "assertionsPassed": [
+          {
+            "testCategory": "resource",
+            "assertionText": "Build a table of all concepts edited in the current release cycle.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 3024,
+            "assertionUuid": "87dca0d6-4080-4b28-bcfa-e58c08e8170f"
+          },
+          {
+            "testCategory": "resource",
+            "assertionText": "Create function to remove character symbols from Snomed CT expression",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 7,
+            "assertionUuid": "a049f928-729c-4840-9029-fca2322e56f0"
+          },
+          {
+            "testCategory": "resource",
+            "assertionText": "Defines procedure that tests that terms that contain EN-GB language-specific words are in the same GB language refset.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 7,
+            "assertionUuid": "c81ee170-84f0-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "resource",
+            "assertionText": "Defines procedure that tests that terms that contain EN-US language-specific words are in the same US language refset.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 7,
+            "assertionUuid": "ba8918f0-84f0-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "resource",
+            "assertionText": "Defines procedure to test the validity of concept ids in the SNOMED CT expression for LOIC mapping.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 6,
+            "assertionUuid": "b4b5ee89-372f-4ae3-8c18-9c37cf4e932e"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current data in the AttributeValue refset snapshot file are the same as the data in the current delta file.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 4,
+            "assertionUuid": "602a3d22-b3b0-48cc-8ebb-949f96580834"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "All inactive concepts have definition status of PRIMITIVE.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 122,
+            "assertionUuid": "fdf6a1b0-7cd6-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current data in the Description snapshot file are the same as the data in the current delta file.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 6,
+            "assertionUuid": "073832f4-6dc5-4781-9e56-9c3bc45d01bd"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current full association refset file consists of the previously published full file and the changes for the current release",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 2213,
+            "assertionUuid": "5491a181-02b0-48a8-bb17-f65c347e9b91"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "All destination ids found in the Stated Relationship snapshot file exist in the Concept snapshot file.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 1778,
+            "assertionUuid": "994b5ff0-79b9-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "No active Terms contain double spaces.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 5130,
+            "assertionUuid": "2d6c61e5-a04d-4115-be18-eeba2a44b835"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current full simple map refset file consists of the previously published full file and the changes for the current release",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 14675,
+            "assertionUuid": "13363e71-60ab-4d1b-975c-f38f7d87d106"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "No active Terms contain leading or trailing spaces.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 1626,
+            "assertionUuid": "57d910b4-b5c9-459e-8bae-ae0ea9035585"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current full inferred relationship file consists of the previously published full file and the changes for the current release",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 69191,
+            "assertionUuid": "5c37bee7-62ad-41f9-93e3-12eb4803e626"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "All type ids found in the Inferred Relationship snapshot file exist in the Concept snapshot file.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 4913,
+            "assertionUuid": "77fc7550-79b9-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current simple map refset delta file is an accurate derivative of the current full file",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 4,
+            "assertionUuid": "659e5e7e-c84f-4c63-b95f-e5d4f26705b5"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "SNOMED RT identifier simple map refset refers to active components.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 338,
+            "assertionUuid": "695cea40-7f25-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "No active definitions contain leading or trailing spaces.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 29,
+            "assertionUuid": "da3ae7c4-6144-4cd5-9530-2a7780c53c9a"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "Active historical association refset members have inactive concepts as reference components.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 776,
+            "assertionUuid": "f7117eb0-7cd6-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "TargetComponentId refers to valid concepts in the ASSOCIATION REFSET snapshot file.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 303,
+            "assertionUuid": "35ec824d-b53d-4567-833e-8ce79774acae"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current simple map refset snapshot file is an accurate derivative of the current full file",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 48973,
+            "assertionUuid": "1d38106d-495e-4d86-8936-33c7e5a12a8f"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "New inactive states follow active states in the DESCRIPTION snapshot.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 3447,
+            "assertionUuid": "2b193a88-8dab-4d19-b995-b556ed59398d"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current full attribute value refset file consists of the previously published full file and the changes for the current release",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 7558,
+            "assertionUuid": "f41f178e-0fe9-42c8-91f2-581c5ad09a5b"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current data in the Simple refset snapshot file are the same as the data in the current delta file.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 5,
+            "assertionUuid": "365b7d89-74d0-411e-93c6-4a3748736a3b"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "The definition status is PRIMITIVE for concepts having only one defining relationship.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 4721,
+            "assertionUuid": "f2293d20-7cd6-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "Active VMP simple refset members refer to active components.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 72,
+            "assertionUuid": "f5092a2b-8874-4290-ae96-a04bf568b1ab"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current SimpleMap refset full file contains all previously published data unchanged.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 12158,
+            "assertionUuid": "c19b9008-bbc9-4209-a3d7-896d414df565"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "All source ids found in the Inferred Relationship snapshot file exist in the Concept snapshot file.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 5894,
+            "assertionUuid": "72184790-79b9-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "ConceptId value refers to valid concept identifier in the DESCRIPTION snapshot.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 3070,
+            "assertionUuid": "1491f72c-cb00-42db-a97b-9c685f4e4cb0"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current full text definition file consists of the previously published full file and the changes for the current release",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 27,
+            "assertionUuid": "b0ce145b-323b-484c-9cdc-25ea021e179d"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current data in the Inferred Relationship snapshot file are the same as the data in the current delta file. ",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 5,
+            "assertionUuid": "177a7271-7986-433b-8506-fff39e6c1004"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "Active VTM simple refset members refer to active components.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 39,
+            "assertionUuid": "9715b1dd-7de5-4f80-ad28-f97ab52b9359"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current association refset delta file is an accurate derivative of the current full file",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 4,
+            "assertionUuid": "a5efb25c-d3d9-4150-8ad9-c8101b2c8df0"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current stated relationship delta file is an accurate derivative of the current full file",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 9,
+            "assertionUuid": "2a938c7e-0803-44a1-8358-339daa87ee39"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current attribute-value refset snapshot file is an accurate derivative of the current full file",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 26058,
+            "assertionUuid": "f4f24394-cb3e-48b2-8cd0-7ec6c8671947"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "ConceptId value refers to valid concept identifier in the DEFINITION snapshot.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 30,
+            "assertionUuid": "5a83783e-3366-48bd-a50d-8f3a53812174"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "ID is unique in CONCEPT snapshot.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 177,
+            "assertionUuid": "309d0620-0a32-43a6-9d08-8e6bdefda3be"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "There is a 1:1 relationship between the id and the key values in the SIMPLE MAP REFSET snapshot.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 9170,
+            "assertionUuid": "3cb10511-33b7-4eca-ba0e-93bcccf70d86"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current simple refset snapshot file is an accurate derivative of the current full file",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 620,
+            "assertionUuid": "0988de1d-29dd-4668-bcbf-032d38692492"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current Description full file contains all previously published data unchanged.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 10346,
+            "assertionUuid": "492bacf0-7d88-45ba-ab26-974150ed9541"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "SNOMED RT identifier simple map refset members are unique.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 5357,
+            "assertionUuid": "83638340-7f25-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "No active term matches that of an inactive Description.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 48,
+            "assertionUuid": "c2975dd5-3869-4bf7-ac75-53fd53b90144"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "All active FSNs for a given concept have the same semantic tag.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 12691,
+            "assertionUuid": "5c0186f3-0b72-4685-8aad-eff15a7f8880"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current language refset delta file is an accurate derivative of the current full file",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 51,
+            "assertionUuid": "b87c6dfe-c109-4c8d-91f2-a15a17631ad2"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "No active definitions contain double spaces.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 18,
+            "assertionUuid": "f7b7cefe-858d-4749-ab98-7106700feaee"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "All inferred relationships in which the concept associated is inactive, are inactive relationships.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 10142,
+            "assertionUuid": "2e4fd620-7d08-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "All members refer to a description that is referenced in either the description table or the text definition table.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 9499,
+            "assertionUuid": "f5d9ae70-7856-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current text definition delta file is an accurate derivative of the current full file",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 3,
+            "assertionUuid": "dc71ca52-f58e-45c7-8f31-c747206a391c"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current description snapshot file is an accurate derivative of the current full file",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 53364,
+            "assertionUuid": "8f2a12df-6088-433a-85a5-866410314fe6"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "Calling procedure testing that terms that contain EN-US language-specific words are in the same US language refset.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 152,
+            "assertionUuid": "c3249e80-84f0-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "Relationship groups contain at least 2 relationships.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 4216,
+            "assertionUuid": "411e9840-7d08-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "All source ids found in the Stated Relationship snapshot file exist in the Concept snapshot file.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 1683,
+            "assertionUuid": "9f84d9a0-79b9-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "All stated is-a relationships have relationship group of 0.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 420,
+            "assertionUuid": "50e809a0-7d08-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current data in the Stated Relationship snapshot file are the same as the data in the current delta file. ",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 7,
+            "assertionUuid": "01ce3ac9-d168-4333-99d7-8d2f228f5ec9"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current full concept file consists of the previously published full file and the changes for the current release",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 2950,
+            "assertionUuid": "bbfbeae4-4b58-465a-9c16-1e8c4454384c"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "CTV3 simple map refset members are unique.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 5137,
+            "assertionUuid": "a2e01ee0-7f25-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "CTV3 simple map refset members are always active.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 11,
+            "assertionUuid": "c0869af0-7f25-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current full stated relationship file consists of the previously published full file and the changes for the current release",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 4472,
+            "assertionUuid": "b1d75e1c-ea12-4567-a8b9-f69923a57cdf"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "There is a 1-to-1 relationship between the id and the immutable values in Inferred Relationship snapshot.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 18566,
+            "assertionUuid": "4dbfed80-79b9-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current data in the SimpleMap refset snapshot file are the same as the data in the current delta file.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 4,
+            "assertionUuid": "959e11e7-9ff9-40b9-b833-387495e320d0"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current Stated Relationship full file contains all previously published data unchanged.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 3693,
+            "assertionUuid": "fd8ed390-94e9-4fd9-9e20-902a24273dca"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "ID is unique in the ATTRIBUTE VALUE snapshot.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 470,
+            "assertionUuid": "e202807d-915d-4c8a-8f02-c6e4e6f969fc"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current simple refset delta file is an accurate derivative of the current full file",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 4,
+            "assertionUuid": "4789c1f0-1776-448e-9ddf-8d1b9986a5cc"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "Terms contains balanced parentheses.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 3361,
+            "assertionUuid": "50907ee7-ddf6-4cb5-ba8b-be150644430b"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "No synonyms have semantic tags.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 39,
+            "assertionUuid": "e95acdbd-0a20-4010-9e78-00e70491e800"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current Inferred Relationship full file contains all previously published data unchanged.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 30145,
+            "assertionUuid": "b46ec8df-1bfd-4825-be49-f09ed8a0076b"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current Language refset full file contains all previously published data unchanged.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 37742,
+            "assertionUuid": "f0b4c712-781a-4ca5-872e-883cf1949f12"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "Case-sensitive terms have appropriate caseSignificanceId.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 136,
+            "assertionUuid": "22a95293-3acb-4671-95f8-1ff13ba3202c"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "Members are inactive for inactive descriptions in the language refset snapshot file.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 7324,
+            "assertionUuid": "d76f1430-7e9a-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "The current Inferred Relationship snapshot file does not contain duplicate Relationship Ids.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 1511,
+            "assertionUuid": "6336ec40-79b9-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "No Concept has 2 inferred relationships with the same type, destination and group.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 14392,
+            "assertionUuid": "4572d730-7d08-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "No Concept has 2 stated relationships with the same type, destination and group.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 6569,
+            "assertionUuid": "5d27df10-7d08-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "Terms are unique in Description hierarchy.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 50,
+            "assertionUuid": "c82246b1-a137-40c5-8653-554c9ce82c6b"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current data in the Definition snapshot file are the same as the data in the current delta file.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 4,
+            "assertionUuid": "c837a6f8-f06a-4599-944c-eaa3a6d68c18"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "Descriptions in a language refset are unique for a given concept.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 28,
+            "assertionUuid": "e658fb00-7e9a-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "There is a 1:1 relationship between the id and the immutable values in the DEFINITION snapshot.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 16,
+            "assertionUuid": "718cc822-73b5-42c2-9c01-f8df09a9bf8d"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "Referencedcomponentid refers to valid concepts in the ASSOCIATION REFSET snapshot file.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 399,
+            "assertionUuid": "bec23e05-e977-4190-aa6a-137e5742f513"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "The first letter of the active definition should be capitalized.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 24,
+            "assertionUuid": "6138248d-8cc8-4bc2-8043-cd609fdd640c"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current description delta file is an accurate derivative of the current full file",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 6,
+            "assertionUuid": "3efbc7d7-3485-4f7f-8c07-f1a7c5a0fdf6"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "CTV3 codes are unique in the CTV3 simple map refset",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 6897,
+            "assertionUuid": "f14d521f-2472-4871-9c4e-356f0f075a3a"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "New inactive states follow active states in the ATTRIBUTEVALUE snapshot.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 698,
+            "assertionUuid": "2aa0bea1-b1fa-4543-b277-b4392a6f864d"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "Active description of active concept consists of valid characters.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 7,
+            "assertionUuid": "6614ff12-fca2-42b7-a5da-ea26353979fe"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "ID is unique in DESCRIPTION snapshot.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 592,
+            "assertionUuid": "3be8c763-a5bc-404b-af9f-a2cb681f6f3d"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "Active Non-human refset members refer to active components.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 5,
+            "assertionUuid": "8479317e-8459-4362-bee8-628b8220f1e4"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current association refset snapshot file is an accurate derivative of the current full file",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 6579,
+            "assertionUuid": "b7597328-a11d-4910-b677-91aef3bd3aea"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "New inactive states follow active states in the CONCEPT snapshot.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 1097,
+            "assertionUuid": "5f1a51a3-6200-4463-8799-d75998165278"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "All relationships inactivated in current release must have been active in the previous release.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 8515,
+            "assertionUuid": "5c6b6bc0-79b9-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "There is a 1:1 relationship between the id and the key values in the ASSOCIATION REFSET snapshot file.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 1757,
+            "assertionUuid": "2ddc9a28-150d-47a4-9b0e-7dbff2efdd72"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "Case-sensitive terms that share initial words also share caseSignificanceId value.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 42,
+            "assertionUuid": "805ab37c-33fa-45aa-876b-f86365a828c8"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "All inferred is-a relationships have relationship group of 0.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 716,
+            "assertionUuid": "36f43550-7d08-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current data in the Language refset snapshot file are the same as the data in the current delta file.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 50,
+            "assertionUuid": "bd27d80a-42f1-4412-8111-fdf72fa32904"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "Calling procedure testing that terms that contain EN-GB language-specific words are in the same GB language refset.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 129,
+            "assertionUuid": "cc9c5340-84f0-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "The current Language Refset snapshot file does not contain duplicate Member Ids.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 2576,
+            "assertionUuid": "fc24db60-7856-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "All concepts have at least one stated is-a relationship.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 5688,
+            "assertionUuid": "5555c400-7d08-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current Association refset full file contains all previously published data unchanged.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 1743,
+            "assertionUuid": "653ce147-780e-4b3d-8afe-bd8d116c8c17"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "All language refset members inactivated in current snapshot must have been active in the previous release.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 13666,
+            "assertionUuid": "eff30fb0-7856-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "Members are active for active descriptions in the language refset snapshot file.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 42398,
+            "assertionUuid": "f636b7b0-7e9a-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "SNOMED RT codes are unique in the SNOMED RT simple map refset",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 7076,
+            "assertionUuid": "5e80ea3e-c4dd-4ae3-8b75-f0567e42b962"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "Referencedcomponentid refers to valid concepts in the SIMPLE REFSET snapshot.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 403,
+            "assertionUuid": "6a407415-8415-4870-a6ef-b5bc22f73c1f"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "Inferred relationship modifier is always SOME.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 5,
+            "assertionUuid": "32b41aa0-7d08-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "ID is unique in the DEFINITION snapshot.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 28,
+            "assertionUuid": "4ba823ce-8ae4-4b2e-beb5-e119b822cfe2"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "ID is unique in the SIMPLE REFSET snapshot.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 25,
+            "assertionUuid": "1cd8b7f9-5730-4db9-b508-13575825b28f"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "All stated relationships inactivated in current release must have been active in the previous release.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 1768,
+            "assertionUuid": "89ceaf00-79b9-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current full simple refset file consists of the previously published full file and the changes for the current release",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 224,
+            "assertionUuid": "b6926fdf-e24a-49ae-a50a-c7c972944804"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "All type ids found in the Stated Relationship snapshot file exist in the Concept snapshot file.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 1301,
+            "assertionUuid": "a4fcd810-79b9-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "All destination ids found in the Inferred Relationship snapshot file exist in the Concept snapshot file.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 5575,
+            "assertionUuid": "6b34ab30-79b9-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "No active Historical Association member associates an inactive concept with its parent.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 3100,
+            "assertionUuid": "90bcb7f0-7f25-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "There is a 1-to-1 relationship between the id and the immutable values in STATED RELATIONSHIP snapshot.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 9366,
+            "assertionUuid": "7e453140-79b9-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "All definitions are case sensitive.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 17,
+            "assertionUuid": "b4930ea7-4078-4599-979c-2dde18164f01"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "All stated relationships in which the source concept is inactive, are inactive relationships.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 4522,
+            "assertionUuid": "49487040-7d08-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "The current Stated Relationship snapshot file does not contain duplicate Relationship Ids.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 409,
+            "assertionUuid": "9074a620-79b9-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current full description file consists of the previously published full file and the changes for the current release",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 13775,
+            "assertionUuid": "7c4165b0-bff2-4b62-b70c-f68d5a147053"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current delta file is an accurate derivative of the current full file",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 6,
+            "assertionUuid": "1be975bb-2a1b-4c21-ae61-6e9fcd556718"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current attribute-value refset delta file is an accurate derivative of the current full file",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 5,
+            "assertionUuid": "f39da0c8-2897-4a04-89cd-ec8ca0c6bf93"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current full language refset file consists of the previously published full file and the changes for the current release",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 43120,
+            "assertionUuid": "28c3a31d-7a9d-48f6-8eb9-18c25b6306fb"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "Relationship groups contain at least 2 relationships.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 2129,
+            "assertionUuid": "59b574a0-7d08-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "ValueId refers to valid concepts in the ATTRIBUTE VALUE snapshot.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 866,
+            "assertionUuid": "ddc754ab-0965-4ae2-b95d-6b0f8392e276"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "There is one and only one CTV3 simple map refset member per concept.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 11482,
+            "assertionUuid": "bab42070-7f25-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current Definition full file contains all previously published data unchanged.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 21,
+            "assertionUuid": "433adc93-fdd5-462a-b1fa-11fb4045a9ec"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current inferred relationship snapshot file is an accurate derivative of the current full file",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 122715,
+            "assertionUuid": "79582950-bf7a-4f63-92cf-7809a29b5dc3"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current concept snapshot file is an accurate derivative of the current full file",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 11975,
+            "assertionUuid": "645e3292-18d6-41df-b42a-58ba4d7240d5"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current data in the Concept snapshot file are the same as the data in the current delta file.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 5,
+            "assertionUuid": "e2d4a6be-cd76-4e03-afe8-5c7783aaa2c7"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current inferred relationship delta file is an accurate derivative of the current full file",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 7,
+            "assertionUuid": "dfbab5f4-8b72-4cd3-abe9-2cf5b5f76e5b"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "Referencedcomponentid refers to valid concepts in the ATTRIBUTEVALUE snapshot file.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 5311,
+            "assertionUuid": "d5c80582-ad32-4f26-a729-a91fe04a06b2"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "There is only zero or one active Definition per concept per dialect in the snapshot file.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 39,
+            "assertionUuid": "00e87310-7e9b-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current Concept full file contains all previously published data unchanged.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 2147,
+            "assertionUuid": "84f5edda-1249-4d79-87da-e248e61f06a6"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "ID is unique in the ASSOCIATION REFSET snapshot.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 138,
+            "assertionUuid": "18a9f6b4-b66f-4af3-8c67-2a07b4655d27"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "Preferred Term exists exactly once in each language refset for each concept.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 48,
+            "assertionUuid": "03cf9850-7857-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current text definition snapshot file is an accurate derivative of the current full file",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 56,
+            "assertionUuid": "13985234-923e-4d91-911b-b3262e353cfa"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "New inactive states follow active states in the DEFINITION snapshot file.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 17,
+            "assertionUuid": "e6082dc4-c6f4-48c6-afa3-233182336a5c"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "New inactive states follow active states in the SIMPLE MAP REFSET snapshot.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 1486,
+            "assertionUuid": "88315a11-4e71-49d2-977f-a5d5ac2a4dc4"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current language refset snapshot file is an accurate derivative of the current full file",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 144818,
+            "assertionUuid": "91e26b70-ea15-4057-8c31-a1bf91614654"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current Simple refset full file contains all previously published data unchanged.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 206,
+            "assertionUuid": "673cf38a-a913-4e0e-be32-356ac433ede8"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current AttributeValue refset full file contains all previously published data unchanged.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 7231,
+            "assertionUuid": "1f6b5876-7714-4362-a065-3906d059a122"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "All active definitions are preferred.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 54,
+            "assertionUuid": "73e46e72-6fdb-407b-9d50-d86a36a3a862"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current data in the Association refset snapshot file are the same as the data in the current delta file.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 5,
+            "assertionUuid": "b808204b-5608-4865-b334-50a6d113b36b"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "Stated relationship modifier is always SOME.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 6,
+            "assertionUuid": "4d32c9d0-7d08-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "Every concept's FSN exists exactly once in each language refset.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 21324,
+            "assertionUuid": "ffe6c560-7856-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "There is at most one active definition per concept per language per dialect in the DEFINITION snapshot.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 37,
+            "assertionUuid": "de0c4d6c-6297-41be-9979-fb1c93717baa"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "ID is unique in the SIMPLEMAP REFSET snapshot.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 801,
+            "assertionUuid": "ad7ae768-d14a-4f15-a5cb-4c56b8b4fed6"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "There is a 1:1 relationship between the id and the immutable values in  the DESCRIPTION snapshot.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 13244,
+            "assertionUuid": "48118153-d32a-4d1c-bfbc-23ed953e9991"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "There is a 1:1 relationship between the id and the key values in the SIMPLE REFSET snapshot.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 138,
+            "assertionUuid": "c779d282-3c4d-4c16-a8a6-8d1a621b247d"
+          },
+          {
+            "testCategory": "release-type-validation",
+            "assertionText": "The current stated relationship snapshot file is an accurate derivative of the current full file",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 24775,
+            "assertionUuid": "23f18cc4-d2d7-4759-96e3-c7d0f0b30a3a"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "There is one and only one SNOMED RT simple map refset member per concept.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 10957,
+            "assertionUuid": "730720b0-7f25-11e1-b0c4-0800200c9a66"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "New inactive states follow active states in the ASSOCIATION REFSET snapshot file.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 239,
+            "assertionUuid": "b88b9f46-4c33-4d8e-b9ab-ddb87aef3068"
+          },
+          {
+            "testCategory": "file-centric-validation",
+            "assertionText": "New inactive states for existing components must have active states in the previous SIMPLE REFSET snapshot.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 47,
+            "assertionUuid": "9190473a-29f7-40fc-b879-9ae0d038b681"
+          },
+          {
+            "testCategory": "component-centric-validation",
+            "assertionText": "All concepts have at least one inferred is-a relationship.",
+            "failureCount": 0,
+            "runTimeInMilliSeconds": 7386,
+            "assertionUuid": "3ab84230-7d08-11e1-b0c4-0800200c9a66"
+          }
+        ],
+        "totalFailures": 10
+      }
+    }
+  }
+}

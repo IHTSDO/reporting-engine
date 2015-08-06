@@ -13,7 +13,7 @@
 
 	<properties>
 		<snowowl.version>4.2.1</snowowl.version>
-		<spring.version>4.0.5.RELEASE</spring.version>
+		<spring.version>4.1.5.RELEASE</spring.version>
 		<spring.security.version>3.2.5.RELEASE</spring.security.version>
 		<spring.hateoas.version>0.11.0.RELEASE</spring.hateoas.version>
 		<swagger.springmvc.version>0.9.3</swagger.springmvc.version>

@@ -9,3 +9,7 @@ snowowlUser=
 orchestration.url=
 orchestration.username=
 orchestration.password=
+
+orchestration.jms.url = tcp://localhost:61616
+orchestration.jms.username =
+orchestration.jms.password =
