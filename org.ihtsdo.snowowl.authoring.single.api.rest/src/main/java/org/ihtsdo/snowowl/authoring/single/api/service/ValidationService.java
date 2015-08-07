@@ -53,7 +53,7 @@ public class ValidationService {
 			if (taskKey != null) {
 				properties.put(TASK, taskKey);
 			}
-			messagingHelper.send(VALIDATION_REQUEST_QUEUE, properties, VALIDATION_RESPONSE_QUEUE);
+			messagingHelper.send(VALIDATION_REQUEST_QUEUE, "", properties, VALIDATION_RESPONSE_QUEUE);
 			return new Validation(Validation.STATUS_SCHEDULED, "");
 		} catch (JsonProcessingException | JMSException e) {
 			throw new BusinessServiceException("Failed to send validation request, please contact support.", e);
@@ -63,13 +63,18 @@ public class ValidationService {
 	@JmsListener(destination = VALIDATION_RESPONSE_QUEUE)
 	public void receiveValidationEvent(TextMessage message) {
 		try {
-			notificationService.queueNotification(
-					message.getStringProperty(MessagingHelper.REQUEST_PROPERTY_NAME_PREFIX + USERNAME),
-					new Notification(
-							message.getStringProperty(MessagingHelper.REQUEST_PROPERTY_NAME_PREFIX + PROJECT),
-							message.getStringProperty(MessagingHelper.REQUEST_PROPERTY_NAME_PREFIX + TASK),
-							EntityType.Validation,
-							message.getStringProperty(STATUS)));
+			if (!MessagingHelper.isError(message)) {
+				logger.info("receiveValidationEvent {}", message);
+				notificationService.queueNotification(
+						message.getStringProperty(MessagingHelper.REQUEST_PROPERTY_NAME_PREFIX + USERNAME),
+						new Notification(
+								message.getStringProperty(MessagingHelper.REQUEST_PROPERTY_NAME_PREFIX + PROJECT),
+								message.getStringProperty(MessagingHelper.REQUEST_PROPERTY_NAME_PREFIX + TASK),
+								EntityType.Validation,
+								message.getStringProperty(STATUS)));
+			} else {
+				logger.error("receiveValidationEvent response with error {}", message);
+			}
 		} catch (JMSException e) {
 			logger.error("Failed to handle validation event message.", e);
 		}
