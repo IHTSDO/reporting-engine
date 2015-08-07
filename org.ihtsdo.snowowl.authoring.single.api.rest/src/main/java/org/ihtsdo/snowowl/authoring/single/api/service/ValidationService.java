@@ -43,11 +43,11 @@ public class ValidationService {
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
 	public String startValidation(String projectKey, String taskKey, String username) throws BusinessServiceException {
-		return doStartValidation(getPath(projectKey, taskKey), username, projectKey, taskKey);
+		return doStartValidation(PathHelper.getPath(projectKey, taskKey), username, projectKey, taskKey);
 	}
 
 	public String startValidation(String projectKey, String username) throws BusinessServiceException {
-		return doStartValidation(getPath(projectKey), username, projectKey, null);
+		return doStartValidation(PathHelper.getPath(projectKey), username, projectKey, null);
 	}
 
 	private String doStartValidation(String path, String username, String projectKey, String taskKey) throws BusinessServiceException {
@@ -87,19 +87,11 @@ public class ValidationService {
 	}
 
 	public String getValidationJson(String projectKey, String taskKey) throws IOException, JSONException {
-		return orchestrationRestClient.retrieveValidation(getPath(projectKey, taskKey));
+		return orchestrationRestClient.retrieveValidation(PathHelper.getPath(projectKey, taskKey));
 	}
 
 	public String getValidationJson(String projectKey) throws IOException, JSONException {
-		return orchestrationRestClient.retrieveValidation(getPath(projectKey));
-	}
-
-	private String getPath(String projectKey) {
-		return "MAIN/" + projectKey;
-	}
-
-	private String getPath(String projectKey, String taskKey) {
-		return "MAIN/" + projectKey + "/" + taskKey;
+		return orchestrationRestClient.retrieveValidation(PathHelper.getPath(projectKey));
 	}
 
 }

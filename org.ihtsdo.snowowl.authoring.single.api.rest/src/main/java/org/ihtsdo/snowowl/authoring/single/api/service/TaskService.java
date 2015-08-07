@@ -5,6 +5,7 @@ import com.b2international.snowowl.core.exceptions.NotFoundException;
 import net.rcarz.jiraclient.*;
 
 import org.ihtsdo.otf.im.utility.SecurityService;
+import org.ihtsdo.otf.rest.client.OrchestrationRestClient;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringProject;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTask;
@@ -13,12 +14,16 @@ import org.ihtsdo.snowowl.authoring.single.api.pojo.StateTransition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import us.monoid.json.JSONException;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class TaskService {
 
+	public static final String FAILED_TO_RETRIEVE = "Failed-to-retrieve";
 	@Autowired
 	private BranchService branchService;
 	
@@ -26,7 +31,10 @@ public class TaskService {
 	private ClassificationService classificationService;
 
 	@Autowired
-	SecurityService ims;
+	private OrchestrationRestClient orchestrationRestClient;
+
+	@Autowired
+	private SecurityService ims;
 	
 	private final JiraClient jiraClient;
 
@@ -103,15 +111,38 @@ public class TaskService {
 
 	private List<AuthoringTask> convertToAuthoringTasks(List<Issue> issues) throws RestClientException {
 		List<AuthoringTask> tasks = new ArrayList<>();
+		List<String> paths = new ArrayList<>();
 		for (Issue issue : issues) {
 			tasks.add(getAuthoringTask(issue));
+			paths.add(PathHelper.getTaskPath(issue));
 		}
+
+		List<String> validationStatuses = getValidationStatuses(paths);
+		for (int a = 0; a < tasks.size(); a++) {
+			tasks.get(a).setLatestValidationStatus(validationStatuses.get(a));
+		}
+
 		return tasks;
 	}
 
 	private AuthoringTask getAuthoringTask(Issue issue) throws RestClientException {
 		final String latestClassificationJson = classificationService.getLatestClassification(issue.getProject().getKey(), issue.getKey());
-		return new AuthoringTask(issue, latestClassificationJson);
+		final AuthoringTask authoringTask = new AuthoringTask(issue, latestClassificationJson);
+		authoringTask.setLatestValidationStatus(getValidationStatuses(Collections.singletonList(PathHelper.getTaskPath(issue))).get(0));
+		return authoringTask;
+	}
+
+	private List<String> getValidationStatuses(List<String> paths) {
+		List<String> statuses;
+		try {
+			statuses = orchestrationRestClient.retrieveValidationStatuses(paths);
+		} catch (JSONException | IOException e) {
+			logger.error("Failed to retrieve validation status of tasks {}", paths, e);
+			statuses = new ArrayList<>();
+			for (String path : paths) {
+				statuses.add(FAILED_TO_RETRIEVE);
+			}
+		} return statuses;
 	}
 
 	private void getProjectOrThrow(String projectKey) {
