@@ -2,16 +2,18 @@ package org.ihtsdo.snowowl.authoring.single.api.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.ihtsdo.otf.jms.MessagingHelper;
+import org.ihtsdo.otf.rest.client.OrchestrationRestClient;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.EntityType;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.Notification;
-import org.ihtsdo.snowowl.authoring.single.api.pojo.Validation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
+import us.monoid.json.JSONException;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import javax.jms.JMSException;
@@ -27,6 +29,7 @@ public class ValidationService {
 	public static final String PROJECT = "project";
 	public static final String TASK = "task";
 	public static final String STATUS = "status";
+	public static final String STATUS_SCHEDULED = "SCHEDULED";
 
 	@Autowired
 	private MessagingHelper messagingHelper;
@@ -34,17 +37,20 @@ public class ValidationService {
 	@Autowired
 	private NotificationService notificationService;
 
+	@Autowired
+	private OrchestrationRestClient orchestrationRestClient;
+
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
-	public Validation startValidation(String projectKey, String taskKey, String username) throws BusinessServiceException {
-		return doStartValidation("MAIN/" + projectKey + "/" + taskKey, username, projectKey, taskKey);
+	public String startValidation(String projectKey, String taskKey, String username) throws BusinessServiceException {
+		return doStartValidation(getPath(projectKey, taskKey), username, projectKey, taskKey);
 	}
 
-	public Validation startValidation(String projectKey, String username) throws BusinessServiceException {
-		return doStartValidation("MAIN/" + projectKey, username, projectKey, null);
+	public String startValidation(String projectKey, String username) throws BusinessServiceException {
+		return doStartValidation(getPath(projectKey), username, projectKey, null);
 	}
 
-	private Validation doStartValidation(String path, String username, String projectKey, String taskKey) throws BusinessServiceException {
+	private String doStartValidation(String path, String username, String projectKey, String taskKey) throws BusinessServiceException {
 		try {
 			Map<String, String> properties = new HashMap<>();
 			properties.put(PATH, path);
@@ -54,7 +60,7 @@ public class ValidationService {
 				properties.put(TASK, taskKey);
 			}
 			messagingHelper.send(VALIDATION_REQUEST_QUEUE, "", properties, VALIDATION_RESPONSE_QUEUE);
-			return new Validation(Validation.STATUS_SCHEDULED, "");
+			return STATUS_SCHEDULED;
 		} catch (JsonProcessingException | JMSException e) {
 			throw new BusinessServiceException("Failed to send validation request, please contact support.", e);
 		}
@@ -80,12 +86,20 @@ public class ValidationService {
 		}
 	}
 
-	public Validation getValidation(String projectKey, String taskKey) {
-		return new Validation ("NOT YET IMPLEMENTED", "");
+	public String getValidationJson(String projectKey, String taskKey) throws IOException, JSONException {
+		return orchestrationRestClient.retrieveValidation(getPath(projectKey, taskKey));
 	}
 
-	public Validation getValidation(String projectKey) {
-		return new Validation("NOT YET IMPLEMENTED", "");
+	public String getValidationJson(String projectKey) throws IOException, JSONException {
+		return orchestrationRestClient.retrieveValidation(getPath(projectKey));
+	}
+
+	private String getPath(String projectKey) {
+		return "MAIN/" + projectKey;
+	}
+
+	private String getPath(String projectKey, String taskKey) {
+		return "MAIN/" + projectKey + "/" + taskKey;
 	}
 
 }
