@@ -60,19 +60,15 @@ public class ClassificationService {
 	}
 
 	public synchronized Classification startClassificationOfProject(String projectKey, String username) throws RestClientException, JSONException {
-		if (!snowOwlClient.isClassificationInProgressOnBranch(getBranchPath(projectKey))) {
+		if (!snowOwlClient.isClassificationInProgressOnBranch(PathHelper.getPath(projectKey))) {
 			return callClassification(projectKey, null, username);
 		} else {
 			throw new IllegalStateException("Classification already in progress on this branch.");
 		}
 	}
 
-	public String getLatestClassification(String projectKey, String taskKey) throws RestClientException {
-		return snowOwlClient.getLatestClassificationOnBranch("MAIN/" + projectKey + "/" + taskKey);
-	}
-
-	private String getBranchPath(String projectKey) {
-		return "MAIN/" + projectKey;
+	public String getLatestClassification(String path) throws RestClientException {
+		return snowOwlClient.getLatestClassificationOnBranch(path);
 	}
 
 	private Classification callClassification(String projectKey, String taskKey, String callerUsername) throws RestClientException {

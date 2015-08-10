@@ -46,13 +46,19 @@ public class TaskService {
 		this.jiraClient = jiraClient;
 	}
 
-	public List<AuthoringProject> listProjects() throws JiraException {
+	public List<AuthoringProject> listProjects() throws JiraException, IOException, JSONException, RestClientException {
 		List<AuthoringProject> authoringProjects = new ArrayList<>();
 		for (Issue issue : jiraClient.searchIssues("type = \"SCA Authoring Project\"").issues) {
 			Project project = issue.getProject();
-			authoringProjects.add(new AuthoringProject(project.getKey(), project.getName()));
+			authoringProjects.add(buildProject(project));
 		}
 		return authoringProjects;
+	}
+
+	private AuthoringProject buildProject(Project project) throws IOException, JSONException, RestClientException {
+		final String validationStatus = orchestrationRestClient.retrieveValidationStatuses(Collections.singletonList(PathHelper.getPath(project.getKey()))).get(0);
+		final String latestClassificationJson = classificationService.getLatestClassification(PathHelper.getPath(project.getKey()));
+		return new AuthoringProject(project.getKey(), project.getName(), validationStatus, latestClassificationJson);
 	}
 
 	public Issue getProjectTicket(String projectKey) throws JiraException {
@@ -71,7 +77,7 @@ public class TaskService {
 
 	public AuthoringTask retrieveTask(String projectKey, String taskKey) throws JiraException, RestClientException {
 		Issue issue = getIssue (projectKey, taskKey);
-		return getAuthoringTask(issue);
+		return buildAuthoringTask(issue);
 	}
 	
 	private Issue getIssue(String projectKey, String taskKey) throws JiraException {
@@ -113,7 +119,7 @@ public class TaskService {
 		List<AuthoringTask> tasks = new ArrayList<>();
 		List<String> paths = new ArrayList<>();
 		for (Issue issue : issues) {
-			tasks.add(getAuthoringTask(issue));
+			tasks.add(buildAuthoringTask(issue));
 			paths.add(PathHelper.getTaskPath(issue));
 		}
 
@@ -125,8 +131,8 @@ public class TaskService {
 		return tasks;
 	}
 
-	private AuthoringTask getAuthoringTask(Issue issue) throws RestClientException {
-		final String latestClassificationJson = classificationService.getLatestClassification(issue.getProject().getKey(), issue.getKey());
+	private AuthoringTask buildAuthoringTask(Issue issue) throws RestClientException {
+		final String latestClassificationJson = classificationService.getLatestClassification(PathHelper.getPath(issue.getProject().getKey(), issue.getKey()));
 		final AuthoringTask authoringTask = new AuthoringTask(issue, latestClassificationJson);
 		authoringTask.setLatestValidationStatus(getValidationStatuses(Collections.singletonList(PathHelper.getTaskPath(issue))).get(0));
 		return authoringTask;

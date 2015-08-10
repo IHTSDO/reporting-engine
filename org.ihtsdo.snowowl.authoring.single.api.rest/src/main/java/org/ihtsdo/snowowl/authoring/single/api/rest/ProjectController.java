@@ -17,7 +17,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import us.monoid.json.JSONException;
 
+import java.io.IOException;
 import java.util.List;
 
 @Api("Authoring Projects")
@@ -33,7 +35,7 @@ public class ProjectController extends AbstractSnomedRestService {
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/projects", method= RequestMethod.GET)
-	public List<AuthoringProject> listProjects() throws JiraException {
+	public List<AuthoringProject> listProjects() throws JiraException, IOException, JSONException, RestClientException {
 		return taskService.listProjects();
 	}
 
