@@ -8,4 +8,8 @@ public class ControllerHelper {
 	public static UserDetails getUserDetails() {
 		return (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 	}
+
+	public static String getUsername() {
+		return getUserDetails().getUsername();
+	}
 }

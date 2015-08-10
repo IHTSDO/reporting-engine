@@ -113,6 +113,18 @@ public abstract class AbstractRestService {
 	}
 
 	/**
+	 * Exception handler to return <b>Bad Request</b> when an {@link IllegalStateException} is thrown from the underlying system.
+	 *
+	 * @param ex
+	 * @return {@link RestApiError} instance with detailed messages
+	 */
+	@ExceptionHandler
+	@ResponseStatus(HttpStatus.BAD_REQUEST)
+	public @ResponseBody RestApiError handle(final IllegalStateException ex) {
+		return RestApiError.of(HttpStatus.BAD_REQUEST.value()).message("Bad request - illegal state.").developerMessage(getDeveloperMessage(ex)).build();
+	}
+
+	/**
 	 * Exception handler to return <b>Bad Request</b> when an {@link BadRequestException} is thrown from the underlying system.
 	 *
 	 * @param ex

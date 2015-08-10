@@ -14,6 +14,7 @@ public class AuthoringTask implements AuthoringTaskCreateRequest {
 	private String created;
 	private String updated;
 	private String latestClassificationJson;
+	private String latestValidationStatus;
 
 	public AuthoringTask() {
 	}
@@ -108,5 +109,13 @@ public class AuthoringTask implements AuthoringTaskCreateRequest {
 	@JsonRawValue
 	public String getLatestClassificationJson() {
 		return latestClassificationJson;
+	}
+
+	public void setLatestValidationStatus(String latestValidationStatus) {
+		this.latestValidationStatus = latestValidationStatus;
+	}
+
+	public String getLatestValidationStatus() {
+		return latestValidationStatus;
 	}
 }

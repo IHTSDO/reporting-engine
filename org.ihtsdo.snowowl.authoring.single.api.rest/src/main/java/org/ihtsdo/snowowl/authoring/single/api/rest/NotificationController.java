@@ -1,36 +1,37 @@
-package org.ihtsdo.snowowl.apichecks.rest;
+package org.ihtsdo.snowowl.authoring.single.api.rest;
 
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
-import net.rcarz.jiraclient.JiraException;
 import org.ihtsdo.snowowl.api.rest.common.AbstractRestService;
 import org.ihtsdo.snowowl.api.rest.common.AbstractSnomedRestService;
-import org.ihtsdo.snowowl.apichecks.service.TestService;
+import org.ihtsdo.snowowl.authoring.single.api.pojo.Notification;
+import org.ihtsdo.snowowl.authoring.single.api.service.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Map;
+import java.io.IOException;
+import java.util.List;
 
-@Api("SnowOwl API Context Checks")
+@Api("Notifications")
 @RestController
 @RequestMapping(produces={AbstractRestService.V1_MEDIA_TYPE, MediaType.APPLICATION_JSON_VALUE})
-public class TestController extends AbstractSnomedRestService {
+public class NotificationController extends AbstractSnomedRestService {
 
 	@Autowired
-	private TestService testService;
-
-	@ApiOperation(value="Check services are available.")
+	private NotificationService notificationService;
+	
+	@ApiOperation(value="Retrieve new notifications", notes="Retrieve one-time user notifications; once retrieved they are lost.")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
 	})
-	@RequestMapping(value="/services-available", method= RequestMethod.GET)
-	public Map<Class, Boolean> checkServicesAvailable() throws JiraException {
-		return testService.checkServicesAvailable();
+	@RequestMapping(value="/notifications", method= RequestMethod.GET)
+	public List<Notification> retrieveNotifications() throws IOException {
+		return notificationService.retrieveNewNotifications(ControllerHelper.getUsername());
 	}
 
 }

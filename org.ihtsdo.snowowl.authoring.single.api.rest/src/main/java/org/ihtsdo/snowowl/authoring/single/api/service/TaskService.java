@@ -1,20 +1,29 @@
 package org.ihtsdo.snowowl.authoring.single.api.service;
 
 import com.b2international.snowowl.core.exceptions.NotFoundException;
+
 import net.rcarz.jiraclient.*;
+
 import org.ihtsdo.otf.im.utility.SecurityService;
-import org.ihtsdo.otf.rest.client.SnowOwlRestClientException;
+import org.ihtsdo.otf.rest.client.OrchestrationRestClient;
+import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringProject;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTask;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskCreateRequest;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.StateTransition;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import us.monoid.json.JSONException;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class TaskService {
 
+	public static final String FAILED_TO_RETRIEVE = "Failed-to-retrieve";
 	@Autowired
 	private BranchService branchService;
 	
@@ -22,33 +31,53 @@ public class TaskService {
 	private ClassificationService classificationService;
 
 	@Autowired
-	SecurityService ims;
+	private OrchestrationRestClient orchestrationRestClient;
+
+	@Autowired
+	private SecurityService ims;
 	
 	private final JiraClient jiraClient;
+
+	private final Logger logger = LoggerFactory.getLogger(getClass());
+
 	private static final String AUTHORING_TASK_TYPE = "SCA Authoring Task";
 
 	public TaskService(JiraClient jiraClient) {
 		this.jiraClient = jiraClient;
 	}
 
-	public List<AuthoringProject> listProjects() throws JiraException {
+	public List<AuthoringProject> listProjects() throws JiraException, IOException, JSONException, RestClientException {
 		List<AuthoringProject> authoringProjects = new ArrayList<>();
 		for (Issue issue : jiraClient.searchIssues("type = \"SCA Authoring Project\"").issues) {
 			Project project = issue.getProject();
-			authoringProjects.add(new AuthoringProject(project.getKey(), project.getName()));
+			authoringProjects.add(buildProject(project));
 		}
 		return authoringProjects;
 	}
 
-	public List<AuthoringTask> listTasks(String projectKey) throws JiraException, SnowOwlRestClientException {
+	private AuthoringProject buildProject(Project project) throws IOException, JSONException, RestClientException {
+		final String validationStatus = orchestrationRestClient.retrieveValidationStatuses(Collections.singletonList(PathHelper.getPath(project.getKey()))).get(0);
+		final String latestClassificationJson = classificationService.getLatestClassification(PathHelper.getPath(project.getKey()));
+		return new AuthoringProject(project.getKey(), project.getName(), validationStatus, latestClassificationJson);
+	}
+
+	public Issue getProjectTicket(String projectKey) throws JiraException {
+		final List<Issue> issues = jiraClient.searchIssues("project = " + projectKey + " AND type = \"SCA Authoring Project\"").issues;
+		if (!issues.isEmpty()) {
+			return issues.get(0);
+		}
+		return null;
+	}
+
+	public List<AuthoringTask> listTasks(String projectKey) throws JiraException, RestClientException {
 		getProjectOrThrow(projectKey);
 		List<Issue> issues = jiraClient.searchIssues(getProjectJQL(projectKey)).issues;
 		return convertToAuthoringTasks(issues);
 	}
 
-	public AuthoringTask retrieveTask(String projectKey, String taskKey) throws JiraException, SnowOwlRestClientException {
+	public AuthoringTask retrieveTask(String projectKey, String taskKey) throws JiraException, RestClientException {
 		Issue issue = getIssue (projectKey, taskKey);
-		return getAuthoringTask(issue);
+		return buildAuthoringTask(issue);
 	}
 	
 	private Issue getIssue(String projectKey, String taskKey) throws JiraException {
@@ -62,7 +91,7 @@ public class TaskService {
 		
 	}
 
-	public List<AuthoringTask> listMyTasks(String username) throws JiraException, SnowOwlRestClientException {
+	public List<AuthoringTask> listMyTasks(String username) throws JiraException, RestClientException {
 		List<Issue> issues = jiraClient.searchIssues("assignee = \"" + username + "\" AND type = \"" + AUTHORING_TASK_TYPE + "\"").issues;
 		return convertToAuthoringTasks(issues);
 	}
@@ -86,17 +115,40 @@ public class TaskService {
 		return authoringTask;
 	}
 
-	private List<AuthoringTask> convertToAuthoringTasks(List<Issue> issues) throws SnowOwlRestClientException {
+	private List<AuthoringTask> convertToAuthoringTasks(List<Issue> issues) throws RestClientException {
 		List<AuthoringTask> tasks = new ArrayList<>();
+		List<String> paths = new ArrayList<>();
 		for (Issue issue : issues) {
-			tasks.add(getAuthoringTask(issue));
+			tasks.add(buildAuthoringTask(issue));
+			paths.add(PathHelper.getTaskPath(issue));
 		}
+
+		List<String> validationStatuses = getValidationStatuses(paths);
+		for (int a = 0; a < tasks.size(); a++) {
+			tasks.get(a).setLatestValidationStatus(validationStatuses.get(a));
+		}
+
 		return tasks;
 	}
 
-	private AuthoringTask getAuthoringTask(Issue issue) throws SnowOwlRestClientException {
-		final String latestClassificationJson = classificationService.getLatestClassification(issue.getProject().getKey(), issue.getKey());
-		return new AuthoringTask(issue, latestClassificationJson);
+	private AuthoringTask buildAuthoringTask(Issue issue) throws RestClientException {
+		final String latestClassificationJson = classificationService.getLatestClassification(PathHelper.getPath(issue.getProject().getKey(), issue.getKey()));
+		final AuthoringTask authoringTask = new AuthoringTask(issue, latestClassificationJson);
+		authoringTask.setLatestValidationStatus(getValidationStatuses(Collections.singletonList(PathHelper.getTaskPath(issue))).get(0));
+		return authoringTask;
+	}
+
+	private List<String> getValidationStatuses(List<String> paths) {
+		List<String> statuses;
+		try {
+			statuses = orchestrationRestClient.retrieveValidationStatuses(paths);
+		} catch (JSONException | IOException e) {
+			logger.error("Failed to retrieve validation status of tasks {}", paths, e);
+			statuses = new ArrayList<>();
+			for (String path : paths) {
+				statuses.add(FAILED_TO_RETRIEVE);
+			}
+		} return statuses;
 	}
 
 	private void getProjectOrThrow(String projectKey) {
@@ -113,9 +165,31 @@ public class TaskService {
 		return currentState.equals(targetState);
 	}
 	
+	public void addCommentLogErrors(String projectKey, String commentString) {
+		try {
+			final Issue projectTicket = getProjectTicket(projectKey);
+			if (projectTicket != null) {
+				projectTicket.addComment(commentString);
+				projectTicket.update();
+			} else {
+				throw new IllegalArgumentException("Authoring project with key " + projectKey + " is not accessible.");
+			}
+		} catch (JiraException e) {
+			logger.error("Failed to set message on jira ticket {}/{}: {}", projectKey, commentString, e);
+		}
+	}
+
+	public void addCommentLogErrors(String projectKey, String taskKey, String commentString) {
+		try {
+			addComment(projectKey, taskKey, commentString);
+		} catch (JiraException e) {
+			logger.error("Failed to set message on jira ticket {}/{}: {}", projectKey, taskKey, commentString, e);
+		}
+	}
+
 	public void addComment(String projectKey, String taskKey, String commentString)
 			throws JiraException {
-		Issue issue = getIssue (projectKey, taskKey);
+		Issue issue = getIssue(projectKey, taskKey);
 		issue.addComment(commentString);
 		issue.update(); // Pick up new comment locally too
 	}
@@ -142,7 +216,8 @@ public class TaskService {
 		} catch (JiraException je) {
 			StringBuilder sb = getTransitionError (projectKey, taskKey, stateTransition);
 			sb.append (je.getMessage());
-			stateTransition.transitionSuccessful(false);	
+			stateTransition.transitionSuccessful(false);
+			stateTransition.experiencedException(true);
 			stateTransition.setErrorMessage(sb.toString());
 		}
 		
@@ -167,6 +242,7 @@ public class TaskService {
 			.append (taskKey);
 		return sb.toString();
 	}
+
 	
 	
 }

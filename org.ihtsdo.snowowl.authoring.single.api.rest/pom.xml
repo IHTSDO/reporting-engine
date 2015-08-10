@@ -4,13 +4,14 @@
 	<parent>
 		<groupId>org.ihtsdo.snowowl</groupId>
 		<artifactId>ihtsdo-snowowl-parent</artifactId>
-		<version>4.1.9</version>
+		<version>4.1.10</version>
 	</parent>
 
 	<artifactId>org.ihtsdo.snowowl.authoring.single.api.rest</artifactId>
 
 	<properties>
 		<org.ihtsdo.otf.im-version>0.0.3</org.ihtsdo.otf.im-version>
+		<activemq.version>5.10.0</activemq.version>
 		<!-- manifest properties -->
 		<bundle.symbolicName>${project.artifactId};singleton:=true</bundle.symbolicName>
 		<bundle.namespace>${project.artifactId}</bundle.namespace>
@@ -22,6 +23,11 @@
 			<groupId>org.ihtsdo.snowowl</groupId>
 			<artifactId>org.ihtsdo.snowowl.api.rest.common</artifactId>
 			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.ihtsdo.otf.common</groupId>
+			<artifactId>otf-common</artifactId>
+			<version>0.0.14-SNAPSHOT</version>
 		</dependency>
 		<!-- Plug-in dependencies are repeated here so that the build can resolve
 			them at compile time -->
@@ -74,60 +80,6 @@
 			<version>${snowowl.version}</version>
 			<scope>provided</scope>
 		</dependency>
-		<!--<dependency>-->
-			<!--<groupId>com.b2international.snowowl</groupId>-->
-			<!--<artifactId>com.b2international.snowowl.api.impl</artifactId>-->
-			<!--<version>${snowowl.version}</version>-->
-			<!--<scope>provided</scope>-->
-		<!--</dependency>-->
-		<!--<dependency>-->
-			<!--<groupId>com.b2international.snowowl</groupId>-->
-			<!--<artifactId>com.b2international.snowowl.snomed.refset.model</artifactId>-->
-			<!--<version>${snowowl.version}</version>-->
-			<!--<scope>provided</scope>-->
-		<!--</dependency>-->
-		<!--<dependency>-->
-			<!--<groupId>com.b2international.snowowl</groupId>-->
-			<!--<artifactId>com.b2international.snowowl.datastore</artifactId>-->
-			<!--<version>${snowowl.version}</version>-->
-			<!--<scope>provided</scope>-->
-		<!--</dependency>-->
-		<!--<dependency>-->
-			<!--<groupId>com.b2international.snowowl</groupId>-->
-			<!--<artifactId>com.b2international.snowowl.core</artifactId>-->
-			<!--<version>${snowowl.version}</version>-->
-			<!--<scope>provided</scope>-->
-		<!--</dependency>-->
-		<!--<dependency>-->
-			<!--<groupId>com.b2international.snowowl</groupId>-->
-			<!--<artifactId>com.b2international.snowowl.snomed.common</artifactId>-->
-			<!--<version>${snowowl.version}</version>-->
-			<!--<scope>provided</scope>-->
-		<!--</dependency>-->
-		<!--<dependency>-->
-			<!--<groupId>com.b2international.snowowl</groupId>-->
-			<!--<artifactId>com.b2international.snowowl.snomed.datastore</artifactId>-->
-			<!--<version>${snowowl.version}</version>-->
-			<!--<scope>provided</scope>-->
-		<!--</dependency>-->
-		<!--<dependency>-->
-			<!--<groupId>com.b2international.snowowl</groupId>-->
-			<!--<artifactId>com.b2international.snowowl.snomed.datastore.server</artifactId>-->
-			<!--<version>${snowowl.version}</version>-->
-			<!--<scope>provided</scope>-->
-		<!--</dependency>-->
-		<!--<dependency>-->
-			<!--<groupId>com.b2international.snowowl</groupId>-->
-			<!--<artifactId>com.b2international.snowowl.snomed.model</artifactId>-->
-			<!--<version>${snowowl.version}</version>-->
-			<!--<scope>provided</scope>-->
-		<!--</dependency>-->
-		<!--<dependency>-->
-			<!--<groupId>com.b2international.snowowl</groupId>-->
-			<!--<artifactId>com.b2international.snowowl.snomed.api.rest</artifactId>-->
-			<!--<version>${snowowl.version}</version>-->
-			<!-- TODO - make the b2i rest module export it's classes so the scope here may be 'provided'-->
-		<!--</dependency>-->
 		<dependency>
 			<groupId>com.b2international.snowowl</groupId>
 			<artifactId>org.eclipse.emf.cdo</artifactId>
@@ -178,8 +130,14 @@
 		</dependency>
 		<dependency>
 			<groupId>org.springframework</groupId>
+			<artifactId>spring-context</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
 			<artifactId>spring-test</artifactId>
 			<version>${spring.version}</version>
+			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.thoughtworks.xstream</groupId>
@@ -233,6 +191,16 @@
 			</exclusions>
 		</dependency>
 		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-jms</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.activemq</groupId>
+			<artifactId>activemq-client</artifactId>
+			<version>${activemq.version}</version>
+		</dependency>
+		<dependency>
 			<groupId>org.scala-lang</groupId>
 			<artifactId>scala-library</artifactId>
 			<version>2.10.4</version>
@@ -269,7 +237,7 @@
 		<dependency>
 			<groupId>org.ihtsdo.otf.common</groupId>
 			<artifactId>otf-common</artifactId>
-			<version>0.0.13</version>
+			<version>0.0.14-SNAPSHOT</version>
 			<exclusions>
 				<exclusion>
 					<artifactId>spring-beans</artifactId>

@@ -7,6 +7,7 @@ import com.wordnik.swagger.annotations.ApiResponses;
 
 import net.rcarz.jiraclient.JiraException;
 
+import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.snowowl.api.rest.common.AbstractRestService;
 import org.ihtsdo.snowowl.api.rest.common.AbstractSnomedRestService;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.Classification;
@@ -14,6 +15,7 @@ import org.ihtsdo.snowowl.authoring.single.api.service.ClassificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import us.monoid.json.JSONException;
 
 @Api("Authoring Projects")
 @RestController
@@ -28,9 +30,17 @@ public class ClassificationController extends AbstractSnomedRestService {
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/projects/{projectKey}/tasks/{taskKey}/classifications", method= RequestMethod.POST)
-	public Classification startClassification(@PathVariable final String projectKey, @PathVariable final String taskKey) throws JiraException {
-		return classificationService.startClassification(projectKey, taskKey);
+	public Classification startClassificationOfTask(@PathVariable final String projectKey, @PathVariable final String taskKey) throws JiraException {
+		return classificationService.startClassificationOfTask(projectKey, taskKey, ControllerHelper.getUsername());
 	}
 
-	
+	@ApiOperation(value="Initiate the classifier on a project")
+	@ApiResponses({
+			@ApiResponse(code = 200, message = "OK")
+	})
+	@RequestMapping(value="/projects/{projectKey}/classifications", method= RequestMethod.POST)
+	public Classification startClassificationOfProject(@PathVariable final String projectKey) throws JiraException, RestClientException, JSONException {
+		return classificationService.startClassificationOfProject(projectKey, ControllerHelper.getUsername());
+	}
+
 }

@@ -5,6 +5,8 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd">
 
+	<import resource="jms-api-context.xml"/>
+
 	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.TaskService">
 		<constructor-arg>
 			<bean class="net.rcarz.jiraclient.JiraClient">
@@ -34,6 +36,12 @@
 		<property name="classificationTimeoutMinutes" value="+{snowowl.classification.timeout}"/>
 	</bean>
 	
+	<bean class="org.ihtsdo.otf.rest.client.OrchestrationRestClient">
+		<constructor-arg value="+{orchestration.url}"/>
+		<constructor-arg value="+{orchestration.username}"/>
+		<constructor-arg value="+{orchestration.password}"/>
+	</bean>
+	
 	<bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
 		<property name="location" value="#{systemProperties['osgi.sharedConfiguration.area']}/single_authoring.properties"/>
 		<property name="placeholderPrefix" value="+{"/>
@@ -42,8 +50,12 @@
 	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.SnowOwlBusHelper"/>
 
 	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.UiStateService"/>
+	
+	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.ValidationService"/>
 
 	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.dao.ArbitraryJsonService"/>
+
+	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.NotificationService"/>
 	
 	<bean factory-bean="securityServiceFactory" factory-method="getSecurityService">
 		<constructor-arg ref="securityServiceStubMode" />
