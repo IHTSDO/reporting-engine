@@ -1,9 +1,7 @@
 package org.ihtsdo.snowowl.authoring.single.api.service;
 
 import com.b2international.snowowl.core.exceptions.NotFoundException;
-
 import net.rcarz.jiraclient.*;
-
 import org.ihtsdo.otf.im.utility.SecurityService;
 import org.ihtsdo.otf.rest.client.OrchestrationRestClient;
 import org.ihtsdo.otf.rest.client.RestClientException;
@@ -24,9 +22,10 @@ import java.util.List;
 public class TaskService {
 
 	public static final String FAILED_TO_RETRIEVE = "Failed-to-retrieve";
+
 	@Autowired
 	private BranchService branchService;
-	
+
 	@Autowired
 	private ClassificationService classificationService;
 
@@ -35,7 +34,7 @@ public class TaskService {
 
 	@Autowired
 	private SecurityService ims;
-	
+
 	private final JiraClient jiraClient;
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -83,7 +82,7 @@ public class TaskService {
 		Issue issue = getIssue(projectKey, taskKey);
 		return buildAuthoringTask(issue);
 	}
-	
+
 	private Issue getIssue(String projectKey, String taskKey) throws JiraException {
 		getProjectOrThrow(projectKey);
 		List<Issue> issues = jiraClient.searchIssues(getProjectTaskJQL(projectKey) + " AND key = " + taskKey).issues;
@@ -91,8 +90,7 @@ public class TaskService {
 			return issues.get(0);
 		} else {
 			throw new NotFoundException("Task", taskKey);
-		}		
-		
+		}
 	}
 
 	public List<AuthoringTask> listMyTasks(String username) throws JiraException, RestClientException {
@@ -107,7 +105,7 @@ public class TaskService {
 	public AuthoringTask createTask(String projectKey, AuthoringTaskCreateRequest taskCreateRequest) throws JiraException, ServiceException {
 		//The task should be assigned to the currently logged in user
 		String currentUser = ims.getCurrentLogin();
-		
+
 		Issue jiraIssue = jiraClient.createIssue(projectKey, AUTHORING_TASK_TYPE)
 				.field(Field.SUMMARY, taskCreateRequest.getSummary())
 				.field(Field.DESCRIPTION, taskCreateRequest.getDescription())
@@ -152,7 +150,8 @@ public class TaskService {
 			for (String path : paths) {
 				statuses.add(FAILED_TO_RETRIEVE);
 			}
-		} return statuses;
+		}
+		return statuses;
 	}
 
 	private void getProjectOrThrow(String projectKey) {
@@ -162,13 +161,13 @@ public class TaskService {
 			throw new NotFoundException("Project", projectKey);
 		}
 	}
-	
+
 	public boolean taskIsState(String projectKey, String taskKey, String targetState) throws JiraException {
-		Issue issue = getIssue (projectKey, taskKey);
+		Issue issue = getIssue(projectKey, taskKey);
 		String currentState = issue.getStatus().getName();
 		return currentState.equals(targetState);
 	}
-	
+
 	public void addCommentLogErrors(String projectKey, String commentString) {
 		try {
 			final Issue projectTicket = getProjectTicket(projectKey);
@@ -200,51 +199,52 @@ public class TaskService {
 
 	public void doStateTransition(String projectKey, String taskKey,
 			StateTransition stateTransition) {
-		
+
 		try {
-			Issue issue = getIssue (projectKey, taskKey);
+			Issue issue = getIssue(projectKey, taskKey);
 			String currentState = issue.getStatus().getName();
-			
+
 			//If the currentState isn't the expected initial state, then refuse
 			if (stateTransition.hasInitialState(currentState)) {
 				issue.transition().execute(stateTransition.getTransition());
 				issue.refresh(); // Synchronize the issue to pick up the new status.
 				stateTransition.transitionSuccessful(true);
 			} else {
-				StringBuilder sb = getTransitionError(projectKey, taskKey, stateTransition) ;
+				StringBuilder sb = getTransitionError(projectKey, taskKey, stateTransition);
 				sb.append("currently being in state ")
-					.append(issue.getStatus().getName());
+						.append(issue.getStatus().getName());
 				stateTransition.transitionSuccessful(false);
-				stateTransition.setErrorMessage(sb.toString());;
+				stateTransition.setErrorMessage(sb.toString());
+				;
 			}
 		} catch (JiraException je) {
-			StringBuilder sb = getTransitionError (projectKey, taskKey, stateTransition);
-			sb.append (je.getMessage());
+			StringBuilder sb = getTransitionError(projectKey, taskKey, stateTransition);
+			sb.append(je.getMessage());
 			stateTransition.transitionSuccessful(false);
 			stateTransition.experiencedException(true);
 			stateTransition.setErrorMessage(sb.toString());
 		}
-		
+
 	}
-	
-	private StringBuilder getTransitionError (String projectKey, String taskKey, StateTransition stateTransition) {
-		StringBuilder sb = new StringBuilder ();
+
+	private StringBuilder getTransitionError(String projectKey, String taskKey, StateTransition stateTransition) {
+		StringBuilder sb = new StringBuilder();
 		sb.append("Failed to transition issue ")
-		.append (toString(projectKey, taskKey))
-		.append (" from status " )
-		.append ( stateTransition.getInitialState())
-		.append (" via transition " )
-		.append ( stateTransition.getTransition())
-		.append ( " due to ");
+				.append(toString(projectKey, taskKey))
+				.append(" from status ")
+				.append(stateTransition.getInitialState())
+				.append(" via transition ")
+				.append(stateTransition.getTransition())
+				.append(" due to ");
 		return sb;
 	}
-	
-	private String toString (String projectKey, String taskKey) {
+
+	private String toString(String projectKey, String taskKey) {
 		StringBuilder sb = new StringBuilder();
-		sb.append (projectKey)
-			.append ("/")
-			.append (taskKey);
+		sb.append(projectKey)
+				.append("/")
+				.append(taskKey);
 		return sb.toString();
 	}
-	
+
 }
