@@ -55,6 +55,10 @@ public class TaskService {
 		return authoringProjects;
 	}
 
+	public AuthoringProject retrieveProject(String projectKey) throws JiraException, JSONException, RestClientException, IOException {
+		return buildProject(getProjectTicket(projectKey).getProject());
+	}
+
 	private AuthoringProject buildProject(Project project) throws IOException, JSONException, RestClientException {
 		final String validationStatus = orchestrationRestClient.retrieveValidationStatuses(Collections.singletonList(PathHelper.getPath(project.getKey()))).get(0);
 		final String latestClassificationJson = classificationService.getLatestClassification(PathHelper.getPath(project.getKey()));
@@ -71,18 +75,18 @@ public class TaskService {
 
 	public List<AuthoringTask> listTasks(String projectKey) throws JiraException, RestClientException {
 		getProjectOrThrow(projectKey);
-		List<Issue> issues = jiraClient.searchIssues(getProjectJQL(projectKey)).issues;
+		List<Issue> issues = jiraClient.searchIssues(getProjectTaskJQL(projectKey)).issues;
 		return convertToAuthoringTasks(issues);
 	}
 
 	public AuthoringTask retrieveTask(String projectKey, String taskKey) throws JiraException, RestClientException {
-		Issue issue = getIssue (projectKey, taskKey);
+		Issue issue = getIssue(projectKey, taskKey);
 		return buildAuthoringTask(issue);
 	}
 	
 	private Issue getIssue(String projectKey, String taskKey) throws JiraException {
 		getProjectOrThrow(projectKey);
-		List<Issue> issues = jiraClient.searchIssues(getProjectJQL(projectKey) + " AND key = " + taskKey).issues;
+		List<Issue> issues = jiraClient.searchIssues(getProjectTaskJQL(projectKey) + " AND key = " + taskKey).issues;
 		if (!issues.isEmpty()) {
 			return issues.get(0);
 		} else {
@@ -96,7 +100,7 @@ public class TaskService {
 		return convertToAuthoringTasks(issues);
 	}
 
-	private String getProjectJQL(String projectKey) {
+	private String getProjectTaskJQL(String projectKey) {
 		return "project = " + projectKey + " AND type = \"" + AUTHORING_TASK_TYPE + "\"";
 	}
 
@@ -242,7 +246,5 @@ public class TaskService {
 			.append (taskKey);
 		return sb.toString();
 	}
-
-	
 	
 }

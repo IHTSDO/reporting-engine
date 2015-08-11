@@ -39,6 +39,15 @@ public class ProjectController extends AbstractSnomedRestService {
 		return taskService.listProjects();
 	}
 
+	@ApiOperation(value="Retrieve an authoring project")
+	@ApiResponses({
+			@ApiResponse(code = 200, message = "OK")
+	})
+	@RequestMapping(value="/projects/{projectKey}", method= RequestMethod.GET)
+	public AuthoringProject retrieveProject(@PathVariable final String projectKey) throws JiraException, RestClientException, JSONException, IOException {
+		return taskService.retrieveProject(projectKey);
+	}
+
 	@ApiOperation(value="List tasks within a project")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
