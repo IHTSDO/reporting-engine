@@ -28,6 +28,12 @@
 			<groupId>org.ihtsdo.otf.common</groupId>
 			<artifactId>otf-common</artifactId>
 			<version>0.0.15</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>spring-beans</artifactId>
+					<groupId>org.springframework</groupId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<!-- Plug-in dependencies are repeated here so that the build can resolve
 			them at compile time -->
@@ -233,17 +239,6 @@
 			<groupId>org.apache.httpcomponents</groupId>
 			<artifactId>httpclient</artifactId>
 			<version>4.3.6</version>
-		</dependency>
-		<dependency>
-			<groupId>org.ihtsdo.otf.common</groupId>
-			<artifactId>otf-common</artifactId>
-			<version>0.0.14-SNAPSHOT</version>
-			<exclusions>
-				<exclusion>
-					<artifactId>spring-beans</artifactId>
-					<groupId>org.springframework</groupId>
-				</exclusion>
-			</exclusions>
 		</dependency>
 		<!-- Testing -->
 		<dependency>
