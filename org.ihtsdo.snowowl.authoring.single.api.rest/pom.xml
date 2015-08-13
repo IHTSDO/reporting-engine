@@ -27,7 +27,7 @@
 		<dependency>
 			<groupId>org.ihtsdo.otf.common</groupId>
 			<artifactId>otf-common</artifactId>
-			<version>0.0.14-SNAPSHOT</version>
+			<version>0.0.15</version>
 		</dependency>
 		<!-- Plug-in dependencies are repeated here so that the build can resolve
 			them at compile time -->
