@@ -35,19 +35,19 @@ public class TaskService {
 	@Autowired
 	private SecurityService ims;
 
-	private final JiraClient jiraClient;
+	private final JiraClientFactory jiraClientFactory;
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	private static final String AUTHORING_TASK_TYPE = "SCA Authoring Task";
 
-	public TaskService(JiraClient jiraClient) {
-		this.jiraClient = jiraClient;
+	public TaskService(JiraClientFactory jiraClientFactory) {
+		this.jiraClientFactory = jiraClientFactory;
 	}
 
 	public List<AuthoringProject> listProjects() throws JiraException, IOException, JSONException, RestClientException {
 		List<AuthoringProject> authoringProjects = new ArrayList<>();
-		for (Issue issue : jiraClient.searchIssues("type = \"SCA Authoring Project\"").issues) {
+		for (Issue issue : getJiraClient().searchIssues("type = \"SCA Authoring Project\"").issues) {
 			Project project = issue.getProject();
 			authoringProjects.add(buildProject(project));
 		}
@@ -65,7 +65,7 @@ public class TaskService {
 	}
 
 	public Issue getProjectTicket(String projectKey) throws JiraException {
-		final List<Issue> issues = jiraClient.searchIssues("project = " + projectKey + " AND type = \"SCA Authoring Project\"").issues;
+		final List<Issue> issues = getJiraClient().searchIssues("project = " + projectKey + " AND type = \"SCA Authoring Project\"").issues;
 		if (!issues.isEmpty()) {
 			return issues.get(0);
 		}
@@ -74,7 +74,7 @@ public class TaskService {
 
 	public List<AuthoringTask> listTasks(String projectKey) throws JiraException, RestClientException {
 		getProjectOrThrow(projectKey);
-		List<Issue> issues = jiraClient.searchIssues(getProjectTaskJQL(projectKey)).issues;
+		List<Issue> issues = getJiraClient().searchIssues(getProjectTaskJQL(projectKey)).issues;
 		return convertToAuthoringTasks(issues);
 	}
 
@@ -85,7 +85,7 @@ public class TaskService {
 
 	private Issue getIssue(String projectKey, String taskKey) throws JiraException {
 		getProjectOrThrow(projectKey);
-		List<Issue> issues = jiraClient.searchIssues(getProjectTaskJQL(projectKey) + " AND key = " + taskKey).issues;
+		List<Issue> issues = getJiraClient().searchIssues(getProjectTaskJQL(projectKey) + " AND key = " + taskKey).issues;
 		if (!issues.isEmpty()) {
 			return issues.get(0);
 		} else {
@@ -94,7 +94,7 @@ public class TaskService {
 	}
 
 	public List<AuthoringTask> listMyTasks(String username) throws JiraException, RestClientException {
-		List<Issue> issues = jiraClient.searchIssues("assignee = \"" + username + "\" AND type = \"" + AUTHORING_TASK_TYPE + "\"").issues;
+		List<Issue> issues = getJiraClient().searchIssues("assignee = \"" + username + "\" AND type = \"" + AUTHORING_TASK_TYPE + "\"").issues;
 		return convertToAuthoringTasks(issues);
 	}
 
@@ -106,7 +106,7 @@ public class TaskService {
 		//The task should be assigned to the currently logged in user
 		String currentUser = ims.getCurrentLogin();
 
-		Issue jiraIssue = jiraClient.createIssue(projectKey, AUTHORING_TASK_TYPE)
+		Issue jiraIssue = getJiraClient().createIssue(projectKey, AUTHORING_TASK_TYPE)
 				.field(Field.SUMMARY, taskCreateRequest.getSummary())
 				.field(Field.DESCRIPTION, taskCreateRequest.getDescription())
 				.field(Field.ASSIGNEE, currentUser)
@@ -156,7 +156,7 @@ public class TaskService {
 
 	private void getProjectOrThrow(String projectKey) {
 		try {
-			jiraClient.getProject(projectKey);
+			getJiraClient().getProject(projectKey);
 		} catch (JiraException e) {
 			throw new NotFoundException("Project", projectKey);
 		}
@@ -225,6 +225,10 @@ public class TaskService {
 			stateTransition.setErrorMessage(sb.toString());
 		}
 
+	}
+
+	private JiraClient getJiraClient() {
+		return jiraClientFactory.getInstance();
 	}
 
 	private StringBuilder getTransitionError(String projectKey, String taskKey, StateTransition stateTransition) {

@@ -9,7 +9,7 @@
 
 	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.TaskService">
 		<constructor-arg>
-			<bean class="net.rcarz.jiraclient.JiraClient">
+			<bean class="org.ihtsdo.snowowl.authoring.single.api.service.JiraClientFactory">
 				<constructor-arg value="+{jira.url}"/>
 				<constructor-arg>
 					<bean class="net.rcarz.jiraclient.BasicCredentials">
