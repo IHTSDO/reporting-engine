@@ -1,10 +1,14 @@
 package org.ihtsdo.snowowl.authoring.single.api.service;
 
+import com.b2international.snowowl.core.exceptions.ConflictException;
 import com.b2international.snowowl.core.exceptions.NotFoundException;
+
 import net.rcarz.jiraclient.*;
+
 import org.ihtsdo.otf.im.utility.SecurityService;
 import org.ihtsdo.otf.rest.client.OrchestrationRestClient;
 import org.ihtsdo.otf.rest.client.RestClientException;
+import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringProject;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTask;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskCreateRequest;
@@ -12,6 +16,7 @@ import org.ihtsdo.snowowl.authoring.single.api.pojo.StateTransition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+
 import us.monoid.json.JSONException;
 
 import java.io.IOException;
@@ -211,8 +216,9 @@ public class TaskService {
 				stateTransition.transitionSuccessful(true);
 			} else {
 				StringBuilder sb = getTransitionError(projectKey, taskKey, stateTransition);
-				sb.append("currently being in state ")
-						.append(issue.getStatus().getName());
+				sb.append("currently being in state '")
+						.append(issue.getStatus().getName())
+						.append("'.");
 				stateTransition.transitionSuccessful(false);
 				stateTransition.setErrorMessage(sb.toString());
 				;
@@ -235,11 +241,11 @@ public class TaskService {
 		StringBuilder sb = new StringBuilder();
 		sb.append("Failed to transition issue ")
 				.append(toString(projectKey, taskKey))
-				.append(" from status ")
+				.append(" from status '")
 				.append(stateTransition.getInitialState())
-				.append(" via transition ")
+				.append("' via transition '")
 				.append(stateTransition.getTransition())
-				.append(" due to ");
+				.append("' due to ");
 		return sb;
 	}
 
@@ -249,6 +255,21 @@ public class TaskService {
 				.append("/")
 				.append(taskKey);
 		return sb.toString();
+	}
+
+	public void startReview(String projectKey, String taskKey) throws BusinessServiceException {
+		StateTransition doReview = new StateTransition(StateTransition.STATE_IN_PROGRESS,
+				StateTransition.TRANSITION_IN_PROGRESS_TO_IN_REVIEW);
+		doStateTransition(projectKey, taskKey, doReview);
+
+		if (!doReview.transitionSuccessful()) {
+			String errorMsg = "Failed to put task into review due to: " + doReview.getErrorMessage();
+			if (doReview.experiencedException()) {
+				throw new BusinessServiceException(errorMsg);
+			} else {
+				throw new ConflictException (errorMsg);
+			}
+		}
 	}
 
 }

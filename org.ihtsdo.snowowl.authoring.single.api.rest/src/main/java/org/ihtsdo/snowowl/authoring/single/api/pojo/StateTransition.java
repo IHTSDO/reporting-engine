@@ -5,10 +5,12 @@ public class StateTransition {
 	public final static String STATE_NEW = "New";
 	public final static String STATE_IN_PROGRESS = "In Progress";
 	public final static String STATE_IN_CLASSIFICATION = "In Classification";
+	public final static String STATE_IN_REVIEW = "In Review";
 	
 	public final static String TRANSITION_NEW_TO_IN_PROGRESS = "Start Work";
 	public static final String TRANSITION_IN_PROGRESS_TO_IN_CLASSIFICATION = "Classify";
 	public static final String TRANSITION_IN_CLASSIFICATION_TO_IN_PROGRESS = "Classification finished"; 
+	public static final String TRANSITION_IN_PROGRESS_TO_IN_REVIEW = "Review";
 	
 	private String initialState;
 	private String transition;
