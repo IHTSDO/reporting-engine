@@ -4,9 +4,7 @@ import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
-
 import net.rcarz.jiraclient.JiraException;
-
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.api.rest.common.AbstractRestService;
@@ -14,17 +12,19 @@ import org.ihtsdo.snowowl.api.rest.common.AbstractSnomedRestService;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringProject;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTask;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskCreateRequest;
+import org.ihtsdo.snowowl.authoring.single.api.pojo.review.AuthoringTaskReview;
 import org.ihtsdo.snowowl.authoring.single.api.service.ServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.service.TaskService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
-
 import us.monoid.json.JSONException;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.ExecutionException;
+import javax.servlet.http.HttpServletRequest;
 
 @Api("Authoring Projects")
 @RestController
@@ -78,6 +78,15 @@ public class ProjectController extends AbstractSnomedRestService {
 	@RequestMapping(value="/projects/{projectKey}/tasks/{taskKey}", method= RequestMethod.GET)
 	public AuthoringTask retrieveTask(@PathVariable final String projectKey, @PathVariable final String taskKey) throws JiraException, RestClientException {
 		return taskService.retrieveTask(projectKey, taskKey);
+	}
+
+	@ApiOperation(value="Retrieve the review list for a task")
+	@ApiResponses({
+			@ApiResponse(code = 200, message = "OK")
+	})
+	@RequestMapping(value="/projects/{projectKey}/tasks/{taskKey}/review", method= RequestMethod.GET)
+	public AuthoringTaskReview retrieveTaskReview(@PathVariable final String projectKey, @PathVariable final String taskKey, HttpServletRequest request) throws ExecutionException, InterruptedException {
+		return taskService.retrieveTaskReview(projectKey, taskKey, Collections.list(request.getLocales()));
 	}
 
 	@ApiOperation(value="Create a task within a project")

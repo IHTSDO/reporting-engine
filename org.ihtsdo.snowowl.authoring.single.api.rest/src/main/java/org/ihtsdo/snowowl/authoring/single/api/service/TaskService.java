@@ -3,6 +3,7 @@ package org.ihtsdo.snowowl.authoring.single.api.service;
 import com.b2international.snowowl.core.exceptions.ConflictException;
 import com.b2international.snowowl.core.exceptions.NotFoundException;
 
+import com.b2international.snowowl.datastore.server.events.CreateReviewEvent;
 import net.rcarz.jiraclient.*;
 
 import org.ihtsdo.otf.im.utility.SecurityService;
@@ -13,6 +14,7 @@ import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringProject;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTask;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskCreateRequest;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.StateTransition;
+import org.ihtsdo.snowowl.authoring.single.api.pojo.review.AuthoringTaskReview;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,9 +22,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import us.monoid.json.JSONException;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.ExecutionException;
 
 public class TaskService {
 
@@ -272,4 +273,7 @@ public class TaskService {
 		}
 	}
 
+	public AuthoringTaskReview retrieveTaskReview(String projectKey, String taskKey, List<Locale> locales) throws ExecutionException, InterruptedException {
+		return branchService.diffTaskBranch(projectKey, taskKey, locales);
+	}
 }
