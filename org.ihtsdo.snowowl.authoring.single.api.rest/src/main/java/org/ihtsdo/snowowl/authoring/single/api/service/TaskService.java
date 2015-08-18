@@ -3,7 +3,6 @@ package org.ihtsdo.snowowl.authoring.single.api.service;
 import com.b2international.snowowl.core.exceptions.ConflictException;
 import com.b2international.snowowl.core.exceptions.NotFoundException;
 
-import com.b2international.snowowl.datastore.server.events.CreateReviewEvent;
 import net.rcarz.jiraclient.*;
 
 import org.ihtsdo.otf.im.utility.SecurityService;
@@ -25,9 +24,13 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
+
 public class TaskService {
 
 	public static final String FAILED_TO_RETRIEVE = "Failed-to-retrieve";
+	
+	private static final String INCLUDED_FIELDS = "*all";
+	private static final int CHUNK_SIZE = 50;
 
 	@Autowired
 	private BranchService branchService;
@@ -80,13 +83,13 @@ public class TaskService {
 
 	public List<AuthoringTask> listTasks(String projectKey) throws JiraException, RestClientException {
 		getProjectOrThrow(projectKey);
-		List<Issue> issues = getJiraClient().searchIssues(getProjectTaskJQL(projectKey)).issues;
-		return convertToAuthoringTasks(issues);
+		List<Issue> issues = searchIssues(getProjectTaskJQL(projectKey), 0, 0);  //unlimited recovery for now
+		return buildAuthoringTasks(issues);
 	}
 
 	public AuthoringTask retrieveTask(String projectKey, String taskKey) throws JiraException, RestClientException {
 		Issue issue = getIssue(projectKey, taskKey);
-		return buildAuthoringTask(issue);
+		return buildAuthoringTasks(Collections.singletonList(issue)).get(0);
 	}
 
 	private Issue getIssue(String projectKey, String taskKey) throws JiraException {
@@ -98,10 +101,36 @@ public class TaskService {
 			throw new NotFoundException("Task", taskKey);
 		}
 	}
+	
+	/**
+	 * @param jql
+	 * @param maxIssues maximum number of issues to return.  If zero, unlimited.
+	 * @param startAt
+	 * @return
+	 * @throws JiraException 
+	 */
+	private List<Issue> searchIssues (String jql, int maxIssues, int startAt) throws JiraException {
+		
+		List<Issue> issues = new ArrayList<Issue>();
+		boolean moreToRecover = true;
+		
+		while (moreToRecover) {
+			Issue.SearchResult searchResult = getJiraClient().searchIssues(jql, INCLUDED_FIELDS, CHUNK_SIZE, startAt);
+			issues.addAll(searchResult.issues);
+			//Have we captured all the issues that Jira says are available? Have we captured as many as were requested?
+			if (searchResult.total > issues.size() && (maxIssues == 0 || issues.size() < maxIssues)) {
+				startAt += CHUNK_SIZE;
+			} else {
+				moreToRecover = false;
+			}
+		}
+		return issues;
+		
+	}
 
 	public List<AuthoringTask> listMyTasks(String username) throws JiraException, RestClientException {
 		List<Issue> issues = getJiraClient().searchIssues("assignee = \"" + username + "\" AND type = \"" + AUTHORING_TASK_TYPE + "\"").issues;
-		return convertToAuthoringTasks(issues);
+		return buildAuthoringTasks(issues);
 	}
 
 	private String getProjectTaskJQL(String projectKey) {
@@ -123,27 +152,35 @@ public class TaskService {
 		return authoringTask;
 	}
 
-	private List<AuthoringTask> convertToAuthoringTasks(List<Issue> issues) throws RestClientException {
-		List<AuthoringTask> tasks = new ArrayList<>();
-		List<String> paths = new ArrayList<>();
+	private List<AuthoringTask> buildAuthoringTasks(List<Issue> issues) throws RestClientException {
+		List<AuthoringTask> allTasks = new ArrayList<>();
+		//Map of task paths to tasks
+		Map<String, AuthoringTask> matureTasks = new HashMap<String, AuthoringTask>();
 		for (Issue issue : issues) {
-			tasks.add(buildAuthoringTask(issue));
-			paths.add(PathHelper.getTaskPath(issue));
+			AuthoringTask task = new AuthoringTask(issue);
+			allTasks.add(task);
+			//We only need to recover classification and validation statuses for task that are not new ie mature
+			if (!task.getStatus().equals(StateTransition.STATE_NEW)) {
+				String latestClassificationJson = classificationService.getLatestClassification(PathHelper.getPath(issue.getProject().getKey(), issue.getKey()));
+				task.setLatestClassificationJson(latestClassificationJson);
+				matureTasks.put(PathHelper.getTaskPath(issue), task);
+			}
 		}
 
-		List<String> validationStatuses = getValidationStatuses(paths);
-		for (int a = 0; a < tasks.size(); a++) {
-			tasks.get(a).setLatestValidationStatus(validationStatuses.get(a));
+		List<String> matureTaskPaths = new ArrayList<String>(matureTasks.keySet());
+		List<String> validationStatuses = getValidationStatuses(matureTaskPaths);
+
+		if (validationStatuses == null) {
+			// TODO I think we should normally throw an exception here, but logging for the moment as I think I'm having connection
+			// issues with the looping REST call while debugging.
+			logger.error("Failed to recover validation statuses - check logs for reason");
+		} else {
+			for (int a = 0; a < matureTaskPaths.size(); a++) {
+				matureTasks.get(matureTaskPaths.get(a)).setLatestValidationStatus(validationStatuses.get(a));
+			}
 		}
 
-		return tasks;
-	}
-
-	private AuthoringTask buildAuthoringTask(Issue issue) throws RestClientException {
-		final String latestClassificationJson = classificationService.getLatestClassification(PathHelper.getPath(issue.getProject().getKey(), issue.getKey()));
-		final AuthoringTask authoringTask = new AuthoringTask(issue, latestClassificationJson);
-		authoringTask.setLatestValidationStatus(getValidationStatuses(Collections.singletonList(PathHelper.getTaskPath(issue))).get(0));
-		return authoringTask;
+		return allTasks;
 	}
 
 	private List<String> getValidationStatuses(List<String> paths) {

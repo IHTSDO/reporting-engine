@@ -33,11 +33,6 @@ public class AuthoringTask implements AuthoringTaskCreateRequest {
 		updated = (String) issue.getField("updated");
 	}
 
-	public AuthoringTask(Issue issue, String latestClassificationJson) {
-		this(issue);
-		this.latestClassificationJson = latestClassificationJson;
-	}
-
 	public String getKey() {
 		return key;
 	}
@@ -109,6 +104,10 @@ public class AuthoringTask implements AuthoringTaskCreateRequest {
 	@JsonRawValue
 	public String getLatestClassificationJson() {
 		return latestClassificationJson;
+	}
+	
+	public void setLatestClassificationJson(String json) {
+		latestClassificationJson = json;
 	}
 
 	public void setLatestValidationStatus(String latestValidationStatus) {
