@@ -13,7 +13,6 @@ import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringProject;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTask;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskCreateRequest;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.StateTransition;
-import org.ihtsdo.snowowl.authoring.single.api.review.pojo.AuthoringTaskReview;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +21,6 @@ import us.monoid.json.JSONException;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
 
 
 public class TaskService {
@@ -33,7 +31,7 @@ public class TaskService {
 	private static final int CHUNK_SIZE = 50;
 
 	@Autowired
-	private BranchService branchService;
+	private BranchServiceImpl branchService;
 
 	@Autowired
 	private ClassificationService classificationService;
@@ -310,7 +308,4 @@ public class TaskService {
 		}
 	}
 
-	public AuthoringTaskReview retrieveTaskReview(String projectKey, String taskKey, List<Locale> locales) throws ExecutionException, InterruptedException {
-		return branchService.diffTaskBranch(projectKey, taskKey, locales);
-	}
 }

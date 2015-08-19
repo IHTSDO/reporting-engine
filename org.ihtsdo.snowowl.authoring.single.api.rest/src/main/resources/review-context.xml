@@ -8,8 +8,6 @@
 
 	<jpa:repositories base-package="org.ihtsdo.snowowl.authoring.single.api.review.repository" />
 
-	<!--<bean class="org.ihtsdo.snowowl.authoring.single.api.SpringConfiguration"/>-->
-
 	<bean class="org.ihtsdo.snowowl.authoring.single.api.review.service.ReviewService"/>
 
 	<bean id="entityManagerFactory"  class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
