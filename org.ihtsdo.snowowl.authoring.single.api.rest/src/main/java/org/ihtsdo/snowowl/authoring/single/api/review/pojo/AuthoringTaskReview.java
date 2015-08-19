@@ -1,4 +1,4 @@
-package org.ihtsdo.snowowl.authoring.single.api.pojo.review;
+package org.ihtsdo.snowowl.authoring.single.api.review.pojo;
 
 import java.util.ArrayList;
 import java.util.List;

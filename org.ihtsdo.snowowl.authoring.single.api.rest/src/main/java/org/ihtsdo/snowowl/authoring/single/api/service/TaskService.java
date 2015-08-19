@@ -13,7 +13,7 @@ import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringProject;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTask;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskCreateRequest;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.StateTransition;
-import org.ihtsdo.snowowl.authoring.single.api.pojo.review.AuthoringTaskReview;
+import org.ihtsdo.snowowl.authoring.single.api.review.pojo.AuthoringTaskReview;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
