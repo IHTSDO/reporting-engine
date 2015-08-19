@@ -44,9 +44,9 @@ public class BranchService {
 	public AuthoringTaskReview diffTaskBranch(String projectKey, String taskKey, List<Locale> locales) throws ExecutionException, InterruptedException {
 		final Timer timer = new Timer("Review");
 		final AuthoringTaskReview review = new AuthoringTaskReview();
-		final String taskBranchPath = getBranchPath(projectKey);
 		logger.info("Creating TS review");
-		final ReviewReply reviewReply = new CreateReviewEvent(SNOMED_TS_REPOSITORY_ID, getTaskPath(projectKey, taskKey), taskBranchPath)
+		final String taskPath = getTaskPath(projectKey, taskKey);
+		final ReviewReply reviewReply = new CreateReviewEvent(SNOMED_TS_REPOSITORY_ID, taskPath, getBranchPath(projectKey))
 				.send(eventBus, ReviewReply.class).get();
 		timer.checkpoint("request review");
 
@@ -68,9 +68,9 @@ public class BranchService {
 		timer.checkpoint("getting changes");
 
 		final ConceptChanges conceptChanges = conceptChangesReply.getConceptChanges();
-		addAllToReview(review, ChangeType.created, conceptChanges.newConcepts(), taskBranchPath, locales);
-		addAllToReview(review, ChangeType.modified, conceptChanges.changedConcepts(), taskBranchPath, locales);
-		addAllToReview(review, ChangeType.deleted, conceptChanges.deletedConcepts(), taskBranchPath, locales);
+		addAllToReview(review, ChangeType.created, conceptChanges.newConcepts(), taskPath, locales);
+		addAllToReview(review, ChangeType.modified, conceptChanges.changedConcepts(), taskPath, locales);
+		addAllToReview(review, ChangeType.deleted, conceptChanges.deletedConcepts(), taskPath, locales);
 		timer.checkpoint("building review with terms");
 		timer.finish();
 		logger.info("Review built");
