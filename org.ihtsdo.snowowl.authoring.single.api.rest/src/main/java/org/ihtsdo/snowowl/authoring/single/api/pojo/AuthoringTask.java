@@ -7,7 +7,11 @@ import net.sf.json.JSONObject;
 
 public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskUpdateRequest {
 
-	public static final String JIRA_REVIEWER_FIELD = "customfield_10000";
+	public static String JIRA_REVIEWER_FIELD;
+	public static void setJiraReviewerField(String jiraReviewerField) {
+		JIRA_REVIEWER_FIELD = jiraReviewerField;
+	}
+
 	public static final String JIRA_CREATED_FIELD = "created";
 	public static final String JIRA_UPDATED_FIELD = "updated";
 

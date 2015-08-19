@@ -21,6 +21,7 @@
 				</constructor-arg>
 			</bean>
 		</constructor-arg>
+		<constructor-arg value="+{jira.reviewer.field}"/>
 	</bean>
 
 	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.BranchService"/>

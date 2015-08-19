@@ -51,11 +51,12 @@ public class TaskService {
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	private static final String AUTHORING_TASK_TYPE = "SCA Authoring Task";
-
-	public TaskService(JiraClientFactory jiraClientFactory) {
+	
+	public TaskService(JiraClientFactory jiraClientFactory, String jiraReviewerField) {
 		this.jiraClientFactory = jiraClientFactory;
+		AuthoringTask.setJiraReviewerField(jiraReviewerField);
 	}
-
+	
 	public List<AuthoringProject> listProjects() throws JiraException, IOException, JSONException, RestClientException {
 		List<AuthoringProject> authoringProjects = new ArrayList<>();
 		for (Issue issue : getJiraClient().searchIssues("type = \"SCA Authoring Project\"").issues) {
