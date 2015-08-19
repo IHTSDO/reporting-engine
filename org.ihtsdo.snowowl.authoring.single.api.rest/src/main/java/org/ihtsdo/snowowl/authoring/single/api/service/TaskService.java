@@ -4,6 +4,7 @@ import com.b2international.snowowl.core.exceptions.ConflictException;
 import com.b2international.snowowl.core.exceptions.NotFoundException;
 
 import net.rcarz.jiraclient.*;
+import net.sf.json.JSONObject;
 
 import org.ihtsdo.otf.im.utility.SecurityService;
 import org.ihtsdo.otf.rest.client.OrchestrationRestClient;
@@ -12,6 +13,7 @@ import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringProject;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTask;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskCreateRequest;
+import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskUpdateRequest;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.StateTransition;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.review.AuthoringTaskReview;
 import org.slf4j.Logger;
@@ -87,9 +89,13 @@ public class TaskService {
 		return buildAuthoringTasks(issues);
 	}
 
-	public AuthoringTask retrieveTask(String projectKey, String taskKey) throws JiraException, RestClientException {
-		Issue issue = getIssue(projectKey, taskKey);
-		return buildAuthoringTasks(Collections.singletonList(issue)).get(0);
+	public AuthoringTask retrieveTask(String projectKey, String taskKey) throws BusinessServiceException {
+		try {
+			Issue issue = getIssue(projectKey, taskKey);
+			return buildAuthoringTasks(Collections.singletonList(issue)).get(0);
+		} catch (JiraException | RestClientException e) {
+			throw new BusinessServiceException("Failed to retrieve task " + toString(projectKey, taskKey), e);
+		}
 	}
 
 	private Issue getIssue(String projectKey, String taskKey) throws JiraException {
@@ -295,7 +301,7 @@ public class TaskService {
 		return sb.toString();
 	}
 
-	public void startReview(String projectKey, String taskKey) throws BusinessServiceException {
+	private void startReview(String projectKey, String taskKey) throws BusinessServiceException {
 		StateTransition doReview = new StateTransition(StateTransition.STATE_IN_PROGRESS,
 				StateTransition.TRANSITION_IN_PROGRESS_TO_IN_REVIEW);
 		doStateTransition(projectKey, taskKey, doReview);
@@ -313,4 +319,38 @@ public class TaskService {
 	public AuthoringTaskReview retrieveTaskReview(String projectKey, String taskKey, List<Locale> locales) throws ExecutionException, InterruptedException {
 		return branchService.diffTaskBranch(projectKey, taskKey, locales);
 	}
+
+	public AuthoringTask updateTask(String projectKey, String taskKey, AuthoringTaskUpdateRequest updatedTask) throws BusinessServiceException,
+			JiraException {
+
+		Issue issue = getIssue(projectKey, taskKey);
+		// Act on each field received
+		if (updatedTask.getStatus() != null) {
+			if (updatedTask.getStatus().equals(StateTransition.STATE_IN_REVIEW)) {
+				startReview(projectKey, taskKey);
+			} else {
+				throw new BusinessServiceException("Unexpected state transition requested to " + updatedTask.getStatus());
+			}
+		}
+
+		if (updatedTask.getReviewer() != null) {
+			// Copy that pojo user into the jira issue as an rcarz user
+			User jiraReviewer = getUser(updatedTask.getReviewer().getName());
+			//org.ihtsdo.snowowl.authoring.single.api.pojo.User reviewer = new org.ihtsdo.snowowl.authoring.single.api.pojo.User (jiraReviewer);
+			issue.update().field(AuthoringTask.JIRA_REVIEWER_FIELD, jiraReviewer).execute();
+		}
+
+		// Pick up those changes in a new Task object
+		return retrieveTask(projectKey, taskKey);
+
+	}
+
+	private User getUser(String username) throws BusinessServiceException {
+		try {
+			return User.get(getJiraClient().getRestClient(), username);
+		} catch (JiraException je) {
+			throw new BusinessServiceException("Failed to recover user '" + username + "' from Jira instance.", je);
+		}
+	}
+	
 }

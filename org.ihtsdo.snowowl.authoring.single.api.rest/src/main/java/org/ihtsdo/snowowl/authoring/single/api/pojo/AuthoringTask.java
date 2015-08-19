@@ -1,9 +1,15 @@
 package org.ihtsdo.snowowl.authoring.single.api.pojo;
 
 import com.fasterxml.jackson.annotation.JsonRawValue;
-import net.rcarz.jiraclient.Issue;
 
-public class AuthoringTask implements AuthoringTaskCreateRequest {
+import net.rcarz.jiraclient.Issue;
+import net.sf.json.JSONObject;
+
+public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskUpdateRequest {
+
+	public static final String JIRA_REVIEWER_FIELD = "customfield_10000";
+	public static final String JIRA_CREATED_FIELD = "created";
+	public static final String JIRA_UPDATED_FIELD = "updated";
 
 	private String key;
 	private String projectKey;
@@ -11,6 +17,7 @@ public class AuthoringTask implements AuthoringTaskCreateRequest {
 	private String status;
 	private String description;
 	private User assignee;
+	private User reviewer;
 	private String created;
 	private String updated;
 	private String latestClassificationJson;
@@ -29,8 +36,13 @@ public class AuthoringTask implements AuthoringTaskCreateRequest {
 		if (assignee != null) {
 			this.assignee = new User(assignee);
 		}
-		created = (String) issue.getField("created");
-		updated = (String) issue.getField("updated");
+		created = (String) issue.getField(JIRA_CREATED_FIELD);
+		updated = (String) issue.getField(JIRA_UPDATED_FIELD);
+		
+		Object reviewerObj = issue.getField(JIRA_REVIEWER_FIELD);
+		if (reviewerObj != null && reviewerObj instanceof JSONObject) {
+			reviewer = new User((JSONObject)reviewerObj);
+		}
 	}
 
 	public String getKey() {
@@ -116,5 +128,13 @@ public class AuthoringTask implements AuthoringTaskCreateRequest {
 
 	public String getLatestValidationStatus() {
 		return latestValidationStatus;
+	}
+
+	public User getReviewer() {
+		return reviewer;
+	}
+
+	public void setReviewer(User reviewer) {
+		this.reviewer = reviewer;
 	}
 }
