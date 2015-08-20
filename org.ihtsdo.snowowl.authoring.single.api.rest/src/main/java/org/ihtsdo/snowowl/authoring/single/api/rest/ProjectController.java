@@ -15,7 +15,6 @@ import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringProject;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTask;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskCreateRequest;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskUpdateRequest;
-import org.ihtsdo.snowowl.authoring.single.api.pojo.review.AuthoringTaskReview;
 import org.ihtsdo.snowowl.authoring.single.api.service.ServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.service.TaskService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,10 +25,8 @@ import org.springframework.web.bind.annotation.*;
 import us.monoid.json.JSONException;
 
 import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.ExecutionException;
 
-import javax.servlet.http.HttpServletRequest;
+import java.util.*;
 
 @Api("Authoring Projects")
 @RestController
@@ -83,15 +80,6 @@ public class ProjectController extends AbstractSnomedRestService {
 	@RequestMapping(value="/projects/{projectKey}/tasks/{taskKey}", method= RequestMethod.GET)
 	public AuthoringTask retrieveTask(@PathVariable final String projectKey, @PathVariable final String taskKey) throws BusinessServiceException {
 		return taskService.retrieveTask(projectKey, taskKey);
-	}
-
-	@ApiOperation(value="Retrieve the review list for a task")
-	@ApiResponses({
-			@ApiResponse(code = 200, message = "OK")
-	})
-	@RequestMapping(value="/projects/{projectKey}/tasks/{taskKey}/review", method= RequestMethod.GET)
-	public AuthoringTaskReview retrieveTaskReview(@PathVariable final String projectKey, @PathVariable final String taskKey, HttpServletRequest request) throws ExecutionException, InterruptedException {
-		return taskService.retrieveTaskReview(projectKey, taskKey, Collections.list(request.getLocales()));
 	}
 
 	@ApiOperation(value="Create a task within a project")

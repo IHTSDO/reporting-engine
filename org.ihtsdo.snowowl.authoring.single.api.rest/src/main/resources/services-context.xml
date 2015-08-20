@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<beans 
+<beans
 	xmlns="http://www.springframework.org/schema/beans"
-
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd">
 
 	<import resource="jms-api-context.xml"/>
 
-	<bean class="org.ihtsdo.snowowl.authoring.single.api.configuration.SpringConfiguration"/>
+	<import resource="review-context.xml"/>
+
+	<bean class="org.ihtsdo.snowowl.authoring.single.api.SpringConfiguration"/>
 
 	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.TaskService">
 		<constructor-arg>
@@ -24,7 +25,7 @@
 		<constructor-arg value="+{jira.reviewer.field}"/>
 	</bean>
 
-	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.BranchService"/>
+	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.BranchServiceImpl"/>
 
 	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.ClassificationService"/>
 

@@ -16,7 +16,7 @@ import us.monoid.json.JSONException;
 public class ClassificationService {
 	
 	@Autowired
-	private BranchService branchService;
+	private BranchServiceImpl branchService;
 
 	@Autowired
 	private TaskService taskService;

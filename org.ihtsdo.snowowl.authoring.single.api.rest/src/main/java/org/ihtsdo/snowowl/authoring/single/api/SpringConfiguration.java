@@ -1,4 +1,4 @@
-package org.ihtsdo.snowowl.authoring.single.api.configuration;
+package org.ihtsdo.snowowl.authoring.single.api;
 
 import com.b2international.snowowl.eventbus.IEventBus;
 import org.springframework.context.annotation.Bean;
