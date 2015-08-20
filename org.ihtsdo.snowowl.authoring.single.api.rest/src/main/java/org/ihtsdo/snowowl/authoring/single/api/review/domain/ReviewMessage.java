@@ -16,17 +16,18 @@ public class ReviewMessage {
 	private Date creationDate;
 	private String fromUsername;
 
-	@OneToMany
-	private List<Concept> subjectConcepts;
+	@ElementCollection(fetch = FetchType.EAGER)
+	private List<String> subjectConceptIds;
 
 	protected ReviewMessage() {
 		creationDate = new Date();
 	}
 
-	public ReviewMessage(Branch branch, String messageHtml, List<Concept> subjectConcepts, String fromUsername) {
+	public ReviewMessage(Branch branch, String messageHtml, List<String> subjectConceptIds, String fromUsername) {
+		this();
 		this.branch = branch;
 		this.messageHtml = messageHtml;
-		this.subjectConcepts = subjectConcepts;
+		this.subjectConceptIds = subjectConceptIds;
 		this.fromUsername = fromUsername;
 	}
 
@@ -45,8 +46,8 @@ public class ReviewMessage {
 		return messageHtml;
 	}
 
-	public List<Concept> getSubjectConcepts() {
-		return subjectConcepts;
+	public List<String> getSubjectConceptIds() {
+		return subjectConceptIds;
 	}
 
 	public Branch getBranch() {

@@ -1,10 +1,15 @@
 package org.ihtsdo.snowowl.authoring.single.api.review.pojo;
 
+import org.ihtsdo.snowowl.authoring.single.api.review.domain.ReviewMessage;
+
+import java.util.List;
+
 public class ReviewConcept {
 
 	private String id;
 	private String term;
 	private ChangeType changeType;
+	private List<ReviewMessage> messages;
 
 	public ReviewConcept(String id, String term, ChangeType changeType) {
 		this.id = id;
@@ -34,5 +39,13 @@ public class ReviewConcept {
 
 	public void setChangeType(ChangeType changeType) {
 		this.changeType = changeType;
+	}
+
+	public void setMessages(List<ReviewMessage> messages) {
+		this.messages = messages;
+	}
+
+	public List<ReviewMessage> getMessages() {
+		return messages;
 	}
 }
