@@ -250,46 +250,26 @@ public class TaskService {
 
 		try {
 			Issue issue = getIssue(projectKey, taskKey);
-			String currentState = issue.getStatus().getName();
-
-			//If the currentState isn't the expected initial state, then refuse
-			if (stateTransition.hasInitialState(currentState)) {
-				issue.transition().execute(stateTransition.getTransition());
-				issue.refresh(); // Synchronize the issue to pick up the new status.
-				stateTransition.transitionSuccessful(true);
-			} else {
-				StringBuilder sb = getTransitionError(projectKey, taskKey, stateTransition);
-				sb.append("currently being in state '")
-						.append(issue.getStatus().getName())
-						.append("'.");
-				stateTransition.transitionSuccessful(false);
-				stateTransition.setErrorMessage(sb.toString());
-				;
-			}
+			issue.transition().execute(stateTransition.getTransition());
+			issue.refresh(); // Synchronize the issue to pick up the new status.
+			stateTransition.transitionSuccessful(true);
 		} catch (JiraException je) {
-			StringBuilder sb = getTransitionError(projectKey, taskKey, stateTransition);
-			sb.append(je.getMessage());
+			//Did we fail due to a state conflict which we'll say is not really an exception?
+			StringBuilder sb = new StringBuilder();
+			sb.append("Failed to transition issue ")
+					.append(toString(projectKey, taskKey))
+					.append(" via transition '")
+					.append(stateTransition.getTransition())
+					.append("' due to: ")
+					.append(je.getMessage());
 			stateTransition.transitionSuccessful(false);
 			stateTransition.experiencedException(true);
 			stateTransition.setErrorMessage(sb.toString());
 		}
-
 	}
 
 	private JiraClient getJiraClient() {
 		return jiraClientFactory.getInstance();
-	}
-
-	private StringBuilder getTransitionError(String projectKey, String taskKey, StateTransition stateTransition) {
-		StringBuilder sb = new StringBuilder();
-		sb.append("Failed to transition issue ")
-				.append(toString(projectKey, taskKey))
-				.append(" from status '")
-				.append(stateTransition.getInitialState())
-				.append("' via transition '")
-				.append(stateTransition.getTransition())
-				.append("' due to ");
-		return sb;
 	}
 
 	private String toString(String projectKey, String taskKey) {
@@ -300,32 +280,13 @@ public class TaskService {
 		return sb.toString();
 	}
 
-	private void startReview(String projectKey, String taskKey) throws BusinessServiceException {
-		StateTransition doReview = new StateTransition(StateTransition.STATE_IN_PROGRESS,
-				StateTransition.TRANSITION_IN_PROGRESS_TO_IN_REVIEW);
-		doStateTransition(projectKey, taskKey, doReview);
-
-		if (!doReview.transitionSuccessful()) {
-			String errorMsg = "Failed to put task into review due to: " + doReview.getErrorMessage();
-			if (doReview.experiencedException()) {
-				throw new BusinessServiceException(errorMsg);
-			} else {
-				throw new ConflictException (errorMsg);
-			}
-		}
-	}
-
 	public AuthoringTask updateTask(String projectKey, String taskKey, AuthoringTaskUpdateRequest updatedTask) throws BusinessServiceException,
 			JiraException {
 
 		Issue issue = getIssue(projectKey, taskKey);
 		// Act on each field received
 		if (updatedTask.getStatus() != null) {
-			if (updatedTask.getStatus().equals(StateTransition.STATE_IN_REVIEW)) {
-				startReview(projectKey, taskKey);
-			} else {
-				throw new BusinessServiceException("Unexpected state transition requested to " + updatedTask.getStatus());
-			}
+			transitionTaskState(projectKey, taskKey, updatedTask.getStatus());
 		}
 
 		if (updatedTask.getReviewer() != null) {
@@ -338,6 +299,41 @@ public class TaskService {
 		// Pick up those changes in a new Task object
 		return retrieveTask(projectKey, taskKey);
 
+	}
+
+	private void transitionTaskState(String projectKey, String taskKey, String newStatus) throws BusinessServiceException {
+		
+		StateTransition stateChange;
+		switch (newStatus) {
+			case StateTransition.STATE_IN_REVIEW:
+				stateChange = new StateTransition(StateTransition.TRANSITION_TO_IN_REVIEW);
+				break;
+			case StateTransition.STATE_IN_PROGRESS:
+				stateChange = new StateTransition(StateTransition.TRANSITION_TO_IN_PROGRESS);
+				break;
+			case StateTransition.STATE_PENDING:
+				stateChange = new StateTransition(StateTransition.TRANSITION_TO_PENDING);
+				break;
+			case StateTransition.STATE_ESCALATION:
+				stateChange = new StateTransition(StateTransition.TRANSITION_TO_ESCALATION);
+				break;
+			case StateTransition.STATE_READY_FOR_PROMOTION:
+				stateChange = new StateTransition(StateTransition.TRANSITION_TO_READY_FOR_PROMOTION);
+				break;
+			default: 
+				throw new BusinessServiceException("Unexpected state transition requested to " + newStatus);
+		}
+		
+		doStateTransition(projectKey, taskKey, stateChange);
+		if (!stateChange.transitionSuccessful()) {
+			String errorMsg = "Failed to put task into state '" + newStatus + "' due to: " + stateChange.getErrorMessage();
+			if (stateChange.experiencedException()) {
+				throw new BusinessServiceException(errorMsg);
+			} else {
+				throw new ConflictException (errorMsg);
+			}
+		}
+		
 	}
 
 	private User getUser(String username) throws BusinessServiceException {
