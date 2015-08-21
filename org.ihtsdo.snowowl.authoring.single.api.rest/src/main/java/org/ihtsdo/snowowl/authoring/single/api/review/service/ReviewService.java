@@ -52,7 +52,7 @@ public class ReviewService {
 		final Branch branch = getCreateBranch(projectKey, taskKey);
 		return messageRepository.save(
 				new ReviewMessage(branch, createRequest.getMessageHtml(),
-						createRequest.getSubjectConceptIds(), fromUsername));
+						createRequest.getSubjectConceptIds(), createRequest.isFeedbackRequested(), fromUsername));
 	}
 
 	private Branch getCreateBranch(String projectKey, String taskKey) {
