@@ -350,4 +350,27 @@ public class TaskService {
 		}
 	}
 	
+	/**
+	 * Returns the most recent Date/time of when the specified field changed to the specified value
+	 * @throws BusinessServiceException 
+	 */
+	public Date getDateOfChange(String projectKey, String taskKey, String fieldName, String newValue) throws JiraException, BusinessServiceException {
+
+		try {
+			//Recover the change log for the issue and work through it to find the change specified
+			ChangeLog changeLog = getIssue(projectKey, taskKey).getChangeLog();
+			for (ChangeLogEntry entry : changeLog.getEntries()) {
+				Date thisChangeDate = entry.getCreated();
+				for (ChangeLogItem changeItem : entry.getItems()) {
+					if (changeItem.getField().equals(fieldName) && changeItem.getTo().equals(newValue)){
+						return thisChangeDate;
+					}
+				}
+			}
+		} catch (JiraException je) {
+			throw new BusinessServiceException("Failed to recover change log from task " + toString(projectKey, taskKey), je);
+		}
+		return null;
+	}
+	
 }

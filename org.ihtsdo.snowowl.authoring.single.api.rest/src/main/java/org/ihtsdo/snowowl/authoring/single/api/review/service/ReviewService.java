@@ -1,6 +1,10 @@
 package org.ihtsdo.snowowl.authoring.single.api.review.service;
 
 import com.b2international.snowowl.core.exceptions.BadRequestException;
+import net.rcarz.jiraclient.JiraException;
+
+import org.ihtsdo.otf.rest.exception.BusinessServiceException;
+import org.ihtsdo.snowowl.authoring.single.api.pojo.StateTransition;
 import org.ihtsdo.snowowl.authoring.single.api.review.domain.Branch;
 import org.ihtsdo.snowowl.authoring.single.api.review.domain.ReviewMessage;
 import org.ihtsdo.snowowl.authoring.single.api.review.domain.ReviewMessageRead;
@@ -11,6 +15,7 @@ import org.ihtsdo.snowowl.authoring.single.api.review.repository.BranchRepositor
 import org.ihtsdo.snowowl.authoring.single.api.review.repository.ReviewMessageReadRepository;
 import org.ihtsdo.snowowl.authoring.single.api.review.repository.ReviewMessageRepository;
 import org.ihtsdo.snowowl.authoring.single.api.service.BranchService;
+import org.ihtsdo.snowowl.authoring.single.api.service.TaskService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +24,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+
 import javax.transaction.Transactional;
 
 @Service
@@ -35,6 +41,9 @@ public class ReviewService {
 
 	@Autowired
 	private BranchService branchService;
+	
+	@Autowired
+	private TaskService taskService;
 
 	@Autowired
 	private ApplicationContext applicationContext;
@@ -42,22 +51,43 @@ public class ReviewService {
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
 	@Transactional
-	public AuthoringTaskReview retrieveTaskReview(String projectKey, String taskKey, List<Locale> locales, String username) throws ExecutionException, InterruptedException {
-		final AuthoringTaskReview authoringTaskReview = branchService.diffTaskBranch(projectKey, taskKey, locales);
-		final List<ReviewConcept> reviewConcepts = authoringTaskReview.getConcepts();
-		final Branch branch = branchRepository.findOneByProjectAndTask(projectKey, taskKey);
-		if (branch != null) {
-			Map<String, List<ReviewMessage>> conceptMessagesMap = getConceptMessagesMap(branch);
-			Map<String, List<ReviewMessage>> conceptMessagesReadMap = getMessagesReadMap(branch, username);
-			for (ReviewConcept reviewConcept : reviewConcepts) {
-				final String conceptId = reviewConcept.getId();
-				final List<ReviewMessage> conceptMessages = conceptMessagesMap.get(conceptId);
-				reviewConcept.setMessages(conceptMessages);
-				reviewConcept.setRead(conceptMessages == null || conceptMessages.isEmpty() ||
-						(conceptMessagesReadMap.containsKey(conceptId) && conceptMessagesReadMap.get(conceptId).containsAll(conceptMessages)));
+	public AuthoringTaskReview retrieveTaskReview(String projectKey, String taskKey, List<Locale> locales, String username) throws BusinessServiceException {
+		try {
+			final AuthoringTaskReview authoringTaskReview = branchService.diffTaskBranch(projectKey, taskKey, locales);
+			final List<ReviewConcept> reviewConcepts = authoringTaskReview.getConcepts();
+			final Branch branch = branchRepository.findOneByProjectAndTask(projectKey, taskKey);
+			if (branch != null) {
+				Map<String, List<ReviewMessage>> conceptMessagesMap = getConceptMessagesMap(branch);
+				Map<String, List<ReviewMessage>> conceptMessagesReadMap = getMessagesReadMap(branch, username);
+				for (ReviewConcept reviewConcept : reviewConcepts) {
+					final String conceptId = reviewConcept.getId();
+					final List<ReviewMessage> conceptMessages = conceptMessagesMap.get(conceptId);
+					reviewConcept.setMessages(conceptMessages);
+					reviewConcept.setRead(conceptMessages == null || conceptMessages.isEmpty() ||
+							(conceptMessagesReadMap.containsKey(conceptId) && conceptMessagesReadMap.get(conceptId).containsAll(conceptMessages)));
+				}
 			}
+			
+			markConceptsModifiedSinceReview(projectKey, taskKey, reviewConcepts);
+			return authoringTaskReview;
+		} catch (ExecutionException|InterruptedException|JiraException e) {
+			throw new BusinessServiceException ("Unable to generate task review.", e);
 		}
-		return authoringTaskReview;
+	}
+
+	private void markConceptsModifiedSinceReview(String projectKey,
+			String taskKey, List<ReviewConcept> reviewConcepts) throws JiraException, BusinessServiceException {
+		//Ensure that we're currently in state 'In Review' and find out from Jira when task entered that state
+		if (!taskService.taskIsState(projectKey, taskKey, StateTransition.STATE_IN_REVIEW)) {
+			logger.error("Unable to mark concepts modified since review as task not currently in state 'In Review'." );
+			return;
+		}
+		
+		Date reviewStated = taskService.getDateOfChange(projectKey, taskKey, "Status", StateTransition.STATE_IN_REVIEW);
+		if (!taskService.taskIsState(projectKey, taskKey, StateTransition.STATE_IN_REVIEW)) {
+			logger.error("Unable to mark concepts modified since review as cannot determine review start date." );
+			return;
+		}
 	}
 
 	/**

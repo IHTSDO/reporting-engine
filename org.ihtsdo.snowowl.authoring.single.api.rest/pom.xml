@@ -105,6 +105,12 @@
 		</dependency>
 		<dependency>
 			<groupId>com.b2international.snowowl</groupId>
+			<artifactId>com.b2international.snowowl.datastore</artifactId>
+			<version>${snowowl.version}</version>
+			<scope>${snowowl.lib.scope}</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.b2international.snowowl</groupId>
 			<artifactId>com.b2international.snowowl.api</artifactId>
 			<version>${snowowl.version}</version>
 			<scope>${snowowl.lib.scope}</scope>

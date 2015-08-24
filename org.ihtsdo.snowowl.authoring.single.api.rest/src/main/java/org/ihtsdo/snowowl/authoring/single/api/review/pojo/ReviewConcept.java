@@ -11,6 +11,7 @@ public class ReviewConcept {
 	private ChangeType changeType;
 	private List<ReviewMessage> messages;
 	private boolean read;
+	private boolean modifiedSinceReview = false;
 
 	public ReviewConcept(String id, String term, ChangeType changeType) {
 		this.id = id;
@@ -56,5 +57,13 @@ public class ReviewConcept {
 
 	public void setRead(boolean read) {
 		this.read = read;
+	}
+
+	public boolean modifiedSinceReview() {
+		return modifiedSinceReview;
+	}
+
+	public void modifiedSinceReview(boolean modifiedSinceReview) {
+		this.modifiedSinceReview = modifiedSinceReview;
 	}
 }
