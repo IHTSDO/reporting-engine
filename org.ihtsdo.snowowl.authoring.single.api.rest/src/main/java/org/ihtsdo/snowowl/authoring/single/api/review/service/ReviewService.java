@@ -13,6 +13,7 @@ import org.ihtsdo.snowowl.authoring.single.api.service.BranchService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -33,6 +34,9 @@ public class ReviewService {
 
 	@Autowired
 	private BranchService branchService;
+
+	@Autowired
+	private ApplicationContext applicationContext;
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -96,9 +100,13 @@ public class ReviewService {
 
 	public ReviewMessage postReviewMessage(String projectKey, String taskKey, ReviewMessageCreateRequest createRequest, String fromUsername) {
 		final Branch branch = getCreateBranch(projectKey, taskKey);
-		return messageRepository.save(
+		final ReviewMessage message = messageRepository.save(
 				new ReviewMessage(branch, createRequest.getMessageHtml(),
 						createRequest.getSubjectConceptIds(), createRequest.isFeedbackRequested(), fromUsername));
+		for (ReviewMessageSentListener listener : getReviewMessageSentListeners()) {
+			listener.messageSent(message);
+		}
+		return message;
 	}
 
 	public void markAsRead(String projectKey, String taskKey, String conceptId, String username) {
@@ -117,5 +125,13 @@ public class ReviewService {
 			branch = branchRepository.save(new Branch(projectKey, taskKey));
 		}
 		return branch;
+	}
+
+	/**
+	 * Autowire ReviewMessageSentListener beans
+	 * @return
+	 */
+	private Collection<ReviewMessageSentListener> getReviewMessageSentListeners() {
+		return applicationContext.getBeansOfType(ReviewMessageSentListener.class).values();
 	}
 }
