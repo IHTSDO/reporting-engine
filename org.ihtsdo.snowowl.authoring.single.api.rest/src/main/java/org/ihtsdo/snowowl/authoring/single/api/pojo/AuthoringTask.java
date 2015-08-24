@@ -26,6 +26,7 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 	private String updated;
 	private String latestClassificationJson;
 	private String latestValidationStatus;
+	private boolean unreadFeedbackMessages;
 
 	public AuthoringTask() {
 	}
@@ -140,5 +141,13 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 
 	public void setReviewer(User reviewer) {
 		this.reviewer = reviewer;
+	}
+
+	public void setUnreadFeedbackMessages(boolean unreadFeedbackMessages) {
+		this.unreadFeedbackMessages = unreadFeedbackMessages;
+	}
+
+	public boolean isUnreadFeedbackMessages() {
+		return unreadFeedbackMessages;
 	}
 }

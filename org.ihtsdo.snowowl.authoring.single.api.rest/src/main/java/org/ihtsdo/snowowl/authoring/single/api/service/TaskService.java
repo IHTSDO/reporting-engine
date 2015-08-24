@@ -14,6 +14,8 @@ import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTask;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskCreateRequest;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskUpdateRequest;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.StateTransition;
+import org.ihtsdo.snowowl.authoring.single.api.rest.ControllerHelper;
+import org.ihtsdo.snowowl.authoring.single.api.review.service.ReviewService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +44,9 @@ public class TaskService {
 
 	@Autowired
 	private SecurityService ims;
+
+	@Autowired
+	private ReviewService reviewService;
 
 	private final JiraClientFactory jiraClientFactory;
 
@@ -157,6 +162,7 @@ public class TaskService {
 	}
 
 	private List<AuthoringTask> buildAuthoringTasks(List<Issue> issues) throws RestClientException {
+		final String username = ControllerHelper.getUsername();
 		List<AuthoringTask> allTasks = new ArrayList<>();
 		//Map of task paths to tasks
 		Map<String, AuthoringTask> matureTasks = new HashMap<String, AuthoringTask>();
@@ -169,6 +175,7 @@ public class TaskService {
 				task.setLatestClassificationJson(latestClassificationJson);
 				matureTasks.put(PathHelper.getTaskPath(issue), task);
 			}
+			task.setUnreadFeedbackMessages(reviewService.anyUnreadMessages(task.getProjectKey(), task.getKey(), username));
 		}
 
 		List<String> matureTaskPaths = new ArrayList<String>(matureTasks.keySet());

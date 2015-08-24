@@ -16,4 +16,13 @@ public interface ReviewMessageRepository extends CrudRepository<ReviewMessage, L
 			"and ?2 member of m.subjectConceptIds ")
 	List<ReviewMessage> findByBranchAndConcept(Branch branch, String conceptId);
 
+	@Query("select case when (count(m) > 0) then true else false end " +
+			"from ReviewMessage m " +
+			"where m.branch = ?1 " +
+			"and m not in " +
+			"	(select r.message from ReviewMessageRead r " +
+			"	where r.message.branch = ?1 " +
+			"	and r.username = ?2 " +
+			"	) ")
+	boolean anyUnreadMessages(Branch branch, String username);
 }

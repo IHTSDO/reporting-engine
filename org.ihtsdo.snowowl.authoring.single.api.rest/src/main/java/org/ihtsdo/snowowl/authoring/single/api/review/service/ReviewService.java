@@ -1,5 +1,6 @@
 package org.ihtsdo.snowowl.authoring.single.api.review.service;
 
+import com.b2international.snowowl.core.exceptions.BadRequestException;
 import org.ihtsdo.snowowl.authoring.single.api.review.domain.Branch;
 import org.ihtsdo.snowowl.authoring.single.api.review.domain.ReviewMessage;
 import org.ihtsdo.snowowl.authoring.single.api.review.domain.ReviewMessageRead;
@@ -99,10 +100,14 @@ public class ReviewService {
 	}
 
 	public ReviewMessage postReviewMessage(String projectKey, String taskKey, ReviewMessageCreateRequest createRequest, String fromUsername) {
+		final List<String> subjectConceptIds = createRequest.getSubjectConceptIds();
+		if (subjectConceptIds == null || subjectConceptIds.isEmpty()) {
+			throw new BadRequestException("There must be at least one id in subjectConceptIds");
+		}
 		final Branch branch = getCreateBranch(projectKey, taskKey);
 		final ReviewMessage message = messageRepository.save(
 				new ReviewMessage(branch, createRequest.getMessageHtml(),
-						createRequest.getSubjectConceptIds(), createRequest.isFeedbackRequested(), fromUsername));
+						subjectConceptIds, createRequest.isFeedbackRequested(), fromUsername));
 		for (ReviewMessageSentListener listener : getReviewMessageSentListeners()) {
 			listener.messageSent(message);
 		}
@@ -117,6 +122,24 @@ public class ReviewService {
 				messageReadRepository.save(new ReviewMessageRead(message, conceptId, username));
 			}
 		}
+	}
+
+	@Transactional
+	public boolean anyUnreadMessages(String projectKey, String taskKey, String username) {
+		logger.info("anyUnreadMessages {}, {}, {}", projectKey, taskKey, username);
+		final Branch branch = branchRepository.findOneByProjectAndTask(projectKey, taskKey);
+		if (branch != null) {
+			final List<ReviewMessage> messages = messageRepository.findByBranch(branch);
+			logger.info("anyUnreadMessages messages {}", messages);
+			for (ReviewMessageRead messageRead : messageReadRepository.findByReviewMessageBranchAndUser(branch, username)) {
+				logger.info("anyUnreadMessages read {}", messageRead.getMessage().getId());
+				messages.remove(messageRead.getMessage());
+			}
+			logger.info("anyUnreadMessages unread {}", messages);
+//			return messageRepository.anyUnreadMessages(branch, username);
+			return !messages.isEmpty();
+		}
+		return false;
 	}
 
 	private Branch getCreateBranch(String projectKey, String taskKey) {
