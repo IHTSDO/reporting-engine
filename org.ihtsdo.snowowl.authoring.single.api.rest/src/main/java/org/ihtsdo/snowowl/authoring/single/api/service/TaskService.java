@@ -4,7 +4,6 @@ import com.b2international.snowowl.core.exceptions.ConflictException;
 import com.b2international.snowowl.core.exceptions.NotFoundException;
 
 import net.rcarz.jiraclient.*;
-import net.sf.json.JSONObject;
 
 import org.ihtsdo.otf.im.utility.SecurityService;
 import org.ihtsdo.otf.rest.client.OrchestrationRestClient;
@@ -291,7 +290,7 @@ public class TaskService {
 
 		if (updatedTask.getReviewer() != null) {
 			// Copy that pojo user into the jira issue as an rcarz user
-			User jiraReviewer = getUser(updatedTask.getReviewer().getName());
+			User jiraReviewer = getUser(updatedTask.getReviewer().getUsername());
 			//org.ihtsdo.snowowl.authoring.single.api.pojo.User reviewer = new org.ihtsdo.snowowl.authoring.single.api.pojo.User (jiraReviewer);
 			issue.update().field(AuthoringTask.JIRA_REVIEWER_FIELD, jiraReviewer).execute();
 		}
