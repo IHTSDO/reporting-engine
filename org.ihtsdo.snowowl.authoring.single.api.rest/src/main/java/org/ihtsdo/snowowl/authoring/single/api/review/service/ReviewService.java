@@ -155,21 +155,16 @@ public class ReviewService {
 	}
 
 	@Transactional
-	public boolean anyUnreadMessages(String projectKey, String taskKey, String username) {
-		logger.info("anyUnreadMessages {}, {}, {}", projectKey, taskKey, username);
+	public TaskMessagesStatus getTaskMessagesStatus(String projectKey, String taskKey, String username) {
 		final Branch branch = branchRepository.findOneByProjectAndTask(projectKey, taskKey);
 		if (branch != null) {
 			final List<ReviewMessage> messages = messageRepository.findByBranch(branch);
-			logger.info("anyUnreadMessages messages {}", messages);
 			for (ReviewMessageRead messageRead : messageReadRepository.findByReviewMessageBranchAndUser(branch, username)) {
-				logger.info("anyUnreadMessages read {}", messageRead.getMessage().getId());
 				messages.remove(messageRead.getMessage());
 			}
-			logger.info("anyUnreadMessages unread {}", messages);
-//			return messageRepository.anyUnreadMessages(branch, username);
-			return !messages.isEmpty();
+			return messages.isEmpty() ? TaskMessagesStatus.read : TaskMessagesStatus.unread;
 		}
-		return false;
+		return TaskMessagesStatus.none;
 	}
 
 	private Branch getCreateBranch(String projectKey, String taskKey) {
