@@ -175,7 +175,7 @@ public class TaskService {
 				task.setLatestClassificationJson(latestClassificationJson);
 				matureTasks.put(PathHelper.getTaskPath(issue), task);
 			}
-			task.setUnreadFeedbackMessages(reviewService.anyUnreadMessages(task.getProjectKey(), task.getKey(), username));
+			task.setFeedbackMessagesStatus(reviewService.getTaskMessagesStatus(task.getProjectKey(), task.getKey(), username));
 		}
 
 		List<String> matureTaskPaths = new ArrayList<String>(matureTasks.keySet());
