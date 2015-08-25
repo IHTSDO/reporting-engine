@@ -12,7 +12,7 @@ public class User {
 
 	private String email;
 	private String displayName;
-	private String name;
+	private String username;
 	private String avatarUrl;
 
 	public User() {
@@ -22,13 +22,13 @@ public class User {
 	public User(net.rcarz.jiraclient.User assignee) {
 		email = assignee.getEmail();
 		displayName = assignee.getDisplayName();
-		name = assignee.getName();
+		username = assignee.getName();
 		avatarUrl = assignee.getAvatarUrls().get("48x48");
 	}
 
 	public User(JSONObject userJSON) {
 		email = userJSON.getString(JSON_FIELD_EMAIL);
-		name = userJSON.getString(JSON_FIELD_NAME);
+		username = userJSON.getString(JSON_FIELD_NAME);
 		displayName = userJSON.getString(JSON_FIELD_DISPLAY_NAME);
 		JSONObject avatarUrls = userJSON.getJSONObject(JSON_FIELD_AVATAR);
 		avatarUrl = avatarUrls.getString(JSON_FIELD_AVATAR_48);
@@ -50,12 +50,12 @@ public class User {
 		this.displayName = displayName;
 	}
 
-	public String getName() {
-		return name;
+	public String getUsername() {
+		return username;
 	}
 
-	public void setName(String name) {
-		this.name = name;
+	public void setUsername(String username) {
+		this.username = username;
 	}
 
 	public String getAvatarUrl() {

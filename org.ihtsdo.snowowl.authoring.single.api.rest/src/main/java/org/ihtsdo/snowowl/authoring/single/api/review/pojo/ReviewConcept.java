@@ -10,6 +10,7 @@ public class ReviewConcept {
 	private String term;
 	private ChangeType changeType;
 	private List<ReviewMessage> messages;
+	private boolean read;
 
 	public ReviewConcept(String id, String term, ChangeType changeType) {
 		this.id = id;
@@ -47,5 +48,13 @@ public class ReviewConcept {
 
 	public List<ReviewMessage> getMessages() {
 		return messages;
+	}
+
+	public boolean isRead() {
+		return read;
+	}
+
+	public void setRead(boolean read) {
+		this.read = read;
 	}
 }

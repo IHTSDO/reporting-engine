@@ -15,6 +15,7 @@ public class ReviewMessage {
 	private String messageHtml;
 	private Date creationDate;
 	private String fromUsername;
+	private boolean feedbackRequested;
 
 	@ElementCollection(fetch = FetchType.EAGER)
 	private List<String> subjectConceptIds;
@@ -23,11 +24,12 @@ public class ReviewMessage {
 		creationDate = new Date();
 	}
 
-	public ReviewMessage(Branch branch, String messageHtml, List<String> subjectConceptIds, String fromUsername) {
+	public ReviewMessage(Branch branch, String messageHtml, List<String> subjectConceptIds, boolean feedbackRequested, String fromUsername) {
 		this();
 		this.branch = branch;
 		this.messageHtml = messageHtml;
 		this.subjectConceptIds = subjectConceptIds;
+		this.feedbackRequested = feedbackRequested;
 		this.fromUsername = fromUsername;
 	}
 
@@ -48,6 +50,10 @@ public class ReviewMessage {
 
 	public List<String> getSubjectConceptIds() {
 		return subjectConceptIds;
+	}
+
+	public boolean isFeedbackRequested() {
+		return feedbackRequested;
 	}
 
 	public Branch getBranch() {

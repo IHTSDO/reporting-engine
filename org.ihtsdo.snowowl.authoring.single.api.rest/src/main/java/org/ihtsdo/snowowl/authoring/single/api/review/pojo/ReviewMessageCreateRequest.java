@@ -8,6 +8,8 @@ public class ReviewMessageCreateRequest {
 
 	private List<String> subjectConceptIds;
 
+	private boolean feedbackRequested;
+
 	public ReviewMessageCreateRequest() {
 	}
 
@@ -25,5 +27,13 @@ public class ReviewMessageCreateRequest {
 
 	public void setSubjectConceptIds(List<String> subjectConceptIds) {
 		this.subjectConceptIds = subjectConceptIds;
+	}
+
+	public boolean isFeedbackRequested() {
+		return feedbackRequested;
+	}
+
+	public void setFeedbackRequested(boolean feedbackRequested) {
+		this.feedbackRequested = feedbackRequested;
 	}
 }

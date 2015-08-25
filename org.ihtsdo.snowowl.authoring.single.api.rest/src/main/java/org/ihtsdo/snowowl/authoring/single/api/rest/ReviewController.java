@@ -33,7 +33,7 @@ public class ReviewController extends AbstractSnomedRestService {
 	@RequestMapping(value="/projects/{projectKey}/tasks/{taskKey}/review", method= RequestMethod.GET)
 	public AuthoringTaskReview retrieveTaskReview(@PathVariable final String projectKey, @PathVariable final String taskKey,
 			HttpServletRequest request) throws ExecutionException, InterruptedException {
-		return reviewService.retrieveTaskReview(projectKey, taskKey, Collections.list(request.getLocales()));
+		return reviewService.retrieveTaskReview(projectKey, taskKey, Collections.list(request.getLocales()), ControllerHelper.getUsername());
 	}
 
 	@ApiOperation(value="Comment on a task")
@@ -45,5 +45,16 @@ public class ReviewController extends AbstractSnomedRestService {
 			@RequestBody ReviewMessageCreateRequest createRequest) {
 		return reviewService.postReviewMessage(projectKey, taskKey, createRequest, ControllerHelper.getUsername());
 	}
+
+	@ApiOperation(value="Mark a review and concept pair as read for this user.")
+	@ApiResponses({
+			@ApiResponse(code = 200, message = "OK")
+	})
+	@RequestMapping(value="/projects/{projectKey}/tasks/{taskKey}/review/concepts/{conceptId}/read", method= RequestMethod.POST)
+	public void markReviewAndConceptRead(@PathVariable final String projectKey, @PathVariable final String taskKey,
+			@PathVariable final String conceptId) throws ExecutionException, InterruptedException {
+		reviewService.markAsRead(projectKey, taskKey, conceptId, ControllerHelper.getUsername());
+	}
+
 
 }
