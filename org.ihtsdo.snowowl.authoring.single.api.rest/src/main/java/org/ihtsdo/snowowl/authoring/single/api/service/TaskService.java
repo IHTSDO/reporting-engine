@@ -5,15 +5,12 @@ import com.b2international.snowowl.core.exceptions.NotFoundException;
 
 import net.rcarz.jiraclient.*;
 
+import net.rcarz.jiraclient.User;
 import org.ihtsdo.otf.im.utility.SecurityService;
 import org.ihtsdo.otf.rest.client.OrchestrationRestClient;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
-import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringProject;
-import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTask;
-import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskCreateRequest;
-import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskUpdateRequest;
-import org.ihtsdo.snowowl.authoring.single.api.pojo.StateTransition;
+import org.ihtsdo.snowowl.authoring.single.api.pojo.*;
 import org.ihtsdo.snowowl.authoring.single.api.rest.ControllerHelper;
 import org.ihtsdo.snowowl.authoring.single.api.review.service.ReviewService;
 import org.slf4j.Logger;
@@ -62,7 +59,8 @@ public class TaskService {
 	public List<AuthoringProject> listProjects() throws JiraException, IOException, JSONException, RestClientException {
 		List<AuthoringProject> authoringProjects = new ArrayList<>();
 		for (Issue issue : getJiraClient().searchIssues("type = \"SCA Authoring Project\"").issues) {
-			Project project = issue.getProject();
+			// Get project with all fields
+			Project project = getJiraClient().getProject(issue.getProject().getKey());
 			authoringProjects.add(buildProject(project));
 		}
 		return authoringProjects;
@@ -75,7 +73,7 @@ public class TaskService {
 	private AuthoringProject buildProject(Project project) throws IOException, JSONException, RestClientException {
 		final String validationStatus = orchestrationRestClient.retrieveValidationStatuses(Collections.singletonList(PathHelper.getPath(project.getKey()))).get(0);
 		final String latestClassificationJson = classificationService.getLatestClassification(PathHelper.getPath(project.getKey()));
-		return new AuthoringProject(project.getKey(), project.getName(), validationStatus, latestClassificationJson);
+		return new AuthoringProject(project.getKey(), project.getName(), getPojoUserOrNull(project.getLead()), validationStatus, latestClassificationJson);
 	}
 
 	public Issue getProjectTicket(String projectKey) throws JiraException {
@@ -340,6 +338,14 @@ public class TaskService {
 			}
 		}
 		
+	}
+
+	private org.ihtsdo.snowowl.authoring.single.api.pojo.User getPojoUserOrNull(User lead) {
+		org.ihtsdo.snowowl.authoring.single.api.pojo.User leadUser = null;
+		if (lead != null) {
+			leadUser = new org.ihtsdo.snowowl.authoring.single.api.pojo.User(lead);
+		}
+		return leadUser;
 	}
 
 	private User getUser(String username) throws BusinessServiceException {
