@@ -4,8 +4,8 @@ import com.b2international.snowowl.core.exceptions.ConflictException;
 import com.b2international.snowowl.core.exceptions.NotFoundException;
 
 import net.rcarz.jiraclient.*;
-
 import net.rcarz.jiraclient.User;
+
 import org.ihtsdo.otf.im.utility.SecurityService;
 import org.ihtsdo.otf.rest.client.OrchestrationRestClient;
 import org.ihtsdo.otf.rest.client.RestClientException;
@@ -106,6 +106,15 @@ public class TaskService {
 			return issues.get(0);
 		} else {
 			throw new NotFoundException("Task", taskKey);
+		}
+	}
+	
+	private Issue getIssue(String projectKey, String taskKey, boolean includeAll) throws JiraException {
+		//If we don't need all fields, then the existing implementation is sufficient
+		if (includeAll) {
+			return getJiraClient().getIssue(taskKey, INCLUDED_FIELDS, "changelog");
+		} else {
+			return getIssue(projectKey, taskKey);
 		}
 	}
 	
@@ -272,7 +281,7 @@ public class TaskService {
 		}
 	}
 
-	private JiraClient getJiraClient() {
+	private JiraClient getJiraClient() throws JiraException {
 		return jiraClientFactory.getInstance();
 	}
 
@@ -364,12 +373,16 @@ public class TaskService {
 
 		try {
 			//Recover the change log for the issue and work through it to find the change specified
-			ChangeLog changeLog = getIssue(projectKey, taskKey).getChangeLog();
-			for (ChangeLogEntry entry : changeLog.getEntries()) {
-				Date thisChangeDate = entry.getCreated();
-				for (ChangeLogItem changeItem : entry.getItems()) {
-					if (changeItem.getField().equals(fieldName) && changeItem.getTo().equals(newValue)){
-						return thisChangeDate;
+			ChangeLog changeLog = getIssue(projectKey, taskKey, true).getChangeLog();
+			if (changeLog != null) {
+				//Sort changeLog entries descending to get most recent change first
+				Collections.sort(changeLog.getEntries(),CHANGELOG_ID_COMPARATOR_DESC);
+				for (ChangeLogEntry entry : changeLog.getEntries()) {
+					Date thisChangeDate = entry.getCreated();
+					for (ChangeLogItem changeItem : entry.getItems()) {
+						if (changeItem.getField().equals(fieldName) && changeItem.getToString().equals(newValue)){
+							return thisChangeDate;
+						}
 					}
 				}
 			}
@@ -379,4 +392,11 @@ public class TaskService {
 		return null;
 	}
 	
+	public static Comparator<ChangeLogEntry> CHANGELOG_ID_COMPARATOR_DESC = new Comparator<ChangeLogEntry>() {
+		public int compare(ChangeLogEntry entry1, ChangeLogEntry entry2) {
+			Integer id1 = new Integer(entry1.getId());
+			Integer id2 = new Integer(entry2.getId());
+			return id2.compareTo(id1);
+		}
+	};
 }

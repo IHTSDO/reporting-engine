@@ -2,6 +2,7 @@ package org.ihtsdo.snowowl.authoring.single.api.service;
 
 import net.rcarz.jiraclient.ICredentials;
 import net.rcarz.jiraclient.JiraClient;
+import net.rcarz.jiraclient.JiraException;
 
 // TODO: Performance - Implement a pool of clients if needed.
 public class JiraClientFactory {
@@ -14,7 +15,7 @@ public class JiraClientFactory {
 		this.iCredentials = iCredentials;
 	}
 
-	public JiraClient getInstance() {
+	public JiraClient getInstance() throws JiraException {
 		return new JiraClient(jiraUrl, iCredentials);
 	}
 

@@ -59,11 +59,11 @@ public class ReviewConcept {
 		this.read = read;
 	}
 
-	public boolean modifiedSinceReview() {
+	public boolean isModifiedSinceReview() {
 		return modifiedSinceReview;
 	}
 
-	public void modifiedSinceReview(boolean modifiedSinceReview) {
+	public void setModifiedSinceReview(boolean modifiedSinceReview) {
 		this.modifiedSinceReview = modifiedSinceReview;
 	}
 }

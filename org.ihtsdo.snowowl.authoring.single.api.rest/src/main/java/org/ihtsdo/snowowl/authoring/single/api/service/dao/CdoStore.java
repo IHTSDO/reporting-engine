@@ -5,10 +5,14 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -60,7 +64,7 @@ public class CdoStore {
 		stmt.setString(1, taskKey);
 		stmt.setString(2, projectKey);
 		ResultSet rs = stmt.executeQuery();
-		return new Integer (rs.getInt(1)); 
+		return rs.next() ? new Integer (rs.getInt(1)) : null; 
 	}
 	
 	/**
@@ -72,13 +76,17 @@ public class CdoStore {
 	 * @return
 	 * @throws SQLException
 	 */
-	public Integer getConceptChanges(String projectKey, String taskKey, Date fromDate) throws SQLException {
+	public Set<String> getConceptChanges(Integer branchId, Date fromDate) throws SQLException {
 		
-		PreparedStatement stmt = preparedStatements.get(CDOStatement.GET_BRANCH_ID);
-		stmt.setString(1, taskKey);
-		stmt.setString(2, projectKey);
+		PreparedStatement stmt = preparedStatements.get(CDOStatement.GET_CONCEPTS_CHANGED_SINCE);
+		stmt.setInt(1, branchId);
+		stmt.setLong(2, fromDate.getTime());
 		ResultSet rs = stmt.executeQuery();
-		return new Integer (rs.getInt(1)); 
+		Set<String> conceptsChanged = new HashSet<String>();
+		while (rs.next()) {
+			conceptsChanged.add(rs.getString(1));
+		}
+		return conceptsChanged; 
 	}
 
 }

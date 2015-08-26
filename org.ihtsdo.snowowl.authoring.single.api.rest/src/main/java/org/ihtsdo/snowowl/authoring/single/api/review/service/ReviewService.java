@@ -1,6 +1,7 @@
 package org.ihtsdo.snowowl.authoring.single.api.review.service;
 
 import com.b2international.snowowl.core.exceptions.BadRequestException;
+
 import net.rcarz.jiraclient.JiraException;
 
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
@@ -16,12 +17,14 @@ import org.ihtsdo.snowowl.authoring.single.api.review.repository.ReviewMessageRe
 import org.ihtsdo.snowowl.authoring.single.api.review.repository.ReviewMessageRepository;
 import org.ihtsdo.snowowl.authoring.single.api.service.BranchService;
 import org.ihtsdo.snowowl.authoring.single.api.service.TaskService;
+import org.ihtsdo.snowowl.authoring.single.api.service.dao.CdoStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 
+import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
@@ -47,6 +50,9 @@ public class ReviewService {
 
 	@Autowired
 	private ApplicationContext applicationContext;
+	
+	@Autowired
+	private CdoStore cdoStore;
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -70,23 +76,41 @@ public class ReviewService {
 			
 			markConceptsModifiedSinceReview(projectKey, taskKey, reviewConcepts);
 			return authoringTaskReview;
-		} catch (ExecutionException|InterruptedException|JiraException e) {
+		} catch (ExecutionException|InterruptedException e) {
 			throw new BusinessServiceException ("Unable to generate task review.", e);
 		}
 	}
 
 	private void markConceptsModifiedSinceReview(String projectKey,
-			String taskKey, List<ReviewConcept> reviewConcepts) throws JiraException, BusinessServiceException {
-		//Ensure that we're currently in state 'In Review' and find out from Jira when task entered that state
-		if (!taskService.taskIsState(projectKey, taskKey, StateTransition.STATE_IN_REVIEW)) {
-			logger.error("Unable to mark concepts modified since review as task not currently in state 'In Review'." );
-			return;
-		}
-		
-		Date reviewStated = taskService.getDateOfChange(projectKey, taskKey, "Status", StateTransition.STATE_IN_REVIEW);
-		if (!taskService.taskIsState(projectKey, taskKey, StateTransition.STATE_IN_REVIEW)) {
-			logger.error("Unable to mark concepts modified since review as cannot determine review start date." );
-			return;
+			String taskKey, List<ReviewConcept> reviewConcepts) throws BusinessServiceException {
+		try {
+			//Ensure that we're currently in state 'In Review' and find out from Jira when task entered that state
+			if (!taskService.taskIsState(projectKey, taskKey, StateTransition.STATE_IN_REVIEW)) {
+				logger.error("Unable to mark concepts modified since review as task not currently in state 'In Review'." );
+				return;
+			}
+			
+			Date reviewStarted = taskService.getDateOfChange(projectKey, taskKey, "status", StateTransition.STATE_IN_REVIEW);
+			if (reviewStarted == null) {
+				logger.error("Unable to mark concepts modified since review as cannot determine review start date." );
+				return;
+			}
+			
+			Integer branchId = cdoStore.getBranchId(projectKey, taskKey);
+			if (branchId == null) {
+				logger.error("Unable to mark concepts modified since review as cannot determine branch Id." );
+				return;
+			}			
+			Set<String> conceptsChangedSinceReview = cdoStore.getConceptChanges(branchId, reviewStarted);
+			
+			//Now loop through all our review concepts and see if any of them need to be marked as changed
+			for (ReviewConcept thisConcept : reviewConcepts) {
+				if (conceptsChangedSinceReview.contains(thisConcept.getId())) {
+					thisConcept.setModifiedSinceReview(true);
+				}
+			}
+		} catch (JiraException | SQLException e) {
+			throw new BusinessServiceException ("Unable to determine concepts modified since review started.",e);
 		}
 	}
 
