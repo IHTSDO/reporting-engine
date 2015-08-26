@@ -14,4 +14,5 @@ public interface BranchService {
 	String getTaskPath(String projectKey, String taskKey);
 
 	String getProjectPath(String projectKey);
+	
 }

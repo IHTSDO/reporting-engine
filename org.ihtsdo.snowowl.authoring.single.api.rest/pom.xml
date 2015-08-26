@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>org.ihtsdo.snowowl</groupId>
 		<artifactId>ihtsdo-snowowl-parent</artifactId>
-		<version>4.1.13</version>
+		<version>4.1.14</version>
 	</parent>
 
 	<artifactId>org.ihtsdo.snowowl.authoring.single.api.rest</artifactId>
@@ -100,6 +100,12 @@
 		<dependency>
 			<groupId>com.b2international.snowowl</groupId>
 			<artifactId>com.b2international.snowowl.snomed.api.impl</artifactId>
+			<version>${snowowl.version}</version>
+			<scope>${snowowl.lib.scope}</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.b2international.snowowl</groupId>
+			<artifactId>com.b2international.snowowl.datastore</artifactId>
 			<version>${snowowl.version}</version>
 			<scope>${snowowl.lib.scope}</scope>
 		</dependency>
@@ -252,7 +258,7 @@
 		<dependency>
 			<groupId>net.rcarz</groupId>
 			<artifactId>jira-client</artifactId>
-			<version>0.5</version>
+			<version>0.6.1-IHTSDO</version>
 		</dependency>
 		<!-- IMS -->
 		<dependency>

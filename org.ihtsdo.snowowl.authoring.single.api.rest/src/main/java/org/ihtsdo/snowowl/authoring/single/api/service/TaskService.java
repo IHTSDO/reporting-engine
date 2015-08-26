@@ -4,16 +4,13 @@ import com.b2international.snowowl.core.exceptions.ConflictException;
 import com.b2international.snowowl.core.exceptions.NotFoundException;
 
 import net.rcarz.jiraclient.*;
+import net.rcarz.jiraclient.User;
 
 import org.ihtsdo.otf.im.utility.SecurityService;
 import org.ihtsdo.otf.rest.client.OrchestrationRestClient;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
-import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringProject;
-import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTask;
-import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskCreateRequest;
-import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskUpdateRequest;
-import org.ihtsdo.snowowl.authoring.single.api.pojo.StateTransition;
+import org.ihtsdo.snowowl.authoring.single.api.pojo.*;
 import org.ihtsdo.snowowl.authoring.single.api.rest.ControllerHelper;
 import org.ihtsdo.snowowl.authoring.single.api.review.service.ReviewService;
 import org.slf4j.Logger;
@@ -62,7 +59,8 @@ public class TaskService {
 	public List<AuthoringProject> listProjects() throws JiraException, IOException, JSONException, RestClientException {
 		List<AuthoringProject> authoringProjects = new ArrayList<>();
 		for (Issue issue : getJiraClient().searchIssues("type = \"SCA Authoring Project\"").issues) {
-			Project project = issue.getProject();
+			// Get project with all fields
+			Project project = getJiraClient().getProject(issue.getProject().getKey());
 			authoringProjects.add(buildProject(project));
 		}
 		return authoringProjects;
@@ -75,7 +73,7 @@ public class TaskService {
 	private AuthoringProject buildProject(Project project) throws IOException, JSONException, RestClientException {
 		final String validationStatus = orchestrationRestClient.retrieveValidationStatuses(Collections.singletonList(PathHelper.getPath(project.getKey()))).get(0);
 		final String latestClassificationJson = classificationService.getLatestClassification(PathHelper.getPath(project.getKey()));
-		return new AuthoringProject(project.getKey(), project.getName(), validationStatus, latestClassificationJson);
+		return new AuthoringProject(project.getKey(), project.getName(), getPojoUserOrNull(project.getLead()), validationStatus, latestClassificationJson);
 	}
 
 	public Issue getProjectTicket(String projectKey) throws JiraException {
@@ -108,6 +106,15 @@ public class TaskService {
 			return issues.get(0);
 		} else {
 			throw new NotFoundException("Task", taskKey);
+		}
+	}
+	
+	private Issue getIssue(String projectKey, String taskKey, boolean includeAll) throws JiraException {
+		//If we don't need all fields, then the existing implementation is sufficient
+		if (includeAll) {
+			return getJiraClient().getIssue(taskKey, INCLUDED_FIELDS, "changelog");
+		} else {
+			return getIssue(projectKey, taskKey);
 		}
 	}
 	
@@ -175,7 +182,7 @@ public class TaskService {
 				task.setLatestClassificationJson(latestClassificationJson);
 				matureTasks.put(PathHelper.getTaskPath(issue), task);
 			}
-			task.setUnreadFeedbackMessages(reviewService.anyUnreadMessages(task.getProjectKey(), task.getKey(), username));
+			task.setFeedbackMessagesStatus(reviewService.getTaskMessagesStatus(task.getProjectKey(), task.getKey(), username));
 		}
 
 		List<String> matureTaskPaths = new ArrayList<String>(matureTasks.keySet());
@@ -274,7 +281,7 @@ public class TaskService {
 		}
 	}
 
-	private JiraClient getJiraClient() {
+	private JiraClient getJiraClient() throws JiraException {
 		return jiraClientFactory.getInstance();
 	}
 
@@ -342,6 +349,14 @@ public class TaskService {
 		
 	}
 
+	private org.ihtsdo.snowowl.authoring.single.api.pojo.User getPojoUserOrNull(User lead) {
+		org.ihtsdo.snowowl.authoring.single.api.pojo.User leadUser = null;
+		if (lead != null) {
+			leadUser = new org.ihtsdo.snowowl.authoring.single.api.pojo.User(lead);
+		}
+		return leadUser;
+	}
+
 	private User getUser(String username) throws BusinessServiceException {
 		try {
 			return User.get(getJiraClient().getRestClient(), username);
@@ -350,4 +365,38 @@ public class TaskService {
 		}
 	}
 	
+	/**
+	 * Returns the most recent Date/time of when the specified field changed to the specified value
+	 * @throws BusinessServiceException 
+	 */
+	public Date getDateOfChange(String projectKey, String taskKey, String fieldName, String newValue) throws JiraException, BusinessServiceException {
+
+		try {
+			//Recover the change log for the issue and work through it to find the change specified
+			ChangeLog changeLog = getIssue(projectKey, taskKey, true).getChangeLog();
+			if (changeLog != null) {
+				//Sort changeLog entries descending to get most recent change first
+				Collections.sort(changeLog.getEntries(),CHANGELOG_ID_COMPARATOR_DESC);
+				for (ChangeLogEntry entry : changeLog.getEntries()) {
+					Date thisChangeDate = entry.getCreated();
+					for (ChangeLogItem changeItem : entry.getItems()) {
+						if (changeItem.getField().equals(fieldName) && changeItem.getToString().equals(newValue)){
+							return thisChangeDate;
+						}
+					}
+				}
+			}
+		} catch (JiraException je) {
+			throw new BusinessServiceException("Failed to recover change log from task " + toString(projectKey, taskKey), je);
+		}
+		return null;
+	}
+	
+	public static Comparator<ChangeLogEntry> CHANGELOG_ID_COMPARATOR_DESC = new Comparator<ChangeLogEntry>() {
+		public int compare(ChangeLogEntry entry1, ChangeLogEntry entry2) {
+			Integer id1 = new Integer(entry1.getId());
+			Integer id2 = new Integer(entry2.getId());
+			return id2.compareTo(id1);
+		}
+	};
 }

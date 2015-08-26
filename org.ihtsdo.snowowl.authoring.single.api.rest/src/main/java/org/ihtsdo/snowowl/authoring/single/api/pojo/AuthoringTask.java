@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonRawValue;
 
 import net.rcarz.jiraclient.Issue;
 import net.sf.json.JSONObject;
+import org.ihtsdo.snowowl.authoring.single.api.review.service.TaskMessagesStatus;
 
 public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskUpdateRequest {
 
@@ -26,7 +27,7 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 	private String updated;
 	private String latestClassificationJson;
 	private String latestValidationStatus;
-	private boolean unreadFeedbackMessages;
+	private TaskMessagesStatus feedbackMessagesStatus;
 
 	public AuthoringTask() {
 	}
@@ -143,11 +144,11 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 		this.reviewer = reviewer;
 	}
 
-	public void setUnreadFeedbackMessages(boolean unreadFeedbackMessages) {
-		this.unreadFeedbackMessages = unreadFeedbackMessages;
+	public void setFeedbackMessagesStatus(TaskMessagesStatus unreadFeedbackMessages) {
+		this.feedbackMessagesStatus = unreadFeedbackMessages;
 	}
 
-	public boolean isUnreadFeedbackMessages() {
-		return unreadFeedbackMessages;
+	public TaskMessagesStatus getFeedbackMessagesStatus() {
+		return feedbackMessagesStatus;
 	}
 }

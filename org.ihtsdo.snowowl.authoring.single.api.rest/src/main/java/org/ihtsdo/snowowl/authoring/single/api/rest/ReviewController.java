@@ -4,6 +4,8 @@ import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
+
+import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.api.rest.common.AbstractRestService;
 import org.ihtsdo.snowowl.api.rest.common.AbstractSnomedRestService;
 import org.ihtsdo.snowowl.authoring.single.api.review.domain.ReviewMessage;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
 import java.util.concurrent.ExecutionException;
+
 import javax.servlet.http.HttpServletRequest;
 
 @Api("Review")
@@ -32,7 +35,7 @@ public class ReviewController extends AbstractSnomedRestService {
 	})
 	@RequestMapping(value="/projects/{projectKey}/tasks/{taskKey}/review", method= RequestMethod.GET)
 	public AuthoringTaskReview retrieveTaskReview(@PathVariable final String projectKey, @PathVariable final String taskKey,
-			HttpServletRequest request) throws ExecutionException, InterruptedException {
+			HttpServletRequest request) throws BusinessServiceException {
 		return reviewService.retrieveTaskReview(projectKey, taskKey, Collections.list(request.getLocales()), ControllerHelper.getUsername());
 	}
 

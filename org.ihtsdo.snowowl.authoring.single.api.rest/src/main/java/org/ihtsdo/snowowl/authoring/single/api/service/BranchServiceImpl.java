@@ -6,6 +6,7 @@ import com.b2international.snowowl.datastore.server.review.Review;
 import com.b2international.snowowl.datastore.server.review.ReviewStatus;
 import com.b2international.snowowl.eventbus.IEventBus;
 import com.b2international.snowowl.snomed.api.ISnomedDescriptionService;
+
 import org.ihtsdo.snowowl.authoring.single.api.review.pojo.AuthoringTaskReview;
 import org.ihtsdo.snowowl.authoring.single.api.review.pojo.ChangeType;
 import org.ihtsdo.snowowl.authoring.single.api.review.pojo.ReviewConcept;
@@ -107,4 +108,5 @@ public class BranchServiceImpl implements BranchService {
 	public String getProjectPath(String projectKey) {
 		return getBranchPath(projectKey);
 	}
+
 }
