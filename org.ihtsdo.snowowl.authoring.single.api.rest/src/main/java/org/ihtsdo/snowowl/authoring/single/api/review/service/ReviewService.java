@@ -59,7 +59,7 @@ public class ReviewService {
 	@Transactional
 	public AuthoringTaskReview retrieveTaskReview(String projectKey, String taskKey, List<Locale> locales, String username) throws BusinessServiceException {
 		try {
-			final AuthoringTaskReview authoringTaskReview = branchService.diffTaskBranch(projectKey, taskKey, locales);
+			final AuthoringTaskReview authoringTaskReview = branchService.diffTaskAgainstProject(projectKey, taskKey, locales);
 			final List<ReviewConcept> reviewConcepts = authoringTaskReview.getConcepts();
 			final Branch branch = branchRepository.findOneByProjectAndTask(projectKey, taskKey);
 			if (branch != null) {

@@ -6,6 +6,7 @@ import java.util.List;
 public class AuthoringTaskReview {
 
 	private List<ReviewConcept> concepts;
+	private String reviewId;
 
 	public AuthoringTaskReview() {
 		concepts = new ArrayList<>();
@@ -21,5 +22,13 @@ public class AuthoringTaskReview {
 
 	public void setConcepts(List<ReviewConcept> concepts) {
 		this.concepts = concepts;
+	}
+
+	public String getReviewId() {
+		return reviewId;
+	}
+
+	public void setReviewId(String reviewId) {
+		this.reviewId = reviewId;
 	}
 }
