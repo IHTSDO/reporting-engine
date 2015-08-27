@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.*;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.*;
 
 public class BranchServiceImpl implements BranchService {
 
@@ -37,6 +37,9 @@ public class BranchServiceImpl implements BranchService {
 	public static final String SNOMED_TS_REPOSITORY_ID = "snomedStore";
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 	
+	private enum DIFF_DIRECTION { TASK_FROM_PROJECT, PROJECT_FROM_TASK }
+	private static final int REVIEW_TIMEOUT = 60; //Minutes
+
 	@Override
 	public void createTaskBranchAndProjectBranchIfNeeded(String projectKey, String taskKey) throws ServiceException {
 		createProjectBranchIfNeeded(projectKey);
@@ -68,7 +71,7 @@ public class BranchServiceImpl implements BranchService {
 
 		Review tsReview = reviewReply.getReview();
 		logger.info("Waiting for TS review to complete");
-		for (int a = 0; a < 60; a++) {
+		for (int a = 0; a < REVIEW_TIMEOUT; a++) {
 			final ReviewReply latestReviewReply = new ReadReviewEvent(SNOMED_TS_REPOSITORY_ID, tsReview.id()).send(eventBus, ReviewReply.class).get();
 			tsReview = latestReviewReply.getReview();
 			if (!ReviewStatus.PENDING.equals(tsReview.status())) {
@@ -90,7 +93,7 @@ public class BranchServiceImpl implements BranchService {
 		addAllToReview(review, ChangeType.deleted, conceptChanges.deletedConcepts(), sourcePath, locales);
 		timer.checkpoint("building review with terms");
 		timer.finish();
-		logger.info("Review built");
+		logger.info("Review {} built", tsReview.id());
 		return review;
 	}
 
@@ -129,18 +132,26 @@ public class BranchServiceImpl implements BranchService {
 		try {
 			//Get changes in the task compared to the project, plus changes in the project
 			//compared to the task and determine which ones intersect
-			AuthoringTaskReview taskChangesReview = diffTaskAgainstProject (projectKey, taskKey, locales);
-			AuthoringTaskReview projectChangesReview = diffProjectAgainstTask(projectKey, taskKey, locales);
+			ExecutorService executor = Executors.newFixedThreadPool(2);
+			AuthoringTaskReviewRunner taskChangesReviewRunner = new AuthoringTaskReviewRunner (getTaskPath(projectKey, taskKey), getProjectPath(projectKey), locales);
+			AuthoringTaskReviewRunner projectChangesReviewRunner = new AuthoringTaskReviewRunner (getProjectPath(projectKey), getTaskPath(projectKey, taskKey), locales);
 			
+			Future<AuthoringTaskReview> taskChangesReview = executor.submit(taskChangesReviewRunner);
+			Future<AuthoringTaskReview> projectChangesReview = executor.submit(projectChangesReviewRunner);
+			
+			//Wait for both of these to complete
+			executor.shutdown();
+			executor.awaitTermination(REVIEW_TIMEOUT, TimeUnit.MINUTES);
+
 			//Form Set of ProjectChanges so as to avoid n x m iterations
 			Set<String> projectChanges = new HashSet<String>();
-			for (ReviewConcept thisConcept : projectChangesReview.getConcepts()) {
+			for (ReviewConcept thisConcept : projectChangesReview.get().getConcepts()) {
 				projectChanges.add(thisConcept.getId());
 			}
 			
 			List<ReviewConcept> conflictingConcepts = new ArrayList<ReviewConcept>();
 			//Work through taskChanges to find concepts in common
-			for (ReviewConcept thisConcept : taskChangesReview.getConcepts()) {
+			for (ReviewConcept thisConcept : taskChangesReview.get().getConcepts()) {
 				if (projectChanges.contains(thisConcept.getId())) {
 					conflictingConcepts.add(thisConcept);
 				}
@@ -148,8 +159,8 @@ public class BranchServiceImpl implements BranchService {
 			
 			ConflictReport conflictReport = new ConflictReport();
 			conflictReport.setConcepts(conflictingConcepts);
-			conflictReport.setTaskReviewId(taskChangesReview.getReviewId());
-			conflictReport.setProjectReviewId(projectChangesReview.getReviewId());
+			conflictReport.setTaskReviewId(taskChangesReview.get().getReviewId());
+			conflictReport.setProjectReviewId(projectChangesReview.get().getReviewId());
 			return conflictReport;
 		} catch (ExecutionException|InterruptedException e) {
 			throw new BusinessServiceException ("Unable to retrieve Conflict report for " + getTaskPath(projectKey, taskKey), e);
@@ -161,6 +172,25 @@ public class BranchServiceImpl implements BranchService {
 			MergeRequest mergeRequest, String username) {
 		logger.warn("Task rebasing not yet implemented");
 		return ;
+	}
+	
+	class AuthoringTaskReviewRunner implements Callable< AuthoringTaskReview> {
+		
+		final String sourcePath;
+		final String targetPath;
+		final List<Locale> locales;
+		
+		AuthoringTaskReviewRunner(String sourcePath, String targetPath, List<Locale> locales) {
+			this.sourcePath = sourcePath;
+			this.targetPath = targetPath;
+			this.locales = locales;
+		}
+
+		@Override
+		public AuthoringTaskReview call() throws Exception {
+			return doDiff(sourcePath, targetPath, locales);
+		}
+		
 	}
 
 }
