@@ -61,32 +61,50 @@ public class ReviewService {
 		try {
 			final AuthoringTaskReview authoringTaskReview = branchService.diffTaskAgainstProject(projectKey, taskKey, locales);
 			final List<ReviewConcept> reviewConcepts = authoringTaskReview.getConcepts();
-			final Branch branch = branchRepository.findOneByProjectAndTask(projectKey, taskKey);
-			if (branch != null) {
-				Map<String, List<ReviewMessage>> conceptMessagesMap = getConceptMessagesMap(branch);
-				Map<String, List<ReviewMessage>> conceptMessagesReadMap = getMessagesReadMap(branch, username);
-				for (ReviewConcept reviewConcept : reviewConcepts) {
-					final String conceptId = reviewConcept.getId();
-					final List<ReviewMessage> conceptMessages = conceptMessagesMap.get(conceptId);
-					reviewConcept.setMessages(conceptMessages);
-					reviewConcept.setRead(conceptMessages == null || conceptMessages.isEmpty() ||
-							(conceptMessagesReadMap.containsKey(conceptId) && conceptMessagesReadMap.get(conceptId).containsAll(conceptMessages)));
-				}
-			}
-			
-			markConceptsModifiedSinceReview(projectKey, taskKey, reviewConcepts);
+			putReviewMessagesAgainstConcepts(projectKey, taskKey, username, reviewConcepts);
+			markConceptsModifiedSinceReview(projectKey, taskKey, reviewConcepts, false);
 			return authoringTaskReview;
 		} catch (ExecutionException|InterruptedException e) {
 			throw new BusinessServiceException ("Unable to generate task review.", e);
 		}
 	}
 
-	private void markConceptsModifiedSinceReview(String projectKey,
-			String taskKey, List<ReviewConcept> reviewConcepts) throws BusinessServiceException {
+	@Transactional
+	public AuthoringTaskReview retrieveProjectReview(String projectKey, ArrayList<Locale> locales, String username) throws BusinessServiceException {
+		try {
+			final AuthoringTaskReview authoringTaskReview = branchService.diffProjectAgainstMain(projectKey, locales);
+			final List<ReviewConcept> reviewConcepts = authoringTaskReview.getConcepts();
+			putReviewMessagesAgainstConcepts(projectKey, null, username, reviewConcepts);
+			final String projectTicketKey = taskService.getProjectTicket(projectKey).getKey();
+			markConceptsModifiedSinceReview(projectKey, projectTicketKey, reviewConcepts, true);
+			return authoringTaskReview;
+		} catch (ExecutionException|InterruptedException e) {
+			throw new BusinessServiceException("Unable to generate project review.", e);
+		} catch (JiraException e) {
+			throw new BusinessServiceException("Unable to generate project review. Failed to load project ticket.", e);
+		}
+	}
+
+	private void putReviewMessagesAgainstConcepts(String projectKey, String taskKey, String username, List<ReviewConcept> reviewConcepts) {
+		final Branch branch = branchRepository.findOneByProjectAndTask(projectKey, taskKey);
+		if (branch != null) {
+			Map<String, List<ReviewMessage>> conceptMessagesMap = getConceptMessagesMap(branch);
+			Map<String, List<ReviewMessage>> conceptMessagesReadMap = getMessagesReadMap(branch, username);
+			for (ReviewConcept reviewConcept : reviewConcepts) {
+				final String conceptId = reviewConcept.getId();
+				final List<ReviewMessage> conceptMessages = conceptMessagesMap.get(conceptId);
+				reviewConcept.setMessages(conceptMessages);
+				reviewConcept.setRead(conceptMessages == null || conceptMessages.isEmpty() ||
+						(conceptMessagesReadMap.containsKey(conceptId) && conceptMessagesReadMap.get(conceptId).containsAll(conceptMessages)));
+			}
+		}
+	}
+
+	private void markConceptsModifiedSinceReview(String projectKey, String taskKey, List<ReviewConcept> reviewConcepts, boolean projectTicket) throws BusinessServiceException {
 		try {
 			//Ensure that we're currently in state 'In Review' and find out from Jira when task entered that state
 			if (!taskService.taskIsState(projectKey, taskKey, StateTransition.STATE_IN_REVIEW)) {
-				logger.error("Unable to mark concepts modified since review as task not currently in state 'In Review'." );
+				logger.warn("Unable to mark concepts modified since review as task not currently in state 'In Review'." );
 				return;
 			}
 			
@@ -95,8 +113,14 @@ public class ReviewService {
 				logger.error("Unable to mark concepts modified since review as cannot determine review start date." );
 				return;
 			}
-			
-			Integer branchId = cdoStore.getBranchId(projectKey, taskKey);
+
+			String parentBranchName = projectKey;
+			String childBranchKey = taskKey;
+			if (projectTicket) {
+				parentBranchName = "MAIN";
+				childBranchKey = projectKey;
+			}
+			Integer branchId = cdoStore.getBranchId(parentBranchName, childBranchKey);
 			if (branchId == null) {
 				logger.error("Unable to mark concepts modified since review as cannot determine branch Id." );
 				return;
@@ -206,4 +230,5 @@ public class ReviewService {
 	private Collection<ReviewMessageSentListener> getReviewMessageSentListeners() {
 		return applicationContext.getBeansOfType(ReviewMessageSentListener.class).values();
 	}
+
 }

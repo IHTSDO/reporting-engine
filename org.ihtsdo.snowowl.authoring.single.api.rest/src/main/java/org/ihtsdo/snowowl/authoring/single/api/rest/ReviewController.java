@@ -39,6 +39,15 @@ public class ReviewController extends AbstractSnomedRestService {
 		return reviewService.retrieveTaskReview(projectKey, taskKey, Collections.list(request.getLocales()), ControllerHelper.getUsername());
 	}
 
+	@ApiOperation(value="Retrieve the review list for a project")
+	@ApiResponses({
+			@ApiResponse(code = 200, message = "OK")
+	})
+	@RequestMapping(value="/projects/{projectKey}/review", method= RequestMethod.GET)
+	public AuthoringTaskReview retrieveProjectReview(@PathVariable final String projectKey, HttpServletRequest request) throws BusinessServiceException {
+		return reviewService.retrieveProjectReview(projectKey, Collections.list(request.getLocales()), ControllerHelper.getUsername());
+	}
+
 	@ApiOperation(value="Comment on a task")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")

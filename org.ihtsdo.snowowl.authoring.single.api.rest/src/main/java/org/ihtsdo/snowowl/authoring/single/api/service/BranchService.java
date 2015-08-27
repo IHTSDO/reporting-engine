@@ -3,7 +3,6 @@ package org.ihtsdo.snowowl.authoring.single.api.service;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.ConflictReport;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.MergeRequest;
-import org.ihtsdo.snowowl.authoring.single.api.review.domain.ReviewMessage;
 import org.ihtsdo.snowowl.authoring.single.api.review.pojo.AuthoringTaskReview;
 
 import java.util.ArrayList;
@@ -29,5 +28,7 @@ public interface BranchService {
 	AuthoringTaskReview diffProjectAgainstTask(String projectKey,
 			String taskKey, List<Locale> locales) throws ExecutionException,
 			InterruptedException;
-	
+
+	AuthoringTaskReview diffProjectAgainstMain(String projectKey, List<Locale> locales) throws ExecutionException, InterruptedException;
+
 }

@@ -6,11 +6,9 @@ import com.b2international.snowowl.datastore.server.review.Review;
 import com.b2international.snowowl.datastore.server.review.ReviewStatus;
 import com.b2international.snowowl.eventbus.IEventBus;
 import com.b2international.snowowl.snomed.api.ISnomedDescriptionService;
-
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.ConflictReport;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.MergeRequest;
-import org.ihtsdo.snowowl.authoring.single.api.review.domain.ReviewMessage;
 import org.ihtsdo.snowowl.authoring.single.api.review.pojo.AuthoringTaskReview;
 import org.ihtsdo.snowowl.authoring.single.api.review.pojo.ChangeType;
 import org.ihtsdo.snowowl.authoring.single.api.review.pojo.ReviewConcept;
@@ -20,11 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 public class BranchServiceImpl implements BranchService {
@@ -43,8 +37,6 @@ public class BranchServiceImpl implements BranchService {
 	public static final String SNOMED_TS_REPOSITORY_ID = "snomedStore";
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 	
-	private enum DIFF_DIRECTION { TASK_FROM_PROJECT, PROJECT_FROM_TASK }
-
 	@Override
 	public void createTaskBranchAndProjectBranchIfNeeded(String projectKey, String taskKey) throws ServiceException {
 		createProjectBranchIfNeeded(projectKey);
@@ -53,30 +45,23 @@ public class BranchServiceImpl implements BranchService {
 
 	@Override
 	public AuthoringTaskReview diffTaskAgainstProject(String projectKey, String taskKey, List<Locale> locales) throws ExecutionException, InterruptedException {
-		return doDiff(projectKey, taskKey, locales, DIFF_DIRECTION.TASK_FROM_PROJECT);
+		return doDiff(getTaskPath(projectKey, taskKey), getProjectPath(projectKey), locales);
+	}
+
+	@Override
+	public AuthoringTaskReview diffProjectAgainstMain(String projectKey, List<Locale> locales) throws ExecutionException, InterruptedException {
+		return doDiff(getProjectPath(projectKey), MAIN, locales);
 	}
 	
 	@Override
 	public AuthoringTaskReview diffProjectAgainstTask(String projectKey, String taskKey, List<Locale> locales) throws ExecutionException, InterruptedException {
-		return doDiff(projectKey, taskKey, locales, DIFF_DIRECTION.PROJECT_FROM_TASK);
+		return doDiff(getProjectPath(projectKey), getTaskPath(projectKey, taskKey), locales);
 	}
 	
-	private AuthoringTaskReview doDiff(String projectKey, String taskKey, List<Locale> locales, DIFF_DIRECTION diffDirection) throws ExecutionException, InterruptedException {
-			
+	private AuthoringTaskReview doDiff(String sourcePath, String targetPath, List<Locale> locales) throws ExecutionException, InterruptedException {
 		final Timer timer = new Timer("Review");
 		final AuthoringTaskReview review = new AuthoringTaskReview();
-		logger.info("Creating TS review - " + diffDirection.toString());
-		final String taskPath = getTaskPath(projectKey, taskKey);
-		final String projectPath = getBranchPath(projectKey);
-		String sourcePath, targetPath;
-		if (diffDirection.equals(DIFF_DIRECTION.TASK_FROM_PROJECT)) {
-			sourcePath = taskPath;
-			targetPath = projectPath;
-		} else {
-			sourcePath = projectPath;
-			targetPath = taskPath;
-		}
-		
+		logger.info("Creating TS review - source {}, target {}", sourcePath, targetPath);
 		final ReviewReply reviewReply = new CreateReviewEvent(SNOMED_TS_REPOSITORY_ID, sourcePath, targetPath)
 				.send(eventBus, ReviewReply.class).get();
 		timer.checkpoint("request review");
@@ -100,9 +85,9 @@ public class BranchServiceImpl implements BranchService {
 		timer.checkpoint("getting changes");
 
 		final ConceptChanges conceptChanges = conceptChangesReply.getConceptChanges();
-		addAllToReview(review, ChangeType.created, conceptChanges.newConcepts(), taskPath, locales);
-		addAllToReview(review, ChangeType.modified, conceptChanges.changedConcepts(), taskPath, locales);
-		addAllToReview(review, ChangeType.deleted, conceptChanges.deletedConcepts(), taskPath, locales);
+		addAllToReview(review, ChangeType.created, conceptChanges.newConcepts(), sourcePath, locales);
+		addAllToReview(review, ChangeType.modified, conceptChanges.changedConcepts(), sourcePath, locales);
+		addAllToReview(review, ChangeType.deleted, conceptChanges.deletedConcepts(), sourcePath, locales);
 		timer.checkpoint("building review with terms");
 		timer.finish();
 		logger.info("Review built");

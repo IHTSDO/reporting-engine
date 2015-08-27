@@ -1,22 +1,12 @@
 package org.ihtsdo.snowowl.authoring.single.api.service.dao;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-
-import com.b2international.snowowl.datastore.config.RepositoryConfiguration;
 import com.b2international.snowowl.core.ApplicationContext;
 import com.b2international.snowowl.core.config.SnowOwlConfiguration;
+import com.b2international.snowowl.datastore.config.RepositoryConfiguration;
+
+import java.sql.*;
+import java.util.Date;
+import java.util.*;
 
 public class CdoStore {
 	
@@ -43,7 +33,7 @@ public class CdoStore {
 	public void init() throws SQLException {
 	
 		getDBConn();
-		preparedStatements = new HashMap<CDOStatement, PreparedStatement>();
+		preparedStatements = new HashMap<>();
 		preparedStatements.put(CDOStatement.GET_BRANCH_ID, conn.prepareStatement(getBranchId));
 		preparedStatements.put(CDOStatement.GET_CONCEPTS_CHANGED_SINCE, conn.prepareStatement(getConceptsChangedSince));
 	}
@@ -58,11 +48,11 @@ public class CdoStore {
 		conn = DriverManager.getConnection(dbUrl, dbProperties);
 	}
 	
-	public Integer getBranchId(String projectKey, String taskKey) throws SQLException {
+	public Integer getBranchId(String parentBranchName, String childBranchName) throws SQLException {
 		
 		PreparedStatement stmt = preparedStatements.get(CDOStatement.GET_BRANCH_ID);
-		stmt.setString(1, taskKey);
-		stmt.setString(2, projectKey);
+		stmt.setString(1, childBranchName);
+		stmt.setString(2, parentBranchName);
 		ResultSet rs = stmt.executeQuery();
 		return rs.next() ? new Integer (rs.getInt(1)) : null; 
 	}
@@ -70,8 +60,7 @@ public class CdoStore {
 	/**
 	 * Returns a list of all concepts modified (including descriptions and relationships)
 	 * since a given date
-	 * @param projectKey
-	 * @param taskKey
+	 * @param branchId
 	 * @param fromDate
 	 * @return
 	 * @throws SQLException

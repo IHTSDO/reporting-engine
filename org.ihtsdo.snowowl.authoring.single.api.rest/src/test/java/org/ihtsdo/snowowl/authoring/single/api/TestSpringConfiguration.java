@@ -79,6 +79,11 @@ public class TestSpringConfiguration {
 					throws ExecutionException, InterruptedException {
 				return null;
 			}
+
+			@Override
+			public AuthoringTaskReview diffProjectAgainstMain(String projectKey, List<Locale> locales) throws ExecutionException, InterruptedException {
+				return null;
+			}
 		};
 	}
 
