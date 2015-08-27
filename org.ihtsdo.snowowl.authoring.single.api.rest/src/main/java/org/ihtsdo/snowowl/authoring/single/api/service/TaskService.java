@@ -2,21 +2,18 @@ package org.ihtsdo.snowowl.authoring.single.api.service;
 
 import com.b2international.snowowl.core.exceptions.ConflictException;
 import com.b2international.snowowl.core.exceptions.NotFoundException;
-
 import net.rcarz.jiraclient.*;
 import net.rcarz.jiraclient.User;
-
-import org.ihtsdo.otf.im.utility.SecurityService;
 import org.ihtsdo.otf.rest.client.OrchestrationRestClient;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.*;
 import org.ihtsdo.snowowl.authoring.single.api.rest.ControllerHelper;
 import org.ihtsdo.snowowl.authoring.single.api.review.service.ReviewService;
+import org.ihtsdo.snowowl.authoring.single.api.service.jira.ImpersonatingJiraClientFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-
 import us.monoid.json.JSONException;
 
 import java.io.IOException;
@@ -40,27 +37,25 @@ public class TaskService {
 	private OrchestrationRestClient orchestrationRestClient;
 
 	@Autowired
-	private SecurityService ims;
-
-	@Autowired
 	private ReviewService reviewService;
 
-	private final JiraClientFactory jiraClientFactory;
+	private final ImpersonatingJiraClientFactory jiraClientFactory;
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	private static final String AUTHORING_TASK_TYPE = "SCA Authoring Task";
 	
-	public TaskService(JiraClientFactory jiraClientFactory, String jiraReviewerField) {
+	public TaskService(ImpersonatingJiraClientFactory jiraClientFactory, String jiraReviewerField) {
 		this.jiraClientFactory = jiraClientFactory;
 		AuthoringTask.setJiraReviewerField(jiraReviewerField);
 	}
 	
 	public List<AuthoringProject> listProjects() throws JiraException, IOException, JSONException, RestClientException {
 		List<AuthoringProject> authoringProjects = new ArrayList<>();
-		for (Issue issue : getJiraClient().searchIssues("type = \"SCA Authoring Project\"").issues) {
+		final JiraClient jiraClient = getJiraClient();
+		for (Issue issue : jiraClient.searchIssues("type = \"SCA Authoring Project\"").issues) {
 			// Get project with all fields
-			Project project = getJiraClient().getProject(issue.getProject().getKey());
+			Project project = jiraClient.getProject(issue.getProject().getKey());
 			authoringProjects.add(buildProject(project));
 		}
 		return authoringProjects;
@@ -154,13 +149,10 @@ public class TaskService {
 	}
 
 	public AuthoringTask createTask(String projectKey, AuthoringTaskCreateRequest taskCreateRequest) throws JiraException, ServiceException {
-		//The task should be assigned to the currently logged in user
-		String currentUser = ims.getCurrentLogin();
-
 		Issue jiraIssue = getJiraClient().createIssue(projectKey, AUTHORING_TASK_TYPE)
 				.field(Field.SUMMARY, taskCreateRequest.getSummary())
 				.field(Field.DESCRIPTION, taskCreateRequest.getDescription())
-				.field(Field.ASSIGNEE, currentUser)
+				.field(Field.ASSIGNEE, getUsername())
 				.execute();
 
 		AuthoringTask authoringTask = new AuthoringTask(jiraIssue);
@@ -169,7 +161,7 @@ public class TaskService {
 	}
 
 	private List<AuthoringTask> buildAuthoringTasks(List<Issue> issues) throws RestClientException {
-		final String username = ControllerHelper.getUsername();
+		final String username = getUsername();
 		List<AuthoringTask> allTasks = new ArrayList<>();
 		//Map of task paths to tasks
 		Map<String, AuthoringTask> matureTasks = new HashMap<String, AuthoringTask>();
@@ -275,22 +267,22 @@ public class TaskService {
 					.append(stateTransition.getTransition())
 					.append("' due to: ")
 					.append(je.getMessage());
+			stateTransition.setErrorMessage(sb.toString());
 			stateTransition.transitionSuccessful(false);
 			stateTransition.experiencedException(true);
-			stateTransition.setErrorMessage(sb.toString());
 		}
 	}
 
-	private JiraClient getJiraClient() throws JiraException {
-		return jiraClientFactory.getInstance();
+	private JiraClient getJiraClient() {
+		return jiraClientFactory.getImpersonatingInstance(getUsername());
+	}
+
+	private String getUsername() {
+		return ControllerHelper.getUsername();
 	}
 
 	private String toString(String projectKey, String taskKey) {
-		StringBuilder sb = new StringBuilder();
-		sb.append(projectKey)
-				.append("/")
-				.append(taskKey);
-		return sb.toString();
+		return projectKey + "/" + taskKey;
 	}
 
 	public AuthoringTask updateTask(String projectKey, String taskKey, AuthoringTaskUpdateRequest updatedTask) throws BusinessServiceException,

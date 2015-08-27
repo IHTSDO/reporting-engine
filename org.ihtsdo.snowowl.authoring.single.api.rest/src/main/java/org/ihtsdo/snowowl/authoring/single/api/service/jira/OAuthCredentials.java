@@ -5,6 +5,8 @@ import com.google.gdata.client.authn.oauth.OAuthParameters;
 import com.google.gdata.client.authn.oauth.OAuthRsaSha1Signer;
 import com.google.gdata.client.authn.oauth.OAuthUtil;
 import net.rcarz.jiraclient.ICredentials;
+import net.rcarz.jiraclient.JiraException;
+import net.rcarz.jiraclient.RestClient;
 import org.apache.http.HttpRequest;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.methods.HttpRequestBase;
@@ -14,11 +16,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sun.misc.BASE64Decoder;
 
-import java.io.DataInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
@@ -45,16 +45,25 @@ public class OAuthCredentials implements ICredentials {
 	private static final String BLANK = "";
 	private static final String OAUTH_SIGNATURE = "oauth_signature";
 
-	private String username;
-	private String consumerKey;
-	private String privateKeyPath;
+	private final String username;
+	private final String consumerKey;
+	private final PrivateKey privateKey;
 
-	private Logger logger = LoggerFactory.getLogger(getClass());
+	private static Logger logger = LoggerFactory.getLogger(OAuthCredentials.class);
 
-	public OAuthCredentials(String username, String consumerKey, String privateKeyPath) {
+	public OAuthCredentials(String username, String consumerKey, PrivateKey privateKey) {
 		this.username = username;
 		this.consumerKey = consumerKey;
-		this.privateKeyPath = privateKeyPath;
+		this.privateKey = privateKey;
+	}
+
+	public OAuthCredentials(String username, String consumerKey, String privateKeyPath) throws NoSuchAlgorithmException, IOException, InvalidKeySpecException {
+		this(username, consumerKey, getPrivateKey(privateKeyPath));
+	}
+
+	@Override
+	public void initialize(RestClient restClient) throws JiraException {
+
 	}
 
 	@Override
@@ -63,45 +72,40 @@ public class OAuthCredentials implements ICredentials {
 			HttpRequestBase requestBase = (HttpRequestBase) request;
 			try {
 				final String uri = requestBase.getRequestLine().getUri();
-				logger.info("Initial uri {}", uri);
+				logger.debug("Initial uri {}", uri);
 
-				PrivateKey privateKey = getPrivateKey(privateKeyPath);
-				if (privateKey != null) {
-					// Gather OAuth params
-					final URIBuilder uriBuilder = new URIBuilder(uri);
+				// Gather OAuth params
+				final URIBuilder uriBuilder = new URIBuilder(uri);
 
-					Map<String, String> params = nameValuePairsToMap(uriBuilder.getQueryParams());
-					params.put(OAUTH_CONSUMER_KEY, consumerKey);
-					params.put(OAUTH_TIMESTAMP, OAuthUtil.getTimestamp());
-					params.put(OAUTH_NONCE, OAuthUtil.getNonce());
-					params.put(USER_ID, username);
-					params.put(OAUTH_SIGNATURE_METHOD, RSA_SHA1);
-					params.put(OAUTH_TOKEN, BLANK);
+				Map<String, String> params = nameValuePairsToMap(uriBuilder.getQueryParams());
+				params.put(OAUTH_CONSUMER_KEY, consumerKey);
+				params.put(OAUTH_TIMESTAMP, OAuthUtil.getTimestamp());
+				params.put(OAUTH_NONCE, OAuthUtil.getNonce());
+				params.put(USER_ID, username);
+				params.put(OAUTH_SIGNATURE_METHOD, RSA_SHA1);
+				params.put(OAUTH_TOKEN, BLANK);
 
-					// Build oauth_signature
-					String baseString = OAuthUtil.getSignatureBaseString(uri, requestBase.getRequestLine().getMethod(), params);
+				// Build oauth_signature
+				String baseString = OAuthUtil.getSignatureBaseString(uri, requestBase.getRequestLine().getMethod(), params);
 
-					// Force blank oauth_token into the base string
-					String timestamp = OAUTH_TIMESTAMP + "%3D" + params.get(OAUTH_TIMESTAMP) + "%26";
-					baseString = baseString.replace(timestamp, timestamp + "oauth_token%3D%26");
+				// Force blank oauth_token into the base string
+				String timestamp = OAUTH_TIMESTAMP + "%3D" + params.get(OAUTH_TIMESTAMP) + "%26";
+				baseString = baseString.replace(timestamp, timestamp + "oauth_token%3D%26");
 
-					logger.info("baseString {}", baseString);
-					final OAuthParameters oauthParameters = new OAuthParameters();
-					for (String key : params.keySet()) {
-						oauthParameters.addCustomBaseParameter(key, params.get(key));
-					}
-					OAuthRsaSha1Signer rsaSigner = new OAuthRsaSha1Signer(privateKey);
-					String signature = rsaSigner.getSignature(baseString, oauthParameters);
-					params.put(OAUTH_SIGNATURE, signature);
-					uriBuilder.setParameters(mapToNameValuePairs(params));
-
-					final URI signedUri = uriBuilder.build();
-					logger.info("Signed uri {}", signedUri);
-					requestBase.setURI(signedUri);
-				} else {
-					logger.error("Failed to load private key.");
+				logger.debug("baseString {}", baseString);
+				final OAuthParameters oauthParameters = new OAuthParameters();
+				for (String key : params.keySet()) {
+					oauthParameters.addCustomBaseParameter(key, params.get(key));
 				}
-			} catch (IOException | GeneralSecurityException | OAuthException | URISyntaxException e) {
+				OAuthRsaSha1Signer rsaSigner = new OAuthRsaSha1Signer(privateKey);
+				String signature = rsaSigner.getSignature(baseString, oauthParameters);
+				params.put(OAUTH_SIGNATURE, signature);
+				uriBuilder.setParameters(mapToNameValuePairs(params));
+
+				final URI signedUri = uriBuilder.build();
+				logger.debug("Signed uri {}", signedUri);
+				requestBase.setURI(signedUri);
+			} catch (OAuthException | URISyntaxException e) {
 				logger.error("Failed to sign jira http request.", e);
 			}
 		} else {
@@ -112,6 +116,10 @@ public class OAuthCredentials implements ICredentials {
 	@Override
 	public String getLogonName() {
 		return username;
+	}
+
+	@Override
+	public void logout(RestClient restClient) throws JiraException {
 	}
 
 	private Map<String, String> nameValuePairsToMap(List<NameValuePair> queryParams) {
@@ -132,12 +140,20 @@ public class OAuthCredentials implements ICredentials {
 
 	/*
 	 * Creates a RSAPrivateKey from the PEM file.
+	 * This method is a little expensive. Building this key once and reusing is most efficient.
 	 */
-	private PrivateKey getPrivateKey(String privKeyPath) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+	public static PrivateKey getPrivateKey(String privKeyPath) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
+		final File privateKeyFile = new File(privKeyPath);
+		if (!privateKeyFile.isFile()) {
+			logger.error("Failed to load private key using path {}", privKeyPath);
+			throw new FileNotFoundException("Private key not found.");
+		}
+
 		String privateKeyString;
-		try (DataInputStream dis = new DataInputStream(getClass().getClassLoader().getResourceAsStream(privKeyPath))) {
-			byte[] privKeyBytes = new byte[dis.available()];
-			dis.readFully(privKeyBytes);
+		try (InputStream inputStream = new FileInputStream(privateKeyFile)) {
+			DataInputStream dataInputStream = new DataInputStream(inputStream);
+			byte[] privKeyBytes = new byte[dataInputStream.available()];
+			dataInputStream.readFully(privKeyBytes);
 			privateKeyString = new String(privKeyBytes, UTF_8);
 		}
 
