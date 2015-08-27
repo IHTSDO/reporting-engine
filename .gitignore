@@ -3,3 +3,5 @@ bin
 .*
 *.iml
 *.sh
+
+*.pem
