@@ -14,8 +14,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
-import org.springframework.beans.factory.annotation.Autowired;
-
 import com.b2international.snowowl.datastore.config.RepositoryConfiguration;
 import com.b2international.snowowl.core.ApplicationContext;
 import com.b2international.snowowl.core.config.SnowOwlConfiguration;
@@ -25,6 +23,7 @@ public class CdoStore {
 	private Map <CDOStatement, PreparedStatement> preparedStatements;
 	
 	private static final String DB_NAME = "snomedStore";
+	private static final String DB_ADDITIONAL_PROPERTIES = "&autoReconnect=true";
 	
 	enum CDOStatement { GET_BRANCH_ID, GET_CONCEPTS_CHANGED_SINCE };
 	
@@ -55,7 +54,8 @@ public class CdoStore {
 		Map<Object, Object> propertyMap = config.getDatasourceProperties(DB_NAME);
 		Properties dbProperties = new Properties();
 		dbProperties.putAll(propertyMap);
-		conn = DriverManager.getConnection(propertyMap.get("uRL").toString(), dbProperties);
+		String dbUrl = propertyMap.get("uRL").toString() + DB_ADDITIONAL_PROPERTIES;
+		conn = DriverManager.getConnection(dbUrl, dbProperties);
 	}
 	
 	public Integer getBranchId(String projectKey, String taskKey) throws SQLException {
