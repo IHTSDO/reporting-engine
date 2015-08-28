@@ -1,14 +1,18 @@
 package org.ihtsdo.snowowl.authoring.single.api.service;
 
+import com.b2international.snowowl.datastore.server.branch.Branch;
 import com.b2international.snowowl.datastore.server.events.*;
 import com.b2international.snowowl.datastore.server.review.ConceptChanges;
 import com.b2international.snowowl.datastore.server.review.Review;
 import com.b2international.snowowl.datastore.server.review.ReviewStatus;
 import com.b2international.snowowl.eventbus.IEventBus;
 import com.b2international.snowowl.snomed.api.ISnomedDescriptionService;
+
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.ConflictReport;
+import org.ihtsdo.snowowl.authoring.single.api.pojo.EntityType;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.MergeRequest;
+import org.ihtsdo.snowowl.authoring.single.api.pojo.Notification;
 import org.ihtsdo.snowowl.authoring.single.api.review.pojo.AuthoringTaskReview;
 import org.ihtsdo.snowowl.authoring.single.api.review.pojo.ChangeType;
 import org.ihtsdo.snowowl.authoring.single.api.review.pojo.ReviewConcept;
@@ -28,6 +32,9 @@ public class BranchServiceImpl implements BranchService {
 	
 	@Autowired
 	private IEventBus eventBus;
+	
+	@Autowired
+	private NotificationService notificationService;
 
 	@Autowired
 	private ISnomedDescriptionService descriptionService;
@@ -37,8 +44,8 @@ public class BranchServiceImpl implements BranchService {
 	public static final String SNOMED_TS_REPOSITORY_ID = "snomedStore";
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 	
-	private enum DIFF_DIRECTION { TASK_FROM_PROJECT, PROJECT_FROM_TASK }
 	private static final int REVIEW_TIMEOUT = 60; //Minutes
+	private static final int MERGE_TIMEOUT = 60; //Minutes
 
 	@Override
 	public void createTaskBranchAndProjectBranchIfNeeded(String projectKey, String taskKey) throws ServiceException {
@@ -54,6 +61,14 @@ public class BranchServiceImpl implements BranchService {
 	@Override
 	public AuthoringTaskReview diffProjectAgainstMain(String projectKey, List<Locale> locales) throws ExecutionException, InterruptedException {
 		return doDiff(getProjectPath(projectKey), MAIN, locales);
+	}
+	
+	@Override
+	public Branch rebaseTask(String projectKey, String taskKey, MergeRequest mergeRequest, String username) throws BusinessServiceException {
+		Branch branch = mergeBranch (getProjectPath(projectKey), getTaskPath(projectKey, taskKey), mergeRequest.getSourceReviewId(), username);
+		String resultMessage = "Rebase completed without conflicts";
+		notificationService.queueNotification(username, new Notification(projectKey, taskKey, EntityType.Rebase, resultMessage));
+		return branch;
 	}
 	
 	@Override
@@ -125,6 +140,17 @@ public class BranchServiceImpl implements BranchService {
 	public String getProjectPath(String projectKey) {
 		return getBranchPath(projectKey);
 	}
+	
+	private Branch mergeBranch(String sourcePath, String targetPath, String reviewId, String username) throws BusinessServiceException {
+		try {
+			String commitMsg = username + " performed merge of " + sourcePath + " to " + targetPath;
+			MergeEvent mergeEvent = new MergeEvent( SNOMED_TS_REPOSITORY_ID, sourcePath, targetPath, commitMsg, reviewId);
+			BranchReply branchReply = mergeEvent.send(eventBus, BranchReply.class).get(MERGE_TIMEOUT, TimeUnit.MINUTES);
+			return branchReply.getBranch();
+		} catch (InterruptedException | ExecutionException | TimeoutException e) {
+			throw new BusinessServiceException ("Failure while attempting to merge " + sourcePath + " to " + targetPath + " due to " + e.getMessage(), e );
+		} 
+	}
 
 	@Override
 	public ConflictReport retrieveConflictReport(String projectKey,
@@ -165,13 +191,6 @@ public class BranchServiceImpl implements BranchService {
 		} catch (ExecutionException|InterruptedException e) {
 			throw new BusinessServiceException ("Unable to retrieve Conflict report for " + getTaskPath(projectKey, taskKey), e);
 		}
-	}
-
-	@Override
-	public void rebaseTask(String projectKey, String taskKey,
-			MergeRequest mergeRequest, String username) {
-		logger.warn("Task rebasing not yet implemented");
-		return ;
 	}
 	
 	class AuthoringTaskReviewRunner implements Callable< AuthoringTaskReview> {

@@ -15,6 +15,8 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
+import com.b2international.snowowl.datastore.server.branch.Branch;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -68,9 +70,9 @@ public class TestSpringConfiguration {
 			}
 
 			@Override
-			public void rebaseTask(String projectKey, String taskKey,
+			public Branch rebaseTask(String projectKey, String taskKey,
 					MergeRequest mergeRequest, String username) {
-				
+				return null;
 			}
 
 			@Override

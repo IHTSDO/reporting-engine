@@ -2,14 +2,14 @@ package org.ihtsdo.snowowl.authoring.single.api.pojo;
 
 public class MergeRequest {
 	
-	String reviewId;
+	String sourceReviewId;
 
-	public String getReviewId() {
-		return reviewId;
+	public String getSourceReviewId() {
+		return sourceReviewId;
 	}
 
-	public void setReviewId(String reviewId) {
-		this.reviewId = reviewId;
+	public void setSourceReviewId(String sourceReviewId) {
+		this.sourceReviewId = sourceReviewId;
 	}
 
 }

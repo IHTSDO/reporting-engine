@@ -5,6 +5,8 @@ import org.ihtsdo.snowowl.authoring.single.api.pojo.ConflictReport;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.MergeRequest;
 import org.ihtsdo.snowowl.authoring.single.api.review.pojo.AuthoringTaskReview;
 
+import com.b2international.snowowl.datastore.server.branch.Branch;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -22,8 +24,8 @@ public interface BranchService {
 	ConflictReport retrieveConflictReport(String projectKey, String taskKey,
 			ArrayList<Locale> list) throws BusinessServiceException;
 
-	void rebaseTask(String projectKey, String taskKey,
-			MergeRequest mergeRequest, String username);
+	Branch rebaseTask(String projectKey, String taskKey,
+			MergeRequest mergeRequest, String username) throws BusinessServiceException;
 
 	AuthoringTaskReview diffProjectAgainstTask(String projectKey,
 			String taskKey, List<Locale> locales) throws ExecutionException,
