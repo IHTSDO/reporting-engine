@@ -86,6 +86,13 @@ public class TestSpringConfiguration {
 			public AuthoringTaskReview diffProjectAgainstMain(String projectKey, List<Locale> locales) throws ExecutionException, InterruptedException {
 				return null;
 			}
+
+			@Override
+			public Branch promoteTask(String projectKey, String taskKey,
+					MergeRequest mergeRequest, String username)
+					throws BusinessServiceException {
+				return null;
+			}
 		};
 	}
 

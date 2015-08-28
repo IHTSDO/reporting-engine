@@ -33,4 +33,7 @@ public interface BranchService {
 
 	AuthoringTaskReview diffProjectAgainstMain(String projectKey, List<Locale> locales) throws ExecutionException, InterruptedException;
 
+	Branch promoteTask(String projectKey, String taskKey,
+			MergeRequest mergeRequest, String username) throws BusinessServiceException;
+
 }

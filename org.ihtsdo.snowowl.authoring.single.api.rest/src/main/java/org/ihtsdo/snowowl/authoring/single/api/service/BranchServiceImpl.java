@@ -72,6 +72,14 @@ public class BranchServiceImpl implements BranchService {
 	}
 	
 	@Override
+	public Branch promoteTask(String projectKey, String taskKey, MergeRequest mergeRequest, String username) throws BusinessServiceException {
+		Branch branch = mergeBranch (getTaskPath(projectKey, taskKey), getProjectPath(projectKey), mergeRequest.getSourceReviewId(), username);
+		String resultMessage = "Promotion completed without conflicts";
+		notificationService.queueNotification(username, new Notification(projectKey, taskKey, EntityType.Promotion, resultMessage));
+		return branch;
+	}
+	
+	@Override
 	public AuthoringTaskReview diffProjectAgainstTask(String projectKey, String taskKey, List<Locale> locales) throws ExecutionException, InterruptedException {
 		return doDiff(getProjectPath(projectKey), getTaskPath(projectKey, taskKey), locales);
 	}
