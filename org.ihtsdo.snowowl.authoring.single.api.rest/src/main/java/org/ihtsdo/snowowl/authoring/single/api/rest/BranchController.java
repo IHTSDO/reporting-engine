@@ -32,7 +32,7 @@ public class BranchController extends AbstractSnomedRestService {
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/projects/{projectKey}/tasks/{taskKey}/rebase", method= RequestMethod.GET)
-	public ConflictReport retrieveTaskReview(@PathVariable final String projectKey, @PathVariable final String taskKey,
+	public ConflictReport retrieveTaskConflicts(@PathVariable final String projectKey, @PathVariable final String taskKey,
 			HttpServletRequest request) throws BusinessServiceException {
 		return branchService.retrieveConflictReport(projectKey, taskKey, Collections.list(request.getLocales()));
 	}
@@ -42,8 +42,7 @@ public class BranchController extends AbstractSnomedRestService {
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/projects/{projectKey}/rebase", method= RequestMethod.GET)
-	public ConflictReport retrieveProjectReview(@PathVariable final String projectKey, @PathVariable final String taskKey,
-			HttpServletRequest request) throws BusinessServiceException {
+	public ConflictReport retrieveProjectConflicts(@PathVariable final String projectKey, HttpServletRequest request) throws BusinessServiceException {
 		return branchService.retrieveConflictReport(projectKey,Collections.list(request.getLocales()));
 	}
 
