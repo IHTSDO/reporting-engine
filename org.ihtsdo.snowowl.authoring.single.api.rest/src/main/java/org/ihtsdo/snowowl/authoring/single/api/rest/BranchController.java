@@ -84,8 +84,7 @@ public class BranchController extends AbstractSnomedRestService {
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/projects/{projectKey}/promote", method= RequestMethod.POST)
-	public void promoteProject(@PathVariable final String projectKey, @PathVariable final String taskKey,
-			@RequestBody MergeRequest mergeRequest) throws BusinessServiceException {
+	public void promoteProject(@PathVariable final String projectKey, @RequestBody MergeRequest mergeRequest) throws BusinessServiceException {
 		//The branch object that's returned from this function is empty, so suppressing it here to avoid confusion.
 		branchService.promoteProject(projectKey, mergeRequest, ControllerHelper.getUsername());
 	}

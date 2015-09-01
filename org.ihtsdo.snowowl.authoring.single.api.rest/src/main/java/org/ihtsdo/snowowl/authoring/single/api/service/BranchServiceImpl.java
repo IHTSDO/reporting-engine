@@ -254,7 +254,12 @@ public class BranchServiceImpl implements BranchService {
 	@Override
 	public void promoteProject(String projectKey,
 			MergeRequest mergeRequest, String username) throws BusinessServiceException {
-		throw new BusinessServiceException ("Not yet implemented");
+		StopWatch stopwatch = new StopWatch();
+		stopwatch.start();
+		mergeBranch (getProjectPath(projectKey), MAIN, mergeRequest.getSourceReviewId(), username);
+		stopwatch.stop();
+		String resultMessage = "Promotion of " + projectKey + " to MAIN completed without conflicts in " + stopwatch;
+		notificationService.queueNotification(username, new Notification(projectKey, EntityType.Promotion, resultMessage));
 	}
 
 }
