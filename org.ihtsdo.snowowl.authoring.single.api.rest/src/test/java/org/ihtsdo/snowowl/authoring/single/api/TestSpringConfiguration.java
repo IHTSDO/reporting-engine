@@ -107,8 +107,9 @@ public class TestSpringConfiguration {
 				return;
 			}
 
+
 			@Override
-			public void promoteProject(String projectKey, String taskKey,
+			public void promoteProject(String projectKey,
 					MergeRequest mergeRequest, String username)
 					throws BusinessServiceException {
 				return;

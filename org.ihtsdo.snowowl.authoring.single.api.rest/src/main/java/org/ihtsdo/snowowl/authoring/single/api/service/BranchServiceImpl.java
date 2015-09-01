@@ -9,6 +9,7 @@ import com.b2international.snowowl.eventbus.IEventBus;
 import com.b2international.snowowl.snomed.api.ISnomedDescriptionService;
 
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
+import org.ihtsdo.snowowl.authoring.single.api.pojo.ConceptConflict;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.ConflictReport;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.EntityType;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.MergeRequest;
@@ -163,41 +164,47 @@ public class BranchServiceImpl implements BranchService {
 	@Override
 	public ConflictReport retrieveConflictReport(String projectKey,
 			String taskKey, ArrayList<Locale> locales) throws BusinessServiceException {
-		try {
-			//Get changes in the task compared to the project, plus changes in the project
-			//compared to the task and determine which ones intersect
+		return createConflictReport (getProjectPath(projectKey), getTaskPath(projectKey, taskKey), locales);
+	}
+	
+
+	private ConflictReport createConflictReport(String sourcePath,
+			String targetPath, ArrayList<Locale> locales) throws BusinessServiceException {	
+	try {
+			//Get changes in the target compared to the source, plus changes in the source
+			//compared to the target and determine which ones intersect
 			ExecutorService executor = Executors.newFixedThreadPool(2);
-			AuthoringTaskReviewRunner taskChangesReviewRunner = new AuthoringTaskReviewRunner (getTaskPath(projectKey, taskKey), getProjectPath(projectKey), locales);
-			AuthoringTaskReviewRunner projectChangesReviewRunner = new AuthoringTaskReviewRunner (getProjectPath(projectKey), getTaskPath(projectKey, taskKey), locales);
+			AuthoringTaskReviewRunner targetChangesReviewRunner = new AuthoringTaskReviewRunner (targetPath, sourcePath, locales);
+			AuthoringTaskReviewRunner sourceChangesReviewRunner = new AuthoringTaskReviewRunner (sourcePath, targetPath, locales);
 			
-			Future<AuthoringTaskReview> taskChangesReview = executor.submit(taskChangesReviewRunner);
-			Future<AuthoringTaskReview> projectChangesReview = executor.submit(projectChangesReviewRunner);
+			Future<AuthoringTaskReview> targetChangesReview = executor.submit(targetChangesReviewRunner);
+			Future<AuthoringTaskReview> sourceChangesReview = executor.submit(sourceChangesReviewRunner);
 			
 			//Wait for both of these to complete
 			executor.shutdown();
 			executor.awaitTermination(REVIEW_TIMEOUT, TimeUnit.MINUTES);
 
-			//Form Set of ProjectChanges so as to avoid n x m iterations
-			Set<String> projectChanges = new HashSet<String>();
-			for (ReviewConcept thisConcept : projectChangesReview.get().getConcepts()) {
-				projectChanges.add(thisConcept.getId());
+			//Form Set of source changes so as to avoid n x m iterations
+			Set<String> sourceChanges = new HashSet<String>();
+			for (ReviewConcept thisConcept : sourceChangesReview.get().getConcepts()) {
+				sourceChanges.add(thisConcept.getId());
 			}
 			
-			List<ReviewConcept> conflictingConcepts = new ArrayList<ReviewConcept>();
-			//Work through taskChanges to find concepts in common
-			for (ReviewConcept thisConcept : taskChangesReview.get().getConcepts()) {
-				if (projectChanges.contains(thisConcept.getId())) {
-					conflictingConcepts.add(thisConcept);
+			List<ConceptConflict> conflictingConcepts = new ArrayList<ConceptConflict>();
+			//Work through Target Changes to find concepts in common
+			for (ReviewConcept thisConcept : targetChangesReview.get().getConcepts()) {
+				if (sourceChanges.contains(thisConcept.getId())) {
+					conflictingConcepts.add(new ConceptConflict(thisConcept.getId()));
 				}
 			}
 			
 			ConflictReport conflictReport = new ConflictReport();
 			conflictReport.setConcepts(conflictingConcepts);
-			conflictReport.setTaskReviewId(taskChangesReview.get().getReviewId());
-			conflictReport.setProjectReviewId(projectChangesReview.get().getReviewId());
+			conflictReport.setTargetReviewId(targetChangesReview.get().getReviewId());
+			conflictReport.setSourceReviewId(sourceChangesReview.get().getReviewId());
 			return conflictReport;
 		} catch (ExecutionException|InterruptedException e) {
-			throw new BusinessServiceException ("Unable to retrieve Conflict report for " + getTaskPath(projectKey, taskKey), e);
+			throw new BusinessServiceException ("Unable to retrieve Conflict report for " + targetPath, e);
 		}
 	}
 	
@@ -222,8 +229,8 @@ public class BranchServiceImpl implements BranchService {
 
 	@Override
 	public ConflictReport retrieveConflictReport(String projectKey,
-			ArrayList<Locale> list) throws BusinessServiceException {
-		throw new BusinessServiceException ("Not yet implemented");
+			ArrayList<Locale> locales) throws BusinessServiceException {
+		return createConflictReport (MAIN, getProjectPath(projectKey), locales);
 	}
 
 	@Override
@@ -233,7 +240,7 @@ public class BranchServiceImpl implements BranchService {
 	}
 
 	@Override
-	public void promoteProject(String projectKey, String taskKey,
+	public void promoteProject(String projectKey,
 			MergeRequest mergeRequest, String username) throws BusinessServiceException {
 		throw new BusinessServiceException ("Not yet implemented");
 	}

@@ -37,12 +37,11 @@ public interface BranchService {
 			MergeRequest mergeRequest, String username) throws BusinessServiceException;
 
 	ConflictReport retrieveConflictReport(String projectKey,
-			ArrayList<Locale> list) throws BusinessServiceException;
+			ArrayList<Locale> locales) throws BusinessServiceException;
 
 	void rebaseProject(String projectKey, MergeRequest mergeRequest,
 			String username) throws BusinessServiceException;
 
-	void promoteProject(String projectKey, String taskKey,
-			MergeRequest mergeRequest, String username) throws BusinessServiceException;
+	void promoteProject(String projectKey, MergeRequest mergeRequest, String username) throws BusinessServiceException;
 
 }

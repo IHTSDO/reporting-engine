@@ -2,30 +2,30 @@ package org.ihtsdo.snowowl.authoring.single.api.pojo;
 
 import java.util.List;
 
-import org.ihtsdo.snowowl.authoring.single.api.review.pojo.ReviewConcept;
-
 public class ConflictReport {
 
-	String projectReviewId;
-	String taskReviewId;
-	private List<ReviewConcept> concepts;
+	String sourceReviewId;
+	String targetReviewId;
+	private List<ConceptConflict> concepts;
 	
-	public String getProjectReviewId() {
-		return projectReviewId;
+	public String getSourceReviewId() {
+		return sourceReviewId;
 	}
-	public void setProjectReviewId(String projectReviewId) {
-		this.projectReviewId = projectReviewId;
+	public void setSourceReviewId(String sourceReviewId) {
+		this.sourceReviewId = sourceReviewId;
 	}
-	public String getTaskReviewId() {
-		return taskReviewId;
+	public String getTargetReviewId() {
+		return targetReviewId;
 	}
-	public void setTaskReviewId(String taskReviewId) {
-		this.taskReviewId = taskReviewId;
+	public void setTargetReviewId(String targetReviewId) {
+		this.targetReviewId = targetReviewId;
 	}
-	public List<ReviewConcept> getConcepts() {
+	public List<ConceptConflict> getConcepts() {
 		return concepts;
 	}
-	public void setConcepts(List<ReviewConcept> concepts) {
+	public void setConcepts(List<ConceptConflict> concepts) {
 		this.concepts = concepts;
 	}
+	
+
 }
