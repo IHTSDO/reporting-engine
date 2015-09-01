@@ -2,8 +2,10 @@ package org.ihtsdo.snowowl.authoring.single.api.service;
 
 import com.b2international.snowowl.core.exceptions.ConflictException;
 import com.b2international.snowowl.core.exceptions.NotFoundException;
+
 import net.rcarz.jiraclient.*;
 import net.rcarz.jiraclient.User;
+
 import org.ihtsdo.otf.rest.client.OrchestrationRestClient;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
@@ -14,6 +16,7 @@ import org.ihtsdo.snowowl.authoring.single.api.service.jira.ImpersonatingJiraCli
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+
 import us.monoid.json.JSONException;
 
 import java.io.IOException;
@@ -243,15 +246,35 @@ public class TaskService {
 		issue.addComment(commentString);
 		issue.update(); // Pick up new comment locally too
 	}
-
+	
 	public void doStateTransition(String projectKey, String taskKey,
 			StateTransition stateTransition) {
+		doStateTransition(projectKey, taskKey, stateTransition, true);
+	}
+	
+	public void doStateTransitionIfRequired(String projectKey, String taskKey,
+			StateTransition st) {
+		doStateTransition(projectKey, taskKey, st, false);
+	}
+
+	private void doStateTransition(String projectKey, String taskKey,
+			StateTransition stateTransition, boolean isRequired) {
 
 		try {
 			Issue issue = getIssue(projectKey, taskKey);
-			issue.transition().execute(stateTransition.getTransition());
-			issue.refresh(); // Synchronize the issue to pick up the new status.
-			stateTransition.transitionSuccessful(true);
+			
+			//If the transition is not necessarily required, check the current status
+			if (!isRequired && !stateTransition.hasInitialState(issue.getStatus().getName())) {
+				String msg = "Ignoring transition of issue " + taskKey + " via transition " + stateTransition.getTransition()
+						+ " as it's currently in state " + issue.getStatus().getName();
+				stateTransition.setErrorMessage(msg);
+				stateTransition.transitionSuccessful(false);
+				stateTransition.experiencedException(false);
+			} else {
+				issue.transition().execute(stateTransition.getTransition());
+				issue.refresh(); // Synchronize the issue to pick up the new status.
+				stateTransition.transitionSuccessful(true);
+			}
 		} catch (JiraException je) {
 			//Did we fail due to a state conflict which we'll say is not really an exception?
 			StringBuilder sb = new StringBuilder();
@@ -266,6 +289,8 @@ public class TaskService {
 			stateTransition.experiencedException(true);
 		}
 	}
+	
+
 
 	private JiraClient getJiraClient() {
 		return jiraClientFactory.getImpersonatingInstance(getUsername());
@@ -385,4 +410,5 @@ public class TaskService {
 			return id2.compareTo(id1);
 		}
 	};
+
 }

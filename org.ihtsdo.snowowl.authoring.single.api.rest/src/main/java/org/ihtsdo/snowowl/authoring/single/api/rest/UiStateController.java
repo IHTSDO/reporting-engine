@@ -49,7 +49,7 @@ public class UiStateController extends AbstractSnomedRestService {
 		//If ticket state is "New" move it to "In Progress".   Don't worry about result, but do log it
 		StateTransition st = new StateTransition(StateTransition.STATE_NEW, 
 												StateTransition.TRANSITION_NEW_TO_IN_PROGRESS);
-		taskService.doStateTransition(projectKey, taskKey, st);
+		taskService.doStateTransitionIfRequired(projectKey, taskKey, st);
 		if (st.experiencedException()) {
 			logger.error(st.getErrorMessage());
 		}
