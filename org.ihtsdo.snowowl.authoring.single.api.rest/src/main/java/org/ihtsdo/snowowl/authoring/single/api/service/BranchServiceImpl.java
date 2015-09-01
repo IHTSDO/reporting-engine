@@ -220,4 +220,22 @@ public class BranchServiceImpl implements BranchService {
 		
 	}
 
+	@Override
+	public ConflictReport retrieveConflictReport(String projectKey,
+			ArrayList<Locale> list) throws BusinessServiceException {
+		throw new BusinessServiceException ("Not yet implemented");
+	}
+
+	@Override
+	public void rebaseProject(String projectKey, MergeRequest mergeRequest,
+			String username) throws BusinessServiceException {
+		throw new BusinessServiceException ("Not yet implemented");
+	}
+
+	@Override
+	public void promoteProject(String projectKey, String taskKey,
+			MergeRequest mergeRequest, String username) throws BusinessServiceException {
+		throw new BusinessServiceException ("Not yet implemented");
+	}
+
 }

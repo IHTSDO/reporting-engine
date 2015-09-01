@@ -36,6 +36,16 @@ public class BranchController extends AbstractSnomedRestService {
 			HttpServletRequest request) throws BusinessServiceException {
 		return branchService.retrieveConflictReport(projectKey, taskKey, Collections.list(request.getLocales()));
 	}
+	
+	@ApiOperation(value="Generate the conflicts report between the Project and MAIN")
+	@ApiResponses({
+			@ApiResponse(code = 200, message = "OK")
+	})
+	@RequestMapping(value="/projects/{projectKey}/rebase", method= RequestMethod.GET)
+	public ConflictReport retrieveProjectReview(@PathVariable final String projectKey, @PathVariable final String taskKey,
+			HttpServletRequest request) throws BusinessServiceException {
+		return branchService.retrieveConflictReport(projectKey,Collections.list(request.getLocales()));
+	}
 
 	@ApiOperation(value="Rebase the task from the project")
 	@ApiResponses({
@@ -48,15 +58,26 @@ public class BranchController extends AbstractSnomedRestService {
 		branchService.rebaseTask(projectKey, taskKey, mergeRequest, ControllerHelper.getUsername());
 	}
 	
-	@ApiOperation(value="Promote the task to the project")
+	@ApiOperation(value="Rebase the project from MAIN")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
 	})
-	@RequestMapping(value="/projects/{projectKey}/tasks/{taskKey}/promote", method= RequestMethod.POST)
+	@RequestMapping(value="/projects/{projectKey}/rebase", method= RequestMethod.POST)
+	public void rebaseProject(@PathVariable final String projectKey, @PathVariable final String taskKey,
+			@RequestBody MergeRequest mergeRequest) throws BusinessServiceException {
+		//The branch object that's returned from this function is empty, so suppressing it here to avoid confusion.
+		branchService.rebaseProject(projectKey, mergeRequest, ControllerHelper.getUsername());
+	}
+	
+	@ApiOperation(value="Promote the project to MAIN")
+	@ApiResponses({
+			@ApiResponse(code = 200, message = "OK")
+	})
+	@RequestMapping(value="/projects/{projectKey}/promote", method= RequestMethod.POST)
 	public void promoteTask(@PathVariable final String projectKey, @PathVariable final String taskKey,
 			@RequestBody MergeRequest mergeRequest) throws BusinessServiceException {
 		//The branch object that's returned from this function is empty, so suppressing it here to avoid confusion.
-		branchService.promoteTask(projectKey, taskKey, mergeRequest, ControllerHelper.getUsername());
+		branchService.promoteProject(projectKey, taskKey, mergeRequest, ControllerHelper.getUsername());
 	}
 
 

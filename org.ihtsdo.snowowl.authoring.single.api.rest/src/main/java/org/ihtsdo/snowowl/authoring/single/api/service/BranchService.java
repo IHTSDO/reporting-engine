@@ -36,4 +36,13 @@ public interface BranchService {
 	Branch promoteTask(String projectKey, String taskKey,
 			MergeRequest mergeRequest, String username) throws BusinessServiceException;
 
+	ConflictReport retrieveConflictReport(String projectKey,
+			ArrayList<Locale> list) throws BusinessServiceException;
+
+	void rebaseProject(String projectKey, MergeRequest mergeRequest,
+			String username) throws BusinessServiceException;
+
+	void promoteProject(String projectKey, String taskKey,
+			MergeRequest mergeRequest, String username) throws BusinessServiceException;
+
 }
