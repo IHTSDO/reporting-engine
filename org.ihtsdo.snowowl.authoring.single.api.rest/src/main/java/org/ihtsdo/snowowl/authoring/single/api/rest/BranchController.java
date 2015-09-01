@@ -62,7 +62,7 @@ public class BranchController extends AbstractSnomedRestService {
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/projects/{projectKey}/rebase", method= RequestMethod.POST)
-	public void rebaseProject(@PathVariable final String projectKey, @PathVariable final String taskKey,
+	public void rebaseProject(@PathVariable final String projectKey,
 			@RequestBody MergeRequest mergeRequest) throws BusinessServiceException {
 		//The branch object that's returned from this function is empty, so suppressing it here to avoid confusion.
 		branchService.rebaseProject(projectKey, mergeRequest, ControllerHelper.getUsername());

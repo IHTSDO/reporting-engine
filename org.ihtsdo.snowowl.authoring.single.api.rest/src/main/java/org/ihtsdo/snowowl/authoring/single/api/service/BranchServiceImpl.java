@@ -8,6 +8,7 @@ import com.b2international.snowowl.datastore.server.review.ReviewStatus;
 import com.b2international.snowowl.eventbus.IEventBus;
 import com.b2international.snowowl.snomed.api.ISnomedDescriptionService;
 
+import org.apache.commons.lang.time.StopWatch;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.ConceptConflict;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.ConflictReport;
@@ -66,16 +67,22 @@ public class BranchServiceImpl implements BranchService {
 	
 	@Override
 	public Branch rebaseTask(String projectKey, String taskKey, MergeRequest mergeRequest, String username) throws BusinessServiceException {
+		StopWatch stopwatch = new StopWatch();
+		stopwatch.start();
 		Branch branch = mergeBranch (getProjectPath(projectKey), getTaskPath(projectKey, taskKey), mergeRequest.getSourceReviewId(), username);
-		String resultMessage = "Rebase completed without conflicts";
+		stopwatch.stop();
+		String resultMessage = "Rebase from project to " + taskKey +  " completed without conflicts in " + stopwatch;
 		notificationService.queueNotification(username, new Notification(projectKey, taskKey, EntityType.Rebase, resultMessage));
 		return branch;
 	}
 	
 	@Override
 	public Branch promoteTask(String projectKey, String taskKey, MergeRequest mergeRequest, String username) throws BusinessServiceException {
+		StopWatch stopwatch = new StopWatch();
+		stopwatch.start();
 		Branch branch = mergeBranch (getTaskPath(projectKey, taskKey), getProjectPath(projectKey), mergeRequest.getSourceReviewId(), username);
-		String resultMessage = "Promotion completed without conflicts";
+		stopwatch.stop();
+		String resultMessage = "Promotion of " + taskKey + " completed without conflicts in " + stopwatch;
 		notificationService.queueNotification(username, new Notification(projectKey, taskKey, EntityType.Promotion, resultMessage));
 		return branch;
 	}
@@ -236,7 +243,12 @@ public class BranchServiceImpl implements BranchService {
 	@Override
 	public void rebaseProject(String projectKey, MergeRequest mergeRequest,
 			String username) throws BusinessServiceException {
-		throw new BusinessServiceException ("Not yet implemented");
+		StopWatch stopwatch = new StopWatch();
+		stopwatch.start();
+		mergeBranch (MAIN, getProjectPath(projectKey), mergeRequest.getSourceReviewId(), username);
+		stopwatch.stop();
+		String resultMessage = "Rebase from MAIN to " + projectKey + " completed without conflicts in " + stopwatch;
+		notificationService.queueNotification(username, new Notification(projectKey, EntityType.Rebase, resultMessage));
 	}
 
 	@Override
