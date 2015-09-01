@@ -95,13 +95,7 @@ public class TaskService {
 	}
 
 	private Issue getIssue(String projectKey, String taskKey) throws JiraException {
-		getProjectOrThrow(projectKey);
-		List<Issue> issues = getJiraClient().searchIssues(getProjectTaskJQL(projectKey) + " AND key = " + taskKey).issues;
-		if (!issues.isEmpty()) {
-			return issues.get(0);
-		} else {
-			throw new NotFoundException("Task", taskKey);
-		}
+		return getIssue(projectKey, taskKey, false);
 	}
 	
 	private Issue getIssue(String projectKey, String taskKey, boolean includeAll) throws JiraException {
@@ -109,7 +103,7 @@ public class TaskService {
 		if (includeAll) {
 			return getJiraClient().getIssue(taskKey, INCLUDED_FIELDS, "changelog");
 		} else {
-			return getIssue(projectKey, taskKey);
+			return getJiraClient().getIssue(taskKey, INCLUDED_FIELDS);
 		}
 	}
 	
