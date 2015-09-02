@@ -69,7 +69,7 @@ public class TaskService {
 
 	private AuthoringProject buildProject(Project project) throws IOException, JSONException, RestClientException {
 		final String validationStatus = orchestrationRestClient.retrieveValidationStatuses(Collections.singletonList(PathHelper.getPath(project.getKey()))).get(0);
-		final String latestClassificationJson = classificationService.getLatestClassification(project.getKey(), null);
+		final String latestClassificationJson = classificationService.getLatestClassification(PathHelper.getPath(project.getKey()));
 		return new AuthoringProject(project.getKey(), project.getName(), getPojoUserOrNull(project.getLead()), validationStatus, latestClassificationJson);
 	}
 
@@ -94,7 +94,7 @@ public class TaskService {
 		return null;
 	}
 
-	public List<AuthoringTask> listTasks(String projectKey) throws JiraException, RestClientException, IOException {
+	public List<AuthoringTask> listTasks(String projectKey) throws JiraException, RestClientException {
 		getProjectOrThrow(projectKey);
 		List<Issue> issues = searchIssues(getProjectTaskJQL(projectKey), 0, 0);  //unlimited recovery for now
 		return buildAuthoringTasks(issues);
@@ -104,7 +104,7 @@ public class TaskService {
 		try {
 			Issue issue = getIssue(projectKey, taskKey);
 			return buildAuthoringTasks(Collections.singletonList(issue)).get(0);
-		} catch (JiraException | RestClientException | IOException e) {
+		} catch (JiraException | RestClientException e) {
 			throw new BusinessServiceException("Failed to retrieve task " + toString(projectKey, taskKey), e);
 		}
 	}
@@ -148,7 +148,7 @@ public class TaskService {
 		
 	}
 
-	public List<AuthoringTask> listMyTasks(String username) throws JiraException, RestClientException, IOException {
+	public List<AuthoringTask> listMyTasks(String username) throws JiraException, RestClientException {
 		List<Issue> issues = getJiraClient().searchIssues("assignee = \"" + username + "\" AND type = \"" + AUTHORING_TASK_TYPE + "\"").issues;
 		return buildAuthoringTasks(issues);
 	}
@@ -169,7 +169,7 @@ public class TaskService {
 		return authoringTask;
 	}
 
-	private List<AuthoringTask> buildAuthoringTasks(List<Issue> issues) throws RestClientException, IOException {
+	private List<AuthoringTask> buildAuthoringTasks(List<Issue> issues) throws RestClientException {
 		final String username = getUsername();
 		List<AuthoringTask> allTasks = new ArrayList<>();
 		//Map of task paths to tasks
@@ -179,7 +179,7 @@ public class TaskService {
 			allTasks.add(task);
 			//We only need to recover classification and validation statuses for task that are not new ie mature
 			if (task.getStatus() != TaskStatus.NEW) {
-				String latestClassificationJson = classificationService.getLatestClassification(issue.getProject().getKey(), issue.getKey());
+				String latestClassificationJson = classificationService.getLatestClassification(PathHelper.getPath(issue.getProject().getKey(), issue.getKey()));
 				task.setLatestClassificationJson(latestClassificationJson);
 				startedTasks.put(PathHelper.getTaskPath(issue), task);
 			}

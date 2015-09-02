@@ -8,19 +8,15 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-public class ArbitraryJsonStore {
+public class ArbitraryJsonService {
 
 	public static final String UTF_8 = "UTF-8";
 
 	private File baseDirectory;
-	private Logger logger = LoggerFactory.getLogger(ArbitraryJsonStore.class);
+	private Logger logger = LoggerFactory.getLogger(ArbitraryJsonService.class);
 
-	public ArbitraryJsonStore() {
+	public ArbitraryJsonService() {
 		this.baseDirectory = new File("resources/org.ihtsdo.snowowl.authoring.single.api");
-	}
-
-	public ArbitraryJsonStore(File baseDirectory) {
-		this.baseDirectory = baseDirectory;
 	}
 
 	public void write(String path, String json) throws IOException {
@@ -31,7 +27,7 @@ public class ArbitraryJsonStore {
 		return new String(Files.readAllBytes(getFile(path)), UTF_8);
 	}
 
-	protected Path getFile(String relativePath) {
+	private Path getFile(String relativePath) {
 		File file = new File(baseDirectory, relativePath);
 		File parentDirectory = file.getParentFile();
 		if (!parentDirectory.isDirectory()) {

@@ -18,8 +18,6 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import us.monoid.json.JSONException;
 
-import java.io.IOException;
-
 @Api("Authoring Projects")
 @RestController
 @RequestMapping(produces={AbstractRestService.V1_MEDIA_TYPE, MediaType.APPLICATION_JSON_VALUE})
@@ -33,7 +31,7 @@ public class ClassificationController extends AbstractSnomedRestService {
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/projects/{projectKey}/tasks/{taskKey}/classifications", method= RequestMethod.POST)
-	public Classification startClassificationOfTask(@PathVariable final String projectKey, @PathVariable final String taskKey) throws JiraException, RestClientException, JSONException, IOException {
+	public Classification startClassificationOfTask(@PathVariable final String projectKey, @PathVariable final String taskKey) throws JiraException, RestClientException, JSONException {
 		return classificationService.startClassification(projectKey, taskKey, ControllerHelper.getUsername());
 	}
 
@@ -42,7 +40,7 @@ public class ClassificationController extends AbstractSnomedRestService {
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/projects/{projectKey}/classifications", method= RequestMethod.POST)
-	public Classification startClassificationOfProject(@PathVariable final String projectKey) throws JiraException, RestClientException, JSONException, IOException {
+	public Classification startClassificationOfProject(@PathVariable final String projectKey) throws JiraException, RestClientException, JSONException {
 		return classificationService.startClassification(projectKey, null, ControllerHelper.getUsername());
 	}
 

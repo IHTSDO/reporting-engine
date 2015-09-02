@@ -60,7 +60,7 @@ public class ProjectController extends AbstractSnomedRestService {
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/projects/{projectKey}/tasks", method= RequestMethod.GET)
-	public List<AuthoringTask> listTasks(@PathVariable final String projectKey) throws JiraException, RestClientException, IOException {
+	public List<AuthoringTask> listTasks(@PathVariable final String projectKey) throws JiraException, RestClientException {
 		return taskService.listTasks(projectKey);
 	}
 
@@ -69,7 +69,7 @@ public class ProjectController extends AbstractSnomedRestService {
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/projects/my-tasks", method= RequestMethod.GET)
-	public List<AuthoringTask> listMyTasks() throws JiraException, RestClientException, IOException {
+	public List<AuthoringTask> listMyTasks() throws JiraException, RestClientException {
 		UserDetails details = ControllerHelper.getUserDetails();
 		return taskService.listMyTasks(details.getUsername());
 	}
