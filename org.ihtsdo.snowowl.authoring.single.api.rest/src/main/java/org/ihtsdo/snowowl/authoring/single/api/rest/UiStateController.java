@@ -4,15 +4,14 @@ import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
-
+import net.rcarz.jiraclient.JiraException;
+import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.api.rest.common.AbstractRestService;
 import org.ihtsdo.snowowl.api.rest.common.AbstractSnomedRestService;
 import org.ihtsdo.snowowl.api.rest.common.ControllerHelper;
-import org.ihtsdo.snowowl.authoring.single.api.pojo.StateTransition;
 import org.ihtsdo.snowowl.authoring.single.api.service.TaskService;
+import org.ihtsdo.snowowl.authoring.single.api.service.TaskStatus;
 import org.ihtsdo.snowowl.authoring.single.api.service.UiStateService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
@@ -33,27 +32,20 @@ public class UiStateController extends AbstractSnomedRestService {
 	@Autowired
 	private TaskService taskService;
 	
-	private Logger logger = LoggerFactory.getLogger(UiStateController.class);
-
 	@ApiOperation(value="Persist UI panel state", notes="This endpoint may be used to persist UI state using any json object. " +
-			"State is stored and retrieved under project, task, user and panel.")
+			"State is stored and retrieved under project, task, user and panel. This also sets the task status to In Progress if it's New.")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/projects/{projectKey}/tasks/{taskKey}/ui-state/{panelId}", method= RequestMethod.POST)
 	public void persistUiPanelState(@PathVariable final String projectKey, @PathVariable final String taskKey,
-			@PathVariable final String panelId, @RequestBody final String jsonState) throws IOException {
+			@PathVariable final String panelId, @RequestBody final String jsonState) throws IOException, BusinessServiceException, JiraException {
 
 		UserDetails details = ControllerHelper.getUserDetails();
-		
-		//If ticket state is "New" move it to "In Progress".   Don't worry about result, but do log it
-		StateTransition st = new StateTransition(StateTransition.STATE_NEW, 
-												StateTransition.TRANSITION_NEW_TO_IN_PROGRESS);
-		taskService.doStateTransitionIfRequired(projectKey, taskKey, st);
-		if (st.experiencedException()) {
-			logger.error(st.getErrorMessage());
-		}
-		
+
+		// TODO - move this to an explicit "Start progress" endpoint.
+		taskService.conditionalStateTransition(projectKey, taskKey, TaskStatus.NEW, TaskStatus.IN_PROGRESS);
+
 		uiStateService.persistPanelState(projectKey, taskKey, details.getUsername(), panelId, jsonState);
 	}
 

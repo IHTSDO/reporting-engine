@@ -1,11 +1,8 @@
 package org.ihtsdo.snowowl.authoring.single.api.review.service;
 
 import com.b2international.snowowl.core.exceptions.BadRequestException;
-
 import net.rcarz.jiraclient.JiraException;
-
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
-import org.ihtsdo.snowowl.authoring.single.api.pojo.StateTransition;
 import org.ihtsdo.snowowl.authoring.single.api.review.domain.Branch;
 import org.ihtsdo.snowowl.authoring.single.api.review.domain.ReviewMessage;
 import org.ihtsdo.snowowl.authoring.single.api.review.domain.ReviewMessageRead;
@@ -17,6 +14,7 @@ import org.ihtsdo.snowowl.authoring.single.api.review.repository.ReviewMessageRe
 import org.ihtsdo.snowowl.authoring.single.api.review.repository.ReviewMessageRepository;
 import org.ihtsdo.snowowl.authoring.single.api.service.BranchService;
 import org.ihtsdo.snowowl.authoring.single.api.service.TaskService;
+import org.ihtsdo.snowowl.authoring.single.api.service.TaskStatus;
 import org.ihtsdo.snowowl.authoring.single.api.service.dao.CdoStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +25,6 @@ import org.springframework.stereotype.Service;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
-
 import javax.transaction.Transactional;
 
 @Service
@@ -103,12 +100,12 @@ public class ReviewService {
 	private void markConceptsModifiedSinceReview(String projectKey, String taskKey, List<ReviewConcept> reviewConcepts, boolean projectTicket) throws BusinessServiceException {
 		try {
 			//Ensure that we're currently in state 'In Review' and find out from Jira when task entered that state
-			if (!taskService.taskIsState(projectKey, taskKey, StateTransition.STATE_IN_REVIEW)) {
+			if (!taskService.taskIsState(projectKey, taskKey, TaskStatus.IN_REVIEW)) {
 				logger.warn("Unable to mark concepts modified since review as task not currently in state 'In Review'." );
 				return;
 			}
 			
-			Date reviewStarted = taskService.getDateOfChange(projectKey, taskKey, "status", StateTransition.STATE_IN_REVIEW);
+			Date reviewStarted = taskService.getDateOfChange(projectKey, taskKey, "status", TaskStatus.IN_REVIEW.getLabel());
 			if (reviewStarted == null) {
 				logger.error("Unable to mark concepts modified since review as cannot determine review start date." );
 				return;
