@@ -9,7 +9,8 @@ public enum TaskStatus {
 	IN_REVIEW("In Review"),
 	ESCALATION("Escalation"),
 	READY_FOR_PROMOTION("Ready For Promotion"),
-	PENDING("Pending");
+	PENDING("Pending"),
+	UNKNOWN("Unknown");
 
 	private final String label;
 
@@ -27,12 +28,12 @@ public enum TaskStatus {
 				return taskStatus;
 			}
 		}
-		return null;
+		return TaskStatus.UNKNOWN;
 	}
 
 	public static TaskStatus fromLabelOrThrow(String label) throws BusinessServiceException {
 		final TaskStatus taskStatus = fromLabel(label);
-		if (taskStatus == null) {
+		if (taskStatus == TaskStatus.UNKNOWN) {
 			throw new BusinessServiceException("Unrecognised task status '" + label + "'.");
 		}
 		return taskStatus;
