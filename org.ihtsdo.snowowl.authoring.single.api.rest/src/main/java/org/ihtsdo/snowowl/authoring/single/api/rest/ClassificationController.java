@@ -10,6 +10,7 @@ import net.rcarz.jiraclient.JiraException;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.snowowl.api.rest.common.AbstractRestService;
 import org.ihtsdo.snowowl.api.rest.common.AbstractSnomedRestService;
+import org.ihtsdo.snowowl.api.rest.common.ControllerHelper;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.Classification;
 import org.ihtsdo.snowowl.authoring.single.api.service.ClassificationService;
 import org.springframework.beans.factory.annotation.Autowired;

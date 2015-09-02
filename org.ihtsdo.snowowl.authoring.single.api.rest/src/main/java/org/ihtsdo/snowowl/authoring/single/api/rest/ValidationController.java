@@ -8,6 +8,7 @@ import net.rcarz.jiraclient.JiraException;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.api.rest.common.AbstractRestService;
 import org.ihtsdo.snowowl.api.rest.common.AbstractSnomedRestService;
+import org.ihtsdo.snowowl.api.rest.common.ControllerHelper;
 import org.ihtsdo.snowowl.authoring.single.api.service.ValidationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;

@@ -6,6 +6,7 @@ import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
 import org.ihtsdo.snowowl.api.rest.common.AbstractRestService;
 import org.ihtsdo.snowowl.api.rest.common.AbstractSnomedRestService;
+import org.ihtsdo.snowowl.api.rest.common.ControllerHelper;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.Notification;
 import org.ihtsdo.snowowl.authoring.single.api.service.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;

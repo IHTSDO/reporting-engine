@@ -8,6 +8,7 @@ import com.wordnik.swagger.annotations.ApiResponses;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.api.rest.common.AbstractRestService;
 import org.ihtsdo.snowowl.api.rest.common.AbstractSnomedRestService;
+import org.ihtsdo.snowowl.api.rest.common.ControllerHelper;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.ConflictReport;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.MergeRequest;
 import org.ihtsdo.snowowl.authoring.single.api.service.BranchService;

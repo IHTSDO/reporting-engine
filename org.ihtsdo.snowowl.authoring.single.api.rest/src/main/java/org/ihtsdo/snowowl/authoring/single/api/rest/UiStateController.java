@@ -7,10 +7,10 @@ import com.wordnik.swagger.annotations.ApiResponses;
 
 import org.ihtsdo.snowowl.api.rest.common.AbstractRestService;
 import org.ihtsdo.snowowl.api.rest.common.AbstractSnomedRestService;
+import org.ihtsdo.snowowl.api.rest.common.ControllerHelper;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.StateTransition;
 import org.ihtsdo.snowowl.authoring.single.api.service.TaskService;
 import org.ihtsdo.snowowl.authoring.single.api.service.UiStateService;
-import org.ihtsdo.snowowl.authoring.single.api.service.dao.ArbitraryJsonService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
