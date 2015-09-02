@@ -55,8 +55,8 @@
 	
 	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.ValidationService"/>
 
-	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.dao.ArbitraryJsonService"/>
-	
+	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.dao.ObjectJsonStore"/>
+
 	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.dao.CdoStore" init-method="init" />
 
 	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.NotificationService"/>
