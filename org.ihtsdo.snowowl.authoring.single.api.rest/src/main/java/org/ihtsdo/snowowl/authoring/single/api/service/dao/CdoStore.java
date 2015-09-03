@@ -186,7 +186,7 @@ public class CdoStore {
 				}
 				inClause.append(concepts.get(idx).getId());
 			}
-			
+			logger.info("Selecting concepts: " + inClause.toString() );
 			stmt.setString(2, inClause.toString());
 			stmt.setString(4, inClause.toString());
 			stmt.setString(6, inClause.toString());
