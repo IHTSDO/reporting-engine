@@ -1,5 +1,6 @@
 package org.ihtsdo.snowowl.authoring.single.api.service;
 
+import com.b2international.snowowl.api.domain.IComponent;
 import com.b2international.snowowl.datastore.server.branch.Branch;
 import com.b2international.snowowl.datastore.server.events.*;
 import com.b2international.snowowl.datastore.server.review.ConceptChanges;
@@ -18,12 +19,14 @@ import org.ihtsdo.snowowl.authoring.single.api.pojo.Notification;
 import org.ihtsdo.snowowl.authoring.single.api.review.pojo.AuthoringTaskReview;
 import org.ihtsdo.snowowl.authoring.single.api.review.pojo.ChangeType;
 import org.ihtsdo.snowowl.authoring.single.api.review.pojo.ReviewConcept;
+import org.ihtsdo.snowowl.authoring.single.api.service.dao.CdoStore;
 import org.ihtsdo.snowowl.authoring.single.api.service.ts.SnomedServiceHelper;
 import org.ihtsdo.snowowl.authoring.single.api.service.util.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -40,6 +43,9 @@ public class BranchServiceImpl implements BranchService {
 
 	@Autowired
 	private ISnomedDescriptionService descriptionService;
+	
+	@Autowired
+	private CdoStore cdoStore;
 
 	private static final String SNOMED_STORE = "snomedStore";
 	private static final String MAIN = "MAIN";
@@ -205,16 +211,50 @@ public class BranchServiceImpl implements BranchService {
 				}
 			}
 			
+			populateLastUpdateTimes(sourcePath, targetPath, conflictingConcepts);
+			
 			ConflictReport conflictReport = new ConflictReport();
 			conflictReport.setConcepts(conflictingConcepts);
 			conflictReport.setTargetReviewId(targetChangesReview.get().getReviewId());
 			conflictReport.setSourceReviewId(sourceChangesReview.get().getReviewId());
 			return conflictReport;
-		} catch (ExecutionException|InterruptedException e) {
-			throw new BusinessServiceException ("Unable to retrieve Conflict report for " + targetPath, e);
+		} catch (ExecutionException|InterruptedException|SQLException e) {
+			throw new BusinessServiceException ("Unable to retrieve Conflict report for " + targetPath + " due to " + e.getMessage(), e);
 		}
 	}
 	
+	private void populateLastUpdateTimes(String sourcePath, String targetPath,
+			List<ConceptConflict> conflictingConcepts) throws SQLException {
+		
+		//No conflicts, no work to do!
+		if ( conflictingConcepts == null || conflictingConcepts.size() == 0) {
+			return;
+		}
+		
+		//We need these last updated times from both the source and the targetPath
+		BranchPath sourceBranchPath = new BranchPath(sourcePath);
+		BranchPath targetBranchPath = new BranchPath(targetPath);
+		
+		Integer sourceBranchId = cdoStore.getBranchId(sourceBranchPath.getParentName(), sourceBranchPath.getChildName());
+		Integer targetBranchId = cdoStore.getBranchId(targetBranchPath.getParentName(), targetBranchPath.getChildName());
+		List<IComponent> concepts = new ArrayList<IComponent>(conflictingConcepts);
+		
+		Map<String, Date> sourceLastUpdatedMap = cdoStore.getLastUpdated(sourceBranchId, concepts);
+		Map<String, Date> targetLastUpdatedMap = cdoStore.getLastUpdated(targetBranchId, concepts);
+		
+		//Now loop through our conflicting concepts and populate those last updated times, if known
+		for(ConceptConflict thisConflict : conflictingConcepts) {
+			if (sourceLastUpdatedMap.containsKey(thisConflict.getId())) {
+				thisConflict.setSourceLastUpdate(sourceLastUpdatedMap.get(thisConflict.getId()));
+			}
+			
+			if (targetLastUpdatedMap.containsKey(thisConflict.getId())) {
+				thisConflict.setTargetLastUpdate(targetLastUpdatedMap.get(thisConflict.getId()));
+			}
+		}
+		
+	}
+
 	class AuthoringTaskReviewRunner implements Callable< AuthoringTaskReview> {
 		
 		final String sourcePath;
@@ -262,4 +302,20 @@ public class BranchServiceImpl implements BranchService {
 		notificationService.queueNotification(username, new Notification(projectKey, EntityType.Promotion, resultMessage));
 	}
 
+	private class BranchPath {
+		String [] pathElements;
+		BranchPath (String path) {
+			this.pathElements = path.split("/");
+		}
+		
+		//Child is the last string in the path
+		String getChildName() {
+			return pathElements[pathElements.length - 1];
+		}
+		
+		//Parent is the String before the last slash
+		String getParentName() {
+			return pathElements.length > 1 ? pathElements[pathElements.length - 2] : null;
+		}
+	}
 }

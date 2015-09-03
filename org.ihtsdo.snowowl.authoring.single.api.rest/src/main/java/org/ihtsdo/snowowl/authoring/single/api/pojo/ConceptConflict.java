@@ -2,7 +2,10 @@ package org.ihtsdo.snowowl.authoring.single.api.pojo;
 
 import java.util.Date;
 
-public class ConceptConflict {
+import com.b2international.snowowl.api.domain.IComponent;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+public class ConceptConflict implements IComponent {
 
 	String id;
 	Date sourceLastUpdate;
@@ -29,5 +32,11 @@ public class ConceptConflict {
 	}
 	public void setTargetLastUpdate(Date targetLastUpdate) {
 		this.targetLastUpdate = targetLastUpdate;
+	}
+
+	@Override
+	@JsonIgnore
+	public boolean isReleased() {
+		return false;
 	}
 }
