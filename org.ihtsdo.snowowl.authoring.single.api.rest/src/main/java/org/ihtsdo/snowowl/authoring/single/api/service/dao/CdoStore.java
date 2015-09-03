@@ -22,7 +22,12 @@ public class CdoStore {
 	private static final int BATCH_SIZE = 500;
 	public static final String MAIN = "MAIN";
 	
-	enum CDOStatement { GET_BRANCH_ID, GET_PROJECT_BRANCH_ID, GET_CONCEPTS_CHANGED_SINCE, GET_CONCEPTS_LAST_MODIFIED };
+	enum CDOStatement { GET_BRANCH_ID, 
+		GET_PROJECT_BRANCH_ID, 
+		GET_CONCEPTS_CHANGED_SINCE, 
+		GET_CONCEPTS_LAST_MODIFIED, 
+		CLEAN_TEMP_TABLE,
+		POPULATE_TEMP_TABLE};
 	
 	Connection conn;
 	
@@ -66,31 +71,43 @@ public class CdoStore {
 	
 	private static final String getConceptsLastModified = 
 			" select concept_sctid, max(cdo_created) from ( "
-			+ " select id as concept_sctid, cdo_created "
-			+ " from snomed_concept use index (SNOMED_CONCEPT_IDX2001)"
+			+ " select c.id as concept_sctid, cdo_created "
+			+ " from snomed_concept c use index (SNOMED_CONCEPT_IDX2001),"
+			+ " temp_component t "
 			+ " where cdo_branch = ? "
-			+ " and id in (?) "
+			+ " and c.id = t.id "
+			+ " and t.transaction_id = ?"
 			+ " union "
 			+ " select c.id, d.cdo_created "
-			+ " from snomed_concept c use index (SNOMED_CONCEPT_IDX2001), "
+			+ " from temp_component t LEFT JOIN snomed_concept c use index (SNOMED_CONCEPT_IDX2001) "
+			+ " on c.id = t.id, "
 			+ " snomed_description d, snomed_concept_descriptions_list cdl "
 			+ " where c.cdo_id = cdl.cdo_source "
 			+ " and cdl.cdo_value = d.cdo_id "
 			+ " and d.cdo_branch = cdl.cdo_branch "
 			+ " and cdl.cdo_branch = ? "
-			+ " and c.id in (?) "
+			+ " and t.transaction_id = ?"
 			+ " and c.cdo_branch = cdl.cdo_branch "
 			+ " union "
 			+ " select c.id, r.cdo_created "
 			+ " from snomed_concept c use index (SNOMED_CONCEPT_IDX2001), "
-			+ " snomed_relationship r, snomed_concept_outboundrelationships_list crl "
+			+ " snomed_relationship r, snomed_concept_outboundrelationships_list crl, "
+			+ " temp_component t "
 			+ " where c.cdo_id = crl.cdo_source "
 			+ " and crl.cdo_value = r.cdo_id "
 			+ " and r.cdo_branch = crl.cdo_branch "
 			+ " and crl.cdo_branch = ? "
-			+ " and c.id in (?) "
+			+ " and c.id = t.id "
+			+ " and t.transaction_id = ?"
 			+ " and c.cdo_branch = crl.cdo_branch ) all_components "
 			+ " group by concept_sctid ";
+	
+	private static final String createTempTable = "CREATE TABLE IF NOT EXISTS temp_component (id varchar(19), transaction_id int,"
+			+ "INDEX `temp_component_IDX_001` (`id`, `transaction_id`))" ;
+	
+	private static final String cleanTempTable = "Delete from temp_component where transaction_id = ?";
+	
+	private static final String populateTempTable = "insert into temp_component values(?, ?)";
 	
 	public void init() throws SQLException {
 	
@@ -100,6 +117,12 @@ public class CdoStore {
 		preparedStatements.put(CDOStatement.GET_PROJECT_BRANCH_ID, conn.prepareStatement(getProjectBranchId));
 		preparedStatements.put(CDOStatement.GET_CONCEPTS_CHANGED_SINCE, conn.prepareStatement(getConceptsChangedSince));
 		preparedStatements.put(CDOStatement.GET_CONCEPTS_LAST_MODIFIED, conn.prepareStatement(getConceptsLastModified));
+		preparedStatements.put(CDOStatement.CLEAN_TEMP_TABLE, conn.prepareStatement(cleanTempTable));
+		preparedStatements.put(CDOStatement.POPULATE_TEMP_TABLE, conn.prepareStatement(populateTempTable));
+		
+		logger.info("Ensuring presence of temptable: temp_component");
+		Statement createTempTableStatement = conn.createStatement();
+		createTempTableStatement.execute(createTempTable);
 	}
 	
 	private void getDBConn() throws SQLException {
@@ -166,39 +189,51 @@ public class CdoStore {
 		stopWatch.start();
 		logger.info("Starting last updated query for branch " + branchId );
 		
+		//Generate a unique identifier for temp table population
+		int transactionId = concepts.hashCode() * 1000 + branchId;
+		populateTempTable(concepts, transactionId);
+		logger.info("Populated temp table");
+		
 		PreparedStatement stmt = preparedStatements.get(CDOStatement.GET_CONCEPTS_LAST_MODIFIED);
 		stmt.setInt(1, branchId);
+		stmt.setInt(2, transactionId);
 		stmt.setInt(3, branchId);
+		stmt.setInt(4, transactionId);
 		stmt.setInt(5, branchId);
+		stmt.setInt(6, transactionId);
 		
 		Map<String, Date> lastUpdatedMap = new HashMap<String, Date>();
-		
-		//Loop around in batches getting last updated dates of matching concepts
-		int idx = 0;
-		while (idx < concepts.size()) {
-			StringBuilder inClause = new StringBuilder();
-			boolean isFirstInBatch = true;
-			for (int i= 0;i < BATCH_SIZE && idx < concepts.size(); i++, idx++) {
-				if (!isFirstInBatch) {
-					inClause.append(", ");
-				} else {
-					isFirstInBatch = false;
-				}
-				inClause.append(concepts.get(idx).getId());
-			}
-			logger.info("Selecting concepts: " + inClause.toString() );
-			stmt.setString(2, inClause.toString());
-			stmt.setString(4, inClause.toString());
-			stmt.setString(6, inClause.toString());
-			ResultSet rs = stmt.executeQuery();
-			while (rs.next()) {
-				lastUpdatedMap.put(rs.getString(1), new Date(rs.getLong(2)));
-			}
+		ResultSet rs = stmt.executeQuery();
+		int rowCount = 0;
+		while (rs.next()) {
+			lastUpdatedMap.put(rs.getString(1), new Date(rs.getLong(2)));
+			rowCount++;
 		}
+		logger.info("Recovered " + rowCount + " last updated times" );
+		cleanTempTable(transactionId);
 		stopWatch.stop();
 		logger.info("Completed last updated for branch " + branchId + " with " + concepts.size() + " conflicts in " + stopWatch);
 
 		return lastUpdatedMap; 
+	}
+
+	private void populateTempTable(List<IComponent> components, int transactionId) throws SQLException {
+		conn.setAutoCommit(false);
+		PreparedStatement stmt = preparedStatements.get(CDOStatement.POPULATE_TEMP_TABLE);
+		
+		for(IComponent component : components){
+			stmt.setString(1, component.getId());
+			stmt.setInt(2, transactionId);
+			stmt.execute();
+		}
+		conn.commit();
+		conn.setAutoCommit(true);
+	}
+	
+	private void cleanTempTable(int transactionId) throws SQLException {
+		PreparedStatement stmt = preparedStatements.get(CDOStatement.CLEAN_TEMP_TABLE);
+		stmt.setInt(1, transactionId);
+		stmt.execute();
 	}
 
 }

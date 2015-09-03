@@ -243,9 +243,9 @@ public class BranchServiceImpl implements BranchService {
 		Map<String, Date> targetLastUpdatedMap = cdoStore.getLastUpdated(targetBranchId, concepts);
 		
 		//Now loop through our conflicting concepts and populate those last updated times, if known
+		logger.info ("Populating " + conflictingConcepts.size() + " conflicts with " + sourceLastUpdatedMap.size() + " source times and "
+				+ targetLastUpdatedMap.size() + " target times");
 		for(ConceptConflict thisConflict : conflictingConcepts) {
-			logger.info ("Populating " + conflictingConcepts.size() + " conflicts with " + sourceLastUpdatedMap.size() + " source times and "
-					+ targetLastUpdatedMap.size() + " target times");
 			if (sourceLastUpdatedMap.containsKey(thisConflict.getId())) {
 				thisConflict.setSourceLastUpdate(sourceLastUpdatedMap.get(thisConflict.getId()));
 			}
