@@ -7,7 +7,6 @@ import org.ihtsdo.otf.rest.client.SnowOwlRestClient;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.Classification;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.EntityType;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.Notification;
-import org.ihtsdo.snowowl.authoring.single.api.pojo.StateTransition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,39 +28,9 @@ public class ClassificationService {
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
-	public Classification startClassificationOfTask(String projectKey, String taskKey, String username) {
-		Classification result;
-		//Can we transition from In Progress to In Classification?
-		StateTransition startClassification = new StateTransition ( StateTransition.STATE_IN_PROGRESS,
-																	StateTransition.TRANSITION_IN_PROGRESS_TO_IN_CLASSIFICATION);
-
-		taskService.doStateTransition(projectKey, taskKey, startClassification);
-
-		if (startClassification.transitionSuccessful()) {
-			try {
-				result = callClassification(projectKey, taskKey, username);
-			} catch (Exception e) {
-				String errorMessage = "Classification failed because: " + e.getMessage();
-				logger.error(errorMessage, e);
-				result = new Classification(errorMessage);
-			}
-			
-			//If the classification failed to start, then we should transition back to In Progress
-			if (result.getStatus().equals(ClassificationStatus.FAILED.toString())) {
-				StateTransition failClassification = new StateTransition ( StateTransition.STATE_IN_CLASSIFICATION,
-						StateTransition.TRANSITION_IN_CLASSIFICATION_TO_IN_PROGRESS);
-				taskService.doStateTransition(projectKey, taskKey, failClassification);
-			}
-		} else {
-			result = new Classification("Unable to start classification because: " + startClassification.getErrorMessage());
-		}
-		
-		return result;
-	}
-
-	public synchronized Classification startClassificationOfProject(String projectKey, String username) throws RestClientException, JSONException {
-		if (!snowOwlClient.isClassificationInProgressOnBranch(PathHelper.getPath(projectKey))) {
-			return callClassification(projectKey, null, username);
+	public synchronized Classification startClassification(String projectKey, String taskKey, String username) throws RestClientException, JSONException {
+		if (!snowOwlClient.isClassificationInProgressOnBranch(PathHelper.getPath(projectKey, taskKey))) {
+			return callClassification(projectKey, taskKey, username);
 		} else {
 			throw new IllegalStateException("Classification already in progress on this branch.");
 		}
@@ -113,16 +82,14 @@ public class ClassificationService {
 				} else {
 					resultMessage = "Classification is in non-successful state: " + results.getStatus();
 				}
-			} catch (Exception e) {
+			} catch (RestClientException | InterruptedException e) {
 				resultMessage = "Classification failed to complete due to " + e.getMessage();
 				logger.error(resultMessage,e);
 			}
 
 			if (taskKey != null) {
-				//In every case we'll report what we know to the jira ticket, and move
-				//the ticket status out from Classification to In Progress
+				//In every case we'll report what we know to the jira ticket
 				taskService.addCommentLogErrors(projectKey, taskKey, resultMessage);
-				returnToInProgress(projectKey, taskKey);
 			} else {
 				// Comment on project magic ticket
 				taskService.addCommentLogErrors(projectKey, resultMessage);
@@ -130,19 +97,6 @@ public class ClassificationService {
 			notificationService.queueNotification(callerUsername, new Notification(projectKey, taskKey, EntityType.Classification, resultMessage));
 		}
 
-		private void returnToInProgress(String projectKey, String taskKey) {
-				
-			StateTransition finishClassification = new StateTransition ( StateTransition.STATE_IN_CLASSIFICATION,
-					StateTransition.TRANSITION_IN_CLASSIFICATION_TO_IN_PROGRESS);
-
-			taskService.doStateTransition(projectKey, taskKey, finishClassification);
-			
-			if (!finishClassification.transitionSuccessful()) {
-				logger.error(finishClassification.getErrorMessage());
-			}
-		}
-		
 	}
-
 
 }

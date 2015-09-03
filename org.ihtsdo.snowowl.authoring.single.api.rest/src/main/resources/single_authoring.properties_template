@@ -1,6 +1,6 @@
 jira.url=
-jira.username=
-jira.password=
+jira.consumerKey=
+jira.privateKeyName=
 
 securityServiceStubMode=
 

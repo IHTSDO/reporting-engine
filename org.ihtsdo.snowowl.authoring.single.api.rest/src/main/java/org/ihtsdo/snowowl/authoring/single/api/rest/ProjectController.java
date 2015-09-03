@@ -11,6 +11,7 @@ import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.api.rest.common.AbstractRestService;
 import org.ihtsdo.snowowl.api.rest.common.AbstractSnomedRestService;
+import org.ihtsdo.snowowl.api.rest.common.ControllerHelper;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringProject;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTask;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskCreateRequest;

@@ -6,10 +6,16 @@ public class Notification {
 	private String task;
 	private EntityType entityType;
 	private String event;
-
+	
+	//Task level notification
 	public Notification(String project, String task, EntityType entityType, String event) {
-		this.project = project;
+		this(project, entityType, event);
 		this.task = task;
+	}
+
+	//Project level notification
+	public Notification(String project, EntityType entityType, String event) {
+		this.project = project;
 		this.entityType = entityType;
 		this.event = event;
 	}

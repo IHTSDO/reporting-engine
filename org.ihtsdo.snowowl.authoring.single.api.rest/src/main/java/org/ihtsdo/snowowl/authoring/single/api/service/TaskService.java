@@ -1,18 +1,17 @@
 package org.ihtsdo.snowowl.authoring.single.api.service;
 
-import com.b2international.snowowl.core.exceptions.ConflictException;
 import com.b2international.snowowl.core.exceptions.NotFoundException;
 
 import net.rcarz.jiraclient.*;
 import net.rcarz.jiraclient.User;
 
-import org.ihtsdo.otf.im.utility.SecurityService;
 import org.ihtsdo.otf.rest.client.OrchestrationRestClient;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.*;
-import org.ihtsdo.snowowl.authoring.single.api.rest.ControllerHelper;
+import org.ihtsdo.snowowl.api.rest.common.ControllerHelper;
 import org.ihtsdo.snowowl.authoring.single.api.review.service.ReviewService;
+import org.ihtsdo.snowowl.authoring.single.api.service.jira.ImpersonatingJiraClientFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,27 +39,25 @@ public class TaskService {
 	private OrchestrationRestClient orchestrationRestClient;
 
 	@Autowired
-	private SecurityService ims;
-
-	@Autowired
 	private ReviewService reviewService;
 
-	private final JiraClientFactory jiraClientFactory;
+	private final ImpersonatingJiraClientFactory jiraClientFactory;
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	private static final String AUTHORING_TASK_TYPE = "SCA Authoring Task";
 	
-	public TaskService(JiraClientFactory jiraClientFactory, String jiraReviewerField) {
+	public TaskService(ImpersonatingJiraClientFactory jiraClientFactory, String jiraReviewerField) {
 		this.jiraClientFactory = jiraClientFactory;
 		AuthoringTask.setJiraReviewerField(jiraReviewerField);
 	}
 	
 	public List<AuthoringProject> listProjects() throws JiraException, IOException, JSONException, RestClientException {
 		List<AuthoringProject> authoringProjects = new ArrayList<>();
-		for (Issue issue : getJiraClient().searchIssues("type = \"SCA Authoring Project\"").issues) {
+		final JiraClient jiraClient = getJiraClient();
+		for (Issue issue : jiraClient.searchIssues("type = \"SCA Authoring Project\"").issues) {
 			// Get project with all fields
-			Project project = getJiraClient().getProject(issue.getProject().getKey());
+			Project project = jiraClient.getProject(issue.getProject().getKey());
 			authoringProjects.add(buildProject(project));
 		}
 		return authoringProjects;
@@ -74,6 +71,19 @@ public class TaskService {
 		final String validationStatus = orchestrationRestClient.retrieveValidationStatuses(Collections.singletonList(PathHelper.getPath(project.getKey()))).get(0);
 		final String latestClassificationJson = classificationService.getLatestClassification(PathHelper.getPath(project.getKey()));
 		return new AuthoringProject(project.getKey(), project.getName(), getPojoUserOrNull(project.getLead()), validationStatus, latestClassificationJson);
+	}
+
+	public Issue getProjectTicketOrThrow(String projectKey) {
+		Issue issue = null;
+		try {
+			issue = getProjectTicket(projectKey);
+		} catch (JiraException e) {
+			logger.error("Failed to load project ticket {}", projectKey, e);
+		}
+		if (issue == null) {
+			throw new IllegalArgumentException("Authoring project with key " + projectKey + " is not accessible.");
+		}
+		return issue;
 	}
 
 	public Issue getProjectTicket(String projectKey) throws JiraException {
@@ -100,13 +110,7 @@ public class TaskService {
 	}
 
 	private Issue getIssue(String projectKey, String taskKey) throws JiraException {
-		getProjectOrThrow(projectKey);
-		List<Issue> issues = getJiraClient().searchIssues(getProjectTaskJQL(projectKey) + " AND key = " + taskKey).issues;
-		if (!issues.isEmpty()) {
-			return issues.get(0);
-		} else {
-			throw new NotFoundException("Task", taskKey);
-		}
+		return getIssue(projectKey, taskKey, false);
 	}
 	
 	private Issue getIssue(String projectKey, String taskKey, boolean includeAll) throws JiraException {
@@ -114,7 +118,7 @@ public class TaskService {
 		if (includeAll) {
 			return getJiraClient().getIssue(taskKey, INCLUDED_FIELDS, "changelog");
 		} else {
-			return getIssue(projectKey, taskKey);
+			return getJiraClient().getIssue(taskKey, INCLUDED_FIELDS);
 		}
 	}
 	
@@ -154,13 +158,10 @@ public class TaskService {
 	}
 
 	public AuthoringTask createTask(String projectKey, AuthoringTaskCreateRequest taskCreateRequest) throws JiraException, ServiceException {
-		//The task should be assigned to the currently logged in user
-		String currentUser = ims.getCurrentLogin();
-
 		Issue jiraIssue = getJiraClient().createIssue(projectKey, AUTHORING_TASK_TYPE)
 				.field(Field.SUMMARY, taskCreateRequest.getSummary())
 				.field(Field.DESCRIPTION, taskCreateRequest.getDescription())
-				.field(Field.ASSIGNEE, currentUser)
+				.field(Field.ASSIGNEE, getUsername())
 				.execute();
 
 		AuthoringTask authoringTask = new AuthoringTask(jiraIssue);
@@ -169,32 +170,32 @@ public class TaskService {
 	}
 
 	private List<AuthoringTask> buildAuthoringTasks(List<Issue> issues) throws RestClientException {
-		final String username = ControllerHelper.getUsername();
+		final String username = getUsername();
 		List<AuthoringTask> allTasks = new ArrayList<>();
 		//Map of task paths to tasks
-		Map<String, AuthoringTask> matureTasks = new HashMap<String, AuthoringTask>();
+		Map<String, AuthoringTask> startedTasks = new HashMap<>();
 		for (Issue issue : issues) {
 			AuthoringTask task = new AuthoringTask(issue);
 			allTasks.add(task);
 			//We only need to recover classification and validation statuses for task that are not new ie mature
-			if (!task.getStatus().equals(StateTransition.STATE_NEW)) {
+			if (task.getStatus() != TaskStatus.NEW) {
 				String latestClassificationJson = classificationService.getLatestClassification(PathHelper.getPath(issue.getProject().getKey(), issue.getKey()));
 				task.setLatestClassificationJson(latestClassificationJson);
-				matureTasks.put(PathHelper.getTaskPath(issue), task);
+				startedTasks.put(PathHelper.getTaskPath(issue), task);
 			}
 			task.setFeedbackMessagesStatus(reviewService.getTaskMessagesStatus(task.getProjectKey(), task.getKey(), username));
 		}
 
-		List<String> matureTaskPaths = new ArrayList<String>(matureTasks.keySet());
-		List<String> validationStatuses = getValidationStatuses(matureTaskPaths);
+		List<String> startedTaskPaths = new ArrayList<>(startedTasks.keySet());
+		List<String> validationStatuses = getValidationStatuses(startedTaskPaths);
 
 		if (validationStatuses == null) {
 			// TODO I think we should normally throw an exception here, but logging for the moment as I think I'm having connection
 			// issues with the looping REST call while debugging.
 			logger.error("Failed to recover validation statuses - check logs for reason");
 		} else {
-			for (int a = 0; a < matureTaskPaths.size(); a++) {
-				matureTasks.get(matureTaskPaths.get(a)).setLatestValidationStatus(validationStatuses.get(a));
+			for (int a = 0; a < startedTaskPaths.size(); a++) {
+				startedTasks.get(startedTaskPaths.get(a)).setLatestValidationStatus(validationStatuses.get(a));
 			}
 		}
 
@@ -208,7 +209,7 @@ public class TaskService {
 		} catch (JSONException | IOException e) {
 			logger.error("Failed to retrieve validation status of tasks {}", paths, e);
 			statuses = new ArrayList<>();
-			for (String path : paths) {
+			for (int i = 0; i < paths.size(); i++) {
 				statuses.add(FAILED_TO_RETRIEVE);
 			}
 		}
@@ -223,24 +224,15 @@ public class TaskService {
 		}
 	}
 
-	public boolean taskIsState(String projectKey, String taskKey, String targetState) throws JiraException {
+	public boolean taskIsState(String projectKey, String taskKey, TaskStatus state) throws JiraException {
 		Issue issue = getIssue(projectKey, taskKey);
 		String currentState = issue.getStatus().getName();
-		return currentState.equals(targetState);
+		return currentState.equals(state.getLabel());
 	}
 
 	public void addCommentLogErrors(String projectKey, String commentString) {
-		try {
-			final Issue projectTicket = getProjectTicket(projectKey);
-			if (projectTicket != null) {
-				projectTicket.addComment(commentString);
-				projectTicket.update();
-			} else {
-				throw new IllegalArgumentException("Authoring project with key " + projectKey + " is not accessible.");
-			}
-		} catch (JiraException e) {
-			logger.error("Failed to set message on jira ticket {}/{}: {}", projectKey, commentString, e);
-		}
+		final Issue projectTicket = getProjectTicketOrThrow(projectKey);
+		addCommentLogErrors(projectKey, projectTicket.getKey(), commentString);
 	}
 
 	public void addCommentLogErrors(String projectKey, String taskKey, String commentString) {
@@ -258,39 +250,16 @@ public class TaskService {
 		issue.update(); // Pick up new comment locally too
 	}
 
-	public void doStateTransition(String projectKey, String taskKey,
-			StateTransition stateTransition) {
-
-		try {
-			Issue issue = getIssue(projectKey, taskKey);
-			issue.transition().execute(stateTransition.getTransition());
-			issue.refresh(); // Synchronize the issue to pick up the new status.
-			stateTransition.transitionSuccessful(true);
-		} catch (JiraException je) {
-			//Did we fail due to a state conflict which we'll say is not really an exception?
-			StringBuilder sb = new StringBuilder();
-			sb.append("Failed to transition issue ")
-					.append(toString(projectKey, taskKey))
-					.append(" via transition '")
-					.append(stateTransition.getTransition())
-					.append("' due to: ")
-					.append(je.getMessage());
-			stateTransition.transitionSuccessful(false);
-			stateTransition.experiencedException(true);
-			stateTransition.setErrorMessage(sb.toString());
-		}
+	private JiraClient getJiraClient() {
+		return jiraClientFactory.getImpersonatingInstance(getUsername());
 	}
 
-	private JiraClient getJiraClient() throws JiraException {
-		return jiraClientFactory.getInstance();
+	private String getUsername() {
+		return ControllerHelper.getUsername();
 	}
 
 	private String toString(String projectKey, String taskKey) {
-		StringBuilder sb = new StringBuilder();
-		sb.append(projectKey)
-				.append("/")
-				.append(taskKey);
-		return sb.toString();
+		return projectKey + "/" + taskKey;
 	}
 
 	public AuthoringTask updateTask(String projectKey, String taskKey, AuthoringTaskUpdateRequest updatedTask) throws BusinessServiceException,
@@ -298,8 +267,8 @@ public class TaskService {
 
 		Issue issue = getIssue(projectKey, taskKey);
 		// Act on each field received
-		if (updatedTask.getStatus() != null) {
-			transitionTaskState(projectKey, taskKey, updatedTask.getStatus());
+		if (updatedTask.getStatusName() != null) {
+			stateTransition(issue, TaskStatus.fromLabel(updatedTask.getStatusName()));
 		}
 
 		if (updatedTask.getReviewer() != null) {
@@ -312,41 +281,6 @@ public class TaskService {
 		// Pick up those changes in a new Task object
 		return retrieveTask(projectKey, taskKey);
 
-	}
-
-	private void transitionTaskState(String projectKey, String taskKey, String newStatus) throws BusinessServiceException {
-		
-		StateTransition stateChange;
-		switch (newStatus) {
-			case StateTransition.STATE_IN_REVIEW:
-				stateChange = new StateTransition(StateTransition.TRANSITION_TO_IN_REVIEW);
-				break;
-			case StateTransition.STATE_IN_PROGRESS:
-				stateChange = new StateTransition(StateTransition.TRANSITION_TO_IN_PROGRESS);
-				break;
-			case StateTransition.STATE_PENDING:
-				stateChange = new StateTransition(StateTransition.TRANSITION_TO_PENDING);
-				break;
-			case StateTransition.STATE_ESCALATION:
-				stateChange = new StateTransition(StateTransition.TRANSITION_TO_ESCALATION);
-				break;
-			case StateTransition.STATE_READY_FOR_PROMOTION:
-				stateChange = new StateTransition(StateTransition.TRANSITION_TO_READY_FOR_PROMOTION);
-				break;
-			default: 
-				throw new BusinessServiceException("Unexpected state transition requested to " + newStatus);
-		}
-		
-		doStateTransition(projectKey, taskKey, stateChange);
-		if (!stateChange.transitionSuccessful()) {
-			String errorMsg = "Failed to put task into state '" + newStatus + "' due to: " + stateChange.getErrorMessage();
-			if (stateChange.experiencedException()) {
-				throw new BusinessServiceException(errorMsg);
-			} else {
-				throw new ConflictException (errorMsg);
-			}
-		}
-		
 	}
 
 	private org.ihtsdo.snowowl.authoring.single.api.pojo.User getPojoUserOrNull(User lead) {
@@ -399,4 +333,30 @@ public class TaskService {
 			return id2.compareTo(id1);
 		}
 	};
+
+	public boolean conditionalStateTransition(String projectKey, String taskKey, TaskStatus requiredState, TaskStatus newState) throws JiraException, BusinessServiceException {
+		final Issue issue = getIssue(projectKey, taskKey);
+		if (TaskStatus.fromLabel(issue.getStatus().getName()) == requiredState) {
+			stateTransition(issue, newState);
+			return true;
+		}
+		return false;
+	}
+
+	private void stateTransition(Issue issue, TaskStatus newState) throws JiraException, BusinessServiceException {
+		final Transition transition = getTransitionToOrThrow(issue, newState);
+		logger.info("Transition issue {} to {}", issue.getKey(), newState.getLabel());
+		issue.transition().execute(transition);
+		issue.refresh();
+	}
+
+	private Transition getTransitionToOrThrow(Issue issue, TaskStatus newState) throws JiraException, BusinessServiceException {
+		for (Transition transition : issue.getTransitions()) {
+			if (transition.getToStatus().getName().equals(newState.getLabel())) {
+				return transition;
+			}
+		}
+		throw new BusinessServiceException("Could not transition task " + issue.getKey() + " from status '" + issue.getStatus().getName() + "' to '" + newState.name() + "', no such transition is available.");
+	}
+
 }

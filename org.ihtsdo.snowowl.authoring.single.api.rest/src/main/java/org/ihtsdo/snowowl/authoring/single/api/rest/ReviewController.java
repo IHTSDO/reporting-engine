@@ -8,6 +8,7 @@ import com.wordnik.swagger.annotations.ApiResponses;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.api.rest.common.AbstractRestService;
 import org.ihtsdo.snowowl.api.rest.common.AbstractSnomedRestService;
+import org.ihtsdo.snowowl.api.rest.common.ControllerHelper;
 import org.ihtsdo.snowowl.authoring.single.api.review.domain.ReviewMessage;
 import org.ihtsdo.snowowl.authoring.single.api.review.pojo.AuthoringTaskReview;
 import org.ihtsdo.snowowl.authoring.single.api.review.pojo.ReviewMessageCreateRequest;
@@ -39,14 +40,33 @@ public class ReviewController extends AbstractSnomedRestService {
 		return reviewService.retrieveTaskReview(projectKey, taskKey, Collections.list(request.getLocales()), ControllerHelper.getUsername());
 	}
 
+	@ApiOperation(value="Retrieve the review list for a project")
+	@ApiResponses({
+			@ApiResponse(code = 200, message = "OK")
+	})
+	@RequestMapping(value="/projects/{projectKey}/review", method= RequestMethod.GET)
+	public AuthoringTaskReview retrieveProjectReview(@PathVariable final String projectKey, HttpServletRequest request) throws BusinessServiceException {
+		return reviewService.retrieveProjectReview(projectKey, Collections.list(request.getLocales()), ControllerHelper.getUsername());
+	}
+
 	@ApiOperation(value="Comment on a task")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/projects/{projectKey}/tasks/{taskKey}/review/message", method= RequestMethod.POST)
-	public ReviewMessage postReviewMessage(@PathVariable final String projectKey, @PathVariable final String taskKey,
+	public ReviewMessage postTaskReviewMessage(@PathVariable final String projectKey, @PathVariable final String taskKey,
 			@RequestBody ReviewMessageCreateRequest createRequest) {
 		return reviewService.postReviewMessage(projectKey, taskKey, createRequest, ControllerHelper.getUsername());
+	}
+
+	@ApiOperation(value="Comment on a project")
+	@ApiResponses({
+			@ApiResponse(code = 200, message = "OK")
+	})
+	@RequestMapping(value="/projects/{projectKey}/review/message", method= RequestMethod.POST)
+	public ReviewMessage postProjectReviewMessage(@PathVariable final String projectKey,
+			@RequestBody ReviewMessageCreateRequest createRequest) {
+		return reviewService.postReviewMessage(projectKey, null, createRequest, ControllerHelper.getUsername());
 	}
 
 	@ApiOperation(value="Mark a review and concept pair as read for this user.")
@@ -54,10 +74,19 @@ public class ReviewController extends AbstractSnomedRestService {
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/projects/{projectKey}/tasks/{taskKey}/review/concepts/{conceptId}/read", method= RequestMethod.POST)
-	public void markReviewAndConceptRead(@PathVariable final String projectKey, @PathVariable final String taskKey,
+	public void markTaskReviewAndConceptRead(@PathVariable final String projectKey, @PathVariable final String taskKey,
 			@PathVariable final String conceptId) throws ExecutionException, InterruptedException {
 		reviewService.markAsRead(projectKey, taskKey, conceptId, ControllerHelper.getUsername());
 	}
 
+	@ApiOperation(value="Mark a review and concept pair as read for this user.")
+	@ApiResponses({
+			@ApiResponse(code = 200, message = "OK")
+	})
+	@RequestMapping(value="/projects/{projectKey}/review/concepts/{conceptId}/read", method= RequestMethod.POST)
+	public void markProjectReviewAndConceptRead(@PathVariable final String projectKey,
+			@PathVariable final String conceptId) throws ExecutionException, InterruptedException {
+		reviewService.markAsRead(projectKey, null, conceptId, ControllerHelper.getUsername());
+	}
 
 }

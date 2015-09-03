@@ -53,7 +53,7 @@ public abstract class AbstractRestService {
 	@ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
 	public @ResponseBody
 	RestApiError handle(final Exception ex) {
-		LOG.error("Exception during processing of a request", ex);
+		LOG.error("Exception during processing of a request. Username '{}'", ControllerHelper.getUsername(), ex);
 		return RestApiError.of(HttpStatus.INTERNAL_SERVER_ERROR.value()).message(GENERIC_USER_MESSAGE).developerMessage(getDeveloperMessage(ex)).build();
 	}
 	
@@ -66,7 +66,7 @@ public abstract class AbstractRestService {
 	@ExceptionHandler
 	@ResponseStatus(HttpStatus.BAD_REQUEST)
 	public @ResponseBody RestApiError handle(HttpMessageNotReadableException ex) {
-		LOG.error("Exception during processing of a JSON document", ex);
+		LOG.warn("Exception during processing of a JSON document", ex);
 		return RestApiError.of(HttpStatus.BAD_REQUEST.value()).message("Bad Request").developerMessage(getDeveloperMessage(ex)).build();
 	}
 
@@ -152,7 +152,7 @@ public abstract class AbstractRestService {
 	@ResponseStatus(HttpStatus.UNAUTHORIZED)
 	public @ResponseBody
 	RestApiError handle(final AccessDeniedException ex) {
-		LOG.error("Exception during processing of a request", ex);
+		LOG.warn("Exception during processing of a request", ex);
 		return RestApiError.of(HttpStatus.UNAUTHORIZED.value()).message(ACCESS_DENIED_MESSAGE).developerMessage(getDeveloperMessage(ex)).build();
 	}
 

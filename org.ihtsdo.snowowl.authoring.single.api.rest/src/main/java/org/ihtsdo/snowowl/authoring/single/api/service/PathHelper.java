@@ -12,7 +12,7 @@ public class PathHelper {
 	}
 
 	public static String getPath(String projectKey, String taskKey) {
-		return MAIN + projectKey + SLASH + taskKey;
+		return MAIN + projectKey + (taskKey == null ? "" : SLASH + taskKey);
 	}
 
 	public static String getTaskPath(Issue issue) {

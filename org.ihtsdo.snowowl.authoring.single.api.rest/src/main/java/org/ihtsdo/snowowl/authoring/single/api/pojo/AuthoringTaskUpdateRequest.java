@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 @JsonDeserialize(as = AuthoringTask.class)
 public interface AuthoringTaskUpdateRequest {
 
-	String getStatus();
+	String getStatusName();
 
 	void setStatus(String status);
 

@@ -1,10 +1,11 @@
 package org.ihtsdo.snowowl.authoring.single.api.pojo;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonRawValue;
-
 import net.rcarz.jiraclient.Issue;
 import net.sf.json.JSONObject;
 import org.ihtsdo.snowowl.authoring.single.api.review.service.TaskMessagesStatus;
+import org.ihtsdo.snowowl.authoring.single.api.service.TaskStatus;
 
 public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskUpdateRequest {
 
@@ -19,7 +20,7 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 	private String key;
 	private String projectKey;
 	private String summary;
-	private String status;
+	private TaskStatus status;
 	private String description;
 	private User assignee;
 	private User reviewer;
@@ -36,7 +37,7 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 		key = issue.getKey();
 		projectKey = issue.getProject().getKey();
 		summary = issue.getSummary();
-		status = issue.getStatus().getName();
+		status = TaskStatus.fromLabel(issue.getStatus().getName());
 		description = issue.getDescription();
 		net.rcarz.jiraclient.User assignee = issue.getAssignee();
 		if (assignee != null) {
@@ -77,12 +78,17 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 		this.summary = summary;
 	}
 
-	public String getStatus() {
+	@JsonProperty("status")
+	public String getStatusName() {
+		return status.getLabel();
+	}
+
+	public TaskStatus getStatus() {
 		return status;
 	}
 
 	public void setStatus(String status) {
-		this.status = status;
+		this.status = TaskStatus.fromLabel(status);
 	}
 
 	@Override
