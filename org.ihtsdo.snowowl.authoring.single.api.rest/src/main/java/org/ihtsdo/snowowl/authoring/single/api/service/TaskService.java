@@ -348,6 +348,10 @@ public class TaskService {
 		return false;
 	}
 
+	public void stateTransition(String projectKey, String taskKey, TaskStatus newState) throws JiraException, BusinessServiceException {
+		stateTransition(getIssue(projectKey, taskKey), newState);
+	}
+
 	private void stateTransition(Issue issue, TaskStatus newState) throws JiraException, BusinessServiceException {
 		final Transition transition = getTransitionToOrThrow(issue, newState);
 		logger.info("Transition issue {} to {}", issue.getKey(), newState.getLabel());

@@ -5,6 +5,7 @@ import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
 
+import net.rcarz.jiraclient.JiraException;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.api.rest.common.AbstractRestService;
 import org.ihtsdo.snowowl.api.rest.common.AbstractSnomedRestService;
@@ -75,7 +76,7 @@ public class BranchController extends AbstractSnomedRestService {
 	})
 	@RequestMapping(value="/projects/{projectKey}/tasks/{taskKey}/promote", method= RequestMethod.POST)
 	public void promoteTask(@PathVariable final String projectKey, @PathVariable final String taskKey,
-			@RequestBody MergeRequest mergeRequest) throws BusinessServiceException {
+			@RequestBody MergeRequest mergeRequest) throws BusinessServiceException, JiraException {
 		//The branch object that's returned from this function is empty, so suppressing it here to avoid confusion.
 		branchService.promoteTask(projectKey, taskKey, mergeRequest, ControllerHelper.getUsername());
 	}

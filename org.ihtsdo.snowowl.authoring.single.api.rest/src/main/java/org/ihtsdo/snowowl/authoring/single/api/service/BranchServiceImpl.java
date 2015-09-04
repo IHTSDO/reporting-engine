@@ -9,6 +9,7 @@ import com.b2international.snowowl.datastore.server.review.ReviewStatus;
 import com.b2international.snowowl.eventbus.IEventBus;
 import com.b2international.snowowl.snomed.api.ISnomedDescriptionService;
 
+import net.rcarz.jiraclient.JiraException;
 import org.apache.commons.lang.time.StopWatch;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.ConceptConflict;
@@ -47,6 +48,9 @@ public class BranchServiceImpl implements BranchService {
 	@Autowired
 	private CdoStore cdoStore;
 
+	@Autowired
+	private TaskService taskService;
+
 	private static final String SNOMED_STORE = "snomedStore";
 	private static final String MAIN = "MAIN";
 	public static final String SNOMED_TS_REPOSITORY_ID = "snomedStore";
@@ -75,7 +79,7 @@ public class BranchServiceImpl implements BranchService {
 	public Branch rebaseTask(String projectKey, String taskKey, MergeRequest mergeRequest, String username) throws BusinessServiceException {
 		StopWatch stopwatch = new StopWatch();
 		stopwatch.start();
-		Branch branch = mergeBranch (getProjectPath(projectKey), getTaskPath(projectKey, taskKey), mergeRequest.getSourceReviewId(), username);
+		Branch branch = mergeBranch(getProjectPath(projectKey), getTaskPath(projectKey, taskKey), mergeRequest.getSourceReviewId(), username);
 		stopwatch.stop();
 		String resultMessage = "Rebase from project to " + taskKey +  " completed without conflicts in " + stopwatch;
 		notificationService.queueNotification(username, new Notification(projectKey, taskKey, EntityType.Rebase, resultMessage));
@@ -83,11 +87,12 @@ public class BranchServiceImpl implements BranchService {
 	}
 	
 	@Override
-	public Branch promoteTask(String projectKey, String taskKey, MergeRequest mergeRequest, String username) throws BusinessServiceException {
+	public Branch promoteTask(String projectKey, String taskKey, MergeRequest mergeRequest, String username) throws BusinessServiceException, JiraException {
 		StopWatch stopwatch = new StopWatch();
 		stopwatch.start();
-		Branch branch = mergeBranch (getTaskPath(projectKey, taskKey), getProjectPath(projectKey), mergeRequest.getSourceReviewId(), username);
+		Branch branch = mergeBranch(getTaskPath(projectKey, taskKey), getProjectPath(projectKey), mergeRequest.getSourceReviewId(), username);
 		stopwatch.stop();
+		taskService.stateTransition(projectKey, taskKey, TaskStatus.PROMOTED);
 		String resultMessage = "Promotion of " + taskKey + " completed without conflicts in " + stopwatch;
 		notificationService.queueNotification(username, new Notification(projectKey, taskKey, EntityType.Promotion, resultMessage));
 		return branch;

@@ -1,5 +1,6 @@
 package org.ihtsdo.snowowl.authoring.single.api.service;
 
+import net.rcarz.jiraclient.JiraException;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.ConflictReport;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.MergeRequest;
@@ -34,7 +35,7 @@ public interface BranchService {
 	AuthoringTaskReview diffProjectAgainstMain(String projectKey, List<Locale> locales) throws ExecutionException, InterruptedException;
 
 	Branch promoteTask(String projectKey, String taskKey,
-			MergeRequest mergeRequest, String username) throws BusinessServiceException;
+			MergeRequest mergeRequest, String username) throws BusinessServiceException, JiraException;
 
 	ConflictReport retrieveConflictReport(String projectKey,
 			ArrayList<Locale> locales) throws BusinessServiceException;
