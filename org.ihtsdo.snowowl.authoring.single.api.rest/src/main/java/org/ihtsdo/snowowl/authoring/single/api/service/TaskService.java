@@ -1,21 +1,22 @@
 package org.ihtsdo.snowowl.authoring.single.api.service;
 
+import com.b2international.snowowl.core.exceptions.BadRequestException;
+import com.b2international.snowowl.core.exceptions.ConflictException;
 import com.b2international.snowowl.core.exceptions.NotFoundException;
-
 import net.rcarz.jiraclient.*;
-import net.rcarz.jiraclient.User;
-
 import org.ihtsdo.otf.rest.client.OrchestrationRestClient;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
-import org.ihtsdo.snowowl.authoring.single.api.pojo.*;
 import org.ihtsdo.snowowl.api.rest.common.ControllerHelper;
+import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringProject;
+import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTask;
+import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskCreateRequest;
+import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskUpdateRequest;
 import org.ihtsdo.snowowl.authoring.single.api.review.service.ReviewService;
 import org.ihtsdo.snowowl.authoring.single.api.service.jira.ImpersonatingJiraClientFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-
 import us.monoid.json.JSONException;
 
 import java.io.IOException;
@@ -267,8 +268,12 @@ public class TaskService {
 
 		Issue issue = getIssue(projectKey, taskKey);
 		// Act on each field received
-		if (updatedTask.getStatusName() != null) {
-			stateTransition(issue, TaskStatus.fromLabel(updatedTask.getStatusName()));
+		final TaskStatus status = updatedTask.getStatus();
+		if (status != null) {
+			if (status == TaskStatus.UNKNOWN) {
+				throw new BadRequestException("Requested status is unknown.");
+			}
+			stateTransition(issue, status);
 		}
 
 		if (updatedTask.getReviewer() != null) {
@@ -343,6 +348,10 @@ public class TaskService {
 		return false;
 	}
 
+	public void stateTransition(String projectKey, String taskKey, TaskStatus newState) throws JiraException, BusinessServiceException {
+		stateTransition(getIssue(projectKey, taskKey), newState);
+	}
+
 	private void stateTransition(Issue issue, TaskStatus newState) throws JiraException, BusinessServiceException {
 		final Transition transition = getTransitionToOrThrow(issue, newState);
 		logger.info("Transition issue {} to {}", issue.getKey(), newState.getLabel());
@@ -356,7 +365,7 @@ public class TaskService {
 				return transition;
 			}
 		}
-		throw new BusinessServiceException("Could not transition task " + issue.getKey() + " from status '" + issue.getStatus().getName() + "' to '" + newState.name() + "', no such transition is available.");
+		throw new ConflictException("Could not transition task " + issue.getKey() + " from status '" + issue.getStatus().getName() + "' to '" + newState.name() + "', no such transition is available.");
 	}
 
 }

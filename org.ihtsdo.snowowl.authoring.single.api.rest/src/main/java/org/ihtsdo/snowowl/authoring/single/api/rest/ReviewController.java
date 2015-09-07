@@ -30,7 +30,7 @@ public class ReviewController extends AbstractSnomedRestService {
 	@Autowired
 	private ReviewService reviewService;
 
-	@ApiOperation(value="Retrieve the review list for a task")
+	@ApiOperation(value="Retrieve the review list for a Task")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
 	})
@@ -40,7 +40,7 @@ public class ReviewController extends AbstractSnomedRestService {
 		return reviewService.retrieveTaskReview(projectKey, taskKey, Collections.list(request.getLocales()), ControllerHelper.getUsername());
 	}
 
-	@ApiOperation(value="Retrieve the review list for a project")
+	@ApiOperation(value="Retrieve the review list for a Project")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
 	})
@@ -49,7 +49,7 @@ public class ReviewController extends AbstractSnomedRestService {
 		return reviewService.retrieveProjectReview(projectKey, Collections.list(request.getLocales()), ControllerHelper.getUsername());
 	}
 
-	@ApiOperation(value="Comment on a task")
+	@ApiOperation(value="Comment on a Task")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
 	})
@@ -59,7 +59,7 @@ public class ReviewController extends AbstractSnomedRestService {
 		return reviewService.postReviewMessage(projectKey, taskKey, createRequest, ControllerHelper.getUsername());
 	}
 
-	@ApiOperation(value="Comment on a project")
+	@ApiOperation(value="Comment on a Project")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
 	})

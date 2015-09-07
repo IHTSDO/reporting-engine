@@ -1,6 +1,7 @@
 package org.ihtsdo.snowowl.authoring.single.api.service;
 
 import com.b2international.snowowl.api.domain.IComponent;
+import com.b2international.snowowl.core.exceptions.NotFoundException;
 import com.b2international.snowowl.datastore.server.branch.Branch;
 import com.b2international.snowowl.datastore.server.events.*;
 import com.b2international.snowowl.datastore.server.review.ConceptChanges;
@@ -9,6 +10,7 @@ import com.b2international.snowowl.datastore.server.review.ReviewStatus;
 import com.b2international.snowowl.eventbus.IEventBus;
 import com.b2international.snowowl.snomed.api.ISnomedDescriptionService;
 
+import net.rcarz.jiraclient.JiraException;
 import org.apache.commons.lang.time.StopWatch;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.ConceptConflict;
@@ -47,6 +49,9 @@ public class BranchServiceImpl implements BranchService {
 	@Autowired
 	private CdoStore cdoStore;
 
+	@Autowired
+	private TaskService taskService;
+
 	private static final String SNOMED_STORE = "snomedStore";
 	private static final String MAIN = "MAIN";
 	public static final String SNOMED_TS_REPOSITORY_ID = "snomedStore";
@@ -59,6 +64,13 @@ public class BranchServiceImpl implements BranchService {
 	public void createTaskBranchAndProjectBranchIfNeeded(String projectKey, String taskKey) throws ServiceException {
 		createProjectBranchIfNeeded(projectKey);
 		snowOwlBusHelper.makeBusRequest(new CreateBranchEvent(SNOMED_STORE, getBranchPath(projectKey), taskKey, null), BranchReply.class, "Failed to create project branch.", this);
+	}
+
+	@Override
+	public Branch.BranchState getBranchState(String project, String taskKey) throws ServiceException {
+		final String branchPath = PathHelper.getPath(project, taskKey);
+		final BranchReply branchReply = snowOwlBusHelper.makeBusRequest(new ReadBranchEvent(SNOMED_STORE, branchPath), BranchReply.class, "Failed to read branch " + branchPath, this);
+		return branchReply.getBranch().state();
 	}
 
 	@Override
@@ -75,7 +87,7 @@ public class BranchServiceImpl implements BranchService {
 	public Branch rebaseTask(String projectKey, String taskKey, MergeRequest mergeRequest, String username) throws BusinessServiceException {
 		StopWatch stopwatch = new StopWatch();
 		stopwatch.start();
-		Branch branch = mergeBranch (getProjectPath(projectKey), getTaskPath(projectKey, taskKey), mergeRequest.getSourceReviewId(), username);
+		Branch branch = mergeBranch(getProjectPath(projectKey), getTaskPath(projectKey, taskKey), mergeRequest.getSourceReviewId(), username);
 		stopwatch.stop();
 		String resultMessage = "Rebase from project to " + taskKey +  " completed without conflicts in " + stopwatch;
 		notificationService.queueNotification(username, new Notification(projectKey, taskKey, EntityType.Rebase, resultMessage));
@@ -83,11 +95,12 @@ public class BranchServiceImpl implements BranchService {
 	}
 	
 	@Override
-	public Branch promoteTask(String projectKey, String taskKey, MergeRequest mergeRequest, String username) throws BusinessServiceException {
+	public Branch promoteTask(String projectKey, String taskKey, MergeRequest mergeRequest, String username) throws BusinessServiceException, JiraException {
 		StopWatch stopwatch = new StopWatch();
 		stopwatch.start();
-		Branch branch = mergeBranch (getTaskPath(projectKey, taskKey), getProjectPath(projectKey), mergeRequest.getSourceReviewId(), username);
+		Branch branch = mergeBranch(getTaskPath(projectKey, taskKey), getProjectPath(projectKey), mergeRequest.getSourceReviewId(), username);
 		stopwatch.stop();
+		taskService.stateTransition(projectKey, taskKey, TaskStatus.PROMOTED);
 		String resultMessage = "Promotion of " + taskKey + " completed without conflicts in " + stopwatch;
 		notificationService.queueNotification(username, new Notification(projectKey, taskKey, EntityType.Promotion, resultMessage));
 		return branch;
@@ -97,7 +110,12 @@ public class BranchServiceImpl implements BranchService {
 	public AuthoringTaskReview diffProjectAgainstTask(String projectKey, String taskKey, List<Locale> locales) throws ExecutionException, InterruptedException {
 		return doDiff(getProjectPath(projectKey), getTaskPath(projectKey, taskKey), locales);
 	}
-	
+
+	@Override
+	public ReviewStatus getReviewStatus(String id) throws ExecutionException, InterruptedException {
+		return getReview(id).status();
+	}
+
 	private AuthoringTaskReview doDiff(String sourcePath, String targetPath, List<Locale> locales) throws ExecutionException, InterruptedException {
 		final Timer timer = new Timer("Review");
 		final AuthoringTaskReview review = new AuthoringTaskReview();
@@ -109,8 +127,7 @@ public class BranchServiceImpl implements BranchService {
 		Review tsReview = reviewReply.getReview();
 		logger.info("Waiting for TS review to complete");
 		for (int a = 0; a < REVIEW_TIMEOUT; a++) {
-			final ReviewReply latestReviewReply = new ReadReviewEvent(SNOMED_TS_REPOSITORY_ID, tsReview.id()).send(eventBus, ReviewReply.class).get();
-			tsReview = latestReviewReply.getReview();
+			tsReview = getReview(tsReview.id());
 			if (!ReviewStatus.PENDING.equals(tsReview.status())) {
 				break;
 			}
@@ -119,7 +136,7 @@ public class BranchServiceImpl implements BranchService {
 		timer.checkpoint("waiting for review to finish");
 		logger.info("TS review {} status {}", tsReview.id(), tsReview.status());
 		review.setReviewId(tsReview.id());
-		
+
 		final ConceptChangesReply conceptChangesReply = new ReadConceptChangesEvent(SNOMED_TS_REPOSITORY_ID, tsReview.id())
 				.send(eventBus, ConceptChangesReply.class).get();
 		timer.checkpoint("getting changes");
@@ -132,6 +149,14 @@ public class BranchServiceImpl implements BranchService {
 		timer.finish();
 		logger.info("Review {} built", tsReview.id());
 		return review;
+	}
+
+	private Review getReview(String id) throws InterruptedException, ExecutionException {
+		final ReviewReply latestReviewReply = new ReadReviewEvent(SNOMED_TS_REPOSITORY_ID, id).send(eventBus, ReviewReply.class).get();
+		if (latestReviewReply == null) {
+			throw new NotFoundException("Review", id);
+		}
+		return latestReviewReply.getReview();
 	}
 
 	private void addAllToReview(AuthoringTaskReview review, ChangeType changeType, Set<String> conceptIds, String branchPath, List<Locale> locales) {
@@ -175,20 +200,18 @@ public class BranchServiceImpl implements BranchService {
 	}
 
 	@Override
-	public ConflictReport retrieveConflictReport(String projectKey,
-			String taskKey, ArrayList<Locale> locales) throws BusinessServiceException {
-		return createConflictReport (getProjectPath(projectKey), getTaskPath(projectKey, taskKey), locales);
+	public ConflictReport createConflictReport(String projectKey, String taskKey, List<Locale> locales) throws BusinessServiceException {
+		return doCreateConflictReport(getProjectPath(projectKey), getTaskPath(projectKey, taskKey), locales);
 	}
-	
 
-	private ConflictReport createConflictReport(String sourcePath,
-			String targetPath, ArrayList<Locale> locales) throws BusinessServiceException {	
-	try {
+	private ConflictReport doCreateConflictReport(String sourcePath,
+			String targetPath, List<Locale> locales) throws BusinessServiceException {
+		try {
 			//Get changes in the target compared to the source, plus changes in the source
 			//compared to the target and determine which ones intersect
 			ExecutorService executor = Executors.newFixedThreadPool(2);
-			AuthoringTaskReviewRunner targetChangesReviewRunner = new AuthoringTaskReviewRunner (targetPath, sourcePath, locales);
-			AuthoringTaskReviewRunner sourceChangesReviewRunner = new AuthoringTaskReviewRunner (sourcePath, targetPath, locales);
+			AuthoringTaskReviewRunner targetChangesReviewRunner = new AuthoringTaskReviewRunner(targetPath, sourcePath, locales);
+			AuthoringTaskReviewRunner sourceChangesReviewRunner = new AuthoringTaskReviewRunner(sourcePath, targetPath, locales);
 			
 			Future<AuthoringTaskReview> targetChangesReview = executor.submit(targetChangesReviewRunner);
 			Future<AuthoringTaskReview> sourceChangesReview = executor.submit(sourceChangesReviewRunner);
@@ -198,12 +221,12 @@ public class BranchServiceImpl implements BranchService {
 			executor.awaitTermination(REVIEW_TIMEOUT, TimeUnit.MINUTES);
 
 			//Form Set of source changes so as to avoid n x m iterations
-			Set<String> sourceChanges = new HashSet<String>();
+			Set<String> sourceChanges = new HashSet<>();
 			for (ReviewConcept thisConcept : sourceChangesReview.get().getConcepts()) {
 				sourceChanges.add(thisConcept.getId());
 			}
 			
-			List<ConceptConflict> conflictingConcepts = new ArrayList<ConceptConflict>();
+			List<ConceptConflict> conflictingConcepts = new ArrayList<>();
 			//Work through Target Changes to find concepts in common
 			for (ReviewConcept thisConcept : targetChangesReview.get().getConcepts()) {
 				if (sourceChanges.contains(thisConcept.getId())) {
@@ -243,6 +266,8 @@ public class BranchServiceImpl implements BranchService {
 		Map<String, Date> targetLastUpdatedMap = cdoStore.getLastUpdated(targetBranchId, concepts);
 		
 		//Now loop through our conflicting concepts and populate those last updated times, if known
+		logger.info ("Populating " + conflictingConcepts.size() + " conflicts with " + sourceLastUpdatedMap.size() + " source times and "
+				+ targetLastUpdatedMap.size() + " target times");
 		for(ConceptConflict thisConflict : conflictingConcepts) {
 			if (sourceLastUpdatedMap.containsKey(thisConflict.getId())) {
 				thisConflict.setSourceLastUpdate(sourceLastUpdatedMap.get(thisConflict.getId()));
@@ -275,9 +300,8 @@ public class BranchServiceImpl implements BranchService {
 	}
 
 	@Override
-	public ConflictReport retrieveConflictReport(String projectKey,
-			ArrayList<Locale> locales) throws BusinessServiceException {
-		return createConflictReport (MAIN, getProjectPath(projectKey), locales);
+	public ConflictReport createConflictReport(String projectKey, List<Locale> locales) throws BusinessServiceException {
+		return doCreateConflictReport(MAIN, getProjectPath(projectKey), locales);
 	}
 
 	@Override

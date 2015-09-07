@@ -25,7 +25,7 @@ public class ValidationController extends AbstractSnomedRestService {
 	@Autowired
 	private ValidationService validationService;
 
-	@ApiOperation(value = "Initiate validation on a task")
+	@ApiOperation(value = "Initiate validation on a Task")
 	@ApiResponses({ @ApiResponse(code = 200, message = "OK") })
 	@RequestMapping(value = "/projects/{projectKey}/tasks/{taskKey}/validation", method = RequestMethod.POST)
 	public String startValidation(@PathVariable final String projectKey, @PathVariable final String taskKey) throws JiraException,
@@ -33,7 +33,7 @@ public class ValidationController extends AbstractSnomedRestService {
 		return validationService.startValidation(projectKey, taskKey, ControllerHelper.getUsername());
 	}
 
-	@ApiOperation(value = "Recover the most recent validation on a task")
+	@ApiOperation(value = "Recover the most recent validation on a Task")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
 	})
@@ -43,7 +43,7 @@ public class ValidationController extends AbstractSnomedRestService {
 		return validationService.getValidationJson(projectKey, taskKey);
 	}
 	
-	@ApiOperation(value = "Initiate validation on a project")
+	@ApiOperation(value = "Initiate validation on a Project")
 	@ApiResponses({ @ApiResponse(code = 200, message = "OK") })
 	@RequestMapping(value = "/projects/{projectKey}/validation", method = RequestMethod.POST)
 	public String startValidation(@PathVariable final String projectKey) throws JiraException, JSONException, IOException,
@@ -51,7 +51,7 @@ public class ValidationController extends AbstractSnomedRestService {
 		return validationService.startValidation(projectKey, ControllerHelper.getUsername());
 	}
 
-	@ApiOperation(value = "Recover the most recent validation on project")
+	@ApiOperation(value = "Recover the most recent validation on Project")
 	@ApiResponses({ @ApiResponse(code = 200, message = "OK") })
 	@RequestMapping(value = "/projects/{projectKey}/validation", method = RequestMethod.GET)
 	@ResponseBody

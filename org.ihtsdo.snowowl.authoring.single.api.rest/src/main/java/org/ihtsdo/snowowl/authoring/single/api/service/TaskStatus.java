@@ -7,9 +7,9 @@ public enum TaskStatus {
 	NEW("New"),
 	IN_PROGRESS("In Progress"),
 	IN_REVIEW("In Review"),
-	ESCALATION("Escalation"),
-	READY_FOR_PROMOTION("Ready For Promotion"),
-	PENDING("Pending"),
+	REVIEW_COMPLETED("Review Completed"),
+	PROMOTED("Promoted"),
+	COMPLETED("Completed"),
 	UNKNOWN("Unknown");
 
 	private final String label;

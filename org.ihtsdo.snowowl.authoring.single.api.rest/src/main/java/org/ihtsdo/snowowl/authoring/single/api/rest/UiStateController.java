@@ -33,7 +33,7 @@ public class UiStateController extends AbstractSnomedRestService {
 	private TaskService taskService;
 	
 	@ApiOperation(value="Persist UI panel state", notes="This endpoint may be used to persist UI state using any json object. " +
-			"State is stored and retrieved under project, task, user and panel. This also sets the task status to In Progress if it's New.")
+			"State is stored and retrieved under Project, Task, User and panel. This also sets the Task status to In Progress if it's New.")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
 	})

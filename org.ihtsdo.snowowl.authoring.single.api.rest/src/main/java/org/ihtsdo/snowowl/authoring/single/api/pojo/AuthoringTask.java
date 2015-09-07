@@ -80,15 +80,15 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 
 	@JsonProperty("status")
 	public String getStatusName() {
-		return status.getLabel();
+		return status != null ? status.getLabel() : null;
 	}
 
 	public TaskStatus getStatus() {
 		return status;
 	}
 
-	public void setStatus(String status) {
-		this.status = TaskStatus.fromLabel(status);
+	public void setStatus(TaskStatus status) {
+		this.status = status;
 	}
 
 	@Override
