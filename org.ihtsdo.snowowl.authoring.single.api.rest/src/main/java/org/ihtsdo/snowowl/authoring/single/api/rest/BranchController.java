@@ -13,6 +13,7 @@ import org.ihtsdo.snowowl.api.rest.common.ControllerHelper;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.ConflictReport;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.MergeRequest;
 import org.ihtsdo.snowowl.authoring.single.api.service.BranchService;
+import org.ihtsdo.snowowl.authoring.single.api.service.monitor.MonitorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -29,23 +30,34 @@ public class BranchController extends AbstractSnomedRestService {
 	@Autowired
 	private BranchService branchService;
 
-	@ApiOperation(value="Generate the conflicts report between the Task and the Project")
+	@Autowired
+	private MonitorService monitorService;
+
+	@ApiOperation(value="Generate the conflicts report between the Task and the Project.",
+			notes = "The new report has a limited lifespan and can become stale early if a change is made on the Task or Project. " +
+			"This endpoint also creates a monitor of this Task and report.")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
 	})
-	@RequestMapping(value="/projects/{projectKey}/tasks/{taskKey}/rebase", method= RequestMethod.GET)
+	@RequestMapping(value="/projects/{projectKey}/tasks/{taskKey}/rebase-conflicts", method= RequestMethod.POST)
 	public ConflictReport retrieveTaskConflicts(@PathVariable final String projectKey, @PathVariable final String taskKey,
 			HttpServletRequest request) throws BusinessServiceException {
-		return branchService.retrieveConflictReport(projectKey, taskKey, Collections.list(request.getLocales()));
+		final ConflictReport conflictReport = branchService.createConflictReport(projectKey, taskKey, Collections.list(request.getLocales()));
+		monitorService.updateUserFocus(ControllerHelper.getUsername(), projectKey, taskKey, conflictReport);
+		return conflictReport;
 	}
 	
-	@ApiOperation(value="Generate the conflicts report between the Project and MAIN")
+	@ApiOperation(value="Generate the conflicts report between the Project and MAIN.",
+			notes =	"The new report has a limited lifespan and can become stale early if a change is made on the Project or MAIN. " +
+			"This endpoint also creates a monitor of this Project and report.")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
 	})
-	@RequestMapping(value="/projects/{projectKey}/rebase", method= RequestMethod.GET)
+	@RequestMapping(value="/projects/{projectKey}/rebase-conflicts", method= RequestMethod.POST)
 	public ConflictReport retrieveProjectConflicts(@PathVariable final String projectKey, HttpServletRequest request) throws BusinessServiceException {
-		return branchService.retrieveConflictReport(projectKey,Collections.list(request.getLocales()));
+		final ConflictReport conflictReport = branchService.createConflictReport(projectKey, Collections.list(request.getLocales()));
+		monitorService.updateUserFocus(ControllerHelper.getUsername(), projectKey, null, conflictReport);
+		return conflictReport;
 	}
 
 	@ApiOperation(value="Rebase the Task from the Project")

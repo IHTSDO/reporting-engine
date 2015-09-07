@@ -1,5 +1,6 @@
 package org.ihtsdo.snowowl.authoring.single.api.service.monitor;
 
+import org.ihtsdo.snowowl.authoring.single.api.pojo.ConflictReport;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.Notification;
 import org.ihtsdo.snowowl.authoring.single.api.service.NotificationService;
 import org.slf4j.Logger;
@@ -10,15 +11,14 @@ import java.util.*;
 public class UserMonitors {
 
 	private String username;
-	private String focusProjectId;
-	private String focusTaskId;
 	private Date lastAccessed;
-	private List<Monitor> currentMonitors;
+	private boolean started;
+	private Map<Class, Monitor> currentMonitors;
+
 	private Set<Monitor> monitorLoggedError;
-
 	private final MonitorFactory monitorFactory;
-	private final NotificationService notificationService;
 
+	private final NotificationService notificationService;
 	public static final int KEEP_ALIVE_MINUTES = 2;
 	private static final int PAUSE_SECONDS = 10;
 	private Logger logger = LoggerFactory.getLogger(getClass());
@@ -27,24 +27,26 @@ public class UserMonitors {
 		this.username = username;
 		this.monitorFactory = monitorFactory;
 		this.notificationService = notificationService;
-		currentMonitors = new ArrayList<>();
+		currentMonitors = new HashMap<>();
 		monitorLoggedError = new HashSet<>();
 		accessed();
 	}
 
 	public void start() {
+		this.started = true;
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
 				try {
 					logger.info("Starting user monitors for {}", username);
 					while (isStillInUse()) {
-						final int size = currentMonitors.size();
+						final List<Class> keys = new ArrayList<>(currentMonitors.keySet());
+						final int size = keys.size();
 						for (int i = 0; i < size; i++) { // Old style for loop to avoid any concurrent modification problem.
 							Monitor monitor = null;
 							synchronized (currentMonitors) {
 								if (currentMonitors.size() > i) {
-									monitor = currentMonitors.get(i);
+									monitor = currentMonitors.get(keys.get(i));
 								}
 							}
 							if (monitor != null) {
@@ -58,7 +60,7 @@ public class UserMonitors {
 								} catch (MonitorException e) {
 									// Log monitor exception only once per monitor
 									synchronized (currentMonitors) {
-										if (currentMonitors.contains(monitor)) {
+										if (currentMonitors.containsValue(monitor)) {
 											if (!monitorLoggedError.contains(monitor)) {
 												monitorLoggedError.add(monitor);
 												logger.error("Monitor run failed.", e);
@@ -81,25 +83,36 @@ public class UserMonitors {
 		}).start();
 	}
 
-	public void updateFocus(String focusProjectId, String focusTaskId) {
+	public void updateFocus(String focusProjectId, String focusTaskId, ConflictReport conflictReport) {
 		accessed();
-		if(isChanged(this.focusProjectId, focusProjectId) || isChanged(this.focusTaskId, focusTaskId)) {
-			this.focusProjectId = focusProjectId;
-			this.focusTaskId = focusTaskId;
-			synchronized (currentMonitors) {
-				currentMonitors.clear();
-				monitorLoggedError.clear();
-				currentMonitors.addAll(monitorFactory.createMonitors(this.focusProjectId, this.focusTaskId));
-				logger.debug("New monitors for user {} - {}", username, currentMonitors);
+		if (focusProjectId != null) {
+			addMonitorIfNew(monitorFactory.createMonitor(focusProjectId, focusTaskId));
+		}
+		if (conflictReport != null) {
+			addMonitorIfNew(monitorFactory.createMonitor(focusProjectId, focusTaskId, conflictReport));
+		}
+		safeStart();
+	}
+
+	private void addMonitorIfNew(Monitor monitor) {
+		synchronized (currentMonitors) {
+			if (!currentMonitors.containsValue(monitor)) {
+				logger.info("New monitor for user {} - {}", username, monitor);
+				final Monitor replaced = currentMonitors.put(monitor.getClass(), monitor);
+				if (replaced != null) {
+					monitorLoggedError.remove(replaced);
+				}
 			}
 		}
 	}
 
-	private boolean isChanged(String existingValue, String newValue) {
-		if (newValue == null) {
-			return existingValue != null;
-		} else {
-			return !newValue.equals(existingValue);
+	private void safeStart() {
+		if (!started) {
+			synchronized (this) {
+				if (!started) {
+					start();
+				}
+			}
 		}
 	}
 

@@ -4,15 +4,22 @@ import net.rcarz.jiraclient.Issue;
 
 public class PathHelper {
 
-	public static final String MAIN = "MAIN/";
-	public static final String SLASH = "/";
+	private static final String MAIN = "MAIN";
+	private static final String SLASH = "/";
 
 	public static String getPath(String projectKey) {
 		return MAIN + projectKey;
 	}
 
 	public static String getPath(String projectKey, String taskKey) {
-		return MAIN + projectKey + (taskKey == null ? "" : SLASH + taskKey);
+		String path = MAIN;
+		if (projectKey != null) {
+			path += SLASH + projectKey;
+			if (taskKey != null) {
+				path += SLASH + taskKey;
+			}
+		}
+		return path;
 	}
 
 	public static String getTaskPath(Issue issue) {

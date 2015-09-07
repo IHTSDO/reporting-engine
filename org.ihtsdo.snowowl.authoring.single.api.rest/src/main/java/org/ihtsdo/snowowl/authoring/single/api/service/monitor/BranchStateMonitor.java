@@ -40,4 +40,30 @@ public class BranchStateMonitor implements Monitor {
 		}
 	}
 
+	@Override
+	public boolean equals(Monitor o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+
+		BranchStateMonitor that = (BranchStateMonitor) o;
+
+		if (projectId != null ? !projectId.equals(that.projectId) : that.projectId != null) return false;
+		return !(taskId != null ? !taskId.equals(that.taskId) : that.taskId != null);
+
+	}
+
+	@Override
+	public int hashCode() {
+		int result = projectId != null ? projectId.hashCode() : 0;
+		result = 31 * result + (taskId != null ? taskId.hashCode() : 0);
+		return result;
+	}
+
+	@Override
+	public String toString() {
+		return "BranchStateMonitor{" +
+				"projectId='" + projectId + '\'' +
+				", taskId='" + taskId + '\'' +
+				'}';
+	}
 }
