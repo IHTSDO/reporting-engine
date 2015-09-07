@@ -1,5 +1,6 @@
 package org.ihtsdo.snowowl.authoring.single.api.pojo;
 
+import com.b2international.snowowl.datastore.server.branch.Branch;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonRawValue;
 import net.rcarz.jiraclient.Issue;
@@ -21,6 +22,7 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 	private String projectKey;
 	private String summary;
 	private TaskStatus status;
+	private Branch.BranchState branchState;
 	private String description;
 	private User assignee;
 	private User reviewer;
@@ -156,5 +158,13 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 
 	public TaskMessagesStatus getFeedbackMessagesStatus() {
 		return feedbackMessagesStatus;
+	}
+
+	public void setBranchState(Branch.BranchState branchState) {
+		this.branchState = branchState;
+	}
+
+	public Branch.BranchState getBranchState() {
+		return branchState;
 	}
 }

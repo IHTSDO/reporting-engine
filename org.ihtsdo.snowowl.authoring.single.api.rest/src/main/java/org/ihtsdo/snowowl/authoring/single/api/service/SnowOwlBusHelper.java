@@ -10,7 +10,7 @@ import java.util.concurrent.CountDownLatch;
 
 public class SnowOwlBusHelper {
 
-	<E extends Event, R> R makeBusRequest(E event, Class<R> replyClass, String errorMessage, BranchServiceImpl branchService) throws ServiceException {
+	<E extends Event, R> R makeBusRequest(E event, Class<R> replyClass, String errorMessage, BranchService branchService) throws ServiceException {
 		final AsyncResult<R> asyncResult = new AsyncResult<>();
 		new AsyncSupport<>(getSnowOwlBackendEventBus(), replyClass)
 				.send(event)
