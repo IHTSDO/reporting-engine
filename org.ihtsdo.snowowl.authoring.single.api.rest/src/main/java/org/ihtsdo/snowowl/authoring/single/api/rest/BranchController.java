@@ -48,7 +48,7 @@ public class BranchController extends AbstractSnomedRestService {
 		return branchService.retrieveConflictReport(projectKey,Collections.list(request.getLocales()));
 	}
 
-	@ApiOperation(value="Rebase the task from the project")
+	@ApiOperation(value="Rebase the Task from the Project")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
 	})
@@ -59,7 +59,7 @@ public class BranchController extends AbstractSnomedRestService {
 		branchService.rebaseTask(projectKey, taskKey, mergeRequest, ControllerHelper.getUsername());
 	}
 	
-	@ApiOperation(value="Rebase the project from MAIN")
+	@ApiOperation(value="Rebase the Project from MAIN")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
 	})
@@ -70,7 +70,7 @@ public class BranchController extends AbstractSnomedRestService {
 		branchService.rebaseProject(projectKey, mergeRequest, ControllerHelper.getUsername());
 	}
 	
-	@ApiOperation(value="Promote the task to the Project")
+	@ApiOperation(value="Promote the Task to the Project")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
 	})
@@ -81,7 +81,7 @@ public class BranchController extends AbstractSnomedRestService {
 		branchService.promoteTask(projectKey, taskKey, mergeRequest, ControllerHelper.getUsername());
 	}
 	
-	@ApiOperation(value="Promote the project to MAIN")
+	@ApiOperation(value="Promote the Project to MAIN")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
 	})

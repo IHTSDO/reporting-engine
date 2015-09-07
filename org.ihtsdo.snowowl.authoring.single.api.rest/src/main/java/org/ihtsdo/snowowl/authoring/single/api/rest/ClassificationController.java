@@ -26,7 +26,7 @@ public class ClassificationController extends AbstractSnomedRestService {
 	@Autowired
 	private ClassificationService classificationService;
 
-	@ApiOperation(value="Initiate the classifier on a task")
+	@ApiOperation(value="Initiate the classifier on a Task")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
 	})
@@ -35,7 +35,7 @@ public class ClassificationController extends AbstractSnomedRestService {
 		return classificationService.startClassification(projectKey, taskKey, ControllerHelper.getUsername());
 	}
 
-	@ApiOperation(value="Initiate the classifier on a project")
+	@ApiOperation(value="Initiate the classifier on a Project")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
 	})

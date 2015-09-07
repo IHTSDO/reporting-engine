@@ -37,7 +37,7 @@ public class ProjectController extends AbstractSnomedRestService {
 	@Autowired
 	private TaskService taskService;
 
-	@ApiOperation(value="List authoring projects")
+	@ApiOperation(value="List authoring Projects")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
 	})
@@ -46,7 +46,7 @@ public class ProjectController extends AbstractSnomedRestService {
 		return taskService.listProjects();
 	}
 
-	@ApiOperation(value="Retrieve an authoring project")
+	@ApiOperation(value="Retrieve an authoring Project")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
 	})
@@ -55,7 +55,7 @@ public class ProjectController extends AbstractSnomedRestService {
 		return taskService.retrieveProject(projectKey);
 	}
 
-	@ApiOperation(value="List tasks within a project")
+	@ApiOperation(value="List Tasks within a Project")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
 	})
@@ -64,7 +64,7 @@ public class ProjectController extends AbstractSnomedRestService {
 		return taskService.listTasks(projectKey);
 	}
 
-	@ApiOperation(value="List authenticated user's tasks across projects")
+	@ApiOperation(value="List authenticated user's Tasks across Projects")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
 	})
@@ -74,7 +74,7 @@ public class ProjectController extends AbstractSnomedRestService {
 		return taskService.listMyTasks(details.getUsername());
 	}
 
-	@ApiOperation(value="Retrieve a task within a project")
+	@ApiOperation(value="Retrieve a Task within a Project")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
 	})
@@ -83,7 +83,7 @@ public class ProjectController extends AbstractSnomedRestService {
 		return taskService.retrieveTask(projectKey, taskKey);
 	}
 
-	@ApiOperation(value="Create a task within a project")
+	@ApiOperation(value="Create a Task within a Project")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
 	})

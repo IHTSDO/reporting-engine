@@ -42,7 +42,7 @@ public class NotificationController extends AbstractSnomedRestService {
 		return notificationService.retrieveNewNotifications(ControllerHelper.getUsername());
 	}
 
-	@ApiOperation(value="Set user focus for notifications.", notes = "A task or project can be monitored for " +
+	@ApiOperation(value="Set user focus for notifications.", notes = "A Task or Project can be monitored for " +
 			"rebase opportunities or stale reports. Notifications will be made available. " +
 			"Each additional POST will replace the previous monitor. " +
 			"A monitor will expire after " + UserMonitors.KEEP_ALIVE_MINUTES + " minutes if the notifications endpoint is not visited by the user.")
