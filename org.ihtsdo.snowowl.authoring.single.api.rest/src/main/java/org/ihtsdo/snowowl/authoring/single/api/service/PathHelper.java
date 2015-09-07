@@ -8,7 +8,7 @@ public class PathHelper {
 	private static final String SLASH = "/";
 
 	public static String getPath(String projectKey) {
-		return MAIN + projectKey;
+		return getPath(projectKey, null);
 	}
 
 	public static String getPath(String projectKey, String taskKey) {

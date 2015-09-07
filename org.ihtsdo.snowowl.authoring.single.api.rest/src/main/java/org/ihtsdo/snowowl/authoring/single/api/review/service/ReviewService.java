@@ -77,7 +77,7 @@ public class ReviewService {
 			return authoringTaskReview;
 		} catch (ExecutionException|InterruptedException e) {
 			throw new BusinessServiceException("Unable to generate project review.", e);
-		} catch (JiraException e) {
+		} catch (BusinessServiceException e) {
 			throw new BusinessServiceException("Unable to generate project review. Failed to load project ticket.", e);
 		}
 	}

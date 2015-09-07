@@ -1,6 +1,10 @@
 package org.ihtsdo.snowowl.authoring.single.api.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+import com.google.common.collect.ImmutableMap;
 import org.ihtsdo.otf.jms.MessagingHelper;
 import org.ihtsdo.otf.rest.client.OrchestrationRestClient;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
@@ -14,8 +18,8 @@ import org.springframework.stereotype.Component;
 import us.monoid.json.JSONException;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.ExecutionException;
 import javax.jms.JMSException;
 import javax.jms.TextMessage;
 
@@ -40,7 +44,45 @@ public class ValidationService {
 	@Autowired
 	private OrchestrationRestClient orchestrationRestClient;
 
+	private LoadingCache<String, String> validationStatusCache;
+
 	private Logger logger = LoggerFactory.getLogger(getClass());
+
+	public void init() {
+		validationStatusCache = CacheBuilder.newBuilder()
+				.maximumSize(10000)
+				.build(
+						new CacheLoader<String, String>() {
+							public String load(String path) throws Exception {
+								return getValidationStatuses(Collections.singletonList(path)).iterator().next();
+							}
+
+							@Override
+							public Map<String, String> loadAll(Iterable<? extends String> paths) throws Exception {
+								final ImmutableMap.Builder<String, String> map = ImmutableMap.builder();
+								List<String> pathsToLoad = new ArrayList<>();
+								for (String path : paths) {
+									final String status = validationStatusCache.getIfPresent(path);
+									if (status != null) {
+										map.put(path, status);
+									} else {
+										pathsToLoad.add(path);
+									}
+								}
+								if (!pathsToLoad.isEmpty()) {
+									final List<String> validationStatuses = getValidationStatuses(pathsToLoad);
+									for (int i = 0; i < pathsToLoad.size(); i++) {
+										String value = validationStatuses.get(i);
+										if (value == null) {
+											value = "";
+										}
+										map.put(pathsToLoad.get(i), value);
+									}
+								}
+								return map.build();
+							}
+						});
+	}
 
 	public String startValidation(String projectKey, String taskKey, String username) throws BusinessServiceException {
 		return doStartValidation(PathHelper.getPath(projectKey, taskKey), username, projectKey, taskKey);
@@ -60,24 +102,32 @@ public class ValidationService {
 				properties.put(TASK, taskKey);
 			}
 			messagingHelper.send(VALIDATION_REQUEST_QUEUE, "", properties, VALIDATION_RESPONSE_QUEUE);
+			validationStatusCache.put(path, STATUS_SCHEDULED);
 			return STATUS_SCHEDULED;
 		} catch (JsonProcessingException | JMSException e) {
 			throw new BusinessServiceException("Failed to send validation request, please contact support.", e);
 		}
 	}
 
+	@SuppressWarnings("unused")
 	@JmsListener(destination = VALIDATION_RESPONSE_QUEUE)
 	public void receiveValidationEvent(TextMessage message) {
 		try {
 			if (!MessagingHelper.isError(message)) {
 				logger.info("receiveValidationEvent {}", message);
+				final String validationStatus = message.getStringProperty(STATUS);
+
+				// Update cache
+				validationStatusCache.put(message.getStringProperty(MessagingHelper.REQUEST_PROPERTY_NAME_PREFIX + PATH), validationStatus);
+
+				// Notify user
 				notificationService.queueNotification(
 						message.getStringProperty(MessagingHelper.REQUEST_PROPERTY_NAME_PREFIX + USERNAME),
 						new Notification(
 								message.getStringProperty(MessagingHelper.REQUEST_PROPERTY_NAME_PREFIX + PROJECT),
 								message.getStringProperty(MessagingHelper.REQUEST_PROPERTY_NAME_PREFIX + TASK),
 								EntityType.Validation,
-								message.getStringProperty(STATUS)));
+								validationStatus));
 			} else {
 				logger.error("receiveValidationEvent response with error {}", message);
 			}
@@ -94,4 +144,21 @@ public class ValidationService {
 		return orchestrationRestClient.retrieveValidation(PathHelper.getPath(projectKey));
 	}
 
+	public ImmutableMap<String, String> getValidationStatusesUsingCache(Collection<String> paths) throws ExecutionException {
+		return validationStatusCache.getAll(paths);
+	}
+
+	private List<String> getValidationStatuses(List<String> paths) {
+		List<String> statuses;
+		try {
+			statuses = orchestrationRestClient.retrieveValidationStatuses(paths);
+		} catch (JSONException | IOException e) {
+			logger.error("Failed to retrieve validation status of tasks {}", paths, e);
+			statuses = new ArrayList<>();
+			for (int i = 0; i < paths.size(); i++) {
+				statuses.add(TaskService.FAILED_TO_RETRIEVE);
+			}
+		}
+		return statuses;
+	}
 }

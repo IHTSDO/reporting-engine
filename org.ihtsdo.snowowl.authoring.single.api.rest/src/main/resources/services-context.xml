@@ -53,7 +53,7 @@
 
 	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.UiStateService"/>
 	
-	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.ValidationService"/>
+	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.ValidationService" init-method="init"/>
 
 	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.dao.ArbitraryJsonService"/>
 	

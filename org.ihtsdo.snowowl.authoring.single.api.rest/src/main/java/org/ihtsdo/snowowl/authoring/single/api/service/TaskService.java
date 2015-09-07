@@ -3,8 +3,8 @@ package org.ihtsdo.snowowl.authoring.single.api.service;
 import com.b2international.snowowl.core.exceptions.BadRequestException;
 import com.b2international.snowowl.core.exceptions.ConflictException;
 import com.b2international.snowowl.core.exceptions.NotFoundException;
+import com.google.common.collect.ImmutableMap;
 import net.rcarz.jiraclient.*;
-import org.ihtsdo.otf.rest.client.OrchestrationRestClient;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.api.rest.common.ControllerHelper;
@@ -14,13 +14,13 @@ import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskCreateRequest;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskUpdateRequest;
 import org.ihtsdo.snowowl.authoring.single.api.review.service.ReviewService;
 import org.ihtsdo.snowowl.authoring.single.api.service.jira.ImpersonatingJiraClientFactory;
+import org.ihtsdo.snowowl.authoring.single.api.service.util.TimerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import us.monoid.json.JSONException;
 
-import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 
 
 public class TaskService {
@@ -37,10 +37,10 @@ public class TaskService {
 	private ClassificationService classificationService;
 
 	@Autowired
-	private OrchestrationRestClient orchestrationRestClient;
+	private ReviewService reviewService;
 
 	@Autowired
-	private ReviewService reviewService;
+	private ValidationService validationService;
 
 	private final ImpersonatingJiraClientFactory jiraClientFactory;
 
@@ -53,32 +53,47 @@ public class TaskService {
 		AuthoringTask.setJiraReviewerField(jiraReviewerField);
 	}
 	
-	public List<AuthoringProject> listProjects() throws JiraException, IOException, JSONException, RestClientException {
-		List<AuthoringProject> authoringProjects = new ArrayList<>();
+	public List<AuthoringProject> listProjects() throws JiraException, BusinessServiceException {
+		final TimerUtil timer = new TimerUtil("ProjectsList");
 		final JiraClient jiraClient = getJiraClient();
+		List<Project> projects = new ArrayList<>();
 		for (Issue issue : jiraClient.searchIssues("type = \"SCA Authoring Project\"").issues) {
-			// Get project with all fields
-			Project project = jiraClient.getProject(issue.getProject().getKey());
-			authoringProjects.add(buildProject(project));
+			projects.add(jiraClient.getProject(issue.getProject().getKey()));
 		}
+		timer.checkpoint("Jira searches");
+		final List<AuthoringProject> authoringProjects = buildProjects(projects);
+		timer.checkpoint("validation and classification");
+		timer.finish();
 		return authoringProjects;
 	}
 
-	public AuthoringProject retrieveProject(String projectKey) throws JiraException, JSONException, RestClientException, IOException {
-		return buildProject(getProjectTicket(projectKey).getProject());
+	public AuthoringProject retrieveProject(String projectKey) throws BusinessServiceException {
+		return buildProjects(Collections.singletonList(getProjectTicket(projectKey).getProject())).get(0);
 	}
 
-	private AuthoringProject buildProject(Project project) throws IOException, JSONException, RestClientException {
-		final String validationStatus = orchestrationRestClient.retrieveValidationStatuses(Collections.singletonList(PathHelper.getPath(project.getKey()))).get(0);
-		final String latestClassificationJson = classificationService.getLatestClassification(PathHelper.getPath(project.getKey()));
-		return new AuthoringProject(project.getKey(), project.getName(), getPojoUserOrNull(project.getLead()), validationStatus, latestClassificationJson);
+	private List<AuthoringProject> buildProjects(List<Project> projects) throws BusinessServiceException {
+		try {
+			List<AuthoringProject> authoringProjects = new ArrayList<>();
+			Map<Project, String> paths = new HashMap<>();
+			for (Project project : projects) {
+				paths.put(project, PathHelper.getPath(project.getKey()));
+			}
+			final ImmutableMap<String, String> statuses = validationService.getValidationStatusesUsingCache(paths.values());
+			for (Project project : projects) {
+				final String latestClassificationJson = classificationService.getLatestClassification(PathHelper.getPath(project.getKey()));
+				authoringProjects.add(new AuthoringProject(project.getKey(), project.getName(), getPojoUserOrNull(project.getLead()), statuses.get(paths.get(project)), latestClassificationJson));
+			}
+			return authoringProjects;
+		} catch (ExecutionException | RestClientException e) {
+			throw new BusinessServiceException("Failed to retrieve Projects", e);
+		}
 	}
 
 	public Issue getProjectTicketOrThrow(String projectKey) {
 		Issue issue = null;
 		try {
 			issue = getProjectTicket(projectKey);
-		} catch (JiraException e) {
+		} catch (BusinessServiceException e) {
 			logger.error("Failed to load project ticket {}", projectKey, e);
 		}
 		if (issue == null) {
@@ -87,15 +102,19 @@ public class TaskService {
 		return issue;
 	}
 
-	public Issue getProjectTicket(String projectKey) throws JiraException {
-		final List<Issue> issues = getJiraClient().searchIssues("project = " + projectKey + " AND type = \"SCA Authoring Project\"").issues;
-		if (!issues.isEmpty()) {
-			return issues.get(0);
+	public Issue getProjectTicket(String projectKey) throws BusinessServiceException {
+		try {
+			final List<Issue> issues = getJiraClient().searchIssues("project = " + projectKey + " AND type = \"SCA Authoring Project\"").issues;
+			if (!issues.isEmpty()) {
+				return issues.get(0);
+			}
+			return null;
+		} catch (JiraException e) {
+			throw new BusinessServiceException("Failed to load project '" + projectKey + "' from Jira.", e);
 		}
-		return null;
 	}
 
-	public List<AuthoringTask> listTasks(String projectKey) throws JiraException, RestClientException, ServiceException {
+	public List<AuthoringTask> listTasks(String projectKey) throws JiraException, BusinessServiceException {
 		getProjectOrThrow(projectKey);
 		List<Issue> issues = searchIssues(getProjectTaskJQL(projectKey), 0, 0);  //unlimited recovery for now
 		return buildAuthoringTasks(issues);
@@ -105,7 +124,7 @@ public class TaskService {
 		try {
 			Issue issue = getIssue(projectKey, taskKey);
 			return buildAuthoringTasks(Collections.singletonList(issue)).get(0);
-		} catch (JiraException | RestClientException | ServiceException e) {
+		} catch (JiraException | BusinessServiceException e) {
 			throw new BusinessServiceException("Failed to retrieve task " + toString(projectKey, taskKey), e);
 		}
 	}
@@ -149,7 +168,7 @@ public class TaskService {
 		
 	}
 
-	public List<AuthoringTask> listMyTasks(String username) throws JiraException, RestClientException, ServiceException {
+	public List<AuthoringTask> listMyTasks(String username) throws JiraException, BusinessServiceException {
 		List<Issue> issues = getJiraClient().searchIssues("assignee = \"" + username + "\" AND type = \"" + AUTHORING_TASK_TYPE + "\"").issues;
 		return buildAuthoringTasks(issues);
 	}
@@ -170,54 +189,48 @@ public class TaskService {
 		return authoringTask;
 	}
 
-	private List<AuthoringTask> buildAuthoringTasks(List<Issue> issues) throws RestClientException, ServiceException {
+	private List<AuthoringTask> buildAuthoringTasks(List<Issue> issues) throws BusinessServiceException {
+		final TimerUtil timer = new TimerUtil("BuildTaskList");
 		final String username = getUsername();
 		List<AuthoringTask> allTasks = new ArrayList<>();
-		//Map of task paths to tasks
-		Map<String, AuthoringTask> startedTasks = new HashMap<>();
-		for (Issue issue : issues) {
-			AuthoringTask task = new AuthoringTask(issue);
-			allTasks.add(task);
-			//We only need to recover classification and validation statuses for task that are not new ie mature
-			if (task.getStatus() != TaskStatus.NEW) {
-				final String projectKey = issue.getProject().getKey();
-				final String issueKey = issue.getKey();
-				String latestClassificationJson = classificationService.getLatestClassification(PathHelper.getPath(projectKey, issueKey));
-				task.setLatestClassificationJson(latestClassificationJson);
-				task.setBranchState(branchService.getBranchStateNoThrow(projectKey, issueKey));
-				startedTasks.put(PathHelper.getTaskPath(issue), task);
-			}
-			task.setFeedbackMessagesStatus(reviewService.getTaskMessagesStatus(task.getProjectKey(), task.getKey(), username));
-		}
-
-		List<String> startedTaskPaths = new ArrayList<>(startedTasks.keySet());
-		List<String> validationStatuses = getValidationStatuses(startedTaskPaths);
-
-		if (validationStatuses == null) {
-			// TODO I think we should normally throw an exception here, but logging for the moment as I think I'm having connection
-			// issues with the looping REST call while debugging.
-			logger.error("Failed to recover validation statuses - check logs for reason");
-		} else {
-			for (int a = 0; a < startedTaskPaths.size(); a++) {
-				startedTasks.get(startedTaskPaths.get(a)).setLatestValidationStatus(validationStatuses.get(a));
-			}
-		}
-
-		return allTasks;
-	}
-
-	private List<String> getValidationStatuses(List<String> paths) {
-		List<String> statuses;
 		try {
-			statuses = orchestrationRestClient.retrieveValidationStatuses(paths);
-		} catch (JSONException | IOException e) {
-			logger.error("Failed to retrieve validation status of tasks {}", paths, e);
-			statuses = new ArrayList<>();
-			for (int i = 0; i < paths.size(); i++) {
-				statuses.add(FAILED_TO_RETRIEVE);
+			//Map of task paths to tasks
+			Map<String, AuthoringTask> startedTasks = new HashMap<>();
+			for (Issue issue : issues) {
+				AuthoringTask task = new AuthoringTask(issue);
+				allTasks.add(task);
+				//We only need to recover classification and validation statuses for task that are not new ie mature
+				if (task.getStatus() != TaskStatus.NEW) {
+					final String projectKey = issue.getProject().getKey();
+					final String issueKey = issue.getKey();
+					String latestClassificationJson = classificationService.getLatestClassification(PathHelper.getPath(projectKey, issueKey));
+					timer.checkpoint("Got classification");
+					task.setLatestClassificationJson(latestClassificationJson);
+					task.setBranchState(branchService.getBranchStateNoThrow(projectKey, issueKey));
+					timer.checkpoint("Got branch state");
+					startedTasks.put(PathHelper.getTaskPath(issue), task);
+				}
+				task.setFeedbackMessagesStatus(reviewService.getTaskMessagesStatus(task.getProjectKey(), task.getKey(), username));
+				timer.checkpoint("Got feedback messages");
 			}
+
+			final ImmutableMap<String, String> validationStatuses = validationService.getValidationStatusesUsingCache(startedTasks.keySet());
+			timer.checkpoint("Got ValidationStatuses");
+
+			if (validationStatuses == null) {
+				// TODO I think we should normally throw an exception here, but logging for the moment as I think I'm having connection
+				// issues with the looping REST call while debugging.
+				logger.error("Failed to recover validation statuses - check logs for reason");
+			} else {
+				for (final String path : startedTasks.keySet()) {
+					startedTasks.get(path).setLatestValidationStatus(validationStatuses.get(path));
+				}
+			}
+			timer.finish();
+		} catch (ExecutionException | RestClientException e) {
+			throw new BusinessServiceException("Failed to retrieve task list.", e);
 		}
-		return statuses;
+		return allTasks;
 	}
 
 	private void getProjectOrThrow(String projectKey) {

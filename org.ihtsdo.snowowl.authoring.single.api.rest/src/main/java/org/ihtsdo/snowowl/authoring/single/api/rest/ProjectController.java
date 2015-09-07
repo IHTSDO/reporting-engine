@@ -4,10 +4,7 @@ import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
-
 import net.rcarz.jiraclient.JiraException;
-
-import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.api.rest.common.AbstractRestService;
 import org.ihtsdo.snowowl.api.rest.common.AbstractSnomedRestService;
@@ -22,12 +19,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
-
 import us.monoid.json.JSONException;
 
 import java.io.IOException;
-
-import java.util.*;
+import java.util.List;
 
 @Api("Authoring Projects")
 @RestController
@@ -42,7 +37,7 @@ public class ProjectController extends AbstractSnomedRestService {
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/projects", method= RequestMethod.GET)
-	public List<AuthoringProject> listProjects() throws JiraException, IOException, JSONException, RestClientException {
+	public List<AuthoringProject> listProjects() throws JiraException, BusinessServiceException {
 		return taskService.listProjects();
 	}
 
@@ -51,7 +46,7 @@ public class ProjectController extends AbstractSnomedRestService {
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/projects/{projectKey}", method= RequestMethod.GET)
-	public AuthoringProject retrieveProject(@PathVariable final String projectKey) throws JiraException, RestClientException, JSONException, IOException {
+	public AuthoringProject retrieveProject(@PathVariable final String projectKey) throws JiraException, BusinessServiceException {
 		return taskService.retrieveProject(projectKey);
 	}
 
@@ -60,7 +55,7 @@ public class ProjectController extends AbstractSnomedRestService {
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/projects/{projectKey}/tasks", method= RequestMethod.GET)
-	public List<AuthoringTask> listTasks(@PathVariable final String projectKey) throws JiraException, RestClientException, ServiceException {
+	public List<AuthoringTask> listTasks(@PathVariable final String projectKey) throws JiraException, BusinessServiceException {
 		return taskService.listTasks(projectKey);
 	}
 
@@ -69,7 +64,7 @@ public class ProjectController extends AbstractSnomedRestService {
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/projects/my-tasks", method= RequestMethod.GET)
-	public List<AuthoringTask> listMyTasks() throws JiraException, RestClientException, ServiceException {
+	public List<AuthoringTask> listMyTasks() throws JiraException, BusinessServiceException {
 		UserDetails details = ControllerHelper.getUserDetails();
 		return taskService.listMyTasks(details.getUsername());
 	}

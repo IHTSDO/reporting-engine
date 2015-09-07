@@ -23,7 +23,7 @@ import org.ihtsdo.snowowl.authoring.single.api.review.pojo.ChangeType;
 import org.ihtsdo.snowowl.authoring.single.api.review.pojo.ReviewConcept;
 import org.ihtsdo.snowowl.authoring.single.api.service.dao.CdoStore;
 import org.ihtsdo.snowowl.authoring.single.api.service.ts.SnomedServiceHelper;
-import org.ihtsdo.snowowl.authoring.single.api.service.util.Timer;
+import org.ihtsdo.snowowl.authoring.single.api.service.util.TimerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -117,7 +117,7 @@ public class BranchService {
 	}
 
 	private AuthoringTaskReview doDiff(String sourcePath, String targetPath, List<Locale> locales) throws ExecutionException, InterruptedException {
-		final Timer timer = new Timer("Review");
+		final TimerUtil timer = new TimerUtil("Review");
 		final AuthoringTaskReview review = new AuthoringTaskReview();
 		logger.info("Creating TS review - source {}, target {}", sourcePath, targetPath);
 		final ReviewReply reviewReply = new CreateReviewEvent(SNOMED_TS_REPOSITORY_ID, sourcePath, targetPath)
