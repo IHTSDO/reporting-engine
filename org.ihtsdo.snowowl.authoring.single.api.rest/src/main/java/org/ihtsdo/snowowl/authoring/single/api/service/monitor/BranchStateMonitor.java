@@ -8,7 +8,7 @@ import org.ihtsdo.snowowl.authoring.single.api.service.ServiceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class BranchStateMonitor implements Monitor {
+public class BranchStateMonitor extends Monitor {
 
 	private final String projectId;
 	private final String taskId;
@@ -41,7 +41,7 @@ public class BranchStateMonitor implements Monitor {
 	}
 
 	@Override
-	public boolean equals(Monitor o) {
+	public boolean equals(Object o) {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 

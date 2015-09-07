@@ -8,7 +8,7 @@ import org.ihtsdo.snowowl.authoring.single.api.service.BranchService;
 
 import java.util.concurrent.ExecutionException;
 
-public class ConflictReportMonitor implements Monitor {
+public class ConflictReportMonitor extends Monitor {
 
 	private final ConflictReport conflictReport;
 	private final BranchService branchService;
@@ -46,7 +46,7 @@ public class ConflictReportMonitor implements Monitor {
 	}
 
 	@Override
-	public boolean equals(Monitor o) {
+	public boolean equals(Object o) {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 

@@ -13,27 +13,32 @@ public class UserMonitors {
 	private String username;
 	private Date lastAccessed;
 	private boolean started;
+	private final Runnable deathCallback;
+
 	private Map<Class, Monitor> currentMonitors;
-
 	private Set<Monitor> monitorLoggedError;
-	private final MonitorFactory monitorFactory;
 
+	private final MonitorFactory monitorFactory;
 	private final NotificationService notificationService;
+
 	public static final int KEEP_ALIVE_MINUTES = 2;
 	private static final int PAUSE_SECONDS = 10;
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
-	public UserMonitors(String username, MonitorFactory monitorFactory, NotificationService notificationService) {
+	public UserMonitors(String username, MonitorFactory monitorFactory, NotificationService notificationService, Runnable deathCallback) {
 		this.username = username;
 		this.monitorFactory = monitorFactory;
 		this.notificationService = notificationService;
 		currentMonitors = new HashMap<>();
 		monitorLoggedError = new HashSet<>();
+		this.deathCallback = deathCallback;
 		accessed();
 	}
 
 	public void start() {
-		this.started = true;
+		synchronized (this) {
+			started = true;
+		}
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
@@ -75,6 +80,7 @@ public class UserMonitors {
 						Thread.sleep(PAUSE_SECONDS * 1000);
 					}
 					logger.info("User monitors for {} no longer in use. Closing down.", username);
+					deathCallback.run();
 				} catch (InterruptedException e) {
 					// This will probably happen when we restart the application.
 					logger.info("User monitor interrupted.", e);

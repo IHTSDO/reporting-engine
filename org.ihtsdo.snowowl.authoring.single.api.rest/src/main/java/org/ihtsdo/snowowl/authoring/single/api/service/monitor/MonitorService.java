@@ -9,7 +9,7 @@ import java.util.Map;
 
 public class MonitorService {
 
-	private Map<String, UserMonitors> userMonitors = new HashMap<>();
+	private Map<String, UserMonitors> userMonitorsMap = new HashMap<>();
 
 	@Autowired
 	private NotificationService notificationService;
@@ -23,15 +23,23 @@ public class MonitorService {
 
 	public void updateUserFocus(String username, String focusProjectId, String focusTaskId, ConflictReport conflictReport) {
 		createIfNotExists(username);
-		userMonitors.get(username).updateFocus(focusProjectId, focusTaskId, conflictReport);
+		userMonitorsMap.get(username).updateFocus(focusProjectId, focusTaskId, conflictReport);
 	}
 
-	private void createIfNotExists(String username) {
-		if (!userMonitors.containsKey(username)) {
+	private void createIfNotExists(final String username) {
+		if (!userMonitorsMap.containsKey(username)) {
 			synchronized(getClass()) {
-				if (!userMonitors.containsKey(username)) {
-					final UserMonitors userMonitors = new UserMonitors(username, monitorFactory, notificationService);
-					this.userMonitors.put(username, userMonitors);
+				if (!userMonitorsMap.containsKey(username)) {
+					final Runnable deathCallback = new Runnable() {
+						@Override
+						public void run() {
+							synchronized (MonitorService.class) {
+								userMonitorsMap.remove(username);
+							}
+						}
+					};
+					final UserMonitors userMonitors = new UserMonitors(username, monitorFactory, notificationService, deathCallback);
+					this.userMonitorsMap.put(username, userMonitors);
 				}
 			}
 		}
