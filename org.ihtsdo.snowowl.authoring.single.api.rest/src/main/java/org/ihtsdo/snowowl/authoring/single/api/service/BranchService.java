@@ -16,6 +16,8 @@ import java.util.concurrent.ExecutionException;
 public interface BranchService {
 	void createTaskBranchAndProjectBranchIfNeeded(String projectKey, String taskKey) throws ServiceException;
 
+	Branch.BranchState getBranchState(String project, String taskKey) throws ServiceException;
+
 	AuthoringTaskReview diffTaskAgainstProject(String projectKey, String taskKey, List<Locale> locales) throws ExecutionException, InterruptedException;
 
 	String getTaskPath(String projectKey, String taskKey);

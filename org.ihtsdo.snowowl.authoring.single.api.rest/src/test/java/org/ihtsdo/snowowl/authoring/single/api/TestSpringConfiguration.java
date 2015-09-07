@@ -48,6 +48,11 @@ public class TestSpringConfiguration {
 			}
 
 			@Override
+			public Branch.BranchState getBranchState(String project, String taskKey) throws ServiceException {
+				return null;
+			}
+
+			@Override
 			public AuthoringTaskReview diffTaskAgainstProject(String projectKey, String taskKey, List<Locale> locales) throws ExecutionException, InterruptedException {
 				return null;
 			}

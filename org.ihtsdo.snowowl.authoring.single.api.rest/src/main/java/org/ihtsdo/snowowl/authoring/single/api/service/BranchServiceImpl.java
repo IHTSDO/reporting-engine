@@ -66,6 +66,13 @@ public class BranchServiceImpl implements BranchService {
 	}
 
 	@Override
+	public Branch.BranchState getBranchState(String project, String taskKey) throws ServiceException {
+		final String branchPath = PathHelper.getPath(project, taskKey);
+		final BranchReply branchReply = snowOwlBusHelper.makeBusRequest(new ReadBranchEvent(SNOMED_STORE, branchPath), BranchReply.class, "Failed to read branch " + branchPath, this);
+		return branchReply.getBranch().state();
+	}
+
+	@Override
 	public AuthoringTaskReview diffTaskAgainstProject(String projectKey, String taskKey, List<Locale> locales) throws ExecutionException, InterruptedException {
 		return doDiff(getTaskPath(projectKey, taskKey), getProjectPath(projectKey), locales);
 	}
@@ -188,7 +195,7 @@ public class BranchServiceImpl implements BranchService {
 
 	private ConflictReport createConflictReport(String sourcePath,
 			String targetPath, ArrayList<Locale> locales) throws BusinessServiceException {	
-	try {
+		try {
 			//Get changes in the target compared to the source, plus changes in the source
 			//compared to the target and determine which ones intersect
 			ExecutorService executor = Executors.newFixedThreadPool(2);
