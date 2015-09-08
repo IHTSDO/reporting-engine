@@ -1,6 +1,9 @@
 package org.ihtsdo.snowowl.authoring.single.api.service;
 
+import static com.google.common.collect.Sets.newHashSet;
+
 import com.b2international.snowowl.api.domain.IComponent;
+import com.b2international.snowowl.api.impl.domain.ComponentRef;
 import com.b2international.snowowl.core.exceptions.NotFoundException;
 import com.b2international.snowowl.datastore.server.branch.Branch;
 import com.b2international.snowowl.datastore.server.events.*;
@@ -9,6 +12,12 @@ import com.b2international.snowowl.datastore.server.review.Review;
 import com.b2international.snowowl.datastore.server.review.ReviewStatus;
 import com.b2international.snowowl.eventbus.IEventBus;
 import com.b2international.snowowl.snomed.api.ISnomedDescriptionService;
+import com.b2international.snowowl.snomed.api.domain.DefinitionStatus;
+import com.b2international.snowowl.snomed.api.impl.FsnJoinerOperation;
+import com.b2international.snowowl.snomed.api.impl.domain.browser.SnomedBrowserRelationshipTarget;
+import com.b2international.snowowl.snomed.datastore.SnomedConceptIndexEntry;
+import com.b2international.snowowl.snomed.datastore.SnomedRelationshipIndexEntry;
+import com.google.common.base.Optional;
 
 import net.rcarz.jiraclient.JiraException;
 import org.apache.commons.lang.time.StopWatch;
@@ -54,6 +63,7 @@ public class BranchService {
 
 	private static final String SNOMED_STORE = "snomedStore";
 	private static final String MAIN = "MAIN";
+	private static final String CODE_SYSYTEM = "SNOMEDCT";
 	public static final String SNOMED_TS_REPOSITORY_ID = "snomedStore";
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 	
@@ -232,6 +242,7 @@ public class BranchService {
 			}
 			
 			populateLastUpdateTimes(sourcePath, targetPath, conflictingConcepts);
+			conflictingConcepts = populateFSNs(conflictingConcepts, locales, targetPath);
 			
 			ConflictReport conflictReport = new ConflictReport();
 			conflictReport.setConcepts(conflictingConcepts);
@@ -243,6 +254,39 @@ public class BranchService {
 		}
 	}
 	
+	private List<ConceptConflict> populateFSNs(final List<ConceptConflict> conflictingConcepts, List<Locale> locales, String targetBranchPath) {
+
+		List<ConceptConflict> results;
+		if (conflictingConcepts == null || conflictingConcepts.size() == 0) {
+			results = conflictingConcepts;
+		} else {
+			StopWatch stopwatch = new StopWatch();
+			stopwatch.start();
+			ComponentRef exampleConcept  = new ComponentRef(CODE_SYSYTEM, targetBranchPath, conflictingConcepts.get(0).getId());
+			results = new FsnJoinerOperation<ConceptConflict>(exampleConcept, locales, descriptionService) {
+	
+				@Override
+				protected Collection<SnomedConceptIndexEntry> getConceptEntries(String conceptId) {
+					final Set<String> conflictingConceptIds = newHashSet();
+					for (final ConceptConflict conflictingConcept : conflictingConcepts) {
+						conflictingConceptIds.add(conflictingConcept.getId());
+					}
+					return getTerminologyBrowser().getConcepts(branchPath, conflictingConceptIds);
+				}
+	
+				@Override
+				protected ConceptConflict convertConceptEntry(SnomedConceptIndexEntry conflictingConceptIdx, Optional<String> optionalFsn) {
+					final ConceptConflict conflictingConcept = new ConceptConflict(conflictingConceptIdx.getId());
+					conflictingConcept.setFsn(optionalFsn.or("[Unable to recover FSN]"));
+					return conflictingConcept;
+				}
+			}.run();
+			stopwatch.stop();
+			logger.info ("Populated " + results.size() + " fsns in " + stopwatch);
+		}
+		return results;
+	}
+
 	private void populateLastUpdateTimes(String sourcePath, String targetPath,
 			List<ConceptConflict> conflictingConcepts) throws SQLException {
 		
