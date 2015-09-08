@@ -71,12 +71,16 @@ public class ValidationService {
 								}
 								if (!pathsToLoad.isEmpty()) {
 									final List<String> validationStatuses = getValidationStatuses(pathsToLoad);
-									for (int i = 0; i < pathsToLoad.size(); i++) {
-										String value = validationStatuses.get(i);
-										if (value == null) {
-											value = "";
+									if (validationStatuses != null) {
+										for (int i = 0; i < pathsToLoad.size(); i++) {
+											String value = validationStatuses.get(i);
+											if (value == null) {
+												value = "";
+											}
+											map.put(pathsToLoad.get(i), value);
 										}
-										map.put(pathsToLoad.get(i), value);
+									} else {
+										logger.error("Unable to Initialise Validation Status Cache - none returned, see logs");
 									}
 								}
 								return map.build();
