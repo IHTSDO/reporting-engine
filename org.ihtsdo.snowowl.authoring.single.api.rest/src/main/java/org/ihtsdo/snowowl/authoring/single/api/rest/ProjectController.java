@@ -17,7 +17,6 @@ import org.ihtsdo.snowowl.authoring.single.api.service.ServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.service.TaskService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import us.monoid.json.JSONException;
 
@@ -65,8 +64,16 @@ public class ProjectController extends AbstractSnomedRestService {
 	})
 	@RequestMapping(value="/projects/my-tasks", method= RequestMethod.GET)
 	public List<AuthoringTask> listMyTasks() throws JiraException, BusinessServiceException {
-		UserDetails details = ControllerHelper.getUserDetails();
-		return taskService.listMyTasks(details.getUsername());
+		return taskService.listMyTasks(ControllerHelper.getUserDetails().getUsername());
+	}
+
+	@ApiOperation(value="List review tasks, with the current user or unassigned reviewer, across Projects")
+	@ApiResponses({
+			@ApiResponse(code = 200, message = "OK")
+	})
+	@RequestMapping(value="/projects/review-tasks", method= RequestMethod.GET)
+	public List<AuthoringTask> listMyOrUnassignedReviewTasks() throws JiraException, BusinessServiceException {
+		return taskService.listMyOrUnassignedReviewTasks();
 	}
 
 	@ApiOperation(value="Retrieve a Task within a Project")

@@ -173,6 +173,10 @@ public class TaskService {
 		return buildAuthoringTasks(issues);
 	}
 
+	public List<AuthoringTask> listMyOrUnassignedReviewTasks() throws JiraException, BusinessServiceException {
+		return buildAuthoringTasks(getJiraClient().searchIssues("type = \"" + AUTHORING_TASK_TYPE + "\" AND (Reviewer = currentUser() OR Reviewer = null)").issues);
+	}
+
 	private String getProjectTaskJQL(String projectKey) {
 		return "project = " + projectKey + " AND type = \"" + AUTHORING_TASK_TYPE + "\"";
 	}
