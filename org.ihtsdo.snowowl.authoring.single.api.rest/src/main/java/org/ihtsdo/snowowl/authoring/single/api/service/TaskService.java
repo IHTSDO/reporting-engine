@@ -169,7 +169,7 @@ public class TaskService {
 	}
 
 	public List<AuthoringTask> listMyTasks(String username) throws JiraException, BusinessServiceException {
-		List<Issue> issues = getJiraClient().searchIssues("(assignee = \"" + username + "\" OR reviewer = \"" + username + "\") AND type = \"" + AUTHORING_TASK_TYPE + "\"").issues;
+		List<Issue> issues = getJiraClient().searchIssues("assignee = \"" + username + "\" AND type = \"" + AUTHORING_TASK_TYPE + "\"").issues;
 		return buildAuthoringTasks(issues);
 	}
 
