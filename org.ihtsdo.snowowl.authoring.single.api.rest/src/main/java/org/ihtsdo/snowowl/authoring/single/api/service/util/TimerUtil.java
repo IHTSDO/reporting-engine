@@ -5,14 +5,14 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 
-public class Timer {
+public class TimerUtil {
 
 	private final String timerName;
 	private final long start;
 	private long lastCheck;
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
-	public Timer(String timerName) {
+	public TimerUtil(String timerName) {
 		this.timerName = timerName;
 		this.start = new Date().getTime();
 		lastCheck = start;
@@ -33,7 +33,7 @@ public class Timer {
 	}
 
 	public static void main(String[] args) throws InterruptedException {
-		final Timer timer = new Timer("A");
+		final TimerUtil timer = new TimerUtil("A");
 		Thread.sleep(100);
 		timer.checkpoint("thing");
 		Thread.sleep(1000);

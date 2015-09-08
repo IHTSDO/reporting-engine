@@ -10,7 +10,8 @@ public class ConceptConflict implements IComponent {
 	String id;
 	Date sourceLastUpdate;
 	Date targetLastUpdate;
-	
+	String fsn;
+
 	public ConceptConflict(String id) {
 		this.id = id;
 	}
@@ -38,5 +39,13 @@ public class ConceptConflict implements IComponent {
 	@JsonIgnore
 	public boolean isReleased() {
 		return false;
+	}
+	
+	public String getFsn() {
+		return fsn;
+	}
+
+	public void setFsn(String fsn) {
+		this.fsn = fsn;
 	}
 }

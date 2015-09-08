@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>org.ihtsdo.snowowl</groupId>
 		<artifactId>ihtsdo-snowowl-parent</artifactId>
-		<version>4.1.16</version>
+		<version>4.1.17</version>
 	</parent>
 
 	<artifactId>org.ihtsdo.snowowl.authoring.single.api.rest</artifactId>
@@ -111,6 +111,12 @@
 		<dependency>
 			<groupId>com.b2international.snowowl</groupId>
 			<artifactId>com.b2international.snowowl.datastore</artifactId>
+			<version>${snowowl.version}</version>
+			<scope>${snowowl.lib.scope}</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.b2international.snowowl</groupId>
+			<artifactId>com.b2international.snowowl.snomed.datastore</artifactId>
 			<version>${snowowl.version}</version>
 			<scope>${snowowl.lib.scope}</scope>
 		</dependency>
@@ -418,7 +424,6 @@
 						<Import-Package>*;resolution:=optional,
 							com.b2international.snowowl.api.impl,
 							com.b2international.snowowl.api.impl.codesystem,
-							com.b2international.snowowl.snomed.api.impl,
 							org.slf4j;version="1.7.2"
 						</Import-Package>
 					</instructions>
