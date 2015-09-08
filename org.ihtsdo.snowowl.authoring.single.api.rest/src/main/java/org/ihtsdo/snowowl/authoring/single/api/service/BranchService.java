@@ -1,8 +1,7 @@
 package org.ihtsdo.snowowl.authoring.single.api.service;
 
-import static com.google.common.collect.Sets.newHashSet;
-
 import com.b2international.snowowl.api.domain.IComponent;
+import com.b2international.snowowl.api.domain.IComponentRef;
 import com.b2international.snowowl.api.impl.domain.ComponentRef;
 import com.b2international.snowowl.core.exceptions.NotFoundException;
 import com.b2international.snowowl.datastore.server.branch.Branch;
@@ -12,21 +11,13 @@ import com.b2international.snowowl.datastore.server.review.Review;
 import com.b2international.snowowl.datastore.server.review.ReviewStatus;
 import com.b2international.snowowl.eventbus.IEventBus;
 import com.b2international.snowowl.snomed.api.ISnomedDescriptionService;
-import com.b2international.snowowl.snomed.api.domain.DefinitionStatus;
 import com.b2international.snowowl.snomed.api.impl.FsnJoinerOperation;
-import com.b2international.snowowl.snomed.api.impl.domain.browser.SnomedBrowserRelationshipTarget;
 import com.b2international.snowowl.snomed.datastore.SnomedConceptIndexEntry;
-import com.b2international.snowowl.snomed.datastore.SnomedRelationshipIndexEntry;
 import com.google.common.base.Optional;
-
 import net.rcarz.jiraclient.JiraException;
 import org.apache.commons.lang.time.StopWatch;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
-import org.ihtsdo.snowowl.authoring.single.api.pojo.ConceptConflict;
-import org.ihtsdo.snowowl.authoring.single.api.pojo.ConflictReport;
-import org.ihtsdo.snowowl.authoring.single.api.pojo.EntityType;
-import org.ihtsdo.snowowl.authoring.single.api.pojo.MergeRequest;
-import org.ihtsdo.snowowl.authoring.single.api.pojo.Notification;
+import org.ihtsdo.snowowl.authoring.single.api.pojo.*;
 import org.ihtsdo.snowowl.authoring.single.api.review.pojo.AuthoringTaskReview;
 import org.ihtsdo.snowowl.authoring.single.api.review.pojo.ChangeType;
 import org.ihtsdo.snowowl.authoring.single.api.review.pojo.ReviewConcept;
@@ -40,6 +31,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.*;
+
+import static com.google.common.collect.Sets.newHashSet;
 
 public class BranchService {
 
@@ -170,9 +163,12 @@ public class BranchService {
 	}
 
 	private void addAllToReview(AuthoringTaskReview review, ChangeType changeType, Set<String> conceptIds, String branchPath, List<Locale> locales) {
-		for (String conceptId : conceptIds) {
-			final String term = descriptionService.getFullySpecifiedName(SnomedServiceHelper.createComponentRef(branchPath, conceptId), locales).getTerm();
-			review.addConcept(new ReviewConcept(conceptId, term, changeType));
+		if (!conceptIds.isEmpty()) {
+			IComponentRef checkedComponentRef = SnomedServiceHelper.createComponentRef(branchPath, conceptIds.iterator().next());;
+			for (String conceptId : conceptIds) {
+				final String term = descriptionService.getFullySpecifiedName(new ComponentRef(checkedComponentRef, conceptId), locales).getTerm();
+				review.addConcept(new ReviewConcept(conceptId, term, changeType));
+			}
 		}
 	}
 
