@@ -41,9 +41,13 @@ public class ConflictReportMonitor extends Monitor {
 		try {
 			status = branchService.getReviewStatus(sourceReviewId);
 		} catch (ExecutionException | InterruptedException e) {
+			if (e instanceof ExecutionException) {
+				final Throwable cause = e.getCause();
+				if (cause != null && cause instanceof NotFoundException) {
+					throw new FatalMonitorException("Review not found.", e);
+				}
+			}
 			throw new MonitorException("Failed to retrieve the status of review " + sourceReviewId, e);
-		} catch (NotFoundException e) {
-			throw new FatalMonitorException("Review not found.", e);
 		}
 		return status;
 	}
