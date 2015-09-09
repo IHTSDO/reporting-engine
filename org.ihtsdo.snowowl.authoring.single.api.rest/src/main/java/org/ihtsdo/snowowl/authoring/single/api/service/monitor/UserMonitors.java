@@ -66,11 +66,16 @@ public class UserMonitors {
 									// Log monitor exception only once per monitor
 									synchronized (currentMonitors) {
 										if (currentMonitors.containsValue(monitor)) {
-											if (!monitorLoggedError.contains(monitor)) {
-												monitorLoggedError.add(monitor);
-												logger.error("Monitor run failed.", e);
+											if (e instanceof FatalMonitorException) {
+												logger.error("Fatal monitor run, removing {}.", monitor, e);
+												currentMonitors.remove(monitor);
 											} else {
-												logger.info("Monitor run failed again.", e);
+												if (!monitorLoggedError.contains(monitor)) {
+													monitorLoggedError.add(monitor);
+													logger.error("Monitor run failed.", e);
+												} else {
+													logger.info("Monitor run failed again.", e);
+												}
 											}
 										}
 									}
@@ -122,7 +127,7 @@ public class UserMonitors {
 		}
 	}
 
-	private void accessed() {
+	public void accessed() {
 		lastAccessed = new Date();
 	}
 

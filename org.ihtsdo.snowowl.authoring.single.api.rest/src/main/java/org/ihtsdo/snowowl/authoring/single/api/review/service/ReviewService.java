@@ -1,7 +1,9 @@
 package org.ihtsdo.snowowl.authoring.single.api.review.service;
 
 import com.b2international.snowowl.core.exceptions.BadRequestException;
+
 import net.rcarz.jiraclient.JiraException;
+
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.review.domain.Branch;
 import org.ihtsdo.snowowl.authoring.single.api.review.domain.ReviewMessage;
@@ -25,6 +27,7 @@ import org.springframework.stereotype.Service;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+
 import javax.transaction.Transactional;
 
 @Service
@@ -52,12 +55,17 @@ public class ReviewService {
 	private CdoStore cdoStore;
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
+	
+	//TODO Investigate wtih B2i why we see Refsets showing as modified in reviews
+	private static final String TEMPORARY_CONCEPT_REMOVAL = "(foundation metadata concept)";
 
 	@Transactional
 	public AuthoringTaskReview retrieveTaskReview(String projectKey, String taskKey, List<Locale> locales, String username) throws BusinessServiceException {
 		try {
 			final AuthoringTaskReview authoringTaskReview = branchService.diffTaskAgainstProject(projectKey, taskKey, locales);
 			final List<ReviewConcept> reviewConcepts = authoringTaskReview.getConcepts();
+			//TODO WRP-1032 Investigate with B2i why refsets are showing as being modified.
+			removeRefsets(reviewConcepts);
 			putReviewMessagesAgainstConcepts(projectKey, taskKey, username, reviewConcepts);
 			markConceptsModifiedSinceReview(projectKey, taskKey, reviewConcepts, false);
 			return authoringTaskReview;
@@ -71,6 +79,8 @@ public class ReviewService {
 		try {
 			final AuthoringTaskReview authoringTaskReview = branchService.diffProjectAgainstMain(projectKey, locales);
 			final List<ReviewConcept> reviewConcepts = authoringTaskReview.getConcepts();
+			//TODO WRP-1032 Investigate with B2i why refsets are showing as being modified.
+			removeRefsets(reviewConcepts);
 			putReviewMessagesAgainstConcepts(projectKey, null, username, reviewConcepts);
 			final String projectTicketKey = taskService.getProjectTicket(projectKey).getKey();
 			markConceptsModifiedSinceReview(projectKey, projectTicketKey, reviewConcepts, true);
@@ -226,6 +236,17 @@ public class ReviewService {
 	 */
 	private Collection<ReviewMessageSentListener> getReviewMessageSentListeners() {
 		return applicationContext.getBeansOfType(ReviewMessageSentListener.class).values();
+	}
+	
+	private void removeRefsets(List<ReviewConcept> concepts) {
+		Iterator<ReviewConcept> i = concepts.iterator();
+		while (i.hasNext()) {
+			ReviewConcept c = i.next(); 
+			if (c.getTerm().contains(TEMPORARY_CONCEPT_REMOVAL)) {
+				i.remove();
+				logger.warn("Removed concept " + c.getTerm() + " from review list.");
+			}
+		}
 	}
 
 }

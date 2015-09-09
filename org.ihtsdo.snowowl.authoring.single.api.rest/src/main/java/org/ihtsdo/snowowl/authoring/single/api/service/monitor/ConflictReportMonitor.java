@@ -1,5 +1,6 @@
 package org.ihtsdo.snowowl.authoring.single.api.service.monitor;
 
+import com.b2international.snowowl.core.exceptions.NotFoundException;
 import com.b2international.snowowl.datastore.server.review.ReviewStatus;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.ConflictReport;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.EntityType;
@@ -40,7 +41,13 @@ public class ConflictReportMonitor extends Monitor {
 		try {
 			status = branchService.getReviewStatus(sourceReviewId);
 		} catch (ExecutionException | InterruptedException e) {
-			throw new MonitorException("Failed to retrieve the status of review " + sourceReviewId);
+			if (e instanceof ExecutionException) {
+				final Throwable cause = e.getCause();
+				if (cause != null && cause instanceof NotFoundException) {
+					throw new FatalMonitorException("Review not found.", e);
+				}
+			}
+			throw new MonitorException("Failed to retrieve the status of review " + sourceReviewId, e);
 		}
 		return status;
 	}

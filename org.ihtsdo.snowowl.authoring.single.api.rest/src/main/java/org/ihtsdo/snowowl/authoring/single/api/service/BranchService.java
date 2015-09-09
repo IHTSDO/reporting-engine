@@ -14,7 +14,9 @@ import com.b2international.snowowl.snomed.api.ISnomedDescriptionService;
 import com.b2international.snowowl.snomed.api.impl.FsnJoinerOperation;
 import com.b2international.snowowl.snomed.datastore.SnomedConceptIndexEntry;
 import com.google.common.base.Optional;
+
 import net.rcarz.jiraclient.JiraException;
+
 import org.apache.commons.lang.time.StopWatch;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.*;
@@ -58,6 +60,10 @@ public class BranchService {
 	private static final String MAIN = "MAIN";
 	private static final String CODE_SYSYTEM = "SNOMEDCT";
 	public static final String SNOMED_TS_REPOSITORY_ID = "snomedStore";
+	
+	//TODO Investigate wtih B2i why we see Refsets showing as modified in reviews
+	private static final String TEMPORARY_CONCEPT_REMOVAL = "(foundation metadata concept)";
+	
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 	
 	private static final int REVIEW_TIMEOUT = 60; //Minutes
@@ -238,7 +244,11 @@ public class BranchService {
 			}
 			
 			populateLastUpdateTimes(sourcePath, targetPath, conflictingConcepts);
+			
 			conflictingConcepts = populateFSNs(conflictingConcepts, locales, targetPath);
+			
+			//TODO WRP-1032 Refsets are going to be temporarily filtered out at this stage
+			removeRefsets(conflictingConcepts);
 			
 			ConflictReport conflictReport = new ConflictReport();
 			conflictReport.setConcepts(conflictingConcepts);
@@ -250,6 +260,17 @@ public class BranchService {
 		}
 	}
 	
+	private void removeRefsets(List<ConceptConflict> conflictingConcepts) {
+		Iterator<ConceptConflict> i = conflictingConcepts.iterator();
+		while (i.hasNext()) {
+			ConceptConflict c = i.next(); // must be called before you can call i.remove()
+			if (c.getFsn().contains(TEMPORARY_CONCEPT_REMOVAL)) {
+				i.remove();
+				logger.warn("Removed concept " + c.getFsn() + " from conflicts report.");
+			}
+		}
+	}
+
 	private List<ConceptConflict> populateFSNs(final List<ConceptConflict> conflictingConcepts, List<Locale> locales, String targetBranchPath) {
 
 		List<ConceptConflict> results;
