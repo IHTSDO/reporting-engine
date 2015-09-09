@@ -122,7 +122,7 @@ public class UserMonitors {
 		}
 	}
 
-	private void accessed() {
+	public void accessed() {
 		lastAccessed = new Date();
 	}
 

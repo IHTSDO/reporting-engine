@@ -26,6 +26,13 @@ public class MonitorService {
 		userMonitorsMap.get(username).updateFocus(focusProjectId, focusTaskId, conflictReport);
 	}
 
+	public void keepMonitorsAlive(String username) {
+		final UserMonitors userMonitors = userMonitorsMap.get(username);
+		if (userMonitors != null) {
+			userMonitors.accessed();
+		}
+	}
+
 	private void createIfNotExists(final String username) {
 		if (!userMonitorsMap.containsKey(username)) {
 			synchronized(getClass()) {

@@ -39,7 +39,9 @@ public class NotificationController extends AbstractSnomedRestService {
 	})
 	@RequestMapping(value="/notifications", method= RequestMethod.GET)
 	public List<Notification> retrieveNotifications() throws IOException {
-		return notificationService.retrieveNewNotifications(ControllerHelper.getUsername());
+		final String username = ControllerHelper.getUsername();
+		monitorService.keepMonitorsAlive(username);
+		return notificationService.retrieveNewNotifications(username);
 	}
 
 	@ApiOperation(value="Set user focus for notifications.", notes = "A Task or Project can be monitored for " +
