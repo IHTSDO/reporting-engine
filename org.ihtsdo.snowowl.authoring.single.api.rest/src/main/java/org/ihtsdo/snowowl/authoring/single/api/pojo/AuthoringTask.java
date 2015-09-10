@@ -140,8 +140,7 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 		this.latestValidationStatus = latestValidationStatus;
 	}
 
-	@JsonProperty(value = "latestValidationStatus")
-	public String getLatestValidationStatusWithFix() {
+	public String getLatestValidationStatus() {
 		return !"".equals(latestValidationStatus) ? null : latestValidationStatus;
 	}
 
