@@ -221,10 +221,10 @@ public class BranchService {
 			ExecutorService executor = Executors.newFixedThreadPool(2);
 			AuthoringTaskReviewRunner targetChangesReviewRunner = new AuthoringTaskReviewRunner(targetPath, sourcePath, locales);
 			AuthoringTaskReviewRunner sourceChangesReviewRunner = new AuthoringTaskReviewRunner(sourcePath, targetPath, locales);
-			
+
 			Future<AuthoringTaskReview> targetChangesReview = executor.submit(targetChangesReviewRunner);
 			Future<AuthoringTaskReview> sourceChangesReview = executor.submit(sourceChangesReviewRunner);
-			
+
 			//Wait for both of these to complete
 			executor.shutdown();
 			executor.awaitTermination(REVIEW_TIMEOUT, TimeUnit.MINUTES);
@@ -234,7 +234,7 @@ public class BranchService {
 			for (ReviewConcept thisConcept : sourceChangesReview.get().getConcepts()) {
 				sourceChanges.add(thisConcept.getId());
 			}
-			
+
 			List<ConceptConflict> conflictingConcepts = new ArrayList<>();
 			//Work through Target Changes to find concepts in common
 			for (ReviewConcept thisConcept : targetChangesReview.get().getConcepts()) {
@@ -242,14 +242,14 @@ public class BranchService {
 					conflictingConcepts.add(new ConceptConflict(thisConcept.getId()));
 				}
 			}
-			
-			populateLastUpdateTimes(sourcePath, targetPath, conflictingConcepts);
-			
+
 			conflictingConcepts = populateFSNs(conflictingConcepts, locales, targetPath);
-			
+
 			//TODO WRP-1032 Refsets are going to be temporarily filtered out at this stage
 			removeRefsets(conflictingConcepts);
-			
+
+			populateLastUpdateTimes(sourcePath, targetPath, conflictingConcepts);
+
 			ConflictReport conflictReport = new ConflictReport();
 			conflictReport.setConcepts(conflictingConcepts);
 			conflictReport.setTargetReviewId(targetChangesReview.get().getReviewId());
