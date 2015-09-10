@@ -68,6 +68,7 @@ public class BranchService {
 	
 	private static final int REVIEW_TIMEOUT = 60; //Minutes
 	private static final int MERGE_TIMEOUT = 60; //Minutes
+	private static final int CONFLICT_REVIEW_TIMEOUT = 45; //Seconds
 
 	public void createTaskBranchAndProjectBranchIfNeeded(String projectKey, String taskKey) throws ServiceException {
 		createProjectBranchIfNeeded(projectKey);
@@ -221,20 +222,22 @@ public class BranchService {
 			ExecutorService executor = Executors.newFixedThreadPool(2);
 			AuthoringTaskReviewRunner targetChangesReviewRunner = new AuthoringTaskReviewRunner(targetPath, sourcePath, locales);
 			AuthoringTaskReviewRunner sourceChangesReviewRunner = new AuthoringTaskReviewRunner(sourcePath, targetPath, locales);
-			
+
 			Future<AuthoringTaskReview> targetChangesReview = executor.submit(targetChangesReviewRunner);
 			Future<AuthoringTaskReview> sourceChangesReview = executor.submit(sourceChangesReviewRunner);
-			
-			//Wait for both of these to complete
-			executor.shutdown();
-			executor.awaitTermination(REVIEW_TIMEOUT, TimeUnit.MINUTES);
 
+			//Wait for both of these to complete
+			logger.info("Waiting for both review reports to complete for target {} ", targetPath);
+			executor.shutdown();
+			executor.awaitTermination(CONFLICT_REVIEW_TIMEOUT, TimeUnit.SECONDS);
+			logger.info("Both reviews completed for target {} ", targetPath);
+			
 			//Form Set of source changes so as to avoid n x m iterations
 			Set<String> sourceChanges = new HashSet<>();
 			for (ReviewConcept thisConcept : sourceChangesReview.get().getConcepts()) {
 				sourceChanges.add(thisConcept.getId());
 			}
-			
+
 			List<ConceptConflict> conflictingConcepts = new ArrayList<>();
 			//Work through Target Changes to find concepts in common
 			for (ReviewConcept thisConcept : targetChangesReview.get().getConcepts()) {
@@ -243,13 +246,15 @@ public class BranchService {
 				}
 			}
 			
-			populateLastUpdateTimes(sourcePath, targetPath, conflictingConcepts);
-			
+			logger.info ("Starting populate conflict report FSNs for {}" , targetPath);
 			conflictingConcepts = populateFSNs(conflictingConcepts, locales, targetPath);
-			
+
 			//TODO WRP-1032 Refsets are going to be temporarily filtered out at this stage
 			removeRefsets(conflictingConcepts);
-			
+
+			logger.info ("Starting populate conflict report last update times for {}" , targetPath);
+			populateLastUpdateTimes(sourcePath, targetPath, conflictingConcepts);
+
 			ConflictReport conflictReport = new ConflictReport();
 			conflictReport.setConcepts(conflictingConcepts);
 			conflictReport.setTargetReviewId(targetChangesReview.get().getReviewId());
@@ -320,8 +325,12 @@ public class BranchService {
 		Integer targetBranchId = cdoStore.getBranchId(targetBranchPath.getParentName(), targetBranchPath.getChildName());
 		List<IComponent> concepts = new ArrayList<IComponent>(conflictingConcepts);
 		
-		Map<String, Date> sourceLastUpdatedMap = cdoStore.getLastUpdated(sourceBranchId, concepts);
-		Map<String, Date> targetLastUpdatedMap = cdoStore.getLastUpdated(targetBranchId, concepts);
+		//Generate a unique identifier for temp table population
+		int transactionId = concepts.hashCode() * 1000 + targetPath.hashCode();
+		
+		//Populate the joining table the first time, delete it the second
+		Map<String, Date> sourceLastUpdatedMap = cdoStore.getLastUpdated(sourceBranchId, concepts, transactionId, true);
+		Map<String, Date> targetLastUpdatedMap = cdoStore.getLastUpdated(targetBranchId, concepts, transactionId, false);
 		
 		//Now loop through our conflicting concepts and populate those last updated times, if known
 		logger.info ("Populating " + conflictingConcepts.size() + " conflicts with " + sourceLastUpdatedMap.size() + " source times and "

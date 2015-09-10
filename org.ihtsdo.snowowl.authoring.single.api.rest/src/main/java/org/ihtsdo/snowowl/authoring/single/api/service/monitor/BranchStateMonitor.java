@@ -1,5 +1,6 @@
 package org.ihtsdo.snowowl.authoring.single.api.service.monitor;
 
+import com.b2international.snowowl.core.exceptions.NotFoundException;
 import com.b2international.snowowl.datastore.server.branch.Branch;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.EntityType;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.Notification;
@@ -36,6 +37,10 @@ public class BranchStateMonitor extends Monitor {
 			}
 			return null;
 		} catch (ServiceException e) {
+			final Throwable cause = e.getCause();
+			if (cause != null && cause instanceof NotFoundException) {
+				throw new FatalMonitorException("Branch not found", e);
+			}
 			throw new MonitorException("Failed to get branch state", e);
 		}
 	}

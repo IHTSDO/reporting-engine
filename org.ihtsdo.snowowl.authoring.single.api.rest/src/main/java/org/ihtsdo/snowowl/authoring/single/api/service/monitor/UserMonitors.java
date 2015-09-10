@@ -68,7 +68,9 @@ public class UserMonitors {
 										if (currentMonitors.containsValue(monitor)) {
 											if (e instanceof FatalMonitorException) {
 												logger.error("Fatal monitor run, removing {}.", monitor, e);
-												currentMonitors.remove(monitor);
+												if (monitor.equals(currentMonitors.get(monitor.getClass()))) {
+													currentMonitors.remove(monitor.getClass());
+												}
 											} else {
 												if (!monitorLoggedError.contains(monitor)) {
 													monitorLoggedError.add(monitor);

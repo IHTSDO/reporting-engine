@@ -94,6 +94,8 @@ public class CdoStore {
 	
 	private static final String POPULATE_TEMP_TABLE = "insert into temp_component values(?, ?)";
 	
+	private static final int QUERY_TIMEOUT = 30;
+	
 	public void init() throws SQLException {
 	
 		pool = new PoolConnectionFactory();
@@ -159,16 +161,16 @@ public class CdoStore {
 	 * @return
 	 * @throws SQLException
 	 */
-	public Map<String, Date> getLastUpdated(Integer branchId, List<IComponent> concepts) throws SQLException {
+	public Map<String, Date> getLastUpdated(Integer branchId, List<IComponent> concepts, int transactionId, boolean populateTempTable) throws SQLException {
 		StopWatch stopWatch = new StopWatch();
 		stopWatch.start();
 		logger.info("Starting last updated query for branch " + branchId );
-		
-		//Generate a unique identifier for temp table population
-		int transactionId = concepts.hashCode() * 1000 + branchId;
+
 		Connection conn = pool.getConn();
-		populateTempTable(concepts, transactionId, conn);
-		logger.info("Populated temp table");
+		if (populateTempTable) {
+			populateTempTable(concepts, transactionId, conn);
+			logger.info("Populated temp table for branchId {}", branchId);
+		}
 		
 		PreparedStatement stmt = conn.prepareStatement(GET_CONCEPTS_LAST_MODIFIED);
 		stmt.setInt(1, branchId);
@@ -179,14 +181,19 @@ public class CdoStore {
 		stmt.setInt(6, transactionId);
 		
 		Map<String, Date> lastUpdatedMap = new HashMap<String, Date>();
+		stmt.setQueryTimeout(QUERY_TIMEOUT);
 		ResultSet rs = stmt.executeQuery();
 		int rowCount = 0;
 		while (rs.next()) {
 			lastUpdatedMap.put(rs.getString(1), new Date(rs.getLong(2)));
 			rowCount++;
 		}
-		logger.info("Recovered " + rowCount + " last updated times" );
-		cleanTempTable(transactionId, conn);
+		logger.info("Recovered " + rowCount + " last updated times for branch {}", branchId );
+		
+		//If we didn't populate the temp table, then it's our turn to clean it up
+		if (!populateTempTable) {
+			cleanTempTable(transactionId, conn);
+		}
 		Utils.closeQuietly(conn);
 		stopWatch.stop();
 		logger.info("Completed last updated for branch " + branchId + " with " + concepts.size() + " conflicts in " + stopWatch);
