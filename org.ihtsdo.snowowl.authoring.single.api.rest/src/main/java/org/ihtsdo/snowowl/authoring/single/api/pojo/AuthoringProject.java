@@ -47,8 +47,4 @@ public class AuthoringProject {
 		return branchState;
 	}
 
-	public void setBranchState(Branch.BranchState branchState) {
-		this.branchState = branchState;
-	}
-
 }

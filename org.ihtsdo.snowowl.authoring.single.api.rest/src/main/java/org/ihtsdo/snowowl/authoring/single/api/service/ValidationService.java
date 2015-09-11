@@ -42,6 +42,7 @@ public class ValidationService {
 	public static final String EFFECTIVE_TIME = "effective-time";
 	public static final String STATUS = "status";
 	public static final String STATUS_SCHEDULED = "SCHEDULED";
+	public static final String STATUS_COMPLETE = "COMPLETED";
 
 	@Autowired
 	private MessagingHelper messagingHelper;
@@ -62,7 +63,7 @@ public class ValidationService {
 				.build(
 						new CacheLoader<String, String>() {
 							public String load(String path) throws Exception {
-								return getValidationStatuses(Collections.singletonList(path)).iterator().next();
+								return getValidationStatusesWithoutCache(Collections.singletonList(path)).iterator().next();
 							}
 
 							@Override
@@ -78,7 +79,7 @@ public class ValidationService {
 									}
 								}
 								if (!pathsToLoad.isEmpty()) {
-									final List<String> validationStatuses = getValidationStatuses(pathsToLoad);
+									final List<String> validationStatuses = getValidationStatusesWithoutCache(pathsToLoad);
 									if (validationStatuses != null) {
 										for (int i = 0; i < pathsToLoad.size(); i++) {
 											String value = validationStatuses.get(i);
@@ -153,19 +154,42 @@ public class ValidationService {
 		}
 	}
 
-	public String getValidationJson(String projectKey, String taskKey) throws IOException, JSONException {
-		return orchestrationRestClient.retrieveValidation(PathHelper.getPath(projectKey, taskKey));
+	public String getValidationJson(String projectKey, String taskKey) throws BusinessServiceException {
+		return getValidationJsonIfAvailable(PathHelper.getPath(projectKey, taskKey));
 	}
 
-	public String getValidationJson(String projectKey) throws IOException, JSONException {
-		return orchestrationRestClient.retrieveValidation(PathHelper.getPath(projectKey));
+	public String getValidationJson(String projectKey) throws BusinessServiceException {
+		return getValidationJsonIfAvailable(PathHelper.getPath(projectKey));
+	}
+	
+	public String getValidationJson() throws BusinessServiceException {
+		return getValidationJsonIfAvailable(PathHelper.getPath());
+	}
+	
+	private String getValidationJsonIfAvailable(String path) throws BusinessServiceException {
+		try {
+		//Only return the validation json if the validation is complete
+			String validationStatus = getValidationStatus(path);
+			if (STATUS_COMPLETE.equals(validationStatus)) {
+				return orchestrationRestClient.retrieveValidation(path);
+			} else {
+				logger.warn("Ignoring request for validation json for path {} as status {} ", path, validationStatus);
+				return null;
+			}
+		} catch (IOException|ExecutionException|JSONException e) {
+			throw new BusinessServiceException ("Unable to recover validation json for " + path, e);
+		}
 	}
 
-	public ImmutableMap<String, String> getValidationStatusesUsingCache(Collection<String> paths) throws ExecutionException {
+	public ImmutableMap<String, String> getValidationStatuses(Collection<String> paths) throws ExecutionException {
 		return validationStatusCache.getAll(paths);
 	}
+	
+	public String getValidationStatus(String path) throws ExecutionException {
+		return validationStatusCache.get(path);
+	}
 
-	private List<String> getValidationStatuses(List<String> paths) {
+	private List<String> getValidationStatusesWithoutCache(List<String> paths) {
 		List<String> statuses;
 		try {
 			statuses = orchestrationRestClient.retrieveValidationStatuses(paths);

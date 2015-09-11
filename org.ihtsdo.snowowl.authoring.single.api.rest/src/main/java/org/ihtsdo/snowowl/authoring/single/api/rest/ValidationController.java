@@ -56,6 +56,16 @@ public class ValidationController extends AbstractSnomedRestService {
 		return validationService.getValidationJson(projectKey, taskKey);
 	}
 	
+	@ApiOperation(value = "Recover the most recent validation on Main")
+	@ApiResponses({
+			@ApiResponse(code = 200, message = "OK")
+	})
+	@RequestMapping(value = "/main/validation", method = RequestMethod.GET)
+	@ResponseBody
+	public String getValidation() throws IOException, JSONException {
+		return validationService.getValidationJson();
+	}
+	
 	@ApiOperation(value = "Initiate validation on a Project")
 	@ApiResponses({ @ApiResponse(code = 200, message = "OK") })
 	@RequestMapping(value = "/projects/{projectKey}/validation", method = RequestMethod.POST)

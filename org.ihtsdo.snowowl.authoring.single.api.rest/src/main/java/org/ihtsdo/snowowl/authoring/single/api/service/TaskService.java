@@ -82,7 +82,7 @@ public class TaskService {
 			for (Project project : projects) {
 				paths.put(project, PathHelper.getPath(project.getKey()));
 			}
-			final ImmutableMap<String, String> statuses = validationService.getValidationStatusesUsingCache(paths.values());
+			final ImmutableMap<String, String> statuses = validationService.getValidationStatuses(paths.values());
 			for (Project project : projects) {
 				final String latestClassificationJson = classificationService.getLatestClassification(project.getKey(), null);
 				Branch.BranchState branchState = branchService.getBranchStateNoThrow(project.getKey(), null);
@@ -102,7 +102,7 @@ public class TaskService {
 		try {
 			String path = PathHelper.getPath(null);
 			Collection<String> paths = Collections.singletonList(path);
-			final ImmutableMap<String, String> statuses = validationService.getValidationStatusesUsingCache(paths);
+			final ImmutableMap<String, String> statuses = validationService.getValidationStatuses(paths);
 			final Branch.BranchState branchState = branchService.getBranchStateNoThrow(null, null);
 			final String latestClassificationJson = classificationService.getLatestClassification(null, null);
 			return new AuthoringMain(path, branchState, statuses.get(path), latestClassificationJson);
@@ -242,7 +242,7 @@ public class TaskService {
 				timer.checkpoint("Recovering feedback messages");
 			}
 
-			final ImmutableMap<String, String> validationStatuses = validationService.getValidationStatusesUsingCache(startedTasks.keySet());
+			final ImmutableMap<String, String> validationStatuses = validationService.getValidationStatuses(startedTasks.keySet());
 			timer.checkpoint("Recovering " + validationStatuses.size() + " ValidationStatuses");
 
 			if (validationStatuses == null || validationStatuses.size() == 0) {
