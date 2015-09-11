@@ -5,21 +5,28 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableMap;
+
 import org.ihtsdo.otf.jms.MessagingHelper;
 import org.ihtsdo.otf.rest.client.OrchestrationRestClient;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.EntityType;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.Notification;
+import org.ihtsdo.snowowl.authoring.single.api.pojo.ReleaseRequest;
+import org.ihtsdo.snowowl.authoring.single.api.pojo.Status;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
+
 import us.monoid.json.JSONException;
 
 import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+
 import javax.jms.JMSException;
 import javax.jms.TextMessage;
 
@@ -32,6 +39,7 @@ public class ValidationService {
 	public static final String USERNAME = "username";
 	public static final String PROJECT = "project";
 	public static final String TASK = "task";
+	public static final String EFFECTIVE_TIME = "effective-time";
 	public static final String STATUS = "status";
 	public static final String STATUS_SCHEDULED = "SCHEDULED";
 
@@ -88,26 +96,31 @@ public class ValidationService {
 						});
 	}
 
-	public String startValidation(String projectKey, String taskKey, String username) throws BusinessServiceException {
-		return doStartValidation(PathHelper.getPath(projectKey, taskKey), username, projectKey, taskKey);
+	public Status startValidation(String projectKey, String taskKey, String username) throws BusinessServiceException {
+		return doStartValidation(PathHelper.getPath(projectKey, taskKey), username, projectKey, taskKey, null);
 	}
 
-	public String startValidation(String projectKey, String username) throws BusinessServiceException {
-		return doStartValidation(PathHelper.getPath(projectKey), username, projectKey, null);
+	public Status startValidation(String projectKey, String username) throws BusinessServiceException {
+		return doStartValidation(PathHelper.getPath(projectKey), username, projectKey, null, null);
 	}
 
-	private String doStartValidation(String path, String username, String projectKey, String taskKey) throws BusinessServiceException {
+	private Status doStartValidation(String path, String username, String projectKey, String taskKey, String effectiveTime) throws BusinessServiceException {
 		try {
 			Map<String, String> properties = new HashMap<>();
 			properties.put(PATH, path);
 			properties.put(USERNAME, username);
-			properties.put(PROJECT, projectKey);
+			if (projectKey != null) {
+				properties.put(PROJECT, projectKey);
+			}
 			if (taskKey != null) {
 				properties.put(TASK, taskKey);
 			}
+			if (effectiveTime != null) {
+				properties.put(EFFECTIVE_TIME, effectiveTime);
+			}
 			messagingHelper.send(VALIDATION_REQUEST_QUEUE, "", properties, VALIDATION_RESPONSE_QUEUE);
 			validationStatusCache.put(path, STATUS_SCHEDULED);
-			return STATUS_SCHEDULED;
+			return new Status(STATUS_SCHEDULED);
 		} catch (JsonProcessingException | JMSException e) {
 			throw new BusinessServiceException("Failed to send validation request, please contact support.", e);
 		}
@@ -164,5 +177,22 @@ public class ValidationService {
 			}
 		}
 		return statuses;
+	}
+
+	//Start validation for MAIN
+	public Status startValidation(ReleaseRequest releaseRequest,
+			String username) throws BusinessServiceException {
+		String effectiveDate = null;
+		if (releaseRequest != null && releaseRequest.getEffectiveDate() != null) {
+			String potentialEffectiveDate = releaseRequest.getEffectiveDate();
+			try {
+				
+				new SimpleDateFormat("yyyyDDmm").parse(potentialEffectiveDate);
+				effectiveDate = potentialEffectiveDate;
+			} catch (ParseException e) {
+				logger.error("Unable to set effective date for MAIN validation, unrecognised: " + potentialEffectiveDate, e);;
+			}
+		}
+		return doStartValidation(PathHelper.getPath(null), username, null, null, effectiveDate);
 	}
 }
