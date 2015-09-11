@@ -32,7 +32,7 @@ public class ValidationController extends AbstractSnomedRestService {
 	
 	@ApiOperation(value = "Initiate validation on MAIN")
 	@ApiResponses({ @ApiResponse(code = 200, message = "OK") })
-	@RequestMapping(value = "/validation", method = RequestMethod.POST)
+	@RequestMapping(value = "/main/validation", method = RequestMethod.POST)
 	public Status startValidation( @RequestBody(required=false) final ReleaseRequest releaseRequest) throws JiraException,
 			JSONException, IOException, BusinessServiceException {
 		return validationService.startValidation(releaseRequest, ControllerHelper.getUsername());

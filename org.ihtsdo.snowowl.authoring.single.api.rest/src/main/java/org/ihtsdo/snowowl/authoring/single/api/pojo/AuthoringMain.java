@@ -4,19 +4,15 @@ import com.b2international.snowowl.datastore.server.branch.Branch;
 import com.b2international.snowowl.datastore.server.branch.Branch.BranchState;
 import com.fasterxml.jackson.annotation.JsonRawValue;
 
-public class AuthoringProject {
+public class AuthoringMain {
 
 	private final String key;
-	private final String title;
-	private final User projectLead;
-	private Branch.BranchState branchState;
 	private String latestClassificationJson;
 	private final String validationStatus;
+	private Branch.BranchState branchState;
 
-	public AuthoringProject(String key, String title, User leadUser, BranchState branchState, String validationStatus, String latestClassificationJson) {
+	public AuthoringMain(String key, BranchState branchState, String validationStatus, String latestClassificationJson) {
 		this.key = key;
-		this.title = title;
-		this.projectLead = leadUser;
 		this.branchState = branchState;
 		this.validationStatus = validationStatus;
 		this.latestClassificationJson = latestClassificationJson;
@@ -24,14 +20,6 @@ public class AuthoringProject {
 
 	public String getKey() {
 		return key;
-	}
-
-	public String getTitle() {
-		return title;
-	}
-
-	public User getProjectLead() {
-		return projectLead;
 	}
 
 	public String getValidationStatus() {
