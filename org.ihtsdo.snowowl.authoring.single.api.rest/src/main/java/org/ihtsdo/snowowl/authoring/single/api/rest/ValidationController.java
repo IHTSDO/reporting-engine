@@ -52,7 +52,7 @@ public class ValidationController extends AbstractSnomedRestService {
 	})
 	@RequestMapping(value = "/projects/{projectKey}/tasks/{taskKey}/validation", method = RequestMethod.GET)
 	@ResponseBody
-	public String getValidation(@PathVariable final String projectKey, @PathVariable final String taskKey) throws IOException, JSONException {
+	public String getValidation(@PathVariable final String projectKey, @PathVariable final String taskKey) throws BusinessServiceException {
 		return validationService.getValidationJson(projectKey, taskKey);
 	}
 	
@@ -62,7 +62,7 @@ public class ValidationController extends AbstractSnomedRestService {
 	})
 	@RequestMapping(value = "/main/validation", method = RequestMethod.GET)
 	@ResponseBody
-	public String getValidation() throws IOException, JSONException {
+	public String getValidation() throws BusinessServiceException {
 		return validationService.getValidationJson();
 	}
 	
@@ -78,7 +78,7 @@ public class ValidationController extends AbstractSnomedRestService {
 	@ApiResponses({ @ApiResponse(code = 200, message = "OK") })
 	@RequestMapping(value = "/projects/{projectKey}/validation", method = RequestMethod.GET)
 	@ResponseBody
-	public String getValidation(@PathVariable final String projectKey) throws IOException, JSONException {
+	public String getValidation(@PathVariable final String projectKey) throws BusinessServiceException {
 		return validationService.getValidationJson(projectKey);
 	}
 
