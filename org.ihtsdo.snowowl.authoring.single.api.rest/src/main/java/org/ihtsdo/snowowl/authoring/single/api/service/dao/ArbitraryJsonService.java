@@ -27,12 +27,15 @@ public class ArbitraryJsonService {
 		return new String(Files.readAllBytes(getFile(path)), UTF_8);
 	}
 
-	private Path getFile(String relativePath) {
+	private Path getFile(String relativePath) throws IOException {
 		File file = new File(baseDirectory, relativePath);
 		File parentDirectory = file.getParentFile();
 		if (!parentDirectory.isDirectory()) {
 			if (!parentDirectory.mkdirs()) {
-				logger.error("Could not create directory " + parentDirectory.getAbsolutePath());
+				//Check if another thread managed to make the parent directory while we were checking
+				if (!parentDirectory.isDirectory()) {
+					throw new IOException("Could not create directory " + parentDirectory.getAbsolutePath());
+				}
 			}
 		}
 		return file.toPath();
