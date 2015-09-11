@@ -210,22 +210,20 @@ public class TaskService {
 					final String projectKey = issue.getProject().getKey();
 					final String issueKey = issue.getKey();
 					String latestClassificationJson = classificationService.getLatestClassification(PathHelper.getPath(projectKey, issueKey));
-					timer.checkpoint("Got classification");
+					timer.checkpoint("Recovering classification");
 					task.setLatestClassificationJson(latestClassificationJson);
 					task.setBranchState(branchService.getBranchStateNoThrow(projectKey, issueKey));
-					timer.checkpoint("Got branch state");
+					timer.checkpoint("Recovering branch state");
 					startedTasks.put(PathHelper.getTaskPath(issue), task);
 				}
 				task.setFeedbackMessagesStatus(reviewService.getTaskMessagesStatus(task.getProjectKey(), task.getKey(), username));
-				timer.checkpoint("Got feedback messages");
+				timer.checkpoint("Recovering feedback messages");
 			}
 
 			final ImmutableMap<String, String> validationStatuses = validationService.getValidationStatusesUsingCache(startedTasks.keySet());
-			timer.checkpoint("Got ValidationStatuses");
+			timer.checkpoint("Recovering " + validationStatuses.size() + " ValidationStatuses");
 
-			if (validationStatuses == null) {
-				// TODO I think we should normally throw an exception here, but logging for the moment as I think I'm having connection
-				// issues with the looping REST call while debugging.
+			if (validationStatuses == null || validationStatuses.size() == 0) {
 				logger.error("Failed to recover validation statuses - check logs for reason");
 			} else {
 				for (final String path : startedTasks.keySet()) {

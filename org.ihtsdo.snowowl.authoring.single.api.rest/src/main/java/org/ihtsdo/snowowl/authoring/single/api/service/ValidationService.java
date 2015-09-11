@@ -80,7 +80,7 @@ public class ValidationService {
 											map.put(pathsToLoad.get(i), value);
 										}
 									} else {
-										logger.error("Unable to Initialise Validation Status Cache - none returned, see logs");
+										logger.error("Unable to load Validation Status, {} requested none returned, see logs", pathsToLoad.size());
 									}
 								}
 								return map.build();

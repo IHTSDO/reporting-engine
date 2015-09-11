@@ -141,7 +141,7 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 	}
 
 	public String getLatestValidationStatus() {
-		return !"".equals(latestValidationStatus) ? null : latestValidationStatus;
+		return "".equals(latestValidationStatus) ? null : latestValidationStatus;
 	}
 
 	public User getReviewer() {
