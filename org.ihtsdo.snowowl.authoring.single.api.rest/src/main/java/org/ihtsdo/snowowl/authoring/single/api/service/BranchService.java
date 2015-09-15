@@ -72,7 +72,7 @@ public class BranchService {
 
 	public void createTaskBranchAndProjectBranchIfNeeded(String projectKey, String taskKey) throws ServiceException {
 		createProjectBranchIfNeeded(projectKey);
-		snowOwlBusHelper.makeBusRequest(new CreateBranchEvent(SNOMED_STORE, getBranchPath(projectKey), taskKey, null), BranchReply.class, "Failed to create project branch.", this);
+		snowOwlBusHelper.makeBusRequest(new CreateBranchEvent(SNOMED_STORE, PathHelper.getPath(projectKey), taskKey, null), BranchReply.class, "Failed to create project branch.", this);
 	}
 
 	public Branch.BranchState getBranchState(String project, String taskKey) throws ServiceException {
@@ -90,17 +90,17 @@ public class BranchService {
 	}
 
 	public AuthoringTaskReview diffTaskAgainstProject(String projectKey, String taskKey, List<Locale> locales) throws ExecutionException, InterruptedException {
-		return doDiff(getTaskPath(projectKey, taskKey), getProjectPath(projectKey), locales);
+		return doDiff(PathHelper.getPath(projectKey, taskKey), PathHelper.getPath(projectKey), locales);
 	}
 
 	public AuthoringTaskReview diffProjectAgainstMain(String projectKey, List<Locale> locales) throws ExecutionException, InterruptedException {
-		return doDiff(getProjectPath(projectKey), MAIN, locales);
+		return doDiff(PathHelper.getPath(projectKey), MAIN, locales);
 	}
 	
 	public Branch rebaseTask(String projectKey, String taskKey, MergeRequest mergeRequest, String username) throws BusinessServiceException {
 		StopWatch stopwatch = new StopWatch();
 		stopwatch.start();
-		Branch branch = mergeBranch(getProjectPath(projectKey), getTaskPath(projectKey, taskKey), mergeRequest.getSourceReviewId(), username);
+		Branch branch = mergeBranch(PathHelper.getPath(projectKey), PathHelper.getPath(projectKey, taskKey), mergeRequest.getSourceReviewId(), username);
 		stopwatch.stop();
 		String resultMessage = "Rebase from project to " + taskKey +  " completed without conflicts in " + stopwatch;
 		notificationService.queueNotification(username, new Notification(projectKey, taskKey, EntityType.Rebase, resultMessage));
@@ -110,7 +110,7 @@ public class BranchService {
 	public Branch promoteTask(String projectKey, String taskKey, MergeRequest mergeRequest, String username) throws BusinessServiceException, JiraException {
 		StopWatch stopwatch = new StopWatch();
 		stopwatch.start();
-		Branch branch = mergeBranch(getTaskPath(projectKey, taskKey), getProjectPath(projectKey), mergeRequest.getSourceReviewId(), username);
+		Branch branch = mergeBranch(PathHelper.getPath(projectKey, taskKey), PathHelper.getPath(projectKey), mergeRequest.getSourceReviewId(), username);
 		stopwatch.stop();
 		taskService.stateTransition(projectKey, taskKey, TaskStatus.PROMOTED);
 		String resultMessage = "Promotion of " + taskKey + " completed without conflicts in " + stopwatch;
@@ -119,7 +119,7 @@ public class BranchService {
 	}
 	
 	public AuthoringTaskReview diffProjectAgainstTask(String projectKey, String taskKey, List<Locale> locales) throws ExecutionException, InterruptedException {
-		return doDiff(getProjectPath(projectKey), getTaskPath(projectKey, taskKey), locales);
+		return doDiff(PathHelper.getPath(projectKey), PathHelper.getPath(projectKey, taskKey), locales);
 	}
 
 	public ReviewStatus getReviewStatus(String id) throws ExecutionException, InterruptedException {
@@ -181,22 +181,10 @@ public class BranchService {
 
 	private void createProjectBranchIfNeeded(String projectKey) throws ServiceException {
 		try {
-			snowOwlBusHelper.makeBusRequest(new ReadBranchEvent(SNOMED_STORE, getBranchPath(projectKey)), BranchReply.class, "Failed to find project branch.", this);
+			snowOwlBusHelper.makeBusRequest(new ReadBranchEvent(SNOMED_STORE, PathHelper.getPath(projectKey)), BranchReply.class, "Failed to find project branch.", this);
 		} catch (ServiceException e) {
 			snowOwlBusHelper.makeBusRequest(new CreateBranchEvent(SNOMED_STORE, MAIN, projectKey, null), BranchReply.class, "Failed to create project branch.", this);
 		}
-	}
-
-	private String getBranchPath(String projectKey) {
-		return MAIN + "/" + projectKey;
-	}
-
-	public String getTaskPath(String projectKey, String taskKey) {
-		return getBranchPath(projectKey + "/" + taskKey);
-	}
-
-	public String getProjectPath(String projectKey) {
-		return getBranchPath(projectKey);
 	}
 	
 	private Branch mergeBranch(String sourcePath, String targetPath, String reviewId, String username) throws BusinessServiceException {
@@ -211,7 +199,9 @@ public class BranchService {
 	}
 
 	public ConflictReport createConflictReport(String projectKey, String taskKey, List<Locale> locales) throws BusinessServiceException {
-		return doCreateConflictReport(getProjectPath(projectKey), getTaskPath(projectKey, taskKey), locales);
+		String projectPath = PathHelper.getPath(projectKey);
+		String taskPath = PathHelper.getPath(taskKey);
+		return doCreateConflictReport(projectPath, taskPath, locales);
 	}
 
 	private ConflictReport doCreateConflictReport(String sourcePath,
@@ -367,14 +357,14 @@ public class BranchService {
 	}
 
 	public ConflictReport createConflictReport(String projectKey, List<Locale> locales) throws BusinessServiceException {
-		return doCreateConflictReport(MAIN, getProjectPath(projectKey), locales);
+		return doCreateConflictReport(MAIN, PathHelper.getPath(projectKey), locales);
 	}
 
 	public void rebaseProject(String projectKey, MergeRequest mergeRequest,
 			String username) throws BusinessServiceException {
 		StopWatch stopwatch = new StopWatch();
 		stopwatch.start();
-		mergeBranch (MAIN, getProjectPath(projectKey), mergeRequest.getSourceReviewId(), username);
+		mergeBranch (MAIN, PathHelper.getPath(projectKey), mergeRequest.getSourceReviewId(), username);
 		stopwatch.stop();
 		String resultMessage = "Rebase from MAIN to " + projectKey + " completed without conflicts in " + stopwatch;
 		notificationService.queueNotification(username, new Notification(projectKey, EntityType.Rebase, resultMessage));
@@ -384,7 +374,7 @@ public class BranchService {
 			MergeRequest mergeRequest, String username) throws BusinessServiceException {
 		StopWatch stopwatch = new StopWatch();
 		stopwatch.start();
-		mergeBranch (getProjectPath(projectKey), MAIN, mergeRequest.getSourceReviewId(), username);
+		mergeBranch (PathHelper.getPath(projectKey), MAIN, mergeRequest.getSourceReviewId(), username);
 		stopwatch.stop();
 		String resultMessage = "Promotion of " + projectKey + " to MAIN completed without conflicts in " + stopwatch;
 		notificationService.queueNotification(username, new Notification(projectKey, EntityType.Promotion, resultMessage));

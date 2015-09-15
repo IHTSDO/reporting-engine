@@ -3,11 +3,15 @@ package org.ihtsdo.snowowl.authoring.single.api.service;
 import com.b2international.snowowl.core.exceptions.BadRequestException;
 import com.b2international.snowowl.core.exceptions.ConflictException;
 import com.b2international.snowowl.core.exceptions.NotFoundException;
+import com.b2international.snowowl.datastore.server.branch.Branch;
 import com.google.common.collect.ImmutableMap;
+
 import net.rcarz.jiraclient.*;
+
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.api.rest.common.ControllerHelper;
+import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringMain;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringProject;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTask;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskCreateRequest;
@@ -61,31 +65,49 @@ public class TaskService {
 			projects.add(jiraClient.getProject(issue.getProject().getKey()));
 		}
 		timer.checkpoint("Jira searches");
-		final List<AuthoringProject> authoringProjects = buildProjects(projects);
+		final List<AuthoringProject> authoringProjects = buildAuthoringProjects(projects);
 		timer.checkpoint("validation and classification");
 		timer.finish();
 		return authoringProjects;
 	}
 
 	public AuthoringProject retrieveProject(String projectKey) throws BusinessServiceException {
-		return buildProjects(Collections.singletonList(getProjectTicket(projectKey).getProject())).get(0);
+		return buildAuthoringProjects(Collections.singletonList(getProjectTicket(projectKey).getProject())).get(0);
 	}
 
-	private List<AuthoringProject> buildProjects(List<Project> projects) throws BusinessServiceException {
+	private List<AuthoringProject> buildAuthoringProjects(List<Project> projects) throws BusinessServiceException {
 		try {
 			List<AuthoringProject> authoringProjects = new ArrayList<>();
 			Map<Project, String> paths = new HashMap<>();
 			for (Project project : projects) {
 				paths.put(project, PathHelper.getPath(project.getKey()));
 			}
-			final ImmutableMap<String, String> statuses = validationService.getValidationStatusesUsingCache(paths.values());
+			final ImmutableMap<String, String> statuses = validationService.getValidationStatuses(paths.values());
 			for (Project project : projects) {
-				final String latestClassificationJson = classificationService.getLatestClassification(PathHelper.getPath(project.getKey()));
-				authoringProjects.add(new AuthoringProject(project.getKey(), project.getName(), getPojoUserOrNull(project.getLead()), statuses.get(paths.get(project)), latestClassificationJson));
+				final String latestClassificationJson = classificationService.getLatestClassification(project.getKey(), null);
+				Branch.BranchState branchState = branchService.getBranchStateNoThrow(project.getKey(), null);
+				authoringProjects.add(new AuthoringProject(project.getKey(), project.getName(), getPojoUserOrNull(project.getLead()), branchState, statuses.get(paths.get(project)), latestClassificationJson));
 			}
 			return authoringProjects;
 		} catch (ExecutionException | RestClientException e) {
 			throw new BusinessServiceException("Failed to retrieve Projects", e);
+		}
+	}
+
+	public AuthoringMain retrieveMain() throws BusinessServiceException {
+		return buildAuthoringMain();
+	}
+	
+	private AuthoringMain buildAuthoringMain() throws BusinessServiceException {
+		try {
+			String path = PathHelper.getPath(null);
+			Collection<String> paths = Collections.singletonList(path);
+			final ImmutableMap<String, String> statuses = validationService.getValidationStatuses(paths);
+			final Branch.BranchState branchState = branchService.getBranchStateNoThrow(null, null);
+			final String latestClassificationJson = classificationService.getLatestClassification(null, null);
+			return new AuthoringMain(path, branchState, statuses.get(path), latestClassificationJson);
+		} catch (ExecutionException | RestClientException e) {
+			throw new BusinessServiceException("Failed to retrieve Main", e);
 		}
 	}
 
@@ -209,23 +231,21 @@ public class TaskService {
 				if (task.getStatus() != TaskStatus.NEW) {
 					final String projectKey = issue.getProject().getKey();
 					final String issueKey = issue.getKey();
-					String latestClassificationJson = classificationService.getLatestClassification(PathHelper.getPath(projectKey, issueKey));
-					timer.checkpoint("Got classification");
+					String latestClassificationJson = classificationService.getLatestClassification(projectKey, issueKey);
+					timer.checkpoint("Recovering classification");
 					task.setLatestClassificationJson(latestClassificationJson);
 					task.setBranchState(branchService.getBranchStateNoThrow(projectKey, issueKey));
-					timer.checkpoint("Got branch state");
+					timer.checkpoint("Recovering branch state");
 					startedTasks.put(PathHelper.getTaskPath(issue), task);
 				}
 				task.setFeedbackMessagesStatus(reviewService.getTaskMessagesStatus(task.getProjectKey(), task.getKey(), username));
-				timer.checkpoint("Got feedback messages");
+				timer.checkpoint("Recovering feedback messages");
 			}
 
-			final ImmutableMap<String, String> validationStatuses = validationService.getValidationStatusesUsingCache(startedTasks.keySet());
-			timer.checkpoint("Got ValidationStatuses");
+			final ImmutableMap<String, String> validationStatuses = validationService.getValidationStatuses(startedTasks.keySet());
+			timer.checkpoint("Recovering " + validationStatuses.size() + " ValidationStatuses");
 
-			if (validationStatuses == null) {
-				// TODO I think we should normally throw an exception here, but logging for the moment as I think I'm having connection
-				// issues with the looping REST call while debugging.
+			if (validationStatuses == null || validationStatuses.size() == 0) {
 				logger.error("Failed to recover validation statuses - check logs for reason");
 			} else {
 				for (final String path : startedTasks.keySet()) {

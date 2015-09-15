@@ -1,6 +1,7 @@
 package org.ihtsdo.snowowl.authoring.single.api.service;
 
 import com.b2international.snowowl.snomed.api.domain.classification.ClassificationStatus;
+
 import org.ihtsdo.otf.rest.client.ClassificationResults;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.client.SnowOwlRestClient;
@@ -10,6 +11,7 @@ import org.ihtsdo.snowowl.authoring.single.api.pojo.Notification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+
 import us.monoid.json.JSONException;
 
 public class ClassificationService {
@@ -36,18 +38,14 @@ public class ClassificationService {
 		}
 	}
 
-	public String getLatestClassification(String path) throws RestClientException {
+	public String getLatestClassification(String projectKey, String taskKey) throws RestClientException {
+		String path = PathHelper.getPath(projectKey, taskKey);
 		return snowOwlClient.getLatestClassificationOnBranch(path);
 	}
 
 	private Classification callClassification(String projectKey, String taskKey, String callerUsername) throws RestClientException {
-		String path;
-		if (taskKey != null) {
-			path = branchService.getTaskPath(projectKey, taskKey);
-		} else {
-			path = branchService.getProjectPath(projectKey);
-		}
-		ClassificationResults results = snowOwlClient.startClassification(path);
+
+		ClassificationResults results = snowOwlClient.startClassification(PathHelper.getPath(projectKey, taskKey));
 		//If we started the classification without an exception then it's state will be RUNNING (or queued)
 		results.setStatus(ClassificationStatus.RUNNING.toString());
 

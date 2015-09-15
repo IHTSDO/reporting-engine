@@ -6,6 +6,10 @@ public class PathHelper {
 
 	private static final String MAIN = "MAIN";
 	private static final String SLASH = "/";
+	
+	public static String getPath() {
+		return getPath(null, null);
+	}
 
 	public static String getPath(String projectKey) {
 		return getPath(projectKey, null);
