@@ -200,7 +200,7 @@ public class BranchService {
 
 	public ConflictReport createConflictReport(String projectKey, String taskKey, List<Locale> locales) throws BusinessServiceException {
 		String projectPath = PathHelper.getPath(projectKey);
-		String taskPath = PathHelper.getPath(taskKey);
+		String taskPath = PathHelper.getPath(projectKey, taskKey);
 		return doCreateConflictReport(projectPath, taskPath, locales);
 	}
 
