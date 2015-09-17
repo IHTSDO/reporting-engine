@@ -1,4 +1,4 @@
-package org.ihtsdo.snowowl.test;
+package org.ihtsdo.snowowl.test.client;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,7 +36,7 @@ public class SnowOwlClient {
 		return resty.json(url + "/browser/" + branchPath + "/concepts/" + sctid);
 	}
 
-	String createBranch(String parent, String branchName) throws JSONException, IOException {
+	public String createBranch(String parent, String branchName) throws JSONException, IOException {
 		JSONObject jsonObject = new JSONObject();
 		jsonObject.put("parent", parent);
 		jsonObject.put("name", branchName);
@@ -62,6 +62,14 @@ public class SnowOwlClient {
 	public void deleteBranch(String branchPath) throws IOException {
 		resty.json(url + "/branches/" + branchPath, Resty.delete());
 		logger.info("Deleted branch {}", branchPath);
+	}
+
+	public JSONResource search(String query, String branchPath) throws IOException {
+		return resty.json(url + "/browser/" + branchPath + "/descriptions?query=" + query);
+	}
+
+	public JSONResource searchWithPT(String query, String branchPath) throws IOException {
+		return resty.json(url + "/browser/" + branchPath + "/descriptions-pt?query=" + query);
 	}
 
 	public void addEventListener(SnowOwlClientEventListener eventListener) {

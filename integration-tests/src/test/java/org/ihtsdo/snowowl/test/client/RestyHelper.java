@@ -1,4 +1,4 @@
-package org.ihtsdo.snowowl.test;
+package org.ihtsdo.snowowl.test.client;
 
 import us.monoid.json.JSONObject;
 import us.monoid.web.Content;
