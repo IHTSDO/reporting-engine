@@ -1,4 +1,4 @@
-package org.ihtsdo.snowowl.test;
+package org.ihtsdo.snowowl.test.domain;
 
 import us.monoid.json.JSONArray;
 import us.monoid.json.JSONException;
@@ -27,7 +27,7 @@ public class ConceptHelper {
 		final JSONObject json = ConceptHelper.createBaseConcept();
 		ConceptHelper.addDescription(fsn, "FSN", json);
 		ConceptHelper.addDescription(pt, "SYNONYM", json);
-		ConceptHelper.addRelationship("116680003", parentId, json);
+		ConceptHelper.addRelationship(parentId, "116680003", json);
 		return json;
 	}
 

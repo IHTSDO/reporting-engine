@@ -1,5 +1,7 @@
 package org.ihtsdo.snowowl.test;
 
+import org.ihtsdo.snowowl.test.domain.ConceptHelper;
+import org.ihtsdo.snowowl.test.domain.ConceptIds;
 import org.junit.Assert;
 import org.junit.Test;
 import us.monoid.json.JSONObject;

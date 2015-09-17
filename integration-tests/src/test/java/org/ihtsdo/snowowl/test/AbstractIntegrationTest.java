@@ -2,6 +2,7 @@ package org.ihtsdo.snowowl.test;
 
 import org.ihtsdo.snowowl.test.client.SnowOwlClient;
 import org.ihtsdo.snowowl.test.client.SnowOwlClientEventListener;
+import org.ihtsdo.snowowl.test.domain.ConceptHelper;
 import org.junit.After;
 import org.junit.Before;
 import org.slf4j.Logger;

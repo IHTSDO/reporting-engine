@@ -1,4 +1,4 @@
-package org.ihtsdo.snowowl.test;
+package org.ihtsdo.snowowl.test.domain;
 
 public interface ConceptIds {
 
