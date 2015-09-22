@@ -12,20 +12,36 @@ public class UiStateService {
 	@Autowired
 	private ArbitraryJsonService arbitraryJsonService;
 
-	public void persistPanelState(String projectKey, String taskKey, String username, String panelId, String jsonState) throws IOException {
-		arbitraryJsonService.write(getUserPanelPath(projectKey, taskKey, username, panelId), jsonState);
+	public void persistTaskPanelState(String projectKey, String taskKey, String username, String panelId, String jsonState) throws IOException {
+		arbitraryJsonService.write(getTaskUserPanelPath(projectKey, taskKey, username, panelId), jsonState);
 	}
 
-	public String retrievePanelState(String projectKey, String taskKey, String username, String panelId) throws IOException {
+	public String retrieveTaskPanelState(String projectKey, String taskKey, String username, String panelId) throws IOException {
 		try {
-			return arbitraryJsonService.read(getUserPanelPath(projectKey, taskKey, username, panelId));
+			return arbitraryJsonService.read(getTaskUserPanelPath(projectKey, taskKey, username, panelId));
 		} catch (NoSuchFileException e) {
 			throw new NotFoundException("ui-state", panelId);
 		}
 	}
 
-	private String getUserPanelPath(String projectKey, String taskKey, String username, String panelId) {
+	public void persistPanelState(String username, String panelId, String jsonState) throws IOException {
+		arbitraryJsonService.write(getUserPanelPath(username, panelId), jsonState);
+	}
+
+	public String retrievePanelState(String username, String panelId) throws IOException {
+		try {
+			return arbitraryJsonService.read(getUserPanelPath(username, panelId));
+		} catch (NoSuchFileException e) {
+			throw new NotFoundException("ui-state", panelId);
+		}
+	}
+
+	private String getTaskUserPanelPath(String projectKey, String taskKey, String username, String panelId) {
 		return projectKey + "/" + taskKey + "/user/" + username + "/ui-panel/" + panelId + ".json";
+	}
+
+	private String getUserPanelPath(String username, String panelId) {
+		return "/user/" + username + "/ui-panel/" + panelId + ".json";
 	}
 
 
