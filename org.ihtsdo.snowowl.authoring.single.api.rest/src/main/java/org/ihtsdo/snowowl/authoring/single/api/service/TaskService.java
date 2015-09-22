@@ -3,7 +3,7 @@ package org.ihtsdo.snowowl.authoring.single.api.service;
 import com.b2international.snowowl.core.exceptions.BadRequestException;
 import com.b2international.snowowl.core.exceptions.ConflictException;
 import com.b2international.snowowl.core.exceptions.NotFoundException;
-import com.b2international.snowowl.datastore.server.branch.Branch;
+import com.b2international.snowowl.datastore.branch.Branch;
 import com.google.common.collect.ImmutableMap;
 
 import net.rcarz.jiraclient.*;

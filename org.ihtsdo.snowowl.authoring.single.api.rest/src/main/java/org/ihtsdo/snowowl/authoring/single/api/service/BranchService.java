@@ -4,7 +4,7 @@ import com.b2international.snowowl.api.domain.IComponent;
 import com.b2international.snowowl.api.domain.IComponentRef;
 import com.b2international.snowowl.api.impl.domain.ComponentRef;
 import com.b2international.snowowl.core.exceptions.NotFoundException;
-import com.b2international.snowowl.datastore.server.branch.Branch;
+import com.b2international.snowowl.datastore.branch.Branch;
 import com.b2international.snowowl.datastore.server.events.*;
 import com.b2international.snowowl.datastore.server.review.ConceptChanges;
 import com.b2international.snowowl.datastore.server.review.Review;
@@ -14,9 +14,7 @@ import com.b2international.snowowl.snomed.api.ISnomedDescriptionService;
 import com.b2international.snowowl.snomed.api.impl.FsnJoinerOperation;
 import com.b2international.snowowl.snomed.datastore.SnomedConceptIndexEntry;
 import com.google.common.base.Optional;
-
 import net.rcarz.jiraclient.JiraException;
-
 import org.apache.commons.lang.time.StopWatch;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.*;

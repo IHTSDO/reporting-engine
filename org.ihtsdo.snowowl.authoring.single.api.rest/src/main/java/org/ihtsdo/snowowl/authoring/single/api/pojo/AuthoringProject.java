@@ -1,7 +1,7 @@
 package org.ihtsdo.snowowl.authoring.single.api.pojo;
 
-import com.b2international.snowowl.datastore.server.branch.Branch;
-import com.b2international.snowowl.datastore.server.branch.Branch.BranchState;
+import com.b2international.snowowl.datastore.branch.Branch;
+import com.b2international.snowowl.datastore.branch.Branch.BranchState;
 import com.fasterxml.jackson.annotation.JsonRawValue;
 
 public class AuthoringProject {
