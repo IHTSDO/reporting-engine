@@ -103,10 +103,12 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 		this.description = description;
 	}
 
+	@Override
 	public User getAssignee() {
 		return assignee;
 	}
 
+	@Override
 	public void setAssignee(User assignee) {
 		this.assignee = assignee;
 	}

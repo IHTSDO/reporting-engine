@@ -8,14 +8,11 @@ import com.google.common.collect.ImmutableMap;
 
 import net.rcarz.jiraclient.*;
 
+import net.rcarz.jiraclient.User;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.api.rest.common.ControllerHelper;
-import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringMain;
-import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringProject;
-import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTask;
-import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskCreateRequest;
-import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskUpdateRequest;
+import org.ihtsdo.snowowl.authoring.single.api.pojo.*;
 import org.ihtsdo.snowowl.authoring.single.api.review.service.ReviewService;
 import org.ihtsdo.snowowl.authoring.single.api.service.jira.ImpersonatingJiraClientFactory;
 import org.ihtsdo.snowowl.authoring.single.api.service.util.TimerUtil;
@@ -305,12 +302,12 @@ public class TaskService {
 		return projectKey + "/" + taskKey;
 	}
 
-	public AuthoringTask updateTask(String projectKey, String taskKey, AuthoringTaskUpdateRequest updatedTask) throws BusinessServiceException,
+	public AuthoringTask updateTask(String projectKey, String taskKey, AuthoringTaskUpdateRequest taskUpdateRequest) throws BusinessServiceException,
 			JiraException {
 
 		Issue issue = getIssue(projectKey, taskKey);
 		// Act on each field received
-		final TaskStatus status = updatedTask.getStatus();
+		final TaskStatus status = taskUpdateRequest.getStatus();
 		if (status != null) {
 			if (status == TaskStatus.UNKNOWN) {
 				throw new BadRequestException("Requested status is unknown.");
@@ -318,16 +315,39 @@ public class TaskService {
 			stateTransition(issue, status);
 		}
 
-		if (updatedTask.getReviewer() != null) {
-			// Copy that pojo user into the jira issue as an rcarz user
-			User jiraReviewer = getUser(updatedTask.getReviewer().getUsername());
-			//org.ihtsdo.snowowl.authoring.single.api.pojo.User reviewer = new org.ihtsdo.snowowl.authoring.single.api.pojo.User (jiraReviewer);
-			issue.update().field(AuthoringTask.JIRA_REVIEWER_FIELD, jiraReviewer).execute();
+		final Issue.FluentUpdate updateRequest = issue.update();
+		boolean fieldUpdates = false;
+
+		final org.ihtsdo.snowowl.authoring.single.api.pojo.User assignee = taskUpdateRequest.getAssignee();
+		if (assignee != null) {
+			updateRequest.field(Field.ASSIGNEE, getUser(assignee.getUsername()));
+			fieldUpdates = true;
+		}
+
+		final org.ihtsdo.snowowl.authoring.single.api.pojo.User reviewer = taskUpdateRequest.getReviewer();
+		if (reviewer != null) {
+			updateRequest.field(AuthoringTask.JIRA_REVIEWER_FIELD, getUser(reviewer.getUsername()));
+			fieldUpdates = true;
+		}
+
+		final String summary = taskUpdateRequest.getSummary();
+		if (summary != null) {
+			updateRequest.field(Field.SUMMARY, summary);
+			fieldUpdates = true;
+		}
+
+		final String description = taskUpdateRequest.getDescription();
+		if (description != null) {
+			updateRequest.field(Field.DESCRIPTION, description);
+			fieldUpdates = true;
+		}
+
+		if (fieldUpdates) {
+			updateRequest.execute();
 		}
 
 		// Pick up those changes in a new Task object
 		return retrieveTask(projectKey, taskKey);
-
 	}
 
 	private org.ihtsdo.snowowl.authoring.single.api.pojo.User getPojoUserOrNull(User lead) {
