@@ -40,4 +40,11 @@ public class ArbitraryJsonService {
 		}
 		return file.toPath();
 	}
+
+	public void delete(String relativePath) {
+		final File file = new File(baseDirectory, relativePath);
+		if (file.isFile() && !file.delete()) {
+			logger.warn("Failed to delete file {}", file.getAbsolutePath());
+		}
+	}
 }
