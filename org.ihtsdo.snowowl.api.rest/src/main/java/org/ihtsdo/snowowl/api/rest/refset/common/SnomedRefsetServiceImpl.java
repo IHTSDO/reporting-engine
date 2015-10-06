@@ -43,13 +43,14 @@ public class SnomedRefsetServiceImpl {
 	 */
 	public RefSet getRefsetHeader(final String version, final String id) {
 		
-		 SnomedRefSetIndexEntry entry = getRefsetBrowser().getRefSet(createVersionPath(version), id);
-		 
-		 if (entry == null) {
+		IBranchPath branchPath = createVersionPath(version);
+		SnomedRefSetIndexEntry entry = getRefsetBrowser().getRefSet(branchPath, id);
+		
+		if (entry == null) {
 			
-			 throw new ComponentNotFoundException(ComponentCategory.SET.name(), id);
+			throw new ComponentNotFoundException(ComponentCategory.SET.name(), id);
 		}
-		 return getRefsetConverter().apply(entry);
+		return getRefsetConverter(branchPath).apply(entry);
 
 	}
 	
@@ -65,11 +66,10 @@ public class SnomedRefsetServiceImpl {
 	/**
 	 * @return
 	 */
-	private ReferenceSetConverter getRefsetConverter() {
+	private ReferenceSetConverter getRefsetConverter(final IBranchPath branchPath) {
 		
-		return new ReferenceSetConverter();
+		return new ReferenceSetConverter(new SnomedBranchRefSetMembershipLookupService(branchPath));
 	}
-	
 	
 	
 	/**Gets concepts as collection of {@link ReferenceSetComponent}. If no concept details found for any given concept 

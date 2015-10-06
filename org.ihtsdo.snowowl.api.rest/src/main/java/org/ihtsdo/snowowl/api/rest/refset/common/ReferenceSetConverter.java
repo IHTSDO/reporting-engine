@@ -13,6 +13,7 @@ package org.ihtsdo.snowowl.api.rest.refset.common;
 
 import com.b2international.snowowl.snomed.api.impl.AbstractSnomedComponentConverter;
 import com.b2international.snowowl.snomed.datastore.index.refset.SnomedRefSetIndexEntry;
+import com.b2international.snowowl.snomed.datastore.services.AbstractSnomedRefSetMembershipLookupService;
 
 import org.ihtsdo.snowowl.api.rest.domain.RefSet;
 
@@ -21,6 +22,11 @@ import org.ihtsdo.snowowl.api.rest.domain.RefSet;
  */
 public class ReferenceSetConverter extends AbstractSnomedComponentConverter<SnomedRefSetIndexEntry, RefSet>  {
 	
+	public ReferenceSetConverter(
+			AbstractSnomedRefSetMembershipLookupService refSetMembershipLookupService) {
+		super(refSetMembershipLookupService);
+	}
+
 	@Override
 	public RefSet apply(final SnomedRefSetIndexEntry input) {
 		
