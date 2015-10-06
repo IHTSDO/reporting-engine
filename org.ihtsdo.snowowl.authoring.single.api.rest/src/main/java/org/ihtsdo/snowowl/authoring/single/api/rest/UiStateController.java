@@ -55,6 +55,18 @@ public class UiStateController extends AbstractSnomedRestService {
 		return uiStateService.retrieveTaskPanelState(projectKey, taskKey, ControllerHelper.getUsername(), panelId);
 	}
 
+	@ApiOperation(value="Delete UI panel state", notes="This endpoint may be used to delete the UI state.")
+	@ApiResponses({
+			@ApiResponse(code = 200, message = "OK")
+	})
+	@RequestMapping(value="/projects/{projectKey}/tasks/{taskKey}/ui-state/{panelId}", method= RequestMethod.DELETE)
+	public void deleteTaskUiPanelState(@PathVariable final String projectKey, @PathVariable final String taskKey,
+			@PathVariable final String panelId) throws IOException {
+
+		uiStateService.deleteTaskPanelState(projectKey, taskKey, ControllerHelper.getUsername(), panelId);
+	}
+
+
 	@ApiOperation(value="Persist UI panel state", notes="This endpoint may be used to persist UI state using any json object. " +
 			"State is stored and retrieved under Project, Task, User and panel. This also sets the Task status to In Progress if it's New.")
 	@ApiResponses({
@@ -74,6 +86,16 @@ public class UiStateController extends AbstractSnomedRestService {
 	public String retrieveUiPanelState(@PathVariable final String panelId) throws IOException {
 
 		return uiStateService.retrievePanelState(ControllerHelper.getUsername(), panelId);
+	}
+
+	@ApiOperation(value="Delete UI panel state", notes="This endpoint may be used to delete the UI state.")
+	@ApiResponses({
+			@ApiResponse(code = 200, message = "OK")
+	})
+	@RequestMapping(value="/ui-state/{panelId}", method= RequestMethod.DELETE)
+	public void deleteUiPanelState(@PathVariable final String panelId) throws IOException {
+
+		uiStateService.deletePanelState(ControllerHelper.getUsername(), panelId);
 	}
 
 }

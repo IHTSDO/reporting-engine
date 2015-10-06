@@ -45,4 +45,11 @@ public class UiStateService {
 	}
 
 
+	public void deleteTaskPanelState(String projectKey, String taskKey, String username, String panelId) {
+		arbitraryJsonService.delete(getTaskUserPanelPath(projectKey, taskKey, username, panelId));
+	}
+
+	public void deletePanelState(String username, String panelId) {
+		arbitraryJsonService.delete(getUserPanelPath(username, panelId));
+	}
 }

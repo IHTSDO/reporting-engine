@@ -31,7 +31,7 @@ public class ReferenceSetComponentConverter extends AbstractSnomedComponentConve
 	 */
 	public ReferenceSetComponentConverter(
 			AbstractSnomedRefSetMembershipLookupService snomedRefSetMembershipLookupService) {
-		
+		super(snomedRefSetMembershipLookupService);
 		this.conceptConvertor = new SnomedConceptConverter(snomedRefSetMembershipLookupService);
 		
 	}
