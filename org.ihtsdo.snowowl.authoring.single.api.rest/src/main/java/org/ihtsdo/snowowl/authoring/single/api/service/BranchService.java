@@ -247,6 +247,8 @@ public class BranchService {
 			conflictReport.setConcepts(conflictingConcepts);
 			conflictReport.setTargetReviewId(targetChangesReview.get().getReviewId());
 			conflictReport.setSourceReviewId(sourceChangesReview.get().getReviewId());
+			logger.info ("Completed conflict report for {}" , targetPath);
+			
 			return conflictReport;
 		} catch (ExecutionException|InterruptedException|SQLException e) {
 			throw new BusinessServiceException ("Unable to retrieve Conflict report for " + targetPath + " due to " + e.getMessage(), e);

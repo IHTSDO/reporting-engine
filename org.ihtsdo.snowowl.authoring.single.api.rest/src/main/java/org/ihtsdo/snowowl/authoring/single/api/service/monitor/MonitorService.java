@@ -2,12 +2,16 @@ package org.ihtsdo.snowowl.authoring.single.api.service.monitor;
 
 import org.ihtsdo.snowowl.authoring.single.api.pojo.ConflictReport;
 import org.ihtsdo.snowowl.authoring.single.api.service.NotificationService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class MonitorService {
+	
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	private Map<String, UserMonitors> userMonitorsMap = new HashMap<>();
 
@@ -22,8 +26,10 @@ public class MonitorService {
 	}
 
 	public void updateUserFocus(String username, String focusProjectId, String focusTaskId, ConflictReport conflictReport) {
+		logger.info("Starting: Updating user focus for {} [{}/{}]", username, focusProjectId, focusTaskId);
 		createIfNotExists(username);
 		userMonitorsMap.get(username).updateFocus(focusProjectId, focusTaskId, conflictReport);
+		logger.info("Finished: Updating user focus for {} [{}/{}]", username, focusProjectId, focusTaskId);
 	}
 
 	public void keepMonitorsAlive(String username) {
