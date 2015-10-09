@@ -127,6 +127,7 @@ public class CdoStore {
 		ResultSet rs = stmt.executeQuery();
 		Integer result = rs.next() ? new Integer (rs.getInt(1)) : null; 
 		Utils.closeQuietly(conn);
+		logger.info("Determined branch id for {}/{}: {}",parentBranchName, childBranchName,result);
 		return result;
 	}
 	
@@ -139,6 +140,7 @@ public class CdoStore {
 	 * @throws SQLException
 	 */
 	public Set<String> getConceptChanges(Integer branchId, Date fromDate) throws SQLException {
+		logger.info("Starting concepts changed query for branch " + branchId );
 		
 		Connection conn = pool.getConn();  //Pooled connection will also pool prepared statement if it's been used before
 		PreparedStatement stmt = conn.prepareStatement(GET_CONCEPTS_CHANGED_SINCE);
@@ -151,6 +153,8 @@ public class CdoStore {
 		while (rs.next()) {
 			conceptsChanged.add(rs.getString(1));
 		}
+		logger.info("Completed concepts changed for branch " + branchId + " with " + conceptsChanged.size() + " concepts changed.");
+
 		return conceptsChanged; 
 	}
 	
