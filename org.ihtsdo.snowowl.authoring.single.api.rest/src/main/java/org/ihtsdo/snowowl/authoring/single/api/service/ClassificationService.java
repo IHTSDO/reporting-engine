@@ -5,6 +5,7 @@ import com.b2international.snowowl.snomed.api.domain.classification.Classificati
 import org.ihtsdo.otf.rest.client.ClassificationResults;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.client.SnowOwlRestClient;
+import org.ihtsdo.snowowl.api.rest.common.ControllerHelper;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.Classification;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.EntityType;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.Notification;
@@ -12,13 +13,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import us.monoid.json.JSONException;
 
 public class ClassificationService {
 	
-	@Autowired
-	private BranchService branchService;
-
 	@Autowired
 	private TaskService taskService;
 
@@ -44,13 +44,15 @@ public class ClassificationService {
 	}
 
 	private Classification callClassification(String projectKey, String taskKey, String callerUsername) throws RestClientException {
-
-		ClassificationResults results = snowOwlClient.startClassification(PathHelper.getPath(projectKey, taskKey));
+		final String path = PathHelper.getPath(projectKey, taskKey);
+		logger.info("Requesting classification of path {} for user {}", path, callerUsername);
+		ClassificationResults results = snowOwlClient.startClassification(path);
 		//If we started the classification without an exception then it's state will be RUNNING (or queued)
 		results.setStatus(ClassificationStatus.RUNNING.toString());
 
 		//Now start an asynchronous thread to wait for the results
-		(new Thread(new ClassificationPoller(projectKey, taskKey, results, callerUsername))).start();
+		final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		(new Thread(new ClassificationPoller(projectKey, taskKey, results, authentication))).start();
 
 		return new Classification(results);
 	}
@@ -60,17 +62,18 @@ public class ClassificationService {
 		private ClassificationResults results;
 		private String projectKey;
 		private String taskKey;
-		private final String callerUsername;
+		private final Authentication authentication;
 
-		ClassificationPoller(String projectKey, String taskKey, ClassificationResults results, String callerUsername) {
+		ClassificationPoller(String projectKey, String taskKey, ClassificationResults results, Authentication authentication) {
 			this.results = results;
 			this.projectKey = projectKey;
 			this.taskKey = taskKey;
-			this.callerUsername = callerUsername;
+			this.authentication = authentication;
 		}
 
 		@Override
 		public void run() {
+			SecurityContextHolder.getContext().setAuthentication(authentication);
 			String resultMessage;
 			try {
 				snowOwlClient.waitForClassificationToComplete(results);
@@ -92,7 +95,7 @@ public class ClassificationService {
 				// Comment on project magic ticket
 				taskService.addCommentLogErrors(projectKey, resultMessage);
 			}
-			notificationService.queueNotification(callerUsername, new Notification(projectKey, taskKey, EntityType.Classification, resultMessage));
+			notificationService.queueNotification(ControllerHelper.getUsername(), new Notification(projectKey, taskKey, EntityType.Classification, resultMessage));
 		}
 
 	}
