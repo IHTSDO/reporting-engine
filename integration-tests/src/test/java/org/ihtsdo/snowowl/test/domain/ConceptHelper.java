@@ -1,5 +1,6 @@
 package org.ihtsdo.snowowl.test.domain;
 
+import org.junit.Assert;
 import us.monoid.json.JSONArray;
 import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
@@ -27,7 +28,7 @@ public class ConceptHelper {
 		final JSONObject json = ConceptHelper.createBaseConcept();
 		ConceptHelper.addDescription(fsn, "FSN", json);
 		ConceptHelper.addDescription(pt, "SYNONYM", json);
-		ConceptHelper.addRelationship(parentId, "116680003", json);
+		ConceptHelper.addRelationship(parentId, ConceptIds.isA, json);
 		return json;
 	}
 
@@ -45,6 +46,11 @@ public class ConceptHelper {
 
 	public static void addRelationship(String targetId, String typeId, JSONObject concept) throws JSONException {
 		JSONObject json = new JSONObject();
+		try {
+			final String conceptId = concept.getString("conceptId");
+			json.put("sourceId", conceptId);
+		} catch (JSONException e) {
+		}
 		json.put("active", true);
 		json.put("characteristicType", "STATED_RELATIONSHIP");
 		json.put("groupId", 0);
@@ -53,6 +59,19 @@ public class ConceptHelper {
 		json.put("target", new JSONObject().put("conceptId", targetId));
 		json.put("type", new JSONObject().put("conceptId", typeId));
 		((JSONArray) concept.get("relationships")).put(json);
+	}
+
+	public static JSONObject findRelationship(String typeId, JSONObject concept) throws JSONException {
+		final JSONArray relationships = concept.getJSONArray("relationships");
+		for (int i = 0; i < relationships.length(); i++) {
+			final JSONObject relationship = relationships.getJSONObject(i);
+			final String relTypeId = relationship.getJSONObject("type").getString("conceptId");
+			if (relTypeId.equals(typeId)) {
+				return relationship;
+			}
+		}
+		Assert.fail("Failed to find relationship with typeId " + typeId + " in concept:\n" + concept.toString());
+		return null; // Will never reach here
 	}
 
 }

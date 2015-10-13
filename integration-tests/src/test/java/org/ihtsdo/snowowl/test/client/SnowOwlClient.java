@@ -1,5 +1,6 @@
 package org.ihtsdo.snowowl.test.client;
 
+import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import us.monoid.json.JSONException;
@@ -23,17 +24,28 @@ public class SnowOwlClient {
 		this.url = url;
 		eventListeners = new HashSet<>();
 		resty = new Resty();
-		resty.authenticate(url, "snowowl", "snowowl".toCharArray());
+		resty.authenticate(url, username, password.toCharArray());
 	}
 
 	public JSONResource createConcept(JSONObject json, String branchPath) throws Exception {
-		final JSONResource newConcept = resty.json(url + "/browser/" + branchPath + "/concepts", RestyHelper.content(json, SNOWOWL_CONTENT_TYPE));
+		final JSONResource newConcept = resty.json(getConceptsPath(branchPath), RestyHelper.content(json, SNOWOWL_CONTENT_TYPE));
 		logger.info("Created concept " + newConcept.get("conceptId"));
 		return newConcept;
 	}
 
+	public JSONResource updateConcept(JSONObject concept, String branchPath) throws IOException, JSONException {
+		final String id = concept.getString("conceptId");
+		Assert.assertNotNull(id);
+		logger.info("Updated concept " + id);
+		return resty.json(getConceptsPath(branchPath) + "/" + id, Resty.put(RestyHelper.content(concept, SNOWOWL_CONTENT_TYPE)));
+	}
+
 	public JSONResource getConcept(String sctid, String branchPath) throws IOException {
-		return resty.json(url + "/browser/" + branchPath + "/concepts/" + sctid);
+		return resty.json(getConceptsPath(branchPath) + "/" + sctid);
+	}
+
+	private String getConceptsPath(String branchPath) {
+		return url + "/browser/" + branchPath + "/concepts";
 	}
 
 	public String createBranch(String parent, String branchName) throws JSONException, IOException {
