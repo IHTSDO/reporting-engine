@@ -49,7 +49,7 @@
 		<property name="placeholderPrefix" value="+{"/>
 	</bean>
 
-	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.SnowOwlBusHelper"/>
+	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.SnowOwlHelper"/>
 
 	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.UiStateService"/>
 	

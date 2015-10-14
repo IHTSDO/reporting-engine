@@ -1,7 +1,6 @@
 package org.ihtsdo.snowowl.authoring.single.api.service;
 
 import com.b2international.snowowl.api.domain.IComponent;
-import com.b2international.snowowl.api.domain.IComponentRef;
 import com.b2international.snowowl.api.impl.domain.ComponentRef;
 import com.b2international.snowowl.core.exceptions.NotFoundException;
 import com.b2international.snowowl.datastore.branch.Branch;
@@ -22,7 +21,6 @@ import org.ihtsdo.snowowl.authoring.single.api.review.pojo.AuthoringTaskReview;
 import org.ihtsdo.snowowl.authoring.single.api.review.pojo.ChangeType;
 import org.ihtsdo.snowowl.authoring.single.api.review.pojo.ReviewConcept;
 import org.ihtsdo.snowowl.authoring.single.api.service.dao.CdoStore;
-import org.ihtsdo.snowowl.authoring.single.api.service.ts.SnomedServiceHelper;
 import org.ihtsdo.snowowl.authoring.single.api.service.util.TimerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +35,7 @@ import static com.google.common.collect.Sets.newHashSet;
 public class BranchService {
 
 	@Autowired
-	private SnowOwlBusHelper snowOwlBusHelper;
+	private SnowOwlHelper snowOwlHelper;
 	
 	@Autowired
 	private IEventBus eventBus;
@@ -70,12 +68,12 @@ public class BranchService {
 
 	public void createTaskBranchAndProjectBranchIfNeeded(String projectKey, String taskKey) throws ServiceException {
 		createProjectBranchIfNeeded(projectKey);
-		snowOwlBusHelper.makeBusRequest(new CreateBranchEvent(SNOMED_STORE, PathHelper.getPath(projectKey), taskKey, null), BranchReply.class, "Failed to create project branch.", this);
+		snowOwlHelper.makeBusRequest(new CreateBranchEvent(SNOMED_STORE, PathHelper.getPath(projectKey), taskKey, null), BranchReply.class, "Failed to create project branch.", this);
 	}
 
 	public Branch.BranchState getBranchState(String project, String taskKey) throws ServiceException {
 		final String branchPath = PathHelper.getPath(project, taskKey);
-		final BranchReply branchReply = snowOwlBusHelper.makeBusRequest(new ReadBranchEvent(SNOMED_STORE, branchPath), BranchReply.class, "Failed to read branch " + branchPath, this);
+		final BranchReply branchReply = snowOwlHelper.makeBusRequest(new ReadBranchEvent(SNOMED_STORE, branchPath), BranchReply.class, "Failed to read branch " + branchPath, this);
 		return branchReply.getBranch().state();
 	}
 
@@ -116,10 +114,6 @@ public class BranchService {
 		return branch;
 	}
 	
-	public AuthoringTaskReview diffProjectAgainstTask(String projectKey, String taskKey, List<Locale> locales) throws ExecutionException, InterruptedException {
-		return doDiff(PathHelper.getPath(projectKey), PathHelper.getPath(projectKey, taskKey), locales);
-	}
-
 	public ReviewStatus getReviewStatus(String id) throws ExecutionException, InterruptedException {
 		return getReview(id).status();
 	}
@@ -150,9 +144,14 @@ public class BranchService {
 		timer.checkpoint("getting changes");
 
 		final ConceptChanges conceptChanges = conceptChangesReply.getConceptChanges();
-		addAllToReview(review, ChangeType.created, conceptChanges.newConcepts(), sourcePath, locales);
-		addAllToReview(review, ChangeType.modified, conceptChanges.changedConcepts(), sourcePath, locales);
-		addAllToReview(review, ChangeType.deleted, conceptChanges.deletedConcepts(), sourcePath, locales);
+		List<String> conceptIds = new ArrayList<>();
+		conceptIds.addAll(conceptChanges.newConcepts());
+		conceptIds.addAll(conceptChanges.changedConcepts());
+		conceptIds.addAll(conceptChanges.deletedConcepts());
+		Map<String, String> idToFsnMap = snowOwlHelper.getFullySpecifiedNamesInOneHit(conceptIds, sourcePath, locales);
+		addAllToReview(review, ChangeType.created, conceptChanges.newConcepts(), idToFsnMap);
+		addAllToReview(review, ChangeType.modified, conceptChanges.changedConcepts(), idToFsnMap);
+		addAllToReview(review, ChangeType.deleted, conceptChanges.deletedConcepts(), idToFsnMap);
 		timer.checkpoint("building review with terms");
 		timer.finish();
 		logger.info("Review {} built", tsReview.id());
@@ -167,21 +166,18 @@ public class BranchService {
 		return latestReviewReply.getReview();
 	}
 
-	private void addAllToReview(AuthoringTaskReview review, ChangeType changeType, Set<String> conceptIds, String branchPath, List<Locale> locales) {
-		if (!conceptIds.isEmpty()) {
-			IComponentRef checkedComponentRef = SnomedServiceHelper.createComponentRef(branchPath, conceptIds.iterator().next());;
-			for (String conceptId : conceptIds) {
-				final String term = descriptionService.getFullySpecifiedName(new ComponentRef(checkedComponentRef, conceptId), locales).getTerm();
-				review.addConcept(new ReviewConcept(conceptId, term, changeType));
-			}
+	private void addAllToReview(AuthoringTaskReview review, ChangeType changeType, Set<String> conceptIds, Map<String, String> idToFsnMap) {
+		for (String conceptId : conceptIds) {
+			final String term = idToFsnMap.get(conceptId);
+			review.addConcept(new ReviewConcept(conceptId, term, changeType));
 		}
 	}
 
 	private void createProjectBranchIfNeeded(String projectKey) throws ServiceException {
 		try {
-			snowOwlBusHelper.makeBusRequest(new ReadBranchEvent(SNOMED_STORE, PathHelper.getPath(projectKey)), BranchReply.class, "Failed to find project branch.", this);
+			snowOwlHelper.makeBusRequest(new ReadBranchEvent(SNOMED_STORE, PathHelper.getPath(projectKey)), BranchReply.class, "Failed to find project branch.", this);
 		} catch (ServiceException e) {
-			snowOwlBusHelper.makeBusRequest(new CreateBranchEvent(SNOMED_STORE, MAIN, projectKey, null), BranchReply.class, "Failed to create project branch.", this);
+			snowOwlHelper.makeBusRequest(new CreateBranchEvent(SNOMED_STORE, MAIN, projectKey, null), BranchReply.class, "Failed to create project branch.", this);
 		}
 	}
 	
