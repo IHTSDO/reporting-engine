@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>org.ihtsdo.snowowl</groupId>
 		<artifactId>ihtsdo-snowowl-parent</artifactId>
-		<version>4.1.24</version>
+		<version>4.1.25</version>
 	</parent>
 
 	<artifactId>org.ihtsdo.snowowl.authoring.single.api.rest</artifactId>
@@ -41,7 +41,6 @@
 			<version>2.0</version>
 		</dependency>
 		
-		<!-- SnowOwl -->
 		<dependency>
 			<groupId>org.ihtsdo.snowowl</groupId>
 			<artifactId>org.ihtsdo.snowowl.api.rest.common</artifactId>
@@ -58,6 +57,7 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
+		<!-- SnowOwl -->
 		<!-- Plug-in dependencies are repeated here so that the build can resolve
 			them at compile time -->
 		<dependency>
