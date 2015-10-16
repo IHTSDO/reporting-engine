@@ -8,6 +8,8 @@
 
 	<import resource="review-context.xml"/>
 
+	<import resource="cdo-context.xml"/>
+
 	<bean class="org.ihtsdo.snowowl.authoring.single.api.SpringConfiguration"/>
 
 	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.TaskService">
