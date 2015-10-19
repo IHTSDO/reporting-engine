@@ -23,13 +23,13 @@ public class IdTest extends AbstractIntegrationTest {
 		final JSONObject newConcept = client.createConcept(concept, branchPath).toObject();
 		Assert.assertEquals(expectedConceptId, newConcept.get("conceptId"));
 	}
+
 	@Test
-	// TODO: Add validation to make this fail
 	public void testCreateConceptWithRelationshipId() throws Exception {
-		final String expectedConceptId = ConceptIds.exampleExtensionConceptId;
-		final JSONObject concept = ConceptHelper.createConcept().put("conceptId", expectedConceptId);
+		final String notExpectedConceptId = ConceptIds.exampleRelationshipId;
+		final JSONObject concept = ConceptHelper.createConcept().put("conceptId", notExpectedConceptId);
 		final JSONObject newConcept = client.createConcept(concept, branchPath).toObject();
-		Assert.assertEquals(expectedConceptId, newConcept.get("conceptId"));
+		Assert.assertNotEquals(notExpectedConceptId, newConcept.get("conceptId"));
 	}
 
 }

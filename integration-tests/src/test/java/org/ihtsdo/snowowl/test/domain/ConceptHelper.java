@@ -74,4 +74,14 @@ public class ConceptHelper {
 		return null; // Will never reach here
 	}
 
+	public static JSONObject getFSN(JSONObject concept) throws JSONException {
+		final JSONArray descriptions = concept.getJSONArray("descriptions");
+		for (int a = 0; a < descriptions.length(); a++) {
+			final JSONObject desc = descriptions.getJSONObject(a);
+			if ("FSN".equals(desc.getString("type"))) {
+				return desc;
+			}
+		}
+		return null;
+	}
 }
