@@ -15,7 +15,7 @@ public class RelationshipMutableFieldsTest extends AbstractIntegrationTest {
 		JSONObject concept = ConceptHelper.createConcept();
 		concept = client.createConcept(concept, branchPath).object();
 
-		ConceptHelper.addRelationship("129264002", "260686004", concept);
+		ConceptHelper.addRelationship("260686004", "129264002", concept);
 		Assert.assertEquals(0, ConceptHelper.findRelationship("260686004", concept).getInt(GROUP_ID));
 		concept = client.updateConcept(concept, branchPath).object();
 
@@ -31,7 +31,7 @@ public class RelationshipMutableFieldsTest extends AbstractIntegrationTest {
 
 		// Create
 		JSONObject concept = client.createConcept(ConceptHelper.createConcept(), branchPath).object();
-		ConceptHelper.addRelationship("129264002", "260686004", concept);
+		ConceptHelper.addRelationship("260686004", "129264002", concept);
 		concept = client.updateConcept(concept, branchPath).object();
 
 		// Assert not equals
