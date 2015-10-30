@@ -12,6 +12,7 @@ public class ReviewMessage {
 	private long id;
 	@ManyToOne
 	private Branch branch;
+	@Column(columnDefinition = "TEXT DEFAULT NULL")
 	private String messageHtml;
 	private Date creationDate;
 	private String fromUsername;
