@@ -6,6 +6,14 @@ import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
 
 public class ConceptHelper {
+
+	public static final String PREFERRED = "PREFERRED";
+	public static final String ACCEPTABLE = "ACCEPTABLE";
+
+	public enum DescriptionType {
+		FSN, PT, SYNONYM
+	}
+
 	public static JSONObject createBaseConcept() throws JSONException {
 		JSONObject json = new JSONObject();
 		json.put("definitionStatus", "PRIMITIVE");
@@ -26,25 +34,29 @@ public class ConceptHelper {
 
 	public static JSONObject createConcept(String fsn, String pt, String parentId) throws Exception {
 		final JSONObject json = ConceptHelper.createBaseConcept();
-		ConceptHelper.addDescription(fsn, "FSN", json);
-		ConceptHelper.addDescription(pt, "SYNONYM", json);
-		ConceptHelper.addRelationship(parentId, ConceptIds.isA, json);
+		ConceptHelper.addDescription(fsn, DescriptionType.FSN, json);
+		ConceptHelper.addDescription(pt, DescriptionType.PT, json);
+		ConceptHelper.addRelationship(ConceptIds.isA, parentId, json);
 		return json;
 	}
 
-	public static void addDescription(String term, String type, JSONObject json) throws JSONException {
+	public static void addDescription(String term, DescriptionType type, JSONObject json) throws JSONException {
 		final JSONObject desc = new JSONObject();
 		desc.put("active", true);
 		desc.put("moduleId", "900000000000207008");
-		desc.put("type", type);
 		desc.put("term", term);
 		desc.put("lang", "en");
 		desc.put("caseSignificance", "INITIAL_CHARACTER_CASE_INSENSITIVE");
-		desc.put("acceptabilityMap", new JSONObject().put("900000000000509007", "PREFERRED").put("900000000000508004", "PREFERRED"));
+		final String acceptability = type != DescriptionType.SYNONYM ? PREFERRED : ACCEPTABLE;
+		desc.put("acceptabilityMap", new JSONObject().put("900000000000509007", acceptability).put("900000000000508004", acceptability));
+		if (type == DescriptionType.PT) {
+			type = DescriptionType.SYNONYM;
+		}
+		desc.put("type", type.toString());
 		json.getJSONArray("descriptions").put(desc);
 	}
 
-	public static void addRelationship(String targetId, String typeId, JSONObject concept) throws JSONException {
+	public static void addRelationship(String typeId, String targetId, JSONObject concept) throws JSONException {
 		JSONObject json = new JSONObject();
 		try {
 			final String conceptId = concept.getString("conceptId");

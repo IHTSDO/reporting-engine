@@ -87,4 +87,33 @@ public class SnowOwlClient {
 	public void addEventListener(SnowOwlClientEventListener eventListener) {
 		eventListeners.add(eventListener);
 	}
+
+	public String classify(String branchPath) throws IOException, JSONException, InterruptedException {
+		final JSONObject json = new JSONObject();
+		json.put("reasonerId", "org.semanticweb.elk.elk.reasoner.factory");
+		final String url = this.url + "/" + branchPath + "/classifications";
+		System.out.println(url);
+		System.out.println(json.toString(3));
+		final JSONResource resource = resty.json(url, RestyHelper.content(json, SNOWOWL_CONTENT_TYPE));
+		final String location = resource.getUrlConnection().getHeaderField("Location");
+		System.out.println("location " + location);
+
+		String status;
+		do {
+			final JSONObject jsonObject = resty.json(location).toObject();
+			status = jsonObject.getString("status");
+		} while (("SCHEDULED".equals(status) || "RUNNING".equals(status) && sleep(10)));
+
+		if ("COMPLETED".equals(status)) {
+			return location.substring(location.lastIndexOf("/"));
+		} else {
+			throw new IOException("Unexpected classification state " + status);
+		}
+	}
+
+	private boolean sleep(int seconds) throws InterruptedException {
+		Thread.sleep(1000 * seconds);
+		return true;
+	}
+
 }
