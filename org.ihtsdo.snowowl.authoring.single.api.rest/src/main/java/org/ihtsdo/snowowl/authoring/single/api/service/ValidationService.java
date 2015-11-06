@@ -176,7 +176,7 @@ public class ValidationService {
 				logger.warn("Ignoring request for validation json for path {} as status {} ", path, validationStatus);
 				return null;
 			}
-		} catch (IOException|ExecutionException|JSONException e) {
+		} catch (Exception e) {
 			throw new BusinessServiceException ("Unable to recover validation json for " + path, e);
 		}
 	}
@@ -193,7 +193,7 @@ public class ValidationService {
 		List<String> statuses;
 		try {
 			statuses = orchestrationRestClient.retrieveValidationStatuses(paths);
-		} catch (JSONException | IOException e) {
+		} catch (Exception e) {
 			logger.error("Failed to retrieve validation status of tasks {}", paths, e);
 			statuses = new ArrayList<>();
 			for (int i = 0; i < paths.size(); i++) {
