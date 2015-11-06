@@ -320,7 +320,12 @@ public class TaskService {
 
 		final org.ihtsdo.snowowl.authoring.single.api.pojo.User assignee = taskUpdateRequest.getAssignee();
 		if (assignee != null) {
-			updateRequest.field(Field.ASSIGNEE, getUser(assignee.getUsername()));
+			final String username = assignee.getUsername();
+			if (username == null || username.isEmpty()) {
+				updateRequest.field(Field.ASSIGNEE, null);
+			} else {
+				updateRequest.field(Field.ASSIGNEE, getUser(username));
+			}
 			fieldUpdates = true;
 		}
 
