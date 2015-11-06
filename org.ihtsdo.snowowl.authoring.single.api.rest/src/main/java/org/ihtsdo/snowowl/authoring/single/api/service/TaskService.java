@@ -331,7 +331,12 @@ public class TaskService {
 
 		final org.ihtsdo.snowowl.authoring.single.api.pojo.User reviewer = taskUpdateRequest.getReviewer();
 		if (reviewer != null) {
-			updateRequest.field(AuthoringTask.JIRA_REVIEWER_FIELD, getUser(reviewer.getUsername()));
+			final String username = reviewer.getUsername();
+			if (username == null || username.isEmpty()) {
+				updateRequest.field(AuthoringTask.JIRA_REVIEWER_FIELD, null);
+			} else {
+				updateRequest.field(AuthoringTask.JIRA_REVIEWER_FIELD, getUser(username));
+			}
 			fieldUpdates = true;
 		}
 
