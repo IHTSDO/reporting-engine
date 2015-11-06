@@ -93,6 +93,8 @@ public class CdoStore {
 	private static final String CREATE_TEMP_TABLE = "CREATE TABLE IF NOT EXISTS temp_component (id varchar(19), transaction_id int,"
 			+ "INDEX `temp_component_IDX_001` (`id`, `transaction_id`))" ;
 	
+	private static final String CREATE_SNOMED_CONCEPT_INDEX = "ALTER TABLE snomed_concept ADD INDEX SNOMED_CONCEPT_IDX2001 (ID, CDO_BRANCH, CDO_CREATED)";
+	
 	private static final String CLEAN_TEMP_TABLE = "Delete from temp_component where transaction_id = ?";
 	
 	private static final String POPULATE_TEMP_TABLE = "insert into temp_component values(?, ?)";
@@ -102,8 +104,14 @@ public class CdoStore {
 	public void init() throws SQLException {
 		logger.info("Ensuring presence of temptable: temp_component");
 		try (Connection conn = dataSource.getConnection()) {
-			Statement createTempTableStatement = conn.createStatement();
-			createTempTableStatement.execute(CREATE_TEMP_TABLE);
+			conn.createStatement().execute(CREATE_TEMP_TABLE);
+			
+			try{
+				conn.createStatement().execute(CREATE_SNOMED_CONCEPT_INDEX);
+				logger.info("Created index using SQL: {}", CREATE_SNOMED_CONCEPT_INDEX);
+			} catch (SQLException e) {
+				logger.info("SnomedConcept table indexes confirmed sufficient");
+			}
 		}
 	}
 
