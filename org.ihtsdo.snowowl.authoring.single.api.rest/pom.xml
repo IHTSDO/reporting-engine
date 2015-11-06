@@ -49,7 +49,7 @@
 		<dependency>
 			<groupId>org.ihtsdo.otf.common</groupId>
 			<artifactId>otf-common</artifactId>
-			<version>0.0.19</version>
+			<version>0.0.20</version>
 			<exclusions>
 				<exclusion>
 					<artifactId>spring-beans</artifactId>
