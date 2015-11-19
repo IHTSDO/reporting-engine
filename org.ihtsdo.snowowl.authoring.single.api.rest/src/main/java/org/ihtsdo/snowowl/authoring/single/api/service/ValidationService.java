@@ -5,7 +5,6 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableMap;
-
 import org.ihtsdo.otf.jms.MessagingHelper;
 import org.ihtsdo.otf.rest.client.OrchestrationRestClient;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
@@ -19,14 +18,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
 
-import us.monoid.json.JSONException;
-
-import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
-
 import javax.jms.JMSException;
 import javax.jms.TextMessage;
 
@@ -190,14 +185,21 @@ public class ValidationService {
 	}
 
 	private List<String> getValidationStatusesWithoutCache(List<String> paths) {
-		List<String> statuses;
+		List<String> statuses = null;
 		try {
 			statuses = orchestrationRestClient.retrieveValidationStatuses(paths);
 		} catch (Exception e) {
 			logger.error("Failed to retrieve validation status of tasks {}", paths, e);
+		}
+		if (statuses == null || statuses.size() < paths.size()) {
 			statuses = new ArrayList<>();
 			for (int i = 0; i < paths.size(); i++) {
 				statuses.add(TaskService.FAILED_TO_RETRIEVE);
+			}
+		}
+		for (int i = 0; i < statuses.size(); i++) {
+			if (statuses.get(i) == null) {
+				statuses.set(i, TaskService.FAILED_TO_RETRIEVE);
 			}
 		}
 		return statuses;
