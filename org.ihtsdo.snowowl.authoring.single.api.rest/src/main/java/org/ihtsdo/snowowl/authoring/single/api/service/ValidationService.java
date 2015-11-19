@@ -38,6 +38,7 @@ public class ValidationService {
 	public static final String STATUS = "status";
 	public static final String STATUS_SCHEDULED = "SCHEDULED";
 	public static final String STATUS_COMPLETE = "COMPLETED";
+	public static final String STATUS_NOT_TRIGGERED = "NOT_TRIGGERED";
 
 	@Autowired
 	private MessagingHelper messagingHelper;
@@ -79,7 +80,7 @@ public class ValidationService {
 										for (int i = 0; i < pathsToLoad.size(); i++) {
 											String value = validationStatuses.get(i);
 											if (value == null) {
-												value = "";
+												value = STATUS_NOT_TRIGGERED;
 											}
 											map.put(pathsToLoad.get(i), value);
 										}
@@ -190,8 +191,6 @@ public class ValidationService {
 			statuses = orchestrationRestClient.retrieveValidationStatuses(paths);
 		} catch (Exception e) {
 			logger.error("Failed to retrieve validation status of tasks {}", paths, e);
-		}
-		if (statuses == null || statuses.size() < paths.size()) {
 			statuses = new ArrayList<>();
 			for (int i = 0; i < paths.size(); i++) {
 				statuses.add(TaskService.FAILED_TO_RETRIEVE);
@@ -199,7 +198,7 @@ public class ValidationService {
 		}
 		for (int i = 0; i < statuses.size(); i++) {
 			if (statuses.get(i) == null) {
-				statuses.set(i, TaskService.FAILED_TO_RETRIEVE);
+				statuses.set(i, STATUS_NOT_TRIGGERED);
 			}
 		}
 		return statuses;
