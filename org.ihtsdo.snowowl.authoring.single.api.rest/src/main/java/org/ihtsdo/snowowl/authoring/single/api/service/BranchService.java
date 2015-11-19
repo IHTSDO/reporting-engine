@@ -184,7 +184,7 @@ public class BranchService {
 	private Branch mergeBranch(String sourcePath, String targetPath, String reviewId, String username) throws BusinessServiceException {
 		try {
 			String commitMsg = username + " performed merge of " + sourcePath + " to " + targetPath;
-			MergeEvent mergeEvent = new MergeEvent( SNOMED_TS_REPOSITORY_ID, sourcePath, targetPath, commitMsg, reviewId);
+			MergeEvent mergeEvent = new MergeEvent(SNOMED_TS_REPOSITORY_ID, sourcePath, targetPath, commitMsg, reviewId, null);
 			BranchReply branchReply = mergeEvent.send(eventBus, BranchReply.class).get(MERGE_TIMEOUT, TimeUnit.MINUTES);
 			return branchReply.getBranch();
 		} catch (InterruptedException | ExecutionException | TimeoutException e) {
