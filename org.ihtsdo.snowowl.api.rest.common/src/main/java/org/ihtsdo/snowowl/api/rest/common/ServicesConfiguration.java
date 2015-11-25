@@ -140,35 +140,6 @@ public class ServicesConfiguration extends WebMvcConfigurerAdapter {
 		return swaggerSpringMvcPlugin;
 	}
 
-	@Bean
-	public ObjectMapper objectMapper() {
-		final ObjectMapper objectMapper = new ObjectMapper();
-		objectMapper.registerModule(new DefaultScalaModule());
-		objectMapper.registerModule(new GuavaModule());
-		objectMapper.setSerializationInclusion(Include.NON_EMPTY);
-		final ISO8601DateFormat df = new ISO8601DateFormat();
-		df.setTimeZone(TimeZone.getTimeZone("UTC"));
-		objectMapper.setDateFormat(df);
-		objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-		objectMapper.addMixInAnnotations(ISnomedComponent.class, ISnomedComponentMixin.class);
-		objectMapper.addMixInAnnotations(ISnomedBrowserComponent.class, ISnomedComponentMixin.class);
-		return objectMapper;
-	}
-
-	@Override
-	public void configureMessageConverters(final List<HttpMessageConverter<?>> converters) {
-		final StringHttpMessageConverter stringConverter = new StringHttpMessageConverter();
-		stringConverter.setWriteAcceptCharset(false);
-		converters.add(stringConverter);
-
-		converters.add(new ByteArrayHttpMessageConverter());
-		converters.add(new ResourceHttpMessageConverter());
-
-		final MappingJackson2HttpMessageConverter jacksonConverter = new MappingJackson2HttpMessageConverter();
-		jacksonConverter.setObjectMapper(objectMapper());
-		converters.add(jacksonConverter);
-	}
-
 	@Override
 	public void configurePathMatch(final PathMatchConfigurer configurer) {
 		configurer.setUseRegisteredSuffixPatternMatch(true);
