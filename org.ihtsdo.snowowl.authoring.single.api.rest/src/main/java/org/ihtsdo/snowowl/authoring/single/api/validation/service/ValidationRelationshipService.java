@@ -1,24 +1,20 @@
 package org.ihtsdo.snowowl.authoring.single.api.validation.service;
 
+import com.b2international.snowowl.eventbus.IEventBus;
+import com.b2international.snowowl.snomed.core.domain.CharacteristicType;
+import com.b2international.snowowl.snomed.core.domain.ISnomedRelationship;
+import com.b2international.snowowl.snomed.core.domain.SnomedRelationships;
+import com.b2international.snowowl.snomed.datastore.server.request.SnomedRequests;
 import org.ihtsdo.drools.service.RelationshipService;
-
-import com.b2international.snowowl.api.domain.IComponentList;
-import com.b2international.snowowl.api.domain.IComponentRef;
-import com.b2international.snowowl.core.ApplicationContext;
-import com.b2international.snowowl.core.api.IBranchPath;
-import com.b2international.snowowl.snomed.api.ISnomedStatementBrowserService;
-import com.b2international.snowowl.snomed.api.domain.CharacteristicType;
-import com.b2international.snowowl.snomed.api.domain.ISnomedRelationship;
-import com.b2international.snowowl.snomed.api.impl.SnomedServiceHelper;
 
 public class ValidationRelationshipService implements RelationshipService {
 
-	private IBranchPath path;
-	private ISnomedStatementBrowserService statementBrowserService;
+	private final IEventBus eventBus;
+	private String branchPath;
 
-	public ValidationRelationshipService(IBranchPath path) {
-		this.path = path;
-		this.statementBrowserService = ApplicationContext.getServiceForClass(ISnomedStatementBrowserService.class);
+	public ValidationRelationshipService(IEventBus eventBus, String branchPath) {
+		this.eventBus = eventBus;
+		this.branchPath = branchPath;
 	}
 
 	@Override
@@ -28,9 +24,14 @@ public class ValidationRelationshipService implements RelationshipService {
 
 	@Override
 	public boolean hasActiveInboundStatedRelationship(String conceptId, String relationshipTypeId) {
-		IComponentRef conceptRef = SnomedServiceHelper.createComponentRef(path.getPath(), conceptId);
-		IComponentList<ISnomedRelationship> inboundEdges = statementBrowserService.getInboundEdges(conceptRef, 0, Integer.MAX_VALUE);
-		for (ISnomedRelationship relationship : inboundEdges.getMembers()) {
+		final SnomedRelationships iSnomedRelationships = SnomedRequests
+				.prepareRelationshipSearch()
+				.filterByDestination(conceptId)
+				.setLimit(Integer.MAX_VALUE)
+				.build(branchPath)
+				.executeSync(eventBus);
+
+		for (ISnomedRelationship relationship : iSnomedRelationships.getItems()) {
 			if (relationship.isActive() && relationship.getCharacteristicType() != CharacteristicType.INFERRED_RELATIONSHIP
 					&& (relationshipTypeId == null || relationshipTypeId.equals(relationship.getTypeId()))) {
 				return true;

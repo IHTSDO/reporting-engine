@@ -12,7 +12,7 @@
 	<packaging>pom</packaging>
 
 	<properties>
-		<snowowl.version>4.4.7-SNAPSHOT</snowowl.version>
+		<snowowl.version>4.5.1-SNAPSHOT</snowowl.version>
 		<spring.version>4.1.5.RELEASE</spring.version>
 		<spring.security.version>3.2.5.RELEASE</spring.security.version>
 		<spring.hateoas.version>0.11.0.RELEASE</spring.hateoas.version>
@@ -24,7 +24,6 @@
 	
 	<modules>
 		<module>org.ihtsdo.snowowl.api.rest.common</module>
-		<module>org.ihtsdo.snowowl.api.rest</module>
 		<module>org.ihtsdo.snowowl.authoring.single.api.rest</module>
 		<module>integration-tests</module>
 		<!--<module>org.ihtsdo.snowowl.authoring.template.api.rest</module>-->

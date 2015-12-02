@@ -1,7 +1,6 @@
 package org.ihtsdo.snowowl.authoring.single.api.pojo;
 
-import com.b2international.snowowl.datastore.branch.Branch;
-import com.b2international.snowowl.datastore.branch.Branch.BranchState;
+import com.b2international.snowowl.core.branch.Branch;
 import com.fasterxml.jackson.annotation.JsonRawValue;
 
 public class AuthoringMain {
@@ -11,7 +10,7 @@ public class AuthoringMain {
 	private final String validationStatus;
 	private Branch.BranchState branchState;
 
-	public AuthoringMain(String key, BranchState branchState, String validationStatus, String latestClassificationJson) {
+	public AuthoringMain(String key, Branch.BranchState branchState, String validationStatus, String latestClassificationJson) {
 		this.key = key;
 		this.branchState = branchState;
 		this.validationStatus = validationStatus;

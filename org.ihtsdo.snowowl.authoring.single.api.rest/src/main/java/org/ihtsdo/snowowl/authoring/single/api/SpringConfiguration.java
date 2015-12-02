@@ -1,7 +1,6 @@
 package org.ihtsdo.snowowl.authoring.single.api;
 
 import com.b2international.snowowl.eventbus.IEventBus;
-import com.b2international.snowowl.snomed.api.domain.ISnomedComponent;
 import com.b2international.snowowl.snomed.api.domain.browser.ISnomedBrowserComponent;
 import com.b2international.snowowl.snomed.api.impl.domain.browser.SnomedBrowserConcept;
 import com.b2international.snowowl.snomed.api.impl.domain.browser.SnomedBrowserRelationship;
@@ -44,7 +43,6 @@ public class SpringConfiguration extends WebMvcConfigurerAdapter {
 		df.setTimeZone(TimeZone.getTimeZone("UTC"));
 		objectMapper.setDateFormat(df);
 		objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-		objectMapper.addMixInAnnotations(ISnomedComponent.class, ISnomedComponentMixin.class);
 		objectMapper.addMixInAnnotations(ISnomedBrowserComponent.class, ISnomedComponentMixin.class);
 		objectMapper.addMixInAnnotations(SnomedBrowserConcept.class, SnomedBrowserConceptMixin.class);
 		objectMapper.addMixInAnnotations(SnomedBrowserRelationship.class, SnomedBrowserRelationshipMixin.class);

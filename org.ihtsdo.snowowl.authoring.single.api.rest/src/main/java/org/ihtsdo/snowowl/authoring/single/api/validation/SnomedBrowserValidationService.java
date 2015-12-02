@@ -4,8 +4,9 @@ import com.b2international.snowowl.core.ApplicationContext;
 import com.b2international.snowowl.core.api.IBranchPath;
 import com.b2international.snowowl.core.exceptions.BadRequestException;
 import com.b2international.snowowl.datastore.BranchPathUtils;
+import com.b2international.snowowl.eventbus.IEventBus;
 import com.b2international.snowowl.snomed.api.domain.browser.ISnomedBrowserConcept;
-import com.b2international.snowowl.snomed.api.impl.SnomedDescriptionServiceImpl;
+import com.b2international.snowowl.snomed.api.impl.DescriptionService;
 import com.b2international.snowowl.snomed.datastore.SnomedTerminologyBrowser;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
@@ -18,14 +19,12 @@ import org.ihtsdo.snowowl.authoring.single.api.validation.service.ValidationDesc
 import org.ihtsdo.snowowl.authoring.single.api.validation.service.ValidationRelationshipService;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 public class SnomedBrowserValidationService {
 
 	@Autowired
-	private SnomedDescriptionServiceImpl descriptionService;
+	private IEventBus eventBus;
 
 	private RuleExecutor ruleExecutor;
 
@@ -33,13 +32,13 @@ public class SnomedBrowserValidationService {
 		ruleExecutor = newRuleExecutor();
 	}
 
-	public List<SnomedInvalidContent> validateConcept(String branchPath, ISnomedBrowserConcept browserConcept, ArrayList<Locale> locales) {
+	public List<SnomedInvalidContent> validateConcept(String branchPath, ISnomedBrowserConcept browserConcept) {
 		IBranchPath path = BranchPathUtils.createPath(branchPath);
 		SnomedTerminologyBrowser terminologyBrowser = ApplicationContext.getServiceForClass(SnomedTerminologyBrowser.class);
 		
 		ValidationConceptService validationConceptService = new ValidationConceptService(path, terminologyBrowser);
-		ValidationDescriptionService validationDescriptionService = new ValidationDescriptionService(path, descriptionService);
-		ValidationRelationshipService validationRelationshipService = new ValidationRelationshipService(path);
+		ValidationDescriptionService validationDescriptionService = new ValidationDescriptionService(new DescriptionService(eventBus, branchPath));
+		ValidationRelationshipService validationRelationshipService = new ValidationRelationshipService(eventBus, branchPath);
 		try {
 			List<InvalidContent> list = ruleExecutor.execute(new ValidationConcept(browserConcept), validationConceptService, validationDescriptionService, validationRelationshipService,
 					false, false);

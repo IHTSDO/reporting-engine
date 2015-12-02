@@ -1,8 +1,8 @@
 package org.ihtsdo.snowowl.authoring.single.api.validation.domain;
 
-import com.b2international.snowowl.snomed.api.domain.Acceptability;
 import com.b2international.snowowl.snomed.api.domain.browser.ISnomedBrowserDescription;
 import com.b2international.snowowl.snomed.api.domain.browser.SnomedBrowserDescriptionType;
+import com.b2international.snowowl.snomed.core.domain.Acceptability;
 
 import java.util.HashMap;
 import java.util.Map;

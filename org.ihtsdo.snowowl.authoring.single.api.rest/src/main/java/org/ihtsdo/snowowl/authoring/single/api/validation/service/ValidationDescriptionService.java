@@ -1,39 +1,36 @@
 package org.ihtsdo.snowowl.authoring.single.api.validation.service;
 
-import com.b2international.snowowl.api.domain.IComponentRef;
-import com.b2international.snowowl.core.api.IBranchPath;
+import com.b2international.commons.http.ExtendedLocale;
 import com.b2international.snowowl.snomed.SnomedConstants;
-import com.b2international.snowowl.snomed.api.ISnomedDescriptionService;
-import com.b2international.snowowl.snomed.api.domain.ISnomedDescription;
-import com.b2international.snowowl.snomed.api.impl.SnomedServiceHelper;
+import com.b2international.snowowl.snomed.core.domain.ISnomedDescription;
 import org.ihtsdo.drools.service.DescriptionService;
 
 import java.util.*;
 
 public class ValidationDescriptionService implements DescriptionService {
 
-	private ISnomedDescriptionService descriptionService;
-	private IBranchPath branchPath = null;
+	private com.b2international.snowowl.snomed.api.impl.DescriptionService descriptionService;
 
-	public ValidationDescriptionService(IBranchPath branchPath, ISnomedDescriptionService descriptionService) {
-		this.branchPath = branchPath;
+	public ValidationDescriptionService(com.b2international.snowowl.snomed.api.impl.DescriptionService descriptionService) {
 		this.descriptionService = descriptionService;
 	}
 
 	@Override
 	public Set<String> getFSNs(Set<String> conceptIds, String... languageRefsetIds) {
-		Set<String> fsns = new HashSet<>();
-		List<Locale> locales = new ArrayList<>();
+		List<ExtendedLocale> locales = new ArrayList<>();
 		for (String languageRefsetId : languageRefsetIds) {
 			String languageCode = SnomedConstants.LanguageCodeReferenceSetIdentifierMapping.getLanguageCode(languageRefsetId);
-			locales.add(new Locale(languageCode));
+			locales.add(new ExtendedLocale(languageCode, null, languageRefsetId));
 		}
-		for (String conceptId : conceptIds) {
-			IComponentRef conceptRef = SnomedServiceHelper.createComponentRef(branchPath.getPath(), conceptId);
-			ISnomedDescription fullySpecifiedName = descriptionService.getFullySpecifiedName(conceptRef, locales);
-			fsns.add(fullySpecifiedName.getTerm());
+		return getTerms(descriptionService.getFullySpecifiedNames(conceptIds, locales));
+	}
+
+	private Set<String> getTerms(Map<String, ISnomedDescription> fullySpecifiedNames) {
+		Set<String> terms = new HashSet<>();
+		for (ISnomedDescription description : fullySpecifiedNames.values()) {
+			terms.add(description.getTerm());
 		}
-		return fsns;
+		return terms;
 	}
 
 }

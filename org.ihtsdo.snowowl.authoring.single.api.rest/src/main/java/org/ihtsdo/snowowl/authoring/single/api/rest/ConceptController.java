@@ -1,8 +1,8 @@
 package org.ihtsdo.snowowl.authoring.single.api.rest;
 
-import com.b2international.snowowl.api.domain.IComponentRef;
-import com.b2international.snowowl.api.impl.domain.StorageRef;
+import com.b2international.snowowl.core.domain.IComponentRef;
 import com.b2international.snowowl.core.exceptions.BadRequestException;
+import com.b2international.snowowl.datastore.server.domain.StorageRef;
 import com.b2international.snowowl.snomed.api.browser.ISnomedBrowserService;
 import com.b2international.snowowl.snomed.api.domain.browser.*;
 import com.b2international.snowowl.snomed.api.impl.domain.browser.SnomedBrowserConcept;
@@ -19,10 +19,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import javax.servlet.http.HttpServletRequest;
 
 @Api("Concepts")
 @Controller
@@ -56,13 +54,10 @@ public class ConceptController extends AbstractSnomedRestService {
 
 			@ApiParam(value="Language codes and reference sets, in order of preference")
 			@RequestHeader(value="Accept-Language", defaultValue="en-US;q=0.8,en-GB;q=0.6", required=false)
-			@SuppressWarnings("unused")
-			final String languageSetting,
-
-			final HttpServletRequest request) {
+			final String languageSetting) {
 
 		final IComponentRef conceptRef = SnomedServiceHelper.createComponentRef(PathHelper.getPath(projectKey, taskKey), conceptId);
-		return browserService.getConceptDetails(conceptRef, Collections.list(request.getLocales()));
+		return browserService.getConceptDetails(conceptRef, getExtendedLocales(languageSetting));
 	}
 
 	@ApiOperation(
@@ -83,13 +78,10 @@ public class ConceptController extends AbstractSnomedRestService {
 
 			@ApiParam(value="Language codes and reference sets, in order of preference")
 			@RequestHeader(value="Accept-Language", defaultValue="en-US;q=0.8,en-GB;q=0.6", required=false)
-			@SuppressWarnings("unused")
-			final String languageSetting,
-
-			final HttpServletRequest request) {
+			final String languageSetting) {
 
 		final IComponentRef conceptRef = SnomedServiceHelper.createComponentRef(PathHelper.getPath(projectKey), conceptId);
-		return browserService.getConceptDetails(conceptRef, Collections.list(request.getLocales()));
+		return browserService.getConceptDetails(conceptRef, getExtendedLocales(languageSetting));
 	}
 
 	@ApiOperation(
@@ -113,10 +105,12 @@ public class ConceptController extends AbstractSnomedRestService {
 
 			final Principal principal,
 
-			final HttpServletRequest request) {
+			@ApiParam(value="Language codes and reference sets, in order of preference")
+			@RequestHeader(value="Accept-Language", defaultValue="en-US;q=0.8,en-GB;q=0.6", required=false)
+			final String languageSetting) {
 
 		final String userId = principal.getName();
-		return browserService.create(PathHelper.getPath(projectKey, taskKey), concept, userId, Collections.list(request.getLocales()));
+		return browserService.create(PathHelper.getPath(projectKey, taskKey), concept, userId, getExtendedLocales(languageSetting));
 	}
 
 	@ApiOperation(
@@ -136,11 +130,9 @@ public class ConceptController extends AbstractSnomedRestService {
 			final String taskKey,
 
 			@RequestBody
-			final SnomedBrowserConcept concept,
+			final SnomedBrowserConcept concept) {
 
-			final HttpServletRequest request) {
-
-		return validationService.validateConcept(PathHelper.getPath(projectKey, taskKey), concept, Collections.list(request.getLocales()));
+		return validationService.validateConcept(PathHelper.getPath(projectKey, taskKey), concept);
 	}
 
 	@ApiOperation(
@@ -167,14 +159,16 @@ public class ConceptController extends AbstractSnomedRestService {
 
 			final Principal principal,
 
-			final HttpServletRequest request) {
+			@ApiParam(value="Language codes and reference sets, in order of preference")
+			@RequestHeader(value="Accept-Language", defaultValue="en-US;q=0.8,en-GB;q=0.6", required=false)
+			final String languageSetting) {
 
 		if (!conceptId.equals(concept.getConceptId())) {
 			throw new BadRequestException("The concept ID in the request body does not match the ID in the URL.");
 		}
 
 		final String userId = principal.getName();
-		return browserService.update(PathHelper.getPath(projectKey, taskKey), concept, userId, Collections.list(request.getLocales()));
+		return browserService.update(PathHelper.getPath(projectKey, taskKey), concept, userId, getExtendedLocales(languageSetting));
 	}
 
 	@ApiOperation(
@@ -201,13 +195,10 @@ public class ConceptController extends AbstractSnomedRestService {
 
 			@ApiParam(value="Language codes and reference sets, in order of preference")
 			@RequestHeader(value="Accept-Language", defaultValue="en-US;q=0.8,en-GB;q=0.6", required=false)
-			@SuppressWarnings("unused")
-			final String languageSetting,
-
-			final HttpServletRequest request) {
+			final String languageSetting) {
 
 		final IComponentRef ref = SnomedServiceHelper.createComponentRef(PathHelper.getPath(projectKey, taskKey), conceptId);
-		return browserService.getConceptParents(ref, Collections.list(request.getLocales()));
+		return browserService.getConceptParents(ref, getExtendedLocales(languageSetting));
 	}
 
 	@ApiOperation(
@@ -234,23 +225,20 @@ public class ConceptController extends AbstractSnomedRestService {
 
 			@ApiParam(value="Language codes and reference sets, in order of preference")
 			@RequestHeader(value="Accept-Language", defaultValue="en-US;q=0.8,en-GB;q=0.6", required=false)
-			@SuppressWarnings("unused")
 			final String languageSetting,
 
 			@ApiParam(value="Stated or inferred form", allowableValues="stated, inferred")
 			@RequestParam(value="form", defaultValue="inferred")
-			final String form,
-
-			final HttpServletRequest request) {
+			final String form) {
 		if ("stated".equals(form) || "inferred".equals(form)) {
 			final IComponentRef ref = SnomedServiceHelper.createComponentRef(PathHelper.getPath(projectKey, taskKey), conceptId);
-			return browserService.getConceptChildren(ref, Collections.list(request.getLocales()), "stated".equals(form));
+			return browserService.getConceptChildren(ref, getExtendedLocales(languageSetting), "stated".equals(form));
 		}
 		throw new BadRequestException("Form parameter should be either 'stated' or 'inferred'");
 	}
 
 	@ApiOperation(
-			value = "Retrieve descriptions matching a query with FSN.",
+			value = "Retrieve descriptions matching a query.",
 			notes = "Returns a list of descriptions which have a term matching the specified query string on a version.",
 			response=Void.class)
 	@ApiResponses({
@@ -260,7 +248,7 @@ public class ConceptController extends AbstractSnomedRestService {
 	@RequestMapping(
 			value="/projects/{projectKey}/tasks/{taskKey}/descriptions",
 			method = RequestMethod.GET)
-	public @ResponseBody List<ISnomedBrowserDescriptionResult> searchDescriptionsFSN(
+	public @ResponseBody List<ISnomedBrowserDescriptionResult> searchDescriptions(
 
 			@PathVariable
 			final String projectKey,
@@ -281,55 +269,10 @@ public class ConceptController extends AbstractSnomedRestService {
 
 			@ApiParam(value="Language codes and reference sets, in order of preference")
 			@RequestHeader(value="Accept-Language", defaultValue="en-US;q=0.8,en-GB;q=0.6", required=false)
-			@SuppressWarnings("unused")
-			final String languageSetting,
-
-			final HttpServletRequest request) {
+			final String languageSetting) {
 
 		final StorageRef ref = SnomedServiceHelper.createStorageRef(PathHelper.getPath(projectKey, taskKey));
-		return browserService.getDescriptions(ref, query, Collections.list(request.getLocales()), ISnomedBrowserDescriptionResult.TermType.FSN, offset, limit);
-	}
-
-	@ApiOperation(
-			value = "Retrieve descriptions matching a query with PT.",
-			notes = "Returns a list of descriptions which have a term matching the specified query string on a version.",
-			response=Void.class)
-	@ApiResponses({
-			@ApiResponse(code = 200, message = "OK"),
-			@ApiResponse(code = 404, message = "Code system version or concept not found")
-	})
-	@RequestMapping(
-			value="/projects/{projectKey}/tasks/{taskKey}/descriptions-pt",
-			method = RequestMethod.GET)
-	public @ResponseBody
-	List<ISnomedBrowserDescriptionResult> searchDescriptionsPT(
-
-			@PathVariable
-			final String projectKey,
-
-			@PathVariable
-			final String taskKey,
-
-			@RequestParam
-			final String query,
-
-			@ApiParam(value="The starting offset in the list")
-			@RequestParam(value="offset", defaultValue="0", required=false)
-			final int offset,
-
-			@ApiParam(value="The maximum number of items to return")
-			@RequestParam(value="limit", defaultValue="50", required=false)
-			final int limit,
-
-			@ApiParam(value="Language codes and reference sets, in order of preference")
-			@RequestHeader(value="Accept-Language", defaultValue="en-US;q=0.8,en-GB;q=0.6", required=false)
-			@SuppressWarnings("unused")
-			final String languageSetting,
-
-			final HttpServletRequest request) {
-
-		final StorageRef ref = SnomedServiceHelper.createStorageRef(PathHelper.getPath(projectKey, taskKey));
-		return browserService.getDescriptions(ref, query, Collections.list(request.getLocales()), ISnomedBrowserDescriptionResult.TermType.PT, offset, limit);
+		return browserService.getDescriptions(ref, query, getExtendedLocales(languageSetting), offset, limit);
 	}
 
 	@ApiOperation(
@@ -350,12 +293,9 @@ public class ConceptController extends AbstractSnomedRestService {
 
 			@ApiParam(value="Language codes and reference sets, in order of preference")
 			@RequestHeader(value="Accept-Language", defaultValue="en-US;q=0.8,en-GB;q=0.6", required=false)
-			@SuppressWarnings("unused")
-			final String languageSetting,
-
-			final HttpServletRequest request) {
-		final StorageRef ref = SnomedServiceHelper.createStorageRef(PathHelper.getPath(projectKey, taskKey));
-		return browserService.getConstants(ref, Collections.list(request.getLocales()));
+			final String languageSetting) {
+		final String branchPath = PathHelper.getPath(projectKey, taskKey);
+		return browserService.getConstants(branchPath, getExtendedLocales(languageSetting));
 	}
 
 }

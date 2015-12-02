@@ -1,5 +1,6 @@
 package org.ihtsdo.snowowl.authoring.single.api.review.service;
 
+import com.b2international.commons.http.ExtendedLocale;
 import com.b2international.snowowl.core.exceptions.BadRequestException;
 import net.rcarz.jiraclient.JiraException;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
@@ -66,7 +67,7 @@ public class ReviewService {
 	}
 
 	@Transactional
-	public AuthoringTaskReview retrieveTaskReview(String projectKey, String taskKey, List<Locale> locales, String username) throws BusinessServiceException {
+	public AuthoringTaskReview retrieveTaskReview(String projectKey, String taskKey, List<ExtendedLocale> locales, String username) throws BusinessServiceException {
 		try {
 			TimerUtil timer = new TimerUtil("Retrieve task review");
 
@@ -88,7 +89,7 @@ public class ReviewService {
 	}
 
 	@Transactional
-	public AuthoringTaskReview retrieveProjectReview(String projectKey, ArrayList<Locale> locales, String username) throws BusinessServiceException {
+	public AuthoringTaskReview retrieveProjectReview(String projectKey, List<ExtendedLocale> locales, String username) throws BusinessServiceException {
 		try {
 			Future<Set<String>> currentReviewConceptChanges = getCurrentReviewConceptChangesOrNullIfNotInReview(projectKey, null, true);
 

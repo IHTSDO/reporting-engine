@@ -1,11 +1,11 @@
 package org.ihtsdo.snowowl.authoring.single.api.service.monitor;
 
+import com.b2international.snowowl.core.branch.Branch;
+import com.b2international.snowowl.core.exceptions.ApiException;
 import com.b2international.snowowl.core.exceptions.NotFoundException;
-import com.b2international.snowowl.datastore.branch.Branch;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.EntityType;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.Notification;
 import org.ihtsdo.snowowl.authoring.single.api.service.BranchService;
-import org.ihtsdo.snowowl.authoring.single.api.service.ServiceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,11 +36,9 @@ public class BranchStateMonitor extends Monitor {
 				logger.debug("Branch {} state {}, no change", taskId, branchState);
 			}
 			return null;
-		} catch (ServiceException e) {
-			final Throwable cause = e.getCause();
-			if (cause != null && cause instanceof NotFoundException) {
-				throw new FatalMonitorException("Branch not found", e);
-			}
+		} catch (NotFoundException e) {
+			throw new FatalMonitorException("Branch not found", e);
+		} catch (ApiException e) {
 			throw new MonitorException("Failed to get branch state", e);
 		}
 	}
@@ -54,7 +52,6 @@ public class BranchStateMonitor extends Monitor {
 
 		if (projectId != null ? !projectId.equals(that.projectId) : that.projectId != null) return false;
 		return !(taskId != null ? !taskId.equals(that.taskId) : that.taskId != null);
-
 	}
 
 	@Override
