@@ -25,7 +25,7 @@ public class ValidationRelationshipService implements RelationshipService {
 	@Override
 	public boolean hasActiveInboundStatedRelationship(String conceptId, String relationshipTypeId) {
 		final SnomedRelationships iSnomedRelationships = SnomedRequests
-				.prepareRelationshipSearch()
+				.prepareSearchRelationship()
 				.filterByDestination(conceptId)
 				.setLimit(Integer.MAX_VALUE)
 				.build(branchPath)
