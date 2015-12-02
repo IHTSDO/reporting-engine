@@ -120,7 +120,7 @@ public class BranchService {
 					.prepareGet(PathHelper.getPath(projectKey))
 					.executeSync(eventBus);
 		} catch (NotFoundException e) {
-			createBranch("MAIN", PathHelper.getPath(projectKey));
+			createBranch("MAIN", projectKey);
 		}
 	}
 
