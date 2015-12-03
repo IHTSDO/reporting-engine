@@ -1,9 +1,9 @@
 package org.ihtsdo.snowowl.authoring.single.api.pojo;
 
-import java.util.Date;
-
-import com.b2international.snowowl.api.domain.IComponent;
+import com.b2international.snowowl.core.domain.IComponent;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import java.util.Date;
 
 public class ConceptConflict implements IComponent {
 
@@ -37,7 +37,7 @@ public class ConceptConflict implements IComponent {
 
 	@Override
 	@JsonIgnore
-	public boolean isReleased() {
+	public Boolean isReleased() {
 		return false;
 	}
 	

@@ -8,23 +8,22 @@
 
 	<groupId>org.ihtsdo.snowowl</groupId>
 	<artifactId>ihtsdo-snowowl-parent</artifactId>
-	<version>4.1.31</version>
+	<version>4.1.32-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
 	<properties>
-		<snowowl.version>4.4.6</snowowl.version>
+		<snowowl.version>4.5.1</snowowl.version>
 		<spring.version>4.1.5.RELEASE</spring.version>
 		<spring.security.version>3.2.5.RELEASE</spring.security.version>
 		<spring.hateoas.version>0.11.0.RELEASE</spring.hateoas.version>
 		<swagger.springmvc.version>0.9.3</swagger.springmvc.version>
 		<servlet.api.version>3.0.1</servlet.api.version>
 		<xstream.version>1.4.3</xstream.version>
-		<jackson.version>2.1.5</jackson.version><!-- This version is what spring-web pulls in -->
+		<jackson.version>2.4.5</jackson.version><!-- This version is what spring-web pulls in -->
 	</properties>
 	
 	<modules>
 		<module>org.ihtsdo.snowowl.api.rest.common</module>
-		<module>org.ihtsdo.snowowl.api.rest</module>
 		<module>org.ihtsdo.snowowl.authoring.single.api.rest</module>
 		<module>integration-tests</module>
 		<!--<module>org.ihtsdo.snowowl.authoring.template.api.rest</module>-->

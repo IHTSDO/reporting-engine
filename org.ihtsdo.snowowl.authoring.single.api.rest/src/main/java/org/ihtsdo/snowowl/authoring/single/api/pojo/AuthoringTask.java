@@ -1,6 +1,6 @@
 package org.ihtsdo.snowowl.authoring.single.api.pojo;
 
-import com.b2international.snowowl.datastore.branch.Branch;
+import com.b2international.snowowl.core.branch.Branch;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonRawValue;
 import net.rcarz.jiraclient.Issue;

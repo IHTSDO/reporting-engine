@@ -1,15 +1,16 @@
 package org.ihtsdo.snowowl.authoring.single.api.service.dao;
 
-import com.b2international.snowowl.api.domain.IComponent;
+import com.b2international.snowowl.core.domain.IComponent;
 import org.apache.commons.dbcp2.BasicDataSource;
-import org.apache.commons.dbcp2.Utils;
 import org.apache.commons.lang.time.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.sql.*;
-import java.util.Date;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.*;
 
 public class CdoStore {

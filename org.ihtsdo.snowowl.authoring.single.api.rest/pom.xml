@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>org.ihtsdo.snowowl</groupId>
 		<artifactId>ihtsdo-snowowl-parent</artifactId>
-		<version>4.1.31</version>
+		<version>4.1.32-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>org.ihtsdo.snowowl.authoring.single.api.rest</artifactId>
@@ -57,6 +57,11 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
+		<dependency>
+			<groupId>org.ihtsdo.drools</groupId>
+			<artifactId>snomed-drools</artifactId>
+			<version>1.0.2</version>
+		</dependency>
 		<!-- SnowOwl -->
 		<!-- Plug-in dependencies are repeated here so that the build can resolve
 			them at compile time -->
@@ -92,6 +97,12 @@
 		</dependency>
 		<dependency>
 			<groupId>com.b2international.snowowl</groupId>
+			<artifactId>com.b2international.snowowl.snomed.model</artifactId>
+			<version>${snowowl.version}</version>
+			<scope>${snowowl.lib.scope}</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.b2international.snowowl</groupId>
 			<artifactId>com.b2international.snowowl.snomed.api</artifactId>
 			<version>${snowowl.version}</version>
 			<scope>${snowowl.lib.scope}</scope>
@@ -117,6 +128,12 @@
 		<dependency>
 			<groupId>com.b2international.snowowl</groupId>
 			<artifactId>com.b2international.snowowl.snomed.datastore</artifactId>
+			<version>${snowowl.version}</version>
+			<scope>${snowowl.lib.scope}</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.b2international.snowowl</groupId>
+			<artifactId>com.b2international.snowowl.snomed.datastore.server</artifactId>
 			<version>${snowowl.version}</version>
 			<scope>${snowowl.lib.scope}</scope>
 		</dependency>
@@ -189,26 +206,6 @@
 			<groupId>com.thoughtworks.xstream</groupId>
 			<artifactId>xstream</artifactId>
 			<version>${xstream.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.fasterxml.jackson.core</groupId>
-			<artifactId>jackson-core</artifactId>
-			<version>${jackson.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.fasterxml.jackson.core</groupId>
-			<artifactId>jackson-annotations</artifactId>
-			<version>${jackson.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.fasterxml.jackson.datatype</groupId>
-			<artifactId>jackson-datatype-guava</artifactId>
-			<version>${jackson.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.fasterxml.jackson.module</groupId>
-			<artifactId>jackson-module-scala_2.10</artifactId>
-			<version>${jackson.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework</groupId>

@@ -115,18 +115,4 @@ public class ProjectController extends AbstractSnomedRestService {
 		return taskService.updateTask(projectKey, taskKey, updatedTask);
 	}
 
-	/** This is planned for a future sprint
-	@ApiOperation(value="Playing with MRCM rules.", notes="")
-	@ApiResponses({
-			@ApiResponse(code = 200, message = "OK")
-	})
-	@RequestMapping(value="/mrcm", method= RequestMethod.GET)
-	public int listMRCMRules() throws IOException {
-		SnomedPredicateBrowser predicateBrowser = ApplicationContext.getInstance().getService(SnomedPredicateBrowser.class);
-		IBranchPath mainPath = BranchPathUtils.createMainPath();
-		Collection<PredicateIndexEntry> predicate = predicateBrowser.getPredicates(mainPath, "361083003", null);
-		return predicate.size();
-	}
-	**/
-
 }

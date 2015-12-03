@@ -1,13 +1,11 @@
 package org.ihtsdo.snowowl.authoring.single.api.service;
 
+import com.b2international.snowowl.core.branch.Branch;
 import com.b2international.snowowl.core.exceptions.BadRequestException;
 import com.b2international.snowowl.core.exceptions.ConflictException;
 import com.b2international.snowowl.core.exceptions.NotFoundException;
-import com.b2international.snowowl.datastore.branch.Branch;
 import com.google.common.collect.ImmutableMap;
-
 import net.rcarz.jiraclient.*;
-
 import net.rcarz.jiraclient.User;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
@@ -23,11 +21,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
-
 public class TaskService {
 
 	public static final String FAILED_TO_RETRIEVE = "Failed-to-retrieve";
-	
+
 	private static final String INCLUDED_FIELDS = "*all";
 	private static final int CHUNK_SIZE = 50;
 
@@ -48,12 +45,12 @@ public class TaskService {
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	private static final String AUTHORING_TASK_TYPE = "SCA Authoring Task";
-	
+
 	public TaskService(ImpersonatingJiraClientFactory jiraClientFactory, String jiraReviewerField) {
 		this.jiraClientFactory = jiraClientFactory;
 		AuthoringTask.setJiraReviewerField(jiraReviewerField);
 	}
-	
+
 	public List<AuthoringProject> listProjects() throws JiraException, BusinessServiceException {
 		final TimerUtil timer = new TimerUtil("ProjectsList");
 		final JiraClient jiraClient = getJiraClient();
@@ -82,7 +79,7 @@ public class TaskService {
 			final ImmutableMap<String, String> statuses = validationService.getValidationStatuses(paths.values());
 			for (Project project : projects) {
 				final String latestClassificationJson = classificationService.getLatestClassification(project.getKey(), null);
-				Branch.BranchState branchState = branchService.getBranchStateNoThrow(project.getKey(), null);
+				final Branch.BranchState branchState = branchService.getBranchStateNoThrow(project.getKey(), null);
 				authoringProjects.add(new AuthoringProject(project.getKey(), project.getName(), getPojoUserOrNull(project.getLead()), branchState, statuses.get(paths.get(project)), latestClassificationJson));
 			}
 			return authoringProjects;
@@ -94,7 +91,7 @@ public class TaskService {
 	public AuthoringMain retrieveMain() throws BusinessServiceException {
 		return buildAuthoringMain();
 	}
-	
+
 	private AuthoringMain buildAuthoringMain() throws BusinessServiceException {
 		try {
 			String path = PathHelper.getPath(null);
@@ -151,7 +148,7 @@ public class TaskService {
 	private Issue getIssue(String projectKey, String taskKey) throws JiraException {
 		return getIssue(projectKey, taskKey, false);
 	}
-	
+
 	private Issue getIssue(String projectKey, String taskKey, boolean includeAll) throws JiraException {
 		//If we don't need all fields, then the existing implementation is sufficient
 		if (includeAll) {
@@ -160,19 +157,19 @@ public class TaskService {
 			return getJiraClient().getIssue(taskKey, INCLUDED_FIELDS);
 		}
 	}
-	
+
 	/**
 	 * @param jql
 	 * @param maxIssues maximum number of issues to return.  If zero, unlimited.
 	 * @param startAt
 	 * @return
-	 * @throws JiraException 
+	 * @throws JiraException
 	 */
 	private List<Issue> searchIssues(String jql, int maxIssues, int startAt) throws JiraException {
-		
+
 		List<Issue> issues = new ArrayList<>();
 		boolean moreToRecover = true;
-		
+
 		while (moreToRecover) {
 			Issue.SearchResult searchResult = getJiraClient().searchIssues(jql, INCLUDED_FIELDS, CHUNK_SIZE, startAt);
 			issues.addAll(searchResult.issues);
@@ -184,7 +181,7 @@ public class TaskService {
 			}
 		}
 		return issues;
-		
+
 	}
 
 	public List<AuthoringTask> listMyTasks(String username) throws JiraException, BusinessServiceException {
@@ -194,8 +191,8 @@ public class TaskService {
 
 	public List<AuthoringTask> listMyOrUnassignedReviewTasks() throws JiraException, BusinessServiceException {
 		return buildAuthoringTasks(getJiraClient().searchIssues("type = \"" + AUTHORING_TASK_TYPE + "\" " +
-						"AND assignee != currentUser() " +
-						"AND (Reviewer = currentUser() OR (Reviewer = null AND status = \"" + TaskStatus.IN_REVIEW.getLabel() + "\"))").issues);
+				"AND assignee != currentUser() " +
+				"AND (Reviewer = currentUser() OR (Reviewer = null AND status = \"" + TaskStatus.IN_REVIEW.getLabel() + "\"))").issues);
 	}
 
 	private String getProjectTaskJQL(String projectKey) {
@@ -375,10 +372,11 @@ public class TaskService {
 			throw new BusinessServiceException("Failed to recover user '" + username + "' from Jira instance.", je);
 		}
 	}
-	
+
 	/**
 	 * Returns the most recent Date/time of when the specified field changed to the specified value
-	 * @throws BusinessServiceException 
+	 *
+	 * @throws BusinessServiceException
 	 */
 	public Date getDateOfChange(String projectKey, String taskKey, String fieldName, String newValue) throws JiraException, BusinessServiceException {
 
@@ -387,11 +385,11 @@ public class TaskService {
 			ChangeLog changeLog = getIssue(projectKey, taskKey, true).getChangeLog();
 			if (changeLog != null) {
 				//Sort changeLog entries descending to get most recent change first
-				Collections.sort(changeLog.getEntries(),CHANGELOG_ID_COMPARATOR_DESC);
+				Collections.sort(changeLog.getEntries(), CHANGELOG_ID_COMPARATOR_DESC);
 				for (ChangeLogEntry entry : changeLog.getEntries()) {
 					Date thisChangeDate = entry.getCreated();
 					for (ChangeLogItem changeItem : entry.getItems()) {
-						if (changeItem.getField().equals(fieldName) && changeItem.getToString().equals(newValue)){
+						if (changeItem.getField().equals(fieldName) && changeItem.getToString().equals(newValue)) {
 							return thisChangeDate;
 						}
 					}
@@ -402,7 +400,7 @@ public class TaskService {
 		}
 		return null;
 	}
-	
+
 	public static Comparator<ChangeLogEntry> CHANGELOG_ID_COMPARATOR_DESC = new Comparator<ChangeLogEntry>() {
 		public int compare(ChangeLogEntry entry1, ChangeLogEntry entry2) {
 			Integer id1 = new Integer(entry1.getId());

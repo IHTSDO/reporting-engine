@@ -1,10 +1,6 @@
 package org.ihtsdo.snowowl.authoring.single.api.rest;
 
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiResponse;
-import com.wordnik.swagger.annotations.ApiResponses;
-
+import com.wordnik.swagger.annotations.*;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.api.rest.common.AbstractRestService;
 import org.ihtsdo.snowowl.api.rest.common.AbstractSnomedRestService;
@@ -17,10 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collections;
 import java.util.concurrent.ExecutionException;
-
-import javax.servlet.http.HttpServletRequest;
 
 @Api("Review")
 @RestController
@@ -35,9 +28,16 @@ public class ReviewController extends AbstractSnomedRestService {
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/projects/{projectKey}/tasks/{taskKey}/review", method= RequestMethod.GET)
-	public AuthoringTaskReview retrieveTaskReview(@PathVariable final String projectKey, @PathVariable final String taskKey,
-			HttpServletRequest request) throws BusinessServiceException {
-		return reviewService.retrieveTaskReview(projectKey, taskKey, Collections.list(request.getLocales()), ControllerHelper.getUsername());
+	public AuthoringTaskReview retrieveTaskReview(
+			@PathVariable final String projectKey,
+
+			@PathVariable final String taskKey,
+
+			@ApiParam(value="Language codes and reference sets, in order of preference")
+			@RequestHeader(value="Accept-Language", defaultValue="en-US;q=0.8,en-GB;q=0.6", required=false)
+			final String languageSetting) throws BusinessServiceException {
+
+		return reviewService.retrieveTaskReview(projectKey, taskKey, getExtendedLocales(languageSetting), ControllerHelper.getUsername());
 	}
 
 	@ApiOperation(value="Retrieve the review list for a Project")
@@ -45,8 +45,15 @@ public class ReviewController extends AbstractSnomedRestService {
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/projects/{projectKey}/review", method= RequestMethod.GET)
-	public AuthoringTaskReview retrieveProjectReview(@PathVariable final String projectKey, HttpServletRequest request) throws BusinessServiceException {
-		return reviewService.retrieveProjectReview(projectKey, Collections.list(request.getLocales()), ControllerHelper.getUsername());
+	public AuthoringTaskReview retrieveProjectReview(
+
+			@PathVariable final String projectKey,
+
+			@ApiParam(value="Language codes and reference sets, in order of preference")
+			@RequestHeader(value="Accept-Language", defaultValue="en-US;q=0.8,en-GB;q=0.6", required=false)
+			final String languageSetting) throws BusinessServiceException {
+
+		return reviewService.retrieveProjectReview(projectKey, getExtendedLocales(languageSetting), ControllerHelper.getUsername());
 	}
 
 	@ApiOperation(value="Comment on a Task")
