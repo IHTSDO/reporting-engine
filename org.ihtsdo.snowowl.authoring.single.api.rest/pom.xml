@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>org.ihtsdo.snowowl</groupId>
 		<artifactId>ihtsdo-snowowl-parent</artifactId>
-		<version>4.5.1</version>
+		<version>4.5.2-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>org.ihtsdo.snowowl.authoring.single.api.rest</artifactId>
