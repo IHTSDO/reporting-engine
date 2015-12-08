@@ -130,9 +130,17 @@ public class TaskService {
 		}
 	}
 
+	public List<Issue> getTaskIssues(String projectKey, TaskStatus taskStatus) throws BusinessServiceException {
+		try {
+			return getJiraClient().searchIssues(getProjectTaskJQL(projectKey, taskStatus)).issues;
+		} catch (JiraException e) {
+			throw new BusinessServiceException("Failed to load tasks in project '" + projectKey + "' from Jira.", e);
+		}
+	}
+
 	public List<AuthoringTask> listTasks(String projectKey) throws JiraException, BusinessServiceException {
 		getProjectOrThrow(projectKey);
-		List<Issue> issues = searchIssues(getProjectTaskJQL(projectKey), 0, 0);  //unlimited recovery for now
+		List<Issue> issues = searchIssues(getProjectTaskJQL(projectKey, null), 0, 0);  //unlimited recovery for now
 		return buildAuthoringTasks(issues);
 	}
 
@@ -195,8 +203,12 @@ public class TaskService {
 				"AND (Reviewer = currentUser() OR (Reviewer = null AND status = \"" + TaskStatus.IN_REVIEW.getLabel() + "\"))").issues);
 	}
 
-	private String getProjectTaskJQL(String projectKey) {
-		return "project = " + projectKey + " AND type = \"" + AUTHORING_TASK_TYPE + "\"";
+	private String getProjectTaskJQL(String projectKey, TaskStatus taskStatus) {
+		String jql = "project = " + projectKey + " AND type = \"" + AUTHORING_TASK_TYPE + "\"";
+		if (taskStatus != null) {
+			jql += " AND status = \"" + taskStatus.getLabel() + "\"";
+		}
+		return jql;
 	}
 
 	public AuthoringTask createTask(String projectKey, AuthoringTaskCreateRequest taskCreateRequest) throws JiraException, ServiceException {
@@ -420,6 +432,16 @@ public class TaskService {
 
 	public void stateTransition(String projectKey, String taskKey, TaskStatus newState) throws JiraException, BusinessServiceException {
 		stateTransition(getIssue(projectKey, taskKey), newState);
+	}
+
+	public void stateTransition(List<Issue> issues, TaskStatus newState) {
+		for (Issue issue : issues) {
+			try {
+				stateTransition(issue, newState);
+			} catch (JiraException | BusinessServiceException e) {
+				logger.error("Failed to transition issue {} to {}", issue.getKey(), newState.getLabel());
+			}
+		}
 	}
 
 	private void stateTransition(Issue issue, TaskStatus newState) throws JiraException, BusinessServiceException {
