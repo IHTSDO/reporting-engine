@@ -11,6 +11,7 @@ import com.b2international.snowowl.eventbus.IEventBus;
 import com.b2international.snowowl.snomed.api.impl.DescriptionService;
 import com.b2international.snowowl.snomed.core.domain.ISnomedDescription;
 import com.b2international.snowowl.snomed.datastore.server.request.SnomedRequests;
+import net.rcarz.jiraclient.Issue;
 import net.rcarz.jiraclient.JiraException;
 import org.apache.commons.lang.time.StopWatch;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
@@ -347,10 +348,12 @@ public class BranchService {
 
 	public void promoteProject(String projectKey,
 			MergeRequest mergeRequest, String username) throws BusinessServiceException {
+		List<Issue> promotedIssues = taskService.getTaskIssues(projectKey, TaskStatus.PROMOTED);
 		StopWatch stopwatch = new StopWatch();
 		stopwatch.start();
 		mergeBranch(PathHelper.getPath(projectKey), MAIN, mergeRequest.getSourceReviewId(), username);
 		stopwatch.stop();
+		taskService.stateTransition(promotedIssues, TaskStatus.COMPLETED);
 		String resultMessage = "Promotion of " + projectKey + " to MAIN completed without conflicts in " + stopwatch;
 		notificationService.queueNotification(username, new Notification(projectKey, EntityType.Promotion, resultMessage));
 	}
