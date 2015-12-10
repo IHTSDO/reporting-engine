@@ -10,6 +10,7 @@ public enum TaskStatus {
 	REVIEW_COMPLETED("Review Completed"),
 	PROMOTED("Promoted"),
 	COMPLETED("Completed"),
+	DELETED("Deleted"),
 	UNKNOWN("Unknown");
 
 	private final String label;

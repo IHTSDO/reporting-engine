@@ -27,6 +27,8 @@ public class TaskService {
 
 	private static final String INCLUDED_FIELDS = "*all";
 	private static final int CHUNK_SIZE = 50;
+	private static final String EXCLUDE_STATUSES = " AND (status != \"" + TaskStatus.COMPLETED.getLabel() + "\" AND status != \"" + TaskStatus.DELETED.getLabel() + "\") ";
+	private static final String AUTHORING_TASK_TYPE = "SCA Authoring Task";
 
 	@Autowired
 	private BranchService branchService;
@@ -43,8 +45,6 @@ public class TaskService {
 	private final ImpersonatingJiraClientFactory jiraClientFactory;
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
-
-	private static final String AUTHORING_TASK_TYPE = "SCA Authoring Task";
 
 	public TaskService(ImpersonatingJiraClientFactory jiraClientFactory, String jiraReviewerField) {
 		this.jiraClientFactory = jiraClientFactory;
@@ -193,18 +193,20 @@ public class TaskService {
 	}
 
 	public List<AuthoringTask> listMyTasks(String username) throws JiraException, BusinessServiceException {
-		List<Issue> issues = getJiraClient().searchIssues("assignee = \"" + username + "\" AND type = \"" + AUTHORING_TASK_TYPE + "\"").issues;
+		List<Issue> issues = getJiraClient().searchIssues("assignee = \"" + username + "\" AND type = \"" + AUTHORING_TASK_TYPE + "\" " +
+				EXCLUDE_STATUSES).issues;
 		return buildAuthoringTasks(issues);
 	}
 
 	public List<AuthoringTask> listMyOrUnassignedReviewTasks() throws JiraException, BusinessServiceException {
 		return buildAuthoringTasks(getJiraClient().searchIssues("type = \"" + AUTHORING_TASK_TYPE + "\" " +
 				"AND assignee != currentUser() " +
-				"AND (Reviewer = currentUser() OR (Reviewer = null AND status = \"" + TaskStatus.IN_REVIEW.getLabel() + "\"))").issues);
+				"AND (Reviewer = currentUser() OR (Reviewer = null AND status = \"" + TaskStatus.IN_REVIEW.getLabel() + "\")) " +
+				EXCLUDE_STATUSES).issues);
 	}
 
 	private String getProjectTaskJQL(String projectKey, TaskStatus taskStatus) {
-		String jql = "project = " + projectKey + " AND type = \"" + AUTHORING_TASK_TYPE + "\"";
+		String jql = "project = " + projectKey + " AND type = \"" + AUTHORING_TASK_TYPE + "\" " + EXCLUDE_STATUSES;
 		if (taskStatus != null) {
 			jql += " AND status = \"" + taskStatus.getLabel() + "\"";
 		}
@@ -249,7 +251,7 @@ public class TaskService {
 			}
 
 			final ImmutableMap<String, String> validationStatuses = validationService.getValidationStatuses(startedTasks.keySet());
-			timer.checkpoint("Recovering " + validationStatuses.size() + " ValidationStatuses");
+			timer.checkpoint("Recovering " + (validationStatuses == null ? "null" : validationStatuses.size()) + " ValidationStatuses");
 
 			if (validationStatuses == null || validationStatuses.size() == 0) {
 				logger.error("Failed to recover validation statuses - check logs for reason");
