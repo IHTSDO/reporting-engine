@@ -25,10 +25,11 @@ public class TaskService {
 
 	public static final String FAILED_TO_RETRIEVE = "Failed-to-retrieve";
 
-	private static final String INCLUDED_FIELDS = "*all";
-	private static final int CHUNK_SIZE = 50;
+	private static final String INCLUDE_ALL_FIELDS = "*all";
 	private static final String EXCLUDE_STATUSES = " AND (status != \"" + TaskStatus.COMPLETED.getLabel() + "\" AND status != \"" + TaskStatus.DELETED.getLabel() + "\") ";
 	private static final String AUTHORING_TASK_TYPE = "SCA Authoring Task";
+	public static final int LIMIT_UNLIMITED = -1;
+	public static final int LIMIT_DEFAULT = 100;
 
 	@Autowired
 	private BranchService branchService;
@@ -55,7 +56,7 @@ public class TaskService {
 		final TimerUtil timer = new TimerUtil("ProjectsList");
 		final JiraClient jiraClient = getJiraClient();
 		List<Project> projects = new ArrayList<>();
-		for (Issue issue : jiraClient.searchIssues("type = \"SCA Authoring Project\"").issues) {
+		for (Issue issue : searchIssues("type = \"SCA Authoring Project\"", -1)) {
 			projects.add(jiraClient.getProject(issue.getProject().getKey()));
 		}
 		timer.checkpoint("Jira searches");
@@ -140,7 +141,7 @@ public class TaskService {
 
 	public List<AuthoringTask> listTasks(String projectKey) throws JiraException, BusinessServiceException {
 		getProjectOrThrow(projectKey);
-		List<Issue> issues = searchIssues(getProjectTaskJQL(projectKey, null), 0, 0);  //unlimited recovery for now
+		List<Issue> issues = searchIssues(getProjectTaskJQL(projectKey, null), LIMIT_UNLIMITED);
 		return buildAuthoringTasks(issues);
 	}
 
@@ -160,49 +161,41 @@ public class TaskService {
 	private Issue getIssue(String projectKey, String taskKey, boolean includeAll) throws JiraException {
 		//If we don't need all fields, then the existing implementation is sufficient
 		if (includeAll) {
-			return getJiraClient().getIssue(taskKey, INCLUDED_FIELDS, "changelog");
+			return getJiraClient().getIssue(taskKey, INCLUDE_ALL_FIELDS, "changelog");
 		} else {
-			return getJiraClient().getIssue(taskKey, INCLUDED_FIELDS);
+			return getJiraClient().getIssue(taskKey, INCLUDE_ALL_FIELDS);
 		}
 	}
 
 	/**
 	 * @param jql
-	 * @param maxIssues maximum number of issues to return.  If zero, unlimited.
-	 * @param startAt
+	 * @param limit maximum number of issues to return.  If -1 the results are unlimited.
 	 * @return
 	 * @throws JiraException
 	 */
-	private List<Issue> searchIssues(String jql, int maxIssues, int startAt) throws JiraException {
-
+	private List<Issue> searchIssues(String jql, int limit) throws JiraException {
 		List<Issue> issues = new ArrayList<>();
-		boolean moreToRecover = true;
-
-		while (moreToRecover) {
-			Issue.SearchResult searchResult = getJiraClient().searchIssues(jql, INCLUDED_FIELDS, CHUNK_SIZE, startAt);
+		Issue.SearchResult searchResult;
+		do {
+			searchResult = getJiraClient().searchIssues(jql, INCLUDE_ALL_FIELDS, limit - issues.size(), issues.size());
 			issues.addAll(searchResult.issues);
-			//Have we captured all the issues that Jira says are available? Have we captured as many as were requested?
-			if (searchResult.total > issues.size() && (maxIssues == 0 || issues.size() < maxIssues)) {
-				startAt += CHUNK_SIZE;
-			} else {
-				moreToRecover = false;
-			}
-		}
+		} while (searchResult.total > issues.size() && (limit == LIMIT_UNLIMITED || issues.size() < limit));
+
 		return issues;
 
 	}
 
 	public List<AuthoringTask> listMyTasks(String username) throws JiraException, BusinessServiceException {
-		List<Issue> issues = getJiraClient().searchIssues("assignee = \"" + username + "\" AND type = \"" + AUTHORING_TASK_TYPE + "\" " +
-				EXCLUDE_STATUSES).issues;
+		List<Issue> issues = searchIssues("assignee = \"" + username + "\" AND type = \"" + AUTHORING_TASK_TYPE + "\" " + EXCLUDE_STATUSES, LIMIT_DEFAULT);
 		return buildAuthoringTasks(issues);
 	}
 
 	public List<AuthoringTask> listMyOrUnassignedReviewTasks() throws JiraException, BusinessServiceException {
-		return buildAuthoringTasks(getJiraClient().searchIssues("type = \"" + AUTHORING_TASK_TYPE + "\" " +
+		List<Issue> issues = searchIssues("type = \"" + AUTHORING_TASK_TYPE + "\" " +
 				"AND assignee != currentUser() " +
 				"AND (Reviewer = currentUser() OR (Reviewer = null AND status = \"" + TaskStatus.IN_REVIEW.getLabel() + "\")) " +
-				EXCLUDE_STATUSES).issues);
+				EXCLUDE_STATUSES, LIMIT_DEFAULT);
+		return buildAuthoringTasks(issues);
 	}
 
 	private String getProjectTaskJQL(String projectKey, TaskStatus taskStatus) {
