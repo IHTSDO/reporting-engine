@@ -28,8 +28,7 @@ public class TaskService {
 	private static final String INCLUDE_ALL_FIELDS = "*all";
 	private static final String EXCLUDE_STATUSES = " AND (status != \"" + TaskStatus.COMPLETED.getLabel() + "\" AND status != \"" + TaskStatus.DELETED.getLabel() + "\") ";
 	private static final String AUTHORING_TASK_TYPE = "SCA Authoring Task";
-	public static final int LIMIT_UNLIMITED = -1;
-	public static final int LIMIT_DEFAULT = 100;
+	private static final int LIMIT_UNLIMITED = -1;
 
 	@Autowired
 	private BranchService branchService;
@@ -186,7 +185,7 @@ public class TaskService {
 	}
 
 	public List<AuthoringTask> listMyTasks(String username) throws JiraException, BusinessServiceException {
-		List<Issue> issues = searchIssues("assignee = \"" + username + "\" AND type = \"" + AUTHORING_TASK_TYPE + "\" " + EXCLUDE_STATUSES, LIMIT_DEFAULT);
+		List<Issue> issues = searchIssues("assignee = \"" + username + "\" AND type = \"" + AUTHORING_TASK_TYPE + "\" " + EXCLUDE_STATUSES, LIMIT_UNLIMITED);
 		return buildAuthoringTasks(issues);
 	}
 
@@ -194,7 +193,7 @@ public class TaskService {
 		List<Issue> issues = searchIssues("type = \"" + AUTHORING_TASK_TYPE + "\" " +
 				"AND assignee != currentUser() " +
 				"AND (Reviewer = currentUser() OR (Reviewer = null AND status = \"" + TaskStatus.IN_REVIEW.getLabel() + "\")) " +
-				EXCLUDE_STATUSES, LIMIT_DEFAULT);
+				EXCLUDE_STATUSES, LIMIT_UNLIMITED);
 		return buildAuthoringTasks(issues);
 	}
 
