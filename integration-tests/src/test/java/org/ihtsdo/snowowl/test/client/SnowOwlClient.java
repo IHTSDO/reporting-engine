@@ -16,7 +16,8 @@ public class SnowOwlClient {
 
 	private final Resty resty;
 	private final String url;
-	private static final String SNOWOWL_CONTENT_TYPE = "application/vnd.com.b2international.snowowl+json";
+	private static final String SNOWOWL_CONTENT_TYPE = "application/json";
+//	private static final String SNOWOWL_CONTENT_TYPE = "application/vnd.com.b2international.snowowl+json";
 	private final Set<SnowOwlClientEventListener> eventListeners;
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -88,12 +89,22 @@ public class SnowOwlClient {
 		eventListeners.add(eventListener);
 	}
 
-	public String classify(String branchPath) throws IOException, JSONException, InterruptedException {
+	/**
+	 * Returns id of classification
+	 * @param branchPath
+	 * @return
+	 * @throws IOException
+	 * @throws JSONException
+	 * @throws InterruptedException
+	 */
+	public String classifyAndWaitForComplete(String branchPath) throws IOException, JSONException, InterruptedException {
 		final JSONObject json = new JSONObject();
 		json.put("reasonerId", "org.semanticweb.elk.elk.reasoner.factory");
-		final String url = this.url + "/" + branchPath + "/classifications";
+		String url = this.url + "/" + branchPath + "/classifications";
 		System.out.println(url);
 		System.out.println(json.toString(3));
+//		resty.withHeader("Accept", "application/vnd.com.b2international.snowowl+json");
+//		url = "http://requestb.in/rky7oqrk";
 		final JSONResource resource = resty.json(url, RestyHelper.content(json, SNOWOWL_CONTENT_TYPE));
 		final String location = resource.getUrlConnection().getHeaderField("Location");
 		System.out.println("location " + location);

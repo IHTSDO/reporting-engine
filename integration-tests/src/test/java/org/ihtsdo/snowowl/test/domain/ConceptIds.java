@@ -6,5 +6,6 @@ public interface ConceptIds {
 	String exampleExtensionConceptId = "10000001105";
 	String exampleRelationshipId = "900020";
 	String isA = "116680003";
+	String method = "260686004";
 
 }

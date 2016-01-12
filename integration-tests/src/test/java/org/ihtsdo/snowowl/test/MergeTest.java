@@ -45,8 +45,8 @@ public class MergeTest extends AbstractIntegrationTest {
 	@Test(expected = IOException.class)
 	public void testMergeConceptsWithDuplicateSCTID() throws Exception {
 		final String childBranchPath = client.createBranch(branchPath, "child");
-		Assert.assertEquals(ConceptIds.exampleExtensionConceptId, client.createConcept(ConceptHelper.createConcept("created on child").put("conceptId", ConceptIds.exampleExtensionConceptId), childBranchPath).toObject().getString("conceptId"));
-		Assert.assertEquals(ConceptIds.exampleExtensionConceptId, client.createConcept(ConceptHelper.createConcept("created on parent").put("conceptId", ConceptIds.exampleExtensionConceptId), branchPath).toObject().getString("conceptId"));
+		Assert.assertEquals(ConceptIds.exampleExtensionConceptId, client.createConcept(ConceptHelper.newConcept("created on child").put("conceptId", ConceptIds.exampleExtensionConceptId), childBranchPath).toObject().getString("conceptId"));
+		Assert.assertEquals(ConceptIds.exampleExtensionConceptId, client.createConcept(ConceptHelper.newConcept("created on parent").put("conceptId", ConceptIds.exampleExtensionConceptId), branchPath).toObject().getString("conceptId"));
 		// Rebase
 		client.mergeBranch(branchPath, childBranchPath);
 	}

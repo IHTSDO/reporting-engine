@@ -24,15 +24,15 @@ public class ConceptHelper {
 		return json;
 	}
 
-	public static JSONObject createConcept() throws Exception {
-		return createConcept("a (finding)", "a", "116680003");
+	public static JSONObject newConcept() throws Exception {
+		return newConcept("a (finding)", "a", "116680003");
 	}
 
-	public static JSONObject createConcept(String pt) throws Exception {
-		return createConcept(pt + " (test)", pt, "116680003");
+	public static JSONObject newConcept(String pt) throws Exception {
+		return newConcept(pt + " (test)", pt, "116680003");
 	}
 
-	public static JSONObject createConcept(String fsn, String pt, String parentId) throws Exception {
+	public static JSONObject newConcept(String fsn, String pt, String parentId) throws Exception {
 		final JSONObject json = ConceptHelper.createBaseConcept();
 		ConceptHelper.addDescription(fsn, DescriptionType.FSN, json);
 		ConceptHelper.addDescription(pt, DescriptionType.PT, json);
@@ -40,7 +40,7 @@ public class ConceptHelper {
 		return json;
 	}
 
-	public static void addDescription(String term, DescriptionType type, JSONObject json) throws JSONException {
+	public static JSONObject addDescription(String term, DescriptionType type, JSONObject json) throws JSONException {
 		final JSONObject desc = new JSONObject();
 		desc.put("active", true);
 		desc.put("moduleId", "900000000000207008");
@@ -54,6 +54,7 @@ public class ConceptHelper {
 		}
 		desc.put("type", type.toString());
 		json.getJSONArray("descriptions").put(desc);
+		return desc;
 	}
 
 	public static void addRelationship(String typeId, String targetId, JSONObject concept) throws JSONException {
@@ -86,11 +87,36 @@ public class ConceptHelper {
 		return null; // Will never reach here
 	}
 
-	public static JSONObject getFSN(JSONObject concept) throws JSONException {
+	public static JSONObject findRelationship(String typeId, String destinationId, JSONObject concept) throws JSONException {
+		final JSONArray relationships = concept.getJSONArray("relationships");
+		for (int i = 0; i < relationships.length(); i++) {
+			final JSONObject relationship = relationships.getJSONObject(i);
+			final String relTypeId = relationship.getJSONObject("type").getString("conceptId");
+			final String relDestinationId = relationship.getJSONObject("target").getString("conceptId");
+			if (relTypeId.equals(typeId) && relDestinationId.equals(destinationId)) {
+				return relationship;
+			}
+		}
+		Assert.fail("Failed to find relationship with typeId " + typeId + " in concept:\n" + concept.toString());
+		return null; // Will never reach here
+	}
+
+	public static JSONObject findFSN(JSONObject concept) throws JSONException {
 		final JSONArray descriptions = concept.getJSONArray("descriptions");
 		for (int a = 0; a < descriptions.length(); a++) {
 			final JSONObject desc = descriptions.getJSONObject(a);
 			if ("FSN".equals(desc.getString("type"))) {
+				return desc;
+			}
+		}
+		return null;
+	}
+
+	public static JSONObject findDescription(JSONObject concept, String term) throws JSONException {
+		final JSONArray descriptions = concept.getJSONArray("descriptions");
+		for (int a = 0; a < descriptions.length(); a++) {
+			final JSONObject desc = descriptions.getJSONObject(a);
+			if (term.equals(desc.getString("term"))) {
 				return desc;
 			}
 		}

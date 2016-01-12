@@ -14,7 +14,7 @@ public class ConceptFieldsTest extends AbstractIntegrationTest {
 	@Test
 	public void testCreatePrimitiveConcept() throws Exception {
 		final String expectedDefStatus = PRIMITIVE;
-		final JSONObject concept = ConceptHelper.createConcept().put(DEFINITION_STATUS, expectedDefStatus);
+		final JSONObject concept = ConceptHelper.newConcept().put(DEFINITION_STATUS, expectedDefStatus);
 		final JSONObject newConcept = client.createConcept(concept, branchPath).toObject();
 		Assert.assertEquals(expectedDefStatus, newConcept.get(DEFINITION_STATUS));
 	}
@@ -22,7 +22,7 @@ public class ConceptFieldsTest extends AbstractIntegrationTest {
 	@Test
 	public void testCreateFullyDefinedConcept() throws Exception {
 		final String expectedDefStatus = FULLY_DEFINED;
-		JSONObject concept = ConceptHelper.createConcept().put(DEFINITION_STATUS, expectedDefStatus);
+		JSONObject concept = ConceptHelper.newConcept().put(DEFINITION_STATUS, expectedDefStatus);
 
 		Assert.assertEquals(expectedDefStatus, concept.get(DEFINITION_STATUS));
 		concept = client.createConcept(concept, branchPath).toObject();
@@ -46,7 +46,7 @@ public class ConceptFieldsTest extends AbstractIntegrationTest {
 	}
 
 	private void definitionStatusChangeTest(String initialDefStatus, String expectedDefStatus) throws Exception {
-		JSONObject concept = ConceptHelper.createConcept();
+		JSONObject concept = ConceptHelper.newConcept();
 		concept.put(DEFINITION_STATUS, initialDefStatus);
 		concept = client.createConcept(concept, branchPath).toObject();
 		Assert.assertEquals(initialDefStatus, concept.get(DEFINITION_STATUS));

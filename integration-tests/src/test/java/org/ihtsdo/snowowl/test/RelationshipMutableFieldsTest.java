@@ -12,7 +12,7 @@ public class RelationshipMutableFieldsTest extends AbstractIntegrationTest {
 
 	@Test
 	public void testChangeGroupId() throws Exception {
-		JSONObject concept = ConceptHelper.createConcept();
+		JSONObject concept = ConceptHelper.newConcept();
 		concept = client.createConcept(concept, branchPath).object();
 
 		ConceptHelper.addRelationship("260686004", "129264002", concept);
@@ -30,7 +30,7 @@ public class RelationshipMutableFieldsTest extends AbstractIntegrationTest {
 		final String newModifier = "UNIVERSAL";
 
 		// Create
-		JSONObject concept = client.createConcept(ConceptHelper.createConcept(), branchPath).object();
+		JSONObject concept = client.createConcept(ConceptHelper.newConcept(), branchPath).object();
 		ConceptHelper.addRelationship("260686004", "129264002", concept);
 		concept = client.updateConcept(concept, branchPath).object();
 

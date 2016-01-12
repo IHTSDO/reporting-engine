@@ -22,7 +22,7 @@ public class BulkCreationTest extends AbstractIntegrationTest {
 		final TimerUtil timer = new TimerUtil("Create batch of " + batchSize);
 		for (int i = 0; i < batchSize; i++) {
 			final String term = RandomWords.generate();
-			client.createConcept(ConceptHelper.createConcept(term + " (finding)", term, ConceptIds.clinicalFinding), branchPath);
+			client.createConcept(ConceptHelper.newConcept(term + " (finding)", term, ConceptIds.clinicalFinding), branchPath);
 		}
 		timer.finish();
 	}

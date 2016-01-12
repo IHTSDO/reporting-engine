@@ -20,10 +20,11 @@ import java.util.Set;
 public abstract class AbstractIntegrationTest implements SnowOwlClientEventListener {
 
 	private final String url = "http://localhost:8080/snowowl/snomed-ct/v2";
+//	private final String url = "https://dev-term.ihtsdotools.org/snowowl/snomed-ct/v2";
 	protected SnowOwlClient client;
 	protected String branchName;
 	protected String branchPath;
-	private Set<String> branchesToTearDown;
+	protected Set<String> branchesToTearDown;
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
 	@Before
@@ -37,11 +38,11 @@ public abstract class AbstractIntegrationTest implements SnowOwlClientEventListe
 	}
 
 	public JSONResource createConcept(String branchPath, String fsn, String pt, String parentId) throws Exception {
-		final JSONObject json = ConceptHelper.createConcept(fsn, pt, parentId);
+		final JSONObject json = ConceptHelper.newConcept(fsn, pt, parentId);
 		return client.createConcept(json, branchPath);
 	}
 
-	private String generateTestBranchName() {
+	String generateTestBranchName() {
 		return "test_" + new SimpleDateFormat("yyyyMMdd_hhmmss").format(new Date());
 	}
 
