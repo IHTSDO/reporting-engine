@@ -25,6 +25,8 @@
 
 	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.eventhandler.ReviewMessageSentHandler"/>
 
+	<bean class="org.ihtsdo.snowowl.authoring.single.api.batchImport.service.BatchImportService"/>
+
 	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.BranchService"/>
 
 	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.ClassificationService"/>
