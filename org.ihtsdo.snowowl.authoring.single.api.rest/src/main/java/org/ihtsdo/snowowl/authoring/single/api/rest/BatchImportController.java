@@ -18,6 +18,8 @@ import com.wordnik.swagger.annotations.ApiParam;
 import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
 
+import net.rcarz.jiraclient.JiraException;
+
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVPrinter;
@@ -26,8 +28,11 @@ import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.api.rest.common.AbstractRestService;
 import org.ihtsdo.snowowl.api.rest.common.AbstractSnomedRestService;
 import org.ihtsdo.snowowl.api.rest.common.ControllerHelper;
+import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportRequest;
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportStatus;
+import org.ihtsdo.snowowl.authoring.single.api.batchImport.service.BatchImportFormat;
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.service.BatchImportService;
+import org.ihtsdo.snowowl.authoring.single.api.service.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -48,20 +53,24 @@ public class BatchImportController extends AbstractSnomedRestService {
 	})
 	@RequestMapping(value="/projects/{projectKey}/batchImport", method= RequestMethod.POST)
 	public void startBatchImport(@PathVariable final String projectKey,
+			@RequestBody final BatchImportRequest importRequest,
 			@ApiParam(value="3rd Party import csv file")
 			@RequestPart("file") 
 			final MultipartFile file,
-			HttpServletResponse response ) throws BusinessServiceException {
+			HttpServletResponse response ) throws BusinessServiceException, JiraException, ServiceException {
 		
 		try {
 			final UUID batchImportId = randomUUID();
 			
 			Reader in = new InputStreamReader(file.getInputStream());
 			CSVParser parser = new CSVParser(in, CSVFormat.EXCEL);
+			BatchImportFormat.FORMAT format = BatchImportFormat.determineFormat(parser.getHeaderMap());
+			importRequest.setFormat(format);
+			importRequest.setProjectKey(projectKey);
 			List<CSVRecord> rows = parser.getRecords();
 			parser.close();
 			
-			batchImportService.startImport(projectKey, rows, ControllerHelper.getUsername());
+			batchImportService.startImport(importRequest, rows, ControllerHelper.getUsername());
 			response.setHeader("Location", "/" + batchImportId.toString());
 		} catch (IOException e) {
 			throw new BusinessServiceException ("Unable to import batch file",e);
@@ -77,6 +86,7 @@ public class BatchImportController extends AbstractSnomedRestService {
 	})
 	@RequestMapping(value="/projects/{projectKey}/batchImport/{batchImportId}", method=RequestMethod.GET)
 	public BatchImportStatus getBatchImportStatus(
+			@PathVariable final String projectKey,
 			@ApiParam(value="The batch import identifier")
 			@PathVariable(value="batchImportId") 
 			final UUID batchImportId,
@@ -94,6 +104,7 @@ public class BatchImportController extends AbstractSnomedRestService {
 	})
 	@RequestMapping(value="/projects/{projectKey}/batchImport/{batchImportId}/results", method=RequestMethod.GET)
 	public void getBatchImportResults(
+			@PathVariable final String projectKey,
 			@ApiParam(value="The import identifier")
 			@PathVariable(value="importId") 
 			final UUID batchImportId,

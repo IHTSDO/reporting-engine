@@ -204,17 +204,21 @@ public class TaskService {
 		}
 		return jql;
 	}
-
-	public AuthoringTask createTask(String projectKey, AuthoringTaskCreateRequest taskCreateRequest) throws JiraException, ServiceException {
+	
+	public AuthoringTask createTask(String projectKey, String username, AuthoringTaskCreateRequest taskCreateRequest) throws JiraException, ServiceException {
 		Issue jiraIssue = getJiraClient().createIssue(projectKey, AUTHORING_TASK_TYPE)
 				.field(Field.SUMMARY, taskCreateRequest.getSummary())
 				.field(Field.DESCRIPTION, taskCreateRequest.getDescription())
-				.field(Field.ASSIGNEE, getUsername())
+				.field(Field.ASSIGNEE, username)
 				.execute();
 
 		AuthoringTask authoringTask = new AuthoringTask(jiraIssue);
 		branchService.createTaskBranchAndProjectBranchIfNeeded(authoringTask.getProjectKey(), authoringTask.getKey());
 		return authoringTask;
+	}
+
+	public AuthoringTask createTask(String projectKey, AuthoringTaskCreateRequest taskCreateRequest) throws JiraException, ServiceException {
+		return createTask (projectKey, getUsername(), taskCreateRequest);
 	}
 
 	private List<AuthoringTask> buildAuthoringTasks(List<Issue> issues) throws BusinessServiceException {
