@@ -1,6 +1,8 @@
 package org.ihtsdo.snowowl.authoring.single.api.batchImport.service;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.csv.CSVRecord;
@@ -13,6 +15,8 @@ public class BatchImportFormat {
 	public static enum FIELD { SCTID, PARENT, FSN_ROOT, NOTES, SEMANTIC_TAG};
 	public static int FIELD_NOT_FOUND = -1;
 	public static String RANGE_SEPARATOR = "-";
+	public static int FIRST_NOTE = 0;
+	public static int LAST_NOTE = 1;
 	
 	//private FORMAT format;
 	private Map<FIELD, String> fieldMap;
@@ -26,6 +30,7 @@ public class BatchImportFormat {
 		SIRS_MAP.put(FIELD.SCTID, "3");
 		SIRS_MAP.put(FIELD.PARENT, "9");
 		SIRS_MAP.put(FIELD.FSN_ROOT, "5");
+		SIRS_MAP.put(FIELD.NOTES, "19-27");
 	}
 	
 	public static BatchImportFormat create(FORMAT format) throws BusinessServiceException {
@@ -68,6 +73,14 @@ public class BatchImportFormat {
 		return false;
 	}
 	
+	public int[] getRange(FIELD field) throws BusinessServiceException {
+		if (!isRange(field)) {
+			throw new BusinessServiceException(field + " expected to contain a range but instead is: " + fieldMap.get(field));
+		}
+		String[] startEnd = fieldMap.get(field).split(RANGE_SEPARATOR);
+		return new int[] { Integer.parseInt(startEnd[FIRST_NOTE]), Integer.parseInt(startEnd[LAST_NOTE])};
+	}
+	
 	public BatchImportConcept createConcept (CSVRecord row) throws BusinessServiceException {
 		String sctid = row.get(getIndex(FIELD.SCTID));
 		//We need an sctid in order to keep track of the row, so form from row number if null
@@ -76,5 +89,17 @@ public class BatchImportFormat {
 		}
 		String parent = row.get(getIndex(FIELD.PARENT));
 		return new BatchImportConcept (sctid, parent, row);
+	}
+
+	public List<String> getAllNotes(BatchImportConcept thisConcept) throws BusinessServiceException {
+		List<String> notes = new ArrayList<String>();
+		int[] noteIdexes = getRange(FIELD.NOTES);
+		for (int i=noteIdexes[FIRST_NOTE] ; i <= noteIdexes[LAST_NOTE]; i++ ) {
+			String thisNote = thisConcept.getRow().get(i);
+			if (thisNote != null && thisNote.trim().length() > 0) {
+				notes.add(thisNote);
+			}
+		}
+		return notes;
 	}
 }

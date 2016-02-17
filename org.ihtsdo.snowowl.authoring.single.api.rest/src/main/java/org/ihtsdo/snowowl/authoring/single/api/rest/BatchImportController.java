@@ -53,7 +53,7 @@ public class BatchImportController extends AbstractSnomedRestService {
 	})
 	@RequestMapping(value="/projects/{projectKey}/batchImport", method= RequestMethod.POST)
 	public void startBatchImport(@PathVariable final String projectKey,
-			@RequestBody final BatchImportRequest importRequest,
+			@RequestPart("json") final BatchImportRequest importRequest,
 			@ApiParam(value="3rd Party import csv file")
 			@RequestPart("file") 
 			final MultipartFile file,

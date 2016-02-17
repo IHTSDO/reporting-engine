@@ -1,6 +1,7 @@
 package org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo;
 
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.service.BatchImportFormat;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -10,6 +11,8 @@ public class BatchImportRequest {
 	int conceptsPerTask;
 	BatchImportFormat.FORMAT format;
 	String projectKey;
+	
+	MultipartFile file;
 	
 	public BatchImportRequest(){}
 	
@@ -38,5 +41,13 @@ public class BatchImportRequest {
 	}
 	public void setProjectKey(String projectKey) {
 		this.projectKey = projectKey;
+	}
+
+	public MultipartFile getFile() {
+		return file;
+	}
+
+	public void setFile(MultipartFile file) {
+		this.file = file;
 	}
 }

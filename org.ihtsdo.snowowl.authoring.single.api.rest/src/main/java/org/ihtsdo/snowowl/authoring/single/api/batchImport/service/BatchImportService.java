@@ -1,5 +1,7 @@
 package org.ihtsdo.snowowl.authoring.single.api.batchImport.service;
 
+import java.io.IOException;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -22,6 +24,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.b2international.commons.VerhoeffCheck;
+import com.b2international.commons.http.AcceptHeader;
+import com.b2international.commons.http.ExtendedLocale;
+import com.b2international.snowowl.core.exceptions.BadRequestException;
+import com.b2international.snowowl.snomed.api.domain.browser.ISnomedBrowserConcept;
+import com.b2international.snowowl.snomed.api.impl.SnomedBrowserService;
+import com.b2international.snowowl.snomed.api.impl.domain.browser.SnomedBrowserConcept;
+import com.b2international.snowowl.snomed.api.impl.domain.browser.SnomedBrowserRelationship;
+import com.b2international.snowowl.snomed.api.impl.domain.browser.SnomedBrowserRelationshipType;
+import com.b2international.snowowl.snomed.core.domain.CharacteristicType;
 
 @Service
 public class BatchImportService {
@@ -29,7 +40,25 @@ public class BatchImportService {
 	@Autowired
 	private TaskService taskService;
 	
+	@Autowired
+	SnomedBrowserService browserService;
+	
 	private static final int ROW_UNKNOWN = -1;
+	private static final String NEW_LINE = "\n";
+	private static final String BULLET = "  *";
+	private static final String SCTID_ISA = "1";
+	
+	private List<ExtendedLocale> defaultLocales;
+	private static final String defaultLocaleStr = "en-US;q=0.8,en-GB;q=0.6";
+	public BatchImportService () {
+		try {
+			defaultLocales = AcceptHeader.parseExtendedLocales(new StringReader(defaultLocaleStr));
+		} catch (IOException e) {
+			throw new BadRequestException(e.getMessage());
+		} catch (IllegalArgumentException e) {
+			throw new BadRequestException(e.getMessage());
+		}
+	}
 	
 	Map<UUID, BatchImportStatus> currentImports = new HashMap<UUID, BatchImportStatus>();
 	
@@ -87,7 +116,7 @@ public class BatchImportService {
 		return true;
 	}
 	
-	private void loadConceptsOntoTasks(BatchImportRun run) throws JiraException, ServiceException {
+	private void loadConceptsOntoTasks(BatchImportRun run) throws JiraException, ServiceException, BusinessServiceException {
 		List<List<BatchImportConcept>> batches = collectIntoBatches(run);
 		for (List<BatchImportConcept> thisBatch : batches) {
 			AuthoringTask task = createTask(run, thisBatch);
@@ -114,7 +143,7 @@ public class BatchImportService {
 	}
 
 	private AuthoringTask createTask(BatchImportRun run,
-			List<BatchImportConcept> thisBatch) throws JiraException, ServiceException {
+			List<BatchImportConcept> thisBatch) throws JiraException, ServiceException, BusinessServiceException {
 		AuthoringTaskCreateRequest taskCreateRequest = new AuthoringTask();
 		String allNotes = getAllNotes(run, thisBatch);
 		taskCreateRequest.setDescription(allNotes);
@@ -146,19 +175,47 @@ public class BatchImportService {
 
 
 	private String getAllNotes(BatchImportRun run,
-			List<BatchImportConcept> thisBatch) {
-		// TODO Auto-generated method stub
-		return null;
+			List<BatchImportConcept> thisBatch) throws BusinessServiceException {
+		StringBuilder str = new StringBuilder();
+		for (BatchImportConcept thisConcept : thisBatch) {
+			str.append(thisConcept.getSctid()).append(":").append(NEW_LINE);
+			List<String> notes = run.getFormatter().getAllNotes(thisConcept);
+			for (String thisNote: notes) {
+				str.append(BULLET)
+					.append(thisNote)
+					.append(NEW_LINE);
+			}
+		}
+		return str.toString();
 	}
 
 
 
 	private void loadConcepts(BatchImportRun run, AuthoringTask task,
 			List<BatchImportConcept> thisBatch) {
-		// TODO Auto-generated method stub
+		String branchPath = "MAIN/" + run.getImportRequest().getProjectKey() + "/" + task.getKey();
+		for (BatchImportConcept thisConcept : thisBatch) {
+			ISnomedBrowserConcept newConcept = createBrowserConcept(thisConcept, run.getFormatter());
+			browserService.create(branchPath, newConcept, run.getImportRequest().getCreateForAuthor(), defaultLocales);
+		}
 		
 	}
 	
+	private ISnomedBrowserConcept createBrowserConcept(
+			BatchImportConcept thisConcept, BatchImportFormat formatter) {
+		SnomedBrowserConcept newConcept = new SnomedBrowserConcept();
+		newConcept.setConceptId(thisConcept.getSctid());
+		newConcept.setActive(true);
+		//Set the Parent
+		SnomedBrowserRelationship isA = new SnomedBrowserRelationship();
+		isA.setCharacteristicType(CharacteristicType.STATED_RELATIONSHIP);
+		isA.setSourceId(thisConcept.getSctid());
+		isA.setType(new SnomedBrowserRelationshipType(SCTID_ISA));
+		return newConcept;
+	}
+
+
+
 	public BatchImportStatus getImportStatus(UUID batchImportId) {
 		return currentImports.get(batchImportId);
 	}
