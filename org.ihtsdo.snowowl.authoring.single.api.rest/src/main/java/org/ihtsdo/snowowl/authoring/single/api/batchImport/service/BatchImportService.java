@@ -30,13 +30,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-
 import com.b2international.commons.VerhoeffCheck;
 import com.b2international.commons.http.AcceptHeader;
 import com.b2international.commons.http.ExtendedLocale;
 import com.b2international.snowowl.core.exceptions.ApiError;
 import com.b2international.snowowl.core.exceptions.BadRequestException;
 import com.b2international.snowowl.core.exceptions.ValidationException;
+import com.b2international.snowowl.eventbus.IEventBus;
 import com.b2international.snowowl.snomed.SnomedConstants;
 import com.b2international.snowowl.snomed.SnomedConstants.Concepts;
 import com.b2international.snowowl.snomed.api.domain.browser.ISnomedBrowserConcept;
@@ -67,6 +67,9 @@ public class BatchImportService {
 	
 	@Autowired
 	UiStateService uiStateService;
+	
+	@Autowired
+	private IEventBus eventBus;
 	
 	@Autowired
 	private ISnomedBrowserValidationService validationService;
@@ -283,9 +286,9 @@ public class BatchImportService {
 		for (BatchImportConcept thisConcept : thisBatch) {
 			try{
 				ISnomedBrowserConcept newConcept = createBrowserConcept(thisConcept, run.getFormatter());
-				String warnings = validateConcept(task, newConcept);
+				//String warnings = validateConcept(task, newConcept);
 				browserService.create(branchPath, newConcept, run.getImportRequest().getCreateForAuthor(), defaultLocales);
-				run.succeed(thisConcept.getRow(), "Loaded onto " + task.getKey() + " " + warnings);
+				run.succeed(thisConcept.getRow(), "Loaded onto " + task.getKey() + " " /*+ warnings*/);
 				if (isFirst){
 					isFirst = false;
 				} else {

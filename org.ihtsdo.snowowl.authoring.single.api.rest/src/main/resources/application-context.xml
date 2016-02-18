@@ -4,9 +4,12 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd">
 
-	<bean class="com.b2international.snowowl.internal.eventbus.EventBus" />
-	
 	<bean class="com.b2international.snowowl.api.impl.AuthenticationServiceImpl" />
+
+	<!--  Need this bean so as to pick up @Resource dependencies 
+	<bean class="org.springframework.context.annotation.CommonAnnotationBeanPostProcessor" />
+	
+	 bean class="com.b2international.snowowl.internal.eventbus" -->
 	
 	<bean class="com.b2international.snowowl.snomed.api.impl.SnomedBrowserService" />
 	
