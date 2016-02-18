@@ -53,7 +53,8 @@ public class BatchImportController extends AbstractSnomedRestService {
 	})
 	@RequestMapping(value="/projects/{projectKey}/batchImport", method= RequestMethod.POST)
 	public void startBatchImport(@PathVariable final String projectKey,
-			@RequestPart("json") final BatchImportRequest importRequest,
+			final String createForAuthor,
+			final Integer conceptsPerTask,
 			@ApiParam(value="3rd Party import csv file")
 			@RequestPart("file") 
 			final MultipartFile file,
@@ -63,11 +64,21 @@ public class BatchImportController extends AbstractSnomedRestService {
 			final UUID batchImportId = randomUUID();
 			
 			Reader in = new InputStreamReader(file.getInputStream());
-			CSVParser parser = new CSVParser(in, CSVFormat.EXCEL);
-			BatchImportFormat.FORMAT format = BatchImportFormat.determineFormat(parser.getHeaderMap());
+			//SIRS files contain duplicate headers (eg multiple Notes columns) 
+			//So read 1st row as a record instead.
+			CSVParser parser = CSVFormat.EXCEL.parse(in);
+			CSVRecord header = parser.iterator().next();
+			BatchImportFormat.FORMAT format = BatchImportFormat.determineFormat(header);
+			//And load the remaining records into memory
+			List<CSVRecord> rows = parser.getRecords();
+			
+			//Swagger has difficulty handling both json and file in the same endpoint
+			//So we'll pass the items we need as individual parameters 
+			BatchImportRequest importRequest = new BatchImportRequest();
+			importRequest.setCreateForAuthor(createForAuthor);
+			importRequest.setConceptsPerTask(conceptsPerTask == null? 1 : conceptsPerTask.intValue());
 			importRequest.setFormat(format);
 			importRequest.setProjectKey(projectKey);
-			List<CSVRecord> rows = parser.getRecords();
 			parser.close();
 			
 			batchImportService.startImport(importRequest, rows, ControllerHelper.getUsername());

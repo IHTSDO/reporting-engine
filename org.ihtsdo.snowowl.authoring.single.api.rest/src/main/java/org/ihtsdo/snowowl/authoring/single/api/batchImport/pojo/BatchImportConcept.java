@@ -50,6 +50,10 @@ public class BatchImportConcept {
 	public CSVRecord getRow() {
 		return row;
 	}
+	
+	public String get(int index) {
+		return row.get(index);
+	}
 
 	public String getSctid() {
 		return sctid;

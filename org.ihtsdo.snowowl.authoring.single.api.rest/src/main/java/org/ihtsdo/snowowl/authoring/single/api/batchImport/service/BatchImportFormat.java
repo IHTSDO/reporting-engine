@@ -8,6 +8,7 @@ import java.util.Map;
 import org.apache.commons.csv.CSVRecord;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportConcept;
+import org.ihtsdo.snowowl.authoring.single.api.batchImport.service.BatchImportFormat.FORMAT;
 
 public class BatchImportFormat {
 
@@ -46,7 +47,7 @@ public class BatchImportFormat {
 		this.fieldMap = fieldMap;
 	}
 	
-	public static FORMAT determineFormat(Map<String, Integer> headers) throws BusinessServiceException {
+/*	public static FORMAT determineFormat(Map<String, Integer> headers) throws BusinessServiceException {
 		
 		//Is it SIRS?  Throw exception if not because it's the only format we support
 		for (Map.Entry<String, Integer> thisHeaderEntry : headers.entrySet()) {
@@ -57,7 +58,7 @@ public class BatchImportFormat {
 			}
 		}
 		return FORMAT.SIRS;
-	}
+	}*/
 	
 	public int getIndex (FIELD field) throws BusinessServiceException {
 		if (fieldMap.containsKey(field) && !isRange(field)) {
@@ -101,5 +102,15 @@ public class BatchImportFormat {
 			}
 		}
 		return notes;
+	}
+
+	public static FORMAT determineFormat(CSVRecord header) throws BusinessServiceException {
+		//Is it SIRS?  Throw exception if not because it's the only format we support
+		for (int colIdx=0; colIdx<header.size();colIdx++) {
+			if (!header.get(colIdx).equals(SIRS_HEADERS[colIdx])) {
+				throw new BusinessServiceException("File is unrecognised format because header " + colIdx + ":" + header.get(colIdx) + " is not " + SIRS_HEADERS[colIdx] + " as expected." );
+			}
+		}
+		return FORMAT.SIRS;
 	}
 }
