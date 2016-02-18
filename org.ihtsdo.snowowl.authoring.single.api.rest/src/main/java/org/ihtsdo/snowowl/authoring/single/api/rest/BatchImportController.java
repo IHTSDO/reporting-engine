@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.wordnik.swagger.annotations.Api;
@@ -29,6 +30,7 @@ import org.ihtsdo.snowowl.api.rest.common.AbstractRestService;
 import org.ihtsdo.snowowl.api.rest.common.AbstractSnomedRestService;
 import org.ihtsdo.snowowl.api.rest.common.ControllerHelper;
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportRequest;
+import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportState;
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportStatus;
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.service.BatchImportFormat;
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.service.BatchImportService;
@@ -53,11 +55,12 @@ public class BatchImportController extends AbstractSnomedRestService {
 	})
 	@RequestMapping(value="/projects/{projectKey}/batchImport", method= RequestMethod.POST)
 	public void startBatchImport(@PathVariable final String projectKey,
-			final String createForAuthor,
-			final Integer conceptsPerTask,
+			@RequestParam("createForAuthor") final String createForAuthor,
+			@RequestParam("conceptsPerTask") final Integer conceptsPerTask,
 			@ApiParam(value="3rd Party import csv file")
 			@RequestPart("file") 
 			final MultipartFile file,
+			HttpServletRequest request,
 			HttpServletResponse response ) throws BusinessServiceException, JiraException, ServiceException {
 		
 		try {
@@ -81,8 +84,8 @@ public class BatchImportController extends AbstractSnomedRestService {
 			importRequest.setProjectKey(projectKey);
 			parser.close();
 			
-			batchImportService.startImport(importRequest, rows, ControllerHelper.getUsername());
-			response.setHeader("Location", "/" + batchImportId.toString());
+			batchImportService.startImport(batchImportId, importRequest, rows, ControllerHelper.getUsername());
+			response.setHeader("Location", request.getRequestURL() + "/" + batchImportId.toString());
 		} catch (IOException e) {
 			throw new BusinessServiceException ("Unable to import batch file",e);
 		}
@@ -129,13 +132,10 @@ public class BatchImportController extends AbstractSnomedRestService {
 		response.setHeader(headerKey, headerValue);
 		try {
 			Appendable writer = new OutputStreamWriter(response.getOutputStream(), StandardCharsets.UTF_8);
-			CSVPrinter csvPrinter = new CSVPrinter(writer,CSVFormat.DEFAULT);
-			List<CSVRecord> results =  batchImportService.getImportResults(batchImportId);
-			csvPrinter.printRecords(results);
-			csvPrinter.close();
+			writer.append(batchImportService.getImportResults(projectKey, batchImportId));
 		} catch (IOException e) {
 			throw new BusinessServiceException ("Unable to recover batch import results",e);
-		}
+		} 
 	}
 
 }

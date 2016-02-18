@@ -1,7 +1,7 @@
 package org.ihtsdo.snowowl.authoring.single.api.service;
 
 import com.b2international.snowowl.core.exceptions.NotFoundException;
-import org.ihtsdo.snowowl.authoring.single.api.service.dao.ArbitraryJsonService;
+import org.ihtsdo.snowowl.authoring.single.api.service.dao.ArbitraryFileService;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
@@ -10,7 +10,7 @@ import java.nio.file.NoSuchFileException;
 public class UiStateService {
 
 	@Autowired
-	private ArbitraryJsonService arbitraryJsonService;
+	private ArbitraryFileService arbitraryJsonService;
 
 	public void persistTaskPanelState(String projectKey, String taskKey, String username, String panelId, String jsonState) throws IOException {
 		arbitraryJsonService.write(getTaskUserPanelPath(projectKey, taskKey, username, panelId), jsonState);

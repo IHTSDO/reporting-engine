@@ -61,7 +61,7 @@
 
 	<bean class="org.ihtsdo.snowowl.authoring.single.api.validation.SnomedBrowserValidationService"/>
 
-	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.dao.ArbitraryJsonService"/>
+	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.dao.ArbitraryFileService"/>
 	
 	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.dao.CdoStore" init-method="init" />
 

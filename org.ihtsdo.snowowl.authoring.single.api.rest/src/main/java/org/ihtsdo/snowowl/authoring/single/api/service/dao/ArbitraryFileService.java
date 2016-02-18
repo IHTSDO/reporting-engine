@@ -8,19 +8,19 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-public class ArbitraryJsonService {
+public class ArbitraryFileService {
 
 	public static final String UTF_8 = "UTF-8";
 
-	private File baseDirectory;
-	private Logger logger = LoggerFactory.getLogger(ArbitraryJsonService.class);
+	protected File baseDirectory;
+	protected Logger logger = LoggerFactory.getLogger(ArbitraryFileService.class);
 
-	public ArbitraryJsonService() {
+	public ArbitraryFileService() {
 		this.baseDirectory = new File("resources/org.ihtsdo.snowowl.authoring.single.api");
 	}
 
-	public void write(String path, String json) throws IOException {
-		Files.write(getFile(path), json.getBytes(UTF_8));
+	public void write(String path, String data) throws IOException {
+		Files.write(getFile(path), data.getBytes(UTF_8));
 	}
 
 	public String read(String path) throws IOException {

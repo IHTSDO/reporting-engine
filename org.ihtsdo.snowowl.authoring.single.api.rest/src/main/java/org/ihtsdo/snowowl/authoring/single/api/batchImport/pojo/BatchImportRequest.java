@@ -1,5 +1,7 @@
 package org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo;
 
+import java.util.UUID;
+
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.service.BatchImportFormat;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -7,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class BatchImportRequest {
 
+	UUID id;
 	String createForAuthor;
 	int conceptsPerTask;
 	BatchImportFormat.FORMAT format;
@@ -49,5 +52,13 @@ public class BatchImportRequest {
 
 	public void setFile(MultipartFile file) {
 		this.file = file;
+	}
+
+	public UUID getId() {
+		return id;
+	}
+
+	public void setId(UUID id) {
+		this.id = id;
 	}
 }

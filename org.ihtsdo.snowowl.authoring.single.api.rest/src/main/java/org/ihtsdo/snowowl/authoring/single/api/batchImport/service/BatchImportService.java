@@ -1,5 +1,6 @@
 package org.ihtsdo.snowowl.authoring.single.api.batchImport.service;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
@@ -15,6 +16,7 @@ import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportConcept;
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportRequest;
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportRun;
+import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportState;
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportStatus;
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.service.BatchImportFormat.FIELD;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTask;
@@ -22,6 +24,7 @@ import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskCreateRequest;
 import org.ihtsdo.snowowl.authoring.single.api.service.ServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.service.TaskService;
 import org.ihtsdo.snowowl.authoring.single.api.service.UiStateService;
+import org.ihtsdo.snowowl.authoring.single.api.service.dao.ArbitraryTempFileService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,11 +36,14 @@ import com.b2international.commons.http.ExtendedLocale;
 import com.b2international.snowowl.core.exceptions.BadRequestException;
 import com.b2international.snowowl.snomed.api.domain.browser.ISnomedBrowserConcept;
 import com.b2international.snowowl.snomed.api.domain.browser.ISnomedBrowserDescription;
+import com.b2international.snowowl.snomed.api.domain.browser.ISnomedBrowserRelationship;
+import com.b2international.snowowl.snomed.api.domain.browser.ISnomedBrowserRelationshipTarget;
 import com.b2international.snowowl.snomed.api.domain.browser.SnomedBrowserDescriptionType;
 import com.b2international.snowowl.snomed.api.impl.SnomedBrowserService;
 import com.b2international.snowowl.snomed.api.impl.domain.browser.SnomedBrowserConcept;
 import com.b2international.snowowl.snomed.api.impl.domain.browser.SnomedBrowserDescription;
 import com.b2international.snowowl.snomed.api.impl.domain.browser.SnomedBrowserRelationship;
+import com.b2international.snowowl.snomed.api.impl.domain.browser.SnomedBrowserRelationshipTarget;
 import com.b2international.snowowl.snomed.api.impl.domain.browser.SnomedBrowserRelationshipType;
 import com.b2international.snowowl.snomed.core.domain.Acceptability;
 import com.b2international.snowowl.snomed.core.domain.CharacteristicType;
@@ -54,18 +60,24 @@ public class BatchImportService {
 	@Autowired
 	UiStateService uiStateService;
 	
+	ArbitraryTempFileService fileService = new ArbitraryTempFileService("batch_import");
+	
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 	
 	private static final int ROW_UNKNOWN = -1;
 	private static final String NEW_LINE = "\n";
-	private static final String BULLET = "  *";
-	private static final String SCTID_ISA = "1";
+	private static final String BULLET = "* ";
+	private static final String SCTID_ISA = "116680003";
 	
 	private static final String EDIT_PANEL = "edit-panel";
 	private static final String SAVE_LIST = "save-list";	
 	
 	private List<ExtendedLocale> defaultLocales;
 	private static final String defaultLocaleStr = "en-US;q=0.8,en-GB;q=0.6";
+	public static final Map<String, Acceptability> DEFAULT_ACCEPTABILIY = new HashMap<String, Acceptability>();
+	
+	Map<UUID, BatchImportStatus> currentImports = new HashMap<UUID, BatchImportStatus>();
+	
 	public BatchImportService () {
 		try {
 			defaultLocales = AcceptHeader.parseExtendedLocales(new StringReader(defaultLocaleStr));
@@ -76,24 +88,32 @@ public class BatchImportService {
 		}
 	}
 	
-	public static final Map<String, Acceptability> DEFAULT_ACCEPTABILIY = new HashMap<String, Acceptability>();
-	
-	Map<UUID, BatchImportStatus> currentImports = new HashMap<UUID, BatchImportStatus>();
-	
-	public void startImport(BatchImportRequest importRequest, List<CSVRecord> rows, String currentUser) throws BusinessServiceException, JiraException, ServiceException {
+	public void startImport(UUID batchImportId, BatchImportRequest importRequest, List<CSVRecord> rows, String currentUser) throws BusinessServiceException, JiraException, ServiceException {
 		
-		BatchImportRun run = BatchImportRun.createRun(importRequest);
-		
-		prepareConcepts(run, rows);
-		
-		if (validateLoadHierarchy(run)) {
-			loadConceptsOntoTasks(run);
-		} else {
-			run.abortLoad(rows);
+		BatchImportRun run = BatchImportRun.createRun(batchImportId, importRequest);
+		currentImports.put(batchImportId, new BatchImportStatus(BatchImportState.RUNNING));
+		boolean completed = false;
+		try { 
+			prepareConcepts(run, rows);
+			
+			logger.info("Batch Importing " + run.getRootConcept().childrenCount() + " concepts onto new tasks in project " + run.getImportRequest().getProjectKey());
+			
+			if (validateLoadHierarchy(run)) {
+				loadConceptsOntoTasks(run);
+				completed = true;
+			} else {
+				run.abortLoad(rows);
+			}
+		} finally {
+			BatchImportState finalState = completed ? BatchImportState.COMPLETED : BatchImportState.FAILED;
+			currentImports.put(batchImportId, new BatchImportStatus(finalState));
+			try {
+				fileService.write(getFilePath(run), run.resultsAsCSV());
+			} catch (Exception e) {
+				logger.error("Failed to save results of batch import",e);
+			}
 		}
 	}
-
-
 
 	private void prepareConcepts(BatchImportRun run, List<CSVRecord> rows) throws BusinessServiceException {
 		// Loop through concepts and form them into a hierarchy to be loaded, if valid
@@ -109,24 +129,26 @@ public class BatchImportService {
 		//Parents and children have to exist in the same task, so 
 		//check that we're not going to exceed "concepts per task"
 		//in doing so.
-		boolean failureDetected = false;
+		boolean valid = true;
 		for (BatchImportConcept thisConcept : run.getRootConcept().getChildren()) {
 			if (thisConcept.childrenCount() > run.getImportRequest().getConceptsPerTask()) {
-				run.fail(thisConcept.getRow(), "Concept has more children than specified for a single task");
-				failureDetected = true;
+				String failureMessage = "Concept " + thisConcept.getSctid() + " at row " + thisConcept.getRow().getRecordNumber() + " has more children than specified for a single task";
+				run.fail(thisConcept.getRow(), failureMessage);
+				logger.error(failureMessage + " Aborting batch import.");
+				valid = false;
 			}
 		}
-		return failureDetected;
+		return valid;
 	}
 
 	
 	private boolean validate (BatchImportRun run, BatchImportConcept concept) {
-		if (VerhoeffCheck.validateLastChecksumDigit(concept.getSctid())) {
-			run.fail(concept.getRow(), concept.getParent() + " is not a valid sctid.");
+		if (!validateSCTID(concept.getSctid())) {
+			run.fail(concept.getRow(), concept.getSctid() + " is not a valid sctid.");
 			return false;
 		}
 		
-		if (VerhoeffCheck.validateLastChecksumDigit(concept.getParent())) {
+		if (!validateSCTID(concept.getParent())) {
 			run.fail(concept.getRow(), concept.getParent() + " is not a valid parent identifier.");
 			return false;
 		}
@@ -134,11 +156,23 @@ public class BatchImportService {
 		return true;
 	}
 	
+	private boolean validateSCTID(String sctid) {
+		try{
+			return VerhoeffCheck.validateLastChecksumDigit(sctid);
+		} catch (Exception e) {
+			//It's wrong, that's all we need to know.
+		}
+		return false;
+	}
+
+
+
 	private void loadConceptsOntoTasks(BatchImportRun run) throws JiraException, ServiceException, BusinessServiceException {
 		List<List<BatchImportConcept>> batches = collectIntoBatches(run);
 		for (List<BatchImportConcept> thisBatch : batches) {
 			AuthoringTask task = createTask(run, thisBatch);
 			String conceptsLoaded = loadConcepts(run, task, thisBatch);
+			logger.info("Loaded concepts onto task " + task.getKey() + ": " + conceptsLoaded);
 			primeUserInterface(task, run, conceptsLoaded);
 		}
 	}
@@ -204,8 +238,6 @@ public class BatchImportService {
 		return str.toString();
 	}
 
-
-
 	private String getAllNotes(BatchImportRun run,
 			List<BatchImportConcept> thisBatch) throws BusinessServiceException {
 		StringBuilder str = new StringBuilder();
@@ -221,8 +253,6 @@ public class BatchImportService {
 		return str.toString();
 	}
 
-
-
 	private String loadConcepts(BatchImportRun run, AuthoringTask task,
 			List<BatchImportConcept> thisBatch) throws BusinessServiceException {
 		String branchPath = "MAIN/" + run.getImportRequest().getProjectKey() + "/" + task.getKey();
@@ -232,6 +262,7 @@ public class BatchImportService {
 			try{
 				ISnomedBrowserConcept newConcept = createBrowserConcept(thisConcept, run.getFormatter());
 				browserService.create(branchPath, newConcept, run.getImportRequest().getCreateForAuthor(), defaultLocales);
+				run.succeed(thisConcept.getRow(), "Loaded onto " + task.getKey());
 				if (isFirst){
 					isFirst = false;
 				} else {
@@ -256,6 +287,13 @@ public class BatchImportService {
 		isA.setCharacteristicType(CharacteristicType.STATED_RELATIONSHIP);
 		isA.setSourceId(thisConcept.getSctid());
 		isA.setType(new SnomedBrowserRelationshipType(SCTID_ISA));
+		SnomedBrowserRelationshipTarget destination = new SnomedBrowserRelationshipTarget();
+		destination.setConceptId(thisConcept.getParent());
+		isA.setTarget(destination);
+		isA.setActive(true);
+		List<ISnomedBrowserRelationship> relationships = new ArrayList<ISnomedBrowserRelationship>();
+		relationships.add(isA);
+		newConcept.setRelationships(relationships);
 		
 		//Add Descriptions FSN, then Preferred Term
 		List<ISnomedBrowserDescription> descriptions = new ArrayList<ISnomedBrowserDescription>();
@@ -263,12 +301,14 @@ public class BatchImportService {
 		String fsnTerm = prefTerm + " (" + thisConcept.get(formatter.getIndex(FIELD.SEMANTIC_TAG)) +")";
 		SnomedBrowserDescription fsn = new SnomedBrowserDescription();
 		fsn.setTerm(fsnTerm);
+		fsn.setActive(true);
 		fsn.setType(SnomedBrowserDescriptionType.FSN);
 		fsn.setAcceptabilityMap(DEFAULT_ACCEPTABILIY);
 		descriptions.add(fsn);
 		
 		SnomedBrowserDescription pref = new SnomedBrowserDescription();
 		pref.setTerm(prefTerm);
+		pref.setActive(true);
 		pref.setType(SnomedBrowserDescriptionType.SYNONYM);
 		pref.setAcceptabilityMap(DEFAULT_ACCEPTABILIY);
 		descriptions.add(pref);
@@ -277,15 +317,20 @@ public class BatchImportService {
 		return newConcept;
 	}
 
-
+	private String getFilePath(BatchImportRun run) {
+		return getFilePath(run.getImportRequest().getProjectKey(), run.getId().toString());
+	}
+	
+	private String getFilePath(String projectKey, String uuid) {
+		return projectKey + File.separator + uuid;
+	}
 
 	public BatchImportStatus getImportStatus(UUID batchImportId) {
 		return currentImports.get(batchImportId);
 	}
 
-	public List<CSVRecord> getImportResults(UUID batchImportId) {
-		// TODO Auto-generated method stub
-		return null;
+	public String getImportResults(String projectKey, UUID batchImportId) throws IOException {
+		return fileService.read(getFilePath(projectKey, batchImportId.toString()));
 	}
 
 }

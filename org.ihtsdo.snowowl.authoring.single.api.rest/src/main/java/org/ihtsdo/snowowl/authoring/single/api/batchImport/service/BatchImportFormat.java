@@ -8,7 +8,6 @@ import java.util.Map;
 import org.apache.commons.csv.CSVRecord;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportConcept;
-import org.ihtsdo.snowowl.authoring.single.api.batchImport.service.BatchImportFormat.FORMAT;
 
 public class BatchImportFormat {
 
@@ -19,31 +18,36 @@ public class BatchImportFormat {
 	public static int FIRST_NOTE = 0;
 	public static int LAST_NOTE = 1;
 	
-	//private FORMAT format;
+	private FORMAT format;
 	private Map<FIELD, String> fieldMap;
 	
 	public static String[] SIRS_HEADERS = {"Request Id","Topic","Local Code","Local Term","Fully Specified Name","Semantic Tag",
 			"Preferred Term","Terminology(1)","Parent Concept Id(1)","UMLS CUI","Definition","Proposed Use",
 			"Justification","Synonym","Synonym","Synonym","Synonym","Synonym","Note","Note","Note","Note","Note","Note","Note","Note","Note"};
 
+	public static String ADDITIONAL_RESULTS_HEADER = "Loaded,Import Result,";
+	
 	public static Map<FIELD, String>SIRS_MAP = new HashMap<FIELD, String>();
 	static {
-		SIRS_MAP.put(FIELD.SCTID, "3");
-		SIRS_MAP.put(FIELD.PARENT, "9");
-		SIRS_MAP.put(FIELD.FSN_ROOT, "5");
-		SIRS_MAP.put(FIELD.NOTES, "19-27");
+		//Note that these are 0-based indexes
+		SIRS_MAP.put(FIELD.SCTID, "2");
+		SIRS_MAP.put(FIELD.PARENT, "8");
+		SIRS_MAP.put(FIELD.FSN_ROOT, "4");
+		SIRS_MAP.put(FIELD.SEMANTIC_TAG, "5");
+		SIRS_MAP.put(FIELD.NOTES, "18-26");
 	}
 	
 	public static BatchImportFormat create(FORMAT format) throws BusinessServiceException {
 		
 		if (format == FORMAT.SIRS) {
-			return new BatchImportFormat(SIRS_MAP);
+			return new BatchImportFormat(FORMAT.SIRS, SIRS_MAP);
 		} else {
 			throw new BusinessServiceException("Unsupported format: " + format);
 		}
 	}
 	
-	private BatchImportFormat (Map<FIELD, String> fieldMap) {
+	private BatchImportFormat (FORMAT format, Map<FIELD, String> fieldMap) {
+		this.format = format;
 		this.fieldMap = fieldMap;
 	}
 	
@@ -112,5 +116,12 @@ public class BatchImportFormat {
 			}
 		}
 		return FORMAT.SIRS;
+	}
+
+	public String[] getHeaders() throws BusinessServiceException {
+		switch (format) {
+			case SIRS : return SIRS_HEADERS;
+		}
+		throw new BusinessServiceException("Unrecognised format: " + format);
 	}
 }
