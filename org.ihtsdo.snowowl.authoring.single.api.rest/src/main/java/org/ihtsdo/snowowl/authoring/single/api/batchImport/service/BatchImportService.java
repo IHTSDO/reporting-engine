@@ -30,14 +30,18 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+
 import com.b2international.commons.VerhoeffCheck;
 import com.b2international.commons.http.AcceptHeader;
 import com.b2international.commons.http.ExtendedLocale;
+import com.b2international.snowowl.core.exceptions.ApiError;
 import com.b2international.snowowl.core.exceptions.BadRequestException;
+import com.b2international.snowowl.core.exceptions.ValidationException;
+import com.b2international.snowowl.snomed.SnomedConstants;
+import com.b2international.snowowl.snomed.SnomedConstants.Concepts;
 import com.b2international.snowowl.snomed.api.domain.browser.ISnomedBrowserConcept;
 import com.b2international.snowowl.snomed.api.domain.browser.ISnomedBrowserDescription;
 import com.b2international.snowowl.snomed.api.domain.browser.ISnomedBrowserRelationship;
-import com.b2international.snowowl.snomed.api.domain.browser.ISnomedBrowserRelationshipTarget;
 import com.b2international.snowowl.snomed.api.domain.browser.SnomedBrowserDescriptionType;
 import com.b2international.snowowl.snomed.api.impl.SnomedBrowserService;
 import com.b2international.snowowl.snomed.api.impl.domain.browser.SnomedBrowserConcept;
@@ -45,8 +49,12 @@ import com.b2international.snowowl.snomed.api.impl.domain.browser.SnomedBrowserD
 import com.b2international.snowowl.snomed.api.impl.domain.browser.SnomedBrowserRelationship;
 import com.b2international.snowowl.snomed.api.impl.domain.browser.SnomedBrowserRelationshipTarget;
 import com.b2international.snowowl.snomed.api.impl.domain.browser.SnomedBrowserRelationshipType;
+import com.b2international.snowowl.snomed.api.validation.ISnomedBrowserValidationService;
+import com.b2international.snowowl.snomed.api.validation.ISnomedInvalidContent;
 import com.b2international.snowowl.snomed.core.domain.Acceptability;
+import com.b2international.snowowl.snomed.core.domain.CaseSignificance;
 import com.b2international.snowowl.snomed.core.domain.CharacteristicType;
+import com.b2international.snowowl.snomed.core.domain.DefinitionStatus;
 
 @Service
 public class BatchImportService {
@@ -60,6 +68,9 @@ public class BatchImportService {
 	@Autowired
 	UiStateService uiStateService;
 	
+	@Autowired
+	private ISnomedBrowserValidationService validationService;
+	
 	ArbitraryTempFileService fileService = new ArbitraryTempFileService("batch_import");
 	
 	private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -67,7 +78,11 @@ public class BatchImportService {
 	private static final int ROW_UNKNOWN = -1;
 	private static final String NEW_LINE = "\n";
 	private static final String BULLET = "* ";
-	private static final String SCTID_ISA = "116680003";
+	private static final String SCTID_ISA = Concepts.IS_A;
+	private static final String SCTID_EN_GB = Concepts.REFSET_LANGUAGE_TYPE_UK;
+	private static final String SCTID_EN_US = Concepts.REFSET_LANGUAGE_TYPE_US;
+	private static final String JIRA_HEADING5 = "h5. ";
+	private static final String VALIDATION_ERROR = "ERROR";
 	
 	private static final String EDIT_PANEL = "edit-panel";
 	private static final String SAVE_LIST = "save-list";	
@@ -75,6 +90,10 @@ public class BatchImportService {
 	private List<ExtendedLocale> defaultLocales;
 	private static final String defaultLocaleStr = "en-US;q=0.8,en-GB;q=0.6";
 	public static final Map<String, Acceptability> DEFAULT_ACCEPTABILIY = new HashMap<String, Acceptability>();
+	static {
+		DEFAULT_ACCEPTABILIY.put(SCTID_EN_GB, Acceptability.PREFERRED);
+		DEFAULT_ACCEPTABILIY.put(SCTID_EN_US, Acceptability.PREFERRED);
+	}
 	
 	Map<UUID, BatchImportStatus> currentImports = new HashMap<UUID, BatchImportStatus>();
 	
@@ -172,7 +191,7 @@ public class BatchImportService {
 		for (List<BatchImportConcept> thisBatch : batches) {
 			AuthoringTask task = createTask(run, thisBatch);
 			String conceptsLoaded = loadConcepts(run, task, thisBatch);
-			logger.info("Loaded concepts onto task " + task.getKey() + ": " + conceptsLoaded);
+			logger.info("Loaded concepts onto task {}: {}",task.getKey(),conceptsLoaded);
 			primeUserInterface(task, run, conceptsLoaded);
 		}
 	}
@@ -242,7 +261,10 @@ public class BatchImportService {
 			List<BatchImportConcept> thisBatch) throws BusinessServiceException {
 		StringBuilder str = new StringBuilder();
 		for (BatchImportConcept thisConcept : thisBatch) {
-			str.append(thisConcept.getSctid()).append(":").append(NEW_LINE);
+			str.append(JIRA_HEADING5)
+			.append(thisConcept.getSctid())
+			.append(":")
+			.append(NEW_LINE);
 			List<String> notes = run.getFormatter().getAllNotes(thisConcept);
 			for (String thisNote: notes) {
 				str.append(BULLET)
@@ -261,37 +283,78 @@ public class BatchImportService {
 		for (BatchImportConcept thisConcept : thisBatch) {
 			try{
 				ISnomedBrowserConcept newConcept = createBrowserConcept(thisConcept, run.getFormatter());
+				String warnings = validateConcept(task, newConcept);
 				browserService.create(branchPath, newConcept, run.getImportRequest().getCreateForAuthor(), defaultLocales);
-				run.succeed(thisConcept.getRow(), "Loaded onto " + task.getKey());
+				run.succeed(thisConcept.getRow(), "Loaded onto " + task.getKey() + " " + warnings);
 				if (isFirst){
 					isFirst = false;
 				} else {
 					conceptsLoaded.append(",");
 				}
 				conceptsLoaded.append("\"").append(thisConcept.getSctid()).append("\"");
+			} catch (ValidationException v) {
+				run.fail(thisConcept.getRow(), prettyPrint(v.toApiError()));
+			} catch (BusinessServiceException b) {
+				//Somewhat expected error, no need for full stack trace
+				run.fail(thisConcept.getRow(), b.getMessage());
 			} catch (Exception e) {
 				run.fail(thisConcept.getRow(), e.getMessage());
+				logger.error("Exception during Batch Import at line {}", thisConcept.getRow().getRecordNumber(), e);
 			}
 		}
 		return conceptsLoaded.toString();
 	}
 	
+	private String validateConcept(AuthoringTask task,
+			ISnomedBrowserConcept newConcept) throws BusinessServiceException {
+		StringBuilder warnings = new StringBuilder();
+		StringBuilder errors = new StringBuilder();
+		List<ISnomedInvalidContent> validationIssues = validationService.validateConcept(getBranchPath(task), newConcept, defaultLocales);
+		for (ISnomedInvalidContent thisIssue : validationIssues) {
+			if (thisIssue.getSeverity().equals(VALIDATION_ERROR)) {
+				errors.append(" ").append(thisIssue.getMessage());
+			} else {
+				warnings.append(" ").append(thisIssue.getMessage());
+			}
+		}
+		if (errors.length() > 0) {
+			throw new BusinessServiceException("Error for concept " + newConcept.getConceptId() + ": " + errors.toString());
+		}
+		return warnings.toString();
+	}
+
+	private String getBranchPath(AuthoringTask task) {
+		return "MAIN/" + task.getProjectKey() + "/" + task.getKey();
+	}
+
+	private String prettyPrint(ApiError v) {
+		StringBuilder buff = new StringBuilder (v.getMessage());
+		buff.append(" - ")
+			.append(v.getDeveloperMessage())
+			.append(": [ ");
+		boolean isFirst = true;
+		for (Map.Entry<String, Object> thisInfo : v.getAdditionalInfo().entrySet()) {
+			if (!isFirst) buff.append (", ");
+			else isFirst = false;
+			
+			buff.append(thisInfo.getKey())
+				.append(":")
+				.append(thisInfo.getValue());
+		}
+		buff.append(" ]");
+		return buff.toString();
+	}
+
 	private ISnomedBrowserConcept createBrowserConcept(
 			BatchImportConcept thisConcept, BatchImportFormat formatter) throws BusinessServiceException {
 		SnomedBrowserConcept newConcept = new SnomedBrowserConcept();
 		newConcept.setConceptId(thisConcept.getSctid());
 		newConcept.setActive(true);
+		newConcept.setDefinitionStatus(DefinitionStatus.PRIMITIVE);
 		
 		//Set the Parent
-		SnomedBrowserRelationship isA = new SnomedBrowserRelationship();
-		isA.setCharacteristicType(CharacteristicType.STATED_RELATIONSHIP);
-		isA.setSourceId(thisConcept.getSctid());
-		isA.setType(new SnomedBrowserRelationshipType(SCTID_ISA));
-		SnomedBrowserRelationshipTarget destination = new SnomedBrowserRelationshipTarget();
-		destination.setConceptId(thisConcept.getParent());
-		isA.setTarget(destination);
-		isA.setActive(true);
 		List<ISnomedBrowserRelationship> relationships = new ArrayList<ISnomedBrowserRelationship>();
+		ISnomedBrowserRelationship isA = createRelationship(thisConcept.getSctid(), SCTID_ISA, thisConcept.getParent(), CharacteristicType.STATED_RELATIONSHIP);
 		relationships.add(isA);
 		newConcept.setRelationships(relationships);
 		
@@ -299,22 +362,39 @@ public class BatchImportService {
 		List<ISnomedBrowserDescription> descriptions = new ArrayList<ISnomedBrowserDescription>();
 		String prefTerm = thisConcept.get(formatter.getIndex(FIELD.FSN_ROOT));
 		String fsnTerm = prefTerm + " (" + thisConcept.get(formatter.getIndex(FIELD.SEMANTIC_TAG)) +")";
-		SnomedBrowserDescription fsn = new SnomedBrowserDescription();
-		fsn.setTerm(fsnTerm);
-		fsn.setActive(true);
-		fsn.setType(SnomedBrowserDescriptionType.FSN);
-		fsn.setAcceptabilityMap(DEFAULT_ACCEPTABILIY);
+		
+		ISnomedBrowserDescription fsn = createDescription(fsnTerm, SnomedBrowserDescriptionType.FSN);
 		descriptions.add(fsn);
 		
-		SnomedBrowserDescription pref = new SnomedBrowserDescription();
-		pref.setTerm(prefTerm);
-		pref.setActive(true);
-		pref.setType(SnomedBrowserDescriptionType.SYNONYM);
-		pref.setAcceptabilityMap(DEFAULT_ACCEPTABILIY);
+		ISnomedBrowserDescription pref = createDescription(prefTerm, SnomedBrowserDescriptionType.SYNONYM);
 		descriptions.add(pref);
 		
 		newConcept.setDescriptions(descriptions);
 		return newConcept;
+	}
+	
+	ISnomedBrowserRelationship createRelationship(String sourceSCTID, String type, String destinationSCTID, CharacteristicType characteristic) {
+		SnomedBrowserRelationship rel = new SnomedBrowserRelationship();
+		rel.setCharacteristicType(CharacteristicType.STATED_RELATIONSHIP);
+		rel.setSourceId(sourceSCTID);
+		rel.setType(new SnomedBrowserRelationshipType(SCTID_ISA));
+		SnomedBrowserRelationshipTarget destination = new SnomedBrowserRelationshipTarget();
+		destination.setConceptId(destinationSCTID);
+		rel.setTarget(destination);
+		rel.setActive(true);
+
+		return rel;
+	}
+	
+	ISnomedBrowserDescription createDescription(String term, SnomedBrowserDescriptionType type) {
+		SnomedBrowserDescription desc = new SnomedBrowserDescription();
+		desc.setTerm(term);
+		desc.setActive(true);
+		desc.setType(type);
+		desc.setLang(SnomedConstants.LanguageCodeReferenceSetIdentifierMapping.EN_LANGUAGE_CODE);
+		desc.setAcceptabilityMap(DEFAULT_ACCEPTABILIY);
+		desc.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
+		return desc;
 	}
 
 	private String getFilePath(BatchImportRun run) {
