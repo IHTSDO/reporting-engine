@@ -79,7 +79,6 @@ public class BatchImportService {
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 	
 	private static final int ROW_UNKNOWN = -1;
-	private static final String NEW_LINE = "\n";
 	private static final String BULLET = "* ";
 	private static final String SCTID_ISA = Concepts.IS_A;
 	private static final String SCTID_EN_GB = Concepts.REFSET_LANGUAGE_TYPE_UK;
@@ -136,6 +135,7 @@ public class BatchImportService {
 			} catch (Exception e) {
 				logger.error("Failed to save results of batch import",e);
 			}
+			logger.info("Batch Importing completed in project {} - batch import id {} ",run.getImportRequest().getProjectKey(), run.getId().toString());
 		}
 	}
 
@@ -199,25 +199,59 @@ public class BatchImportService {
 		List<List<BatchImportConcept>> batches = collectIntoBatches(run);
 		for (List<BatchImportConcept> thisBatch : batches) {
 			AuthoringTask task = createTask(run, thisBatch);
-			String conceptsLoaded = loadConcepts(run, task, thisBatch);
+			List<ISnomedBrowserConcept> conceptsLoaded = loadConcepts(run, task, thisBatch);
 			logger.info("Loaded concepts onto task {}: {}",task.getKey(),conceptsLoaded);
-			primeUserInterface(task, run, conceptsLoaded);
+			primeEditPanel(task, run, conceptsLoaded);
+			primeSavedList(task, run, conceptsLoaded);
 		}
 	}
 	
 
-	private void primeUserInterface(AuthoringTask task, BatchImportRun run, String conceptsLoaded) {
+	private void primeEditPanel(AuthoringTask task, BatchImportRun run, List<ISnomedBrowserConcept> conceptsLoaded) {
 		try {
-			String json = new StringBuilder("[").append(conceptsLoaded).append("]").toString();
+			StringBuilder json = new StringBuilder("[");
+			boolean isFirst = true;
+			for (ISnomedBrowserConcept thisConcept : conceptsLoaded) {
+				json.append( isFirst? "" : ",");
+				json.append("\"").append(thisConcept.getConceptId()).append("\"");
+				isFirst = false;
+			}
+			json.append("]");
 			String user = run.getImportRequest().getCreateForAuthor();
-			uiStateService.persistTaskPanelState(task.getProjectKey(), task.getKey(), user, EDIT_PANEL, json);
-			uiStateService.persistTaskPanelState(task.getProjectKey(), task.getKey(), user, SAVE_LIST, json);
+			uiStateService.persistTaskPanelState(task.getProjectKey(), task.getKey(), user, EDIT_PANEL, json.toString());
 		} catch (IOException e) {
-			logger.warn("Failed to prime user Interface for task " + task.getKey(), e );
+			logger.warn("Failed to prime edit panel for task " + task.getKey(), e );
+		}
+	}
+	
+	private void primeSavedList(AuthoringTask task, BatchImportRun run, List<ISnomedBrowserConcept> conceptsLoaded) {
+		try {
+			String user = run.getImportRequest().getCreateForAuthor();
+			StringBuilder json = new StringBuilder("[\"items\":[");
+			boolean isFirst = true;
+			for (ISnomedBrowserConcept thisConcept : conceptsLoaded) {
+				json.append( isFirst? "" : ",");
+				json.append(toSavedListJson(thisConcept));
+				isFirst = false;
+			}
+			json.append("]]");
+			uiStateService.persistTaskPanelState(task.getProjectKey(), task.getKey(), user, SAVE_LIST, json.toString());
+		} catch (IOException e) {
+			logger.warn("Failed to prime saved list for task " + task.getKey(), e );
 		}
 	}
 
 
+
+	private StringBuilder toSavedListJson(ISnomedBrowserConcept thisConcept) {
+		StringBuilder buff = new StringBuilder("{\"concept\":");
+		buff.append("{\"conceptId\":\"")
+			.append(thisConcept.getConceptId())
+			.append("\",\"fsn\":\"")
+			.append(thisConcept.getFsn())
+			.append("\"}}");
+		return buff;
+	}
 
 	private List<List<BatchImportConcept>> collectIntoBatches(BatchImportRun run) {
 		List<List<BatchImportConcept>> batches = new ArrayList<List<BatchImportConcept>>();
@@ -262,7 +296,7 @@ public class BatchImportService {
 				maxRow = thisRowNum;
 			}
 		}
-		str.append(minRow).append(":").append(maxRow);
+		str.append(minRow).append(" - ").append(maxRow);
 		return str.toString();
 	}
 
@@ -304,11 +338,10 @@ public class BatchImportService {
 		return str.toString();
 	}
 
-	private String loadConcepts(BatchImportRun run, AuthoringTask task,
+	private List<ISnomedBrowserConcept> loadConcepts(BatchImportRun run, AuthoringTask task,
 			List<BatchImportConcept> thisBatch) throws BusinessServiceException {
 		String branchPath = "MAIN/" + run.getImportRequest().getProjectKey() + "/" + task.getKey();
-		StringBuilder conceptsLoaded = new StringBuilder();
-		boolean isFirst = true;
+		List<ISnomedBrowserConcept> conceptsLoaded = new ArrayList<ISnomedBrowserConcept>();
 		for (BatchImportConcept thisConcept : thisBatch) {
 			boolean loadedOK = false;
 			try{
@@ -317,13 +350,8 @@ public class BatchImportService {
 				removeTemporaryIds(newConcept);
 				browserService.create(branchPath, newConcept, run.getImportRequest().getCreateForAuthor(), defaultLocales);
 				run.succeed(thisConcept.getRow(), "Loaded onto " + task.getKey() + " " + warnings);
-				if (isFirst){
-					isFirst = false;
-				} else {
-					conceptsLoaded.append(",");
-				}
 				loadedOK = true;
-				conceptsLoaded.append("\"").append(thisConcept.getSctid()).append("\"");
+				conceptsLoaded.add(newConcept);
 			} catch (ValidationException v) {
 				run.fail(thisConcept.getRow(), prettyPrint(v.toApiError()));
 			} catch (BusinessServiceException b) {
@@ -335,7 +363,7 @@ public class BatchImportService {
 			}
 			incrementProgress(run.getId(), loadedOK);
 		}
-		return conceptsLoaded.toString();
+		return conceptsLoaded;
 	}
 	
 	/**
@@ -414,6 +442,7 @@ public class BatchImportService {
 		
 		ISnomedBrowserDescription fsn = createDescription(fsnTerm, SnomedBrowserDescriptionType.FSN);
 		descriptions.add(fsn);
+		newConcept.setFsn(fsnTerm);
 		
 		ISnomedBrowserDescription pref = createDescription(prefTerm, SnomedBrowserDescriptionType.SYNONYM);
 		descriptions.add(pref);
@@ -455,7 +484,7 @@ public class BatchImportService {
 	}
 	
 	private String getFilePath(String projectKey, String uuid) {
-		return projectKey + File.separator + uuid;
+		return projectKey + File.separator + uuid + ".csv";
 	}
 
 	public BatchImportStatus getImportStatus(UUID batchImportId) {
@@ -466,12 +495,12 @@ public class BatchImportService {
 		return fileService.read(getFilePath(projectKey, batchImportId.toString()));
 	}
 	
-	synchronized public void setTarget(UUID batchImportId, Integer rowsToProcess) {
+	synchronized private void setTarget(UUID batchImportId, Integer rowsToProcess) {
 		BatchImportStatus status = getBatchImportStatus(batchImportId);
 		status.setTarget(rowsToProcess);
 	}
 	
-	synchronized public void incrementProgress(UUID batchImportId, boolean loaded) {
+	synchronized private void incrementProgress(UUID batchImportId, boolean loaded) {
 		BatchImportStatus status = getBatchImportStatus(batchImportId);
 		status.setProcessed(status.getProcessed() == null? 1 : status.getProcessed().intValue() + 1);
 		if (loaded) {

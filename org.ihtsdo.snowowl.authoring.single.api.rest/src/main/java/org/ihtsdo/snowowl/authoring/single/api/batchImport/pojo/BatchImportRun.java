@@ -12,6 +12,7 @@ import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.service.BatchImportFormat;
+import org.ihtsdo.snowowl.authoring.single.api.batchImport.service.BatchImportService;
 
 public class BatchImportRun {
 	
@@ -104,14 +105,18 @@ public class BatchImportRun {
 			buff.append(",")
 				.append(thisHeaderItem);
 		}
+		buff.append(BatchImportFormat.NEW_LINE);
 		//Now loop through all records and output the status, followed by the original line
 		for (Map.Entry<CSVRecord, BatchImportDetail> entry : allRows.entrySet()) {
+			CSVRecord thisRow = entry.getKey();
 			BatchImportDetail detail = entry.getValue();
-			buff.append(detail.isLoaded())
+			buff.append(thisRow.getRecordNumber())
+				.append(",")
+				.append(detail.isLoaded())
 				.append(",\"")
 				.append(detail.getFailureReason())
 				.append("\",");
-			out.printRecord(entry.getKey());
+			out.printRecord(thisRow);
 		}
 		return buff.toString();
 	}

@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
+import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
@@ -92,7 +93,7 @@ public class BatchImportController extends AbstractSnomedRestService {
 	}
 	
 	@ApiOperation(
-			value="Retrieve import run details", 
+			value="Retrieve import run status", 
 			notes="Returns the specified batch import run's status.")
 	@ApiResponses({
 		@ApiResponse(code = 200, message = "OK"),
@@ -111,7 +112,7 @@ public class BatchImportController extends AbstractSnomedRestService {
 	
 	@ApiOperation(
 			value="Retrieve import run details", 
-			notes="Returns the specified import run's configuration and status.")
+			notes="Returns the specified import run's results on a per row basis as a CSV file.")
 	@ApiResponses({
 		@ApiResponse(code = 200, message = "OK"),
 		@ApiResponse(code = 404, message = "Batch import not found"),
@@ -131,8 +132,11 @@ public class BatchImportController extends AbstractSnomedRestService {
 		String headerValue = String.format("attachment; filename=\"%s\"", csvFileName);
 		response.setHeader(headerKey, headerValue);
 		try {
-			Appendable writer = new OutputStreamWriter(response.getOutputStream(), StandardCharsets.UTF_8);
-			writer.append(batchImportService.getImportResults(projectKey, batchImportId));
+			Writer writer = new OutputStreamWriter(response.getOutputStream(), StandardCharsets.UTF_8);
+			String fileContent = batchImportService.getImportResults(projectKey, batchImportId);
+			writer.append(fileContent);
+			writer.flush();
+			writer.close();
 		} catch (IOException e) {
 			throw new BusinessServiceException ("Unable to recover batch import results",e);
 		} 
