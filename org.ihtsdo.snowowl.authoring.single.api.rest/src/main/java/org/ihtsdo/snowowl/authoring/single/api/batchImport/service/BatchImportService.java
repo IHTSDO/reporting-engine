@@ -118,8 +118,9 @@ public class BatchImportService {
 		boolean completed = false;
 		try { 
 			prepareConcepts(run, rows);
-			
-			logger.info("Batch Importing {} concepts onto new tasks in project {} - batch import id {} ",run.getRootConcept().childrenCount(), run.getImportRequest().getProjectKey(), run.getId().toString());
+			int rowsToProcess = run.getRootConcept().childrenCount();
+			setTarget(run.getId(), rowsToProcess);
+			logger.info("Batch Importing {} concepts onto new tasks in project {} - batch import id {} ",rowsToProcess, run.getImportRequest().getProjectKey(), run.getId().toString());
 			
 			if (validateLoadHierarchy(run)) {
 				loadConceptsOntoTasks(run);
@@ -129,7 +130,7 @@ public class BatchImportService {
 			}
 		} finally {
 			BatchImportState finalState = completed ? BatchImportState.COMPLETED : BatchImportState.FAILED;
-			currentImports.put(batchImportId, new BatchImportStatus(finalState));
+			getBatchImportStatus(run.getId()).setState(finalState);
 			try {
 				fileService.write(getFilePath(run), run.resultsAsCSV());
 			} catch (Exception e) {
