@@ -89,7 +89,7 @@ public class BatchImportService {
 	private static final int MIN_VIABLE_COLUMNS = 9;
 	
 	private static final String EDIT_PANEL = "edit-panel";
-	private static final String SAVE_LIST = "save-list";	
+	private static final String SAVE_LIST = "saved-list";	
 	
 	private List<ExtendedLocale> defaultLocales;
 	private static final String defaultLocaleStr = "en-US;q=0.8,en-GB;q=0.6";
@@ -119,7 +119,7 @@ public class BatchImportService {
 		try { 
 			prepareConcepts(run, rows);
 			
-			logger.info("Batch Importing " + run.getRootConcept().childrenCount() + " concepts onto new tasks in project " + run.getImportRequest().getProjectKey());
+			logger.info("Batch Importing {} concepts onto new tasks in project {} - batch import id {} ",run.getRootConcept().childrenCount(), run.getImportRequest().getProjectKey(), run.getId().toString());
 			
 			if (validateLoadHierarchy(run)) {
 				loadConceptsOntoTasks(run);
@@ -209,8 +209,8 @@ public class BatchImportService {
 		try {
 			String json = new StringBuilder("[").append(conceptsLoaded).append("]").toString();
 			String user = run.getImportRequest().getCreateForAuthor();
-			uiStateService.persistPanelState(user, EDIT_PANEL, json);
-			uiStateService.persistPanelState(user, SAVE_LIST, json);
+			uiStateService.persistTaskPanelState(task.getProjectKey(), task.getKey(), user, EDIT_PANEL, json);
+			uiStateService.persistTaskPanelState(task.getProjectKey(), task.getKey(), user, SAVE_LIST, json);
 		} catch (IOException e) {
 			logger.warn("Failed to prime user Interface for task " + task.getKey(), e );
 		}
@@ -265,7 +265,7 @@ public class BatchImportService {
 		return str.toString();
 	}
 
-	private String getAllNotes(BatchImportRun run,
+	/*private String getAllNotes(BatchImportRun run,
 			List<BatchImportConcept> thisBatch) throws BusinessServiceException {
 		StringBuilder str = new StringBuilder();
 		for (BatchImportConcept thisConcept : thisBatch) {
@@ -279,6 +279,26 @@ public class BatchImportService {
 					.append(thisNote)
 					.append(NEW_LINE);
 			}
+			str.append(NEW_LINE);
+		}
+		return str.toString();
+	}*/
+	// Temporary version using html formatting until WRP-2372 gets done
+	private String getAllNotes(BatchImportRun run,
+			List<BatchImportConcept> thisBatch) throws BusinessServiceException {
+		StringBuilder str = new StringBuilder();
+		for (BatchImportConcept thisConcept : thisBatch) {
+			str.append("<h5>")
+			.append(thisConcept.getSctid())
+			.append(":</h5>")
+			.append("<ul>");
+			List<String> notes = run.getFormatter().getAllNotes(thisConcept);
+			for (String thisNote: notes) {
+				str.append("<li>")
+					.append(thisNote)
+					.append("</li>");
+			}
+			str.append("</ul>");
 		}
 		return str.toString();
 	}
@@ -292,9 +312,10 @@ public class BatchImportService {
 			boolean loadedOK = false;
 			try{
 				ISnomedBrowserConcept newConcept = createBrowserConcept(thisConcept, run.getFormatter());
-				//String warnings = validateConcept(task, newConcept);
+				String warnings = ""; // validateConcept(task, newConcept);
+				removeTemporaryIds(newConcept);
 				browserService.create(branchPath, newConcept, run.getImportRequest().getCreateForAuthor(), defaultLocales);
-				run.succeed(thisConcept.getRow(), "Loaded onto " + task.getKey() + " " /*+ warnings*/);
+				run.succeed(thisConcept.getRow(), "Loaded onto " + task.getKey() + " " + warnings);
 				if (isFirst){
 					isFirst = false;
 				} else {
@@ -316,6 +337,22 @@ public class BatchImportService {
 		return conceptsLoaded.toString();
 	}
 	
+	/**
+	 * We assigned temporary text ids so that we could tell the user which components failed validation
+	 * but we don't want to save those, so remove.
+	 * @param newConcept
+	 */
+	private void removeTemporaryIds(ISnomedBrowserConcept newConcept) {
+		//Casting is quicker than recreating the lists and replacing
+		for (ISnomedBrowserDescription thisDesc : newConcept.getDescriptions()) {
+			((SnomedBrowserDescription)thisDesc).setDescriptionId(null);
+		}
+		
+		for (ISnomedBrowserRelationship thisRel : newConcept.getRelationships()) {
+			((SnomedBrowserRelationship)thisRel).setRelationshipId(null);
+		}
+	}
+
 	private String validateConcept(AuthoringTask task,
 			ISnomedBrowserConcept newConcept) throws BusinessServiceException {
 		StringBuilder warnings = new StringBuilder();
@@ -389,6 +426,8 @@ public class BatchImportService {
 		rel.setCharacteristicType(CharacteristicType.STATED_RELATIONSHIP);
 		rel.setSourceId(sourceSCTID);
 		rel.setType(new SnomedBrowserRelationshipType(SCTID_ISA));
+		//Set a temporary id so the user can tell which item failed validation
+		rel.setRelationshipId("rel_isa");
 		SnomedBrowserRelationshipTarget destination = new SnomedBrowserRelationshipTarget();
 		destination.setConceptId(destinationSCTID);
 		rel.setTarget(destination);
@@ -399,6 +438,8 @@ public class BatchImportService {
 	
 	ISnomedBrowserDescription createDescription(String term, SnomedBrowserDescriptionType type) {
 		SnomedBrowserDescription desc = new SnomedBrowserDescription();
+		//Set a temporary id so the user can tell which item failed validation
+		desc.setDescriptionId("desc_" + type.toString());
 		desc.setTerm(term);
 		desc.setActive(true);
 		desc.setType(type);
