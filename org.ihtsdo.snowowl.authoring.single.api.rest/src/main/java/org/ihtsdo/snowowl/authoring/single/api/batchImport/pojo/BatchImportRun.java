@@ -111,7 +111,7 @@ public class BatchImportRun {
 				.append(",\"")
 				.append(detail.getFailureReason())
 				.append("\",");
-			out.print(entry.getKey());
+			out.printRecord(entry.getKey());
 		}
 		return buff.toString();
 	}

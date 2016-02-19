@@ -120,7 +120,7 @@ public class BatchImportController extends AbstractSnomedRestService {
 	public void getBatchImportResults(
 			@PathVariable final String projectKey,
 			@ApiParam(value="The import identifier")
-			@PathVariable(value="importId") 
+			@PathVariable(value="batchImportId") 
 			final UUID batchImportId,
 			HttpServletResponse response) throws BusinessServiceException {
 

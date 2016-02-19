@@ -2,7 +2,9 @@ package org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo;
 
 public class BatchImportStatus {
 	BatchImportState state;
-	String progress;
+	Integer target;
+	Integer loaded;
+	Integer processed;
 	
 	public BatchImportStatus(BatchImportState state) {
 		this.state = state;
@@ -13,10 +15,23 @@ public class BatchImportStatus {
 	public void setState(BatchImportState state) {
 		this.state = state;
 	}
-	public String getProgress() {
-		return progress;
+	public Integer getTarget() {
+		return target;
 	}
-	public void setProgress(String progress) {
-		this.progress = progress;
+	public void setTarget(Integer target) {
+		this.target = target;
 	}
+	public Integer getLoaded() {
+		return loaded;
+	}
+	public void setLoaded(Integer loaded) {
+		this.loaded = loaded;
+	}
+	public Integer getProcessed() {
+		return processed;
+	}
+	public void setProcessed(Integer processed) {
+		this.processed = processed;
+	}
+
 }

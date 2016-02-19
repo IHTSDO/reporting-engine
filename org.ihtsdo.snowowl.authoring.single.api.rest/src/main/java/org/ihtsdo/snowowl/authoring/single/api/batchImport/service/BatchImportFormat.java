@@ -99,7 +99,8 @@ public class BatchImportFormat {
 	public List<String> getAllNotes(BatchImportConcept thisConcept) throws BusinessServiceException {
 		List<String> notes = new ArrayList<String>();
 		int[] noteIdexes = getRange(FIELD.NOTES);
-		for (int i=noteIdexes[FIRST_NOTE] ; i <= noteIdexes[LAST_NOTE]; i++ ) {
+		int maxNotes = thisConcept.getRow().size();
+		for (int i=noteIdexes[FIRST_NOTE] ; i <= noteIdexes[LAST_NOTE] && i < maxNotes; i++ ) {
 			String thisNote = thisConcept.getRow().get(i);
 			if (thisNote != null && thisNote.trim().length() > 0) {
 				notes.add(thisNote);

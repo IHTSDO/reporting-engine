@@ -86,6 +86,7 @@ public class BatchImportService {
 	private static final String SCTID_EN_US = Concepts.REFSET_LANGUAGE_TYPE_US;
 	private static final String JIRA_HEADING5 = "h5. ";
 	private static final String VALIDATION_ERROR = "ERROR";
+	private static final int MIN_VIABLE_COLUMNS = 9;
 	
 	private static final String EDIT_PANEL = "edit-panel";
 	private static final String SAVE_LIST = "save-list";	
@@ -140,9 +141,13 @@ public class BatchImportService {
 	private void prepareConcepts(BatchImportRun run, List<CSVRecord> rows) throws BusinessServiceException {
 		// Loop through concepts and form them into a hierarchy to be loaded, if valid
 		for (CSVRecord thisRow : rows) {
-			BatchImportConcept thisConcept = run.getFormatter().createConcept(thisRow);
-			if (validate(run, thisConcept)) {
-				run.insertIntoLoadHierarchy(thisConcept);
+			if (thisRow.size() > MIN_VIABLE_COLUMNS) {
+				BatchImportConcept thisConcept = run.getFormatter().createConcept(thisRow);
+				if (validate(run, thisConcept)) {
+					run.insertIntoLoadHierarchy(thisConcept);
+				}
+			} else {
+				run.fail(thisRow, "Blank row detected");
 			}
 		}
 	}
@@ -284,6 +289,7 @@ public class BatchImportService {
 		StringBuilder conceptsLoaded = new StringBuilder();
 		boolean isFirst = true;
 		for (BatchImportConcept thisConcept : thisBatch) {
+			boolean loadedOK = false;
 			try{
 				ISnomedBrowserConcept newConcept = createBrowserConcept(thisConcept, run.getFormatter());
 				//String warnings = validateConcept(task, newConcept);
@@ -294,6 +300,7 @@ public class BatchImportService {
 				} else {
 					conceptsLoaded.append(",");
 				}
+				loadedOK = true;
 				conceptsLoaded.append("\"").append(thisConcept.getSctid()).append("\"");
 			} catch (ValidationException v) {
 				run.fail(thisConcept.getRow(), prettyPrint(v.toApiError()));
@@ -304,6 +311,7 @@ public class BatchImportService {
 				run.fail(thisConcept.getRow(), e.getMessage());
 				logger.error("Exception during Batch Import at line {}", thisConcept.getRow().getRecordNumber(), e);
 			}
+			incrementProgress(run.getId(), loadedOK);
 		}
 		return conceptsLoaded.toString();
 	}
@@ -414,6 +422,28 @@ public class BatchImportService {
 
 	public String getImportResults(String projectKey, UUID batchImportId) throws IOException {
 		return fileService.read(getFilePath(projectKey, batchImportId.toString()));
+	}
+	
+	synchronized public void setTarget(UUID batchImportId, Integer rowsToProcess) {
+		BatchImportStatus status = getBatchImportStatus(batchImportId);
+		status.setTarget(rowsToProcess);
+	}
+	
+	synchronized public void incrementProgress(UUID batchImportId, boolean loaded) {
+		BatchImportStatus status = getBatchImportStatus(batchImportId);
+		status.setProcessed(status.getProcessed() == null? 1 : status.getProcessed().intValue() + 1);
+		if (loaded) {
+			status.setLoaded(status.getLoaded() == null? 1 : status.getLoaded().intValue() + 1);
+		}
+	}
+	
+	synchronized private BatchImportStatus getBatchImportStatus(UUID batchImportId) {
+		BatchImportStatus status = currentImports.get(batchImportId);
+		if (status == null) {
+			status = new BatchImportStatus (BatchImportState.RUNNING);
+			currentImports.put(batchImportId, status);
+		}
+		return status;
 	}
 
 }
