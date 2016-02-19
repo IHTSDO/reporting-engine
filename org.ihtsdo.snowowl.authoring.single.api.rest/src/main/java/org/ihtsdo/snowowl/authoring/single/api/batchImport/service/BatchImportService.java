@@ -227,14 +227,14 @@ public class BatchImportService {
 	private void primeSavedList(AuthoringTask task, BatchImportRun run, List<ISnomedBrowserConcept> conceptsLoaded) {
 		try {
 			String user = run.getImportRequest().getCreateForAuthor();
-			StringBuilder json = new StringBuilder("[\"items\":[");
+			StringBuilder json = new StringBuilder("{\"items\":[");
 			boolean isFirst = true;
 			for (ISnomedBrowserConcept thisConcept : conceptsLoaded) {
 				json.append( isFirst? "" : ",");
 				json.append(toSavedListJson(thisConcept));
 				isFirst = false;
 			}
-			json.append("]]");
+			json.append("]}");
 			uiStateService.persistTaskPanelState(task.getProjectKey(), task.getKey(), user, SAVE_LIST, json.toString());
 		} catch (IOException e) {
 			logger.warn("Failed to prime saved list for task " + task.getKey(), e );
