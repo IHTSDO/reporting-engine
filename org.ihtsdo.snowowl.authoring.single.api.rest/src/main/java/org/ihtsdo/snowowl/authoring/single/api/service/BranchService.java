@@ -114,7 +114,7 @@ public class BranchService {
 				.executeSync(eventBus);
 	}
 
-	private void createProjectBranchIfNeeded(String projectKey) throws ServiceException {
+	public void createProjectBranchIfNeeded(String projectKey) throws ServiceException {
 		try {
 			SnomedRequests
 					.branching()

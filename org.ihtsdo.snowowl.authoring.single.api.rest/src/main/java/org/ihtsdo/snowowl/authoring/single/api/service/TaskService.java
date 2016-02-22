@@ -213,7 +213,8 @@ public class TaskService {
 				.execute();
 
 		AuthoringTask authoringTask = new AuthoringTask(jiraIssue);
-		branchService.createTaskBranchAndProjectBranchIfNeeded(authoringTask.getProjectKey(), authoringTask.getKey());
+		branchService.createProjectBranchIfNeeded(authoringTask.getProjectKey());
+		// Task branch creation is delayed until the user starts work to prevent having to rebase straight away.
 		return authoringTask;
 	}
 
