@@ -83,6 +83,7 @@ public class BatchImportController extends AbstractSnomedRestService {
 			importRequest.setConceptsPerTask(conceptsPerTask == null? 1 : conceptsPerTask.intValue());
 			importRequest.setFormat(format);
 			importRequest.setProjectKey(projectKey);
+			importRequest.setOriginalFilename(file.getOriginalFilename());
 			parser.close();
 			
 			batchImportService.startImport(batchImportId, importRequest, rows, ControllerHelper.getUsername());

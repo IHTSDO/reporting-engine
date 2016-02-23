@@ -14,7 +14,7 @@ public class BatchImportRequest {
 	int conceptsPerTask;
 	BatchImportFormat.FORMAT format;
 	String projectKey;
-	
+	String originalFilename;
 	MultipartFile file;
 	
 	public BatchImportRequest(){}
@@ -60,5 +60,13 @@ public class BatchImportRequest {
 
 	public void setId(UUID id) {
 		this.id = id;
+	}
+
+	public void setOriginalFilename(String originalFilename) {
+		this.originalFilename = originalFilename;	
+	}
+	
+	public String getOriginalFilename() {
+		return this.originalFilename;
 	}
 }

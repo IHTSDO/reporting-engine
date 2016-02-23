@@ -275,7 +275,8 @@ public class BatchImportService {
 		AuthoringTaskCreateRequest taskCreateRequest = new AuthoringTask();
 		String allNotes = getAllNotes(run, thisBatch);
 		taskCreateRequest.setDescription(allNotes);
-		taskCreateRequest.setSummary(getRowRange(thisBatch));
+		String taskSummary = run.getImportRequest().getOriginalFilename() + ": " + getRowRange(thisBatch);
+		taskCreateRequest.setSummary(taskSummary);
 		return taskService.createTask(run.getImportRequest().getProjectKey(), 
 				run.getImportRequest().getCreateForAuthor(),
 				taskCreateRequest);
