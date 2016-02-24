@@ -160,8 +160,8 @@ public class BatchImportService {
 		//in doing so.
 		boolean valid = true;
 		for (BatchImportConcept thisConcept : run.getRootConcept().getChildren()) {
-			if (thisConcept.childrenCount() > run.getImportRequest().getConceptsPerTask()) {
-				String failureMessage = "Concept " + thisConcept.getSctid() + " at row " + thisConcept.getRow().getRecordNumber() + " has more children than specified for a single task";
+			if (thisConcept.childrenCount() >= run.getImportRequest().getConceptsPerTask()) {
+				String failureMessage = "Concept " + thisConcept.getSctid() + " at row " + thisConcept.getRow().getRecordNumber() + " has more children than allowed for a single task";
 				run.fail(thisConcept.getRow(), failureMessage);
 				logger.error(failureMessage + " Aborting batch import.");
 				valid = false;
@@ -260,7 +260,7 @@ public class BatchImportService {
 		//Loop through all the children of root, starting a new batch every "concepts per task"
 		List<BatchImportConcept> thisBatch = null;
 		for (BatchImportConcept thisChild : run.getRootConcept().getChildren()) {
-			if (thisBatch == null || thisBatch.size() > run.getImportRequest().getConceptsPerTask() + 1) {
+			if (thisBatch == null || thisBatch.size() >= run.getImportRequest().getConceptsPerTask()) {
 				thisBatch = new ArrayList<BatchImportConcept>();
 				batches.add(thisBatch);
 			}
