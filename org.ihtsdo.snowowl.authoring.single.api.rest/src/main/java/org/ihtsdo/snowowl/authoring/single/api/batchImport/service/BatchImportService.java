@@ -53,7 +53,6 @@ import com.b2international.snowowl.snomed.api.impl.domain.browser.SnomedBrowserR
 import com.b2international.snowowl.snomed.api.impl.domain.browser.SnomedBrowserRelationshipTarget;
 import com.b2international.snowowl.snomed.api.impl.domain.browser.SnomedBrowserRelationshipType;
 import com.b2international.snowowl.snomed.api.validation.ISnomedBrowserValidationService;
-import com.b2international.snowowl.snomed.api.validation.ISnomedInvalidContent;
 import com.b2international.snowowl.snomed.core.domain.Acceptability;
 import com.b2international.snowowl.snomed.core.domain.CaseSignificance;
 import com.b2international.snowowl.snomed.core.domain.CharacteristicType;
@@ -99,6 +98,7 @@ public class BatchImportService {
 	
 	private static final String EDIT_PANEL = "edit-panel";
 	private static final String SAVE_LIST = "saved-list";	
+	private static final String NO_NOTES = "All concepts failed to load via Batch Import";
 	
 	private List<ExtendedLocale> defaultLocales;
 	private static final String defaultLocaleStr = "en-US;q=0.8,en-GB;q=0.6";
@@ -201,9 +201,22 @@ public class BatchImportService {
 			List<ISnomedBrowserConcept> conceptsLoaded = loadConcepts(run, task, thisBatch);
 			String conceptsLoadedJson = conceptList(conceptsLoaded);
 			logger.info("Loaded concepts onto task {}: {}",task.getKey(),conceptsLoaded);
+			updateTaskDescription(task, run, conceptsLoaded);
 			primeEditPanel(task, run, conceptsLoadedJson);
 			primeSavedList(task, run, conceptsLoaded);
 		}
+	}
+
+	private void updateTaskDescription(AuthoringTask task, BatchImportRun run,
+			List<ISnomedBrowserConcept> conceptsLoaded) {
+		try {
+			String allNotes = getAllNotes(task, run, conceptsLoaded);
+			task.setDescription(allNotes);
+			taskService.updateTask(task.getProjectKey(), task.getKey(), task);
+		} catch (Exception e) {
+			logger.error("Failed to update description on task {}",task.getKey(),e);
+		}
+		
 	}
 
 	private void primeEditPanel(AuthoringTask task, BatchImportRun run, String conceptsJson) {
@@ -274,8 +287,8 @@ public class BatchImportService {
 	private AuthoringTask createTask(BatchImportRun run,
 			List<BatchImportConcept> thisBatch) throws JiraException, ServiceException, BusinessServiceException {
 		AuthoringTaskCreateRequest taskCreateRequest = new AuthoringTask();
-		String allNotes = getAllNotes(run, thisBatch);
-		taskCreateRequest.setDescription(allNotes);
+		//We'll re-do the description once we know which concepts actually loaded
+		taskCreateRequest.setDescription(NO_NOTES);
 		String taskSummary = run.getImportRequest().getOriginalFilename() + ": " + getRowRange(thisBatch);
 		taskCreateRequest.setSummary(taskSummary);
 		AuthoringTask task = taskService.createTask(run.getImportRequest().getProjectKey(), 
@@ -324,15 +337,16 @@ public class BatchImportService {
 		return str.toString();
 	}*/
 	// Temporary version using html formatting until WRP-2372 gets done
-	private String getAllNotes(BatchImportRun run,
-			List<BatchImportConcept> thisBatch) throws BusinessServiceException {
+	private String getAllNotes(AuthoringTask task, BatchImportRun run,
+			List<ISnomedBrowserConcept> conceptsLoaded) throws BusinessServiceException {
 		StringBuilder str = new StringBuilder();
-		for (BatchImportConcept thisConcept : thisBatch) {
+		for (ISnomedBrowserConcept thisConcept : conceptsLoaded) {
 			str.append("<h5>")
-			.append(thisConcept.getSctid())
+			.append(thisConcept.getId())
 			.append(":</h5>")
 			.append("<ul>");
-			List<String> notes = run.getFormatter().getAllNotes(thisConcept);
+			BatchImportConcept biConcept = run.getConcept(thisConcept.getConceptId());
+			List<String> notes = run.getFormatter().getAllNotes(biConcept);
 			for (String thisNote: notes) {
 				str.append("<li>")
 					.append(thisNote)

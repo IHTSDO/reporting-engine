@@ -12,7 +12,6 @@ import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.service.BatchImportFormat;
-import org.ihtsdo.snowowl.authoring.single.api.batchImport.service.BatchImportService;
 
 public class BatchImportRun {
 	
@@ -73,6 +72,10 @@ public class BatchImportRun {
 
 	public BatchImportConcept getRootConcept() {
 		return rootConcept;
+	}
+	
+	public BatchImportConcept getConcept (String sctId) {
+		return allValidConcepts.get(sctId);
 	}
 
 	public BatchImportRequest getImportRequest() {
