@@ -194,35 +194,37 @@ public class BatchImportService {
 		return false;
 	}
 
-
-
 	void loadConceptsOntoTasks(BatchImportRun run) throws JiraException, ServiceException, BusinessServiceException {
 		List<List<BatchImportConcept>> batches = collectIntoBatches(run);
 		for (List<BatchImportConcept> thisBatch : batches) {
 			AuthoringTask task = createTask(run, thisBatch);
 			List<ISnomedBrowserConcept> conceptsLoaded = loadConcepts(run, task, thisBatch);
+			String conceptsLoadedJson = conceptList(conceptsLoaded);
 			logger.info("Loaded concepts onto task {}: {}",task.getKey(),conceptsLoaded);
-			primeEditPanel(task, run, conceptsLoaded);
+			primeEditPanel(task, run, conceptsLoadedJson);
 			primeSavedList(task, run, conceptsLoaded);
 		}
 	}
-	
 
-	private void primeEditPanel(AuthoringTask task, BatchImportRun run, List<ISnomedBrowserConcept> conceptsLoaded) {
+	private void primeEditPanel(AuthoringTask task, BatchImportRun run, String conceptsJson) {
 		try {
-			StringBuilder json = new StringBuilder("[");
-			boolean isFirst = true;
-			for (ISnomedBrowserConcept thisConcept : conceptsLoaded) {
-				json.append( isFirst? "" : ",");
-				json.append("\"").append(thisConcept.getConceptId()).append("\"");
-				isFirst = false;
-			}
-			json.append("]");
 			String user = run.getImportRequest().getCreateForAuthor();
-			uiStateService.persistTaskPanelState(task.getProjectKey(), task.getKey(), user, EDIT_PANEL, json.toString());
+			uiStateService.persistTaskPanelState(task.getProjectKey(), task.getKey(), user, EDIT_PANEL, conceptsJson);
 		} catch (IOException e) {
 			logger.warn("Failed to prime edit panel for task " + task.getKey(), e );
 		}
+	}
+	
+	private String conceptList(List<ISnomedBrowserConcept> concepts) {
+		StringBuilder json = new StringBuilder("[");
+		boolean isFirst = true;
+		for (ISnomedBrowserConcept thisConcept : concepts) {
+			json.append( isFirst? "" : ",");
+			json.append("\"").append(thisConcept.getConceptId()).append("\"");
+			isFirst = false;
+		}
+		json.append("]");
+		return json.toString();
 	}
 	
 	private void primeSavedList(AuthoringTask task, BatchImportRun run, List<ISnomedBrowserConcept> conceptsLoaded) {
@@ -241,8 +243,6 @@ public class BatchImportService {
 			logger.warn("Failed to prime saved list for task " + task.getKey(), e );
 		}
 	}
-
-
 
 	private StringBuilder toSavedListJson(ISnomedBrowserConcept thisConcept) {
 		StringBuilder buff = new StringBuilder("{\"concept\":");
