@@ -8,6 +8,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import net.rcarz.jiraclient.JiraException;
 
@@ -78,13 +80,17 @@ public class BatchImportService {
 	
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 	
+	private ExecutorService executor = null;
+	
+	private static final String[] LATERALITY = new String[] { "left", "right"};
+	
 	private static final int ROW_UNKNOWN = -1;
-	private static final String BULLET = "* ";
+	//private static final String BULLET = "* ";
 	private static final String SCTID_ISA = Concepts.IS_A;
 	private static final String SCTID_EN_GB = Concepts.REFSET_LANGUAGE_TYPE_UK;
 	private static final String SCTID_EN_US = Concepts.REFSET_LANGUAGE_TYPE_US;
-	private static final String JIRA_HEADING5 = "h5. ";
-	private static final String VALIDATION_ERROR = "ERROR";
+	//private static final String JIRA_HEADING5 = "h5. ";
+	//private static final String VALIDATION_ERROR = "ERROR";
 	private static final int MIN_VIABLE_COLUMNS = 9;
 	
 	private static final String EDIT_PANEL = "edit-panel";
@@ -103,6 +109,7 @@ public class BatchImportService {
 	public BatchImportService () {
 		try {
 			defaultLocales = AcceptHeader.parseExtendedLocales(new StringReader(defaultLocaleStr));
+			executor = Executors.newFixedThreadPool(1); //Want this to be Async, but not expecting more than 1 to run at a time.
 		} catch (IOException e) {
 			throw new BadRequestException(e.getMessage());
 		} catch (IllegalArgumentException e) {
@@ -111,31 +118,21 @@ public class BatchImportService {
 	}
 	
 	public void startImport(UUID batchImportId, BatchImportRequest importRequest, List<CSVRecord> rows, String currentUser) throws BusinessServiceException, JiraException, ServiceException {
-		
 		BatchImportRun run = BatchImportRun.createRun(batchImportId, importRequest);
 		currentImports.put(batchImportId, new BatchImportStatus(BatchImportState.RUNNING));
-		boolean completed = false;
-		try { 
-			prepareConcepts(run, rows);
-			int rowsToProcess = run.getRootConcept().childrenCount();
-			setTarget(run.getId(), rowsToProcess);
-			logger.info("Batch Importing {} concepts onto new tasks in project {} - batch import id {} ",rowsToProcess, run.getImportRequest().getProjectKey(), run.getId().toString());
-			
-			if (validateLoadHierarchy(run)) {
-				loadConceptsOntoTasks(run);
-				completed = true;
-			} else {
-				run.abortLoad(rows);
-			}
-		} finally {
-			BatchImportState finalState = completed ? BatchImportState.COMPLETED : BatchImportState.FAILED;
-			getBatchImportStatus(run.getId()).setState(finalState);
-			try {
-				fileService.write(getFilePath(run), run.resultsAsCSV());
-			} catch (Exception e) {
-				logger.error("Failed to save results of batch import",e);
-			}
-			logger.info("Batch Importing completed in project {} - batch import id {} ",run.getImportRequest().getProjectKey(), run.getId().toString());
+		prepareConcepts(run, rows);
+		int rowsToProcess = run.getRootConcept().childrenCount();
+		setTarget(run.getId(), rowsToProcess);
+		logger.info("Batch Importing {} concepts onto new tasks in project {} - batch import id {} ",rowsToProcess, run.getImportRequest().getProjectKey(), run.getId().toString());
+		
+		if (validateLoadHierarchy(run)) {
+			BatchImportRunner runner = new BatchImportRunner(run, this);
+			executor.execute(runner);
+		} else {
+			run.abortLoad(rows);
+			getBatchImportStatus(run.getId()).setState(BatchImportState.FAILED);
+			logger.info("Batch Importing failed in project {} - batch import id {} ",run.getImportRequest().getProjectKey(), run.getId().toString());
+			outputCSV(run);
 		}
 	}
 
@@ -195,7 +192,7 @@ public class BatchImportService {
 
 
 
-	private void loadConceptsOntoTasks(BatchImportRun run) throws JiraException, ServiceException, BusinessServiceException {
+	void loadConceptsOntoTasks(BatchImportRun run) throws JiraException, ServiceException, BusinessServiceException {
 		List<List<BatchImportConcept>> batches = collectIntoBatches(run);
 		for (List<BatchImportConcept> thisBatch : batches) {
 			AuthoringTask task = createTask(run, thisBatch);
@@ -347,7 +344,8 @@ public class BatchImportService {
 			boolean loadedOK = false;
 			try{
 				ISnomedBrowserConcept newConcept = createBrowserConcept(thisConcept, run.getFormatter());
-				String warnings = ""; // validateConcept(task, newConcept);
+				String warnings = "";
+				validateConcept(task, newConcept);
 				removeTemporaryIds(newConcept);
 				browserService.create(branchPath, newConcept, run.getImportRequest().getCreateForAuthor(), defaultLocales);
 				run.succeed(thisConcept.getRow(), "Loaded onto " + task.getKey() + " " + warnings);
@@ -382,8 +380,21 @@ public class BatchImportService {
 			((SnomedBrowserRelationship)thisRel).setRelationshipId(null);
 		}
 	}
-
+	
 	private String validateConcept(AuthoringTask task,
+			ISnomedBrowserConcept newConcept) throws BusinessServiceException {
+		
+		//Check for lateralized content
+		for (String thisBadWord : LATERALITY) {
+			if (newConcept.getFsn().toLowerCase().contains(thisBadWord)) {
+				throw new BusinessServiceException ("Lateralized content detected");
+			}
+		}
+		return null;
+	}
+	
+
+	/*private String validateConcept(AuthoringTask task,
 			ISnomedBrowserConcept newConcept) throws BusinessServiceException {
 		StringBuilder warnings = new StringBuilder();
 		StringBuilder errors = new StringBuilder();
@@ -399,7 +410,7 @@ public class BatchImportService {
 			throw new BusinessServiceException("Error for concept " + newConcept.getConceptId() + ": " + errors.toString());
 		}
 		return warnings.toString();
-	}
+	}*/
 
 	private String getBranchPath(AuthoringTask task) {
 		return "MAIN/" + task.getProjectKey() + "/" + task.getKey();
@@ -509,13 +520,21 @@ public class BatchImportService {
 		}
 	}
 	
-	synchronized private BatchImportStatus getBatchImportStatus(UUID batchImportId) {
+	synchronized BatchImportStatus getBatchImportStatus(UUID batchImportId) {
 		BatchImportStatus status = currentImports.get(batchImportId);
 		if (status == null) {
 			status = new BatchImportStatus (BatchImportState.RUNNING);
 			currentImports.put(batchImportId, status);
 		}
 		return status;
+	}
+
+	public void outputCSV(BatchImportRun batchImportRun) {
+		try {
+			fileService.write(getFilePath(batchImportRun), batchImportRun.resultsAsCSV());
+		} catch (Exception e) {
+			logger.error("Failed to save results of batch import",e);
+		}
 	}
 
 }
