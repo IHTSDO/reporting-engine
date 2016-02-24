@@ -23,6 +23,7 @@ import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportStatu
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.service.BatchImportFormat.FIELD;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTask;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskCreateRequest;
+import org.ihtsdo.snowowl.authoring.single.api.service.BranchService;
 import org.ihtsdo.snowowl.authoring.single.api.service.ServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.service.TaskService;
 import org.ihtsdo.snowowl.authoring.single.api.service.UiStateService;
@@ -72,6 +73,9 @@ public class BatchImportService {
 	
 	@Autowired
 	private IEventBus eventBus;
+	
+	@Autowired
+	private BranchService branchService;
 	
 	@Autowired
 	private ISnomedBrowserValidationService validationService;
@@ -274,9 +278,12 @@ public class BatchImportService {
 		taskCreateRequest.setDescription(allNotes);
 		String taskSummary = run.getImportRequest().getOriginalFilename() + ": " + getRowRange(thisBatch);
 		taskCreateRequest.setSummary(taskSummary);
-		return taskService.createTask(run.getImportRequest().getProjectKey(), 
+		AuthoringTask task = taskService.createTask(run.getImportRequest().getProjectKey(), 
 				run.getImportRequest().getCreateForAuthor(),
 				taskCreateRequest);
+		//Task service now delays creation of actual task branch, so separate call to do that.
+		branchService.createTaskBranchAndProjectBranchIfNeeded(task.getProjectKey(), task.getKey());
+		return task;
 	}
 
 	private String getRowRange(List<BatchImportConcept> thisBatch) {

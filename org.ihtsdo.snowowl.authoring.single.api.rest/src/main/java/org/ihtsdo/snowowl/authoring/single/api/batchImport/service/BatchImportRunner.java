@@ -36,7 +36,7 @@ public class BatchImportRunner implements Runnable {
 				BatchImportState finalState = completed ? BatchImportState.COMPLETED : BatchImportState.FAILED;
 				service.getBatchImportStatus(batchImportRun.getId()).setState(finalState);
 				service.outputCSV(batchImportRun);
-				logger.info("Batch Importing completed in project {} - batch import id {} ",batchImportRun.getImportRequest().getProjectKey(), batchImportRun.getId().toString());
+				logger.info("Batch Importing failed in project {} - batch import id {} ",batchImportRun.getImportRequest().getProjectKey(), batchImportRun.getId().toString());
 			}
 	}
 	
