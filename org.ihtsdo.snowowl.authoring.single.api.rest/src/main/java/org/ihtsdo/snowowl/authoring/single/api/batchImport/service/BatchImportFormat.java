@@ -112,7 +112,7 @@ public class BatchImportFormat {
 
 	public static FORMAT determineFormat(CSVRecord header) throws BusinessServiceException {
 		//Is it SIRS?  Throw exception if not because it's the only format we support
-		for (int colIdx=0; colIdx<header.size();colIdx++) {
+		for (int colIdx=0; colIdx < header.size() && colIdx < SIRS_HEADERS.length;colIdx++) {
 			if (!header.get(colIdx).equals(SIRS_HEADERS[colIdx])) {
 				throw new BusinessServiceException("File is unrecognised format because header " + colIdx + ":" + header.get(colIdx) + " is not " + SIRS_HEADERS[colIdx] + " as expected." );
 			}
