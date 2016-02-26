@@ -26,7 +26,7 @@ public class BatchImportFormat {
 			"Preferred Term","Terminology(1)","Parent Concept Id(1)","UMLS CUI","Definition","Proposed Use",
 			"Justification","Synonym","Synonym","Synonym","Synonym","Synonym","Note","Note","Note","Note","Note","Note","Note","Note","Note"};
 
-	public static String ADDITIONAL_RESULTS_HEADER = "OrigRow,Loaded,Import Result,";
+	public static String ADDITIONAL_RESULTS_HEADER = "OrigRow,Loaded,Import Result";
 	
 	public static Map<FIELD, String>SIRS_MAP = new HashMap<FIELD, String>();
 	static {
