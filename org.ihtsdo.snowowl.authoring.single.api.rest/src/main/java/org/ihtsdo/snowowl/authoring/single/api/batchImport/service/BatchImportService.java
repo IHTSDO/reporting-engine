@@ -102,11 +102,16 @@ public class BatchImportService {
 	
 	private List<ExtendedLocale> defaultLocales;
 	private static final String defaultLocaleStr = "en-US;q=0.8,en-GB;q=0.6";
-	public static final Map<String, Acceptability> DEFAULT_ACCEPTABILIY = new HashMap<String, Acceptability>();
+	public static final Map<String, Acceptability> ACCEPTABLE_ACCEPTABILIY = new HashMap<String, Acceptability>();
 	static {
-		DEFAULT_ACCEPTABILIY.put(SCTID_EN_GB, Acceptability.PREFERRED);
-		DEFAULT_ACCEPTABILIY.put(SCTID_EN_US, Acceptability.PREFERRED);
+		ACCEPTABLE_ACCEPTABILIY.put(SCTID_EN_GB, Acceptability.ACCEPTABLE);
+		ACCEPTABLE_ACCEPTABILIY.put(SCTID_EN_US, Acceptability.ACCEPTABLE);
 	}
+	public static final Map<String, Acceptability> PREFERRED_ACCEPTABILIY = new HashMap<String, Acceptability>();
+	static {
+		PREFERRED_ACCEPTABILIY.put(SCTID_EN_GB, Acceptability.PREFERRED);
+		PREFERRED_ACCEPTABILIY.put(SCTID_EN_US, Acceptability.PREFERRED);
+	}	
 	
 	Map<UUID, BatchImportStatus> currentImports = new HashMap<UUID, BatchImportStatus>();
 	
@@ -475,17 +480,27 @@ public class BatchImportService {
 		String prefTerm = thisConcept.get(formatter.getIndex(FIELD.FSN_ROOT));
 		String fsnTerm = prefTerm + " (" + thisConcept.get(formatter.getIndex(FIELD.SEMANTIC_TAG)) +")";
 		
-		ISnomedBrowserDescription fsn = createDescription(fsnTerm, SnomedBrowserDescriptionType.FSN);
+		ISnomedBrowserDescription fsn = createDescription(fsnTerm, SnomedBrowserDescriptionType.FSN, PREFERRED_ACCEPTABILIY);
 		descriptions.add(fsn);
 		newConcept.setFsn(fsnTerm);
 		
-		ISnomedBrowserDescription pref = createDescription(prefTerm, SnomedBrowserDescriptionType.SYNONYM);
+		ISnomedBrowserDescription pref = createDescription(prefTerm, SnomedBrowserDescriptionType.SYNONYM, PREFERRED_ACCEPTABILIY);
 		descriptions.add(pref);
-		
+		addSynonyms(descriptions, formatter, thisConcept);
 		newConcept.setDescriptions(descriptions);
+		
 		return newConcept;
 	}
 	
+	private void addSynonyms(List<ISnomedBrowserDescription> descriptions,
+			BatchImportFormat formatter, BatchImportConcept thisConcept) throws BusinessServiceException {
+		List<String> allSynonyms = formatter.getAllSynonyms(thisConcept);
+		for (String thisSyn : allSynonyms) {
+			ISnomedBrowserDescription syn =  createDescription(thisSyn, SnomedBrowserDescriptionType.SYNONYM, ACCEPTABLE_ACCEPTABILIY);
+			descriptions.add(syn);
+		}
+	}
+
 	ISnomedBrowserRelationship createRelationship(String sourceSCTID, String type, String destinationSCTID, CharacteristicType characteristic) {
 		SnomedBrowserRelationship rel = new SnomedBrowserRelationship();
 		rel.setCharacteristicType(CharacteristicType.STATED_RELATIONSHIP);
@@ -501,7 +516,7 @@ public class BatchImportService {
 		return rel;
 	}
 	
-	ISnomedBrowserDescription createDescription(String term, SnomedBrowserDescriptionType type) {
+	ISnomedBrowserDescription createDescription(String term, SnomedBrowserDescriptionType type, Map<String, Acceptability> acceptabilityMap) {
 		SnomedBrowserDescription desc = new SnomedBrowserDescription();
 		//Set a temporary id so the user can tell which item failed validation
 		desc.setDescriptionId("desc_" + type.toString());
@@ -509,7 +524,7 @@ public class BatchImportService {
 		desc.setActive(true);
 		desc.setType(type);
 		desc.setLang(SnomedConstants.LanguageCodeReferenceSetIdentifierMapping.EN_LANGUAGE_CODE);
-		desc.setAcceptabilityMap(DEFAULT_ACCEPTABILIY);
+		desc.setAcceptabilityMap(acceptabilityMap);
 		desc.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
 		return desc;
 	}

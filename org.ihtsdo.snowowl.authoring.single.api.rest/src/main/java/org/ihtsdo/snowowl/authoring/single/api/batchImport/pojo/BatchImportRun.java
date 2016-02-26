@@ -12,8 +12,12 @@ import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.service.BatchImportFormat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BatchImportRun {
+	
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 	
 	Map <CSVRecord, BatchImportDetail> allRows = new LinkedHashMap<CSVRecord, BatchImportDetail>();
 	Map <String, BatchImportConcept> allValidConcepts = new HashMap<String, BatchImportConcept>();
@@ -24,7 +28,7 @@ public class BatchImportRun {
 	
 	public static BatchImportRun createRun (UUID batchImportId, BatchImportRequest importRequest) throws BusinessServiceException {
 		BatchImportRun run = new BatchImportRun(importRequest);
-		BatchImportFormat format = BatchImportFormat.create(importRequest.getFormat());
+		BatchImportFormat format = importRequest.getFormat();
 		run.format = format;
 		run.id = batchImportId;
 		return run;
@@ -101,26 +105,35 @@ public class BatchImportRun {
 
 	public String resultsAsCSV() throws IOException, BusinessServiceException {
 		StringBuilder buff = new StringBuilder();
-		CSVPrinter out = new CSVPrinter(buff, CSVFormat.EXCEL);
-		//First add the header row
-		buff.append(BatchImportFormat.ADDITIONAL_RESULTS_HEADER);
-		for (String thisHeaderItem : format.getHeaders()) {
-			buff.append(",")
-				.append(thisHeaderItem);
+		CSVPrinter out = null;
+		try {
+			out = new CSVPrinter(buff, CSVFormat.EXCEL);
+			//First add the header row
+			buff.append(BatchImportFormat.ADDITIONAL_RESULTS_HEADER);
+			for (String thisHeaderItem : format.getHeaders()) {
+				buff.append(",")
+					.append(thisHeaderItem);
+			}
+			buff.append(BatchImportFormat.NEW_LINE);
+			//Now loop through all records and output the status, followed by the original line
+			for (Map.Entry<CSVRecord, BatchImportDetail> entry : allRows.entrySet()) {
+				CSVRecord thisRow = entry.getKey();
+				BatchImportDetail detail = entry.getValue();
+				buff.append(thisRow.getRecordNumber())
+					.append(",")
+					.append(detail.isLoaded())
+					.append(",\"")
+					.append(detail.getFailureReason())
+					.append("\",");
+				out.printRecord(thisRow);
+			}
+		} catch (Exception e) {
+			logger.error("Exception while outputting Batch Import results as CSV",e);
+		} finally {
+			if (out != null)
+				out.close();
 		}
-		buff.append(BatchImportFormat.NEW_LINE);
-		//Now loop through all records and output the status, followed by the original line
-		for (Map.Entry<CSVRecord, BatchImportDetail> entry : allRows.entrySet()) {
-			CSVRecord thisRow = entry.getKey();
-			BatchImportDetail detail = entry.getValue();
-			buff.append(thisRow.getRecordNumber())
-				.append(",")
-				.append(detail.isLoaded())
-				.append(",\"")
-				.append(detail.getFailureReason())
-				.append("\",");
-			out.printRecord(thisRow);
-		}
+		
 		return buff.toString();
 	}
 }
