@@ -343,6 +343,8 @@ public class BatchImportService {
 		for (ISnomedBrowserConcept thisConcept : conceptsLoaded) {
 			str.append("<h5>")
 			.append(thisConcept.getId())
+			.append(" - ")
+			.append(thisConcept.getFsn())
 			.append(":</h5>")
 			.append("<ul>");
 			BatchImportConcept biConcept = run.getConcept(thisConcept.getConceptId());
