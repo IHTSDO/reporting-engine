@@ -12,9 +12,9 @@ public class BatchImportRequest {
 	UUID id;
 	String createForAuthor;
 	int conceptsPerTask;
-	BatchImportFormat.FORMAT format;
+	BatchImportFormat format;
 	String projectKey;
-	
+	String originalFilename;
 	MultipartFile file;
 	
 	public BatchImportRequest(){}
@@ -31,11 +31,11 @@ public class BatchImportRequest {
 	public void setConceptsPerTask(int conceptsPerTask) {
 		this.conceptsPerTask = conceptsPerTask;
 	}
-	public BatchImportFormat.FORMAT getFormat() {
+	public BatchImportFormat getFormat() {
 		return format;
 	}
 	@JsonIgnore
-	public void setFormat(BatchImportFormat.FORMAT format) {
+	public void setFormat(BatchImportFormat format) {
 		this.format = format;
 	}
 	@JsonIgnore
@@ -60,5 +60,13 @@ public class BatchImportRequest {
 
 	public void setId(UUID id) {
 		this.id = id;
+	}
+
+	public void setOriginalFilename(String originalFilename) {
+		this.originalFilename = originalFilename;	
+	}
+	
+	public String getOriginalFilename() {
+		return this.originalFilename;
 	}
 }

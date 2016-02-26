@@ -72,7 +72,7 @@ public class BatchImportController extends AbstractSnomedRestService {
 			//So read 1st row as a record instead.
 			CSVParser parser = CSVFormat.EXCEL.parse(in);
 			CSVRecord header = parser.iterator().next();
-			BatchImportFormat.FORMAT format = BatchImportFormat.determineFormat(header);
+			BatchImportFormat format = BatchImportFormat.determineFormat(header);
 			//And load the remaining records into memory
 			List<CSVRecord> rows = parser.getRecords();
 			
@@ -83,6 +83,7 @@ public class BatchImportController extends AbstractSnomedRestService {
 			importRequest.setConceptsPerTask(conceptsPerTask == null? 1 : conceptsPerTask.intValue());
 			importRequest.setFormat(format);
 			importRequest.setProjectKey(projectKey);
+			importRequest.setOriginalFilename(file.getOriginalFilename());
 			parser.close();
 			
 			batchImportService.startImport(batchImportId, importRequest, rows, ControllerHelper.getUsername());
