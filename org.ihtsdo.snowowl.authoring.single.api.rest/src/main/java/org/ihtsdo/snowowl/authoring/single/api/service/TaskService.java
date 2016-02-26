@@ -5,8 +5,11 @@ import com.b2international.snowowl.core.exceptions.BadRequestException;
 import com.b2international.snowowl.core.exceptions.ConflictException;
 import com.b2international.snowowl.core.exceptions.NotFoundException;
 import com.google.common.collect.ImmutableMap;
+
 import net.rcarz.jiraclient.*;
+import net.rcarz.jiraclient.Status;
 import net.rcarz.jiraclient.User;
+
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.api.rest.common.ControllerHelper;
@@ -316,11 +319,16 @@ public class TaskService {
 		Issue issue = getIssue(projectKey, taskKey);
 		// Act on each field received
 		final TaskStatus status = taskUpdateRequest.getStatus();
+		
 		if (status != null) {
-			if (status == TaskStatus.UNKNOWN) {
-				throw new BadRequestException("Requested status is unknown.");
+			Status currentStatus = issue.getStatus();
+			//Don't attempt to transition to the same status
+			if (!status.getLabel().equalsIgnoreCase(currentStatus.getName())) {
+				if (status == TaskStatus.UNKNOWN) {
+					throw new BadRequestException("Requested status is unknown.");
+				}
+				stateTransition(issue, status);
 			}
-			stateTransition(issue, status);
 		}
 
 		final Issue.FluentUpdate updateRequest = issue.update();
