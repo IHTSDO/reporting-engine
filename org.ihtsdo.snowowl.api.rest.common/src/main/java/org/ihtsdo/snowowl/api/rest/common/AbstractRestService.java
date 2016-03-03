@@ -5,6 +5,8 @@ import com.b2international.snowowl.core.exceptions.BadRequestException;
 import com.b2international.snowowl.core.exceptions.ConflictException;
 import com.b2international.snowowl.core.exceptions.NotFoundException;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import org.apache.catalina.connector.ClientAbortException;
+import org.ihtsdo.otf.rest.exception.ResourceNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -38,7 +40,14 @@ public abstract class AbstractRestService {
 		LOG.error("Exception during processing of a request. Username '{}'", ControllerHelper.getUsername(), ex);
 		return RestApiError.of(HttpStatus.INTERNAL_SERVER_ERROR.value()).message(GENERIC_USER_MESSAGE).developerMessage(getDeveloperMessage(ex)).build();
 	}
-	
+
+	@ExceptionHandler
+	@ResponseStatus(HttpStatus.REQUEST_TIMEOUT)
+	public @ResponseBody RestApiError handle(final ClientAbortException ex) {
+		LOG.info("Client Abort Exception during processing of a request. Username '{}'", ControllerHelper.getUsername(), ex);
+		return RestApiError.of(HttpStatus.REQUEST_TIMEOUT.value()).message(GENERIC_USER_MESSAGE).developerMessage(getDeveloperMessage(ex)).build();
+	}
+
 	/**
 	 * Exception handler converting any {@link JsonMappingException} to an <em>HTTP 400</em>.
 	 * 
@@ -63,6 +72,12 @@ public abstract class AbstractRestService {
 	@ResponseStatus(HttpStatus.NOT_FOUND)
 	public @ResponseBody RestApiError handle(final NotFoundException ex) {
 		return getRestApiError(ex.toApiError(), HttpStatus.NOT_FOUND);
+	}
+
+	@ExceptionHandler
+	@ResponseStatus(HttpStatus.NOT_FOUND)
+	public @ResponseBody RestApiError handle(final ResourceNotFoundException ex) {
+		return RestApiError.of(HttpStatus.NOT_FOUND.value()).message(ex.getMessage()).developerMessage(getDeveloperMessage(ex)).build();
 	}
 
 	private RestApiError getRestApiError(ApiError apiError, HttpStatus httpStatus) {

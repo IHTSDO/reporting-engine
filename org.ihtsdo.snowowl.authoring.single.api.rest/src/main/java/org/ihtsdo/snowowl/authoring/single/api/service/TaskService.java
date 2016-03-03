@@ -12,6 +12,7 @@ import net.rcarz.jiraclient.User;
 
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
+import org.ihtsdo.otf.rest.exception.ResourceNotFoundException;
 import org.ihtsdo.snowowl.api.rest.common.ControllerHelper;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.*;
 import org.ihtsdo.snowowl.authoring.single.api.review.service.ReviewService;
@@ -152,6 +153,12 @@ public class TaskService {
 			Issue issue = getIssue(projectKey, taskKey);
 			return buildAuthoringTasks(Collections.singletonList(issue)).get(0);
 		} catch (JiraException | BusinessServiceException e) {
+			if (e instanceof JiraException
+					&& e.getCause() instanceof RestException
+					&& ((RestException)e.getCause()).getHttpStatusCode() == 404) {
+				throw new ResourceNotFoundException("Task not found " + toString(projectKey, taskKey), e);
+			}
+
 			throw new BusinessServiceException("Failed to retrieve task " + toString(projectKey, taskKey), e);
 		}
 	}
