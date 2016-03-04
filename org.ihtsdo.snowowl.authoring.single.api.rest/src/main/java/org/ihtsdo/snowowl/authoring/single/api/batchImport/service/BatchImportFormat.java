@@ -23,6 +23,9 @@ public class BatchImportFormat {
 	public static final String SYNONYM = "Synonym";
 	public static final String NOTE = "Note";
 	
+	private static final String NEW_SCTID = "NEW_SCTID";  //Indicates we'll pass blank to TS
+	
+	
 	private FORMAT format;
 	private Map<FIELD, String> fieldMap;
 	private int[] synonymFields;
@@ -78,13 +81,19 @@ public class BatchImportFormat {
 	}
 	
 	public BatchImportConcept createConcept (CSVRecord row) throws BusinessServiceException {
-		String sctid = row.get(getIndex(FIELD.SCTID));
+		String sctid = row.get(getIndex(FIELD.SCTID)).trim();
 		//We need an sctid in order to keep track of the row, so form from row number if null
 		if (sctid == null || sctid.trim().length() == 0) {
 			sctid = "row_" + row.getRecordNumber();
 		}
+		
+		boolean requiresNewSCTID = false;
+		if (sctid.equals(NEW_SCTID) ) {
+			requiresNewSCTID = true;
+			sctid += "_" + row.getRecordNumber();
+		}
 		String parent = row.get(getIndex(FIELD.PARENT));
-		return new BatchImportConcept (sctid, parent, row);
+		return new BatchImportConcept (sctid, parent, row, requiresNewSCTID);
 	}
 
 	public List<String> getAllNotes(BatchImportConcept thisConcept) throws BusinessServiceException {

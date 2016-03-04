@@ -14,12 +14,15 @@ public class BatchImportConcept {
 	
 	String parent;
 	
+	boolean requiresNewSCTID = false;
+	
 	List<BatchImportConcept> children = new ArrayList<BatchImportConcept>();
 	
-	public BatchImportConcept(String sctid, String parent, CSVRecord row) {
+	public BatchImportConcept(String sctid, String parent, CSVRecord row, boolean requiresNewSCTID) {
 		this.sctid = sctid;
 		this.parent = parent;
 		this.row = row;
+		this.requiresNewSCTID = requiresNewSCTID;
 	}
 	
 	private BatchImportConcept() {
@@ -41,6 +44,10 @@ public class BatchImportConcept {
 		}
 		
 		this.children.remove(child);
+	}
+	
+	public boolean requiresNewSCTID() {
+		return this.requiresNewSCTID;
 	}
 
 	public boolean isRootConcept() {

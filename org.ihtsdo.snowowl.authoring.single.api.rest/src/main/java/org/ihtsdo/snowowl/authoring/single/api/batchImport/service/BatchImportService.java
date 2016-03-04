@@ -177,7 +177,7 @@ public class BatchImportService {
 
 	
 	private boolean validate (BatchImportRun run, BatchImportConcept concept) {
-		if (!validateSCTID(concept.getSctid())) {
+		if (!concept.requiresNewSCTID() && !validateSCTID(concept.getSctid())) {
 			run.fail(concept.getRow(), concept.getSctid() + " is not a valid sctid.");
 			return false;
 		}
@@ -465,7 +465,9 @@ public class BatchImportService {
 	private ISnomedBrowserConcept createBrowserConcept(
 			BatchImportConcept thisConcept, BatchImportFormat formatter) throws BusinessServiceException {
 		SnomedBrowserConcept newConcept = new SnomedBrowserConcept();
-		newConcept.setConceptId(thisConcept.getSctid());
+		if (!thisConcept.requiresNewSCTID()) {
+			newConcept.setConceptId(thisConcept.getSctid());
+		}
 		newConcept.setActive(true);
 		newConcept.setDefinitionStatus(DefinitionStatus.PRIMITIVE);
 		
@@ -496,9 +498,26 @@ public class BatchImportService {
 			BatchImportFormat formatter, BatchImportConcept thisConcept) throws BusinessServiceException {
 		List<String> allSynonyms = formatter.getAllSynonyms(thisConcept);
 		for (String thisSyn : allSynonyms) {
-			ISnomedBrowserDescription syn =  createDescription(thisSyn, SnomedBrowserDescriptionType.SYNONYM, ACCEPTABLE_ACCEPTABILIY);
-			descriptions.add(syn);
+			if (!containsDescription (descriptions, thisSyn)){
+				ISnomedBrowserDescription syn =  createDescription(thisSyn, SnomedBrowserDescriptionType.SYNONYM, ACCEPTABLE_ACCEPTABILIY);
+				descriptions.add(syn);
+			}
 		}
+	}
+
+	/**
+	 * @param descriptions
+	 * @param thisSyn
+	 * @return true if the list of descriptions already contains this term
+	 */
+	private boolean containsDescription(
+			List<ISnomedBrowserDescription> descriptions, String term) {
+		for (ISnomedBrowserDescription thisDesc : descriptions) {
+			if (thisDesc.getTerm().equals(term)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	ISnomedBrowserRelationship createRelationship(String sourceSCTID, String type, String destinationSCTID, CharacteristicType characteristic) {
