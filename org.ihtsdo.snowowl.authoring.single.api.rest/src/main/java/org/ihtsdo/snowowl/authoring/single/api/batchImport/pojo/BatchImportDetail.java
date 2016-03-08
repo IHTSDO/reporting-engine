@@ -4,10 +4,12 @@ public class BatchImportDetail {
 	
 	boolean loaded;
 	String failureReason;
+	String sctidCreated;
 	
-	public BatchImportDetail (boolean loaded, String failureReason) {
+	public BatchImportDetail (boolean loaded, String failureReason, String sctidCreated) {
 		this.loaded = loaded;
 		this.failureReason = failureReason;
+		this.sctidCreated = sctidCreated;
 	}
 	
 	public boolean isLoaded() {
@@ -16,6 +18,10 @@ public class BatchImportDetail {
 
 	public String getFailureReason() {
 		return failureReason;
+	}
+
+	public Object getSctidCreated() {
+		return this.sctidCreated;
 	}
 
 }

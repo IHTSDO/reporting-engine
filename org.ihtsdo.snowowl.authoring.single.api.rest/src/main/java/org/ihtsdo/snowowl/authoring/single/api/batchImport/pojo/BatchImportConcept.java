@@ -11,7 +11,7 @@ public class BatchImportConcept {
 	CSVRecord row;
 	
 	String sctid;
-	
+
 	String parent;
 	
 	boolean requiresNewSCTID = false;
@@ -88,6 +88,6 @@ public class BatchImportConcept {
 			thisBatch.add(thisChild);
 			thisChild.addDescendants(thisBatch);
 		}
-	}
+	}	
 
 }

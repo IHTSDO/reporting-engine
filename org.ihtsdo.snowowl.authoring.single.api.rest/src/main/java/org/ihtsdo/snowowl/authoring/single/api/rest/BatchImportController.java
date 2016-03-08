@@ -126,7 +126,7 @@ public class BatchImportController extends AbstractSnomedRestService {
 			final UUID batchImportId,
 			HttpServletResponse response) throws BusinessServiceException {
 
-		String csvFileName = "BatchImportResults.csv";
+		String csvFileName = "results_" + batchImportService.getImportResultsFile(projectKey, batchImportId).getName();
 		response.setContentType("text/csv");
 
 		String headerKey = "Content-Disposition";

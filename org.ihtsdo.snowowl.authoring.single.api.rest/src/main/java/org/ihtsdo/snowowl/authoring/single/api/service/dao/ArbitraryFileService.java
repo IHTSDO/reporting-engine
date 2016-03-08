@@ -26,6 +26,10 @@ public class ArbitraryFileService {
 	public String read(String path) throws IOException {
 		return new String(Files.readAllBytes(getFile(path)), UTF_8);
 	}
+	
+	public String read(File file) throws IOException {
+		return new String(Files.readAllBytes(file.toPath()), UTF_8);
+	}
 
 	private Path getFile(String relativePath) throws IOException {
 		File file = new File(baseDirectory, relativePath);
