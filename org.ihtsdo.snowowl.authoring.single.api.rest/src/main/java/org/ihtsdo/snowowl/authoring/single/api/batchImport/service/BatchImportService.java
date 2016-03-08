@@ -384,7 +384,7 @@ public class BatchImportService {
 				String msg = "Loaded onto " + task.getKey() + " " + warnings;
 				run.succeed(thisConcept.getRow(), msg, createdConcept.getId());
 				loadedOK = true;
-				conceptsLoaded.put(thisConcept.getSctid(),newConcept);
+				conceptsLoaded.put(thisConcept.getSctid(),createdConcept);
 			} catch (ValidationException v) {
 				run.fail(thisConcept.getRow(), prettyPrint(v.toApiError()));
 			} catch (BusinessServiceException b) {
