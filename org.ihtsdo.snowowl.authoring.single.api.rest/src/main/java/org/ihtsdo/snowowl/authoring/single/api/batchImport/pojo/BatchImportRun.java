@@ -43,12 +43,12 @@ public class BatchImportRun {
 	}
 
 	public void fail(CSVRecord row, String failureReason) {
-		BatchImportDetail failureDetail = new BatchImportDetail(false, failureReason);
+		BatchImportDetail failureDetail = new BatchImportDetail(false, failureReason, null);
 		allRows.put(row, failureDetail);
 	}
 	
-	public void succeed(CSVRecord row, String additionalInfo) {
-		BatchImportDetail successDetail = new BatchImportDetail(true, additionalInfo);
+	public void succeed(CSVRecord row, String additionalInfo, String sctIdCreated) {
+		BatchImportDetail successDetail = new BatchImportDetail(true, additionalInfo, sctIdCreated);
 		allRows.put(row, successDetail);
 	}
 
@@ -124,7 +124,9 @@ public class BatchImportRun {
 					.append(detail.isLoaded())
 					.append(",\"")
 					.append(detail.getFailureReason())
-					.append("\",");
+					.append("\",")
+					.append(detail.getSctidCreated())
+					.append(",");
 				out.printRecord(thisRow);
 			}
 		} catch (Exception e) {

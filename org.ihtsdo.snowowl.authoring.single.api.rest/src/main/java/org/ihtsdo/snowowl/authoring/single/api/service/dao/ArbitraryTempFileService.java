@@ -11,4 +11,9 @@ public class ArbitraryTempFileService extends ArbitraryFileService{
 		this.baseDirectory = new File("work/tmp/" + functionalArea);
 	}
 
+	public File[] listFiles(String relativePath) {
+		File file = new File(baseDirectory, relativePath);
+		return file.listFiles();
+	}
+
 }

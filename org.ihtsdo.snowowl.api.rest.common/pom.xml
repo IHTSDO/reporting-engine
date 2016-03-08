@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>org.ihtsdo.snowowl</groupId>
 		<artifactId>ihtsdo-snowowl-parent</artifactId>
-		<version>4.5.12</version>
+		<version>4.5.13</version>
 	</parent>
 
 	<artifactId>org.ihtsdo.snowowl.api.rest.common</artifactId>
@@ -99,6 +99,16 @@
 			<artifactId>javax.servlet-api</artifactId>
 			<version>${servlet.api.version}</version>
 			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.ihtsdo.otf.common</groupId>
+			<artifactId>otf-common</artifactId>
+			<version>0.0.21</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.tomcat.embed</groupId>
+			<artifactId>tomcat-embed-core</artifactId>
+			<version>8.0.28</version>
 		</dependency>
 	</dependencies>
 

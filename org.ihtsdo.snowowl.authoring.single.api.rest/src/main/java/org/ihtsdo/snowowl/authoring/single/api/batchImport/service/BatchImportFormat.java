@@ -8,10 +8,14 @@ import java.util.Map;
 import org.apache.commons.csv.CSVRecord;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportConcept;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.primitives.Ints;
 
 public class BatchImportFormat {
+	
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	public static enum FORMAT { SIRS };
 	public static enum FIELD { SCTID, PARENT, FSN_ROOT, NOTES, SEMANTIC_TAG};
@@ -23,6 +27,9 @@ public class BatchImportFormat {
 	public static final String SYNONYM = "Synonym";
 	public static final String NOTE = "Note";
 	
+	private static final String NEW_SCTID = "NEW_SCTID";  //Indicates we'll pass blank to TS
+	
+	
 	private FORMAT format;
 	private Map<FIELD, String> fieldMap;
 	private int[] synonymFields;
@@ -32,7 +39,7 @@ public class BatchImportFormat {
 	public static String[] SIRS_HEADERS = {"Request Id","Topic","Local Code","Local Term","Fully Specified Name","Semantic Tag",
 			"Preferred Term","Terminology(1)","Parent Concept Id(1)","UMLS CUI","Definition","Proposed Use","Justification"};
 
-	public static String ADDITIONAL_RESULTS_HEADER = "OrigRow,Loaded,Import Result";
+	public static String ADDITIONAL_RESULTS_HEADER = "OrigRow,Loaded,Import Result,SCTID Created";
 	
 	public static Map<FIELD, String>SIRS_MAP = new HashMap<FIELD, String>();
 	static {
@@ -78,21 +85,31 @@ public class BatchImportFormat {
 	}
 	
 	public BatchImportConcept createConcept (CSVRecord row) throws BusinessServiceException {
-		String sctid = row.get(getIndex(FIELD.SCTID));
+		String sctid = row.get(getIndex(FIELD.SCTID)).trim();
 		//We need an sctid in order to keep track of the row, so form from row number if null
 		if (sctid == null || sctid.trim().length() == 0) {
 			sctid = "row_" + row.getRecordNumber();
 		}
+		
+		boolean requiresNewSCTID = false;
+		if (sctid.equals(NEW_SCTID) ) {
+			requiresNewSCTID = true;
+			sctid += "_" + row.getRecordNumber();
+		}
 		String parent = row.get(getIndex(FIELD.PARENT));
-		return new BatchImportConcept (sctid, parent, row);
+		return new BatchImportConcept (sctid, parent, row, requiresNewSCTID);
 	}
 
 	public List<String> getAllNotes(BatchImportConcept thisConcept) throws BusinessServiceException {
 		List<String> notes = new ArrayList<String>();
 		for (int i=0 ; i < notesFields.length; i++ ) {
-			String thisNote = thisConcept.getRow().get(notesFields[i]);
-			if (thisNote != null && thisNote.trim().length() > 0) {
-				notes.add(thisNote);
+			try {
+				String thisNote = thisConcept.getRow().get(notesFields[i]);
+				if (thisNote != null && thisNote.trim().length() > 0) {
+					notes.add(thisNote);
+				}
+			} catch (Exception e) {
+				logger.error("Failed to recover note at field {} for concept {}", notesFields[i], thisConcept.getSctid(), e);
 			}
 		}
 		return notes;
