@@ -8,7 +8,7 @@
 
 	<groupId>org.ihtsdo.snowowl</groupId>
 	<artifactId>ihtsdo-snowowl-parent</artifactId>
-	<version>4.5.13-SNAPSHOT</version>
+	<version>4.5.14-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
 	<properties>
