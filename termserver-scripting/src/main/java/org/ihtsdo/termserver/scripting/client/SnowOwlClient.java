@@ -1,8 +1,10 @@
 package org.ihtsdo.termserver.scripting.client;
 
 import com.google.common.base.Preconditions;
+import org.ihtsdo.termserver.scripting.domain.ConceptHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import us.monoid.json.JSONArray;
 import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
 import us.monoid.web.JSONResource;
@@ -127,4 +129,22 @@ public class SnowOwlClient {
 		return true;
 	}
 
+	public Resty getResty() {
+		return resty;
+	}
+
+	public JSONArray getMergeReviewDetails(String mergeReviewId) throws IOException, JSONException {
+		logger.info("Getting merge review {}", mergeReviewId);
+		return resty.json(getMergeReviewUrl(mergeReviewId) + "/details").array();
+	}
+
+	private String getMergeReviewUrl(String mergeReviewId) {
+		return this.url + "/merge-reviews/" + mergeReviewId;
+	}
+
+	public void saveConceptMerge(String mergeReviewId, JSONObject mergedConcept) throws JSONException, IOException {
+		String id = ConceptHelper.getConceptId(mergedConcept);
+		logger.info("Saving merged concept {} for merge review {}", id, mergeReviewId);
+		resty.json(getMergeReviewUrl(mergeReviewId) + "/" + id, RestyHelper.content(mergedConcept, SNOWOWL_CONTENT_TYPE));
+	}
 }

@@ -9,6 +9,10 @@ public class ConceptHelper {
 	public static final String PREFERRED = "PREFERRED";
 	public static final String ACCEPTABLE = "ACCEPTABLE";
 
+	public static String getConceptId(JSONObject concept) throws JSONException {
+		return concept.getString("conceptId");
+	}
+
 	public enum DescriptionType {
 		FSN, PT, SYNONYM
 	}
