@@ -77,6 +77,10 @@ public class ConceptHelper {
 		((JSONArray) concept.get("relationships")).put(json);
 	}
 
+	public static void setModule(String moduleId, JSONObject concept) throws JSONException {
+		concept.put("moduleId", moduleId);
+	}
+
 	public static JSONObject findRelationship(String typeId, JSONObject concept) throws JSONException {
 		final JSONArray relationships = concept.getJSONArray("relationships");
 		for (int i = 0; i < relationships.length(); i++) {
