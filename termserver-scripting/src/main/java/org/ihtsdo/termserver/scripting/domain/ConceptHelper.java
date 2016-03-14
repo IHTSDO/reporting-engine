@@ -85,9 +85,11 @@ public class ConceptHelper {
 		final JSONArray relationships = concept.getJSONArray("relationships");
 		for (int i = 0; i < relationships.length(); i++) {
 			final JSONObject relationship = relationships.getJSONObject(i);
-			final String relTypeId = relationship.getJSONObject("type").getString("conceptId");
-			if (relTypeId.equals(typeId)) {
-				return relationship;
+			if (relationship.getString("characteristicType").equals("STATED_RELATIONSHIP")) {
+				final String relTypeId = relationship.getJSONObject("type").getString("conceptId");
+				if (relTypeId.equals(typeId)) {
+					return relationship;
+				}
 			}
 		}
 		return null;
