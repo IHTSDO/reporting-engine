@@ -362,16 +362,21 @@ public class BatchImportService {
 	private String getAllNotes(AuthoringTask task, BatchImportRun run,
 			Map<String, ISnomedBrowserConcept> conceptsLoaded) throws BusinessServiceException {
 		StringBuilder str = new StringBuilder();
+		BatchImportFormat format = run.getFormatter();
 		for (Map.Entry<String, ISnomedBrowserConcept> thisEntry: conceptsLoaded.entrySet()) {
 			String thisOriginalSCTID = thisEntry.getKey();
+			BatchImportConcept biConcept = run.getConcept(thisOriginalSCTID);
 			ISnomedBrowserConcept thisConcept = thisEntry.getValue();
 			str.append("<h5>")
 			.append(thisConcept.getId())
 			.append(" - ")
 			.append(thisConcept.getFsn())
 			.append(":</h5>")
-			.append("<ul>");
-			BatchImportConcept biConcept = run.getConcept(thisOriginalSCTID);
+			.append("<ul>")
+			.append("<li>Originating Reference: ")
+			.append(biConcept.get(format.getIndex(FIELD.ORIG_REF)))
+			.append("</li>");
+			
 			List<String> notes = run.getFormatter().getAllNotes(biConcept);
 			for (String thisNote: notes) {
 				str.append("<li>")

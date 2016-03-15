@@ -20,7 +20,7 @@ public class BatchImportFormat {
 	private static final Logger LOGGER = LoggerFactory.getLogger(BatchImportFormat.class);
 
 	public static enum FORMAT { SIRS, ICD11 };
-	public static enum FIELD { SCTID, PARENT, FSN, FSN_ROOT, NOTES, SEMANTIC_TAG, EXPRESSION};
+	public static enum FIELD { SCTID, PARENT, FSN, FSN_ROOT, NOTES, SEMANTIC_TAG, EXPRESSION, ORIG_REF};
 	public static int FIELD_NOT_FOUND = -1;
 	public static String RANGE_SEPARATOR = "-";
 	public static int FIRST_NOTE = 0;
@@ -52,6 +52,7 @@ public class BatchImportFormat {
 	public static Map<FIELD, String>SIRS_MAP = new HashMap<FIELD, String>();
 	static {
 		//Note that these are 0-based indexes
+		SIRS_MAP.put(FIELD.ORIG_REF, "0");
 		SIRS_MAP.put(FIELD.SCTID, "2");
 		SIRS_MAP.put(FIELD.PARENT, "8");
 		SIRS_MAP.put(FIELD.FSN_ROOT, "4");
@@ -61,6 +62,7 @@ public class BatchImportFormat {
 	public static Map<FIELD, String>ICD11_MAP = new HashMap<FIELD, String>();
 	static {
 		//Note that these are 0-based indexes
+		ICD11_MAP.put(FIELD.ORIG_REF, "0");
 		ICD11_MAP.put(FIELD.SCTID, "1");
 		ICD11_MAP.put(FIELD.FSN, "2");
 		ICD11_MAP.put(FIELD.EXPRESSION, "4");		
