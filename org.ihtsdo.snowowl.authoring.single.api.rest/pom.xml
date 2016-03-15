@@ -12,6 +12,8 @@
 	<properties>
 		<org.ihtsdo.otf.im-version>0.0.3</org.ihtsdo.otf.im-version>
 		<activemq.version>5.10.0</activemq.version>
+		<emf.version>2.11.0-v20150123-0347</emf.version>
+		<slf4j.version>1.7.2</slf4j.version>
 		<!-- manifest properties -->
 		<bundle.symbolicName>${project.artifactId};singleton:=true</bundle.symbolicName>
 		<bundle.namespace>${project.artifactId}</bundle.namespace>
@@ -165,6 +167,28 @@
 			<version>${snowowl.version}</version>
 			<scope>${snowowl.lib.scope}</scope>
 		</dependency>
+		<dependency>
+			<groupId>com.b2international.snowowl</groupId>
+			<artifactId>com.b2international.snowowl.snomed.scg</artifactId>
+			<version>${snowowl.version}</version>
+			<scope>${snowowl.lib.scope}</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.eclipse.emf</groupId>
+			<artifactId>org.eclipse.emf.ecore</artifactId>
+			<version>${emf.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.eclipse.emf</groupId>
+			<artifactId>org.eclipse.emf.common</artifactId>
+			<version>${emf.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>${slf4j.version}</version>
+		</dependency>
+
 
 		<!-- The Servlet specification is implemented by the web container -->
 		<dependency>
@@ -439,7 +463,8 @@
 							com.b2international.snowowl.internal.eventbus,
 							com.b2international.snowowl.snomed.api.impl.validation,
 							com.b2international.snowowl.api.impl.codesystem,
-							org.slf4j;version="1.7.2"
+							com.b2international.snowowl.snomed.scg,
+							org.slf4j;version="1.7.2",
 						</Import-Package>
 					</instructions>
 				</configuration>

@@ -11,14 +11,16 @@ import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportConce
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.b2international.snowowl.dsl.SCGStandaloneSetup;
+import com.b2international.snowowl.dsl.scg.Expression;
 import com.google.common.primitives.Ints;
 
 public class BatchImportFormat {
 	
-	private final Logger logger = LoggerFactory.getLogger(getClass());
+	private static final Logger LOGGER = LoggerFactory.getLogger(BatchImportFormat.class);
 
-	public static enum FORMAT { SIRS };
-	public static enum FIELD { SCTID, PARENT, FSN_ROOT, NOTES, SEMANTIC_TAG};
+	public static enum FORMAT { SIRS, ICD11 };
+	public static enum FIELD { SCTID, PARENT, FSN, FSN_ROOT, NOTES, SEMANTIC_TAG, EXPRESSION};
 	public static int FIELD_NOT_FOUND = -1;
 	public static String RANGE_SEPARATOR = "-";
 	public static int FIRST_NOTE = 0;
@@ -26,21 +28,27 @@ public class BatchImportFormat {
 	public static final String NEW_LINE = "\n";
 	public static final String SYNONYM = "Synonym";
 	public static final String NOTE = "Note";
+	public static final String EXPRESSION = "Expression";
 	
 	private static final String NEW_SCTID = "NEW_SCTID";  //Indicates we'll pass blank to TS
-	
 	
 	private FORMAT format;
 	private Map<FIELD, String> fieldMap;
 	private int[] synonymFields;
 	private int[] notesFields;
+	private boolean definesByExpression = false;
 	
 	//There are variable numbers of Synonym and Notes fields, so they're optional and we'll work them out at runtime
 	public static String[] SIRS_HEADERS = {"Request Id","Topic","Local Code","Local Term","Fully Specified Name","Semantic Tag",
 			"Preferred Term","Terminology(1)","Parent Concept Id(1)","UMLS CUI","Definition","Proposed Use","Justification"};
-
+	public static String[] ICD11_HEADERS = {"icd11","sctid","fsn","prefterm","expression"};  //Also note and synonym, but we'll detect those dynamically as there can be more than 1.
 	public static String ADDITIONAL_RESULTS_HEADER = "OrigRow,Loaded,Import Result,SCTID Created";
 	
+	public static Map<FORMAT, String[]> HEADERS_MAP = new HashMap<FORMAT, String[]>();
+	static {
+		HEADERS_MAP.put(FORMAT.SIRS, SIRS_HEADERS);
+		HEADERS_MAP.put(FORMAT.ICD11, ICD11_HEADERS);
+	}
 	public static Map<FIELD, String>SIRS_MAP = new HashMap<FIELD, String>();
 	static {
 		//Note that these are 0-based indexes
@@ -50,32 +58,30 @@ public class BatchImportFormat {
 		SIRS_MAP.put(FIELD.SEMANTIC_TAG, "5");
 	}
 	
+	public static Map<FIELD, String>ICD11_MAP = new HashMap<FIELD, String>();
+	static {
+		//Note that these are 0-based indexes
+		ICD11_MAP.put(FIELD.SCTID, "1");
+		ICD11_MAP.put(FIELD.FSN, "2");
+		ICD11_MAP.put(FIELD.EXPRESSION, "4");		
+	}
+	
 	private static BatchImportFormat create(FORMAT format) throws BusinessServiceException {
 		
 		if (format == FORMAT.SIRS) {
-			return new BatchImportFormat(FORMAT.SIRS, SIRS_MAP);
+			return new BatchImportFormat(FORMAT.SIRS, SIRS_MAP, false);
+		} else if (format == FORMAT.ICD11) {
+			return new BatchImportFormat(FORMAT.ICD11, ICD11_MAP, true);
 		} else {
 			throw new BusinessServiceException("Unsupported format: " + format);
 		}
 	}
 	
-	private BatchImportFormat (FORMAT format, Map<FIELD, String> fieldMap) {
+	private BatchImportFormat (FORMAT format, Map<FIELD, String> fieldMap, boolean definesByExpression) {
 		this.format = format;
 		this.fieldMap = fieldMap;
+		this.definesByExpression = definesByExpression;
 	}
-	
-/*	public static FORMAT determineFormat(Map<String, Integer> headers) throws BusinessServiceException {
-		
-		//Is it SIRS?  Throw exception if not because it's the only format we support
-		for (Map.Entry<String, Integer> thisHeaderEntry : headers.entrySet()) {
-			String header = thisHeaderEntry.getKey();
-			int index = thisHeaderEntry.getValue().intValue();
-			if (!header.equals(SIRS_HEADERS[index])) {
-				throw new BusinessServiceException("File is unrecognised format because header " + index + ":" + header + " is not " + SIRS_HEADERS[index] + " as expected." );
-			}
-		}
-		return FORMAT.SIRS;
-	}*/
 	
 	public int getIndex (FIELD field) throws BusinessServiceException {
 		if (fieldMap.containsKey(field)) {
@@ -85,6 +91,7 @@ public class BatchImportFormat {
 	}
 	
 	public BatchImportConcept createConcept (CSVRecord row) throws BusinessServiceException {
+		BatchImportConcept newConcept = null;
 		String sctid = row.get(getIndex(FIELD.SCTID)).trim();
 		//We need an sctid in order to keep track of the row, so form from row number if null
 		if (sctid == null || sctid.trim().length() == 0) {
@@ -96,8 +103,15 @@ public class BatchImportFormat {
 			requiresNewSCTID = true;
 			sctid += "_" + row.getRecordNumber();
 		}
-		String parent = row.get(getIndex(FIELD.PARENT));
-		return new BatchImportConcept (sctid, parent, row, requiresNewSCTID);
+		
+		if (definesByExpression) {
+			String expressionStr = row.get(getIndex(FIELD.EXPRESSION)).trim();
+			newConcept = new BatchImportConcept (sctid, row, expressionStr, requiresNewSCTID);
+		} else {
+			String parent = row.get(getIndex(FIELD.PARENT));
+			newConcept = new BatchImportConcept (sctid, parent, row, requiresNewSCTID);			
+		}
+		return newConcept;
 	}
 
 	public List<String> getAllNotes(BatchImportConcept thisConcept) throws BusinessServiceException {
@@ -109,7 +123,7 @@ public class BatchImportFormat {
 					notes.add(thisNote);
 				}
 			} catch (Exception e) {
-				logger.error("Failed to recover note at field {} for concept {}", notesFields[i], thisConcept.getSctid(), e);
+				LOGGER.error("Failed to recover note at field {} for concept {}", notesFields[i], thisConcept.getSctid(), e);
 			}
 		}
 		return notes;
@@ -128,31 +142,48 @@ public class BatchImportFormat {
 
 	public static BatchImportFormat determineFormat(CSVRecord header) throws BusinessServiceException {
 		
-		//Is it SIRS?  Throw exception if not because it's the only format we support
-		List<Integer> notesIndexList = new ArrayList<Integer>();
-		List<Integer> synonymIndexList = new ArrayList<Integer>();
-		for (int colIdx=0; colIdx < header.size() ;colIdx++) {
-			if (colIdx < SIRS_HEADERS.length && !header.get(colIdx).equals(SIRS_HEADERS[colIdx])) {
-				throw new BusinessServiceException("File is unrecognised format because header " + colIdx + ":" + header.get(colIdx) + " is not " + SIRS_HEADERS[colIdx] + " as expected." );
+		BatchImportFormat thisFormat = null;
+		for (Map.Entry<FORMAT, String[]> thisFormatHeaders : HEADERS_MAP.entrySet()) {
+			FORMAT checkFormat = thisFormatHeaders.getKey();
+			String[] checkHeaders = thisFormatHeaders.getValue();
+			boolean mismatchDetected = false;
+			List<Integer> notesIndexList = new ArrayList<Integer>();
+			List<Integer> synonymIndexList = new ArrayList<Integer>();
+			for (int colIdx=0; colIdx < header.size() && !mismatchDetected ;colIdx++) {
+				if (colIdx < checkHeaders.length && !header.get(colIdx).equals(checkHeaders[colIdx])) {
+					LOGGER.info("File is not {} format because header {}:{} is not {}.", checkFormat, colIdx, header.get(colIdx), checkHeaders[colIdx]);
+					mismatchDetected = true;
+				}
+				
+				if (header.get(colIdx).equalsIgnoreCase(NOTE)) {
+					notesIndexList.add(colIdx);
+				}
+				
+				if (header.get(colIdx).equalsIgnoreCase(SYNONYM)) {
+					synonymIndexList.add(colIdx);
+				}
 			}
-			
-			if (header.get(colIdx).equalsIgnoreCase(NOTE)) {
-				notesIndexList.add(colIdx);
-			}
-			
-			if (header.get(colIdx).equalsIgnoreCase(SYNONYM)) {
-				synonymIndexList.add(colIdx);
+			if (!mismatchDetected) {
+				thisFormat = create(checkFormat);
+				thisFormat.notesFields = Ints.toArray(notesIndexList);
+				thisFormat.synonymFields = Ints.toArray(synonymIndexList);
 			}
 		}
-		BatchImportFormat thisFormat = create(FORMAT.SIRS);
-		thisFormat.notesFields = Ints.toArray(notesIndexList);
-		thisFormat.synonymFields = Ints.toArray(synonymIndexList);
+		if (thisFormat == null) {
+			throw new BusinessServiceException ("File format could not be determined");
+		}
 		return thisFormat;
+	
+	}
+
+	public boolean definesByExpression() {
+		return definesByExpression;
 	}
 
 	public String[] getHeaders() throws BusinessServiceException {
 		switch (format) {
 			case SIRS : return SIRS_HEADERS;
+			case ICD11 : return ICD11_HEADERS;
 		}
 		throw new BusinessServiceException("Unrecognised format: " + format);
 	}

@@ -42,6 +42,10 @@ import com.b2international.commons.http.ExtendedLocale;
 import com.b2international.snowowl.core.exceptions.ApiError;
 import com.b2international.snowowl.core.exceptions.BadRequestException;
 import com.b2international.snowowl.core.exceptions.ValidationException;
+import com.b2international.snowowl.dsl.SCGStandaloneSetup;
+import com.b2international.snowowl.dsl.scg.Attribute;
+import com.b2international.snowowl.dsl.scg.Expression;
+import com.b2international.snowowl.dsl.scg.Group;
 import com.b2international.snowowl.eventbus.IEventBus;
 import com.b2international.snowowl.snomed.SnomedConstants;
 import com.b2international.snowowl.snomed.SnomedConstants.Concepts;
@@ -97,7 +101,6 @@ public class BatchImportService {
 	private static final String SCTID_EN_US = Concepts.REFSET_LANGUAGE_TYPE_US;
 	//private static final String JIRA_HEADING5 = "h5. ";
 	//private static final String VALIDATION_ERROR = "ERROR";
-	private static final int MIN_VIABLE_COLUMNS = 9;
 	
 	private static final String EDIT_PANEL = "edit-panel";
 	private static final String SAVE_LIST = "saved-list";	
@@ -150,8 +153,9 @@ public class BatchImportService {
 
 	private void prepareConcepts(BatchImportRun run, List<CSVRecord> rows) throws BusinessServiceException {
 		// Loop through concepts and form them into a hierarchy to be loaded, if valid
+		int minViableColumns = run.getImportRequest().getFormat().getHeaders().length;
 		for (CSVRecord thisRow : rows) {
-			if (thisRow.size() > MIN_VIABLE_COLUMNS) {
+			if (thisRow.size() > minViableColumns) {
 				BatchImportConcept thisConcept = run.getFormatter().createConcept(thisRow);
 				if (validate(run, thisConcept)) {
 					run.insertIntoLoadHierarchy(thisConcept);
@@ -185,9 +189,19 @@ public class BatchImportService {
 			return false;
 		}
 		
-		if (!validateSCTID(concept.getParent())) {
+		if (!run.getFormatter().definesByExpression() && !validateSCTID(concept.getParent())) {
 			run.fail(concept.getRow(), concept.getParent() + " is not a valid parent identifier.");
 			return false;
+		}
+		
+		if (run.getFormatter().definesByExpression()) {
+			try{
+				Expression expression = (Expression) SCGStandaloneSetup.parse(concept.getExpressionStr());
+				concept.setExpression(expression);
+			} catch (Exception e) {
+				run.fail(concept.getRow(), " is represented by an invalid expression: " + e.getMessage());
+				return false;				
+			}
 		}
 		
 		return true;
@@ -473,11 +487,16 @@ public class BatchImportService {
 		}
 		newConcept.setActive(true);
 		newConcept.setDefinitionStatus(DefinitionStatus.PRIMITIVE);
-		
-		//Set the Parent
-		List<ISnomedBrowserRelationship> relationships = new ArrayList<ISnomedBrowserRelationship>();
-		ISnomedBrowserRelationship isA = createRelationship(thisConcept.getSctid(), SCTID_ISA, thisConcept.getParent(), CharacteristicType.STATED_RELATIONSHIP);
-		relationships.add(isA);
+
+		List<ISnomedBrowserRelationship> relationships = null;
+		if (formatter.definesByExpression()) {
+			relationships = convertExpressionToRelationships(thisConcept.getSctid(), thisConcept.getExpression());
+		} else {
+			//Set the Parent
+			relationships = new ArrayList<ISnomedBrowserRelationship>();
+			ISnomedBrowserRelationship isA = createRelationship("rel_isa", thisConcept.getSctid(), SCTID_ISA, thisConcept.getParent(), CharacteristicType.STATED_RELATIONSHIP);
+			relationships.add(isA);
+		}
 		newConcept.setRelationships(relationships);
 		
 		//Add Descriptions FSN, then Preferred Term
@@ -497,6 +516,28 @@ public class BatchImportService {
 		return newConcept;
 	}
 	
+	private List<ISnomedBrowserRelationship> convertExpressionToRelationships(String sourceSCTID,
+			Expression expression) {
+		List<ISnomedBrowserRelationship> relationships = new ArrayList<ISnomedBrowserRelationship>();
+		int attributeNum = 0;
+		
+		for (Attribute attribute : expression.getAttributes()) {
+			ISnomedBrowserRelationship rel = createRelationship("rel_" + attributeNum, attribute);
+			relationships.add(rel);
+			attributeNum++;
+		}
+		
+		for (Group group : expression.getGroups()) {
+			for (Attribute attribute : group.getAttributes()) {
+				ISnomedBrowserRelationship rel = createRelationship("rel_" + attributeNum, attribute);
+				relationships.add(rel);
+				attributeNum++;
+			}
+		}		
+		
+		return relationships;
+	}
+
 	private void addSynonyms(List<ISnomedBrowserDescription> descriptions,
 			BatchImportFormat formatter, BatchImportConcept thisConcept) throws BusinessServiceException {
 		List<String> allSynonyms = formatter.getAllSynonyms(thisConcept);
@@ -523,19 +564,23 @@ public class BatchImportService {
 		return false;
 	}
 
-	ISnomedBrowserRelationship createRelationship(String sourceSCTID, String type, String destinationSCTID, CharacteristicType characteristic) {
+	ISnomedBrowserRelationship createRelationship(String tmpId, String sourceSCTID, String type, String destinationSCTID, CharacteristicType characteristic) {
 		SnomedBrowserRelationship rel = new SnomedBrowserRelationship();
 		rel.setCharacteristicType(CharacteristicType.STATED_RELATIONSHIP);
 		rel.setSourceId(sourceSCTID);
 		rel.setType(new SnomedBrowserRelationshipType(SCTID_ISA));
 		//Set a temporary id so the user can tell which item failed validation
-		rel.setRelationshipId("rel_isa");
+		rel.setRelationshipId(tmpId);
 		SnomedBrowserRelationshipTarget destination = new SnomedBrowserRelationshipTarget();
 		destination.setConceptId(destinationSCTID);
 		rel.setTarget(destination);
 		rel.setActive(true);
-
 		return rel;
+	}
+	
+	private ISnomedBrowserRelationship createRelationship(String string, Attribute attribute) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 	
 	ISnomedBrowserDescription createDescription(String term, SnomedBrowserDescriptionType type, Map<String, Acceptability> acceptabilityMap) {

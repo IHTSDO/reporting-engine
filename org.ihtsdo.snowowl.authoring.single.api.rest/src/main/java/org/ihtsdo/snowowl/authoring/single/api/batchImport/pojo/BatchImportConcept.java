@@ -6,6 +6,8 @@ import java.util.List;
 import org.apache.commons.csv.CSVRecord;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 
+import com.b2international.snowowl.dsl.scg.Expression;
+
 public class BatchImportConcept {
 	
 	CSVRecord row;
@@ -14,6 +16,10 @@ public class BatchImportConcept {
 
 	String parent;
 	
+	String expressionStr;
+	
+	Expression expression;
+
 	boolean requiresNewSCTID = false;
 	
 	List<BatchImportConcept> children = new ArrayList<BatchImportConcept>();
@@ -21,6 +27,13 @@ public class BatchImportConcept {
 	public BatchImportConcept(String sctid, String parent, CSVRecord row, boolean requiresNewSCTID) {
 		this.sctid = sctid;
 		this.parent = parent;
+		this.row = row;
+		this.requiresNewSCTID = requiresNewSCTID;
+	}
+	
+	public BatchImportConcept(String sctid, CSVRecord row, String expressionStr, boolean requiresNewSCTID) {
+		this.sctid = sctid;
+		this.expressionStr = expressionStr;
 		this.row = row;
 		this.requiresNewSCTID = requiresNewSCTID;
 	}
@@ -88,6 +101,18 @@ public class BatchImportConcept {
 			thisBatch.add(thisChild);
 			thisChild.addDescendants(thisBatch);
 		}
-	}	
+	}
+	
+	public Expression getExpression() {
+		return expression;
+	}
+
+	public void setExpression(Expression expression) {
+		this.expression = expression;
+	}
+
+	public String getExpressionStr() {
+		return this.expressionStr;
+	}
 
 }
