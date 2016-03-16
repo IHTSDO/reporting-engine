@@ -31,6 +31,12 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
 			<version>1.2.5.RELEASE</version>
+			<exclusions>
+				<exclusion>
+					<groupId>ch.qos.logback</groupId>
+					<artifactId>logback-classic</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>com.h2database</groupId>
@@ -185,6 +191,12 @@
 			<version>${emf.version}</version>
 			<scope>${snowowl.lib.scope}</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>${slf4j.version}</version>
+			<scope>${snowowl.lib.scope}</scope>
+		</dependency>
 
 		<!-- The Servlet specification is implemented by the web container -->
 		<dependency>
@@ -312,11 +324,23 @@
 			<classifier>resources</classifier>
 			<type>zip</type>
 			<scope>provided</scope>
+			<exclusions>
+				<exclusion>
+					<groupId>ch.qos.logback</groupId>
+					<artifactId>logback-classic</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.ihtsdo.otf</groupId>
 			<artifactId>ihtsdo-crowd-bridge</artifactId>
 			<version>${org.ihtsdo.otf.im-version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>ch.qos.logback</groupId>
+					<artifactId>logback-classic</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.httpcomponents</groupId>
@@ -500,6 +524,9 @@
 								applicationContext-CrowdClient.xml,
 								crowd-ehcache.xml
 							</includes>
+							<excludes>
+								logback-classic*.jar
+							</excludes>
 						</configuration>
 					</execution>
 					<execution>
