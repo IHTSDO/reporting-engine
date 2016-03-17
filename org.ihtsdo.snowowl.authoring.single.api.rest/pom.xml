@@ -482,9 +482,7 @@
 							com.b2international.snowowl.api.impl,
 							com.b2international.snowowl.internal.eventbus,
 							com.b2international.snowowl.snomed.api.impl.validation,
-							com.b2international.snowowl.api.impl.codesystem,
-							com.b2international.snowowl.snomed.scg,
-							org.slf4j;version="1.7.2"
+							com.b2international.snowowl.api.impl.codesystem
 						</Import-Package>
 					</instructions>
 				</configuration>
@@ -525,7 +523,8 @@
 								crowd-ehcache.xml
 							</includes>
 							<excludes>
-								logback-classic*.jar
+								logback-classic*.jar,
+								*slf4j*.jar
 							</excludes>
 						</configuration>
 					</execution>
