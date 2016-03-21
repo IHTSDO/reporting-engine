@@ -3,7 +3,7 @@
 	<parent>
 		<artifactId>ihtsdo-snowowl-parent</artifactId>
 		<groupId>org.ihtsdo.snowowl</groupId>
-		<version>4.5.13</version>
+		<version>4.5.14</version>
 	</parent>
 	<modelVersion>4.0.0</modelVersion>
 
@@ -75,6 +75,7 @@
 				<artifactId>maven-surefire-plugin</artifactId>
 				<version>2.18.1</version>
 				<configuration>
+					<!-- Integration tests are intended to be run manually at the moment -->
 					<skipTests>true</skipTests>
 				</configuration>
 			</plugin>

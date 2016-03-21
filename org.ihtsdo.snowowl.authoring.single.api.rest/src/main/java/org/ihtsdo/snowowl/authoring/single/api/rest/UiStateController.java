@@ -23,13 +23,14 @@ import java.io.IOException;
 @RequestMapping(produces={AbstractRestService.V1_MEDIA_TYPE, MediaType.APPLICATION_JSON_VALUE})
 public class UiStateController extends AbstractSnomedRestService {
 
+	public static final String SHARED = "SHARED";
 	@Autowired
 	private UiStateService uiStateService;
 	
 	@Autowired
 	private TaskService taskService;
 
-	@ApiOperation(value="Persist UI panel state", notes="This endpoint may be used to persist UI state using any json object. " +
+	@ApiOperation(value="Persist User UI panel state", notes="This endpoint may be used to persist UI state using any json object. " +
 			"State is stored and retrieved under Project, Task, User and panel. This also sets the Task status to In Progress if it's New.")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
@@ -44,7 +45,7 @@ public class UiStateController extends AbstractSnomedRestService {
 		uiStateService.persistTaskPanelState(projectKey, taskKey, ControllerHelper.getUsername(), panelId, jsonState);
 	}
 
-	@ApiOperation(value="Retrieve UI panel state", notes="This endpoint may be used to retrieve UI state using any json object.")
+	@ApiOperation(value="Retrieve User UI panel state", notes="This endpoint may be used to retrieve UI state using any json object.")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
 	})
@@ -55,7 +56,7 @@ public class UiStateController extends AbstractSnomedRestService {
 		return uiStateService.retrieveTaskPanelState(projectKey, taskKey, ControllerHelper.getUsername(), panelId);
 	}
 
-	@ApiOperation(value="Delete UI panel state", notes="This endpoint may be used to delete the UI state.")
+	@ApiOperation(value="Delete User UI panel state", notes="This endpoint may be used to delete the UI state.")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
 	})
@@ -67,7 +68,42 @@ public class UiStateController extends AbstractSnomedRestService {
 	}
 
 
-	@ApiOperation(value="Persist UI panel state", notes="This endpoint may be used to persist UI state using any json object. " +
+	@ApiOperation(value="Persist Shared UI panel state", notes="This endpoint may be used to persist UI state using any json object. " +
+			"State is stored and retrieved under Project, Task and panel shared between all users. This also sets the Task status to In Progress if it's New.")
+	@ApiResponses({
+			@ApiResponse(code = 200, message = "OK")
+	})
+	@RequestMapping(value="/projects/{projectKey}/tasks/{taskKey}/shared-ui-state/{panelId}", method= RequestMethod.POST)
+	public void persistSharedTaskUiPanelState(@PathVariable final String projectKey, @PathVariable final String taskKey,
+			@PathVariable final String panelId, @RequestBody final String jsonState) throws IOException, BusinessServiceException, JiraException {
+
+		uiStateService.persistTaskPanelState(projectKey, taskKey, SHARED, panelId, jsonState);
+	}
+
+	@ApiOperation(value="Retrieve Shared UI panel state", notes="This endpoint may be used to retrieve UI state using any json object.")
+	@ApiResponses({
+			@ApiResponse(code = 200, message = "OK")
+	})
+	@RequestMapping(value="/projects/{projectKey}/tasks/{taskKey}/shared-ui-state/{panelId}", method= RequestMethod.GET)
+	public String retrieveSharedTaskUiPanelState(@PathVariable final String projectKey, @PathVariable final String taskKey,
+			@PathVariable final String panelId) throws IOException {
+
+		return uiStateService.retrieveTaskPanelState(projectKey, taskKey, SHARED, panelId);
+	}
+
+	@ApiOperation(value="Delete Shared UI panel state", notes="This endpoint may be used to delete the UI state.")
+	@ApiResponses({
+			@ApiResponse(code = 200, message = "OK")
+	})
+	@RequestMapping(value="/projects/{projectKey}/tasks/{taskKey}/shared-ui-state/{panelId}", method= RequestMethod.DELETE)
+	public void deleteSharedTaskUiPanelState(@PathVariable final String projectKey, @PathVariable final String taskKey,
+			@PathVariable final String panelId) throws IOException {
+
+		uiStateService.deleteTaskPanelState(projectKey, taskKey, SHARED, panelId);
+	}
+
+
+	@ApiOperation(value="Persist User UI panel state", notes="This endpoint may be used to persist UI state using any json object. " +
 			"State is stored and retrieved under Project, Task, User and panel. This also sets the Task status to In Progress if it's New.")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
@@ -78,7 +114,7 @@ public class UiStateController extends AbstractSnomedRestService {
 		uiStateService.persistPanelState(ControllerHelper.getUsername(), panelId, jsonState);
 	}
 
-	@ApiOperation(value="Retrieve UI panel state", notes="This endpoint may be used to retrieve UI state using any json object.")
+	@ApiOperation(value="Retrieve User UI panel state", notes="This endpoint may be used to retrieve UI state using any json object.")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
 	})
@@ -88,7 +124,7 @@ public class UiStateController extends AbstractSnomedRestService {
 		return uiStateService.retrievePanelState(ControllerHelper.getUsername(), panelId);
 	}
 
-	@ApiOperation(value="Delete UI panel state", notes="This endpoint may be used to delete the UI state.")
+	@ApiOperation(value="Delete User UI panel state", notes="This endpoint may be used to delete the UI state.")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
 	})
