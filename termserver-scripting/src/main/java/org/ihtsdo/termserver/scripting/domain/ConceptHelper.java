@@ -81,6 +81,25 @@ public class ConceptHelper {
 		concept.put("moduleId", moduleId);
 	}
 
+	public static JSONObject findRelationshipById(String relationshipId, JSONObject concept) throws JSONException {
+		return findComponentById(relationshipId, concept, "relationships");
+	}
+
+	public static JSONObject findDescriptionById(String descriptionId, JSONObject concept) throws JSONException {
+		return findComponentById(descriptionId, concept, "descriptions");
+	}
+
+	private static JSONObject findComponentById(String componentId, JSONObject concept, String componentType) throws JSONException {
+		final JSONArray components = concept.getJSONArray(componentType);
+		for (int i = 0; i < components.length(); i++) {
+			final JSONObject component = components.getJSONObject(i);
+			if (componentId.equals(component.getString("id"))) {
+				return component;
+			}
+		}
+		return null;
+	}
+
 	public static JSONObject findRelationship(String typeId, JSONObject concept) throws JSONException {
 		final JSONArray relationships = concept.getJSONArray("relationships");
 		for (int i = 0; i < relationships.length(); i++) {

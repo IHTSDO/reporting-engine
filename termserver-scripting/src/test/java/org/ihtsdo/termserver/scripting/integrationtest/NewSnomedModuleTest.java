@@ -22,6 +22,10 @@ public class NewSnomedModuleTest extends AbstractIntegrationTest {
 		newDrugA = client.createConcept(newDrugA, branchPath).toObject();
 		Assert.assertEquals(drugsModuleId, newDrugA.getString("moduleId"));
 
+		final JSONObject aluminumChlorideAlcoholConcept = client.getConcept("412199006", branchPath).toObject();
+		ConceptHelper.setModule(drugsModuleId, aluminumChlorideAlcoholConcept);
+		client.updateConcept(aluminumChlorideAlcoholConcept, branchPath);
+
 		client.classifyAndWaitForComplete(branchPath);
 	}
 
