@@ -11,8 +11,8 @@ import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportConce
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.b2international.snowowl.dsl.SCGStandaloneSetup;
-import com.b2international.snowowl.dsl.scg.Expression;
+//import com.b2international.snowowl.dsl.SCGStandaloneSetup;
+//import com.b2international.snowowl.dsl.scg.Expression;
 import com.google.common.primitives.Ints;
 
 public class BatchImportFormat {

@@ -6,8 +6,6 @@ import java.util.List;
 import org.apache.commons.csv.CSVRecord;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 
-import com.b2international.snowowl.dsl.scg.Expression;
-
 public class BatchImportConcept {
 	
 	CSVRecord row;
@@ -18,7 +16,7 @@ public class BatchImportConcept {
 	
 	String expressionStr;
 	
-	Expression expression;
+	BatchImportExpression expression;
 
 	boolean requiresNewSCTID = false;
 	
@@ -103,11 +101,11 @@ public class BatchImportConcept {
 		}
 	}
 	
-	public Expression getExpression() {
+	public BatchImportExpression getExpression() {
 		return expression;
 	}
 
-	public void setExpression(Expression expression) {
+	public void setExpression(BatchImportExpression expression) {
 		this.expression = expression;
 	}
 

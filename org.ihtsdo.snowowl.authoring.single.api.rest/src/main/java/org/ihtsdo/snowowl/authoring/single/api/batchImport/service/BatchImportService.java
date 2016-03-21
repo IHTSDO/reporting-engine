@@ -18,6 +18,8 @@ import net.rcarz.jiraclient.JiraException;
 import org.apache.commons.csv.CSVRecord;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportConcept;
+import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportExpression;
+import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportGroup;
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportRequest;
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportRun;
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportState;
@@ -97,6 +99,7 @@ public class BatchImportService {
 	private static final int ROW_UNKNOWN = -1;
 	//private static final String BULLET = "* ";
 	private static final String SCTID_ISA = Concepts.IS_A;
+	public static final int DEFAULT_GROUP = 1;
 	private static final String SCTID_EN_GB = Concepts.REFSET_LANGUAGE_TYPE_UK;
 	private static final String SCTID_EN_US = Concepts.REFSET_LANGUAGE_TYPE_US;
 	//private static final String JIRA_HEADING5 = "h5. ";
@@ -196,8 +199,9 @@ public class BatchImportService {
 		
 		if (run.getFormatter().definesByExpression()) {
 			try{
-				Expression expression = (Expression) SCGStandaloneSetup.parse(concept.getExpressionStr());
-				concept.setExpression(expression);
+				//Expression expression = (Expression) SCGStandaloneSetup.parse(concept.getExpressionStr());
+				BatchImportExpression exp = BatchImportExpression.parse(concept.getExpressionStr());
+				concept.setExpression(exp);
 			} catch (Exception e) {
 				run.fail(concept.getRow(), " is represented by an invalid expression: " + e.getMessage());
 				return false;				
@@ -499,7 +503,7 @@ public class BatchImportService {
 		} else {
 			//Set the Parent
 			relationships = new ArrayList<ISnomedBrowserRelationship>();
-			ISnomedBrowserRelationship isA = createRelationship("rel_isa", thisConcept.getSctid(), SCTID_ISA, thisConcept.getParent(), CharacteristicType.STATED_RELATIONSHIP);
+			ISnomedBrowserRelationship isA = createRelationship(DEFAULT_GROUP, "rel_isa", thisConcept.getSctid(), SCTID_ISA, thisConcept.getParent());
 			relationships.add(isA);
 		}
 		newConcept.setRelationships(relationships);
@@ -521,7 +525,7 @@ public class BatchImportService {
 		return newConcept;
 	}
 	
-	private List<ISnomedBrowserRelationship> convertExpressionToRelationships(String sourceSCTID,
+	/*private List<ISnomedBrowserRelationship> convertExpressionToRelationships(String sourceSCTID,
 			Expression expression) {
 		List<ISnomedBrowserRelationship> relationships = new ArrayList<ISnomedBrowserRelationship>();
 		int attributeNum = 0;
@@ -539,6 +543,23 @@ public class BatchImportService {
 				attributeNum++;
 			}
 		}		
+		
+		return relationships;
+	}*/
+	
+	List<ISnomedBrowserRelationship> convertExpressionToRelationships(String sourceSCTID,
+			BatchImportExpression expression) {
+		List<ISnomedBrowserRelationship> relationships = new ArrayList<ISnomedBrowserRelationship>();
+		
+		int parentNum = 0;
+		for (String thisParent : expression.getFocusConcepts()) {
+			ISnomedBrowserRelationship rel = createRelationship(DEFAULT_GROUP, "rel_" + (parentNum++), sourceSCTID, SCTID_ISA, thisParent);
+			relationships.add(rel);
+		}
+		
+		for (BatchImportGroup group : expression.getAttributeGroups()) {
+			relationships.addAll(group.getRelationships());
+		}
 		
 		return relationships;
 	}
@@ -569,11 +590,12 @@ public class BatchImportService {
 		return false;
 	}
 
-	ISnomedBrowserRelationship createRelationship(String tmpId, String sourceSCTID, String type, String destinationSCTID, CharacteristicType characteristic) {
+	public static ISnomedBrowserRelationship createRelationship(int groupNum, String tmpId, String sourceSCTID, String typeSCTID, String destinationSCTID) {
 		SnomedBrowserRelationship rel = new SnomedBrowserRelationship();
+		rel.setGroupId(groupNum);
 		rel.setCharacteristicType(CharacteristicType.STATED_RELATIONSHIP);
 		rel.setSourceId(sourceSCTID);
-		rel.setType(new SnomedBrowserRelationshipType(SCTID_ISA));
+		rel.setType(new SnomedBrowserRelationshipType(typeSCTID));
 		//Set a temporary id so the user can tell which item failed validation
 		rel.setRelationshipId(tmpId);
 		SnomedBrowserRelationshipTarget destination = new SnomedBrowserRelationshipTarget();
@@ -581,11 +603,6 @@ public class BatchImportService {
 		rel.setTarget(destination);
 		rel.setActive(true);
 		return rel;
-	}
-	
-	private ISnomedBrowserRelationship createRelationship(String string, Attribute attribute) {
-		// TODO Auto-generated method stub
-		return null;
 	}
 	
 	ISnomedBrowserDescription createDescription(String term, SnomedBrowserDescriptionType type, Map<String, Acceptability> acceptabilityMap) {
