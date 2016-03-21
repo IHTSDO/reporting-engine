@@ -22,11 +22,10 @@ public class CdoStore {
 
 	private static final String MAIN = "MAIN";
 
-	private static final String GET_BRANCH_ID = "select childBranch.id "
-		+ " from cdo_branches childBranch "
-		+ " where childBranch.base_id =  "
-		+ " ( select max(parent.id) from cdo_branches parent where name = ? ) "
-		+ " and childBranch.name = ? ";
+	private static final String GET_BRANCH_ID = "select max(c.id) " +
+			"from cdo_branches p " +
+			"join cdo_branches c on p.id=c.base_id " +
+			"where p.name=? and c.name=?;";
 
 	private static final String GET_PROJECT_BRANCH_ID = " select max(childBranch.id) "
 			+ " from cdo_branches childBranch "
@@ -132,7 +131,7 @@ public class CdoStore {
 				stmt.setString(2, childBranchName);
 			}
 			ResultSet rs = stmt.executeQuery();
-			Integer result = rs.next() ? new Integer(rs.getInt(1)) : null;
+			Integer result = rs.next() ? rs.getInt(1) : null;
 			logger.info("Determined branch id for {}/{}: {}", parentBranchName, childBranchName, result);
 			return result;
 		}
