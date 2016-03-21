@@ -2,16 +2,15 @@ package org.ihtsdo.termserver.scripting.integrationtest;
 
 import org.ihtsdo.termserver.scripting.client.SnowOwlClient;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientEventListener;
+import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.ConceptHelper;
 import org.junit.After;
 import org.junit.Before;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
 import us.monoid.web.JSONResource;
 
-import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashSet;
@@ -28,7 +27,7 @@ public abstract class AbstractIntegrationTest implements SnowOwlClientEventListe
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
 	@Before
-	public void setup() throws IOException, JSONException {
+	public void setup() throws SnowOwlClientException {
 		branchesToTearDown = new HashSet<>();
 		client = new SnowOwlClient(url, "snowowl", "snowowl");
 		client.addEventListener(this);

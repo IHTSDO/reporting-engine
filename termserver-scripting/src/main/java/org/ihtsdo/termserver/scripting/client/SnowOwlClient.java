@@ -30,61 +30,94 @@ public class SnowOwlClient {
 		resty.authenticate(url, username, password.toCharArray());
 	}
 
-	public JSONResource createConcept(JSONObject json, String branchPath) throws Exception {
-		final JSONResource newConcept = resty.json(getConceptsPath(branchPath), RestyHelper.content(json, SNOWOWL_CONTENT_TYPE));
-		logger.info("Created concept " + newConcept.get("conceptId"));
-		return newConcept;
+	public JSONResource createConcept(JSONObject json, String branchPath) throws SnowOwlClientException {
+		final JSONResource newConcept;
+		try {
+			newConcept = resty.json(getConceptsPath(branchPath), RestyHelper.content(json, SNOWOWL_CONTENT_TYPE));
+			logger.info("Created concept " + newConcept.get("conceptId"));
+			return newConcept;
+		} catch (Exception e) {
+			throw new SnowOwlClientException(e);
+		}
 	}
 
-	public JSONResource updateConcept(JSONObject concept, String branchPath) throws IOException, JSONException {
-		final String id = concept.getString("conceptId");
-		Preconditions.checkNotNull(id);
-		logger.info("Updated concept " + id);
-		return resty.json(getConceptsPath(branchPath) + "/" + id, Resty.put(RestyHelper.content(concept, SNOWOWL_CONTENT_TYPE)));
+	public JSONResource updateConcept(JSONObject concept, String branchPath) throws SnowOwlClientException {
+		try {
+			final String id = concept.getString("conceptId");
+			Preconditions.checkNotNull(id);
+			logger.info("Updated concept " + id);
+			return resty.json(getConceptsPath(branchPath) + "/" + id, Resty.put(RestyHelper.content(concept, SNOWOWL_CONTENT_TYPE)));
+		} catch (Exception e) {
+			throw new SnowOwlClientException(e);
+		}
 	}
 
-	public JSONResource getConcept(String sctid, String branchPath) throws IOException {
-		return resty.json(getConceptsPath(branchPath) + "/" + sctid);
+	public JSONResource getConcept(String sctid, String branchPath) throws SnowOwlClientException {
+		try {
+			return resty.json(getConceptsPath(branchPath) + "/" + sctid);
+		} catch (IOException e) {
+			throw new SnowOwlClientException(e);
+		}
 	}
 
 	private String getConceptsPath(String branchPath) {
 		return url + "/browser/" + branchPath + "/concepts";
 	}
 
-	public String createBranch(String parent, String branchName) throws JSONException, IOException {
-		JSONObject jsonObject = new JSONObject();
-		jsonObject.put("parent", parent);
-		jsonObject.put("name", branchName);
-		resty.json(url + "/branches", RestyHelper.content(jsonObject, SNOWOWL_CONTENT_TYPE));
-		final String branchPath = parent + "/" + branchName;
-		logger.info("Created branch {}", branchPath);
-		for (SnowOwlClientEventListener eventListener : eventListeners) {
-			eventListener.branchCreated(branchPath);
+	public String createBranch(String parent, String branchName) throws SnowOwlClientException {
+		try {
+			JSONObject jsonObject = new JSONObject();
+			jsonObject.put("parent", parent);
+			jsonObject.put("name", branchName);
+			resty.json(url + "/branches", RestyHelper.content(jsonObject, SNOWOWL_CONTENT_TYPE));
+			final String branchPath = parent + "/" + branchName;
+			logger.info("Created branch {}", branchPath);
+			for (SnowOwlClientEventListener eventListener : eventListeners) {
+				eventListener.branchCreated(branchPath);
+			}
+			return branchPath;
+		} catch (Exception e) {
+			throw new SnowOwlClientException(e);
 		}
-		return branchPath;
 	}
 
-	public void mergeBranch(String source, String target) throws IOException, JSONException {
-		final JSONObject json = new JSONObject();
-		json.put("source", source);
-		json.put("target", target);
-		final String message = "Merging " + source + " to " + target;
-		json.put("commitComment", message);
-		logger.info(message);
-		resty.json(url + "/merges", RestyHelper.content(json, SNOWOWL_CONTENT_TYPE));
+	public void mergeBranch(String source, String target) throws SnowOwlClientException {
+		try {
+			final JSONObject json = new JSONObject();
+			json.put("source", source);
+			json.put("target", target);
+			final String message = "Merging " + source + " to " + target;
+			json.put("commitComment", message);
+			logger.info(message);
+			resty.json(url + "/merges", RestyHelper.content(json, SNOWOWL_CONTENT_TYPE));
+		} catch (Exception e) {
+			throw new SnowOwlClientException(e);
+		}
 	}
 
-	public void deleteBranch(String branchPath) throws IOException {
-		resty.json(url + "/branches/" + branchPath, Resty.delete());
-		logger.info("Deleted branch {}", branchPath);
+	public void deleteBranch(String branchPath) throws SnowOwlClientException {
+		try {
+			resty.json(url + "/branches/" + branchPath, Resty.delete());
+			logger.info("Deleted branch {}", branchPath);
+		} catch (IOException e) {
+			throw new SnowOwlClientException(e);
+		}
 	}
 
-	public JSONResource search(String query, String branchPath) throws IOException {
-		return resty.json(url + "/browser/" + branchPath + "/descriptions?query=" + query);
+	public JSONResource search(String query, String branchPath) throws SnowOwlClientException {
+		try {
+			return resty.json(url + "/browser/" + branchPath + "/descriptions?query=" + query);
+		} catch (IOException e) {
+			throw new SnowOwlClientException(e);
+		}
 	}
 
-	public JSONResource searchWithPT(String query, String branchPath) throws IOException {
-		return resty.json(url + "/browser/" + branchPath + "/descriptions-pt?query=" + query);
+	public JSONResource searchWithPT(String query, String branchPath) throws SnowOwlClientException {
+		try {
+			return resty.json(url + "/browser/" + branchPath + "/descriptions-pt?query=" + query);
+		} catch (IOException e) {
+			throw new SnowOwlClientException(e);
+		}
 	}
 
 	public void addEventListener(SnowOwlClientEventListener eventListener) {
@@ -99,28 +132,32 @@ public class SnowOwlClient {
 	 * @throws JSONException
 	 * @throws InterruptedException
 	 */
-	public String classifyAndWaitForComplete(String branchPath) throws IOException, JSONException, InterruptedException {
-		final JSONObject json = new JSONObject();
-		json.put("reasonerId", "org.semanticweb.elk.elk.reasoner.factory");
-		String url = this.url + "/" + branchPath + "/classifications";
-		System.out.println(url);
-		System.out.println(json.toString(3));
+	public String classifyAndWaitForComplete(String branchPath) throws SnowOwlClientException {
+		try {
+			final JSONObject json = new JSONObject();
+			json.put("reasonerId", "org.semanticweb.elk.elk.reasoner.factory");
+			String url = this.url + "/" + branchPath + "/classifications";
+			System.out.println(url);
+			System.out.println(json.toString(3));
 //		resty.withHeader("Accept", "application/vnd.com.b2international.snowowl+json");
 //		url = "http://requestb.in/rky7oqrk";
-		final JSONResource resource = resty.json(url, RestyHelper.content(json, SNOWOWL_CONTENT_TYPE));
-		final String location = resource.getUrlConnection().getHeaderField("Location");
-		System.out.println("location " + location);
+			final JSONResource resource = resty.json(url, RestyHelper.content(json, SNOWOWL_CONTENT_TYPE));
+			final String location = resource.getUrlConnection().getHeaderField("Location");
+			System.out.println("location " + location);
 
-		String status;
-		do {
-			final JSONObject jsonObject = resty.json(location).toObject();
-			status = jsonObject.getString("status");
-		} while (("SCHEDULED".equals(status) || "RUNNING".equals(status) && sleep(10)));
+			String status;
+			do {
+				final JSONObject jsonObject = resty.json(location).toObject();
+				status = jsonObject.getString("status");
+			} while (("SCHEDULED".equals(status) || "RUNNING".equals(status) && sleep(10)));
 
-		if ("COMPLETED".equals(status)) {
-			return location.substring(location.lastIndexOf("/"));
-		} else {
-			throw new IOException("Unexpected classification state " + status);
+			if ("COMPLETED".equals(status)) {
+				return location.substring(location.lastIndexOf("/"));
+			} else {
+				throw new SnowOwlClientException("Unexpected classification state " + status);
+			}
+		} catch (InterruptedException | IOException | JSONException e) {
+			throw new SnowOwlClientException(e);
 		}
 	}
 
@@ -133,18 +170,26 @@ public class SnowOwlClient {
 		return resty;
 	}
 
-	public JSONArray getMergeReviewDetails(String mergeReviewId) throws IOException, JSONException {
+	public JSONArray getMergeReviewDetails(String mergeReviewId) throws SnowOwlClientException {
 		logger.info("Getting merge review {}", mergeReviewId);
-		return resty.json(getMergeReviewUrl(mergeReviewId) + "/details").array();
+		try {
+			return resty.json(getMergeReviewUrl(mergeReviewId) + "/details").array();
+		} catch (IOException | JSONException e) {
+			throw new SnowOwlClientException(e);
+		}
 	}
 
 	private String getMergeReviewUrl(String mergeReviewId) {
 		return this.url + "/merge-reviews/" + mergeReviewId;
 	}
 
-	public void saveConceptMerge(String mergeReviewId, JSONObject mergedConcept) throws JSONException, IOException {
-		String id = ConceptHelper.getConceptId(mergedConcept);
-		logger.info("Saving merged concept {} for merge review {}", id, mergeReviewId);
-		resty.json(getMergeReviewUrl(mergeReviewId) + "/" + id, RestyHelper.content(mergedConcept, SNOWOWL_CONTENT_TYPE));
+	public void saveConceptMerge(String mergeReviewId, JSONObject mergedConcept) throws SnowOwlClientException {
+		try {
+			String id = ConceptHelper.getConceptId(mergedConcept);
+			logger.info("Saving merged concept {} for merge review {}", id, mergeReviewId);
+			resty.json(getMergeReviewUrl(mergeReviewId) + "/" + id, RestyHelper.content(mergedConcept, SNOWOWL_CONTENT_TYPE));
+		} catch (JSONException | IOException e) {
+			throw new SnowOwlClientException(e);
+		}
 	}
 }

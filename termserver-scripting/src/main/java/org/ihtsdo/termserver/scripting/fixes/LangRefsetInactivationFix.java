@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
 import org.ihtsdo.termserver.scripting.client.SnowOwlClient;
+import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import us.monoid.json.JSONArray;
 import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
@@ -14,7 +15,7 @@ import java.util.*;
  */
 public class LangRefsetInactivationFix {
 
-	public static void main(String[] args) throws IOException, JSONException {
+	public static void main(String[] args) throws IOException, JSONException, SnowOwlClientException {
 		String url = "http://localhost:8080/";
 		String project = "INTQA";
 		String validationReportUrl = url + "snowowl/ihtsdo-sca/projects/" + project + "/validation";
