@@ -531,12 +531,14 @@ public class BatchImportService {
 			newConcept.setConceptId(thisConcept.getSctid());
 		}
 		newConcept.setActive(true);
-		newConcept.setDefinitionStatus(DefinitionStatus.PRIMITIVE);
+
 
 		List<ISnomedBrowserRelationship> relationships = null;
 		if (formatter.definesByExpression()) {
 			relationships = convertExpressionToRelationships(thisConcept.getSctid(), thisConcept.getExpression());
+			newConcept.setDefinitionStatus(thisConcept.getExpression().getDefinitionStatus());
 		} else {
+			newConcept.setDefinitionStatus(DefinitionStatus.PRIMITIVE);
 			//Set the Parent
 			relationships = new ArrayList<ISnomedBrowserRelationship>();
 			ISnomedBrowserRelationship isA = createRelationship(DEFAULT_GROUP, "rel_isa", thisConcept.getSctid(), SCTID_ISA, thisConcept.getParent());

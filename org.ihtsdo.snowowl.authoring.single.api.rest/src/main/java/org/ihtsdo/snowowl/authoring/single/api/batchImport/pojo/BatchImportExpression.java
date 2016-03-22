@@ -6,6 +6,8 @@ import java.util.List;
 
 import org.ihtsdo.otf.rest.exception.ProcessingException;
 
+import com.b2international.snowowl.snomed.core.domain.DefinitionStatus;
+
 public class BatchImportExpression {
 	
 	public static final String FULLY_DEFINED = "===";
@@ -23,7 +25,7 @@ public class BatchImportExpression {
 	public static final String TYPE_SEPARATOR = "=";
 	public static char[] termTerminators = new char[] {'|', ':', '+', '{', ',', '}' };
 
-	boolean isFullyDefined = false;
+	DefinitionStatus definitionStatus;
 	List<String> focusConcepts;
 	List<BatchImportGroup> attributeGroups;
 
@@ -36,13 +38,13 @@ public class BatchImportExpression {
 		StringBuffer expressionBuff = new StringBuffer(expressionStr);
 		makeMachineReadable(expressionBuff);
 		//After each extract we're left with the remainder of the expression
-		result.isFullyDefined = extractDefinitionStatus(expressionBuff);
+		result.definitionStatus = extractDefinitionStatus(expressionBuff);
 		result.focusConcepts = extractFocusConcepts(expressionBuff);
 		result.attributeGroups = extractGroups(expressionBuff);
 		return result;
 	}
 
-	static boolean extractDefinitionStatus(StringBuffer expressionBuff) throws ProcessingException {
+	static DefinitionStatus extractDefinitionStatus(StringBuffer expressionBuff) throws ProcessingException {
 		Boolean isFullyDefined = null;
 		if (expressionBuff.indexOf(FULLY_DEFINED) == 0) {
 			isFullyDefined = Boolean.TRUE;
@@ -55,7 +57,7 @@ public class BatchImportExpression {
 		}
 		
 		expressionBuff.delete(0, FULLY_DEFINED.length());
-		return isFullyDefined;
+		return isFullyDefined ? DefinitionStatus.FULLY_DEFINED : DefinitionStatus.PRIMITIVE;
 	}
 	
 	static List<String> extractFocusConcepts(StringBuffer expressionBuff) {
@@ -135,8 +137,8 @@ public class BatchImportExpression {
 		return -1;
 	}
 
-	public boolean isFullyDefined() {
-		return isFullyDefined;
+	public DefinitionStatus getDefinitionStatus() {
+		return definitionStatus;
 	}
 
 	public List<String> getFocusConcepts() {
