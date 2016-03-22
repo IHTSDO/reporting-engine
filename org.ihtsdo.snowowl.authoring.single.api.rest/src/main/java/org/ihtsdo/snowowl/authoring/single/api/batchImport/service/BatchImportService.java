@@ -97,6 +97,7 @@ public class BatchImportService {
 	private static final String[] LATERALITY = new String[] { "left", "right"};
 	
 	private static final int ROW_UNKNOWN = -1;
+	private static final String DRY_RUN = "DRY_RUN";
 	//private static final String BULLET = "* ";
 	private static final String SCTID_ISA = Concepts.IS_A;
 	public static final int DEFAULT_GROUP = 1;
@@ -220,7 +221,7 @@ public class BatchImportService {
 		return false;
 	}
 
-	void loadConceptsOntoTasks(BatchImportRun run) throws JiraException, ServiceException, BusinessServiceException {
+	void loadConceptsOntoTasks(BatchImportRun run) throws JiraException, ServiceException, BusinessServiceException, InterruptedException {
 		List<List<BatchImportConcept>> batches = collectIntoBatches(run);
 		for (List<BatchImportConcept> thisBatch : batches) {
 			AuthoringTask task = createTask(run, thisBatch);
@@ -311,17 +312,33 @@ public class BatchImportService {
 	}
 
 	private AuthoringTask createTask(BatchImportRun run,
-			List<BatchImportConcept> thisBatch) throws JiraException, ServiceException, BusinessServiceException {
+			List<BatchImportConcept> thisBatch) throws JiraException, ServiceException, BusinessServiceException, InterruptedException {
+		BatchImportRequest request = run.getImportRequest();
 		AuthoringTaskCreateRequest taskCreateRequest = new AuthoringTask();
+		
 		//We'll re-do the description once we know which concepts actually loaded
 		taskCreateRequest.setDescription(NO_NOTES);
-		String taskSummary = run.getImportRequest().getOriginalFilename() + ": " + getRowRange(thisBatch);
+		String taskSummary = request.getOriginalFilename() + ": " + getRowRange(thisBatch);
 		taskCreateRequest.setSummary(taskSummary);
-		AuthoringTask task = taskService.createTask(run.getImportRequest().getProjectKey(), 
-				run.getImportRequest().getCreateForAuthor(),
-				taskCreateRequest);
-		//Task service now delays creation of actual task branch, so separate call to do that.
-		branchService.createTaskBranchAndProjectBranchIfNeeded(task.getProjectKey(), task.getKey());
+
+		AuthoringTask task = null;
+		if (!request.getDryRun()) {
+			task = taskService.createTask(request.getProjectKey(), 
+					request.getCreateForAuthor(),
+					taskCreateRequest);
+			//Task service now delays creation of actual task branch, so separate call to do that.
+			branchService.createTaskBranchAndProjectBranchIfNeeded(task.getProjectKey(), task.getKey());
+			
+			//Because creating a task is relatively expensive and can cause contention, we'll take an optional
+			//pause here to allow other threads to clear and obtain locks
+			if (request.getPostTaskDelay() != null) {
+				Thread.sleep(1000 * request.getPostTaskDelay().intValue());
+			}
+		} else {
+			task = new AuthoringTask();
+			task.setProjectKey(request.getProjectKey());
+			task.setKey(DRY_RUN);
+		}
 		return task;
 	}
 
@@ -394,7 +411,9 @@ public class BatchImportService {
 
 	private Map<String, ISnomedBrowserConcept> loadConcepts(BatchImportRun run, AuthoringTask task,
 			List<BatchImportConcept> thisBatch) throws BusinessServiceException {
-		String branchPath = "MAIN/" + run.getImportRequest().getProjectKey() + "/" + task.getKey();
+		BatchImportRequest request = run.getImportRequest();
+		String branchPath = "MAIN/" + request.getProjectKey() + "/" + task.getKey();
+		
 		Map<String, ISnomedBrowserConcept> conceptsLoaded = new HashMap<String, ISnomedBrowserConcept>();
 		for (BatchImportConcept thisConcept : thisBatch) {
 			boolean loadedOK = false;
@@ -403,7 +422,14 @@ public class BatchImportService {
 				String warnings = "";
 				validateConcept(task, newConcept);
 				removeTemporaryIds(newConcept);
-				ISnomedBrowserConcept createdConcept = browserService.create(branchPath, newConcept, run.getImportRequest().getCreateForAuthor(), defaultLocales);
+				ISnomedBrowserConcept createdConcept = null;
+				if (!request.getDryRun()) {
+					createdConcept = browserService.create(branchPath, newConcept, run.getImportRequest().getCreateForAuthor(), defaultLocales);
+				} else {
+					SnomedBrowserConcept dryRunConcept = new SnomedBrowserConcept();
+					dryRunConcept.setConceptId(DRY_RUN);
+					createdConcept = dryRunConcept;
+				}
 				String msg = "Loaded onto " + task.getKey() + " " + warnings;
 				run.succeed(thisConcept.getRow(), msg, createdConcept.getId());
 				loadedOK = true;
