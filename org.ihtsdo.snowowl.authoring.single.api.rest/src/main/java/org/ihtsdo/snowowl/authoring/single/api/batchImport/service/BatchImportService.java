@@ -17,7 +17,10 @@ import net.rcarz.jiraclient.JiraException;
 
 import org.apache.commons.csv.CSVRecord;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
+import org.ihtsdo.otf.rest.exception.ProcessingException;
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportConcept;
+import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportExpression;
+import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportGroup;
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportRequest;
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportRun;
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportState;
@@ -29,7 +32,6 @@ import org.ihtsdo.snowowl.authoring.single.api.service.BranchService;
 import org.ihtsdo.snowowl.authoring.single.api.service.ServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.service.TaskService;
 import org.ihtsdo.snowowl.authoring.single.api.service.UiStateService;
-import org.ihtsdo.snowowl.authoring.single.api.service.dao.ArbitraryFileService;
 import org.ihtsdo.snowowl.authoring.single.api.service.dao.ArbitraryTempFileService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,13 +93,14 @@ public class BatchImportService {
 	private static final String[] LATERALITY = new String[] { "left", "right"};
 	
 	private static final int ROW_UNKNOWN = -1;
+	private static final String DRY_RUN = "DRY_RUN";
 	//private static final String BULLET = "* ";
 	private static final String SCTID_ISA = Concepts.IS_A;
+	public static final int DEFAULT_GROUP = 1;
 	private static final String SCTID_EN_GB = Concepts.REFSET_LANGUAGE_TYPE_UK;
 	private static final String SCTID_EN_US = Concepts.REFSET_LANGUAGE_TYPE_US;
 	//private static final String JIRA_HEADING5 = "h5. ";
 	//private static final String VALIDATION_ERROR = "ERROR";
-	private static final int MIN_VIABLE_COLUMNS = 9;
 	
 	private static final String EDIT_PANEL = "edit-panel";
 	private static final String SAVE_LIST = "saved-list";	
@@ -150,8 +153,9 @@ public class BatchImportService {
 
 	private void prepareConcepts(BatchImportRun run, List<CSVRecord> rows) throws BusinessServiceException {
 		// Loop through concepts and form them into a hierarchy to be loaded, if valid
+		int minViableColumns = run.getImportRequest().getFormat().getHeaders().length;
 		for (CSVRecord thisRow : rows) {
-			if (thisRow.size() > MIN_VIABLE_COLUMNS) {
+			if (thisRow.size() >= minViableColumns) {
 				BatchImportConcept thisConcept = run.getFormatter().createConcept(thisRow);
 				if (validate(run, thisConcept)) {
 					run.insertIntoLoadHierarchy(thisConcept);
@@ -185,9 +189,31 @@ public class BatchImportService {
 			return false;
 		}
 		
-		if (!validateSCTID(concept.getParent())) {
+		if (!run.getFormatter().definesByExpression() && !validateSCTID(concept.getParent())) {
 			run.fail(concept.getRow(), concept.getParent() + " is not a valid parent identifier.");
 			return false;
+		}
+		
+		if (run.getFormatter().definesByExpression()) {
+			try{
+				//Expression expression = (Expression) SCGStandaloneSetup.parse(concept.getExpressionStr());
+				BatchImportExpression exp = BatchImportExpression.parse(concept.getExpressionStr());
+				if (exp.getFocusConcepts() == null || exp.getFocusConcepts().size() < 1) {
+					throw new ProcessingException ("Unable to determine a parent for concept from expression");
+				} 
+				String parentStr = exp.getFocusConcepts().get(0);
+				//Check we've got an integer (ok a long) for a parent
+				try {
+					Long.parseLong(parentStr);
+				} catch (NumberFormatException ne) {
+					throw new ProcessingException ("Failed to correctly determine parent in expression: " + concept.getExpressionStr(),ne);
+				}
+				concept.setParent(parentStr);
+				concept.setExpression(exp);
+			} catch (Exception e) {
+				run.fail(concept.getRow(), "Invalid expression: " + e.getMessage());
+				return false;				
+			}
 		}
 		
 		return true;
@@ -202,16 +228,19 @@ public class BatchImportService {
 		return false;
 	}
 
-	void loadConceptsOntoTasks(BatchImportRun run) throws JiraException, ServiceException, BusinessServiceException {
+	void loadConceptsOntoTasks(BatchImportRun run) throws JiraException, ServiceException, BusinessServiceException, InterruptedException {
 		List<List<BatchImportConcept>> batches = collectIntoBatches(run);
 		for (List<BatchImportConcept> thisBatch : batches) {
 			AuthoringTask task = createTask(run, thisBatch);
 			Map<String, ISnomedBrowserConcept> conceptsLoaded = loadConcepts(run, task, thisBatch);
 			String conceptsLoadedJson = conceptList(conceptsLoaded.values());
-			logger.info("Loaded concepts onto task {}: {}",task.getKey(),conceptsLoadedJson);
-			updateTaskDescription(task, run, conceptsLoaded);
-			primeEditPanel(task, run, conceptsLoadedJson);
-			primeSavedList(task, run, conceptsLoaded.values());
+			boolean dryRun = run.getImportRequest().isDryRun();
+			logger.info((dryRun?"Dry ":"") + "Loaded concepts onto task {}: {}",task.getKey(),conceptsLoadedJson);
+			if (!dryRun) {
+				updateTaskDescription(task, run, conceptsLoaded);
+				primeEditPanel(task, run, conceptsLoadedJson);
+				primeSavedList(task, run, conceptsLoaded.values());
+			}
 		}
 	}
 
@@ -293,17 +322,33 @@ public class BatchImportService {
 	}
 
 	private AuthoringTask createTask(BatchImportRun run,
-			List<BatchImportConcept> thisBatch) throws JiraException, ServiceException, BusinessServiceException {
+			List<BatchImportConcept> thisBatch) throws JiraException, ServiceException, BusinessServiceException, InterruptedException {
+		BatchImportRequest request = run.getImportRequest();
 		AuthoringTaskCreateRequest taskCreateRequest = new AuthoringTask();
+		
 		//We'll re-do the description once we know which concepts actually loaded
 		taskCreateRequest.setDescription(NO_NOTES);
-		String taskSummary = run.getImportRequest().getOriginalFilename() + ": " + getRowRange(thisBatch);
+		String taskSummary = request.getOriginalFilename() + ": " + getRowRange(thisBatch);
 		taskCreateRequest.setSummary(taskSummary);
-		AuthoringTask task = taskService.createTask(run.getImportRequest().getProjectKey(), 
-				run.getImportRequest().getCreateForAuthor(),
-				taskCreateRequest);
-		//Task service now delays creation of actual task branch, so separate call to do that.
-		branchService.createTaskBranchAndProjectBranchIfNeeded(task.getProjectKey(), task.getKey());
+
+		AuthoringTask task = null;
+		if (!request.isDryRun()) {
+			task = taskService.createTask(request.getProjectKey(), 
+					request.getCreateForAuthor(),
+					taskCreateRequest);
+			//Task service now delays creation of actual task branch, so separate call to do that.
+			branchService.createTaskBranchAndProjectBranchIfNeeded(task.getProjectKey(), task.getKey());
+			
+			//Because creating a task is relatively expensive and can cause contention, we'll take an optional
+			//pause here to allow other threads to clear and obtain locks
+			if (request.getPostTaskDelay() != null) {
+				Thread.sleep(1000 * request.getPostTaskDelay().intValue());
+			}
+		} else {
+			task = new AuthoringTask();
+			task.setProjectKey(request.getProjectKey());
+			task.setKey(DRY_RUN);
+		}
 		return task;
 	}
 
@@ -348,16 +393,21 @@ public class BatchImportService {
 	private String getAllNotes(AuthoringTask task, BatchImportRun run,
 			Map<String, ISnomedBrowserConcept> conceptsLoaded) throws BusinessServiceException {
 		StringBuilder str = new StringBuilder();
+		BatchImportFormat format = run.getFormatter();
 		for (Map.Entry<String, ISnomedBrowserConcept> thisEntry: conceptsLoaded.entrySet()) {
 			String thisOriginalSCTID = thisEntry.getKey();
+			BatchImportConcept biConcept = run.getConcept(thisOriginalSCTID);
 			ISnomedBrowserConcept thisConcept = thisEntry.getValue();
 			str.append("<h5>")
 			.append(thisConcept.getId())
 			.append(" - ")
 			.append(thisConcept.getFsn())
 			.append(":</h5>")
-			.append("<ul>");
-			BatchImportConcept biConcept = run.getConcept(thisOriginalSCTID);
+			.append("<ul>")
+			.append("<li>Originating Reference: ")
+			.append(biConcept.get(format.getIndex(FIELD.ORIG_REF)))
+			.append("</li>");
+			
 			List<String> notes = run.getFormatter().getAllNotes(biConcept);
 			for (String thisNote: notes) {
 				str.append("<li>")
@@ -371,16 +421,25 @@ public class BatchImportService {
 
 	private Map<String, ISnomedBrowserConcept> loadConcepts(BatchImportRun run, AuthoringTask task,
 			List<BatchImportConcept> thisBatch) throws BusinessServiceException {
-		String branchPath = "MAIN/" + run.getImportRequest().getProjectKey() + "/" + task.getKey();
+		BatchImportRequest request = run.getImportRequest();
+		String branchPath = "MAIN/" + request.getProjectKey() + "/" + task.getKey();
+		
 		Map<String, ISnomedBrowserConcept> conceptsLoaded = new HashMap<String, ISnomedBrowserConcept>();
 		for (BatchImportConcept thisConcept : thisBatch) {
 			boolean loadedOK = false;
 			try{
 				ISnomedBrowserConcept newConcept = createBrowserConcept(thisConcept, run.getFormatter());
 				String warnings = "";
-				validateConcept(task, newConcept);
+				validateConcept(run, task, newConcept);
 				removeTemporaryIds(newConcept);
-				ISnomedBrowserConcept createdConcept = browserService.create(branchPath, newConcept, run.getImportRequest().getCreateForAuthor(), defaultLocales);
+				ISnomedBrowserConcept createdConcept = null;
+				if (!request.isDryRun()) {
+					createdConcept = browserService.create(branchPath, newConcept, run.getImportRequest().getCreateForAuthor(), defaultLocales);
+				} else {
+					SnomedBrowserConcept dryRunConcept = new SnomedBrowserConcept();
+					dryRunConcept.setConceptId(DRY_RUN);
+					createdConcept = dryRunConcept;
+				}
 				String msg = "Loaded onto " + task.getKey() + " " + warnings;
 				run.succeed(thisConcept.getRow(), msg, createdConcept.getId());
 				loadedOK = true;
@@ -415,13 +474,15 @@ public class BatchImportService {
 		}
 	}
 	
-	private String validateConcept(AuthoringTask task,
+	private String validateConcept(BatchImportRun run, AuthoringTask task,
 			ISnomedBrowserConcept newConcept) throws BusinessServiceException {
 		
-		//Check for lateralized content
-		for (String thisBadWord : LATERALITY) {
-			if (newConcept.getFsn().toLowerCase().contains(thisBadWord)) {
-				throw new BusinessServiceException ("Lateralized content detected");
+		if (!run.getImportRequest().isLateralizedContentAllowed()) {
+			//Check for lateralized content
+			for (String thisBadWord : LATERALITY) {
+				if (newConcept.getFsn().toLowerCase().contains(thisBadWord)) {
+					throw new BusinessServiceException ("Lateralized content detected");
+				}
 			}
 		}
 		return null;
@@ -472,18 +533,32 @@ public class BatchImportService {
 			newConcept.setConceptId(thisConcept.getSctid());
 		}
 		newConcept.setActive(true);
-		newConcept.setDefinitionStatus(DefinitionStatus.PRIMITIVE);
-		
-		//Set the Parent
-		List<ISnomedBrowserRelationship> relationships = new ArrayList<ISnomedBrowserRelationship>();
-		ISnomedBrowserRelationship isA = createRelationship(thisConcept.getSctid(), SCTID_ISA, thisConcept.getParent(), CharacteristicType.STATED_RELATIONSHIP);
-		relationships.add(isA);
+
+
+		List<ISnomedBrowserRelationship> relationships = null;
+		if (formatter.definesByExpression()) {
+			relationships = convertExpressionToRelationships(thisConcept.getSctid(), thisConcept.getExpression());
+			newConcept.setDefinitionStatus(thisConcept.getExpression().getDefinitionStatus());
+		} else {
+			newConcept.setDefinitionStatus(DefinitionStatus.PRIMITIVE);
+			//Set the Parent
+			relationships = new ArrayList<ISnomedBrowserRelationship>();
+			ISnomedBrowserRelationship isA = createRelationship(DEFAULT_GROUP, "rel_isa", thisConcept.getSctid(), SCTID_ISA, thisConcept.getParent());
+			relationships.add(isA);
+		}
 		newConcept.setRelationships(relationships);
 		
 		//Add Descriptions FSN, then Preferred Term
 		List<ISnomedBrowserDescription> descriptions = new ArrayList<ISnomedBrowserDescription>();
-		String prefTerm = thisConcept.get(formatter.getIndex(FIELD.FSN_ROOT));
-		String fsnTerm = prefTerm + " (" + thisConcept.get(formatter.getIndex(FIELD.SEMANTIC_TAG)) +")";
+		String prefTerm, fsnTerm;
+		
+		if (formatter.constructsFSN()) {
+			prefTerm = thisConcept.get(formatter.getIndex(FIELD.FSN_ROOT));
+			fsnTerm = prefTerm + " (" + thisConcept.get(formatter.getIndex(FIELD.SEMANTIC_TAG)) +")";
+		} else {
+			prefTerm = thisConcept.get(formatter.getIndex(FIELD.PREF_TERM));
+			fsnTerm = thisConcept.get(formatter.getIndex(FIELD.FSN));
+		}
 		
 		ISnomedBrowserDescription fsn = createDescription(fsnTerm, SnomedBrowserDescriptionType.FSN, PREFERRED_ACCEPTABILIY);
 		descriptions.add(fsn);
@@ -497,6 +572,45 @@ public class BatchImportService {
 		return newConcept;
 	}
 	
+	/*private List<ISnomedBrowserRelationship> convertExpressionToRelationships(String sourceSCTID,
+			Expression expression) {
+		List<ISnomedBrowserRelationship> relationships = new ArrayList<ISnomedBrowserRelationship>();
+		int attributeNum = 0;
+		
+		for (Attribute attribute : expression.getAttributes()) {
+			ISnomedBrowserRelationship rel = createRelationship("rel_" + attributeNum, attribute);
+			relationships.add(rel);
+			attributeNum++;
+		}
+		
+		for (Group group : expression.getGroups()) {
+			for (Attribute attribute : group.getAttributes()) {
+				ISnomedBrowserRelationship rel = createRelationship("rel_" + attributeNum, attribute);
+				relationships.add(rel);
+				attributeNum++;
+			}
+		}		
+		
+		return relationships;
+	}*/
+	
+	List<ISnomedBrowserRelationship> convertExpressionToRelationships(String sourceSCTID,
+			BatchImportExpression expression) {
+		List<ISnomedBrowserRelationship> relationships = new ArrayList<ISnomedBrowserRelationship>();
+		
+		int parentNum = 0;
+		for (String thisParent : expression.getFocusConcepts()) {
+			ISnomedBrowserRelationship rel = createRelationship(DEFAULT_GROUP, "rel_" + (parentNum++), sourceSCTID, SCTID_ISA, thisParent);
+			relationships.add(rel);
+		}
+		
+		for (BatchImportGroup group : expression.getAttributeGroups()) {
+			relationships.addAll(group.getRelationships());
+		}
+		
+		return relationships;
+	}
+
 	private void addSynonyms(List<ISnomedBrowserDescription> descriptions,
 			BatchImportFormat formatter, BatchImportConcept thisConcept) throws BusinessServiceException {
 		List<String> allSynonyms = formatter.getAllSynonyms(thisConcept);
@@ -523,18 +637,18 @@ public class BatchImportService {
 		return false;
 	}
 
-	ISnomedBrowserRelationship createRelationship(String sourceSCTID, String type, String destinationSCTID, CharacteristicType characteristic) {
+	public static ISnomedBrowserRelationship createRelationship(int groupNum, String tmpId, String sourceSCTID, String typeSCTID, String destinationSCTID) {
 		SnomedBrowserRelationship rel = new SnomedBrowserRelationship();
+		rel.setGroupId(groupNum);
 		rel.setCharacteristicType(CharacteristicType.STATED_RELATIONSHIP);
 		rel.setSourceId(sourceSCTID);
-		rel.setType(new SnomedBrowserRelationshipType(SCTID_ISA));
+		rel.setType(new SnomedBrowserRelationshipType(typeSCTID));
 		//Set a temporary id so the user can tell which item failed validation
-		rel.setRelationshipId("rel_isa");
+		rel.setRelationshipId(tmpId);
 		SnomedBrowserRelationshipTarget destination = new SnomedBrowserRelationshipTarget();
 		destination.setConceptId(destinationSCTID);
 		rel.setTarget(destination);
 		rel.setActive(true);
-
 		return rel;
 	}
 	

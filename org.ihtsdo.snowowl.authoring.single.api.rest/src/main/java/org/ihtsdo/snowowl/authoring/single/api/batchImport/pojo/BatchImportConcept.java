@@ -14,6 +14,10 @@ public class BatchImportConcept {
 
 	String parent;
 	
+	String expressionStr;
+	
+	BatchImportExpression expression;
+
 	boolean requiresNewSCTID = false;
 	
 	List<BatchImportConcept> children = new ArrayList<BatchImportConcept>();
@@ -21,6 +25,13 @@ public class BatchImportConcept {
 	public BatchImportConcept(String sctid, String parent, CSVRecord row, boolean requiresNewSCTID) {
 		this.sctid = sctid;
 		this.parent = parent;
+		this.row = row;
+		this.requiresNewSCTID = requiresNewSCTID;
+	}
+	
+	public BatchImportConcept(String sctid, CSVRecord row, String expressionStr, boolean requiresNewSCTID) {
+		this.sctid = sctid;
+		this.expressionStr = expressionStr;
 		this.row = row;
 		this.requiresNewSCTID = requiresNewSCTID;
 	}
@@ -69,6 +80,10 @@ public class BatchImportConcept {
 	public String getParent() {
 		return parent;
 	}
+	
+	public void setParent(String parentSCTID) {
+		this.parent = parentSCTID;
+	}
 
 	public final List<BatchImportConcept> getChildren() {
 		return children;
@@ -88,6 +103,18 @@ public class BatchImportConcept {
 			thisBatch.add(thisChild);
 			thisChild.addDescendants(thisBatch);
 		}
-	}	
+	}
+	
+	public BatchImportExpression getExpression() {
+		return expression;
+	}
+
+	public void setExpression(BatchImportExpression expression) {
+		this.expression = expression;
+	}
+
+	public String getExpressionStr() {
+		return this.expressionStr;
+	}
 
 }

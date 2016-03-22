@@ -58,6 +58,12 @@ public class BatchImportController extends AbstractSnomedRestService {
 	public void startBatchImport(@PathVariable final String projectKey,
 			@RequestParam("createForAuthor") final String createForAuthor,
 			@RequestParam("conceptsPerTask") final Integer conceptsPerTask,
+			
+			@ApiParam(value="seconds to delay after creating task")
+			@RequestParam("postTaskDelay") final Integer postTaskDelay,
+			@RequestParam("dryRun") final Boolean dryRun,
+			@RequestParam(value ="allowLateralizedContent", defaultValue = "FALSE") final Boolean allowLateralizedContent,
+			
 			@ApiParam(value="3rd Party import csv file")
 			@RequestPart("file") 
 			final MultipartFile file,
@@ -84,6 +90,9 @@ public class BatchImportController extends AbstractSnomedRestService {
 			importRequest.setFormat(format);
 			importRequest.setProjectKey(projectKey);
 			importRequest.setOriginalFilename(file.getOriginalFilename());
+			importRequest.setPostTaskDelay(postTaskDelay);
+			importRequest.setDryRun(dryRun);
+			importRequest.allowLateralizedContent(allowLateralizedContent);
 			parser.close();
 			
 			batchImportService.startImport(batchImportId, importRequest, rows, ControllerHelper.getUsername());

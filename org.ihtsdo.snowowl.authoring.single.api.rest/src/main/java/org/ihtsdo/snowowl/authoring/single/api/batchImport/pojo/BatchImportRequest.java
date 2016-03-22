@@ -16,7 +16,10 @@ public class BatchImportRequest {
 	String projectKey;
 	String originalFilename;
 	MultipartFile file;
-	
+	Integer postTaskDelay;
+	Boolean dryRun;
+	Boolean allowLateralizedContent;
+
 	public BatchImportRequest(){}
 	
 	public String getCreateForAuthor() {
@@ -68,5 +71,29 @@ public class BatchImportRequest {
 	
 	public String getOriginalFilename() {
 		return this.originalFilename;
+	}
+	
+	public Integer getPostTaskDelay() {
+		return postTaskDelay;
+	}
+
+	public void setPostTaskDelay(Integer postTaskDelay) {
+		this.postTaskDelay = postTaskDelay;
+	}
+
+	public Boolean isDryRun() {
+		return dryRun;
+	}
+
+	public Boolean isLateralizedContentAllowed() {
+		return allowLateralizedContent;
+	}
+
+	public void allowLateralizedContent(Boolean allowLateralizedContent) {
+		this.allowLateralizedContent = allowLateralizedContent;
+	}
+
+	public void setDryRun(Boolean dryRun) {
+		this.dryRun = dryRun;
 	}
 }
