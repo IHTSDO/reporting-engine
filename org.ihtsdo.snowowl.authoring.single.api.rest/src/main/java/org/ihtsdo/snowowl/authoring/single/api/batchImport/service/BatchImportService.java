@@ -62,6 +62,7 @@ import com.b2international.snowowl.snomed.core.domain.Acceptability;
 import com.b2international.snowowl.snomed.core.domain.CaseSignificance;
 import com.b2international.snowowl.snomed.core.domain.CharacteristicType;
 import com.b2international.snowowl.snomed.core.domain.DefinitionStatus;
+import com.b2international.snowowl.snomed.core.domain.RelationshipModifier;
 
 @Service
 public class BatchImportService {
@@ -649,6 +650,7 @@ public class BatchImportService {
 		destination.setConceptId(destinationSCTID);
 		rel.setTarget(destination);
 		rel.setActive(true);
+		rel.setModifier(RelationshipModifier.EXISTENTIAL);
 		return rel;
 	}
 	
