@@ -80,6 +80,10 @@ public class BatchImportConcept {
 	public String getParent() {
 		return parent;
 	}
+	
+	public void setParent(String parentSCTID) {
+		this.parent = parentSCTID;
+	}
 
 	public final List<BatchImportConcept> getChildren() {
 		return children;

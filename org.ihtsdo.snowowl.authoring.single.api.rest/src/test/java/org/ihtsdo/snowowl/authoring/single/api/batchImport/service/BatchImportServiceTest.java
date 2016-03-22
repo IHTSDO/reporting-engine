@@ -1,7 +1,5 @@
 package org.ihtsdo.snowowl.authoring.single.api.batchImport.service;
 
-import static org.junit.Assert.*;
-
 import java.util.List;
 
 import org.ihtsdo.otf.rest.exception.ProcessingException;

@@ -17,6 +17,7 @@ import net.rcarz.jiraclient.JiraException;
 
 import org.apache.commons.csv.CSVRecord;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
+import org.ihtsdo.otf.rest.exception.ProcessingException;
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportConcept;
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportExpression;
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportGroup;
@@ -159,7 +160,7 @@ public class BatchImportService {
 		// Loop through concepts and form them into a hierarchy to be loaded, if valid
 		int minViableColumns = run.getImportRequest().getFormat().getHeaders().length;
 		for (CSVRecord thisRow : rows) {
-			if (thisRow.size() > minViableColumns) {
+			if (thisRow.size() >= minViableColumns) {
 				BatchImportConcept thisConcept = run.getFormatter().createConcept(thisRow);
 				if (validate(run, thisConcept)) {
 					run.insertIntoLoadHierarchy(thisConcept);
@@ -202,6 +203,10 @@ public class BatchImportService {
 			try{
 				//Expression expression = (Expression) SCGStandaloneSetup.parse(concept.getExpressionStr());
 				BatchImportExpression exp = BatchImportExpression.parse(concept.getExpressionStr());
+				if (exp.getFocusConcepts() == null || exp.getFocusConcepts().size() < 1) {
+					throw new ProcessingException ("Unable to determine a parent for concept from expression");
+				}
+				concept.setParent(exp.getFocusConcepts().get(0));
 				concept.setExpression(exp);
 			} catch (Exception e) {
 				run.fail(concept.getRow(), " is represented by an invalid expression: " + e.getMessage());
@@ -227,10 +232,13 @@ public class BatchImportService {
 			AuthoringTask task = createTask(run, thisBatch);
 			Map<String, ISnomedBrowserConcept> conceptsLoaded = loadConcepts(run, task, thisBatch);
 			String conceptsLoadedJson = conceptList(conceptsLoaded.values());
-			logger.info("Loaded concepts onto task {}: {}",task.getKey(),conceptsLoadedJson);
-			updateTaskDescription(task, run, conceptsLoaded);
-			primeEditPanel(task, run, conceptsLoadedJson);
-			primeSavedList(task, run, conceptsLoaded.values());
+			boolean dryRun = run.getImportRequest().isDryRun();
+			logger.info((dryRun?"Dry ":"") + "Loaded concepts onto task {}: {}",task.getKey(),conceptsLoadedJson);
+			if (!dryRun) {
+				updateTaskDescription(task, run, conceptsLoaded);
+				primeEditPanel(task, run, conceptsLoadedJson);
+				primeSavedList(task, run, conceptsLoaded.values());
+			}
 		}
 	}
 
@@ -322,7 +330,7 @@ public class BatchImportService {
 		taskCreateRequest.setSummary(taskSummary);
 
 		AuthoringTask task = null;
-		if (!request.getDryRun()) {
+		if (!request.isDryRun()) {
 			task = taskService.createTask(request.getProjectKey(), 
 					request.getCreateForAuthor(),
 					taskCreateRequest);
@@ -420,10 +428,10 @@ public class BatchImportService {
 			try{
 				ISnomedBrowserConcept newConcept = createBrowserConcept(thisConcept, run.getFormatter());
 				String warnings = "";
-				validateConcept(task, newConcept);
+				validateConcept(run, task, newConcept);
 				removeTemporaryIds(newConcept);
 				ISnomedBrowserConcept createdConcept = null;
-				if (!request.getDryRun()) {
+				if (!request.isDryRun()) {
 					createdConcept = browserService.create(branchPath, newConcept, run.getImportRequest().getCreateForAuthor(), defaultLocales);
 				} else {
 					SnomedBrowserConcept dryRunConcept = new SnomedBrowserConcept();
@@ -464,13 +472,15 @@ public class BatchImportService {
 		}
 	}
 	
-	private String validateConcept(AuthoringTask task,
+	private String validateConcept(BatchImportRun run, AuthoringTask task,
 			ISnomedBrowserConcept newConcept) throws BusinessServiceException {
 		
-		//Check for lateralized content
-		for (String thisBadWord : LATERALITY) {
-			if (newConcept.getFsn().toLowerCase().contains(thisBadWord)) {
-				throw new BusinessServiceException ("Lateralized content detected");
+		if (!run.getImportRequest().isLateralizedContentAllowed()) {
+			//Check for lateralized content
+			for (String thisBadWord : LATERALITY) {
+				if (newConcept.getFsn().toLowerCase().contains(thisBadWord)) {
+					throw new BusinessServiceException ("Lateralized content detected");
+				}
 			}
 		}
 		return null;
@@ -536,8 +546,15 @@ public class BatchImportService {
 		
 		//Add Descriptions FSN, then Preferred Term
 		List<ISnomedBrowserDescription> descriptions = new ArrayList<ISnomedBrowserDescription>();
-		String prefTerm = thisConcept.get(formatter.getIndex(FIELD.FSN_ROOT));
-		String fsnTerm = prefTerm + " (" + thisConcept.get(formatter.getIndex(FIELD.SEMANTIC_TAG)) +")";
+		String prefTerm, fsnTerm;
+		
+		if (formatter.constructsFSN()) {
+			prefTerm = thisConcept.get(formatter.getIndex(FIELD.FSN_ROOT));
+			fsnTerm = prefTerm + " (" + thisConcept.get(formatter.getIndex(FIELD.SEMANTIC_TAG)) +")";
+		} else {
+			prefTerm = thisConcept.get(formatter.getIndex(FIELD.PREF_TERM));
+			fsnTerm = thisConcept.get(formatter.getIndex(FIELD.FSN));
+		}
 		
 		ISnomedBrowserDescription fsn = createDescription(fsnTerm, SnomedBrowserDescriptionType.FSN, PREFERRED_ACCEPTABILIY);
 		descriptions.add(fsn);

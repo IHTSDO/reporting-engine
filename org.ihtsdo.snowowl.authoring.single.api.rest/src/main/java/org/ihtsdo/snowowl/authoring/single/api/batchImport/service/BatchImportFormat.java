@@ -20,7 +20,7 @@ public class BatchImportFormat {
 	private static final Logger LOGGER = LoggerFactory.getLogger(BatchImportFormat.class);
 
 	public static enum FORMAT { SIRS, ICD11 };
-	public static enum FIELD { SCTID, PARENT, FSN, FSN_ROOT, NOTES, SEMANTIC_TAG, EXPRESSION, ORIG_REF};
+	public static enum FIELD { SCTID, PARENT, FSN, FSN_ROOT, PREF_TERM, NOTES, SEMANTIC_TAG, EXPRESSION, ORIG_REF};
 	public static int FIELD_NOT_FOUND = -1;
 	public static String RANGE_SEPARATOR = "-";
 	public static int FIRST_NOTE = 0;
@@ -37,6 +37,7 @@ public class BatchImportFormat {
 	private int[] synonymFields;
 	private int[] notesFields;
 	private boolean definesByExpression = false;
+	private boolean constructsFSN = false;
 	
 	//There are variable numbers of Synonym and Notes fields, so they're optional and we'll work them out at runtime
 	public static String[] SIRS_HEADERS = {"Request Id","Topic","Local Code","Local Term","Fully Specified Name","Semantic Tag",
@@ -65,24 +66,26 @@ public class BatchImportFormat {
 		ICD11_MAP.put(FIELD.ORIG_REF, "0");
 		ICD11_MAP.put(FIELD.SCTID, "1");
 		ICD11_MAP.put(FIELD.FSN, "2");
+		ICD11_MAP.put(FIELD.PREF_TERM, "3");		
 		ICD11_MAP.put(FIELD.EXPRESSION, "4");		
 	}
 	
 	private static BatchImportFormat create(FORMAT format) throws BusinessServiceException {
 		
 		if (format == FORMAT.SIRS) {
-			return new BatchImportFormat(FORMAT.SIRS, SIRS_MAP, false);
+			return new BatchImportFormat(FORMAT.SIRS, SIRS_MAP, false, true);
 		} else if (format == FORMAT.ICD11) {
-			return new BatchImportFormat(FORMAT.ICD11, ICD11_MAP, true);
+			return new BatchImportFormat(FORMAT.ICD11, ICD11_MAP, true, false);
 		} else {
 			throw new BusinessServiceException("Unsupported format: " + format);
 		}
 	}
 	
-	private BatchImportFormat (FORMAT format, Map<FIELD, String> fieldMap, boolean definesByExpression) {
+	private BatchImportFormat (FORMAT format, Map<FIELD, String> fieldMap, boolean definesByExpression, boolean constructsFSN) {
 		this.format = format;
 		this.fieldMap = fieldMap;
 		this.definesByExpression = definesByExpression;
+		this.constructsFSN = constructsFSN;
 	}
 	
 	public int getIndex (FIELD field) throws BusinessServiceException {
@@ -153,7 +156,7 @@ public class BatchImportFormat {
 			List<Integer> synonymIndexList = new ArrayList<Integer>();
 			for (int colIdx=0; colIdx < header.size() && !mismatchDetected ;colIdx++) {
 				if (colIdx < checkHeaders.length && !header.get(colIdx).equals(checkHeaders[colIdx])) {
-					LOGGER.info("File is not {} format because header {}:{} is not {}.", checkFormat, colIdx, header.get(colIdx), checkHeaders[colIdx]);
+					LOGGER.debug("File is not {} format because header {}:{} is not {}.", checkFormat, colIdx, header.get(colIdx), checkHeaders[colIdx]);
 					mismatchDetected = true;
 				}
 				
@@ -166,9 +169,11 @@ public class BatchImportFormat {
 				}
 			}
 			if (!mismatchDetected) {
+				LOGGER.debug("File Batch Import file format determined to be {}.", checkFormat);
 				thisFormat = create(checkFormat);
 				thisFormat.notesFields = Ints.toArray(notesIndexList);
 				thisFormat.synonymFields = Ints.toArray(synonymIndexList);
+				break;
 			}
 		}
 		if (thisFormat == null) {
@@ -180,6 +185,10 @@ public class BatchImportFormat {
 
 	public boolean definesByExpression() {
 		return definesByExpression;
+	}
+	
+	public boolean constructsFSN() {
+		return constructsFSN;
 	}
 
 	public String[] getHeaders() throws BusinessServiceException {

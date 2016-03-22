@@ -18,6 +18,7 @@ public class BatchImportRequest {
 	MultipartFile file;
 	Integer postTaskDelay;
 	Boolean dryRun;
+	Boolean allowLateralizedContent;
 
 	public BatchImportRequest(){}
 	
@@ -80,8 +81,16 @@ public class BatchImportRequest {
 		this.postTaskDelay = postTaskDelay;
 	}
 
-	public Boolean getDryRun() {
+	public Boolean isDryRun() {
 		return dryRun;
+	}
+
+	public Boolean isLateralizedContentAllowed() {
+		return allowLateralizedContent;
+	}
+
+	public void allowLateralizedContent(Boolean allowLateralizedContent) {
+		this.allowLateralizedContent = allowLateralizedContent;
 	}
 
 	public void setDryRun(Boolean dryRun) {
