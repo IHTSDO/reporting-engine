@@ -24,7 +24,7 @@ public class BatchImportExpression {
 	public static final String FOCUS_CONCEPT_SEPARATOR = "\\+";
 	public static final String ATTRIBUTE_SEPARATOR = ",";
 	public static final String TYPE_SEPARATOR = "=";
-	public static char[] termTerminators = new char[] {'|', ':', '+', '{', ',', '}' };
+	public static char[] termTerminators = new char[] {'|', ':', '+', '{', ',', '}', '=' };
 
 	DefinitionStatus definitionStatus;
 	List<String> focusConcepts;

@@ -123,5 +123,39 @@ public class BatchImportExpressionTest {
 		List<BatchImportGroup> groups = exp.getAttributeGroups();
 		Assert.assertTrue(groups.size() == 0);
 	}	
-
+	
+	@Test
+	public void testCombination4() throws ProcessingException {
+		String testExpression = "=== 64572001 | Disease |: { 246075003 | Causative agent | = 113858008 | Mycobacterium tuberculosis complex" +
+								", 370135005 | Pathological process | = 441862004 | Infectious process} {63698007 | Finding site | = " +
+								"45292006 | Vulval structure, 116676008 | Associated morphology | = 23583003 | Inflammation} " +
+								"{63698007 | Finding site | = 45292006 | Vulval structure, 116676008 | Associated morphology | = 56208002 | Ulcer}";
+		String expectedParent1 = "64572001";
+		BatchImportExpression exp = BatchImportExpression.parse(testExpression);
+		Assert.assertEquals(expectedParent1, exp.getFocusConcepts().get(0));
+		List<BatchImportGroup> groups = exp.getAttributeGroups();
+		Assert.assertTrue(groups.size() == 3);
+	}	
+	
+	//I can't handle the missing pipe in this one.
+	/*public void testCombination5() throws ProcessingException {
+		String testExpression = "<<< 41769001 | Disease suspected   { 246090004 | Associated finding = 16726004 | Renal osteodystrophy } " +
+								"{ 246090004 | Associated finding = 709044004 Chronic kidney disease }";
+		String expectedParent1 = "41769001";
+		BatchImportExpression exp = BatchImportExpression.parse(testExpression);
+		Assert.assertEquals(expectedParent1, exp.getFocusConcepts().get(0));
+		List<BatchImportGroup> groups = exp.getAttributeGroups();
+		Assert.assertTrue(groups.size() == 2);
+	}	*/
+	
+	
+	@Test
+	public void testCombination6() throws ProcessingException {
+		String testExpression = "<<< 133906008 | Postpartum care   {260870009  | Priority = 373113001 | Routine}";
+		String expectedParent1 = "133906008";
+		BatchImportExpression exp = BatchImportExpression.parse(testExpression);
+		Assert.assertEquals(expectedParent1, exp.getFocusConcepts().get(0));
+		List<BatchImportGroup> groups = exp.getAttributeGroups();
+		Assert.assertTrue(groups.size() == 1);
+	}	
 }
