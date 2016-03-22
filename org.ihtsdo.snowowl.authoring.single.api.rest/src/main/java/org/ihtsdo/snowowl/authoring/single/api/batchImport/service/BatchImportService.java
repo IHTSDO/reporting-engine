@@ -32,7 +32,6 @@ import org.ihtsdo.snowowl.authoring.single.api.service.BranchService;
 import org.ihtsdo.snowowl.authoring.single.api.service.ServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.service.TaskService;
 import org.ihtsdo.snowowl.authoring.single.api.service.UiStateService;
-import org.ihtsdo.snowowl.authoring.single.api.service.dao.ArbitraryFileService;
 import org.ihtsdo.snowowl.authoring.single.api.service.dao.ArbitraryTempFileService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,10 +44,6 @@ import com.b2international.commons.http.ExtendedLocale;
 import com.b2international.snowowl.core.exceptions.ApiError;
 import com.b2international.snowowl.core.exceptions.BadRequestException;
 import com.b2international.snowowl.core.exceptions.ValidationException;
-import com.b2international.snowowl.dsl.SCGStandaloneSetup;
-import com.b2international.snowowl.dsl.scg.Attribute;
-import com.b2international.snowowl.dsl.scg.Expression;
-import com.b2international.snowowl.dsl.scg.Group;
 import com.b2international.snowowl.eventbus.IEventBus;
 import com.b2international.snowowl.snomed.SnomedConstants;
 import com.b2international.snowowl.snomed.SnomedConstants.Concepts;
@@ -205,11 +200,18 @@ public class BatchImportService {
 				BatchImportExpression exp = BatchImportExpression.parse(concept.getExpressionStr());
 				if (exp.getFocusConcepts() == null || exp.getFocusConcepts().size() < 1) {
 					throw new ProcessingException ("Unable to determine a parent for concept from expression");
+				} 
+				String parentStr = exp.getFocusConcepts().get(0);
+				//Check we've got an integer (ok a long) for a parent
+				try {
+					Long.parseLong(parentStr);
+				} catch (NumberFormatException ne) {
+					throw new ProcessingException ("Failed to correctly determine parent in expression: " + concept.getExpressionStr(),ne);
 				}
-				concept.setParent(exp.getFocusConcepts().get(0));
+				concept.setParent(parentStr);
 				concept.setExpression(exp);
 			} catch (Exception e) {
-				run.fail(concept.getRow(), " is represented by an invalid expression: " + e.getMessage());
+				run.fail(concept.getRow(), "Invalid expression: " + e.getMessage());
 				return false;				
 			}
 		}

@@ -80,5 +80,48 @@ public class BatchImportExpressionTest {
 		groups = BatchImportExpression.extractGroups(testBuff2);
 		Assert.assertTrue(groups.size()==3);
 	}
+	
+	@Test
+	public void testCombination() throws ProcessingException {
+		String testExpression = "=== 64572001 | Disease |: { 246075003 | Causative agent | = 113858008 | " + 
+								"Mycobacterium tuberculosis complex , 370135005 | Pathological process | = " +
+								"441862004 | Infectious process} {63698007 | Finding site | = 45292006 | Vulval " + 
+								"structure, 116676008 | Associated morphology | = 23583003 | Inflammation} {63698007 " +
+								"| Finding site | = 45292006 | Vulval structure, 116676008 | Associated morphology | = 56208002 | Ulcer}";
+		String expectedParent = "64572001";
+		BatchImportExpression exp = BatchImportExpression.parse(testExpression);
+		String parent = exp.getFocusConcepts().get(0);
+		Assert.assertEquals(expectedParent, parent);
+		List<BatchImportGroup> groups = exp.getAttributeGroups();
+		Assert.assertTrue(groups.size() == 3);
+	}
+	
+	@Test
+	public void testCombination2() throws ProcessingException {
+		String testExpression = "=== 64572001 | Disease  {63698007 | Finding site | = 43981004 | Structure of left ovary, " +
+				 				"116676008 | Associated morphology | = 24216005 | Congenital absence} {63698007 | Finding site |" +
+				 				"= 20837000 | Structure of right ovary, 116676008 | Associated morphology | = 24216005 | Congenital absence}";
+		String expectedParent = "64572001";
+		BatchImportExpression exp = BatchImportExpression.parse(testExpression);
+		String parent = exp.getFocusConcepts().get(0);
+		Assert.assertEquals(expectedParent, parent);
+		List<BatchImportGroup> groups = exp.getAttributeGroups();
+		Assert.assertTrue(groups.size() == 2);
+	}
+	
+	@Test
+	public void testCombination3() throws ProcessingException {
+		//Note that the failure to close the term here means that we're having to check if that comma is part of the term
+		//or compositional grammar syntax.
+		String testExpression = "<<< 198609003 | Complication of pregnancy, childbirth and/or the puerperium  + " +
+								"417746004 | Traumatic injury";
+		String expectedParent1 = "198609003";
+		String expectedParent2 = "417746004";
+		BatchImportExpression exp = BatchImportExpression.parse(testExpression);
+		Assert.assertEquals(expectedParent1, exp.getFocusConcepts().get(0));
+		Assert.assertEquals(expectedParent2, exp.getFocusConcepts().get(1));
+		List<BatchImportGroup> groups = exp.getAttributeGroups();
+		Assert.assertTrue(groups.size() == 0);
+	}	
 
 }

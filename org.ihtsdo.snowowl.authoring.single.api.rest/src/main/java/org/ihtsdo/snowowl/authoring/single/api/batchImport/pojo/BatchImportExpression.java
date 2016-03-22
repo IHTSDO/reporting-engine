@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.rest.exception.ProcessingException;
 
 import com.b2international.snowowl.snomed.core.domain.DefinitionStatus;
@@ -15,7 +16,7 @@ public class BatchImportExpression {
 	public static final String PIPE = "|";
 	public static final char PIPE_CHAR = '|';
 	public static final char SPACE = ' ';
-	public static final String REFINEMENT_START = ":";
+	public static final char[] REFINEMENT_START = new char[] {':', '{'};
 	public static final String GROUP_START = "\\{";
 	public static final char GROUP_START_CHAR = '{';
 	public static final String GROUP_END = "}";
@@ -62,14 +63,15 @@ public class BatchImportExpression {
 	
 	static List<String> extractFocusConcepts(StringBuffer expressionBuff) {
 		// Do we have a refinement, or just the parent(s) defined?
-		int focusEnd = expressionBuff.indexOf(REFINEMENT_START);
+		//Ah, we're sometimes missing the colon.  Allow open curly brace as well.
+		int focusEnd = indexOf(expressionBuff, REFINEMENT_START, 0);
 		if (focusEnd == -1) {
 			//Otherwise cut to end
 			focusEnd = expressionBuff.length();
 		} 
 		String focusConceptStr = expressionBuff.substring(0, focusEnd);
 		String[] focusConcepts = focusConceptStr.split(FOCUS_CONCEPT_SEPARATOR);
-		if (focusEnd < expressionBuff.length()) {
+		if (focusEnd < expressionBuff.length() && expressionBuff.charAt(focusEnd) == ':') {
 			//Also delete the ":" symbol
 			focusEnd++;
 		}
@@ -100,22 +102,33 @@ public class BatchImportExpression {
 	static void makeMachineReadable (StringBuffer hrExp) {
 		int pipeIdx =  hrExp.indexOf(PIPE);
 		while (pipeIdx != -1) {
-			int endIdx = indexOf(hrExp, termTerminators, pipeIdx+1);
-			//If we didn't find a terminator, cut to the end.
-			if (endIdx == -1) {
-				endIdx = hrExp.length();
-			} else {
-				//If the character found as a terminator is a pipe, then cut that too
-				if (hrExp.charAt(endIdx) == PIPE_CHAR) {
-					endIdx++;
-				}
-			}
+			int endIdx = findEndOfTerm(hrExp, pipeIdx);
 			hrExp.delete(pipeIdx, endIdx);
 			pipeIdx =  hrExp.indexOf(PIPE);
 		}
 		remove(hrExp, SPACE);
 	}
 	
+	private static int findEndOfTerm(StringBuffer hrExp, int searchStart) {
+		int endIdx = indexOf(hrExp, termTerminators, searchStart+1);
+		//If we didn't find a terminator, cut to the end.
+		if (endIdx == -1) {
+			endIdx = hrExp.length();
+		} else {
+			//If the character found as a terminator is a pipe, then cut that too
+			if (hrExp.charAt(endIdx) == PIPE_CHAR) {
+				endIdx++;
+			} else if (hrExp.charAt(endIdx) == ATTRIBUTE_SEPARATOR.charAt(0)) {
+				//If the character is a comma, then it might be a comma inside a term so find out if the next token is a number
+				if (!StringUtils.isNumericSpace(hrExp.substring(endIdx+1, endIdx+5))) {
+					//OK it's a term, so find the new actual end. 
+					endIdx = findEndOfTerm(hrExp, endIdx);
+				}
+			}
+		}
+		return endIdx;
+	}
+
 	static void remove (StringBuffer haystack, char needle) {
 		for (int idx = 0; idx < haystack.length(); idx++) {
 			if (haystack.charAt(idx) == needle) {
