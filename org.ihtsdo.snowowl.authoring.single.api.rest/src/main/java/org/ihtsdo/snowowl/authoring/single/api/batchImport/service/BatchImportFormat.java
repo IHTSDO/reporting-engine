@@ -156,7 +156,7 @@ public class BatchImportFormat {
 			List<Integer> synonymIndexList = new ArrayList<Integer>();
 			for (int colIdx=0; colIdx < header.size() && !mismatchDetected ;colIdx++) {
 				if (colIdx < checkHeaders.length && !header.get(colIdx).equals(checkHeaders[colIdx])) {
-					LOGGER.debug("File is not {} format because header {}:{} is not {}.", checkFormat, colIdx, header.get(colIdx), checkHeaders[colIdx]);
+					LOGGER.info("File is not {} format because header {}:{} is not {}.", checkFormat, colIdx, header.get(colIdx), checkHeaders[colIdx]);
 					mismatchDetected = true;
 				}
 				
@@ -169,7 +169,7 @@ public class BatchImportFormat {
 				}
 			}
 			if (!mismatchDetected) {
-				LOGGER.debug("File Batch Import file format determined to be {}.", checkFormat);
+				LOGGER.info("File Batch Import file format determined to be {}.", checkFormat);
 				thisFormat = create(checkFormat);
 				thisFormat.notesFields = Ints.toArray(notesIndexList);
 				thisFormat.synonymFields = Ints.toArray(synonymIndexList);
