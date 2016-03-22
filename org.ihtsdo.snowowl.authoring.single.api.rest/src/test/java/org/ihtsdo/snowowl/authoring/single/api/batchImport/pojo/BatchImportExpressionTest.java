@@ -6,6 +6,8 @@ import org.ihtsdo.otf.rest.exception.ProcessingException;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.b2international.snowowl.snomed.core.domain.DefinitionStatus;
+
 public class BatchImportExpressionTest {
 
 	@Test
@@ -36,8 +38,8 @@ public class BatchImportExpressionTest {
 		String testExpression = "===64572001:{363698007=53134007";
 		String expectedRemainder = "64572001:{363698007=53134007";
 		StringBuffer testBuff = new StringBuffer(testExpression);
-		boolean isFullyDefined = BatchImportExpression.extractDefinitionStatus(testBuff);
-		Assert.assertTrue(isFullyDefined);
+		DefinitionStatus defStatus = BatchImportExpression.extractDefinitionStatus(testBuff);
+		Assert.assertTrue(DefinitionStatus.FULLY_DEFINED.equals(defStatus));
 		Assert.assertEquals(testBuff.toString(), expectedRemainder);
 	}
 	
