@@ -130,6 +130,9 @@ public abstract class AbstractRestService {
 	@ExceptionHandler
 	@ResponseStatus(HttpStatus.CONFLICT)
 	public @ResponseBody RestApiError handle(final ConflictException ex) {
+		if (ex.getCause() != null) {
+			LOG.info("Conflict with cause", ex);
+		}
 		return getRestApiError(ex.toApiError(), HttpStatus.CONFLICT);
 	}
 
