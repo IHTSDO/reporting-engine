@@ -11,7 +11,7 @@ import us.monoid.json.JSONObject;
 public class ConceptReactivationTest extends AbstractIntegrationTest {
 
 	@Test
-	public void test() throws Exception {
+	public void testReactivation() throws Exception {
 		JSONObject concept = client.getConcept("347997007", branchPath).toObject();
 
 		Assert.assertEquals(0, countActiveRelationships(concept));

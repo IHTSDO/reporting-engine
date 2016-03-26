@@ -1,16 +1,16 @@
 package org.ihtsdo.termserver.scripting.integrationtest;
 
+import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.ConceptHelper;
 import org.ihtsdo.termserver.scripting.domain.ConceptIds;
 import org.junit.Assert;
 import org.junit.Test;
-import us.monoid.json.JSONObject;
 
-import java.io.IOException;
+import us.monoid.json.JSONObject;
 
 public class IdTest extends AbstractIntegrationTest {
 
-	@Test(expected = IOException.class)
+	@Test(expected = SnowOwlClientException.class)
 	public void testCreateConceptWithIdAlreadyInUse() throws Exception {
 		final JSONObject concept = ConceptHelper.newConcept().put("conceptId", ConceptIds.clinicalFinding);
 		client.createConcept(concept, branchPath);
@@ -24,7 +24,7 @@ public class IdTest extends AbstractIntegrationTest {
 		Assert.assertEquals(expectedConceptId, newConcept.get("conceptId"));
 	}
 
-	@Test
+	@Test(expected = SnowOwlClientException.class)
 	public void testCreateConceptWithRelationshipId() throws Exception {
 		final String notExpectedConceptId = ConceptIds.exampleRelationshipId;
 		final JSONObject concept = ConceptHelper.newConcept().put("conceptId", notExpectedConceptId);

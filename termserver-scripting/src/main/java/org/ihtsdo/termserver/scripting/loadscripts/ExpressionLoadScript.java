@@ -9,11 +9,13 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 
+/*
+ * mvn exec:java -Dexec.mainClass="org.ihtsdo.termserver.scripting.loadscripts.ExpressionLoadScript" -Dexec.cleanupDaemonThreads=false
+ */
 public class ExpressionLoadScript {
 
 	public static void main(String[] args) throws IOException {
-		final String refsetPath = "termserver-scripting/release/SnomedCT_LOINC_TechnologyPreview_INT_20150801/RF2Release/Snapshot/" +
-				"Refset/Content/xder2_sscccRefset_LOINCExpressionAssociationSnapshot_INT_20150801.txt";
+		final String refsetPath = "C:/Users/Apeteri/Desktop/xder2_sscccRefset_LOINCExpressionAssociationSnapshot_INT_20150801.txt";
 		new ExpressionLoadScript().createConceptsFromExpressionRefset(
 				refsetPath);
 	}
