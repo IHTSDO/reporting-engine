@@ -14,6 +14,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
+import com.b2international.snowowl.core.merge.Merge;
+
 @Api("Branch")
 @RestController
 @RequestMapping(produces={AbstractRestService.V1_MEDIA_TYPE, MediaType.APPLICATION_JSON_VALUE})
@@ -71,10 +73,9 @@ public class BranchController extends AbstractSnomedRestService {
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/projects/{projectKey}/tasks/{taskKey}/rebase", method= RequestMethod.POST)
-	public void rebaseTask(@PathVariable final String projectKey, @PathVariable final String taskKey,
+	public Merge rebaseTask(@PathVariable final String projectKey, @PathVariable final String taskKey,
 			@RequestBody MergeRequest mergeRequest) throws BusinessServiceException {
-		//The branch object that's returned from this function is empty, so suppressing it here to avoid confusion.
-		branchService.rebaseTask(projectKey, taskKey, mergeRequest, ControllerHelper.getUsername());
+		return branchService.rebaseTask(projectKey, taskKey, mergeRequest, ControllerHelper.getUsername());
 	}
 	
 	@ApiOperation(value="Rebase the Project from MAIN")
@@ -82,10 +83,9 @@ public class BranchController extends AbstractSnomedRestService {
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/projects/{projectKey}/rebase", method= RequestMethod.POST)
-	public void rebaseProject(@PathVariable final String projectKey,
+	public Merge rebaseProject(@PathVariable final String projectKey,
 			@RequestBody MergeRequest mergeRequest) throws BusinessServiceException {
-		//The branch object that's returned from this function is empty, so suppressing it here to avoid confusion.
-		branchService.rebaseProject(projectKey, mergeRequest, ControllerHelper.getUsername());
+		return branchService.rebaseProject(projectKey, mergeRequest, ControllerHelper.getUsername());
 	}
 	
 	@ApiOperation(value="Promote the Task to the Project")
@@ -104,9 +104,9 @@ public class BranchController extends AbstractSnomedRestService {
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/projects/{projectKey}/promote", method= RequestMethod.POST)
-	public void promoteProject(@PathVariable final String projectKey, @RequestBody MergeRequest mergeRequest) throws BusinessServiceException {
+	public Merge promoteProject(@PathVariable final String projectKey, @RequestBody MergeRequest mergeRequest) throws BusinessServiceException {
 		//The branch object that's returned from this function is empty, so suppressing it here to avoid confusion.
-		branchService.promoteProject(projectKey, mergeRequest, ControllerHelper.getUsername());
+		return branchService.promoteProject(projectKey, mergeRequest, ControllerHelper.getUsername());
 	}
 
 

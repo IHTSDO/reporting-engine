@@ -4,6 +4,7 @@ import com.b2international.commons.http.ExtendedLocale;
 import com.b2international.snowowl.core.branch.Branch;
 import com.b2international.snowowl.core.domain.IComponent;
 import com.b2international.snowowl.core.exceptions.NotFoundException;
+import com.b2international.snowowl.core.merge.Merge;
 import com.b2international.snowowl.datastore.review.ConceptChanges;
 import com.b2international.snowowl.datastore.review.Review;
 import com.b2international.snowowl.datastore.review.ReviewStatus;
@@ -79,25 +80,25 @@ public class BranchService {
 		return doDiff(PathHelper.getPath(projectKey), MAIN, locales);
 	}
 
-	public Branch rebaseTask(String projectKey, String taskKey, MergeRequest mergeRequest, String username) throws BusinessServiceException {
+	public Merge rebaseTask(String projectKey, String taskKey, MergeRequest mergeRequest, String username) throws BusinessServiceException {
 		StopWatch stopwatch = new StopWatch();
 		stopwatch.start();
-		Branch branch = mergeBranch(PathHelper.getPath(projectKey), PathHelper.getPath(projectKey, taskKey), mergeRequest.getSourceReviewId(), username);
+		Merge merge = mergeBranch(PathHelper.getPath(projectKey), PathHelper.getPath(projectKey, taskKey), mergeRequest.getSourceReviewId(), username);
 		stopwatch.stop();
 		String resultMessage = "Rebase from project to " + taskKey + " completed without conflicts in " + stopwatch;
 		notificationService.queueNotification(username, new Notification(projectKey, taskKey, EntityType.Rebase, resultMessage));
-		return branch;
+		return merge;
 	}
 
-	public Branch promoteTask(String projectKey, String taskKey, MergeRequest mergeRequest, String username) throws BusinessServiceException, JiraException {
+	public Merge promoteTask(String projectKey, String taskKey, MergeRequest mergeRequest, String username) throws BusinessServiceException, JiraException {
 		StopWatch stopwatch = new StopWatch();
 		stopwatch.start();
-		Branch branch = mergeBranch(PathHelper.getPath(projectKey, taskKey), PathHelper.getPath(projectKey), mergeRequest.getSourceReviewId(), username);
+		Merge merge = mergeBranch(PathHelper.getPath(projectKey, taskKey), PathHelper.getPath(projectKey), mergeRequest.getSourceReviewId(), username);
 		stopwatch.stop();
 		taskService.stateTransition(projectKey, taskKey, TaskStatus.PROMOTED);
 		String resultMessage = "Promotion of " + taskKey + " completed without conflicts in " + stopwatch;
 		notificationService.queueNotification(username, new Notification(projectKey, taskKey, EntityType.Promotion, resultMessage));
-		return branch;
+		return merge;
 	}
 
 	public ReviewStatus getReviewStatus(String id) throws ExecutionException, InterruptedException {
@@ -173,11 +174,11 @@ public class BranchService {
 		}
 	}
 
-	private Branch mergeBranch(String sourcePath, String targetPath, String reviewId, String username) throws BusinessServiceException {
+	private Merge mergeBranch(String sourcePath, String targetPath, String reviewId, String username) throws BusinessServiceException {
 		String commitMsg = username + " performed merge of " + sourcePath + " to " + targetPath;
 		return SnomedRequests
-				.branching()
-				.prepareMerge()
+				.merging()
+				.prepareCreate()
 				.setSource(sourcePath)
 				.setTarget(targetPath)
 				.setCommitComment(commitMsg)
@@ -336,26 +337,28 @@ public class BranchService {
 		return doCreateConflictReport(MAIN, PathHelper.getPath(projectKey), locales);
 	}
 
-	public void rebaseProject(String projectKey, MergeRequest mergeRequest,
+	public Merge rebaseProject(String projectKey, MergeRequest mergeRequest,
 			String username) throws BusinessServiceException {
 		StopWatch stopwatch = new StopWatch();
 		stopwatch.start();
-		mergeBranch(MAIN, PathHelper.getPath(projectKey), mergeRequest.getSourceReviewId(), username);
+		Merge merge = mergeBranch(MAIN, PathHelper.getPath(projectKey), mergeRequest.getSourceReviewId(), username);
 		stopwatch.stop();
 		String resultMessage = "Rebase from MAIN to " + projectKey + " completed without conflicts in " + stopwatch;
 		notificationService.queueNotification(username, new Notification(projectKey, EntityType.Rebase, resultMessage));
+		return merge;
 	}
 
-	public void promoteProject(String projectKey,
+	public Merge promoteProject(String projectKey,
 			MergeRequest mergeRequest, String username) throws BusinessServiceException {
 		List<Issue> promotedIssues = taskService.getTaskIssues(projectKey, TaskStatus.PROMOTED);
 		StopWatch stopwatch = new StopWatch();
 		stopwatch.start();
-		mergeBranch(PathHelper.getPath(projectKey), MAIN, mergeRequest.getSourceReviewId(), username);
+		Merge merge = mergeBranch(PathHelper.getPath(projectKey), MAIN, mergeRequest.getSourceReviewId(), username);
 		stopwatch.stop();
 		taskService.stateTransition(promotedIssues, TaskStatus.COMPLETED);
 		String resultMessage = "Promotion of " + projectKey + " to MAIN completed without conflicts in " + stopwatch;
 		notificationService.queueNotification(username, new Notification(projectKey, EntityType.Promotion, resultMessage));
+		return merge;
 	}
 
 	private class BranchPath {
