@@ -15,28 +15,14 @@
 		<emf.version>2.11.0-v20150123-0347</emf.version>
 		<slf4j.version>1.7.2</slf4j.version>
 		<!-- manifest properties -->
-		<bundle.symbolicName>${project.artifactId};singleton:=true</bundle.symbolicName>
-		<bundle.namespace>${project.artifactId}</bundle.namespace>
 		<bundle.webcontext>/snowowl/ihtsdo-sca</bundle.webcontext>
-		<snowowl.lib.scope>provided</snowowl.lib.scope>
 	</properties>
 
 	<dependencies>
-<!--  dependency>
-	<groupId>javax.annotation</groupId>
-	<artifactId>jsr250-api</artifactId>
-	<version>1.0</version>
-</dependency>-->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
 			<version>1.2.5.RELEASE</version>
-			<exclusions>
-				<exclusion>
-					<groupId>ch.qos.logback</groupId>
-					<artifactId>logback-classic</artifactId>
-				</exclusion>
-			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>com.h2database</groupId>
@@ -68,12 +54,6 @@
 			<groupId>org.ihtsdo.otf.common</groupId>
 			<artifactId>otf-common</artifactId>
 			<version>0.0.21</version>
-			<exclusions>
-				<exclusion>
-					<artifactId>spring-beans</artifactId>
-					<groupId>org.springframework</groupId>
-				</exclusion>
-			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.ihtsdo.drools</groupId>
@@ -86,124 +66,76 @@
 		<dependency>
 			<groupId>com.b2international.snowowl</groupId>
 			<artifactId>com.b2international.commons</artifactId>
-			<version>${snowowl.version}</version>
-			<scope>${snowowl.lib.scope}</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.b2international.snowowl</groupId>
 			<artifactId>com.b2international.commons.base</artifactId>
-			<version>${snowowl.version}</version>
-			<scope>${snowowl.lib.scope}</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.b2international.snowowl</groupId>
 			<artifactId>com.b2international.snowowl.core</artifactId>
-			<version>${snowowl.version}</version>
-			<scope>${snowowl.lib.scope}</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.b2international.snowowl</groupId>
 			<artifactId>com.b2international.snowowl.datastore.server</artifactId>
-			<version>${snowowl.version}</version>
-			<scope>${snowowl.lib.scope}</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.b2international.snowowl</groupId>
 			<artifactId>com.b2international.snowowl.eventbus</artifactId>
-			<version>${snowowl.version}</version>
-			<scope>${snowowl.lib.scope}</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.b2international.snowowl</groupId>
 			<artifactId>com.b2international.snowowl.snomed.model</artifactId>
-			<version>${snowowl.version}</version>
-			<scope>${snowowl.lib.scope}</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.b2international.snowowl</groupId>
 			<artifactId>com.b2international.snowowl.snomed.api</artifactId>
-			<version>${snowowl.version}</version>
-			<scope>${snowowl.lib.scope}</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.b2international.snowowl</groupId>
 			<artifactId>com.b2international.snowowl.api.impl</artifactId>
-			<version>${snowowl.version}</version>
-			<scope>${snowowl.lib.scope}</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.b2international.snowowl</groupId>
 			<artifactId>com.b2international.snowowl.snomed.api.impl</artifactId>
-			<version>${snowowl.version}</version>
-			<scope>${snowowl.lib.scope}</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.b2international.snowowl</groupId>
 			<artifactId>com.b2international.snowowl.datastore</artifactId>
-			<version>${snowowl.version}</version>
-			<scope>${snowowl.lib.scope}</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.b2international.snowowl</groupId>
 			<artifactId>com.b2international.snowowl.snomed.datastore</artifactId>
-			<version>${snowowl.version}</version>
-			<scope>${snowowl.lib.scope}</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.b2international.snowowl</groupId>
 			<artifactId>com.b2international.snowowl.snomed.datastore.server</artifactId>
-			<version>${snowowl.version}</version>
-			<scope>${snowowl.lib.scope}</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.b2international.snowowl</groupId>
 			<artifactId>com.b2international.snowowl.api</artifactId>
-			<version>${snowowl.version}</version>
-			<scope>${snowowl.lib.scope}</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.b2international.snowowl</groupId>
 			<artifactId>org.eclipse.emf.cdo</artifactId>
-			<version>${snowowl.version}</version>
-			<scope>${snowowl.lib.scope}</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.b2international.snowowl</groupId>
 			<artifactId>org.eclipse.emf.cdo.common</artifactId>
-			<version>${snowowl.version}</version>
-			<scope>${snowowl.lib.scope}</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.b2international.snowowl</groupId>
 			<artifactId>com.b2international.snowowl.snomed.scg</artifactId>
-			<version>${snowowl.version}</version>
-			<scope>${snowowl.lib.scope}</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.eclipse.emf</groupId>
-			<artifactId>org.eclipse.emf.ecore</artifactId>
-			<version>${emf.version}</version>
-			<scope>${snowowl.lib.scope}</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.eclipse.emf</groupId>
-			<artifactId>org.eclipse.emf.common</artifactId>
-			<version>${emf.version}</version>
-			<scope>${snowowl.lib.scope}</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
-			<version>${slf4j.version}</version>
-			<scope>${snowowl.lib.scope}</scope>
 		</dependency>
-
+		
 		<!-- The Servlet specification is implemented by the web container -->
 		<dependency>
-			<groupId>javax.servlet</groupId>
-			<artifactId>javax.servlet-api</artifactId>
-			<version>${servlet.api.version}</version>
-			<scope>provided</scope>
+			<groupId>org.eclipse.jetty.orbit</groupId>
+			<artifactId>javax.servlet</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>javax.validation</groupId>
@@ -274,12 +206,6 @@
 			<groupId>org.springframework.hateoas</groupId>
 			<artifactId>spring-hateoas</artifactId>
 			<version>${spring.hateoas.version}</version>
-			<exclusions>
-				<exclusion>
-					<groupId>org.slf4j</groupId>
-					<artifactId>slf4j-api</artifactId>
-				</exclusion>
-			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework</groupId>
@@ -324,23 +250,11 @@
 			<classifier>resources</classifier>
 			<type>zip</type>
 			<scope>provided</scope>
-			<exclusions>
-				<exclusion>
-					<groupId>ch.qos.logback</groupId>
-					<artifactId>logback-classic</artifactId>
-				</exclusion>
-			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.ihtsdo.otf</groupId>
 			<artifactId>ihtsdo-crowd-bridge</artifactId>
 			<version>${org.ihtsdo.otf.im-version}</version>
-			<exclusions>
-				<exclusion>
-					<groupId>ch.qos.logback</groupId>
-					<artifactId>logback-classic</artifactId>
-				</exclusion>
-			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.httpcomponents</groupId>
@@ -353,15 +267,6 @@
 			<version>1.47.1</version>
 		</dependency>
 	</dependencies>
-
-	<profiles>
-		<profile>
-			<id>standalone-test</id>
-			<properties>
-				<snowowl.lib.scope>compile</snowowl.lib.scope>
-			</properties>
-	</profile>
-	</profiles>
 
 	<build>
 
@@ -470,7 +375,7 @@
 						<Bundle-SymbolicName>${project.artifactId};singleton:=true</Bundle-SymbolicName>
 						<Bundle-Version>1.0.0.qualifier</Bundle-Version>
 						<Bundle-ManifestVersion>2</Bundle-ManifestVersion>
-						<Bundle-ClassPath>.,WEB-INF/classes,{maven-dependencies}</Bundle-ClassPath>
+						<Bundle-ClassPath>.,{maven-dependencies}</Bundle-ClassPath>
 						<Embed-Directory>WEB-INF/lib</Embed-Directory>
 						<Embed-Dependency>*;scope=compile|runtime</Embed-Dependency>
 						<Embed-Transitive>true</Embed-Transitive>
@@ -478,15 +383,11 @@
 						<!-- this plugin automatically replaces full packages by scanning import statements in classes.
 						However package configured in spring bean classes and not used as import within java classes needs to mention separately
 						hence com.b2international.snowowl.api.impl etc -->
-						<Import-Package>!ch.qos.logback.*,
-							!org.slf4j,
-							!org.slf4j.*,*;resolution:=optional,
+						<Import-Package>*;resolution:=optional,
 							com.b2international.snowowl.api.impl,
 							com.b2international.snowowl.internal.eventbus,
 							com.b2international.snowowl.snomed.api.impl.validation,
-							com.b2international.snowowl.api.impl.codesystem,
-							org.slf4j;version="1.7.2",
-							org.slf4j.spi;version="1.7.2"
+							com.b2international.snowowl.api.impl.codesystem
 						</Import-Package>
 					</instructions>
 				</configuration>
@@ -526,10 +427,6 @@
 								applicationContext-CrowdClient.xml,
 								crowd-ehcache.xml
 							</includes>
-							<excludes>
-								logback-classic*.jar,
-								*slf4j*.jar
-							</excludes>
 						</configuration>
 					</execution>
 					<execution>
