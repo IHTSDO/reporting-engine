@@ -42,7 +42,7 @@ public abstract class AbstractIntegrationTest implements SnowOwlClientEventListe
 	}
 
 	String generateTestBranchName() {
-		return "test_" + new SimpleDateFormat("yyyyMMdd_hhmmss_SSS").format(new Date());
+		return "test_" + new SimpleDateFormat("yyyyMMdd_hhmmss").format(new Date());
 	}
 
 	@After

@@ -11,7 +11,6 @@ import us.monoid.web.JSONResource;
 import us.monoid.web.Resty;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -82,7 +81,7 @@ public class SnowOwlClient {
 		}
 	}
 
-	public void mergeAndWait(String source, String target) throws SnowOwlClientException {
+	public void mergeBranch(String source, String target) throws SnowOwlClientException {
 		try {
 			final JSONObject json = new JSONObject();
 			json.put("source", source);
@@ -90,20 +89,7 @@ public class SnowOwlClient {
 			final String message = "Merging " + source + " to " + target;
 			json.put("commitComment", message);
 			logger.info(message);
-			URI location = resty.json(url + "/merges", RestyHelper.content(json, SNOWOWL_CONTENT_TYPE)).location();
-			
-			String status;
-			JSONObject jsonObject;
-			do {
-				jsonObject = resty.json(location).toObject();
-				status = jsonObject.getString("status");
-			} while (("SCHEDULED".equals(status) || "IN_PROGRESS".equals(status) && sleep(10)));
-
-			if (!"COMPLETED".equals(status)) {
-				logger.error(jsonObject.toString(2));
-				throw new SnowOwlClientException("Unexpected classification state " + status);
-			}
-
+			resty.json(url + "/merges", RestyHelper.content(json, SNOWOWL_CONTENT_TYPE));
 		} catch (Exception e) {
 			throw new SnowOwlClientException(e);
 		}
@@ -121,6 +107,14 @@ public class SnowOwlClient {
 	public JSONResource search(String query, String branchPath) throws SnowOwlClientException {
 		try {
 			return resty.json(url + "/browser/" + branchPath + "/descriptions?query=" + query);
+		} catch (IOException e) {
+			throw new SnowOwlClientException(e);
+		}
+	}
+
+	public JSONResource searchWithPT(String query, String branchPath) throws SnowOwlClientException {
+		try {
+			return resty.json(url + "/browser/" + branchPath + "/descriptions-pt?query=" + query);
 		} catch (IOException e) {
 			throw new SnowOwlClientException(e);
 		}
@@ -148,7 +142,7 @@ public class SnowOwlClient {
 //		resty.withHeader("Accept", "application/vnd.com.b2international.snowowl+json");
 //		url = "http://requestb.in/rky7oqrk";
 			final JSONResource resource = resty.json(url, RestyHelper.content(json, SNOWOWL_CONTENT_TYPE));
-			final String location = resource.location().toString();
+			final String location = resource.getUrlConnection().getHeaderField("Location");
 			System.out.println("location " + location);
 
 			String status;

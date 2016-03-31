@@ -25,7 +25,7 @@ public class ConceptCreationTest extends AbstractIntegrationTest {
 		String firstRelationshipId = ConceptHelper.findRelationship(ConceptIds.isA, concept).getString("relationshipId");
 		Assert.assertNotNull(firstRelationshipId);
 		ConceptHelper.findRelationship(ConceptIds.isA, concept).remove("relationshipId");
-		concept = client.updateConcept(concept, branchPath).toObject();
+		client.updateConcept(concept, branchPath);
 		String secondRelationshipId = ConceptHelper.findRelationship(ConceptIds.isA, concept).getString("relationshipId");
 		Assert.assertNotNull(secondRelationshipId);
 		Assert.assertNotEquals(firstRelationshipId, secondRelationshipId);
@@ -39,7 +39,7 @@ public class ConceptCreationTest extends AbstractIntegrationTest {
 		String firstRelationshipId = ConceptHelper.findRelationship(ConceptIds.method, concept).getString("relationshipId");
 		Assert.assertNotNull(firstRelationshipId);
 		ConceptHelper.findRelationship(ConceptIds.method, concept).remove("relationshipId");
-		concept = client.updateConcept(concept, branchPath).toObject();
+		client.updateConcept(concept, branchPath);
 		String secondRelationshipId = ConceptHelper.findRelationship(ConceptIds.method, concept).getString("relationshipId");
 		Assert.assertNotNull(secondRelationshipId);
 		Assert.assertNotEquals(firstRelationshipId, secondRelationshipId);
