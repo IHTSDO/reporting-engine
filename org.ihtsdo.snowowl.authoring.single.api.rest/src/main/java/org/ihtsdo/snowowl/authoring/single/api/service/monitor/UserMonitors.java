@@ -1,6 +1,5 @@
 package org.ihtsdo.snowowl.authoring.single.api.service.monitor;
 
-import org.ihtsdo.snowowl.authoring.single.api.pojo.ConflictReport;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.Notification;
 import org.ihtsdo.snowowl.authoring.single.api.service.NotificationService;
 import org.slf4j.Logger;
@@ -96,13 +95,10 @@ public class UserMonitors {
 		}).start();
 	}
 
-	public void updateFocus(String focusProjectId, String focusTaskId, ConflictReport conflictReport) {
+	public void updateFocus(String focusProjectId, String focusTaskId) {
 		accessed();
 		if (focusProjectId != null) {
 			addMonitorIfNew(monitorFactory.createMonitor(focusProjectId, focusTaskId));
-		}
-		if (conflictReport != null) {
-			addMonitorIfNew(monitorFactory.createMonitor(focusProjectId, focusTaskId, conflictReport));
 		}
 		safeStart();
 	}
