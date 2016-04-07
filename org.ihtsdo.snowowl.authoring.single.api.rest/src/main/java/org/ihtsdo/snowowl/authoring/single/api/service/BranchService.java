@@ -16,9 +16,7 @@ import net.rcarz.jiraclient.JiraException;
 import org.apache.commons.lang.time.StopWatch;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.*;
-import org.ihtsdo.snowowl.authoring.single.api.review.pojo.AuthoringTaskReview;
 import org.ihtsdo.snowowl.authoring.single.api.review.pojo.ChangeType;
-import org.ihtsdo.snowowl.authoring.single.api.review.pojo.ReviewConcept;
 import org.ihtsdo.snowowl.authoring.single.api.service.dao.CdoStore;
 import org.ihtsdo.snowowl.authoring.single.api.service.util.TimerUtil;
 import org.slf4j.Logger;
@@ -51,7 +49,6 @@ public class BranchService {
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	private static final int REVIEW_TIMEOUT = 60; //Minutes
-	private static final int MERGE_TIMEOUT = 60; //Minutes
 	private static final int CONFLICT_REVIEW_TIMEOUT = 45; //Seconds
 
 	public void createTaskBranchAndProjectBranchIfNeeded(String projectKey, String taskKey) throws ServiceException {
@@ -69,14 +66,6 @@ public class BranchService {
 		} catch (NotFoundException e) {
 			return null;
 		}
-	}
-
-	public AuthoringTaskReview diffTaskAgainstProject(String projectKey, String taskKey, List<ExtendedLocale> locales) throws ExecutionException, InterruptedException {
-		return doDiff(PathHelper.getPath(projectKey, taskKey), PathHelper.getPath(projectKey), locales);
-	}
-
-	public AuthoringTaskReview diffProjectAgainstMain(String projectKey, List<ExtendedLocale> locales) throws ExecutionException, InterruptedException {
-		return doDiff(PathHelper.getPath(projectKey), MAIN, locales);
 	}
 
 	public Branch rebaseTask(String projectKey, String taskKey, MergeRequest mergeRequest, String username) throws BusinessServiceException {
@@ -125,9 +114,9 @@ public class BranchService {
 		}
 	}
 
-	private AuthoringTaskReview doDiff(String sourcePath, String targetPath, List<ExtendedLocale> locales) throws ExecutionException, InterruptedException {
+	private MergeReview doDiff(String sourcePath, String targetPath, List<ExtendedLocale> locales) throws ExecutionException, InterruptedException {
 		final TimerUtil timer = new TimerUtil("Review");
-		final AuthoringTaskReview review = new AuthoringTaskReview();
+		final MergeReview review = new MergeReview();
 		logger.info("Creating TS review - source {}, target {}", sourcePath, targetPath);
 		Review tsReview = SnomedRequests.review().prepareCreate().setSource(sourcePath).setTarget(targetPath).build().executeSync(eventBus);
 		timer.checkpoint("request review");
@@ -164,12 +153,12 @@ public class BranchService {
 		return SnomedRequests.review().prepareGet(id).executeSync(eventBus);
 	}
 
-	private void addAllToReview(AuthoringTaskReview review, ChangeType changeType, Set<String> conceptIds,
+	private void addAllToReview(MergeReview review, ChangeType changeType, Set<String> conceptIds,
 			Map<String, ISnomedDescription> fullySpecifiedNames) {
 		for (String conceptId : conceptIds) {
 			final ISnomedDescription description = fullySpecifiedNames.get(conceptId);
 			String term = description != null ? description.getTerm() : conceptId;
-			review.addConcept(new ReviewConcept(conceptId, term, changeType));
+			review.addConcept(new MergeReviewConcept(conceptId, term, changeType));
 		}
 	}
 
@@ -201,8 +190,8 @@ public class BranchService {
 			AuthoringTaskReviewRunner targetChangesReviewRunner = new AuthoringTaskReviewRunner(targetPath, sourcePath, locales);
 			AuthoringTaskReviewRunner sourceChangesReviewRunner = new AuthoringTaskReviewRunner(sourcePath, targetPath, locales);
 
-			Future<AuthoringTaskReview> targetChangesReview = executor.submit(targetChangesReviewRunner);
-			Future<AuthoringTaskReview> sourceChangesReview = executor.submit(sourceChangesReviewRunner);
+			Future<MergeReview> targetChangesReview = executor.submit(targetChangesReviewRunner);
+			Future<MergeReview> sourceChangesReview = executor.submit(sourceChangesReviewRunner);
 
 			//Wait for both of these to complete
 			logger.info("Waiting for both review reports to complete for target {} ", targetPath);
@@ -212,13 +201,13 @@ public class BranchService {
 
 			//Form Set of source changes so as to avoid n x m iterations
 			Set<String> sourceChanges = new HashSet<>();
-			for (ReviewConcept thisConcept : sourceChangesReview.get().getConcepts()) {
+			for (MergeReviewConcept thisConcept : sourceChangesReview.get().getConcepts()) {
 				sourceChanges.add(thisConcept.getId());
 			}
 
 			List<ConceptConflict> conflictingConcepts = new ArrayList<>();
 			//Work through Target Changes to find concepts in common
-			for (ReviewConcept thisConcept : targetChangesReview.get().getConcepts()) {
+			for (MergeReviewConcept thisConcept : targetChangesReview.get().getConcepts()) {
 				if (sourceChanges.contains(thisConcept.getId())) {
 					conflictingConcepts.add(new ConceptConflict(thisConcept.getId()));
 				}
@@ -313,7 +302,7 @@ public class BranchService {
 
 	}
 
-	class AuthoringTaskReviewRunner implements Callable<AuthoringTaskReview> {
+	class AuthoringTaskReviewRunner implements Callable<MergeReview> {
 
 		final String sourcePath;
 		final String targetPath;
@@ -326,7 +315,7 @@ public class BranchService {
 		}
 
 		@Override
-		public AuthoringTaskReview call() throws Exception {
+		public MergeReview call() throws Exception {
 			return doDiff(sourcePath, targetPath, locales);
 		}
 

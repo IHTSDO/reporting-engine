@@ -43,7 +43,7 @@ public class ReviewMessageSentHandler implements ReviewMessageSentListener {
 				notificationService.queueNotification(username, new Notification(project, task, EntityType.Feedback, "new"));
 			}
 		} catch (BusinessServiceException e) {
-			e.printStackTrace();
+			logger.error("Failed to notify user of review feedback.", e);
 		}
 	}
 

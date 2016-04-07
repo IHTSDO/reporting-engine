@@ -1,5 +1,7 @@
 package org.ihtsdo.snowowl.authoring.single.api.review.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -10,6 +12,7 @@ public class Branch {
 
 	@Id
 	@GeneratedValue(strategy= GenerationType.AUTO)
+	@JsonIgnore
 	private long id;
 	private String project;
 	private String task;

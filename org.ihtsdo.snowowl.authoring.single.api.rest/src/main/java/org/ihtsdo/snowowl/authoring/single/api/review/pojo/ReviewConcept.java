@@ -2,68 +2,30 @@ package org.ihtsdo.snowowl.authoring.single.api.review.pojo;
 
 import org.ihtsdo.snowowl.authoring.single.api.review.domain.ReviewMessage;
 
+import java.util.Date;
 import java.util.List;
 
 public class ReviewConcept {
 
 	private String id;
-	private String term;
-	private ChangeType changeType;
 	private List<ReviewMessage> messages;
-	private boolean read;
-	private boolean modifiedSinceReview = false;
+	private Date viewDate;
 
-	public ReviewConcept(String id, String term, ChangeType changeType) {
+	public ReviewConcept(String id, List<ReviewMessage> messages, Date viewDate) {
 		this.id = id;
-		this.term = term;
-		this.changeType = changeType;
+		this.messages = messages;
+		this.viewDate = viewDate;
 	}
 
 	public String getId() {
 		return id;
 	}
 
-	public void setId(String id) {
-		this.id = id;
-	}
-
-	public String getTerm() {
-		return term;
-	}
-
-	public void setTerm(String term) {
-		this.term = term;
-	}
-
-	public ChangeType getChangeType() {
-		return changeType;
-	}
-
-	public void setChangeType(ChangeType changeType) {
-		this.changeType = changeType;
-	}
-
-	public void setMessages(List<ReviewMessage> messages) {
-		this.messages = messages;
-	}
-
 	public List<ReviewMessage> getMessages() {
 		return messages;
 	}
 
-	public boolean isRead() {
-		return read;
-	}
-
-	public void setRead(boolean read) {
-		this.read = read;
-	}
-
-	public boolean isModifiedSinceReview() {
-		return modifiedSinceReview;
-	}
-
-	public void setModifiedSinceReview(boolean modifiedSinceReview) {
-		this.modifiedSinceReview = modifiedSinceReview;
+	public Date getViewDate() {
+		return viewDate;
 	}
 }

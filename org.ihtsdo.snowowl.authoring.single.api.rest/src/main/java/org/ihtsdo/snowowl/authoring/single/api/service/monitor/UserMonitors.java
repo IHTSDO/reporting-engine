@@ -15,7 +15,7 @@ public class UserMonitors {
 	private boolean started;
 	private final Runnable deathCallback;
 
-	private Map<Class, Monitor> currentMonitors;
+	private final Map<Class, Monitor> currentMonitors;
 	private Set<Monitor> monitorLoggedError;
 
 	private final MonitorFactory monitorFactory;

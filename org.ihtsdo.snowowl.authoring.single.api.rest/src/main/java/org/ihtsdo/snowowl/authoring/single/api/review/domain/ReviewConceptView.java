@@ -1,27 +1,34 @@
 package org.ihtsdo.snowowl.authoring.single.api.review.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import java.util.Date;
 import javax.persistence.*;
 
-@Entity
-public class ReviewMessageRead {
+@Entity(name = "ReviewConceptView")
+public class ReviewConceptView {
 
 	@Id
 	@GeneratedValue(strategy= GenerationType.AUTO)
 	private long id;
-	@ManyToOne(fetch = FetchType.EAGER)
-	private ReviewMessage message;
+	@ManyToOne
+	private Branch branch;
 	private String conceptId;
 	private String username;
+	private final Date viewDate;
 
-	protected ReviewMessageRead() {
+	protected ReviewConceptView() {
+		viewDate = new Date();
 	}
 
-	public ReviewMessageRead(ReviewMessage message, String conceptId, String username) {
-		this.message = message;
+	public ReviewConceptView(Branch branch, String conceptId, String username) {
+		this();
+		this.branch = branch;
 		this.conceptId = conceptId;
 		this.username = username;
 	}
 
+	@JsonIgnore
 	public long getId() {
 		return id;
 	}
@@ -30,8 +37,9 @@ public class ReviewMessageRead {
 		this.id = id;
 	}
 
-	public ReviewMessage getMessage() {
-		return message;
+	@JsonIgnore
+	public Branch getBranch() {
+		return branch;
 	}
 
 	public String getUsername() {
@@ -41,14 +49,18 @@ public class ReviewMessageRead {
 	public String getConceptId() {
 		return conceptId;
 	}
+	
+	public Date getViewDate() {
+		return viewDate;
+	}
 
 	@Override
 	public String toString() {
 		return "ReviewMessageRead{" +
 				"id=" + id +
-				", message=" + message +
 				", conceptId='" + conceptId + '\'' +
 				", username='" + username + '\'' +
+				", viewDate=" + viewDate +
 				'}';
 	}
 }

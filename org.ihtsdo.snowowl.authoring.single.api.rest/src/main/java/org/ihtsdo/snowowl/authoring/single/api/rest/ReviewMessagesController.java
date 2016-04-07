@@ -6,57 +6,50 @@ import org.ihtsdo.snowowl.api.rest.common.AbstractRestService;
 import org.ihtsdo.snowowl.api.rest.common.AbstractSnomedRestService;
 import org.ihtsdo.snowowl.api.rest.common.ControllerHelper;
 import org.ihtsdo.snowowl.authoring.single.api.review.domain.ReviewMessage;
-import org.ihtsdo.snowowl.authoring.single.api.review.pojo.AuthoringTaskReview;
+import org.ihtsdo.snowowl.authoring.single.api.review.pojo.ReviewConcept;
 import org.ihtsdo.snowowl.authoring.single.api.review.pojo.ReviewMessageCreateRequest;
 import org.ihtsdo.snowowl.authoring.single.api.review.service.ReviewService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-@Api("Review")
+@Api("Review Messages")
 @RestController
 @RequestMapping(produces={AbstractRestService.V1_MEDIA_TYPE, MediaType.APPLICATION_JSON_VALUE})
-public class ReviewController extends AbstractSnomedRestService {
+public class ReviewMessagesController extends AbstractSnomedRestService {
 
 	@Autowired
 	private ReviewService reviewService;
 
-	@ApiOperation(value="Retrieve the review list for a Task")
+	@ApiOperation(value="Retrieve a list of stored details for a task review concept, including last view date for the user and a list of messages.")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/projects/{projectKey}/tasks/{taskKey}/review", method= RequestMethod.GET)
-	public AuthoringTaskReview retrieveTaskReview(
+	public List<ReviewConcept> retrieveTaskReview(
 			@PathVariable final String projectKey,
 
-			@PathVariable final String taskKey,
+			@PathVariable final String taskKey) throws BusinessServiceException {
 
-			@ApiParam(value="Language codes and reference sets, in order of preference")
-			@RequestHeader(value="Accept-Language", defaultValue="en-US;q=0.8,en-GB;q=0.6", required=false)
-			final String languageSetting) throws BusinessServiceException {
-
-		return reviewService.retrieveTaskReview(projectKey, taskKey, getExtendedLocales(languageSetting), ControllerHelper.getUsername());
+		return reviewService.retrieveTaskReviewConceptDetails(projectKey, taskKey, ControllerHelper.getUsername());
 	}
 
-	@ApiOperation(value="Retrieve the review list for a Project")
+	@ApiOperation(value="Retrieve a list of stored details for a project review concept, including last view date for the user and a list of messages.")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/projects/{projectKey}/review", method= RequestMethod.GET)
-	public AuthoringTaskReview retrieveProjectReview(
+	public List<ReviewConcept> retrieveProjectReview(
 
-			@PathVariable final String projectKey,
+			@PathVariable final String projectKey) throws BusinessServiceException {
 
-			@ApiParam(value="Language codes and reference sets, in order of preference")
-			@RequestHeader(value="Accept-Language", defaultValue="en-US;q=0.8,en-GB;q=0.6", required=false)
-			final String languageSetting) throws BusinessServiceException {
-
-		return reviewService.retrieveProjectReview(projectKey, getExtendedLocales(languageSetting), ControllerHelper.getUsername());
+		return reviewService.retrieveProjectReviewConceptDetails(projectKey, ControllerHelper.getUsername());
 	}
 
-	@ApiOperation(value="Comment on a Task")
+	@ApiOperation(value="Record a review feedback message on task concepts.")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
 	})
@@ -66,7 +59,7 @@ public class ReviewController extends AbstractSnomedRestService {
 		return reviewService.postReviewMessage(projectKey, taskKey, createRequest, ControllerHelper.getUsername());
 	}
 
-	@ApiOperation(value="Comment on a Project")
+	@ApiOperation(value="Record a review feedback message on project concepts.")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
 	})
@@ -76,24 +69,24 @@ public class ReviewController extends AbstractSnomedRestService {
 		return reviewService.postReviewMessage(projectKey, null, createRequest, ControllerHelper.getUsername());
 	}
 
-	@ApiOperation(value="Mark a review and concept pair as read for this user.")
+	@ApiOperation(value="Mark a task review concept as viewed for this user.")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
 	})
-	@RequestMapping(value="/projects/{projectKey}/tasks/{taskKey}/review/concepts/{conceptId}/read", method= RequestMethod.POST)
-	public void markTaskReviewAndConceptRead(@PathVariable final String projectKey, @PathVariable final String taskKey,
+	@RequestMapping(value="/projects/{projectKey}/tasks/{taskKey}/review/concepts/{conceptId}/view", method= RequestMethod.POST)
+	public void markTaskReviewConceptViewed(@PathVariable final String projectKey, @PathVariable final String taskKey,
 			@PathVariable final String conceptId) throws ExecutionException, InterruptedException {
-		reviewService.markAsRead(projectKey, taskKey, conceptId, ControllerHelper.getUsername());
+		reviewService.recordConceptView(projectKey, taskKey, conceptId, ControllerHelper.getUsername());
 	}
 
-	@ApiOperation(value="Mark a review and concept pair as read for this user.")
+	@ApiOperation(value="Mark a project review concept as viewed for this user.")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
 	})
-	@RequestMapping(value="/projects/{projectKey}/review/concepts/{conceptId}/read", method= RequestMethod.POST)
-	public void markProjectReviewAndConceptRead(@PathVariable final String projectKey,
+	@RequestMapping(value="/projects/{projectKey}/review/concepts/{conceptId}/view", method= RequestMethod.POST)
+	public void markProjectReviewConceptViewed(@PathVariable final String projectKey,
 			@PathVariable final String conceptId) throws ExecutionException, InterruptedException {
-		reviewService.markAsRead(projectKey, null, conceptId, ControllerHelper.getUsername());
+		reviewService.recordConceptView(projectKey, null, conceptId, ControllerHelper.getUsername());
 	}
 
 }

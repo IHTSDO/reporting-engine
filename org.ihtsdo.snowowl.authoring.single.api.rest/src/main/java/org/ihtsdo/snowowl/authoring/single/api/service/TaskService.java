@@ -254,7 +254,9 @@ public class TaskService {
 					timer.checkpoint("Recovering branch state");
 					startedTasks.put(PathHelper.getTaskPath(issue), task);
 				}
-				task.setFeedbackMessagesStatus(reviewService.getTaskMessagesStatus(task.getProjectKey(), task.getKey(), username));
+				if (task.getStatus() == TaskStatus.IN_REVIEW) {
+					task.setFeedbackMessagesStatus(reviewService.getTaskMessagesStatus(task.getProjectKey(), task.getKey(), username));
+				}
 				timer.checkpoint("Recovering feedback messages");
 			}
 
