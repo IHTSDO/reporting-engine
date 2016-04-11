@@ -93,6 +93,7 @@ public abstract class AbstractRestService {
 	@ExceptionHandler
 	@ResponseStatus(HttpStatus.NOT_IMPLEMENTED)
 	public @ResponseBody RestApiError handle(UnsupportedOperationException ex) {
+		LOG.info("UnsupportedOperationException", ex);
 		return RestApiError.of(HttpStatus.NOT_IMPLEMENTED.value()).developerMessage(getDeveloperMessage(ex))
 				.build();
 	}

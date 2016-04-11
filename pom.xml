@@ -8,11 +8,11 @@
 
 	<groupId>org.ihtsdo.snowowl</groupId>
 	<artifactId>ihtsdo-snowowl-parent</artifactId>
-	<version>4.5.21</version>
+	<version>4.5.22-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
 	<properties>
-		<snowowl.version>4.5.18</snowowl.version>
+		<snowowl.version>4.5.19-SNAPSHOT</snowowl.version>
 		<spring.version>4.1.5.RELEASE</spring.version>
 		<spring.security.version>3.2.5.RELEASE</spring.security.version>
 		<spring.hateoas.version>0.11.0.RELEASE</spring.hateoas.version>

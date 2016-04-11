@@ -10,6 +10,7 @@ import net.rcarz.jiraclient.*;
 import net.rcarz.jiraclient.Status;
 import net.rcarz.jiraclient.User;
 
+import org.apache.log4j.Level;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.otf.rest.exception.ResourceNotFoundException;
@@ -233,7 +234,7 @@ public class TaskService {
 	}
 
 	private List<AuthoringTask> buildAuthoringTasks(List<Issue> issues) throws BusinessServiceException {
-		final TimerUtil timer = new TimerUtil("BuildTaskList");
+		final TimerUtil timer = new TimerUtil("BuildTaskList", Level.DEBUG);
 		final String username = getUsername();
 		List<AuthoringTask> allTasks = new ArrayList<>();
 		try {
@@ -253,7 +254,9 @@ public class TaskService {
 					timer.checkpoint("Recovering branch state");
 					startedTasks.put(PathHelper.getTaskPath(issue), task);
 				}
-				task.setFeedbackMessagesStatus(reviewService.getTaskMessagesStatus(task.getProjectKey(), task.getKey(), username));
+				if (task.getStatus() == TaskStatus.IN_REVIEW) {
+					task.setFeedbackMessagesStatus(reviewService.getTaskMessagesStatus(task.getProjectKey(), task.getKey(), username));
+				}
 				timer.checkpoint("Recovering feedback messages");
 			}
 
