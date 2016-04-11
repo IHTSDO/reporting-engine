@@ -52,7 +52,8 @@ public class ReviewService {
 			final Set<String> conceptIds = new HashSet<>(conceptMessagesMap.keySet());
 			conceptIds.addAll(conceptViewDatesMap.keySet());
 			for (String conceptId : conceptIds) {
-				reviewConcepts.add(new ReviewConcept(conceptId, conceptMessagesMap.get(conceptId), conceptViewDatesMap.get(conceptId)));
+				final List<ReviewMessage> messages = conceptMessagesMap.get(conceptId);
+				reviewConcepts.add(new ReviewConcept(conceptId, messages != null ? messages : new ArrayList<ReviewMessage>(), conceptViewDatesMap.get(conceptId)));
 			}
 		}
 		return reviewConcepts;
