@@ -155,7 +155,7 @@ public class BatchImportFormat {
 			List<Integer> notesIndexList = new ArrayList<Integer>();
 			List<Integer> synonymIndexList = new ArrayList<Integer>();
 			for (int colIdx=0; colIdx < header.size() && !mismatchDetected ;colIdx++) {
-				if (colIdx < checkHeaders.length && !header.get(colIdx).equals(checkHeaders[colIdx])) {
+				if (colIdx < checkHeaders.length && !header.get(colIdx).equalsIgnoreCase(checkHeaders[colIdx])) {
 					LOGGER.info("File is not {} format because header {}:{} is not {}.", checkFormat, colIdx, header.get(colIdx), checkHeaders[colIdx]);
 					mismatchDetected = true;
 				}
