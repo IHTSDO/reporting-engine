@@ -31,6 +31,8 @@ public class BatchImportExpressionTest {
 		StringBuffer testBuff = new StringBuffer(testExpression);
 		BatchImportExpression.makeMachineReadable(testBuff);
 		Assert.assertEquals(testBuff.toString(), expectedResult);
+		
+		
 	}
 	
 	@Test
@@ -126,7 +128,7 @@ public class BatchImportExpressionTest {
 	
 	@Test
 	public void testCombination4() throws ProcessingException {
-		String testExpression = "=== 64572001 | Disease |: { 246075003 | Causative agent | = 113858008 | Mycobacterium tuberculosis complex" +
+		String testExpression = "=== 64572001 | Disease | : { 246075003 | Causative agent | = 113858008 | Mycobacterium tuberculosis complex" +
 								", 370135005 | Pathological process | = 441862004 | Infectious process} {63698007 | Finding site | = " +
 								"45292006 | Vulval structure, 116676008 | Associated morphology | = 23583003 | Inflammation} " +
 								"{63698007 | Finding site | = 45292006 | Vulval structure, 116676008 | Associated morphology | = 56208002 | Ulcer}";
