@@ -663,7 +663,7 @@ public class BatchImportService {
 		desc.setType(type);
 		desc.setLang(SnomedConstants.LanguageCodeReferenceSetIdentifierMapping.EN_LANGUAGE_CODE);
 		desc.setAcceptabilityMap(acceptabilityMap);
-		desc.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
+		desc.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
 		return desc;
 	}
 
