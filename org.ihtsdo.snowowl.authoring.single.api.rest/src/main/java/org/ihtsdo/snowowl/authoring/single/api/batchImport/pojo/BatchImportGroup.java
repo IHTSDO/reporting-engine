@@ -6,6 +6,7 @@ import java.util.List;
 import org.ihtsdo.otf.rest.exception.ProcessingException;
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.service.BatchImportService;
 
+import com.b2international.commons.VerhoeffCheck;
 import com.b2international.snowowl.snomed.api.domain.browser.ISnomedBrowserRelationship;
 
 public class BatchImportGroup {
@@ -38,6 +39,24 @@ public class BatchImportGroup {
 		if (attributeParts.length != 2) {
 			throw new ProcessingException("Unable to detect type=value in attribute: " + thisAttribute);
 		}
+		//Check we have SCTIDs that pass the Verhoeff check
+		boolean verhoeffOK = false;
+		try {
+			verhoeffOK = VerhoeffCheck.validateLastChecksumDigit(attributeParts[0]);
+		} finally {
+			if (!verhoeffOK) {
+				throw new ProcessingException ("Attribute type is not a valid SCTID: " + attributeParts[0]);
+			}
+		}
+		verhoeffOK = false;
+		try {
+			verhoeffOK = VerhoeffCheck.validateLastChecksumDigit(attributeParts[1]);
+		} finally {
+			if (!verhoeffOK) {
+				throw new ProcessingException ("Attribute destination is not a valid SCTID: " + attributeParts[1]);
+			}
+		}
+		
 		return BatchImportService.createRelationship(groupNum, tmpId, null, attributeParts[0], attributeParts[1]);
 	}
 }

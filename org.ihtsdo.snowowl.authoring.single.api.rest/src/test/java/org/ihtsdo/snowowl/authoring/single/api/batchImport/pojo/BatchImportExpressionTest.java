@@ -87,9 +87,9 @@ public class BatchImportExpressionTest {
 	public void testCombination() throws ProcessingException {
 		String testExpression = "=== 64572001 | Disease |: { 246075003 | Causative agent | = 113858008 | " + 
 								"Mycobacterium tuberculosis complex , 370135005 | Pathological process | = " +
-								"441862004 | Infectious process} {63698007 | Finding site | = 45292006 | Vulval " + 
-								"structure, 116676008 | Associated morphology | = 23583003 | Inflammation} {63698007 " +
-								"| Finding site | = 45292006 | Vulval structure, 116676008 | Associated morphology | = 56208002 | Ulcer}";
+								"441862004 | Infectious process} {363698007 | Finding site | = 45292006 | Vulval " + 
+								"structure, 116676008 | Associated morphology | = 23583003 | Inflammation} " +
+								"{363698007 | Finding site | = 45292006 | Vulval structure, 116676008 | Associated morphology | = 56208002 | Ulcer}";
 		String expectedParent = "64572001";
 		BatchImportExpression exp = BatchImportExpression.parse(testExpression);
 		String parent = exp.getFocusConcepts().get(0);
@@ -100,8 +100,8 @@ public class BatchImportExpressionTest {
 	
 	@Test
 	public void testCombination2() throws ProcessingException {
-		String testExpression = "=== 64572001 | Disease  {63698007 | Finding site | = 43981004 | Structure of left ovary, " +
-				 				"116676008 | Associated morphology | = 24216005 | Congenital absence} {63698007 | Finding site |" +
+		String testExpression = "=== 64572001 | Disease  {363698007 | Finding site | = 43981004 | Structure of left ovary, " +
+				 				"116676008 | Associated morphology | = 24216005 | Congenital absence} {363698007 | Finding site |" +
 				 				"= 20837000 | Structure of right ovary, 116676008 | Associated morphology | = 24216005 | Congenital absence}";
 		String expectedParent = "64572001";
 		BatchImportExpression exp = BatchImportExpression.parse(testExpression);
@@ -129,9 +129,9 @@ public class BatchImportExpressionTest {
 	@Test
 	public void testCombination4() throws ProcessingException {
 		String testExpression = "=== 64572001 | Disease | : { 246075003 | Causative agent | = 113858008 | Mycobacterium tuberculosis complex" +
-								", 370135005 | Pathological process | = 441862004 | Infectious process} {63698007 | Finding site | = " +
+								", 370135005 | Pathological process | = 441862004 | Infectious process} { 363698007 | Finding site | = " +
 								"45292006 | Vulval structure, 116676008 | Associated morphology | = 23583003 | Inflammation} " +
-								"{63698007 | Finding site | = 45292006 | Vulval structure, 116676008 | Associated morphology | = 56208002 | Ulcer}";
+								"{363698007 | Finding site | = 45292006 | Vulval structure, 116676008 | Associated morphology | = 56208002 | Ulcer}";
 		String expectedParent1 = "64572001";
 		BatchImportExpression exp = BatchImportExpression.parse(testExpression);
 		Assert.assertEquals(expectedParent1, exp.getFocusConcepts().get(0));
@@ -160,4 +160,15 @@ public class BatchImportExpressionTest {
 		List<BatchImportGroup> groups = exp.getAttributeGroups();
 		Assert.assertTrue(groups.size() == 1);
 	}	
+	
+	@Test
+	public void testCombination7() throws ProcessingException {
+		String testExpression = "<<< 41769001 | Disease suspected |  { 246090004 | Associated finding = 16726004 | Renal osteodystrophy } { 246090004 | Associated finding = 709044004 | Chronic kidney disease | }";
+		String expectedParent1 = "41769001";
+		BatchImportExpression exp = BatchImportExpression.parse(testExpression);
+		Assert.assertEquals(expectedParent1, exp.getFocusConcepts().get(0));
+		List<BatchImportGroup> groups = exp.getAttributeGroups();
+		Assert.assertTrue(groups.size() == 2);
+	}	
+	
 }
