@@ -1,32 +1,48 @@
 package org.ihtsdo.termserver.scripting.client;
 
-import com.google.common.base.Preconditions;
+import java.io.IOException;
+import java.net.URLConnection;
+import java.util.HashSet;
+import java.util.Set;
+
 import org.ihtsdo.termserver.scripting.domain.ConceptHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Preconditions;
+
 import us.monoid.json.JSONArray;
 import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
 import us.monoid.web.JSONResource;
 import us.monoid.web.Resty;
 
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
-
 public class SnowOwlClient {
 
 	private final Resty resty;
 	private final String url;
+	private static final String ALL_CONTENT_TYPE = "*/*";
 	private static final String SNOWOWL_CONTENT_TYPE = "application/json";
 //	private static final String SNOWOWL_CONTENT_TYPE = "application/vnd.com.b2international.snowowl+json";
 	private final Set<SnowOwlClientEventListener> eventListeners;
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
+	private static class OverrideAccept extends Resty.Option {
+		private final String accept;
+		
+		public OverrideAccept(String accept) {
+			this.accept = accept;
+		}
+
+		@Override public void apply(URLConnection connection) {
+			connection.setRequestProperty("Accept", accept);
+		}
+	}
+
 	public SnowOwlClient(String url, String username, String password) {
 		this.url = url;
 		eventListeners = new HashSet<>();
-		resty = new Resty();
+		resty = new Resty(new OverrideAccept(ALL_CONTENT_TYPE));
 		resty.authenticate(url, username, password.toCharArray());
 	}
 
@@ -168,6 +184,10 @@ public class SnowOwlClient {
 
 	public Resty getResty() {
 		return resty;
+	}
+
+	public String getUrl() {
+		return url;
 	}
 
 	public JSONArray getMergeReviewDetails(String mergeReviewId) throws SnowOwlClientException {
