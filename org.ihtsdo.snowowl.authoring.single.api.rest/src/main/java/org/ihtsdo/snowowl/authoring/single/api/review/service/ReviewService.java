@@ -123,7 +123,8 @@ public class ReviewService {
 			for (ReviewConcept reviewConcept : reviewConcepts) {
 				final Date viewDate = reviewConcept.getViewDate();
 				for (ReviewMessage reviewMessage : reviewConcept.getMessages()) {
-					if (viewDate == null || reviewMessage.getCreationDate().after(viewDate)) {
+					if (viewDate == null ||
+							(!username.equals(reviewMessage.getFromUsername()) && reviewMessage.getCreationDate().after(viewDate))) {
 						return TaskMessagesStatus.unread;
 					}
 					status = TaskMessagesStatus.read;
