@@ -17,10 +17,13 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 public abstract class AbstractRestService {
-
 	private static final Logger LOG = LoggerFactory.getLogger(AbstractRestService.class);
+	
 	private static final String GENERIC_USER_MESSAGE = "Something went wrong during the processing of your request.";
 	private static final String ACCESS_DENIED_MESSAGE = "You do not have required privileges to perform this operation.";
+	private static final String BAD_REQUEST_MESSAGE = "Bad Request";
+	private static final String ILLEGAL_STATE_MESSAGE = "Bad request - illegal state.";
+	private static final String NOT_IMPLEMENTED_MESSAGE = "Not implemented";
 
 	/**
 	 * The currently supported versioned media type of the snowowl RESTful API.
@@ -38,14 +41,14 @@ public abstract class AbstractRestService {
 	public @ResponseBody
 	RestApiError handle(final Exception ex) {
 		LOG.error("Exception during processing of a request. Username '{}'", ControllerHelper.getUsername(), ex);
-		return RestApiError.of(HttpStatus.INTERNAL_SERVER_ERROR.value()).message(GENERIC_USER_MESSAGE).developerMessage(getDeveloperMessage(ex)).build();
+		return getRestApiError(getApiError(ex, GENERIC_USER_MESSAGE), HttpStatus.INTERNAL_SERVER_ERROR);
 	}
 
 	@ExceptionHandler
 	@ResponseStatus(HttpStatus.REQUEST_TIMEOUT)
 	public @ResponseBody RestApiError handle(final ClientAbortException ex) {
 		LOG.info("Client Abort Exception during processing of a request. Username '{}'", ControllerHelper.getUsername(), ex);
-		return RestApiError.of(HttpStatus.REQUEST_TIMEOUT.value()).message(GENERIC_USER_MESSAGE).developerMessage(getDeveloperMessage(ex)).build();
+		return getRestApiError(getApiError(ex, GENERIC_USER_MESSAGE), HttpStatus.REQUEST_TIMEOUT);
 	}
 
 	/**
@@ -58,7 +61,7 @@ public abstract class AbstractRestService {
 	@ResponseStatus(HttpStatus.BAD_REQUEST)
 	public @ResponseBody RestApiError handle(HttpMessageNotReadableException ex) {
 		LOG.warn("Exception during processing of a JSON document", ex);
-		return RestApiError.of(HttpStatus.BAD_REQUEST.value()).message("Bad Request").developerMessage(getDeveloperMessage(ex)).build();
+		return getRestApiError(getApiError(ex, BAD_REQUEST_MESSAGE), HttpStatus.BAD_REQUEST);
 	}
 
 	/**
@@ -77,11 +80,7 @@ public abstract class AbstractRestService {
 	@ExceptionHandler
 	@ResponseStatus(HttpStatus.NOT_FOUND)
 	public @ResponseBody RestApiError handle(final ResourceNotFoundException ex) {
-		return RestApiError.of(HttpStatus.NOT_FOUND.value()).message(ex.getMessage()).developerMessage(getDeveloperMessage(ex)).build();
-	}
-
-	private RestApiError getRestApiError(ApiError apiError, HttpStatus httpStatus) {
-		return RestApiError.of(httpStatus.value()).message(apiError.getMessage()).developerMessage(apiError.getDeveloperMessage()).build();
+		return getRestApiError(getApiError(ex), HttpStatus.NOT_FOUND);
 	}
 
 	/**
@@ -94,8 +93,7 @@ public abstract class AbstractRestService {
 	@ResponseStatus(HttpStatus.NOT_IMPLEMENTED)
 	public @ResponseBody RestApiError handle(UnsupportedOperationException ex) {
 		LOG.info("UnsupportedOperationException", ex);
-		return RestApiError.of(HttpStatus.NOT_IMPLEMENTED.value()).developerMessage(getDeveloperMessage(ex))
-				.build();
+		return getRestApiError(getApiError(ex, NOT_IMPLEMENTED_MESSAGE), HttpStatus.NOT_IMPLEMENTED);
 	}
 
 	/**
@@ -119,7 +117,7 @@ public abstract class AbstractRestService {
 	@ExceptionHandler
 	@ResponseStatus(HttpStatus.BAD_REQUEST)
 	public @ResponseBody RestApiError handle(final IllegalStateException ex) {
-		return RestApiError.of(HttpStatus.BAD_REQUEST.value()).message("Bad request - illegal state.").developerMessage(getDeveloperMessage(ex)).build();
+		return getRestApiError(getApiError(ex, ILLEGAL_STATE_MESSAGE), HttpStatus.BAD_REQUEST);
 	}
 
 	/**
@@ -137,15 +135,7 @@ public abstract class AbstractRestService {
 		return getRestApiError(ex.toApiError(), HttpStatus.CONFLICT);
 	}
 
-	private String getDeveloperMessage(Exception ex) {
-		if (ex instanceof UnsupportedOperationException) {
-			return ex.getMessage() == null ? "Unsupported Operation" : ex.getMessage();
-		}
-		return ex.getMessage();
-	}
-
 	/**
-	 *  org.springframework.security.access.AccessDeniedException 
 	 * @param ex
 	 * @return {@link org.ihtsdo.snowowl.api.rest.common.RestApiError} instance with detailed messages
 	 */
@@ -154,7 +144,25 @@ public abstract class AbstractRestService {
 	public @ResponseBody
 	RestApiError handle(final AccessDeniedException ex) {
 		LOG.warn("Exception during processing of a request", ex);
-		return RestApiError.of(HttpStatus.UNAUTHORIZED.value()).message(ACCESS_DENIED_MESSAGE).developerMessage(getDeveloperMessage(ex)).build();
+		return getRestApiError(getApiError(ex, ACCESS_DENIED_MESSAGE), HttpStatus.UNAUTHORIZED);
 	}
 
+	private RestApiError getRestApiError(ApiError apiError, HttpStatus httpStatus) {
+		return RestApiError.of(apiError).build(httpStatus.value());
+	}
+	
+	private ApiError getApiError(Exception ex) {
+		return getApiError(ex, ex.getMessage());
+	}
+	
+	private ApiError getApiError(Exception ex, String message) {
+		return ApiError.Builder.of(message).developerMessage(getDeveloperMessage(ex)).build();
+	}
+
+	private String getDeveloperMessage(Exception ex) {
+		if (ex instanceof UnsupportedOperationException) {
+			return ex.getMessage() == null ? "Unsupported Operation" : ex.getMessage();
+		}
+		return ex.getMessage();
+	}
 }
