@@ -27,22 +27,10 @@ public class SnowOwlClient {
 	private final Set<SnowOwlClientEventListener> eventListeners;
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
-	private static class OverrideAccept extends Resty.Option {
-		private final String accept;
-		
-		public OverrideAccept(String accept) {
-			this.accept = accept;
-		}
-
-		@Override public void apply(URLConnection connection) {
-			connection.setRequestProperty("Accept", accept);
-		}
-	}
-
 	public SnowOwlClient(String url, String username, String password) {
 		this.url = url;
 		eventListeners = new HashSet<>();
-		resty = new Resty(new OverrideAccept(ALL_CONTENT_TYPE));
+		resty = new Resty(new RestyOverrideAccept(ALL_CONTENT_TYPE));
 		resty.authenticate(url, username, password.toCharArray());
 	}
 

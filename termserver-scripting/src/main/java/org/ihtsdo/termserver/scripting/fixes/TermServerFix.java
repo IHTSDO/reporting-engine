@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.fixes;
 
 import java.util.Scanner;
 
+import org.ihtsdo.termserver.scripting.client.SCAClient;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClient;
 
 import us.monoid.web.Resty;
@@ -11,7 +12,9 @@ public abstract class TermServerFix {
 	static boolean debug = true;
 	static boolean dryRun = true;
 	protected String url = environments[0];
-	protected SnowOwlClient client;
+	protected SnowOwlClient tsClient;
+	protected SCAClient scaClient;
+	
 	protected Resty resty = new Resty();
 	protected String project;
 	
@@ -38,10 +41,12 @@ public abstract class TermServerFix {
 			String choice = in.nextLine().trim();
 			url = environments[Integer.parseInt(choice)];
 		
-			client = new SnowOwlClient(url + "snowowl/snomed-ct/v2", "snowowl", "snowowl");
+			tsClient = new SnowOwlClient(url + "snowowl/snomed-ct/v2", "snowowl", "snowowl");
 			print ("Please enter your authenticated cookie for connection to " + url);
 			String cookie = in.nextLine().trim();
-			resty.withHeader("Cookie", cookie);
+			//TODO Make calls through client objectsrather than resty direct
+			resty.withHeader("Cookie", cookie);  
+			scaClient = new SCAClient(url, cookie);
 			
 			print ("Specify Project: " + project==null?"":"[" + project + "]");
 			String response = in.nextLine().trim();
@@ -50,5 +55,7 @@ public abstract class TermServerFix {
 			}
 		}
 	}
+	
+	public abstract void doFix(String conceptId, String branchPath) throws TermServerFixException;
 
 }
