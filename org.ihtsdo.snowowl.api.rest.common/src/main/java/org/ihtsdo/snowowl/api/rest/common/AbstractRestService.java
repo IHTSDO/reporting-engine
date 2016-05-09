@@ -3,6 +3,7 @@ package org.ihtsdo.snowowl.api.rest.common;
 import com.b2international.snowowl.core.exceptions.ApiError;
 import com.b2international.snowowl.core.exceptions.BadRequestException;
 import com.b2international.snowowl.core.exceptions.ConflictException;
+import com.b2international.snowowl.core.exceptions.MergeConflictException;
 import com.b2international.snowowl.core.exceptions.NotFoundException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import org.apache.catalina.connector.ClientAbortException;
@@ -132,6 +133,11 @@ public abstract class AbstractRestService {
 		if (ex.getCause() != null) {
 			LOG.info("Conflict with cause", ex);
 		}
+		
+		if (ex instanceof MergeConflictException) {
+			LOG.info("Conflict details: {}", ex.toApiError().getAdditionalInfo());
+		}
+		
 		return getRestApiError(ex.toApiError(), HttpStatus.CONFLICT);
 	}
 
