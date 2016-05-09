@@ -1,11 +1,9 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import org.ihtsdo.termserver.scripting.client.SnowOwlClient;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import us.monoid.json.JSONArray;
 import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
-import us.monoid.web.Resty;
 
 import java.io.IOException;
 import java.util.*;
@@ -13,18 +11,21 @@ import java.util.*;
 /**
  * Fix script to inactivate the language reference sets of inactive descriptions found in a validation report
  */
-public class LangRefsetInactivationFix {
+public class LangRefsetInactivationFix extends TermServerFix{
 
 	public static void main(String[] args) throws IOException, JSONException, SnowOwlClientException {
-		String url = "http://localhost:8080/";
-		String project = "INTQA";
+		LangRefsetInactivationFix fixer = new LangRefsetInactivationFix();
+		fixer.project = "INTQA";
+		fixer.init();
+		fixer.doLangRefsetInactivationFix();
+	}
+		
+	public void doLangRefsetInactivationFix () throws IOException, JSONException, SnowOwlClientException {
 		String validationReportUrl = url + "snowowl/ihtsdo-sca/projects/" + project + "/validation";
-		System.out.println(validationReportUrl);
+		print(validationReportUrl);
 
 		Set<String> conceptIds = new LinkedHashSet<>();
 
-		Resty resty = new Resty();
-		resty.withHeader("Cookie", "");
 		JSONObject validationReport = resty.json(validationReportUrl).toObject();
 		JSONObject report = validationReport.getJSONObject("report");
 		JSONObject rvfValidationResult = report.getJSONObject("rvfValidationResult");
@@ -43,9 +44,7 @@ public class LangRefsetInactivationFix {
 		}
 
 		if (!conceptIds.isEmpty()) {
-			System.out.println("Concepts in the report that need fixing - " + conceptIds);
-
-			SnowOwlClient client = new SnowOwlClient(url + "snowowl/snomed-ct/v2", "snowowl", "snowowl");
+			print("Concepts in the report that need fixing - " + conceptIds);
 
 			String branchPath = "MAIN/" + project;
 			for (String conceptId : conceptIds) {
@@ -66,14 +65,14 @@ public class LangRefsetInactivationFix {
 					}
 				}
 				if (fixed) {
-					System.out.println("Fixing " + conceptId);
+					print("Fixing " + conceptId);
 					client.updateConcept(concept, branchPath);
 				} else {
-					System.out.println("No issue with " + conceptId);
+					print("No issue with " + conceptId);
 				}
 			}
 		} else {
-			System.out.println("No lang refset failures found in report " + validationReportUrl);
+			print("No lang refset failures found in report " + validationReportUrl);
 		}
 	}
 
