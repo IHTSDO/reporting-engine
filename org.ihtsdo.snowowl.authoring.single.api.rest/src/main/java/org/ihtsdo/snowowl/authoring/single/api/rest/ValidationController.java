@@ -82,4 +82,11 @@ public class ValidationController extends AbstractSnomedRestService {
 		return validationService.getValidationJson(projectKey);
 	}
 
+	@ApiOperation(value = "Clear validation status cache (workaround)")
+	@ApiResponses({ @ApiResponse(code = 200, message = "OK") })
+	@RequestMapping(value = "/main/validation/clear-status-cache", method = RequestMethod.POST)
+	public void clearValidationStatusCache() {
+		validationService.clearStatusCache();
+	}
+
 }
