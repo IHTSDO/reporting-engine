@@ -3,7 +3,9 @@ package org.ihtsdo.termserver.scripting.domain;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import javax.annotation.Generated;
+
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
@@ -177,6 +179,19 @@ public class Concept implements RF2Constants {
 		}
 		Concept rhs = ((Concept) other);
 		return this.conceptId.equals(rhs.conceptId);
+	}
+
+	public void addRelationship(String type, String target) {
+		Relationship r = new Relationship();
+		r.setActive(true);
+		r.setGroupId(0);
+		r.setCharacteristicType(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP);
+		r.setSourceId(this.getConceptId());
+		r.setType(new Concept(type));
+		r.setTarget(new Concept(target));
+		r.setModifier(MODIFER.EXISTENTIAL);
+		relationships.add(r);
+		
 	}
 
 }

@@ -59,6 +59,7 @@ public abstract class BatchFix extends TermServerFix {
 		} catch (IOException e) {
 			throw new TermServerFixException("Error while reading batch file " + batchFixFile.getAbsolutePath(), e);
 		}
+		println ("Processing complete.  See results: " + reportFile.getAbsolutePath());
 	}
 
 	private void batchProcess(List<String> thisBatch, String description, String summary) throws TermServerFixException {

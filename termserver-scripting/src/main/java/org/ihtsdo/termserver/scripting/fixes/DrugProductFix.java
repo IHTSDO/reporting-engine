@@ -15,18 +15,21 @@ import us.monoid.json.JSONException;
 import us.monoid.web.JSONResource;
 
 /*
-All concepts in the module must be primitive.
-All concepts in the module must have one and only one stated |Is a| relationship.
+All concepts in the module must be primitive when "Product Strength", otherwise fully defined
+All concepts must have one and only one stated |Is a| relationship.
  - The parent concept for all concepts in the module must be 373873005| Pharmaceutical / biologic product (product).
-All concepts in the module must have one or more Has active ingredient attributes.
+All concepts must have one or more Has active ingredient attributes.
  - The attribute values must be a descendant of 105590001|Substance (substance).
-All concepts in the module must have one and only one Has dose form attribute.
+All concepts in the module must have one and only one Has dose form attribute when "Product Strength" or "Medicinal Form"
  - The attribute value must be a descendant of 105904009| Type of drug preparation (qualifier value).
-Any plus symbol in the name must be surrounded by single space
-Ingredients in name should be in alpha order.  Change amounts order to match.
-Remove the word "preparation"
-Change m/r to modified-release
-2nd ingredient should be lower case
+Any plus symbol in the name must be surrounded by single space, exclude for "Product Strength"
+Ingredients in name should be in alpha order exclude for "Product Strength".  
+[Change amounts order to match - not relevant because these should only appear outside Product Strength]
+Remove the word "preparation" also "product" when not part of semantic tag - exclude Product Strength
+Change m/r to modified-release - exclude Product Strength
+2nd ingredient should be lower case - exclude Product Strength
+
+Medicinal Entity plus all descendants in one task, could group by "has active ingredient"
  */
 public class DrugProductFix extends BatchFix implements RF2Constants{
 	
@@ -69,11 +72,21 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 
 	private void ensureAcceptableParent(Concept c) {
 		List<Relationship> statedParents = c.getRelationships(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP, IS_A);
+		boolean hasAcceptableParent = false;
 		for (Relationship thisParent : statedParents) {
 			if (thisParent.isActive() && !thisParent.getTarget().equals(PHARM_BIO_PRODUCT)) {
 				report(c.getConceptId(), REPORT_ACTION_TYPE.RELATIONSHIP_CHANGE_MADE, "Inactivated unwanted parent: " + thisParent);
 				thisParent.setActive(false);
+			} else {
+				if (thisParent.getTarget().equals(PHARM_BIO_PRODUCT)) {
+					hasAcceptableParent = true;
+				}
 			}
+		}
+		
+		if (!hasAcceptableParent) {
+			c.addRelationship(IS_A, PHARM_BIO_PRODUCT);
+			report(c.getConceptId(), REPORT_ACTION_TYPE.RELATIONSHIP_CHANGE_MADE, "Added required parent: " + PHARM_BIO_PRODUCT);
 		}
 	}
 

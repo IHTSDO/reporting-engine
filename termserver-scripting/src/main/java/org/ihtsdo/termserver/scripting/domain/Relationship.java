@@ -37,7 +37,7 @@ public class Relationship implements RF2Constants {
 	private CHARACTERISTIC_TYPE characteristicType;
 	@SerializedName("modifier")
 	@Expose
-	private String modifier;
+	private MODIFER modifier;
 
 	/**
 	 * No args constructor for use in serialization
@@ -59,7 +59,7 @@ public class Relationship implements RF2Constants {
 	 * @param type
 	 * @param sourceId
 	 */
-	public Relationship(String effectiveTime, String moduleId, boolean active, String relationshipId, Concept type, Concept target, String sourceId, long groupId, CHARACTERISTIC_TYPE characteristicType, String modifier) {
+	public Relationship(String effectiveTime, String moduleId, boolean active, String relationshipId, Concept type, Concept target, String sourceId, long groupId, CHARACTERISTIC_TYPE characteristicType, MODIFER modifier) {
 		this.effectiveTime = effectiveTime;
 		this.moduleId = moduleId;
 		this.active = active;
@@ -239,7 +239,7 @@ public class Relationship implements RF2Constants {
 	 * @return
 	 *	 The modifier
 	 */
-	public String getModifier() {
+	public MODIFER getModifier() {
 		return modifier;
 	}
 
@@ -248,7 +248,7 @@ public class Relationship implements RF2Constants {
 	 * @param modifier
 	 *	 The modifier
 	 */
-	public void setModifier(String modifier) {
+	public void setModifier(MODIFER modifier) {
 		this.modifier = modifier;
 	}
 
