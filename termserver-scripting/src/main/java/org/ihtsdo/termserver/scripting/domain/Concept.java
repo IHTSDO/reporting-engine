@@ -8,7 +8,7 @@ import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
 @Generated("org.jsonschema2pojo")
-public class Concept {
+public class Concept implements RF2Constants {
 
 	@SerializedName("effectiveTime")
 	@Expose
@@ -115,16 +115,32 @@ public class Concept {
 	public List<Relationship> getRelationships() {
 		return relationships;
 	}
+	
+	public List<Relationship> getRelationships(CHARACTERISTIC_TYPE characteristicType) {
+		List<Relationship> matches = new ArrayList<Relationship>();
+		for (Relationship r : relationships) {
+			if (r.getCharacteristicType().equals(characteristicType)) {
+				matches.add(r);
+			}
+		}
+		return matches;
+	}
+	
+	public List<Relationship> getRelationships(CHARACTERISTIC_TYPE characteristicType, String targetType) {
+		List<Relationship> potentialMatches = getRelationships(characteristicType);
+		List<Relationship> matches = new ArrayList<Relationship>();
+		for (Relationship r : potentialMatches) {
+			if (r.getType().getConceptId().equals(targetType)) {
+				matches.add(r);
+			}
+		}
+		return matches;
+	}
 
 	public void setRelationships(List<Relationship> relationships) {
 		this.relationships = relationships;
 	}
 
-	/**
-	 * 
-	 * @return
-	 *	 The isLeafStated
-	 */
 	public boolean isIsLeafStated() {
 		return isLeafStated;
 	}

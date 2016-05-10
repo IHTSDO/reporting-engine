@@ -23,7 +23,7 @@ public class LangRefsetInactivationFix extends TermServerFix{
 		
 	public void fixAll () throws TermServerFixException, IOException, JSONException {
 		String validationReportUrl = url + "snowowl/ihtsdo-sca/projects/" + project + "/validation";
-		print(validationReportUrl);
+		println(validationReportUrl);
 
 		Set<String> conceptIds = new LinkedHashSet<>();
 
@@ -45,14 +45,14 @@ public class LangRefsetInactivationFix extends TermServerFix{
 		}
 
 		if (!conceptIds.isEmpty()) {
-			print("Concepts in the report that need fixing - " + conceptIds);
+			println("Concepts in the report that need fixing - " + conceptIds);
 
 			String branchPath = "MAIN/" + project;
 			for (String conceptId : conceptIds) {
 				doFix(conceptId, branchPath);
 			}
 		} else {
-			print("No lang refset failures found in report " + validationReportUrl);
+			println("No lang refset failures found in report " + validationReportUrl);
 		}
 	}
 
@@ -76,10 +76,10 @@ public class LangRefsetInactivationFix extends TermServerFix{
 				}
 			}
 			if (fixed) {
-				print("Fixing " + conceptId);
+				println("Fixing " + conceptId);
 				tsClient.updateConcept(concept, branchPath);
 			} else {
-				print("No issue with " + conceptId);
+				println("No issue with " + conceptId);
 			}
 		}catch (IOException | JSONException | SnowOwlClientException e) {
 			throw new TermServerFixException("Failed to fix issue", e);

@@ -6,7 +6,7 @@ import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
 @Generated("org.jsonschema2pojo")
-public class Relationship {
+public class Relationship implements RF2Constants {
 
 	@SerializedName("effectiveTime")
 	@Expose
@@ -34,7 +34,7 @@ public class Relationship {
 	private long groupId;
 	@SerializedName("characteristicType")
 	@Expose
-	private String characteristicType;
+	private CHARACTERISTIC_TYPE characteristicType;
 	@SerializedName("modifier")
 	@Expose
 	private String modifier;
@@ -59,7 +59,7 @@ public class Relationship {
 	 * @param type
 	 * @param sourceId
 	 */
-	public Relationship(String effectiveTime, String moduleId, boolean active, String relationshipId, Concept type, Concept target, String sourceId, long groupId, String characteristicType, String modifier) {
+	public Relationship(String effectiveTime, String moduleId, boolean active, String relationshipId, Concept type, Concept target, String sourceId, long groupId, CHARACTERISTIC_TYPE characteristicType, String modifier) {
 		this.effectiveTime = effectiveTime;
 		this.moduleId = moduleId;
 		this.active = active;
@@ -221,7 +221,7 @@ public class Relationship {
 	 * @return
 	 *	 The characteristicType
 	 */
-	public String getCharacteristicType() {
+	public CHARACTERISTIC_TYPE getCharacteristicType() {
 		return characteristicType;
 	}
 
@@ -230,7 +230,7 @@ public class Relationship {
 	 * @param characteristicType
 	 *	 The characteristicType
 	 */
-	public void setCharacteristicType(String characteristicType) {
+	public void setCharacteristicType(CHARACTERISTIC_TYPE characteristicType) {
 		this.characteristicType = characteristicType;
 	}
 

@@ -3,5 +3,5 @@ bin
 .*
 *.iml
 *.sh
-
+*.csv
 *.pem
