@@ -1,10 +1,8 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -13,13 +11,27 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.domain.Batch;
+import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants;
+import org.ihtsdo.termserver.scripting.domain.Relationship;
+
+import us.monoid.json.JSONException;
+import us.monoid.web.JSONResource;
+
+import com.google.common.base.Charsets;
+import com.google.common.io.Files;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
 /**
  * Reads in a file containing a list of concept SCTIDs and processes them in batches
  * in tasks created on the specified project
  */
-public abstract class BatchFix extends TermServerFix {
+public abstract class BatchFix extends TermServerFix implements RF2Constants{
 	
-	private int batchSize = 5;
+	protected int batchSize = 5;
 	protected boolean dryRun = true;
 	File batchFixFile;
 	File reportFile;
@@ -27,33 +39,24 @@ public abstract class BatchFix extends TermServerFix {
 	private static String COMMA = ",";
 	private static String QUOTE = "\"";
 	
+	protected  Gson gson;	
+
 	public enum REPORT_ACTION_TYPE { ACTION_TYPE, API_ERROR, CONCEPT_CHANGE_MADE, INFO,
 									 RELATIONSHIP_CHANGE_MADE, DESCRIPTION_CHANGE_MADE};
 
 	protected void processFile() throws TermServerFixException {
-		try (BufferedReader br = new BufferedReader(new FileReader(batchFixFile))) {
-			String fileShortName = batchFixFile.getName();
-			String taskDescription = fileShortName + " 1 - ";
-			String taskSummary = "";
-			String line;
-			int lineNumber = 0;
-			List<String> thisBatch = new ArrayList<String>();
-			while ((line = br.readLine()) != null) {
-				//Skip header line
-				if (lineNumber > 0) {
-					thisBatch.add(line);
-					if (lineNumber%batchSize == 0) {
-						batchProcess(thisBatch, taskDescription + lineNumber, taskSummary);
-						thisBatch.clear();
-						taskDescription = fileShortName + " " + (lineNumber + 1) + " - ";
-					}
-				}
-				lineNumber++;
+		try {
+			List<String> lines = Files.readLines(batchFixFile, Charsets.UTF_8);
+			List<Concept> allConcepts = new ArrayList<Concept>();
+			for (int lineNum = 0; lineNum < lines.size(); lineNum++) {
+				//We might have a comment on the line to strip off 
+				String thisConceptId = lines.get(lineNum).split(COMMENT_CHAR)[0].trim();
+				allConcepts.add(new Concept(thisConceptId, lineNum));
 			}
-			//Any left overs?
-			if (thisBatch.size() >0) {
-				batchProcess(thisBatch, taskDescription + lineNumber, taskSummary);
-			}
+			String projectPath = "MAIN/" + project;
+			List<Batch> batches = formIntoBatches(batchFixFile.getName(), allConcepts, projectPath);
+			System.exit(0);
+			batchProcess(batches);
 		} catch (FileNotFoundException e) {
 			throw new TermServerFixException("Unable to open batch file " + batchFixFile.getAbsolutePath(), e);
 		} catch (IOException e) {
@@ -61,32 +64,42 @@ public abstract class BatchFix extends TermServerFix {
 		}
 		println ("Processing complete.  See results: " + reportFile.getAbsolutePath());
 	}
+	
+	abstract List<Batch> formIntoBatches (String fileName, List<Concept> allConcepts, String branchPath) throws TermServerFixException;
+	
+	abstract void doFix(Concept concept, String taskPath);
 
-	private void batchProcess(List<String> thisBatch, String description, String summary) throws TermServerFixException {
-		try {
-			//Create a task for this 
-			String taskKey = scaClient.createTask(project, description, summary);
-			String taskPath = tsClient.createBranch("MAIN/" + project, taskKey);
-			debug ("Created task: " + taskPath);
-			
-			//Process each line
-			for (String thisLine : thisBatch) {
-				//We might have a comment on the line to strip off 
-				String thisConceptId = thisLine.split(COMMENT_CHAR)[0].trim();
-				doFix(thisConceptId, taskPath);
+	private void batchProcess(List<Batch> batches) throws TermServerFixException {
+		for (Batch thisBatch : batches) {
+			try {
+				//Create a task for this batch of concepts
+				String taskKey = scaClient.createTask(project, thisBatch.getDescription(), thisBatch.getSummary());
+				String taskPath = tsClient.createBranch("MAIN/" + project, taskKey);
+				debug ("Created task: " + taskPath);
+				
+				//Process each concept
+				for (Concept concept : thisBatch.getConcepts()) {
+					doFix(concept, taskPath);
+				}
+				
+				//Prefill the Edit Panel
+				
+				//Run the classifier and report the results
+				
+				//Reassign the task to the intended author
+			} catch (Exception e) {
+				throw new TermServerFixException("Failed to process batch " + thisBatch.getDescription(), e);
 			}
-			
-			//Prefill the Edit Panel
-			
-			//Run the classifier and report the results
-			
-			//Reassign the task to the intended author
-		} catch (Exception e) {
-			throw new TermServerFixException("Failed to process batch " + description, e);
 		}
 		
 	}
-	
+
+	protected void ensureDefinitionStatus(Concept c, DEFINITION_STATUS targetDefStat) {
+		if (!c.getDefinitionStatus().equals(targetDefStat.toString())) {
+			report (c.getConceptId(), REPORT_ACTION_TYPE.CONCEPT_CHANGE_MADE, "Definition status changed to " + targetDefStat);
+			c.setDefinitionStatus(targetDefStat.toString());
+		}
+	}
 	
 	protected void report(String conceptId, REPORT_ACTION_TYPE actionType, String actionDetail) {
 		try(FileWriter fw = new FileWriter(reportFile, true);
@@ -94,6 +107,7 @@ public abstract class BatchFix extends TermServerFix {
 				PrintWriter out = new PrintWriter(bw))
 			{
 				String line = conceptId + COMMA + actionType + COMMA + QUOTE + actionDetail + QUOTE;
+				out.println(line);
 			} catch (Exception e) {
 				print ("Unable to output " + conceptId + ": " + actionDetail + " due to " + e.getMessage());
 			}
@@ -151,5 +165,41 @@ public abstract class BatchFix extends TermServerFix {
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
 		report ("SCTID",REPORT_ACTION_TYPE.ACTION_TYPE,"ACTION_DETAIL");
+		
+		GsonBuilder gsonBuilder = new GsonBuilder();
+		//gsonBuilder.registerTypeAdapter(Concept.class, new ConceptDeserializer());
+		gson = gsonBuilder.create();
+	}
+	
+	Concept loadConcept(Concept concept, String branchPath) {
+		try {
+			JSONResource response = tsClient.getConcept(concept.getConceptId(), branchPath);
+			String json = response.toObject().toString();
+			concept = gson.fromJson(json, Concept.class);
+			concept.setLoaded(true);
+		} catch (SnowOwlClientException | JSONException | IOException e) {
+			report(concept.getConceptId(), REPORT_ACTION_TYPE.API_ERROR, "Failed to recover concept from termserver: " + e.getMessage());
+		}
+		return concept;
+	}
+	
+	protected void ensureAcceptableParent(Concept c, Concept acceptableParent) {
+		List<Relationship> statedParents = c.getRelationships(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP, IS_A);
+		boolean hasAcceptableParent = false;
+		for (Relationship thisParent : statedParents) {
+			if (thisParent.isActive() && !thisParent.getTarget().equals(acceptableParent)) {
+				report(c.getConceptId(), REPORT_ACTION_TYPE.RELATIONSHIP_CHANGE_MADE, "Inactivated unwanted parent: " + thisParent);
+				thisParent.setActive(false);
+			} else {
+				if (thisParent.getTarget().equals(acceptableParent)) {
+					hasAcceptableParent = true;
+				}
+			}
+		}
+		
+		if (!hasAcceptableParent) {
+			c.addRelationship(IS_A, acceptableParent);
+			report(c.getConceptId(), REPORT_ACTION_TYPE.RELATIONSHIP_CHANGE_MADE, "Added required parent: " + acceptableParent);
+		}
 	}
 }

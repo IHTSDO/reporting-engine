@@ -45,9 +45,13 @@ public class Concept implements RF2Constants {
 	@SerializedName("isLeafInferred")
 	@Expose
 	private boolean isLeafInferred;
+	
+	private boolean isLoaded = false;
+	private int originalFileLineNumber;
 
-	public Concept(String conceptId) {
+	public Concept(String conceptId, int originalFileLineNumber) {
 		this.conceptId = conceptId;
+		this.originalFileLineNumber = originalFileLineNumber;
 	}
 
 	public String getEffectiveTime() {
@@ -128,11 +132,11 @@ public class Concept implements RF2Constants {
 		return matches;
 	}
 	
-	public List<Relationship> getRelationships(CHARACTERISTIC_TYPE characteristicType, String targetType) {
+	public List<Relationship> getRelationships(CHARACTERISTIC_TYPE characteristicType, Concept type) {
 		List<Relationship> potentialMatches = getRelationships(characteristicType);
 		List<Relationship> matches = new ArrayList<Relationship>();
 		for (Relationship r : potentialMatches) {
-			if (r.getType().getConceptId().equals(targetType)) {
+			if (r.getType().equals(type)) {
 				matches.add(r);
 			}
 		}
@@ -181,17 +185,28 @@ public class Concept implements RF2Constants {
 		return this.conceptId.equals(rhs.conceptId);
 	}
 
-	public void addRelationship(String type, String target) {
+	public void addRelationship(Concept type, Concept target) {
 		Relationship r = new Relationship();
 		r.setActive(true);
 		r.setGroupId(0);
 		r.setCharacteristicType(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP);
 		r.setSourceId(this.getConceptId());
-		r.setType(new Concept(type));
-		r.setTarget(new Concept(target));
+		r.setType(type);
+		r.setTarget(target);
 		r.setModifier(MODIFER.EXISTENTIAL);
 		relationships.add(r);
-		
+	}
+
+	public boolean isLoaded() {
+		return isLoaded;
+	}
+
+	public void setLoaded(boolean isLoaded) {
+		this.isLoaded = isLoaded;
+	}
+
+	public int getOriginalFileLineNumber() {
+		return originalFileLineNumber;
 	}
 
 }

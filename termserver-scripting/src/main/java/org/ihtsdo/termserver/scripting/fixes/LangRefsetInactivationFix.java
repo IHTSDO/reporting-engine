@@ -1,6 +1,8 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 
 import us.monoid.json.JSONArray;
 import us.monoid.json.JSONException;
@@ -12,7 +14,7 @@ import java.util.*;
 /**
  * Fix script to inactivate the language reference sets of inactive descriptions found in a validation report
  */
-public class LangRefsetInactivationFix extends TermServerFix{
+public class LangRefsetInactivationFix extends TermServerFix implements RF2Constants {
 
 	public static void main(String[] args) throws TermServerFixException, IOException, JSONException {
 		LangRefsetInactivationFix fixer = new LangRefsetInactivationFix();
@@ -25,7 +27,7 @@ public class LangRefsetInactivationFix extends TermServerFix{
 		String validationReportUrl = url + "snowowl/ihtsdo-sca/projects/" + project + "/validation";
 		println(validationReportUrl);
 
-		Set<String> conceptIds = new LinkedHashSet<>();
+		Set<Concept> concepts = new LinkedHashSet<>();
 
 		JSONObject validationReport = resty.json(validationReportUrl).toObject();
 		JSONObject report = validationReport.getJSONObject("report");
@@ -39,29 +41,28 @@ public class LangRefsetInactivationFix extends TermServerFix{
 				for (int j = 0; j < firstNInstances.length(); j++) {
 					JSONObject jsonObject = firstNInstances.getJSONObject(j);
 					String conceptId = ((Long)jsonObject.getLong("conceptId")).toString();
-					conceptIds.add(conceptId);
+					concepts.add(new Concept(conceptId, NA));
 				}
 			}
 		}
 
-		if (!conceptIds.isEmpty()) {
-			println("Concepts in the report that need fixing - " + conceptIds);
+		if (!concepts.isEmpty()) {
+			println("Concepts in the report that need fixing - " + concepts);
 
 			String branchPath = "MAIN/" + project;
-			for (String conceptId : conceptIds) {
-				doFix(conceptId, branchPath);
+			for (Concept concept : concepts) {
+				doFix(concept, branchPath);
 			}
 		} else {
 			println("No lang refset failures found in report " + validationReportUrl);
 		}
 	}
 
-	@Override
-	public void doFix(String conceptId, String branchPath) throws TermServerFixException {
+	public void doFix(Concept concept, String branchPath) throws TermServerFixException {
 		try{
-			JSONObject concept = tsClient.getConcept(conceptId, branchPath).object();
+			JSONObject conceptObj = tsClient.getConcept(concept.getConceptId(), branchPath).object();
 			boolean fixed = false;
-			JSONArray descriptions = concept.getJSONArray("descriptions");
+			JSONArray descriptions = conceptObj.getJSONArray("descriptions");
 			for (int i = 0; i < descriptions.length(); i++) {
 				JSONObject description = descriptions.getJSONObject(i);
 				if (!description.getBoolean("active")) {
@@ -76,10 +77,10 @@ public class LangRefsetInactivationFix extends TermServerFix{
 				}
 			}
 			if (fixed) {
-				println("Fixing " + conceptId);
-				tsClient.updateConcept(concept, branchPath);
+				println("Fixing " + concept.getConceptId());
+				tsClient.updateConcept(conceptObj, branchPath);
 			} else {
-				println("No issue with " + conceptId);
+				println("No issue with " + concept.getConceptId());
 			}
 		}catch (IOException | JSONException | SnowOwlClientException e) {
 			throw new TermServerFixException("Failed to fix issue", e);

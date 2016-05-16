@@ -4,7 +4,6 @@ import java.util.Scanner;
 
 import org.ihtsdo.termserver.scripting.client.SCAClient;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClient;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 
 import us.monoid.web.Resty;
 
@@ -80,7 +79,5 @@ public abstract class TermServerFix {
 	public void setProject(String project) {
 		this.project = project;
 	}
-
-	public abstract void doFix(String conceptId, String branchPath) throws TermServerFixException, SnowOwlClientException;
 
 }
