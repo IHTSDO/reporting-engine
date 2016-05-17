@@ -16,6 +16,8 @@ public class BatchImportConcept {
 	
 	String expressionStr;
 	
+	String fsn;
+	
 	BatchImportExpression expression;
 
 	boolean requiresNewSCTID = false;
@@ -115,6 +117,14 @@ public class BatchImportConcept {
 
 	public String getExpressionStr() {
 		return this.expressionStr;
+	}
+
+	public String getFsn() {
+		return fsn;
+	}
+
+	public void setFsn(String fsn) {
+		this.fsn = fsn;
 	}
 
 }
