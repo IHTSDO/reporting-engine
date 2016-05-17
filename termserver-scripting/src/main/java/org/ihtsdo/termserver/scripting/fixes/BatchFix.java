@@ -55,7 +55,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants{
 			}
 			String projectPath = "MAIN/" + project;
 			List<Batch> batches = formIntoBatches(batchFixFile.getName(), allConcepts, projectPath);
-			System.exit(0);
+			//System.exit(0);
 			batchProcess(batches);
 		} catch (FileNotFoundException e) {
 			throw new TermServerFixException("Unable to open batch file " + batchFixFile.getAbsolutePath(), e);

@@ -38,6 +38,8 @@ Medicinal Entity plus all descendants in one task, group by "has active ingredie
  */
 public class MedicinalEntityFix extends BatchFix implements RF2Constants{
 	
+	private static final String SEPARATOR = "_";
+	
 	public static void main(String[] args) throws TermServerFixException, IOException {
 		MedicinalEntityFix fix = new MedicinalEntityFix();
 		fix.init(args);
@@ -59,20 +61,25 @@ public class MedicinalEntityFix extends BatchFix implements RF2Constants{
 		//and batch those together.
 		List<Batch> batches = new ArrayList<Batch>();
 		Multimap<String, Concept> ingredientCombos = ArrayListMultimap.create();
+		//Remove the first row
+		concepts.remove(0);
+		debug ("Loading " + concepts.size() + " concepts from TermServer.");
 		for (Concept thisConcept : concepts) {
 			Concept loadedConcept = loadConcept(thisConcept, branchPath);
 			//Work out a unique key by the concatenation of all inferred active ingredients
 			List<Relationship> ingredients = loadedConcept.getRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED);
 			String comboKey = getIngredientCombinationKey(loadedConcept, ingredients);
+			debug ("Loaded " + loadedConcept + " with " + comboKey.split(SEPARATOR).length + " active ingredients.");
 			ingredientCombos.put(comboKey, loadedConcept);
 		}
+		println ("Formed " + concepts.size() + " concepts into " + ingredientCombos.keySet().size() + " batches.");
 		//Now each of those concepts that shares that combination of ingredients can go into the same batch
 		for (String thisComboKey : ingredientCombos.keySet()) {
 			Collection<Concept> conceptsWithCombo = ingredientCombos.get(thisComboKey);
 			Batch batchThisCombo = new Batch();
 			batchThisCombo.setDescription(fileName + ": " + thisComboKey);
 			batchThisCombo.setConcepts(new ArrayList<Concept>(conceptsWithCombo));
-			print ("Batched " + conceptsWithCombo.size() + " concepts with ingredients " + thisComboKey);
+			debug ("Batched " + conceptsWithCombo.size() + " concepts with ingredients " + thisComboKey);
 			batches.add(batchThisCombo);
 		}
 		return batches;
@@ -81,12 +88,20 @@ public class MedicinalEntityFix extends BatchFix implements RF2Constants{
 	private String getIngredientCombinationKey(Concept loadedConcept, List<Relationship> ingredients) throws TermServerFixException {
 		String comboKey = "";
 		for (Relationship r : ingredients) {
-			comboKey = r.getTarget().getConceptId() + "_";
+			if (r.isActive()) {
+				comboKey += r.getTarget().getConceptId() + SEPARATOR;
+			}
 		}
 		if (comboKey.isEmpty()) {
-			throw new TermServerFixException("Unable to find any ingredients for: " + loadedConcept);
+			//throw new TermServerFixException("Unable to find any ingredients for: " + loadedConcept);
+			println ("*** Unable to find ingredients for " + loadedConcept);
+			comboKey = "NONE";
 		}
 		return comboKey;
 	}
 
+	@Override
+	public String getFixName() {
+		return "MedicinalEntity";
+	}
 }

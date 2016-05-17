@@ -73,4 +73,9 @@ public class ProductStrengthFix extends BatchFix implements RF2Constants{
 		return batches;
 	}
 
+	@Override
+	public String getFixName() {
+		return "ProductStrength";
+	}
+
 }

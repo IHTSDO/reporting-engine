@@ -15,6 +15,8 @@ public abstract class TermServerFix {
 	protected SnowOwlClient tsClient;
 	protected SCAClient scaClient;
 	protected String authenticatedCookie;
+
+	public abstract String getFixName();
 	
 	public String getAuthenticatedCookie() {
 		return authenticatedCookie;
