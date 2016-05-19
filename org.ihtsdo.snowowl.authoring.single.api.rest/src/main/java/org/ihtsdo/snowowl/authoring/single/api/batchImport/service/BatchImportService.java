@@ -105,7 +105,7 @@ public class BatchImportService {
 	
 	private static final String EDIT_PANEL = "edit-panel";
 	private static final String SAVE_LIST = "saved-list";	
-	private static final String NO_NOTES = "All concepts failed to load via Batch Import";
+	private static final String NO_NOTES = "Concept import pending...";
 	
 	private List<ExtendedLocale> defaultLocales;
 	private static final String defaultLocaleStr = "en-US;q=0.8,en-GB;q=0.6";
