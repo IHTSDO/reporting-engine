@@ -105,7 +105,7 @@ public class BatchImportService {
 	
 	private static final String EDIT_PANEL = "edit-panel";
 	private static final String SAVE_LIST = "saved-list";	
-	private static final String NO_NOTES = "All concepts failed to load via Batch Import";
+	private static final String NO_NOTES = "Concept import pending...";
 	
 	private List<ExtendedLocale> defaultLocales;
 	private static final String defaultLocaleStr = "en-US;q=0.8,en-GB;q=0.6";
@@ -238,17 +238,27 @@ public class BatchImportService {
 			boolean dryRun = run.getImportRequest().isDryRun();
 			logger.info((dryRun?"Dry ":"") + "Loaded concepts onto task {}: {}",task.getKey(),conceptsLoadedJson);
 			if (!dryRun) {
-				updateTaskDescription(task, run, conceptsLoaded);
+				//If we are loading 1 concept per task, then set the summary to be the FSN
+				String newSummary = null;
+				if (run.getImportRequest().getConceptsPerTask() == 1) {
+					newSummary = "New concept: " + thisBatch.get(0).getFsn();
+				}
+				updateTaskDetails(task, run, conceptsLoaded, newSummary);
 				primeEditPanel(task, run, conceptsLoadedJson);
 				primeSavedList(task, run, conceptsLoaded.values());
+				
+
 			}
 		}
 	}
 
-	private void updateTaskDescription(AuthoringTask task, BatchImportRun run,
-			Map<String, ISnomedBrowserConcept> conceptsLoaded) {
+	private void updateTaskDetails(AuthoringTask task, BatchImportRun run,
+			Map<String, ISnomedBrowserConcept> conceptsLoaded, String newSummary) {
 		try {
 			String allNotes = getAllNotes(task, run, conceptsLoaded);
+			if (newSummary != null) {
+				task.setSummary(newSummary);
+			}
 			task.setDescription(allNotes);
 			taskService.updateTask(task.getProjectKey(), task.getKey(), task);
 		} catch (Exception e) {
@@ -560,6 +570,9 @@ public class BatchImportService {
 			prefTerm = thisConcept.get(formatter.getIndex(FIELD.PREF_TERM));
 			fsnTerm = thisConcept.get(formatter.getIndex(FIELD.FSN));
 		}
+		
+		//Save the FSN back to the concept for future use eg in Task Summary
+		thisConcept.setFsn(fsnTerm);
 		
 		ISnomedBrowserDescription fsn = createDescription(fsnTerm, SnomedBrowserDescriptionType.FSN, PREFERRED_ACCEPTABILIY);
 		descriptions.add(fsn);

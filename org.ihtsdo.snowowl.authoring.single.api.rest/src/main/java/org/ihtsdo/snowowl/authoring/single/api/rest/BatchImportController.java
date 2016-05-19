@@ -85,7 +85,7 @@ public class BatchImportController extends AbstractSnomedRestService {
 			//Swagger has difficulty handling both json and file in the same endpoint
 			//So we'll pass the items we need as individual parameters 
 			BatchImportRequest importRequest = new BatchImportRequest();
-			importRequest.setCreateForAuthor(createForAuthor);
+			importRequest.setCreateForAuthor(createForAuthor.toLowerCase());
 			importRequest.setConceptsPerTask(conceptsPerTask == null? 1 : conceptsPerTask.intValue());
 			importRequest.setFormat(format);
 			importRequest.setProjectKey(projectKey);

@@ -220,4 +220,8 @@ public class ValidationService {
 		}
 		return doStartValidation(PathHelper.getPath(null), username, null, null, effectiveDate);
 	}
+
+	public void clearStatusCache() {
+		validationStatusCache.invalidateAll();
+	}
 }
