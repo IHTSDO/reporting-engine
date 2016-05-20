@@ -88,4 +88,9 @@ public class LangRefsetInactivationFix extends TermServerFix implements RF2Const
 		
 	}
 
+	@Override
+	public String getFixName() {
+		return "LangRefsetInactivationFix";
+	}
+
 }

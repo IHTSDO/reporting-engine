@@ -1,7 +1,9 @@
 package org.ihtsdo.termserver.scripting.client;
 
+import java.io.File;
 import java.io.IOException;
-import java.net.URLConnection;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -14,10 +16,25 @@ import com.google.common.base.Preconditions;
 import us.monoid.json.JSONArray;
 import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
+import us.monoid.web.BinaryResource;
 import us.monoid.web.JSONResource;
 import us.monoid.web.Resty;
 
 public class SnowOwlClient {
+	
+	public enum ExtractType {
+		DELTA, SNAPSHOT, FULL;
+	};
+
+	public enum ProcessingStatus {
+		COMPLETED, SAVED
+	}
+
+	public enum ExportType {
+		PUBLISHED, UNPUBLISHED, MIXED;
+	}
+	
+	public static SimpleDateFormat YYYYMMDD = new SimpleDateFormat("yyyyMMdd");
 
 	private final Resty resty;
 	private final String url;
@@ -26,6 +43,7 @@ public class SnowOwlClient {
 //	private static final String SNOWOWL_CONTENT_TYPE = "application/vnd.com.b2international.snowowl+json";
 	private final Set<SnowOwlClientEventListener> eventListeners;
 	private Logger logger = LoggerFactory.getLogger(getClass());
+	private static int INDENT = 2;
 
 	public SnowOwlClient(String url, String username, String password) {
 		this.url = url;
@@ -198,6 +216,77 @@ public class SnowOwlClient {
 			resty.json(getMergeReviewUrl(mergeReviewId) + "/" + id, RestyHelper.content(mergedConcept, SNOWOWL_CONTENT_TYPE));
 		} catch (JSONException | IOException e) {
 			throw new SnowOwlClientException(e);
+		}
+	}
+	
+
+	public File export(String branchPath, String effectiveDate, ExportType exportType, ExtractType extractType)
+			throws SnowOwlClientException {
+		JSONObject jsonObj = prepareExportJSON(branchPath, effectiveDate, exportType, extractType);
+		String exportLocationURL = initiateExport(jsonObj);
+		return recoverExportedArchive(exportLocationURL);
+	}
+	
+	private JSONObject prepareExportJSON(String branchPath, String effectiveDate, ExportType exportType, ExtractType extractType)
+			throws SnowOwlClientException {
+		JSONObject jsonObj = new JSONObject();
+		try {
+			jsonObj.put("type", extractType);
+			jsonObj.put("branchPath", branchPath);
+			switch (exportType) {
+				case MIXED:  //Snapshot allows for both published and unpublished, where unpublished
+					//content would get the transient effective Date
+					if (!extractType.equals(ExtractType.SNAPSHOT)) {
+						throw new SnowOwlClientException("Export type " + exportType + " not recognised");
+					}
+				case UNPUBLISHED:
+					String tet = (effectiveDate == null) ?YYYYMMDD.format(new Date()) : effectiveDate;
+					jsonObj.put("transientEffectiveTime", tet);
+					break;
+				case PUBLISHED:
+					if (effectiveDate == null) {
+						throw new SnowOwlClientException("Cannot export published data without an effective date");
+					}
+					jsonObj.put("deltaStartEffectiveTime", effectiveDate);
+					jsonObj.put("deltaEndEffectiveTime", effectiveDate);
+					jsonObj.put("transientEffectiveTime", effectiveDate);
+					break;
+				
+				default:
+					throw new SnowOwlClientException("Export type " + exportType + " not recognised");
+			}
+		} catch (JSONException e) {
+			throw new SnowOwlClientException("Failed to prepare JSON for export request.", e);
+		}
+		return jsonObj;
+	}
+
+	private String initiateExport(JSONObject jsonObj) throws SnowOwlClientException {
+		try {
+			JSONResource jsonResponse = resty.json(url + "/exports", RestyHelper.content(jsonObj, SNOWOWL_CONTENT_TYPE));
+			Object exportLocationURLObj = jsonResponse.getUrlConnection().getHeaderField("Location");
+			if (exportLocationURLObj == null) {
+				throw new SnowOwlClientException("Failed to obtain location of export:"); //, instead got status '" + jsonResponse.getHTTPStatus()
+						//+ "' and body: " + jsonResponse.toObject().toString(INDENT));
+			}
+			return exportLocationURLObj.toString() + "/archive";
+		} catch (Exception e) {
+			// TODO Change this to catch JSONException once Resty no longer throws Exceptions
+			throw new SnowOwlClientException("Failed to initiate export", e);
+		}
+	}
+
+	private File recoverExportedArchive(String exportLocationURL) throws SnowOwlClientException {
+		try {
+			logger.debug("Recovering exported archive from {}", exportLocationURL);
+			resty.withHeader("Accept", ALL_CONTENT_TYPE);
+			BinaryResource archiveResource = resty.bytes(exportLocationURL);
+			File archive = File.createTempFile("ts-extract", ".zip");
+			archiveResource.save(archive);
+			logger.debug("Extract saved to {}", archive.getAbsolutePath());
+			return archive;
+		} catch (IOException e) {
+			throw new SnowOwlClientException("Unable to recover exported archive from " + exportLocationURL, e);
 		}
 	}
 }

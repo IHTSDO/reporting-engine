@@ -15,6 +15,8 @@ public abstract class TermServerFix {
 	protected SnowOwlClient tsClient;
 	protected SCAClient scaClient;
 	protected String authenticatedCookie;
+	protected Resty resty = new Resty();
+	protected String project;
 
 	public abstract String getFixName();
 	
@@ -26,9 +28,6 @@ public abstract class TermServerFix {
 		this.authenticatedCookie = authenticatedCookie;
 	}
 
-	protected Resty resty = new Resty();
-	protected String project;
-	
 	private static String[] environments = new String[] {	"http://localhost:8080/",
 															"https://dev-term.ihtsdotools.org/",
 															"https://uat-term.ihtsdotools.org/",

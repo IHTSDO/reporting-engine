@@ -48,6 +48,13 @@ public class Concept implements RF2Constants {
 	
 	private boolean isLoaded = false;
 	private int originalFileLineNumber;
+	
+	List<Concept> parents = new ArrayList<Concept>();
+	List<Concept> children = new ArrayList<Concept>();
+	
+	public Concept(String conceptId) {
+		this.conceptId = conceptId;
+	}
 
 	public Concept(String conceptId, int originalFileLineNumber) {
 		this.conceptId = conceptId;
@@ -207,6 +214,18 @@ public class Concept implements RF2Constants {
 
 	public int getOriginalFileLineNumber() {
 		return originalFileLineNumber;
+	}
+	
+	public void addRelationship(Relationship r) {
+		relationships.add(r);
+	}
+	
+	public void addChild(Concept c) {
+		children.add(c);
+	}
+	
+	public void addParent(Concept p) {
+		parents.add(p);
 	}
 
 }

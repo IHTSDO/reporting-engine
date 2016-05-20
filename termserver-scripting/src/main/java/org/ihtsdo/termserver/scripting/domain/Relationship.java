@@ -27,6 +27,7 @@ public class Relationship implements RF2Constants {
 	@Expose
 	private Concept target;
 	@SerializedName("sourceId")
+	private Concept source;
 	@Expose
 	private String sourceId;
 	@SerializedName("groupId")
@@ -59,17 +60,12 @@ public class Relationship implements RF2Constants {
 	 * @param type
 	 * @param sourceId
 	 */
-	public Relationship(String effectiveTime, String moduleId, boolean active, String relationshipId, Concept type, Concept target, String sourceId, long groupId, CHARACTERISTIC_TYPE characteristicType, MODIFER modifier) {
-		this.effectiveTime = effectiveTime;
-		this.moduleId = moduleId;
-		this.active = active;
-		this.relationshipId = relationshipId;
+	public Relationship(Concept source, Concept type, Concept target, long groupId) {
 		this.type = type;
 		this.target = target;
-		this.sourceId = sourceId;
+		this.source = source;
+		this.sourceId = source.getConceptId();
 		this.groupId = groupId;
-		this.characteristicType = characteristicType;
-		this.modifier = modifier;
 	}
 
 	/**
