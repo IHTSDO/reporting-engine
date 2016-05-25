@@ -18,6 +18,10 @@ public interface RF2Constants {
 	
 	public enum MODIFER { EXISTENTIAL, UNIVERSAL};
 	
+	public enum ACTIVE_STATE { ACTIVE, INACTIVE, BOTH };
+	
+	public enum ConceptType { PRODUCT_STRENGTH, MEDICINAL_ENTITY, MEDICINAL_FORM, UNKNOWN };
+	
 	public static final String FIELD_DELIMITER = "\t";
 	public static final String LINE_DELIMITER = "\r\n";
 	public static final String ACTIVE_FLAG = "1";

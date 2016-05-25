@@ -48,12 +48,26 @@ public class Concept implements RF2Constants {
 	
 	private boolean isLoaded = false;
 	private int originalFileLineNumber;
+	private ConceptType conceptType;
 	
 	List<Concept> parents = new ArrayList<Concept>();
 	List<Concept> children = new ArrayList<Concept>();
 	
 	public Concept(String conceptId) {
 		this.conceptId = conceptId;
+	}
+	
+	public Concept(String conceptTypeStr, String conceptId) {
+		this.conceptId = conceptId;
+		if (conceptTypeStr.contains("Strength")) {
+			this.setConceptType(ConceptType.PRODUCT_STRENGTH);
+		} else if (conceptTypeStr.contains("Entity")) {
+			this.setConceptType(ConceptType.MEDICINAL_ENTITY);
+		} else if (conceptTypeStr.contains("Form")) {
+			this.setConceptType(ConceptType.MEDICINAL_FORM);
+		} else {
+			this.setConceptType(ConceptType.UNKNOWN);
+		}
 	}
 
 	public Concept(String conceptId, int originalFileLineNumber) {
@@ -129,18 +143,21 @@ public class Concept implements RF2Constants {
 		return relationships;
 	}
 	
-	public List<Relationship> getRelationships(CHARACTERISTIC_TYPE characteristicType) {
+	public List<Relationship> getRelationships(CHARACTERISTIC_TYPE characteristicType, ACTIVE_STATE state) {
 		List<Relationship> matches = new ArrayList<Relationship>();
 		for (Relationship r : relationships) {
 			if (r.getCharacteristicType().equals(characteristicType)) {
-				matches.add(r);
+				if (state.equals(ACTIVE_STATE.BOTH) || (state.equals(ACTIVE_STATE.ACTIVE) && r.isActive()) ||
+						(state.equals(ACTIVE_STATE.INACTIVE) && !r.isActive())) {
+					matches.add(r);
+				}
 			}
 		}
 		return matches;
 	}
 	
-	public List<Relationship> getRelationships(CHARACTERISTIC_TYPE characteristicType, Concept type) {
-		List<Relationship> potentialMatches = getRelationships(characteristicType);
+	public List<Relationship> getRelationships(CHARACTERISTIC_TYPE characteristicType, Concept type, ACTIVE_STATE state) {
+		List<Relationship> potentialMatches = getRelationships(characteristicType, state);
 		List<Relationship> matches = new ArrayList<Relationship>();
 		for (Relationship r : potentialMatches) {
 			if (r.getType().equals(type)) {
@@ -189,7 +206,7 @@ public class Concept implements RF2Constants {
 			return false;
 		}
 		Concept rhs = ((Concept) other);
-		return this.conceptId.equals(rhs.conceptId);
+		return (this.conceptId.compareTo(rhs.conceptId) == 0);
 	}
 
 	public void addRelationship(Concept type, Concept target) {
@@ -226,6 +243,14 @@ public class Concept implements RF2Constants {
 	
 	public void addParent(Concept p) {
 		parents.add(p);
+	}
+
+	public ConceptType getConceptType() {
+		return conceptType;
+	}
+
+	public void setConceptType(ConceptType conceptType) {
+		this.conceptType = conceptType;
 	}
 
 }

@@ -54,10 +54,10 @@ public class Relationship implements RF2Constants {
 	 * @param relationshipId
 	 * @param moduleId
 	 * @param target
-	 * @param characteristicType
 	 * @param active
 	 * @param effectiveTime
 	 * @param type
+	 * @param inferredRelationship 
 	 * @param sourceId
 	 */
 	public Relationship(Concept source, Concept type, Concept target, long groupId) {

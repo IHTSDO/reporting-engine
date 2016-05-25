@@ -220,11 +220,12 @@ public class SnowOwlClient {
 	}
 	
 
-	public File export(String branchPath, String effectiveDate, ExportType exportType, ExtractType extractType)
+	public File export(String branchPath, String effectiveDate, ExportType exportType, ExtractType extractType, File saveLocation)
 			throws SnowOwlClientException {
 		JSONObject jsonObj = prepareExportJSON(branchPath, effectiveDate, exportType, extractType);
 		String exportLocationURL = initiateExport(jsonObj);
-		return recoverExportedArchive(exportLocationURL);
+		File recoveredArchive = recoverExportedArchive(exportLocationURL, saveLocation);
+		return recoveredArchive;
 	}
 	
 	private JSONObject prepareExportJSON(String branchPath, String effectiveDate, ExportType exportType, ExtractType extractType)
@@ -276,15 +277,17 @@ public class SnowOwlClient {
 		}
 	}
 
-	private File recoverExportedArchive(String exportLocationURL) throws SnowOwlClientException {
+	private File recoverExportedArchive(String exportLocationURL, File saveLocation) throws SnowOwlClientException {
 		try {
 			logger.debug("Recovering exported archive from {}", exportLocationURL);
 			resty.withHeader("Accept", ALL_CONTENT_TYPE);
 			BinaryResource archiveResource = resty.bytes(exportLocationURL);
-			File archive = File.createTempFile("ts-extract", ".zip");
-			archiveResource.save(archive);
-			logger.debug("Extract saved to {}", archive.getAbsolutePath());
-			return archive;
+			if (saveLocation == null) {
+				saveLocation = File.createTempFile("ts-extract", ".zip");
+			}
+			archiveResource.save(saveLocation);
+			logger.debug("Extract saved to {}", saveLocation.getAbsolutePath());
+			return saveLocation;
 		} catch (IOException e) {
 			throw new SnowOwlClientException("Unable to recover exported archive from " + exportLocationURL, e);
 		}

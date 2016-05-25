@@ -36,9 +36,8 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 	public static void main(String[] args) throws TermServerFixException, IOException, SnowOwlClientException {
 		DrugProductFix fix = new DrugProductFix();
 		fix.init(args);
+		//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 		fix.loadProject();
-		//Recover the current project state from TS to allow quick searching of all concepts
-		System.exit(0);
 		fix.processFile();
 	}
 
@@ -52,39 +51,51 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 
 	@Override
 	List<Batch> formIntoBatches(String fileName, List<Concept> concepts, String branchPath) throws TermServerFixException {
-		//Medicinal Entity a little tricky.  We're going to recover all the concepts
-		//then work out which ones have the same set of active ingredients 
-		//and batch those together.
+
 		List<Batch> batches = new ArrayList<Batch>();
-		Multimap<String, Concept> ingredientCombos = ArrayListMultimap.create();
-		//Remove the first row
-		concepts.remove(0);
-		debug ("Loading " + concepts.size() + " concepts from TermServer.");
+		debug ("Finding all concepts with ingredients...");
+		Multimap<String, Concept> ingredientCombos = findAllIngredientCombos();
+		
+		//If the concept is of type Medicinal Entity, then put it in a batch with other concept with same ingredient combo
 		for (Concept thisConcept : concepts) {
-			Concept loadedConcept = loadConcept(thisConcept, branchPath);
-			//Work out a unique key by the concatenation of all inferred active ingredients
-			List<Relationship> ingredients = loadedConcept.getRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED);
-			String comboKey = getIngredientCombinationKey(loadedConcept, ingredients);
-			debug ("Loaded " + loadedConcept + " with " + comboKey.split(SEPARATOR).length + " active ingredients.");
-			ingredientCombos.put(comboKey, loadedConcept);
-		}
-		println ("Formed " + concepts.size() + " concepts into " + ingredientCombos.keySet().size() + " batches.");
-		//Now each of those concepts that shares that combination of ingredients can go into the same batch
-		for (String thisComboKey : ingredientCombos.keySet()) {
-			Collection<Concept> conceptsWithCombo = ingredientCombos.get(thisComboKey);
-			Batch batchThisCombo = new Batch();
-			batchThisCombo.setDescription(fileName + ": " + thisComboKey);
-			batchThisCombo.setConcepts(new ArrayList<Concept>(conceptsWithCombo));
-			debug ("Batched " + conceptsWithCombo.size() + " concepts with ingredients " + thisComboKey);
-			batches.add(batchThisCombo);
+			if (thisConcept.getConceptType().equals(ConceptType.MEDICINAL_ENTITY)) {
+				//thisConcept was loaded from file, we need the relationships from the concept loaded from the snapshot archive
+				Concept fullConcept = GraphLoader.getGraphLoader().getConcept(thisConcept.getConceptId(), false);
+				List<Relationship> ingredients = fullConcept.getRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, ACTIVE_STATE.ACTIVE);
+				String comboKey = getIngredientCombinationKey(fullConcept, ingredients);
+				//Get all concepts with this identical combination of ingredients
+				Collection<Concept> matchingCombo = ingredientCombos.get(comboKey);
+				Batch batchThisCombo = new Batch();
+				batchThisCombo.setDescription(fileName + ": " + comboKey);
+				batchThisCombo.setConcepts(new ArrayList<Concept>(matchingCombo));
+				debug ("Batched " + fullConcept + " with " + comboKey.split(SEPARATOR).length + " active ingredients.  Batch size " + matchingCombo.size());
+			}
 		}
 		return batches;
 	}
 	
+	private Multimap<String, Concept> findAllIngredientCombos() throws TermServerFixException {
+		Collection<Concept> allConcepts = GraphLoader.getGraphLoader().getAllConcepts();
+		Multimap<String, Concept> ingredientCombos = ArrayListMultimap.create();
+		for (Concept thisConcept : allConcepts) {
+			List<Relationship> ingredients = thisConcept.getRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, ACTIVE_STATE.ACTIVE);
+			if (ingredients.size() > 0) {
+				String comboKey = getIngredientCombinationKey(thisConcept, ingredients);
+				ingredientCombos.put(comboKey, thisConcept);
+			}
+		}
+		return ingredientCombos;
+	}
+
 	private void loadProject() throws SnowOwlClientException, TermServerFixException {
-		File snapShotArchive = tsClient.export("MAIN/" + project, null, ExportType.MIXED, ExtractType.SNAPSHOT);
+		File snapShotArchive = new File (project + ".zip");
+		//Do we already have a copy of the project locally?  If not, recover it.
+		if (!snapShotArchive.exists()) {
+			println ("Recovering current state of " + project + " from TS");
+			tsClient.export("MAIN/" + project, null, ExportType.MIXED, ExtractType.SNAPSHOT, snapShotArchive);
+		}
 		GraphLoader gl = GraphLoader.getGraphLoader();
-		
+		println ("Loading archive contents into memory...");
 		try {
 			ZipInputStream zis = new ZipInputStream(new FileInputStream(snapShotArchive));
 			ZipEntry ze = zis.getNextEntry();
@@ -93,17 +104,21 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 					if (!ze.isDirectory()) {
 						Path p = Paths.get(ze.getName());
 						String fileName = p.getFileName().toString();
-						if (fileName.contains("rf2_Relationship_Snapshot")) {
+						if (fileName.contains("sct2_Relationship_Snapshot")) {
+							println("Loading Relationship File.");
 							gl.loadRelationshipFile(zis);
-						} else if (fileName.contains("rf2_Description_Snapshot")) {
+						} else if (fileName.contains("sct2_Description_Snapshot")) {
+							println("Loading Description File.");
 							gl.loadDescriptionFile(zis);
 						}
 					}
 					ze = zis.getNextEntry();
 				}
 			} finally {
-				zis.closeEntry();
-				zis.close();
+				try{
+					zis.closeEntry();
+					zis.close();
+				} catch (Exception e){} //Well, we tried.
 			}
 		} catch (IOException e) {
 			throw new TermServerFixException("Failed to extract project state from archive " + snapShotArchive.getName(), e);

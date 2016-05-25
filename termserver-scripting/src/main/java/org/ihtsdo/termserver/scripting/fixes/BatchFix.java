@@ -37,6 +37,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants{
 	File reportFile;
 	private static String COMMENT_CHAR = "--";
 	private static String COMMA = ",";
+	private static String CSV_FIELD_DELIMITER = COMMA;
 	private static String QUOTE = "\"";
 	
 	protected  Gson gson;	
@@ -49,13 +50,15 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants{
 			List<String> lines = Files.readLines(batchFixFile, Charsets.UTF_8);
 			List<Concept> allConcepts = new ArrayList<Concept>();
 			for (int lineNum = 0; lineNum < lines.size(); lineNum++) {
-				//We might have a comment on the line to strip off 
-				String thisConceptId = lines.get(lineNum).split(COMMENT_CHAR)[0].trim();
-				allConcepts.add(new Concept(thisConceptId, lineNum));
+				if (lineNum == 0) {
+					continue; //skip header row
+				}
+				//File format Concept Type, SCTID, FSN with string fields quoted.  Strip quotes also.
+				String[] lineItems = lines.get(lineNum).replace("\"", "").split(CSV_FIELD_DELIMITER);
+				allConcepts.add(new Concept(lineItems[0], lineItems[1]));
 			}
 			String projectPath = "MAIN/" + project;
 			List<Batch> batches = formIntoBatches(batchFixFile.getName(), allConcepts, projectPath);
-			//System.exit(0);
 			batchProcess(batches);
 		} catch (FileNotFoundException e) {
 			throw new TermServerFixException("Unable to open batch file " + batchFixFile.getAbsolutePath(), e);
@@ -184,16 +187,14 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants{
 	}
 	
 	protected void ensureAcceptableParent(Concept c, Concept acceptableParent) {
-		List<Relationship> statedParents = c.getRelationships(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP, IS_A);
+		List<Relationship> statedParents = c.getRelationships(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP, IS_A, ACTIVE_STATE.ACTIVE);
 		boolean hasAcceptableParent = false;
 		for (Relationship thisParent : statedParents) {
-			if (thisParent.isActive() && !thisParent.getTarget().equals(acceptableParent)) {
+			if (!thisParent.getTarget().equals(acceptableParent)) {
 				report(c.getConceptId(), REPORT_ACTION_TYPE.RELATIONSHIP_CHANGE_MADE, "Inactivated unwanted parent: " + thisParent);
 				thisParent.setActive(false);
 			} else {
-				if (thisParent.getTarget().equals(acceptableParent)) {
-					hasAcceptableParent = true;
-				}
+				hasAcceptableParent = true;
 			}
 		}
 		
