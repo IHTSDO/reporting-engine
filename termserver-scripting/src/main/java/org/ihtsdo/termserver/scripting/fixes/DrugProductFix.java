@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -18,7 +19,11 @@ import org.ihtsdo.termserver.scripting.domain.Batch;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
+import org.ihtsdo.termserver.scripting.fixes.BatchFix.REPORT_ACTION_TYPE;
 
+import us.monoid.json.JSONObject;
+
+import com.b2international.commons.StringUtils;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 
@@ -31,27 +36,62 @@ What rules are applied to each one depends on the type - Medicinal Entity, Produ
  */
 public class DrugProductFix extends BatchFix implements RF2Constants{
 	
+	protected DrugProductFix(BatchFix clone) {
+		super(clone);
+	}
+
 	private static final String SEPARATOR = "_";
 	
+	ProductStrengthFix psf;
+	MedicinalFormFix mff;
+	MedicinalEntityFix mef;
+	GrouperFix gf;
+	
 	public static void main(String[] args) throws TermServerFixException, IOException, SnowOwlClientException {
-		DrugProductFix fix = new DrugProductFix();
+		DrugProductFix fix = new DrugProductFix(null);
 		fix.init(args);
 		//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 		fix.loadProject();
 		fix.processFile();
 	}
-
-	@Override
-	public void doFix(Concept concept, String branchPath) {
-		debug ("Examining: " + concept.getConceptId());
-		ensureDefinitionStatus(concept, DEFINITION_STATUS.FULLY_DEFINED);
-		ensureAcceptableParent(concept, PHARM_BIO_PRODUCT);
+	
+	protected void init(String[] args) throws TermServerFixException, IOException {
+		super.init(args);
+		psf = new ProductStrengthFix(this);
+		mff = new MedicinalFormFix(this);
+		mef = new MedicinalEntityFix(this);
+		gf =  new GrouperFix(this);
 	}
 
+	@Override
+	public int doFix(Batch batch, Concept concept) throws TermServerFixException {
+		Concept loadedConcept = loadConcept(concept, batch.getBranchPath());
+		loadedConcept.setConceptType(concept.getConceptType());
+		int changesMade = 0;
+		switch (concept.getConceptType()) {
+			case MEDICINAL_ENTITY : changesMade = mef.doFix(batch, loadedConcept);
+									break;
+			case MEDICINAL_FORM : changesMade = mff.doFix(batch, loadedConcept);
+									break;
+			case PRODUCT_STRENGTH : changesMade = psf.doFix(batch, loadedConcept);
+									break;
+			case GROUPER : changesMade = gf.doFix(batch, loadedConcept);
+									break;
+			default : warn ("Don't know what to do with " + concept);
+			report(batch, concept, REPORT_ACTION_TYPE.VALIDATION_ERROR, "Concept Type not determined.");
+		}
+		try {
+			String conceptSerialised = gson.toJson(loadedConcept);
+			debug ("Updating state of " + loadedConcept);
+			tsClient.updateConcept(new JSONObject(conceptSerialised), batch.getBranchPath());
+		} catch (Exception e) {
+			report(batch, concept, REPORT_ACTION_TYPE.API_ERROR, "Failed to save changed concept to TS: " + e.getMessage());
+		}
+		return changesMade;
+	}
 
 	@Override
 	List<Batch> formIntoBatches(String fileName, List<Concept> concepts, String branchPath) throws TermServerFixException {
-
 		List<Batch> batches = new ArrayList<Batch>();
 		debug ("Finding all concepts with ingredients...");
 		Multimap<String, Concept> ingredientCombos = findAllIngredientCombos();
@@ -59,19 +99,41 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		//If the concept is of type Medicinal Entity, then put it in a batch with other concept with same ingredient combo
 		for (Concept thisConcept : concepts) {
 			if (thisConcept.getConceptType().equals(ConceptType.MEDICINAL_ENTITY)) {
-				//thisConcept was loaded from file, we need the relationships from the concept loaded from the snapshot archive
-				Concept fullConcept = GraphLoader.getGraphLoader().getConcept(thisConcept.getConceptId(), false);
-				List<Relationship> ingredients = fullConcept.getRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, ACTIVE_STATE.ACTIVE);
-				String comboKey = getIngredientCombinationKey(fullConcept, ingredients);
+				List<Relationship> ingredients = getIngredients(thisConcept);
+				String comboKey = getIngredientCombinationKey(thisConcept, ingredients);
 				//Get all concepts with this identical combination of ingredients
 				Collection<Concept> matchingCombo = ingredientCombos.get(comboKey);
-				Batch batchThisCombo = new Batch();
-				batchThisCombo.setDescription(fileName + ": " + comboKey);
-				batchThisCombo.setConcepts(new ArrayList<Concept>(matchingCombo));
-				debug ("Batched " + fullConcept + " with " + comboKey.split(SEPARATOR).length + " active ingredients.  Batch size " + matchingCombo.size());
+				Batch thisComboBatch = new Batch();
+				thisComboBatch.setDescription(getIngredientList(ingredients));
+				thisComboBatch.setConcepts(new ArrayList<Concept>(matchingCombo));
+				batches.add(thisComboBatch);
+				debug ("Batched " + thisConcept + " with " + comboKey.split(SEPARATOR).length + " active ingredients.  Batch size " + matchingCombo.size());
+			} else {
+				//Validate that concept does have a type and some ingredients otherwise it's going to get missed
+				if (thisConcept.getConceptType().equals(ConceptType.UNKNOWN)) {
+					warn ("Concept is of unknown type: " + thisConcept);
+				}
+				
+				if (getIngredients(thisConcept).size() == 0) {
+					warn ("Concept has no ingredients: " + thisConcept);
+				}
 			}
 		}
 		return batches;
+	}
+	
+	private List<Relationship> getIngredients(Concept c) {
+		return c.getRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, ACTIVE_STATE.ACTIVE);
+	}
+	
+	private String getIngredientList(List<Relationship> ingredientRelationships) {
+		ArrayList<String> ingredientNames = new ArrayList<String>();
+		for (Relationship r : ingredientRelationships) {
+			String ingredientName = r.getTarget().getFsn().replaceAll("\\(.*?\\)","").trim();
+			ingredientNames.add(ingredientName);
+		}
+		Collections.sort(ingredientNames);
+		return ingredientNames.toString().replaceAll("\\[|\\]", "").replaceAll(", "," + ");
 	}
 	
 	private Multimap<String, Concept> findAllIngredientCombos() throws TermServerFixException {
@@ -133,7 +195,6 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 			}
 		}
 		if (comboKey.isEmpty()) {
-			//throw new TermServerFixException("Unable to find any ingredients for: " + loadedConcept);
 			println ("*** Unable to find ingredients for " + loadedConcept);
 			comboKey = "NONE";
 		}

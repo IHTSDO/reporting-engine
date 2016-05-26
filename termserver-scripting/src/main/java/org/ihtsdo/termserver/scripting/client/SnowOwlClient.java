@@ -67,8 +67,9 @@ public class SnowOwlClient {
 		try {
 			final String id = concept.getString("conceptId");
 			Preconditions.checkNotNull(id);
+			JSONResource response =  resty.json(getConceptsPath(branchPath) + "/" + id, Resty.put(RestyHelper.content(concept, SNOWOWL_CONTENT_TYPE)));
 			logger.info("Updated concept " + id);
-			return resty.json(getConceptsPath(branchPath) + "/" + id, Resty.put(RestyHelper.content(concept, SNOWOWL_CONTENT_TYPE)));
+			return response;
 		} catch (Exception e) {
 			throw new SnowOwlClientException(e);
 		}
@@ -292,4 +293,6 @@ public class SnowOwlClient {
 			throw new SnowOwlClientException("Unable to recover exported archive from " + exportLocationURL, e);
 		}
 	}
+
+
 }

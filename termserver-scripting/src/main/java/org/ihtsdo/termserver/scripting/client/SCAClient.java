@@ -1,7 +1,6 @@
 package org.ihtsdo.termserver.scripting.client;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.io.IOException;
 
 import us.monoid.json.JSONObject;
 import us.monoid.web.JSONResource;
@@ -13,7 +12,6 @@ public class SCAClient {
 	private static final String apiRoot = "snowowl/ihtsdo-sca/";
 	private static final String ALL_CONTENT_TYPE = "*/*";
 	private static final String JSON_CONTENT_TYPE = "application/json";
-	private Logger logger = LoggerFactory.getLogger(getClass());
 
 	public SCAClient(String serverUrl, String cookie) {
 		this.serverUrl = serverUrl;
@@ -29,5 +27,11 @@ public class SCAClient {
 		requestJson.put("description", description);
 		JSONResource response = resty.json(endPoint, RestyHelper.content(requestJson, JSON_CONTENT_TYPE));
 		return response.get("key").toString();
+	}
+
+	public void setUIState(String project, String taskKey, String quotedList) throws IOException {
+		String endPoint = serverUrl + apiRoot + "projects/" + project + "/tasks/" + taskKey + "/ui-state/edit-panel";
+		resty.json(endPoint, RestyHelper.content(quotedList, JSON_CONTENT_TYPE));
+		//TODO Move to locally maintained Resty so we can easily check for HTTP200 return status
 	}
 }

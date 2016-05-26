@@ -1,24 +1,10 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
-import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Batch;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
-import org.ihtsdo.termserver.scripting.domain.Relationship;
-
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-
-import us.monoid.json.JSONException;
-import us.monoid.web.JSONResource;
 
 /*
 All concepts must be fully defined
@@ -38,70 +24,25 @@ Medicinal Entity plus all descendants in one task, group by "has active ingredie
  */
 public class MedicinalEntityFix extends BatchFix implements RF2Constants{
 	
-	private static final String SEPARATOR = "_";
-	
-	public static void main(String[] args) throws TermServerFixException, IOException {
-		MedicinalEntityFix fix = new MedicinalEntityFix();
-		fix.init(args);
-		fix.processFile();
+	protected MedicinalEntityFix(BatchFix clone) {
+		super(clone);
 	}
 
 	@Override
-	public void doFix(Concept concept, String branchPath) {
-		debug ("Examining: " + concept.getConceptId());
-		ensureDefinitionStatus(concept, DEFINITION_STATUS.FULLY_DEFINED);
-		ensureAcceptableParent(concept, PHARM_BIO_PRODUCT);
-	}
-
-
-	@Override
-	List<Batch> formIntoBatches(String fileName, List<Concept> concepts, String branchPath) throws TermServerFixException {
-		//Medicinal Entity a little tricky.  We're going to recover all the concepts
-		//then work out which ones have the same set of active ingredients 
-		//and batch those together.
-		List<Batch> batches = new ArrayList<Batch>();
-		Multimap<String, Concept> ingredientCombos = ArrayListMultimap.create();
-		//Remove the first row
-		concepts.remove(0);
-		debug ("Loading " + concepts.size() + " concepts from TermServer.");
-		for (Concept thisConcept : concepts) {
-			Concept loadedConcept = loadConcept(thisConcept, branchPath);
-			//Work out a unique key by the concatenation of all inferred active ingredients
-			List<Relationship> ingredients = loadedConcept.getRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED);
-			String comboKey = getIngredientCombinationKey(loadedConcept, ingredients);
-			debug ("Loaded " + loadedConcept + " with " + comboKey.split(SEPARATOR).length + " active ingredients.");
-			ingredientCombos.put(comboKey, loadedConcept);
-		}
-		println ("Formed " + concepts.size() + " concepts into " + ingredientCombos.keySet().size() + " batches.");
-		//Now each of those concepts that shares that combination of ingredients can go into the same batch
-		for (String thisComboKey : ingredientCombos.keySet()) {
-			Collection<Concept> conceptsWithCombo = ingredientCombos.get(thisComboKey);
-			Batch batchThisCombo = new Batch();
-			batchThisCombo.setDescription(fileName + ": " + thisComboKey);
-			batchThisCombo.setConcepts(new ArrayList<Concept>(conceptsWithCombo));
-			debug ("Batched " + conceptsWithCombo.size() + " concepts with ingredients " + thisComboKey);
-			batches.add(batchThisCombo);
-		}
-		return batches;
-	}
-
-	private String getIngredientCombinationKey(Concept loadedConcept, List<Relationship> ingredients) throws TermServerFixException {
-		String comboKey = "";
-		for (Relationship r : ingredients) {
-			if (r.isActive()) {
-				comboKey += r.getTarget().getConceptId() + SEPARATOR;
-			}
-		}
-		if (comboKey.isEmpty()) {
-			//throw new TermServerFixException("Unable to find any ingredients for: " + loadedConcept);
-			println ("*** Unable to find ingredients for " + loadedConcept);
-			comboKey = "NONE";
-		}
-		return comboKey;
+	public int doFix(Batch batch, Concept concept) throws TermServerFixException {
+		int changesMade = ensureDefinitionStatus(batch, concept, DEFINITION_STATUS.FULLY_DEFINED);
+		changesMade += ensureAcceptableParent(batch, concept, graph.getConcept(PHARM_BIO_PRODUCT_SCTID));
+		return changesMade;
 	}
 
 	@Override
 	public String getFixName() {
 		return "MedicinalEntity";
+	}
+
+	@Override
+	List<Batch> formIntoBatches(String fileName, List<Concept> allConcepts,
+			String branchPath) throws TermServerFixException {
+		throw new TermServerFixException("Not Implemented");
 	}
 }

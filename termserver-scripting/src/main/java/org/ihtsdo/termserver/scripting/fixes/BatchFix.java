@@ -16,6 +16,7 @@ import org.ihtsdo.termserver.scripting.domain.Batch;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
+import org.ihtsdo.termserver.scripting.domain.RelationshipSerializer;
 
 import us.monoid.json.JSONException;
 import us.monoid.web.JSONResource;
@@ -32,18 +33,37 @@ import com.google.gson.GsonBuilder;
 public abstract class BatchFix extends TermServerFix implements RF2Constants{
 	
 	protected int batchSize = 5;
-	protected boolean dryRun = true;
 	File batchFixFile;
 	File reportFile;
-	private static String COMMENT_CHAR = "--";
 	private static String COMMA = ",";
 	private static String CSV_FIELD_DELIMITER = COMMA;
 	private static String QUOTE = "\"";
 	
-	protected  Gson gson;	
+	protected static Gson gson;
+	static {
+		GsonBuilder gsonBuilder = new GsonBuilder();
+		//gsonBuilder.registerTypeAdapter(Concept.class, new ConceptDeserializer());
+		gsonBuilder.registerTypeAdapter(Relationship.class, new RelationshipSerializer());
+		gsonBuilder.setPrettyPrinting();
+		gsonBuilder.excludeFieldsWithoutExposeAnnotation();
+		gson = gsonBuilder.create();
+	}
+	
+	protected static GraphLoader graph = GraphLoader.getGraphLoader();
 
 	public enum REPORT_ACTION_TYPE { ACTION_TYPE, API_ERROR, CONCEPT_CHANGE_MADE, INFO,
-									 RELATIONSHIP_CHANGE_MADE, DESCRIPTION_CHANGE_MADE};
+									 RELATIONSHIP_ADDED, RELATIONSHIP_REMOVED, DESCRIPTION_CHANGE_MADE, 
+									 NO_CHANGE, VALIDATION_ERROR};
+
+	protected BatchFix (BatchFix clone) {
+		if (clone != null) {
+			this.batchFixFile = clone.batchFixFile;
+			this.reportFile = clone.reportFile;
+			this.project = clone.project;
+			this.tsClient = clone.tsClient;
+			this.scaClient = clone.scaClient;
+		}
+	}
 
 	protected void processFile() throws TermServerFixException {
 		try {
@@ -55,7 +75,9 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants{
 				}
 				//File format Concept Type, SCTID, FSN with string fields quoted.  Strip quotes also.
 				String[] lineItems = lines.get(lineNum).replace("\"", "").split(CSV_FIELD_DELIMITER);
-				allConcepts.add(new Concept(lineItems[0], lineItems[1]));
+				Concept c = graph.getConcept(lineItems[1]);
+				c.setConceptType(lineItems[0]);
+				allConcepts.add(c);
 			}
 			String projectPath = "MAIN/" + project;
 			List<Batch> batches = formIntoBatches(batchFixFile.getName(), allConcepts, projectPath);
@@ -70,50 +92,90 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants{
 	
 	abstract List<Batch> formIntoBatches (String fileName, List<Concept> allConcepts, String branchPath) throws TermServerFixException;
 	
-	abstract void doFix(Concept concept, String taskPath);
+	abstract int doFix(Batch batch, Concept concept) throws TermServerFixException;
 
 	private void batchProcess(List<Batch> batches) throws TermServerFixException {
-		for (Batch thisBatch : batches) {
+		int failureCount = 0;
+		for (Batch batch : batches) {
 			try {
+				String branchPath;
+				String taskKey;
 				//Create a task for this batch of concepts
-				String taskKey = scaClient.createTask(project, thisBatch.getDescription(), thisBatch.getSummary());
-				String taskPath = tsClient.createBranch("MAIN/" + project, taskKey);
-				debug ("Created task: " + taskPath);
+				if (!dryRun) {
+					debug ("Creating task on project: " + project);
+					taskKey = scaClient.createTask(project, batch.getDescription(), batch.getSummaryHTML());
+					branchPath = tsClient.createBranch("MAIN/" + project, taskKey);
+				} else {
+					taskKey = project + "-" + getNextDryRunNum();
+					branchPath = "MAIN/" + project + "/" + taskKey;
+				}
+				
+				debug ( (dryRun?"Dry Run " : "Created") + "task: " + branchPath);
+				batch.setTaskKey(taskKey);
+				batch.setBranchPath(branchPath);
 				
 				//Process each concept
-				for (Concept concept : thisBatch.getConcepts()) {
-					doFix(concept, taskPath);
+				for (Concept concept : batch.getConcepts()) {
+					try {
+						int changesMade = doFix(batch, concept);
+						if (changesMade == 0) {
+							report(batch, concept, REPORT_ACTION_TYPE.NO_CHANGE, "");
+						}
+					} catch (TermServerFixException e) {
+						report(batch, concept, REPORT_ACTION_TYPE.API_ERROR, getMessage(e));
+						if (++failureCount > maxFailures) {
+							throw new TermServerFixException ("Failure count exceeded " + maxFailures);
+						}
+					}
 				}
 				
 				//Prefill the Edit Panel
-				
-				//Run the classifier and report the results
+				try {
+					scaClient.setUIState(project, taskKey, batch.toQuotedList());
+				} catch (Exception e) {
+					String msg = "Failed to preload edit-panel ui state: " + e.getMessage();
+					warn (msg);
+					report(batch, null, REPORT_ACTION_TYPE.NO_CHANGE, msg);
+				}
 				
 				//Reassign the task to the intended author
 			} catch (Exception e) {
-				throw new TermServerFixException("Failed to process batch " + thisBatch.getDescription(), e);
+				throw new TermServerFixException("Failed to process batch " + batch.getDescription(), e);
 			}
 		}
 		
 	}
 
-	protected void ensureDefinitionStatus(Concept c, DEFINITION_STATUS targetDefStat) {
+	protected int ensureDefinitionStatus(Batch b, Concept c, DEFINITION_STATUS targetDefStat) {
+		int changesMade = 0;
 		if (!c.getDefinitionStatus().equals(targetDefStat.toString())) {
-			report (c.getConceptId(), REPORT_ACTION_TYPE.CONCEPT_CHANGE_MADE, "Definition status changed to " + targetDefStat);
+			report (b, c, REPORT_ACTION_TYPE.CONCEPT_CHANGE_MADE, "Definition status changed to " + targetDefStat);
 			c.setDefinitionStatus(targetDefStat.toString());
+			changesMade++;
 		}
+		return changesMade;
 	}
 	
-	protected void report(String conceptId, REPORT_ACTION_TYPE actionType, String actionDetail) {
+	protected void report(Batch batch, Concept concept, REPORT_ACTION_TYPE actionType, String actionDetail) {
+		String sctid = "";
+		String fsn = "";
+		if (concept != null) {
+			sctid = concept.getConceptId();
+			fsn = concept.getFsn();
+		}
+		String line = batch.toString() + COMMA + sctid + COMMA + fsn + COMMA + concept.getConceptType() + COMMA + actionType + COMMA + QUOTE + actionDetail + QUOTE;
+		writeToFile (line);
+	}
+	
+	private void writeToFile(String line) {
 		try(FileWriter fw = new FileWriter(reportFile, true);
 				BufferedWriter bw = new BufferedWriter(fw);
 				PrintWriter out = new PrintWriter(bw))
-			{
-				String line = conceptId + COMMA + actionType + COMMA + QUOTE + actionDetail + QUOTE;
-				out.println(line);
-			} catch (Exception e) {
-				print ("Unable to output " + conceptId + ": " + actionDetail + " due to " + e.getMessage());
-			}
+		{
+			out.println(line);
+		} catch (Exception e) {
+			print ("Unable to output report line: " + line + " due to " + e.getMessage());
+		}
 		
 	}
 
@@ -145,7 +207,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants{
 				project = thisArg;
 				isProjectName = false;
 			} else if (isDryRun) {
-				dryRun = Boolean.parseBoolean(thisArg);
+				dryRun = thisArg.toUpperCase().equals("Y");
 				isDryRun = false;
 			} else if (isCookie) {
 				authenticatedCookie = thisArg;
@@ -167,32 +229,35 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants{
 		reportFile = new File(reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
-		report ("SCTID",REPORT_ACTION_TYPE.ACTION_TYPE,"ACTION_DETAIL");
-		
-		GsonBuilder gsonBuilder = new GsonBuilder();
-		//gsonBuilder.registerTypeAdapter(Concept.class, new ConceptDeserializer());
-		gson = gsonBuilder.create();
+		writeToFile ("TASK, SCTID, FSN, CONCEPT_TYPE," +REPORT_ACTION_TYPE.ACTION_TYPE + ",ACTION_DETAIL");
 	}
 	
-	Concept loadConcept(Concept concept, String branchPath) {
+	Concept loadConcept(Concept concept, String branchPath) throws TermServerFixException {
+		debug ("Loading: " + concept + " from TS.");
 		try {
+			//In a dry run situation, the task branch is not created so use the Project instead
+			if (dryRun) {
+				branchPath = branchPath.substring(0, branchPath.lastIndexOf("/"));
+			}
 			JSONResource response = tsClient.getConcept(concept.getConceptId(), branchPath);
 			String json = response.toObject().toString();
 			concept = gson.fromJson(json, Concept.class);
 			concept.setLoaded(true);
 		} catch (SnowOwlClientException | JSONException | IOException e) {
-			report(concept.getConceptId(), REPORT_ACTION_TYPE.API_ERROR, "Failed to recover concept from termserver: " + e.getMessage());
+			throw new TermServerFixException("Failed to recover " + concept + " from TS",e);
 		}
 		return concept;
 	}
 	
-	protected void ensureAcceptableParent(Concept c, Concept acceptableParent) {
+	protected int ensureAcceptableParent(Batch batch, Concept c, Concept acceptableParent) {
 		List<Relationship> statedParents = c.getRelationships(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP, IS_A, ACTIVE_STATE.ACTIVE);
 		boolean hasAcceptableParent = false;
+		int changesMade = 0;
 		for (Relationship thisParent : statedParents) {
 			if (!thisParent.getTarget().equals(acceptableParent)) {
-				report(c.getConceptId(), REPORT_ACTION_TYPE.RELATIONSHIP_CHANGE_MADE, "Inactivated unwanted parent: " + thisParent);
+				report(batch, c, REPORT_ACTION_TYPE.RELATIONSHIP_REMOVED, "Inactivated unwanted parent: " + thisParent.getTarget());
 				thisParent.setActive(false);
+				changesMade++;
 			} else {
 				hasAcceptableParent = true;
 			}
@@ -200,7 +265,9 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants{
 		
 		if (!hasAcceptableParent) {
 			c.addRelationship(IS_A, acceptableParent);
-			report(c.getConceptId(), REPORT_ACTION_TYPE.RELATIONSHIP_CHANGE_MADE, "Added required parent: " + acceptableParent);
+			changesMade++;
+			report(batch, c, REPORT_ACTION_TYPE.RELATIONSHIP_ADDED, "Added required parent: " + acceptableParent);
 		}
+		return changesMade;
 	}
 }

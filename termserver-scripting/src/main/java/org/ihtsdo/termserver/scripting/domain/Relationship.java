@@ -27,7 +27,6 @@ public class Relationship implements RF2Constants {
 	@Expose
 	private Concept target;
 	@SerializedName("sourceId")
-	private Concept source;
 	@Expose
 	private String sourceId;
 	@SerializedName("groupId")
@@ -39,6 +38,8 @@ public class Relationship implements RF2Constants {
 	@SerializedName("modifier")
 	@Expose
 	private MODIFER modifier;
+	
+	private Concept source;
 
 	/**
 	 * No args constructor for use in serialization

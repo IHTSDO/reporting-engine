@@ -3,7 +3,7 @@ package org.ihtsdo.termserver.scripting.domain;
 public interface RF2Constants {
 	
 	static int NA = -1;
-	static Concept PHARM_BIO_PRODUCT = new Concept ("373873005") ; //Pharmaceutical / biologic product (product)
+	static String PHARM_BIO_PRODUCT_SCTID = "373873005" ; //Pharmaceutical / biologic product (product)
 	static Concept IS_A =  new Concept ("116680003");  // | Is a (attribute) |
 	static Concept HAS_ACTIVE_INGRED = new Concept ("127489000");
 	static final String FULLY_DEFINED_SCTID = "900000000000073002";
@@ -20,7 +20,7 @@ public interface RF2Constants {
 	
 	public enum ACTIVE_STATE { ACTIVE, INACTIVE, BOTH };
 	
-	public enum ConceptType { PRODUCT_STRENGTH, MEDICINAL_ENTITY, MEDICINAL_FORM, UNKNOWN };
+	public enum ConceptType { PRODUCT_STRENGTH, MEDICINAL_ENTITY, MEDICINAL_FORM, GROUPER, UNKNOWN };
 	
 	public static final String FIELD_DELIMITER = "\t";
 	public static final String LINE_DELIMITER = "\r\n";

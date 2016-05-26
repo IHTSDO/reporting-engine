@@ -34,22 +34,23 @@ Change m/r to modified-release - exclude Product Strength
 Medicinal Entity plus all descendants in one task, could group by "has active ingredient"
  */
 public class ProductStrengthFix extends BatchFix implements RF2Constants{
-	
+
+	protected ProductStrengthFix(BatchFix clone) {
+		super(clone);
+	}
+
 	public static void main(String[] args) throws TermServerFixException, IOException {
-		ProductStrengthFix fix = new ProductStrengthFix();
+		ProductStrengthFix fix = new ProductStrengthFix(null);
 		fix.init(args);
 		fix.processFile();
 	}
 
 	@Override
-	public void doFix(Concept concept, String branchPath) {
-		debug ("Examining: " + concept.getConceptId());
-		concept = loadConcept(concept,branchPath);
-		ensureDefinitionStatus(concept, DEFINITION_STATUS.PRIMITIVE);
-		ensureAcceptableParent(concept, PHARM_BIO_PRODUCT);
-		
+	public int doFix(Batch batch, Concept concept) throws TermServerFixException {
+		int changesMade = ensureDefinitionStatus(batch, concept, DEFINITION_STATUS.PRIMITIVE);
+		changesMade += ensureAcceptableParent(batch, concept, graph.getConcept(PHARM_BIO_PRODUCT_SCTID));
+		return changesMade;
 	}
-
 
 
 	@Override

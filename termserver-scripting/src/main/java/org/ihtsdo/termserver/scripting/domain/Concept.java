@@ -20,7 +20,7 @@ public class Concept implements RF2Constants {
 	private String moduleId;
 	@SerializedName("active")
 	@Expose
-	private boolean active;
+	private boolean active = true;
 	@SerializedName("conceptId")
 	@Expose
 	private String conceptId;
@@ -55,19 +55,6 @@ public class Concept implements RF2Constants {
 	
 	public Concept(String conceptId) {
 		this.conceptId = conceptId;
-	}
-	
-	public Concept(String conceptTypeStr, String conceptId) {
-		this.conceptId = conceptId;
-		if (conceptTypeStr.contains("Strength")) {
-			this.setConceptType(ConceptType.PRODUCT_STRENGTH);
-		} else if (conceptTypeStr.contains("Entity")) {
-			this.setConceptType(ConceptType.MEDICINAL_ENTITY);
-		} else if (conceptTypeStr.contains("Form")) {
-			this.setConceptType(ConceptType.MEDICINAL_FORM);
-		} else {
-			this.setConceptType(ConceptType.UNKNOWN);
-		}
 	}
 
 	public Concept(String conceptId, int originalFileLineNumber) {
@@ -251,6 +238,20 @@ public class Concept implements RF2Constants {
 
 	public void setConceptType(ConceptType conceptType) {
 		this.conceptType = conceptType;
+	}
+	
+	public void setConceptType(String conceptTypeStr) {
+		if (conceptTypeStr.contains("Strength")) {
+			this.setConceptType(ConceptType.PRODUCT_STRENGTH);
+		} else if (conceptTypeStr.contains("Entity")) {
+			this.setConceptType(ConceptType.MEDICINAL_ENTITY);
+		} else if (conceptTypeStr.contains("Form")) {
+			this.setConceptType(ConceptType.MEDICINAL_FORM);
+		} else if (conceptTypeStr.contains("Grouper")) {
+			this.setConceptType(ConceptType.GROUPER);
+		} else {
+			this.setConceptType(ConceptType.UNKNOWN);
+		}
 	}
 
 }

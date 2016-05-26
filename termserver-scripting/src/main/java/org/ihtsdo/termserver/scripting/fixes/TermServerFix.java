@@ -11,17 +11,23 @@ public abstract class TermServerFix {
 	
 	static boolean debug = true;
 	static boolean dryRun = true;
+	static int dryRunCounter = 0;
 	protected String url = environments[0];
 	protected SnowOwlClient tsClient;
 	protected SCAClient scaClient;
 	protected String authenticatedCookie;
 	protected Resty resty = new Resty();
 	protected String project;
+	public static final int maxFailures = 5;
 
 	public abstract String getFixName();
 	
 	public String getAuthenticatedCookie() {
 		return authenticatedCookie;
+	}
+	
+	public static int getNextDryRunNum() {
+		return ++dryRunCounter;
 	}
 
 	public void setAuthenticatedCookie(String authenticatedCookie) {
@@ -44,6 +50,19 @@ public abstract class TermServerFix {
 	
 	public static void debug (String msg) {
 		System.out.println (msg);
+	}
+	
+	public static void warn (String msg) {
+		System.out.println ("*** " + msg);
+	}
+	
+	public static String getMessage (Exception e) {
+		String msg = e.getMessage();
+		Throwable cause = e.getCause();
+		if (cause != null) {
+			msg += " caused by " + cause.getMessage();
+		}
+		return msg;
 	}
 	
 	public void init() {
