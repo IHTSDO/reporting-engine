@@ -46,6 +46,9 @@ public class TaskService {
 
 	@Autowired
 	private ValidationService validationService;
+	
+	@Autowired
+	private UiStateService uiService;
 
 	private final ImpersonatingJiraClientFactory jiraClientFactory;
 
@@ -343,12 +346,15 @@ public class TaskService {
 		boolean fieldUpdates = false;
 
 		final org.ihtsdo.snowowl.authoring.single.api.pojo.User assignee = taskUpdateRequest.getAssignee();
+		TaskTransferRequest taskTransferRequest = null;
 		if (assignee != null) {
 			final String username = assignee.getUsername();
 			if (username == null || username.isEmpty()) {
 				updateRequest.field(Field.ASSIGNEE, null);
 			} else {
 				updateRequest.field(Field.ASSIGNEE, getUser(username));
+				String currentUser = issue.getAssignee().getName();
+				taskTransferRequest = new TaskTransferRequest(currentUser, username);
 			}
 			fieldUpdates = true;
 		}
@@ -378,6 +384,10 @@ public class TaskService {
 
 		if (fieldUpdates) {
 			updateRequest.execute();
+			//If the JIRA update goes through, then we can move any UI-State over if required
+			if (taskTransferRequest != null) {
+				uiService.transferTask(projectKey, taskKey, taskTransferRequest);
+			}
 		}
 
 		// Pick up those changes in a new Task object
@@ -474,5 +484,6 @@ public class TaskService {
 		}
 		throw new ConflictException("Could not transition task " + issue.getKey() + " from status '" + issue.getStatus().getName() + "' to '" + newState.name() + "', no such transition is available.");
 	}
+	
 
 }

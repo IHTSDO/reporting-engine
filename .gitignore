@@ -5,3 +5,5 @@ bin
 *.sh
 
 *.pem
+*.zip
+*.csv
