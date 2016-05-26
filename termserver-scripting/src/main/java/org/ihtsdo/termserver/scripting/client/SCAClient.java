@@ -34,4 +34,25 @@ public class SCAClient {
 		resty.json(endPoint, RestyHelper.content(quotedList, JSON_CONTENT_TYPE));
 		//TODO Move to locally maintained Resty so we can easily check for HTTP200 return status
 	}
+	
+	public String updateTask(String project, String taskKey, String summary, String description, String username) throws Exception {
+		String endPoint = serverUrl + apiRoot + "projects/" + project + "/tasks/" + taskKey;
+		
+		JSONObject requestJson = new JSONObject();
+		if (summary != null) {
+			requestJson.put("summary", summary);
+		}
+		
+		if (description != null) {
+			requestJson.put("description", description);
+		}
+		
+		if (username != null) {
+			JSONObject assigneeJson = new JSONObject();
+			assigneeJson.put("username", username);
+			requestJson.put("assignee", assigneeJson);
+		}
+		JSONResource response = resty.json(endPoint, Resty.put(RestyHelper.content(requestJson, JSON_CONTENT_TYPE)));
+		return response.get("key").toString();
+	}
 }

@@ -35,6 +35,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants{
 	protected int batchSize = 5;
 	File batchFixFile;
 	File reportFile;
+	protected String targetAuthor;
 	private static String COMMA = ",";
 	private static String CSV_FIELD_DELIMITER = COMMA;
 	private static String QUOTE = "\"";
@@ -139,6 +140,9 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants{
 				}
 				
 				//Reassign the task to the intended author
+				if (targetAuthor != null && !targetAuthor.isEmpty()) {
+					scaClient.updateTask(project, taskKey, null, null, targetAuthor);
+				}
 			} catch (Exception e) {
 				throw new TermServerFixException("Failed to process batch " + batch.getDescription(), e);
 			}
@@ -182,7 +186,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants{
 
 	protected void init (String[] args) throws TermServerFixException, IOException {
 		if (args.length < 3) {
-			println("Usage: java <FixClass> [-b <batchSize>] [-c <authenticatedCookie>] [-d <Y/N>] [-p <projectName>] <batch file Location>");
+			println("Usage: java <FixClass> [-a author] [-b <batchSize>] [-c <authenticatedCookie>] [-d <Y/N>] [-p <projectName>] <batch file Location>");
 			println(" d - dry run");
 			System.exit(-1);
 		}
@@ -190,9 +194,12 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants{
 		boolean isProjectName = false;
 		boolean isCookie = false;
 		boolean isDryRun = false;
+		boolean isAuthor = false;
 	
 		for (String thisArg : args) {
-			if (thisArg.equals("-b")) {
+			if (thisArg.equals("-a")) {
+				isAuthor = true;
+			} else if (thisArg.equals("-b")) {
 				isBatchSize = true;
 			} else if (thisArg.equals("-p")) {
 				isProjectName = true;
@@ -200,6 +207,9 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants{
 				isCookie = true;
 			} else if (thisArg.equals("-d")) {
 				isDryRun = true;
+			} else if (isAuthor) {
+				targetAuthor = thisArg.toLowerCase();
+				isAuthor = false;
 			} else if (isBatchSize) {
 				batchSize = Integer.parseInt(thisArg);
 				isBatchSize = false;
@@ -221,6 +231,10 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants{
 		}
 		if (batchFixFile == null) {
 			throw new TermServerFixException("No valid batch import file detected in command line arguments");
+		}
+		
+		if (targetAuthor == null) {
+			throw new TermServerFixException("No target author detected in command line arguments");
 		}
 		init();
 		
