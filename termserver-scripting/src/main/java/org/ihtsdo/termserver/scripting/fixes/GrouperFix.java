@@ -7,7 +7,11 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 
 /*
-
+All concepts must be fully defined.
+All concepts must have one and only one stated |Is a| relationship.
+ - The parent concept for all concepts must be 373873005| Pharmaceutical / biologic product (product).
+All concepts must have one or more Has active ingredient attributes.
+ - The attribute values must be a descendant of 105590001|Substance (substance).
  */
 public class GrouperFix extends BatchFix implements RF2Constants{
 
@@ -17,7 +21,7 @@ public class GrouperFix extends BatchFix implements RF2Constants{
 
 	@Override
 	public int doFix(Batch batch, Concept concept) throws TermServerFixException {
-		int changesMade = ensureDefinitionStatus(batch, concept, DEFINITION_STATUS.PRIMITIVE);
+		int changesMade = ensureDefinitionStatus(batch, concept, DEFINITION_STATUS.FULLY_DEFINED);
 		changesMade += ensureAcceptableParent(batch, concept, graph.getConcept(PHARM_BIO_PRODUCT_SCTID));
 		return changesMade;
 	}

@@ -77,6 +77,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 									break;
 			case GROUPER : changesMade = gf.doFix(batch, loadedConcept);
 									break;
+			case PRODUCT_ROLE : 
 			default : warn ("Don't know what to do with " + concept);
 			report(batch, concept, REPORT_ACTION_TYPE.VALIDATION_ERROR, "Concept Type not determined.");
 		}
