@@ -1,6 +1,9 @@
 package org.ihtsdo.snowowl.authoring.single.api.service;
 
 import com.b2international.snowowl.core.exceptions.NotFoundException;
+
+import org.ihtsdo.otf.rest.exception.BusinessServiceException;
+import org.ihtsdo.snowowl.authoring.single.api.pojo.TaskTransferRequest;
 import org.ihtsdo.snowowl.authoring.single.api.service.dao.ArbitraryFileService;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -35,9 +38,13 @@ public class UiStateService {
 			throw new NotFoundException("ui-state", panelId);
 		}
 	}
+	
+	private String getTaskUserPath(String projectKey, String taskKey, String username) {
+		return projectKey + "/" + taskKey + "/user/" + username + "/ui-panel/";
+	}
 
 	private String getTaskUserPanelPath(String projectKey, String taskKey, String username, String panelId) {
-		return projectKey + "/" + taskKey + "/user/" + username + "/ui-panel/" + panelId + ".json";
+		return getTaskUserPath(projectKey, taskKey, username) + panelId + ".json";
 	}
 
 	private String getUserPanelPath(String username, String panelId) {
@@ -51,5 +58,16 @@ public class UiStateService {
 
 	public void deletePanelState(String username, String panelId) {
 		arbitraryJsonService.delete(getUserPanelPath(username, panelId));
+	}
+
+	public void transferTask(String projectKey, String taskKey, TaskTransferRequest taskTransferRequest) throws BusinessServiceException {
+		String currentUserUIStatePath = getTaskUserPath(projectKey, taskKey, taskTransferRequest.getCurrentUser());
+		String newUserUIStatePath = getTaskUserPath(projectKey, taskKey, taskTransferRequest.getNewUser());
+		try {
+			arbitraryJsonService.moveFiles(currentUserUIStatePath, newUserUIStatePath);
+		} catch (IOException e) {
+			throw new BusinessServiceException("Unable to move UI State from " + currentUserUIStatePath + " to " + newUserUIStatePath, e);
+		}
+		
 	}
 }

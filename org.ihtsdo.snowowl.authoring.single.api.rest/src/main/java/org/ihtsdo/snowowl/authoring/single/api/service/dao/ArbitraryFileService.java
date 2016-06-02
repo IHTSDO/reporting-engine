@@ -1,5 +1,6 @@
 package org.ihtsdo.snowowl.authoring.single.api.service.dao;
 
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,5 +51,12 @@ public class ArbitraryFileService {
 		if (file.isFile() && !file.delete()) {
 			logger.warn("Failed to delete file {}", file.getAbsolutePath());
 		}
+	}
+
+	public void moveFiles(String fromRelativePath, String toRelativePath) throws IOException {
+		File fromDir = new File(baseDirectory, fromRelativePath);
+		File toDir = new File(baseDirectory, toRelativePath);
+		FileUtils.moveDirectory(fromDir, toDir);
+		
 	}
 }
