@@ -354,7 +354,9 @@ public class TaskService {
 			} else {
 				updateRequest.field(Field.ASSIGNEE, getUser(username));
 				String currentUser = issue.getAssignee().getName();
-				taskTransferRequest = new TaskTransferRequest(currentUser, username);
+				if (currentUser != null && !currentUser.isEmpty() && !currentUser.equalsIgnoreCase(username)) {
+					taskTransferRequest = new TaskTransferRequest(currentUser, username);
+				}
 			}
 			fieldUpdates = true;
 		}
@@ -386,7 +388,11 @@ public class TaskService {
 			updateRequest.execute();
 			//If the JIRA update goes through, then we can move any UI-State over if required
 			if (taskTransferRequest != null) {
-				uiService.transferTask(projectKey, taskKey, taskTransferRequest);
+				try {
+					uiService.transferTask(projectKey, taskKey, taskTransferRequest);
+				} catch (BusinessServiceException e) {
+					logger.error("Unable to transfer UI State in " + taskKey + " from " + taskTransferRequest.getCurrentUser() + " to " + taskTransferRequest.getNewUser(),e);
+				}
 			}
 		}
 
