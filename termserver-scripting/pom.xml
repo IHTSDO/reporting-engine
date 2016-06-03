@@ -5,7 +5,7 @@
 	<parent>
 		<artifactId>ihtsdo-snowowl-parent</artifactId>
 		<groupId>org.ihtsdo.snowowl</groupId>
-		<version>4.5.50-SNAPSHOT</version>
+		<version>4.5.50</version>
 	</parent>
 
 	<artifactId>termserver-scripting</artifactId>
