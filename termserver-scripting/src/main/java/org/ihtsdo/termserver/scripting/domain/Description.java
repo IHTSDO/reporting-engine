@@ -1,6 +1,7 @@
 
 package org.ihtsdo.termserver.scripting.domain;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import javax.annotation.Generated;
@@ -180,6 +181,23 @@ public class Description {
 		}
 		Description rhs = ((Description) other);
 		return this.hashCode() == rhs.hashCode();
+	}
+	
+	@Override
+	public Description clone() {
+		Description clone = new Description();
+		clone.effectiveTime = this.effectiveTime;
+		clone.moduleId = this.moduleId;
+		clone.active = this.active;
+		clone.descriptionId = null;  //Creating a new object, so no id for now.
+		clone.conceptId = this.conceptId;
+		clone.type = this.type;
+		clone.lang = this.lang;
+		clone.term = this.term;
+		clone.caseSignificance = this.caseSignificance;
+		clone.acceptabilityMap = new HashMap<String, String>();
+		clone.acceptabilityMap.putAll(this.acceptabilityMap);
+		return clone;
 	}
 
 }

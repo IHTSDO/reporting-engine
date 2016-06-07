@@ -2,9 +2,13 @@
 package org.ihtsdo.termserver.scripting.domain;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.annotation.Generated;
+
+import org.ihtsdo.termserver.scripting.fixes.TermServerFixException;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
@@ -133,7 +137,7 @@ public class Concept implements RF2Constants {
 	public List<Relationship> getRelationships(CHARACTERISTIC_TYPE characteristicType, ACTIVE_STATE state) {
 		List<Relationship> matches = new ArrayList<Relationship>();
 		for (Relationship r : relationships) {
-			if (r.getCharacteristicType().equals(characteristicType)) {
+			if (characteristicType.equals(CHARACTERISTIC_TYPE.ALL) || r.getCharacteristicType().equals(characteristicType)) {
 				if (state.equals(ACTIVE_STATE.BOTH) || (state.equals(ACTIVE_STATE.ACTIVE) && r.isActive()) ||
 						(state.equals(ACTIVE_STATE.INACTIVE) && !r.isActive())) {
 					matches.add(r);
@@ -251,6 +255,42 @@ public class Concept implements RF2Constants {
 			this.setConceptType(ConceptType.GROUPER);
 		} else {
 			this.setConceptType(ConceptType.UNKNOWN);
+		}
+	}
+	
+	public Set<Concept> getDescendents(int depth) {
+		Set<Concept> allDescendents = new HashSet<Concept>();
+		this.populateAllDescendents(allDescendents, depth);
+		return allDescendents;
+	}
+	
+	private void populateAllDescendents(Set<Concept> descendents, int depth) {
+		for (Concept thisChild : children) {
+			descendents.add(thisChild);
+			if (depth == DEPTH_NOT_SET || depth > 1) {
+				int newDepth = depth == DEPTH_NOT_SET ? DEPTH_NOT_SET : depth - 1;
+				thisChild.populateAllDescendents(descendents, newDepth);
+			}
+		}
+	}
+
+	public List<Description> getDescriptions(ACCEPTABILITY acceptability, String descriptionType, ACTIVE_STATE active) throws TermServerFixException {
+		List<Description> matchingDescriptions = new ArrayList<Description>();
+		for (Description thisDescription : descriptions) {
+			if (thisDescription.getAcceptabilityMap().containsValue(acceptability) &&
+					( descriptionType == null || thisDescription.getType().equals(descriptionType) &&
+					( active.equals(ACTIVE_STATE.BOTH) || thisDescription.isActive() == translateActive(active))) ) {
+				matchingDescriptions.add(thisDescription);
+			}
+		}
+		return matchingDescriptions;
+	}
+
+	private static boolean translateActive(ACTIVE_STATE active) throws TermServerFixException {
+		switch (active) {
+			case ACTIVE : return true;
+			case INACTIVE : return false;
+			default: throw new TermServerFixException("Unable to translate " + active + " into boolean state");
 		}
 	}
 

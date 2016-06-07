@@ -2,23 +2,34 @@ package org.ihtsdo.termserver.scripting.domain;
 
 public interface RF2Constants {
 	
+	static int DEPTH_NOT_SET = -1;
+	static int IMMEDIATE_CHILD = 1;
 	static int NA = -1;
 	static String PHARM_BIO_PRODUCT_SCTID = "373873005" ; //Pharmaceutical / biologic product (product)
 	static Concept IS_A =  new Concept ("116680003");  // | Is a (attribute) |
 	static Concept HAS_ACTIVE_INGRED = new Concept ("127489000");
+	static Concept SUBSTANCE = new Concept("105590001");
+	static String SYN = "900000000000013009";
+	static String FSN = "900000000000003001";
 	static final String FULLY_DEFINED_SCTID = "900000000000073002";
 	static final String FULLY_SPECIFIED_NAME = "900000000000003001";
 	final Long SNOMED_ROOT_CONCEPT = 138875005L;
 	final String ADDITIONAL_RELATIONSHIP = "900000000000227009";
+	final String SPACE = " ";
+	final String INGREDIENT_SEPARATOR = "+";
+	
+	final public String SEMANTIC_TAG_START = "(";
 	
 	public enum CHARACTERISTIC_TYPE {	STATED_RELATIONSHIP, INFERRED_RELATIONSHIP, 
-										QUALIFYING_RELATIONSHIP, ADDITIONAL_RELATIONSHIP};
+										QUALIFYING_RELATIONSHIP, ADDITIONAL_RELATIONSHIP, ALL};
 
 	public enum DEFINITION_STATUS { PRIMITIVE, FULLY_DEFINED };
 	
 	public enum MODIFER { EXISTENTIAL, UNIVERSAL};
 	
 	public enum ACTIVE_STATE { ACTIVE, INACTIVE, BOTH };
+	
+	public enum ACCEPTABILITY { ACCEPTABLE, PREFERRED };
 	
 	public enum ConceptType { PRODUCT_STRENGTH, MEDICINAL_ENTITY, MEDICINAL_FORM, GROUPER, PRODUCT_ROLE, UNKNOWN };
 	

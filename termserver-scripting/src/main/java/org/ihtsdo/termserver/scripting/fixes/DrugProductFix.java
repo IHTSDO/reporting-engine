@@ -6,9 +6,12 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -17,9 +20,10 @@ import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExtractType;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Batch;
 import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
-import org.ihtsdo.termserver.scripting.fixes.BatchFix.REPORT_ACTION_TYPE;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import us.monoid.json.JSONObject;
 
@@ -35,6 +39,8 @@ These same ingredient concepts are worked on together in a single task.
 What rules are applied to each one depends on the type - Medicinal Entity, Product Strength, Medicinal Form
  */
 public class DrugProductFix extends BatchFix implements RF2Constants{
+	
+	String [] unwantedWords = new String[] { "preparation", "product" };
 	
 	protected DrugProductFix(BatchFix clone) {
 		super(clone);
@@ -79,14 +85,14 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 									break;
 			case PRODUCT_ROLE : 
 			default : warn ("Don't know what to do with " + concept);
-			report(batch, concept, REPORT_ACTION_TYPE.VALIDATION_ERROR, "Concept Type not determined.");
+			report(batch, concept, SEVERITY.HIGH, REPORT_ACTION_TYPE.VALIDATION_ERROR, "Concept Type not determined.");
 		}
 		try {
 			String conceptSerialised = gson.toJson(loadedConcept);
 			debug ("Updating state of " + loadedConcept);
 			tsClient.updateConcept(new JSONObject(conceptSerialised), batch.getBranchPath());
 		} catch (Exception e) {
-			report(batch, concept, REPORT_ACTION_TYPE.API_ERROR, "Failed to save changed concept to TS: " + e.getMessage());
+			report(batch, concept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.API_ERROR, "Failed to save changed concept to TS: " + e.getMessage());
 		}
 		return changesMade;
 	}
@@ -95,6 +101,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 	List<Batch> formIntoBatches(String fileName, List<Concept> concepts, String branchPath) throws TermServerFixException {
 		List<Batch> batches = new ArrayList<Batch>();
 		debug ("Finding all concepts with ingredients...");
+		Set<Concept> allConceptsToBeProcessed = new HashSet<Concept>();
 		Multimap<String, Concept> ingredientCombos = findAllIngredientCombos();
 		
 		//If the concept is of type Medicinal Entity, then put it in a batch with other concept with same ingredient combo
@@ -108,6 +115,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 				thisComboBatch.setDescription(getIngredientList(ingredients));
 				thisComboBatch.setConcepts(new ArrayList<Concept>(matchingCombo));
 				batches.add(thisComboBatch);
+				allConceptsToBeProcessed.addAll(matchingCombo);
 				debug ("Batched " + thisConcept + " with " + comboKey.split(SEPARATOR).length + " active ingredients.  Batch size " + matchingCombo.size());
 			} else {
 				//Validate that concept does have a type and some ingredients otherwise it's going to get missed
@@ -120,9 +128,21 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 				}
 			}
 		}
+		validateAllInputConceptsBatched (concepts, allConceptsToBeProcessed);
 		return batches;
 	}
 	
+	private void validateAllInputConceptsBatched(List<Concept> concepts,
+			Set<Concept> allConceptsToBeProcessed) {
+		//Ensure that all concepts we got given to process were captured in one batch or another
+		for (Concept thisConcept : concepts) {
+			if (!allConceptsToBeProcessed.contains(thisConcept)) {
+				String msg = thisConcept + " was given in input file but did not get included in a batch.  Check active ingredient.";
+				report(null, thisConcept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.UNEXPECTED_CONDITION, msg);
+			}
+		}
+	}
+
 	private List<Relationship> getIngredients(Concept c) {
 		return c.getRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, ACTIVE_STATE.ACTIVE);
 	}
@@ -206,4 +226,73 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 	public String getFixName() {
 		return "MedicinalEntity";
 	}
+	
+
+	protected void ensureAcceptableFSN(Batch batch, Concept concept) throws TermServerFixException {
+		String[] fsnParts = SnomedUtils.deconstructFSN(concept.getFsn());
+		String newFSN = removeUnwantedWords(batch, concept, fsnParts[0]);
+		boolean isMultiIngredient = fsnParts[0].contains(INGREDIENT_SEPARATOR);
+		if (isMultiIngredient) {
+			newFSN = ensureMultiIngredientFSNCorrect(batch, concept, newFSN);
+		}
+		//have we changed the FSN?  Reflect that in the Preferred Term(s) if so
+		if (!newFSN.equals(fsnParts[0])) {
+			updateFsnAndPrefTerms(batch, concept, newFSN, fsnParts[1]);
+		}
+	}
+
+	private void updateFsnAndPrefTerms(Batch batch, Concept concept,
+			String newFSN, String semanticTag) throws TermServerFixException {
+		concept.setFsn(newFSN);
+		//FSNs are also preferred so we can just replace all preferred terms
+		List<Description> fsnAndPreferred = concept.getDescriptions(ACCEPTABILITY.PREFERRED, null, ACTIVE_STATE.ACTIVE);
+		for (Description thisDescription : fsnAndPreferred) {
+			Description replacement = thisDescription.clone();
+			thisDescription.setActive(false);
+			replacement.setTerm(newFSN);
+			if (thisDescription.getType().equals(FSN)) {
+				replacement.setTerm(newFSN + SPACE + semanticTag);
+			}
+		}
+		
+	}
+
+	protected String ensureMultiIngredientFSNCorrect(Batch batch,
+			Concept concept, String newFSN) {
+		String[] ingredients = newFSN.split(INGREDIENT_SEPARATOR);
+		//ingredients should be in alphabetical order, also trim spaces
+		Arrays.sort(ingredients);
+		for (int i = 0; i < ingredients.length; i++) {
+			ingredients[i] = ingredients[i].trim();
+		}
+		
+		//Reform with spaces around + sign and only first letter capitalized
+		boolean firstIngredient = true;
+		newFSN = "";
+		for (String thisIngredient : ingredients) {
+			if (!firstIngredient) {
+				newFSN += SPACE + INGREDIENT_SEPARATOR + SPACE;
+			}
+			newFSN += thisIngredient.toLowerCase();
+		}
+		return StringUtils.capitalizeFirstLetter(newFSN);
+	}
+
+	private String removeUnwantedWords(Batch batch, Concept concept,
+			String fsnRoot) {
+		String modifiedFsnRoot = fsnRoot;
+		for (String unwantedWord : unwantedWords) {
+			String[] unwantedWordCombinations = new String[] { SPACE + unwantedWord, unwantedWord + SPACE };
+			for (String thisUnwantedWord : unwantedWordCombinations) {
+				if (modifiedFsnRoot.contains(thisUnwantedWord)) {
+					modifiedFsnRoot.replace(thisUnwantedWord,"");
+					String msg = "Removed unwanted word " + modifiedFsnRoot + " from FSN.";
+					report(batch, concept, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, msg);
+				}
+			}
+			
+		}
+		return modifiedFsnRoot;
+	}
+
 }

@@ -10,13 +10,16 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Batch;
 import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.RelationshipSerializer;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import us.monoid.json.JSONException;
 import us.monoid.web.JSONResource;
@@ -52,9 +55,11 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants{
 	
 	protected static GraphLoader graph = GraphLoader.getGraphLoader();
 
-	public enum REPORT_ACTION_TYPE { ACTION_TYPE, API_ERROR, CONCEPT_CHANGE_MADE, INFO,
+	public enum REPORT_ACTION_TYPE { API_ERROR, CONCEPT_CHANGE_MADE, INFO, UNEXPECTED_CONDITION,
 									 RELATIONSHIP_ADDED, RELATIONSHIP_REMOVED, DESCRIPTION_CHANGE_MADE, 
 									 NO_CHANGE, VALIDATION_ERROR};
+									 
+	public enum SEVERITY { NONE, LOW, MEDIUM, HIGH, CRITICAL }; 
 
 	protected BatchFix (BatchFix clone) {
 		if (clone != null) {
@@ -120,10 +125,10 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants{
 					try {
 						int changesMade = doFix(batch, concept);
 						if (changesMade == 0) {
-							report(batch, concept, REPORT_ACTION_TYPE.NO_CHANGE, "");
+							report(batch, concept, SEVERITY.NONE, REPORT_ACTION_TYPE.NO_CHANGE, "");
 						}
 					} catch (TermServerFixException e) {
-						report(batch, concept, REPORT_ACTION_TYPE.API_ERROR, getMessage(e));
+						report(batch, concept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.API_ERROR, getMessage(e));
 						if (++failureCount > maxFailures) {
 							throw new TermServerFixException ("Failure count exceeded " + maxFailures);
 						}
@@ -136,7 +141,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants{
 				} catch (Exception e) {
 					String msg = "Failed to preload edit-panel ui state: " + e.getMessage();
 					warn (msg);
-					report(batch, null, REPORT_ACTION_TYPE.NO_CHANGE, msg);
+					report(batch, null, SEVERITY.LOW, REPORT_ACTION_TYPE.API_ERROR, msg);
 				}
 				
 				//Reassign the task to the intended author
@@ -153,21 +158,21 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants{
 	protected int ensureDefinitionStatus(Batch b, Concept c, DEFINITION_STATUS targetDefStat) {
 		int changesMade = 0;
 		if (!c.getDefinitionStatus().equals(targetDefStat.toString())) {
-			report (b, c, REPORT_ACTION_TYPE.CONCEPT_CHANGE_MADE, "Definition status changed to " + targetDefStat);
+			report (b, c, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.CONCEPT_CHANGE_MADE, "Definition status changed to " + targetDefStat);
 			c.setDefinitionStatus(targetDefStat.toString());
 			changesMade++;
 		}
 		return changesMade;
 	}
 	
-	protected void report(Batch batch, Concept concept, REPORT_ACTION_TYPE actionType, String actionDetail) {
+	protected void report(Batch batch, Concept concept, SEVERITY severity, REPORT_ACTION_TYPE actionType, String actionDetail) {
 		String sctid = "";
 		String fsn = "";
 		if (concept != null) {
 			sctid = concept.getConceptId();
 			fsn = concept.getFsn();
 		}
-		String line = batch.toString() + COMMA + sctid + COMMA + fsn + COMMA + concept.getConceptType() + COMMA + actionType + COMMA + QUOTE + actionDetail + QUOTE;
+		String line = batch.toString() + COMMA + sctid + COMMA + fsn + COMMA + concept.getConceptType() + COMMA + severity + COMMA + actionType + COMMA + QUOTE + actionDetail + QUOTE;
 		writeToFile (line);
 	}
 	
@@ -243,7 +248,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants{
 		reportFile = new File(reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToFile ("TASK, SCTID, FSN, CONCEPT_TYPE," +REPORT_ACTION_TYPE.ACTION_TYPE + ",ACTION_DETAIL");
+		writeToFile ("TASK, SCTID, FSN, CONCEPT_TYPE,SEVERITY,ACTION_TYPE,ACTION_DETAIL");
 	}
 	
 	Concept loadConcept(Concept concept, String branchPath) throws TermServerFixException {
@@ -269,7 +274,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants{
 		int changesMade = 0;
 		for (Relationship thisParent : statedParents) {
 			if (!thisParent.getTarget().equals(acceptableParent)) {
-				report(batch, c, REPORT_ACTION_TYPE.RELATIONSHIP_REMOVED, "Inactivated unwanted parent: " + thisParent.getTarget());
+				report(batch, c, SEVERITY.HIGH, REPORT_ACTION_TYPE.RELATIONSHIP_REMOVED, "Inactivated unwanted parent: " + thisParent.getTarget());
 				thisParent.setActive(false);
 				changesMade++;
 			} else {
@@ -280,8 +285,39 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants{
 		if (!hasAcceptableParent) {
 			c.addRelationship(IS_A, acceptableParent);
 			changesMade++;
-			report(batch, c, REPORT_ACTION_TYPE.RELATIONSHIP_ADDED, "Added required parent: " + acceptableParent);
+			report(batch, c, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.RELATIONSHIP_ADDED, "Added required parent: " + acceptableParent);
 		}
 		return changesMade;
+	}
+	
+	/**
+	 Validate that that any attribute with that attribute type is a descendent of the target Value
+	 * @throws TermServerFixException 
+	 */
+	protected void validateAttributeValues(Batch batch, Concept concept,
+			Concept attributeType, Concept descendentsOfValue) throws TermServerFixException {
+		
+		List<Relationship> attributes = concept.getRelationships(CHARACTERISTIC_TYPE.ALL, attributeType, ACTIVE_STATE.BOTH);
+		Set<Concept> descendents = ClosureCache.getClosureCache().getClosure(descendentsOfValue);
+		for (Relationship thisAttribute : attributes) {
+			Concept value = thisAttribute.getTarget();
+			if (!descendents.contains(value)) {
+				report (batch, concept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.VALIDATION_ERROR, "Attribute has target which is not a descendent of: " + descendentsOfValue);
+			}
+		}
+	}
+	
+
+	protected void validatePrefInFSN(Batch batch, Concept concept) throws TermServerFixException {
+		//Check that the FSN with the semantic tags stripped off is
+		//equal to the preferred terms
+		List<Description> preferredTerms = concept.getDescriptions(ACCEPTABILITY.PREFERRED, SYN, ACTIVE_STATE.ACTIVE);
+		String trimmedFSN = SnomedUtils.deconstructFSN(concept.getFsn())[0];
+		for (Description pref : preferredTerms) {
+			if (!pref.getTerm().equals(trimmedFSN)) {
+				String msg = concept + " has preferred term that does not match FSN: " + pref.getTerm();
+				report (batch, concept, SEVERITY.HIGH, REPORT_ACTION_TYPE.VALIDATION_ERROR, msg);
+			}
+		}
 	}
 }
