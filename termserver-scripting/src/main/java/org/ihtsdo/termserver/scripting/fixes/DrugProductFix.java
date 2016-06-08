@@ -11,6 +11,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -90,7 +91,9 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		try {
 			String conceptSerialised = gson.toJson(loadedConcept);
 			debug ("Updating state of " + loadedConcept);
-			tsClient.updateConcept(new JSONObject(conceptSerialised), batch.getBranchPath());
+			if (!dryRun) {
+				tsClient.updateConcept(new JSONObject(conceptSerialised), batch.getBranchPath());
+			}
 		} catch (Exception e) {
 			report(batch, concept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.API_ERROR, "Failed to save changed concept to TS: " + e.getMessage());
 		}
@@ -228,17 +231,35 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 	}
 	
 
-	protected void ensureAcceptableFSN(Batch batch, Concept concept) throws TermServerFixException {
+	protected int ensureAcceptableFSN(Batch batch, Concept concept, Map<String, String> wordSubstitution) throws TermServerFixException {
 		String[] fsnParts = SnomedUtils.deconstructFSN(concept.getFsn());
 		String newFSN = removeUnwantedWords(batch, concept, fsnParts[0]);
+		int changesMade = 0;
 		boolean isMultiIngredient = fsnParts[0].contains(INGREDIENT_SEPARATOR);
 		if (isMultiIngredient) {
 			newFSN = ensureMultiIngredientFSNCorrect(batch, concept, newFSN);
 		}
+		
+		if (wordSubstitution != null) {
+			newFSN = doWordSubstitution(batch, concept, newFSN, wordSubstitution);
+		}
 		//have we changed the FSN?  Reflect that in the Preferred Term(s) if so
 		if (!newFSN.equals(fsnParts[0])) {
 			updateFsnAndPrefTerms(batch, concept, newFSN, fsnParts[1]);
+			changesMade = 1;
 		}
+		return changesMade;
+	}
+
+	private String doWordSubstitution(Batch batch, Concept concept,
+			String newFSN, Map<String, String> wordSubstitution) {
+		//Replace any instances of the map key with the corresponding value
+		for (Map.Entry<String, String> substitution : wordSubstitution.entrySet()) {
+			newFSN = newFSN.replace(substitution.getKey(), substitution.getValue());
+			String msg = "Replaced " + substitution.getKey() + " with " + substitution.getValue() + " from FSN.";
+			report(batch, concept, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, msg);
+		}
+		return newFSN;
 	}
 
 	private void updateFsnAndPrefTerms(Batch batch, Concept concept,
@@ -259,7 +280,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 
 	protected String ensureMultiIngredientFSNCorrect(Batch batch,
 			Concept concept, String newFSN) {
-		String[] ingredients = newFSN.split(INGREDIENT_SEPARATOR);
+		String[] ingredients = newFSN.split(INGREDIENT_SEPARATOR_ESCAPED);
 		//ingredients should be in alphabetical order, also trim spaces
 		Arrays.sort(ingredients);
 		for (int i = 0; i < ingredients.length; i++) {

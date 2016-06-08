@@ -33,15 +33,12 @@ import com.google.gson.GsonBuilder;
  * Reads in a file containing a list of concept SCTIDs and processes them in batches
  * in tasks created on the specified project
  */
-public abstract class BatchFix extends TermServerFix implements RF2Constants{
+public abstract class BatchFix extends TermServerFix implements RF2Constants {
 	
 	protected int batchSize = 5;
 	File batchFixFile;
 	File reportFile;
 	protected String targetAuthor;
-	private static String COMMA = ",";
-	private static String CSV_FIELD_DELIMITER = COMMA;
-	private static String QUOTE = "\"";
 	
 	protected static Gson gson;
 	static {
@@ -77,13 +74,17 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants{
 			List<Concept> allConcepts = new ArrayList<Concept>();
 			for (int lineNum = 0; lineNum < lines.size(); lineNum++) {
 				if (lineNum == 0) {
-					continue; //skip header row
+					//continue; //skip header row
 				}
 				//File format Concept Type, SCTID, FSN with string fields quoted.  Strip quotes also.
-				String[] lineItems = lines.get(lineNum).replace("\"", "").split(CSV_FIELD_DELIMITER);
-				Concept c = graph.getConcept(lineItems[1]);
-				c.setConceptType(lineItems[0]);
-				allConcepts.add(c);
+				String[] lineItems = lines.get(lineNum).replace("\"", "").split(TSV_FIELD_DELIMITER);
+				if (lineItems.length > 1) {
+					Concept c = graph.getConcept(lineItems[1]);
+					c.setConceptType(lineItems[0]);
+					allConcepts.add(c);
+				} else {
+					debug ("Skipping blank line " + lineNum);
+				}
 			}
 			String projectPath = "MAIN/" + project;
 			List<Batch> batches = formIntoBatches(batchFixFile.getName(), allConcepts, projectPath);
@@ -135,18 +136,20 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants{
 					}
 				}
 				
-				//Prefill the Edit Panel
-				try {
-					scaClient.setUIState(project, taskKey, batch.toQuotedList());
-				} catch (Exception e) {
-					String msg = "Failed to preload edit-panel ui state: " + e.getMessage();
-					warn (msg);
-					report(batch, null, SEVERITY.LOW, REPORT_ACTION_TYPE.API_ERROR, msg);
-				}
-				
-				//Reassign the task to the intended author
-				if (targetAuthor != null && !targetAuthor.isEmpty()) {
-					scaClient.updateTask(project, taskKey, null, null, targetAuthor);
+				if (!dryRun) {
+					//Prefill the Edit Panel
+					try {
+						scaClient.setUIState(project, taskKey, batch.toQuotedList());
+					} catch (Exception e) {
+						String msg = "Failed to preload edit-panel ui state: " + e.getMessage();
+						warn (msg);
+						report(batch, null, SEVERITY.LOW, REPORT_ACTION_TYPE.API_ERROR, msg);
+					}
+					
+					//Reassign the task to the intended author
+					if (targetAuthor != null && !targetAuthor.isEmpty()) {
+						scaClient.updateTask(project, taskKey, null, null, targetAuthor);
+					}
 				}
 			} catch (Exception e) {
 				throw new TermServerFixException("Failed to process batch " + batch.getDescription(), e);
@@ -172,7 +175,8 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants{
 			sctid = concept.getConceptId();
 			fsn = concept.getFsn();
 		}
-		String line = batch.toString() + COMMA + sctid + COMMA + fsn + COMMA + concept.getConceptType() + COMMA + severity + COMMA + actionType + COMMA + QUOTE + actionDetail + QUOTE;
+		String batchStr = (batch == null? "" :  batch.toString());
+		String line = batchStr + COMMA + sctid + COMMA + fsn + COMMA + concept.getConceptType() + COMMA + severity + COMMA + actionType + COMMA + QUOTE + actionDetail + QUOTE;
 		writeToFile (line);
 	}
 	
@@ -292,21 +296,74 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants{
 	
 	/**
 	 Validate that that any attribute with that attribute type is a descendent of the target Value
+	 * @param cardinality 
 	 * @throws TermServerFixException 
 	 */
-	protected void validateAttributeValues(Batch batch, Concept concept,
-			Concept attributeType, Concept descendentsOfValue) throws TermServerFixException {
+	protected int validateAttributeValues(Batch batch, Concept concept,
+			Concept attributeType, Concept descendentsOfValue, CARDINALITY cardinality) throws TermServerFixException {
 		
 		List<Relationship> attributes = concept.getRelationships(CHARACTERISTIC_TYPE.ALL, attributeType, ACTIVE_STATE.BOTH);
 		Set<Concept> descendents = ClosureCache.getClosureCache().getClosure(descendentsOfValue);
 		for (Relationship thisAttribute : attributes) {
 			Concept value = thisAttribute.getTarget();
 			if (!descendents.contains(value)) {
-				report (batch, concept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.VALIDATION_ERROR, "Attribute has target which is not a descendent of: " + descendentsOfValue);
+				SEVERITY severity = thisAttribute.isActive()?SEVERITY.CRITICAL:SEVERITY.LOW;
+				String activeStr = thisAttribute.isActive()?"":"inactive ";
+				String relType = thisAttribute.getCharacteristicType().equals(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP)?"stated ":"inferred ";
+				report (batch, concept, severity, REPORT_ACTION_TYPE.VALIDATION_ERROR, "Attribute has " + activeStr + relType + "target which is not a descendent of: " + descendentsOfValue);
 			}
 		}
+		
+		int changesMade = 0;
+		
+		//Now check cardinality on active stated relationships
+		attributes = concept.getRelationships(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP, attributeType, ACTIVE_STATE.ACTIVE);
+		switch (cardinality) {
+			case EXACTLY_ONE : if (attributes.size() != 1) {
+									String msg = "Concept has " + attributes.size() + " active stated attributes of type " + attributeType + " expected exactly one.";
+									report (batch, concept, SEVERITY.HIGH, REPORT_ACTION_TYPE.VALIDATION_ERROR, msg);
+									
+								}
+								break;
+			case AT_LEAST_ONE : if (attributes.size() < 1) {
+									String msg = "Concept has " + attributes.size() + " active stated attributes of type " + attributeType + " expected one or more.";
+									report (batch, concept, SEVERITY.HIGH, REPORT_ACTION_TYPE.VALIDATION_ERROR, msg);
+									
+								}
+								break;
+		}
+		
+		//If we have no stated attributes of the expected type, attempt to pull from the inferred ones
+		if (attributes.size() == 0) {
+			changesMade = transferInferredRelationshipsToStated(batch, concept, attributeType, cardinality);
+		}
+		return changesMade;
 	}
 	
+
+	private int transferInferredRelationshipsToStated(Batch batch,
+			Concept concept, Concept attributeType, CARDINALITY cardinality) {
+		List<Relationship> replacements = concept.getRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, attributeType, ACTIVE_STATE.ACTIVE);
+		int changesMade = 0;
+		if (replacements.size() == 0) {
+			String msg = "Unable to find any inferred " + attributeType + " relationships to state.";
+			report(batch, concept, SEVERITY.HIGH, REPORT_ACTION_TYPE.INFO, msg);
+		} else if (cardinality.equals(CARDINALITY.EXACTLY_ONE) && replacements.size() > 1) {
+			String msg = "Found " + replacements.size() + " " + attributeType + " relationships to state but wanted only one!";
+			report(batch, concept, SEVERITY.HIGH, REPORT_ACTION_TYPE.INFO, msg);
+		} else {
+			//Clone the inferred relationships, make them stated and add to concept
+			for (Relationship replacement : replacements) {
+				Relationship statedClone = replacement.clone();
+				statedClone.setCharacteristicType(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP);
+				concept.addRelationship(statedClone);
+				String msg = "Restated inferred relationship: " + replacement;
+				report(batch, concept, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.RELATIONSHIP_ADDED, msg);
+				changesMade++;
+			}
+		}
+		return changesMade;
+	}
 
 	protected void validatePrefInFSN(Batch batch, Concept concept) throws TermServerFixException {
 		//Check that the FSN with the semantic tags stripped off is

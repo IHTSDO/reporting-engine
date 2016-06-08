@@ -30,9 +30,9 @@ public class MedicinalEntityFix extends DrugProductFix implements RF2Constants{
 	public int doFix(Batch batch, Concept concept) throws TermServerFixException {
 		int changesMade = ensureDefinitionStatus(batch, concept, DEFINITION_STATUS.FULLY_DEFINED);
 		changesMade += ensureAcceptableParent(batch, concept, graph.getConcept(PHARM_BIO_PRODUCT_SCTID));
-		validateAttributeValues(batch, concept, HAS_ACTIVE_INGRED, SUBSTANCE);
+		validateAttributeValues(batch, concept, HAS_ACTIVE_INGRED, SUBSTANCE, CARDINALITY.AT_LEAST_ONE);
 		validatePrefInFSN(batch, concept);
-		ensureAcceptableFSN(batch, concept);
+		ensureAcceptableFSN(batch, concept, null);
 		return changesMade;
 	}
 

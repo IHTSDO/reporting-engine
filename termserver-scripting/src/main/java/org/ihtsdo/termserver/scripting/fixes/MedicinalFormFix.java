@@ -1,10 +1,13 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.ihtsdo.termserver.scripting.domain.Batch;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.CARDINALITY;
 
 /*
 All concepts must be fully defined
@@ -23,7 +26,12 @@ All concepts in the module must have one and only one Has dose form attribute wh
  - The attribute value must be a descendant of 105904009| Type of drug preparation (qualifier value).
 
  */
-public class MedicinalFormFix extends BatchFix implements RF2Constants{
+public class MedicinalFormFix extends DrugProductFix implements RF2Constants{
+	
+	static Map<String, String> wordSubstitution = new HashMap<String, String>();
+	static {
+		wordSubstitution.put("m\\/r", "modified-release");
+	}
 
 	protected MedicinalFormFix(BatchFix clone) {
 		super(clone);
@@ -33,6 +41,9 @@ public class MedicinalFormFix extends BatchFix implements RF2Constants{
 	public int doFix(Batch batch, Concept concept) throws TermServerFixException {
 		int changesMade = ensureDefinitionStatus(batch, concept, DEFINITION_STATUS.FULLY_DEFINED);
 		changesMade += ensureAcceptableParent(batch, concept, graph.getConcept(PHARM_BIO_PRODUCT_SCTID));
+		validateAttributeValues(batch, concept, HAS_ACTIVE_INGRED, SUBSTANCE, CARDINALITY.AT_LEAST_ONE);
+		validatePrefInFSN(batch, concept);
+		changesMade += ensureAcceptableFSN(batch, concept, wordSubstitution);
 		return changesMade;
 	}
 

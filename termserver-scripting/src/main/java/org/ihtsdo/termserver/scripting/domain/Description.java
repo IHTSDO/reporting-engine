@@ -163,7 +163,7 @@ public class Description {
 
 	@Override
 	public String toString() {
-		return term;
+		return descriptionId + "[" + conceptId + "]: " + term;
 	}
 
 	@Override
@@ -186,7 +186,7 @@ public class Description {
 	@Override
 	public Description clone() {
 		Description clone = new Description();
-		clone.effectiveTime = this.effectiveTime;
+		clone.effectiveTime = null; //New description is unpublished.
 		clone.moduleId = this.moduleId;
 		clone.active = this.active;
 		clone.descriptionId = null;  //Creating a new object, so no id for now.

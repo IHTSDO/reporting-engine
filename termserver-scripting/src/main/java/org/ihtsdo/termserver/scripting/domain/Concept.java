@@ -8,6 +8,7 @@ import java.util.Set;
 
 import javax.annotation.Generated;
 
+import org.ihtsdo.termserver.scripting.fixes.TermServerFix;
 import org.ihtsdo.termserver.scripting.fixes.TermServerFixException;
 
 import com.google.gson.annotations.Expose;
@@ -59,6 +60,11 @@ public class Concept implements RF2Constants {
 	
 	public Concept(String conceptId) {
 		this.conceptId = conceptId;
+	}
+	
+	public Concept(String conceptId, String fsn) {
+		this.conceptId = conceptId;
+		this.fsn = fsn;
 	}
 
 	public Concept(String conceptId, int originalFileLineNumber) {
@@ -277,10 +283,16 @@ public class Concept implements RF2Constants {
 	public List<Description> getDescriptions(ACCEPTABILITY acceptability, String descriptionType, ACTIVE_STATE active) throws TermServerFixException {
 		List<Description> matchingDescriptions = new ArrayList<Description>();
 		for (Description thisDescription : descriptions) {
-			if (thisDescription.getAcceptabilityMap().containsValue(acceptability) &&
-					( descriptionType == null || thisDescription.getType().equals(descriptionType) &&
-					( active.equals(ACTIVE_STATE.BOTH) || thisDescription.isActive() == translateActive(active))) ) {
+			if (
+					( active.equals(ACTIVE_STATE.BOTH) || thisDescription.isActive() == translateActive(active)) &&
+					( thisDescription.getAcceptabilityMap() != null && thisDescription.getAcceptabilityMap().containsValue(acceptability)) &&
+					( descriptionType == null || thisDescription.getType().equals(descriptionType) )
+				) {
 				matchingDescriptions.add(thisDescription);
+			} else {
+				if (thisDescription.getAcceptabilityMap() == null && thisDescription.isActive()) {
+					TermServerFix.warn (thisDescription + " is active with no acceptability map");
+				}
 			}
 		}
 		return matchingDescriptions;

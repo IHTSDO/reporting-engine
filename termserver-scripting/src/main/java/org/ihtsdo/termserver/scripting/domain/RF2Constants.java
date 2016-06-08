@@ -7,8 +7,10 @@ public interface RF2Constants {
 	static int NA = -1;
 	static String PHARM_BIO_PRODUCT_SCTID = "373873005" ; //Pharmaceutical / biologic product (product)
 	static Concept IS_A =  new Concept ("116680003");  // | Is a (attribute) |
-	static Concept HAS_ACTIVE_INGRED = new Concept ("127489000");
-	static Concept SUBSTANCE = new Concept("105590001");
+	static Concept HAS_ACTIVE_INGRED = new Concept ("127489000","Has active ingredient (attribute)");
+	static Concept SUBSTANCE = new Concept("105590001", "Substance (substance)");
+	static Concept HAS_DOSE_FORM = new Concept ("411116001","Has dose form (attribute)");
+	static Concept DRUG_PREPARATION = new Concept("105904009","Type of drug preparation (qualifier value)");
 	static String SYN = "900000000000013009";
 	static String FSN = "900000000000003001";
 	static final String FULLY_DEFINED_SCTID = "900000000000073002";
@@ -16,7 +18,13 @@ public interface RF2Constants {
 	final Long SNOMED_ROOT_CONCEPT = 138875005L;
 	final String ADDITIONAL_RELATIONSHIP = "900000000000227009";
 	final String SPACE = " ";
+	final String COMMA = ",";
+	final String TAB = "\t";
+	final String CSV_FIELD_DELIMITER = COMMA;
+	final String TSV_FIELD_DELIMITER = TAB;
+	final String QUOTE = "\"";
 	final String INGREDIENT_SEPARATOR = "+";
+	final String INGREDIENT_SEPARATOR_ESCAPED = "\\+";
 	
 	final public String SEMANTIC_TAG_START = "(";
 	
@@ -32,6 +40,8 @@ public interface RF2Constants {
 	public enum ACCEPTABILITY { ACCEPTABLE, PREFERRED };
 	
 	public enum ConceptType { PRODUCT_STRENGTH, MEDICINAL_ENTITY, MEDICINAL_FORM, GROUPER, PRODUCT_ROLE, UNKNOWN };
+	
+	public enum CARDINALITY { AT_LEAST_ONE, EXACTLY_ONE };
 	
 	public static final String FIELD_DELIMITER = "\t";
 	public static final String LINE_DELIMITER = "\r\n";

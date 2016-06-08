@@ -16,8 +16,6 @@ All concepts must have one or more Has active ingredient attributes.
  - The attribute values must be a descendant of 105590001|Substance (substance).
 All concepts in the module must have one and only one Has dose form attribute when "Product Strength" or "Medicinal Form"
  - The attribute value must be a descendant of 105904009| Type of drug preparation (qualifier value).
-Any plus symbol in the name must be surrounded by single space, exclude for "Product Strength"
-
  */
 public class ProductStrengthFix extends BatchFix implements RF2Constants{
 
@@ -35,6 +33,8 @@ public class ProductStrengthFix extends BatchFix implements RF2Constants{
 	public int doFix(Batch batch, Concept concept) throws TermServerFixException {
 		int changesMade = ensureDefinitionStatus(batch, concept, DEFINITION_STATUS.PRIMITIVE);
 		changesMade += ensureAcceptableParent(batch, concept, graph.getConcept(PHARM_BIO_PRODUCT_SCTID));
+		validateAttributeValues(batch, concept, HAS_ACTIVE_INGRED, SUBSTANCE, CARDINALITY.AT_LEAST_ONE);
+		validateAttributeValues(batch, concept, HAS_DOSE_FORM, DRUG_PREPARATION, CARDINALITY.EXACTLY_ONE);
 		return changesMade;
 	}
 

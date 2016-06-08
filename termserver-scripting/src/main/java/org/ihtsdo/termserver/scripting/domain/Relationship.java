@@ -49,16 +49,10 @@ public class Relationship implements RF2Constants {
 	}
 
 	/**
-	 * 
-	 * @param modifier
 	 * @param groupId
-	 * @param relationshipId
-	 * @param moduleId
 	 * @param target
 	 * @param active
-	 * @param effectiveTime
 	 * @param type
-	 * @param inferredRelationship 
 	 * @param sourceId
 	 */
 	public Relationship(Concept source, Concept type, Concept target, long groupId) {
@@ -249,9 +243,13 @@ public class Relationship implements RF2Constants {
 		this.modifier = modifier;
 	}
 
+	public String toShortString() {
+		return "[S: " + sourceId + ", T: " + type.getConceptId() + ", D: " + target.getConceptId() + "]";
+	}
+	
 	@Override
 	public String toString() {
-		return "[S: " + sourceId + ", T: " + type.getConceptId() + ", D: " + target.getConceptId() + "]";
+		return type + " - " + target;
 	}
 
 	@Override
@@ -269,6 +267,22 @@ public class Relationship implements RF2Constants {
 		}
 		Relationship rhs = ((Relationship) other);
 		return this.hashCode() == rhs.hashCode();
+	}
+	
+	@Override
+	public Relationship clone() {
+		Relationship clone = new Relationship();
+		clone.modifier = this.modifier;
+		clone.groupId = this.groupId;
+		clone.relationshipId = null; //New relationship needs own 
+		clone.moduleId = this.moduleId;
+		clone.target = this.target;
+		clone.active = this.active;
+		clone.effectiveTime = null; //New relationship is unpublished
+		clone.type = this.type;
+		clone.sourceId = this.sourceId;
+		clone.source = this.source;
+		return clone;
 	}
 
 }
