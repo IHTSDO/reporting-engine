@@ -22,6 +22,6 @@ public class BranchStateMonitorTest {
 	}
 
 	private BranchStateMonitor newMon() {
-		return new BranchStateMonitor("A", "B", null);
+		return new BranchStateMonitor("A", "B", "MAIN/A/B", null);
 	}
 }

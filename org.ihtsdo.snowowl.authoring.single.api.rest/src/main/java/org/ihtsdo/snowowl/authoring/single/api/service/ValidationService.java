@@ -41,6 +41,9 @@ public class ValidationService {
 	public static final String STATUS_NOT_TRIGGERED = "NOT_TRIGGERED";
 
 	@Autowired
+	private TaskService taskService;
+
+	@Autowired
 	private MessagingHelper messagingHelper;
 
 	@Autowired
@@ -94,11 +97,11 @@ public class ValidationService {
 	}
 
 	public Status startValidation(String projectKey, String taskKey, String username) throws BusinessServiceException {
-		return doStartValidation(PathHelper.getPath(projectKey, taskKey), username, projectKey, taskKey, null);
+		return doStartValidation(taskService.getTaskBranchPathUsingCache(projectKey, taskKey), username, projectKey, taskKey, null);
 	}
 
 	public Status startValidation(String projectKey, String username) throws BusinessServiceException {
-		return doStartValidation(PathHelper.getPath(projectKey), username, projectKey, null, null);
+		return doStartValidation(taskService.getProjectBranchPathUsingCache(projectKey), username, projectKey, null, null);
 	}
 
 	private Status doStartValidation(String path, String username, String projectKey, String taskKey, String effectiveTime) throws BusinessServiceException {
@@ -151,15 +154,15 @@ public class ValidationService {
 	}
 
 	public String getValidationJson(String projectKey, String taskKey) throws BusinessServiceException {
-		return getValidationJsonIfAvailable(PathHelper.getPath(projectKey, taskKey));
+		return getValidationJsonIfAvailable(taskService.getTaskBranchPathUsingCache(projectKey, taskKey));
 	}
 
 	public String getValidationJson(String projectKey) throws BusinessServiceException {
-		return getValidationJsonIfAvailable(PathHelper.getPath(projectKey));
+		return getValidationJsonIfAvailable(taskService.getProjectBranchPathUsingCache(projectKey));
 	}
 	
 	public String getValidationJson() throws BusinessServiceException {
-		return getValidationJsonIfAvailable(PathHelper.getPath());
+		return getValidationJsonIfAvailable(PathHelper.getMainPath());
 	}
 	
 	private String getValidationJsonIfAvailable(String path) throws BusinessServiceException {
@@ -186,7 +189,7 @@ public class ValidationService {
 	}
 
 	private List<String> getValidationStatusesWithoutCache(List<String> paths) {
-		List<String> statuses = null;
+		List<String> statuses;
 		try {
 			statuses = orchestrationRestClient.retrieveValidationStatuses(paths);
 		} catch (Exception e) {
@@ -215,10 +218,10 @@ public class ValidationService {
 				new SimpleDateFormat("yyyyDDmm").parse(potentialEffectiveDate);
 				effectiveDate = potentialEffectiveDate;
 			} catch (ParseException e) {
-				logger.error("Unable to set effective date for MAIN validation, unrecognised: " + potentialEffectiveDate, e);;
+				logger.error("Unable to set effective date for MAIN validation, unrecognised: " + potentialEffectiveDate, e);
 			}
 		}
-		return doStartValidation(PathHelper.getPath(null), username, null, null, effectiveDate);
+		return doStartValidation(PathHelper.getMainPath(), username, null, null, effectiveDate);
 	}
 
 	public void clearStatusCache() {

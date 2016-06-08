@@ -20,7 +20,7 @@
 				<constructor-arg value="#{systemProperties['osgi.sharedConfiguration.area']}/+{jira.privateKeyName}"/>
 			</bean>
 		</constructor-arg>
-		<constructor-arg value="+{jira.reviewer.field}"/>
+		<constructor-arg value="+{jira.username}"/>
 	</bean>
 
 	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.eventhandler.ReviewMessageSentHandler"/>

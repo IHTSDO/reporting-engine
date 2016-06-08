@@ -13,13 +13,15 @@ public class BranchStateMonitor extends Monitor {
 
 	private final String projectId;
 	private final String taskId;
+	private final String branchPath;
 	private BranchService branchService;
 	private Branch.BranchState branchState;
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
-	public BranchStateMonitor(String projectId, String taskId, BranchService branchService) {
+	public BranchStateMonitor(String projectId, String taskId, String branchPath, BranchService branchService) {
 		this.projectId = projectId;
 		this.taskId = taskId;
+		this.branchPath = branchPath;
 		this.branchService = branchService;
 	}
 
@@ -27,7 +29,7 @@ public class BranchStateMonitor extends Monitor {
 	public Notification runOnce() throws MonitorException {
 		try {
 			logger.debug("Get branch state");
-			final Branch.BranchState branchState = branchService.getBranchState(projectId, taskId);
+			final Branch.BranchState branchState = branchService.getBranchState(branchPath);
 			if (branchState != this.branchState) {
 				logger.debug("Branch {} state {}, changed", taskId, branchState);
 				this.branchState = branchState;

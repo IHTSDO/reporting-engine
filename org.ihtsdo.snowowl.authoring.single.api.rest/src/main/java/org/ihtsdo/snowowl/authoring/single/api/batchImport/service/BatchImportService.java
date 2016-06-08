@@ -342,13 +342,13 @@ public class BatchImportService {
 		String taskSummary = request.getOriginalFilename() + ": " + getRowRange(thisBatch);
 		taskCreateRequest.setSummary(taskSummary);
 
-		AuthoringTask task = null;
+		AuthoringTask task;
 		if (!request.isDryRun()) {
 			task = taskService.createTask(request.getProjectKey(), 
 					request.getCreateForAuthor(),
 					taskCreateRequest);
 			//Task service now delays creation of actual task branch, so separate call to do that.
-			branchService.createTaskBranchAndProjectBranchIfNeeded(task.getProjectKey(), task.getKey());
+			branchService.createTaskBranchAndProjectBranchIfNeeded(task.getBranchPath());
 			
 			//Because creating a task is relatively expensive and can cause contention, we'll take an optional
 			//pause here to allow other threads to clear and obtain locks

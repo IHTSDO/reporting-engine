@@ -1,6 +1,8 @@
 jira.url=
 jira.consumerKey=
 jira.privateKeyName=
+# Used to fetch custom fields
+jira.username=
 
 securityServiceStubMode=
 
