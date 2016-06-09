@@ -55,11 +55,6 @@
 			<artifactId>otf-common</artifactId>
 			<version>0.0.21</version>
 		</dependency>
-		<dependency>
-			<groupId>org.ihtsdo.drools</groupId>
-			<artifactId>snomed-drools</artifactId>
-			<version>1.0.3-SNAPSHOT</version>
-		</dependency>
 		<!-- SnowOwl -->
 		<!-- Plug-in dependencies are repeated here so that the build can resolve
 			them at compile time -->
