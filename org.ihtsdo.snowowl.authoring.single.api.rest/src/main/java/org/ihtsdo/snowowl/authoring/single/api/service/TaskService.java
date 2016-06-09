@@ -324,7 +324,7 @@ public class TaskService {
 
 		AuthoringTask authoringTask = new AuthoringTask(jiraIssue, getProjectBaseUsingCache(projectKey));
 		try {
-			branchService.createProjectBranchIfNeeded(authoringTask.getBranchPath());
+			branchService.createProjectBranchIfNeeded(PathHelper.getParentPath(authoringTask.getBranchPath()));
 		} catch (ServiceException e) {
 			throw new BusinessServiceException("Failed to create project branch.", e);
 		}
