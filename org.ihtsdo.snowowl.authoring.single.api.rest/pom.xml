@@ -58,7 +58,7 @@
 		<dependency>
 			<groupId>org.ihtsdo.drools</groupId>
 			<artifactId>snomed-drools</artifactId>
-			<version>1.0.2</version>
+			<version>1.0.3-SNAPSHOT</version>
 		</dependency>
 		<!-- SnowOwl -->
 		<!-- Plug-in dependencies are repeated here so that the build can resolve
