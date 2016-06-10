@@ -3,12 +3,12 @@
 	<parent>
 		<groupId>com.b2international.snowowl</groupId>
 		<artifactId>snowowl-parent</artifactId>
-		<version>4.5.52-SNAPSHOT</version>
+		<version>4.5.55-SNAPSHOT</version>
 	</parent>
 
 	<groupId>org.ihtsdo.snowowl</groupId>
 	<artifactId>ihtsdo-snowowl-parent</artifactId>
-	<version>4.5.52-SNAPSHOT</version>
+	<version>4.5.55-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
 	<properties>
