@@ -30,7 +30,12 @@ public class SCAClient {
 	}
 
 	public void setUIState(String project, String taskKey, String quotedList) throws IOException {
-		String endPoint = serverUrl + apiRoot + "projects/" + project + "/tasks/" + taskKey + "/ui-state/edit-panel";
+		String endPointRoot = serverUrl + apiRoot + "projects/" + project + "/tasks/" + taskKey + "/ui-state/";
+		String endPoint = endPointRoot + "edit-panel";
+		resty.json(endPoint, RestyHelper.content(quotedList, JSON_CONTENT_TYPE));
+		
+		//Also include concepts in the saved list
+		endPoint = endPointRoot + "saved-list";
 		resty.json(endPoint, RestyHelper.content(quotedList, JSON_CONTENT_TYPE));
 		//TODO Move to locally maintained Resty so we can easily check for HTTP200 return status
 	}
