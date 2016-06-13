@@ -24,6 +24,7 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
+import org.ihtsdo.termserver.scripting.domain.Task;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import us.monoid.json.JSONObject;
@@ -71,8 +72,8 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 	}
 
 	@Override
-	public int doFix(Batch batch, Concept concept) throws TermServerFixException {
-		Concept loadedConcept = loadConcept(concept, batch.getBranchPath());
+	public int doFix(Task task, Concept concept) throws TermServerFixException {
+		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
 		if (concept.getConceptType().equals(ConceptType.UNKNOWN)) {
 			determineConceptType(concept);
 		}
@@ -80,27 +81,27 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		int changesMade = 0;
 		
 		switch (concept.getConceptType()) {
-			case MEDICINAL_ENTITY : changesMade = mef.doFix(batch, loadedConcept);
+			case MEDICINAL_ENTITY : changesMade = mef.doFix(task, loadedConcept);
 									break;
-			case MEDICINAL_FORM : changesMade = mff.doFix(batch, loadedConcept);
+			case MEDICINAL_FORM : changesMade = mff.doFix(task, loadedConcept);
 									break;
-			case PRODUCT_STRENGTH : changesMade = psf.doFix(batch, loadedConcept);
+			case PRODUCT_STRENGTH : changesMade = psf.doFix(task, loadedConcept);
 									break;
 			case GROUPER :			//No fixes being made to groupers for now
 									//changesMade = gf.doFix(batch, loadedConcept);
 									break;
 			case PRODUCT_ROLE : 
 			default : warn ("Don't know what to do with " + concept);
-			report(batch, concept, SEVERITY.HIGH, REPORT_ACTION_TYPE.VALIDATION_ERROR, "Concept Type not determined.");
+			report(task, concept, SEVERITY.HIGH, REPORT_ACTION_TYPE.VALIDATION_ERROR, "Concept Type not determined.");
 		}
 		try {
 			String conceptSerialised = gson.toJson(loadedConcept);
 			debug ("Updating state of " + loadedConcept);
 			if (!dryRun) {
-				tsClient.updateConcept(new JSONObject(conceptSerialised), batch.getBranchPath());
+				tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
 			}
 		} catch (Exception e) {
-			report(batch, concept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.API_ERROR, "Failed to save changed concept to TS: " + e.getMessage());
+			report(task, concept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.API_ERROR, "Failed to save changed concept to TS: " + e.getMessage());
 		}
 		return changesMade;
 	}
@@ -119,12 +120,9 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 				String comboKey = getIngredientCombinationKey(thisConcept, ingredients);
 				//Get all concepts with this identical combination of ingredients
 				Collection<Concept> matchingCombo = ingredientCombos.get(comboKey);
-				Batch thisComboBatch = new Batch();
-				thisComboBatch.setDescription(getIngredientList(ingredients));
-				thisComboBatch.setConcepts(new ArrayList<Concept>(matchingCombo));
-				batches.add(thisComboBatch);
+				int taskCount = formIntoTasks(batches, matchingCombo, ingredients);
 				allConceptsToBeProcessed.addAll(matchingCombo);
-				debug ("Batched " + thisConcept + " with " + comboKey.split(SEPARATOR).length + " active ingredients.  Batch size " + matchingCombo.size());
+				debug ("Batched " + thisConcept + " with " + comboKey.split(SEPARATOR).length + " active ingredients.  Batch size " + matchingCombo.size() + " into " + taskCount + " tasks.");
 			} else {
 				//Validate that concept does have a type and some ingredients otherwise it's going to get missed
 				if (thisConcept.getConceptType().equals(ConceptType.UNKNOWN)) {
@@ -140,6 +138,25 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		return batches;
 	}
 	
+	private int formIntoTasks(List<Batch> batches,
+			Collection<Concept> matchingCombo, List<Relationship>ingredients) {
+		Batch thisBatch = new Batch();
+		batches.add(thisBatch);
+		List<List<Concept>> taskContents = splitBatchIntoChunks(matchingCombo, batchSize);
+		int taskCount = 0;
+		for (List<Concept> thisTaskContents : taskContents) {
+			Task thisTask = new Task (thisTaskContents);
+			thisBatch.addTask(thisTask);
+			String ingredientList = getIngredientList(ingredients);
+			if (taskContents.size() > 1) {
+				ingredientList += ": " + (++taskCount);
+			}
+			thisTask.setDescription(ingredientList);
+			thisTask.setConcepts(new ArrayList<Concept>(matchingCombo));
+		}
+		return taskCount;
+	}
+
 	private void validateAllInputConceptsBatched(List<Concept> concepts,
 			Set<Concept> allConceptsToBeProcessed) {
 		//Ensure that all concepts we got given to process were captured in one batch or another
@@ -237,41 +254,47 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 	}
 	
 
-	protected int ensureAcceptableFSN(Batch batch, Concept concept, Map<String, String> wordSubstitution) throws TermServerFixException {
+	protected int ensureAcceptableFSN(Task task, Concept concept, Map<String, String> wordSubstitution) throws TermServerFixException {
 		String[] fsnParts = SnomedUtils.deconstructFSN(concept.getFsn());
-		String newFSN = removeUnwantedWords(batch, concept, fsnParts[0]);
+		String newFSN = removeUnwantedWords(task, concept, fsnParts[0]);
 		int changesMade = 0;
 		boolean isMultiIngredient = fsnParts[0].contains(INGREDIENT_SEPARATOR);
 		if (isMultiIngredient) {
-			newFSN = ensureMultiIngredientFSNCorrect(batch, concept, newFSN);
+			newFSN = normalizeMultiIngredientTerm(newFSN);
 		}
-		
+
 		if (wordSubstitution != null) {
-			newFSN = doWordSubstitution(batch, concept, newFSN, wordSubstitution);
+			newFSN = doWordSubstitution(task, concept, newFSN, wordSubstitution);
 		}
 		//have we changed the FSN?  Reflect that in the Preferred Term(s) if so
 		if (!newFSN.equals(fsnParts[0])) {
-			updateFsnAndPrefTerms(batch, concept, newFSN, fsnParts[1]);
+			updateFsnAndPrefTerms(task, concept, newFSN, fsnParts[1]);
 			changesMade = 1;
 		}
 		return changesMade;
 	}
 
-	private String doWordSubstitution(Batch batch, Concept concept,
+	private String doWordSubstitution(Task task, Concept concept,
 			String newFSN, Map<String, String> wordSubstitution) {
 		//Replace any instances of the map key with the corresponding value
 		for (Map.Entry<String, String> substitution : wordSubstitution.entrySet()) {
 			String modifiedFSN = newFSN.replace(substitution.getKey(), substitution.getValue());
 			if (!modifiedFSN.equals(newFSN)) {
 				String msg = "Replaced " + substitution.getKey() + " with " + substitution.getValue() + " from FSN.";
-				report(batch, concept, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, msg);
+				report(task, concept, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, msg);
 				newFSN = modifiedFSN;
 			}
 		}
 		return newFSN;
 	}
 
-	private void updateFsnAndPrefTerms(Batch batch, Concept concept,
+	/*
+	If the FSN contains acetaminophen:
+	Inactivate the FSN and create a new FSN changing acetaminophen to paracetamol and applying the usual rules eg: alpha order, spaces around +
+	Concept should have one PT for US/GB corresponding to FSN (description may already exist or may need to be created)
+	Change any PT containing acetaminophen to a synonym with US=A, GB=N and no changes eg: alpha order, spaces around +
+	 */
+	private void updateFsnAndPrefTerms(Task task, Concept concept,
 			String newFSN, String semanticTag) throws TermServerFixException {
 		String fullFSN = newFSN + SPACE + semanticTag;
 		concept.setFsn(fullFSN);
@@ -283,18 +306,84 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 			if (thisDescription.getType().equals(DESCRIPTION_TYPE.FSN)) {
 				replacement.setTerm(fullFSN);
 			} else {
-				replacement.setTerm(newFSN);
+				if (attemptAcceptableSYNPromotion(task, concept, newFSN, thisDescription)) {
+					replacement = null;
+				} else {
+					replacement.setTerm(newFSN);
+				}
+				
+				if (checkForDemotion(thisDescription, newFSN)) {
+					String msg = "Demoted " + thisDescription + " to  " + SnomedUtils.toString(thisDescription.getAcceptabilityMap());
+					report (task, concept, SEVERITY.HIGH, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, msg);
+				}
 			}
-			String msg = "Replaced (inactivated) " + thisDescription.getType() + " " + thisDescription + " with " + replacement;
-			report (batch, concept, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, msg);
-			concept.addDescription(replacement);
+			
+			if (replacement != null) {
+				String msg = "Replaced (inactivated) " + thisDescription.getType() + " " + thisDescription + " with " + replacement;
+				report (task, concept, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, msg);
+				concept.addDescription(replacement);
+			}
 		}
 		
 	}
 
-	protected String ensureMultiIngredientFSNCorrect(Batch batch,
-			Concept concept, String newFSN) {
-		String[] ingredients = newFSN.split(INGREDIENT_SEPARATOR_ESCAPED);
+	private boolean checkForDemotion(Description originalDesc, String newFSN) {
+		boolean demotionPerformed = false;
+		//Normalise the original Description to see if the ingredients look like they've changed
+		String origDescNorm = normalizeMultiIngredientTerm(originalDesc.getTerm());
+		boolean isAcetaminophen = origDescNorm.toLowerCase().contains(ACETAMINOPHEN);
+		if (!origDescNorm.equals(newFSN)) {
+			//Demote the original description rather than inactivating it
+			originalDesc.setActive(true);
+			for (String dialect : originalDesc.getAcceptabilityMap().keySet()) {
+				originalDesc.getAcceptabilityMap().put(dialect, ACCEPTABILITY.ACCEPTABLE);
+			}
+			if (isAcetaminophen) {
+				originalDesc.getAcceptabilityMap().remove(GB_ENG_LANG_REFSET);
+			}
+			demotionPerformed = true;
+		}
+		return demotionPerformed;
+	}
+
+	private boolean attemptAcceptableSYNPromotion(Task task, Concept concept,
+			String newTerm, Description oldDescription) throws TermServerFixException {
+		//If we have a term which is only Acceptable (ie not preferred in either dialect)
+		//then promote it to Preferred in the appropriate dialect
+		boolean promotionSuccessful = false;
+		List<Description> allAcceptable = concept.getDescriptions(ACCEPTABILITY.ACCEPTABLE, DESCRIPTION_TYPE.SYNONYM, ACTIVE_STATE.BOTH);
+		List<Description> matchingAcceptable = new ArrayList<Description>();
+		for (Description thisDesc : allAcceptable) {
+			if (thisDesc.getTerm().equals(newTerm)) {
+				matchingAcceptable.add(thisDesc);
+			}
+		}
+		
+		if (matchingAcceptable.size() > 1) {
+			report(task, concept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.API_ERROR, "More than one possible description promotion detected.");
+		}
+		
+		if (matchingAcceptable.size() > 0) {
+			Description promoting = matchingAcceptable.get(0);
+			promoting.setActive(true);
+			//Now find the dialects that were preferred in the old term and copy to new
+			for (Map.Entry<String, ACCEPTABILITY> acceptablityEntry : oldDescription.getAcceptabilityMap().entrySet()) {
+				String dialect = acceptablityEntry.getKey();
+				ACCEPTABILITY a = acceptablityEntry.getValue();
+				if (a.equals(ACCEPTABILITY.PREFERRED)) {
+					promoting.getAcceptabilityMap().put(dialect, ACCEPTABILITY.PREFERRED);
+					promotionSuccessful = true;
+					String msg = "Promoted acceptable term " + promoting + " to be preferred in dialect " + dialect;
+					report (task, concept, SEVERITY.HIGH, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, msg);
+				}
+			}
+		}
+		
+		return promotionSuccessful;
+	}
+
+	protected String normalizeMultiIngredientTerm(String term) {
+		String[] ingredients = term.split(INGREDIENT_SEPARATOR_ESCAPED);
 		//ingredients should be in alphabetical order, also trim spaces
 		for (int i = 0; i < ingredients.length; i++) {
 			ingredients[i] = ingredients[i].toLowerCase().trim();
@@ -303,18 +392,18 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 
 		//Reform with spaces around + sign and only first letter capitalized
 		boolean isFirstIngredient = true;
-		newFSN = "";
+		term = "";
 		for (String thisIngredient : ingredients) {
 			if (!isFirstIngredient) {
-				newFSN += SPACE + INGREDIENT_SEPARATOR + SPACE;
+				term += SPACE + INGREDIENT_SEPARATOR + SPACE;
 			} 
-			newFSN += thisIngredient.toLowerCase();
+			term += thisIngredient.toLowerCase();
 			isFirstIngredient = false;
 		}
-		return StringUtils.capitalizeFirstLetter(newFSN);
+		return StringUtils.capitalizeFirstLetter(term);
 	}
 
-	private String removeUnwantedWords(Batch batch, Concept concept,
+	private String removeUnwantedWords(Task task, Concept concept,
 			String fsnRoot) {
 		String modifiedFsnRoot = fsnRoot;
 		for (String unwantedWord : unwantedWords) {
@@ -323,7 +412,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 				if (modifiedFsnRoot.contains(thisUnwantedWord)) {
 					modifiedFsnRoot.replace(thisUnwantedWord,"");
 					String msg = "Removed unwanted word " + modifiedFsnRoot + " from FSN.";
-					report(batch, concept, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, msg);
+					report(task, concept, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, msg);
 				}
 			}
 			
@@ -349,22 +438,23 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 	}
 	
 	
-	List<List<Concept>> splitBatchIntoChunks(List<Concept> concepts, int chunkSize) {
+	List<List<Concept>> splitBatchIntoChunks(Collection<Concept> concepts, int chunkSize) {
+		List<Concept> batchContent = new ArrayList<Concept>(concepts);
 		List<List<Concept>> chunkedList = new ArrayList<List<Concept>>();
 		//How many chunks are we going to need?
-		double chunkCount = Math.ceil((float)concepts.size()/(float)chunkSize);
+		double chunkCount = Math.ceil((float)batchContent.size()/(float)chunkSize);
 		//Now if we divide the concepts evenly between chunks how many in each?
-		int conceptsPerChunk = (int)Math.round(concepts.size() / chunkCount);
+		int conceptsPerChunk = (int)Math.round(batchContent.size() / chunkCount);
 		
 		//Any Medicinal Entity concepts must go in the first chunk
 		List<Concept> thisChunk = new ArrayList<Concept>();
 		chunkedList.add(thisChunk);
-		List<Concept> MEs = getConceptsOfType(concepts, ConceptType.MEDICINAL_ENTITY);
+		List<Concept> MEs = getConceptsOfType(batchContent, ConceptType.MEDICINAL_ENTITY);
 		thisChunk.addAll(MEs);
-		concepts.removeAll(MEs);
-		while (concepts.size() > 0) {
-			Concept thisConcept = concepts.get(0);
-			concepts.remove(thisConcept);
+		batchContent.removeAll(MEs);
+		while (batchContent.size() > 0) {
+			Concept thisConcept = batchContent.get(0);
+			batchContent.remove(thisConcept);
 			thisChunk.add(thisConcept);
 			if (thisChunk.size() == conceptsPerChunk && chunkedList.size() < chunkCount) {
 				thisChunk = new ArrayList<Concept>();
@@ -374,7 +464,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		return chunkedList;
 	}
 	
-	List<Concept> getConceptsOfType(List<Concept> concepts, ConceptType type) {
+	List<Concept> getConceptsOfType(Collection<Concept> concepts, ConceptType type) {
 		List<Concept> matching = new ArrayList<Concept>();
 		for (Concept thisConcept : concepts) {
 			if (thisConcept.getConceptType().equals(type)) {
@@ -383,5 +473,18 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		}
 		return matching;
 	}
+
+	/**
+	For Medicinal entity and Medicinal form concepts only:
+	If the FSN contains acetaminophen:
+	Inactivate the FSN and create a new FSN changing acetaminophen to paracetamol and applying the usual rules eg: alpha order, spaces around +
+	Concept should have one PT for US/GB corresponding to FSN (description may already exist or may need to be created)
+	Change any PT containing acetaminophen to a synonym with US=A, GB=N and no changes eg: alpha order, spaces around +
+	 */
+	protected int processAcetaminophen(Batch batch, Concept concept) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
 
 }

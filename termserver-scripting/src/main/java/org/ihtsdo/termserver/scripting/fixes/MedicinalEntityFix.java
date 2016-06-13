@@ -1,10 +1,13 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.ihtsdo.termserver.scripting.domain.Batch;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
+import org.ihtsdo.termserver.scripting.domain.Task;
 
 /*
 All concepts must be fully defined
@@ -25,14 +28,19 @@ public class MedicinalEntityFix extends DrugProductFix implements RF2Constants{
 	protected MedicinalEntityFix(BatchFix clone) {
 		super(clone);
 	}
+	
+	static Map<String, String> wordSubstitution = new HashMap<String, String>();
+	static {
+		wordSubstitution.put("acetaminophen", "paracetamol");
+	}
 
 	@Override
-	public int doFix(Batch batch, Concept concept) throws TermServerFixException {
-		int changesMade = ensureDefinitionStatus(batch, concept, DEFINITION_STATUS.FULLY_DEFINED);
-		changesMade += ensureAcceptableParent(batch, concept, graph.getConcept(PHARM_BIO_PRODUCT_SCTID));
-		validateAttributeValues(batch, concept, HAS_ACTIVE_INGRED, SUBSTANCE, CARDINALITY.AT_LEAST_ONE);
-		validatePrefInFSN(batch, concept);
-		changesMade += ensureAcceptableFSN(batch, concept, null);
+	public int doFix(Task task, Concept concept) throws TermServerFixException {
+		int changesMade = ensureDefinitionStatus(task, concept, DEFINITION_STATUS.FULLY_DEFINED);
+		changesMade += ensureAcceptableParent(task, concept, graph.getConcept(PHARM_BIO_PRODUCT_SCTID));
+		validateAttributeValues(task, concept, HAS_ACTIVE_INGRED, SUBSTANCE, CARDINALITY.AT_LEAST_ONE);
+		validatePrefInFSN(task, concept);
+		changesMade += ensureAcceptableFSN(task, concept, wordSubstitution);
 		return changesMade;
 	}
 

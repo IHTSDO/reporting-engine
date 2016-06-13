@@ -7,6 +7,7 @@ import java.util.List;
 import org.ihtsdo.termserver.scripting.domain.Batch;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
+import org.ihtsdo.termserver.scripting.domain.Task;
 
 /*
 All concepts in the module must be primitive when "Product Strength"
@@ -30,34 +31,18 @@ public class ProductStrengthFix extends BatchFix implements RF2Constants{
 	}
 
 	@Override
-	public int doFix(Batch batch, Concept concept) throws TermServerFixException {
-		int changesMade = ensureDefinitionStatus(batch, concept, DEFINITION_STATUS.PRIMITIVE);
-		changesMade += ensureAcceptableParent(batch, concept, graph.getConcept(PHARM_BIO_PRODUCT_SCTID));
-		validateAttributeValues(batch, concept, HAS_ACTIVE_INGRED, SUBSTANCE, CARDINALITY.AT_LEAST_ONE);
-		validateAttributeValues(batch, concept, HAS_DOSE_FORM, DRUG_PREPARATION, CARDINALITY.EXACTLY_ONE);
+	public int doFix(Task task, Concept concept) throws TermServerFixException {
+		int changesMade = ensureDefinitionStatus(task, concept, DEFINITION_STATUS.PRIMITIVE);
+		changesMade += ensureAcceptableParent(task, concept, graph.getConcept(PHARM_BIO_PRODUCT_SCTID));
+		validateAttributeValues(task, concept, HAS_ACTIVE_INGRED, SUBSTANCE, CARDINALITY.AT_LEAST_ONE);
+		validateAttributeValues(task, concept, HAS_DOSE_FORM, DRUG_PREPARATION, CARDINALITY.EXACTLY_ONE);
 		return changesMade;
 	}
 
 
 	@Override
-	List<Batch> formIntoBatches(String fileName, List<Concept> concepts, String projectPath) {
-		//Product Strength concepts we'll just simply to in batches of N
-		List<Batch> batches = new ArrayList<Batch>();
-		Batch thisBatch = new Batch();
-		for (int lineNum = 0; lineNum < concepts.size(); lineNum++) {
-			//skip the header row
-			if (lineNum > 0) {
-				thisBatch.addConcept(concepts.get(lineNum));
-				if (lineNum % batchSize == 0) {
-					batches.add(thisBatch);
-					thisBatch = new Batch();
-				}
-			}
-		}
-		if (!thisBatch.getConcepts().isEmpty()) {
-			batches.add(thisBatch);
-		}
-		return batches;
+	List<Batch> formIntoBatches(String fileName, List<Concept> concepts, String projectPath) throws TermServerFixException {
+		throw new TermServerFixException("Not Implemented");
 	}
 
 	@Override

@@ -5,6 +5,7 @@ import java.util.List;
 import org.ihtsdo.termserver.scripting.domain.Batch;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
+import org.ihtsdo.termserver.scripting.domain.Task;
 
 /*
 All concepts must be fully defined.
@@ -20,9 +21,9 @@ public class GrouperFix extends BatchFix implements RF2Constants{
 	}
 
 	@Override
-	public int doFix(Batch batch, Concept concept) throws TermServerFixException {
-		int changesMade = ensureDefinitionStatus(batch, concept, DEFINITION_STATUS.FULLY_DEFINED);
-		changesMade += ensureAcceptableParent(batch, concept, graph.getConcept(PHARM_BIO_PRODUCT_SCTID));
+	public int doFix(Task task, Concept concept) throws TermServerFixException {
+		int changesMade = ensureDefinitionStatus(task, concept, DEFINITION_STATUS.FULLY_DEFINED);
+		changesMade += ensureAcceptableParent(task, concept, graph.getConcept(PHARM_BIO_PRODUCT_SCTID));
 		return changesMade;
 	}
 

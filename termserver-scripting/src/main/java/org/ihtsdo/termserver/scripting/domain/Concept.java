@@ -288,7 +288,11 @@ public class Concept implements RF2Constants {
 					( thisDescription.getAcceptabilityMap() != null && thisDescription.getAcceptabilityMap().containsValue(acceptability)) &&
 					( descriptionType == null || thisDescription.getType().equals(descriptionType) )
 				) {
-				matchingDescriptions.add(thisDescription);
+				//A preferred description can be preferred in either dialect, but if we're looking for an acceptable one, 
+				//then it must not also be preferred in the other dialect
+				if (acceptability.equals(ACCEPTABILITY.PREFERRED) || !thisDescription.getAcceptabilityMap().containsValue(ACCEPTABILITY.PREFERRED)) {
+					matchingDescriptions.add(thisDescription);
+				}
 			} else {
 				if (thisDescription.getAcceptabilityMap() == null && thisDescription.isActive()) {
 					TermServerFix.warn (thisDescription + " is active with no acceptability map");

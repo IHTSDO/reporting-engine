@@ -19,6 +19,7 @@ import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.RelationshipSerializer;
+import org.ihtsdo.termserver.scripting.domain.Task;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import us.monoid.json.JSONException;
@@ -73,10 +74,14 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 		try {
 			List<String> lines = Files.readLines(batchFixFile, Charsets.UTF_8);
 			List<Concept> allConcepts = new ArrayList<Concept>();
-			for (int lineNum = 0; lineNum < lines.size(); lineNum++) {
+			
+			//Are we restarting the file from some line number
+			int startPos = (restartPosition == NOT_SET)?0:restartPosition - 1;
+			for (int lineNum = startPos; lineNum < lines.size(); lineNum++) {
 				if (lineNum == 0) {
-					//continue; //skip header row
+					//continue; //skip header row  //Current file format has no header
 				}
+				
 				//File format Concept Type, SCTID, FSN with string fields quoted.  Strip quotes also.
 				String[] lineItems = lines.get(lineNum).replace("\"", "").split(TSV_FIELD_DELIMITER);
 				if (lineItems.length > 1) {
@@ -100,85 +105,87 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 	
 	abstract List<Batch> formIntoBatches (String fileName, List<Concept> allConcepts, String branchPath) throws TermServerFixException;
 	
-	abstract int doFix(Batch batch, Concept concept) throws TermServerFixException;
+	abstract int doFix(Task task, Concept concept) throws TermServerFixException;
 
 	private void batchProcess(List<Batch> batches) throws TermServerFixException {
 		int failureCount = 0;
 		for (Batch batch : batches) {
-			try {
-				String branchPath;
-				String taskKey;
-				//Create a task for this batch of concepts
-				if (!dryRun) {
-					debug ("Creating jira task on project: " + project);
-					taskKey = scaClient.createTask(project, batch.getDescription(), batch.getSummaryHTML());
-					debug ("Creating task branch in terminology server: " + taskKey);
-					branchPath = tsClient.createBranch("MAIN/" + project, taskKey);
-				} else {
-					taskKey = project + "-" + getNextDryRunNum();
-					branchPath = "MAIN/" + project + "/" + taskKey;
-				}
-				
-				debug ( (dryRun?"Dry Run " : "Created") + "task: " + branchPath);
-				batch.setTaskKey(taskKey);
-				batch.setBranchPath(branchPath);
-				
-				//Process each concept
-				for (Concept concept : batch.getConcepts()) {
-					try {
-						int changesMade = doFix(batch, concept);
-						if (changesMade == 0) {
-							report(batch, concept, SEVERITY.NONE, REPORT_ACTION_TYPE.NO_CHANGE, "");
-						}
-					} catch (TermServerFixException e) {
-						report(batch, concept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.API_ERROR, getMessage(e));
-						if (++failureCount > maxFailures) {
-							throw new TermServerFixException ("Failure count exceeded " + maxFailures);
-						}
-					}
-				}
-				
-				if (!dryRun) {
-					//Prefill the Edit Panel
-					try {
-						scaClient.setUIState(project, taskKey, batch.toQuotedList());
-					} catch (Exception e) {
-						String msg = "Failed to preload edit-panel ui state: " + e.getMessage();
-						warn (msg);
-						report(batch, null, SEVERITY.LOW, REPORT_ACTION_TYPE.API_ERROR, msg);
+			for (Task task : batch.getTasks()) {
+				try {
+					String branchPath;
+					String taskKey;
+					//Create a task for this batch of concepts
+					if (!dryRun) {
+						debug ("Creating jira task on project: " + project);
+						taskKey = scaClient.createTask(project, task.getDescription(), task.getSummaryHTML());
+						debug ("Creating task branch in terminology server: " + taskKey);
+						branchPath = tsClient.createBranch("MAIN/" + project, taskKey);
+					} else {
+						taskKey = project + "-" + getNextDryRunNum();
+						branchPath = "MAIN/" + project + "/" + taskKey;
 					}
 					
-					//Reassign the task to the intended author
-					if (targetAuthor != null && !targetAuthor.isEmpty()) {
-						scaClient.updateTask(project, taskKey, null, null, targetAuthor);
+					debug ( (dryRun?"Dry Run " : "Created") + "task: " + branchPath);
+					task.setTaskKey(taskKey);
+					task.setBranchPath(branchPath);
+					
+					//Process each concept
+					for (Concept concept : task.getConcepts()) {
+						try {
+							int changesMade = doFix(task, concept);
+							if (changesMade == 0) {
+								report(task, concept, SEVERITY.NONE, REPORT_ACTION_TYPE.NO_CHANGE, "");
+							}
+						} catch (TermServerFixException e) {
+							report(task, concept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.API_ERROR, getMessage(e));
+							if (++failureCount > maxFailures) {
+								throw new TermServerFixException ("Failure count exceeded " + maxFailures);
+							}
+						}
 					}
+					
+					if (!dryRun) {
+						//Prefill the Edit Panel
+						try {
+							scaClient.setUIState(project, taskKey, task.toQuotedList());
+						} catch (Exception e) {
+							String msg = "Failed to preload edit-panel ui state: " + e.getMessage();
+							warn (msg);
+							report(task, null, SEVERITY.LOW, REPORT_ACTION_TYPE.API_ERROR, msg);
+						}
+						
+						//Reassign the task to the intended author
+						if (targetAuthor != null && !targetAuthor.isEmpty()) {
+							scaClient.updateTask(project, taskKey, null, null, targetAuthor);
+						}
+					}
+				} catch (Exception e) {
+					throw new TermServerFixException("Failed to process batch " + task.getDescription() + " on task " + task.getTaskKey(), e);
 				}
-			} catch (Exception e) {
-				throw new TermServerFixException("Failed to process batch " + batch.getDescription() + " on task " + batch.getTaskKey(), e);
 			}
 		}
 		
 	}
 
-	protected int ensureDefinitionStatus(Batch b, Concept c, DEFINITION_STATUS targetDefStat) {
+	protected int ensureDefinitionStatus(Task t, Concept c, DEFINITION_STATUS targetDefStat) {
 		int changesMade = 0;
 		if (!c.getDefinitionStatus().equals(targetDefStat.toString())) {
-			report (b, c, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.CONCEPT_CHANGE_MADE, "Definition status changed to " + targetDefStat);
+			report (t, c, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.CONCEPT_CHANGE_MADE, "Definition status changed to " + targetDefStat);
 			c.setDefinitionStatus(targetDefStat.toString());
 			changesMade++;
 		}
 		return changesMade;
 	}
 	
-	protected void report(Batch batch, Concept concept, SEVERITY severity, REPORT_ACTION_TYPE actionType, String actionDetail) {
+	protected void report(Task task, Concept concept, SEVERITY severity, REPORT_ACTION_TYPE actionType, String actionDetail) {
 		String sctid = "";
 		String fsn = "";
 		if (concept != null) {
 			sctid = concept.getConceptId();
 			fsn = concept.getFsn();
 		}
-		String batchKey = (batch == null? "" :  batch.getTaskKey());
-		String batchDesc = (batch == null? "" :  batch.getDescription());
+		String batchKey = (task == null? "" :  task.getTaskKey());
+		String batchDesc = (task == null? "" :  task.getDescription());
 		String line = batchKey + COMMA + batchDesc + COMMA + sctid + COMMA_QUOTE + fsn + QUOTE_COMMA + concept.getConceptType() + COMMA + severity + COMMA + actionType + COMMA + QUOTE + actionDetail + QUOTE;
 		writeToFile (line);
 	}
@@ -281,13 +288,13 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 		return concept;
 	}
 	
-	protected int ensureAcceptableParent(Batch batch, Concept c, Concept acceptableParent) {
+	protected int ensureAcceptableParent(Task task, Concept c, Concept acceptableParent) {
 		List<Relationship> statedParents = c.getRelationships(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP, IS_A, ACTIVE_STATE.ACTIVE);
 		boolean hasAcceptableParent = false;
 		int changesMade = 0;
 		for (Relationship thisParent : statedParents) {
 			if (!thisParent.getTarget().equals(acceptableParent)) {
-				report(batch, c, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.RELATIONSHIP_REMOVED, "Inactivated unwanted parent: " + thisParent.getTarget());
+				report(task, c, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.RELATIONSHIP_REMOVED, "Inactivated unwanted parent: " + thisParent.getTarget());
 				thisParent.setActive(false);
 				changesMade++;
 			} else {
@@ -298,7 +305,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 		if (!hasAcceptableParent) {
 			c.addRelationship(IS_A, acceptableParent);
 			changesMade++;
-			report(batch, c, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.RELATIONSHIP_ADDED, "Added required parent: " + acceptableParent);
+			report(task, c, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.RELATIONSHIP_ADDED, "Added required parent: " + acceptableParent);
 		}
 		return changesMade;
 	}
@@ -308,7 +315,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 	 * @param cardinality 
 	 * @throws TermServerFixException 
 	 */
-	protected int validateAttributeValues(Batch batch, Concept concept,
+	protected int validateAttributeValues(Task task, Concept concept,
 			Concept attributeType, Concept descendentsOfValue, CARDINALITY cardinality) throws TermServerFixException {
 		
 		List<Relationship> attributes = concept.getRelationships(CHARACTERISTIC_TYPE.ALL, attributeType, ACTIVE_STATE.ACTIVE);
@@ -320,7 +327,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 				String activeStr = thisAttribute.isActive()?"":"inactive ";
 				String relType = thisAttribute.getCharacteristicType().equals(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP)?"stated ":"inferred ";
 				String msg = "Attribute has " + activeStr + relType + "target which is not a descendent of: " + descendentsOfValue;
-				report (batch, concept, severity, REPORT_ACTION_TYPE.VALIDATION_ERROR, msg);
+				report (task, concept, severity, REPORT_ACTION_TYPE.VALIDATION_ERROR, msg);
 			}
 		}
 		
@@ -342,27 +349,27 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 		
 		//If we have no stated attributes of the expected type, attempt to pull from the inferred ones
 		if (attributes.size() == 0) {
-			changesMade = transferInferredRelationshipsToStated(batch, concept, attributeType, cardinality);
+			changesMade = transferInferredRelationshipsToStated(task, concept, attributeType, cardinality);
 		}
 		
 		//If we have an error message but have not made any changes to the concept, then report that error now
 		if (msg != null && changesMade == 0) {
-			report (batch, concept, SEVERITY.HIGH, REPORT_ACTION_TYPE.VALIDATION_ERROR, msg);
+			report (task, concept, SEVERITY.HIGH, REPORT_ACTION_TYPE.VALIDATION_ERROR, msg);
 		}
 		return changesMade;
 	}
 	
 
-	private int transferInferredRelationshipsToStated(Batch batch,
+	private int transferInferredRelationshipsToStated(Task task,
 			Concept concept, Concept attributeType, CARDINALITY cardinality) {
 		List<Relationship> replacements = concept.getRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, attributeType, ACTIVE_STATE.ACTIVE);
 		int changesMade = 0;
 		if (replacements.size() == 0) {
 			String msg = "Unable to find any inferred " + attributeType + " relationships to state.";
-			report(batch, concept, SEVERITY.HIGH, REPORT_ACTION_TYPE.INFO, msg);
+			report(task, concept, SEVERITY.HIGH, REPORT_ACTION_TYPE.INFO, msg);
 		} else if (cardinality.equals(CARDINALITY.EXACTLY_ONE) && replacements.size() > 1) {
 			String msg = "Found " + replacements.size() + " " + attributeType + " relationships to state but wanted only one!";
-			report(batch, concept, SEVERITY.HIGH, REPORT_ACTION_TYPE.INFO, msg);
+			report(task, concept, SEVERITY.HIGH, REPORT_ACTION_TYPE.INFO, msg);
 		} else {
 			//Clone the inferred relationships, make them stated and add to concept
 			for (Relationship replacement : replacements) {
@@ -370,22 +377,27 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 				statedClone.setCharacteristicType(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP);
 				concept.addRelationship(statedClone);
 				String msg = "Restated inferred relationship: " + replacement;
-				report(batch, concept, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.RELATIONSHIP_ADDED, msg);
+				report(task, concept, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.RELATIONSHIP_ADDED, msg);
 				changesMade++;
 			}
 		}
 		return changesMade;
 	}
 
-	protected void validatePrefInFSN(Batch batch, Concept concept) throws TermServerFixException {
+	protected void validatePrefInFSN(Task task, Concept concept) throws TermServerFixException {
 		//Check that the FSN with the semantic tags stripped off is
 		//equal to the preferred terms
 		List<Description> preferredTerms = concept.getDescriptions(ACCEPTABILITY.PREFERRED, DESCRIPTION_TYPE.SYNONYM, ACTIVE_STATE.ACTIVE);
 		String trimmedFSN = SnomedUtils.deconstructFSN(concept.getFsn())[0];
-		for (Description pref : preferredTerms) {
-			if (!pref.getTerm().equals(trimmedFSN)) {
-				String msg = concept + " has preferred term that does not match FSN: " + pref.getTerm();
-				report (batch, concept, SEVERITY.HIGH, REPORT_ACTION_TYPE.VALIDATION_ERROR, msg);
+		//Special handling for acetaminophen
+		if (trimmedFSN.toLowerCase().contains(ACETAMINOPHEN)) {
+			println ("Doing ACETAMINOPHEN processing for " + concept);
+		} else {
+			for (Description pref : preferredTerms) {
+				if (!pref.getTerm().equals(trimmedFSN)) {
+					String msg = concept + " has preferred term that does not match FSN: " + pref.getTerm();
+					report (task, concept, SEVERITY.HIGH, REPORT_ACTION_TYPE.VALIDATION_ERROR, msg);
+				}
 			}
 		}
 	}
