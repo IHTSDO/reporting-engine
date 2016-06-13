@@ -32,7 +32,7 @@ public class MedicinalEntityFix extends DrugProductFix implements RF2Constants{
 		changesMade += ensureAcceptableParent(batch, concept, graph.getConcept(PHARM_BIO_PRODUCT_SCTID));
 		validateAttributeValues(batch, concept, HAS_ACTIVE_INGRED, SUBSTANCE, CARDINALITY.AT_LEAST_ONE);
 		validatePrefInFSN(batch, concept);
-		ensureAcceptableFSN(batch, concept, null);
+		changesMade += ensureAcceptableFSN(batch, concept, null);
 		return changesMade;
 	}
 

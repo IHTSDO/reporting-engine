@@ -6,7 +6,7 @@ import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
 @Generated("org.jsonschema2pojo")
-public class Relationship implements RF2Constants {
+public class Relationship implements RF2Constants, Comparable<Relationship> {
 
 	@SerializedName("effectiveTime")
 	@Expose
@@ -283,6 +283,28 @@ public class Relationship implements RF2Constants {
 		clone.sourceId = this.sourceId;
 		clone.source = this.source;
 		return clone;
+	}
+
+	@Override
+	//Sort on source id, type id, target id, group id
+	public int compareTo(Relationship other) {
+		if (!this.sourceId.equals(other.getSourceId())) {
+			return sourceId.compareTo(other.getSourceId());
+		} else {
+			if (!this.getType().getConceptId().equals(other.getType().getConceptId())) {
+				return this.getType().getConceptId().compareTo(other.getType().getConceptId());
+			} else {
+				if (!this.getTarget().getConceptId().equals(other.getTarget().getConceptId())) {
+					return this.getTarget().getConceptId().compareTo(other.getTarget().getConceptId());
+				} else {
+					if (this.getGroupId() != other.getGroupId()) {
+						return ((Long)this.getGroupId()).compareTo(other.getGroupId());
+					} else {
+						return 0;  //Equal in all four values
+					}
+				}
+			}
+		}
 	}
 
 }

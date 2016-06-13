@@ -6,6 +6,9 @@ import java.util.Map;
 
 import javax.annotation.Generated;
 
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.ACCEPTABILITY;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.DESCRIPTION_TYPE;
+
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
@@ -29,7 +32,7 @@ public class Description {
 	private String conceptId;
 	@SerializedName("type")
 	@Expose
-	private String type;
+	private DESCRIPTION_TYPE type;
 	@SerializedName("lang")
 	@Expose
 	private String lang;
@@ -41,7 +44,7 @@ public class Description {
 	private String caseSignificance;
 	@SerializedName("acceptabilityMap")
 	@Expose
-	private Map<String, String> acceptabilityMap;
+	private Map<String, ACCEPTABILITY> acceptabilityMap;
 
 	/**
 	 * No args constructor for use in serialization
@@ -63,7 +66,7 @@ public class Description {
 	 * @param lang
 	 * @param acceptabilityMap
 	 */
-	public Description(String effectiveTime, String moduleId, boolean active, String descriptionId, String conceptId, String type, String lang, String term, String caseSignificance, Map<String, String> acceptabilityMap) {
+	public Description(String effectiveTime, String moduleId, boolean active, String descriptionId, String conceptId, DESCRIPTION_TYPE type, String lang, String term, String caseSignificance, Map<String, ACCEPTABILITY> acceptabilityMap) {
 		this.effectiveTime = effectiveTime;
 		this.moduleId = moduleId;
 		this.active = active;
@@ -116,11 +119,11 @@ public class Description {
 		this.conceptId = conceptId;
 	}
 
-	public String getType() {
+	public DESCRIPTION_TYPE getType() {
 		return type;
 	}
 
-	public void setType(String type) {
+	public void setType(DESCRIPTION_TYPE type) {
 		this.type = type;
 	}
 
@@ -148,7 +151,7 @@ public class Description {
 		this.caseSignificance = caseSignificance;
 	}
 
-	public Map<String, String> getAcceptabilityMap() {
+	public Map<String, ACCEPTABILITY> getAcceptabilityMap() {
 		return acceptabilityMap;
 	}
 
@@ -157,13 +160,13 @@ public class Description {
 	 * @param acceptabilityMap
 	 *	 The acceptabilityMap
 	 */
-	public void setAcceptabilityMap(Map<String, String> acceptabilityMap) {
+	public void setAcceptabilityMap(Map<String, ACCEPTABILITY> acceptabilityMap) {
 		this.acceptabilityMap = acceptabilityMap;
 	}
 
 	@Override
 	public String toString() {
-		return descriptionId + "[" + conceptId + "]: " + term;
+		return (descriptionId==null?"NEW":descriptionId) + "[" + conceptId + "]: " + term;
 	}
 
 	@Override
@@ -195,7 +198,7 @@ public class Description {
 		clone.lang = this.lang;
 		clone.term = this.term;
 		clone.caseSignificance = this.caseSignificance;
-		clone.acceptabilityMap = new HashMap<String, String>();
+		clone.acceptabilityMap = new HashMap<String, ACCEPTABILITY>();
 		clone.acceptabilityMap.putAll(this.acceptabilityMap);
 		return clone;
 	}

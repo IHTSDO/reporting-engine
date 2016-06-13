@@ -2,7 +2,7 @@ package org.ihtsdo.termserver.scripting.domain;
 
 public interface RF2Constants {
 	
-	static int DEPTH_NOT_SET = -1;
+	static int NOT_SET = -1;
 	static int IMMEDIATE_CHILD = 1;
 	static int NA = -1;
 	static String PHARM_BIO_PRODUCT_SCTID = "373873005" ; //Pharmaceutical / biologic product (product)
@@ -19,6 +19,8 @@ public interface RF2Constants {
 	final String ADDITIONAL_RELATIONSHIP = "900000000000227009";
 	final String SPACE = " ";
 	final String COMMA = ",";
+	final String COMMA_QUOTE = ",\"";
+	final String QUOTE_COMMA = "\",";
 	final String TAB = "\t";
 	final String CSV_FIELD_DELIMITER = COMMA;
 	final String TSV_FIELD_DELIMITER = TAB;
@@ -42,6 +44,8 @@ public interface RF2Constants {
 	public enum ConceptType { PRODUCT_STRENGTH, MEDICINAL_ENTITY, MEDICINAL_FORM, GROUPER, PRODUCT_ROLE, UNKNOWN };
 	
 	public enum CARDINALITY { AT_LEAST_ONE, EXACTLY_ONE };
+	
+	public enum DESCRIPTION_TYPE { FSN, SYNONYM };
 	
 	public static final String FIELD_DELIMITER = "\t";
 	public static final String LINE_DELIMITER = "\r\n";

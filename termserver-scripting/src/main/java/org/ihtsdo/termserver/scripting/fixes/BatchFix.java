@@ -36,6 +36,7 @@ import com.google.gson.GsonBuilder;
 public abstract class BatchFix extends TermServerFix implements RF2Constants {
 	
 	protected int batchSize = 5;
+	protected int restartPosition = NOT_SET;
 	File batchFixFile;
 	File reportFile;
 	protected String targetAuthor;
@@ -109,8 +110,9 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 				String taskKey;
 				//Create a task for this batch of concepts
 				if (!dryRun) {
-					debug ("Creating task on project: " + project);
+					debug ("Creating jira task on project: " + project);
 					taskKey = scaClient.createTask(project, batch.getDescription(), batch.getSummaryHTML());
+					debug ("Creating task branch in terminology server: " + taskKey);
 					branchPath = tsClient.createBranch("MAIN/" + project, taskKey);
 				} else {
 					taskKey = project + "-" + getNextDryRunNum();
@@ -152,7 +154,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 					}
 				}
 			} catch (Exception e) {
-				throw new TermServerFixException("Failed to process batch " + batch.getDescription(), e);
+				throw new TermServerFixException("Failed to process batch " + batch.getDescription() + " on task " + batch.getTaskKey(), e);
 			}
 		}
 		
@@ -175,8 +177,9 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 			sctid = concept.getConceptId();
 			fsn = concept.getFsn();
 		}
-		String batchStr = (batch == null? "" :  batch.toString());
-		String line = batchStr + COMMA + sctid + COMMA + fsn + COMMA + concept.getConceptType() + COMMA + severity + COMMA + actionType + COMMA + QUOTE + actionDetail + QUOTE;
+		String batchKey = (batch == null? "" :  batch.getTaskKey());
+		String batchDesc = (batch == null? "" :  batch.getDescription());
+		String line = batchKey + COMMA + batchDesc + COMMA + sctid + COMMA_QUOTE + fsn + QUOTE_COMMA + concept.getConceptType() + COMMA + severity + COMMA + actionType + COMMA + QUOTE + actionDetail + QUOTE;
 		writeToFile (line);
 	}
 	
@@ -195,7 +198,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 
 	protected void init (String[] args) throws TermServerFixException, IOException {
 		if (args.length < 3) {
-			println("Usage: java <FixClass> [-a author] [-b <batchSize>] [-c <authenticatedCookie>] [-d <Y/N>] [-p <projectName>] <batch file Location>");
+			println("Usage: java <FixClass> [-a author] [-b <batchSize>] [-r <restart lineNum>] [-c <authenticatedCookie>] [-d <Y/N>] [-p <projectName>] <batch file Location>");
 			println(" d - dry run");
 			System.exit(-1);
 		}
@@ -204,6 +207,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 		boolean isCookie = false;
 		boolean isDryRun = false;
 		boolean isAuthor = false;
+		boolean isRestart = false;
 	
 		for (String thisArg : args) {
 			if (thisArg.equals("-a")) {
@@ -216,6 +220,8 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 				isCookie = true;
 			} else if (thisArg.equals("-d")) {
 				isDryRun = true;
+			}  else if (thisArg.equals("-r")) {
+				isRestart = true;
 			} else if (isAuthor) {
 				targetAuthor = thisArg.toLowerCase();
 				isAuthor = false;
@@ -228,6 +234,9 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 			} else if (isDryRun) {
 				dryRun = thisArg.toUpperCase().equals("Y");
 				isDryRun = false;
+			} else if (isRestart) {
+				restartPosition = Integer.parseInt(thisArg);
+				isRestart = false;
 			} else if (isCookie) {
 				authenticatedCookie = thisArg;
 				isCookie = false;
@@ -252,7 +261,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 		reportFile = new File(reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToFile ("TASK, SCTID, FSN, CONCEPT_TYPE,SEVERITY,ACTION_TYPE,ACTION_DETAIL");
+		writeToFile ("TASK_KEY, TASK_DESC, SCTID, FSN, CONCEPT_TYPE,SEVERITY,ACTION_TYPE,ACTION_DETAIL");
 	}
 	
 	Concept loadConcept(Concept concept, String branchPath) throws TermServerFixException {
@@ -278,7 +287,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 		int changesMade = 0;
 		for (Relationship thisParent : statedParents) {
 			if (!thisParent.getTarget().equals(acceptableParent)) {
-				report(batch, c, SEVERITY.HIGH, REPORT_ACTION_TYPE.RELATIONSHIP_REMOVED, "Inactivated unwanted parent: " + thisParent.getTarget());
+				report(batch, c, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.RELATIONSHIP_REMOVED, "Inactivated unwanted parent: " + thisParent.getTarget());
 				thisParent.setActive(false);
 				changesMade++;
 			} else {
@@ -302,7 +311,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 	protected int validateAttributeValues(Batch batch, Concept concept,
 			Concept attributeType, Concept descendentsOfValue, CARDINALITY cardinality) throws TermServerFixException {
 		
-		List<Relationship> attributes = concept.getRelationships(CHARACTERISTIC_TYPE.ALL, attributeType, ACTIVE_STATE.BOTH);
+		List<Relationship> attributes = concept.getRelationships(CHARACTERISTIC_TYPE.ALL, attributeType, ACTIVE_STATE.ACTIVE);
 		Set<Concept> descendents = ClosureCache.getClosureCache().getClosure(descendentsOfValue);
 		for (Relationship thisAttribute : attributes) {
 			Concept value = thisAttribute.getTarget();
@@ -310,7 +319,8 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 				SEVERITY severity = thisAttribute.isActive()?SEVERITY.CRITICAL:SEVERITY.LOW;
 				String activeStr = thisAttribute.isActive()?"":"inactive ";
 				String relType = thisAttribute.getCharacteristicType().equals(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP)?"stated ":"inferred ";
-				report (batch, concept, severity, REPORT_ACTION_TYPE.VALIDATION_ERROR, "Attribute has " + activeStr + relType + "target which is not a descendent of: " + descendentsOfValue);
+				String msg = "Attribute has " + activeStr + relType + "target which is not a descendent of: " + descendentsOfValue;
+				report (batch, concept, severity, REPORT_ACTION_TYPE.VALIDATION_ERROR, msg);
 			}
 		}
 		
@@ -318,17 +328,14 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 		
 		//Now check cardinality on active stated relationships
 		attributes = concept.getRelationships(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP, attributeType, ACTIVE_STATE.ACTIVE);
+		String msg = null;
 		switch (cardinality) {
 			case EXACTLY_ONE : if (attributes.size() != 1) {
-									String msg = "Concept has " + attributes.size() + " active stated attributes of type " + attributeType + " expected exactly one.";
-									report (batch, concept, SEVERITY.HIGH, REPORT_ACTION_TYPE.VALIDATION_ERROR, msg);
-									
+									msg = "Concept has " + attributes.size() + " active stated attributes of type " + attributeType + " expected exactly one.";
 								}
 								break;
 			case AT_LEAST_ONE : if (attributes.size() < 1) {
-									String msg = "Concept has " + attributes.size() + " active stated attributes of type " + attributeType + " expected one or more.";
-									report (batch, concept, SEVERITY.HIGH, REPORT_ACTION_TYPE.VALIDATION_ERROR, msg);
-									
+									msg = "Concept has " + attributes.size() + " active stated attributes of type " + attributeType + " expected one or more.";
 								}
 								break;
 		}
@@ -336,6 +343,11 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 		//If we have no stated attributes of the expected type, attempt to pull from the inferred ones
 		if (attributes.size() == 0) {
 			changesMade = transferInferredRelationshipsToStated(batch, concept, attributeType, cardinality);
+		}
+		
+		//If we have an error message but have not made any changes to the concept, then report that error now
+		if (msg != null && changesMade == 0) {
+			report (batch, concept, SEVERITY.HIGH, REPORT_ACTION_TYPE.VALIDATION_ERROR, msg);
 		}
 		return changesMade;
 	}
@@ -368,7 +380,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 	protected void validatePrefInFSN(Batch batch, Concept concept) throws TermServerFixException {
 		//Check that the FSN with the semantic tags stripped off is
 		//equal to the preferred terms
-		List<Description> preferredTerms = concept.getDescriptions(ACCEPTABILITY.PREFERRED, SYN, ACTIVE_STATE.ACTIVE);
+		List<Description> preferredTerms = concept.getDescriptions(ACCEPTABILITY.PREFERRED, DESCRIPTION_TYPE.SYNONYM, ACTIVE_STATE.ACTIVE);
 		String trimmedFSN = SnomedUtils.deconstructFSN(concept.getFsn())[0];
 		for (Description pref : preferredTerms) {
 			if (!pref.getTerm().equals(trimmedFSN)) {

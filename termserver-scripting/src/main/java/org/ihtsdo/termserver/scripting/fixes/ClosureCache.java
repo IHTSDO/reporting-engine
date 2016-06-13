@@ -25,7 +25,7 @@ public class ClosureCache implements RF2Constants{
 	Set<Concept> getClosure(Concept c) throws TermServerFixException {
 		if (!closureCache.containsKey(c)) {
 			Concept preLoadedConcept = gl.getConcept(c.getConceptId());
-			Set<Concept> descendents = preLoadedConcept.getDescendents(DEPTH_NOT_SET);
+			Set<Concept> descendents = preLoadedConcept.getDescendents(NOT_SET);
 			closureCache.put(c, descendents);
 		}
 		return closureCache.get(c);

@@ -53,7 +53,7 @@ public class Concept implements RF2Constants {
 	
 	private boolean isLoaded = false;
 	private int originalFileLineNumber;
-	private ConceptType conceptType;
+	private ConceptType conceptType = ConceptType.UNKNOWN;
 	
 	List<Concept> parents = new ArrayList<Concept>();
 	List<Concept> children = new ArrayList<Concept>();
@@ -273,14 +273,14 @@ public class Concept implements RF2Constants {
 	private void populateAllDescendents(Set<Concept> descendents, int depth) {
 		for (Concept thisChild : children) {
 			descendents.add(thisChild);
-			if (depth == DEPTH_NOT_SET || depth > 1) {
-				int newDepth = depth == DEPTH_NOT_SET ? DEPTH_NOT_SET : depth - 1;
+			if (depth == NOT_SET || depth > 1) {
+				int newDepth = depth == NOT_SET ? NOT_SET : depth - 1;
 				thisChild.populateAllDescendents(descendents, newDepth);
 			}
 		}
 	}
 
-	public List<Description> getDescriptions(ACCEPTABILITY acceptability, String descriptionType, ACTIVE_STATE active) throws TermServerFixException {
+	public List<Description> getDescriptions(ACCEPTABILITY acceptability, DESCRIPTION_TYPE descriptionType, ACTIVE_STATE active) throws TermServerFixException {
 		List<Description> matchingDescriptions = new ArrayList<Description>();
 		for (Description thisDescription : descriptions) {
 			if (
@@ -304,6 +304,11 @@ public class Concept implements RF2Constants {
 			case INACTIVE : return false;
 			default: throw new TermServerFixException("Unable to translate " + active + " into boolean state");
 		}
+	}
+
+	public void addDescription(Description description) {
+		descriptions.add(description);
+		
 	}
 
 }

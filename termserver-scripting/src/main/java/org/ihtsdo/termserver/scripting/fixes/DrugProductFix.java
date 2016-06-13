@@ -73,8 +73,12 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 	@Override
 	public int doFix(Batch batch, Concept concept) throws TermServerFixException {
 		Concept loadedConcept = loadConcept(concept, batch.getBranchPath());
+		if (concept.getConceptType().equals(ConceptType.UNKNOWN)) {
+			determineConceptType(concept);
+		}
 		loadedConcept.setConceptType(concept.getConceptType());
 		int changesMade = 0;
+		
 		switch (concept.getConceptType()) {
 			case MEDICINAL_ENTITY : changesMade = mef.doFix(batch, loadedConcept);
 									break;
@@ -82,7 +86,8 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 									break;
 			case PRODUCT_STRENGTH : changesMade = psf.doFix(batch, loadedConcept);
 									break;
-			case GROUPER : changesMade = gf.doFix(batch, loadedConcept);
+			case GROUPER :			//No fixes being made to groupers for now
+									//changesMade = gf.doFix(batch, loadedConcept);
 									break;
 			case PRODUCT_ROLE : 
 			default : warn ("Don't know what to do with " + concept);
@@ -139,7 +144,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 			Set<Concept> allConceptsToBeProcessed) {
 		//Ensure that all concepts we got given to process were captured in one batch or another
 		for (Concept thisConcept : concepts) {
-			if (!allConceptsToBeProcessed.contains(thisConcept)) {
+			if (!allConceptsToBeProcessed.contains(thisConcept) && !thisConcept.getConceptType().equals(ConceptType.GROUPER)) {
 				String msg = thisConcept + " was given in input file but did not get included in a batch.  Check active ingredient.";
 				report(null, thisConcept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.UNEXPECTED_CONDITION, msg);
 			}
@@ -213,6 +218,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 
 	private String getIngredientCombinationKey(Concept loadedConcept, List<Relationship> ingredients) throws TermServerFixException {
 		String comboKey = "";
+		Collections.sort(ingredients);  //Ingredient order must be consistent.
 		for (Relationship r : ingredients) {
 			if (r.isActive()) {
 				comboKey += r.getTarget().getConceptId() + SEPARATOR;
@@ -255,25 +261,33 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 			String newFSN, Map<String, String> wordSubstitution) {
 		//Replace any instances of the map key with the corresponding value
 		for (Map.Entry<String, String> substitution : wordSubstitution.entrySet()) {
-			newFSN = newFSN.replace(substitution.getKey(), substitution.getValue());
-			String msg = "Replaced " + substitution.getKey() + " with " + substitution.getValue() + " from FSN.";
-			report(batch, concept, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, msg);
+			String modifiedFSN = newFSN.replace(substitution.getKey(), substitution.getValue());
+			if (!modifiedFSN.equals(newFSN)) {
+				String msg = "Replaced " + substitution.getKey() + " with " + substitution.getValue() + " from FSN.";
+				report(batch, concept, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, msg);
+				newFSN = modifiedFSN;
+			}
 		}
 		return newFSN;
 	}
 
 	private void updateFsnAndPrefTerms(Batch batch, Concept concept,
 			String newFSN, String semanticTag) throws TermServerFixException {
-		concept.setFsn(newFSN);
+		String fullFSN = newFSN + SPACE + semanticTag;
+		concept.setFsn(fullFSN);
 		//FSNs are also preferred so we can just replace all preferred terms
 		List<Description> fsnAndPreferred = concept.getDescriptions(ACCEPTABILITY.PREFERRED, null, ACTIVE_STATE.ACTIVE);
 		for (Description thisDescription : fsnAndPreferred) {
 			Description replacement = thisDescription.clone();
 			thisDescription.setActive(false);
-			replacement.setTerm(newFSN);
-			if (thisDescription.getType().equals(FSN)) {
-				replacement.setTerm(newFSN + SPACE + semanticTag);
+			if (thisDescription.getType().equals(DESCRIPTION_TYPE.FSN)) {
+				replacement.setTerm(fullFSN);
+			} else {
+				replacement.setTerm(newFSN);
 			}
+			String msg = "Replaced (inactivated) " + thisDescription.getType() + " " + thisDescription + " with " + replacement;
+			report (batch, concept, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, msg);
+			concept.addDescription(replacement);
 		}
 		
 	}
@@ -282,19 +296,20 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 			Concept concept, String newFSN) {
 		String[] ingredients = newFSN.split(INGREDIENT_SEPARATOR_ESCAPED);
 		//ingredients should be in alphabetical order, also trim spaces
-		Arrays.sort(ingredients);
 		for (int i = 0; i < ingredients.length; i++) {
-			ingredients[i] = ingredients[i].trim();
+			ingredients[i] = ingredients[i].toLowerCase().trim();
 		}
-		
+		Arrays.sort(ingredients);
+
 		//Reform with spaces around + sign and only first letter capitalized
-		boolean firstIngredient = true;
+		boolean isFirstIngredient = true;
 		newFSN = "";
 		for (String thisIngredient : ingredients) {
-			if (!firstIngredient) {
+			if (!isFirstIngredient) {
 				newFSN += SPACE + INGREDIENT_SEPARATOR + SPACE;
-			}
+			} 
 			newFSN += thisIngredient.toLowerCase();
+			isFirstIngredient = false;
 		}
 		return StringUtils.capitalizeFirstLetter(newFSN);
 	}
@@ -314,6 +329,59 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 			
 		}
 		return modifiedFsnRoot;
+	}
+	
+
+	void determineConceptType(Concept concept) {
+		//Simplest thing for Product Strength is that if there's a number in the FSN then it's probably Product Strength
+		//We'll refine this logic as examples present themselves.
+		String fsn = concept.getFsn();
+		if (fsn.matches(".*\\d+.*")) {
+			concept.setConceptType(ConceptType.PRODUCT_STRENGTH);
+		} else {
+			//If the concept has a dose form, then it's a Medicinal Form
+			List<Relationship> doseFormAttributes = concept.getRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, HAS_DOSE_FORM, ACTIVE_STATE.ACTIVE);
+			if (!doseFormAttributes.isEmpty()) {
+				concept.setConceptType(ConceptType.MEDICINAL_FORM);
+			}
+		}
+		debug ("Determined " + concept + " to be " + concept.getConceptType());
+	}
+	
+	
+	List<List<Concept>> splitBatchIntoChunks(List<Concept> concepts, int chunkSize) {
+		List<List<Concept>> chunkedList = new ArrayList<List<Concept>>();
+		//How many chunks are we going to need?
+		double chunkCount = Math.ceil((float)concepts.size()/(float)chunkSize);
+		//Now if we divide the concepts evenly between chunks how many in each?
+		int conceptsPerChunk = (int)Math.round(concepts.size() / chunkCount);
+		
+		//Any Medicinal Entity concepts must go in the first chunk
+		List<Concept> thisChunk = new ArrayList<Concept>();
+		chunkedList.add(thisChunk);
+		List<Concept> MEs = getConceptsOfType(concepts, ConceptType.MEDICINAL_ENTITY);
+		thisChunk.addAll(MEs);
+		concepts.removeAll(MEs);
+		while (concepts.size() > 0) {
+			Concept thisConcept = concepts.get(0);
+			concepts.remove(thisConcept);
+			thisChunk.add(thisConcept);
+			if (thisChunk.size() == conceptsPerChunk && chunkedList.size() < chunkCount) {
+				thisChunk = new ArrayList<Concept>();
+				chunkedList.add(thisChunk);
+			}
+		}
+		return chunkedList;
+	}
+	
+	List<Concept> getConceptsOfType(List<Concept> concepts, ConceptType type) {
+		List<Concept> matching = new ArrayList<Concept>();
+		for (Concept thisConcept : concepts) {
+			if (thisConcept.getConceptType().equals(type)) {
+				matching.add(thisConcept);
+			}
+		}
+		return matching;
 	}
 
 }
