@@ -37,7 +37,6 @@ import com.google.gson.GsonBuilder;
 public abstract class BatchFix extends TermServerFix implements RF2Constants {
 	
 	protected int batchSize = 5;
-	protected int restartPosition = NOT_SET;
 	File batchFixFile;
 	File reportFile;
 	protected String targetAuthor;
@@ -116,6 +115,10 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 					String taskKey;
 					//Create a task for this batch of concepts
 					if (!dryRun) {
+						debug ("Letting TS catch up");
+						if (!batch.equals(batches.get(0))) {
+							Thread.sleep(20 * 1000);
+						}
 						debug ("Creating jira task on project: " + project);
 						taskKey = scaClient.createTask(project, task.getDescription(), task.getSummaryHTML());
 						debug ("Creating task branch in terminology server: " + taskKey);
@@ -243,6 +246,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 				isDryRun = false;
 			} else if (isRestart) {
 				restartPosition = Integer.parseInt(thisArg);
+				println("Restarting file from line " + restartPosition);
 				isRestart = false;
 			} else if (isCookie) {
 				authenticatedCookie = thisArg;
@@ -390,7 +394,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 		List<Description> preferredTerms = concept.getDescriptions(ACCEPTABILITY.PREFERRED, DESCRIPTION_TYPE.SYNONYM, ACTIVE_STATE.ACTIVE);
 		String trimmedFSN = SnomedUtils.deconstructFSN(concept.getFsn())[0];
 		//Special handling for acetaminophen
-		if (trimmedFSN.toLowerCase().contains(ACETAMINOPHEN)) {
+		if (trimmedFSN.toLowerCase().contains(ACETAMINOPHEN) || trimmedFSN.toLowerCase().contains(PARACETAMOL)) {
 			println ("Doing ACETAMINOPHEN processing for " + concept);
 		} else {
 			for (Description pref : preferredTerms) {

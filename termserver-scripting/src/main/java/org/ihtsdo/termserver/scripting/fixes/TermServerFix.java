@@ -4,10 +4,11 @@ import java.util.Scanner;
 
 import org.ihtsdo.termserver.scripting.client.SCAClient;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClient;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 
 import us.monoid.web.Resty;
 
-public abstract class TermServerFix {
+public abstract class TermServerFix implements RF2Constants {
 	
 	static boolean debug = true;
 	static boolean dryRun = true;
@@ -19,6 +20,7 @@ public abstract class TermServerFix {
 	protected Resty resty = new Resty();
 	protected String project;
 	public static final int maxFailures = 5;
+	protected int restartPosition = NOT_SET;
 
 	public abstract String getFixName();
 	
@@ -89,6 +91,19 @@ public abstract class TermServerFix {
 			if (!response.isEmpty()) {
 				project = response;
 			}
+			
+			if (restartPosition != NOT_SET) {
+				print ("Restarting from line: [" +restartPosition + "]: ");
+				response = in.nextLine().trim();
+				if (!response.isEmpty()) {
+					restartPosition = Integer.parseInt(response);
+				}
+			}
+
+		}
+		if (restartPosition == 0) {
+			println ("Restart position given as 0 but line numbering starts from 1.  Starting at line 1.");
+			restartPosition = 1;
 		}
 	}
 	

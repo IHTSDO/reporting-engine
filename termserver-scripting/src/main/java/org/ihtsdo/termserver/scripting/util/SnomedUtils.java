@@ -1,6 +1,9 @@
 package org.ihtsdo.termserver.scripting.util;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.fixes.TermServerFixException;
@@ -38,6 +41,58 @@ public class SnomedUtils implements RF2Constants{
 			return "A";
 		}
 		throw new TermServerFixException("Unable to translate acceptability " + a);
+	}
+
+	public static String substitute(String str,
+			Map<String, String> wordSubstitution) {
+		//Replace any instances of the map key with the corresponding value
+		for (Map.Entry<String, String> substitution : wordSubstitution.entrySet()) {
+			str = str.replace(substitution.getKey(), substitution.getValue());
+		}
+		return str;
+	}
+	
+	/**
+	 * Merge two acceptability maps such that a PREFERRED overrides an ACCEPTABLE
+	 * AND ACCEPTABLE overrides not acceptable.
+	 */
+	public static Map<String, ACCEPTABILITY> mergeAcceptabilityMap (Map<String, ACCEPTABILITY> left, Map<String, ACCEPTABILITY> right) {
+		Set<String> dialects = new HashSet<String>();
+		dialects.addAll(left.keySet());
+		dialects.addAll(right.keySet());
+		Map<String, ACCEPTABILITY> merged = new HashMap<String, ACCEPTABILITY>();
+		
+		for (String thisDialect : dialects) {
+			if (!left.containsKey(thisDialect) && right.containsKey(thisDialect)) {
+				merged.put(thisDialect, right.get(thisDialect));
+			} 
+			if (!right.containsKey(thisDialect) && left.containsKey(thisDialect)) {
+				merged.put(thisDialect, left.get(thisDialect));
+			} 
+			if (left.containsKey(thisDialect) && right.containsKey(thisDialect)) {
+				if (left.get(thisDialect).equals(ACCEPTABILITY.PREFERRED) || right.get(thisDialect).equals(ACCEPTABILITY.PREFERRED)) {
+					merged.put(thisDialect, ACCEPTABILITY.PREFERRED);
+				} else {
+					merged.put(thisDialect, ACCEPTABILITY.ACCEPTABLE);
+				}
+			}
+		}
+		return merged;
+	}
+	
+	/**
+	 * 2 points for preferred, 1 point for acceptable
+	 */
+	public static int accetabilityScore (Map<String, ACCEPTABILITY> acceptabilityMap) {
+		int score = 0;
+		for (ACCEPTABILITY a : acceptabilityMap.values()) {
+			if (a.equals(ACCEPTABILITY.PREFERRED)) {
+				score += 2;
+			} else if (a.equals(ACCEPTABILITY.ACCEPTABLE)) {
+				score += 1;
+			}
+		}
+		return score;
 	}
 		
 

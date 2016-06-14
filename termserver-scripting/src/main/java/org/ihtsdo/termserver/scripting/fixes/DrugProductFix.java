@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +28,7 @@ import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.Task;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
+import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
 
 import com.b2international.commons.StringUtils;
@@ -43,6 +45,11 @@ What rules are applied to each one depends on the type - Medicinal Entity, Produ
 public class DrugProductFix extends BatchFix implements RF2Constants{
 	
 	String [] unwantedWords = new String[] { "preparation", "product" };
+	
+	static Map<String, String> wordSubstitution = new HashMap<String, String>();
+	static {
+		wordSubstitution.put("acetaminophen", "paracetamol");
+	}
 	
 	protected DrugProductFix(BatchFix clone) {
 		super(clone);
@@ -99,11 +106,37 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 			debug ("Updating state of " + loadedConcept);
 			if (!dryRun) {
 				tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
+				updateDescriptionInactivationReason(task, loadedConcept);
 			}
 		} catch (Exception e) {
 			report(task, concept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.API_ERROR, "Failed to save changed concept to TS: " + e.getMessage());
 		}
 		return changesMade;
+	}
+
+	/**
+	 * Any description that has been updated (effectiveTime == null) and is now inactive
+	 * should have its inactivation reason set to RETIRED aka "Reason not stated"
+	 * @param loadedConcept
+	 * @throws  
+	 */
+	private void updateDescriptionInactivationReason(Task t, Concept loadedConcept) {
+		for (Description d : loadedConcept.getDescriptions()) {
+			if (d.getEffectiveTime() == null && d.isActive() == false) {
+				try {
+					String descriptionSerialised = gson.toJson(d);
+					JSONObject jsonObjDesc = new JSONObject(descriptionSerialised);
+					jsonObjDesc.put("id", d.getDescriptionId());
+					jsonObjDesc.remove("descriptionId");
+					jsonObjDesc.put("inactivationIndicator", InactivationIndicator.RETIRED.toString());
+					jsonObjDesc.put("commitComment", "Batch Script Update");
+					tsClient.updateDescription(jsonObjDesc, t.getBranchPath());
+				} catch (SnowOwlClientException | JSONException e) {
+					println ("Failed to set inactivation reason on " + d + ": " + e.getMessage());
+				}
+			}
+		}
+		
 	}
 
 	@Override
@@ -146,13 +179,13 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		int taskCount = 0;
 		for (List<Concept> thisTaskContents : taskContents) {
 			Task thisTask = new Task (thisTaskContents);
+			taskCount++;
 			thisBatch.addTask(thisTask);
 			String ingredientList = getIngredientList(ingredients);
 			if (taskContents.size() > 1) {
-				ingredientList += ": " + (++taskCount);
+				ingredientList += ": " + taskCount;
 			}
 			thisTask.setDescription(ingredientList);
-			thisTask.setConcepts(new ArrayList<Concept>(matchingCombo));
 		}
 		return taskCount;
 	}
@@ -166,6 +199,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 				report(null, thisConcept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.UNEXPECTED_CONDITION, msg);
 			}
 		}
+		println("Processing " + allConceptsToBeProcessed.size() + " concepts.");
 	}
 
 	private List<Relationship> getIngredients(Concept c) {
@@ -176,6 +210,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		ArrayList<String> ingredientNames = new ArrayList<String>();
 		for (Relationship r : ingredientRelationships) {
 			String ingredientName = r.getTarget().getFsn().replaceAll("\\(.*?\\)","").trim();
+			ingredientName = SnomedUtils.substitute(ingredientName, wordSubstitution);
 			ingredientNames.add(ingredientName);
 		}
 		Collections.sort(ingredientNames);
@@ -276,14 +311,12 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 
 	private String doWordSubstitution(Task task, Concept concept,
 			String newFSN, Map<String, String> wordSubstitution) {
-		//Replace any instances of the map key with the corresponding value
-		for (Map.Entry<String, String> substitution : wordSubstitution.entrySet()) {
-			String modifiedFSN = newFSN.replace(substitution.getKey(), substitution.getValue());
-			if (!modifiedFSN.equals(newFSN)) {
-				String msg = "Replaced " + substitution.getKey() + " with " + substitution.getValue() + " from FSN.";
-				report(task, concept, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, msg);
-				newFSN = modifiedFSN;
-			}
+
+		String modifiedFSN = SnomedUtils.substitute(newFSN, wordSubstitution);
+		if (!modifiedFSN.equals(newFSN)) {
+			String msg = "Word substitution changed " + newFSN + " to " + modifiedFSN;
+			report(task, concept, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, msg);
+			newFSN = modifiedFSN;
 		}
 		return newFSN;
 	}
@@ -303,6 +336,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		for (Description thisDescription : fsnAndPreferred) {
 			Description replacement = thisDescription.clone();
 			thisDescription.setActive(false);
+			thisDescription.setEffectiveTime(null);
 			if (thisDescription.getType().equals(DESCRIPTION_TYPE.FSN)) {
 				replacement.setTerm(fullFSN);
 			} else {
@@ -319,12 +353,42 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 			}
 			
 			if (replacement != null) {
-				String msg = "Replaced (inactivated) " + thisDescription.getType() + " " + thisDescription + " with " + replacement;
+				//Check to see if we're adding another description when we could better just increase
+				//the acceptability of an existing preferred term
+				String msg;
+				Description improvedAcceptablity = attemptAcceptabilityImprovement(replacement, concept);
+				if (improvedAcceptablity != null) {
+					msg = "Improved acceptability of existing term: " + improvedAcceptablity + " now " + SnomedUtils.toString(improvedAcceptablity.getAcceptabilityMap());
+				} else {
+					concept.addDescription(replacement);
+					msg = "Replaced (inactivated) " + thisDescription.getType() + " " + thisDescription + " with " + replacement;
+				}
 				report (task, concept, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, msg);
-				concept.addDescription(replacement);
+				
 			}
 		}
 		
+	}
+
+	private Description attemptAcceptabilityImprovement(
+			Description replacement, Concept concept) throws TermServerFixException {
+		//Look through all exising Preferred Terms to find if there's an existing one that matches
+		//which could have it's acceptability improved instead of adding the replacement
+		List<Description> preferredTerms = concept.getDescriptions(ACCEPTABILITY.PREFERRED, DESCRIPTION_TYPE.SYNONYM, ACTIVE_STATE.BOTH);
+		Description improvedDescription = null;
+		for (Description desc : preferredTerms) {
+			if (desc.getTerm().equals(replacement.getTerm())) {
+				int existingScore = SnomedUtils.accetabilityScore(desc.getAcceptabilityMap());
+				Map<String, ACCEPTABILITY> mergedMap = SnomedUtils.mergeAcceptabilityMap(desc.getAcceptabilityMap(), replacement.getAcceptabilityMap());
+				int newScore = SnomedUtils.accetabilityScore(mergedMap);
+				if (newScore > existingScore) {
+					improvedDescription = desc;
+					desc.setAcceptabilityMap(mergedMap);
+					desc.setActive(true);
+				}
+			}
+		}
+		return improvedDescription;
 	}
 
 	private boolean checkForDemotion(Description originalDesc, String newFSN) {

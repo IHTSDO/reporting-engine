@@ -12,6 +12,7 @@ public interface RF2Constants {
 	static Concept HAS_DOSE_FORM = new Concept ("411116001","Has dose form (attribute)");
 	static Concept DRUG_PREPARATION = new Concept("105904009","Type of drug preparation (qualifier value)");
 	static String ACETAMINOPHEN = "acetaminophen";
+	static String PARACETAMOL = "paracetamol";
 	static String SYN = "900000000000013009";
 	static String FSN = "900000000000003001";
 	static final String FULLY_DEFINED_SCTID = "900000000000073002";
@@ -28,6 +29,9 @@ public interface RF2Constants {
 	final String QUOTE = "\"";
 	final String INGREDIENT_SEPARATOR = "+";
 	final String INGREDIENT_SEPARATOR_ESCAPED = "\\+";
+	
+	enum InactivationIndicator {DUPLICATE, OUTDATED, ERRONEOUS, LIMITED, MOVED_ELSEWHERE, 
+		PENDING_MOVE, INAPPROPRIATE, CONCEPT_NON_CURRENT, RETIRED};
 	
 	static final String GB_ENG_LANG_REFSET = "900000000000508004";
 	static final String US_ENG_LANG_REFSET = "900000000000509007";

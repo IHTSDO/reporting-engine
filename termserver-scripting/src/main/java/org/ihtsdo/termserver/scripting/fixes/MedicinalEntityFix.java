@@ -1,8 +1,6 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.ihtsdo.termserver.scripting.domain.Batch;
 import org.ihtsdo.termserver.scripting.domain.Concept;
@@ -29,11 +27,6 @@ public class MedicinalEntityFix extends DrugProductFix implements RF2Constants{
 		super(clone);
 	}
 	
-	static Map<String, String> wordSubstitution = new HashMap<String, String>();
-	static {
-		wordSubstitution.put("acetaminophen", "paracetamol");
-	}
-
 	@Override
 	public int doFix(Task task, Concept concept) throws TermServerFixException {
 		int changesMade = ensureDefinitionStatus(task, concept, DEFINITION_STATUS.FULLY_DEFINED);

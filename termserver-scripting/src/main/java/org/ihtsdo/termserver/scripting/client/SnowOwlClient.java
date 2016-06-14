@@ -86,6 +86,10 @@ public class SnowOwlClient {
 	private String getConceptsPath(String branchPath) {
 		return url + "/browser/" + branchPath + "/concepts";
 	}
+	
+	private String getDescriptionsPath(String branchPath, String id) {
+		return url  + "/" + branchPath + "/descriptions/" + id;
+	}
 
 	public String createBranch(String parent, String branchName) throws SnowOwlClientException {
 		try {
@@ -292,6 +296,19 @@ public class SnowOwlClient {
 		} catch (IOException e) {
 			throw new SnowOwlClientException("Unable to recover exported archive from " + exportLocationURL, e);
 		}
+	}
+
+	public JSONResource updateDescription(JSONObject descObj, String branchPath) throws SnowOwlClientException {
+		try {
+			final String id = descObj.getString("id");
+			Preconditions.checkNotNull(id);
+			JSONResource response =  resty.json(getDescriptionsPath(branchPath,id) + "/updates", RestyHelper.content(descObj, SNOWOWL_CONTENT_TYPE));
+			logger.info("Updated description " + id);
+			return response;
+		} catch (Exception e) {
+			throw new SnowOwlClientException(e);
+		}
+		
 	}
 
 
