@@ -209,12 +209,13 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 	private String getIngredientList(List<Relationship> ingredientRelationships) {
 		ArrayList<String> ingredientNames = new ArrayList<String>();
 		for (Relationship r : ingredientRelationships) {
-			String ingredientName = r.getTarget().getFsn().replaceAll("\\(.*?\\)","").trim();
+			String ingredientName = r.getTarget().getFsn().replaceAll("\\(.*?\\)","").trim().toLowerCase();
 			ingredientName = SnomedUtils.substitute(ingredientName, wordSubstitution);
 			ingredientNames.add(ingredientName);
 		}
 		Collections.sort(ingredientNames);
-		return ingredientNames.toString().replaceAll("\\[|\\]", "").replaceAll(", "," + ");
+		String list = ingredientNames.toString().replaceAll("\\[|\\]", "").replaceAll(", "," + ");
+		return SnomedUtils.capitalize(list);
 	}
 	
 	private Multimap<String, Concept> findAllIngredientCombos() throws TermServerFixException {

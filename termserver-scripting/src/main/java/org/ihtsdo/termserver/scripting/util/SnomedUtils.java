@@ -94,6 +94,13 @@ public class SnomedUtils implements RF2Constants{
 		}
 		return score;
 	}
+	
+	public static String capitalize (String str) {
+		if (str == null || str.isEmpty() || str.length() < 2) {
+			return str;
+		}
+		return str.substring(0, 1).toUpperCase() + str.substring(1);
+	}
 		
 
 }
