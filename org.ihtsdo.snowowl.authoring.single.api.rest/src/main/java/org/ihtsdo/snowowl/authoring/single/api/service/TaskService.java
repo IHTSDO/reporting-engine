@@ -222,7 +222,7 @@ public class TaskService {
 
 	public List<Issue> getTaskIssues(String projectKey, TaskStatus taskStatus) throws BusinessServiceException {
 		try {
-			return getJiraClient().searchIssues(getProjectTaskJQL(projectKey, taskStatus)).issues;
+			return getJiraClient().searchIssues(getProjectTaskJQL(projectKey, taskStatus), -1).issues;
 		} catch (JiraException e) {
 			throw new BusinessServiceException("Failed to load tasks in project '" + projectKey + "' from Jira.", e);
 		}
