@@ -1,5 +1,9 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Scanner;
 
 import org.ihtsdo.termserver.scripting.client.SCAClient;
@@ -21,6 +25,8 @@ public abstract class TermServerFix implements RF2Constants {
 	protected String project;
 	public static final int maxFailures = 5;
 	protected int restartPosition = NOT_SET;
+	private static Date startTime;
+	private static Map<String, Object> summaryDetails = new HashMap<String, Object>();
 
 	public abstract String getFixName();
 	
@@ -113,6 +119,44 @@ public abstract class TermServerFix implements RF2Constants {
 
 	public void setProject(String project) {
 		this.project = project;
+	}
+	
+	public void startTimer() {
+		startTime = new Date();
+	}
+	
+	public void addSummaryInformation(String item, Object detail) {
+		summaryDetails.put(item, detail);
+	}
+	
+	public void incrementSummaryInformation(String key, int incrementAmount) {
+		if (!summaryDetails.containsKey(key)) {
+			summaryDetails.put (key, new Integer(0));
+		}
+		int newValue = ((Integer)summaryDetails.get(key)).intValue() + incrementAmount;
+		summaryDetails.put(key, newValue);
+	}
+	
+	public void finish() {
+		println ("===========================================");
+		Date endTime = new Date();
+		SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+		//I've not had to adjust for timezones when creating a date before?
+		Date diff = new Date(endTime.getTime() - startTime.getTime() + (endTime.getTimezoneOffset() * 60 * 1000));
+		println ("Completed processing in " + sdf.format(diff));
+		println ("Started at: " + startTime);
+		println ("Finished at: " + endTime);
+		
+		for (Map.Entry<String, Object> summaryDetail : summaryDetails.entrySet()) {
+			println (summaryDetail.getKey() + ": " + summaryDetail.getValue().toString());
+		}
+		if (summaryDetails.containsKey("Tasks created") && summaryDetails.containsKey("Concepts processed") ) {
+			double c = (double)((Integer)summaryDetails.get("Concepts processed")).intValue();
+			double t = (double)((Integer)summaryDetails.get("Tasks created")).intValue();
+			double avg = Math.round((c/t) * 10) / 10.0;
+			println ("Concepts per task: " + avg);
+		}
+		
 	}
 
 }

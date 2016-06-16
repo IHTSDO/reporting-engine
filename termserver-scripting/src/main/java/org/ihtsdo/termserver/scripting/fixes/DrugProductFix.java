@@ -64,10 +64,16 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 	
 	public static void main(String[] args) throws TermServerFixException, IOException, SnowOwlClientException {
 		DrugProductFix fix = new DrugProductFix(null);
-		fix.init(args);
-		//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
-		fix.loadProject();
-		fix.processFile();
+		try {
+			fix.init(args);
+			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
+			fix.loadProject();
+			//We won't incude the project export in our timings
+			fix.startTimer();
+			fix.processFile();
+		} finally {
+			fix.finish();
+		}
 	}
 	
 	protected void init(String[] args) throws TermServerFixException, IOException {
@@ -130,6 +136,12 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 					jsonObjDesc.remove("descriptionId");
 					jsonObjDesc.put("inactivationIndicator", InactivationIndicator.RETIRED.toString());
 					jsonObjDesc.put("commitComment", "Batch Script Update");
+					//Description endpoint uses acceptability rather than acceptabilityMap
+					JSONObject acceptabilityMap = jsonObjDesc.optJSONObject("acceptabilityMap");
+					if (acceptabilityMap != null) {
+	 					jsonObjDesc.put("acceptability", acceptabilityMap);
+						jsonObjDesc.remove("acceptabilityMap");
+					}
 					tsClient.updateDescription(jsonObjDesc, t.getBranchPath());
 				} catch (SnowOwlClientException | JSONException e) {
 					println ("Failed to set inactivation reason on " + d + ": " + e.getMessage());
@@ -167,6 +179,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 				}
 			}
 		}
+		addSummaryInformation("Concepts processed", allConceptsToBeProcessed.size());
 		validateAllInputConceptsBatched (concepts, allConceptsToBeProcessed);
 		return batches;
 	}
@@ -512,16 +525,23 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		int conceptsPerChunk = (int)Math.round(batchContent.size() / chunkCount);
 		
 		//Any Medicinal Entity concepts must go in the first chunk
+		//Also Medicinal Forms
 		List<Concept> thisChunk = new ArrayList<Concept>();
 		chunkedList.add(thisChunk);
+		
 		List<Concept> MEs = getConceptsOfType(batchContent, ConceptType.MEDICINAL_ENTITY);
 		thisChunk.addAll(MEs);
 		batchContent.removeAll(MEs);
+		
+		List<Concept> MFs = getConceptsOfType(batchContent, ConceptType.MEDICINAL_FORM);
+		thisChunk.addAll(MFs);
+		batchContent.removeAll(MFs);
+
 		while (batchContent.size() > 0) {
 			Concept thisConcept = batchContent.get(0);
 			batchContent.remove(thisConcept);
 			thisChunk.add(thisConcept);
-			if (thisChunk.size() == conceptsPerChunk && chunkedList.size() < chunkCount) {
+			if (thisChunk.size() >= conceptsPerChunk && chunkedList.size() < chunkCount) {
 				thisChunk = new ArrayList<Concept>();
 				chunkedList.add(thisChunk);
 			}

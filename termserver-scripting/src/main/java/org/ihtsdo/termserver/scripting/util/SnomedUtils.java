@@ -1,7 +1,10 @@
 package org.ihtsdo.termserver.scripting.util;
 
+import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -101,6 +104,35 @@ public class SnomedUtils implements RF2Constants{
 		}
 		return str.substring(0, 1).toUpperCase() + str.substring(1);
 	}
+
+	public static List<String> removeBlankLines(List<String> lines) {
+		List<String> unixLines = new ArrayList<String>();
+		for (String thisLine : lines) {
+			if (!thisLine.isEmpty()) {
+				unixLines.add(thisLine);
+			}
+		}
+		return unixLines;
+	}
+
+	/**
+	 * @return an array of 3 elements containing:  The path, the filename, the file extension (if it exists) or empty strings
+	 */
+	public static String[] deconstructFilename(File file) {
+		String[] parts = new String[] {"","",""};
 		
+		if (file== null) {
+			return parts;
+		}
+		parts[0] = file.getAbsolutePath().substring(0, file.getAbsolutePath().lastIndexOf(File.separator));
+		if (file.getName().lastIndexOf(".") > 0) {
+			parts[1] = file.getName().substring(0, file.getName().lastIndexOf("."));
+			parts[2] = file.getName().substring(file.getName().lastIndexOf(".") + 1);
+		} else {
+			parts[1] = file.getName();
+		}
+		
+		return parts;
+	}
 
 }

@@ -72,6 +72,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 	protected void processFile() throws TermServerFixException {
 		try {
 			List<String> lines = Files.readLines(batchFixFile, Charsets.UTF_8);
+			lines = SnomedUtils.removeBlankLines(lines);
 			List<Concept> allConcepts = new ArrayList<Concept>();
 			
 			//Are we restarting the file from some line number
@@ -92,7 +93,9 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 				}
 			}
 			String projectPath = "MAIN/" + project;
+			addSummaryInformation("Concepts in file", allConcepts.size());
 			List<Batch> batches = formIntoBatches(batchFixFile.getName(), allConcepts, projectPath);
+			addSummaryInformation("Batches created", batches.size());
 			batchProcess(batches);
 		} catch (FileNotFoundException e) {
 			throw new TermServerFixException("Unable to open batch file " + batchFixFile.getAbsolutePath(), e);
@@ -131,6 +134,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 					debug ( (dryRun?"Dry Run " : "Created") + "task: " + branchPath);
 					task.setTaskKey(taskKey);
 					task.setBranchPath(branchPath);
+					incrementSummaryInformation("Tasks created",1);
 					
 					//Process each concept
 					for (Concept concept : task.getConcepts()) {
@@ -268,7 +272,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 		init();
 		
 		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
-		String reportFilename = "batch_fix_" + df.format(new Date()) + ".csv";
+		String reportFilename = "results_" + SnomedUtils.deconstructFilename(batchFixFile)[1] + "_" + df.format(new Date()) + ".csv";
 		reportFile = new File(reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());

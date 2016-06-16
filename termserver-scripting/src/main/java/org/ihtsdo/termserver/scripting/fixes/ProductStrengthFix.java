@@ -24,12 +24,6 @@ public class ProductStrengthFix extends BatchFix implements RF2Constants{
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerFixException, IOException {
-		ProductStrengthFix fix = new ProductStrengthFix(null);
-		fix.init(args);
-		fix.processFile();
-	}
-
 	@Override
 	public int doFix(Task task, Concept concept) throws TermServerFixException {
 		int changesMade = ensureDefinitionStatus(task, concept, DEFINITION_STATUS.PRIMITIVE);
