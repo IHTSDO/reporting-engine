@@ -17,6 +17,7 @@ public abstract class TermServerFix implements RF2Constants {
 	static boolean debug = true;
 	static boolean dryRun = true;
 	static int dryRunCounter = 0;
+	static int throttle = 0;
 	protected String url = environments[0];
 	protected SnowOwlClient tsClient;
 	protected SCAClient scaClient;
@@ -99,10 +100,18 @@ public abstract class TermServerFix implements RF2Constants {
 			}
 			
 			if (restartPosition != NOT_SET) {
-				print ("Restarting from line: [" +restartPosition + "]: ");
+				print ("Restarting from line [" +restartPosition + "]: ");
 				response = in.nextLine().trim();
 				if (!response.isEmpty()) {
 					restartPosition = Integer.parseInt(response);
+				}
+			}
+			
+			if (throttle > 0) {
+				print ("Time delay between tasks (throttle) seconds [" +throttle + "]: ");
+				response = in.nextLine().trim();
+				if (!response.isEmpty()) {
+					throttle = Integer.parseInt(response);
 				}
 			}
 

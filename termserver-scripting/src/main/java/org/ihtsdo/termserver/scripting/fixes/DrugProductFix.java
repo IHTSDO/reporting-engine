@@ -408,7 +408,8 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 	private boolean checkForDemotion(Description originalDesc, String newFSN) {
 		boolean demotionPerformed = false;
 		//Normalise the original Description to see if the ingredients look like they've changed
-		String origDescNorm = normalizeMultiIngredientTerm(originalDesc.getTerm());
+		String sanitizedTerm = removeUnwantedWords(originalDesc.getTerm());
+		String origDescNorm = normalizeMultiIngredientTerm(sanitizedTerm);
 		boolean isAcetaminophen = origDescNorm.toLowerCase().contains(ACETAMINOPHEN);
 		if (!origDescNorm.equals(newFSN)) {
 			//Demote the original description rather than inactivating it
@@ -481,21 +482,27 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		return StringUtils.capitalizeFirstLetter(term);
 	}
 
-	private String removeUnwantedWords(Task task, Concept concept,
-			String fsnRoot) {
-		String modifiedFsnRoot = fsnRoot;
+	private String removeUnwantedWords(String str) {
 		for (String unwantedWord : unwantedWords) {
 			String[] unwantedWordCombinations = new String[] { SPACE + unwantedWord, unwantedWord + SPACE };
 			for (String thisUnwantedWord : unwantedWordCombinations) {
-				if (modifiedFsnRoot.contains(thisUnwantedWord)) {
-					modifiedFsnRoot.replace(thisUnwantedWord,"");
-					String msg = "Removed unwanted word " + modifiedFsnRoot + " from FSN.";
-					report(task, concept, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, msg);
+				if (str.contains(thisUnwantedWord)) {
+					str = str.replace(thisUnwantedWord,"");
 				}
 			}
 			
 		}
-		return modifiedFsnRoot;
+		return str;
+	}
+	
+	private String removeUnwantedWords(Task task, Concept concept,
+			String fsnRoot) {
+		String sanitizedFsnRoot = removeUnwantedWords(fsnRoot);
+		if (!sanitizedFsnRoot.equals(fsnRoot)) {
+			String msg = "Removed unwanted word from FSN: " + fsnRoot + " became " + sanitizedFsnRoot;
+			report(task, concept, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, msg);
+		}
+		return sanitizedFsnRoot;
 	}
 	
 

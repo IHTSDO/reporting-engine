@@ -39,6 +39,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 	protected int batchSize = 5;
 	File batchFixFile;
 	File reportFile;
+	File outputDir;
 	protected String targetAuthor;
 	
 	protected static Gson gson;
@@ -222,6 +223,8 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 		boolean isDryRun = false;
 		boolean isAuthor = false;
 		boolean isRestart = false;
+		boolean isOutputDir = false;
+		boolean isThrottle = false;
 	
 		for (String thisArg : args) {
 			if (thisArg.equals("-a")) {
@@ -234,8 +237,12 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 				isCookie = true;
 			} else if (thisArg.equals("-d")) {
 				isDryRun = true;
-			}  else if (thisArg.equals("-r")) {
+			} else if (thisArg.equals("-o")) {
+				isOutputDir = true;
+			} else if (thisArg.equals("-r")) {
 				isRestart = true;
+			} else if (thisArg.equals("-t")) {
+				isThrottle = true;
 			} else if (isAuthor) {
 				targetAuthor = thisArg.toLowerCase();
 				isAuthor = false;
@@ -252,6 +259,17 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 				restartPosition = Integer.parseInt(thisArg);
 				println("Restarting file from line " + restartPosition);
 				isRestart = false;
+			} else if (isThrottle) {
+				throttle = Integer.parseInt(thisArg);
+				isThrottle = false;
+			} else if (isOutputDir) {
+				File possibleDir = new File(thisArg);
+				if (possibleDir.exists() && possibleDir.isDirectory() && possibleDir.canRead()) {
+					outputDir = possibleDir;
+				} else {
+					println ("Unable to use directory " + possibleDir.getAbsolutePath() + " for output.");
+				}
+				isOutputDir = false;
 			} else if (isCookie) {
 				authenticatedCookie = thisArg;
 				isCookie = false;
@@ -273,7 +291,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 		
 		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
 		String reportFilename = "results_" + SnomedUtils.deconstructFilename(batchFixFile)[1] + "_" + df.format(new Date()) + ".csv";
-		reportFile = new File(reportFilename);
+		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
 		writeToFile ("TASK_KEY, TASK_DESC, SCTID, FSN, CONCEPT_TYPE,SEVERITY,ACTION_TYPE,ACTION_DETAIL");
