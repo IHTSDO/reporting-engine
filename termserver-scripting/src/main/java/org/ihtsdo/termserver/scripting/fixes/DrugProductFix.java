@@ -153,7 +153,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 
 	@Override
 	List<Batch> formIntoBatches(String fileName, List<Concept> concepts, String branchPath) throws TermServerFixException {
-		List<Batch> batches = new ArrayList<Batch>();
+		Map<String, Batch> batches = new HashMap<String, Batch>();
 		debug ("Finding all concepts with ingredients...");
 		Set<Concept> allConceptsToBeProcessed = new HashSet<Concept>();
 		Multimap<String, Concept> ingredientCombos = findAllIngredientCombos();
@@ -161,13 +161,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		//If the concept is of type Medicinal Entity, then put it in a batch with other concept with same ingredient combo
 		for (Concept thisConcept : concepts) {
 			if (thisConcept.getConceptType().equals(ConceptType.MEDICINAL_ENTITY)) {
-				List<Relationship> ingredients = getIngredients(thisConcept);
-				String comboKey = getIngredientCombinationKey(thisConcept, ingredients);
-				//Get all concepts with this identical combination of ingredients
-				Collection<Concept> matchingCombo = ingredientCombos.get(comboKey);
-				int taskCount = formIntoTasks(batches, matchingCombo, ingredients);
-				allConceptsToBeProcessed.addAll(matchingCombo);
-				debug ("Batched " + thisConcept + " with " + comboKey.split(SEPARATOR).length + " active ingredients.  Batch size " + matchingCombo.size() + " into " + taskCount + " tasks.");
+				fillBatch(allConceptsToBeProcessed, batches, ingredientCombos, thisConcept);
 			} else {
 				//Validate that concept does have a type and some ingredients otherwise it's going to get missed
 				if (thisConcept.getConceptType().equals(ConceptType.UNKNOWN)) {
@@ -179,21 +173,44 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 				}
 			}
 		}
+
+		//Try to accomodate concepts expected to be processed that did not match exactly to Medicinal Entities
+		List<Concept> lostConcepts = new ArrayList<Concept> (concepts);
+		lostConcepts.removeAll(allConceptsToBeProcessed);
+		assignLostConcepts(lostConcepts, batches, allConceptsToBeProcessed);
 		addSummaryInformation("Concepts processed", allConceptsToBeProcessed.size());
 		validateAllInputConceptsBatched (concepts, allConceptsToBeProcessed);
-		return batches;
+		return new ArrayList<Batch>(batches.values());
 	}
-	
-	private int formIntoTasks(List<Batch> batches,
+
+	private void fillBatch(Set<Concept> allConceptsToBeProcessed,
+			Map<String, Batch> batches, Multimap<String, Concept> ingredientCombos, Concept thisConcept) throws TermServerFixException {
+		List<Relationship> ingredients = getIngredients(thisConcept);
+		String comboKey = getIngredientCombinationKey(thisConcept, ingredients);
+		//Have we already seen a MedicinalEntity with these ingredients?
+		Batch thisBatch;
+		if (batches.containsKey(comboKey)) {
+			thisBatch = batches.get(comboKey);
+		} else {
+			thisBatch = new Batch();
+			batches.put(comboKey, thisBatch);
+		}
+		//Get all concepts with this identical combination of ingredients
+		Collection<Concept> matchingCombo = ingredientCombos.get(comboKey);
+		int taskCount = formIntoTasks(thisBatch, matchingCombo, ingredients);
+		allConceptsToBeProcessed.addAll(matchingCombo);
+		debug ("Batched " + thisConcept + " with " + comboKey.split(SEPARATOR).length + " active ingredients.  Batch size " + matchingCombo.size() + " into " + taskCount + " tasks.");
+	}
+
+	private int formIntoTasks(Batch batch,
 			Collection<Concept> matchingCombo, List<Relationship>ingredients) {
-		Batch thisBatch = new Batch();
-		batches.add(thisBatch);
+
 		List<List<Concept>> taskContents = splitBatchIntoChunks(matchingCombo, batchSize);
 		int taskCount = 0;
 		for (List<Concept> thisTaskContents : taskContents) {
 			Task thisTask = new Task (thisTaskContents);
 			taskCount++;
-			thisBatch.addTask(thisTask);
+			batch.addTask(thisTask);
 			String ingredientList = getIngredientList(ingredients);
 			if (taskContents.size() > 1) {
 				ingredientList += ": " + taskCount;
@@ -201,6 +218,60 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 			thisTask.setDescription(ingredientList);
 		}
 		return taskCount;
+	}
+	
+	
+	private void assignLostConcepts(List<Concept> lostConcepts,
+			Map<String, Batch> batches, Set<Concept> allConceptsToBeProcessed) throws TermServerFixException {
+		//Attempt to find a batch to add the concept to, looking at parents of the active ingredients
+		nextConcept:
+		for (Concept thisConcept : lostConcepts) {
+			List<Relationship> origIngredients = getIngredients(thisConcept);
+			int permutations = (int)Math.pow(2, origIngredients.size());
+			//The zero permutation would be no change, so skip that.
+			for (int p = 1; p < permutations ; p++) {
+				//Use the binary representation of the permutations to work out which ingredients to switch to their parent
+				String permStr = Integer.toBinaryString(p);
+				List<Relationship> ingredientPermutation = new ArrayList<>();
+				for (int i = 0; i<permStr.length(); i++) {
+					if (permStr.charAt(i)=='0') {
+						ingredientPermutation.add(origIngredients.get(i));
+					} else {
+						//Add a relationship which is the parent of the original one
+						Relationship parentRel = origIngredients.get(i).clone();
+						if (parentRel.getTarget().getParents().size() > 1) {
+							println("Warning, lost concept " + thisConcept + " had ingredient with multiple parents: " + parentRel);
+						}
+						Concept parent = parentRel.getTarget().getParents().get(0);
+						parentRel.setTarget(parent);
+						ingredientPermutation.add(parentRel);
+					}
+				}
+				//Now do we have a batch for this permutation of ingredients and parents-of-ingredients?
+				String comboKey = getIngredientCombinationKey(thisConcept, ingredientPermutation);
+				if (batches.containsKey(comboKey)) {
+					String ingredientList = getIngredientList(ingredientPermutation);
+					forceConceptIntoBatch(batches.get(comboKey), thisConcept, ingredientList);
+					allConceptsToBeProcessed.add(thisConcept);
+					continue nextConcept;
+				}
+			}
+		}
+	}
+
+	private void forceConceptIntoBatch(Batch batch, Concept concept, String ingredientList) {
+		//Add concept to the last task in the batch, or create a new one if required
+		int maxTask = batch.getTasks().size();
+		Task lastTask = batch.getTasks().get(maxTask - 1);
+		if (lastTask.getConcepts().size() < batchSize) {
+			lastTask.addConcept(concept);
+		} else {
+			lastTask = new Task(new ArrayList<Concept>(Arrays.asList(concept)));
+			batch.addTask(lastTask);
+			lastTask.setDescription(ingredientList + ": " + (maxTask + 1));
+		}
+		println("Added lost concept " + concept + " to batch " + ingredientList + " in task " + (batch.getTasks().indexOf(lastTask) + 1));
+		
 	}
 
 	private void validateAllInputConceptsBatched(List<Concept> concepts,
@@ -565,18 +636,5 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		}
 		return matching;
 	}
-
-	/**
-	For Medicinal entity and Medicinal form concepts only:
-	If the FSN contains acetaminophen:
-	Inactivate the FSN and create a new FSN changing acetaminophen to paracetamol and applying the usual rules eg: alpha order, spaces around +
-	Concept should have one PT for US/GB corresponding to FSN (description may already exist or may need to be created)
-	Change any PT containing acetaminophen to a synonym with US=A, GB=N and no changes eg: alpha order, spaces around +
-	 */
-	protected int processAcetaminophen(Batch batch, Concept concept) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
 
 }

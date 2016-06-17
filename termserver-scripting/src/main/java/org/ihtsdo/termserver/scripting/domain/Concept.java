@@ -4,6 +4,7 @@ package org.ihtsdo.termserver.scripting.domain;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.Generated;
@@ -313,6 +314,10 @@ public class Concept implements RF2Constants {
 	public void addDescription(Description description) {
 		descriptions.add(description);
 		
+	}
+
+	public List<Concept> getParents() {
+		return new ArrayList<Concept>(parents);
 	}
 
 }
