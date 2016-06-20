@@ -32,6 +32,7 @@ import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
 
 import com.b2international.commons.StringUtils;
+import com.google.common.base.Strings;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 
@@ -177,7 +178,10 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		//Try to accomodate concepts expected to be processed that did not match exactly to Medicinal Entities
 		List<Concept> lostConcepts = new ArrayList<Concept> (concepts);
 		lostConcepts.removeAll(allConceptsToBeProcessed);
+		int before = allConceptsToBeProcessed.size();
 		assignLostConcepts(lostConcepts, batches, allConceptsToBeProcessed);
+		int after = allConceptsToBeProcessed.size();
+		addSummaryInformation("Lost concepts included", (after - before));
 		addSummaryInformation("Concepts processed", allConceptsToBeProcessed.size());
 		validateAllInputConceptsBatched (concepts, allConceptsToBeProcessed);
 		return new ArrayList<Batch>(batches.values());
@@ -231,7 +235,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 			//The zero permutation would be no change, so skip that.
 			for (int p = 1; p < permutations ; p++) {
 				//Use the binary representation of the permutations to work out which ingredients to switch to their parent
-				String permStr = Integer.toBinaryString(p);
+				String permStr = Strings.padStart(Integer.toBinaryString(p), origIngredients.size(), '0');
 				List<Relationship> ingredientPermutation = new ArrayList<>();
 				for (int i = 0; i<permStr.length(); i++) {
 					if (permStr.charAt(i)=='0') {
