@@ -5,6 +5,7 @@ import com.b2international.snowowl.snomed.api.domain.classification.Classificati
 import org.ihtsdo.otf.rest.client.ClassificationResults;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.client.SnowOwlRestClient;
+import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.api.rest.common.ControllerHelper;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.Classification;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.EntityType;
@@ -30,23 +31,21 @@ public class ClassificationService {
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
-	public synchronized Classification startClassification(String projectKey, String taskKey, String username) throws RestClientException, JSONException {
-		if (!snowOwlClient.isClassificationInProgressOnBranch(PathHelper.getPath(projectKey, taskKey))) {
-			return callClassification(projectKey, taskKey, username);
+	public synchronized Classification startClassification(String projectKey, String taskKey, String branchPath, String username) throws RestClientException, JSONException, BusinessServiceException {
+		if (!snowOwlClient.isClassificationInProgressOnBranch(branchPath)) {
+			return callClassification(projectKey, taskKey, branchPath, username);
 		} else {
 			throw new IllegalStateException("Classification already in progress on this branch.");
 		}
 	}
 
-	public String getLatestClassification(String projectKey, String taskKey) throws RestClientException {
-		String path = PathHelper.getPath(projectKey, taskKey);
-		return snowOwlClient.getLatestClassificationOnBranch(path);
+	public String getLatestClassification(String branchPath) throws RestClientException {
+		return snowOwlClient.getLatestClassificationOnBranch(branchPath);
 	}
 
-	private Classification callClassification(String projectKey, String taskKey, String callerUsername) throws RestClientException {
-		final String path = PathHelper.getPath(projectKey, taskKey);
-		logger.info("Requesting classification of path {} for user {}", path, callerUsername);
-		ClassificationResults results = snowOwlClient.startClassification(path);
+	private Classification callClassification(String projectKey, String taskKey, String branchPath, String callerUsername) throws RestClientException {
+		logger.info("Requesting classification of path {} for user {}", branchPath, callerUsername);
+		ClassificationResults results = snowOwlClient.startClassification(branchPath);
 		//If we started the classification without an exception then it's state will be RUNNING (or queued)
 		results.setStatus(ClassificationStatus.RUNNING.toString());
 

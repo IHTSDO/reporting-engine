@@ -1,22 +1,25 @@
 package org.ihtsdo.snowowl.authoring.single.api.service;
 
-import net.rcarz.jiraclient.Issue;
-
 public class PathHelper {
 
 	private static final String MAIN = "MAIN";
 	private static final String SLASH = "/";
 	
-	public static String getPath() {
-		return getPath(null, null);
+	public static String getMainPath() {
+		return MAIN;
 	}
 
-	public static String getPath(String projectKey) {
-		return getPath(projectKey, null);
+	public static String getProjectPath(String extensionBase, String projectKey) {
+		return getTaskPath(extensionBase, projectKey, null);
 	}
 
-	public static String getPath(String projectKey, String taskKey) {
-		String path = MAIN;
+	public static String getTaskPath(String extensionBase, String projectKey, String taskKey) {
+		String path;
+		if (extensionBase != null && !extensionBase.isEmpty()) {
+			path = extensionBase;
+		} else {
+			path = MAIN;
+		}
 		if (projectKey != null) {
 			path += SLASH + projectKey;
 			if (taskKey != null) {
@@ -26,8 +29,15 @@ public class PathHelper {
 		return path;
 	}
 
-	public static String getTaskPath(Issue issue) {
-		return PathHelper.getPath(issue.getProject().getKey(), issue.getKey());
+	public static String getParentPath(String branchPath) {
+		return branchPath.substring(0, branchPath.lastIndexOf("/"));
 	}
 
+	public static String getName(String branchPath) {
+		return branchPath.substring(branchPath.lastIndexOf("/") + 1);
+	}
+
+	public static String getParentName(String branchPath) {
+		return getName(getParentPath(branchPath));
+	}
 }

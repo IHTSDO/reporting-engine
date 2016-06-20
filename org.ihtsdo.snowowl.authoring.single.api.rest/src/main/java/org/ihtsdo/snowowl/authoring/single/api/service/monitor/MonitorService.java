@@ -1,5 +1,6 @@
 package org.ihtsdo.snowowl.authoring.single.api.service.monitor;
 
+import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.service.NotificationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +21,7 @@ public class MonitorService {
 	@Autowired
 	private MonitorFactory monitorFactory;
 
-	public void updateUserFocus(String username, String focusProjectId, String focusTaskId) {
+	public void updateUserFocus(String username, String focusProjectId, String focusTaskId) throws BusinessServiceException {
 		logger.info("Starting: Updating user focus for {} [{}/{}]", username, focusProjectId, focusTaskId);
 		createIfNotExists(username);
 		userMonitorsMap.get(username).updateFocus(focusProjectId, focusTaskId);

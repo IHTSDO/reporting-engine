@@ -4,27 +4,17 @@ import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
-
 import net.rcarz.jiraclient.JiraException;
-
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.api.rest.common.AbstractRestService;
 import org.ihtsdo.snowowl.api.rest.common.AbstractSnomedRestService;
 import org.ihtsdo.snowowl.api.rest.common.ControllerHelper;
-import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringMain;
-import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringProject;
-import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTask;
-import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskCreateRequest;
-import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskUpdateRequest;
-import org.ihtsdo.snowowl.authoring.single.api.service.ServiceException;
+import org.ihtsdo.snowowl.authoring.single.api.pojo.*;
 import org.ihtsdo.snowowl.authoring.single.api.service.TaskService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
-import us.monoid.json.JSONException;
-
-import java.io.IOException;
 import java.util.List;
 
 @Api("Authoring Projects")
@@ -49,7 +39,7 @@ public class ProjectController extends AbstractSnomedRestService {
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/projects/{projectKey}", method= RequestMethod.GET)
-	public AuthoringProject retrieveProject(@PathVariable final String projectKey) throws JiraException, BusinessServiceException {
+	public AuthoringProject retrieveProject(@PathVariable final String projectKey) throws BusinessServiceException {
 		return taskService.retrieveProject(projectKey);
 	}
 	
@@ -58,7 +48,7 @@ public class ProjectController extends AbstractSnomedRestService {
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/main", method= RequestMethod.GET)
-	public AuthoringMain retrieveMain() throws JiraException, BusinessServiceException {
+	public AuthoringMain retrieveMain() throws BusinessServiceException {
 		return taskService.retrieveMain();
 	}
 
@@ -67,7 +57,7 @@ public class ProjectController extends AbstractSnomedRestService {
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/projects/{projectKey}/tasks", method= RequestMethod.GET)
-	public List<AuthoringTask> listTasks(@PathVariable final String projectKey) throws JiraException, BusinessServiceException {
+	public List<AuthoringTask> listTasks(@PathVariable final String projectKey) throws BusinessServiceException {
 		return taskService.listTasks(projectKey);
 	}
 
@@ -103,15 +93,14 @@ public class ProjectController extends AbstractSnomedRestService {
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/projects/{projectKey}/tasks", method= RequestMethod.POST)
-	public AuthoringTask createTask(@PathVariable final String projectKey, @RequestBody final AuthoringTaskCreateRequest taskCreateRequest) throws JiraException, ServiceException {
+	public AuthoringTask createTask(@PathVariable final String projectKey, @RequestBody final AuthoringTaskCreateRequest taskCreateRequest) throws BusinessServiceException {
 		return taskService.createTask(projectKey, taskCreateRequest);
 	}
 
 	@ApiOperation(value = "Update a Task")
 	@ApiResponses({ @ApiResponse(code = 200, message = "OK") })
 	@RequestMapping(value = "/projects/{projectKey}/tasks/{taskKey}", method = RequestMethod.PUT)
-	public AuthoringTask updateTask(@PathVariable final String projectKey, @PathVariable final String taskKey,  @RequestBody final AuthoringTaskUpdateRequest updatedTask) throws JiraException,
-			JSONException, IOException, BusinessServiceException {
+	public AuthoringTask updateTask(@PathVariable final String projectKey, @PathVariable final String taskKey,  @RequestBody final AuthoringTaskUpdateRequest updatedTask) throws BusinessServiceException {
 		return taskService.updateTask(projectKey, taskKey, updatedTask);
 	}
 

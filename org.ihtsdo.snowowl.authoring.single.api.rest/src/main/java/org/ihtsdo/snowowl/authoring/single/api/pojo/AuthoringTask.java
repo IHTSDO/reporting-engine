@@ -6,17 +6,15 @@ import com.fasterxml.jackson.annotation.JsonRawValue;
 import net.rcarz.jiraclient.Issue;
 import net.sf.json.JSONObject;
 import org.ihtsdo.snowowl.authoring.single.api.review.service.TaskMessagesStatus;
+import org.ihtsdo.snowowl.authoring.single.api.service.PathHelper;
 import org.ihtsdo.snowowl.authoring.single.api.service.TaskStatus;
 
 public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskUpdateRequest {
 
-	public static String JIRA_REVIEWER_FIELD;
-	public static void setJiraReviewerField(String jiraReviewerField) {
-		JIRA_REVIEWER_FIELD = jiraReviewerField;
-	}
-
 	public static final String JIRA_CREATED_FIELD = "created";
 	public static final String JIRA_UPDATED_FIELD = "updated";
+
+	public static String jiraReviewerField;
 
 	private String key;
 	private String projectKey;
@@ -31,11 +29,12 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 	private String latestClassificationJson;
 	private String latestValidationStatus;
 	private TaskMessagesStatus feedbackMessagesStatus;
+	private String branchPath;
 
 	public AuthoringTask() {
 	}
 
-	public AuthoringTask(Issue issue) {
+	public AuthoringTask(Issue issue, String extensionBase) {
 		key = issue.getKey();
 		projectKey = issue.getProject().getKey();
 		summary = issue.getSummary();
@@ -48,10 +47,12 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 		created = (String) issue.getField(JIRA_CREATED_FIELD);
 		updated = (String) issue.getField(JIRA_UPDATED_FIELD);
 		
-		Object reviewerObj = issue.getField(JIRA_REVIEWER_FIELD);
+		Object reviewerObj = issue.getField(jiraReviewerField);
 		if (reviewerObj != null && reviewerObj instanceof JSONObject) {
 			reviewer = new User((JSONObject)reviewerObj);
 		}
+
+		branchPath = PathHelper.getTaskPath(extensionBase, projectKey, key);
 	}
 
 	public String getKey() {
@@ -169,4 +170,13 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 	public Branch.BranchState getBranchState() {
 		return branchState;
 	}
+
+	public static void setJiraReviewerField(String jiraReviewerField) {
+		AuthoringTask.jiraReviewerField = jiraReviewerField;
+	}
+
+	public String getBranchPath() {
+		return branchPath;
+	}
+
 }

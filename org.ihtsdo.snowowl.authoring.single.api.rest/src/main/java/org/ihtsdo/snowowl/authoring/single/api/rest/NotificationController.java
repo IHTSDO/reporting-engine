@@ -4,6 +4,7 @@ import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
+import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.api.rest.common.AbstractRestService;
 import org.ihtsdo.snowowl.api.rest.common.AbstractSnomedRestService;
 import org.ihtsdo.snowowl.api.rest.common.ControllerHelper;
@@ -49,7 +50,7 @@ public class NotificationController extends AbstractSnomedRestService {
 			"Each additional POST will replace the previous monitor. " +
 			"A monitor will expire after " + UserMonitors.KEEP_ALIVE_MINUTES + " minutes if the notifications endpoint is not visited by the user.")
 	@RequestMapping(value="/monitor", method= RequestMethod.POST)
-	public void monitor(@RequestBody UserFocusRequest userFocusRequest) {
+	public void monitor(@RequestBody UserFocusRequest userFocusRequest) throws BusinessServiceException {
 		monitorService.updateUserFocus(ControllerHelper.getUsername(), userFocusRequest.getProjectId(), userFocusRequest.getTaskId());
 	}
 

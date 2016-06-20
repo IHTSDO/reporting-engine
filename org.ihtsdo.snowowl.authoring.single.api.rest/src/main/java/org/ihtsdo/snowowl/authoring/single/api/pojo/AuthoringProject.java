@@ -8,16 +8,17 @@ public class AuthoringProject {
 	private final String key;
 	private final String title;
 	private final User projectLead;
+	private final String branchPath;
 	private Branch.BranchState branchState;
 	private String latestClassificationJson;
-	private final String validationStatus;
+	private String validationStatus;
 
-	public AuthoringProject(String key, String title, User leadUser, Branch.BranchState branchState, String validationStatus, String latestClassificationJson) {
+	public AuthoringProject(String key, String title, User leadUser, String branchPath, Branch.BranchState branchState, String latestClassificationJson) {
 		this.key = key;
 		this.title = title;
 		this.projectLead = leadUser;
+		this.branchPath = branchPath;
 		this.branchState = branchState;
-		this.validationStatus = validationStatus;
 		this.latestClassificationJson = latestClassificationJson;
 	}
 
@@ -33,8 +34,16 @@ public class AuthoringProject {
 		return projectLead;
 	}
 
+	public String getBranchPath() {
+		return branchPath;
+	}
+
 	public String getValidationStatus() {
 		return validationStatus;
+	}
+
+	public void setValidationStatus(String validationStatus) {
+		this.validationStatus = validationStatus;
 	}
 
 	@JsonRawValue

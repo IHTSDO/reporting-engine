@@ -1,5 +1,6 @@
 package org.ihtsdo.snowowl.authoring.single.api.service.monitor;
 
+import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.Notification;
 import org.ihtsdo.snowowl.authoring.single.api.service.NotificationService;
 import org.slf4j.Logger;
@@ -95,7 +96,7 @@ public class UserMonitors {
 		}).start();
 	}
 
-	public void updateFocus(String focusProjectId, String focusTaskId) {
+	public void updateFocus(String focusProjectId, String focusTaskId) throws BusinessServiceException {
 		accessed();
 		if (focusProjectId != null) {
 			addMonitorIfNew(monitorFactory.createMonitor(focusProjectId, focusTaskId));

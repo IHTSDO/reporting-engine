@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>org.ihtsdo.snowowl</groupId>
 		<artifactId>ihtsdo-snowowl-parent</artifactId>
-		<version>4.5.50-SNAPSHOT</version>
+		<version>4.5.55-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>org.ihtsdo.snowowl.authoring.single.api.rest</artifactId>
@@ -54,11 +54,6 @@
 			<groupId>org.ihtsdo.otf.common</groupId>
 			<artifactId>otf-common</artifactId>
 			<version>0.0.21</version>
-		</dependency>
-		<dependency>
-			<groupId>org.ihtsdo.drools</groupId>
-			<artifactId>snomed-drools</artifactId>
-			<version>1.0.2</version>
 		</dependency>
 		<!-- SnowOwl -->
 		<!-- Plug-in dependencies are repeated here so that the build can resolve

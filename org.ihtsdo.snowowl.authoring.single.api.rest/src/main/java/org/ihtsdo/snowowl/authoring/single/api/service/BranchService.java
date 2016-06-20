@@ -28,63 +28,92 @@ public class BranchService {
 
 	private static final String MAIN = "MAIN";
 
-	public void createTaskBranchAndProjectBranchIfNeeded(String projectKey, String taskKey) throws ServiceException {
-		createProjectBranchIfNeeded(projectKey);
-		createBranch(PathHelper.getPath(projectKey), taskKey);
+	public void createTaskBranchAndProjectBranchIfNeeded(String branchPath) throws ServiceException {
+		createProjectBranchIfNeeded(PathHelper.getParentPath(branchPath));
+		createBranch(branchPath);
 	}
 
-	public Branch.BranchState getBranchState(String project, String taskKey) throws NotFoundException {
-		return SnomedRequests.branching().prepareGet(PathHelper.getPath(project, taskKey)).executeSync(eventBus).state();
+	public Branch.BranchState getBranchState(String branchPath) throws NotFoundException {
+		return SnomedRequests.branching().prepareGet(branchPath).executeSync(eventBus).state();
 	}
 
-	public Branch.BranchState getBranchStateNoThrow(String projectKey, String issueKey) {
+	public Branch.BranchState getBranchStateNoThrow(String branchPath) {
 		try {
-			return getBranchState(projectKey, issueKey);
+			return getBranchState(branchPath);
 		} catch (NotFoundException e) {
 			return null;
 		}
 	}
 
-	public Branch rebaseTask(String projectKey, String taskKey, MergeRequest mergeRequest, String username) throws BusinessServiceException {
+	public Branch rebaseTask(String branchPath, MergeRequest mergeRequest, String username) throws BusinessServiceException {
 		StopWatch stopwatch = new StopWatch();
 		stopwatch.start();
-		Branch branch = mergeBranch(PathHelper.getPath(projectKey), PathHelper.getPath(projectKey, taskKey), mergeRequest.getSourceReviewId(), username);
+		Branch branch = mergeBranch(PathHelper.getParentPath(branchPath), branchPath, mergeRequest.getSourceReviewId(), username);
 		stopwatch.stop();
+		final String taskKey = PathHelper.getName(branchPath);
 		String resultMessage = "Rebase from project to " + taskKey + " completed without conflicts in " + stopwatch;
-		notificationService.queueNotification(username, new Notification(projectKey, taskKey, EntityType.Rebase, resultMessage));
+		notificationService.queueNotification(username, new Notification(PathHelper.getParentName(branchPath), taskKey, EntityType.Rebase, resultMessage));
 		return branch;
 	}
 
-	public Branch promoteTask(String projectKey, String taskKey, MergeRequest mergeRequest, String username) throws BusinessServiceException, JiraException {
+	public Branch promoteTask(String branchPath, MergeRequest mergeRequest, String username) throws BusinessServiceException, JiraException {
 		StopWatch stopwatch = new StopWatch();
 		stopwatch.start();
-		Branch branch = mergeBranch(PathHelper.getPath(projectKey, taskKey), PathHelper.getPath(projectKey), mergeRequest.getSourceReviewId(), username);
+		Branch branch = mergeBranch(branchPath, PathHelper.getParentPath(branchPath), mergeRequest.getSourceReviewId(), username);
 		stopwatch.stop();
+		final String projectKey = PathHelper.getParentName(branchPath);
+		final String taskKey = PathHelper.getName(branchPath);
 		taskService.stateTransition(projectKey, taskKey, TaskStatus.PROMOTED);
-		String resultMessage = "Promotion of " + taskKey + " completed without conflicts in " + stopwatch;
+		String resultMessage = "Promotion of " + PathHelper.getName(branchPath) + " completed without conflicts in " + stopwatch;
 		notificationService.queueNotification(username, new Notification(projectKey, taskKey, EntityType.Promotion, resultMessage));
 		return branch;
 	}
 
-	private void createBranch(String parentPath, String branchName) {
+	private void createBranch(String branchPath) {
 		SnomedRequests
 				.branching()
 				.prepareCreate()
-				.setParent(parentPath)
-				.setName(branchName)
+				.setParent(PathHelper.getParentPath(branchPath))
+				.setName(PathHelper.getName(branchPath))
 				.build()
 				.executeSync(eventBus);
 	}
 
-	public void createProjectBranchIfNeeded(String projectKey) throws ServiceException {
+	public void createProjectBranchIfNeeded(String branchPath) throws ServiceException {
 		try {
 			SnomedRequests
 					.branching()
-					.prepareGet(PathHelper.getPath(projectKey))
+					.prepareGet(branchPath)
 					.executeSync(eventBus);
 		} catch (NotFoundException e) {
-			createBranch("MAIN", projectKey);
+			createBranch(branchPath);
 		}
+	}
+
+	public void rebaseProject(String branchPath, MergeRequest mergeRequest, String username) throws BusinessServiceException {
+		StopWatch stopwatch = new StopWatch();
+		stopwatch.start();
+		mergeBranch(PathHelper.getParentPath(branchPath), branchPath, mergeRequest.getSourceReviewId(), username);
+		stopwatch.stop();
+		final String projectKey = PathHelper.getName(branchPath);
+		String resultMessage = "Rebase from " + getProjectParentLabel(branchPath) +" to " + projectKey + " completed without conflicts in " + stopwatch;
+		notificationService.queueNotification(username, new Notification(projectKey, EntityType.Rebase, resultMessage));
+	}
+
+	public void promoteProject(String branchPath, MergeRequest mergeRequest, String username) throws BusinessServiceException {
+		final String projectKey = PathHelper.getName(branchPath);
+		List<Issue> promotedIssues = taskService.getTaskIssues(projectKey, TaskStatus.PROMOTED);
+		StopWatch stopwatch = new StopWatch();
+		stopwatch.start();
+		mergeBranch(branchPath, PathHelper.getParentPath(branchPath), mergeRequest.getSourceReviewId(), username);
+		stopwatch.stop();
+		taskService.stateTransition(promotedIssues, TaskStatus.COMPLETED);
+		String resultMessage = "Promotion of " + projectKey + " to " + getProjectParentLabel(branchPath) + " completed without conflicts in " + stopwatch;
+		notificationService.queueNotification(username, new Notification(projectKey, EntityType.Promotion, resultMessage));
+	}
+
+	private String getProjectParentLabel(String branchPath) {
+		return PathHelper.getParentPath(branchPath).equals("MAIN") ? "MAIN" : "Extension";
 	}
 
 	private Branch mergeBranch(String sourcePath, String targetPath, String reviewId, String username) throws BusinessServiceException {
@@ -98,28 +127,6 @@ public class BranchService {
 				.setReviewId(reviewId)
 				.build()
 				.executeSync(eventBus);
-	}
-
-	public void rebaseProject(String projectKey, MergeRequest mergeRequest,
-			String username) throws BusinessServiceException {
-		StopWatch stopwatch = new StopWatch();
-		stopwatch.start();
-		mergeBranch(MAIN, PathHelper.getPath(projectKey), mergeRequest.getSourceReviewId(), username);
-		stopwatch.stop();
-		String resultMessage = "Rebase from MAIN to " + projectKey + " completed without conflicts in " + stopwatch;
-		notificationService.queueNotification(username, new Notification(projectKey, EntityType.Rebase, resultMessage));
-	}
-
-	public void promoteProject(String projectKey,
-			MergeRequest mergeRequest, String username) throws BusinessServiceException {
-		List<Issue> promotedIssues = taskService.getTaskIssues(projectKey, TaskStatus.PROMOTED);
-		StopWatch stopwatch = new StopWatch();
-		stopwatch.start();
-		mergeBranch(PathHelper.getPath(projectKey), MAIN, mergeRequest.getSourceReviewId(), username);
-		stopwatch.stop();
-		taskService.stateTransition(promotedIssues, TaskStatus.COMPLETED);
-		String resultMessage = "Promotion of " + projectKey + " to MAIN completed without conflicts in " + stopwatch;
-		notificationService.queueNotification(username, new Notification(projectKey, EntityType.Promotion, resultMessage));
 	}
 
 }
