@@ -119,8 +119,8 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 					String taskKey;
 					//Create a task for this batch of concepts
 					if (!dryRun) {
-						debug ("Letting TS catch up");
 						if (!batch.equals(batches.get(0))) {
+							debug ("Letting TS catch up");
 							Thread.sleep(20 * 1000);
 						}
 						debug ("Creating jira task on project: " + project);
