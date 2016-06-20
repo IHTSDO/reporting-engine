@@ -1,5 +1,6 @@
 package org.ihtsdo.snowowl.authoring.single.api.service;
 
+import com.b2international.snowowl.core.Metadata;
 import com.b2international.snowowl.core.branch.Branch;
 import com.b2international.snowowl.core.exceptions.BadRequestException;
 import com.b2international.snowowl.core.exceptions.ConflictException;
@@ -140,9 +141,20 @@ public class TaskService {
 				final String extensionBase = getProjectBase(issue);
 				final String branchPath = PathHelper.getProjectPath(extensionBase, key);
 				final String latestClassificationJson = classificationService.getLatestClassification(branchPath);
-				final Branch.BranchState branchState = branchService.getBranchStateNoThrow(branchPath);
+
+				final Branch branchOrNull = branchService.getBranchOrNull(branchPath);
+				final Branch parentBranchOrNull = branchService.getBranchOrNull(PathHelper.getParentPath(branchPath));
+				Branch.BranchState branchState = null;
+				Metadata metadata = null;
+				if (branchOrNull != null) {
+					branchState = branchOrNull.state();
+					if (parentBranchOrNull != null) {
+						metadata = parentBranchOrNull.metadata();
+					}
+				}
 				branchPaths.add(branchPath);
 				final AuthoringProject authoringProject = new AuthoringProject(project.getKey(), project.getName(), getPojoUserOrNull(project.getLead()), branchPath, branchState, latestClassificationJson);
+				authoringProject.setMetadata(metadata);
 				authoringProjects.add(authoringProject);
 			}
 			final ImmutableMap<String, String> validationStatuses = validationService.getValidationStatuses(branchPaths);
@@ -171,7 +183,7 @@ public class TaskService {
 			String path = PathHelper.getProjectPath(null, null);
 			Collection<String> paths = Collections.singletonList(path);
 			final ImmutableMap<String, String> statuses = validationService.getValidationStatuses(paths);
-			final Branch.BranchState branchState = branchService.getBranchStateNoThrow(PathHelper.getMainPath());
+			final Branch.BranchState branchState = branchService.getBranchStateOrNull(PathHelper.getMainPath());
 			final String latestClassificationJson = classificationService.getLatestClassification(PathHelper.getMainPath());
 			return new AuthoringMain(path, branchState, statuses.get(path), latestClassificationJson);
 		} catch (ExecutionException | RestClientException e) {
@@ -222,7 +234,7 @@ public class TaskService {
 
 	public List<Issue> getTaskIssues(String projectKey, TaskStatus taskStatus) throws BusinessServiceException {
 		try {
-			return getJiraClient().searchIssues(getProjectTaskJQL(projectKey, taskStatus)).issues;
+			return getJiraClient().searchIssues(getProjectTaskJQL(projectKey, taskStatus), -1).issues;
 		} catch (JiraException e) {
 			throw new BusinessServiceException("Failed to load tasks in project '" + projectKey + "' from Jira.", e);
 		}
@@ -356,7 +368,7 @@ public class TaskService {
 					String latestClassificationJson = classificationService.getLatestClassification(task.getBranchPath());
 					timer.checkpoint("Recovering classification");
 					task.setLatestClassificationJson(latestClassificationJson);
-					task.setBranchState(branchService.getBranchStateNoThrow(task.getBranchPath()));
+					task.setBranchState(branchService.getBranchStateOrNull(task.getBranchPath()));
 					timer.checkpoint("Recovering branch state");
 					startedTasks.put(task.getBranchPath(), task);
 				}

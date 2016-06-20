@@ -1,5 +1,6 @@
 package org.ihtsdo.snowowl.authoring.single.api.pojo;
 
+import com.b2international.snowowl.core.Metadata;
 import com.b2international.snowowl.core.branch.Branch;
 import com.fasterxml.jackson.annotation.JsonRawValue;
 
@@ -12,6 +13,7 @@ public class AuthoringProject {
 	private Branch.BranchState branchState;
 	private String latestClassificationJson;
 	private String validationStatus;
+	private Metadata metadata;
 
 	public AuthoringProject(String key, String title, User leadUser, String branchPath, Branch.BranchState branchState, String latestClassificationJson) {
 		this.key = key;
@@ -55,4 +57,11 @@ public class AuthoringProject {
 		return branchState;
 	}
 
+	public void setMetadata(Metadata metadata) {
+		this.metadata = metadata;
+	}
+
+	public Metadata getMetadata() {
+		return metadata;
+	}
 }

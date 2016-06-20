@@ -34,15 +34,24 @@ public class BranchService {
 	}
 
 	public Branch.BranchState getBranchState(String branchPath) throws NotFoundException {
-		return SnomedRequests.branching().prepareGet(branchPath).executeSync(eventBus).state();
+		return getBranch(branchPath).state();
 	}
 
-	public Branch.BranchState getBranchStateNoThrow(String branchPath) {
+	public Branch getBranch(String branchPath) {
+		return SnomedRequests.branching().prepareGet(branchPath).executeSync(eventBus);
+	}
+
+	public Branch getBranchOrNull(String branchPath) {
 		try {
-			return getBranchState(branchPath);
+			return getBranch(branchPath);
 		} catch (NotFoundException e) {
 			return null;
 		}
+	}
+
+	public Branch.BranchState getBranchStateOrNull(String branchPath) {
+		final Branch branchOrNull = getBranchOrNull(branchPath);
+		return branchOrNull == null ? null : branchOrNull.state();
 	}
 
 	public Branch rebaseTask(String branchPath, MergeRequest mergeRequest, String username) throws BusinessServiceException {
@@ -81,10 +90,7 @@ public class BranchService {
 
 	public void createProjectBranchIfNeeded(String branchPath) throws ServiceException {
 		try {
-			SnomedRequests
-					.branching()
-					.prepareGet(branchPath)
-					.executeSync(eventBus);
+			getBranch(branchPath);
 		} catch (NotFoundException e) {
 			createBranch(branchPath);
 		}
