@@ -1,16 +1,34 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
 import java.io.BufferedWriter;
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Properties;
 import java.util.Set;
+
+import javax.mail.Authenticator;
+import javax.mail.Message;
+import javax.mail.MessagingException;
+import javax.mail.Multipart;
+import javax.mail.PasswordAuthentication;
+import javax.mail.Session;
+import javax.mail.Transport;
+import javax.mail.internet.AddressException;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeBodyPart;
+import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMultipart;
 
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Batch;
@@ -41,6 +59,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 	File reportFile;
 	File outputDir;
 	protected String targetAuthor;
+	String[] emailDetails;
 	
 	protected static Gson gson;
 	static {
@@ -98,6 +117,10 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 			List<Batch> batches = formIntoBatches(batchFixFile.getName(), allConcepts, projectPath);
 			addSummaryInformation("Batches created", batches.size());
 			batchProcess(batches);
+			if (emailDetails != null) {
+				String msg = "Batch Scripting has completed successfully." + getSummaryText();
+				sendEmail(msg, reportFile);
+			}
 		} catch (FileNotFoundException e) {
 			throw new TermServerFixException("Unable to open batch file " + batchFixFile.getAbsolutePath(), e);
 		} catch (IOException e) {
@@ -225,6 +248,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 		boolean isRestart = false;
 		boolean isOutputDir = false;
 		boolean isThrottle = false;
+		boolean isMailRecipient = false;
 	
 		for (String thisArg : args) {
 			if (thisArg.equals("-a")) {
@@ -425,6 +449,40 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 					report (task, concept, SEVERITY.HIGH, REPORT_ACTION_TYPE.VALIDATION_ERROR, msg);
 				}
 			}
+		}
+	}
+	
+	protected void sendEmail(String content, File resultsFile)  {
+		Properties props = new Properties();
+		props.put("mail.transport.protocol", emailDetails[0]);
+		props.put("mail.smtp.host", emailDetails[1]); // smtp.gmail.com?
+		props.put("mail.smtp.port", emailDetails[2]);
+		props.put("mail.smtp.auth", "true");
+		Authenticator authenticator = new Authenticator() {
+			protected PasswordAuthentication getPasswordAuthentication() {
+			return new PasswordAuthentication(emailDetails[3], emailDetails[4]);
+			}
+		};
+		Session session = Session.getDefaultInstance(props, authenticator);
+		try {
+			Message msg = new MimeMessage(session);
+			msg.setFrom(new InternetAddress("techsupport@ihtsdo.org", "IHTSDO Email"));
+			msg.addRecipient(Message.RecipientType.TO, new InternetAddress("user@example.com"));
+			msg.setSubject("Terminology Server Batch script complete.");
+			
+			Multipart mp = new MimeMultipart();
+			MimeBodyPart htmlPart = new MimeBodyPart();
+			htmlPart.setContent(content, "text/html");
+			mp.addBodyPart(htmlPart);
+
+			MimeBodyPart attachment = new MimeBodyPart();
+			InputStream attachmentDataStream = new FileInputStream(resultsFile);
+			attachment.setFileName(resultsFile.getName());
+			attachment.setContent(attachmentDataStream, "application/csv");
+			mp.addBodyPart(attachment);
+			Transport.send(msg);
+		} catch (MessagingException | FileNotFoundException | UnsupportedEncodingException e) {
+			println ("Failed to send email " + e.getMessage());
 		}
 	}
 }

@@ -28,6 +28,7 @@ public abstract class TermServerFix implements RF2Constants {
 	protected int restartPosition = NOT_SET;
 	private static Date startTime;
 	private static Map<String, Object> summaryDetails = new HashMap<String, Object>();
+	private static String summaryText = "";
 
 	public abstract String getFixName();
 	
@@ -152,20 +153,25 @@ public abstract class TermServerFix implements RF2Constants {
 		SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
 		//I've not had to adjust for timezones when creating a date before?
 		Date diff = new Date(endTime.getTime() - startTime.getTime() + (endTime.getTimezoneOffset() * 60 * 1000));
-		println ("Completed processing in " + sdf.format(diff));
-		println ("Started at: " + startTime);
-		println ("Finished at: " + endTime);
+		recordSummaryText ("Completed processing in " + sdf.format(diff));
+		recordSummaryText ("Started at: " + startTime);
+		recordSummaryText ("Finished at: " + endTime);
 		
 		for (Map.Entry<String, Object> summaryDetail : summaryDetails.entrySet()) {
-			println (summaryDetail.getKey() + ": " + summaryDetail.getValue().toString());
+			recordSummaryText (summaryDetail.getKey() + ": " + summaryDetail.getValue().toString());
 		}
 		if (summaryDetails.containsKey("Tasks created") && summaryDetails.containsKey("Concepts processed") ) {
 			double c = (double)((Integer)summaryDetails.get("Concepts processed")).intValue();
 			double t = (double)((Integer)summaryDetails.get("Tasks created")).intValue();
 			double avg = Math.round((c/t) * 10) / 10.0;
-			println ("Concepts per task: " + avg);
+			recordSummaryText ("Concepts per task: " + avg);
 		}
 		
+	}
+	
+	private void recordSummaryText(String msg) {
+		println (msg);
+		summaryText += msg + "\n<br/>";
 	}
 
 }
