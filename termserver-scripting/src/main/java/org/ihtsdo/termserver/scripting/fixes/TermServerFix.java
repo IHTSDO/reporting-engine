@@ -169,9 +169,13 @@ public abstract class TermServerFix implements RF2Constants {
 		
 	}
 	
-	private void recordSummaryText(String msg) {
+	private synchronized void recordSummaryText(String msg) {
 		println (msg);
 		summaryText += msg + "\n<br/>";
+	}
+	
+	public static String getSummaryText() {
+		return summaryText;
 	}
 
 }
