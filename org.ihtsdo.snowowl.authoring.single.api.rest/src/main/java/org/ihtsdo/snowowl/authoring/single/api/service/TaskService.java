@@ -270,6 +270,17 @@ public class TaskService {
 		return PathHelper.getTaskPath(getProjectBaseUsingCache(projectKey), projectKey, taskKey);
 	}
 
+	public String getBranchPathUsingCache(String projectKey, String taskKey) throws BusinessServiceException {
+		if (!Strings.isNullOrEmpty(projectKey)) {
+			final String extensionBase = getProjectBaseUsingCache(projectKey);
+			if (!Strings.isNullOrEmpty(taskKey)) {
+				return PathHelper.getTaskPath(extensionBase, projectKey, taskKey);
+			}
+			return PathHelper.getProjectPath(extensionBase, projectKey);
+		}
+		return null;
+	}
+
 	private Issue getIssue(String projectKey, String taskKey) throws JiraException {
 		return getIssue(projectKey, taskKey, false);
 	}
@@ -607,6 +618,5 @@ public class TaskService {
 		}
 		throw new ConflictException("Could not transition task " + issue.getKey() + " from status '" + issue.getStatus().getName() + "' to '" + newState.name() + "', no such transition is available.");
 	}
-	
 
 }
