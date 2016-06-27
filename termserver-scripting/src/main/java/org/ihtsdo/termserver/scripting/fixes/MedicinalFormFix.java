@@ -55,7 +55,7 @@ public class MedicinalFormFix extends DrugProductFix implements RF2Constants{
 	}
 
 	@Override
-	List<Batch> formIntoBatches(String fileName, List<Concept> allConcepts,
+	Batch formIntoBatch(String fileName, List<Concept> allConcepts,
 			String branchPath) throws TermServerFixException {
 		throw new TermServerFixException("Not Implemented");
 	}

@@ -35,7 +35,7 @@ public class ProductStrengthFix extends BatchFix implements RF2Constants{
 
 
 	@Override
-	List<Batch> formIntoBatches(String fileName, List<Concept> concepts, String projectPath) throws TermServerFixException {
+	Batch formIntoBatch(String fileName, List<Concept> concepts, String projectPath) throws TermServerFixException {
 		throw new TermServerFixException("Not Implemented");
 	}
 

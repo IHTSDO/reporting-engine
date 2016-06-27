@@ -140,7 +140,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 					//Description endpoint uses acceptability rather than acceptabilityMap
 					JSONObject acceptabilityMap = jsonObjDesc.optJSONObject("acceptabilityMap");
 					if (acceptabilityMap != null) {
-	 					jsonObjDesc.put("acceptability", acceptabilityMap);
+	 					jsonObjDesc.put("acceptability", JSONObject.NULL);
 						jsonObjDesc.remove("acceptabilityMap");
 					}
 					tsClient.updateDescription(jsonObjDesc, t.getBranchPath());
@@ -153,80 +153,92 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 	}
 
 	@Override
-	List<Batch> formIntoBatches(String fileName, List<Concept> concepts, String branchPath) throws TermServerFixException {
-		Map<String, Batch> batches = new HashMap<String, Batch>();
+	Batch formIntoBatch(String fileName, List<Concept> conceptsInFile, String branchPath) throws TermServerFixException {
 		debug ("Finding all concepts with ingredients...");
-		Set<Concept> allConceptsToBeProcessed = new HashSet<Concept>();
 		Multimap<String, Concept> ingredientCombos = findAllIngredientCombos();
-		
-		//If the concept is of type Medicinal Entity, then put it in a batch with other concept with same ingredient combo
-		for (Concept thisConcept : concepts) {
-			if (thisConcept.getConceptType().equals(ConceptType.MEDICINAL_ENTITY)) {
-				fillBatch(allConceptsToBeProcessed, batches, ingredientCombos, thisConcept);
-			} else {
-				//Validate that concept does have a type and some ingredients otherwise it's going to get missed
-				if (thisConcept.getConceptType().equals(ConceptType.UNKNOWN)) {
-					warn ("Concept is of unknown type: " + thisConcept);
-				}
-				
-				if (getIngredients(thisConcept).size() == 0) {
-					warn ("Concept has no ingredients: " + thisConcept);
-				}
-			}
-		}
+		List<Concept> allConceptsBeingProcessed = new ArrayList<Concept>();
+		List<String> ingredientCombosBeingProcessed = new ArrayList<String>();
+		Batch batch =  createBatch(fileName, conceptsInFile, ingredientCombos, allConceptsBeingProcessed, ingredientCombosBeingProcessed);
+		addSummaryInformation("Tasks Created", batch.getTasks().size());
 
-		//Try to accomodate concepts expected to be processed that did not match exactly to Medicinal Entities
-		List<Concept> lostConcepts = new ArrayList<Concept> (concepts);
-		lostConcepts.removeAll(allConceptsToBeProcessed);
-		int before = allConceptsToBeProcessed.size();
-		assignLostConcepts(lostConcepts, batches, allConceptsToBeProcessed);
-		int after = allConceptsToBeProcessed.size();
+		//Try to accommodate concepts expected to be processed that did not match exactly to Medicinal Entities
+		List<Concept> lostConcepts = new ArrayList<Concept> (conceptsInFile);
+		lostConcepts.removeAll(allConceptsBeingProcessed);
+		int before = allConceptsBeingProcessed.size();
+		assignLostConcepts(ingredientCombosBeingProcessed, lostConcepts, batch, allConceptsBeingProcessed);
+		int after = allConceptsBeingProcessed.size();
 		addSummaryInformation("Lost concepts included", (after - before));
-		addSummaryInformation("Concepts processed", allConceptsToBeProcessed.size());
-		validateAllInputConceptsBatched (concepts, allConceptsToBeProcessed);
-		return new ArrayList<Batch>(batches.values());
+		addSummaryInformation("Concepts processed", allConceptsBeingProcessed.size());
+		validateAllInputConceptsBatched (conceptsInFile, allConceptsBeingProcessed);
+		return batch;
 	}
 
-	private void fillBatch(Set<Concept> allConceptsToBeProcessed,
-			Map<String, Batch> batches, Multimap<String, Concept> ingredientCombos, Concept thisConcept) throws TermServerFixException {
-		List<Relationship> ingredients = getIngredients(thisConcept);
-		String comboKey = getIngredientCombinationKey(thisConcept, ingredients);
-		//Have we already seen a MedicinalEntity with these ingredients?
-		Batch thisBatch;
-		if (batches.containsKey(comboKey)) {
-			thisBatch = batches.get(comboKey);
-		} else {
-			thisBatch = new Batch();
-			batches.put(comboKey, thisBatch);
-		}
-		//Get all concepts with this identical combination of ingredients
-		Collection<Concept> matchingCombo = ingredientCombos.get(comboKey);
-		int taskCount = formIntoTasks(thisBatch, matchingCombo, ingredients);
-		allConceptsToBeProcessed.addAll(matchingCombo);
-		debug ("Batched " + thisConcept + " with " + comboKey.split(SEPARATOR).length + " active ingredients.  Batch size " + matchingCombo.size() + " into " + taskCount + " tasks.");
-	}
-
-	private int formIntoTasks(Batch batch,
-			Collection<Concept> matchingCombo, List<Relationship>ingredients) {
-
-		List<List<Concept>> taskContents = splitBatchIntoChunks(matchingCombo, batchSize);
-		int taskCount = 0;
-		for (List<Concept> thisTaskContents : taskContents) {
-			Task thisTask = new Task (thisTaskContents);
-			taskCount++;
-			batch.addTask(thisTask);
-			String ingredientList = getIngredientList(ingredients);
-			if (taskContents.size() > 1) {
-				ingredientList += ": " + taskCount;
+	Batch createBatch(String fileName, List<Concept> conceptsInFile, Multimap<String, Concept> ingredientCombos, List<Concept> allConceptsBeingProcessed, List<String> ingredientCombosBeingProcessed) throws TermServerFixException {
+		Batch batch = new Batch(fileName);
+		List<List<Concept>> groupedConcepts = separateOutSingleIngredients(conceptsInFile);
+		//If the concept is of type Medicinal Entity, then put it in a batch with other concept with same ingredient combo
+		boolean startNewTask = false; //We'll start a new task when we switch from single to multiple ingredients
+		for (List<Concept> theseConcepts : groupedConcepts) {
+			for (Concept thisConcept : theseConcepts) {
+				if (thisConcept.getConceptType().equals(ConceptType.MEDICINAL_ENTITY)) {
+					//Add all concepts with this ingredient combination to the list of concepts to be processed
+					List<Relationship> ingredients = getIngredients(thisConcept);
+					String thisComboKey = getIngredientCombinationKey(thisConcept, ingredients);
+					Collection<Concept> sameIngredientConcepts = ingredientCombos.get(thisComboKey);
+					allConceptsBeingProcessed.addAll(sameIngredientConcepts);
+					ingredientCombosBeingProcessed.add(thisComboKey);
+					splitConceptsIntoTasks(batch, sameIngredientConcepts, thisConcept, startNewTask);
+					startNewTask = false;
+				} else {
+					//Validate that concept does have a type and some ingredients otherwise it's going to get missed
+					if (thisConcept.getConceptType().equals(ConceptType.UNKNOWN)) {
+						warn ("Concept is of unknown type: " + thisConcept);
+					}
+					
+					if (getIngredients(thisConcept).size() == 0) {
+						warn ("Concept has no ingredients: " + thisConcept);
+					}
+				}
 			}
-			thisTask.setDescription(ingredientList);
+			startNewTask = true;
 		}
-		return taskCount;
+		return batch;
+	}
+	
+	private List<List<Concept>> separateOutSingleIngredients(
+			List<Concept> conceptsInFile) {
+		//Group concepts by whether or not they have single or multiple ingredients
+		List<List<Concept>> groupedConcepts = new ArrayList<List<Concept>>();
+		groupedConcepts.add(new ArrayList<Concept>());
+		groupedConcepts.add(new ArrayList<Concept>());
+		for (Concept thisConcept : conceptsInFile) {
+			if (getIngredients(thisConcept).size() == 1) {
+				groupedConcepts.get(0).add(thisConcept);
+			} else {
+				groupedConcepts.get(1).add(thisConcept);
+			}
+		}
+		return groupedConcepts;
+	}
+
+	void splitConceptsIntoTasks(Batch batch, Collection<Concept> sameIngredientConcepts, Concept medicinalEntity, boolean startNewTask) {
+		//Work through all our Medicinal Entities and pull out all concepts 
+		List<Concept> medicinals = getConceptsOfType(sameIngredientConcepts, new ConceptType[] {ConceptType.MEDICINAL_ENTITY, ConceptType.MEDICINAL_FORM});
+		
+		//Do we have room for these Medicinal concepts in our last task?  Otherwise create a new one.
+		Task task = batch.getLastTask();
+		if (batch.isRemainder() || startNewTask || task.getConcepts().size() + medicinals.size() > taskSize) {
+			task = batch.addNewTask();
+		}
+		task.addAll(medicinals);
+		sameIngredientConcepts.removeAll(medicinals); 
+		//Anything else goes into the remainder task
+		batch.addToRemainder(sameIngredientConcepts);
 	}
 	
 	
-	private void assignLostConcepts(List<Concept> lostConcepts,
-			Map<String, Batch> batches, Set<Concept> allConceptsToBeProcessed) throws TermServerFixException {
+	private void assignLostConcepts(List<String> ingredientCombosBeingProcessed, List<Concept> lostConcepts,
+			Batch batch, List<Concept> allConceptsToBeProcessed) throws TermServerFixException {
 		//Attempt to find a batch to add the concept to, looking at parents of the active ingredients
 		nextConcept:
 		for (Concept thisConcept : lostConcepts) {
@@ -251,11 +263,11 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 						ingredientPermutation.add(parentRel);
 					}
 				}
-				//Now do we have a batch for this permutation of ingredients and parents-of-ingredients?
+				//Now do we have a Medicinal Entity? for this permutation of ingredients and parents-of-ingredients?
 				String comboKey = getIngredientCombinationKey(thisConcept, ingredientPermutation);
-				if (batches.containsKey(comboKey)) {
-					String ingredientList = getIngredientList(ingredientPermutation);
-					forceConceptIntoBatch(batches.get(comboKey), thisConcept, ingredientList);
+				if (ingredientCombosBeingProcessed.contains(comboKey) ) {
+					batch.addToRemainder(thisConcept);
+					println("Found home for lost concept: " + thisConcept);
 					allConceptsToBeProcessed.add(thisConcept);
 					continue nextConcept;
 				}
@@ -263,23 +275,8 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		}
 	}
 
-	private void forceConceptIntoBatch(Batch batch, Concept concept, String ingredientList) {
-		//Add concept to the last task in the batch, or create a new one if required
-		int maxTask = batch.getTasks().size();
-		Task lastTask = batch.getTasks().get(maxTask - 1);
-		if (lastTask.getConcepts().size() < batchSize) {
-			lastTask.addConcept(concept);
-		} else {
-			lastTask = new Task(new ArrayList<Concept>(Arrays.asList(concept)));
-			batch.addTask(lastTask);
-			lastTask.setDescription(ingredientList + ": " + (maxTask + 1));
-		}
-		println("Added lost concept " + concept + " to batch " + ingredientList + " in task " + (batch.getTasks().indexOf(lastTask) + 1));
-		
-	}
-
 	private void validateAllInputConceptsBatched(List<Concept> concepts,
-			Set<Concept> allConceptsToBeProcessed) {
+			List<Concept> allConceptsToBeProcessed) {
 		//Ensure that all concepts we got given to process were captured in one batch or another
 		for (Concept thisConcept : concepts) {
 			if (!allConceptsToBeProcessed.contains(thisConcept) && !thisConcept.getConceptType().equals(ConceptType.GROUPER)) {
@@ -294,7 +291,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		return c.getRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, ACTIVE_STATE.ACTIVE);
 	}
 	
-	private String getIngredientList(List<Relationship> ingredientRelationships) {
+	/*private String getIngredientList(List<Relationship> ingredientRelationships) {
 		ArrayList<String> ingredientNames = new ArrayList<String>();
 		for (Relationship r : ingredientRelationships) {
 			String ingredientName = r.getTarget().getFsn().replaceAll("\\(.*?\\)","").trim().toLowerCase();
@@ -304,7 +301,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		Collections.sort(ingredientNames);
 		String list = ingredientNames.toString().replaceAll("\\[|\\]", "").replaceAll(", "," + ");
 		return SnomedUtils.capitalize(list);
-	}
+	}*/
 	
 	private Multimap<String, Concept> findAllIngredientCombos() throws TermServerFixException {
 		Collection<Concept> allConcepts = GraphLoader.getGraphLoader().getAllConcepts();
@@ -596,46 +593,14 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		}
 		debug ("Determined " + concept + " to be " + concept.getConceptType());
 	}
-	
-	
-	List<List<Concept>> splitBatchIntoChunks(Collection<Concept> concepts, int chunkSize) {
-		List<Concept> batchContent = new ArrayList<Concept>(concepts);
-		List<List<Concept>> chunkedList = new ArrayList<List<Concept>>();
-		//How many chunks are we going to need?
-		double chunkCount = Math.ceil((float)batchContent.size()/(float)chunkSize);
-		//Now if we divide the concepts evenly between chunks how many in each?
-		int conceptsPerChunk = (int)Math.round(batchContent.size() / chunkCount);
-		
-		//Any Medicinal Entity concepts must go in the first chunk
-		//Also Medicinal Forms
-		List<Concept> thisChunk = new ArrayList<Concept>();
-		chunkedList.add(thisChunk);
-		
-		List<Concept> MEs = getConceptsOfType(batchContent, ConceptType.MEDICINAL_ENTITY);
-		thisChunk.addAll(MEs);
-		batchContent.removeAll(MEs);
-		
-		List<Concept> MFs = getConceptsOfType(batchContent, ConceptType.MEDICINAL_FORM);
-		thisChunk.addAll(MFs);
-		batchContent.removeAll(MFs);
 
-		while (batchContent.size() > 0) {
-			Concept thisConcept = batchContent.get(0);
-			batchContent.remove(thisConcept);
-			thisChunk.add(thisConcept);
-			if (thisChunk.size() >= conceptsPerChunk && chunkedList.size() < chunkCount) {
-				thisChunk = new ArrayList<Concept>();
-				chunkedList.add(thisChunk);
-			}
-		}
-		return chunkedList;
-	}
-	
-	List<Concept> getConceptsOfType(Collection<Concept> concepts, ConceptType type) {
+	List<Concept> getConceptsOfType(Collection<Concept> concepts, ConceptType[] conceptTypes) {
 		List<Concept> matching = new ArrayList<Concept>();
 		for (Concept thisConcept : concepts) {
-			if (thisConcept.getConceptType().equals(type)) {
-				matching.add(thisConcept);
+			for (ConceptType thisConceptType : conceptTypes) {
+				if (thisConcept.getConceptType().equals(thisConceptType)) {
+					matching.add(thisConcept);
+				}
 			}
 		}
 		return matching;

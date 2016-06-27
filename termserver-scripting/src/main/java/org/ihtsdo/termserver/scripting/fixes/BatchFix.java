@@ -54,7 +54,7 @@ import com.google.gson.GsonBuilder;
  */
 public abstract class BatchFix extends TermServerFix implements RF2Constants {
 	
-	protected int batchSize = 5;
+	protected int taskSize = 7;
 	File batchFixFile;
 	File reportFile;
 	File outputDir;
@@ -114,9 +114,8 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 			}
 			String projectPath = "MAIN/" + project;
 			addSummaryInformation("Concepts in file", allConcepts.size());
-			List<Batch> batches = formIntoBatches(batchFixFile.getName(), allConcepts, projectPath);
-			addSummaryInformation("Batches created", batches.size());
-			batchProcess(batches);
+			Batch batch = formIntoBatch(batchFixFile.getName(), allConcepts, projectPath);
+			batchProcess(batch);
 			if (emailDetails != null) {
 				String msg = "Batch Scripting has completed successfully." + getSummaryText();
 				sendEmail(msg, reportFile);
@@ -129,22 +128,24 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 		println ("Processing complete.  See results: " + reportFile.getAbsolutePath());
 	}
 	
-	abstract List<Batch> formIntoBatches (String fileName, List<Concept> allConcepts, String branchPath) throws TermServerFixException;
+	abstract Batch formIntoBatch (String fileName, List<Concept> allConcepts, String branchPath) throws TermServerFixException;
 	
 	abstract int doFix(Task task, Concept concept) throws TermServerFixException;
 
-	private void batchProcess(List<Batch> batches) throws TermServerFixException {
+	private void batchProcess(Batch batch) throws TermServerFixException {
 		int failureCount = 0;
-		for (Batch batch : batches) {
+		boolean isFirst = true;
 			for (Task task : batch.getTasks()) {
 				try {
 					String branchPath;
 					String taskKey;
 					//Create a task for this batch of concepts
 					if (!dryRun) {
-						if (!batch.equals(batches.get(0))) {
+						if (!isFirst) {
 							debug ("Letting TS catch up");
 							Thread.sleep(20 * 1000);
+						} else {
+							isFirst = false;
 						}
 						debug ("Creating jira task on project: " + project);
 						taskKey = scaClient.createTask(project, task.getDescription(), task.getSummaryHTML());
@@ -194,8 +195,6 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 					throw new TermServerFixException("Failed to process batch " + task.getDescription() + " on task " + task.getTaskKey(), e);
 				}
 			}
-		}
-		
 	}
 
 	protected int ensureDefinitionStatus(Task t, Concept c, DEFINITION_STATUS targetDefStat) {
@@ -271,7 +270,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 				targetAuthor = thisArg.toLowerCase();
 				isAuthor = false;
 			} else if (isBatchSize) {
-				batchSize = Integer.parseInt(thisArg);
+				taskSize = Integer.parseInt(thisArg);
 				isBatchSize = false;
 			} else if (isProjectName) {
 				project = thisArg;
@@ -281,7 +280,6 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 				isDryRun = false;
 			} else if (isRestart) {
 				restartPosition = Integer.parseInt(thisArg);
-				println("Restarting file from line " + restartPosition);
 				isRestart = false;
 			} else if (isThrottle) {
 				throttle = Integer.parseInt(thisArg);
@@ -311,6 +309,8 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 		if (targetAuthor == null) {
 			throw new TermServerFixException("No target author detected in command line arguments");
 		}
+		println("Reading file from line " + restartPosition + " - " + batchFixFile.getName());
+		
 		init();
 		
 		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");

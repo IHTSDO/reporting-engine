@@ -1,5 +1,7 @@
 package org.ihtsdo.termserver.scripting.domain;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 public class Task {
@@ -8,10 +10,10 @@ public class Task {
 	String description;
 	List<Concept> concepts;
 	
-	public Task (final List<Concept> concepts) {
-		this.concepts = concepts;
+	public Task() {
+		concepts = new ArrayList<Concept>();
 	}
-	
+
 	public String getDescription() {
 		return description;
 	}
@@ -61,5 +63,13 @@ public class Task {
 		}
 		quotedList.append("]");
 		return quotedList.toString();
+	}
+
+	public void addAll(Collection<Concept> concepts) {
+		this.concepts.addAll(concepts);
+	}
+
+	public void add(Concept concept) {
+		this.concepts.add(concept);
 	}
 }
