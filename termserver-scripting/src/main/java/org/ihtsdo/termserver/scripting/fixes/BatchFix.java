@@ -139,6 +139,12 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 				try {
 					String branchPath;
 					String taskKey;
+					//If we don't have any concepts in this task eg this is 100% ME file, then skip
+					if (task.getConcepts().size() == 0) {
+						println ("Skipping Task " + task.getDescription() + " - no concepts to process");
+						continue;
+					}
+					
 					//Create a task for this batch of concepts
 					if (!dryRun) {
 						if (!isFirst) {
