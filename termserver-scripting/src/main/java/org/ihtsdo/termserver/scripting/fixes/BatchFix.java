@@ -213,6 +213,12 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 		if (concept != null) {
 			sctid = concept.getConceptId();
 			fsn = concept.getFsn();
+			
+			if (severity.equals(SEVERITY.CRITICAL)) {
+				String key = "CRITICAL ISSUE encountered for " + sctid + " |" + fsn + "|" ;
+				addSummaryInformation(key, actionDetail);
+				println ( key + " : " + actionDetail);
+			}
 		}
 		String batchKey = (task == null? "" :  task.getTaskKey());
 		String batchDesc = (task == null? "" :  task.getDescription());
