@@ -21,11 +21,9 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.authority.AuthorityUtils;
 
 import com.b2international.snowowl.api.IAuthenticationService;
-import com.google.common.collect.ImmutableList;
 
 /**
  * Provides HTTP basic authentication in the RESTful API. Uses a given {@link IAuthenticationService} to do the actual authentication and responds
@@ -45,8 +43,7 @@ public class SnowOwlAuthenticationProvider implements AuthenticationProvider {
 		final String password = credentials == null ? null : credentials.toString();
 
 		if (delegate.authenticate(username, password)) {
-			return new UsernamePasswordAuthenticationToken(username, password, ImmutableList.<GrantedAuthority> of(new SimpleGrantedAuthority(
-					"ROLE_USER")));
+			return new UsernamePasswordAuthenticationToken(username, password, AuthorityUtils.createAuthorityList("ROLE_USER"));
 		} else {
 			throw new BadCredentialsException("Incorrect user name or password.");
 		}

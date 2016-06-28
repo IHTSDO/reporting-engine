@@ -8,26 +8,25 @@
  	http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd">
 
 	<!-- REST should have no state, each request is re-authenticated -->
-	<http create-session="stateless"
-			auto-config="false" 				
-			entry-point-ref="http403EntryPoint"
-			use-expressions="true"
-		>
-		<custom-filter ref="authenticationProcessingFilter" position="FORM_LOGIN_FILTER"/>
+	<http create-session="stateless" use-expressions="true">
 		<intercept-url pattern="/api-docs/**" access="permitAll" />
 		<intercept-url pattern="/**/*.html" access="permitAll" />
 		<intercept-url pattern="/**/*.js" access="permitAll" />
 		<intercept-url pattern="/**/*.css" access="permitAll" />
 		<intercept-url pattern="/**/*.png" access="permitAll" />
 		<intercept-url pattern="/**/*.jpg" access="permitAll" />
-	
 		<intercept-url pattern="/**" access="hasAnyRole('ROLE_ihtsdo-sca-author')" />
+		<http-basic />
+		<custom-filter ref="authenticationDecorator" after="BASIC_AUTH_FILTER" />
 	</http>
 
 	<global-method-security pre-post-annotations="enabled" secured-annotations="enabled" proxy-target-class="true" />
 	
- 	<beans:import resource="classpath:applicationContext-CrowdClient.xml" />
- 	<beans:import resource="classpath:application-im-common-security-config.xml" />
-	<beans:bean id="http403EntryPoint" class="org.springframework.security.web.authentication.Http403ForbiddenEntryPoint" />
+	<authentication-manager>
+		<authentication-provider ref="basicAuthenticationProvider" />
+	</authentication-manager>
+	
+	<beans:bean id="basicAuthenticationProvider" class="org.ihtsdo.snowowl.api.rest.common.SnowOwlAuthenticationProvider" />
+	<beans:bean id="authenticationDecorator" class="org.ihtsdo.snowowl.api.rest.common.RequestHeaderAuthenticationDecorator" />
 	
 </beans:beans>
