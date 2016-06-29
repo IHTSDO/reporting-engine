@@ -56,8 +56,8 @@ public class BatchImportRun {
 		allValidConcepts.put(thisConcept.getSctid(), thisConcept);
 		
 		//Are we loading the parent of this concept? Add as a child if so
-		if (allValidConcepts.containsKey(thisConcept.getParent())) {
-			allValidConcepts.get(thisConcept.getParent()).addChild(thisConcept);
+		if (allValidConcepts.containsKey(thisConcept.getParent(0))) {
+			allValidConcepts.get(thisConcept.getParent(0)).addChild(thisConcept);
 		} else {
 			//otherwise add as a child of the root concept
 			rootConcept.addChild(thisConcept);
@@ -66,7 +66,7 @@ public class BatchImportRun {
 		//Is this concept a parent of existing known children?  Remove children 
 		//from the root concept and add under this concept if so
 		for (BatchImportConcept existingConcept : allValidConcepts.values()) {
-			if (existingConcept.getParent().equals(thisConcept.getSctid())) {
+			if (existingConcept.getParent(0).equals(thisConcept.getSctid())) {
 				rootConcept.removeChild(existingConcept);
 				thisConcept.addChild(existingConcept);
 			}

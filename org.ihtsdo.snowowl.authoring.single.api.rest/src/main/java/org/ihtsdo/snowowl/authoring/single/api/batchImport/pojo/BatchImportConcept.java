@@ -9,24 +9,25 @@ import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 public class BatchImportConcept {
 	
 	CSVRecord row;
-	
 	String sctid;
-
-	String parent;
-	
+	List<String> parents;
 	String expressionStr;
-	
 	String fsn;
-	
 	BatchImportExpression expression;
+	BatchImportDocumentation documentation = new BatchImportDocumentation();
+	ArrayList <BatchImportTerm> terms = new ArrayList<BatchImportTerm>();
+
+	public BatchImportDocumentation getDocumentation() {
+		return documentation;
+	}
 
 	boolean requiresNewSCTID = false;
 	
 	List<BatchImportConcept> children = new ArrayList<BatchImportConcept>();
 	
-	public BatchImportConcept(String sctid, String parent, CSVRecord row, boolean requiresNewSCTID) {
+	public BatchImportConcept(String sctid, List<String> parents, CSVRecord row, boolean requiresNewSCTID) {
 		this.sctid = sctid;
-		this.parent = parent;
+		this.parents = parents;
 		this.row = row;
 		this.requiresNewSCTID = requiresNewSCTID;
 	}
@@ -79,12 +80,16 @@ public class BatchImportConcept {
 		return sctid;
 	}
 
-	public String getParent() {
-		return parent;
+	public List<String> getParents() {
+		return parents;
 	}
 	
-	public void setParent(String parentSCTID) {
-		this.parent = parentSCTID;
+	public String getParent(int ref) {
+		return parents.get(ref);
+	}
+	
+	public void addParent(String parentSCTID) {
+		parents.add(parentSCTID);
 	}
 
 	public final List<BatchImportConcept> getChildren() {
@@ -126,5 +131,12 @@ public class BatchImportConcept {
 	public void setFsn(String fsn) {
 		this.fsn = fsn;
 	}
+	
+	public void addTerm (BatchImportTerm t) {
+		terms.add(t);
+	}
 
+	public ArrayList<BatchImportTerm> getTerms() {
+		return terms;
+	}
 }

@@ -25,6 +25,7 @@ import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportReque
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportRun;
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportState;
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportStatus;
+import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportTerm;
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.service.BatchImportFormat.FIELD;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTask;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskCreateRequest;
@@ -190,8 +191,8 @@ public class BatchImportService {
 			return false;
 		}
 		
-		if (!run.getFormatter().definesByExpression() && !validateSCTID(concept.getParent())) {
-			run.fail(concept.getRow(), concept.getParent() + " is not a valid parent identifier.");
+		if (!run.getFormatter().definesByExpression() && !validateSCTID(concept.getParent(0))) {
+			run.fail(concept.getRow(), concept.getParent(0) + " is not a valid parent identifier.");
 			return false;
 		}
 		
@@ -209,7 +210,7 @@ public class BatchImportService {
 				} catch (NumberFormatException ne) {
 					throw new ProcessingException ("Failed to correctly determine parent in expression: " + concept.getExpressionStr(),ne);
 				}
-				concept.setParent(parentStr);
+				concept.addParent(parentStr);
 				concept.setExpression(exp);
 			} catch (Exception e) {
 				run.fail(concept.getRow(), "Invalid expression: " + e.getMessage());
@@ -414,10 +415,21 @@ public class BatchImportService {
 			.append(" - ")
 			.append(thisConcept.getFsn())
 			.append(":</h5>")
-			.append("<ul>")
-			.append("<li>Originating Reference: ")
-			.append(biConcept.get(format.getIndex(FIELD.ORIG_REF)))
-			.append("</li>");
+			.append("<ul>");
+			
+			if (format.getIndex(FIELD.ORIG_REF) != BatchImportFormat.FIELD_NOT_FOUND) {
+				str.append("<li>Originating Reference: ")
+				.append(biConcept.get(format.getIndex(FIELD.ORIG_REF)))
+				.append("</li>");
+			}
+			
+			for (int docIdx : format.getDocumentationFields()) {
+				str.append("<li>")
+				.append(format.getHeaders()[docIdx])
+				.append(": ")
+				.append(biConcept.get(docIdx))
+				.append("</li>");
+			}
 			
 			List<String> notes = run.getFormatter().getAllNotes(biConcept);
 			for (String thisNote: notes) {
@@ -554,21 +566,25 @@ public class BatchImportService {
 			newConcept.setDefinitionStatus(DefinitionStatus.PRIMITIVE);
 			//Set the Parent
 			relationships = new ArrayList<ISnomedBrowserRelationship>();
-			ISnomedBrowserRelationship isA = createRelationship(DEFAULT_GROUP, "rel_isa", thisConcept.getSctid(), SCTID_ISA, thisConcept.getParent());
-			relationships.add(isA);
+			for (String thisParent : thisConcept.getParents()) {
+				ISnomedBrowserRelationship isA = createRelationship(DEFAULT_GROUP, "rel_isa", thisConcept.getSctid(), SCTID_ISA, thisParent);
+				relationships.add(isA);
+			}
 		}
 		newConcept.setRelationships(relationships);
 		
 		//Add Descriptions FSN, then Preferred Term
 		List<ISnomedBrowserDescription> descriptions = new ArrayList<ISnomedBrowserDescription>();
-		String prefTerm, fsnTerm;
+		String prefTerm = null, fsnTerm = null;
 		
 		if (formatter.constructsFSN()) {
 			prefTerm = thisConcept.get(formatter.getIndex(FIELD.FSN_ROOT));
 			fsnTerm = prefTerm + " (" + thisConcept.get(formatter.getIndex(FIELD.SEMANTIC_TAG)) +")";
 		} else {
-			prefTerm = thisConcept.get(formatter.getIndex(FIELD.PREF_TERM));
 			fsnTerm = thisConcept.get(formatter.getIndex(FIELD.FSN));
+			if (!formatter.hasMultipleTerms()) {
+				prefTerm = thisConcept.get(formatter.getIndex(FIELD.PREF_TERM));
+			}
 		}
 		
 		//Save the FSN back to the concept for future use eg in Task Summary
@@ -578,35 +594,22 @@ public class BatchImportService {
 		descriptions.add(fsn);
 		newConcept.setFsn(fsnTerm);
 		
-		ISnomedBrowserDescription pref = createDescription(prefTerm, SnomedBrowserDescriptionType.SYNONYM, PREFERRED_ACCEPTABILIY);
-		descriptions.add(pref);
-		addSynonyms(descriptions, formatter, thisConcept);
+		if (formatter.hasMultipleTerms()) {
+			int termIdx = 0;
+			for (BatchImportTerm biTerm : thisConcept.getTerms()) {
+				ISnomedBrowserDescription term = createDescription(biTerm, termIdx);
+				descriptions.add(term);
+				termIdx++;
+			}
+		} else {
+			ISnomedBrowserDescription pref = createDescription(prefTerm, SnomedBrowserDescriptionType.SYNONYM, PREFERRED_ACCEPTABILIY);
+			descriptions.add(pref);
+			addSynonyms(descriptions, formatter, thisConcept);
+		}
 		newConcept.setDescriptions(descriptions);
 		
 		return newConcept;
 	}
-	
-	/*private List<ISnomedBrowserRelationship> convertExpressionToRelationships(String sourceSCTID,
-			Expression expression) {
-		List<ISnomedBrowserRelationship> relationships = new ArrayList<ISnomedBrowserRelationship>();
-		int attributeNum = 0;
-		
-		for (Attribute attribute : expression.getAttributes()) {
-			ISnomedBrowserRelationship rel = createRelationship("rel_" + attributeNum, attribute);
-			relationships.add(rel);
-			attributeNum++;
-		}
-		
-		for (Group group : expression.getGroups()) {
-			for (Attribute attribute : group.getAttributes()) {
-				ISnomedBrowserRelationship rel = createRelationship("rel_" + attributeNum, attribute);
-				relationships.add(rel);
-				attributeNum++;
-			}
-		}		
-		
-		return relationships;
-	}*/
 	
 	List<ISnomedBrowserRelationship> convertExpressionToRelationships(String sourceSCTID,
 			BatchImportExpression expression) {
@@ -678,6 +681,51 @@ public class BatchImportService {
 		desc.setAcceptabilityMap(acceptabilityMap);
 		desc.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
 		return desc;
+	}
+	
+	ISnomedBrowserDescription createDescription(BatchImportTerm biTerm, int idx) throws BusinessServiceException {
+		SnomedBrowserDescription desc = new SnomedBrowserDescription();
+		//Set a temporary id so the user can tell which item failed validation
+		desc.setDescriptionId("desc_SYN_" + idx);
+		desc.setTerm(biTerm.getTerm());
+		desc.setActive(true);
+		desc.setType(SnomedBrowserDescriptionType.SYNONYM);
+		desc.setLang(SnomedConstants.LanguageCodeReferenceSetIdentifierMapping.EN_LANGUAGE_CODE);
+		desc.setAcceptabilityMap(getAcceptablityAsMap(biTerm));
+		desc.setCaseSignificance(translateCaseSensitivity(biTerm.getCaseSensitivity()));
+		return desc;
+	}
+
+	public static  CaseSignificance translateCaseSensitivity(String caseSensitivity) throws BusinessServiceException {
+		switch (caseSensitivity) {
+			case "CS" : return CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE;
+			case "ci" : return CaseSignificance.CASE_INSENSITIVE;
+			case "cI" : return CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE;
+			default : throw new BusinessServiceException ("Could not determine case significance from " + caseSensitivity);
+		}
+	}
+	
+	public static Acceptability translateAcceptability (char acceptability) throws BusinessServiceException {
+		switch (Character.toUpperCase(acceptability)) {
+			case 'N' : return null;
+			case 'P' : return Acceptability.PREFERRED;
+			case 'A' : return Acceptability.ACCEPTABLE;
+			default : throw new BusinessServiceException ("Could not determine acceptability from '" + acceptability + "'");
+		}
+	}
+
+	public static Map<String, Acceptability> getAcceptablityAsMap(BatchImportTerm term) throws BusinessServiceException {
+		Map <String, Acceptability> acceptabilityMap = new HashMap<String, Acceptability>();
+		Acceptability gbAcceptability = translateAcceptability(term.getAcceptabilityGB());
+		if (gbAcceptability != null) {
+			acceptabilityMap.put(Concepts.REFSET_LANGUAGE_TYPE_UK, gbAcceptability);
+		}
+		
+		Acceptability usAcceptability = translateAcceptability(term.getAcceptabilityUS());
+		if (usAcceptability != null) {
+			acceptabilityMap.put(Concepts.REFSET_LANGUAGE_TYPE_US, usAcceptability);
+		}
+		return acceptabilityMap;
 	}
 
 	private String getFilePath(BatchImportRun run) {
