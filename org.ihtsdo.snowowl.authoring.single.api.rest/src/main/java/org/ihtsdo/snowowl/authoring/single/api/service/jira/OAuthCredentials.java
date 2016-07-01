@@ -1,5 +1,6 @@
 package org.ihtsdo.snowowl.authoring.single.api.service.jira;
 
+import com.google.common.io.BaseEncoding;
 import com.google.gdata.client.authn.oauth.OAuthException;
 import com.google.gdata.client.authn.oauth.OAuthParameters;
 import com.google.gdata.client.authn.oauth.OAuthRsaSha1Signer;
@@ -31,6 +32,8 @@ import java.util.Map;
 
 public class OAuthCredentials implements ICredentials {
 
+	private static final BaseEncoding BASE64 = BaseEncoding.base64().withSeparator("\n", 64);
+	
 	private static final String BEGIN_PRIVATE_KEY = "-----BEGIN PRIVATE KEY-----";
 	private static final String END_PRIVATE_KEY = "-----END PRIVATE KEY-----";
 	private static final String UTF_8 = "UTF-8";
@@ -163,7 +166,7 @@ public class OAuthCredentials implements ICredentials {
 			int endIndex = privateKeyString.indexOf(END_PRIVATE_KEY);
 			privateKeyString = privateKeyString.substring(startIndex + BEGIN_PRIVATE_KEY.length(), endIndex);
 			// decode private key
-			PKCS8EncodedKeySpec privSpec = new PKCS8EncodedKeySpec((new BASE64Decoder()).decodeBuffer(privateKeyString));
+			PKCS8EncodedKeySpec privSpec = new PKCS8EncodedKeySpec(BASE64.decode(privateKeyString));
 			return KeyFactory.getInstance(RSA).generatePrivate(privSpec);
 		} else {
 			throw new IOException("Unexpected private key format. File should contain " + BEGIN_PRIVATE_KEY);
