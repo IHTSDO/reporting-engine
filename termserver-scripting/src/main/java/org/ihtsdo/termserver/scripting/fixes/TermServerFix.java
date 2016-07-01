@@ -201,7 +201,7 @@ public abstract class TermServerFix implements RF2Constants {
 		}
 		
 		if (criticalIssues.size() > 0) {
-			recordSummaryText ("Critical Issues Encountered\n========================");
+			recordSummaryText ("\nCritical Issues Encountered\n========================");
 			for (String thisCriticalIssue : criticalIssues) {
 				recordSummaryText(thisCriticalIssue);
 			}
