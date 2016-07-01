@@ -113,7 +113,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 				}
 			}
 			String projectPath = "MAIN/" + project;
-			addSummaryInformation("Concepts in file", allConcepts.size());
+			addSummaryInformation(CONCEPTS_IN_FILE, allConcepts);
 			Batch batch = formIntoBatch(batchFixFile.getName(), allConcepts, projectPath);
 			batchProcess(batch);
 			if (emailDetails != null) {
@@ -221,7 +221,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 			fsn = concept.getFsn();
 			
 			if (severity.equals(SEVERITY.CRITICAL)) {
-				String key = "CRITICAL ISSUE encountered for " + sctid + " |" + fsn + "|" ;
+				String key = CRITICAL_ISSUE + " encountered for " + sctid + " |" + fsn + "|" ;
 				addSummaryInformation(key, actionDetail);
 				println ( key + " : " + actionDetail);
 			}

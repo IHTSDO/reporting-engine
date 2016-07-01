@@ -1,8 +1,11 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
@@ -29,6 +32,11 @@ public abstract class TermServerFix implements RF2Constants {
 	private static Date startTime;
 	private static Map<String, Object> summaryDetails = new HashMap<String, Object>();
 	private static String summaryText = "";
+	
+	public static String CONCEPTS_IN_FILE = "Concepts in file";
+	public static String CONCEPTS_PROCESSED = "Concepts processed";
+	public static String REPORTED_NOT_PROCESSED = "Reported not processed";
+	public static String CRITICAL_ISSUE = "CRITICAL ISSUE";
 
 	public abstract String getFixName();
 	
@@ -147,24 +155,55 @@ public abstract class TermServerFix implements RF2Constants {
 		summaryDetails.put(key, newValue);
 	}
 	
+	public void storeRemainder(String start, String remove1, String remove2, String storeAs) {
+		Collection<?> differences = new ArrayList((Collection<?>)summaryDetails.get(start));
+		Collection<?> removeList = (Collection<?>)summaryDetails.get(remove1);
+		differences.removeAll(removeList);
+		if (remove2 != null && !remove2.isEmpty()) {
+			removeList = (Collection<?>)summaryDetails.get(remove2);
+			differences.removeAll(removeList);
+		}
+		summaryDetails.put(storeAs, differences.toString());
+	}
+	
 	public void finish() {
 		println ("===========================================");
 		Date endTime = new Date();
 		SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
 		//I've not had to adjust for timezones when creating a date before?
-		Date diff = new Date(endTime.getTime() - startTime.getTime() + (endTime.getTimezoneOffset() * 60 * 1000));
-		recordSummaryText ("Completed processing in " + sdf.format(diff));
-		recordSummaryText ("Started at: " + startTime);
+		if (startTime != null) {
+			Date diff = new Date(endTime.getTime() - startTime.getTime() + (endTime.getTimezoneOffset() * 60 * 1000));
+			recordSummaryText ("Completed processing in " + sdf.format(diff));
+			recordSummaryText ("Started at: " + startTime);
+		}
 		recordSummaryText ("Finished at: " + endTime);
+		List<String> criticalIssues = new ArrayList<String>();
 		
 		for (Map.Entry<String, Object> summaryDetail : summaryDetails.entrySet()) {
-			recordSummaryText (summaryDetail.getKey() + ": " + summaryDetail.getValue().toString());
+			String key = summaryDetail.getKey();
+			Object value = summaryDetail.getValue();
+			String display = "";
+			if (value instanceof Collection) {
+				display += ((Collection<?>)value).size();
+			} else if (key.startsWith(CRITICAL_ISSUE)) {
+				criticalIssues.add(key + ": " + value.toString());
+			} else {
+				display = value.toString();
+			}
+			recordSummaryText (key + ": " + display);
 		}
-		if (summaryDetails.containsKey("Tasks created") && summaryDetails.containsKey("Concepts processed") ) {
-			double c = (double)((Integer)summaryDetails.get("Concepts processed")).intValue();
+		if (summaryDetails.containsKey("Tasks created") && summaryDetails.containsKey(CONCEPTS_PROCESSED) ) {
+			double c = (double)((Collection)summaryDetails.get("Concepts processed")).size();
 			double t = (double)((Integer)summaryDetails.get("Tasks created")).intValue();
 			double avg = Math.round((c/t) * 10) / 10.0;
 			recordSummaryText ("Concepts per task: " + avg);
+		}
+		
+		if (criticalIssues.size() > 0) {
+			recordSummaryText ("Critical Issues Encountered\n<br/>========================");
+			for (String thisCriticalIssue : criticalIssues) {
+				recordSummaryText(thisCriticalIssue);
+			}
 		}
 		
 	}

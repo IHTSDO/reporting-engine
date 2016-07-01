@@ -168,8 +168,10 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		assignLostConcepts(ingredientCombosBeingProcessed, lostConcepts, batch, allConceptsBeingProcessed);
 		int after = allConceptsBeingProcessed.size();
 		addSummaryInformation("Lost concepts included", (after - before));
-		addSummaryInformation("Concepts processed", allConceptsBeingProcessed.size());
-		validateAllInputConceptsBatched (conceptsInFile, allConceptsBeingProcessed);
+		addSummaryInformation(CONCEPTS_PROCESSED, allConceptsBeingProcessed);
+		List <Concept> reportedNotProcessed = validateAllInputConceptsBatched (conceptsInFile, allConceptsBeingProcessed);
+		addSummaryInformation(REPORTED_NOT_PROCESSED, reportedNotProcessed);
+		storeRemainder(CONCEPTS_IN_FILE, CONCEPTS_PROCESSED, REPORTED_NOT_PROCESSED, "Gone Missing");
 		return batch;
 	}
 
@@ -275,16 +277,19 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		}
 	}
 
-	private void validateAllInputConceptsBatched(List<Concept> concepts,
+	private List<Concept> validateAllInputConceptsBatched(List<Concept> concepts,
 			List<Concept> allConceptsToBeProcessed) {
+		List<Concept> reportedNotProcessed = new ArrayList<Concept>();
 		//Ensure that all concepts we got given to process were captured in one batch or another
 		for (Concept thisConcept : concepts) {
 			if (!allConceptsToBeProcessed.contains(thisConcept) && !thisConcept.getConceptType().equals(ConceptType.GROUPER)) {
+				reportedNotProcessed.add(thisConcept);
 				String msg = thisConcept + " was given in input file but did not get included in a batch.  Check active ingredient.";
 				report(null, thisConcept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.UNEXPECTED_CONDITION, msg);
 			}
 		}
 		println("Processing " + allConceptsToBeProcessed.size() + " concepts.");
+		return reportedNotProcessed;
 	}
 
 	private List<Relationship> getIngredients(Concept c) {
