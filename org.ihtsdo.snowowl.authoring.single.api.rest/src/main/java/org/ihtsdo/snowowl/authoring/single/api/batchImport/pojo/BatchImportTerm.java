@@ -1,14 +1,5 @@
 package org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import org.ihtsdo.otf.rest.exception.BusinessServiceException;
-import org.ihtsdo.snowowl.authoring.single.api.batchImport.service.BatchImportService;
-
-import com.b2international.snowowl.snomed.SnomedConstants.Concepts;
-import com.b2international.snowowl.snomed.core.domain.Acceptability;
-
 public class BatchImportTerm {
 	String term;
 	boolean isFSN;
