@@ -150,7 +150,6 @@ public class BatchImportFormat {
 			newConcept = new BatchImportConcept (sctid, parents, row, requiresNewSCTID);
 		}
 		
-		
 		if (multipleTerms) {
 			String[] headers = getHeaders();
 			for (int i = 0; i < headers.length; i++) {
@@ -160,7 +159,6 @@ public class BatchImportFormat {
 					//Do we have a CAPS indicator here?
 					if (headers[i].toLowerCase().startsWith("caps")) {
 						term.setCaseSensitivity(row.get(i));
-						i++;
 					}
 					newConcept.addTerm(term);
 				}
