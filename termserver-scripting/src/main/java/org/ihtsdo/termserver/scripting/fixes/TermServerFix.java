@@ -187,6 +187,7 @@ public abstract class TermServerFix implements RF2Constants {
 				display += ((Collection<?>)value).size();
 			} else if (key.startsWith(CRITICAL_ISSUE)) {
 				criticalIssues.add(key + ": " + value.toString());
+				continue;
 			} else {
 				display = value.toString();
 			}
@@ -200,7 +201,7 @@ public abstract class TermServerFix implements RF2Constants {
 		}
 		
 		if (criticalIssues.size() > 0) {
-			recordSummaryText ("Critical Issues Encountered\n<br/>========================");
+			recordSummaryText ("Critical Issues Encountered\n========================");
 			for (String thisCriticalIssue : criticalIssues) {
 				recordSummaryText(thisCriticalIssue);
 			}
@@ -210,6 +211,7 @@ public abstract class TermServerFix implements RF2Constants {
 	
 	private synchronized void recordSummaryText(String msg) {
 		println (msg);
+		msg = msg.replace("\n", "\n</br>");
 		summaryText += msg + "\n<br/>";
 	}
 	
