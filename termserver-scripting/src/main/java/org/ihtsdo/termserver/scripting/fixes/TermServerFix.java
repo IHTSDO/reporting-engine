@@ -194,7 +194,7 @@ public abstract class TermServerFix implements RF2Constants {
 			recordSummaryText (key + ": " + display);
 		}
 		if (summaryDetails.containsKey("Tasks created") && summaryDetails.containsKey(CONCEPTS_PROCESSED) ) {
-			double c = (double)((Collection)summaryDetails.get("Concepts processed")).size();
+			double c = (double)((Collection<?>)summaryDetails.get("Concepts processed")).size();
 			double t = (double)((Integer)summaryDetails.get("Tasks created")).intValue();
 			double avg = Math.round((c/t) * 10) / 10.0;
 			recordSummaryText ("Concepts per task: " + avg);
