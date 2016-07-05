@@ -19,7 +19,7 @@ public class LangRefsetInactivationFix extends TermServerFix implements RF2Const
 	public static void main(String[] args) throws TermServerFixException, IOException, JSONException {
 		LangRefsetInactivationFix fixer = new LangRefsetInactivationFix();
 		fixer.project = "INTQA";
-		fixer.init();
+		fixer.init(args);
 		fixer.fixAll();
 	}
 		

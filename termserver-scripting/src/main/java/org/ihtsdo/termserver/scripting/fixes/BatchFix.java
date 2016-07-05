@@ -56,8 +56,6 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 	
 	protected int taskSize = 7;
 	File batchFixFile;
-	File reportFile;
-	File outputDir;
 	protected String targetAuthor;
 	String[] emailDetails;
 	
@@ -228,22 +226,9 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 		}
 		String batchKey = (task == null? "" :  task.getTaskKey());
 		String batchDesc = (task == null? "" :  task.getDescription());
-		String line = batchKey + COMMA + batchDesc + COMMA + sctid + COMMA_QUOTE + fsn + QUOTE_COMMA + concept.getConceptType() + COMMA + severity + COMMA + actionType + COMMA + QUOTE + actionDetail + QUOTE;
+		String line = batchKey + COMMA + batchDesc + COMMA + sctid + COMMA_QUOTE + fsn + QUOTE_COMMA + concept.getConceptType() + COMMA + severity + COMMA + actionType + COMMA_QUOTE + actionDetail + QUOTE;
 		writeToFile (line);
 	}
-	
-	private void writeToFile(String line) {
-		try(FileWriter fw = new FileWriter(reportFile, true);
-				BufferedWriter bw = new BufferedWriter(fw);
-				PrintWriter out = new PrintWriter(bw))
-		{
-			out.println(line);
-		} catch (Exception e) {
-			print ("Unable to output report line: " + line + " due to " + e.getMessage());
-		}
-		
-	}
-
 
 	protected void init (String[] args) throws TermServerFixException, IOException {
 		if (args.length < 3) {
@@ -253,31 +238,12 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 		}
 		boolean isBatchSize = false;
 		boolean isProjectName = false;
-		boolean isCookie = false;
-		boolean isDryRun = false;
 		boolean isAuthor = false;
-		boolean isRestart = false;
-		boolean isOutputDir = false;
-		boolean isThrottle = false;
 		boolean isMailRecipient = false;
 	
 		for (String thisArg : args) {
-			if (thisArg.equals("-a")) {
-				isAuthor = true;
-			} else if (thisArg.equals("-b")) {
+			 if (thisArg.equals("-b")) {
 				isBatchSize = true;
-			} else if (thisArg.equals("-p")) {
-				isProjectName = true;
-			} else if (thisArg.equals("-c")) {
-				isCookie = true;
-			} else if (thisArg.equals("-d")) {
-				isDryRun = true;
-			} else if (thisArg.equals("-o")) {
-				isOutputDir = true;
-			} else if (thisArg.equals("-r")) {
-				isRestart = true;
-			} else if (thisArg.equals("-t")) {
-				isThrottle = true;
 			} else if (isAuthor) {
 				targetAuthor = thisArg.toLowerCase();
 				isAuthor = false;
@@ -287,26 +253,6 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 			} else if (isProjectName) {
 				project = thisArg;
 				isProjectName = false;
-			} else if (isDryRun) {
-				dryRun = thisArg.toUpperCase().equals("Y");
-				isDryRun = false;
-			} else if (isRestart) {
-				restartPosition = Integer.parseInt(thisArg);
-				isRestart = false;
-			} else if (isThrottle) {
-				throttle = Integer.parseInt(thisArg);
-				isThrottle = false;
-			} else if (isOutputDir) {
-				File possibleDir = new File(thisArg);
-				if (possibleDir.exists() && possibleDir.isDirectory() && possibleDir.canRead()) {
-					outputDir = possibleDir;
-				} else {
-					println ("Unable to use directory " + possibleDir.getAbsolutePath() + " for output.");
-				}
-				isOutputDir = false;
-			} else if (isCookie) {
-				authenticatedCookie = thisArg;
-				isCookie = false;
 			} else {
 				File possibleFile = new File(thisArg);
 				if (possibleFile.exists() && !possibleFile.isDirectory() && possibleFile.canRead()) {
@@ -323,7 +269,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 		}
 		println("Reading file from line " + restartPosition + " - " + batchFixFile.getName());
 		
-		init();
+		super.init(args);
 		
 		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
 		String reportFilename = "results_" + SnomedUtils.deconstructFilename(batchFixFile)[1] + "_" + df.format(new Date()) + ".csv";

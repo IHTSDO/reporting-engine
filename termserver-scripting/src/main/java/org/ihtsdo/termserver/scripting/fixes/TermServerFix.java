@@ -1,5 +1,10 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -32,6 +37,8 @@ public abstract class TermServerFix implements RF2Constants {
 	private static Date startTime;
 	private static Map<String, Object> summaryDetails = new HashMap<String, Object>();
 	private static String summaryText = "";
+	File reportFile;
+	File outputDir;
 	
 	public static String CONCEPTS_IN_FILE = "Concepts in file";
 	public static String CONCEPTS_PROCESSED = "Concepts processed";
@@ -83,7 +90,59 @@ public abstract class TermServerFix implements RF2Constants {
 		return msg;
 	}
 	
-	public void init() {
+	protected void init(String[] args) throws TermServerFixException, IOException {
+		
+		if (args.length < 3) {
+			println("Usage: java <FixClass> [-a author] [-b <batchSize>] [-r <restart lineNum>] [-c <authenticatedCookie>] [-d <Y/N>] [-p <projectName>] <batch file Location>");
+			println(" d - dry run");
+			System.exit(-1);
+		}
+		boolean isProjectName = false;
+		boolean isCookie = false;
+		boolean isDryRun = false;
+		boolean isRestart = false;
+		boolean isThrottle = false;
+		boolean isOutputDir = false;
+	
+		for (String thisArg : args) {
+			if (thisArg.equals("-p")) {
+				isProjectName = true;
+			} else if (thisArg.equals("-c")) {
+				isCookie = true;
+			} else if (thisArg.equals("-d")) {
+				isDryRun = true;
+			} else if (thisArg.equals("-o")) {
+				isOutputDir = true;
+			} else if (thisArg.equals("-r")) {
+				isRestart = true;
+			} else if (thisArg.equals("-t")) {
+				isThrottle = true;
+			}  else if (isProjectName) {
+				project = thisArg;
+				isProjectName = false;
+			} else if (isDryRun) {
+				dryRun = thisArg.toUpperCase().equals("Y");
+				isDryRun = false;
+			} else if (isRestart) {
+				restartPosition = Integer.parseInt(thisArg);
+				isRestart = false;
+			} else if (isThrottle) {
+				throttle = Integer.parseInt(thisArg);
+				isThrottle = false;
+			} else if (isCookie) {
+				authenticatedCookie = thisArg;
+				isCookie = false;
+			} else if (isOutputDir) {
+				File possibleDir = new File(thisArg);
+				if (possibleDir.exists() && possibleDir.isDirectory() && possibleDir.canRead()) {
+					outputDir = possibleDir;
+				} else {
+					println ("Unable to use directory " + possibleDir.getAbsolutePath() + " for output.");
+				}
+				isOutputDir = false;
+			} 
+		}		
+		
 		println ("Select an environment ");
 		for (int i=0; i < environments.length; i++) {
 			println ("  " + i + ": " + environments[i]);
@@ -217,6 +276,18 @@ public abstract class TermServerFix implements RF2Constants {
 	
 	public static String getSummaryText() {
 		return summaryText;
+	}
+	
+	
+	protected void writeToFile(String line) {
+		try(FileWriter fw = new FileWriter(reportFile, true);
+				BufferedWriter bw = new BufferedWriter(fw);
+				PrintWriter out = new PrintWriter(bw))
+		{
+			out.println(line);
+		} catch (Exception e) {
+			print ("Unable to output report line: " + line + " due to " + e.getMessage());
+		}
 	}
 
 }

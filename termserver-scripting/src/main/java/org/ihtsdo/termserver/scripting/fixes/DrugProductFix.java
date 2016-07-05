@@ -68,7 +68,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		try {
 			fix.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
-			fix.loadProject();
+			fix.loadProjectSnapshot();
 			//We won't incude the project export in our timings
 			fix.startTimer();
 			fix.processFile();
@@ -321,7 +321,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		return ingredientCombos;
 	}
 
-	private void loadProject() throws SnowOwlClientException, TermServerFixException {
+	private void loadProjectSnapshot() throws SnowOwlClientException, TermServerFixException {
 		File snapShotArchive = new File (project + ".zip");
 		//Do we already have a copy of the project locally?  If not, recover it.
 		if (!snapShotArchive.exists()) {

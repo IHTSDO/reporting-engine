@@ -7,7 +7,9 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
@@ -38,25 +40,26 @@ public class GraphLoader implements RF2Constants {
 			// Only store active relationships.  Check for active filters out header row.
 			if (lineItems[REL_IDX_ACTIVE].equals(ACTIVE_FLAG)
 					&& !lineItems[REL_IDX_CHARACTERISTICTYPEID].equals(ADDITIONAL_RELATIONSHIP)) {
-				createRelationship(lineItems);
+				addRelationshipToConcept(lineItems);
 			}
 		}
 		return loadedRelationships;
 	}
 	
-	private void createRelationship(String[] lineItems) throws TermServerFixException {
+	private Concept addRelationshipToConcept(String[] lineItems) throws TermServerFixException {
 		Concept source = getConcept(lineItems[REL_IDX_SOURCEID]);
 		Concept type = getConcept(lineItems[REL_IDX_TYPEID]);
 		Concept destination = getConcept(lineItems[REL_IDX_DESTINATIONID]);
 		int groupNum = Integer.parseInt(lineItems[REL_IDX_RELATIONSHIPGROUP]);
 		Relationship r = new Relationship(source, type, destination, groupNum);
-		r.setActive(true);
+		r.setActive(lineItems[REL_IDX_ACTIVE].equals("1"));
 		r.setCharacteristicType(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP);
 		source.addRelationship(r);
 		if (type.equals(IS_A)) {
 			source.addParent(destination);
 			destination.addChild(source);
 		}
+		return source;
 	}
 
 	Concept getConcept(String sctId) throws TermServerFixException {
@@ -87,6 +90,38 @@ public class GraphLoader implements RF2Constants {
 				c.setFsn(lineItems[DES_IDX_TERM]);
 			}
 		}
+	}
+	
+	public void loadConceptFile(InputStream is) throws IOException, TermServerFixException {
+		//Not putting this in a try resource block otherwise it will close the stream on completion and we've got more to read!
+		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+		String line;
+		boolean isHeaderLine = true;
+		while ((line = br.readLine()) != null) {
+			if (!isHeaderLine) {
+				String[] lineItems = line.split(FIELD_DELIMITER);
+				Concept c = getConcept(lineItems[CON_IDX_ID]);
+				c.setActive(lineItems[CON_IDX_ACTIVE].equals("1"));
+			} else {
+				isHeaderLine = false;
+			}
+		}
+	}
+
+	public Set<Concept> getConcepts(InputStream relStream) throws IOException, TermServerFixException {
+		Set<Concept> concepts = new HashSet<Concept>();
+		BufferedReader br = new BufferedReader(new InputStreamReader(relStream, StandardCharsets.UTF_8));
+		String line;
+		boolean isHeaderLine = true;
+		while ((line = br.readLine()) != null) {
+			if (!isHeaderLine) {
+				String[] lineItems = line.split(FIELD_DELIMITER);
+				concepts.add(addRelationshipToConcept(lineItems));
+			} else {
+				isHeaderLine = false;
+			}
+		}
+		return concepts;
 	}
 
 }
