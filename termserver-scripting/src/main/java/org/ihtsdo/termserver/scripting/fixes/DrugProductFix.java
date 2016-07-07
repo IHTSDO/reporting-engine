@@ -174,7 +174,40 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		storeRemainder(CONCEPTS_IN_FILE, CONCEPTS_PROCESSED, REPORTED_NOT_PROCESSED, "Gone Missing");
 		return batch;
 	}
-
+/*  We're no longer looking for all concepts with the same ingredients, instead we'll just process 
+	the concepts in the file.
+	Batch createBatch(String fileName, List<Concept> conceptsInFile, Multimap<String, Concept> ingredientCombos, List<Concept> allConceptsBeingProcessed, List<String> ingredientCombosBeingProcessed) throws TermServerFixException {
+		Batch batch = new Batch(fileName);
+		List<List<Concept>> groupedConcepts = separateOutSingleIngredients(conceptsInFile);
+		//If the concept is of type Medicinal Entity, then put it in a batch with other concept with same ingredient combo
+		boolean startNewTask = false; //We'll start a new task when we switch from single to multiple ingredients
+		for (List<Concept> theseConcepts : groupedConcepts) {
+			for (Concept thisConcept : theseConcepts) {
+				if (thisConcept.getConceptType().equals(ConceptType.MEDICINAL_ENTITY)) {
+					//Add all concepts with this ingredient combination to the list of concepts to be processed
+					List<Relationship> ingredients = getIngredients(thisConcept);
+					String thisComboKey = getIngredientCombinationKey(thisConcept, ingredients);
+					Collection<Concept> sameIngredientConcepts = ingredientCombos.get(thisComboKey);
+					allConceptsBeingProcessed.addAll(sameIngredientConcepts);
+					ingredientCombosBeingProcessed.add(thisComboKey);
+					splitConceptsIntoTasks(batch, sameIngredientConcepts, thisConcept, startNewTask);
+					startNewTask = false;
+				} else {
+					//Validate that concept does have a type and some ingredients otherwise it's going to get missed
+					if (thisConcept.getConceptType().equals(ConceptType.UNKNOWN)) {
+						warn ("Concept is of unknown type: " + thisConcept);
+					}
+					
+					if (getIngredients(thisConcept).size() == 0) {
+						warn ("Concept has no ingredients: " + thisConcept);
+					}
+				}
+			}
+			startNewTask = true;
+		}
+		return batch;
+	}*/
+	
 	Batch createBatch(String fileName, List<Concept> conceptsInFile, Multimap<String, Concept> ingredientCombos, List<Concept> allConceptsBeingProcessed, List<String> ingredientCombosBeingProcessed) throws TermServerFixException {
 		Batch batch = new Batch(fileName);
 		List<List<Concept>> groupedConcepts = separateOutSingleIngredients(conceptsInFile);
@@ -539,6 +572,13 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 	}
 
 	protected String normalizeMultiIngredientTerm(String term) {
+		//Terms like Oral form, Topical form, Vaginal form should not be moved around 
+		//as these are not ingredients.  Return unchanged.
+		if (term.contains(" form")) {
+			debug ("Skipping normalization of term " + term);
+			return term;
+		}
+		
 		String[] ingredients = term.split(INGREDIENT_SEPARATOR_ESCAPED);
 		//ingredients should be in alphabetical order, also trim spaces
 		for (int i = 0; i < ingredients.length; i++) {
