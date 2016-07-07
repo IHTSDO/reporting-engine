@@ -50,13 +50,17 @@ public class TaskService {
 
 	@Autowired
 	private ValidationService validationService;
-	
+
 	@Autowired
 	private UiStateService uiService;
 
+	@Autowired
+	private InstanceConfiguration instanceConfiguration;
+
 	private final ImpersonatingJiraClientFactory jiraClientFactory;
 	private final String jiraExtensionBaseField;
-	private LoadingCache<String, String> projectBaseCache;
+	private final String jiraProductCodeField;
+	private LoadingCache<String, ProjectDetails> projectDetailsCache;
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -67,27 +71,28 @@ public class TaskService {
 		final JiraClient jiraClientForFieldLookup = jiraClientFactory.getImpersonatingInstance(jiraUsername);
 		AuthoringTask.setJiraReviewerField(JiraHelper.fieldIdLookup("Reviewer", jiraClientForFieldLookup));
 		jiraExtensionBaseField = JiraHelper.fieldIdLookup("Extension Base", jiraClientForFieldLookup);
+		jiraProductCodeField = JiraHelper.fieldIdLookup("Product Code", jiraClientForFieldLookup);
 
 		init();
 	}
 
 	public void init() {
-		projectBaseCache = CacheBuilder.newBuilder()
+		projectDetailsCache = CacheBuilder.newBuilder()
 				.maximumSize(10000)
 				.build(
-						new CacheLoader<String, String>() {
+						new CacheLoader<String, ProjectDetails>() {
 							@Override
-							public String load(String projectKey) throws BusinessServiceException {
+							public ProjectDetails load(String projectKey) throws BusinessServiceException {
 								final Issue projectTicket = getProjectTicket(projectKey);
-								return getProjectBase(projectTicket);
+								return getProjectDetailsPopulatingCache(projectTicket);
 							}
 
 							@Override
-							public Map<String, String> loadAll(Iterable<? extends String> keys) throws Exception {
+							public Map<String, ProjectDetails> loadAll(Iterable<? extends String> keys) throws Exception {
 								final Map<String, Issue> projectTickets = getProjectTickets(keys);
-								Map<String, String> keyToBaseMap = new HashMap<>();
+								Map<String, ProjectDetails> keyToBaseMap = new HashMap<>();
 								for (String projectKey : projectTickets.keySet()) {
-									keyToBaseMap.put(projectKey, getProjectBase(projectTickets.get(projectKey)));
+									keyToBaseMap.put(projectKey, getProjectDetailsPopulatingCache(projectTickets.get(projectKey)));
 								}
 								return keyToBaseMap;
 							}
@@ -99,8 +104,11 @@ public class TaskService {
 		final TimerUtil timer = new TimerUtil("ProjectsList");
 		final JiraClient jiraClient = getJiraClient();
 		List<Project> projects = new ArrayList<>();
-		for (Issue issue : searchIssues("type = \"SCA Authoring Project\"", -1)) {
-			projects.add(jiraClient.getProject(issue.getProject().getKey()));
+		for (Issue projectMagicTicket : searchIssues("type = \"SCA Authoring Project\"", -1)) {
+			final String productCode = getProjectDetailsPopulatingCache(projectMagicTicket).getProductCode();
+			if (instanceConfiguration.isJiraProjectVisible(productCode)) {
+				projects.add(jiraClient.getProject(projectMagicTicket.getProject().getKey()));
+			}
 		}
 		timer.checkpoint("Jira searches");
 		final List<AuthoringProject> authoringProjects = buildAuthoringProjects(projects);
@@ -110,7 +118,7 @@ public class TaskService {
 	}
 
 	public AuthoringProject retrieveProject(String projectKey) throws BusinessServiceException {
-		return buildAuthoringProjects(Collections.singletonList(getProjectTicket(projectKey).getProject())).get(0);
+		return buildAuthoringProjects(Collections.singletonList(getProjectTicketOrThrow(projectKey).getProject())).get(0);
 	}
 
 	public String getProjectBranchPathUsingCache(String projectKey) throws BusinessServiceException {
@@ -119,13 +127,16 @@ public class TaskService {
 
 	public String getProjectBaseUsingCache(String projectKey) throws BusinessServiceException {
 		try {
-			return projectBaseCache.get(projectKey);
+			return projectDetailsCache.get(projectKey).getBaseBranchPath();
 		} catch (ExecutionException e) {
 			throw new BusinessServiceException("Failed to retrieve project path.", e);
 		}
 	}
 
 	private List<AuthoringProject> buildAuthoringProjects(List<Project> projects) throws BusinessServiceException {
+		if (projects.isEmpty()) {
+			return new ArrayList<>();
+		}
 		try {
 			List<AuthoringProject> authoringProjects = new ArrayList<>();
 			Set<String> projectKeys = new HashSet<>();
@@ -138,7 +149,7 @@ public class TaskService {
 			for (Project project : projects) {
 				final String key = project.getKey();
 				final Issue issue = projectMagicTickets.get(key);
-				final String extensionBase = getProjectBase(issue);
+				final String extensionBase = getProjectDetailsPopulatingCache(issue).getBaseBranchPath();
 				final String branchPath = PathHelper.getProjectPath(extensionBase, key);
 				final String latestClassificationJson = classificationService.getLatestClassification(branchPath);
 
@@ -167,11 +178,13 @@ public class TaskService {
 		}
 	}
 
-	private String getProjectBase(Issue projectMagicTicket) {
+	private ProjectDetails getProjectDetailsPopulatingCache(Issue projectMagicTicket) {
 		final String base = Strings.nullToEmpty(JiraHelper.toStringOrNull(projectMagicTicket.getField(jiraExtensionBaseField)));
+		final String productCode = Strings.nullToEmpty(JiraHelper.toStringOrNull(projectMagicTicket.getField(jiraProductCodeField)));
 		// Update cache with recently fetched project base value
-		projectBaseCache.put(projectMagicTicket.getProject().getKey(), base);
-		return base;
+		final ProjectDetails details = new ProjectDetails(base, productCode);
+		projectDetailsCache.put(projectMagicTicket.getProject().getKey(), details);
+		return details;
 	}
 
 	public AuthoringMain retrieveMain() throws BusinessServiceException {
@@ -242,7 +255,7 @@ public class TaskService {
 
 	public List<AuthoringTask> listTasks(String projectKey) throws BusinessServiceException {
 		getProjectOrThrow(projectKey);
-		List<Issue> issues = null;
+		List<Issue> issues;
 		try {
 			issues = searchIssues(getProjectTaskJQL(projectKey, null), LIMIT_UNLIMITED);
 		} catch (JiraException e) {
@@ -254,14 +267,12 @@ public class TaskService {
 	public AuthoringTask retrieveTask(String projectKey, String taskKey) throws BusinessServiceException {
 		try {
 			Issue issue = getIssue(projectKey, taskKey);
-			return buildAuthoringTasks(Collections.singletonList(issue)).get(0);
-		} catch (JiraException | BusinessServiceException e) {
-			if (e instanceof JiraException
-					&& e.getCause() instanceof RestException
-					&& ((RestException)e.getCause()).getHttpStatusCode() == 404) {
+			final List<AuthoringTask> authoringTasks = buildAuthoringTasks(Collections.singletonList(issue));
+			return !authoringTasks.isEmpty() ? authoringTasks.get(0) : null;
+		} catch (JiraException e) {
+			if (e.getCause() instanceof RestException && ((RestException) e.getCause()).getHttpStatusCode() == 404) {
 				throw new ResourceNotFoundException("Task not found " + toString(projectKey, taskKey), e);
 			}
-
 			throw new BusinessServiceException("Failed to retrieve task " + toString(projectKey, taskKey), e);
 		}
 	}
@@ -332,7 +343,7 @@ public class TaskService {
 		}
 		return jql;
 	}
-	
+
 	public AuthoringTask createTask(String projectKey, String username, AuthoringTaskCreateRequest taskCreateRequest) throws BusinessServiceException {
 		Issue jiraIssue;
 		try {
@@ -359,7 +370,7 @@ public class TaskService {
 		return createTask(projectKey, getUsername(), taskCreateRequest);
 	}
 
-	private List<AuthoringTask> buildAuthoringTasks(List<Issue> issues) throws BusinessServiceException {
+	private List<AuthoringTask> buildAuthoringTasks(List<Issue> tasks) throws BusinessServiceException {
 		final TimerUtil timer = new TimerUtil("BuildTaskList", Level.DEBUG);
 		final String username = getUsername();
 		List<AuthoringTask> allTasks = new ArrayList<>();
@@ -367,24 +378,27 @@ public class TaskService {
 			//Map of task paths to tasks
 			Map<String, AuthoringTask> startedTasks = new HashMap<>();
 			Set<String> projectKeys = new HashSet<>();
-			for (Issue issue : issues) {
+			for (Issue issue : tasks) {
 				projectKeys.add(issue.getProject().getKey());
 			}
-			final Map<String, String> projectKeyToBranchBaseMap = projectBaseCache.getAll(projectKeys);
-			for (Issue issue : issues) {
-				AuthoringTask task = new AuthoringTask(issue, projectKeyToBranchBaseMap.get(issue.getProject().getKey()));
-				allTasks.add(task);
-				//We only need to recover classification and validation statuses for task that are not new ie mature
-				if (task.getStatus() != TaskStatus.NEW) {
-					String latestClassificationJson = classificationService.getLatestClassification(task.getBranchPath());
-					timer.checkpoint("Recovering classification");
-					task.setLatestClassificationJson(latestClassificationJson);
-					task.setBranchState(branchService.getBranchStateOrNull(task.getBranchPath()));
-					timer.checkpoint("Recovering branch state");
-					startedTasks.put(task.getBranchPath(), task);
+			final Map<String, ProjectDetails> projectKeyToBranchBaseMap = projectDetailsCache.getAll(projectKeys);
+			for (Issue issue : tasks) {
+				final ProjectDetails projectDetails = projectKeyToBranchBaseMap.get(issue.getProject().getKey());
+				if (instanceConfiguration.isJiraProjectVisible(projectDetails.getProductCode())) {
+					AuthoringTask task = new AuthoringTask(issue, projectDetails.getBaseBranchPath());
+					allTasks.add(task);
+					//We only need to recover classification and validation statuses for task that are not new ie mature
+					if (task.getStatus() != TaskStatus.NEW) {
+						String latestClassificationJson = classificationService.getLatestClassification(task.getBranchPath());
+						timer.checkpoint("Recovering classification");
+						task.setLatestClassificationJson(latestClassificationJson);
+						task.setBranchState(branchService.getBranchStateOrNull(task.getBranchPath()));
+						timer.checkpoint("Recovering branch state");
+						startedTasks.put(task.getBranchPath(), task);
+					}
+					task.setFeedbackMessagesStatus(reviewService.getTaskMessagesStatus(task.getProjectKey(), task.getKey(), username));
+					timer.checkpoint("Recovering feedback messages");
 				}
-				task.setFeedbackMessagesStatus(reviewService.getTaskMessagesStatus(task.getProjectKey(), task.getKey(), username));
-				timer.checkpoint("Recovering feedback messages");
 			}
 
 			final ImmutableMap<String, String> validationStatuses = validationService.getValidationStatuses(startedTasks.keySet());

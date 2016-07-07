@@ -12,6 +12,10 @@
 
 	<bean class="org.ihtsdo.snowowl.authoring.single.api.SpringConfiguration"/>
 
+	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.InstanceConfiguration">
+		<constructor-arg value="+{jiraProjectFilterProductCodes}"/>
+	</bean>
+
 	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.TaskService">
 		<constructor-arg>
 			<bean class="org.ihtsdo.snowowl.authoring.single.api.service.jira.OAuthJiraClientFactory">

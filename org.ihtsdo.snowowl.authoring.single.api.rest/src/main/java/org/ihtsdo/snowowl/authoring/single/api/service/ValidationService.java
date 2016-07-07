@@ -79,7 +79,7 @@ public class ValidationService {
 								}
 								if (!pathsToLoad.isEmpty()) {
 									final List<String> validationStatuses = getValidationStatusesWithoutCache(pathsToLoad);
-									if (validationStatuses != null) {
+									if (validationStatuses != null && validationStatuses.size() == pathsToLoad.size()) {
 										for (int i = 0; i < pathsToLoad.size(); i++) {
 											String value = validationStatuses.get(i);
 											if (value == null) {
@@ -189,11 +189,13 @@ public class ValidationService {
 	}
 
 	private List<String> getValidationStatusesWithoutCache(List<String> paths) {
-		List<String> statuses;
+		List<String> statuses = null;
 		try {
 			statuses = orchestrationRestClient.retrieveValidationStatuses(paths);
 		} catch (Exception e) {
 			logger.error("Failed to retrieve validation status of tasks {}", paths, e);
+		}
+		if (statuses == null) {
 			statuses = new ArrayList<>();
 			for (int i = 0; i < paths.size(); i++) {
 				statuses.add(TaskService.FAILED_TO_RETRIEVE);
