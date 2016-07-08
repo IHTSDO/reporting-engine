@@ -1,50 +1,48 @@
 package org.ihtsdo.termserver.scripting.domain;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 
 public class Batch {
 	String batchName;
-	List<Task> tasks = new ArrayList<Task>();
+	ArrayList<Task> tasks = new ArrayList<Task>();
 	
 	public Batch(String fileName) {
 		batchName = fileName;
 		tasks = new ArrayList<Task>();
-		addNewTask(); //Task 0 will always be for remaining concepts
 	}
 	
 	public Task addNewTask() {
-		Task task = new Task();
+		Task task = new Task(this);
 		tasks.add(task);
-		task.setDescription(batchName + ": " + tasks.size());
+		return task;
+	}
+	
+	public Task insertNewTask(Task after) {
+		Task task = new Task(this);
+		tasks.add(tasks.indexOf(after), task);
 		return task;
 	}
 
-	public List<Task> getTasks() {
+	public ArrayList<Task> getTasks() {
 		return tasks;
 	}
 	
 	public Task getLastTask() {
 		return tasks.get(tasks.size() -1 );
 	}
-	
-	public void addTask(Task t) {
-		tasks.add(t);
-	}
-	
-	public boolean isRemainder() {
-		return tasks.size() == 1;
-	}
-	
-	public void addToRemainder(Collection<Concept> sameIngredientConcepts) {
-		tasks.get(0).addAll(sameIngredientConcepts);
-	}
+
 	public String getBatchName() {
 		return batchName;
 	}
 
-	public void addToRemainder(Concept thisConcept) {
-		tasks.get(0).add(thisConcept);
+	public void merge(Task thisLargeTask, Task thisSmallTask) {
+		thisLargeTask.addAll(thisSmallTask.getConcepts());
+		tasks.remove(thisSmallTask);
 	}
+
+	//This needs to be dynamic because tasks move around, get merged, etc.
+	public String getTaskName(Task task) {
+		return batchName + ": " + (tasks.indexOf(task) + 1);
+	}
+
 }

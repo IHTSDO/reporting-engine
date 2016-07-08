@@ -5,21 +5,21 @@ import java.util.Collection;
 import java.util.List;
 
 public class Task {
+	Batch batch;
 	String taskKey;
 	String branchPath;
 	String description;
 	List<Concept> concepts;
 	
-	public Task() {
+	public Task(Batch batch) {
+		this.batch = batch;
 		concepts = new ArrayList<Concept>();
 	}
 
 	public String getDescription() {
-		return description;
+		return batch.getTaskName(this);
 	}
-	public void setDescription(String description) {
-		this.description = description;
-	}
+
 	public String getSummaryHTML() {
 		StringBuilder html = new StringBuilder();
 		for (Concept concept : concepts) {
@@ -49,7 +49,10 @@ public class Task {
 		this.branchPath = branchPath;
 	}
 	public String toString() {
-		return taskKey + ": " + getDescription();
+		if (taskKey != null) {
+			return taskKey + ": " + getDescription();
+		}
+		return getDescription();
 	}
 	public String toQuotedList() {
 		StringBuilder quotedList = new StringBuilder(concepts.size()*10).append("[");
@@ -71,5 +74,9 @@ public class Task {
 
 	public void add(Concept concept) {
 		this.concepts.add(concept);
+	}
+	
+	public int size() {
+		return concepts.size();
 	}
 }

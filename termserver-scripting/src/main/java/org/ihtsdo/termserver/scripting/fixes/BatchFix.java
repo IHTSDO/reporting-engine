@@ -24,7 +24,6 @@ import javax.mail.Multipart;
 import javax.mail.PasswordAuthentication;
 import javax.mail.Session;
 import javax.mail.Transport;
-import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
@@ -54,7 +53,8 @@ import com.google.gson.GsonBuilder;
  */
 public abstract class BatchFix extends TermServerFix implements RF2Constants {
 	
-	protected int taskSize = 7;
+	protected int taskSize = 6;
+	protected int wiggleRoom = 2;
 	File batchFixFile;
 	protected String targetAuthor;
 	String[] emailDetails;
@@ -138,16 +138,18 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 					String branchPath;
 					String taskKey;
 					//If we don't have any concepts in this task eg this is 100% ME file, then skip
-					if (task.getConcepts().size() == 0) {
+					if (task.size() == 0) {
 						println ("Skipping Task " + task.getDescription() + " - no concepts to process");
 						continue;
+					} else if (task.size() > (taskSize + wiggleRoom)) {
+						warn (task + " contains " + task.size() + " concepts");
 					}
 					
 					//Create a task for this batch of concepts
 					if (!dryRun) {
 						if (!isFirst) {
-							debug ("Letting TS catch up");
-							Thread.sleep(20 * 1000);
+							debug ("Letting TS catch up - " + taskThrottle + "s nap.");
+							Thread.sleep(taskThrottle * 1000);
 						} else {
 							isFirst = false;
 						}
@@ -168,6 +170,9 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 					//Process each concept
 					for (Concept concept : task.getConcepts()) {
 						try {
+							if (!dryRun && task.getConcepts().indexOf(concept) != 0) {
+								Thread.sleep(conceptThrottle * 1000);
+							}
 							int changesMade = doFix(task, concept);
 							if (changesMade == 0) {
 								report(task, concept, SEVERITY.NONE, REPORT_ACTION_TYPE.NO_CHANGE, "");
@@ -242,7 +247,9 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 		boolean isMailRecipient = false;
 	
 		for (String thisArg : args) {
-			 if (thisArg.equals("-b")) {
+			if (thisArg.equals("-a")) {
+				isAuthor = true;
+			} else if (thisArg.equals("-b")) {
 				isBatchSize = true;
 			} else if (isAuthor) {
 				targetAuthor = thisArg.toLowerCase();

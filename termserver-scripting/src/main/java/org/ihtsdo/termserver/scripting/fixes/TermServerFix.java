@@ -25,7 +25,8 @@ public abstract class TermServerFix implements RF2Constants {
 	static boolean debug = true;
 	static boolean dryRun = true;
 	static int dryRunCounter = 0;
-	static int throttle = 0;
+	static int taskThrottle = 0;
+	static int conceptThrottle = 20;
 	protected String url = environments[0];
 	protected SnowOwlClient tsClient;
 	protected SCAClient scaClient;
@@ -127,7 +128,7 @@ public abstract class TermServerFix implements RF2Constants {
 				restartPosition = Integer.parseInt(thisArg);
 				isRestart = false;
 			} else if (isThrottle) {
-				throttle = Integer.parseInt(thisArg);
+				taskThrottle = Integer.parseInt(thisArg);
 				isThrottle = false;
 			} else if (isCookie) {
 				authenticatedCookie = thisArg;
@@ -175,11 +176,11 @@ public abstract class TermServerFix implements RF2Constants {
 				}
 			}
 			
-			if (throttle > 0) {
-				print ("Time delay between tasks (throttle) seconds [" +throttle + "]: ");
+			if (taskThrottle > 0) {
+				print ("Time delay between tasks (throttle) seconds [" +taskThrottle + "]: ");
 				response = in.nextLine().trim();
 				if (!response.isEmpty()) {
-					throttle = Integer.parseInt(response);
+					taskThrottle = Integer.parseInt(response);
 				}
 			}
 
