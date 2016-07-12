@@ -26,7 +26,7 @@ public abstract class TermServerFix implements RF2Constants {
 	static boolean dryRun = true;
 	static int dryRunCounter = 0;
 	static int taskThrottle = 0;
-	static int conceptThrottle = 20;
+	static int conceptThrottle = 0;
 	protected String url = environments[0];
 	protected SnowOwlClient tsClient;
 	protected SCAClient scaClient;
@@ -40,6 +40,8 @@ public abstract class TermServerFix implements RF2Constants {
 	private static String summaryText = "";
 	File reportFile;
 	File outputDir;
+	
+	Scanner STDIN = new Scanner(System.in);
 	
 	public static String CONCEPTS_IN_FILE = "Concepts in file";
 	public static String CONCEPTS_PROCESSED = "Concepts processed";
@@ -148,43 +150,42 @@ public abstract class TermServerFix implements RF2Constants {
 		for (int i=0; i < environments.length; i++) {
 			println ("  " + i + ": " + environments[i]);
 		}
-		try (Scanner in = new Scanner(System.in)) {
-			print ("Choice: ");
-			String choice = in.nextLine().trim();
-			url = environments[Integer.parseInt(choice)];
 		
-			tsClient = new SnowOwlClient(url + "snowowl/snomed-ct/v2", "snowowl", "snowowl");
-			if (authenticatedCookie == null) {
-				print ("Please enter your authenticated cookie for connection to " + url + " : ");
-				authenticatedCookie = in.nextLine().trim();
-			}
-			//TODO Make calls through client objects rather than resty direct and remove this member 
-			resty.withHeader("Cookie", authenticatedCookie);  
-			scaClient = new SCAClient(url, authenticatedCookie);
-			
-			print ("Specify Project " + (project==null?": ":"[" + project + "]: "));
-			String response = in.nextLine().trim();
-			if (!response.isEmpty()) {
-				project = response;
-			}
-			
-			if (restartPosition != NOT_SET) {
-				print ("Restarting from line [" +restartPosition + "]: ");
-				response = in.nextLine().trim();
-				if (!response.isEmpty()) {
-					restartPosition = Integer.parseInt(response);
-				}
-			}
-			
-			if (taskThrottle > 0) {
-				print ("Time delay between tasks (throttle) seconds [" +taskThrottle + "]: ");
-				response = in.nextLine().trim();
-				if (!response.isEmpty()) {
-					taskThrottle = Integer.parseInt(response);
-				}
-			}
-
+		print ("Choice: ");
+		String choice = STDIN.nextLine().trim();
+		url = environments[Integer.parseInt(choice)];
+	
+		tsClient = new SnowOwlClient(url + "snowowl/snomed-ct/v2", "snowowl", "snowowl");
+		if (authenticatedCookie == null) {
+			print ("Please enter your authenticated cookie for connection to " + url + " : ");
+			authenticatedCookie = STDIN.nextLine().trim();
 		}
+		//TODO Make calls through client objects rather than resty direct and remove this member 
+		resty.withHeader("Cookie", authenticatedCookie);  
+		scaClient = new SCAClient(url, authenticatedCookie);
+		
+		print ("Specify Project " + (project==null?": ":"[" + project + "]: "));
+		String response = STDIN.nextLine().trim();
+		if (!response.isEmpty()) {
+			project = response;
+		}
+		
+		if (restartPosition != NOT_SET) {
+			print ("Restarting from line [" +restartPosition + "]: ");
+			response = STDIN.nextLine().trim();
+			if (!response.isEmpty()) {
+				restartPosition = Integer.parseInt(response);
+			}
+		}
+		
+		if (taskThrottle > 0) {
+			print ("Time delay between tasks (throttle) seconds [" +taskThrottle + "]: ");
+			response = STDIN.nextLine().trim();
+			if (!response.isEmpty()) {
+				taskThrottle = Integer.parseInt(response);
+			}
+		}
+
 		if (restartPosition == 0) {
 			println ("Restart position given as 0 but line numbering starts from 1.  Starting at line 1.");
 			restartPosition = 1;
