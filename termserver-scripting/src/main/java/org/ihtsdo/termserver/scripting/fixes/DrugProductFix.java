@@ -251,8 +251,8 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 			}
 			
 			List<List<Concept>> groupedBySingle = separateOutSingleIngredients(theseConcepts); 
-			//If there are only 2 single concepts, then don't bother splitting.  Better to avoid merge issues.
-			if (theseConcepts.size() > taskSize + wiggleRoom && groupedBySingle.get(0).size() > 2) {
+			//If there are only 2 single or 2 multiple concepts, then don't bother splitting.  Better to avoid merge issues.
+			if (theseConcepts.size() > taskSize + wiggleRoom && groupedBySingle.get(0).size() > 2 && groupedBySingle.get(1).size() > 2) {
 				//Split into single and multiple ingredients
 				boolean isSingle = true;
 				for (List<Concept> thisGroup : groupedBySingle) {
