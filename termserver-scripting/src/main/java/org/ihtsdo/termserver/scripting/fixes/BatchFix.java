@@ -1,14 +1,10 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.BufferedWriter;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -237,11 +233,11 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 
 	protected void init (String[] args) throws TermServerFixException, IOException {
 		if (args.length < 3) {
-			println("Usage: java <FixClass> [-a author] [-b <batchSize>] [-r <restart lineNum>] [-c <authenticatedCookie>] [-d <Y/N>] [-p <projectName>] <batch file Location>");
+			println("Usage: java <FixClass> [-a author] [-n <taskSize>] [-r <restart lineNum>] [-t taskCreationDelay] [-c <authenticatedCookie>] [-d <Y/N>] [-p <projectName>] <batch file Location>");
 			println(" d - dry run");
 			System.exit(-1);
 		}
-		boolean isBatchSize = false;
+		boolean isTaskSize = false;
 		boolean isProjectName = false;
 		boolean isAuthor = false;
 		boolean isMailRecipient = false;
@@ -250,13 +246,13 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 			if (thisArg.equals("-a")) {
 				isAuthor = true;
 			} else if (thisArg.equals("-b")) {
-				isBatchSize = true;
+				isTaskSize = true;
 			} else if (isAuthor) {
 				targetAuthor = thisArg.toLowerCase();
 				isAuthor = false;
-			} else if (isBatchSize) {
+			} else if (isTaskSize) {
 				taskSize = Integer.parseInt(thisArg);
-				isBatchSize = false;
+				isTaskSize = false;
 			} else if (isProjectName) {
 				project = thisArg;
 				isProjectName = false;
@@ -274,9 +270,17 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 		if (targetAuthor == null) {
 			throw new TermServerFixException("No target author detected in command line arguments");
 		}
+		
 		println("Reading file from line " + restartPosition + " - " + batchFixFile.getName());
 		
 		super.init(args);
+		
+		print ("Number of concepts per task [" + taskSize + "]: ");
+		String response = STDIN.nextLine().trim();
+		if (!response.isEmpty()) {
+			taskSize = Integer.parseInt(response);
+		}
+		println ("\nBatching " + taskSize + " concepts per task");
 		
 		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
 		String reportFilename = "results_" + SnomedUtils.deconstructFilename(batchFixFile)[1] + "_" + df.format(new Date()) + ".csv";
