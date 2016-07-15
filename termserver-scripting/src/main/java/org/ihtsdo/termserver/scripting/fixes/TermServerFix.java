@@ -25,8 +25,8 @@ public abstract class TermServerFix implements RF2Constants {
 	static boolean debug = true;
 	static boolean dryRun = true;
 	static int dryRunCounter = 0;
-	static int taskThrottle = 0;
-	static int conceptThrottle = 0;
+	static int taskThrottle = 30;
+	static int conceptThrottle = 20;
 	protected String url = environments[0];
 	protected SnowOwlClient tsClient;
 	protected SCAClient scaClient;

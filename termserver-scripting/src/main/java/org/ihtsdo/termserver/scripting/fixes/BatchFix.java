@@ -131,8 +131,8 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 		boolean isFirst = true;
 			for (Task task : batch.getTasks()) {
 				try {
-					String branchPath;
-					String taskKey;
+					String branchPath="";
+					String taskKey="";
 					//If we don't have any concepts in this task eg this is 100% ME file, then skip
 					if (task.size() == 0) {
 						println ("Skipping Task " + task.getDescription() + " - no concepts to process");
@@ -149,10 +149,24 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 						} else {
 							isFirst = false;
 						}
-						debug ("Creating jira task on project: " + project);
-						taskKey = scaClient.createTask(project, task.getDescription(), task.getSummaryHTML());
-						debug ("Creating task branch in terminology server: " + taskKey);
-						branchPath = tsClient.createBranch("MAIN/" + project, taskKey);
+						
+						boolean taskCreated = false;
+						int taskCreationAttempts = 0; 
+						while (!taskCreated) {
+							try{
+								debug ("Creating jira task on project: " + project);
+								taskKey = scaClient.createTask(project, task.getDescription(), task.getSummaryHTML());
+								debug ("Creating task branch in terminology server: " + taskKey);
+								branchPath = tsClient.createBranch("MAIN/" + project, taskKey);
+								taskCreated = true;
+							} catch (Exception e) {
+								taskCreationAttempts++;
+								//TODO delete the Jira task in this case
+								if (taskCreationAttempts >= 3) {
+									throw new TermServerFixException("Maxed out failure attempts", e);
+								}
+							}
+						}
 					} else {
 						taskKey = project + "-" + getNextDryRunNum();
 						branchPath = "MAIN/" + project + "/" + taskKey;
