@@ -160,7 +160,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		//Did we end up with small tasks that can be merged with larger ones? 
 		mergeSmallTasks(batch);
 		listTaskSizes(batch);
-		addSummaryInformation("Tasks Created", batch.getTasks().size());
+		addSummaryInformation("Tasks scheduled", batch.getTasks().size());
 		addSummaryInformation(CONCEPTS_PROCESSED, allConceptsBeingProcessed);
 		List <Concept> reportedNotProcessed = validateAllInputConceptsBatched (conceptsInFile, allConceptsBeingProcessed);
 		addSummaryInformation(REPORTED_NOT_PROCESSED, reportedNotProcessed);
