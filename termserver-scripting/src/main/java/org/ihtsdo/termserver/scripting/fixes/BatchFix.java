@@ -8,6 +8,7 @@ import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Properties;
@@ -35,7 +36,9 @@ import org.ihtsdo.termserver.scripting.domain.RelationshipSerializer;
 import org.ihtsdo.termserver.scripting.domain.Task;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
+import us.monoid.json.JSONArray;
 import us.monoid.json.JSONException;
+import us.monoid.json.JSONObject;
 import us.monoid.web.JSONResource;
 
 import com.google.common.base.Charsets;
@@ -161,10 +164,12 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 								taskCreated = true;
 							} catch (Exception e) {
 								taskCreationAttempts++;
+								scaClient.deleteTask(project, taskKey, true);  //Don't worry if deletion fails
 								//TODO delete the Jira task in this case
 								if (taskCreationAttempts >= 3) {
 									throw new TermServerFixException("Maxed out failure attempts", e);
 								}
+								warn ("Branch creation failed (" + e.getMessage() + "), retrying...");
 							}
 						}
 					} else {
@@ -198,7 +203,8 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 					if (!dryRun) {
 						//Prefill the Edit Panel
 						try {
-							scaClient.setUIState(project, taskKey, task.toQuotedList());
+							scaClient.setEditPanelUIState(project, taskKey, task.toQuotedList());
+							scaClient.setSavedListUIState(project, taskKey, convertToSavedListJson(task));
 						} catch (Exception e) {
 							String msg = "Failed to preload edit-panel ui state: " + e.getMessage();
 							warn (msg);
@@ -467,5 +473,29 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 		} catch (MessagingException | FileNotFoundException | UnsupportedEncodingException e) {
 			println ("Failed to send email " + e.getMessage());
 		}
+	}
+
+	private JSONObject convertToSavedListJson(Task task) throws JSONException {
+		JSONObject savedList = new JSONObject();
+		JSONArray items = new JSONArray();
+		savedList.put("items", items);
+		for (Concept thisConcept : task.getConcepts()) {
+			items.put(convertToSavedListJson(thisConcept));
+		}
+		return savedList;
+	}
+
+	private JSONObject convertToSavedListJson(Concept concept) throws JSONException {
+		JSONObject jsonObj = new JSONObject();
+		jsonObj.put("term", concept.getPreferredSynonym());
+		jsonObj.put("active", concept.isActive()?"true":"false");
+		JSONObject conceptObj = new JSONObject();
+		jsonObj.put("concept", conceptObj);
+		conceptObj.put("active", concept.isActive()?"true":"false");
+		conceptObj.put("conceptId", concept.getConceptId());
+		conceptObj.put("fsn", concept.getFsn());
+		conceptObj.put("moduleId", concept.getModuleId());
+		conceptObj.put("defintionStatus", concept.getDefinitionStatus());
+		return jsonObj;
 	}
 }

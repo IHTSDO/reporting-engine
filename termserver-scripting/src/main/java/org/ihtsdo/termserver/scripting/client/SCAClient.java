@@ -2,6 +2,8 @@ package org.ihtsdo.termserver.scripting.client;
 
 import java.io.IOException;
 
+import org.ihtsdo.termserver.scripting.domain.Task;
+
 import us.monoid.json.JSONObject;
 import us.monoid.web.JSONResource;
 import us.monoid.web.Resty;
@@ -29,15 +31,17 @@ public class SCAClient {
 		return response.get("key").toString();
 	}
 
-	public void setUIState(String project, String taskKey, String quotedList) throws IOException {
+	public void setEditPanelUIState(String project, String taskKey, String quotedList) throws IOException {
 		String endPointRoot = serverUrl + apiRoot + "projects/" + project + "/tasks/" + taskKey + "/ui-state/";
 		String endPoint = endPointRoot + "edit-panel";
 		resty.json(endPoint, RestyHelper.content(quotedList, JSON_CONTENT_TYPE));
-		
-		//Also include concepts in the saved list
-		endPoint = endPointRoot + "saved-list";
-		resty.json(endPoint, RestyHelper.content(quotedList, JSON_CONTENT_TYPE));
 		//TODO Move to locally maintained Resty so we can easily check for HTTP200 return status
+	}
+	
+	public void setSavedListUIState(String project, String taskKey, JSONObject items) throws IOException {
+		String endPointRoot = serverUrl + apiRoot + "projects/" + project + "/tasks/" + taskKey + "/ui-state/";
+		String endPoint = endPointRoot + "saved-list";
+		resty.json(endPoint, RestyHelper.content(items, JSON_CONTENT_TYPE));
 	}
 	
 	public String updateTask(String project, String taskKey, String summary, String description, String username) throws Exception {
@@ -59,5 +63,21 @@ public class SCAClient {
 		}
 		JSONResource response = resty.json(endPoint, Resty.put(RestyHelper.content(requestJson, JSON_CONTENT_TYPE)));
 		return response.get("key").toString();
+	}
+
+	public void deleteTask(String project, String taskKey, boolean optional) throws SnowOwlClientException {
+		String endPoint = serverUrl + apiRoot + "projects/" + project + "/tasks/" + taskKey;
+		try {
+			JSONObject requestJson = new JSONObject();
+			requestJson.put("status", "DELETED");
+			resty.json(endPoint, Resty.put(RestyHelper.content(requestJson, JSON_CONTENT_TYPE)));
+		} catch (Exception e) {
+			String errStr = "Failed to delete task - " + taskKey;
+			if (optional) {
+				System.out.println(errStr + ": " + e.getMessage());
+			} else {
+				throw new SnowOwlClientException (errStr, e);
+			}
+		}
 	}
 }
