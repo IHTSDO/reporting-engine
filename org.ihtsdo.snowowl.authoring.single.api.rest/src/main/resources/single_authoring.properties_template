@@ -15,3 +15,5 @@ orchestration.password=
 orchestration.jms.url = failover:tcp://localhost:61616
 orchestration.jms.username =
 orchestration.jms.password =
+
+jiraProjectFilterProductCodes=INT,DK
