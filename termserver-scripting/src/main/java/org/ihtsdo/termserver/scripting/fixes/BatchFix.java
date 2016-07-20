@@ -165,7 +165,6 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 							} catch (Exception e) {
 								taskCreationAttempts++;
 								scaClient.deleteTask(project, taskKey, true);  //Don't worry if deletion fails
-								//TODO delete the Jira task in this case
 								if (taskCreationAttempts >= 3) {
 									throw new TermServerFixException("Maxed out failure attempts", e);
 								}
