@@ -133,17 +133,15 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 				try {
 					String descriptionSerialised = gson.toJson(d);
 					JSONObject jsonObjDesc = new JSONObject(descriptionSerialised);
-					jsonObjDesc.put("id", d.getDescriptionId());
 					jsonObjDesc.remove("descriptionId");
 					jsonObjDesc.put("inactivationIndicator", InactivationIndicator.RETIRED.toString());
 					jsonObjDesc.put("commitComment", "Batch Script Update");
 					//Description endpoint uses acceptability rather than acceptabilityMap
-					JSONObject acceptabilityMap = jsonObjDesc.optJSONObject("acceptabilityMap");
-					if (acceptabilityMap != null) {
-	 					jsonObjDesc.put("acceptability", JSONObject.NULL);
+					if (jsonObjDesc.optJSONObject("acceptabilityMap") != null) {
 						jsonObjDesc.remove("acceptabilityMap");
 					}
-					tsClient.updateDescription(jsonObjDesc, t.getBranchPath());
+					jsonObjDesc.put("acceptability", JSONObject.NULL);
+					tsClient.updateDescription(d.getDescriptionId(), jsonObjDesc, t.getBranchPath());
 				} catch (SnowOwlClientException | JSONException e) {
 					println ("Failed to set inactivation reason on " + d + ": " + e.getMessage());
 				}

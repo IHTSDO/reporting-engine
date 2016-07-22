@@ -298,12 +298,11 @@ public class SnowOwlClient {
 		}
 	}
 
-	public JSONResource updateDescription(JSONObject descObj, String branchPath) throws SnowOwlClientException {
+	public JSONResource updateDescription(String descId, JSONObject descObj, String branchPath) throws SnowOwlClientException {
 		try {
-			final String id = descObj.getString("id");
-			Preconditions.checkNotNull(id);
-			JSONResource response =  resty.json(getDescriptionsPath(branchPath,id) + "/updates", RestyHelper.content(descObj, SNOWOWL_CONTENT_TYPE));
-			logger.info("Updated description " + id);
+			Preconditions.checkNotNull(descId);
+			JSONResource response =  resty.json(getDescriptionsPath(branchPath,descId) + "/updates", RestyHelper.content(descObj, SNOWOWL_CONTENT_TYPE));
+			logger.info("Updated description " + descId);
 			return response;
 		} catch (Exception e) {
 			throw new SnowOwlClientException(e);
