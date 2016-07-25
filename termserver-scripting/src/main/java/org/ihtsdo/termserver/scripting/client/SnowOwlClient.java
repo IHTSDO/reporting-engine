@@ -307,7 +307,6 @@ public class SnowOwlClient {
 		} catch (Exception e) {
 			throw new SnowOwlClientException(e);
 		}
-		
 	}
 
 

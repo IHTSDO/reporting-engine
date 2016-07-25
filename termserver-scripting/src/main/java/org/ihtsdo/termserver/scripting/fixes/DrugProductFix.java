@@ -143,7 +143,8 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 					jsonObjDesc.put("acceptability", JSONObject.NULL);
 					tsClient.updateDescription(d.getDescriptionId(), jsonObjDesc, t.getBranchPath());
 				} catch (SnowOwlClientException | JSONException e) {
-					println ("Failed to set inactivation reason on " + d + ": " + e.getMessage());
+					String errStr = "Failed to set inactivation reason on description '" + d.getTerm() + "' : " + e.getMessage();
+					report(t, loadedConcept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.API_ERROR, errStr);
 				}
 			}
 		}
