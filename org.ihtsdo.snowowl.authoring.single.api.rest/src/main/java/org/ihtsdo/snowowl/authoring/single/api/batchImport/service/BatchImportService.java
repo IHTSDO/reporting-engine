@@ -16,6 +16,7 @@ import java.util.concurrent.Executors;
 import net.rcarz.jiraclient.JiraException;
 
 import org.apache.commons.csv.CSVRecord;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.otf.rest.exception.ProcessingException;
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportConcept;
@@ -158,9 +159,13 @@ public class BatchImportService {
 		int minViableColumns = run.getImportRequest().getFormat().getHeaders().length;
 		for (CSVRecord thisRow : rows) {
 			if (thisRow.size() >= minViableColumns) {
-				BatchImportConcept thisConcept = run.getFormatter().createConcept(thisRow);
-				if (validate(run, thisConcept)) {
-					run.insertIntoLoadHierarchy(thisConcept);
+				try {
+					BatchImportConcept thisConcept = run.getFormatter().createConcept(thisRow);
+					if (validate(run, thisConcept)) {
+						run.insertIntoLoadHierarchy(thisConcept);
+					}
+				} catch (Exception e) {
+					run.fail(thisRow, e.getMessage());
 				}
 			} else {
 				run.fail(thisRow, "Blank row detected");
@@ -212,12 +217,15 @@ public class BatchImportService {
 				}
 				concept.addParent(parentStr);
 				concept.setExpression(exp);
+			} catch (NullPointerException np) {
+				run.fail(concept.getRow(), "API coding exception: NullPointerException.  See logs for details");
+				logger.error(ExceptionUtils.getStackTrace(np));
+				return false;
 			} catch (Exception e) {
 				run.fail(concept.getRow(), "Invalid expression: " + e.getMessage());
-				return false;				
+				return false;
 			}
 		}
-		
 		return true;
 	}
 	
@@ -692,7 +700,11 @@ public class BatchImportService {
 		desc.setType(SnomedBrowserDescriptionType.SYNONYM);
 		desc.setLang(SnomedConstants.LanguageCodeReferenceSetIdentifierMapping.EN_LANGUAGE_CODE);
 		desc.setAcceptabilityMap(getAcceptablityAsMap(biTerm));
-		desc.setCaseSignificance(translateCaseSensitivity(biTerm.getCaseSensitivity()));
+		if (biTerm.getCaseSensitivity() == null || biTerm.getCaseSensitivity().isEmpty()) {
+			desc.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
+		} else {
+			desc.setCaseSignificance(translateCaseSensitivity(biTerm.getCaseSensitivity()));
+		}
 		return desc;
 	}
 
