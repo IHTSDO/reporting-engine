@@ -104,7 +104,8 @@ public abstract class TermServerFix implements RF2Constants {
 		boolean isCookie = false;
 		boolean isDryRun = false;
 		boolean isRestart = false;
-		boolean isThrottle = false;
+		boolean isTaskThrottle = false;
+		boolean isConceptThrottle = false;
 		boolean isOutputDir = false;
 	
 		for (String thisArg : args) {
@@ -118,9 +119,11 @@ public abstract class TermServerFix implements RF2Constants {
 				isOutputDir = true;
 			} else if (thisArg.equals("-r")) {
 				isRestart = true;
-			} else if (thisArg.equals("-t")) {
-				isThrottle = true;
-			}  else if (isProjectName) {
+			} else if (thisArg.equals("-t") || thisArg.equals("-t1")) {
+				isTaskThrottle = true;
+			} else if (thisArg.equals("-t2")) {
+				isConceptThrottle = true;
+			} else if (isProjectName) {
 				project = thisArg;
 				isProjectName = false;
 			} else if (isDryRun) {
@@ -129,9 +132,12 @@ public abstract class TermServerFix implements RF2Constants {
 			} else if (isRestart) {
 				restartPosition = Integer.parseInt(thisArg);
 				isRestart = false;
-			} else if (isThrottle) {
+			} else if (isTaskThrottle) {
 				taskThrottle = Integer.parseInt(thisArg);
-				isThrottle = false;
+				isTaskThrottle = false;
+			} else if (isConceptThrottle) {
+				conceptThrottle = Integer.parseInt(thisArg);
+				isConceptThrottle = false;
 			} else if (isCookie) {
 				authenticatedCookie = thisArg;
 				isCookie = false;
@@ -183,6 +189,14 @@ public abstract class TermServerFix implements RF2Constants {
 			response = STDIN.nextLine().trim();
 			if (!response.isEmpty()) {
 				taskThrottle = Integer.parseInt(response);
+			}
+		}
+		
+		if (conceptThrottle > 0) {
+			print ("Time delay between concepts (throttle) seconds [" +conceptThrottle + "]: ");
+			response = STDIN.nextLine().trim();
+			if (!response.isEmpty()) {
+				conceptThrottle = Integer.parseInt(response);
 			}
 		}
 
