@@ -35,6 +35,7 @@ public class BatchImportFormat {
 	public static final String NOTES = "Notes";
 	public static final String EXPRESSION = "Expression";
 	private static final String NEW_SCTID = "NEW_SCTID";  //Indicates we'll pass blank to TS
+	private static final String NULL_STR = "NULL";
 	
 	private FORMAT format;
 	private Map<FIELD, String> fieldMap;
@@ -48,7 +49,7 @@ public class BatchImportFormat {
 	//There are variable numbers of Synonym and Notes fields, so they're optional and we'll work them out at runtime
 	public static String[] SIRS_HEADERS = {"Request Id","Topic","Local Code","Local Term","Fully Specified Name","Semantic Tag",
 			"Preferred Term","Terminology(1)","Parent Concept Id(1)","UMLS CUI","Definition","Proposed Use","Justification"};
-	public static String[] ICD11_HEADERS = {"icd11","sctid","fsn","prefterm","expression"};  //Also note and synonym, but we'll detect those dynamically as there can be more than 1.
+	public static String[] ICD11_HEADERS = {"icd11","sctid","fsn","usfsn", "gbfsn","TERM1","US1","GB1","TERM2","US2","GB2","TERM3","US3","GB3","TERM4","US4","GB4","expression"};  //Also note and synonym, but we'll detect those dynamically as there can be more than 1.
 	public static String[] LOINC_HEADERS = {"SCTID","Parent_1","Parent_2","FSN","CAPSFSN","TERM1","US1","GB1","CAPS1","TERM2","US2","GB2","CAPS2","TERM3","US3","GB3","CAPS3","TERM4","US4","GB4","CAPS4","TERM5","US5","GB5","CAPS5","Associated LOINC Part(s)","Reference link(s)","Notes"};
 
 	public static String ADDITIONAL_RESULTS_HEADER = "OrigRow,Loaded,Import Result,SCTID Created";
@@ -75,8 +76,7 @@ public class BatchImportFormat {
 		ICD11_MAP.put(FIELD.ORIG_REF, "0");
 		ICD11_MAP.put(FIELD.SCTID, "1");
 		ICD11_MAP.put(FIELD.FSN, "2");
-		ICD11_MAP.put(FIELD.PREF_TERM, "3");
-		ICD11_MAP.put(FIELD.EXPRESSION, "4");
+		ICD11_MAP.put(FIELD.EXPRESSION, "17");
 	}
 	
 	public static Map<FIELD, String>LOINC_MAP = new HashMap<FIELD, String>();
@@ -96,7 +96,7 @@ public class BatchImportFormat {
 		if (format == FORMAT.SIRS) {
 			return new BatchImportFormat(FORMAT.SIRS, SIRS_MAP, null, false, true, false);
 		} else if (format == FORMAT.ICD11) {
-			return new BatchImportFormat(FORMAT.ICD11, ICD11_MAP, null, true, false, false);
+			return new BatchImportFormat(FORMAT.ICD11, ICD11_MAP, null, true, false, true);
 		} else if (format == FORMAT.LOINC) {
 			
 			return new BatchImportFormat(FORMAT.LOINC, LOINC_MAP, LOINC_Documentation, false, false, true);
@@ -154,13 +154,20 @@ public class BatchImportFormat {
 			String[] headers = getHeaders();
 			for (int i = 0; i < headers.length; i++) {
 				if (headers[i].toLowerCase().startsWith("term")) {
-					BatchImportTerm term = new BatchImportTerm(row.get(i), false, row.get(i+1).charAt(0), row.get(i+2).charAt(0)); 
-					i += 3;
-					//Do we have a CAPS indicator here?
-					if (headers[i].toLowerCase().startsWith("caps")) {
-						term.setCaseSensitivity(row.get(i));
+					String termStr = row.get(i);
+					if (!termStr.isEmpty() && !termStr.toUpperCase().equals(NULL_STR)) {
+						char usAccept = row.get(i+1).isEmpty()? null : row.get(i+1).charAt(0);
+						char gbAccept =  row.get(i+2).isEmpty()? null : row.get(i+2).charAt(0);
+						BatchImportTerm term = new BatchImportTerm(termStr, false, usAccept, gbAccept); 
+						i += 3;
+						//Do we have a CAPS indicator here?
+						if (headers[i].toLowerCase().startsWith("caps")) {
+							term.setCaseSensitivity(row.get(i));
+						} else {
+							i--;  //Move back one because loop will take us on to the next term.
+						}
+						newConcept.addTerm(term);
 					}
-					newConcept.addTerm(term);
 				}
 			}
 		}

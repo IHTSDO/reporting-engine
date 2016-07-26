@@ -10,7 +10,7 @@ public class BatchImportConcept {
 	
 	CSVRecord row;
 	String sctid;
-	List<String> parents;
+	List<String> parents = new ArrayList<String>();
 	String expressionStr;
 	String fsn;
 	BatchImportExpression expression;

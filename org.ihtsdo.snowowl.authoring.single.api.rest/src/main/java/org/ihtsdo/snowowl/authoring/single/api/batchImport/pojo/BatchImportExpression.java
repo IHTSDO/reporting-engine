@@ -93,6 +93,25 @@ public class BatchImportExpression {
 				BatchImportGroup newGroup = BatchImportGroup.parse(++groupNumber, thisGroupStr);
 				groups.add(newGroup);
 			}
+		} else if (Character.isDigit(expressionBuff.charAt(0))) {
+			//Do we have a block of ungrouped attributes to start with?  parse
+			//up to the first open group character, ensuring that it occurs before the 
+			//next close group character.
+			int nextGroupOpen = expressionBuff.indexOf(Character.toString(GROUP_START_CHAR));
+			int nextGroupClose = expressionBuff.indexOf(Character.toString(GROUP_END_CHAR));
+			//Case no further groups
+			if (nextGroupOpen == -1 && nextGroupClose == -1) {
+				BatchImportGroup newGroup = BatchImportGroup.parse(0, expressionBuff.toString());
+				groups.add(newGroup);
+			} else if (nextGroupOpen > -1 && nextGroupClose > nextGroupOpen) {
+				BatchImportGroup newGroup = BatchImportGroup.parse(0, expressionBuff.substring(0, nextGroupOpen));
+				groups.add(newGroup);
+				//And now work through the bracketed groups
+				StringBuffer remainder = new StringBuffer(expressionBuff.substring(nextGroupOpen, expressionBuff.length()));
+				groups.addAll(extractGroups(remainder));
+			} else {
+				throw new ProcessingException("Unable to separate grouped from ungrouped attributes in: " + expressionBuff.toString());
+			}
 		} else {
 			throw new ProcessingException("Unable to parse attributes groups from: " + expressionBuff.toString());
 		}
