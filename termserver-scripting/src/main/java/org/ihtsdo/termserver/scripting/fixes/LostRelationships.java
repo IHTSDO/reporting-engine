@@ -3,6 +3,7 @@ package org.ihtsdo.termserver.scripting.fixes;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
@@ -28,6 +29,9 @@ public class LostRelationships extends TermServerFix{
 			fix.init(args);
 			fix.loadProjectDelta();
 			fix.detectLostRelationships();
+		} catch (Exception e) {
+			println("Failed to produce Lost Relationship Report due to " + e.getMessage());
+			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			fix.finish();
 		}
