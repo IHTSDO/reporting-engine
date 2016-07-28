@@ -102,7 +102,7 @@ public class BatchImportService {
 	private static final String DRY_RUN = "DRY_RUN";
 	//private static final String BULLET = "* ";
 	private static final String SCTID_ISA = Concepts.IS_A;
-	public static final int DEFAULT_GROUP = 1;
+	public static final int DEFAULT_GROUP = 0;
 	private static final String SCTID_EN_GB = Concepts.REFSET_LANGUAGE_TYPE_UK;
 	private static final String SCTID_EN_US = Concepts.REFSET_LANGUAGE_TYPE_US;
 	//private static final String JIRA_HEADING5 = "h5. ";
