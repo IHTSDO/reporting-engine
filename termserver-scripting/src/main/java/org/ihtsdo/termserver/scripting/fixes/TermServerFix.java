@@ -27,6 +27,7 @@ public abstract class TermServerFix implements RF2Constants {
 	static int dryRunCounter = 0;
 	static int taskThrottle = 30;
 	static int conceptThrottle = 20;
+	protected String env;
 	protected String url = environments[0];
 	protected SnowOwlClient tsClient;
 	protected SCAClient scaClient;
@@ -61,6 +62,8 @@ public abstract class TermServerFix implements RF2Constants {
 	public void setAuthenticatedCookie(String authenticatedCookie) {
 		this.authenticatedCookie = authenticatedCookie;
 	}
+	
+	private static String[] envKeys = new String[] {"local","dev","uat", "prod"};
 
 	private static String[] environments = new String[] {	"http://localhost:8080/",
 															"https://dev-term.ihtsdotools.org/",
@@ -159,7 +162,9 @@ public abstract class TermServerFix implements RF2Constants {
 		
 		print ("Choice: ");
 		String choice = STDIN.nextLine().trim();
-		url = environments[Integer.parseInt(choice)];
+		int envChoice = Integer.parseInt(choice);
+		url = environments[envChoice];
+		env = envKeys[envChoice];
 	
 		tsClient = new SnowOwlClient(url + "snowowl/snomed-ct/v2", "snowowl", "snowowl");
 		if (authenticatedCookie == null) {

@@ -302,7 +302,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 		println ("\nBatching " + taskSize + " concepts per task");
 		
 		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
-		String reportFilename = "results_" + SnomedUtils.deconstructFilename(batchFixFile)[1] + "_" + df.format(new Date()) + ".csv";
+		String reportFilename = "results_" + SnomedUtils.deconstructFilename(batchFixFile)[1] + "_" + df.format(new Date()) + "_" + env  + ".csv";
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());

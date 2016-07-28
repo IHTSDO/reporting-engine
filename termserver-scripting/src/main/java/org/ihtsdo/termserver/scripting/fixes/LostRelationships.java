@@ -7,6 +7,7 @@ import java.io.PrintStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
@@ -22,18 +23,22 @@ import org.ihtsdo.termserver.scripting.domain.Relationship;
 public class LostRelationships extends TermServerFix{
 	
 	Set<Concept> modifiedConcepts;
+	List<String> criticalErrors = new ArrayList<String>();
 	
 	public static void main(String[] args) throws TermServerFixException, IOException, SnowOwlClientException {
 		LostRelationships fix = new LostRelationships();
 		try {
 			fix.init(args);
-			fix.loadProjectDelta();
+			fix.loadProjectSnapshotAndDelta();
 			fix.detectLostRelationships();
 		} catch (Exception e) {
 			println("Failed to produce Lost Relationship Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			fix.finish();
+			for (String err : fix.criticalErrors) {
+				println (err);
+			}
 		}
 	}
 	
@@ -45,7 +50,11 @@ public class LostRelationships extends TermServerFix{
 		nextConcept:
 		for (Concept thisConcept : modifiedConcepts) {
 			//Only working with product concepts
-			if (!thisConcept.getFsn().contains("(product)")) {
+			if (thisConcept.getFsn() == null) {
+				String msg = "Concept " + thisConcept.getConceptId() + " has no FSN";
+				criticalErrors.add(msg);
+				println(msg);
+			} else if (!thisConcept.getFsn().contains("(product)")) {
 				debug ("Skipping " + thisConcept);
 				continue;
 			}
@@ -75,26 +84,27 @@ public class LostRelationships extends TermServerFix{
 	protected void init(String[] args) throws IOException, TermServerFixException {
 		super.init(args);
 		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
-		String reportFilename = "lost_relationships_" + df.format(new Date()) + ".csv";
+		String reportFilename = "lost_relationships_" + df.format(new Date()) + "_" + env  + ".csv";
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
 		writeToFile ("Concept, FSN, Active, Not Replaced Relationship");
 	}
 
-	private void loadProjectDelta() throws SnowOwlClientException, TermServerFixException {
+	private void loadProjectSnapshotAndDelta() throws SnowOwlClientException, TermServerFixException, InterruptedException {
 		int SNAPSHOT = 0;
 		int DELTA = 1;
-		File[] archives = new File[] { new File (project + "_snapshot.zip"), new File (project + "_delta.zip") };
+		File[] archives = new File[] { new File (project + "_snapshot_" + env + ".zip"), new File (project + "_delta_" + env + ".zip") };
 
 		//Do we already have a copy of the project locally?  If not, recover it.
 		if (!archives[SNAPSHOT].exists()) {
-			println ("Recovering snapshot state of " + project + " from TS");
+			println ("Recovering snapshot state of " + project + " from TS (" + env + ")");
 			tsClient.export("MAIN/" + project, null, ExportType.MIXED, ExtractType.SNAPSHOT, archives[SNAPSHOT]);
+			Thread.sleep(60*1000); //If we recover delta too quickly we seem to get a HTTP500 back.
 		}
 		
 		if (!archives[DELTA].exists()) {
-			println ("Recovering delta state of " + project + " from TS");
+			println ("Recovering delta state of " + project + " from TS (" + env + ")");
 			String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
 			tsClient.export("MAIN/" + project, transientEffectiveDate, ExportType.UNPUBLISHED, ExtractType.DELTA, archives[DELTA]);
 		}

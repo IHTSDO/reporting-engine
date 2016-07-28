@@ -428,10 +428,10 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 	}
 
 	private void loadProjectSnapshot() throws SnowOwlClientException, TermServerFixException {
-		File snapShotArchive = new File (project + ".zip");
+		File snapShotArchive = new File (project + "_" + env + ".zip");
 		//Do we already have a copy of the project locally?  If not, recover it.
 		if (!snapShotArchive.exists()) {
-			println ("Recovering current state of " + project + " from TS");
+			println ("Recovering current state of " + project + " from TS (" + env + ")");
 			tsClient.export("MAIN/" + project, null, ExportType.MIXED, ExtractType.SNAPSHOT, snapShotArchive);
 		}
 		GraphLoader gl = GraphLoader.getGraphLoader();
