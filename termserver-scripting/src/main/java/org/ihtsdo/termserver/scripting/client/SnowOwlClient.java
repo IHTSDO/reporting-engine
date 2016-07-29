@@ -166,8 +166,6 @@ public class SnowOwlClient {
 			String url = this.url + "/" + branchPath + "/classifications";
 			System.out.println(url);
 			System.out.println(json.toString(3));
-//		resty.withHeader("Accept", "application/vnd.com.b2international.snowowl+json");
-//		url = "http://requestb.in/rky7oqrk";
 			final JSONResource resource = resty.json(url, RestyHelper.content(json, SNOWOWL_CONTENT_TYPE));
 			final String location = resource.getUrlConnection().getHeaderField("Location");
 			System.out.println("location " + location);
@@ -272,8 +270,7 @@ public class SnowOwlClient {
 			JSONResource jsonResponse = resty.json(url + "/exports", RestyHelper.content(jsonObj, SNOWOWL_CONTENT_TYPE));
 			Object exportLocationURLObj = jsonResponse.getUrlConnection().getHeaderField("Location");
 			if (exportLocationURLObj == null) {
-				throw new SnowOwlClientException("Failed to obtain location of export:"); //, instead got status '" + jsonResponse.getHTTPStatus()
-						//+ "' and body: " + jsonResponse.toObject().toString(INDENT));
+				throw new SnowOwlClientException("Failed to obtain location of export:");
 			}
 			return exportLocationURLObj.toString() + "/archive";
 		} catch (Exception e) {
