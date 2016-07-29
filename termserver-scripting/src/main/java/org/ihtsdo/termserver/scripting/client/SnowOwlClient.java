@@ -35,6 +35,8 @@ public class SnowOwlClient {
 	}
 	
 	public static SimpleDateFormat YYYYMMDD = new SimpleDateFormat("yyyyMMdd");
+	
+	public static final int MAX_TRIES = 3;
 
 	private final Resty resty;
 	private final String url;
@@ -65,10 +67,25 @@ public class SnowOwlClient {
 
 	public JSONResource updateConcept(JSONObject concept, String branchPath) throws SnowOwlClientException {
 		try {
+			JSONResource response = null;
 			final String id = concept.getString("conceptId");
 			Preconditions.checkNotNull(id);
-			JSONResource response =  resty.json(getConceptsPath(branchPath) + "/" + id, Resty.put(RestyHelper.content(concept, SNOWOWL_CONTENT_TYPE)));
-			logger.info("Updated concept " + id);
+			boolean updatedOK = false;
+			int tries = 0;
+			while (!updatedOK) {
+				try {
+					response =  resty.json(getConceptsPath(branchPath) + "/" + id, Resty.put(RestyHelper.content(concept, SNOWOWL_CONTENT_TYPE)));
+					updatedOK = true;
+					logger.info("Updated concept " + id);
+				} catch (Exception e) {
+					tries++;
+					if (tries >= MAX_TRIES) {
+						throw new SnowOwlClientException("Failed to update concept " + id, e);
+					}
+					logger.debug("Update of concept failed, trying again....",e);
+					Thread.sleep(10*1000); //Give the server 10 seconds to recover
+				}
+			}
 			return response;
 		} catch (Exception e) {
 			throw new SnowOwlClientException(e);
