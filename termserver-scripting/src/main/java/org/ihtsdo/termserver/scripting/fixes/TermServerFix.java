@@ -166,7 +166,7 @@ public abstract class TermServerFix implements RF2Constants {
 		url = environments[envChoice];
 		env = envKeys[envChoice];
 	
-		tsClient = new SnowOwlClient(url + "snowowl/snomed-ct/v2", "snowowl", "snowowl");
+		initialiseSnowOwlClient();
 		if (authenticatedCookie == null) {
 			print ("Please enter your authenticated cookie for connection to " + url + " : ");
 			authenticatedCookie = STDIN.nextLine().trim();
@@ -211,6 +211,10 @@ public abstract class TermServerFix implements RF2Constants {
 		}
 	}
 	
+	protected void initialiseSnowOwlClient() {
+		tsClient = new SnowOwlClient(url + "snowowl/snomed-ct/v2", "snowowl", "snowowl");
+	}
+
 	public String getProject() {
 		return project;
 	}

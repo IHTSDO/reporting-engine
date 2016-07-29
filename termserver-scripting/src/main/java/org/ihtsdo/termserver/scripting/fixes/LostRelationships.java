@@ -100,7 +100,7 @@ public class LostRelationships extends TermServerFix{
 		if (!archives[SNAPSHOT].exists()) {
 			println ("Recovering snapshot state of " + project + " from TS (" + env + ")");
 			tsClient.export("MAIN/" + project, null, ExportType.MIXED, ExtractType.SNAPSHOT, archives[SNAPSHOT]);
-			Thread.sleep(60*1000); //If we recover delta too quickly we seem to get a HTTP500 back.
+			initialiseSnowOwlClient();  //re-initialise client to avoid HttpMediaTypeNotAcceptableException.  Cause unknown.
 		}
 		
 		if (!archives[DELTA].exists()) {
