@@ -1,13 +1,20 @@
 package org.ihtsdo.snowowl.authoring.single.api.pojo;
 
-import com.b2international.snowowl.core.branch.Branch;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonRawValue;
-import net.rcarz.jiraclient.Issue;
-import net.sf.json.JSONObject;
+import java.util.List;
+
 import org.ihtsdo.snowowl.authoring.single.api.review.service.TaskMessagesStatus;
 import org.ihtsdo.snowowl.authoring.single.api.service.PathHelper;
 import org.ihtsdo.snowowl.authoring.single.api.service.TaskStatus;
+
+import com.b2international.snowowl.core.branch.Branch;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonRawValue;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import net.rcarz.jiraclient.Issue;
+import net.rcarz.jiraclient.IssueLink;
+import net.sf.json.JSONObject;
 
 public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskUpdateRequest {
 
@@ -30,6 +37,8 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 	private String latestValidationStatus;
 	private TaskMessagesStatus feedbackMessagesStatus;
 	private String branchPath;
+	private String issueLinks;
+	private String labels;
 
 	public AuthoringTask() {
 	}
@@ -46,6 +55,22 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 		}
 		created = (String) issue.getField(JIRA_CREATED_FIELD);
 		updated = (String) issue.getField(JIRA_UPDATED_FIELD);
+		
+
+		
+		ObjectMapper mapper = new ObjectMapper();
+		
+		try {
+			issueLinks = mapper.writeValueAsString(issue.getIssueLinks());
+		} catch (JsonProcessingException e) {
+			issueLinks = "Failed to convert Jira issue links into json string";
+		}
+
+		try {
+			issueLinks = mapper.writeValueAsString(issue.getLabels());
+		} catch (JsonProcessingException e) {
+			issueLinks = "Failed to convert Jira labels into json string";
+		}
 		
 		Object reviewerObj = issue.getField(jiraReviewerField);
 		if (reviewerObj != null && reviewerObj instanceof JSONObject) {
