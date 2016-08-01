@@ -1,5 +1,37 @@
 package org.ihtsdo.snowowl.authoring.single.api.service;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+
+import org.apache.log4j.Level;
+import org.ihtsdo.otf.rest.client.RestClientException;
+import org.ihtsdo.otf.rest.exception.BusinessServiceException;
+import org.ihtsdo.otf.rest.exception.ResourceNotFoundException;
+import org.ihtsdo.snowowl.api.rest.common.ControllerHelper;
+import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringMain;
+import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringProject;
+import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTask;
+import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskCreateRequest;
+import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskUpdateRequest;
+import org.ihtsdo.snowowl.authoring.single.api.pojo.TaskTransferRequest;
+import org.ihtsdo.snowowl.authoring.single.api.review.service.ReviewService;
+import org.ihtsdo.snowowl.authoring.single.api.review.service.TaskMessagesDetail;
+import org.ihtsdo.snowowl.authoring.single.api.service.jira.ImpersonatingJiraClientFactory;
+import org.ihtsdo.snowowl.authoring.single.api.service.jira.JiraHelper;
+import org.ihtsdo.snowowl.authoring.single.api.service.util.TimerUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+
 import com.b2international.snowowl.core.Metadata;
 import com.b2international.snowowl.core.branch.Branch;
 import com.b2international.snowowl.core.exceptions.BadRequestException;
@@ -10,25 +42,19 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableMap;
-import net.rcarz.jiraclient.*;
-import net.rcarz.jiraclient.Status;
-import net.rcarz.jiraclient.User;
-import org.apache.log4j.Level;
-import org.ihtsdo.otf.rest.client.RestClientException;
-import org.ihtsdo.otf.rest.exception.BusinessServiceException;
-import org.ihtsdo.otf.rest.exception.ResourceNotFoundException;
-import org.ihtsdo.snowowl.api.rest.common.ControllerHelper;
-import org.ihtsdo.snowowl.authoring.single.api.pojo.*;
-import org.ihtsdo.snowowl.authoring.single.api.review.service.ReviewService;
-import org.ihtsdo.snowowl.authoring.single.api.service.jira.ImpersonatingJiraClientFactory;
-import org.ihtsdo.snowowl.authoring.single.api.service.jira.JiraHelper;
-import org.ihtsdo.snowowl.authoring.single.api.service.util.TimerUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.*;
-import java.util.concurrent.ExecutionException;
+import net.rcarz.jiraclient.ChangeLog;
+import net.rcarz.jiraclient.ChangeLogEntry;
+import net.rcarz.jiraclient.ChangeLogItem;
+import net.rcarz.jiraclient.Field;
+import net.rcarz.jiraclient.Issue;
+import net.rcarz.jiraclient.JiraClient;
+import net.rcarz.jiraclient.JiraException;
+import net.rcarz.jiraclient.Project;
+import net.rcarz.jiraclient.RestException;
+import net.rcarz.jiraclient.Status;
+import net.rcarz.jiraclient.Transition;
+import net.rcarz.jiraclient.User;
 
 public class TaskService {
 
@@ -396,8 +422,14 @@ public class TaskService {
 						timer.checkpoint("Recovering branch state");
 						startedTasks.put(task.getBranchPath(), task);
 					}
-					task.setFeedbackMessagesStatus(reviewService.getTaskMessagesStatus(task.getProjectKey(), task.getKey(), username));
+					
+					// get the review message details and append to task
+					TaskMessagesDetail detail = reviewService.getTaskMessagesDetail(task.getProjectKey(), task.getKey(), username);
+					task.setFeedbackMessagesStatus(detail.getTaskMessagesStatus());
+					task.setFeedbackMessageDate(detail.getLastMessageDate());
+					task.setViewDate(detail.getViewDate());			
 					timer.checkpoint("Recovering feedback messages");
+				
 				}
 			}
 
