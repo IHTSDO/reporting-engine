@@ -10,6 +10,8 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.module.scala.DefaultScalaModule;
+import com.google.common.base.Charsets;
+
 import org.ihtsdo.snowowl.api.rest.common.domain.ISnomedComponentMixin;
 import org.ihtsdo.snowowl.authoring.single.api.mapping.SnomedBrowserConceptMixin;
 import org.ihtsdo.snowowl.authoring.single.api.mapping.SnomedBrowserRelationshipMixin;
@@ -51,7 +53,7 @@ public class SpringConfiguration extends WebMvcConfigurerAdapter {
 
 	@Override
 	public void configureMessageConverters(final List<HttpMessageConverter<?>> converters) {
-		final StringHttpMessageConverter stringConverter = new StringHttpMessageConverter();
+		final StringHttpMessageConverter stringConverter = new StringHttpMessageConverter(Charsets.UTF_8);
 		stringConverter.setWriteAcceptCharset(false);
 		converters.add(stringConverter);
 
