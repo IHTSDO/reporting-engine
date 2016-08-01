@@ -56,22 +56,6 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 		created = (String) issue.getField(JIRA_CREATED_FIELD);
 		updated = (String) issue.getField(JIRA_UPDATED_FIELD);
 		
-
-		
-		ObjectMapper mapper = new ObjectMapper();
-		
-		try {
-			issueLinks = mapper.writeValueAsString(issue.getIssueLinks());
-		} catch (JsonProcessingException e) {
-			issueLinks = "Failed to convert Jira issue links into json string";
-		}
-
-		try {
-			issueLinks = mapper.writeValueAsString(issue.getLabels());
-		} catch (JsonProcessingException e) {
-			issueLinks = "Failed to convert Jira labels into json string";
-		}
-		
 		Object reviewerObj = issue.getField(jiraReviewerField);
 		if (reviewerObj != null && reviewerObj instanceof JSONObject) {
 			reviewer = new User((JSONObject)reviewerObj);
