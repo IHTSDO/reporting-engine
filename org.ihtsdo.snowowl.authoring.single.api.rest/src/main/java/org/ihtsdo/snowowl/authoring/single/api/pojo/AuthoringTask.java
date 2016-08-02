@@ -224,6 +224,7 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 		this.viewDate = viewDate;
 	}
 
+	@JsonRawValue
 	public String getIssueLinks() {
 		return issueLinks;
 	}
@@ -232,6 +233,7 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 		this.issueLinks = issueLinks;
 	}
 
+	@JsonRawValue
 	public String getLabels() {
 		return labels;
 	}
