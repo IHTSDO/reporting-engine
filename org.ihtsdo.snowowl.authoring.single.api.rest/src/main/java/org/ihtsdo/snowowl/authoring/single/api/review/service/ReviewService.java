@@ -31,15 +31,17 @@ public class ReviewService {
 
 	@Autowired
 	private ApplicationContext applicationContext;
-	
+
 	@Transactional
-	public List<ReviewConcept> retrieveTaskReviewConceptDetails(String projectKey, String taskKey, String username) throws BusinessServiceException {
+	public List<ReviewConcept> retrieveTaskReviewConceptDetails(String projectKey, String taskKey, String username)
+			throws BusinessServiceException {
 		final Branch branch = branchRepository.findOneByProjectAndTask(projectKey, taskKey);
 		return getReviewConcepts(username, branch);
 	}
 
 	@Transactional
-	public List<ReviewConcept> retrieveProjectReviewConceptDetails(String projectKey, String username) throws BusinessServiceException {
+	public List<ReviewConcept> retrieveProjectReviewConceptDetails(String projectKey, String username)
+			throws BusinessServiceException {
 		final Branch branch = branchRepository.findOneByProjectAndTask(projectKey, null);
 		return getReviewConcepts(username, branch);
 	}
@@ -53,14 +55,17 @@ public class ReviewService {
 			conceptIds.addAll(conceptViewDatesMap.keySet());
 			for (String conceptId : conceptIds) {
 				final List<ReviewMessage> messages = conceptMessagesMap.get(conceptId);
-				reviewConcepts.add(new ReviewConcept(conceptId, messages != null ? messages : new ArrayList<ReviewMessage>(), conceptViewDatesMap.get(conceptId)));
+				reviewConcepts
+						.add(new ReviewConcept(conceptId, messages != null ? messages : new ArrayList<ReviewMessage>(),
+								conceptViewDatesMap.get(conceptId)));
 			}
 		}
 		return reviewConcepts;
 	}
 
 	private Map<String, Date> getLatestConceptViewDatesMap(String username, Branch branch) {
-		final List<ReviewConceptView> reviewConceptViews = reviewConceptViewRepository.findByBranchAndUsernameOrderByViewDateAsc(branch, username);
+		final List<ReviewConceptView> reviewConceptViews = reviewConceptViewRepository
+				.findByBranchAndUsernameOrderByViewDateAsc(branch, username);
 		final Map<String, Date> reviewConceptViewDateMap = new HashMap<>();
 		for (ReviewConceptView reviewConceptView : reviewConceptViews) {
 			reviewConceptViewDateMap.put(reviewConceptView.getConceptId(), reviewConceptView.getViewDate());
@@ -70,6 +75,7 @@ public class ReviewService {
 
 	/**
 	 * Builds a map of conceptIds and messages with that concept in the subject.
+	 * 
 	 * @param branch
 	 * @return
 	 */
@@ -87,15 +93,15 @@ public class ReviewService {
 		return conceptMessagesMap;
 	}
 
-	public ReviewMessage postReviewMessage(String projectKey, String taskKey, ReviewMessageCreateRequest createRequest, String fromUsername) {
+	public ReviewMessage postReviewMessage(String projectKey, String taskKey, ReviewMessageCreateRequest createRequest,
+			String fromUsername) {
 		final List<String> subjectConceptIds = createRequest.getSubjectConceptIds();
 		if (subjectConceptIds == null || subjectConceptIds.isEmpty()) {
 			throw new BadRequestException("There must be at least one id in subjectConceptIds");
 		}
 		final Branch branch = getCreateBranch(projectKey, taskKey);
-		final ReviewMessage message = messageRepository.save(
-				new ReviewMessage(branch, createRequest.getMessageHtml(),
-						subjectConceptIds, createRequest.isFeedbackRequested(), fromUsername));
+		final ReviewMessage message = messageRepository.save(new ReviewMessage(branch, createRequest.getMessageHtml(),
+				subjectConceptIds, createRequest.isFeedbackRequested(), fromUsername));
 		for (ReviewMessageSentListener listener : getReviewMessageSentListeners()) {
 			listener.messageSent(message);
 		}
@@ -117,31 +123,43 @@ public class ReviewService {
 
 	public TaskMessagesDetail getTaskMessagesDetail(String projectKey, String taskKey, String username) {
 		TaskMessagesDetail detail = new TaskMessagesDetail();
-		
+
 		detail.setTaskMessagesStatus(TaskMessagesStatus.none);
 		final Branch branch = branchRepository.findOneByProjectAndTask(projectKey, taskKey);
 		if (branch != null) {
 			final List<ReviewConcept> reviewConcepts = getReviewConcepts(username, branch);
 			for (ReviewConcept reviewConcept : reviewConcepts) {
-				
+
 				// get the view date and save in task messages detail
 				final Date viewDate = reviewConcept.getViewDate();
 				detail.setViewDate(viewDate);
-				
-				// cycle over review messages
+
+				// check dates and messages status
 				for (ReviewMessage reviewMessage : reviewConcept.getMessages()) {
-					
+
 					final Date messageDate = reviewMessage.getCreationDate();
-					if (messageDate != null && messageDate.after(detail.getLastMessageDate())) {
+
+					// If last message date null, simply set
+					if (detail.getLastMessageDate() == null) {
 						detail.setLastMessageDate(messageDate);
 					}
-					
-					if (viewDate == null ||
-							(!username.equals(reviewMessage.getFromUsername()) && messageDate.after(viewDate))) {
+
+					// otherwise check for later date
+					else if (messageDate != null && messageDate.after(detail.getLastMessageDate())) {
+						detail.setLastMessageDate(messageDate);
+					}
+
+					// if another user left message after view date, mark unread
+					if (!username.equals(reviewMessage.getFromUsername()) && messageDate.after(viewDate)) {
 						detail.setTaskMessagesStatus(TaskMessagesStatus.unread);
 					}
-					detail.setTaskMessagesStatus(TaskMessagesStatus.read);
+
+					// if not already marked unread, mark read
+					else if (!detail.getTaskMessagesStatus().equals(TaskMessagesStatus.unread)) {
+						detail.setTaskMessagesStatus(TaskMessagesStatus.read);
+					}
 				}
+
 			}
 		}
 		return detail;
@@ -149,6 +167,7 @@ public class ReviewService {
 
 	/**
 	 * Autowire ReviewMessageSentListener beans
+	 * 
 	 * @return
 	 */
 	private Collection<ReviewMessageSentListener> getReviewMessageSentListeners() {
