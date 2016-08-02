@@ -1,11 +1,7 @@
 package org.ihtsdo.snowowl.authoring.single.api.service;
 
-import com.b2international.snowowl.core.branch.Branch;
-import com.b2international.snowowl.core.exceptions.NotFoundException;
-import com.b2international.snowowl.eventbus.IEventBus;
-import com.b2international.snowowl.snomed.datastore.server.request.SnomedRequests;
-import net.rcarz.jiraclient.Issue;
-import net.rcarz.jiraclient.JiraException;
+import java.util.List;
+
 import org.apache.commons.lang.time.StopWatch;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.EntityType;
@@ -13,7 +9,15 @@ import org.ihtsdo.snowowl.authoring.single.api.pojo.MergeRequest;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.Notification;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.List;
+import com.b2international.snowowl.core.branch.Branch;
+import com.b2international.snowowl.core.exceptions.NotFoundException;
+import com.b2international.snowowl.eventbus.IEventBus;
+import com.b2international.snowowl.snomed.datastore.server.request.SnomedRequests;
+
+import net.rcarz.jiraclient.Field;
+import net.rcarz.jiraclient.Issue;
+import net.rcarz.jiraclient.IssueLink;
+import net.rcarz.jiraclient.JiraException;
 
 public class BranchService {
 
@@ -114,6 +118,15 @@ public class BranchService {
 		mergeBranch(branchPath, PathHelper.getParentPath(branchPath), mergeRequest.getSourceReviewId(), username);
 		stopwatch.stop();
 		taskService.stateTransition(promotedIssues, TaskStatus.COMPLETED);
+		
+		// for each CRS issue linked in the tasks, advance to Ready for Release
+		for (Issue issue : promotedIssues) {
+			for (IssueLink link : issue.getIssueLinks()) {
+				// TODO Decide how to handle the CRS Issues
+				//link.getOutwardIssue().transition().field(Field.STATUS, CRSTaskStatus.READY_FOR_RELEASE);
+			}
+		}
+		
 		String resultMessage = "Promotion of " + projectKey + " to " + getProjectParentLabel(branchPath) + " completed without conflicts in " + stopwatch;
 		notificationService.queueNotification(username, new Notification(projectKey, EntityType.Promotion, resultMessage));
 	}
