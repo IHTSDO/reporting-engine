@@ -150,7 +150,7 @@ public class ReviewService {
 					}
 
 					// if another user left message after view date, mark unread
-					if (!username.equals(reviewMessage.getFromUsername()) && messageDate.after(viewDate)) {
+					if (!username.equals(reviewMessage.getFromUsername()) && (viewDate == null || messageDate.after(viewDate))) {
 						detail.setTaskMessagesStatus(TaskMessagesStatus.unread);
 					}
 
