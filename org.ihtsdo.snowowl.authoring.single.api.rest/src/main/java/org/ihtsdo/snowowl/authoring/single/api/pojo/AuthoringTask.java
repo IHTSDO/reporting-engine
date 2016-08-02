@@ -70,9 +70,9 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 
 		// set the labels
 		try {
-			issueLinks = mapper.writeValueAsString(issue.getLabels());
+			labels = mapper.writeValueAsString(issue.getLabels());
 		} catch (JsonProcessingException e) {
-			issueLinks = "Failed to convert Jira labels into json string";
+			labels = "Failed to convert Jira labels into json string";
 		}
 		
 		// set the reviewer object
