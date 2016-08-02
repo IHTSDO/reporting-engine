@@ -115,23 +115,36 @@ public class ReviewService {
 		return branch;
 	}
 
-	public TaskMessagesStatus getTaskMessagesStatus(String projectKey, String taskKey, String username) {
-		TaskMessagesStatus status = TaskMessagesStatus.none;
+	public TaskMessagesDetail getTaskMessagesDetail(String projectKey, String taskKey, String username) {
+		TaskMessagesDetail detail = new TaskMessagesDetail();
+		
+		detail.setTaskMessagesStatus(TaskMessagesStatus.none);
 		final Branch branch = branchRepository.findOneByProjectAndTask(projectKey, taskKey);
 		if (branch != null) {
 			final List<ReviewConcept> reviewConcepts = getReviewConcepts(username, branch);
 			for (ReviewConcept reviewConcept : reviewConcepts) {
+				
+				// get the view date and save in task messages detail
 				final Date viewDate = reviewConcept.getViewDate();
+				detail.setViewDate(viewDate);
+				
+				// cycle over review messages
 				for (ReviewMessage reviewMessage : reviewConcept.getMessages()) {
-					if (viewDate == null ||
-							(!username.equals(reviewMessage.getFromUsername()) && reviewMessage.getCreationDate().after(viewDate))) {
-						return TaskMessagesStatus.unread;
+					
+					final Date messageDate = reviewMessage.getCreationDate();
+					if (messageDate != null && messageDate.after(detail.getLastMessageDate())) {
+						detail.setLastMessageDate(messageDate);
 					}
-					status = TaskMessagesStatus.read;
+					
+					if (viewDate == null ||
+							(!username.equals(reviewMessage.getFromUsername()) && messageDate.after(viewDate))) {
+						detail.setTaskMessagesStatus(TaskMessagesStatus.unread);
+					}
+					detail.setTaskMessagesStatus(TaskMessagesStatus.read);
 				}
 			}
 		}
-		return status;
+		return detail;
 	}
 
 	/**
