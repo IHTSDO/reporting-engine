@@ -122,16 +122,11 @@ public class BranchService {
 		// taskService.stateTransition(promotedIssues, TaskStatus.COMPLETED);
 		
 		// for each CRS issue linked in the tasks, advance to Ready for Release
-		for (Issue issue : promotedIssues) {
-			for (IssueLink link : issue.getIssueLinks()) {
+		for (Issue promotedIssue : promotedIssues) {
+			for (IssueLink link : promotedIssue.getIssueLinks()) {
 				
-				// TODO Decide how to handle errors
-				try {
-					link.getOutwardIssue().transition().field(Field.STATUS, "READY_FOR_RELEASE");
-				} catch (JiraException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+				Issue issue = link.getOutwardIssue();
+				System.out.println("Found issue " + issue.getKey() + ", " + issue.getField("status"));
 			}
 		}
 		
