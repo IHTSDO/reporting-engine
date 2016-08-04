@@ -43,6 +43,7 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableMap;
 
+import net.rcarz.jiraclient.Attachment;
 import net.rcarz.jiraclient.ChangeLog;
 import net.rcarz.jiraclient.ChangeLogEntry;
 import net.rcarz.jiraclient.ChangeLogItem;
@@ -413,10 +414,15 @@ public class TaskService {
 			for (Issue issue : tasks) {
 				for (IssueLink issueLink : issue.getIssueLinks()) {
 					Issue linkedIssue = issueLink.getOutwardIssue();
+					
+					for (Attachment attachment : linkedIssue.getAttachments()) {
+						logger.info("directly linked attachment" + attachment.toString());
+					}
+					
 					Issue issue1;
 					try {
 						issue1 = this.getIssue(null,  linkedIssue.getKey(), true);
-						logger.info(issue1.toString() + ", attachments: " + issue1.getAttachments().toString());
+						logger.info("retrieved attachment for (true): " + issue1.toString() + ", attachments: " + issue1.getAttachments().toString());
 					} catch (JiraException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -424,7 +430,7 @@ public class TaskService {
 					Issue issue2;
 					try {
 						issue2 = this.getIssue(null,  linkedIssue.getKey(), false);
-						logger.info(issue2.toString() + ", attachments: " + issue2.getAttachments().toString());
+						logger.info("retrieved attachment for (true): " + issue2.toString() + ", attachments: " + issue2.getAttachments().toString());
 					} catch (JiraException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
