@@ -416,7 +416,7 @@ public class TaskService {
 					Issue issue1;
 					try {
 						issue1 = this.getIssue(null,  linkedIssue.getKey(), true);
-						logger.info(issue1.toString(), issue1.getAttachments().toString());
+						logger.info(issue1.toString() + ", attachments: " + issue1.getAttachments().toString());
 					} catch (JiraException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -424,7 +424,7 @@ public class TaskService {
 					Issue issue2;
 					try {
 						issue2 = this.getIssue(null,  linkedIssue.getKey(), false);
-						logger.info(issue2.toString(), issue2.getAttachments().toString());
+						logger.info(issue2.toString() + ", attachments: " + issue2.getAttachments().toString());
 					} catch (JiraException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
