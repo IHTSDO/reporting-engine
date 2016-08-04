@@ -12,7 +12,9 @@ import com.fasterxml.jackson.annotation.JsonRawValue;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import net.rcarz.jiraclient.Attachment;
 import net.rcarz.jiraclient.Issue;
+import net.rcarz.jiraclient.IssueLink;
 import net.sf.json.JSONObject;
 
 public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskUpdateRequest {
@@ -39,8 +41,10 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 	private Date viewDate;
 	private String branchPath;
 	private String issueLinks;
+	private String issueLinkAttachments;
 	private String labels;
 	private String attachments;
+	
 
 	public AuthoringTask() {
 	}
@@ -76,12 +80,30 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 			labels = "Failed to convert Jira labels into json string";
 		}
 		
-		// set the attachments
+		// set the attachments from linked issues
 		try {
 			attachments = mapper.writeValueAsString(issue.getAttachments());
 		} catch(JsonProcessingException e) {
 			attachments = "Failed to convert attachments into json string";
 		}
+		
+		
+		// construct a JSON array of attachments from issue links
+		StringBuilder str = new StringBuilder();
+		str.append("[");
+		for (IssueLink issueLink : issue.getIssueLinks()) {
+			for(Attachment attachment : issueLink.getOutwardIssue().getAttachments()) {
+				try {
+					str.append(mapper.writeValueAsString(attachment));
+				} catch (JsonProcessingException e) {
+					str.append("{ " + attachment.getId() + ": 'failed to convert json'");
+				}
+			}
+		}
+		str.append("]");
+		issueLinkAttachments = str.toString();
+		
+		
 		
 		// set the reviewer object
 		Object reviewerObj = issue.getField(jiraReviewerField);
@@ -258,6 +280,17 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 	public void setAttachments(String attachments) {
 		this.attachments = attachments;
 	}
+
+	@JsonRawValue
+	public String getIssueLinkAttachments() {
+		return issueLinkAttachments;
+	}
+
+	public void setIssueLinkAttachments(String issueLinkAttachments) {
+		this.issueLinkAttachments = issueLinkAttachments;
+	}
+	
+	
 	
 	
 
