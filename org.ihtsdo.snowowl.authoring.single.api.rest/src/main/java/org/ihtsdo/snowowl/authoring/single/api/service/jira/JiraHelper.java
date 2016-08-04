@@ -1,15 +1,17 @@
 package org.ihtsdo.snowowl.authoring.single.api.service.jira;
 
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+
+import net.rcarz.jiraclient.Attachment;
 import net.rcarz.jiraclient.JiraClient;
 import net.rcarz.jiraclient.JiraException;
 import net.rcarz.jiraclient.RestClient;
 import net.rcarz.jiraclient.RestException;
+import net.sf.json.JSON;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
-
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 
 public class JiraHelper {
 
@@ -35,6 +37,18 @@ public class JiraHelper {
 			return fieldId;
 		} catch (IOException | URISyntaxException | RestException e) {
 			throw new JiraException("Failed to lookup field ID", e);
+		}
+	}
+	
+	public static JSON getAttachmentAsJSON(Attachment attachment, JiraClient client) {
+		try {
+			String fieldId = null;
+			final RestClient restClient = client.getRestClient();
+			final JSON result = (JSONArray) restClient.get(attachment.getContentUrl());
+			return result;
+		} catch (IOException | URISyntaxException | RestException e) {
+			e.printStackTrace();
+			return null;
 		}
 	}
 

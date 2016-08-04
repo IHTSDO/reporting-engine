@@ -5,6 +5,8 @@ import java.util.Date;
 import org.ihtsdo.snowowl.authoring.single.api.review.service.TaskMessagesStatus;
 import org.ihtsdo.snowowl.authoring.single.api.service.PathHelper;
 import org.ihtsdo.snowowl.authoring.single.api.service.TaskStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.b2international.snowowl.core.branch.Branch;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -81,11 +83,12 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 		}
 		
 		// set the attachments from linked issues
-		try {
-			attachments = mapper.writeValueAsString(issue.getAttachments());
-		} catch(JsonProcessingException e) {
-			attachments = "Failed to convert attachments into json string";
-		}
+		// TODO restore this to main issue attachments after testing
+		final Logger logger = LoggerFactory.getLogger(getClass());
+			attachments = issue.getAttachments().toString();
+			logger.info("authoring task attachments: " + attachments);
+			
+		
 		
 		
 		// construct a JSON array of attachments from issue links

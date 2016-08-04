@@ -57,13 +57,15 @@ import net.rcarz.jiraclient.RestException;
 import net.rcarz.jiraclient.Status;
 import net.rcarz.jiraclient.Transition;
 import net.rcarz.jiraclient.User;
+import net.sf.json.JSON;
 
 public class TaskService {
 
 	public static final String FAILED_TO_RETRIEVE = "Failed-to-retrieve";
 
 	private static final String INCLUDE_ALL_FIELDS = "*all";
-	private static final String EXCLUDE_STATUSES = " AND (status != \"" + TaskStatus.COMPLETED.getLabel() + "\" AND status != \"" + TaskStatus.DELETED.getLabel() + "\") ";
+	private static final String EXCLUDE_STATUSES = " AND (status != \"" + TaskStatus.COMPLETED.getLabel()
+			+ "\" AND status != \"" + TaskStatus.DELETED.getLabel() + "\") ";
 	private static final String AUTHORING_TASK_TYPE = "SCA Authoring Task";
 	private static final int LIMIT_UNLIMITED = -1;
 
@@ -105,27 +107,25 @@ public class TaskService {
 	}
 
 	public void init() {
-		projectDetailsCache = CacheBuilder.newBuilder()
-				.maximumSize(10000)
-				.build(
-						new CacheLoader<String, ProjectDetails>() {
-							@Override
-							public ProjectDetails load(String projectKey) throws BusinessServiceException {
-								final Issue projectTicket = getProjectTicket(projectKey);
-								return getProjectDetailsPopulatingCache(projectTicket);
-							}
+		projectDetailsCache = CacheBuilder.newBuilder().maximumSize(10000)
+				.build(new CacheLoader<String, ProjectDetails>() {
+					@Override
+					public ProjectDetails load(String projectKey) throws BusinessServiceException {
+						final Issue projectTicket = getProjectTicket(projectKey);
+						return getProjectDetailsPopulatingCache(projectTicket);
+					}
 
-							@Override
-							public Map<String, ProjectDetails> loadAll(Iterable<? extends String> keys) throws Exception {
-								final Map<String, Issue> projectTickets = getProjectTickets(keys);
-								Map<String, ProjectDetails> keyToBaseMap = new HashMap<>();
-								for (String projectKey : projectTickets.keySet()) {
-									keyToBaseMap.put(projectKey, getProjectDetailsPopulatingCache(projectTickets.get(projectKey)));
-								}
-								return keyToBaseMap;
-							}
+					@Override
+					public Map<String, ProjectDetails> loadAll(Iterable<? extends String> keys) throws Exception {
+						final Map<String, Issue> projectTickets = getProjectTickets(keys);
+						Map<String, ProjectDetails> keyToBaseMap = new HashMap<>();
+						for (String projectKey : projectTickets.keySet()) {
+							keyToBaseMap.put(projectKey,
+									getProjectDetailsPopulatingCache(projectTickets.get(projectKey)));
 						}
-				);
+						return keyToBaseMap;
+					}
+				});
 	}
 
 	public List<AuthoringProject> listProjects() throws JiraException, BusinessServiceException {
@@ -146,7 +146,8 @@ public class TaskService {
 	}
 
 	public AuthoringProject retrieveProject(String projectKey) throws BusinessServiceException {
-		return buildAuthoringProjects(Collections.singletonList(getProjectTicketOrThrow(projectKey).getProject())).get(0);
+		return buildAuthoringProjects(Collections.singletonList(getProjectTicketOrThrow(projectKey).getProject()))
+				.get(0);
 	}
 
 	public String getProjectBranchPathUsingCache(String projectKey) throws BusinessServiceException {
@@ -192,11 +193,13 @@ public class TaskService {
 					}
 				}
 				branchPaths.add(branchPath);
-				final AuthoringProject authoringProject = new AuthoringProject(project.getKey(), project.getName(), getPojoUserOrNull(project.getLead()), branchPath, branchState, latestClassificationJson);
+				final AuthoringProject authoringProject = new AuthoringProject(project.getKey(), project.getName(),
+						getPojoUserOrNull(project.getLead()), branchPath, branchState, latestClassificationJson);
 				authoringProject.setMetadata(metadata);
 				authoringProjects.add(authoringProject);
 			}
-			final ImmutableMap<String, String> validationStatuses = validationService.getValidationStatuses(branchPaths);
+			final ImmutableMap<String, String> validationStatuses = validationService
+					.getValidationStatuses(branchPaths);
 			for (AuthoringProject authoringProject : authoringProjects) {
 				authoringProject.setValidationStatus(validationStatuses.get(authoringProject.getBranchPath()));
 			}
@@ -207,8 +210,10 @@ public class TaskService {
 	}
 
 	private ProjectDetails getProjectDetailsPopulatingCache(Issue projectMagicTicket) {
-		final String base = Strings.nullToEmpty(JiraHelper.toStringOrNull(projectMagicTicket.getField(jiraExtensionBaseField)));
-		final String productCode = Strings.nullToEmpty(JiraHelper.toStringOrNull(projectMagicTicket.getField(jiraProductCodeField)));
+		final String base = Strings
+				.nullToEmpty(JiraHelper.toStringOrNull(projectMagicTicket.getField(jiraExtensionBaseField)));
+		final String productCode = Strings
+				.nullToEmpty(JiraHelper.toStringOrNull(projectMagicTicket.getField(jiraProductCodeField)));
 		// Update cache with recently fetched project base value
 		final ProjectDetails details = new ProjectDetails(base, productCode);
 		projectDetailsCache.put(projectMagicTicket.getProject().getKey(), details);
@@ -225,7 +230,8 @@ public class TaskService {
 			Collection<String> paths = Collections.singletonList(path);
 			final ImmutableMap<String, String> statuses = validationService.getValidationStatuses(paths);
 			final Branch.BranchState branchState = branchService.getBranchStateOrNull(PathHelper.getMainPath());
-			final String latestClassificationJson = classificationService.getLatestClassification(PathHelper.getMainPath());
+			final String latestClassificationJson = classificationService
+					.getLatestClassification(PathHelper.getMainPath());
 			return new AuthoringMain(path, branchState, statuses.get(path), latestClassificationJson);
 		} catch (ExecutionException | RestClientException e) {
 			throw new BusinessServiceException("Failed to retrieve Main", e);
@@ -249,7 +255,8 @@ public class TaskService {
 		return getProjectTickets(Collections.singleton(projectKey)).get(projectKey);
 	}
 
-	private Map<String, Issue> getProjectTickets(Iterable<? extends String> projectKeys) throws BusinessServiceException {
+	private Map<String, Issue> getProjectTickets(Iterable<? extends String> projectKeys)
+			throws BusinessServiceException {
 		StringBuilder magicTicketQuery = new StringBuilder();
 		magicTicketQuery.append("(");
 		for (String projectKey : projectKeys) {
@@ -271,7 +278,6 @@ public class TaskService {
 			throw new BusinessServiceException("Failed to load Projects from Jira.", e);
 		}
 	}
-
 
 	public List<Issue> getTaskIssues(String projectKey, TaskStatus taskStatus) throws BusinessServiceException {
 		try {
@@ -325,7 +331,8 @@ public class TaskService {
 	}
 
 	private Issue getIssue(String projectKey, String taskKey, boolean includeAll) throws JiraException {
-		//If we don't need all fields, then the existing implementation is sufficient
+		// If we don't need all fields, then the existing implementation is
+		// sufficient
 		if (includeAll) {
 			return getJiraClient().getIssue(taskKey, INCLUDE_ALL_FIELDS, "changelog");
 		} else {
@@ -335,7 +342,9 @@ public class TaskService {
 
 	/**
 	 * @param jql
-	 * @param limit maximum number of issues to return.  If -1 the results are unlimited.
+	 * @param limit
+	 *            maximum number of issues to return. If -1 the results are
+	 *            unlimited.
 	 * @return
 	 * @throws JiraException
 	 */
@@ -352,15 +361,16 @@ public class TaskService {
 	}
 
 	public List<AuthoringTask> listMyTasks(String username) throws JiraException, BusinessServiceException {
-		List<Issue> issues = searchIssues("assignee = \"" + username + "\" AND type = \"" + AUTHORING_TASK_TYPE + "\" " + EXCLUDE_STATUSES, LIMIT_UNLIMITED);
+		List<Issue> issues = searchIssues(
+				"assignee = \"" + username + "\" AND type = \"" + AUTHORING_TASK_TYPE + "\" " + EXCLUDE_STATUSES,
+				LIMIT_UNLIMITED);
 		return buildAuthoringTasks(issues);
 	}
 
 	public List<AuthoringTask> listMyOrUnassignedReviewTasks() throws JiraException, BusinessServiceException {
-		List<Issue> issues = searchIssues("type = \"" + AUTHORING_TASK_TYPE + "\" " +
-				"AND assignee != currentUser() " +
-				"AND (Reviewer = currentUser() OR (Reviewer = null AND status = \"" + TaskStatus.IN_REVIEW.getLabel() + "\")) " +
-				EXCLUDE_STATUSES, LIMIT_UNLIMITED);
+		List<Issue> issues = searchIssues("type = \"" + AUTHORING_TASK_TYPE + "\" " + "AND assignee != currentUser() "
+				+ "AND (Reviewer = currentUser() OR (Reviewer = null AND status = \"" + TaskStatus.IN_REVIEW.getLabel()
+				+ "\")) " + EXCLUDE_STATUSES, LIMIT_UNLIMITED);
 		return buildAuthoringTasks(issues);
 	}
 
@@ -372,13 +382,13 @@ public class TaskService {
 		return jql;
 	}
 
-	public AuthoringTask createTask(String projectKey, String username, AuthoringTaskCreateRequest taskCreateRequest) throws BusinessServiceException {
+	public AuthoringTask createTask(String projectKey, String username, AuthoringTaskCreateRequest taskCreateRequest)
+			throws BusinessServiceException {
 		Issue jiraIssue;
 		try {
 			jiraIssue = getJiraClient().createIssue(projectKey, AUTHORING_TASK_TYPE)
 					.field(Field.SUMMARY, taskCreateRequest.getSummary())
-					.field(Field.DESCRIPTION, taskCreateRequest.getDescription())
-					.field(Field.ASSIGNEE, username)
+					.field(Field.DESCRIPTION, taskCreateRequest.getDescription()).field(Field.ASSIGNEE, username)
 					.execute();
 		} catch (JiraException e) {
 			throw new BusinessServiceException("Failed to create Jira task", e);
@@ -390,11 +400,13 @@ public class TaskService {
 		} catch (ServiceException e) {
 			throw new BusinessServiceException("Failed to create project branch.", e);
 		}
-		// Task branch creation is delayed until the user starts work to prevent having to rebase straight away.
+		// Task branch creation is delayed until the user starts work to prevent
+		// having to rebase straight away.
 		return authoringTask;
 	}
 
-	public AuthoringTask createTask(String projectKey, AuthoringTaskCreateRequest taskCreateRequest) throws BusinessServiceException {
+	public AuthoringTask createTask(String projectKey, AuthoringTaskCreateRequest taskCreateRequest)
+			throws BusinessServiceException {
 		return createTask(projectKey, getUsername(), taskCreateRequest);
 	}
 
@@ -403,71 +415,81 @@ public class TaskService {
 		final String username = getUsername();
 		List<AuthoringTask> allTasks = new ArrayList<>();
 		try {
-			//Map of task paths to tasks
+			// Map of task paths to tasks
 			Map<String, AuthoringTask> startedTasks = new HashMap<>();
 			Set<String> projectKeys = new HashSet<>();
 			for (Issue issue : tasks) {
 				projectKeys.add(issue.getProject().getKey());
 			}
-			
+
 			// TODO Remove debug content
 			for (Issue issue : tasks) {
 				for (IssueLink issueLink : issue.getIssueLinks()) {
 					Issue linkedIssue = issueLink.getOutwardIssue();
-					
+
 					for (Attachment attachment : linkedIssue.getAttachments()) {
 						logger.info("directly linked attachment" + attachment.toString());
+
+						JSON result = JiraHelper.getAttachmentAsJSON(attachment, getJiraClient());
+						logger.info("  content: " + result.toString());
+
 					}
-					
+
 					Issue issue1;
 					try {
-						issue1 = this.getIssue(null,  linkedIssue.getKey(), true);
-						logger.info("retrieved attachment for (true): " + issue1.toString() + ", attachments: " + issue1.getAttachments().toString());
+						issue1 = this.getIssue(null, linkedIssue.getKey(), true);
+						logger.info("retrieved attachment for (true): " + issue1.toString() + ", attachments: "
+								+ issue1.getAttachments().toString());
 					} catch (JiraException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 					Issue issue2;
 					try {
-						issue2 = this.getIssue(null,  linkedIssue.getKey(), false);
-						logger.info("retrieved attachment for (true): " + issue2.toString() + ", attachments: " + issue2.getAttachments().toString());
+						issue2 = this.getIssue(null, linkedIssue.getKey(), false);
+						logger.info("retrieved attachment for (true): " + issue2.toString() + ", attachments: "
+								+ issue2.getAttachments().toString());
 					} catch (JiraException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
-					
-					
+
 				}
 			}
-			
+
 			final Map<String, ProjectDetails> projectKeyToBranchBaseMap = projectDetailsCache.getAll(projectKeys);
 			for (Issue issue : tasks) {
 				final ProjectDetails projectDetails = projectKeyToBranchBaseMap.get(issue.getProject().getKey());
 				if (instanceConfiguration.isJiraProjectVisible(projectDetails.getProductCode())) {
 					AuthoringTask task = new AuthoringTask(issue, projectDetails.getBaseBranchPath());
 					allTasks.add(task);
-					//We only need to recover classification and validation statuses for task that are not new ie mature
+					// We only need to recover classification and validation
+					// statuses for task that are not new ie mature
 					if (task.getStatus() != TaskStatus.NEW) {
-						String latestClassificationJson = classificationService.getLatestClassification(task.getBranchPath());
+						String latestClassificationJson = classificationService
+								.getLatestClassification(task.getBranchPath());
 						timer.checkpoint("Recovering classification");
 						task.setLatestClassificationJson(latestClassificationJson);
 						task.setBranchState(branchService.getBranchStateOrNull(task.getBranchPath()));
 						timer.checkpoint("Recovering branch state");
 						startedTasks.put(task.getBranchPath(), task);
 					}
-					
+
 					// get the review message details and append to task
-					TaskMessagesDetail detail = reviewService.getTaskMessagesDetail(task.getProjectKey(), task.getKey(), username);
+					TaskMessagesDetail detail = reviewService.getTaskMessagesDetail(task.getProjectKey(), task.getKey(),
+							username);
 					task.setFeedbackMessagesStatus(detail.getTaskMessagesStatus());
 					task.setFeedbackMessageDate(detail.getLastMessageDate());
-					task.setViewDate(detail.getViewDate());			
+					task.setViewDate(detail.getViewDate());
 					timer.checkpoint("Recovering feedback messages");
-				
+
 				}
 			}
 
-			final ImmutableMap<String, String> validationStatuses = validationService.getValidationStatuses(startedTasks.keySet());
-			timer.checkpoint("Recovering " + (validationStatuses == null ? "null" : validationStatuses.size()) + " ValidationStatuses");
+			final ImmutableMap<String, String> validationStatuses = validationService
+					.getValidationStatuses(startedTasks.keySet());
+			timer.checkpoint("Recovering " + (validationStatuses == null ? "null" : validationStatuses.size())
+					+ " ValidationStatuses");
 
 			if (validationStatuses == null || validationStatuses.size() == 0) {
 				logger.error("Failed to recover validation statuses - check logs for reason");
@@ -510,8 +532,7 @@ public class TaskService {
 		}
 	}
 
-	public void addComment(String projectKey, String taskKey, String commentString)
-			throws JiraException {
+	public void addComment(String projectKey, String taskKey, String commentString) throws JiraException {
 		Issue issue = getIssue(projectKey, taskKey);
 		issue.addComment(commentString);
 		issue.update(); // Pick up new comment locally too
@@ -529,7 +550,8 @@ public class TaskService {
 		return projectKey + "/" + taskKey;
 	}
 
-	public AuthoringTask updateTask(String projectKey, String taskKey, AuthoringTaskUpdateRequest taskUpdateRequest) throws BusinessServiceException {
+	public AuthoringTask updateTask(String projectKey, String taskKey, AuthoringTaskUpdateRequest taskUpdateRequest)
+			throws BusinessServiceException {
 		try {
 			Issue issue = getIssue(projectKey, taskKey);
 			// Act on each field received
@@ -537,7 +559,7 @@ public class TaskService {
 
 			if (status != null) {
 				Status currentStatus = issue.getStatus();
-				//Don't attempt to transition to the same status
+				// Don't attempt to transition to the same status
 				if (!status.getLabel().equalsIgnoreCase(currentStatus.getName())) {
 					if (status == TaskStatus.UNKNOWN) {
 						throw new BadRequestException("Requested status is unknown.");
@@ -590,12 +612,14 @@ public class TaskService {
 
 			if (fieldUpdates) {
 				updateRequest.execute();
-				//If the JIRA update goes through, then we can move any UI-State over if required
+				// If the JIRA update goes through, then we can move any
+				// UI-State over if required
 				if (taskTransferRequest != null) {
 					try {
 						uiService.transferTask(projectKey, taskKey, taskTransferRequest);
 					} catch (BusinessServiceException e) {
-						logger.error("Unable to transfer UI State in " + taskKey + " from " + taskTransferRequest.getCurrentUser() + " to " + taskTransferRequest.getNewUser(), e);
+						logger.error("Unable to transfer UI State in " + taskKey + " from "
+								+ taskTransferRequest.getCurrentUser() + " to " + taskTransferRequest.getNewUser(), e);
 					}
 				}
 			}
@@ -624,17 +648,21 @@ public class TaskService {
 	}
 
 	/**
-	 * Returns the most recent Date/time of when the specified field changed to the specified value
+	 * Returns the most recent Date/time of when the specified field changed to
+	 * the specified value
 	 *
 	 * @throws BusinessServiceException
 	 */
-	public Date getDateOfChange(String projectKey, String taskKey, String fieldName, String newValue) throws JiraException, BusinessServiceException {
+	public Date getDateOfChange(String projectKey, String taskKey, String fieldName, String newValue)
+			throws JiraException, BusinessServiceException {
 
 		try {
-			//Recover the change log for the issue and work through it to find the change specified
+			// Recover the change log for the issue and work through it to find
+			// the change specified
 			ChangeLog changeLog = getIssue(projectKey, taskKey, true).getChangeLog();
 			if (changeLog != null) {
-				//Sort changeLog entries descending to get most recent change first
+				// Sort changeLog entries descending to get most recent change
+				// first
 				Collections.sort(changeLog.getEntries(), CHANGELOG_ID_COMPARATOR_DESC);
 				for (ChangeLogEntry entry : changeLog.getEntries()) {
 					Date thisChangeDate = entry.getCreated();
@@ -646,7 +674,8 @@ public class TaskService {
 				}
 			}
 		} catch (JiraException je) {
-			throw new BusinessServiceException("Failed to recover change log from task " + toString(projectKey, taskKey), je);
+			throw new BusinessServiceException(
+					"Failed to recover change log from task " + toString(projectKey, taskKey), je);
 		}
 		return null;
 	}
@@ -659,7 +688,8 @@ public class TaskService {
 		}
 	};
 
-	public boolean conditionalStateTransition(String projectKey, String taskKey, TaskStatus requiredState, TaskStatus newState) throws JiraException, BusinessServiceException {
+	public boolean conditionalStateTransition(String projectKey, String taskKey, TaskStatus requiredState,
+			TaskStatus newState) throws JiraException, BusinessServiceException {
 		final Issue issue = getIssue(projectKey, taskKey);
 		if (TaskStatus.fromLabel(issue.getStatus().getName()) == requiredState) {
 			stateTransition(issue, newState);
@@ -668,7 +698,8 @@ public class TaskService {
 		return false;
 	}
 
-	public void stateTransition(String projectKey, String taskKey, TaskStatus newState) throws JiraException, BusinessServiceException {
+	public void stateTransition(String projectKey, String taskKey, TaskStatus newState)
+			throws JiraException, BusinessServiceException {
 		stateTransition(getIssue(projectKey, taskKey), newState);
 	}
 
@@ -689,13 +720,15 @@ public class TaskService {
 		issue.refresh();
 	}
 
-	private Transition getTransitionToOrThrow(Issue issue, TaskStatus newState) throws JiraException, BusinessServiceException {
+	private Transition getTransitionToOrThrow(Issue issue, TaskStatus newState)
+			throws JiraException, BusinessServiceException {
 		for (Transition transition : issue.getTransitions()) {
 			if (transition.getToStatus().getName().equals(newState.getLabel())) {
 				return transition;
 			}
 		}
-		throw new ConflictException("Could not transition task " + issue.getKey() + " from status '" + issue.getStatus().getName() + "' to '" + newState.name() + "', no such transition is available.");
+		throw new ConflictException("Could not transition task " + issue.getKey() + " from status '"
+				+ issue.getStatus().getName() + "' to '" + newState.name() + "', no such transition is available.");
 	}
 
 }
