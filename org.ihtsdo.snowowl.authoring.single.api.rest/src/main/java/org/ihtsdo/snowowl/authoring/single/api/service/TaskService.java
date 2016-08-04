@@ -417,43 +417,51 @@ public class TaskService {
 		try {
 			// Map of task paths to tasks
 			Map<String, AuthoringTask> startedTasks = new HashMap<>();
+			
+			// map of JSON attachments by issue key
+			Map<String, List<JSON>> attachmentMap = new HashMap<>();
+			
 			Set<String> projectKeys = new HashSet<>();
 			for (Issue issue : tasks) {
 				projectKeys.add(issue.getProject().getKey());
 			}
 
-			// TODO Remove debug content
-			for (Issue issue : tasks) {
-				for (IssueLink issueLink : issue.getIssueLinks()) {
-					Issue linkedIssue = issueLink.getOutwardIssue();
+			// Only want to retrieve JSON attachments if single task retrieval
+			// TODO Get better check for this
+			if (tasks.size() == 1) {
 
-					for (Attachment attachment : linkedIssue.getAttachments()) {
-						logger.info("directly linked attachment" + attachment.toString());
+				for (Issue issue : tasks) {
+					for (IssueLink issueLink : issue.getIssueLinks()) {
+						Issue linkedIssue = issueLink.getOutwardIssue();
 
-						JSON result = JiraHelper.getAttachmentAsJSON(attachment, getJiraClient(), logger);
-						logger.info("  content: " + result.toString());
+						Issue issue1;
+						try {
+							issue1 = this.getIssue(null, linkedIssue.getKey(), true);
+							logger.info("retrieved attachment for (true): " + issue1.toString() + ", attachments: "
+									+ issue1.getAttachments().toString());
 
+							for (Attachment attachment : issue1.getAttachments()) {
+								logger.info("directly linked attachment" + attachment.toString());
+
+								JSON jsonAttachment = JiraHelper.getAttachmentAsJSON(attachment, getJiraClient(),
+										logger);
+								logger.info(attachment.toString() + ": " + jsonAttachment.toString());
+
+								// add to map
+								List<JSON> attachments = attachmentMap.get(issue.getKey());
+								if (attachments == null) {
+									attachments = new ArrayList<>();
+								}
+								attachments.add(jsonAttachment);
+								attachmentMap.put(issue.getKey(), attachments);
+
+							}
+
+						} catch (JiraException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
 					}
-
-					Issue issue1;
-					try {
-						issue1 = this.getIssue(null, linkedIssue.getKey(), true);
-						logger.info("retrieved attachment for (true): " + issue1.toString() + ", attachments: "
-								+ issue1.getAttachments().toString());
-					} catch (JiraException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-					Issue issue2;
-					try {
-						issue2 = this.getIssue(null, linkedIssue.getKey(), false);
-						logger.info("retrieved attachment for (true): " + issue2.toString() + ", attachments: "
-								+ issue2.getAttachments().toString());
-					} catch (JiraException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-
 				}
 			}
 
@@ -462,6 +470,9 @@ public class TaskService {
 				final ProjectDetails projectDetails = projectKeyToBranchBaseMap.get(issue.getProject().getKey());
 				if (instanceConfiguration.isJiraProjectVisible(projectDetails.getProductCode())) {
 					AuthoringTask task = new AuthoringTask(issue, projectDetails.getBaseBranchPath());
+					
+					// set the issue link attachments from the attachment map
+					task.setIssueLinkAttachments(attachmentMap.get(issue.getKey()).toString());
 					allTasks.add(task);
 					// We only need to recover classification and validation
 					// statuses for task that are not new ie mature
