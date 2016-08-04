@@ -430,7 +430,7 @@ public class TaskService {
 					for (Attachment attachment : linkedIssue.getAttachments()) {
 						logger.info("directly linked attachment" + attachment.toString());
 
-						JSON result = JiraHelper.getAttachmentAsJSON(attachment, getJiraClient());
+						JSON result = JiraHelper.getAttachmentAsJSON(attachment, getJiraClient(), logger);
 						logger.info("  content: " + result.toString());
 
 					}

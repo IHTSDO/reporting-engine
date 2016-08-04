@@ -92,20 +92,19 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 		
 		
 		// construct a JSON array of attachments from issue links
-		StringBuilder str = new StringBuilder();
-		str.append("[");
+		String str ="[";
+	
 		for (IssueLink issueLink : issue.getIssueLinks()) {
 			for(Attachment attachment : issueLink.getOutwardIssue().getAttachments()) {
-				try {
-					str.append(mapper.writeValueAsString(attachment));
-				} catch (JsonProcessingException e) {
-					str.append("{ " + attachment.getId() + ": 'failed to convert json'");
-				}
+				str += attachment.toString() + ",";
 			}
 		}
-		str.append("]");
+		if (str.toString().endsWith(",")) {
+			str = str.substring(0, str.length()-2);
+		}
+		str +="]";
 		issueLinkAttachments = str.toString();
-		
+		logger.info("issue link attachments: " + str);
 		
 		
 		// set the reviewer object

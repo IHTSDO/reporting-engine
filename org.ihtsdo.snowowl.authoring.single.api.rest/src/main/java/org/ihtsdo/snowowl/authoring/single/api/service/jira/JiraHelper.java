@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.rcarz.jiraclient.Attachment;
 import net.rcarz.jiraclient.JiraClient;
 import net.rcarz.jiraclient.JiraException;
@@ -40,14 +43,18 @@ public class JiraHelper {
 		}
 	}
 	
-	public static JSON getAttachmentAsJSON(Attachment attachment, JiraClient client) {
+	public static JSON getAttachmentAsJSON(Attachment attachment, JiraClient client, Logger logger) {
+		
 		try {
-			String fieldId = null;
+			
+			logger.info("Get attachment " + attachment.toString() + " " + attachment.getContentUrl());
+		
 			final RestClient restClient = client.getRestClient();
 			final JSON result = (JSONArray) restClient.get(attachment.getContentUrl());
 			return result;
 		} catch (IOException | URISyntaxException | RestException e) {
-			e.printStackTrace();
+			logger.info("  Failed " + e.getMessage());
+		
 			return null;
 		}
 	}
