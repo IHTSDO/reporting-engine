@@ -7,6 +7,8 @@ import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.EntityType;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.MergeRequest;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.Notification;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.b2international.snowowl.core.branch.Branch;
@@ -20,6 +22,8 @@ import net.rcarz.jiraclient.IssueLink;
 import net.rcarz.jiraclient.JiraException;
 
 public class BranchService {
+	
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	@Autowired
 	private IEventBus eventBus;
@@ -126,7 +130,7 @@ public class BranchService {
 			for (IssueLink link : promotedIssue.getIssueLinks()) {
 				
 				Issue issue = link.getOutwardIssue();
-				System.out.println("Found issue " + issue.getKey() + ", " + issue.getField("status"));
+				logger.info("Found issue " + issue.getKey() + ", " + issue.getField("status"));
 			}
 		}
 		

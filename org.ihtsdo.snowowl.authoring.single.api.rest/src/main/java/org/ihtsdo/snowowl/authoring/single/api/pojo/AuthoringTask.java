@@ -40,6 +40,7 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 	private String branchPath;
 	private String issueLinks;
 	private String labels;
+	private String attachments;
 
 	public AuthoringTask() {
 	}
@@ -73,6 +74,13 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 			labels = mapper.writeValueAsString(issue.getLabels());
 		} catch (JsonProcessingException e) {
 			labels = "Failed to convert Jira labels into json string";
+		}
+		
+		// set the attachments
+		try {
+			attachments = mapper.writeValueAsString(issue.getAttachments());
+		} catch(JsonProcessingException e) {
+			attachments = "Failed to convert attachments into json string";
 		}
 		
 		// set the reviewer object
@@ -241,5 +249,16 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 	public void setLabels(String labels) {
 		this.labels = labels;
 	}
+
+	@JsonRawValue
+	public String getAttachments() {
+		return attachments;
+	}
+
+	public void setAttachments(String attachments) {
+		this.attachments = attachments;
+	}
+	
+	
 
 }
