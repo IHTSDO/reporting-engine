@@ -48,6 +48,7 @@ import net.rcarz.jiraclient.ChangeLogEntry;
 import net.rcarz.jiraclient.ChangeLogItem;
 import net.rcarz.jiraclient.Field;
 import net.rcarz.jiraclient.Issue;
+import net.rcarz.jiraclient.IssueLink;
 import net.rcarz.jiraclient.JiraClient;
 import net.rcarz.jiraclient.JiraException;
 import net.rcarz.jiraclient.Project;
@@ -407,6 +408,32 @@ public class TaskService {
 			for (Issue issue : tasks) {
 				projectKeys.add(issue.getProject().getKey());
 			}
+			
+			// TODO Remove debug content
+			for (Issue issue : tasks) {
+				for (IssueLink issueLink : issue.getIssueLinks()) {
+					Issue linkedIssue = issueLink.getOutwardIssue();
+					Issue issue1;
+					try {
+						issue1 = this.getIssue(null,  linkedIssue.getKey(), true);
+						logger.info(issue1.toString());
+					} catch (JiraException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					Issue issue2;
+					try {
+						issue2 = this.getIssue(null,  linkedIssue.getKey(), false);
+						logger.info(issue2.toString());
+					} catch (JiraException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					
+					
+				}
+			}
+			
 			final Map<String, ProjectDetails> projectKeyToBranchBaseMap = projectDetailsCache.getAll(projectKeys);
 			for (Issue issue : tasks) {
 				final ProjectDetails projectDetails = projectKeyToBranchBaseMap.get(issue.getProject().getKey());
