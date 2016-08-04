@@ -115,15 +115,23 @@ public class BranchService {
 		List<Issue> promotedIssues = taskService.getTaskIssues(projectKey, TaskStatus.PROMOTED);
 		StopWatch stopwatch = new StopWatch();
 		stopwatch.start();
-		mergeBranch(branchPath, PathHelper.getParentPath(branchPath), mergeRequest.getSourceReviewId(), username);
-		stopwatch.stop();
-		taskService.stateTransition(promotedIssues, TaskStatus.COMPLETED);
+		
+		// TODO Temporarily disabled while handling CRS issues
+		// mergeBranch(branchPath, PathHelper.getParentPath(branchPath), mergeRequest.getSourceReviewId(), username);
+		
+		// taskService.stateTransition(promotedIssues, TaskStatus.COMPLETED);
 		
 		// for each CRS issue linked in the tasks, advance to Ready for Release
 		for (Issue issue : promotedIssues) {
 			for (IssueLink link : issue.getIssueLinks()) {
-				// TODO Decide how to handle the CRS Issues
-				//link.getOutwardIssue().transition().field(Field.STATUS, CRSTaskStatus.READY_FOR_RELEASE);
+				
+				// TODO Decide how to handle errors
+				try {
+					link.getOutwardIssue().transition().field(Field.STATUS, "READY_FOR_RELEASE");
+				} catch (JiraException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 		}
 		
