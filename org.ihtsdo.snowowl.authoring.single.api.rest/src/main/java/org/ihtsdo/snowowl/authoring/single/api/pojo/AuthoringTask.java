@@ -260,7 +260,7 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 		
 		String str = "[";
 		for (int i = 0; i < this.issueLinkAttachments.size(); i++) {
-			str += "\"" + this.issueLinkAttachments.get(i) + (i == this.issueLinkAttachments.size() - 1 ? "" : ",");
+			str += "\"" + this.issueLinkAttachments.get(i) + "\"" + (i == this.issueLinkAttachments.size() - 1 ? "" : ",");
 		}
 		str += "]";
 		
