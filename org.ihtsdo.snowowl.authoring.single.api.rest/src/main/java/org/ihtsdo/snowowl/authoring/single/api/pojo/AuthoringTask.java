@@ -82,31 +82,6 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 			labels = "Failed to convert Jira labels into json string";
 		}
 		
-		// set the attachments from linked issues
-		// TODO restore this to main issue attachments after testing
-		final Logger logger = LoggerFactory.getLogger(getClass());
-			attachments = issue.getAttachments().toString();
-			logger.info("authoring task attachments: " + attachments);
-			
-		
-		
-		
-		// construct a JSON array of attachments from issue links
-		String str ="[";
-	
-		for (IssueLink issueLink : issue.getIssueLinks()) {
-			for(Attachment attachment : issueLink.getOutwardIssue().getAttachments()) {
-				str += attachment.toString() + ",";
-			}
-		}
-		if (str.toString().endsWith(",")) {
-			str = str.substring(0, str.length()-2);
-		}
-		str +="]";
-		issueLinkAttachments = str.toString();
-		logger.info("issue link attachments: " + str);
-		
-		
 		// set the reviewer object
 		Object reviewerObj = issue.getField(jiraReviewerField);
 		if (reviewerObj != null && reviewerObj instanceof JSONObject) {
