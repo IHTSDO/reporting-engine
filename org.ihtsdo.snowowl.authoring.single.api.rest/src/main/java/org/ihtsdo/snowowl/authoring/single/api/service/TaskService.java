@@ -417,16 +417,17 @@ public class TaskService {
 		try {
 			// Map of task paths to tasks
 			Map<String, AuthoringTask> startedTasks = new HashMap<>();
-			
+
 			// map of JSON attachments by issue key
-			Map<String, List<JSON>> attachmentMap = new HashMap<>();
-			
+			Map<String, List<String>> attachmentMap = new HashMap<>();
+
 			Set<String> projectKeys = new HashSet<>();
 			for (Issue issue : tasks) {
 				projectKeys.add(issue.getProject().getKey());
 			}
 
 			// Only want to retrieve JSON attachments if single task retrieval
+			// (reduce number of calls)
 			// TODO Get better check for this
 			if (tasks.size() == 1) {
 
@@ -434,32 +435,24 @@ public class TaskService {
 					for (IssueLink issueLink : issue.getIssueLinks()) {
 						Issue linkedIssue = issueLink.getOutwardIssue();
 
+						// create list of attachment urls
+						List<String> attachmentUrls = new ArrayList<>();
+
 						Issue issue1;
 						try {
 							issue1 = this.getIssue(null, linkedIssue.getKey(), true);
-							logger.info("retrieved attachment for (true): " + issue1.toString() + ", attachments: "
-									+ issue1.getAttachments().toString());
 
+							// for each attachment, get the list of URLS and
+							// save
 							for (Attachment attachment : issue1.getAttachments()) {
-								logger.info("directly linked attachment" + attachment.toString());
-
-								JSON jsonAttachment = JiraHelper.getAttachmentAsJSON(attachment, getJiraClient(),
-										logger);
-								logger.info(attachment.toString() + ": " + jsonAttachment.toString());
-
-								// add to map
-								List<JSON> attachments = attachmentMap.get(issue.getKey());
-								if (attachments == null) {
-									attachments = new ArrayList<>();
-								}
-								attachments.add(jsonAttachment);
-								attachmentMap.put(issue.getKey(), attachments);
-
+								logger.info("attachment found on " + issue.getKey() + ": " + attachment.toString());
+								attachmentUrls.add(attachment.toString());
 							}
+							attachmentMap.put(issue.getKey(), attachmentUrls);
 
 						} catch (JiraException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
+							// TODO Decide error handling, don't want Jira to
+							// break task retrieval
 						}
 					}
 				}
@@ -470,7 +463,7 @@ public class TaskService {
 				final ProjectDetails projectDetails = projectKeyToBranchBaseMap.get(issue.getProject().getKey());
 				if (instanceConfiguration.isJiraProjectVisible(projectDetails.getProductCode())) {
 					AuthoringTask task = new AuthoringTask(issue, projectDetails.getBaseBranchPath());
-					
+
 					// set the issue link attachments from the attachment map
 					task.setIssueLinkAttachments(attachmentMap.get(issue.getKey()).toString());
 					allTasks.add(task);
