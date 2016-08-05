@@ -1,12 +1,11 @@
 package org.ihtsdo.snowowl.authoring.single.api.pojo;
 
 import java.util.Date;
+import java.util.List;
 
 import org.ihtsdo.snowowl.authoring.single.api.review.service.TaskMessagesStatus;
 import org.ihtsdo.snowowl.authoring.single.api.service.PathHelper;
 import org.ihtsdo.snowowl.authoring.single.api.service.TaskStatus;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.b2international.snowowl.core.branch.Branch;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -14,9 +13,7 @@ import com.fasterxml.jackson.annotation.JsonRawValue;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import net.rcarz.jiraclient.Attachment;
 import net.rcarz.jiraclient.Issue;
-import net.rcarz.jiraclient.IssueLink;
 import net.sf.json.JSONObject;
 
 public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskUpdateRequest {
@@ -43,7 +40,7 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 	private Date viewDate;
 	private String branchPath;
 	private String issueLinks;
-	private String issueLinkAttachments;
+	private List<String> issueLinkAttachments;
 	private String labels;
 	private String attachments;
 	
@@ -260,10 +257,19 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 
 	@JsonRawValue
 	public String getIssueLinkAttachments() {
-		return issueLinkAttachments;
+		
+		String str = "[";
+		for (int i = 0; i < this.issueLinkAttachments.size(); i++) {
+			str += "\"" + this.issueLinkAttachments + "\"," + (i == this.issueLinkAttachments.size() - 1 ? "" : ",");
+		}
+		str += "]";
+		
+		
+		return str;
 	}
 
-	public void setIssueLinkAttachments(String issueLinkAttachments) {
+	// TODO Bad practice here with getter/setter mismatch -- add transient for completeness
+	public void setIssueLinkAttachments(List<String> issueLinkAttachments) {
 		this.issueLinkAttachments = issueLinkAttachments;
 	}
 	
