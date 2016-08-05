@@ -121,9 +121,9 @@ public class BranchService {
 		stopwatch.start();
 		
 		// TODO Temporarily disabled while handling CRS issues
-		// mergeBranch(branchPath, PathHelper.getParentPath(branchPath), mergeRequest.getSourceReviewId(), username);
+		mergeBranch(branchPath, PathHelper.getParentPath(branchPath), mergeRequest.getSourceReviewId(), username);
 		
-		// taskService.stateTransition(promotedIssues, TaskStatus.COMPLETED);
+		taskService.stateTransition(promotedIssues, TaskStatus.COMPLETED);
 		
 		// for each CRS issue linked in the tasks, advance to Ready for Release
 		for (Issue promotedIssue : promotedIssues) {
