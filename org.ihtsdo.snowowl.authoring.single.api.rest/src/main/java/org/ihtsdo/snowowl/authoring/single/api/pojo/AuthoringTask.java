@@ -268,7 +268,7 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 		return str;
 	}
 
-	// TODO Bad practice here with getter/setter mismatch -- add transient for completeness
+	// TODO Bad practice here with getter/setter mismatch -- add XMLTransient getter for completeness
 	public void setIssueLinkAttachments(List<String> issueLinkAttachments) {
 		this.issueLinkAttachments = issueLinkAttachments;
 	}
