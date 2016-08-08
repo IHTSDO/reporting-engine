@@ -43,7 +43,6 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 	private List<String> issueLinkAttachments;
 	private String labels;
 	private String attachments;
-	
 
 	public AuthoringTask() {
 	}
@@ -255,26 +254,12 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 		this.attachments = attachments;
 	}
 
-	@JsonRawValue
-	public String getIssueLinkAttachments() {
-		
-		String str = "[";
-		for (int i = 0; i < this.issueLinkAttachments.size(); i++) {
-			str += "\"" + this.issueLinkAttachments.get(i) + "\"" + (i == this.issueLinkAttachments.size() - 1 ? "" : ",");
-		}
-		str += "]";
-		
-		
-		return str;
+	public List<String> getIssueLinkAttachments() {
+		return issueLinkAttachments;
 	}
 
 	// TODO Bad practice here with getter/setter mismatch -- add XMLTransient getter for completeness
 	public void setIssueLinkAttachments(List<String> issueLinkAttachments) {
 		this.issueLinkAttachments = issueLinkAttachments;
 	}
-	
-	
-	
-	
-
 }
