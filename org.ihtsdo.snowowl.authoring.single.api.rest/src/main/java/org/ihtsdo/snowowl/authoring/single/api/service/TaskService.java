@@ -465,7 +465,7 @@ public class TaskService {
 					AuthoringTask task = new AuthoringTask(issue, projectDetails.getBaseBranchPath());
 
 					// set the issue link attachments from the attachment map
-					task.setIssueLinkAttachments(attachmentMap.get(issue.getKey()));
+					task.addIssueLinkAttachmentUrlsForKey(issue.getKey(), attachmentMap.get(issue.getKey()));
 					allTasks.add(task);
 					// We only need to recover classification and validation
 					// statuses for task that are not new ie mature

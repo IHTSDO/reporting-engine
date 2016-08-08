@@ -14,6 +14,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import net.rcarz.jiraclient.Issue;
+import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
 public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskUpdateRequest {
@@ -40,7 +41,7 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 	private Date viewDate;
 	private String branchPath;
 	private String issueLinks;
-	private List<String> issueLinkAttachments;
+	private JSONObject issueLinkAttachments;
 	private String labels;
 	private String attachments;
 
@@ -59,6 +60,7 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 		}
 		created = (String) issue.getField(JIRA_CREATED_FIELD);
 		updated = (String) issue.getField(JIRA_UPDATED_FIELD);
+		issueLinkAttachments = new JSONObject();
 		
 
 		// declare the object mapper for JSON conversion
@@ -254,12 +256,21 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 		this.attachments = attachments;
 	}
 
-	public List<String> getIssueLinkAttachments() {
+	
+	public JSONObject getIssueLinkAttachments() {
 		return issueLinkAttachments;
 	}
-
-	// TODO Bad practice here with getter/setter mismatch -- add XMLTransient getter for completeness
-	public void setIssueLinkAttachments(List<String> issueLinkAttachments) {
+	
+	public void setIssueLinkAttachments(JSONObject issueLinkAttachments) {
 		this.issueLinkAttachments = issueLinkAttachments;
+	}
+
+	// Function to add a list of attachment urls by key value
+	public void addIssueLinkAttachmentUrlsForKey(String key, List<String> issueLinkUrls) {
+		JSONArray jsonArr = new JSONArray();
+		for (String url : issueLinkUrls) {
+			jsonArr.add(url);
+		}
+		this.issueLinkAttachments.put(key,  jsonArr);
 	}
 }
