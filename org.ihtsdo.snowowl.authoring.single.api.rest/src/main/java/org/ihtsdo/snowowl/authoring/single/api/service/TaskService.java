@@ -451,7 +451,7 @@ public class TaskService {
 							}
 							
 							// store the list in the linked issue map
-							attachmentMap.put(issue1.getKey(), attachmentUrls);
+							attachmentMap.put(issue1.getField("CRS-ID").toString(), attachmentUrls);
 
 						} catch (JiraException e) {
 							// TODO Decide error handling, don't want Jira to
