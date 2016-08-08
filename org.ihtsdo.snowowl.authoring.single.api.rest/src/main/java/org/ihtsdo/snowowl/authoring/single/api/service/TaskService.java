@@ -450,8 +450,14 @@ public class TaskService {
 								attachmentUrls.add(attachment.toString());
 							}
 							
+							String crsId = issue1.getField("customfield_10203").toString();
+							if (crsId == null) {
+								crsId = "Unknown";
+							}
+							
+							
 							// store the list in the linked issue map
-							attachmentMap.put(issue1.getField("CRS-ID").toString(), attachmentUrls);
+							attachmentMap.put(crsId, attachmentUrls);
 
 						} catch (JiraException e) {
 							// TODO Decide error handling, don't want Jira to
