@@ -418,13 +418,14 @@ public class TaskService {
 			// Map of task paths to tasks
 			Map<String, AuthoringTask> startedTasks = new HashMap<>();
 
-			// map of JSON attachments by issue key
-			Map<String, List<String>> attachmentMap = new HashMap<>();
 
 			Set<String> projectKeys = new HashSet<>();
 			for (Issue issue : tasks) {
 				projectKeys.add(issue.getProject().getKey());
 			}
+			
+			// map of JSON attachments by linked issue key
+			Map<String, List<String>> attachmentMap = new HashMap<>();
 
 			// Only want to retrieve JSON attachments if single task retrieval
 			// (reduce number of calls)
@@ -435,20 +436,22 @@ public class TaskService {
 					for (IssueLink issueLink : issue.getIssueLinks()) {
 						Issue linkedIssue = issueLink.getOutwardIssue();
 
-						// create list of attachment urls
+						// create list of attachment urls for this linked issue
 						List<String> attachmentUrls = new ArrayList<>();
 
 						Issue issue1;
 						try {
+							// need to forcibly retrieve the issue in order to get attachments
 							issue1 = this.getIssue(null, linkedIssue.getKey(), true);
 
-							// for each attachment, get the list of URLS and
-							// save
+							// add url of each attachment
 							for (Attachment attachment : issue1.getAttachments()) {
-								logger.info("attachment found on " + issue.getKey() + ": " + attachment.toString());
+								logger.info("attachment found on " + issue1.getKey() + ": " + attachment.toString());
 								attachmentUrls.add(attachment.toString());
 							}
-							attachmentMap.put(issue.getKey(), attachmentUrls);
+							
+							// store the list in the linked issue map
+							attachmentMap.put(issue1.getKey(), attachmentUrls);
 
 						} catch (JiraException e) {
 							// TODO Decide error handling, don't want Jira to
@@ -465,7 +468,11 @@ public class TaskService {
 					AuthoringTask task = new AuthoringTask(issue, projectDetails.getBaseBranchPath());
 
 					// set the issue link attachments from the attachment map
-					task.addIssueLinkAttachmentUrlsForKey(issue.getKey(), attachmentMap.get(issue.getKey()));
+					for (String key : attachmentMap.keySet()) {
+						logger.info("adding attachments for " + key + ": " + attachmentMap.get(key));
+						task.addIssueLinkAttachmentUrlsForKey(key, attachmentMap.get(key));
+					}
+					
 					allTasks.add(task);
 					// We only need to recover classification and validation
 					// statuses for task that are not new ie mature
