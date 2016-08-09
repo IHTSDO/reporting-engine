@@ -1,6 +1,11 @@
 package org.ihtsdo.snowowl.authoring.single.api.service;
 
+import java.util.ArrayList;
 import java.util.List;
+
+import net.rcarz.jiraclient.Issue;
+import net.rcarz.jiraclient.IssueLink;
+import net.rcarz.jiraclient.JiraException;
 
 import org.apache.commons.lang.time.StopWatch;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
@@ -11,15 +16,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import com.b2international.snowowl.core.Metadata;
 import com.b2international.snowowl.core.branch.Branch;
 import com.b2international.snowowl.core.exceptions.NotFoundException;
 import com.b2international.snowowl.eventbus.IEventBus;
 import com.b2international.snowowl.snomed.datastore.server.request.SnomedRequests;
-
-import net.rcarz.jiraclient.Field;
-import net.rcarz.jiraclient.Issue;
-import net.rcarz.jiraclient.IssueLink;
-import net.rcarz.jiraclient.JiraException;
+import com.google.common.collect.Lists;
 
 public class BranchService {
 	
@@ -153,6 +155,37 @@ public class BranchService {
 				.setReviewId(reviewId)
 				.build()
 				.executeSync(eventBus);
+	}
+	
+	public Metadata getBranchMetadataIncludeInherited(String path) {
+		Metadata mergedMetadata = null;
+		List<String> stackPaths = getBranchPathStack(path);
+		for (String stackPath : stackPaths) {
+			final Branch branch = getBranch(stackPath);
+			final Metadata metadata = branch.metadata();
+			if (mergedMetadata == null) {
+				mergedMetadata = metadata;
+			} else {
+				// merge metadata
+				for (String key : metadata.keySet()) {
+					if (!key.equals("lock") || stackPath.equals(path)) { // Only copy lock info from the deepest branch
+						mergedMetadata.put(key, metadata.get(key));
+					}
+				}
+			}
+		}
+		return mergedMetadata;
+	}
+	
+	private List<String> getBranchPathStack(String path) {
+		List<String> paths = new ArrayList<>();
+		paths.add(path);
+		int index;
+		while ((index = path.lastIndexOf("/")) != -1) {
+			path = path.substring(0, index);
+			paths.add(path);
+		}
+		return Lists.reverse(paths);
 	}
 
 }
