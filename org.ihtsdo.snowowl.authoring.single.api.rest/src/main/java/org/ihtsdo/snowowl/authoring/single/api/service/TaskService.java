@@ -792,15 +792,18 @@ public class TaskService {
 						response = client.getRestClient().get(attachment.getContentUrl());
 						attachments.add(response.toString());
 					} catch (RestException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+						throw new BusinessServiceException(
+								"RE Failed to retrieve JSON directly " + toString(projectKey, taskKey), e);
+
 					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					} catch (URISyntaxException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
+						throw new BusinessServiceException(
+								"IO Failed to retrieve JSON directly " + toString(projectKey, taskKey), e);
+
+				} catch (URISyntaxException e) {
+					throw new BusinessServiceException(
+							"URI Failed to retrieve JSON directly " + toString(projectKey, taskKey), e);
+
+			}
 		        	
 					
 				}
@@ -813,7 +816,6 @@ public class TaskService {
 			throw new BusinessServiceException("Failed to retrieve task " + toString(projectKey, taskKey), e);
 		}
 	
-		logger.info("attachments: " + attachments.toString());
 		return attachments;
 	}
 
