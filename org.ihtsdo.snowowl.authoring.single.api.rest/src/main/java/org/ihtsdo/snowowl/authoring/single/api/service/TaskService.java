@@ -799,13 +799,14 @@ public class TaskService {
 					
 					JSON jsonResponse;
 					try {
-						jsonResponse = client.get(attachment.getContentUrl(), params);
+						jsonResponse = client.get(attachment.getContentUrl().substring(0, attachment.getContentUrl().lastIndexOf("/")), params);
 				        attachments.add(jsonResponse.toString());
 				
 					} catch (Exception e) {
-						logger.info("RestClient Exception: " + e.getMessage());
+						
+						attachments.add("RestClient Exception: " + e.getMessage());
 					}
-					
+				
 								
 				
 					
