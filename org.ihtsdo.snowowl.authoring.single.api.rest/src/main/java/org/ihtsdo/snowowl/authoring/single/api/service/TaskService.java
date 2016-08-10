@@ -748,4 +748,44 @@ public class TaskService {
 				+ issue.getStatus().getName() + "' to '" + newState.name() + "', no such transition is available.");
 	}
 
+	public List<String> getTaskAttachments(String projectKey, String taskKey) throws BusinessServiceException {
+		
+		List<String> attachments = new ArrayList<>();
+	
+		try {
+			Issue issue = getIssue(projectKey, taskKey);
+			
+			logger.info("issue " + issue.toString());
+			
+			
+			for (IssueLink issueLink : issue.getIssueLinks()) {
+				
+				logger.info("issue link " + issueLink.toString());
+				
+				Issue linkedIssue = issueLink.getOutwardIssue();
+				
+				logger.info("linked issue " + linkedIssue.toString());
+				
+				for (Attachment attachment : linkedIssue.getAttachments()) {
+					
+					logger.info("attachment " + attachment.toString());
+					
+					byte[] attachmentAsBytes = attachment.download();
+					String attachmentAsString = new String(attachmentAsBytes);
+					logger.info("attachment download: " + attachmentAsString);
+					attachments.add(attachmentAsString);
+				}
+				
+			}
+		} catch (JiraException e) {
+			if (e.getCause() instanceof RestException && ((RestException) e.getCause()).getHttpStatusCode() == 404) {
+				throw new ResourceNotFoundException("Task not found " + toString(projectKey, taskKey), e);
+			}
+			throw new BusinessServiceException("Failed to retrieve task " + toString(projectKey, taskKey), e);
+		}
+	
+		logger.info("attachments: " + attachments.toString());
+		return attachments;
+	}
+
 }

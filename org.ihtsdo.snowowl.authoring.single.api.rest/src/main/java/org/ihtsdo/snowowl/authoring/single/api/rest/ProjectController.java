@@ -103,5 +103,12 @@ public class ProjectController extends AbstractSnomedRestService {
 	public AuthoringTask updateTask(@PathVariable final String projectKey, @PathVariable final String taskKey,  @RequestBody final AuthoringTaskUpdateRequest updatedTask) throws BusinessServiceException {
 		return taskService.updateTask(projectKey, taskKey, updatedTask);
 	}
+	
+	@ApiOperation(value = "Update a Task")
+	@ApiResponses({ @ApiResponse(code = 200, message = "OK") })
+	@RequestMapping(value = "/projects/{projectKey}/tasks/{taskKey}", method = RequestMethod.PUT)
+	public List<String> getAttachmentsForTask(@PathVariable final String projectKey, @PathVariable final String taskKey) throws BusinessServiceException {
+		return taskService.getTaskAttachments(projectKey, taskKey);
+	}
 
 }
