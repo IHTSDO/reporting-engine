@@ -1,7 +1,8 @@
 package org.ihtsdo.snowowl.authoring.single.api.service;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.net.URISyntaxException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -16,7 +17,10 @@ import java.util.concurrent.ExecutionException;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.log4j.Level;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
@@ -62,7 +66,6 @@ import net.rcarz.jiraclient.RestException;
 import net.rcarz.jiraclient.Status;
 import net.rcarz.jiraclient.Transition;
 import net.rcarz.jiraclient.User;
-import net.sf.json.JSON;
 
 public class TaskService {
 
@@ -785,31 +788,41 @@ public class TaskService {
 					String attachmentAsString = new String(attachmentAsBytes);
 					attachments.add(attachmentAsString);
 					
-					JiraClient client = getJiraClient();
+					HttpClient client = getJiraClient().getRestClient().getHttpClient();
+					HttpUriRequest request = new HttpGet(attachment.getContentUrl());
+					request.setHeader("Accept", "Accept:text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
+					request.setHeader("Upgrade-Insecure-Requests", "1");
+					request.setHeader("Accept-Encoding", "gzip, deflate, sdch, br");
 					
-				
-					
-				
-					//
-					// 
-		        	JSON response;
+					ByteArrayOutputStream bs = new ByteArrayOutputStream();
 					try {
+						HttpResponse response = client.execute(request);
+						logger.info(" response: " + response.getStatusLine().toString());
 						
-						response = client.getRestClient().get(attachment.getContentUrl());
-						attachments.add(response.toString());
-					} catch (RestException e) {
-						throw new BusinessServiceException(
-								"RestException " + e.getMessage() + ": " + e.getHttpResult() + " " + toString(projectKey, taskKey));
+						HttpEntity entity = response.getEntity();
+						
+						if (entity != null) {
+							InputStream is = entity.getContent();
+							 int iter = is.read();
+							while (iter > -1) {
+			        	        bs.write(iter);
+			        	        iter = is.read();
+			        	    }
+			        	    bs.flush();
+			        	    attachments.add(new String(bs.toByteArray()));
+						} else {
+							logger.info(" NO ENTITY");
+						}
 
+						
+					} catch (ClientProtocolException e) {
+						logger.info("ClientProtocolException: " + e.getMessage() + ": " + e.getCause());
 					} catch (IOException e) {
-						throw new BusinessServiceException(
-								"IOException " + e.getMessage() + ": " + toString(projectKey, taskKey), e);
-
-				} catch (URISyntaxException e) {
-					throw new BusinessServiceException(
-							"RestException " + e.getMessage() + ": " + toString(projectKey, taskKey), e);
-
-			}
+						logger.info("IOException: " + e.getMessage() + ": " + e.getCause());
+					}
+				
+					
+				
 		        	
 					
 				}
