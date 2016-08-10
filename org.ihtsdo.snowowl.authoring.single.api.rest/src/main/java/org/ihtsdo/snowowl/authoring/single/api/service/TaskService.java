@@ -3,6 +3,7 @@ package org.ihtsdo.snowowl.authoring.single.api.service;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -18,9 +19,6 @@ import java.util.concurrent.ExecutionException;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.log4j.Level;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
@@ -62,10 +60,12 @@ import net.rcarz.jiraclient.IssueLink;
 import net.rcarz.jiraclient.JiraClient;
 import net.rcarz.jiraclient.JiraException;
 import net.rcarz.jiraclient.Project;
+import net.rcarz.jiraclient.RestClient;
 import net.rcarz.jiraclient.RestException;
 import net.rcarz.jiraclient.Status;
 import net.rcarz.jiraclient.Transition;
 import net.rcarz.jiraclient.User;
+import net.sf.json.JSON;
 
 public class TaskService {
 
@@ -782,44 +782,31 @@ public class TaskService {
 					
 					logger.info("      attachment url:" + attachment.getContentUrl().toString() + " with size " + attachment.getSize());
 					
-					
+					// rcarz attachment download via http client
 					byte[] attachmentAsBytes = attachment.download();
 					logger.info("      attachment downloaded size: " + attachmentAsBytes.length);
 					String attachmentAsString = new String(attachmentAsBytes);
 					attachments.add(attachmentAsString);
 					
-					HttpClient client = getJiraClient().getRestClient().getHttpClient();
-					HttpUriRequest request = new HttpGet(attachment.getContentUrl());
-					request.setHeader("Accept", "Accept:text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
-					request.setHeader("Upgrade-Insecure-Requests", "1");
-					request.setHeader("Accept-Encoding", "gzip, deflate, sdch, br");
+					// rest client download
+					RestClient client = getJiraClient().getRestClient();
+					Map<String, String> params = new HashMap<>();
+				
+					// header values taken from successful browser retrieval requests
+					params.put("Accept", "Accept:text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
+					params.put("Upgrade-Insecure-Requests", "1");
+					params.put("Accept-Encoding", "gzip, deflate, sdch, br");
 					
-					ByteArrayOutputStream bs = new ByteArrayOutputStream();
+					JSON jsonResponse;
 					try {
-						HttpResponse response = client.execute(request);
-						logger.info(" response: " + response.getStatusLine().toString());
-						
-						HttpEntity entity = response.getEntity();
-						
-						if (entity != null) {
-							InputStream is = entity.getContent();
-							 int iter = is.read();
-							while (iter > -1) {
-			        	        bs.write(iter);
-			        	        iter = is.read();
-			        	    }
-			        	    bs.flush();
-			        	    attachments.add(new String(bs.toByteArray()));
-						} else {
-							logger.info(" NO ENTITY");
-						}
-
-						
-					} catch (ClientProtocolException e) {
-						logger.info("ClientProtocolException: " + e.getMessage() + ": " + e.getCause());
-					} catch (IOException e) {
-						logger.info("IOException: " + e.getMessage() + ": " + e.getCause());
+						jsonResponse = client.get(attachment.getContentUrl(), params);
+				        attachments.add(jsonResponse.toString());
+				
+					} catch (Exception e) {
+						logger.info("RestClient Exception: " + e.getMessage());
 					}
+					
+								
 				
 					
 				
