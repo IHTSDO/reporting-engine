@@ -446,7 +446,6 @@ public class TaskService {
 
 							// add url of each attachment
 							for (Attachment attachment : issue1.getAttachments()) {
-								logger.info("attachment found on " + issue1.getKey() + ": " + attachment.toString());
 								attachmentUrls.add(attachment.toString());
 							}
 							
@@ -755,24 +754,28 @@ public class TaskService {
 		try {
 			Issue issue = getIssue(projectKey, taskKey);
 			
-			logger.info("issue " + issue.toString());
+			logger.info("issue: " + issue.toString());
 			
 			
 			for (IssueLink issueLink : issue.getIssueLinks()) {
 				
-				logger.info("issue link " + issueLink.toString());
-				
 				Issue linkedIssue = issueLink.getOutwardIssue();
 				
-				logger.info("linked issue " + linkedIssue.toString());
+				logger.info("  linked issue: " + linkedIssue.toString());
+				logger.info("  - " + linkedIssue.getDescription());
+				logger.info("  - " + linkedIssue.getSummary());
+				logger.info("  - " + linkedIssue.getUrl());
+				logger.info("  - " + linkedIssue.getAttachments().size() + " attachments");
 				
 				for (Attachment attachment : linkedIssue.getAttachments()) {
 					
-					logger.info("attachment " + attachment.toString());
+					logger.info("      attachment:" + attachment.toString() + " with size " + attachment.getSize());
+					
 					
 					byte[] attachmentAsBytes = attachment.download();
+					logger.info("      attachment downloaded size: " + attachmentAsBytes.length);
 					String attachmentAsString = new String(attachmentAsBytes);
-					logger.info("attachment download: " + attachmentAsString);
+					logger.info("      attachment download string: " + attachmentAsString);
 					attachments.add(attachmentAsString);
 				}
 				
