@@ -799,7 +799,7 @@ public class TaskService {
 						attachments.add(response.toString());
 					} catch (RestException e) {
 						throw new BusinessServiceException(
-								"RestException " + e.getMessage() + ": " + toString(projectKey, taskKey));
+								"RestException " + e.getMessage() + ": " + e.getHttpResult() + " " + toString(projectKey, taskKey));
 
 					} catch (IOException e) {
 						throw new BusinessServiceException(
