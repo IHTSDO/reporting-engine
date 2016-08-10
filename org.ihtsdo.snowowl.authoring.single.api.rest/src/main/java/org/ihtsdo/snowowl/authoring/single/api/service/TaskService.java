@@ -1,9 +1,5 @@
 package org.ihtsdo.snowowl.authoring.single.api.service;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -16,9 +12,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.ClientProtocolException;
 import org.apache.log4j.Level;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
@@ -755,10 +748,11 @@ public class TaskService {
 				+ issue.getStatus().getName() + "' to '" + newState.name() + "', no such transition is available.");
 	}
 
-	public List<String> getTaskAttachments(String projectKey, String taskKey) throws BusinessServiceException {
+	public List<JSON> getTaskAttachments(String projectKey, String taskKey) throws BusinessServiceException {
 		
-		List<String> attachments = new ArrayList<>();
-	
+		List<JSON> attachments = new ArrayList<>();
+		final RestClient restClient = getJiraClient().getRestClient();
+		
 		try {
 			Issue issue = getIssue(projectKey, taskKey);
 			
@@ -779,42 +773,19 @@ public class TaskService {
 				logger.info("  - " + issue1.getAttachments().size() + " attachments");
 				
 				for (Attachment attachment : issue1.getAttachments()) {
-					
-					logger.info("      attachment url:" + attachment.getContentUrl().toString() + " with size " + attachment.getSize());
-					
-					// rcarz attachment download via http client
-					byte[] attachmentAsBytes = attachment.download();
-					logger.info("      attachment downloaded size: " + attachmentAsBytes.length);
-					String attachmentAsString = new String(attachmentAsBytes);
-					attachments.add(attachmentAsString);
-					
-					// rest client download
-					RestClient client = getJiraClient().getRestClient();
-					Map<String, String> params = new HashMap<>();
-				
-					// header values taken from successful browser retrieval requests
-					params.put("Accept", "Accept:text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
-					params.put("Upgrade-Insecure-Requests", "1");
-					params.put("Accept-Encoding", "gzip, deflate, sdch, br");
-					
-					JSON jsonResponse;
-					try {
-						jsonResponse = client.get(attachment.getContentUrl().substring(0, attachment.getContentUrl().lastIndexOf("/")), params);
-				        attachments.add(jsonResponse.toString());
-				
-					} catch (Exception e) {
 						
-						attachments.add("RestClient Exception: " + e.getMessage());
+					// attachments must be retrieved by relative path -- absolute path will redirect to login
+					final String absolutePath = attachment.getContentUrl();
+					final String relativePath = absolutePath.substring(absolutePath.indexOf("secure"));
+					
+					try {
+						final JSON jsonResponse = restClient.get(relativePath);
+						attachments.add(jsonResponse);
+		
+					} catch (Exception e) {
+						throw new BusinessServiceException("Failed to retrieve attachment " + relativePath);
 					}
-				
-								
-				
-					
-				
-		        	
-					
-				}
-				
+				}	
 			}
 		} catch (JiraException e) {
 			if (e.getCause() instanceof RestException && ((RestException) e.getCause()).getHttpStatusCode() == 404) {
@@ -822,6 +793,7 @@ public class TaskService {
 			}
 			throw new BusinessServiceException("Failed to retrieve task " + toString(projectKey, taskKey), e);
 		}
+		
 	
 		return attachments;
 	}
