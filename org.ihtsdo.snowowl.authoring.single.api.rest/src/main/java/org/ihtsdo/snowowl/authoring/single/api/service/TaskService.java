@@ -1,5 +1,7 @@
 package org.ihtsdo.snowowl.authoring.single.api.service;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -12,6 +14,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.log4j.Level;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
@@ -772,14 +777,32 @@ public class TaskService {
 				
 				for (Attachment attachment : issue1.getAttachments()) {
 					
-					logger.info("      attachment:" + attachment.toString() + " with size " + attachment.getSize());
+					logger.info("      attachment url:" + attachment.getContentUrl().toString() + " with size " + attachment.getSize());
 					
 					
 					byte[] attachmentAsBytes = attachment.download();
 					logger.info("      attachment downloaded size: " + attachmentAsBytes.length);
 					String attachmentAsString = new String(attachmentAsBytes);
-					logger.info("      attachment download string: " + attachmentAsString);
 					attachments.add(attachmentAsString);
+					
+					JiraClient client = getJiraClient();
+					
+		        	JSON response;
+					try {
+						response = client.getRestClient().get(attachment.getContentUrl());
+						attachments.add(response.toString());
+					} catch (RestException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (URISyntaxException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+		        	
+					
 				}
 				
 			}
