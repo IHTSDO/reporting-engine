@@ -474,7 +474,7 @@ public class TaskService {
 
 					// set the issue link attachments from the attachment map
 					for (String key : attachmentMap.keySet()) {
-						logger.info("adding attachments for " + key + ": " + attachmentMap.get(key));
+					//	logger.info("adding attachments for " + key + ": " + attachmentMap.get(key));
 						task.addIssueLinkAttachmentUrlsForKey(key, attachmentMap.get(key));
 					}
 					
@@ -770,7 +770,7 @@ public class TaskService {
 				logger.info("  - " + linkedIssue.getUrl());
 				logger.info("  - " + linkedIssue.getAttachments().size() + " attachments");
 				
-				for (Attachment attachment : linkedIssue.getAttachments()) {
+				for (Attachment attachment : issue1.getAttachments()) {
 					
 					logger.info("      attachment:" + attachment.toString() + " with size " + attachment.getSize());
 					
