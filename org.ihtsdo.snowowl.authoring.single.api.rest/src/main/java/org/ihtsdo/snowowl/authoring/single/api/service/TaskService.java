@@ -770,10 +770,10 @@ public class TaskService {
 				Issue issue1 = this.getIssue(null, linkedIssue.getKey(), true);
 				
 				logger.info("  linked issue: " + linkedIssue.toString());
-				logger.info("  - " + linkedIssue.getDescription());
-				logger.info("  - " + linkedIssue.getSummary());
-				logger.info("  - " + linkedIssue.getUrl());
-				logger.info("  - " + linkedIssue.getAttachments().size() + " attachments");
+				logger.info("  - " + issue1.getDescription());
+				logger.info("  - " + issue1.getSummary());
+				logger.info("  - " + issue1.getUrl());
+				logger.info("  - " + issue1.getAttachments().size() + " attachments");
 				
 				for (Attachment attachment : issue1.getAttachments()) {
 					
@@ -787,21 +787,27 @@ public class TaskService {
 					
 					JiraClient client = getJiraClient();
 					
+				
+					
+				
+					//
+					// 
 		        	JSON response;
 					try {
+						
 						response = client.getRestClient().get(attachment.getContentUrl());
 						attachments.add(response.toString());
 					} catch (RestException e) {
-						throw new BusinessServiceException(
-								"RE Failed to retrieve JSON directly " + toString(projectKey, taskKey), e);
+						logger.info(
+								"RestException retrieving attachment " + e.getMessage() + ": " + toString(projectKey, taskKey));
 
 					} catch (IOException e) {
 						throw new BusinessServiceException(
-								"IO Failed to retrieve JSON directly " + toString(projectKey, taskKey), e);
+								"IOException " + e.getMessage() + ": " + toString(projectKey, taskKey), e);
 
 				} catch (URISyntaxException e) {
 					throw new BusinessServiceException(
-							"URI Failed to retrieve JSON directly " + toString(projectKey, taskKey), e);
+							"RestException " + e.getMessage() + ": " + toString(projectKey, taskKey), e);
 
 			}
 		        	
