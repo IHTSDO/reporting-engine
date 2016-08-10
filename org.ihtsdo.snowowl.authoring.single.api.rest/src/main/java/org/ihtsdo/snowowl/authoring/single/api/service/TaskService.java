@@ -761,6 +761,9 @@ public class TaskService {
 				
 				Issue linkedIssue = issueLink.getOutwardIssue();
 				
+				// need to forcibly retrieve the issue in order to get attachments
+				Issue issue1 = this.getIssue(null, linkedIssue.getKey(), true);
+				
 				logger.info("  linked issue: " + linkedIssue.toString());
 				logger.info("  - " + linkedIssue.getDescription());
 				logger.info("  - " + linkedIssue.getSummary());

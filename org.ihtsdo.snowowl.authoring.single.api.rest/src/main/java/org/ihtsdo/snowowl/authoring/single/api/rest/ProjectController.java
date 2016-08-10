@@ -106,7 +106,7 @@ public class ProjectController extends AbstractSnomedRestService {
 	
 	@ApiOperation(value = "Retrieve task attachments")
 	@ApiResponses({ @ApiResponse(code = 200, message = "OK") })
-	@RequestMapping(value = "/projects/{projectKey}/tasks/{taskKey}/attachments", method = RequestMethod.PUT)
+	@RequestMapping(value = "/projects/{projectKey}/tasks/{taskKey}/attachments", method = RequestMethod.GET)
 	public List<String> getAttachmentsForTask(@PathVariable final String projectKey, @PathVariable final String taskKey) throws BusinessServiceException {
 		return taskService.getTaskAttachments(projectKey, taskKey);
 	}
