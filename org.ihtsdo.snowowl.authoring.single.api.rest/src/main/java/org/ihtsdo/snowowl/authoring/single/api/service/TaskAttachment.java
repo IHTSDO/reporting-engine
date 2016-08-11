@@ -1,5 +1,7 @@
 package org.ihtsdo.snowowl.authoring.single.api.service;
 
+import com.fasterxml.jackson.annotation.JsonRawValue;
+
 public class TaskAttachment {
 
 	public String content;
@@ -12,6 +14,7 @@ public class TaskAttachment {
 		this.issueKey = issueKey;
 	}
 	
+	@JsonRawValue
 	public String getContent() {
 		return content;
 	}
