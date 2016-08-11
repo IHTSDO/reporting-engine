@@ -791,10 +791,16 @@ public class TaskService {
 					try {
 						final String contentUrl = attachment.getContentUrl();
 						final JSON attachmentJson = restClient.get(contentUrl.substring(contentUrl.indexOf("secure")));
+						
+						logger.info("attachmentJson successfully retrieved");
+					
 						ObjectMapper mapper = new ObjectMapper();
 						mapper.setSerializationInclusion(Include.NON_NULL);
 						TaskAttachment taskAttachment = new TaskAttachment(crsId,
 								mapper.writeValueAsString(attachmentJson));
+						
+						logger.info("taskAttachment successfully created");
+						
 						attachments.add(taskAttachment);
 
 					} catch (Exception e) {
