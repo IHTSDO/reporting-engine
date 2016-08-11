@@ -37,6 +37,8 @@ import com.b2international.snowowl.core.branch.Branch;
 import com.b2international.snowowl.core.exceptions.BadRequestException;
 import com.b2international.snowowl.core.exceptions.ConflictException;
 import com.b2international.snowowl.core.exceptions.NotFoundException;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -748,9 +750,9 @@ public class TaskService {
 				+ issue.getStatus().getName() + "' to '" + newState.name() + "', no such transition is available.");
 	}
 
-	public List<JSON> getTaskAttachments(String projectKey, String taskKey) throws BusinessServiceException {
+	public List<String> getTaskAttachments(String projectKey, String taskKey) throws BusinessServiceException {
 		
-		List<JSON> attachments = new ArrayList<>();
+		List<String> attachments = new ArrayList<>();
 		final RestClient restClient = getJiraClient().getRestClient();
 		
 		try {
@@ -780,7 +782,9 @@ public class TaskService {
 					
 					try {
 						final JSON jsonResponse = restClient.get(relativePath);
-						attachments.add(jsonResponse);
+						ObjectMapper mapper = new ObjectMapper();
+						mapper.setSerializationInclusion(Include.NON_NULL);
+						attachments.add(mapper.writeValueAsString(jsonResponse));
 		
 					} catch (Exception e) {
 						throw new BusinessServiceException("Failed to retrieve attachment " + relativePath);
