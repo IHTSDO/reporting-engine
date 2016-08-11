@@ -750,9 +750,9 @@ public class TaskService {
 				+ issue.getStatus().getName() + "' to '" + newState.name() + "', no such transition is available.");
 	}
 
-	public List<String> getTaskAttachments(String projectKey, String taskKey) throws BusinessServiceException {
+	public List<TaskAttachment> getTaskAttachments(String projectKey, String taskKey) throws BusinessServiceException {
 		
-		List<String> attachments = new ArrayList<>();
+		List<TaskAttachment> attachments = new ArrayList<>();
 		final RestClient restClient = getJiraClient().getRestClient();
 		
 		try {
@@ -784,7 +784,8 @@ public class TaskService {
 						final JSON jsonResponse = restClient.get(relativePath);
 						ObjectMapper mapper = new ObjectMapper();
 						mapper.setSerializationInclusion(Include.NON_NULL);
-						attachments.add(mapper.writeValueAsString(jsonResponse));
+						TaskAttachment taskAttachment = new TaskAttachment(issue1.getKey(), mapper.writeValueAsString(jsonResponse));
+						attachments.add(taskAttachment);
 		
 					} catch (Exception e) {
 						throw new BusinessServiceException("Failed to retrieve attachment " + relativePath);
