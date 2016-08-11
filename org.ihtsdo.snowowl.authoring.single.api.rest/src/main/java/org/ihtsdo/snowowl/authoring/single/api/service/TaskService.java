@@ -751,47 +751,57 @@ public class TaskService {
 	}
 
 	public List<TaskAttachment> getTaskAttachments(String projectKey, String taskKey) throws BusinessServiceException {
-		
+
 		List<TaskAttachment> attachments = new ArrayList<>();
 		final RestClient restClient = getJiraClient().getRestClient();
-		
+
 		try {
 			Issue issue = getIssue(projectKey, taskKey);
-		/*	
-			logger.info("issue: " + issue.toString());*/
-			
-			
+			/*
+			 * logger.info("issue: " + issue.toString());
+			 */
+
 			for (IssueLink issueLink : issue.getIssueLinks()) {
-				
+
 				Issue linkedIssue = issueLink.getOutwardIssue();
-				
-				// need to forcibly retrieve the issue in order to get attachments
+
+				// need to forcibly retrieve the issue in order to get
+				// attachments
 				Issue issue1 = this.getIssue(null, linkedIssue.getKey(), true);
-			/*	
-				logger.info("  linked issue: " + linkedIssue.toString());
-				logger.info("  - " + issue1.getDescription());
-				logger.info("  - " + issue1.getSummary());
-				logger.info("  - " + issue1.getUrl());
-				logger.info("  - " + issue1.getAttachments().size() + " attachments");
-				*/
+				
+				String crsId = issue1.getField("customfield_10203").toString();
+				if (crsId == null) {
+					crsId = "Unknown";
+				}
+				
+				/*
+				 * logger.info("  linked issue: " + linkedIssue.toString());
+				 * logger.info("  - " + issue1.getDescription()); logger.info(
+				 * "  - " + issue1.getSummary()); logger.info("  - " +
+				 * issue1.getUrl()); logger.info("  - " +
+				 * issue1.getAttachments().size() + " attachments");
+				 */
 				for (Attachment attachment : issue1.getAttachments()) {
-						
-					// attachments must be retrieved by relative path -- absolute path will redirect to login
+
+					// attachments must be retrieved by relative path --
+					// absolute path will redirect to login
 					final String absolutePath = attachment.getContentUrl();
 					final String relativePath = absolutePath.substring(absolutePath.indexOf("secure"));
-					
+
 					try {
 						final String contentUrl = attachment.getContentUrl();
 						final JSON attachmentJson = restClient.get(contentUrl.substring(contentUrl.indexOf("secure")));
 						ObjectMapper mapper = new ObjectMapper();
 						mapper.setSerializationInclusion(Include.NON_NULL);
-						TaskAttachment taskAttachment = new TaskAttachment(issue1.getKey(), mapper.writeValueAsString(attachmentJson));
+						TaskAttachment taskAttachment = new TaskAttachment(crsId,
+								mapper.writeValueAsString(attachmentJson));
 						attachments.add(taskAttachment);
-		
+
 					} catch (Exception e) {
-						throw new BusinessServiceException("Failed to retrieve attachment " + relativePath + ": " + e.getMessage(), e);
+						throw new BusinessServiceException(
+								"Failed to retrieve attachment " + relativePath + ": " + e.getMessage(), e);
 					}
-				}	
+				}
 			}
 		} catch (JiraException e) {
 			if (e.getCause() instanceof RestException && ((RestException) e.getCause()).getHttpStatusCode() == 404) {
@@ -799,8 +809,7 @@ public class TaskService {
 			}
 			throw new BusinessServiceException("Failed to retrieve task " + toString(projectKey, taskKey), e);
 		}
-		
-	
+
 		return attachments;
 	}
 
