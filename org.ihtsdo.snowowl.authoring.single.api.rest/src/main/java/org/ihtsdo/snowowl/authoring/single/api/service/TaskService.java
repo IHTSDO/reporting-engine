@@ -421,12 +421,11 @@ public class TaskService {
 			// Map of task paths to tasks
 			Map<String, AuthoringTask> startedTasks = new HashMap<>();
 
-
 			Set<String> projectKeys = new HashSet<>();
 			for (Issue issue : tasks) {
 				projectKeys.add(issue.getProject().getKey());
 			}
-			
+
 			// map of JSON attachments by linked issue key
 			Map<String, List<String>> attachmentMap = new HashMap<>();
 
@@ -444,20 +443,20 @@ public class TaskService {
 
 						Issue issue1;
 						try {
-							// need to forcibly retrieve the issue in order to get attachments
+							// need to forcibly retrieve the issue in order to
+							// get attachments
 							issue1 = this.getIssue(null, linkedIssue.getKey(), true);
 
 							// add url of each attachment
 							for (Attachment attachment : issue1.getAttachments()) {
 								attachmentUrls.add(attachment.toString());
 							}
-							
+
 							String crsId = issue1.getField("customfield_10203").toString();
 							if (crsId == null) {
 								crsId = "Unknown";
 							}
-							
-							
+
 							// store the list in the linked issue map
 							attachmentMap.put(crsId, attachmentUrls);
 
@@ -477,10 +476,11 @@ public class TaskService {
 
 					// set the issue link attachments from the attachment map
 					for (String key : attachmentMap.keySet()) {
-					//	logger.info("adding attachments for " + key + ": " + attachmentMap.get(key));
+						// logger.info("adding attachments for " + key + ": " +
+						// attachmentMap.get(key));
 						task.addIssueLinkAttachmentUrlsForKey(key, attachmentMap.get(key));
 					}
-					
+
 					allTasks.add(task);
 					// We only need to recover classification and validation
 					// statuses for task that are not new ie mature
@@ -757,8 +757,8 @@ public class TaskService {
 		
 		try {
 			Issue issue = getIssue(projectKey, taskKey);
-			
-			logger.info("issue: " + issue.toString());
+		/*	
+			logger.info("issue: " + issue.toString());*/
 			
 			
 			for (IssueLink issueLink : issue.getIssueLinks()) {
@@ -767,13 +767,13 @@ public class TaskService {
 				
 				// need to forcibly retrieve the issue in order to get attachments
 				Issue issue1 = this.getIssue(null, linkedIssue.getKey(), true);
-				
+			/*	
 				logger.info("  linked issue: " + linkedIssue.toString());
 				logger.info("  - " + issue1.getDescription());
 				logger.info("  - " + issue1.getSummary());
 				logger.info("  - " + issue1.getUrl());
 				logger.info("  - " + issue1.getAttachments().size() + " attachments");
-				
+				*/
 				for (Attachment attachment : issue1.getAttachments()) {
 						
 					// attachments must be retrieved by relative path -- absolute path will redirect to login
@@ -781,14 +781,15 @@ public class TaskService {
 					final String relativePath = absolutePath.substring(absolutePath.indexOf("secure"));
 					
 					try {
-						final JSON jsonResponse = restClient.get(relativePath);
+						final String contentUrl = attachment.getContentUrl();
+						final JSON attachmentJson = restClient.get(contentUrl.substring(contentUrl.indexOf("secure")));
 						ObjectMapper mapper = new ObjectMapper();
 						mapper.setSerializationInclusion(Include.NON_NULL);
-						TaskAttachment taskAttachment = new TaskAttachment(issue1.getKey(), mapper.writeValueAsString(jsonResponse));
+						TaskAttachment taskAttachment = new TaskAttachment(issue1.getKey(), mapper.writeValueAsString(attachmentJson));
 						attachments.add(taskAttachment);
 		
 					} catch (Exception e) {
-						throw new BusinessServiceException("Failed to retrieve attachment " + relativePath);
+						throw new BusinessServiceException("Failed to retrieve attachment " + relativePath + ": " + e.getMessage(), e);
 					}
 				}	
 			}
