@@ -424,60 +424,12 @@ public class TaskService {
 				projectKeys.add(issue.getProject().getKey());
 			}
 
-			// map of JSON attachments by linked issue key
-			Map<String, List<String>> attachmentMap = new HashMap<>();
-
-			// Only want to retrieve JSON attachments if single task retrieval
-			// (reduce number of calls)
-			// TODO Get better check for this
-			if (tasks.size() == 1) {
-
-				for (Issue issue : tasks) {
-					for (IssueLink issueLink : issue.getIssueLinks()) {
-						Issue linkedIssue = issueLink.getOutwardIssue();
-
-						// create list of attachment urls for this linked issue
-						List<String> attachmentUrls = new ArrayList<>();
-
-						Issue issue1;
-						try {
-							// need to forcibly retrieve the issue in order to
-							// get attachments
-							issue1 = this.getIssue(null, linkedIssue.getKey(), true);
-
-							// add url of each attachment
-							for (Attachment attachment : issue1.getAttachments()) {
-								attachmentUrls.add(attachment.toString());
-							}
-
-							String crsId = issue1.getField("customfield_10203").toString();
-							if (crsId == null) {
-								crsId = "Unknown";
-							}
-
-							// store the list in the linked issue map
-							attachmentMap.put(crsId, attachmentUrls);
-
-						} catch (JiraException e) {
-							// TODO Decide error handling, don't want Jira to
-							// break task retrieval
-						}
-					}
-				}
-			}
-
 			final Map<String, ProjectDetails> projectKeyToBranchBaseMap = projectDetailsCache.getAll(projectKeys);
 			for (Issue issue : tasks) {
 				final ProjectDetails projectDetails = projectKeyToBranchBaseMap.get(issue.getProject().getKey());
 				if (instanceConfiguration.isJiraProjectVisible(projectDetails.getProductCode())) {
 					AuthoringTask task = new AuthoringTask(issue, projectDetails.getBaseBranchPath());
 
-					// set the issue link attachments from the attachment map
-					for (String key : attachmentMap.keySet()) {
-						// logger.info("adding attachments for " + key + ": " +
-						// attachmentMap.get(key));
-						task.addIssueLinkAttachmentUrlsForKey(key, attachmentMap.get(key));
-					}
 
 					allTasks.add(task);
 					// We only need to recover classification and validation

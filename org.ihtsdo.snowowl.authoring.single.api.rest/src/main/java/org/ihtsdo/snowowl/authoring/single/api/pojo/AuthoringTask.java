@@ -40,10 +40,7 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 	private Date feedbackMessageDate;
 	private Date viewDate;
 	private String branchPath;
-	private String issueLinks;
-	private JSONObject issueLinkAttachments;
 	private String labels;
-	private String attachments;
 
 	public AuthoringTask() {
 	}
@@ -60,18 +57,10 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 		}
 		created = (String) issue.getField(JIRA_CREATED_FIELD);
 		updated = (String) issue.getField(JIRA_UPDATED_FIELD);
-		issueLinkAttachments = new JSONObject();
 		
 
 		// declare the object mapper for JSON conversion
 		ObjectMapper mapper = new ObjectMapper();
-		
-		// set the issue links
-		try {
-			issueLinks = mapper.writeValueAsString(issue.getIssueLinks());
-		} catch (JsonProcessingException e) {
-			issueLinks = "Failed to convert Jira issue links into json string";
-		}
 
 		// set the labels
 		try {
@@ -229,14 +218,6 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 		this.viewDate = viewDate;
 	}
 
-	@JsonRawValue
-	public String getIssueLinks() {
-		return issueLinks;
-	}
-
-	public void setIssueLinks(String issueLinks) {
-		this.issueLinks = issueLinks;
-	}
 
 	@JsonRawValue
 	public String getLabels() {
@@ -247,30 +228,5 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 		this.labels = labels;
 	}
 
-	@JsonRawValue
-	public String getAttachments() {
-		return attachments;
-	}
 
-	public void setAttachments(String attachments) {
-		this.attachments = attachments;
-	}
-
-	
-	public JSONObject getIssueLinkAttachments() {
-		return issueLinkAttachments;
-	}
-	
-	public void setIssueLinkAttachments(JSONObject issueLinkAttachments) {
-		this.issueLinkAttachments = issueLinkAttachments;
-	}
-
-	// Function to add a list of attachment urls by key value
-	public void addIssueLinkAttachmentUrlsForKey(String key, List<String> issueLinkUrls) {
-		JSONArray jsonArr = new JSONArray();
-		for (String url : issueLinkUrls) {
-			jsonArr.add(url);
-		}
-		this.issueLinkAttachments.put(key,  jsonArr);
-	}
 }
