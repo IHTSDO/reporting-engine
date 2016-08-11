@@ -37,8 +37,6 @@ import com.b2international.snowowl.core.branch.Branch;
 import com.b2international.snowowl.core.exceptions.BadRequestException;
 import com.b2international.snowowl.core.exceptions.ConflictException;
 import com.b2international.snowowl.core.exceptions.NotFoundException;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -792,10 +790,9 @@ public class TaskService {
 						final String contentUrl = attachment.getContentUrl();
 						final JSON attachmentJson = restClient.get(contentUrl.substring(contentUrl.indexOf("secure")));
 						
-						ObjectMapper mapper = new ObjectMapper();
-						mapper.setSerializationInclusion(Include.NON_NULL);
+						
 						TaskAttachment taskAttachment = new TaskAttachment(crsId,
-								mapper.writeValueAsString(attachmentJson));
+								attachmentJson.toString());
 							
 						attachments.add(taskAttachment);
 
