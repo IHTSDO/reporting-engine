@@ -1,15 +1,15 @@
 package org.ihtsdo.snowowl.authoring.single.api.service.jira;
 
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+
 import net.rcarz.jiraclient.JiraClient;
 import net.rcarz.jiraclient.JiraException;
 import net.rcarz.jiraclient.RestClient;
 import net.rcarz.jiraclient.RestException;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
-
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 
 public class JiraHelper {
 

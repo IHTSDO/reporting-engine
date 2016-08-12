@@ -10,11 +10,16 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.module.scala.DefaultScalaModule;
+import com.google.common.base.Charsets;
+
 import org.ihtsdo.snowowl.api.rest.common.domain.ISnomedComponentMixin;
 import org.ihtsdo.snowowl.authoring.single.api.mapping.SnomedBrowserConceptMixin;
 import org.ihtsdo.snowowl.authoring.single.api.mapping.SnomedBrowserRelationshipMixin;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Scope;
+import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.http.converter.ByteArrayHttpMessageConverter;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.ResourceHttpMessageConverter;
@@ -29,6 +34,7 @@ import java.util.TimeZone;
 public class SpringConfiguration extends WebMvcConfigurerAdapter {
 
 	@Bean
+	@Scope(value=ConfigurableBeanFactory.SCOPE_PROTOTYPE, proxyMode=ScopedProxyMode.TARGET_CLASS)
 	public IEventBus eventBus() {
 		return com.b2international.snowowl.core.ApplicationContext.getInstance().getServiceChecked(IEventBus.class);
 	}
@@ -51,7 +57,7 @@ public class SpringConfiguration extends WebMvcConfigurerAdapter {
 
 	@Override
 	public void configureMessageConverters(final List<HttpMessageConverter<?>> converters) {
-		final StringHttpMessageConverter stringConverter = new StringHttpMessageConverter();
+		final StringHttpMessageConverter stringConverter = new StringHttpMessageConverter(Charsets.UTF_8);
 		stringConverter.setWriteAcceptCharset(false);
 		converters.add(stringConverter);
 

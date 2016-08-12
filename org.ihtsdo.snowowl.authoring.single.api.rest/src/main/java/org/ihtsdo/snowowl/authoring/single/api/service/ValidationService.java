@@ -1,10 +1,18 @@
 package org.ihtsdo.snowowl.authoring.single.api.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
-import com.google.common.collect.ImmutableMap;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+
+import javax.jms.JMSException;
+import javax.jms.TextMessage;
+
 import org.ihtsdo.otf.jms.MessagingHelper;
 import org.ihtsdo.otf.rest.client.OrchestrationRestClient;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
@@ -15,15 +23,17 @@ import org.ihtsdo.snowowl.authoring.single.api.pojo.Status;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.concurrent.ExecutionException;
-import javax.jms.JMSException;
-import javax.jms.TextMessage;
+import com.b2international.snowowl.core.Metadata;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.common.base.Strings;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+import com.google.common.collect.ImmutableMap;
 
 @Component
 public class ValidationService {
@@ -39,6 +49,13 @@ public class ValidationService {
 	public static final String STATUS_SCHEDULED = "SCHEDULED";
 	public static final String STATUS_COMPLETE = "COMPLETED";
 	public static final String STATUS_NOT_TRIGGERED = "NOT_TRIGGERED";
+	public static final String ASSERTION_GROUP_NAMES = "assertionGroupNames";
+	public static final String PREVIOUS_RELEASE = "previousRelease";
+	public static final String DEPENDENCY_RELEASE = "dependencyRelease";
+	public static final String SHORT_NAME ="shortname";
+	
+	@Value("+{orchestration.name}")
+	private String orchestrationName;
 
 	@Autowired
 	private TaskService taskService;
@@ -51,6 +68,9 @@ public class ValidationService {
 
 	@Autowired
 	private OrchestrationRestClient orchestrationRestClient;
+
+	@Autowired
+	private BranchService branchService;
 
 	private LoadingCache<String, String> validationStatusCache;
 
@@ -106,7 +126,12 @@ public class ValidationService {
 
 	private Status doStartValidation(String path, String username, String projectKey, String taskKey, String effectiveTime) throws BusinessServiceException {
 		try {
+			final Metadata mergedBranchMetadata = branchService.getBranchMetadataIncludeInherited(path);
 			Map<String, String> properties = new HashMap<>();
+			copyProperty(ASSERTION_GROUP_NAMES, mergedBranchMetadata, properties);
+			copyProperty(PREVIOUS_RELEASE, mergedBranchMetadata, properties);
+			copyProperty(DEPENDENCY_RELEASE, mergedBranchMetadata, properties);
+			copyProperty(SHORT_NAME, mergedBranchMetadata, properties);
 			properties.put(PATH, path);
 			properties.put(USERNAME, username);
 			if (projectKey != null) {
@@ -118,7 +143,8 @@ public class ValidationService {
 			if (effectiveTime != null) {
 				properties.put(EFFECTIVE_TIME, effectiveTime);
 			}
-			messagingHelper.send(VALIDATION_REQUEST_QUEUE, "", properties, VALIDATION_RESPONSE_QUEUE);
+			String prefix = orchestrationName + ".";
+			messagingHelper.send( prefix + VALIDATION_REQUEST_QUEUE, "", properties, prefix + VALIDATION_RESPONSE_QUEUE);
 			validationStatusCache.put(path, STATUS_SCHEDULED);
 			return new Status(STATUS_SCHEDULED);
 		} catch (JsonProcessingException | JMSException e) {
@@ -126,8 +152,15 @@ public class ValidationService {
 		}
 	}
 
+	private void copyProperty(String key, Metadata metadata, Map<String, String> properties) {
+		final String value = metadata.getString(key);
+		if (!Strings.isNullOrEmpty(value)) {
+			properties.put(key, value);
+		}
+	}
+
 	@SuppressWarnings("unused")
-	@JmsListener(destination = VALIDATION_RESPONSE_QUEUE)
+	@JmsListener(destination = "+{orchestration.name}" + "." + VALIDATION_RESPONSE_QUEUE)
 	public void receiveValidationEvent(TextMessage message) {
 		try {
 			if (!MessagingHelper.isError(message)) {

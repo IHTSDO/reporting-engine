@@ -1,21 +1,32 @@
 package org.ihtsdo.snowowl.authoring.single.api.rest;
 
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiResponse;
-import com.wordnik.swagger.annotations.ApiResponses;
-import net.rcarz.jiraclient.JiraException;
+import java.util.List;
+
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.api.rest.common.AbstractRestService;
 import org.ihtsdo.snowowl.api.rest.common.AbstractSnomedRestService;
 import org.ihtsdo.snowowl.api.rest.common.ControllerHelper;
-import org.ihtsdo.snowowl.authoring.single.api.pojo.*;
+import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringMain;
+import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringProject;
+import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTask;
+import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskCreateRequest;
+import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskUpdateRequest;
+import org.ihtsdo.snowowl.authoring.single.api.service.TaskAttachment;
 import org.ihtsdo.snowowl.authoring.single.api.service.TaskService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
+import com.wordnik.swagger.annotations.Api;
+import com.wordnik.swagger.annotations.ApiOperation;
+import com.wordnik.swagger.annotations.ApiResponse;
+import com.wordnik.swagger.annotations.ApiResponses;
+
+import net.rcarz.jiraclient.JiraException;
 
 @Api("Authoring Projects")
 @RestController
@@ -102,6 +113,13 @@ public class ProjectController extends AbstractSnomedRestService {
 	@RequestMapping(value = "/projects/{projectKey}/tasks/{taskKey}", method = RequestMethod.PUT)
 	public AuthoringTask updateTask(@PathVariable final String projectKey, @PathVariable final String taskKey,  @RequestBody final AuthoringTaskUpdateRequest updatedTask) throws BusinessServiceException {
 		return taskService.updateTask(projectKey, taskKey, updatedTask);
+	}
+	
+	@ApiOperation(value = "Retrieve task attachments")
+	@ApiResponses({ @ApiResponse(code = 200, message = "OK") })
+	@RequestMapping(value = "/projects/{projectKey}/tasks/{taskKey}/attachments", method = RequestMethod.GET)
+	public List<TaskAttachment> getAttachmentsForTask(@PathVariable final String projectKey, @PathVariable final String taskKey) throws BusinessServiceException {
+		return taskService.getTaskAttachments(projectKey, taskKey);
 	}
 
 }

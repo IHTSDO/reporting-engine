@@ -16,6 +16,7 @@ import java.util.concurrent.Executors;
 import net.rcarz.jiraclient.JiraException;
 
 import org.apache.commons.csv.CSVRecord;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.otf.rest.exception.ProcessingException;
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportConcept;
@@ -29,9 +30,11 @@ import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportTerm;
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.service.BatchImportFormat.FIELD;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTask;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskCreateRequest;
+import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskUpdateRequest;
 import org.ihtsdo.snowowl.authoring.single.api.service.BranchService;
 import org.ihtsdo.snowowl.authoring.single.api.service.ServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.service.TaskService;
+import org.ihtsdo.snowowl.authoring.single.api.service.TaskStatus;
 import org.ihtsdo.snowowl.authoring.single.api.service.UiStateService;
 import org.ihtsdo.snowowl.authoring.single.api.service.dao.ArbitraryTempFileService;
 import org.slf4j.Logger;
@@ -42,6 +45,7 @@ import org.springframework.stereotype.Service;
 import com.b2international.commons.VerhoeffCheck;
 import com.b2international.commons.http.AcceptHeader;
 import com.b2international.commons.http.ExtendedLocale;
+import com.b2international.snowowl.core.exceptions.AlreadyExistsException;
 import com.b2international.snowowl.core.exceptions.ApiError;
 import com.b2international.snowowl.core.exceptions.BadRequestException;
 import com.b2international.snowowl.core.exceptions.ValidationException;
@@ -98,11 +102,12 @@ public class BatchImportService {
 	private static final String DRY_RUN = "DRY_RUN";
 	//private static final String BULLET = "* ";
 	private static final String SCTID_ISA = Concepts.IS_A;
-	public static final int DEFAULT_GROUP = 1;
+	public static final int DEFAULT_GROUP = 0;
 	private static final String SCTID_EN_GB = Concepts.REFSET_LANGUAGE_TYPE_UK;
 	private static final String SCTID_EN_US = Concepts.REFSET_LANGUAGE_TYPE_US;
 	//private static final String JIRA_HEADING5 = "h5. ";
 	//private static final String VALIDATION_ERROR = "ERROR";
+	private static final int MAX_TASK_CREATION_ATTEMPTS = 100;
 	
 	private static final String EDIT_PANEL = "edit-panel";
 	private static final String SAVE_LIST = "saved-list";	
@@ -158,9 +163,13 @@ public class BatchImportService {
 		int minViableColumns = run.getImportRequest().getFormat().getHeaders().length;
 		for (CSVRecord thisRow : rows) {
 			if (thisRow.size() >= minViableColumns) {
-				BatchImportConcept thisConcept = run.getFormatter().createConcept(thisRow);
-				if (validate(run, thisConcept)) {
-					run.insertIntoLoadHierarchy(thisConcept);
+				try {
+					BatchImportConcept thisConcept = run.getFormatter().createConcept(thisRow);
+					if (validate(run, thisConcept)) {
+						run.insertIntoLoadHierarchy(thisConcept);
+					}
+				} catch (Exception e) {
+					run.fail(thisRow, e.getMessage());
 				}
 			} else {
 				run.fail(thisRow, "Blank row detected");
@@ -212,12 +221,15 @@ public class BatchImportService {
 				}
 				concept.addParent(parentStr);
 				concept.setExpression(exp);
+			} catch (NullPointerException np) {
+				run.fail(concept.getRow(), "API coding exception: NullPointerException.  See logs for details");
+				logger.error(ExceptionUtils.getStackTrace(np));
+				return false;
 			} catch (Exception e) {
 				run.fail(concept.getRow(), "Invalid expression: " + e.getMessage());
-				return false;				
+				return false;
 			}
 		}
-		
 		return true;
 	}
 	
@@ -247,8 +259,6 @@ public class BatchImportService {
 				updateTaskDetails(task, run, conceptsLoaded, newSummary);
 				primeEditPanel(task, run, conceptsLoadedJson);
 				primeSavedList(task, run, conceptsLoaded.values());
-				
-
 			}
 		}
 	}
@@ -343,14 +353,34 @@ public class BatchImportService {
 		String taskSummary = request.getOriginalFilename() + ": " + getRowRange(thisBatch);
 		taskCreateRequest.setSummary(taskSummary);
 
-		AuthoringTask task;
+		AuthoringTask task = null;
 		if (!request.isDryRun()) {
-			task = taskService.createTask(request.getProjectKey(), 
-					request.getCreateForAuthor(),
-					taskCreateRequest);
-			//Task service now delays creation of actual task branch, so separate call to do that.
-			branchService.createTaskBranchAndProjectBranchIfNeeded(task.getBranchPath());
-			
+			boolean taskFullyCreatedOK = false;
+			int attempts = 0;
+			while (!taskFullyCreatedOK) {
+				try{
+					task = taskService.createTask(request.getProjectKey(), 
+							request.getCreateForAuthor(),
+							taskCreateRequest);
+					//Task service now delays creation of actual task branch, so separate call to do that.
+					branchService.createTaskBranchAndProjectBranchIfNeeded(task.getBranchPath());
+					taskFullyCreatedOK = true;
+				} catch (AlreadyExistsException e) {
+					attempts++;
+					if (attempts > MAX_TASK_CREATION_ATTEMPTS) {
+						throw (new BusinessServiceException ("Exceeded possible attempts at creating branch",e));
+					} else {
+						logger.error("Branch already exists for newly created " + task.getKey() + ", attempting to delete unwanted Jira task", e);
+						try {
+							AuthoringTaskUpdateRequest deleteTask = new AuthoringTask();
+							deleteTask.setStatus(TaskStatus.DELETED);
+							taskService.updateTask(request.getProjectKey(), task.getKey(), deleteTask);
+						} catch (Exception e2) {
+							logger.error("Failed to delete jira task after ts branch creation failed",e2);
+						}
+					}
+				}
+			}
 			//Because creating a task is relatively expensive and can cause contention, we'll take an optional
 			//pause here to allow other threads to clear and obtain locks
 			if (request.getPostTaskDelay() != null) {
@@ -692,7 +722,11 @@ public class BatchImportService {
 		desc.setType(SnomedBrowserDescriptionType.SYNONYM);
 		desc.setLang(SnomedConstants.LanguageCodeReferenceSetIdentifierMapping.EN_LANGUAGE_CODE);
 		desc.setAcceptabilityMap(getAcceptablityAsMap(biTerm));
-		desc.setCaseSignificance(translateCaseSensitivity(biTerm.getCaseSensitivity()));
+		if (biTerm.getCaseSensitivity() == null || biTerm.getCaseSensitivity().isEmpty()) {
+			desc.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
+		} else {
+			desc.setCaseSignificance(translateCaseSensitivity(biTerm.getCaseSensitivity()));
+		}
 		return desc;
 	}
 
