@@ -13,15 +13,18 @@ public class AuthoringProject {
 	private Branch.BranchState branchState;
 	private String latestClassificationJson;
 	private String validationStatus;
+	private boolean projectPromotionDisabled;
 	private Metadata metadata;
 
-	public AuthoringProject(String key, String title, User leadUser, String branchPath, Branch.BranchState branchState, String latestClassificationJson) {
+	public AuthoringProject(String key, String title, User leadUser, String branchPath, Branch.BranchState branchState,
+			String latestClassificationJson, boolean projectPromotionDisabled) {
 		this.key = key;
 		this.title = title;
 		this.projectLead = leadUser;
 		this.branchPath = branchPath;
 		this.branchState = branchState;
 		this.latestClassificationJson = latestClassificationJson;
+		this.projectPromotionDisabled = projectPromotionDisabled;
 	}
 
 	public String getKey() {
@@ -55,6 +58,14 @@ public class AuthoringProject {
 	
 	public Branch.BranchState getBranchState() {
 		return branchState;
+	}
+
+	public boolean isProjectPromotionDisabled() {
+		return projectPromotionDisabled;
+	}
+
+	public void setProjectPromotionDisabled(boolean projectPromotionDisabled) {
+		this.projectPromotionDisabled = projectPromotionDisabled;
 	}
 
 	public void setMetadata(Metadata metadata) {

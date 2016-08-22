@@ -75,6 +75,7 @@ public class TaskService {
 	private final ImpersonatingJiraClientFactory jiraClientFactory;
 	private final String jiraExtensionBaseField;
 	private final String jiraProductCodeField;
+	private final String jiraProjectPromotionField;
 	private LoadingCache<String, ProjectDetails> projectDetailsCache;
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -87,6 +88,7 @@ public class TaskService {
 		AuthoringTask.setJiraReviewerField(JiraHelper.fieldIdLookup("Reviewer", jiraClientForFieldLookup));
 		jiraExtensionBaseField = JiraHelper.fieldIdLookup("Extension Base", jiraClientForFieldLookup);
 		jiraProductCodeField = JiraHelper.fieldIdLookup("Product Code", jiraClientForFieldLookup);
+		jiraProjectPromotionField = JiraHelper.fieldIdLookup("SCA Project Promotion", jiraClientForFieldLookup);
 
 		init();
 	}
@@ -162,10 +164,11 @@ public class TaskService {
 			Set<String> branchPaths = new HashSet<>();
 			for (Project project : projects) {
 				final String key = project.getKey();
-				final Issue issue = projectMagicTickets.get(key);
-				final String extensionBase = getProjectDetailsPopulatingCache(issue).getBaseBranchPath();
+				final Issue magicTicket = projectMagicTickets.get(key);
+				final String extensionBase = getProjectDetailsPopulatingCache(magicTicket).getBaseBranchPath();
 				final String branchPath = PathHelper.getProjectPath(extensionBase, key);
 				final String latestClassificationJson = classificationService.getLatestClassification(branchPath);
+				final boolean promotionDisabled = "Disabled".equals(magicTicket.getField(jiraProjectPromotionField));
 
 				final Branch branchOrNull = branchService.getBranchOrNull(branchPath);
 				final Branch parentBranchOrNull = branchService.getBranchOrNull(PathHelper.getParentPath(branchPath));
@@ -179,7 +182,7 @@ public class TaskService {
 				}
 				branchPaths.add(branchPath);
 				final AuthoringProject authoringProject = new AuthoringProject(project.getKey(), project.getName(),
-						getPojoUserOrNull(project.getLead()), branchPath, branchState, latestClassificationJson);
+						getPojoUserOrNull(project.getLead()), branchPath, branchState, latestClassificationJson, promotionDisabled);
 				authoringProject.setMetadata(metadata);
 				authoringProjects.add(authoringProject);
 			}
