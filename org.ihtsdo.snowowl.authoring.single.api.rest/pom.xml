@@ -53,7 +53,7 @@
 		<dependency>
 			<groupId>org.ihtsdo.otf.common</groupId>
 			<artifactId>otf-common</artifactId>
-			<version>1.0.26-SNAPSHOT</version>
+			<version>1.0.26</version>
 		</dependency>
 		<!-- SnowOwl -->
 		<!-- Plug-in dependencies are repeated here so that the build can resolve
