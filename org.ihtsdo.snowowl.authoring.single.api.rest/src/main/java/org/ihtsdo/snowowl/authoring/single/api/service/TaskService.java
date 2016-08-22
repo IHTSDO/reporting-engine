@@ -1,28 +1,28 @@
 package org.ihtsdo.snowowl.authoring.single.api.service;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ExecutionException;
-
+import com.b2international.snowowl.core.Metadata;
+import com.b2international.snowowl.core.branch.Branch;
+import com.b2international.snowowl.core.exceptions.BadRequestException;
+import com.b2international.snowowl.core.exceptions.ConflictException;
+import com.b2international.snowowl.core.exceptions.NotFoundException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.common.base.Strings;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+import com.google.common.collect.ImmutableMap;
+import net.rcarz.jiraclient.*;
+import net.rcarz.jiraclient.Status;
+import net.rcarz.jiraclient.User;
+import net.sf.json.JSON;
+import org.apache.activemq.command.ActiveMQQueue;
 import org.apache.log4j.Level;
+import org.ihtsdo.otf.jms.MessagingHelper;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.otf.rest.exception.ResourceNotFoundException;
 import org.ihtsdo.snowowl.api.rest.common.ControllerHelper;
-import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringMain;
-import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringProject;
-import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTask;
-import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskCreateRequest;
-import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskUpdateRequest;
-import org.ihtsdo.snowowl.authoring.single.api.pojo.TaskTransferRequest;
+import org.ihtsdo.snowowl.authoring.single.api.pojo.*;
 import org.ihtsdo.snowowl.authoring.single.api.review.service.ReviewService;
 import org.ihtsdo.snowowl.authoring.single.api.review.service.TaskMessagesDetail;
 import org.ihtsdo.snowowl.authoring.single.api.service.jira.ImpersonatingJiraClientFactory;
@@ -31,34 +31,11 @@ import org.ihtsdo.snowowl.authoring.single.api.service.util.TimerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 
-import com.b2international.snowowl.core.Metadata;
-import com.b2international.snowowl.core.branch.Branch;
-import com.b2international.snowowl.core.exceptions.BadRequestException;
-import com.b2international.snowowl.core.exceptions.ConflictException;
-import com.b2international.snowowl.core.exceptions.NotFoundException;
-import com.google.common.base.Strings;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
-import com.google.common.collect.ImmutableMap;
-
-import net.rcarz.jiraclient.Attachment;
-import net.rcarz.jiraclient.ChangeLog;
-import net.rcarz.jiraclient.ChangeLogEntry;
-import net.rcarz.jiraclient.ChangeLogItem;
-import net.rcarz.jiraclient.Field;
-import net.rcarz.jiraclient.Issue;
-import net.rcarz.jiraclient.IssueLink;
-import net.rcarz.jiraclient.JiraClient;
-import net.rcarz.jiraclient.JiraException;
-import net.rcarz.jiraclient.Project;
-import net.rcarz.jiraclient.RestClient;
-import net.rcarz.jiraclient.RestException;
-import net.rcarz.jiraclient.Status;
-import net.rcarz.jiraclient.Transition;
-import net.rcarz.jiraclient.User;
-import net.sf.json.JSON;
+import java.util.*;
+import java.util.concurrent.ExecutionException;
+import javax.jms.JMSException;
 
 public class TaskService {
 
@@ -69,6 +46,7 @@ public class TaskService {
 			+ "\" AND status != \"" + TaskStatus.DELETED.getLabel() + "\") ";
 	private static final String AUTHORING_TASK_TYPE = "SCA Authoring Task";
 	private static final int LIMIT_UNLIMITED = -1;
+	private static final String TASK_STATE_CHANGE_QUEUE_NAME = "-authoring.task-state-change";
 
 	@Autowired
 	private BranchService branchService;
@@ -87,6 +65,12 @@ public class TaskService {
 
 	@Autowired
 	private InstanceConfiguration instanceConfiguration;
+
+	@Autowired
+	private MessagingHelper messagingHelper;
+
+	@Value("+{orchestration.name}")
+	private String orchestrationName;
 
 	private final ImpersonatingJiraClientFactory jiraClientFactory;
 	private final String jiraExtensionBaseField;
@@ -684,9 +668,26 @@ public class TaskService {
 
 	private void stateTransition(Issue issue, TaskStatus newState) throws JiraException, BusinessServiceException {
 		final Transition transition = getTransitionToOrThrow(issue, newState);
-		logger.info("Transition issue {} to {}", issue.getKey(), newState.getLabel());
+		final String key = issue.getKey();
+		final String newStateLabel = newState.getLabel();
+		logger.info("Transition issue {} to {}", key, newStateLabel);
 		issue.transition().execute(transition);
 		issue.refresh();
+
+		// Send JMS Task State Notification
+		try {
+			Map<String, String> properties = new HashMap<>();
+			properties.put("key", key);
+			properties.put("status", newStateLabel);
+
+			// To comma separated list
+			final String labelsString = issue.getLabels().toString();
+			properties.put("labels", labelsString.substring(1, labelsString.length() - 1).replace(", ", ","));
+
+			messagingHelper.send(new ActiveMQQueue(orchestrationName + TASK_STATE_CHANGE_QUEUE_NAME), properties);
+		} catch (JsonProcessingException | JMSException e) {
+			logger.error("Failed to send task state change notification for {} {}.", key, newStateLabel, e);
+		}
 	}
 
 	private Transition getTransitionToOrThrow(Issue issue, TaskStatus newState)
