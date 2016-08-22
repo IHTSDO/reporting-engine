@@ -76,6 +76,8 @@ public class TaskService {
 	private final String jiraExtensionBaseField;
 	private final String jiraProductCodeField;
 	private final String jiraProjectPromotionField;
+	private final String jiraCrsIdField;
+
 	private LoadingCache<String, ProjectDetails> projectDetailsCache;
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -89,6 +91,7 @@ public class TaskService {
 		jiraExtensionBaseField = JiraHelper.fieldIdLookup("Extension Base", jiraClientForFieldLookup);
 		jiraProductCodeField = JiraHelper.fieldIdLookup("Product Code", jiraClientForFieldLookup);
 		jiraProjectPromotionField = JiraHelper.fieldIdLookup("SCA Project Promotion", jiraClientForFieldLookup);
+		jiraCrsIdField = JiraHelper.fieldIdLookup("CRS-ID", jiraClientForFieldLookup);
 
 		init();
 	}
@@ -723,7 +726,7 @@ public class TaskService {
 				// attachments
 				Issue issue1 = this.getIssue(null, linkedIssue.getKey(), true);
 				
-				String crsId = issue1.getField("customfield_10203").toString();
+				String crsId = issue1.getField(jiraCrsIdField).toString();
 				if (crsId == null) {
 					crsId = "Unknown";
 				}
