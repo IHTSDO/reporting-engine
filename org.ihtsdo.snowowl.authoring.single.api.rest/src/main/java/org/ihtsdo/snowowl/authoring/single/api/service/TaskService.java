@@ -171,9 +171,7 @@ public class TaskService {
 				final String extensionBase = getProjectDetailsPopulatingCache(magicTicket).getBaseBranchPath();
 				final String branchPath = PathHelper.getProjectPath(extensionBase, key);
 				final String latestClassificationJson = classificationService.getLatestClassification(branchPath);
-				final String projectPromotionString = magicTicket.getField(jiraProjectPromotionField).toString();
-				final boolean promotionDisabled = "Disabled".equals(projectPromotionString);
-				logger.info("Project promotionDisabled string for {}, '{}' = {}", magicTicket.getKey(), projectPromotionString, promotionDisabled);
+				final boolean promotionDisabled = "Disabled".equals(JiraHelper.toStringOrNull(magicTicket.getField(jiraProjectPromotionField)));
 
 				final Branch branchOrNull = branchService.getBranchOrNull(branchPath);
 				final Branch parentBranchOrNull = branchService.getBranchOrNull(PathHelper.getParentPath(branchPath));

@@ -1,21 +1,25 @@
 package org.ihtsdo.snowowl.authoring.single.api.service.jira;
 
+import net.rcarz.jiraclient.*;
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-
-import net.rcarz.jiraclient.JiraClient;
-import net.rcarz.jiraclient.JiraException;
-import net.rcarz.jiraclient.RestClient;
-import net.rcarz.jiraclient.RestException;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
+import java.util.Map;
 
 public class JiraHelper {
 
 	public static String toStringOrNull(Object jsonProperty) {
-		if (jsonProperty != null && jsonProperty instanceof String) {
-			return (String) jsonProperty;
+		if (jsonProperty != null) {
+			if (jsonProperty instanceof String) {
+				return (String) jsonProperty;
+			} else if (jsonProperty instanceof Map) {
+				return (String) ((Map)jsonProperty).get("value");
+			} else {
+				throw new IllegalArgumentException("Unrecognised Jira Field type " + jsonProperty.getClass());
+			}
 		}
 		return null;
 	}
