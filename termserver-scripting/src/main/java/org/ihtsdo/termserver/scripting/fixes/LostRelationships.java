@@ -54,10 +54,10 @@ public class LostRelationships extends TermServerFix{
 				String msg = "Concept " + thisConcept.getConceptId() + " has no FSN";
 				criticalErrors.add(msg);
 				println(msg);
-			} /*else if (!thisConcept.getFsn().contains("(product)")) {
+			} else if (!thisConcept.getFsn().contains("(product)")) {
 				debug ("Skipping " + thisConcept);
 				continue;
-			}*/
+			}
 			for(Relationship thisRel : thisConcept.getRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, ACTIVE_STATE.INACTIVE)) {
 				List<Relationship> replacements = thisConcept.getRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, thisRel.getType(), ACTIVE_STATE.ACTIVE);
 				if (replacements.size() == 0) {
