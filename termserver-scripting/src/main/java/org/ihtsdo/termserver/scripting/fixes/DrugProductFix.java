@@ -446,7 +446,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 						String fileName = p.getFileName().toString();
 						if (fileName.contains("sct2_Relationship_Snapshot")) {
 							println("Loading Relationship File.");
-							gl.loadRelationshipFile(zis);
+							gl.loadRelationshipFile(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, zis);
 						} else if (fileName.contains("sct2_Description_Snapshot")) {
 							println("Loading Description File.");
 							gl.loadDescriptionFile(zis);

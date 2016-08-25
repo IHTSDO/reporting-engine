@@ -23,6 +23,7 @@ public interface RF2Constants {
 	final String COMMA = ",";
 	final String COMMA_QUOTE = ",\"";
 	final String QUOTE_COMMA = "\",";
+	final String QUOTE_COMMA_QUOTE = "\",\"";
 	final String TAB = "\t";
 	final String CSV_FIELD_DELIMITER = COMMA;
 	final String TSV_FIELD_DELIMITER = TAB;

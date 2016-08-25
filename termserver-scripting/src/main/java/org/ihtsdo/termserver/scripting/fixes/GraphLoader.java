@@ -31,7 +31,7 @@ public class GraphLoader implements RF2Constants {
 		return concepts.values();
 	}
 
-	public Map<String, Relationship> loadRelationshipFile (InputStream relStream) throws IOException, TermServerFixException {
+	public Map<String, Relationship> loadRelationshipFile (CHARACTERISTIC_TYPE characteristicType, InputStream relStream) throws IOException, TermServerFixException {
 		Map<String, Relationship> loadedRelationships = new HashMap<String, Relationship>();
 		BufferedReader br = new BufferedReader(new InputStreamReader(relStream, StandardCharsets.UTF_8));
 		String line;
@@ -40,22 +40,26 @@ public class GraphLoader implements RF2Constants {
 			// Only store active relationships.  Check for active filters out header row.
 			if (lineItems[REL_IDX_ACTIVE].equals(ACTIVE_FLAG)
 					&& !lineItems[REL_IDX_CHARACTERISTICTYPEID].equals(ADDITIONAL_RELATIONSHIP)) {
-				addRelationshipToConcept(lineItems);
+				addRelationshipToConcept(characteristicType, lineItems);
 			}
 		}
 		return loadedRelationships;
 	}
 	
-	private Concept addRelationshipToConcept(String[] lineItems) throws TermServerFixException {
+	private Concept addRelationshipToConcept(CHARACTERISTIC_TYPE characteristicType, String[] lineItems) throws TermServerFixException {
 		Concept source = getConcept(lineItems[REL_IDX_SOURCEID]);
 		Concept type = getConcept(lineItems[REL_IDX_TYPEID]);
 		Concept destination = getConcept(lineItems[REL_IDX_DESTINATIONID]);
 		int groupNum = Integer.parseInt(lineItems[REL_IDX_RELATIONSHIPGROUP]);
+		
 		Relationship r = new Relationship(source, type, destination, groupNum);
+		r.setCharacteristicType(characteristicType);
 		r.setActive(lineItems[REL_IDX_ACTIVE].equals("1"));
-		r.setCharacteristicType(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP);
+		r.setEffectiveTime(lineItems[REL_IDX_EFFECTIVETIME]);
 		source.addRelationship(r);
-		if (type.equals(IS_A)) {
+		
+		//Only if the relationship is inferred, consider adding it as a parent
+		if (type.equals(IS_A) && r.getCharacteristicType().equals(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP)) {
 			source.addParent(destination);
 			destination.addChild(source);
 		}
@@ -102,13 +106,14 @@ public class GraphLoader implements RF2Constants {
 				String[] lineItems = line.split(FIELD_DELIMITER);
 				Concept c = getConcept(lineItems[CON_IDX_ID]);
 				c.setActive(lineItems[CON_IDX_ACTIVE].equals("1"));
+				c.setEffectiveTime(lineItems[CON_IDX_EFFECTIVETIME]);
 			} else {
 				isHeaderLine = false;
 			}
 		}
 	}
 
-	public Set<Concept> getConcepts(InputStream relStream) throws IOException, TermServerFixException {
+	public Set<Concept> loadRelationshipDelta(CHARACTERISTIC_TYPE characteristicType, InputStream relStream) throws IOException, TermServerFixException {
 		Set<Concept> concepts = new HashSet<Concept>();
 		BufferedReader br = new BufferedReader(new InputStreamReader(relStream, StandardCharsets.UTF_8));
 		String line;
@@ -116,7 +121,7 @@ public class GraphLoader implements RF2Constants {
 		while ((line = br.readLine()) != null) {
 			if (!isHeaderLine) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
-				concepts.add(addRelationshipToConcept(lineItems));
+				concepts.add(addRelationshipToConcept(characteristicType, lineItems));
 			} else {
 				isHeaderLine = false;
 			}
