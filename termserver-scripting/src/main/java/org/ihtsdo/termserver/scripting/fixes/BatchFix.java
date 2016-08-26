@@ -216,9 +216,13 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 							report(task, null, SEVERITY.LOW, REPORT_ACTION_TYPE.API_ERROR, msg);
 						}
 						
-						//Reassign the task to the intended author
-						if (targetAuthor != null && !targetAuthor.isEmpty()) {
-							scaClient.updateTask(project, taskKey, null, null, targetAuthor);
+						//Reassign the task to the intended author.  Set at task or processing level
+						String taskAuthor = task.getAssignedAuthor();
+						if (taskAuthor == null) {
+							taskAuthor = targetAuthor;
+						}
+						if (taskAuthor != null && !taskAuthor.isEmpty()) {
+							scaClient.updateTask(project, taskKey, null, null, taskAuthor);
 						}
 					}
 				} catch (Exception e) {
