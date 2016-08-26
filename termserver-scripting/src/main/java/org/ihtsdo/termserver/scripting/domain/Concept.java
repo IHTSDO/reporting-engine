@@ -55,6 +55,8 @@ public class Concept implements RF2Constants {
 	private boolean isLoaded = false;
 	private int originalFileLineNumber;
 	private ConceptType conceptType = ConceptType.UNKNOWN;
+	private List<String> assertionFailures = new ArrayList<String>();
+	private String assignedAuthor;
 	
 	List<Concept> parents = new ArrayList<Concept>();
 	List<Concept> children = new ArrayList<Concept>();
@@ -318,6 +320,22 @@ public class Concept implements RF2Constants {
 
 	public List<Concept> getParents() {
 		return new ArrayList<Concept>(parents);
+	}
+	
+	public List<String>getAssertionFailures() {
+		return assertionFailures;
+	}
+	
+	public void addAssertionFailure(String failure) {
+		assertionFailures.add(failure);
+	}
+
+	public String getAssignedAuthor() {
+		return assignedAuthor;
+	}
+
+	public void setAssignedAuthor(String assignedAuthor) {
+		this.assignedAuthor = assignedAuthor;
 	}
 
 }

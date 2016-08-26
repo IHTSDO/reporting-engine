@@ -303,7 +303,6 @@ public abstract class TermServerFix implements RF2Constants {
 		return summaryText;
 	}
 	
-	
 	protected void writeToFile(String line) {
 		try(FileWriter fw = new FileWriter(reportFile, true);
 				BufferedWriter bw = new BufferedWriter(fw);

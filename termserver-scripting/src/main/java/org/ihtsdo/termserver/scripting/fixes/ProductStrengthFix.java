@@ -44,4 +44,9 @@ public class ProductStrengthFix extends BatchFix implements RF2Constants{
 		return "ProductStrength";
 	}
 
+	@Override
+	Concept loadLine(String[] lineItems) throws TermServerFixException {
+		throw new TermServerFixException("Not Implemented");
+	}
+
 }

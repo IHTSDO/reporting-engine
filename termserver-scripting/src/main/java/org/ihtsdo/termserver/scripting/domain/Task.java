@@ -10,8 +10,10 @@ public class Task {
 	String branchPath;
 	String description;
 	List<Concept> concepts;
-	
-	public Task(Batch batch) {
+	String assignedAuthor;
+
+	/* Call Batch.addNewTask instead of creating a Task directly */
+	Task(Batch batch) {
 		this.batch = batch;
 		concepts = new ArrayList<Concept>();
 	}
@@ -79,4 +81,13 @@ public class Task {
 	public int size() {
 		return concepts.size();
 	}
+	
+	public String getAssignedAuthor() {
+		return assignedAuthor;
+	}
+
+	public void setAssignedAuthor(String assignedAuthor) {
+		this.assignedAuthor = assignedAuthor;
+	}
+
 }

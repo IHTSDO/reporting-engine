@@ -121,35 +121,6 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		return changesMade;
 	}
 
-	/**
-	 * Any description that has been updated (effectiveTime == null) and is now inactive
-	 * should have its inactivation reason set to RETIRED aka "Reason not stated"
-	 * @param loadedConcept
-	 * @throws  
-	 */
-	private void updateDescriptionInactivationReason(Task t, Concept loadedConcept) {
-		for (Description d : loadedConcept.getDescriptions()) {
-			if (d.getEffectiveTime() == null && d.isActive() == false) {
-				try {
-					String descriptionSerialised = gson.toJson(d);
-					JSONObject jsonObjDesc = new JSONObject(descriptionSerialised);
-					jsonObjDesc.remove("descriptionId");
-					jsonObjDesc.put("inactivationIndicator", InactivationIndicator.RETIRED.toString());
-					jsonObjDesc.put("commitComment", "Batch Script Update");
-					//Description endpoint uses acceptability rather than acceptabilityMap
-					if (jsonObjDesc.optJSONObject("acceptabilityMap") != null) {
-						jsonObjDesc.remove("acceptabilityMap");
-					}
-					jsonObjDesc.put("acceptability", JSONObject.NULL);
-					tsClient.updateDescription(d.getDescriptionId(), jsonObjDesc, t.getBranchPath());
-				} catch (SnowOwlClientException | JSONException e) {
-					String errStr = "Failed to set inactivation reason on description '" + d.getTerm() + "' : " + e.getMessage();
-					report(t, loadedConcept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.API_ERROR, errStr);
-				}
-			}
-		}
-		
-	}
 
 	@Override
 	Batch formIntoBatch(String fileName, List<Concept> conceptsInFile, String branchPath) throws TermServerFixException {
@@ -166,6 +137,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		storeRemainder(CONCEPTS_IN_FILE, CONCEPTS_PROCESSED, REPORTED_NOT_PROCESSED, "Gone Missing");
 		return batch;
 	}
+	
 /*  We're no longer looking for all concepts with the same ingredients, instead we'll just process 
 	the concepts in the file.
 	Batch createBatch(String fileName, List<Concept> conceptsInFile, Multimap<String, Concept> ingredientCombos, List<Concept> allConceptsBeingProcessed, List<String> ingredientCombosBeingProcessed) throws TermServerFixException {
@@ -427,44 +399,6 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		return ingredientCombos;
 	}
 
-	private void loadProjectSnapshot() throws SnowOwlClientException, TermServerFixException {
-		File snapShotArchive = new File (project + "_" + env + ".zip");
-		//Do we already have a copy of the project locally?  If not, recover it.
-		if (!snapShotArchive.exists()) {
-			println ("Recovering current state of " + project + " from TS (" + env + ")");
-			tsClient.export("MAIN/" + project, null, ExportType.MIXED, ExtractType.SNAPSHOT, snapShotArchive);
-		}
-		GraphLoader gl = GraphLoader.getGraphLoader();
-		println ("Loading archive contents into memory...");
-		try {
-			ZipInputStream zis = new ZipInputStream(new FileInputStream(snapShotArchive));
-			ZipEntry ze = zis.getNextEntry();
-			try {
-				while (ze != null) {
-					if (!ze.isDirectory()) {
-						Path p = Paths.get(ze.getName());
-						String fileName = p.getFileName().toString();
-						if (fileName.contains("sct2_Relationship_Snapshot")) {
-							println("Loading Relationship File.");
-							gl.loadRelationshipFile(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, zis);
-						} else if (fileName.contains("sct2_Description_Snapshot")) {
-							println("Loading Description File.");
-							gl.loadDescriptionFile(zis);
-						}
-					}
-					ze = zis.getNextEntry();
-				}
-			} finally {
-				try{
-					zis.closeEntry();
-					zis.close();
-				} catch (Exception e){} //Well, we tried.
-			}
-		} catch (IOException e) {
-			throw new TermServerFixException("Failed to extract project state from archive " + snapShotArchive.getName(), e);
-		}
-	}
-
 	private String getIngredientCombinationKey(Concept loadedConcept, List<Relationship> ingredients) throws TermServerFixException {
 		String comboKey = "";
 		Collections.sort(ingredients);  //Ingredient order must be consistent.
@@ -722,6 +656,13 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 			}
 		}
 		return matching;
+	}
+
+	@Override
+	Concept loadLine(String[] lineItems) throws TermServerFixException {
+		Concept c = graph.getConcept(lineItems[1]);
+		c.setConceptType(lineItems[0]);
+		return c;
 	}
 
 }

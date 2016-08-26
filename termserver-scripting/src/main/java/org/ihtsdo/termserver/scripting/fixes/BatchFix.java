@@ -6,13 +6,16 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import javax.mail.Authenticator;
 import javax.mail.Message;
@@ -27,6 +30,8 @@ import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExportType;
+import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExtractType;
 import org.ihtsdo.termserver.scripting.domain.Batch;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
@@ -85,6 +90,8 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 			this.scaClient = clone.scaClient;
 		}
 	}
+	
+	abstract Concept loadLine(String[] lineItems) throws TermServerFixException;
 
 	protected void processFile() throws TermServerFixException {
 		try {
@@ -102,8 +109,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 				//File format Concept Type, SCTID, FSN with string fields quoted.  Strip quotes also.
 				String[] lineItems = lines.get(lineNum).replace("\"", "").split(TSV_FIELD_DELIMITER);
 				if (lineItems.length > 1) {
-					Concept c = graph.getConcept(lineItems[1]);
-					c.setConceptType(lineItems[0]);
+					Concept c = loadLine(lineItems);
 					allConcepts.add(c);
 				} else {
 					debug ("Skipping blank line " + lineNum);
@@ -347,6 +353,74 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 		}
 		return changesMade;
 	}
+	
+	/**
+	 * Any description that has been updated (effectiveTime == null) and is now inactive
+	 * should have its inactivation reason set to RETIRED aka "Reason not stated"
+	 * @param loadedConcept
+	 * @throws  
+	 */
+	protected void updateDescriptionInactivationReason(Task t, Concept loadedConcept) {
+		for (Description d : loadedConcept.getDescriptions()) {
+			if (d.getEffectiveTime() == null && d.isActive() == false) {
+				try {
+					String descriptionSerialised = gson.toJson(d);
+					JSONObject jsonObjDesc = new JSONObject(descriptionSerialised);
+					jsonObjDesc.remove("descriptionId");
+					jsonObjDesc.put("inactivationIndicator", InactivationIndicator.RETIRED.toString());
+					jsonObjDesc.put("commitComment", "Batch Script Update");
+					//Description endpoint uses acceptability rather than acceptabilityMap
+					if (jsonObjDesc.optJSONObject("acceptabilityMap") != null) {
+						jsonObjDesc.remove("acceptabilityMap");
+					}
+					jsonObjDesc.put("acceptability", JSONObject.NULL);
+					tsClient.updateDescription(d.getDescriptionId(), jsonObjDesc, t.getBranchPath());
+				} catch (SnowOwlClientException | JSONException e) {
+					String errStr = "Failed to set inactivation reason on description '" + d.getTerm() + "' : " + e.getMessage();
+					report(t, loadedConcept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.API_ERROR, errStr);
+				}
+			}
+		}
+	}
+	
+	protected void loadProjectSnapshot() throws SnowOwlClientException, TermServerFixException {
+		File snapShotArchive = new File (project + "_" + env + ".zip");
+		//Do we already have a copy of the project locally?  If not, recover it.
+		if (!snapShotArchive.exists()) {
+			println ("Recovering current state of " + project + " from TS (" + env + ")");
+			tsClient.export("MAIN/" + project, null, ExportType.MIXED, ExtractType.SNAPSHOT, snapShotArchive);
+		}
+		GraphLoader gl = GraphLoader.getGraphLoader();
+		println ("Loading archive contents into memory...");
+		try {
+			ZipInputStream zis = new ZipInputStream(new FileInputStream(snapShotArchive));
+			ZipEntry ze = zis.getNextEntry();
+			try {
+				while (ze != null) {
+					if (!ze.isDirectory()) {
+						Path p = Paths.get(ze.getName());
+						String fileName = p.getFileName().toString();
+						if (fileName.contains("sct2_Relationship_Snapshot")) {
+							println("Loading Relationship File.");
+							gl.loadRelationshipFile(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, zis);
+						} else if (fileName.contains("sct2_Description_Snapshot")) {
+							println("Loading Description File.");
+							gl.loadDescriptionFile(zis);
+						}
+					}
+					ze = zis.getNextEntry();
+				}
+			} finally {
+				try{
+					zis.closeEntry();
+					zis.close();
+				} catch (Exception e){} //Well, we tried.
+			}
+		} catch (IOException e) {
+			throw new TermServerFixException("Failed to extract project state from archive " + snapShotArchive.getName(), e);
+		}
+	}
+
 	
 	/**
 	 Validate that that any attribute with that attribute type is a descendent of the target Value

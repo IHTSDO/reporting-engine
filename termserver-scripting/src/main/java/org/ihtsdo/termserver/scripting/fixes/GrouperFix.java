@@ -38,4 +38,9 @@ public class GrouperFix extends BatchFix implements RF2Constants{
 		throw new TermServerFixException("Not Implemented");
 	}
 
+	@Override
+	Concept loadLine(String[] lineItems) throws TermServerFixException {
+		throw new TermServerFixException("Not Implemented");
+	}
+
 }
