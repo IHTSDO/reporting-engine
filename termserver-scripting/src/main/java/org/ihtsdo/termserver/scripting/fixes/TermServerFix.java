@@ -69,6 +69,9 @@ public abstract class TermServerFix implements RF2Constants {
 															"https://dev-term.ihtsdotools.org/",
 															"https://uat-term.ihtsdotools.org/",
 															"https://term.ihtsdotools.org/",
+															"https://dev-ms-term.ihtsdotools.org/",
+															"https://uat-ms-term.ihtsdotools.org/",
+															"https://ms-term.ihtsdotools.org/",
 	};
 	
 	public static void println (String msg) {
