@@ -420,7 +420,6 @@ public class TaskService {
 				if (instanceConfiguration.isJiraProjectVisible(projectDetails.getProductCode())) {
 					AuthoringTask task = new AuthoringTask(issue, projectDetails.getBaseBranchPath());
 
-
 					allTasks.add(task);
 					// We only need to recover classification and validation
 					// statuses for task that are not new ie mature
@@ -725,12 +724,12 @@ public class TaskService {
 				// need to forcibly retrieve the issue in order to get
 				// attachments
 				Issue issue1 = this.getIssue(null, linkedIssue.getKey(), true);
-				
+
 				String crsId = issue1.getField(jiraCrsIdField).toString();
 				if (crsId == null) {
 					crsId = "Unknown";
 				}
-				
+
 				/*
 				 * logger.info("  linked issue: " + linkedIssue.toString());
 				 * logger.info("  - " + issue1.getDescription()); logger.info(
@@ -740,24 +739,26 @@ public class TaskService {
 				 */
 				for (Attachment attachment : issue1.getAttachments()) {
 
-					// attachments must be retrieved by relative path --
-					// absolute path will redirect to login
-					final String absolutePath = attachment.getContentUrl();
-					final String relativePath = absolutePath.substring(absolutePath.indexOf("secure"));
+					if (attachment.getFileName().equals("request.json")) {
 
-					try {
-						final String contentUrl = attachment.getContentUrl();
-						final JSON attachmentJson = restClient.get(contentUrl.substring(contentUrl.indexOf("secure")));
-						
-						
-						TaskAttachment taskAttachment = new TaskAttachment(crsId,
-								attachmentJson.toString());
-							
-						attachments.add(taskAttachment);
+						// attachments must be retrieved by relative path --
+						// absolute path will redirect to login
+						final String absolutePath = attachment.getContentUrl();
+						final String relativePath = absolutePath.substring(absolutePath.indexOf("secure"));
 
-					} catch (Exception e) {
-						throw new BusinessServiceException(
-								"Failed to retrieve attachment " + relativePath + ": " + e.getMessage(), e);
+						try {
+							final String contentUrl = attachment.getContentUrl();
+							final JSON attachmentJson = restClient
+									.get(contentUrl.substring(contentUrl.indexOf("secure")));
+
+							TaskAttachment taskAttachment = new TaskAttachment(crsId, attachmentJson.toString());
+
+							attachments.add(taskAttachment);
+
+						} catch (Exception e) {
+							throw new BusinessServiceException(
+									"Failed to retrieve attachment " + relativePath + ": " + e.getMessage(), e);
+						}
 					}
 				}
 			}
