@@ -2,9 +2,12 @@ package org.ihtsdo.termserver.scripting.fixes;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -63,15 +66,15 @@ public abstract class TermServerFix implements RF2Constants {
 		this.authenticatedCookie = authenticatedCookie;
 	}
 	
-	private static String[] envKeys = new String[] {"local","dev","uat", "prod"};
+	private static String[] envKeys = new String[] {"local","dev","uat","prod","dev","uat","prod"};
 
 	private static String[] environments = new String[] {	"http://localhost:8080/",
 															"https://dev-term.ihtsdotools.org/",
 															"https://uat-term.ihtsdotools.org/",
 															"https://term.ihtsdotools.org/",
-															"https://dev-ms-term.ihtsdotools.org/",
-															"https://uat-ms-term.ihtsdotools.org/",
-															"https://ms-term.ihtsdotools.org/",
+															"https://dev-ms-authoring.ihtsdotools.org/",
+															"https://uat-ms-authoring.ihtsdotools.org/",
+															"https://ms-authoring.ihtsdotools.org/",
 	};
 	
 	public static void println (String msg) {
@@ -169,7 +172,6 @@ public abstract class TermServerFix implements RF2Constants {
 		url = environments[envChoice];
 		env = envKeys[envChoice];
 	
-		initialiseSnowOwlClient();
 		if (authenticatedCookie == null) {
 			print ("Please enter your authenticated cookie for connection to " + url + " : ");
 			authenticatedCookie = STDIN.nextLine().trim();
@@ -177,6 +179,7 @@ public abstract class TermServerFix implements RF2Constants {
 		//TODO Make calls through client objects rather than resty direct and remove this member 
 		resty.withHeader("Cookie", authenticatedCookie);  
 		scaClient = new SCAClient(url, authenticatedCookie);
+		initialiseSnowOwlClient();
 		
 		print ("Specify Project " + (project==null?": ":"[" + project + "]: "));
 		String response = STDIN.nextLine().trim();
@@ -215,7 +218,8 @@ public abstract class TermServerFix implements RF2Constants {
 	}
 	
 	protected void initialiseSnowOwlClient() {
-		tsClient = new SnowOwlClient(url + "snowowl/snomed-ct/v2", "snowowl", "snowowl");
+		//tsClient = new SnowOwlClient(url + "snowowl/snomed-ct/v2", "snowowl", "snowowl");
+		tsClient = new SnowOwlClient(url + "snowowl/snomed-ct/v2", authenticatedCookie);
 	}
 
 	public String getProject() {
@@ -307,8 +311,8 @@ public abstract class TermServerFix implements RF2Constants {
 	}
 	
 	protected void writeToFile(String line) {
-		try(FileWriter fw = new FileWriter(reportFile, true);
-				BufferedWriter bw = new BufferedWriter(fw);
+		try(	OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(reportFile, true), StandardCharsets.UTF_8);
+				BufferedWriter bw = new BufferedWriter(osw);
 				PrintWriter out = new PrintWriter(bw))
 		{
 			out.println(line);
