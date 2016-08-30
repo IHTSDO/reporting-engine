@@ -42,16 +42,22 @@ public class SnowOwlClient {
 	private final String url;
 	private static final String ALL_CONTENT_TYPE = "*/*";
 	private static final String SNOWOWL_CONTENT_TYPE = "application/json";
-//	private static final String SNOWOWL_CONTENT_TYPE = "application/vnd.com.b2international.snowowl+json";
 	private final Set<SnowOwlClientEventListener> eventListeners;
 	private Logger logger = LoggerFactory.getLogger(getClass());
-	private static int INDENT = 2;
 
 	public SnowOwlClient(String url, String username, String password) {
 		this.url = url;
 		eventListeners = new HashSet<>();
 		resty = new Resty(new RestyOverrideAccept(ALL_CONTENT_TYPE));
 		resty.authenticate(url, username, password.toCharArray());
+	}
+	
+	public SnowOwlClient(String serverUrl, String cookie) {
+		this.url = serverUrl;
+		eventListeners = new HashSet<>();
+		resty = new Resty(new RestyOverrideAccept(ALL_CONTENT_TYPE));
+		resty.withHeader("Cookie", cookie);
+		resty.authenticate(this.url, null,null);
 	}
 
 	public JSONResource createConcept(JSONObject json, String branchPath) throws SnowOwlClientException {
