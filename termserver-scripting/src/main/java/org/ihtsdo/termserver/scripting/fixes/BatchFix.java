@@ -62,6 +62,9 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 	File batchFixFile;
 	protected String targetAuthor;
 	String[] emailDetails;
+	//String DELIMETER = TSV_FIELD_DELIMITER;
+	String DELIMITER = CSV_FIELD_DELIMITER;
+	protected String tsRoot = "MAIN/2016-01-31/SNOMEDCT-DK/";
 	
 	protected static Gson gson;
 	static {
@@ -107,7 +110,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 				}
 				
 				//File format Concept Type, SCTID, FSN with string fields quoted.  Strip quotes also.
-				String[] lineItems = lines.get(lineNum).replace("\"", "").split(TSV_FIELD_DELIMITER);
+				String[] lineItems = lines.get(lineNum).replace("\"", "").split(DELIMITER);
 				if (lineItems.length > 1) {
 					Concept c = loadLine(lineItems);
 					allConcepts.add(c);
@@ -115,7 +118,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 					debug ("Skipping blank line " + lineNum);
 				}
 			}
-			String projectPath = "MAIN/" + project;
+			String projectPath = tsRoot + project;
 			addSummaryInformation(CONCEPTS_IN_FILE, allConcepts);
 			Batch batch = formIntoBatch(batchFixFile.getName(), allConcepts, projectPath);
 			batchProcess(batch);
@@ -166,7 +169,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 								debug ("Creating jira task on project: " + project);
 								taskKey = scaClient.createTask(project, task.getDescription(), task.getSummaryHTML());
 								debug ("Creating task branch in terminology server: " + taskKey);
-								branchPath = tsClient.createBranch("MAIN/" + project, taskKey);
+								branchPath = tsClient.createBranch(tsRoot + project, taskKey);
 								taskCreated = true;
 							} catch (Exception e) {
 								taskCreationAttempts++;
@@ -179,7 +182,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 						}
 					} else {
 						taskKey = project + "-" + getNextDryRunNum();
-						branchPath = "MAIN/" + project + "/" + taskKey;
+						branchPath = tsRoot + project + "/" + taskKey;
 					}
 					
 					debug ( (dryRun?"Dry Run " : "Created") + "task: " + branchPath);
@@ -222,6 +225,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 							taskAuthor = targetAuthor;
 						}
 						if (taskAuthor != null && !taskAuthor.isEmpty()) {
+							debug("Assigning " + taskKey + " to " + taskAuthor);
 							scaClient.updateTask(project, taskKey, null, null, taskAuthor);
 						}
 					}
@@ -377,6 +381,10 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 					if (jsonObjDesc.optJSONObject("acceptabilityMap") != null) {
 						jsonObjDesc.remove("acceptabilityMap");
 					}
+					//Description endpoint does not include the conceptId
+					if (jsonObjDesc.optJSONObject("conceptId") != null) {
+						jsonObjDesc.remove("conceptId");
+					}
 					jsonObjDesc.put("acceptability", JSONObject.NULL);
 					tsClient.updateDescription(d.getDescriptionId(), jsonObjDesc, t.getBranchPath());
 				} catch (SnowOwlClientException | JSONException e) {
@@ -392,7 +400,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 		//Do we already have a copy of the project locally?  If not, recover it.
 		if (!snapShotArchive.exists()) {
 			println ("Recovering current state of " + project + " from TS (" + env + ")");
-			tsClient.export("MAIN/" + project, null, ExportType.MIXED, ExtractType.SNAPSHOT, snapShotArchive);
+			tsClient.export(tsRoot + project, null, ExportType.MIXED, ExtractType.SNAPSHOT, snapShotArchive);
 		}
 		GraphLoader gl = GraphLoader.getGraphLoader();
 		println ("Loading archive contents into memory...");

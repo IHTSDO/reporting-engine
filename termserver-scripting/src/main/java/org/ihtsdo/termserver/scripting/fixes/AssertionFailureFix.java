@@ -73,11 +73,11 @@ public class AssertionFailureFix extends BatchFix implements RF2Constants{
 		//Loop through all the terms for the concept and for any active one:
 		// 1. replace any double spaces with single spaces
 		// 2. TBA
-		//Then inactivate that term and replace with an otherwise indentical one.
-		for (Description d : concept.getDescriptions()) {
+		//Then inactivate that term and replace with an otherwise identical one.
+		List<Description> originalDescriptions = new ArrayList<Description>(concept.getDescriptions());
+		for (Description d : originalDescriptions) {
 			if (d.isActive()) {
-				String newTerm = d.getTerm();
-				newTerm.replaceAll("  ", " ");
+				String newTerm = d.getTerm().replaceAll("    ", " ").replaceAll("   ", " ").replaceAll("  ", " ");
 				if (!newTerm.equals(d.getTerm())) {
 					Description replacement = d.clone();
 					replacement.setTerm(newTerm);
@@ -107,6 +107,7 @@ public class AssertionFailureFix extends BatchFix implements RF2Constants{
 					task = batch.addNewTask();
 				}
 				task.add(thisConcept);
+				allConceptsBeingProcessed.add(thisConcept);
 			}
 		}
 		addSummaryInformation("Tasks scheduled", batch.getTasks().size());
@@ -137,9 +138,9 @@ public class AssertionFailureFix extends BatchFix implements RF2Constants{
 		List<Concept> reportedNotProcessed = new ArrayList<Concept>();
 		//Ensure that all concepts we got given to process were captured in one batch or another
 		for (Concept thisConcept : concepts) {
-			if (!allConceptsToBeProcessed.contains(thisConcept) && !thisConcept.getConceptType().equals(ConceptType.GROUPER)) {
+			if (!allConceptsToBeProcessed.contains(thisConcept)) {
 				reportedNotProcessed.add(thisConcept);
-				String msg = thisConcept + " was given in input file but did not get included in a batch.  Check active ingredient.";
+				String msg = thisConcept + " was given in input file but did not get included in a batch.";
 				report(null, thisConcept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.UNEXPECTED_CONDITION, msg);
 			}
 		}
