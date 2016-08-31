@@ -99,9 +99,11 @@ public class AssertionFailureFix extends BatchFix implements RF2Constants{
 		List<Concept> allConceptsBeingProcessed = new ArrayList<Concept>();
 		//Sort the concepts into groups per assigned Author
 		for (Map.Entry<String, List<Concept>> thisEntry : groupByAuthor(conceptsInFile).entrySet()) {
-			String assignedAuthor = thisEntry.getKey();
+			String[] author_reviewer = thisEntry.getKey().split("_");
 			Task task = batch.addNewTask();
-			task.setAssignedAuthor(assignedAuthor);
+			
+			task.setAssignedAuthor(author_reviewer[0]);
+			task.setReviewer(author_reviewer[1]);
 			for (Concept thisConcept : thisEntry.getValue()) {
 				if (task.size() >= taskSize) {
 					task = batch.addNewTask();
@@ -119,14 +121,15 @@ public class AssertionFailureFix extends BatchFix implements RF2Constants{
 	}
 	
 
+	/**Actually we're going to group by both Author and Reviewer **/
 	private Map<String, List<Concept>> groupByAuthor(List<Concept> conceptsInFile) {
 		Map<String, List<Concept>> groupedByAuthor = new HashMap<String,List<Concept>>();
 		for (Concept thisConcept : conceptsInFile) {
-			String assignedAuthor = thisConcept.getAssignedAuthor();
-			List<Concept> thisAuthorsConcepts = groupedByAuthor.get(assignedAuthor);
+			String author_reviewer = thisConcept.getAssignedAuthor() + "_" + thisConcept.getReviewer();
+			List<Concept> thisAuthorsConcepts = groupedByAuthor.get(author_reviewer);
 			if (thisAuthorsConcepts == null) {
 				thisAuthorsConcepts = new ArrayList<Concept>();
-				groupedByAuthor.put(assignedAuthor, thisAuthorsConcepts);
+				groupedByAuthor.put(author_reviewer, thisAuthorsConcepts);
 			}
 			thisAuthorsConcepts.add(thisConcept);
 		}
@@ -155,9 +158,10 @@ public class AssertionFailureFix extends BatchFix implements RF2Constants{
 
 	@Override
 	Concept loadLine(String[] lineItems) throws TermServerFixException {
-		Concept c = graph.getConcept(lineItems[1]);
+		Concept c = graph.getConcept(lineItems[2]);
 		c.setAssignedAuthor(lineItems[0]);
-		c.addAssertionFailure(lineItems[2]);
+		c.setReviewer(lineItems[1]);
+		c.addAssertionFailure(lineItems[3]);
 		return c;
 	}
 

@@ -228,6 +228,12 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 							debug("Assigning " + taskKey + " to " + taskAuthor);
 							scaClient.updateTask(project, taskKey, null, null, taskAuthor);
 						}
+						
+						String taskReviewer = task.getReviewer();
+						if (taskReviewer != null && !taskReviewer.isEmpty()) {
+							debug("Assigning " + taskKey + " to reviewer " + taskReviewer);
+							scaClient.putTaskIntoReview(project, taskKey, taskReviewer);
+						}
 					}
 				} catch (Exception e) {
 					throw new TermServerFixException("Failed to process batch " + task.getDescription() + " on task " + task.getTaskKey(), e);

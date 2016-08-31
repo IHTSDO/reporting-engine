@@ -9,13 +9,13 @@ public class Task {
 	String taskKey;
 	String branchPath;
 	String description;
-	List<Concept> concepts;
-	String assignedAuthor;
+	List<Concept> concepts = new ArrayList<Concept>();
+	String assignedAuthor = null;
+	String reviewer = null;
 
 	/* Call Batch.addNewTask instead of creating a Task directly */
 	Task(Batch batch) {
 		this.batch = batch;
-		concepts = new ArrayList<Concept>();
 	}
 
 	public String getDescription() {
@@ -88,6 +88,14 @@ public class Task {
 
 	public void setAssignedAuthor(String assignedAuthor) {
 		this.assignedAuthor = assignedAuthor;
+	}
+
+	public String getReviewer() {
+		return reviewer;
+	}
+
+	public void setReviewer(String reviewer) {
+		this.reviewer = reviewer;
 	}
 
 }

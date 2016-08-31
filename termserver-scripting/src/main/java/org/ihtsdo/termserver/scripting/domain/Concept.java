@@ -57,7 +57,16 @@ public class Concept implements RF2Constants {
 	private ConceptType conceptType = ConceptType.UNKNOWN;
 	private List<String> assertionFailures = new ArrayList<String>();
 	private String assignedAuthor;
+	private String reviewer;
 	
+	public String getReviewer() {
+		return reviewer;
+	}
+
+	public void setReviewer(String reviewer) {
+		this.reviewer = reviewer;
+	}
+
 	List<Concept> parents = new ArrayList<Concept>();
 	List<Concept> children = new ArrayList<Concept>();
 	
