@@ -64,6 +64,20 @@ public class SCAClient {
 		JSONResource response = resty.json(endPoint, Resty.put(RestyHelper.content(requestJson, JSON_CONTENT_TYPE)));
 		return response.get("key").toString();
 	}
+	
+	public String putTaskIntoReview(String project, String taskKey, String reviewer) throws Exception {
+		String endPoint = serverUrl + apiRoot + "projects/" + project + "/tasks/" + taskKey;
+		JSONObject requestJson = new JSONObject();
+		requestJson.put("status", "IN_REVIEW");
+
+		if (reviewer != null) {
+			JSONObject assigneeJson = new JSONObject();
+			assigneeJson.put("username", reviewer);
+			requestJson.put("reviewer", assigneeJson);
+		}
+		JSONResource response = resty.json(endPoint, Resty.put(RestyHelper.content(requestJson, JSON_CONTENT_TYPE)));
+		return response.get("key").toString();
+	}
 
 	public void deleteTask(String project, String taskKey, boolean optional) throws SnowOwlClientException {
 		String endPoint = serverUrl + apiRoot + "projects/" + project + "/tasks/" + taskKey;
