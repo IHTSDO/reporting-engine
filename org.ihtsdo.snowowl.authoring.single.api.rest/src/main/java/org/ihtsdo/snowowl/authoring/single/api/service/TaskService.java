@@ -713,10 +713,7 @@ public class TaskService {
 
 		try {
 			Issue issue = getIssue(projectKey, taskKey);
-			/*
-			 * logger.info("issue: " + issue.toString());
-			 */
-
+		
 			for (IssueLink issueLink : issue.getIssueLinks()) {
 
 				Issue linkedIssue = issueLink.getOutwardIssue();
@@ -730,22 +727,12 @@ public class TaskService {
 					crsId = "Unknown";
 				}
 
-				/*
-				 * logger.info("  linked issue: " + linkedIssue.toString());
-				 * logger.info("  - " + issue1.getDescription()); logger.info(
-				 * "  - " + issue1.getSummary()); logger.info("  - " +
-				 * issue1.getUrl()); logger.info("  - " +
-				 * issue1.getAttachments().size() + " attachments");
-				 */
 				for (Attachment attachment : issue1.getAttachments()) {
 
 					if (attachment.getFileName().equals("request.json")) {
 
 						// attachments must be retrieved by relative path --
 						// absolute path will redirect to login
-						final String absolutePath = attachment.getContentUrl();
-						final String relativePath = absolutePath.substring(absolutePath.indexOf("secure"));
-
 						try {
 							final String contentUrl = attachment.getContentUrl();
 							final JSON attachmentJson = restClient
