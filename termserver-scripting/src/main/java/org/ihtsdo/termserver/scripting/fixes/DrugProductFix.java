@@ -113,7 +113,6 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 			debug ("Updating state of " + loadedConcept);
 			if (!dryRun) {
 				tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
-				updateDescriptionInactivationReason(task, loadedConcept);
 			}
 		} catch (Exception e) {
 			report(task, concept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.API_ERROR, "Failed to save changed concept to TS: " + e.getMessage());
@@ -468,6 +467,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 			Description replacement = thisDescription.clone();
 			thisDescription.setActive(false);
 			thisDescription.setEffectiveTime(null);
+			thisDescription.setInactivationIndicator(InactivationIndicator.RETIRED);
 			if (thisDescription.getType().equals(DESCRIPTION_TYPE.FSN)) {
 				replacement.setTerm(fullFSN);
 			} else {

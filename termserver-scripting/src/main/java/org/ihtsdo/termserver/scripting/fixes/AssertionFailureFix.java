@@ -53,7 +53,6 @@ public class AssertionFailureFix extends BatchFix implements RF2Constants{
 				debug ("Updating state of " + loadedConcept);
 				if (!dryRun) {
 					tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
-					updateDescriptionInactivationReason(task, loadedConcept);
 				}
 			} catch (Exception e) {
 				report(task, concept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.API_ERROR, "Failed to save changed concept to TS: " + e.getMessage());
@@ -85,6 +84,7 @@ public class AssertionFailureFix extends BatchFix implements RF2Constants{
 					concept.addDescription(replacement);
 					d.setActive(false);
 					d.setEffectiveTime(null);
+					d.setInactivationIndicator(InactivationIndicator.RETIRED);
 					String msg = "Replaced term '" + d.getTerm() + "' with '" + replacement.getTerm() + "'.";
 					report(task, concept, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, msg);
 				}
@@ -101,12 +101,12 @@ public class AssertionFailureFix extends BatchFix implements RF2Constants{
 		for (Map.Entry<String, List<Concept>> thisEntry : groupByAuthor(conceptsInFile).entrySet()) {
 			String[] author_reviewer = thisEntry.getKey().split("_");
 			Task task = batch.addNewTask();
-			
-			task.setAssignedAuthor(author_reviewer[0]);
-			task.setReviewer(author_reviewer[1]);
+			setAuthorReviewer(task, author_reviewer);
+
 			for (Concept thisConcept : thisEntry.getValue()) {
 				if (task.size() >= taskSize) {
 					task = batch.addNewTask();
+					setAuthorReviewer(task, author_reviewer);
 				}
 				task.add(thisConcept);
 				allConceptsBeingProcessed.add(thisConcept);
@@ -120,6 +120,13 @@ public class AssertionFailureFix extends BatchFix implements RF2Constants{
 		return batch;
 	}
 	
+
+	private void setAuthorReviewer(Task task, String[] author_reviewer) {
+		task.setAssignedAuthor(author_reviewer[0]);
+		if (author_reviewer.length > 1) {
+			task.setReviewer(author_reviewer[1]);
+		}
+	}
 
 	/**Actually we're going to group by both Author and Reviewer **/
 	private Map<String, List<Concept>> groupByAuthor(List<Concept> conceptsInFile) {

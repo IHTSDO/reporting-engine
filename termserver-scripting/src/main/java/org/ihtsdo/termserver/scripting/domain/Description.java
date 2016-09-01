@@ -8,6 +8,7 @@ import javax.annotation.Generated;
 
 import org.ihtsdo.termserver.scripting.domain.RF2Constants.ACCEPTABILITY;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants.DESCRIPTION_TYPE;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.InactivationIndicator;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
@@ -45,6 +46,9 @@ public class Description {
 	@SerializedName("acceptabilityMap")
 	@Expose
 	private Map<String, ACCEPTABILITY> acceptabilityMap;
+	@SerializedName("inactivationIndicator")
+	@Expose
+	private InactivationIndicator inactivationIndicator;
 
 	/**
 	 * No args constructor for use in serialization
@@ -201,6 +205,14 @@ public class Description {
 		clone.acceptabilityMap = new HashMap<String, ACCEPTABILITY>();
 		clone.acceptabilityMap.putAll(this.acceptabilityMap);
 		return clone;
+	}
+
+	public InactivationIndicator getInactivationIndicator() {
+		return inactivationIndicator;
+	}
+
+	public void setInactivationIndicator(InactivationIndicator inactivationIndicator) {
+		this.inactivationIndicator = inactivationIndicator;
 	}
 
 }

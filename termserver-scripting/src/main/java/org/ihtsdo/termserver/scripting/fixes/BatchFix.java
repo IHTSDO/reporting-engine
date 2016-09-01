@@ -254,9 +254,13 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 	protected void report(Task task, Concept concept, SEVERITY severity, REPORT_ACTION_TYPE actionType, String actionDetail) {
 		String sctid = "";
 		String fsn = "";
+		String type = "";
 		if (concept != null) {
 			sctid = concept.getConceptId();
 			fsn = concept.getFsn();
+			if (concept.getConceptType() != null) {
+				type = concept.getConceptType().toString();
+			}
 			
 			if (severity.equals(SEVERITY.CRITICAL)) {
 				String key = CRITICAL_ISSUE + " encountered for " + sctid + " |" + fsn + "|" ;
@@ -266,7 +270,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 		}
 		String batchKey = (task == null? "" :  task.getTaskKey());
 		String batchDesc = (task == null? "" :  task.getDescription());
-		String line = batchKey + COMMA + batchDesc + COMMA + sctid + COMMA_QUOTE + fsn + QUOTE_COMMA + concept.getConceptType() + COMMA + severity + COMMA + actionType + COMMA_QUOTE + actionDetail + QUOTE;
+		String line = batchKey + COMMA + batchDesc + COMMA + sctid + COMMA_QUOTE + fsn + QUOTE_COMMA + type + COMMA + severity + COMMA + actionType + COMMA_QUOTE + actionDetail + QUOTE;
 		writeToFile (line);
 	}
 
@@ -374,22 +378,24 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 	 * @param loadedConcept
 	 * @throws  
 	 */
-	protected void updateDescriptionInactivationReason(Task t, Concept loadedConcept) {
+	//The browser endpoint can now handle inactivation reasons, so set when description is inactivated in concept.
+/*	protected void updateDescriptionInactivationReason(Task t, Concept loadedConcept) {
 		for (Description d : loadedConcept.getDescriptions()) {
 			if (d.getEffectiveTime() == null && d.isActive() == false) {
 				try {
 					String descriptionSerialised = gson.toJson(d);
 					JSONObject jsonObjDesc = new JSONObject(descriptionSerialised);
+					//The following fields can't be updated in a description and so are not represented
 					jsonObjDesc.remove("descriptionId");
+					jsonObjDesc.remove("conceptId");
+					jsonObjDesc.remove("type");
+					jsonObjDesc.remove("lang");
+					jsonObjDesc.remove("term");
 					jsonObjDesc.put("inactivationIndicator", InactivationIndicator.RETIRED.toString());
 					jsonObjDesc.put("commitComment", "Batch Script Update");
 					//Description endpoint uses acceptability rather than acceptabilityMap
 					if (jsonObjDesc.optJSONObject("acceptabilityMap") != null) {
 						jsonObjDesc.remove("acceptabilityMap");
-					}
-					//Description endpoint does not include the conceptId
-					if (jsonObjDesc.optJSONObject("conceptId") != null) {
-						jsonObjDesc.remove("conceptId");
 					}
 					jsonObjDesc.put("acceptability", JSONObject.NULL);
 					tsClient.updateDescription(d.getDescriptionId(), jsonObjDesc, t.getBranchPath());
@@ -399,7 +405,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 				}
 			}
 		}
-	}
+	}*/
 	
 	protected void loadProjectSnapshot() throws SnowOwlClientException, TermServerFixException {
 		File snapShotArchive = new File (project + "_" + env + ".zip");
