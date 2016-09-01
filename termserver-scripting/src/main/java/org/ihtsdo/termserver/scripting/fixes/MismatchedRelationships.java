@@ -59,16 +59,19 @@ public class MismatchedRelationships extends TermServerFix{
 			List<Relationship> statedRelationships = thisConcept.getRelationships(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP, targetAttribute, ACTIVE_STATE.ACTIVE);
 			List<Relationship> inferredRelationships = thisConcept.getRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, targetAttribute, ACTIVE_STATE.ACTIVE);
 			
-			if (statedRelationships.size() > 1) {
+			if (statedRelationships.size() == 0) {
+				//Nothing to do here, concept not relevant
+				continue; //consider next concept
+			} else if (statedRelationships.size() > 1) {
 				report (thisConcept, null, "multiple stated attributes of specified type detected");
 			} else {
 				Relationship stated = statedRelationships.get(0);
 				if (inferredRelationships.size() != 1) {
-					report (thisConcept, stated, "Stated relationship has" + inferredRelationships.size() + " inferred counterparts");
+					report (thisConcept, stated, "Stated relationship has " + inferredRelationships.size() + " inferred counterparts");
 					mismatchedRelationships++;
 				} else {
 					Relationship inferred = inferredRelationships.get(0);
-					if (stated.getTarget().equals(inferred.getTarget())) {
+					if (!stated.getTarget().equals(inferred.getTarget())) {
 						String msg = "Stated target does not equal inferred target " + inferred.getTarget();
 						report (thisConcept, stated, msg);
 					}
@@ -120,7 +123,7 @@ public class MismatchedRelationships extends TermServerFix{
 		//No need for a delta for this report.  We can tell if the relationship has
 		//changed by the null effective time.
 		
-		println ("Loading snapshot terms and delta relationships into memory...");
+		println ("Loading snapshot data into memory...");
 		for (File archive : archives) {
 			try {
 				ZipInputStream zis = new ZipInputStream(new FileInputStream(archive));
