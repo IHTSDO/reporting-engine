@@ -3,7 +3,6 @@ package org.ihtsdo.termserver.scripting.fixes;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
@@ -32,6 +31,7 @@ public abstract class TermServerFix implements RF2Constants {
 	static int conceptThrottle = 20;
 	protected String env;
 	protected String url = environments[0];
+	protected boolean useAuthenticatedCookie = false;
 	protected SnowOwlClient tsClient;
 	protected SCAClient scaClient;
 	protected String authenticatedCookie;
@@ -218,8 +218,11 @@ public abstract class TermServerFix implements RF2Constants {
 	}
 	
 	protected void initialiseSnowOwlClient() {
-		//tsClient = new SnowOwlClient(url + "snowowl/snomed-ct/v2", "snowowl", "snowowl");
-		tsClient = new SnowOwlClient(url + "snowowl/snomed-ct/v2", authenticatedCookie);
+		if (useAuthenticatedCookie) {
+			tsClient = new SnowOwlClient(url + "snowowl/snomed-ct/v2", authenticatedCookie);
+		} else {
+			tsClient = new SnowOwlClient(url + "snowowl/snomed-ct/v2", "snowowl", "snowowl");
+		}
 	}
 
 	public String getProject() {

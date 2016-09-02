@@ -28,6 +28,7 @@ public class AssertionFailureFix extends BatchFix implements RF2Constants{
 	public static void main(String[] args) throws TermServerFixException, IOException, SnowOwlClientException {
 		AssertionFailureFix fix = new AssertionFailureFix(null);
 		try {
+			fix.useAuthenticatedCookie = true;  //MS Servers have been update to use personal logins
 			fix.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			fix.loadProjectSnapshot();
