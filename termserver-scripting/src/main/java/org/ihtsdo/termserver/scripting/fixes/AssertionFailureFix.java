@@ -70,6 +70,8 @@ public class AssertionFailureFix extends BatchFix implements RF2Constants{
 
 	private int ensureTerms(Task task, Concept concept) {
 		int changesMade = 0;
+		//TODO Need to add check that all components have been published before
+		//inactivating.  If NOT published, should delete and recreate.
 		//Loop through all the terms for the concept and for any active one:
 		// 1. replace any double spaces with single spaces
 		// 2. TBA
