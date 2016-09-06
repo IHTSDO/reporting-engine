@@ -11,14 +11,14 @@ import org.ihtsdo.termserver.scripting.domain.ConceptHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Preconditions;
-
 import us.monoid.json.JSONArray;
 import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
 import us.monoid.web.BinaryResource;
 import us.monoid.web.JSONResource;
 import us.monoid.web.Resty;
+
+import com.google.common.base.Preconditions;
 
 public class SnowOwlClient {
 	
@@ -244,7 +244,6 @@ public class SnowOwlClient {
 			throw new SnowOwlClientException(e);
 		}
 	}
-	
 
 	public File export(String branchPath, String effectiveDate, ExportType exportType, ExtractType extractType, File saveLocation)
 			throws SnowOwlClientException {
@@ -329,5 +328,63 @@ public class SnowOwlClient {
 		}
 	}
 
+	public JSONArray getLangRefsetMembers(String descriptionId, String refsetId, String branch) throws SnowOwlClientException {
+		final String url = this.url + "/" + branch + "/members?referenceSet=" + refsetId + "&referencedComponentId=" + descriptionId;
+		try {
+			return (JSONArray) resty.json(url).get("items");
+		} catch (Exception e) {
+			throw new SnowOwlClientException(e);
+		}
+	}
+
+	public void deleteRefsetMember(String langRefMemberId, String branch, boolean toForce) throws SnowOwlClientException {
+		
+		try {
+			resty.json(getRefsetMemberUpdateUrl(langRefMemberId, branch, toForce), Resty.delete());
+			logger.info("deleted refset member id:" + langRefMemberId);
+		} catch (IOException e) {
+			throw new SnowOwlClientException(e);
+		}
+	}
+
+	public JSONResource updateRefsetMember(JSONObject langRefsetToUpdate, String branch, boolean toForce) throws SnowOwlClientException {
+		try {
+			final String id = langRefsetToUpdate.getString("id");
+			Preconditions.checkNotNull(id);
+			logger.info("Updating refset member " + id);
+			return resty.json(getRefsetMemberUpdateUrl(id, branch, toForce), Resty.put(RestyHelper.content(langRefsetToUpdate, SNOWOWL_CONTENT_TYPE)));
+		} catch (Exception e) {
+			throw new SnowOwlClientException(e);
+		}
+	}
+	
+	private String getRefsetMemberUrl(String refSetMemberId, String branch) {
+		return this.url + "/" + branch + "/members/" + refSetMemberId;
+	}
+	
+	
+	private String getDescriptionUrl(String descriptionId, String branch) {
+		return this.url + "/" + branch + "/descriptions/" + descriptionId;
+	}
+	
+	private String getRefsetMemberUpdateUrl(String refSetMemberId, String branch, boolean toForce) {
+		return getRefsetMemberUrl(refSetMemberId, branch) + "?force=" + toForce;
+	}
+
+	public JSONResource getRefsetMemberById(String id, String branch) throws SnowOwlClientException {
+		try {
+			return resty.json(getRefsetMemberUrl(id, branch));
+		} catch (IOException e) {
+			throw new SnowOwlClientException(e);
+		}
+	}
+
+	public JSONResource getDescriptionById(String descriptionId, String branch) throws SnowOwlClientException {
+		try {
+			return resty.json(getDescriptionUrl(descriptionId, branch));
+		} catch (IOException e) {
+			throw new SnowOwlClientException(e);
+		}
+	}
 
 }

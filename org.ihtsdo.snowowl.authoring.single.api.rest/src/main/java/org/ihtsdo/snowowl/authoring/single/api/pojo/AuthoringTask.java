@@ -1,13 +1,21 @@
 package org.ihtsdo.snowowl.authoring.single.api.pojo;
 
-import com.b2international.snowowl.core.branch.Branch;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonRawValue;
-import net.rcarz.jiraclient.Issue;
-import net.sf.json.JSONObject;
+import java.util.Date;
+import java.util.List;
+
 import org.ihtsdo.snowowl.authoring.single.api.review.service.TaskMessagesStatus;
 import org.ihtsdo.snowowl.authoring.single.api.service.PathHelper;
 import org.ihtsdo.snowowl.authoring.single.api.service.TaskStatus;
+
+import com.b2international.snowowl.core.branch.Branch;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonRawValue;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import net.rcarz.jiraclient.Issue;
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
 
 public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskUpdateRequest {
 
@@ -29,7 +37,10 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 	private String latestClassificationJson;
 	private String latestValidationStatus;
 	private TaskMessagesStatus feedbackMessagesStatus;
+	private Date feedbackMessageDate;
+	private Date viewDate;
 	private String branchPath;
+	private String labels;
 
 	public AuthoringTask() {
 	}
@@ -47,6 +58,18 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 		created = (String) issue.getField(JIRA_CREATED_FIELD);
 		updated = (String) issue.getField(JIRA_UPDATED_FIELD);
 		
+
+		// declare the object mapper for JSON conversion
+		ObjectMapper mapper = new ObjectMapper();
+
+		// set the labels
+		try {
+			labels = mapper.writeValueAsString(issue.getLabels());
+		} catch (JsonProcessingException e) {
+			labels = "Failed to convert Jira labels into json string";
+		}
+		
+		// set the reviewer object
 		Object reviewerObj = issue.getField(jiraReviewerField);
 		if (reviewerObj != null && reviewerObj instanceof JSONObject) {
 			reviewer = new User((JSONObject)reviewerObj);
@@ -178,5 +201,32 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 	public String getBranchPath() {
 		return branchPath;
 	}
+
+	public Date getFeedbackMessageDate() {
+		return feedbackMessageDate;
+	}
+
+	public void setFeedbackMessageDate(Date feedbackMessageDate) {
+		this.feedbackMessageDate = feedbackMessageDate;
+	}
+
+	public Date getViewDate() {
+		return viewDate;
+	}
+
+	public void setViewDate(Date viewDate) {
+		this.viewDate = viewDate;
+	}
+
+
+	@JsonRawValue
+	public String getLabels() {
+		return labels;
+	}
+
+	public void setLabels(String labels) {
+		this.labels = labels;
+	}
+
 
 }

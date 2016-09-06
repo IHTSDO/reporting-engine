@@ -1,9 +1,12 @@
 package org.ihtsdo.snowowl.authoring.single.api.service;
 
+import com.b2international.snowowl.core.Metadata;
 import com.b2international.snowowl.core.branch.Branch;
 import com.b2international.snowowl.core.exceptions.NotFoundException;
+import com.b2international.snowowl.core.merge.Merge;
 import com.b2international.snowowl.eventbus.IEventBus;
-import com.b2international.snowowl.snomed.datastore.server.request.SnomedRequests;
+import com.b2international.snowowl.snomed.datastore.request.SnomedRequests;
+import com.google.common.collect.Lists;
 import net.rcarz.jiraclient.Issue;
 import net.rcarz.jiraclient.JiraException;
 import org.apache.commons.lang.time.StopWatch;
@@ -11,11 +14,16 @@ import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.EntityType;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.MergeRequest;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.Notification;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class BranchService {
+	
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	@Autowired
 	private IEventBus eventBus;
@@ -54,28 +62,28 @@ public class BranchService {
 		return branchOrNull == null ? null : branchOrNull.state();
 	}
 
-	public Branch rebaseTask(String branchPath, MergeRequest mergeRequest, String username) throws BusinessServiceException {
+	public Merge rebaseTask(String branchPath, MergeRequest mergeRequest, String username) throws BusinessServiceException {
 		StopWatch stopwatch = new StopWatch();
 		stopwatch.start();
-		Branch branch = mergeBranch(PathHelper.getParentPath(branchPath), branchPath, mergeRequest.getSourceReviewId(), username);
+		Merge merge = mergeBranch(PathHelper.getParentPath(branchPath), branchPath, mergeRequest.getSourceReviewId(), username);
 		stopwatch.stop();
 		final String taskKey = PathHelper.getName(branchPath);
 		String resultMessage = "Rebase from project to " + taskKey + " completed without conflicts in " + stopwatch;
 		notificationService.queueNotification(username, new Notification(PathHelper.getParentName(branchPath), taskKey, EntityType.Rebase, resultMessage));
-		return branch;
+		return merge;
 	}
 
-	public Branch promoteTask(String branchPath, MergeRequest mergeRequest, String username) throws BusinessServiceException, JiraException {
+	public Merge promoteTask(String branchPath, MergeRequest mergeRequest, String username) throws BusinessServiceException, JiraException {
 		StopWatch stopwatch = new StopWatch();
 		stopwatch.start();
-		Branch branch = mergeBranch(branchPath, PathHelper.getParentPath(branchPath), mergeRequest.getSourceReviewId(), username);
+		Merge merge = mergeBranch(branchPath, PathHelper.getParentPath(branchPath), mergeRequest.getSourceReviewId(), username);
 		stopwatch.stop();
 		final String projectKey = PathHelper.getParentName(branchPath);
 		final String taskKey = PathHelper.getName(branchPath);
 		taskService.stateTransition(projectKey, taskKey, TaskStatus.PROMOTED);
 		String resultMessage = "Promotion of " + PathHelper.getName(branchPath) + " completed without conflicts in " + stopwatch;
 		notificationService.queueNotification(username, new Notification(projectKey, taskKey, EntityType.Promotion, resultMessage));
-		return branch;
+		return merge;
 	}
 
 	private void createBranch(String branchPath) {
@@ -122,7 +130,7 @@ public class BranchService {
 		return PathHelper.getParentPath(branchPath).equals("MAIN") ? "MAIN" : "Extension";
 	}
 
-	private Branch mergeBranch(String sourcePath, String targetPath, String reviewId, String username) throws BusinessServiceException {
+	private Merge mergeBranch(String sourcePath, String targetPath, String reviewId, String username) throws BusinessServiceException {
 		String commitMsg = username + " performed merge of " + sourcePath + " to " + targetPath;
 		return SnomedRequests
 				.branching()
@@ -133,6 +141,37 @@ public class BranchService {
 				.setReviewId(reviewId)
 				.build()
 				.executeSync(eventBus);
+	}
+	
+	public Metadata getBranchMetadataIncludeInherited(String path) {
+		Metadata mergedMetadata = null;
+		List<String> stackPaths = getBranchPathStack(path);
+		for (String stackPath : stackPaths) {
+			final Branch branch = getBranch(stackPath);
+			final Metadata metadata = branch.metadata();
+			if (mergedMetadata == null) {
+				mergedMetadata = metadata;
+			} else {
+				// merge metadata
+				for (String key : metadata.keySet()) {
+					if (!key.equals("lock") || stackPath.equals(path)) { // Only copy lock info from the deepest branch
+						mergedMetadata.put(key, metadata.get(key));
+					}
+				}
+			}
+		}
+		return mergedMetadata;
+	}
+	
+	private List<String> getBranchPathStack(String path) {
+		List<String> paths = new ArrayList<>();
+		paths.add(path);
+		int index;
+		while ((index = path.lastIndexOf("/")) != -1) {
+			path = path.substring(0, index);
+			paths.add(path);
+		}
+		return Lists.reverse(paths);
 	}
 
 }

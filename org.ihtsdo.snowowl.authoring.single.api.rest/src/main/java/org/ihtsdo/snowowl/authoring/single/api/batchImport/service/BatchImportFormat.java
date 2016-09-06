@@ -49,7 +49,7 @@ public class BatchImportFormat {
 	//There are variable numbers of Synonym and Notes fields, so they're optional and we'll work them out at runtime
 	public static String[] SIRS_HEADERS = {"Request Id","Topic","Local Code","Local Term","Fully Specified Name","Semantic Tag",
 			"Preferred Term","Terminology(1)","Parent Concept Id(1)","UMLS CUI","Definition","Proposed Use","Justification"};
-	public static String[] ICD11_HEADERS = {"icd11","sctid","fsn","usfsn", "gbfsn","TERM1","US1","GB1","TERM2","US2","GB2","TERM3","US3","GB3","TERM4","US4","GB4","expression"};  //Also note and synonym, but we'll detect those dynamically as there can be more than 1.
+	public static String[] ICD11_HEADERS = {"icd11","sctid","fsn","TERM1","US1","GB1","TERM2","US2","GB2","TERM3","US3","GB3","TERM4","US4","GB4","expression"};  //Also note and synonym, but we'll detect those dynamically as there can be more than 1.
 	public static String[] LOINC_HEADERS = {"SCTID","Parent_1","Parent_2","FSN","CAPSFSN","TERM1","US1","GB1","CAPS1","TERM2","US2","GB2","CAPS2","TERM3","US3","GB3","CAPS3","TERM4","US4","GB4","CAPS4","TERM5","US5","GB5","CAPS5","Associated LOINC Part(s)","Reference link(s)","Notes"};
 
 	public static String ADDITIONAL_RESULTS_HEADER = "OrigRow,Loaded,Import Result,SCTID Created";
@@ -76,7 +76,7 @@ public class BatchImportFormat {
 		ICD11_MAP.put(FIELD.ORIG_REF, "0");
 		ICD11_MAP.put(FIELD.SCTID, "1");
 		ICD11_MAP.put(FIELD.FSN, "2");
-		ICD11_MAP.put(FIELD.EXPRESSION, "17");
+		ICD11_MAP.put(FIELD.EXPRESSION, "15");
 	}
 	
 	public static Map<FIELD, String>LOINC_MAP = new HashMap<FIELD, String>();
