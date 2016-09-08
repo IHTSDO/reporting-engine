@@ -140,6 +140,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 
 	private void batchProcess(Batch batch) throws TermServerFixException {
 		int failureCount = 0;
+		int tasksCreated = 0;
 		boolean isFirst = true;
 			for (Task task : batch.getTasks()) {
 				try {
@@ -184,8 +185,9 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 						taskKey = project + "-" + getNextDryRunNum();
 						branchPath = tsRoot + project + "/" + taskKey;
 					}
-					
-					debug ( (dryRun?"Dry Run " : "Created") + "task: " + branchPath);
+					tasksCreated++;
+					String xOfY =  tasksCreated + " of " + batch.getTasks().size();
+					println ( (dryRun?"Dry Run " : "Created ") + "task (" + xOfY + "): " + branchPath);
 					task.setTaskKey(taskKey);
 					task.setBranchPath(branchPath);
 					incrementSummaryInformation("Tasks created",1);
