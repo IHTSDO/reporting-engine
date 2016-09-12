@@ -20,6 +20,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
+import org.springframework.core.convert.ConversionService;
+import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.http.converter.ByteArrayHttpMessageConverter;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.ResourceHttpMessageConverter;
@@ -68,5 +70,9 @@ public class SpringConfiguration extends WebMvcConfigurerAdapter {
 		jacksonConverter.setObjectMapper(objectMapper());
 		converters.add(jacksonConverter);
 	}
-
+	
+	@Bean
+	public ConversionService conversionService() {
+		return new DefaultConversionService();
+	}
 }
