@@ -744,7 +744,7 @@ public class TaskService {
 
 						} catch (Exception e) {
 							throw new BusinessServiceException(
-									"Failed to retrieve attachment " + relativePath + ": " + e.getMessage(), e);
+									"Failed to retrieve attachment " + attachment.getContentUrl() + ": " + e.getMessage(), e);
 						}
 					}
 				}
