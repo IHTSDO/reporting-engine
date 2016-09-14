@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.fixes;
+package org.ihtsdo.termserver.scripting.reports;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -14,18 +14,21 @@ import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import org.ihtsdo.termserver.scripting.GraphLoader;
+import org.ihtsdo.termserver.scripting.TermServerScript;
+import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExportType;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExtractType;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 
-public class LostRelationships extends TermServerFix{
+public class LostRelationships extends TermServerScript{
 	
 	Set<Concept> modifiedConcepts;
 	List<String> criticalErrors = new ArrayList<String>();
 	
-	public static void main(String[] args) throws TermServerFixException, IOException, SnowOwlClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		LostRelationships fix = new LostRelationships();
 		try {
 			fix.init(args);
@@ -81,7 +84,7 @@ public class LostRelationships extends TermServerFix{
 		writeToFile(line);
 	}
 	
-	protected void init(String[] args) throws IOException, TermServerFixException {
+	protected void init(String[] args) throws IOException, TermServerScriptException {
 		super.init(args);
 		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
 		String reportFilename = "lost_relationships_" + project.toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
@@ -91,7 +94,7 @@ public class LostRelationships extends TermServerFix{
 		writeToFile ("Concept, FSN, Active, Not Replaced Relationship");
 	}
 
-	private void loadProjectSnapshotAndDelta() throws SnowOwlClientException, TermServerFixException, InterruptedException {
+	private void loadProjectSnapshotAndDelta() throws SnowOwlClientException, TermServerScriptException, InterruptedException {
 		int SNAPSHOT = 0;
 		int DELTA = 1;
 		File[] archives = new File[] { new File (project + "_snapshot_" + env + ".zip"), new File (project + "_delta_" + env + ".zip") };
@@ -144,7 +147,7 @@ public class LostRelationships extends TermServerFix{
 					} catch (Exception e){} //Well, we tried.
 				}
 			} catch (IOException e) {
-				throw new TermServerFixException("Failed to extract project state from archive " + archive.getName(), e);
+				throw new TermServerScriptException("Failed to extract project state from archive " + archive.getName(), e);
 			}
 		}
 	}

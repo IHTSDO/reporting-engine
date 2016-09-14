@@ -1,11 +1,13 @@
-package org.ihtsdo.termserver.scripting.fixes;
+package org.ihtsdo.termserver.scripting.fixes.drugs;
 
 import java.util.List;
 
+import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Batch;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Task;
+import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 
 /*
 All concepts must be fully defined.
@@ -21,7 +23,7 @@ public class GrouperFix extends BatchFix implements RF2Constants{
 	}
 
 	@Override
-	public int doFix(Task task, Concept concept) throws TermServerFixException {
+	public int doFix(Task task, Concept concept) throws TermServerScriptException {
 		int changesMade = ensureDefinitionStatus(task, concept, DEFINITION_STATUS.FULLY_DEFINED);
 		changesMade += ensureAcceptableParent(task, concept, graph.getConcept(PHARM_BIO_PRODUCT_SCTID));
 		return changesMade;
@@ -33,14 +35,14 @@ public class GrouperFix extends BatchFix implements RF2Constants{
 	}
 
 	@Override
-	Batch formIntoBatch(String fileName, List<Concept> allConcepts,
-			String branchPath) throws TermServerFixException {
-		throw new TermServerFixException("Not Implemented");
+	protected Batch formIntoBatch(String fileName, List<Concept> allConcepts,
+			String branchPath) throws TermServerScriptException {
+		throw new TermServerScriptException("Not Implemented");
 	}
 
 	@Override
-	Concept loadLine(String[] lineItems) throws TermServerFixException {
-		throw new TermServerFixException("Not Implemented");
+	protected Concept loadLine(String[] lineItems) throws TermServerScriptException {
+		throw new TermServerScriptException("Not Implemented");
 	}
 
 }

@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.fixes;
+package org.ihtsdo.termserver.scripting.reports;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -15,19 +15,22 @@ import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import org.ihtsdo.termserver.scripting.GraphLoader;
+import org.ihtsdo.termserver.scripting.TermServerScript;
+import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExportType;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExtractType;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 
-public class ChangedRelationships extends TermServerFix{
+public class ChangedRelationships extends TermServerScript{
 	
 	Set<Concept> modifiedConcepts = new HashSet<Concept>();
 	List<String> criticalErrors = new ArrayList<String>();
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	
-	public static void main(String[] args) throws TermServerFixException, IOException, SnowOwlClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		ChangedRelationships fix = new ChangedRelationships();
 		try {
 			fix.init(args);
@@ -82,7 +85,7 @@ public class ChangedRelationships extends TermServerFix{
 		writeToFile(line);
 	}
 	
-	protected void init(String[] args) throws IOException, TermServerFixException {
+	protected void init(String[] args) throws IOException, TermServerScriptException {
 		super.init(args);
 		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
 		String reportFilename = "changed_relationships_" + project.toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
@@ -92,7 +95,7 @@ public class ChangedRelationships extends TermServerFix{
 		writeToFile ("Concept, FSN, Concept_Active, Concept_Modified, Stated_or_Inferred, Relationship_Active, GroupNum, Type, Target");
 	}
 
-	private void loadProjectSnapshotAndDelta() throws SnowOwlClientException, TermServerFixException, InterruptedException {
+	private void loadProjectSnapshotAndDelta() throws SnowOwlClientException, TermServerScriptException, InterruptedException {
 		int SNAPSHOT = 0;
 		int DELTA = 1;
 		File[] archives = new File[] { new File (project + "_snapshot_" + env + ".zip"), new File (project + "_delta_" + env + "_" + transientEffectiveDate + ".zip") };
@@ -149,7 +152,7 @@ public class ChangedRelationships extends TermServerFix{
 					} catch (Exception e){} //Well, we tried.
 				}
 			} catch (IOException e) {
-				throw new TermServerFixException("Failed to extract project state from archive " + archive.getName(), e);
+				throw new TermServerScriptException("Failed to extract project state from archive " + archive.getName(), e);
 			}
 		}
 	}

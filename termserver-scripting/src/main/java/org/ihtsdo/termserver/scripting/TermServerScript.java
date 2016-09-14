@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.fixes;
+package org.ihtsdo.termserver.scripting;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -22,13 +22,13 @@ import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 
 import us.monoid.web.Resty;
 
-public abstract class TermServerFix implements RF2Constants {
+public abstract class TermServerScript implements RF2Constants {
 	
-	static boolean debug = true;
-	static boolean dryRun = true;
-	static int dryRunCounter = 0;
-	static int taskThrottle = 30;
-	static int conceptThrottle = 20;
+	protected static boolean debug = true;
+	protected static boolean dryRun = true;
+	protected static int dryRunCounter = 0;
+	protected static int taskThrottle = 30;
+	protected static int conceptThrottle = 20;
 	protected String env;
 	protected String url = environments[0];
 	protected boolean useAuthenticatedCookie = false;
@@ -42,10 +42,10 @@ public abstract class TermServerFix implements RF2Constants {
 	private static Date startTime;
 	private static Map<String, Object> summaryDetails = new HashMap<String, Object>();
 	private static String summaryText = "";
-	File reportFile;
-	File outputDir;
+	protected File reportFile;
+	protected File outputDir;
 	
-	Scanner STDIN = new Scanner(System.in);
+	protected Scanner STDIN = new Scanner(System.in);
 	
 	public static String CONCEPTS_IN_FILE = "Concepts in file";
 	public static String CONCEPTS_PROCESSED = "Concepts processed";
@@ -102,7 +102,7 @@ public abstract class TermServerFix implements RF2Constants {
 		return msg;
 	}
 	
-	protected void init(String[] args) throws TermServerFixException, IOException {
+	protected void init(String[] args) throws TermServerScriptException, IOException {
 		
 		if (args.length < 3) {
 			println("Usage: java <FixClass> [-a author] [-b <batchSize>] [-r <restart lineNum>] [-c <authenticatedCookie>] [-d <Y/N>] [-p <projectName>] <batch file Location>");

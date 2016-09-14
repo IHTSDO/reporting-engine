@@ -1,14 +1,16 @@
-package org.ihtsdo.termserver.scripting.fixes;
+package org.ihtsdo.termserver.scripting.fixes.drugs;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Batch;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants.CARDINALITY;
 import org.ihtsdo.termserver.scripting.domain.Task;
+import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 
 /*
 All concepts must be fully defined
@@ -40,7 +42,7 @@ public class MedicinalFormFix extends DrugProductFix implements RF2Constants{
 	}
 
 	@Override
-	public int doFix(Task task, Concept concept) throws TermServerFixException {
+	public int doFix(Task task, Concept concept) throws TermServerScriptException {
 		int changesMade = 0; //ensureDefinitionStatus(task, concept, DEFINITION_STATUS.FULLY_DEFINED);
 		changesMade += ensureAcceptableParent(task, concept, graph.getConcept(PHARM_BIO_PRODUCT_SCTID));
 		validateAttributeValues(task, concept, HAS_ACTIVE_INGRED, SUBSTANCE, CARDINALITY.AT_LEAST_ONE);
@@ -55,9 +57,9 @@ public class MedicinalFormFix extends DrugProductFix implements RF2Constants{
 	}
 
 	@Override
-	Batch formIntoBatch(String fileName, List<Concept> allConcepts,
-			String branchPath) throws TermServerFixException {
-		throw new TermServerFixException("Not Implemented");
+	protected Batch formIntoBatch(String fileName, List<Concept> allConcepts,
+			String branchPath) throws TermServerScriptException {
+		throw new TermServerScriptException("Not Implemented");
 	}
 
 }

@@ -9,8 +9,8 @@ import java.util.Set;
 
 import javax.annotation.Generated;
 
-import org.ihtsdo.termserver.scripting.fixes.TermServerFix;
-import org.ihtsdo.termserver.scripting.fixes.TermServerFixException;
+import org.ihtsdo.termserver.scripting.TermServerScript;
+import org.ihtsdo.termserver.scripting.TermServerScriptException;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
@@ -292,7 +292,7 @@ public class Concept implements RF2Constants {
 		}
 	}
 
-	public List<Description> getDescriptions(ACCEPTABILITY acceptability, DESCRIPTION_TYPE descriptionType, ACTIVE_STATE active) throws TermServerFixException {
+	public List<Description> getDescriptions(ACCEPTABILITY acceptability, DESCRIPTION_TYPE descriptionType, ACTIVE_STATE active) throws TermServerScriptException {
 		List<Description> matchingDescriptions = new ArrayList<Description>();
 		for (Description thisDescription : descriptions) {
 			if (
@@ -307,18 +307,18 @@ public class Concept implements RF2Constants {
 				}
 			} else {
 				if (thisDescription.getAcceptabilityMap() == null && thisDescription.isActive()) {
-					TermServerFix.warn (thisDescription + " is active with no acceptability map");
+					TermServerScript.warn (thisDescription + " is active with no acceptability map");
 				}
 			}
 		}
 		return matchingDescriptions;
 	}
 
-	private static boolean translateActive(ACTIVE_STATE active) throws TermServerFixException {
+	private static boolean translateActive(ACTIVE_STATE active) throws TermServerScriptException {
 		switch (active) {
 			case ACTIVE : return true;
 			case INACTIVE : return false;
-			default: throw new TermServerFixException("Unable to translate " + active + " into boolean state");
+			default: throw new TermServerScriptException("Unable to translate " + active + " into boolean state");
 		}
 	}
 

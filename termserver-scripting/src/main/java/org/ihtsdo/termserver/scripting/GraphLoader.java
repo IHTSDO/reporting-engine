@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.fixes;
+package org.ihtsdo.termserver.scripting;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -31,7 +31,7 @@ public class GraphLoader implements RF2Constants {
 		return concepts.values();
 	}
 
-	public Map<String, Relationship> loadRelationshipFile (CHARACTERISTIC_TYPE characteristicType, InputStream relStream) throws IOException, TermServerFixException {
+	public Map<String, Relationship> loadRelationshipFile (CHARACTERISTIC_TYPE characteristicType, InputStream relStream) throws IOException, TermServerScriptException {
 		Map<String, Relationship> loadedRelationships = new HashMap<String, Relationship>();
 		BufferedReader br = new BufferedReader(new InputStreamReader(relStream, StandardCharsets.UTF_8));
 		String line;
@@ -46,7 +46,7 @@ public class GraphLoader implements RF2Constants {
 		return loadedRelationships;
 	}
 	
-	private Concept addRelationshipToConcept(CHARACTERISTIC_TYPE characteristicType, String[] lineItems) throws TermServerFixException {
+	private Concept addRelationshipToConcept(CHARACTERISTIC_TYPE characteristicType, String[] lineItems) throws TermServerScriptException {
 		Concept source = getConcept(lineItems[REL_IDX_SOURCEID]);
 		Concept type = getConcept(lineItems[REL_IDX_TYPEID]);
 		Concept destination = getConcept(lineItems[REL_IDX_DESTINATIONID]);
@@ -66,23 +66,23 @@ public class GraphLoader implements RF2Constants {
 		return source;
 	}
 
-	Concept getConcept(String sctId) throws TermServerFixException {
+	public Concept getConcept(String sctId) throws TermServerScriptException {
 		return getConcept(sctId, true);
 	}
 	
-	Concept getConcept(String sctId, boolean createIfRequired) throws TermServerFixException {
+	public Concept getConcept(String sctId, boolean createIfRequired) throws TermServerScriptException {
 		if (!concepts.containsKey(sctId)) {
 			if (createIfRequired) {
 				Concept c = new Concept(sctId);
 				concepts.put(sctId, c);
 			} else {
-				throw new TermServerFixException("Expected Concept " + sctId + " has not been loaded from archive");
+				throw new TermServerScriptException("Expected Concept " + sctId + " has not been loaded from archive");
 			}
 		}
 		return concepts.get(sctId);
 	}
 	
-	public void loadDescriptionFile(InputStream descStream) throws IOException, TermServerFixException {
+	public void loadDescriptionFile(InputStream descStream) throws IOException, TermServerScriptException {
 		//Not putting this in a try resource block otherwise it will close the stream on completion and we've got more to read!
 		BufferedReader br = new BufferedReader(new InputStreamReader(descStream, StandardCharsets.UTF_8));
 		String line;
@@ -96,7 +96,7 @@ public class GraphLoader implements RF2Constants {
 		}
 	}
 	
-	public void loadConceptFile(InputStream is) throws IOException, TermServerFixException {
+	public void loadConceptFile(InputStream is) throws IOException, TermServerScriptException {
 		//Not putting this in a try resource block otherwise it will close the stream on completion and we've got more to read!
 		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 		String line;
@@ -113,7 +113,7 @@ public class GraphLoader implements RF2Constants {
 		}
 	}
 
-	public Set<Concept> loadRelationshipDelta(CHARACTERISTIC_TYPE characteristicType, InputStream relStream) throws IOException, TermServerFixException {
+	public Set<Concept> loadRelationshipDelta(CHARACTERISTIC_TYPE characteristicType, InputStream relStream) throws IOException, TermServerScriptException {
 		Set<Concept> concepts = new HashSet<Concept>();
 		BufferedReader br = new BufferedReader(new InputStreamReader(relStream, StandardCharsets.UTF_8));
 		String line;

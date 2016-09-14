@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Batch;
 import org.ihtsdo.termserver.scripting.domain.Concept;
@@ -25,7 +26,7 @@ public class AssertionFailureFix extends BatchFix implements RF2Constants{
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerFixException, IOException, SnowOwlClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		AssertionFailureFix fix = new AssertionFailureFix(null);
 		try {
 			fix.useAuthenticatedCookie = true;  //MS Servers have been update to use personal logins
@@ -40,12 +41,12 @@ public class AssertionFailureFix extends BatchFix implements RF2Constants{
 		}
 	}
 	
-	protected void init(String[] args) throws TermServerFixException, IOException {
+	protected void init(String[] args) throws TermServerScriptException, IOException {
 		super.init(args);
 	}
 
 	@Override
-	public int doFix(Task task, Concept concept) throws TermServerFixException {
+	public int doFix(Task task, Concept concept) throws TermServerScriptException {
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
 		int changesMade = fixAssertionIssues(task, loadedConcept);
 		if (changesMade > 0) {
@@ -97,7 +98,7 @@ public class AssertionFailureFix extends BatchFix implements RF2Constants{
 	}
 
 	@Override
-	Batch formIntoBatch(String fileName, List<Concept> conceptsInFile, String branchPath) throws TermServerFixException {
+	protected Batch formIntoBatch(String fileName, List<Concept> conceptsInFile, String branchPath) throws TermServerScriptException {
 		Batch batch = new Batch(fileName);
 		List<Concept> allConceptsBeingProcessed = new ArrayList<Concept>();
 		//Sort the concepts into groups per assigned Author
@@ -167,7 +168,7 @@ public class AssertionFailureFix extends BatchFix implements RF2Constants{
 	}
 
 	@Override
-	Concept loadLine(String[] lineItems) throws TermServerFixException {
+	protected Concept loadLine(String[] lineItems) throws TermServerScriptException {
 		Concept c = graph.getConcept(lineItems[2]);
 		c.setAssignedAuthor(lineItems[0]);
 		c.setReviewer(lineItems[1]);

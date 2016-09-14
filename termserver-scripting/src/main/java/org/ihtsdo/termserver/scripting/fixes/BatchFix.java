@@ -29,6 +29,9 @@ import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 
+import org.ihtsdo.termserver.scripting.GraphLoader;
+import org.ihtsdo.termserver.scripting.TermServerScript;
+import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExportType;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExtractType;
@@ -55,7 +58,7 @@ import com.google.gson.GsonBuilder;
  * Reads in a file containing a list of concept SCTIDs and processes them in batches
  * in tasks created on the specified project
  */
-public abstract class BatchFix extends TermServerFix implements RF2Constants {
+public abstract class BatchFix extends TermServerScript implements RF2Constants {
 	
 	protected int taskSize = 6;
 	protected int wiggleRoom = 2;
@@ -94,9 +97,9 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 		}
 	}
 	
-	abstract Concept loadLine(String[] lineItems) throws TermServerFixException;
+	protected abstract Concept loadLine(String[] lineItems) throws TermServerScriptException;
 
-	protected void processFile() throws TermServerFixException {
+	protected void processFile() throws TermServerScriptException {
 		try {
 			List<String> lines = Files.readLines(batchFixFile, Charsets.UTF_8);
 			lines = SnomedUtils.removeBlankLines(lines);
@@ -127,18 +130,18 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 				sendEmail(msg, reportFile);
 			}
 		} catch (FileNotFoundException e) {
-			throw new TermServerFixException("Unable to open batch file " + batchFixFile.getAbsolutePath(), e);
+			throw new TermServerScriptException("Unable to open batch file " + batchFixFile.getAbsolutePath(), e);
 		} catch (IOException e) {
-			throw new TermServerFixException("Error while reading batch file " + batchFixFile.getAbsolutePath(), e);
+			throw new TermServerScriptException("Error while reading batch file " + batchFixFile.getAbsolutePath(), e);
 		}
 		println ("Processing complete.  See results: " + reportFile.getAbsolutePath());
 	}
 	
-	abstract Batch formIntoBatch (String fileName, List<Concept> allConcepts, String branchPath) throws TermServerFixException;
+	abstract protected Batch formIntoBatch (String fileName, List<Concept> allConcepts, String branchPath) throws TermServerScriptException;
 	
-	abstract int doFix(Task task, Concept concept) throws TermServerFixException;
+	abstract protected int doFix(Task task, Concept concept) throws TermServerScriptException;
 
-	private void batchProcess(Batch batch) throws TermServerFixException {
+	private void batchProcess(Batch batch) throws TermServerScriptException {
 		int failureCount = 0;
 		int tasksCreated = 0;
 		boolean isFirst = true;
@@ -176,7 +179,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 								taskCreationAttempts++;
 								scaClient.deleteTask(project, taskKey, true);  //Don't worry if deletion fails
 								if (taskCreationAttempts >= 3) {
-									throw new TermServerFixException("Maxed out failure attempts", e);
+									throw new TermServerScriptException("Maxed out failure attempts", e);
 								}
 								warn ("Branch creation failed (" + e.getMessage() + "), retrying...");
 							}
@@ -202,10 +205,10 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 							if (changesMade == 0) {
 								report(task, concept, SEVERITY.NONE, REPORT_ACTION_TYPE.NO_CHANGE, "");
 							}
-						} catch (TermServerFixException e) {
+						} catch (TermServerScriptException e) {
 							report(task, concept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.API_ERROR, getMessage(e));
 							if (++failureCount > maxFailures) {
-								throw new TermServerFixException ("Failure count exceeded " + maxFailures);
+								throw new TermServerScriptException ("Failure count exceeded " + maxFailures);
 							}
 						}
 					}
@@ -238,7 +241,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 						}
 					}
 				} catch (Exception e) {
-					throw new TermServerFixException("Failed to process batch " + task.getDescription() + " on task " + task.getTaskKey(), e);
+					throw new TermServerScriptException("Failed to process batch " + task.getDescription() + " on task " + task.getTaskKey(), e);
 				}
 			}
 	}
@@ -276,7 +279,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 		writeToFile (line);
 	}
 
-	protected void init (String[] args) throws TermServerFixException, IOException {
+	protected void init (String[] args) throws TermServerScriptException, IOException {
 		if (args.length < 3) {
 			println("Usage: java <FixClass> [-a author] [-n <taskSize>] [-r <restart lineNum>] [-t taskCreationDelay] [-c <authenticatedCookie>] [-d <Y/N>] [-p <projectName>] <batch file Location>");
 			println(" d - dry run");
@@ -309,11 +312,11 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 			}
 		}
 		if (batchFixFile == null) {
-			throw new TermServerFixException("No valid batch import file detected in command line arguments");
+			throw new TermServerScriptException("No valid batch import file detected in command line arguments");
 		}
 		
 		if (targetAuthor == null) {
-			throw new TermServerFixException("No target author detected in command line arguments");
+			throw new TermServerScriptException("No target author detected in command line arguments");
 		}
 		
 		println("Reading file from line " + restartPosition + " - " + batchFixFile.getName());
@@ -335,7 +338,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 		writeToFile ("TASK_KEY, TASK_DESC, SCTID, FSN, CONCEPT_TYPE,SEVERITY,ACTION_TYPE,ACTION_DETAIL");
 	}
 	
-	Concept loadConcept(Concept concept, String branchPath) throws TermServerFixException {
+	protected Concept loadConcept(Concept concept, String branchPath) throws TermServerScriptException {
 		debug ("Loading: " + concept + " from TS.");
 		try {
 			//In a dry run situation, the task branch is not created so use the Project instead
@@ -347,7 +350,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 			concept = gson.fromJson(json, Concept.class);
 			concept.setLoaded(true);
 		} catch (SnowOwlClientException | JSONException | IOException e) {
-			throw new TermServerFixException("Failed to recover " + concept + " from TS",e);
+			throw new TermServerScriptException("Failed to recover " + concept + " from TS",e);
 		}
 		return concept;
 	}
@@ -409,7 +412,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 		}
 	}*/
 	
-	protected void loadProjectSnapshot() throws SnowOwlClientException, TermServerFixException {
+	protected void loadProjectSnapshot() throws SnowOwlClientException, TermServerScriptException {
 		File snapShotArchive = new File (project + "_" + env + ".zip");
 		//Do we already have a copy of the project locally?  If not, recover it.
 		if (!snapShotArchive.exists()) {
@@ -443,7 +446,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 				} catch (Exception e){} //Well, we tried.
 			}
 		} catch (IOException e) {
-			throw new TermServerFixException("Failed to extract project state from archive " + snapShotArchive.getName(), e);
+			throw new TermServerScriptException("Failed to extract project state from archive " + snapShotArchive.getName(), e);
 		}
 	}
 
@@ -451,10 +454,10 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 	/**
 	 Validate that that any attribute with that attribute type is a descendent of the target Value
 	 * @param cardinality 
-	 * @throws TermServerFixException 
+	 * @throws TermServerScriptException 
 	 */
 	protected int validateAttributeValues(Task task, Concept concept,
-			Concept attributeType, Concept descendentsOfValue, CARDINALITY cardinality) throws TermServerFixException {
+			Concept attributeType, Concept descendentsOfValue, CARDINALITY cardinality) throws TermServerScriptException {
 		
 		List<Relationship> attributes = concept.getRelationships(CHARACTERISTIC_TYPE.ALL, attributeType, ACTIVE_STATE.ACTIVE);
 		Set<Concept> descendents = ClosureCache.getClosureCache().getClosure(descendentsOfValue);
@@ -522,7 +525,7 @@ public abstract class BatchFix extends TermServerFix implements RF2Constants {
 		return changesMade;
 	}
 
-	protected void validatePrefInFSN(Task task, Concept concept) throws TermServerFixException {
+	protected void validatePrefInFSN(Task task, Concept concept) throws TermServerScriptException {
 		//Check that the FSN with the semantic tags stripped off is
 		//equal to the preferred terms
 		List<Description> preferredTerms = concept.getDescriptions(ACCEPTABILITY.PREFERRED, DESCRIPTION_TYPE.SYNONYM, ACTIVE_STATE.ACTIVE);

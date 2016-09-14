@@ -8,8 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
-import org.ihtsdo.termserver.scripting.fixes.TermServerFixException;
 
 public class SnomedUtils implements RF2Constants{
 
@@ -21,7 +21,7 @@ public class SnomedUtils implements RF2Constants{
 		return elements;
 	}
 	
-	public static String toString(Map<String, ACCEPTABILITY> acceptabilityMap) throws TermServerFixException {
+	public static String toString(Map<String, ACCEPTABILITY> acceptabilityMap) throws TermServerScriptException {
 		String US = "N";
 		String GB = "N";
 		if (acceptabilityMap.containsKey(US_ENG_LANG_REFSET)) {
@@ -35,7 +35,7 @@ public class SnomedUtils implements RF2Constants{
 		return "US: " + US + ", GB: " + GB;
 	}
 	
-	public static String translatAcceptability (ACCEPTABILITY a) throws TermServerFixException {
+	public static String translatAcceptability (ACCEPTABILITY a) throws TermServerScriptException {
 		if (a.equals(ACCEPTABILITY.PREFERRED)) {
 			return "P";
 		}
@@ -43,7 +43,7 @@ public class SnomedUtils implements RF2Constants{
 		if (a.equals(ACCEPTABILITY.ACCEPTABLE)) {
 			return "A";
 		}
-		throw new TermServerFixException("Unable to translate acceptability " + a);
+		throw new TermServerScriptException("Unable to translate acceptability " + a);
 	}
 
 	public static String substitute(String str,

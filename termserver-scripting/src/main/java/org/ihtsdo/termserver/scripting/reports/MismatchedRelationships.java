@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.fixes;
+package org.ihtsdo.termserver.scripting.reports;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -13,20 +13,23 @@ import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import org.ihtsdo.termserver.scripting.GraphLoader;
+import org.ihtsdo.termserver.scripting.TermServerScript;
+import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExportType;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExtractType;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 
-public class MismatchedRelationships extends TermServerFix{
+public class MismatchedRelationships extends TermServerScript{
 	
 	GraphLoader gl = GraphLoader.getGraphLoader();
 	List<String> criticalErrors = new ArrayList<String>();
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	String targetAttributeType = "246075003"; // | Causative agent (attribute) |;
 	
-	public static void main(String[] args) throws TermServerFixException, IOException, SnowOwlClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		MismatchedRelationships fix = new MismatchedRelationships();
 		try {
 			fix.init(args);
@@ -43,7 +46,7 @@ public class MismatchedRelationships extends TermServerFix{
 		}
 	}
 	
-	private void detectMismatchedRelationships() throws TermServerFixException {
+	private void detectMismatchedRelationships() throws TermServerScriptException {
 		//Work through the snapshot of stated relationships and - for the target
 		//attribute type, report if the inferred relationship does not
 		//match the inferred one.
@@ -99,7 +102,7 @@ public class MismatchedRelationships extends TermServerFix{
 		writeToFile(line);
 	}
 	
-	protected void init(String[] args) throws IOException, TermServerFixException {
+	protected void init(String[] args) throws IOException, TermServerScriptException {
 		super.init(args);
 		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
 		String reportFilename = "mismatched_relationships_" + project.toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
@@ -109,7 +112,7 @@ public class MismatchedRelationships extends TermServerFix{
 		writeToFile ("Concept, FSN, Concept_Active, Concept_Modified, Stated_or_Inferred, Relationship_Active, GroupNum, Type, Target");
 	}
 
-	private void loadProjectSnapshot() throws SnowOwlClientException, TermServerFixException, InterruptedException {
+	private void loadProjectSnapshot() throws SnowOwlClientException, TermServerScriptException, InterruptedException {
 		int SNAPSHOT = 0;
 		File[] archives = new File[] { new File (project + "_snapshot_" + env + ".zip") };
 
@@ -163,7 +166,7 @@ public class MismatchedRelationships extends TermServerFix{
 					} catch (Exception e){} //Well, we tried.
 				}
 			} catch (IOException e) {
-				throw new TermServerFixException("Failed to extract project state from archive " + archive.getName(), e);
+				throw new TermServerScriptException("Failed to extract project state from archive " + archive.getName(), e);
 			}
 		}
 	}
