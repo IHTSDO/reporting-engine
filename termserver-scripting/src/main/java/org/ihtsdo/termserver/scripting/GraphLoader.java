@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.zip.ZipInputStream;
 
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
@@ -35,12 +36,13 @@ public class GraphLoader implements RF2Constants {
 		Map<String, Relationship> loadedRelationships = new HashMap<String, Relationship>();
 		BufferedReader br = new BufferedReader(new InputStreamReader(relStream, StandardCharsets.UTF_8));
 		String line;
+		boolean isHeader = true;
 		while ((line = br.readLine()) != null) {
-			String[] lineItems = line.split(FIELD_DELIMITER);
-			// Only store active relationships.  Check for active filters out header row.
-			if (lineItems[REL_IDX_ACTIVE].equals(ACTIVE_FLAG)
-					&& !lineItems[REL_IDX_CHARACTERISTICTYPEID].equals(ADDITIONAL_RELATIONSHIP)) {
+			if (!isHeader) {
+				String[] lineItems = line.split(FIELD_DELIMITER);
 				addRelationshipToConcept(characteristicType, lineItems);
+			} else {
+				isHeader = false;
 			}
 		}
 		return loadedRelationships;
@@ -59,7 +61,7 @@ public class GraphLoader implements RF2Constants {
 		source.addRelationship(r);
 		
 		//Only if the relationship is inferred, consider adding it as a parent
-		if (type.equals(IS_A) && r.getCharacteristicType().equals(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP)) {
+		if (r.isActive() && type.equals(IS_A) && r.getCharacteristicType().equals(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP)) {
 			source.addParent(destination);
 			destination.addChild(source);
 		}
@@ -114,6 +116,16 @@ public class GraphLoader implements RF2Constants {
 	}
 
 	public Set<Concept> loadRelationshipDelta(CHARACTERISTIC_TYPE characteristicType, InputStream relStream) throws IOException, TermServerScriptException {
+		return loadRelationshipDelta(characteristicType, relStream, true);
+	}
+
+	public Set<Concept> getModifiedConcepts(
+			CHARACTERISTIC_TYPE characteristicType, ZipInputStream relStream) throws IOException, TermServerScriptException {
+		return loadRelationshipDelta(characteristicType, relStream, false);
+	}
+	
+	public Set<Concept> loadRelationshipDelta(CHARACTERISTIC_TYPE characteristicType, InputStream relStream, boolean addRelationshipsToConcepts) 
+			throws IOException, TermServerScriptException {
 		Set<Concept> concepts = new HashSet<Concept>();
 		BufferedReader br = new BufferedReader(new InputStreamReader(relStream, StandardCharsets.UTF_8));
 		String line;
@@ -121,7 +133,13 @@ public class GraphLoader implements RF2Constants {
 		while ((line = br.readLine()) != null) {
 			if (!isHeaderLine) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
-				concepts.add(addRelationshipToConcept(characteristicType, lineItems));
+				Concept thisConcept;
+				if (addRelationshipsToConcepts) {
+					thisConcept = addRelationshipToConcept(characteristicType, lineItems);
+				} else {
+					thisConcept = getConcept(lineItems[REL_IDX_SOURCEID]);
+				}
+				concepts.add(thisConcept);
 			} else {
 				isHeaderLine = false;
 			}

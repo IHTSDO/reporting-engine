@@ -25,14 +25,18 @@ import org.ihtsdo.termserver.scripting.domain.Relationship;
 
 public class LostRelationships extends TermServerScript{
 	
+	GraphLoader gl = GraphLoader.getGraphLoader();
 	Set<Concept> modifiedConcepts;
+	Set<Concept> descendentOfProductRole;
 	List<String> criticalErrors = new ArrayList<String>();
+	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		LostRelationships fix = new LostRelationships();
 		try {
 			fix.init(args);
 			fix.loadProjectSnapshotAndDelta();
+			fix.populateProdRoleDesc();
 			fix.detectLostRelationships();
 		} catch (Exception e) {
 			println("Failed to produce Lost Relationship Report due to " + e.getMessage());
@@ -45,6 +49,11 @@ public class LostRelationships extends TermServerScript{
 		}
 	}
 	
+	private void populateProdRoleDesc() throws TermServerScriptException {
+		Concept productRole = gl.getConcept("718566004"); // |Product role (product))
+		descendentOfProductRole = productRole.getDescendents(NOT_SET);
+	}
+
 	private void detectLostRelationships() {
 		//Work through our set of modified concepts and if a relationship of a type has 
 		//been inactivated, ensure that we have another relationship of the same time 
@@ -61,7 +70,8 @@ public class LostRelationships extends TermServerScript{
 				debug ("Skipping " + thisConcept);
 				continue;
 			}
-			for(Relationship thisRel : thisConcept.getRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, ACTIVE_STATE.INACTIVE)) {
+			//Only looking at relationships that have changed in this release, so pass current effective time
+			for(Relationship thisRel : thisConcept.getRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, ACTIVE_STATE.INACTIVE, transientEffectiveDate)) {
 				List<Relationship> replacements = thisConcept.getRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, thisRel.getType(), ACTIVE_STATE.ACTIVE);
 				if (replacements.size() == 0) {
 					String msg = thisConcept + " has no replacement for lost relationship " + thisRel;
@@ -80,7 +90,9 @@ public class LostRelationships extends TermServerScript{
 	}
 	
 	protected void report (Concept c, Relationship r) {
-		String line = c.getConceptId() + COMMA_QUOTE + c.getFsn() + QUOTE_COMMA + c.isActive() + COMMA_QUOTE + r + QUOTE;
+		//Adding a column to indicate if the relationship value is a descendant of Product Role
+		boolean isProdRoleDesc = descendentOfProductRole.contains(r.getTarget());
+		String line = c.getConceptId() + COMMA_QUOTE + c.getFsn() + QUOTE_COMMA + c.isActive() + COMMA_QUOTE + r + QUOTE_COMMA + isProdRoleDesc;
 		writeToFile(line);
 	}
 	
@@ -91,7 +103,7 @@ public class LostRelationships extends TermServerScript{
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToFile ("Concept, FSN, Active, Not Replaced Relationship");
+		writeToFile ("Concept, FSN, Active, Not Replaced Relationship, ValueIsProdRoleDesc");
 	}
 
 	private void loadProjectSnapshotAndDelta() throws SnowOwlClientException, TermServerScriptException, InterruptedException {
@@ -108,11 +120,9 @@ public class LostRelationships extends TermServerScript{
 		
 		if (!archives[DELTA].exists()) {
 			println ("Recovering delta state of " + project + " from TS (" + env + ")");
-			String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
 			tsClient.export("MAIN/" + project, transientEffectiveDate, ExportType.UNPUBLISHED, ExtractType.DELTA, archives[DELTA]);
 		}
 		
-		GraphLoader gl = GraphLoader.getGraphLoader();
 		println ("Loading snapshot terms and delta relationships into memory...");
 		for (File archive : archives) {
 			try {
@@ -133,9 +143,14 @@ public class LostRelationships extends TermServerScript{
 								gl.loadConceptFile(zis);
 							}
 							
+							if (fileName.contains("sct2_Relationship_Snapshot")) {
+								println("Loading Relationship Snapshot File.");
+								gl.loadRelationshipFile(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, zis);
+							}
+							
 							if (fileName.contains("sct2_Relationship_Delta")) {
 								println("Loading Relationship Delta File.");
-								modifiedConcepts = gl.loadRelationshipDelta(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, zis);
+								modifiedConcepts = gl.getModifiedConcepts(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, zis);
 							}
 						}
 						ze = zis.getNextEntry();

@@ -152,17 +152,23 @@ public class Concept implements RF2Constants {
 		return relationships;
 	}
 	
-	public List<Relationship> getRelationships(CHARACTERISTIC_TYPE characteristicType, ACTIVE_STATE state) {
+	public List<Relationship> getRelationships(CHARACTERISTIC_TYPE characteristicType, ACTIVE_STATE state, String effectiveTime) {
 		List<Relationship> matches = new ArrayList<Relationship>();
 		for (Relationship r : relationships) {
-			if (characteristicType.equals(CHARACTERISTIC_TYPE.ALL) || r.getCharacteristicType().equals(characteristicType)) {
-				if (state.equals(ACTIVE_STATE.BOTH) || (state.equals(ACTIVE_STATE.ACTIVE) && r.isActive()) ||
-						(state.equals(ACTIVE_STATE.INACTIVE) && !r.isActive())) {
-					matches.add(r);
+			if (effectiveTime == null || r.getEffectiveTime().equals(effectiveTime)) {
+				if (characteristicType.equals(CHARACTERISTIC_TYPE.ALL) || r.getCharacteristicType().equals(characteristicType)) {
+					if (state.equals(ACTIVE_STATE.BOTH) || (state.equals(ACTIVE_STATE.ACTIVE) && r.isActive()) ||
+							(state.equals(ACTIVE_STATE.INACTIVE) && !r.isActive())) {
+						matches.add(r);
+					}
 				}
 			}
 		}
 		return matches;
+	}
+	
+	public List<Relationship> getRelationships(CHARACTERISTIC_TYPE characteristicType, ACTIVE_STATE state) {
+		return getRelationships(characteristicType, state, null);
 	}
 	
 	public List<Relationship> getRelationships(CHARACTERISTIC_TYPE characteristicType, Concept type, ACTIVE_STATE state) {
