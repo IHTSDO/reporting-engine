@@ -76,6 +76,7 @@ public class TaskService {
 	private final String jiraExtensionBaseField;
 	private final String jiraProductCodeField;
 	private final String jiraProjectPromotionField;
+	private final String jiraProjectMrcmField;
 	private final String jiraCrsIdField;
 
 	private LoadingCache<String, ProjectDetails> projectDetailsCache;
@@ -91,6 +92,7 @@ public class TaskService {
 		jiraExtensionBaseField = JiraHelper.fieldIdLookup("Extension Base", jiraClientForFieldLookup);
 		jiraProductCodeField = JiraHelper.fieldIdLookup("Product Code", jiraClientForFieldLookup);
 		jiraProjectPromotionField = JiraHelper.fieldIdLookup("SCA Project Promotion", jiraClientForFieldLookup);
+		jiraProjectMrcmField = JiraHelper.fieldIdLookup("SCA Project MRCM", jiraClientForFieldLookup);
 		jiraCrsIdField = JiraHelper.fieldIdLookup("CRS-ID", jiraClientForFieldLookup);
 
 		init();
@@ -172,7 +174,9 @@ public class TaskService {
 				final String branchPath = PathHelper.getProjectPath(extensionBase, key);
 				final String latestClassificationJson = classificationService.getLatestClassification(branchPath);
 				final boolean promotionDisabled = "Disabled".equals(JiraHelper.toStringOrNull(magicTicket.getField(jiraProjectPromotionField)));
+				final boolean mrcmDisabled = "Disabled".equals(JiraHelper.toStringOrNull(magicTicket.getField(jiraProjectMrcmField)));
 
+				
 				final Branch branchOrNull = branchService.getBranchOrNull(branchPath);
 				final Branch parentBranchOrNull = branchService.getBranchOrNull(PathHelper.getParentPath(branchPath));
 				Branch.BranchState branchState = null;
@@ -185,7 +189,7 @@ public class TaskService {
 				}
 				branchPaths.add(branchPath);
 				final AuthoringProject authoringProject = new AuthoringProject(project.getKey(), project.getName(),
-						getPojoUserOrNull(project.getLead()), branchPath, branchState, latestClassificationJson, promotionDisabled);
+						getPojoUserOrNull(project.getLead()), branchPath, branchState, latestClassificationJson, promotionDisabled, mrcmDisabled);
 				authoringProject.setMetadata(metadata);
 				authoringProjects.add(authoringProject);
 			}
