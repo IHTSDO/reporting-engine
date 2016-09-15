@@ -31,11 +31,18 @@ public interface RF2Constants {
 	final String INGREDIENT_SEPARATOR = "+";
 	final String INGREDIENT_SEPARATOR_ESCAPED = "\\+";
 	
+	final String CONCEPT_INT_PARTITION = "00";
+	final String DESC_INT_PARTITION = "01";
+	final String REL_INT_PARTITION = "02";
+	
 	enum InactivationIndicator {DUPLICATE, OUTDATED, ERRONEOUS, LIMITED, MOVED_ELSEWHERE, 
 		PENDING_MOVE, INAPPROPRIATE, CONCEPT_NON_CURRENT, RETIRED};
 	
 	static final String GB_ENG_LANG_REFSET = "900000000000508004";
 	static final String US_ENG_LANG_REFSET = "900000000000509007";
+	
+	static final String PREFERRED_TERM = "900000000000548007";
+	static final String ACCEPTABLE_TERM = " 900000000000549004";
 	
 	final public String SEMANTIC_TAG_START = "(";
 	
@@ -94,5 +101,15 @@ public interface RF2Constants {
 	public static final int DES_IDX_TYPEID = 6;
 	public static final int DES_IDX_TERM = 7;
 	public static final int DES_IDX_CASESIGNIFICANCEID = 8;
+	
+	// Language Refset columns
+	// id	effectiveTime	active	moduleId	refsetId	referencedComponentId	acceptabilityId
+	public static final int LANG_IDX_ID = 0;
+	public static final int LANG_IDX_EFFECTIVETIME = 1;
+	public static final int LANG_IDX_ACTIVE = 2;
+	public static final int LANG_IDX_MODULID = 3;
+	public static final int LANG_IDX_REFSETID = 4;
+	public static final int LANG_IDX_REFCOMPID = 5;
+	public static final int LANG_IDX_ACCEPTABILITY_ID = 6;
 
 }

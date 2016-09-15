@@ -13,13 +13,16 @@ import java.util.Set;
 import java.util.zip.ZipInputStream;
 
 import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 public class GraphLoader implements RF2Constants {
 
 	private static GraphLoader singletonGraphLoader = null;
 	private Map<String, Concept> concepts = new HashMap<String, Concept>();
+	private Map<String, Description> descriptions = new HashMap<String, Description>();
 
 	public static GraphLoader getGraphLoader() {
 		if (singletonGraphLoader == null) {
@@ -84,20 +87,57 @@ public class GraphLoader implements RF2Constants {
 		return concepts.get(sctId);
 	}
 	
-	public void loadDescriptionFile(InputStream descStream) throws IOException, TermServerScriptException {
+	public Description getDescription(String sctId) throws TermServerScriptException {
+		return getDescription(sctId, true);
+	}
+	
+	public Description getDescription(String sctId, boolean createIfRequired) throws TermServerScriptException {
+		if (!descriptions.containsKey(sctId)) {
+			if (createIfRequired) {
+				Description d = new Description(sctId);
+				descriptions.put(sctId, d);
+			} else {
+				throw new TermServerScriptException("Expected Description " + sctId + " has not been loaded from archive");
+			}
+		}
+		return descriptions.get(sctId);
+	}
+	
+	public void loadDescriptionFile(InputStream descStream, boolean fsnOnly) throws IOException, TermServerScriptException {
 		//Not putting this in a try resource block otherwise it will close the stream on completion and we've got more to read!
 		BufferedReader br = new BufferedReader(new InputStreamReader(descStream, StandardCharsets.UTF_8));
 		String line;
 		while ((line = br.readLine()) != null) {
 			String[] lineItems = line.split(FIELD_DELIMITER);
-			// Only store active relationships.  Need for active flag will skip header line
-			if (lineItems[DES_IDX_ACTIVE].equals(ACTIVE_FLAG) && lineItems[DES_IDX_TYPEID].equals(FULLY_SPECIFIED_NAME)) {
+			if (fsnOnly) {
+				// Only store active relationships.  Need for active flag will skip header line
+				if (lineItems[DES_IDX_ACTIVE].equals(ACTIVE_FLAG) && lineItems[DES_IDX_TYPEID].equals(FULLY_SPECIFIED_NAME)) {
+					Concept c = getConcept(lineItems[DES_IDX_CONCEPTID]);
+					c.setFsn(lineItems[DES_IDX_TERM]);
+				}
+			} else {
 				Concept c = getConcept(lineItems[DES_IDX_CONCEPTID]);
-				c.setFsn(lineItems[DES_IDX_TERM]);
+				Description d = loadDescriptionLine(lineItems);
+				c.addDescription(d);
+				if (d.isActive() && d.getType().equals(DESCRIPTION_TYPE.FSN)) {
+					c.setFsn(lineItems[DES_IDX_TERM]);
+				}
 			}
 		}
 	}
 	
+	private Description loadDescriptionLine(String[] lineItems) throws TermServerScriptException {
+		Description d = getDescription(lineItems[DES_IDX_ID]);
+		d.setDescriptionId(lineItems[DES_IDX_ID]);
+		d.setActive(lineItems[DES_IDX_ACTIVE].equals("1"));
+		d.setModuleId(lineItems[DES_IDX_MODULID]);
+		d.setCaseSignificance(lineItems[DES_IDX_CASESIGNIFICANCEID]);
+		d.setConceptId(lineItems[DES_IDX_CONCEPTID]);
+		d.setLang(lineItems[DES_IDX_LANGUAGECODE]);
+		d.setTerm(lineItems[DES_IDX_TERM]);
+		return d;
+	}
+
 	public void loadConceptFile(InputStream is) throws IOException, TermServerScriptException {
 		//Not putting this in a try resource block otherwise it will close the stream on completion and we've got more to read!
 		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
@@ -145,6 +185,24 @@ public class GraphLoader implements RF2Constants {
 			}
 		}
 		return concepts;
+	}
+
+	public void loadLanguageFile(ZipInputStream zis) throws IOException, TermServerScriptException {
+		BufferedReader br = new BufferedReader(new InputStreamReader(zis, StandardCharsets.UTF_8));
+		boolean isHeaderLine = true;
+		String line;
+		while ((line = br.readLine()) != null) {
+			if (!isHeaderLine) {
+				String[] lineItems = line.split(FIELD_DELIMITER);
+				if (lineItems[LANG_IDX_ACTIVE].equals(ACTIVE_FLAG)) {
+					Description d = getDescription(lineItems[LANG_IDX_REFCOMPID]);
+					ACCEPTABILITY a = SnomedUtils.getAcceptability(lineItems[LANG_IDX_ACCEPTABILITY_ID]);
+					d.setAcceptablity(lineItems[LANG_IDX_REFSETID], a);
+				}
+			} else {
+				isHeaderLine = false;
+			}
+		}
 	}
 
 }

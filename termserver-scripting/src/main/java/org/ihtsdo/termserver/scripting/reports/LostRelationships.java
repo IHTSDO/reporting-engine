@@ -135,7 +135,7 @@ public class LostRelationships extends TermServerScript{
 							String fileName = p.getFileName().toString();
 							if (fileName.contains("sct2_Description_Snapshot")) {
 								println("Loading Description File.");
-								gl.loadDescriptionFile(zis);
+								gl.loadDescriptionFile(zis, true);  //Load FSNs only
 							}
 							
 							if (fileName.contains("sct2_Concept_Snapshot")) {
@@ -170,5 +170,12 @@ public class LostRelationships extends TermServerScript{
 	@Override
 	public String getFixName() {
 		return "Lost Relationships";
+	}
+
+	@Override
+	protected Concept loadLine(String[] lineItems)
+			throws TermServerScriptException {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }

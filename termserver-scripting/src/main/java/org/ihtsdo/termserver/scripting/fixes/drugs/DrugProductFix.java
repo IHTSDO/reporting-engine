@@ -1,10 +1,6 @@
 package org.ihtsdo.termserver.scripting.fixes.drugs;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -15,13 +11,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExportType;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExtractType;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Batch;
 import org.ihtsdo.termserver.scripting.domain.Concept;
@@ -30,11 +22,8 @@ import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.Task;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
-import org.ihtsdo.termserver.scripting.fixes.BatchFix.REPORT_ACTION_TYPE;
-import org.ihtsdo.termserver.scripting.fixes.BatchFix.SEVERITY;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
-import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
 
 import com.b2international.commons.StringUtils;
@@ -57,7 +46,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		wordSubstitution.put("acetaminophen", "paracetamol");
 	}
 	
-	protected DrugProductFix(BatchFix clone) {
+	public DrugProductFix(BatchFix clone) {
 		super(clone);
 	}
 
@@ -68,12 +57,12 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 	MedicinalEntityFix mef;
 	GrouperFix gf;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
 		DrugProductFix fix = new DrugProductFix(null);
 		try {
 			fix.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
-			fix.loadProjectSnapshot();
+			fix.loadProjectSnapshot(true);  //Load FSNs only
 			//We won't incude the project export in our timings
 			fix.startTimer();
 			fix.processFile();
@@ -635,7 +624,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 	}
 	
 
-	void determineConceptType(Concept concept) {
+	public void determineConceptType(Concept concept) {
 		//Simplest thing for Product Strength is that if there's a number in the FSN then it's probably Product Strength
 		//We'll refine this logic as examples present themselves.
 		String fsn = concept.getFsn();

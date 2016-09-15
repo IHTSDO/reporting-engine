@@ -34,7 +34,7 @@ public class ChangedRelationships extends TermServerScript{
 		ChangedRelationships fix = new ChangedRelationships();
 		try {
 			fix.init(args);
-			fix.loadProjectSnapshotAndDelta();
+			fix.loadProjectSnapshotAndDelta();  //Load FSNs only
 			fix.detectChangedRelationships();
 		} catch (Exception e) {
 			println("Failed to produce Changed Relationship Report due to " + e.getMessage());
@@ -125,7 +125,7 @@ public class ChangedRelationships extends TermServerScript{
 							String fileName = p.getFileName().toString();
 							if (fileName.contains("sct2_Description_Snapshot")) {
 								println("Loading Description File.");
-								gl.loadDescriptionFile(zis);
+								gl.loadDescriptionFile(zis, true);  //Load FSNs only
 							}
 							
 							if (fileName.contains("sct2_Concept_Snapshot")) {
@@ -160,5 +160,12 @@ public class ChangedRelationships extends TermServerScript{
 	@Override
 	public String getFixName() {
 		return "Lost Relationships";
+	}
+
+	@Override
+	protected Concept loadLine(String[] lineItems)
+			throws TermServerScriptException {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }

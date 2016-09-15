@@ -112,7 +112,7 @@ public class MismatchedRelationships extends TermServerScript{
 		writeToFile ("Concept, FSN, Concept_Active, Concept_Modified, Stated_or_Inferred, Relationship_Active, GroupNum, Type, Target");
 	}
 
-	private void loadProjectSnapshot() throws SnowOwlClientException, TermServerScriptException, InterruptedException {
+	protected void loadProjectSnapshot() throws SnowOwlClientException, TermServerScriptException, InterruptedException {
 		int SNAPSHOT = 0;
 		File[] archives = new File[] { new File (project + "_snapshot_" + env + ".zip") };
 
@@ -139,7 +139,7 @@ public class MismatchedRelationships extends TermServerScript{
 							String fileName = p.getFileName().toString();
 							if (fileName.contains("sct2_Description_Snapshot")) {
 								println("Loading Description File.");
-								gl.loadDescriptionFile(zis);
+								gl.loadDescriptionFile(zis, true);  //Load FSNs only
 							}
 							
 							if (fileName.contains("sct2_Concept_Snapshot")) {
@@ -174,5 +174,11 @@ public class MismatchedRelationships extends TermServerScript{
 	@Override
 	public String getFixName() {
 		return "Lost Relationships";
+	}
+
+	@Override
+	protected Concept loadLine(String[] lineItems)
+			throws TermServerScriptException {
+		return null;
 	}
 }

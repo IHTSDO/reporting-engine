@@ -45,6 +45,18 @@ public class SnomedUtils implements RF2Constants{
 		}
 		throw new TermServerScriptException("Unable to translate acceptability " + a);
 	}
+	
+	public static ACCEPTABILITY getAcceptability(String sctid) throws TermServerScriptException {
+		if (sctid.equals(ACCEPTABLE_TERM)) {
+			return ACCEPTABILITY.ACCEPTABLE;
+		}
+		
+		if (sctid.equals(PREFERRED_TERM)) {
+			return ACCEPTABILITY.PREFERRED;
+		} 
+		
+		throw new TermServerScriptException("Unable to translate acceptability " + sctid);
+	}
 
 	public static String substitute(String str,
 			Map<String, String> wordSubstitution) {
@@ -104,6 +116,13 @@ public class SnomedUtils implements RF2Constants{
 		}
 		return str.substring(0, 1).toUpperCase() + str.substring(1);
 	}
+	
+	public static String deCapitalize (String str) {
+		if (str == null || str.isEmpty() || str.length() < 2) {
+			return str;
+		}
+		return str.substring(0, 1).toLowerCase() + str.substring(1);
+	}	
 
 	public static List<String> removeBlankLines(List<String> lines) {
 		List<String> unixLines = new ArrayList<String>();

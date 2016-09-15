@@ -83,6 +83,10 @@ public class Description {
 		this.acceptabilityMap = acceptabilityMap;
 	}
 
+	public Description(String descriptionId) {
+		this.descriptionId = descriptionId;
+	}
+
 	public String getEffectiveTime() {
 		return effectiveTime;
 	}
@@ -213,6 +217,13 @@ public class Description {
 
 	public void setInactivationIndicator(InactivationIndicator inactivationIndicator) {
 		this.inactivationIndicator = inactivationIndicator;
+	}
+
+	public void setAcceptablity(String refsetId, ACCEPTABILITY acceptability) {
+		if (acceptabilityMap == null) {
+			acceptabilityMap = new HashMap<String, ACCEPTABILITY> ();
+		}
+		acceptabilityMap.put(refsetId, acceptability);
 	}
 
 }

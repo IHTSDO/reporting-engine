@@ -95,4 +95,10 @@ public class LangRefsetInactivationFix extends TermServerScript implements RF2Co
 		return "LangRefsetInactivationFix";
 	}
 
+	@Override
+	protected Concept loadLine(String[] lineItems)
+			throws TermServerScriptException {
+		return null;
+	}
+
 }

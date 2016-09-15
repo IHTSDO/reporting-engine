@@ -353,4 +353,23 @@ public class Concept implements RF2Constants {
 		this.assignedAuthor = assignedAuthor;
 	}
 
+	public Description getFSNDescription() {
+		for (Description d : descriptions) {
+			if (d.isActive() && d.getType().equals(DESCRIPTION_TYPE.FSN)) {
+				return d;
+			}
+		}
+		return null;
+	}
+	
+	public List<Description> getPrefTerms() {
+		List<Description> prefTerms = new ArrayList<Description>();
+		for (Description d : descriptions) {
+			if (d.isActive() && d.getAcceptabilityMap().values().contains(ACCEPTABILITY.PREFERRED)) {
+				prefTerms.add(d);
+			}
+		}
+		return prefTerms;
+	}
+
 }
