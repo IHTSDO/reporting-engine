@@ -6,9 +6,11 @@ import java.util.Map;
 
 import javax.annotation.Generated;
 
+import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants.ACCEPTABILITY;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants.DESCRIPTION_TYPE;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants.InactivationIndicator;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
@@ -224,6 +226,12 @@ public class Description {
 			acceptabilityMap = new HashMap<String, ACCEPTABILITY> ();
 		}
 		acceptabilityMap.put(refsetId, acceptability);
+	}
+
+	public String[] toRF2Desc() throws TermServerScriptException {
+		//"id","effectiveTime","active","moduleId","conceptId","languageCode","typeId","term","caseSignificanceId"
+		return new String[] {descriptionId, effectiveTime, moduleId, conceptId, lang,
+				SnomedUtils.translateDescType(type), term, caseSignificance};
 	}
 
 }

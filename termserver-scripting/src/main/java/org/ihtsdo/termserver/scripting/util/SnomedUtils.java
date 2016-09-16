@@ -10,6 +10,7 @@ import java.util.Set;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.DESCRIPTION_TYPE;
 
 public class SnomedUtils implements RF2Constants{
 
@@ -152,6 +153,14 @@ public class SnomedUtils implements RF2Constants{
 		}
 		
 		return parts;
+	}
+
+	public static String translateDescType(DESCRIPTION_TYPE type) throws TermServerScriptException {
+		switch (type) {
+		case FSN : return FSN;
+		case SYNONYM : return SYN;
+		}
+		throw new TermServerScriptException("Unable to translate description type " + type);
 	}
 
 }
