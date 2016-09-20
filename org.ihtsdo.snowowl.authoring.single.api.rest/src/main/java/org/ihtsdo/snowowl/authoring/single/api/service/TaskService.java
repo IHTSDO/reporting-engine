@@ -748,6 +748,13 @@ public class TaskService {
 						}
 					}
 				}
+				
+				
+				// if no attachments, create a blank one to link CRS ticket id
+				if (attachments.size() == 0) {
+					TaskAttachment taskAttachment = new TaskAttachment(crsId, null);
+					attachments.add(taskAttachment);
+				}
 			}
 		} catch (JiraException e) {
 			if (e.getCause() instanceof RestException && ((RestException) e.getCause()).getHttpStatusCode() == 404) {
