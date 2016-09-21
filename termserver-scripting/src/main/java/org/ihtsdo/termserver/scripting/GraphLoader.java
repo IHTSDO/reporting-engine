@@ -107,21 +107,26 @@ public class GraphLoader implements RF2Constants {
 		//Not putting this in a try resource block otherwise it will close the stream on completion and we've got more to read!
 		BufferedReader br = new BufferedReader(new InputStreamReader(descStream, StandardCharsets.UTF_8));
 		String line;
+		boolean isHeader = true;
 		while ((line = br.readLine()) != null) {
-			String[] lineItems = line.split(FIELD_DELIMITER);
-			if (fsnOnly) {
-				// Only store active relationships.  Need for active flag will skip header line
-				if (lineItems[DES_IDX_ACTIVE].equals(ACTIVE_FLAG) && lineItems[DES_IDX_TYPEID].equals(FULLY_SPECIFIED_NAME)) {
+			if (!isHeader) {
+				String[] lineItems = line.split(FIELD_DELIMITER);
+				if (fsnOnly) {
+					// Only store active relationships.  
+					if (lineItems[DES_IDX_ACTIVE].equals(ACTIVE_FLAG) && lineItems[DES_IDX_TYPEID].equals(FULLY_SPECIFIED_NAME)) {
+						Concept c = getConcept(lineItems[DES_IDX_CONCEPTID]);
+						c.setFsn(lineItems[DES_IDX_TERM]);
+					}
+				} else {
 					Concept c = getConcept(lineItems[DES_IDX_CONCEPTID]);
-					c.setFsn(lineItems[DES_IDX_TERM]);
+					Description d = loadDescriptionLine(lineItems);
+					c.addDescription(d);
+					if (d.isActive() && d.getType().equals(DESCRIPTION_TYPE.FSN)) {
+						c.setFsn(lineItems[DES_IDX_TERM]);
+					}
 				}
 			} else {
-				Concept c = getConcept(lineItems[DES_IDX_CONCEPTID]);
-				Description d = loadDescriptionLine(lineItems);
-				c.addDescription(d);
-				if (d.isActive() && d.getType().equals(DESCRIPTION_TYPE.FSN)) {
-					c.setFsn(lineItems[DES_IDX_TERM]);
-				}
+				isHeader = false;
 			}
 		}
 	}
@@ -135,6 +140,7 @@ public class GraphLoader implements RF2Constants {
 		d.setConceptId(lineItems[DES_IDX_CONCEPTID]);
 		d.setLang(lineItems[DES_IDX_LANGUAGECODE]);
 		d.setTerm(lineItems[DES_IDX_TERM]);
+		d.setType(SnomedUtils.translateDescType(lineItems[DES_IDX_TYPEID]));
 		return d;
 	}
 

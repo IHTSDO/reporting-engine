@@ -365,7 +365,7 @@ public class Concept implements RF2Constants {
 	public List<Description> getPrefTerms() {
 		List<Description> prefTerms = new ArrayList<Description>();
 		for (Description d : descriptions) {
-			if (d.isActive() && d.getAcceptabilityMap().values().contains(ACCEPTABILITY.PREFERRED)) {
+			if (d.isActive() && d.getAcceptabilityMap().values().contains(ACCEPTABILITY.PREFERRED) && d.getType().equals(DESCRIPTION_TYPE.SYNONYM)) {
 				prefTerms.add(d);
 			}
 		}

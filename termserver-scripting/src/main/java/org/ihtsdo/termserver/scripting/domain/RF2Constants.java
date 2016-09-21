@@ -13,8 +13,12 @@ public interface RF2Constants {
 	static Concept DRUG_PREPARATION = new Concept("105904009","Type of drug preparation (qualifier value)");
 	static String ACETAMINOPHEN = "acetaminophen";
 	static String PARACETAMOL = "paracetamol";
+	
+	//Description Type SCTIDs
 	static String SYN = "900000000000013009";
 	static String FSN = "900000000000003001";
+	static String DEF = "900000000000550004"; 
+	
 	static final String FULLY_DEFINED_SCTID = "900000000000073002";
 	static final String FULLY_SPECIFIED_NAME = "900000000000003001";
 	final Long SNOMED_ROOT_CONCEPT = 138875005L;
@@ -42,7 +46,7 @@ public interface RF2Constants {
 	static final String US_ENG_LANG_REFSET = "900000000000509007";
 	
 	static final String PREFERRED_TERM = "900000000000548007";
-	static final String ACCEPTABLE_TERM = " 900000000000549004";
+	static final String ACCEPTABLE_TERM = "900000000000549004";
 	
 	final public String SEMANTIC_TAG_START = "(";
 	
@@ -61,7 +65,7 @@ public interface RF2Constants {
 	
 	public enum CARDINALITY { AT_LEAST_ONE, EXACTLY_ONE };
 	
-	public enum DESCRIPTION_TYPE { FSN, SYNONYM };
+	public enum DESCRIPTION_TYPE { FSN, SYNONYM, DEFINITION};
 	
 	public static final String FIELD_DELIMITER = "\t";
 	public static final String LINE_DELIMITER = "\r\n";

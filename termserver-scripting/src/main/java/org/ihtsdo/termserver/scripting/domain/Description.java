@@ -209,7 +209,9 @@ public class Description {
 		clone.term = this.term;
 		clone.caseSignificance = this.caseSignificance;
 		clone.acceptabilityMap = new HashMap<String, ACCEPTABILITY>();
-		clone.acceptabilityMap.putAll(this.acceptabilityMap);
+		if (this.acceptabilityMap != null) { 
+			clone.acceptabilityMap.putAll(this.acceptabilityMap);
+		}
 		return clone;
 	}
 

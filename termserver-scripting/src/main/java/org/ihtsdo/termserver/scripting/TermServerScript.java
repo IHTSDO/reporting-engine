@@ -75,7 +75,7 @@ public abstract class TermServerScript implements RF2Constants {
 	public static String CRITICAL_ISSUE = "CRITICAL ISSUE";
 	//String DELIMETER = TSV_FIELD_DELIMITER;
 	protected String DELIMITER = CSV_FIELD_DELIMITER;
-	protected String tsRoot = "MAIN"; //"MAIN/2016-01-31/SNOMEDCT-DK/";
+	protected String tsRoot = "MAIN/"; //"MAIN/2016-01-31/SNOMEDCT-DK/";
 	
 	protected static Gson gson;
 	static {
@@ -148,7 +148,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected void init(String[] args) throws TermServerScriptException, IOException {
 		
 		if (args.length < 3) {
-			println("Usage: java <FixClass> [-a author] [-b <batchSize>] [-r <restart lineNum>] [-c <authenticatedCookie>] [-d <Y/N>] [-p <projectName>] <batch file Location>");
+			println("Usage: java <TSScriptClass> [-a author] [-b <batchSize>] [-r <restart lineNum>] [-c <authenticatedCookie>] [-d <Y/N>] [-p <projectName>] <batch file Location>");
 			println(" d - dry run");
 			System.exit(-1);
 		}
@@ -201,8 +201,13 @@ public abstract class TermServerScript implements RF2Constants {
 					println ("Unable to use directory " + possibleDir.getAbsolutePath() + " for output.");
 				}
 				isOutputDir = false;
-			} 
-		}		
+			} else {
+				File possibleFile = new File(thisArg);
+				if (possibleFile.exists() && !possibleFile.isDirectory() && possibleFile.canRead()) {
+					inputFile = possibleFile;
+				}
+			}
+		}
 		
 		println ("Select an environment ");
 		for (int i=0; i < environments.length; i++) {
@@ -295,8 +300,8 @@ public abstract class TermServerScript implements RF2Constants {
 							gl.loadDescriptionFile(zis, fsnOnly);
 						}
 						//If we're loading all terms, load the language refset as well
-						if (!fsnOnly && fileName.contains("der2_cRefset_LanguageSnapshot")) {
-							println("Loading Language Reference Set File.");
+						if (!fsnOnly && fileName.contains("EnglishSnapshot")) {
+							println("Loading Language Reference Set File - " + fileName);
 							gl.loadLanguageFile(zis);
 						}
 					}
@@ -332,6 +337,7 @@ public abstract class TermServerScript implements RF2Constants {
 	
 	protected List<Concept> processFile() throws TermServerScriptException {
 		List<Concept> allConcepts = new ArrayList<Concept>();
+		debug ("Loading input file " + inputFile.getAbsolutePath());
 		try {
 			List<String> lines = Files.readLines(inputFile, Charsets.UTF_8);
 			lines = SnomedUtils.removeBlankLines(lines);
@@ -345,7 +351,7 @@ public abstract class TermServerScript implements RF2Constants {
 				
 				//File format Concept Type, SCTID, FSN with string fields quoted.  Strip quotes also.
 				String[] lineItems = lines.get(lineNum).replace("\"", "").split(DELIMITER);
-				if (lineItems.length > 1) {
+				if (lineItems.length >= 1) {
 					Concept c = loadLine(lineItems);
 					allConcepts.add(c);
 				} else {
@@ -459,8 +465,26 @@ public abstract class TermServerScript implements RF2Constants {
 		{
 			out.println(line);
 		} catch (Exception e) {
-			print ("Unable to output report line: " + line + " due to " + e.getMessage());
+			println ("Unable to output report line: " + line + " due to " + e.getMessage());
 		}
+	}
+	
+	protected void initialiseReportFile(String columnHeaders) throws IOException {
+		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
+		String reportFilename = "results_" + SnomedUtils.deconstructFilename(inputFile)[1] + "_" + df.format(new Date()) + "_" + env  + ".csv";
+		reportFile = new File(outputDir, reportFilename);
+		reportFile.createNewFile();
+		println ("Outputting Report to " + reportFile.getAbsolutePath());
+		writeToFile (columnHeaders);
+	}
+
+	protected File ensureFileExists(String fileName) throws IOException {
+		File file = new File(fileName);
+		if (!file.exists()) {
+			file.getParentFile().mkdirs();
+			file.createNewFile();
+		}
+		return file;
 	}
 
 }

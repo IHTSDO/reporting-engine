@@ -1,6 +1,8 @@
 package org.ihtsdo.termserver.scripting.util;
 
 import java.io.File;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -56,7 +58,7 @@ public class SnomedUtils implements RF2Constants{
 			return ACCEPTABILITY.PREFERRED;
 		} 
 		
-		throw new TermServerScriptException("Unable to translate acceptability " + sctid);
+		throw new TermServerScriptException("Unable to translate acceptability '" + sctid + "'");
 	}
 
 	public static String substitute(String str,
@@ -157,10 +159,27 @@ public class SnomedUtils implements RF2Constants{
 
 	public static String translateDescType(DESCRIPTION_TYPE type) throws TermServerScriptException {
 		switch (type) {
-		case FSN : return FSN;
-		case SYNONYM : return SYN;
+			case FSN : return FSN;
+			case SYNONYM : return SYN;
+			case DEFINITION : return DEF;
 		}
 		throw new TermServerScriptException("Unable to translate description type " + type);
+	}
+
+	public static DESCRIPTION_TYPE translateDescType(String descTypeId) throws TermServerScriptException {
+		switch (descTypeId) {
+			case FSN : return DESCRIPTION_TYPE.FSN;
+			case SYN : return DESCRIPTION_TYPE.SYNONYM;
+			case DEF : return DESCRIPTION_TYPE.DEFINITION; 
+		}
+		throw new TermServerScriptException("Unable to translate description type: " + descTypeId);
+	}
+	
+	public static String getStackTrace (Exception e) {
+		StringWriter sw = new StringWriter();
+		PrintWriter pw = new PrintWriter(sw);
+		e.printStackTrace(pw);
+		return sw.toString(); // stack trace as a string
 	}
 
 }

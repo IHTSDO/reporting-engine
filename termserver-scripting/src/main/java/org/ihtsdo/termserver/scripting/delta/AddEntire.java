@@ -2,8 +2,10 @@ package org.ihtsdo.termserver.scripting.delta;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
@@ -42,26 +44,42 @@ public class AddEntire extends DeltaGenerator {
 	
 	protected List<Concept> processFile() throws TermServerScriptException {
 		List<Concept> allConcepts = super.processFile();
-		for (Concept thisConcept : allConcepts) {
-			addEntireToFSN(thisConcept);
-			addEntireToPrefTerms(thisConcept);
+		//Since our code works through all descriptions for a concept, we can remove duplicate entires of concepts, 
+		Set<Concept> uniqueConcepts = new LinkedHashSet<Concept>(allConcepts);
+		for (Concept thisConcept : uniqueConcepts) {
+			if (!thisConcept.isActive()) {
+				report (thisConcept, null, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.VALIDATION_ERROR, "Concept is inactive, skipping");
+				
+			}
+			try {
+				addEntireToFSN(thisConcept);
+				addEntireToPrefTerms(thisConcept);
+			} catch (Exception e) {
+				report (thisConcept, null, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.API_ERROR, "Exception while processing: " + e.getMessage() + " : " + SnomedUtils.getStackTrace(e));
+			}
 		}
 		return allConcepts;
 	}
 
-	private void addEntireToPrefTerms(Concept c) {
+	private void addEntireToPrefTerms(Concept c) throws TermServerScriptException, IOException {
 		List<Description> prefTerms = c.getPrefTerms();
 		for (Description d : prefTerms) {
 			addEntireToTerm(c, d, false);
 		}
 	}
 
-	private void addEntireToFSN(Concept c) {
+	private void addEntireToFSN(Concept c) throws TermServerScriptException, IOException {
 		Description fsn = c.getFSNDescription();
 		addEntireToTerm(c, fsn, true);	
 	}
 
-	private void addEntireToTerm(Concept c, Description d, boolean isFSN) {
+	private void addEntireToTerm(Concept c, Description d, boolean isFSN) throws TermServerScriptException, IOException {
+
+		//We only work with active terms
+		if (d == null) {
+			report (c,d,SEVERITY.HIGH, REPORT_ACTION_TYPE.VALIDATION_ERROR, "No active " + (isFSN?"FSN":"SYN") + " found for concept");
+			return;
+		}
 		
 		String[] newTermParts = new String[2];
 		if (isFSN) {
@@ -90,7 +108,7 @@ public class AddEntire extends DeltaGenerator {
 		replaceDescription (c,d,newTerm);
 	}
 
-	private void replaceDescription(Concept c, Description d, String newTerm) {
+	private void replaceDescription(Concept c, Description d, String newTerm) throws TermServerScriptException, IOException {
 		//Do we already have this description, even inactivated?
 		for (Description thisDesc : c.getDescriptions()) {
 			if (thisDesc.getTerm().equals(newTerm)) {
@@ -106,13 +124,15 @@ public class AddEntire extends DeltaGenerator {
 		}
 		d.setEffectiveTime(null);
 		Description replacement = d.clone();
+
 		d.setActive(false);
 		report (c,d,SEVERITY.MEDIUM, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, "Inactivated Description");
-		//TODO - Stopped work here
-		//replacement.setDescriptionId(IdGenerator.getSCTID(DESC_INT_PARTITION));
+		replacement.setDescriptionId(idGen.getSCTID(DESC_INT_PARTITION));
+		replacement.setTerm(newTerm);
+		c.addDescription(replacement);
 		report (c,replacement,SEVERITY.MEDIUM, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, "Added new Description");
-		//outputRF2(d);
-		//outputRF2(replacement);
+		outputRF2(d);
+		outputRF2(replacement);
 	}
 
 	@Override
@@ -123,7 +143,7 @@ public class AddEntire extends DeltaGenerator {
 	@Override
 	protected Concept loadLine(String[] lineItems)
 			throws TermServerScriptException {
-		Concept c = graph.getConcept(lineItems[1]);
+		Concept c = graph.getConcept(lineItems[0]);
 		return c;
 	}
 }

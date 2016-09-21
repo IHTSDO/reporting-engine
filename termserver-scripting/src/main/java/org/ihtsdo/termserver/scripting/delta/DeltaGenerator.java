@@ -3,12 +3,12 @@ package org.ihtsdo.termserver.scripting.delta;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
 
 import org.ihtsdo.termserver.scripting.IdGenerator;
 import org.ihtsdo.termserver.scripting.TermServerScript;
@@ -30,22 +30,43 @@ public abstract class DeltaGenerator extends TermServerScript {
 	IdGenerator idGen = new IdGenerator();
 	
 	protected void report(Concept concept, Description d, SEVERITY severity, REPORT_ACTION_TYPE actionType, String actionDetail) {
-		String line = concept.getConceptId() + COMMA + 
+		String line = "";
+		
+		if (d==null) {
+			line = concept.getConceptId() + COMMA + COMMA_QUOTE + 
+					concept.getFsn() + QUOTE_COMMA; 
+		} else {
+			line = concept.getConceptId() + COMMA + 
 				d.getDescriptionId() + COMMA_QUOTE + 
-				d.getTerm() + QUOTE_COMMA_QUOTE + 
-				actionType.toString() + QUOTE_COMMA_QUOTE +
+				d.getTerm() + QUOTE_COMMA ; 
+		}
+		line += QUOTE + actionType.toString() + QUOTE_COMMA_QUOTE +
 				actionDetail + QUOTE;
 		writeToFile(line);
 	}
 	
-	protected void outputRF2(Description d) throws TermServerScriptException {
+	protected void init (String[] args) throws IOException, TermServerScriptException {
+		super.init(args);
+		initialiseReportFile("Concept,DescSctId,Term,Severity,Action,Detail");
+		//Don't add to previously exported data
+		File outputRoot = new File (packageDir);
+		int increment = 0;
+		while (outputRoot.exists() && outputRoot.isDirectory()) {
+			packageDir = packageRoot + today + "_" + (++increment) + File.separator;
+			outputRoot = new File(packageDir);
+		}
+		println ("Outputting data to " + packageDir);
+	}
+	
+	protected void outputRF2(Description d) throws TermServerScriptException, IOException {
 		writeToRF2File(descDeltaFilename, d.toRF2Desc());
 		//TODO Work restarts here
 		//writeToRF2File(langDeltaFilename, d.toRF2Lang());		
 	}
 	
-	protected void writeToRF2File(String fileName, String[] columns) {
-		try(	OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(fileName, true), StandardCharsets.UTF_8);
+	protected void writeToRF2File(String fileName, String[] columns) throws IOException {
+		File file = ensureFileExists(fileName);
+		try(	OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(file, true), StandardCharsets.UTF_8);
 				BufferedWriter bw = new BufferedWriter(osw);
 				PrintWriter out = new PrintWriter(bw))
 		{
@@ -54,11 +75,12 @@ public abstract class DeltaGenerator extends TermServerScript {
 				if (x > 0) {
 					line.append(TSV_FIELD_DELIMITER);
 				}
-				line.append(columns[x]);
+				line.append(columns[x]==null?"":columns[x]);
 			}
 			out.println(line.toString());
 		} catch (Exception e) {
-			print ("Unable to output report rf2 line due to " + e.getMessage());
+			println ("Unable to output report rf2 line due to " + e.getMessage());
 		}
 	}
+
 }

@@ -242,12 +242,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			} else if (isProjectName) {
 				project = thisArg;
 				isProjectName = false;
-			} else {
-				File possibleFile = new File(thisArg);
-				if (possibleFile.exists() && !possibleFile.isDirectory() && possibleFile.canRead()) {
-					inputFile = possibleFile;
-				}
-			}
+			} 
 		}
 		if (inputFile == null) {
 			throw new TermServerScriptException("No valid batch import file detected in command line arguments");
@@ -267,13 +262,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			taskSize = Integer.parseInt(response);
 		}
 		println ("\nBatching " + taskSize + " concepts per task");
-		
-		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
-		String reportFilename = "results_" + SnomedUtils.deconstructFilename(inputFile)[1] + "_" + df.format(new Date()) + "_" + env  + ".csv";
-		reportFile = new File(outputDir, reportFilename);
-		reportFile.createNewFile();
-		println ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToFile ("TASK_KEY, TASK_DESC, SCTID, FSN, CONCEPT_TYPE,SEVERITY,ACTION_TYPE,ACTION_DETAIL");
+		initialiseReportFile("TASK_KEY, TASK_DESC, SCTID, FSN, CONCEPT_TYPE,SEVERITY,ACTION_TYPE,ACTION_DETAIL");
 	}
 	
 	protected int ensureAcceptableParent(Task task, Concept c, Concept acceptableParent) {
