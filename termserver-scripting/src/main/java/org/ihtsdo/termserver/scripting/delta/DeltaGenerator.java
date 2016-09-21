@@ -27,7 +27,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 	String langDeltaFilename = refDir + "language/der2_cRefset_LanguageDelta-en_INT_" + today + ".txt";
 	String[] descHeader = new String[] {"id","effectiveTime","active","moduleId","conceptId","languageCode","typeId","term","caseSignificanceId"};
 	String[] langHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","acceptabilityId"};
-	IdGenerator idGen = new IdGenerator();
+	IdGenerator descIdGenerator;
 	
 	protected void report(Concept concept, Description d, SEVERITY severity, REPORT_ACTION_TYPE actionType, String actionDetail) {
 		String line = "";
@@ -47,11 +47,20 @@ public abstract class DeltaGenerator extends TermServerScript {
 	
 	protected void init (String[] args) throws IOException, TermServerScriptException {
 		super.init(args);
+		
+		for (int x=0; x<args.length; x++) {
+			if (args[x].equals("-i")) {
+				descIdGenerator = IdGenerator.initiateIdGenerator(args[++x]);
+			}
+		}
+		if (descIdGenerator == null) {
+			throw new TermServerScriptException("Command line arguments must supply a list of available sctid using the -i option");
+		}
 		initialiseReportFile("Concept,DescSctId,Term,Severity,Action,Detail");
 		//Don't add to previously exported data
 		File outputRoot = new File (packageDir);
 		int increment = 0;
-		while (outputRoot.exists() && outputRoot.isDirectory()) {
+		while (outputRoot.exists()) {
 			packageDir = packageRoot + today + "_" + (++increment) + File.separator;
 			outputRoot = new File(packageDir);
 		}

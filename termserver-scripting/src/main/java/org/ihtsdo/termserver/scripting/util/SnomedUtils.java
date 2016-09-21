@@ -10,11 +10,33 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.validator.routines.checkdigit.VerhoeffCheckDigit;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.DESCRIPTION_TYPE;
 
 public class SnomedUtils implements RF2Constants{
+	
+	private static VerhoeffCheckDigit verhoeffCheck = new VerhoeffCheckDigit();
+
+	public static String isValid(String sctId, PartionIdentifier partitionIdentifier) {
+		String errorMsg=null;
+		int partitionNumber = Integer.valueOf("" + sctId.charAt(sctId.length() -2));
+		if ( partitionNumber != partitionIdentifier.ordinal()) {
+			errorMsg = sctId + " does not exist in partition " + partitionIdentifier.toString();
+		}
+		if (!verhoeffCheck.isValid(sctId)) {
+			errorMsg = sctId + " does not exhibit a valid check digit";
+		}
+		return errorMsg;
+	}
+
+	public static void isValid(String sctId, PartionIdentifier partitionIdentifier,
+			boolean errorIfInvalid) throws TermServerScriptException {
+		String errMsg = isValid(sctId,partitionIdentifier);
+		if (errorIfInvalid && errMsg != null) {
+			throw new TermServerScriptException(errMsg);
+		}
+	}
 
 	public static String[] deconstructFSN(String fsn) {
 		String[] elements = new String[2];

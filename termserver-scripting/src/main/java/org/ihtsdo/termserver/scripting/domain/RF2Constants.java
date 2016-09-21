@@ -50,6 +50,8 @@ public interface RF2Constants {
 	
 	final public String SEMANTIC_TAG_START = "(";
 	
+	public enum PartionIdentifier {CONCEPT, DESCRIPTION, RELATIONSHIP};
+	
 	public enum CHARACTERISTIC_TYPE {	STATED_RELATIONSHIP, INFERRED_RELATIONSHIP, 
 										QUALIFYING_RELATIONSHIP, ADDITIONAL_RELATIONSHIP, ALL};
 

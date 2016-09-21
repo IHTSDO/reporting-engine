@@ -127,7 +127,7 @@ public class AddEntire extends DeltaGenerator {
 
 		d.setActive(false);
 		report (c,d,SEVERITY.MEDIUM, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, "Inactivated Description");
-		replacement.setDescriptionId(idGen.getSCTID(DESC_INT_PARTITION));
+		replacement.setDescriptionId(descIdGenerator.getSCTID(PartionIdentifier.DESCRIPTION));
 		replacement.setTerm(newTerm);
 		c.addDescription(replacement);
 		report (c,replacement,SEVERITY.MEDIUM, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, "Added new Description");
