@@ -1,6 +1,9 @@
 package org.ihtsdo.termserver.scripting.util;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -9,8 +12,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.validator.routines.checkdigit.VerhoeffCheckDigit;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 
@@ -202,6 +209,51 @@ public class SnomedUtils implements RF2Constants{
 		PrintWriter pw = new PrintWriter(sw);
 		e.printStackTrace(pw);
 		return sw.toString(); // stack trace as a string
+	}
+	
+	public static void createArchive(File dirToZip) throws TermServerScriptException {
+		try {
+			// The zip filename will be the name of the first thing in the zip location
+			// ie in this case the directory SnomedCT_RF1Release_INT_20150731
+			String zipFileName = dirToZip.listFiles()[0].getName() + ".zip";
+			int fileNameModifier = 1;
+			while (new File(zipFileName).exists()) {
+				zipFileName = dirToZip.listFiles()[0].getName() + "_" + fileNameModifier++ + ".zip";
+			}
+			ZipOutputStream out = new ZipOutputStream(new FileOutputStream(zipFileName));
+			String rootLocation = dirToZip.getAbsolutePath() + File.separator;
+			TermServerScript.println("Creating archive : " + zipFileName + " from files found in " + rootLocation);
+			addDir(rootLocation, dirToZip, out);
+			out.close();
+		} catch (IOException e) {
+			throw new TermServerScriptException("Failed to create archive from " + dirToZip, e);
+		} finally {
+			try {
+				FileUtils.deleteDirectory(dirToZip);
+			} catch (IOException e) {}
+		}
+	}
+	
+	public static void addDir(String rootLocation, File dirObj, ZipOutputStream out) throws IOException {
+		File[] files = dirObj.listFiles();
+		byte[] tmpBuf = new byte[1024];
+
+		for (int i = 0; i < files.length; i++) {
+			if (files[i].isDirectory()) {
+				addDir(rootLocation, files[i], out);
+				continue;
+			}
+			FileInputStream in = new FileInputStream(files[i].getAbsolutePath());
+			String relativePath = files[i].getAbsolutePath().substring(rootLocation.length());
+			TermServerScript.debug(" Adding: " + relativePath);
+			out.putNextEntry(new ZipEntry(relativePath));
+			int len;
+			while ((len = in.read(tmpBuf)) > 0) {
+				out.write(tmpBuf, 0, len);
+			}
+			out.closeEntry();
+			in.close();
+		}
 	}
 
 }

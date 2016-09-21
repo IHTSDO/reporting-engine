@@ -1,7 +1,9 @@
 
 package org.ihtsdo.termserver.scripting.domain;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Generated;
@@ -51,6 +53,7 @@ public class Description {
 	@SerializedName("inactivationIndicator")
 	@Expose
 	private InactivationIndicator inactivationIndicator;
+	List<LangRefsetEntry> langRefsetEntries;
 
 	/**
 	 * No args constructor for use in serialization
@@ -111,6 +114,12 @@ public class Description {
 
 	public void setActive(boolean active) {
 		this.active = active;
+		//If we inactivate a description, inactivate all of its LangRefsetEntriesAlso
+		if (active == false && this.langRefsetEntries != null) {
+			for (LangRefsetEntry thisDialect : getLangRefsetEntries()) {
+				thisDialect.setActive(false);
+			}
+		}
 	}
 
 	public String getDescriptionId() {
@@ -212,6 +221,12 @@ public class Description {
 		if (this.acceptabilityMap != null) { 
 			clone.acceptabilityMap.putAll(this.acceptabilityMap);
 		}
+		if (langRefsetEntries != null) {
+			for (LangRefsetEntry thisDialect : getLangRefsetEntries()) {
+				LangRefsetEntry thisDialectClone = thisDialect.clone(); //will create a new UUID and remove EffectiveTime
+				clone.getLangRefsetEntries().add(thisDialectClone);
+			}
+		}
 		return clone;
 	}
 
@@ -230,10 +245,17 @@ public class Description {
 		acceptabilityMap.put(refsetId, acceptability);
 	}
 
-	public String[] toRF2Desc() throws TermServerScriptException {
+	public String[] toRF2() throws TermServerScriptException {
 		//"id","effectiveTime","active","moduleId","conceptId","languageCode","typeId","term","caseSignificanceId"
 		return new String[] {descriptionId, effectiveTime, moduleId, conceptId, lang,
 				SnomedUtils.translateDescType(type), term, caseSignificance};
+	}
+
+	public List<LangRefsetEntry> getLangRefsetEntries() {
+		if (langRefsetEntries == null) {
+			langRefsetEntries = new ArrayList<LangRefsetEntry>();
+		}
+		return langRefsetEntries;
 	}
 
 }

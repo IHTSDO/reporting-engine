@@ -15,17 +15,22 @@ import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
+import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
 
 public abstract class DeltaGenerator extends TermServerScript {
 	
 	String packageRoot = "SnomedCT_RF2Release_INT_";
 	String today = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	String packageDir =  packageRoot + today + File.separator;
-	String termDir = packageDir +"/Delta/Terminology/";
-	String refDir =  packageDir +"/Delta/Refset/";
-	String descDeltaFilename = termDir + "sct2_Description_Delta-en_INT_" + today + ".txt";
-	String langDeltaFilename = refDir + "language/der2_cRefset_LanguageDelta-en_INT_" + today + ".txt";
+	String conDeltaFilename;
+	String relDeltaFilename;
+	String sRelDeltaFilename;
+	String descDeltaFilename;
+	String langDeltaFilename;
+	
+	String[] conHeader = new String[] {"id","effectiveTime","active","moduleId","definitionStatusId"};
 	String[] descHeader = new String[] {"id","effectiveTime","active","moduleId","conceptId","languageCode","typeId","term","caseSignificanceId"};
+	String[] relHeader = new String[] {"id","effectiveTime","active","moduleId","sourceId","destinationId","relationshipGroup","typeId","characteristicTypeId","modifierId"};
 	String[] langHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","acceptabilityId"};
 	IdGenerator descIdGenerator;
 	
@@ -65,12 +70,33 @@ public abstract class DeltaGenerator extends TermServerScript {
 			outputRoot = new File(packageDir);
 		}
 		println ("Outputting data to " + packageDir);
+		initialiseFileHeaders();
 	}
 	
+	private void initialiseFileHeaders() throws IOException {
+		String termDir = packageDir +"/Delta/Terminology/";
+		String refDir =  packageDir +"/Delta/Refset/";
+		conDeltaFilename = termDir + "sct2_Concept_Delta_INT_" + today + ".txt";
+		writeToRF2File(conDeltaFilename, conHeader);
+		
+		relDeltaFilename = termDir + "sct2_Relationship_Delta_INT_" + today + ".txt";
+		writeToRF2File(relDeltaFilename, relHeader);
+		
+		sRelDeltaFilename = termDir + "sct2_StatedRelationship_Delta_INT_" + today + ".txt";
+		writeToRF2File(sRelDeltaFilename, relHeader);
+		
+		descDeltaFilename = termDir + "sct2_Description_Delta-en_INT_" + today + ".txt";
+		writeToRF2File(descDeltaFilename, descHeader);
+		
+		langDeltaFilename = refDir + "language/der2_cRefset_LanguageDelta-en_INT_" + today + ".txt";
+		writeToRF2File(langDeltaFilename, langHeader);
+	}
+
 	protected void outputRF2(Description d) throws TermServerScriptException, IOException {
-		writeToRF2File(descDeltaFilename, d.toRF2Desc());
-		//TODO Work restarts here
-		//writeToRF2File(langDeltaFilename, d.toRF2Lang());		
+		writeToRF2File(descDeltaFilename, d.toRF2());
+		for (LangRefsetEntry lang : d.getLangRefsetEntries()) {
+			writeToRF2File(langDeltaFilename, lang.toRF2());
+		}
 	}
 	
 	protected void writeToRF2File(String fileName, String[] columns) throws IOException {
