@@ -727,6 +727,8 @@ public class TaskService {
 					crsId = "Unknown";
 				}
 
+				boolean attachmentFound = false;
+
 				for (Attachment attachment : issue1.getAttachments()) {
 
 					if (attachment.getFileName().equals("request.json")) {
@@ -741,6 +743,8 @@ public class TaskService {
 							TaskAttachment taskAttachment = new TaskAttachment(crsId, attachmentJson.toString());
 
 							attachments.add(taskAttachment);
+							
+							attachmentFound = true;
 
 						} catch (Exception e) {
 							throw new BusinessServiceException(
@@ -749,12 +753,12 @@ public class TaskService {
 					}
 				}
 				
-				
 				// if no attachments, create a blank one to link CRS ticket id
-				if (attachments.size() == 0) {
-					TaskAttachment taskAttachment = new TaskAttachment(crsId, null);
-					attachments.add(taskAttachment);
-				}
+ 				if (!attachmentFound) {
+ 					TaskAttachment taskAttachment = new TaskAttachment(crsId, null);
+ 					attachments.add(taskAttachment);
+ 				}	
+				
 			}
 		} catch (JiraException e) {
 			if (e.getCause() instanceof RestException && ((RestException) e.getCause()).getHttpStatusCode() == 404) {
