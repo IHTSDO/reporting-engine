@@ -117,6 +117,7 @@ public class Description {
 		//If we inactivate a description, inactivate all of its LangRefsetEntriesAlso
 		if (active == false && this.langRefsetEntries != null) {
 			for (LangRefsetEntry thisDialect : getLangRefsetEntries()) {
+				thisDialect.setEffectiveTime(null);
 				thisDialect.setActive(false);
 			}
 		}
@@ -247,7 +248,7 @@ public class Description {
 
 	public String[] toRF2() throws TermServerScriptException {
 		//"id","effectiveTime","active","moduleId","conceptId","languageCode","typeId","term","caseSignificanceId"
-		return new String[] {descriptionId, effectiveTime, moduleId, conceptId, lang,
+		return new String[] {descriptionId, effectiveTime, (active?"1":"0"), moduleId, conceptId, lang,
 				SnomedUtils.translateDescType(type), term, caseSignificance};
 	}
 

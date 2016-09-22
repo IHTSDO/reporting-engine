@@ -19,9 +19,10 @@ import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
 
 public abstract class DeltaGenerator extends TermServerScript {
 	
-	String packageRoot = "SnomedCT_RF2Release_INT_";
+	String outputDirName = "output" + File.separator;
+	String packageRoot;
 	String today = new SimpleDateFormat("yyyyMMdd").format(new Date());
-	String packageDir =  packageRoot + today + File.separator;
+	String packageDir;
 	String conDeltaFilename;
 	String relDeltaFilename;
 	String sRelDeltaFilename;
@@ -63,19 +64,21 @@ public abstract class DeltaGenerator extends TermServerScript {
 		}
 		initialiseReportFile("Concept,DescSctId,Term,Severity,Action,Detail");
 		//Don't add to previously exported data
-		File outputRoot = new File (packageDir);
+		File outputDir = new File (outputDirName);
 		int increment = 0;
-		while (outputRoot.exists()) {
-			packageDir = packageRoot + today + "_" + (++increment) + File.separator;
-			outputRoot = new File(packageDir);
+		while (outputDir.exists()) {
+			outputDirName = outputDirName + "_" + (++increment) + File.separator;
+			outputDir = new File(outputDirName);
 		}
+		packageRoot = outputDirName + "SnomedCT_RF2Release_INT_";
+		packageDir = packageRoot + today + File.separator;
 		println ("Outputting data to " + packageDir);
 		initialiseFileHeaders();
 	}
 	
 	private void initialiseFileHeaders() throws IOException {
-		String termDir = packageDir +"/Delta/Terminology/";
-		String refDir =  packageDir +"/Delta/Refset/";
+		String termDir = packageDir +"Delta/Terminology/";
+		String refDir =  packageDir +"Delta/Refset/";
 		conDeltaFilename = termDir + "sct2_Concept_Delta_INT_" + today + ".txt";
 		writeToRF2File(conDeltaFilename, conHeader);
 		
@@ -88,7 +91,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 		descDeltaFilename = termDir + "sct2_Description_Delta-en_INT_" + today + ".txt";
 		writeToRF2File(descDeltaFilename, descHeader);
 		
-		langDeltaFilename = refDir + "language/der2_cRefset_LanguageDelta-en_INT_" + today + ".txt";
+		langDeltaFilename = refDir + "Language/der2_cRefset_LanguageDelta-en_INT_" + today + ".txt";
 		writeToRF2File(langDeltaFilename, langHeader);
 	}
 
@@ -112,7 +115,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 				}
 				line.append(columns[x]==null?"":columns[x]);
 			}
-			out.println(line.toString());
+			out.print(line.toString() + LINE_DELIMITER);
 		} catch (Exception e) {
 			println ("Unable to output report rf2 line due to " + e.getMessage());
 		}

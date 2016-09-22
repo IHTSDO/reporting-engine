@@ -14,6 +14,7 @@ import java.util.zip.ZipInputStream;
 
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
+import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -202,6 +203,8 @@ public class GraphLoader implements RF2Constants {
 				String[] lineItems = line.split(FIELD_DELIMITER);
 				if (lineItems[LANG_IDX_ACTIVE].equals(ACTIVE_FLAG)) {
 					Description d = getDescription(lineItems[LANG_IDX_REFCOMPID]);
+					LangRefsetEntry langRefsetEntry = loadLanguageLine(lineItems);
+					d.getLangRefsetEntries().add(langRefsetEntry);
 					ACCEPTABILITY a = SnomedUtils.getAcceptability(lineItems[LANG_IDX_ACCEPTABILITY_ID]);
 					d.setAcceptablity(lineItems[LANG_IDX_REFSETID], a);
 				}
@@ -209,6 +212,18 @@ public class GraphLoader implements RF2Constants {
 				isHeaderLine = false;
 			}
 		}
+	}
+
+	private LangRefsetEntry loadLanguageLine(String[] lineItems) {
+		LangRefsetEntry l = new LangRefsetEntry();
+		l.setId(lineItems[LANG_IDX_ID]);
+		l.setEffectiveTime(lineItems[LANG_IDX_EFFECTIVETIME]);
+		l.setActive(lineItems[LANG_IDX_ACTIVE].equals("1"));
+		l.setModuleId(lineItems[LANG_IDX_MODULID]);
+		l.setRefsetId(lineItems[LANG_IDX_REFSETID]);
+		l.setReferencedComponentId(lineItems[LANG_IDX_REFCOMPID]);
+		l.setAcceptabilityId(lineItems[LANG_IDX_ACCEPTABILITY_ID]);
+		return l;
 	}
 
 }

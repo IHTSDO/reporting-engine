@@ -28,8 +28,9 @@ public class LangRefsetEntry {
 	
 	public String[] toRF2() {
 		return new String[] { id, 
-				effectiveTime==null?"":effectiveTime, 
-				moduleId, active?"1":"0", refsetId,
+				(effectiveTime==null?"":effectiveTime), 
+				(active?"1":"0"),
+				moduleId, refsetId,
 				referencedComponentId,
 				acceptabilityId
 		};

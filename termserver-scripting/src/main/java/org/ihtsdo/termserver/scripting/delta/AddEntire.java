@@ -1,5 +1,6 @@
 package org.ihtsdo.termserver.scripting.delta;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -37,6 +38,7 @@ public class AddEntire extends DeltaGenerator {
 			//We won't incude the project export in our timings
 			delta.startTimer();
 			delta.processFile();
+			SnomedUtils.createArchive(new File(delta.outputDirName));
 		} finally {
 			delta.finish();
 		}
