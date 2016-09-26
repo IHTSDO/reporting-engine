@@ -458,7 +458,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		//FSNs are also preferred so we can just replace all preferred terms
 		List<Description> fsnAndPreferred = concept.getDescriptions(ACCEPTABILITY.PREFERRED, null, ACTIVE_STATE.ACTIVE);
 		for (Description thisDescription : fsnAndPreferred) {
-			Description replacement = thisDescription.clone();
+			Description replacement = thisDescription.clone(null);
 			thisDescription.setActive(false);
 			thisDescription.setEffectiveTime(null);
 			thisDescription.setInactivationIndicator(InactivationIndicator.RETIRED);

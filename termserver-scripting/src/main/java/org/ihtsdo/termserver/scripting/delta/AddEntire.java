@@ -124,15 +124,15 @@ public class AddEntire extends DeltaGenerator {
 			report (c,d,SEVERITY.HIGH, REPORT_ACTION_TYPE.API_ERROR, msg);
 			return;
 		}
-		d.setEffectiveTime(null);
-		Description replacement = d.clone();
-
+		String newSCTID = descIdGenerator.getSCTID(PartionIdentifier.DESCRIPTION);
+		Description replacement = d.clone(newSCTID);
 		d.setActive(false);
 		report (c,d,SEVERITY.MEDIUM, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, "Inactivated Description");
-		replacement.setDescriptionId(descIdGenerator.getSCTID(PartionIdentifier.DESCRIPTION));
+		
 		replacement.setTerm(newTerm);
 		c.addDescription(replacement);
 		report (c,replacement,SEVERITY.MEDIUM, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, "Added new Description");
+		
 		outputRF2(d);
 		outputRF2(replacement);
 	}

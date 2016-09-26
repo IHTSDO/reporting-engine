@@ -114,6 +114,7 @@ public class Description {
 
 	public void setActive(boolean active) {
 		this.active = active;
+		this.effectiveTime = null;
 		//If we inactivate a description, inactivate all of its LangRefsetEntriesAlso
 		if (active == false && this.langRefsetEntries != null) {
 			for (LangRefsetEntry thisDialect : getLangRefsetEntries()) {
@@ -206,13 +207,12 @@ public class Description {
 		return this.hashCode() == rhs.hashCode();
 	}
 	
-	@Override
-	public Description clone() {
+	public Description clone(String newSCTID) {
 		Description clone = new Description();
 		clone.effectiveTime = null; //New description is unpublished.
 		clone.moduleId = this.moduleId;
 		clone.active = this.active;
-		clone.descriptionId = null;  //Creating a new object, so no id for now.
+		clone.descriptionId = newSCTID;
 		clone.conceptId = this.conceptId;
 		clone.type = this.type;
 		clone.lang = this.lang;
@@ -223,9 +223,12 @@ public class Description {
 			clone.acceptabilityMap.putAll(this.acceptabilityMap);
 		}
 		if (langRefsetEntries != null) {
-			for (LangRefsetEntry thisDialect : getLangRefsetEntries()) {
+			for (LangRefsetEntry thisDialect : this.getLangRefsetEntries()) {
 				LangRefsetEntry thisDialectClone = thisDialect.clone(); //will create a new UUID and remove EffectiveTime
 				clone.getLangRefsetEntries().add(thisDialectClone);
+				//The lang refset entres for the cloned description should also point to it
+				thisDialectClone.setReferencedComponentId(clone.descriptionId);
+				thisDialectClone.setActive(true);
 			}
 		}
 		return clone;

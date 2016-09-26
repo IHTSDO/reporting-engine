@@ -82,7 +82,7 @@ public class AssertionFailureFix extends BatchFix implements RF2Constants{
 			if (d.isActive()) {
 				String newTerm = d.getTerm().replaceAll("    ", " ").replaceAll("   ", " ").replaceAll("  ", " ");
 				if (!newTerm.equals(d.getTerm())) {
-					Description replacement = d.clone();
+					Description replacement = d.clone(null);
 					replacement.setTerm(newTerm);
 					changesMade++;
 					concept.addDescription(replacement);
