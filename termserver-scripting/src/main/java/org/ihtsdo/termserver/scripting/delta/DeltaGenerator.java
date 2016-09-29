@@ -19,7 +19,7 @@ import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
 
 public abstract class DeltaGenerator extends TermServerScript {
 	
-	String outputDirName = "output" + File.separator;
+	String outputDirName = "output";
 	String packageRoot;
 	String today = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	String packageDir;
@@ -67,10 +67,10 @@ public abstract class DeltaGenerator extends TermServerScript {
 		File outputDir = new File (outputDirName);
 		int increment = 0;
 		while (outputDir.exists()) {
-			outputDirName = outputDirName + "_" + (++increment) + File.separator;
+			outputDirName = outputDirName + "_" + (++increment) ;
 			outputDir = new File(outputDirName);
 		}
-		packageRoot = outputDirName + "SnomedCT_RF2Release_INT_";
+		packageRoot = outputDirName + File.separator + "SnomedCT_RF2Release_INT_";
 		packageDir = packageRoot + today + File.separator;
 		println ("Outputting data to " + packageDir);
 		initialiseFileHeaders();

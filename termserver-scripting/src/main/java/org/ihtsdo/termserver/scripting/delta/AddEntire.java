@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.ihtsdo.termserver.scripting.IdGenerator;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
@@ -20,6 +21,9 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * inactivate the existing terms.
  */
 public class AddEntire extends DeltaGenerator {
+	
+	enum MODE { FSN_PT, SYN };
+	private MODE mode = null;
 	
 	static Map<String, String> findReplace = new HashMap<String,String>();
 	static {
@@ -44,6 +48,20 @@ public class AddEntire extends DeltaGenerator {
 		}
 	}
 	
+	protected void init (String[] args) throws IOException, TermServerScriptException {
+		super.init(args);
+		
+		for (int x=0; x<args.length; x++) {
+			if (args[x].equals("-m")) {
+				mode = MODE.valueOf(args[++x]);
+			}
+		}
+		if (mode == null) {
+			String msg = "Require a mode as a -m argument - FSN_PT or SYN";
+			throw new TermServerScriptException(msg);
+		}
+	}
+
 	protected List<Concept> processFile() throws TermServerScriptException {
 		List<Concept> allConcepts = super.processFile();
 		//Since our code works through all descriptions for a concept, we can remove duplicate entires of concepts, 
@@ -54,8 +72,13 @@ public class AddEntire extends DeltaGenerator {
 				
 			}
 			try {
-				addEntireToFSN(thisConcept);
-				addEntireToPrefTerms(thisConcept);
+				switch (mode) {
+				case FSN_PT: 	addEntireToFSN(thisConcept);
+								addEntireToPrefTerms(thisConcept);
+								break;
+				case SYN:		addEntireToSynonyms(thisConcept);
+				}
+
 			} catch (Exception e) {
 				report (thisConcept, null, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.API_ERROR, "Exception while processing: " + e.getMessage() + " : " + SnomedUtils.getStackTrace(e));
 			}
@@ -64,7 +87,7 @@ public class AddEntire extends DeltaGenerator {
 	}
 
 	private void addEntireToPrefTerms(Concept c) throws TermServerScriptException, IOException {
-		List<Description> prefTerms = c.getPrefTerms();
+		List<Description> prefTerms = c.getSynonyms(ACCEPTABILITY.PREFERRED);
 		for (Description d : prefTerms) {
 			addEntireToTerm(c, d, false);
 		}
@@ -73,6 +96,15 @@ public class AddEntire extends DeltaGenerator {
 	private void addEntireToFSN(Concept c) throws TermServerScriptException, IOException {
 		Description fsn = c.getFSNDescription();
 		addEntireToTerm(c, fsn, true);	
+	}
+	
+
+	private void addEntireToSynonyms(Concept c) throws TermServerScriptException, IOException {
+		List<Description> synonyms = c.getSynonyms(ACCEPTABILITY.ACCEPTABLE);
+		for (Description d : synonyms) {
+			addEntireToTerm(c, d, false);
+		}
+		
 	}
 
 	private void addEntireToTerm(Concept c, Description d, boolean isFSN) throws TermServerScriptException, IOException {
@@ -103,38 +135,45 @@ public class AddEntire extends DeltaGenerator {
 			}
 		}
 		
-		String newTerm = ENTIRE + " " + SnomedUtils.deCapitalize(newTermParts[0]);
+		//If the entire term is case sensitive, then we don't want to decapitalize the first letter
+		boolean caseSensitive = d.getCaseSignificance().equals(ENITRE_TERM_CASE_SENSITIVE);
+		String newTerm = ENTIRE + " " + (caseSensitive? newTermParts[0]:SnomedUtils.deCapitalize(newTermParts[0]));
 		if (isFSN) {
 			newTerm += " " + newTermParts[1];
 		}
+		
 		replaceDescription (c,d,newTerm);
 	}
 
 	private void replaceDescription(Concept c, Description d, String newTerm) throws TermServerScriptException, IOException {
-		//Do we already have this description, even inactivated?
-		for (Description thisDesc : c.getDescriptions()) {
-			if (thisDesc.getTerm().equals(newTerm)) {
-				String msg = "Replacement term already exists in " + thisDesc.toString();
-				report (c,d,SEVERITY.HIGH, REPORT_ACTION_TYPE.VALIDATION_ERROR, msg);
-				return;
-			}
-		}
+		
 		if (!d.isActive()) {
 			String msg = "Attempting to inactivate and already inactive description";
 			report (c,d,SEVERITY.HIGH, REPORT_ACTION_TYPE.API_ERROR, msg);
 			return;
 		}
-		String newSCTID = descIdGenerator.getSCTID(PartionIdentifier.DESCRIPTION);
-		Description replacement = d.clone(newSCTID);
+		
+		//Do we already have this description, even inactivated?
+		boolean alreadyExists = false;
+		for (Description thisDesc : c.getDescriptions()) {
+			if (thisDesc.getTerm().equalsIgnoreCase(newTerm)) {
+				String msg = "Replacement term already exists in " + thisDesc.toString() + " inactivating orginal";
+				report (c,d,SEVERITY.HIGH, REPORT_ACTION_TYPE.VALIDATION_ERROR, msg);
+				alreadyExists = true;;
+			}
+		}
+
+		if (!alreadyExists) {
+			String newSCTID = descIdGenerator.getSCTID(PartionIdentifier.DESCRIPTION);
+			Description replacement = d.clone(newSCTID);
+			replacement.setTerm(newTerm);
+			c.addDescription(replacement);
+			report (c,replacement,SEVERITY.MEDIUM, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, "Added new Description");
+			outputRF2(replacement);
+		}
 		d.setActive(false);
 		report (c,d,SEVERITY.MEDIUM, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, "Inactivated Description");
-		
-		replacement.setTerm(newTerm);
-		c.addDescription(replacement);
-		report (c,replacement,SEVERITY.MEDIUM, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, "Added new Description");
-		
 		outputRF2(d);
-		outputRF2(replacement);
 	}
 
 	@Override

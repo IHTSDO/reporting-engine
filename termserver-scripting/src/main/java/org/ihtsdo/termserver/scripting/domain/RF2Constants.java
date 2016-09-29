@@ -48,6 +48,8 @@ public interface RF2Constants {
 	static final String PREFERRED_TERM = "900000000000548007";
 	static final String ACCEPTABLE_TERM = "900000000000549004";
 	
+	static final String ENITRE_TERM_CASE_SENSITIVE = "900000000000017005";
+	
 	final public String SEMANTIC_TAG_START = "(";
 	
 	public enum PartionIdentifier {CONCEPT, DESCRIPTION, RELATIONSHIP};
