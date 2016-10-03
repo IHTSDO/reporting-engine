@@ -157,7 +157,7 @@ public class AddEntire extends DeltaGenerator {
 		boolean alreadyExists = false;
 		for (Description thisDesc : c.getDescriptions()) {
 			if (thisDesc.getTerm().equalsIgnoreCase(newTerm)) {
-				String msg = "Replacement term already exists in " + thisDesc.toString() + " inactivating orginal";
+				String msg = "Replacement term already exists: '" + thisDesc.toString() + "', inactivating original";
 				report (c,d,SEVERITY.HIGH, REPORT_ACTION_TYPE.VALIDATION_ERROR, msg);
 				alreadyExists = true;;
 			}

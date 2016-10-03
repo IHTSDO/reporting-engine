@@ -40,13 +40,14 @@ public abstract class DeltaGenerator extends TermServerScript {
 		
 		if (d==null) {
 			line = concept.getConceptId() + COMMA + COMMA_QUOTE + 
-					concept.getFsn() + QUOTE_COMMA; 
+					concept.getFsn() + QUOTE_COMMA_QUOTE; 
 		} else {
 			line = concept.getConceptId() + COMMA + 
 				d.getDescriptionId() + COMMA_QUOTE + 
-				d.getTerm() + QUOTE_COMMA ; 
+				d.getTerm() + QUOTE_COMMA_QUOTE ; 
 		}
-		line += QUOTE + actionType.toString() + QUOTE_COMMA_QUOTE +
+		line += severity + QUOTE_COMMA_QUOTE + 
+				actionType.toString() + QUOTE_COMMA_QUOTE +
 				actionDetail + QUOTE;
 		writeToFile(line);
 	}
