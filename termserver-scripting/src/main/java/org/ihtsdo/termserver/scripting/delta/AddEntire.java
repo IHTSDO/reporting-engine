@@ -144,10 +144,12 @@ public class AddEntire extends DeltaGenerator {
 			newTerm += " " + newTermParts[1];
 		}
 		
-		replaceDescription (c,d,newTerm);
+		//Because we're adding a word that is not case sensitive, we'll sent the case significance
+		//to 900000000000020002 |Only initial character case insensitive (core metadata concept)|
+		replaceDescription (c,d,newTerm, ONLY_INITIAL_CHAR_CASE_INSENSITIVE);
 	}
 
-	private void replaceDescription(Concept c, Description d, String newTerm) throws TermServerScriptException, IOException {
+	private void replaceDescription(Concept c, Description d, String newTerm, String newCaseSignificance) throws TermServerScriptException, IOException {
 		
 		if (!d.isActive()) {
 			String msg = "Attempting to inactivate and already inactive description";
@@ -172,6 +174,7 @@ public class AddEntire extends DeltaGenerator {
 			String newSCTID = descIdGenerator.getSCTID(PartionIdentifier.DESCRIPTION);
 			Description replacement = d.clone(newSCTID);
 			replacement.setTerm(newTerm);
+			replacement.setCaseSignificance(newCaseSignificance);
 			c.addDescription(replacement);
 			report (c,replacement,SEVERITY.MEDIUM, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, "Added new Description");
 			outputRF2(replacement);
