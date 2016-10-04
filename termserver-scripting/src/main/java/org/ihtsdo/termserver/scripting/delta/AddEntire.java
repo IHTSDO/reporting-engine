@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.ihtsdo.termserver.scripting.IdGenerator;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
@@ -45,6 +44,9 @@ public class AddEntire extends DeltaGenerator {
 			SnomedUtils.createArchive(new File(delta.outputDirName));
 		} finally {
 			delta.finish();
+			if (delta.descIdGenerator != null) {
+				println(delta.descIdGenerator.finish());
+			}
 		}
 	}
 	
@@ -64,7 +66,7 @@ public class AddEntire extends DeltaGenerator {
 
 	protected List<Concept> processFile() throws TermServerScriptException {
 		List<Concept> allConcepts = super.processFile();
-		//Since our code works through all descriptions for a concept, we can remove duplicate entires of concepts, 
+		//Since our code works through all descriptions for a concept, we can remove duplicate entries of concepts, 
 		Set<Concept> uniqueConcepts = new LinkedHashSet<Concept>(allConcepts);
 		for (Concept thisConcept : uniqueConcepts) {
 			if (!thisConcept.isActive()) {
@@ -162,6 +164,9 @@ public class AddEntire extends DeltaGenerator {
 				alreadyExists = true;;
 			}
 		}
+		
+		//TODO If we already have a term and we're inactiving this one, but this one is a preferred term,
+		//then we need to promote the one that we matched with, to be preferred instead.
 
 		if (!alreadyExists) {
 			String newSCTID = descIdGenerator.getSCTID(PartionIdentifier.DESCRIPTION);

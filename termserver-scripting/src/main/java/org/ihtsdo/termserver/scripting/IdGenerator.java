@@ -16,6 +16,7 @@ public class IdGenerator implements RF2Constants{
 	private BufferedReader availableSctIds;
 	private int dummySequence = 100;
 	private boolean useDummySequence = false;
+	int idsAssigned = 0;
 	
 	public static IdGenerator initiateIdGenerator(String sctidFilename) throws TermServerScriptException {
 		if (sctidFilename.equals("dummy")) {
@@ -41,6 +42,7 @@ public class IdGenerator implements RF2Constants{
 	
 	public String getSCTID(PartionIdentifier partitionIdentifier) throws IOException, TermServerScriptException {
 		if (useDummySequence) {
+			idsAssigned++;
 			return getDummySCTID(partitionIdentifier);
 		}
 		
@@ -52,6 +54,7 @@ public class IdGenerator implements RF2Constants{
 		}
 		//Check the SCTID is valid, and belongs to the correct partition
 		SnomedUtils.isValid(sctId, partitionIdentifier, true);  //throw exception if not valid
+		idsAssigned++;
 		return sctId;
 	}
 	private String getDummySCTID(PartionIdentifier partitionIdentifier) throws TermServerScriptException  {
@@ -62,5 +65,13 @@ public class IdGenerator implements RF2Constants{
 		} catch (CheckDigitException e) {
 			throw new TermServerScriptException ("Failed to generate dummy sctid",e);
 		}
+	}
+	public String finish() {
+		try {
+			availableSctIds.close();
+		} catch (Exception e){}
+		
+		return "IdGenerator supplied " + idsAssigned + " sctids.";
+		
 	}
 }
