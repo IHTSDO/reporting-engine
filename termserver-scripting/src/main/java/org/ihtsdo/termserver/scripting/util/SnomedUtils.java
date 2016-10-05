@@ -19,6 +19,8 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.validator.routines.checkdigit.VerhoeffCheckDigit;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.domain.Description;
+import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 
 public class SnomedUtils implements RF2Constants{
@@ -254,6 +256,35 @@ public class SnomedUtils implements RF2Constants{
 			out.closeEntry();
 			in.close();
 		}
+	}
+
+	//Merge the lang refset entries of a into b such that b obtains the 
+	//union of the two sets and preferred trumps acceptable
+	public static boolean mergeLangRefsetEntries(Description a,
+			Description b) {
+		boolean changesMade = false;
+		for (LangRefsetEntry la : a.getLangRefsetEntries(ACTIVE_STATE.ACTIVE)) {
+			boolean bHasThis = false;
+			for (LangRefsetEntry lb : b.getLangRefsetEntries(ACTIVE_STATE.ACTIVE)) {
+				if (lb.getRefsetId().equals(la.getRefsetId())) {
+					bHasThis = true;
+					if (!lb.getAcceptabilityId().equals(la.getAcceptabilityId())) {
+						if (la.getAcceptabilityId().equals(PREFERRED_TERM)) {
+							lb.setAcceptabilityId(PREFERRED_TERM);
+							lb.setEffectiveTime(null);
+							changesMade = true;
+						}
+					}
+				}
+			}
+			if (!bHasThis) {
+				//TODO If b does actually have this but in an inactive state,
+				//then we could search for that and activate it.
+				b.getLangRefsetEntries().add(la.clone());
+				changesMade = true;
+			}
+		}
+		return changesMade;
 	}
 
 }

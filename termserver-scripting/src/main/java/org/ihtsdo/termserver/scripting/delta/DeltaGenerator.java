@@ -97,9 +97,13 @@ public abstract class DeltaGenerator extends TermServerScript {
 	}
 
 	protected void outputRF2(Description d) throws TermServerScriptException, IOException {
-		writeToRF2File(descDeltaFilename, d.toRF2());
+		if (d.isDirty()) {
+			writeToRF2File(descDeltaFilename, d.toRF2());
+		}
 		for (LangRefsetEntry lang : d.getLangRefsetEntries()) {
-			writeToRF2File(langDeltaFilename, lang.toRF2());
+			if (lang.isDirty()) {
+				writeToRF2File(langDeltaFilename, lang.toRF2());
+			}
 		}
 	}
 	

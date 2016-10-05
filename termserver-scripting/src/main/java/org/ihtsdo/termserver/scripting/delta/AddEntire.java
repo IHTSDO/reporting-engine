@@ -152,25 +152,20 @@ public class AddEntire extends DeltaGenerator {
 	private void replaceDescription(Concept c, Description d, String newTerm, String newCaseSignificance) throws TermServerScriptException, IOException {
 		
 		if (!d.isActive()) {
-			String msg = "Attempting to inactivate and already inactive description";
+			String msg = "Attempting to inactivate an already inactive description";
 			report (c,d,SEVERITY.HIGH, REPORT_ACTION_TYPE.API_ERROR, msg);
 			return;
 		}
 		
 		//Do we already have this description, even inactivated?
-		boolean alreadyExists = false;
+		Description duplicate = null;
 		for (Description thisDesc : c.getDescriptions()) {
 			if (thisDesc.getTerm().equalsIgnoreCase(newTerm)) {
-				String msg = "Replacement term already exists: '" + thisDesc.toString() + "', inactivating original";
-				report (c,d,SEVERITY.HIGH, REPORT_ACTION_TYPE.VALIDATION_ERROR, msg);
-				alreadyExists = true;;
+				duplicate = thisDesc;
 			}
 		}
 		
-		//TODO If we already have a term and we're inactiving this one, but this one is a preferred term,
-		//then we need to promote the one that we matched with, to be preferred instead.
-
-		if (!alreadyExists) {
+		if (duplicate == null) {
 			String newSCTID = descIdGenerator.getSCTID(PartionIdentifier.DESCRIPTION);
 			Description replacement = d.clone(newSCTID);
 			replacement.setTerm(newTerm);
@@ -178,6 +173,26 @@ public class AddEntire extends DeltaGenerator {
 			c.addDescription(replacement);
 			report (c,replacement,SEVERITY.MEDIUM, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, "Added new Description");
 			outputRF2(replacement);
+		} else {
+			SEVERITY severity = SEVERITY.MEDIUM;
+			//If the duplicate is inactive, we need to activate it.
+			String duplicateMsg = "";
+			if (!duplicate.isActive()) {
+				duplicate.setActive(true);
+				duplicateMsg = "Reactivated duplicate term and ";
+			}
+
+			//We need to merge the acceptability of the previous term and that of the duplicate
+			//so that we get the best of both.  This might promote an acceptable term to a preferred one.
+			if (SnomedUtils.mergeLangRefsetEntries(d, duplicate)) {
+				duplicateMsg += "Modified duplicate term's lang refset entries (" + duplicate.getDescriptionId() + ")";
+				severity = SEVERITY.HIGH;
+			}
+			if (duplicateMsg.isEmpty()) {
+				duplicateMsg="No changes needed to duplicate.";
+			}
+			report (c,d,severity,REPORT_ACTION_TYPE.VALIDATION_ERROR, duplicateMsg);
+			outputRF2(duplicate);
 		}
 		d.setActive(false);
 		report (c,d,SEVERITY.MEDIUM, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, "Inactivated Description");

@@ -9,16 +9,13 @@ import java.util.Map;
 import javax.annotation.Generated;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.ACCEPTABILITY;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.DESCRIPTION_TYPE;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.InactivationIndicator;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
 @Generated("org.jsonschema2pojo")
-public class Description {
+public class Description implements RF2Constants{
 
 	@SerializedName("effectiveTime")
 	@Expose
@@ -28,7 +25,7 @@ public class Description {
 	private String moduleId;
 	@SerializedName("active")
 	@Expose
-	private boolean active;
+	private Boolean active;
 	@SerializedName("descriptionId")
 	@Expose
 	private String descriptionId;
@@ -54,7 +51,7 @@ public class Description {
 	@Expose
 	private InactivationIndicator inactivationIndicator;
 	List<LangRefsetEntry> langRefsetEntries;
-
+	private boolean dirty = false;
 	/**
 	 * No args constructor for use in serialization
 	 * 
@@ -112,8 +109,11 @@ public class Description {
 		return active;
 	}
 
-	public void setActive(boolean active) {
-		this.active = active;
+	public void setActive(boolean newActiveState) {
+		if (this.active != null && !this.active == newActiveState) {
+			setDirty();
+		}
+		this.active = newActiveState;
 		this.effectiveTime = null;
 		//If we inactivate a description, inactivate all of its LangRefsetEntriesAlso
 		if (active == false && this.langRefsetEntries != null) {
@@ -161,6 +161,10 @@ public class Description {
 	}
 
 	public void setTerm(String term) {
+		//Are we changing the term?
+		if (this.term != null && !this.term.equalsIgnoreCase(term)) {
+			dirty = true;
+		}
 		this.term = term;
 	}
 
@@ -260,6 +264,28 @@ public class Description {
 			langRefsetEntries = new ArrayList<LangRefsetEntry>();
 		}
 		return langRefsetEntries;
+	}
+	
+	public List<LangRefsetEntry> getLangRefsetEntries(ACTIVE_STATE activeState) {
+		if (activeState.equals(ACTIVE_STATE.BOTH)) {
+			return langRefsetEntries;
+		}
+		List<LangRefsetEntry> result = new ArrayList<LangRefsetEntry>();
+		for (LangRefsetEntry l : langRefsetEntries) {
+			if ((activeState.equals(ACTIVE_STATE.ACTIVE) && l.isActive()) ||
+				(activeState.equals(ACTIVE_STATE.INACTIVE) && !l.isActive()) ) {
+				result.add(l);
+			}
+		}
+		return result;
+	}
+
+	public boolean isDirty() {
+		return dirty;
+	}
+	
+	public void setDirty() {
+		dirty = true;
 	}
 
 }

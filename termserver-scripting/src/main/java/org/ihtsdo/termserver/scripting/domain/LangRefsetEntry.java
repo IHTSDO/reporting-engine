@@ -9,10 +9,11 @@ public class LangRefsetEntry {
 	private String id;
 	private String effectiveTime;
 	private String moduleId;
-	private boolean active;
+	private Boolean active = false;
 	private String refsetId;
 	private String referencedComponentId;
 	private String acceptabilityId;
+	private boolean dirty = false;
 	
 	public LangRefsetEntry clone() {
 		LangRefsetEntry clone = new LangRefsetEntry();
@@ -23,6 +24,7 @@ public class LangRefsetEntry {
 		clone.refsetId = this.refsetId;
 		clone.referencedComponentId = this.referencedComponentId;
 		clone.acceptabilityId = this.acceptabilityId;
+		clone.dirty = true; //New components need to be written to any delta
 		return clone;
 	}
 	
@@ -57,8 +59,11 @@ public class LangRefsetEntry {
 	public boolean isActive() {
 		return active;
 	}
-	public void setActive(boolean active) {
-		this.active = active;
+	public void setActive(boolean newActiveState) {
+		if (this.active != null && this.active != newActiveState) {
+			setDirty();
+		}
+		this.active = newActiveState;
 	}
 	public String getRefsetId() {
 		return refsetId;
@@ -77,5 +82,13 @@ public class LangRefsetEntry {
 	}
 	public void setAcceptabilityId(String acceptabilityId) {
 		this.acceptabilityId = acceptabilityId;
+	}
+
+	public boolean isDirty() {
+		return dirty;
+	}
+	
+	public void setDirty() {
+		dirty = true;
 	}
 }
