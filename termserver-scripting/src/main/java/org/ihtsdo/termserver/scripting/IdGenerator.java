@@ -52,6 +52,9 @@ public class IdGenerator implements RF2Constants{
 		} catch (IOException e) {
 			throw new TermServerScriptException("Unable to recover SCTID from file " + fileName);
 		}
+		if (sctId == null || sctId.isEmpty()) {
+			throw new TermServerScriptException("No more SCTIDs in file " + fileName + " need more than " + idsAssigned);
+		}
 		//Check the SCTID is valid, and belongs to the correct partition
 		SnomedUtils.isValid(sctId, partitionIdentifier, true);  //throw exception if not valid
 		idsAssigned++;
