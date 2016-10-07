@@ -159,9 +159,25 @@ public class AddEntire extends DeltaGenerator {
 		
 		//Do we already have this description, even inactivated?
 		Description duplicate = null;
-		for (Description thisDesc : c.getDescriptions()) {
+		for (Description thisDesc : c.getDescriptions(ACTIVE_STATE.ACTIVE)) {
 			if (thisDesc.getTerm().equalsIgnoreCase(newTerm)) {
+				//Have we already found a duplicate?
+				if (duplicate != null) {
+					report (c,duplicate,SEVERITY.CRITICAL, REPORT_ACTION_TYPE.VALIDATION_ERROR, "Multiple matching active duplicates found!");
+				}
 				duplicate = thisDesc;
+			}
+		}
+		
+		if (duplicate == null) {
+			for (Description thisDesc : c.getDescriptions(ACTIVE_STATE.INACTIVE)) {
+				if (thisDesc.getTerm().equalsIgnoreCase(newTerm)) {
+					//Have we already found a duplicate?
+					if (duplicate != null) {
+						report (c,duplicate,SEVERITY.CRITICAL, REPORT_ACTION_TYPE.VALIDATION_ERROR, "Multiple matching inactivate duplicates found!");
+					}
+					duplicate = thisDesc;
+				}
 			}
 		}
 		
@@ -175,6 +191,7 @@ public class AddEntire extends DeltaGenerator {
 			outputRF2(replacement);
 		} else {
 			SEVERITY severity = SEVERITY.MEDIUM;
+			REPORT_ACTION_TYPE action = REPORT_ACTION_TYPE.VALIDATION_ERROR;
 			//If the duplicate is inactive, we need to activate it.
 			String duplicateMsg = "";
 			if (!duplicate.isActive()) {
@@ -185,13 +202,14 @@ public class AddEntire extends DeltaGenerator {
 			//We need to merge the acceptability of the previous term and that of the duplicate
 			//so that we get the best of both.  This might promote an acceptable term to a preferred one.
 			if (SnomedUtils.mergeLangRefsetEntries(d, duplicate)) {
-				duplicateMsg += "Modified duplicate term's lang refset entries (" + duplicate.getDescriptionId() + ")";
+				duplicateMsg += "Modified duplicate term's lang refset entries - " + duplicate;
 				severity = SEVERITY.HIGH;
 			}
 			if (duplicateMsg.isEmpty()) {
-				duplicateMsg="No changes needed to duplicate.";
+				duplicateMsg="No changes needed to duplicate - " + duplicate;
+				action = REPORT_ACTION_TYPE.NO_CHANGE;
 			}
-			report (c,d,severity,REPORT_ACTION_TYPE.VALIDATION_ERROR, duplicateMsg);
+			report (c,d,severity,action, duplicateMsg);
 			outputRF2(duplicate);
 		}
 		d.setActive(false);

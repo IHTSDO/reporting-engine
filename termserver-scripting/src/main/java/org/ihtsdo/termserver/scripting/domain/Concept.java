@@ -10,6 +10,7 @@ import javax.annotation.Generated;
 
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.ACTIVE_STATE;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
@@ -317,6 +318,20 @@ public class Concept implements RF2Constants {
 			}
 		}
 		return matchingDescriptions;
+	}
+	
+	public List<Description> getDescriptions(ACTIVE_STATE activeState) {
+		if (activeState.equals(ACTIVE_STATE.BOTH)) {
+			return descriptions;
+		}
+		List<Description> results = new ArrayList<Description>();
+		for (Description d : descriptions) {
+			if ((activeState.equals(ACTIVE_STATE.ACTIVE) && d.isActive()) ||
+					(activeState.equals(ACTIVE_STATE.INACTIVE) && !d.isActive()) ) {
+					results.add(d);
+			}
+		}
+		return results;
 	}
 
 	private static boolean translateActive(ACTIVE_STATE active) throws TermServerScriptException {
