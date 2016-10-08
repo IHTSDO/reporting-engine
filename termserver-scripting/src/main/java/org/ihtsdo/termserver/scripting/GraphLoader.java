@@ -24,7 +24,8 @@ public class GraphLoader implements RF2Constants {
 	private static GraphLoader singletonGraphLoader = null;
 	private Map<String, Concept> concepts = new HashMap<String, Concept>();
 	private Map<String, Description> descriptions = new HashMap<String, Description>();
-
+	public StringBuffer log = new StringBuffer();
+	
 	public static GraphLoader getGraphLoader() {
 		if (singletonGraphLoader == null) {
 			singletonGraphLoader = new GraphLoader();
@@ -35,21 +36,31 @@ public class GraphLoader implements RF2Constants {
 	public Collection <Concept> getAllConcepts() {
 		return concepts.values();
 	}
-
-	public Map<String, Relationship> loadRelationshipFile (CHARACTERISTIC_TYPE characteristicType, InputStream relStream) throws IOException, TermServerScriptException {
-		Map<String, Relationship> loadedRelationships = new HashMap<String, Relationship>();
+	
+	public Set<Concept> loadRelationships(CHARACTERISTIC_TYPE characteristicType, InputStream relStream, boolean addRelationshipsToConcepts) 
+			throws IOException, TermServerScriptException {
+		Set<Concept> concepts = new HashSet<Concept>();
 		BufferedReader br = new BufferedReader(new InputStreamReader(relStream, StandardCharsets.UTF_8));
 		String line;
-		boolean isHeader = true;
+		boolean isHeaderLine = true;
+		long relationshipsLoaded = 0;
 		while ((line = br.readLine()) != null) {
-			if (!isHeader) {
+			if (!isHeaderLine) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
-				addRelationshipToConcept(characteristicType, lineItems);
+				Concept thisConcept;
+				if (addRelationshipsToConcepts) {
+					thisConcept = addRelationshipToConcept(characteristicType, lineItems);
+				} else {
+					thisConcept = getConcept(lineItems[REL_IDX_SOURCEID]);
+				}
+				concepts.add(thisConcept);
 			} else {
-				isHeader = false;
+				isHeaderLine = false;
 			}
+			relationshipsLoaded++;
 		}
-		return loadedRelationships;
+		log.append("Loaded " + relationshipsLoaded + " relationships of type " + characteristicType + " which were " + (addRelationshipsToConcepts?"":"not ") + " added to concepts");
+		return concepts;
 	}
 	
 	private Concept addRelationshipToConcept(CHARACTERISTIC_TYPE characteristicType, String[] lineItems) throws TermServerScriptException {
@@ -113,7 +124,7 @@ public class GraphLoader implements RF2Constants {
 			if (!isHeader) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
 				if (fsnOnly) {
-					// Only store active relationships.  
+					// Only store active descriptions.  
 					if (lineItems[DES_IDX_ACTIVE].equals(ACTIVE_FLAG) && lineItems[DES_IDX_TYPEID].equals(FULLY_SPECIFIED_NAME)) {
 						Concept c = getConcept(lineItems[DES_IDX_CONCEPTID]);
 						c.setFsn(lineItems[DES_IDX_TERM]);
@@ -163,35 +174,12 @@ public class GraphLoader implements RF2Constants {
 	}
 
 	public Set<Concept> loadRelationshipDelta(CHARACTERISTIC_TYPE characteristicType, InputStream relStream) throws IOException, TermServerScriptException {
-		return loadRelationshipDelta(characteristicType, relStream, true);
+		return loadRelationships(characteristicType, relStream, true);
 	}
 
 	public Set<Concept> getModifiedConcepts(
 			CHARACTERISTIC_TYPE characteristicType, ZipInputStream relStream) throws IOException, TermServerScriptException {
-		return loadRelationshipDelta(characteristicType, relStream, false);
-	}
-	
-	public Set<Concept> loadRelationshipDelta(CHARACTERISTIC_TYPE characteristicType, InputStream relStream, boolean addRelationshipsToConcepts) 
-			throws IOException, TermServerScriptException {
-		Set<Concept> concepts = new HashSet<Concept>();
-		BufferedReader br = new BufferedReader(new InputStreamReader(relStream, StandardCharsets.UTF_8));
-		String line;
-		boolean isHeaderLine = true;
-		while ((line = br.readLine()) != null) {
-			if (!isHeaderLine) {
-				String[] lineItems = line.split(FIELD_DELIMITER);
-				Concept thisConcept;
-				if (addRelationshipsToConcepts) {
-					thisConcept = addRelationshipToConcept(characteristicType, lineItems);
-				} else {
-					thisConcept = getConcept(lineItems[REL_IDX_SOURCEID]);
-				}
-				concepts.add(thisConcept);
-			} else {
-				isHeaderLine = false;
-			}
-		}
-		return concepts;
+		return loadRelationships(characteristicType, relStream, false);
 	}
 
 	public void loadLanguageFile(ZipInputStream zis) throws IOException, TermServerScriptException {

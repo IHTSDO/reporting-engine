@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -24,18 +25,20 @@ import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExtractType;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 
-public class ChangedRelationships extends TermServerScript{
+public class RelationshipReport extends TermServerScript{
 	
 	Set<Concept> modifiedConcepts = new HashSet<Concept>();
 	List<String> criticalErrors = new ArrayList<String>();
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
+	GraphLoader gl = GraphLoader.getGraphLoader();
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
-		ChangedRelationships fix = new ChangedRelationships();
+		RelationshipReport fix = new RelationshipReport();
 		try {
 			fix.init(args);
 			fix.loadProjectSnapshotAndDelta();  //Load FSNs only
-			fix.detectChangedRelationships();
+			//fix.detectChangedRelationships();
+			fix.reportActiveRelationships();
 		} catch (Exception e) {
 			println("Failed to produce Changed Relationship Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
@@ -51,15 +54,16 @@ public class ChangedRelationships extends TermServerScript{
 		//Work through our set of modified concepts and if a relationship of a type has 
 		//been inactivated, ensure that we have another relationship of the same time 
 		//that replaces it.
-		println("Examining " + modifiedConcepts.size() + " modified concepts");
+		Collection<Concept> conceptsToExamine =  gl.getAllConcepts();  //modifiedConcepts
+		println("Examining " + conceptsToExamine.size() + " concepts");
 		int changedRelationships = 0;
-		for (Concept thisConcept : modifiedConcepts) {
+		for (Concept thisConcept : conceptsToExamine) {
 			if (thisConcept.getFsn() == null) {
 				String msg = "Concept " + thisConcept.getConceptId() + " has no FSN";
 				criticalErrors.add(msg);
 				println(msg);
 			}
-			List<Relationship> allConceptRelationships = thisConcept.getRelationships(CHARACTERISTIC_TYPE.ALL, ACTIVE_STATE.BOTH);
+			List<Relationship> allConceptRelationships = thisConcept.getRelationships(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP, ACTIVE_STATE.BOTH);
 			
 			for(Relationship thisRel : allConceptRelationships) {
 				//Has this relationship changed in the this release?
@@ -69,7 +73,29 @@ public class ChangedRelationships extends TermServerScript{
 				}
 			}
 		}
-		println("Detected " + changedRelationships + " changed Relationships");
+		println("Detected " + changedRelationships + " changed Stated Relationships");
+		println("Graph loader log: \n" + gl.log);
+	}
+	
+	private void reportActiveRelationships() {
+		Collection<Concept> conceptsToExamine =  gl.getAllConcepts();  //modifiedConcepts
+		println("Examining " + conceptsToExamine.size() + " concepts");
+		int reportedRelationships = 0;
+		for (Concept thisConcept : conceptsToExamine) {
+			if (thisConcept.getFsn() == null) {
+				String msg = "Concept " + thisConcept.getConceptId() + " has no FSN";
+				criticalErrors.add(msg);
+				println(msg);
+			}
+			List<Relationship> allConceptRelationships = thisConcept.getRelationships(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP, ACTIVE_STATE.ACTIVE);
+			
+			for(Relationship thisRel : allConceptRelationships) {
+				report (thisConcept, thisRel);
+				reportedRelationships++;
+			}
+		}
+		println("Reported " + reportedRelationships + " active Stated Relationships");
+		println("Graph loader log: \n" + gl.log);
 	}
 	
 	protected void report (Concept c, Relationship r) {
@@ -87,8 +113,19 @@ public class ChangedRelationships extends TermServerScript{
 	
 	protected void init(String[] args) throws IOException, TermServerScriptException {
 		super.init(args);
+		print ("What date identifies 'new' relationships? [" + transientEffectiveDate + "]: ");
+		String response = STDIN.nextLine().trim();
+		if (!response.isEmpty()) {
+			long dateAsNumber = Long.parseLong(response);
+			if (dateAsNumber < 2000000L || dateAsNumber > 30000000) {
+				throw new TermServerScriptException("Invalid date: "  + response);
+			}
+			transientEffectiveDate = response;
+		}
+		
 		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
-		String reportFilename = "changed_relationships_" + project.toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
+		//String reportFilename = "changed_relationships_" + project.toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
+		String reportFilename = "active_stated_relationships_" + project.toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
@@ -112,7 +149,6 @@ public class ChangedRelationships extends TermServerScript{
 			tsClient.export("MAIN/" + project, transientEffectiveDate, ExportType.UNPUBLISHED, ExtractType.DELTA, archives[DELTA]);
 		}
 		
-		GraphLoader gl = GraphLoader.getGraphLoader();
 		println ("Loading snapshot terms and delta relationships into memory...");
 		for (File archive : archives) {
 			try {
@@ -133,6 +169,16 @@ public class ChangedRelationships extends TermServerScript{
 								gl.loadConceptFile(zis);
 							}
 							
+							if (fileName.contains("sct2_Relationship_Snapshot")) {
+								println("Loading Relationship Snapshot File.");
+								gl.loadRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP,zis, true);
+							}
+							
+							if (fileName.contains("sct2_StatedRelationship_Snapshot")) {
+								println("Loading Stated Relationship Snapshot File.");
+								gl.loadRelationships(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP,zis, true);
+							}
+							/*
 							if (fileName.contains("sct2_Relationship_Delta")) {
 								println("Loading Relationship Delta File.");
 								modifiedConcepts.addAll(gl.loadRelationshipDelta(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP,zis));
@@ -141,7 +187,7 @@ public class ChangedRelationships extends TermServerScript{
 							if (fileName.contains("sct2_StatedRelationship_Delta")) {
 								println("Loading Stated Relationship Delta File.");
 								modifiedConcepts.addAll(gl.loadRelationshipDelta(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP,zis));
-							}
+							}*/
 						}
 						ze = zis.getNextEntry();
 					}

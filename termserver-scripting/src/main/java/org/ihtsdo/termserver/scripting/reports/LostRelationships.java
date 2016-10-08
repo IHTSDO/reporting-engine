@@ -145,7 +145,7 @@ public class LostRelationships extends TermServerScript{
 							
 							if (fileName.contains("sct2_Relationship_Snapshot")) {
 								println("Loading Relationship Snapshot File.");
-								gl.loadRelationshipFile(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, zis);
+								gl.loadRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, zis, true);
 							}
 							
 							if (fileName.contains("sct2_Relationship_Delta")) {
