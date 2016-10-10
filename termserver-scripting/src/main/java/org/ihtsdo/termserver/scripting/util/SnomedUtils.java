@@ -287,4 +287,23 @@ public class SnomedUtils implements RF2Constants{
 		return changesMade;
 	}
 
+	public static String translateCharacteristicType(
+			CHARACTERISTIC_TYPE characteristicType) {
+		switch (characteristicType) {
+			case STATED_RELATIONSHIP : return SCTID_STATED_RELATIONSHIP;
+			case INFERRED_RELATIONSHIP : return SCTID_INFERRED_RELATIONSHIP;
+			case QUALIFYING_RELATIONSHIP : return SCTID_QUALIFYING_RELATIONSHIP;
+			case ADDITIONAL_RELATIONSHIP : return SCTID_ADDITIONAL_RELATIONSHIP;
+			default : return "";
+		}
+	}
+
+	public static String translateModifier(MODIFER modifier) {
+		switch (modifier) {
+			case EXISTENTIAL : return SCTID_EXISTENTIAL_MODIFIER;
+			case UNIVERSAL : return SCTID_UNIVERSAL_MODIFIER;
+			default : return "";
+		}
+	}
+
 }
