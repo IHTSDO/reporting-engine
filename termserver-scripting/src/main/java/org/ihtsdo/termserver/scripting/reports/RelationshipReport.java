@@ -106,8 +106,10 @@ public class RelationshipReport extends TermServerScript{
 						r.getCharacteristicType().toString() + QUOTE_COMMA +
 						r.isActive() + COMMA +
 						r.getGroupId() + COMMA_QUOTE +
-						r.getType().toString() + QUOTE_COMMA_QUOTE +
-						r.getTarget().toString() + QUOTE;
+						r.getType().getConceptId() + QUOTE_COMMA_QUOTE +
+						r.getType().getFsn() + QUOTE_COMMA_QUOTE +
+						r.getTarget().getConceptId() + QUOTE_COMMA_QUOTE +
+						r.getTarget().getFsn() + QUOTE;
 		writeToFile(line);
 	}
 	
@@ -129,7 +131,7 @@ public class RelationshipReport extends TermServerScript{
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToFile ("Concept, FSN, Concept_Active, Concept_Modified, Stated_or_Inferred, Relationship_Active, GroupNum, Type, Target");
+		writeToFile ("Concept, FSN, Concept_Active, Concept_Modified, Stated_or_Inferred, Relationship_Active, GroupNum, TypeId, TypeFsn, TargetId, TargetFsn");
 	}
 
 	private void loadProjectSnapshotAndDelta() throws SnowOwlClientException, TermServerScriptException, InterruptedException {
