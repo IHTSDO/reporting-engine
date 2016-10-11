@@ -228,10 +228,9 @@ public class Description implements RF2Constants{
 		}
 		if (langRefsetEntries != null) {
 			for (LangRefsetEntry thisDialect : this.getLangRefsetEntries()) {
-				LangRefsetEntry thisDialectClone = thisDialect.clone(); //will create a new UUID and remove EffectiveTime
-				clone.getLangRefsetEntries().add(thisDialectClone);
 				//The lang refset entres for the cloned description should also point to it
-				thisDialectClone.setReferencedComponentId(clone.descriptionId);
+				LangRefsetEntry thisDialectClone = thisDialect.clone(clone.descriptionId); //will create a new UUID and remove EffectiveTime
+				clone.getLangRefsetEntries().add(thisDialectClone);
 				thisDialectClone.setActive(true);
 			}
 		}

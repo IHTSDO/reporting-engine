@@ -189,13 +189,11 @@ public class GraphLoader implements RF2Constants {
 		while ((line = br.readLine()) != null) {
 			if (!isHeaderLine) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
-				if (lineItems[LANG_IDX_ACTIVE].equals(ACTIVE_FLAG)) {
-					Description d = getDescription(lineItems[LANG_IDX_REFCOMPID]);
-					LangRefsetEntry langRefsetEntry = loadLanguageLine(lineItems);
-					d.getLangRefsetEntries().add(langRefsetEntry);
-					ACCEPTABILITY a = SnomedUtils.getAcceptability(lineItems[LANG_IDX_ACCEPTABILITY_ID]);
-					d.setAcceptablity(lineItems[LANG_IDX_REFSETID], a);
-				}
+				Description d = getDescription(lineItems[LANG_IDX_REFCOMPID]);
+				LangRefsetEntry langRefsetEntry = loadLanguageLine(lineItems);
+				d.getLangRefsetEntries().add(langRefsetEntry);
+				ACCEPTABILITY a = SnomedUtils.getAcceptability(lineItems[LANG_IDX_ACCEPTABILITY_ID]);
+				d.setAcceptablity(lineItems[LANG_IDX_REFSETID], a);
 			} else {
 				isHeaderLine = false;
 			}

@@ -9,20 +9,20 @@ public class LangRefsetEntry {
 	private String id;
 	private String effectiveTime;
 	private String moduleId;
-	private Boolean active = false;
+	private Boolean active;
 	private String refsetId;
 	private String referencedComponentId;
 	private String acceptabilityId;
 	private boolean dirty = false;
 	
-	public LangRefsetEntry clone() {
+	public LangRefsetEntry clone(String newDescriptionSctId) {
 		LangRefsetEntry clone = new LangRefsetEntry();
 		clone.id = UUID.randomUUID().toString();
 		clone.effectiveTime = null;
 		clone.moduleId = this.moduleId;
 		clone.active = this.active;
 		clone.refsetId = this.refsetId;
-		clone.referencedComponentId = this.referencedComponentId;
+		clone.referencedComponentId = newDescriptionSctId;
 		clone.acceptabilityId = this.acceptabilityId;
 		clone.dirty = true; //New components need to be written to any delta
 		return clone;

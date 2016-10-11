@@ -265,6 +265,7 @@ public class SnomedUtils implements RF2Constants{
 		boolean changesMade = false;
 		for (LangRefsetEntry la : a.getLangRefsetEntries(ACTIVE_STATE.ACTIVE)) {
 			boolean bHasThis = false;
+			//First check for existing active entries.  If they're not found, search inactive
 			for (LangRefsetEntry lb : b.getLangRefsetEntries(ACTIVE_STATE.ACTIVE)) {
 				if (lb.getRefsetId().equals(la.getRefsetId())) {
 					bHasThis = true;
@@ -277,10 +278,27 @@ public class SnomedUtils implements RF2Constants{
 					}
 				}
 			}
+			
 			if (!bHasThis) {
-				//TODO If b does actually have this but in an inactive state,
-				//then we could search for that and activate it.
-				b.getLangRefsetEntries().add(la.clone());
+				for (LangRefsetEntry lb : b.getLangRefsetEntries(ACTIVE_STATE.INACTIVE)) {
+					if (lb.getRefsetId().equals(la.getRefsetId())) {
+						bHasThis = true;
+						lb.setActive(true);
+						changesMade = true;
+						lb.setEffectiveTime(null);
+						//As well as activating, are we also promoting to preferred?
+						if (!lb.getAcceptabilityId().equals(la.getAcceptabilityId())) {
+							if (la.getAcceptabilityId().equals(PREFERRED_TERM)) {
+								lb.setAcceptabilityId(PREFERRED_TERM);
+							}
+						}
+					}
+				}
+			}
+			
+			//If we didn't find any existing lang refset for this dialect then copy it from "a"
+			if (!bHasThis) {
+				b.getLangRefsetEntries().add(la.clone(b.getDescriptionId()));
 				changesMade = true;
 			}
 		}
