@@ -770,4 +770,16 @@ public class TaskService {
 		return attachments;
 	}
 
+	public void leaveCommentForTask(String projectKey, String taskKey, String comment) throws BusinessServiceException {
+		try {
+			addComment(projectKey, taskKey, comment);
+		} catch (JiraException e) {
+			if (e.getCause() instanceof RestException && ((RestException) e.getCause()).getHttpStatusCode() == 404) {
+				throw new ResourceNotFoundException("Task not found " + toString(projectKey, taskKey), e);
+			}
+			throw new BusinessServiceException("Failed to leave comment for task " + toString(projectKey, taskKey), e);
+		
+		}
+	}
+
 }
