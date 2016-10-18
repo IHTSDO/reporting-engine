@@ -31,6 +31,8 @@ public class RelationshipReport extends TermServerScript{
 	List<String> criticalErrors = new ArrayList<String>();
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	GraphLoader gl = GraphLoader.getGraphLoader();
+	Concept filterOnType = null; 
+	CHARACTERISTIC_TYPE filterOnCharacteristicType = null;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		RelationshipReport fix = new RelationshipReport();
@@ -87,11 +89,13 @@ public class RelationshipReport extends TermServerScript{
 				criticalErrors.add(msg);
 				println(msg);
 			}
-			List<Relationship> allConceptRelationships = thisConcept.getRelationships(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP, ACTIVE_STATE.ACTIVE);
+			List<Relationship> allConceptRelationships = thisConcept.getRelationships(filterOnCharacteristicType, ACTIVE_STATE.ACTIVE);
 			
 			for(Relationship thisRel : allConceptRelationships) {
-				report (thisConcept, thisRel);
-				reportedRelationships++;
+				if (filterOnType == null || thisRel.getType().equals(filterOnType)){
+					report (thisConcept, thisRel);
+					reportedRelationships++;
+				}
 			}
 		}
 		println("Reported " + reportedRelationships + " active Stated Relationships");
@@ -125,9 +129,30 @@ public class RelationshipReport extends TermServerScript{
 			transientEffectiveDate = response;
 		}
 		
+		print ("Filter for a particular attribute type? (return for none): ");
+		response = STDIN.nextLine().trim();
+		if (!response.isEmpty()) {
+			filterOnType = gl.getConcept(response);
+		}
+		
+		while (filterOnCharacteristicType == null) {
+			print ("Report which characteristic type(s)? [S,I,B]: ");
+			response = STDIN.nextLine().trim();
+			if (!response.isEmpty()) {
+				switch (response.toUpperCase()) {
+					case "S" : filterOnCharacteristicType = CHARACTERISTIC_TYPE.STATED_RELATIONSHIP;
+															break;
+					case "I" : filterOnCharacteristicType = CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP;
+															break;
+					case "B" : filterOnCharacteristicType = CHARACTERISTIC_TYPE.ALL;
+				default:
+				}
+			} 
+		}
+		
 		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
 		//String reportFilename = "changed_relationships_" + project.toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
-		String reportFilename = "active_stated_relationships_" + project.toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
+		String reportFilename = "active_relationships_" + project.toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
@@ -137,7 +162,7 @@ public class RelationshipReport extends TermServerScript{
 	private void loadProjectSnapshotAndDelta() throws SnowOwlClientException, TermServerScriptException, InterruptedException {
 		int SNAPSHOT = 0;
 		int DELTA = 1;
-		File[] archives = new File[] { new File (project + "_snapshot_" + env + ".zip"), new File (project + "_delta_" + env + "_" + transientEffectiveDate + ".zip") };
+		File[] archives = new File[] { new File (project + "_snapshot_" + env + ".zip")};//, new File (project + "_delta_" + env + "_" + transientEffectiveDate + ".zip") };
 
 		//Do we already have a copy of the project locally?  If not, recover it.
 		if (!archives[SNAPSHOT].exists()) {
@@ -146,10 +171,10 @@ public class RelationshipReport extends TermServerScript{
 			initialiseSnowOwlClient();  //re-initialise client to avoid HttpMediaTypeNotAcceptableException.  Cause unknown.
 		}
 		
-		if (!archives[DELTA].exists()) {
+		/*if (!archives[DELTA].exists()) {
 			println ("Recovering delta state of " + project + " from TS (" + env + ") for " + transientEffectiveDate);
 			tsClient.export("MAIN/" + project, transientEffectiveDate, ExportType.UNPUBLISHED, ExtractType.DELTA, archives[DELTA]);
-		}
+		}*/
 		
 		println ("Loading snapshot terms and delta relationships into memory...");
 		for (File archive : archives) {

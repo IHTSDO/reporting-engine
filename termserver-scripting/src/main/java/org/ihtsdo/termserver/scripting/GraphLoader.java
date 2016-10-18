@@ -59,7 +59,7 @@ public class GraphLoader implements RF2Constants {
 			}
 			relationshipsLoaded++;
 		}
-		log.append("Loaded " + relationshipsLoaded + " relationships of type " + characteristicType + " which were " + (addRelationshipsToConcepts?"":"not ") + " added to concepts");
+		log.append("\tLoaded " + relationshipsLoaded + " relationships of type " + characteristicType + " which were " + (addRelationshipsToConcepts?"":"not ") + "added to concepts\n");
 		return concepts;
 	}
 	
