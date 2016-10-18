@@ -740,7 +740,7 @@ public class TaskService {
 							final JSON attachmentJson = restClient
 									.get(contentUrl.substring(contentUrl.indexOf("secure")));
 
-							TaskAttachment taskAttachment = new TaskAttachment(crsId, attachmentJson.toString());
+							TaskAttachment taskAttachment = new TaskAttachment(issue.getKey(), crsId, attachmentJson.toString());
 
 							attachments.add(taskAttachment);
 							
@@ -755,7 +755,7 @@ public class TaskService {
 				
 				// if no attachments, create a blank one to link CRS ticket id
  				if (!attachmentFound) {
- 					TaskAttachment taskAttachment = new TaskAttachment(crsId, null);
+ 					TaskAttachment taskAttachment = new TaskAttachment(issue.getKey(), crsId, null);
  					attachments.add(taskAttachment);
  				}	
 				
