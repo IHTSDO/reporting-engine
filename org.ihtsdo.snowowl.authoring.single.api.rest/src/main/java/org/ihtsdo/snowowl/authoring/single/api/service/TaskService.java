@@ -740,7 +740,7 @@ public class TaskService {
 							final JSON attachmentJson = restClient
 									.get(contentUrl.substring(contentUrl.indexOf("secure")));
 
-							TaskAttachment taskAttachment = new TaskAttachment(issue.getKey(), crsId, attachmentJson.toString());
+							TaskAttachment taskAttachment = new TaskAttachment(issue1.getKey(), crsId, attachmentJson.toString());
 
 							attachments.add(taskAttachment);
 							
