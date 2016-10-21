@@ -33,6 +33,7 @@ public class RelationshipReport extends TermServerScript{
 	GraphLoader gl = GraphLoader.getGraphLoader();
 	Concept filterOnType = null; 
 	CHARACTERISTIC_TYPE filterOnCharacteristicType = null;
+	ACTIVE_STATE filterOnActiveState = null;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		RelationshipReport fix = new RelationshipReport();
@@ -89,7 +90,7 @@ public class RelationshipReport extends TermServerScript{
 				criticalErrors.add(msg);
 				println(msg);
 			}
-			List<Relationship> allConceptRelationships = thisConcept.getRelationships(filterOnCharacteristicType, ACTIVE_STATE.ACTIVE);
+			List<Relationship> allConceptRelationships = thisConcept.getRelationships(filterOnCharacteristicType, filterOnActiveState);
 			
 			for(Relationship thisRel : allConceptRelationships) {
 				if (filterOnType == null || thisRel.getType().equals(filterOnType)){
@@ -150,9 +151,24 @@ public class RelationshipReport extends TermServerScript{
 			} 
 		}
 		
+		while (filterOnActiveState == null) {
+			print ("Report which active state(s)? [A,I,B]: ");
+			response = STDIN.nextLine().trim();
+			if (!response.isEmpty()) {
+				switch (response.toUpperCase()) {
+					case "A" : filterOnActiveState = ACTIVE_STATE.ACTIVE;
+															break;
+					case "I" : filterOnActiveState = ACTIVE_STATE.INACTIVE;
+															break;
+					case "B" : filterOnActiveState = ACTIVE_STATE.BOTH;
+				default:
+				}
+			} 
+		}
+		
 		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
 		//String reportFilename = "changed_relationships_" + project.toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
-		String reportFilename = "active_relationships_" + project.toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
+		String reportFilename = "relationships_" + project.toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
