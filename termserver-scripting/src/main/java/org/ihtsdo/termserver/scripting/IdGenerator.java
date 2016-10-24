@@ -17,6 +17,7 @@ public class IdGenerator implements RF2Constants{
 	private int dummySequence = 100;
 	private boolean useDummySequence = false;
 	int idsAssigned = 0;
+	private String namespace = "";
 	
 	public static IdGenerator initiateIdGenerator(String sctidFilename) throws TermServerScriptException {
 		if (sctidFilename.equals("dummy")) {
@@ -60,21 +61,25 @@ public class IdGenerator implements RF2Constants{
 		idsAssigned++;
 		return sctId;
 	}
+	
 	private String getDummySCTID(PartionIdentifier partitionIdentifier) throws TermServerScriptException  {
 		try {
-			String sctIdBase = ++dummySequence + "0" + partitionIdentifier.ordinal();
+			String sctIdBase = ++dummySequence + namespace + "0" + partitionIdentifier.ordinal();
 			String checkDigit = new VerhoeffCheckDigit().calculate(sctIdBase);
 			return sctIdBase + checkDigit;
 		} catch (CheckDigitException e) {
 			throw new TermServerScriptException ("Failed to generate dummy sctid",e);
 		}
 	}
+	
+	public void setNamespace(String namespace) {
+		this.namespace = namespace;
+	}	
+	
 	public String finish() {
 		try {
 			availableSctIds.close();
 		} catch (Exception e){}
-		
 		return "IdGenerator supplied " + idsAssigned + " sctids.";
-		
 	}
 }

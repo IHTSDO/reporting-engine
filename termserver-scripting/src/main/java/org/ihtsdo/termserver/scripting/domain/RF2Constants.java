@@ -49,6 +49,7 @@ public interface RF2Constants {
 	static final String ACCEPTABLE_TERM = "900000000000549004";
 	
 	static final String ENITRE_TERM_CASE_SENSITIVE = "900000000000017005";
+	static final String ENTIRE_TERM_CASE_INSENSITIVE = "900000000000448009";
 	static final String ONLY_INITIAL_CHAR_CASE_INSENSITIVE = "900000000000020002";
 	
 	final public String SEMANTIC_TAG_START = "(";

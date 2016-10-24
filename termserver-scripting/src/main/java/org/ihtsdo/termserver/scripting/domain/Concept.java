@@ -320,6 +320,19 @@ public class Concept implements RF2Constants {
 		return matchingDescriptions;
 	}
 	
+	public List<Description> getDescriptions(String langRefsetId, ACCEPTABILITY targetAcceptability, DESCRIPTION_TYPE descriptionType, ACTIVE_STATE active) throws TermServerScriptException {
+		//Get the matching terms, and then pick the ones that have the appropriate acceptability for the specified Refset
+		List<Description> matchingDescriptions = new ArrayList<Description>();
+		for (Description d : getDescriptions(targetAcceptability, descriptionType, active)) {
+			ACCEPTABILITY acceptability = d.getAcceptabilityMap().get(langRefsetId);
+			if (acceptability.equals(targetAcceptability)) {
+				//Need to check this again because the first function might match on the other language
+				matchingDescriptions.add(d);
+			}
+		}
+		return matchingDescriptions;
+	}
+	
 	public List<Description> getDescriptions(ACTIVE_STATE activeState) {
 		if (activeState.equals(ACTIVE_STATE.BOTH)) {
 			return descriptions;

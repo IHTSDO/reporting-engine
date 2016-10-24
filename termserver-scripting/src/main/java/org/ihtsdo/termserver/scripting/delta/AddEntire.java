@@ -218,7 +218,7 @@ public class AddEntire extends DeltaGenerator {
 	}
 
 	@Override
-	public String getFixName() {
+	public String getScriptName() {
 		return "Add Entire";
 	}
 

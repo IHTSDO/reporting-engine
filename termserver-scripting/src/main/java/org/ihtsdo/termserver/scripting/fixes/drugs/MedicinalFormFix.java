@@ -52,7 +52,7 @@ public class MedicinalFormFix extends DrugProductFix implements RF2Constants{
 	}
 
 	@Override
-	public String getFixName() {
+	public String getScriptName() {
 		return "MedicinalFormFix";
 	}
 

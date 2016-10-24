@@ -91,7 +91,7 @@ public class LangRefsetInactivationFix extends TermServerScript implements RF2Co
 	}
 
 	@Override
-	public String getFixName() {
+	public String getScriptName() {
 		return "LangRefsetInactivationFix";
 	}
 

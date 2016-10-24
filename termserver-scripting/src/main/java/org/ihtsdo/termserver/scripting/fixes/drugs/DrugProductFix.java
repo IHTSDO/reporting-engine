@@ -408,7 +408,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 	}
 
 	@Override
-	public String getFixName() {
+	public String getScriptName() {
 		return "MedicinalEntity";
 	}
 	

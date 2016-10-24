@@ -40,7 +40,7 @@ public class MedicinalEntityFix extends DrugProductFix implements RF2Constants{
 	}
 
 	@Override
-	public String getFixName() {
+	public String getScriptName() {
 		return "MedicinalEntity";
 	}
 

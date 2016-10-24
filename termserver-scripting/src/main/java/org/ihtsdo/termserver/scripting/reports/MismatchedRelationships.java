@@ -172,7 +172,7 @@ public class MismatchedRelationships extends TermServerScript{
 	}
 
 	@Override
-	public String getFixName() {
+	public String getScriptName() {
 		return "Lost Relationships";
 	}
 

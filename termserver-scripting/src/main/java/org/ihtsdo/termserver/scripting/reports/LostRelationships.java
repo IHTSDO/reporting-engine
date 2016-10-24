@@ -168,7 +168,7 @@ public class LostRelationships extends TermServerScript{
 	}
 
 	@Override
-	public String getFixName() {
+	public String getScriptName() {
 		return "Lost Relationships";
 	}
 

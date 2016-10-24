@@ -29,6 +29,8 @@ public abstract class DeltaGenerator extends TermServerScript {
 	String descDeltaFilename;
 	String langDeltaFilename;
 	
+	protected String languageCode = "en";
+	
 	String[] conHeader = new String[] {"id","effectiveTime","active","moduleId","definitionStatusId"};
 	String[] descHeader = new String[] {"id","effectiveTime","active","moduleId","conceptId","languageCode","typeId","term","caseSignificanceId"};
 	String[] relHeader = new String[] {"id","effectiveTime","active","moduleId","sourceId","destinationId","relationshipGroup","typeId","characteristicTypeId","modifierId"};
@@ -89,10 +91,10 @@ public abstract class DeltaGenerator extends TermServerScript {
 		sRelDeltaFilename = termDir + "sct2_StatedRelationship_Delta_INT_" + today + ".txt";
 		writeToRF2File(sRelDeltaFilename, relHeader);
 		
-		descDeltaFilename = termDir + "sct2_Description_Delta-en_INT_" + today + ".txt";
+		descDeltaFilename = termDir + "sct2_Description_Delta-"+languageCode+"_INT_" + today + ".txt";
 		writeToRF2File(descDeltaFilename, descHeader);
 		
-		langDeltaFilename = refDir + "Language/der2_cRefset_LanguageDelta-en_INT_" + today + ".txt";
+		langDeltaFilename = refDir + "Language/der2_cRefset_LanguageDelta-"+languageCode+"_INT_" + today + ".txt";
 		writeToRF2File(langDeltaFilename, langHeader);
 	}
 

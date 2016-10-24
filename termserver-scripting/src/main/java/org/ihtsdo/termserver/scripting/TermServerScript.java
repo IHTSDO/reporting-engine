@@ -95,7 +95,9 @@ public abstract class TermServerScript implements RF2Constants {
 									 
 	public enum SEVERITY { NONE, LOW, MEDIUM, HIGH, CRITICAL }; 
 
-	public abstract String getFixName();
+	public String getScriptName() {
+		return this.getClass().getSimpleName();
+	}
 	
 	public String getAuthenticatedCookie() {
 		return authenticatedCookie;
@@ -114,7 +116,7 @@ public abstract class TermServerScript implements RF2Constants {
 	private static String[] environments = new String[] {	"http://localhost:8080/",
 															"https://dev-term.ihtsdotools.org/",
 															"https://uat-term.ihtsdotools.org/",
-															"https://uat-flat-termserver.ihtsdotools.org",
+															"https://uat-flat-termserver.ihtsdotools.org/",
 															"https://term.ihtsdotools.org/",
 															"https://dev-ms-authoring.ihtsdotools.org/",
 															"https://uat-ms-authoring.ihtsdotools.org/",
