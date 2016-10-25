@@ -19,6 +19,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.validator.routines.checkdigit.VerhoeffCheckDigit;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
@@ -256,6 +257,16 @@ public class SnomedUtils implements RF2Constants{
 			out.closeEntry();
 			in.close();
 		}
+	}
+	
+	public static boolean conceptHasActiveState(Concept c, ACTIVE_STATE a) {
+		boolean hasActiveState = false;
+		if (a.equals(ACTIVE_STATE.BOTH) ||
+			(a.equals(ACTIVE_STATE.ACTIVE) && c.isActive()) ||
+			(a.equals(ACTIVE_STATE.INACTIVE) && !c.isActive())) {
+			hasActiveState = true;
+		}
+		return hasActiveState;
 	}
 
 	//Merge the lang refset entries of a into b such that b obtains the 
