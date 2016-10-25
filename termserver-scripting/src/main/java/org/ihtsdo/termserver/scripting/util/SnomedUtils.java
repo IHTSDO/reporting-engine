@@ -23,6 +23,7 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.ACTIVE_STATE;
 
 public class SnomedUtils implements RF2Constants{
 	
@@ -268,6 +269,16 @@ public class SnomedUtils implements RF2Constants{
 		}
 		return hasActiveState;
 	}
+	//TODO See if the JSON will allow us to create the abstract "Component" which allows us to do this with one function
+	public static boolean descriptionHasActiveState(Description d, ACTIVE_STATE a) {
+		boolean hasActiveState = false;
+		if (a.equals(ACTIVE_STATE.BOTH) ||
+			(a.equals(ACTIVE_STATE.ACTIVE) && d.isActive()) ||
+			(a.equals(ACTIVE_STATE.INACTIVE) && !d.isActive())) {
+			hasActiveState = true;
+		}
+		return hasActiveState;
+	}
 
 	//Merge the lang refset entries of a into b such that b obtains the 
 	//union of the two sets and preferred trumps acceptable
@@ -332,6 +343,15 @@ public class SnomedUtils implements RF2Constants{
 			case EXISTENTIAL : return SCTID_EXISTENTIAL_MODIFIER;
 			case UNIVERSAL : return SCTID_UNIVERSAL_MODIFIER;
 			default : return "";
+		}
+	}
+	
+
+	public static boolean translateActive(ACTIVE_STATE active) throws TermServerScriptException {
+		switch (active) {
+			case ACTIVE : return true;
+			case INACTIVE : return false;
+			default: throw new TermServerScriptException("Unable to translate " + active + " into boolean state");
 		}
 	}
 

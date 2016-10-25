@@ -73,8 +73,7 @@ public abstract class TermServerScript implements RF2Constants {
 	public static String CONCEPTS_PROCESSED = "Concepts processed";
 	public static String REPORTED_NOT_PROCESSED = "Reported not processed";
 	public static String CRITICAL_ISSUE = "CRITICAL ISSUE";
-	//String DELIMETER = TSV_FIELD_DELIMITER;
-	protected String DELIMITER = CSV_FIELD_DELIMITER;
+	protected String inputFileDelimiter = CSV_FIELD_DELIMITER;
 	protected String tsRoot = "MAIN/"; //"MAIN/2016-01-31/SNOMEDCT-DK/";
 	
 	protected static Gson gson;
@@ -303,7 +302,7 @@ public abstract class TermServerScript implements RF2Constants {
 							gl.loadDescriptionFile(zis, fsnOnly);
 						}
 						//If we're loading all terms, load the language refset as well
-						if (!fsnOnly && fileName.contains("EnglishSnapshot")) {
+						if (!fsnOnly && (fileName.contains("EnglishSnapshot") || fileName.contains("LanguageSnapshot-en"))) {
 							println("Loading Language Reference Set File - " + fileName);
 							gl.loadLanguageFile(zis);
 						}
@@ -353,10 +352,14 @@ public abstract class TermServerScript implements RF2Constants {
 				}
 				
 				//File format Concept Type, SCTID, FSN with string fields quoted.  Strip quotes also.
-				String[] lineItems = lines.get(lineNum).replace("\"", "").split(DELIMITER);
+				String[] lineItems = lines.get(lineNum).replace("\"", "").split(inputFileDelimiter);
 				if (lineItems.length >= 1) {
 					Concept c = loadLine(lineItems);
-					allConcepts.add(c);
+					if (c != null) {
+						allConcepts.add(c);
+					} else {
+						debug ("Malformed line " + lineNum + ": " + lines.get(lineNum));
+					}
 				} else {
 					debug ("Skipping blank line " + lineNum);
 				}

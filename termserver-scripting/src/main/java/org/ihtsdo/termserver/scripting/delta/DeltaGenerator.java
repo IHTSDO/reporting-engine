@@ -28,6 +28,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 	String sRelDeltaFilename;
 	String descDeltaFilename;
 	String langDeltaFilename;
+	String edition = "INT";
 	
 	protected String languageCode = "en";
 	
@@ -70,10 +71,11 @@ public abstract class DeltaGenerator extends TermServerScript {
 		File outputDir = new File (outputDirName);
 		int increment = 0;
 		while (outputDir.exists()) {
-			outputDirName = outputDirName + "_" + (++increment) ;
-			outputDir = new File(outputDirName);
+			String proposedOutputDirName = outputDirName + "_" + (++increment) ;
+			outputDir = new File(proposedOutputDirName);
 		}
-		packageRoot = outputDirName + File.separator + "SnomedCT_RF2Release_INT_";
+		outputDirName = outputDir.getName();
+		packageRoot = outputDirName + File.separator + "SnomedCT_RF2Release_" + edition +"_";
 		packageDir = packageRoot + today + File.separator;
 		println ("Outputting data to " + packageDir);
 		initialiseFileHeaders();
@@ -82,19 +84,19 @@ public abstract class DeltaGenerator extends TermServerScript {
 	private void initialiseFileHeaders() throws IOException {
 		String termDir = packageDir +"Delta/Terminology/";
 		String refDir =  packageDir +"Delta/Refset/";
-		conDeltaFilename = termDir + "sct2_Concept_Delta_INT_" + today + ".txt";
+		conDeltaFilename = termDir + "sct2_Concept_Delta_"+edition+"_" + today + ".txt";
 		writeToRF2File(conDeltaFilename, conHeader);
 		
-		relDeltaFilename = termDir + "sct2_Relationship_Delta_INT_" + today + ".txt";
+		relDeltaFilename = termDir + "sct2_Relationship_Delta_"+edition+"_" + today + ".txt";
 		writeToRF2File(relDeltaFilename, relHeader);
 		
-		sRelDeltaFilename = termDir + "sct2_StatedRelationship_Delta_INT_" + today + ".txt";
+		sRelDeltaFilename = termDir + "sct2_StatedRelationship_Delta_"+edition+"_" + today + ".txt";
 		writeToRF2File(sRelDeltaFilename, relHeader);
 		
-		descDeltaFilename = termDir + "sct2_Description_Delta-"+languageCode+"_INT_" + today + ".txt";
+		descDeltaFilename = termDir + "sct2_Description_Delta-"+languageCode+"_"+edition+"_" + today + ".txt";
 		writeToRF2File(descDeltaFilename, descHeader);
 		
-		langDeltaFilename = refDir + "Language/der2_cRefset_LanguageDelta-"+languageCode+"_INT_" + today + ".txt";
+		langDeltaFilename = refDir + "Language/der2_cRefset_LanguageDelta-"+languageCode+"_"+edition+"_" + today + ".txt";
 		writeToRF2File(langDeltaFilename, langHeader);
 	}
 

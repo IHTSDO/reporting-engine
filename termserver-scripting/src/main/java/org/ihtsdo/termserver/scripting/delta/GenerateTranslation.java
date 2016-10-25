@@ -1,7 +1,9 @@
 package org.ihtsdo.termserver.scripting.delta;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -27,10 +29,16 @@ public class GenerateTranslation extends DeltaGenerator {
 		GenerateTranslation delta = new GenerateTranslation();
 		try {
 			delta.useAuthenticatedCookie = true; //ManagedService uses different authentication.  
+			delta.tsRoot="MAIN/2016-07-31/SNOMEDCT-SE/";
+			delta.edition="SE1000052";
+			delta.languageCode="sv";
+			delta.inputFileDelimiter = TSV_FIELD_DELIMITER;
 			delta.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			delta.loadProjectSnapshot(false);  //Not just FSN, load all terms with lang refset also
 			//We won't incude the project export in our timings
+			//InputStream is = new FileInputStream(delta.usLangRefsetFilePath);
+			//graph.loadLanguageFile(is);
 			delta.startTimer();
 			delta.processFile();
 			SnomedUtils.createArchive(new File(delta.outputDirName));
@@ -67,7 +75,6 @@ public class GenerateTranslation extends DeltaGenerator {
 			moduleId = response;
 		}
 		
-		languageCode="se";
 		print ("Targetting which language code? [" + languageCode + "]: ");
 		response = STDIN.nextLine().trim();
 		if (!response.isEmpty()) {
@@ -79,6 +86,24 @@ public class GenerateTranslation extends DeltaGenerator {
 		if (!response.isEmpty()) {
 			langRefsetId = response;
 		}
+		
+		print ("What's the Termserver root? [" + tsRoot + "]: ");
+		response = STDIN.nextLine().trim();
+		if (!response.isEmpty()) {
+			tsRoot = response;
+		}
+		
+		print ("What's the Edition? [" + edition + "]: ");
+		response = STDIN.nextLine().trim();
+		if (!response.isEmpty()) {
+			edition = response;
+		}
+		
+		/*print ("What's the US Langrefset file? [" + usLangRefsetFilePath + "]: ");
+		response = STDIN.nextLine().trim();
+		if (!response.isEmpty()) {
+			usLangRefsetFilePath = response;
+		}*/
 		
 		if (moduleId.isEmpty() || langRefsetId.isEmpty()) {
 			String msg = "Require both moduleId and langRefset Id to be specified (-m -l parameters)";
@@ -132,6 +157,7 @@ public class GenerateTranslation extends DeltaGenerator {
 		Description d = new Description();
 		
 		d.setDescriptionId(descIdGenerator.getSCTID(PartionIdentifier.DESCRIPTION));
+		d.setConceptId(newState.getConceptId());
 		d.setActive(true);
 		d.setEffectiveTime(null);
 		d.setLang(languageCode);
@@ -165,15 +191,18 @@ public class GenerateTranslation extends DeltaGenerator {
 	//SE File format: Concept_Id	English	Case_Significant	Fully_Specified_Name	Swedish	Case_Significant
 	protected Concept loadLine(String[] lineItems)
 			throws TermServerScriptException {
-		ConceptChange c = new ConceptChange(lineItems[0]);
-		c.setExpectedCurrentPreferredTerm(lineItems[1]);
-		c.setNewPreferredTerm(lineItems[4]);
-		if (lineItems[5].toUpperCase().equals("YES")) {
-			c.setCaseSensitivitySctId(ENITRE_TERM_CASE_SENSITIVE);
-		} else {
-			c.setCaseSensitivitySctId(ENTIRE_TERM_CASE_INSENSITIVE);
+		if (lineItems.length > 3) {
+			ConceptChange c = new ConceptChange(lineItems[0]);
+			c.setExpectedCurrentPreferredTerm(lineItems[1]);
+			c.setNewPreferredTerm(lineItems[4]);
+			if (lineItems[5].toUpperCase().equals("YES")) {
+				c.setCaseSensitivitySctId(ENITRE_TERM_CASE_SENSITIVE);
+			} else {
+				c.setCaseSensitivitySctId(ENTIRE_TERM_CASE_INSENSITIVE);
+			}
+			return c;
 		}
-		return c;
+		return null;
 	}
 
 }

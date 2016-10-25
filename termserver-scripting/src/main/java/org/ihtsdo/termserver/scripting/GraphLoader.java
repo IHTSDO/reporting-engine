@@ -182,8 +182,8 @@ public class GraphLoader implements RF2Constants {
 		return loadRelationships(characteristicType, relStream, false);
 	}
 
-	public void loadLanguageFile(ZipInputStream zis) throws IOException, TermServerScriptException {
-		BufferedReader br = new BufferedReader(new InputStreamReader(zis, StandardCharsets.UTF_8));
+	public void loadLanguageFile(InputStream is) throws IOException, TermServerScriptException {
+		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 		boolean isHeaderLine = true;
 		String line;
 		while ((line = br.readLine()) != null) {
@@ -192,8 +192,10 @@ public class GraphLoader implements RF2Constants {
 				Description d = getDescription(lineItems[LANG_IDX_REFCOMPID]);
 				LangRefsetEntry langRefsetEntry = loadLanguageLine(lineItems);
 				d.getLangRefsetEntries().add(langRefsetEntry);
-				ACCEPTABILITY a = SnomedUtils.getAcceptability(lineItems[LANG_IDX_ACCEPTABILITY_ID]);
-				d.setAcceptablity(lineItems[LANG_IDX_REFSETID], a);
+				if (lineItems[LANG_IDX_ACTIVE].equals("1")) {
+					ACCEPTABILITY a = SnomedUtils.getAcceptability(lineItems[LANG_IDX_ACCEPTABILITY_ID]);
+					d.setAcceptablity(lineItems[LANG_IDX_REFSETID], a);
+				}
 			} else {
 				isHeaderLine = false;
 			}

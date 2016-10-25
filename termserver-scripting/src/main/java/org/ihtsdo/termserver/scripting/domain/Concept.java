@@ -11,6 +11,7 @@ import javax.annotation.Generated;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants.ACTIVE_STATE;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
@@ -298,12 +299,10 @@ public class Concept implements RF2Constants {
 		}
 	}
 
-	public List<Description> getDescriptions(ACCEPTABILITY acceptability, DESCRIPTION_TYPE descriptionType, ACTIVE_STATE active) throws TermServerScriptException {
+	public List<Description> getDescriptions(ACCEPTABILITY acceptability, DESCRIPTION_TYPE descriptionType, ACTIVE_STATE active_state) throws TermServerScriptException {
 		List<Description> matchingDescriptions = new ArrayList<Description>();
-		for (Description thisDescription : descriptions) {
-			if (
-					( active.equals(ACTIVE_STATE.BOTH) || thisDescription.isActive() == translateActive(active)) &&
-					( thisDescription.getAcceptabilityMap() != null && thisDescription.getAcceptabilityMap().containsValue(acceptability)) &&
+		for (Description thisDescription : getDescriptions(active_state)) {
+			if (	( thisDescription.getAcceptabilityMap() != null && thisDescription.getAcceptabilityMap().containsValue(acceptability)) &&
 					( descriptionType == null || thisDescription.getType().equals(descriptionType) )
 				) {
 				//A preferred description can be preferred in either dialect, but if we're looking for an acceptable one, 
@@ -325,34 +324,22 @@ public class Concept implements RF2Constants {
 		List<Description> matchingDescriptions = new ArrayList<Description>();
 		for (Description d : getDescriptions(targetAcceptability, descriptionType, active)) {
 			ACCEPTABILITY acceptability = d.getAcceptabilityMap().get(langRefsetId);
-			if (acceptability.equals(targetAcceptability)) {
-				//Need to check this again because the first function might match on the other language
+			if (acceptability!= null && acceptability.equals(targetAcceptability)) {
+				//Need to check the acceptability because the first function might match on some other language
 				matchingDescriptions.add(d);
 			}
 		}
 		return matchingDescriptions;
 	}
 	
-	public List<Description> getDescriptions(ACTIVE_STATE activeState) {
-		if (activeState.equals(ACTIVE_STATE.BOTH)) {
-			return descriptions;
-		}
+	public List<Description> getDescriptions(ACTIVE_STATE a) {
 		List<Description> results = new ArrayList<Description>();
 		for (Description d : descriptions) {
-			if ((activeState.equals(ACTIVE_STATE.ACTIVE) && d.isActive()) ||
-					(activeState.equals(ACTIVE_STATE.INACTIVE) && !d.isActive()) ) {
+			if (SnomedUtils.descriptionHasActiveState(d, a)) {
 					results.add(d);
 			}
 		}
 		return results;
-	}
-
-	private static boolean translateActive(ACTIVE_STATE active) throws TermServerScriptException {
-		switch (active) {
-			case ACTIVE : return true;
-			case INACTIVE : return false;
-			default: throw new TermServerScriptException("Unable to translate " + active + " into boolean state");
-		}
 	}
 
 	public void addDescription(Description description) {
