@@ -33,6 +33,7 @@ public class GenerateTranslation extends DeltaGenerator {
 			delta.edition="SE1000052";
 			delta.languageCode="sv";
 			delta.inputFileDelimiter = TSV_FIELD_DELIMITER;
+			delta.isExtension = true; //Ensures the correct partition identifier is used.
 			delta.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			delta.loadProjectSnapshot(false);  //Not just FSN, load all terms with lang refset also
@@ -53,6 +54,7 @@ public class GenerateTranslation extends DeltaGenerator {
 	protected void init (String[] args) throws IOException, TermServerScriptException {
 		super.init(args);
 		descIdGenerator.setNamespace("1000052");
+		descIdGenerator.isExtension(true);
 		
 		for (int x=0; x<args.length; x++) {
 			if (args[x].equals("-m")) {
@@ -162,7 +164,7 @@ public class GenerateTranslation extends DeltaGenerator {
 		d.setEffectiveTime(null);
 		d.setLang(languageCode);
 		d.setTerm(newState.getNewPreferredTerm());
-		d.setType(DESCRIPTION_TYPE.SYNONYM);
+		d.setType(DescriptionType.SYNONYM);
 		d.setCaseSignificance(newState.getCaseSensitivitySctId());
 		d.setDirty();
 		
@@ -180,7 +182,7 @@ public class GenerateTranslation extends DeltaGenerator {
 	}
 
 	private Description getUsPrefTerm(Concept currentState) throws TermServerScriptException {
-		List<Description> terms = currentState.getDescriptions(US_ENG_LANG_REFSET, ACCEPTABILITY.PREFERRED, DESCRIPTION_TYPE.SYNONYM, ACTIVE_STATE.ACTIVE);
+		List<Description> terms = currentState.getDescriptions(US_ENG_LANG_REFSET, Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE);
 		if (terms.size() != 1) {
 			throw new TermServerScriptException("Expected to find 1 x US preferred term, found " + terms.size());
 		}

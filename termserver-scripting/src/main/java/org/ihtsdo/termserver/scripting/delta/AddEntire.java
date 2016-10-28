@@ -89,27 +89,27 @@ public class AddEntire extends DeltaGenerator {
 	}
 
 	private void addEntireToPrefTerms(Concept c) throws TermServerScriptException, IOException {
-		List<Description> prefTerms = c.getSynonyms(ACCEPTABILITY.PREFERRED);
+		List<Description> prefTerms = c.getSynonyms(Acceptability.PREFERRED);
 		for (Description d : prefTerms) {
-			addEntireToTerm(c, d, false);
+			addEntireToTerm(c, d, false, true);
 		}
 	}
 
 	private void addEntireToFSN(Concept c) throws TermServerScriptException, IOException {
 		Description fsn = c.getFSNDescription();
-		addEntireToTerm(c, fsn, true);	
+		addEntireToTerm(c, fsn, true, true);	
 	}
 	
 
 	private void addEntireToSynonyms(Concept c) throws TermServerScriptException, IOException {
-		List<Description> synonyms = c.getSynonyms(ACCEPTABILITY.ACCEPTABLE);
+		List<Description> synonyms = c.getSynonyms(Acceptability.ACCEPTABLE);
 		for (Description d : synonyms) {
-			addEntireToTerm(c, d, false);
+			addEntireToTerm(c, d, false,false);
 		}
 		
 	}
 
-	private void addEntireToTerm(Concept c, Description d, boolean isFSN) throws TermServerScriptException, IOException {
+	private void addEntireToTerm(Concept c, Description d, boolean isFSN, boolean isPT) throws TermServerScriptException, IOException {
 
 		//We only work with active terms
 		if (d == null) {
@@ -146,10 +146,10 @@ public class AddEntire extends DeltaGenerator {
 		
 		//Because we're adding a word that is not case sensitive, we'll sent the case significance
 		//to 900000000000020002 |Only initial character case insensitive (core metadata concept)|
-		replaceDescription (c,d,newTerm, ONLY_INITIAL_CHAR_CASE_INSENSITIVE);
+		replaceDescription (c,d,newTerm, ONLY_INITIAL_CHAR_CASE_INSENSITIVE, isPT);
 	}
 
-	private void replaceDescription(Concept c, Description d, String newTerm, String newCaseSignificance) throws TermServerScriptException, IOException {
+	private void replaceDescription(Concept c, Description d, String newTerm, String newCaseSignificance, boolean isPT) throws TermServerScriptException, IOException {
 		
 		if (!d.isActive()) {
 			String msg = "Attempting to inactivate an already inactive description";
@@ -159,7 +159,7 @@ public class AddEntire extends DeltaGenerator {
 		
 		//Do we already have this description, even inactivated?
 		Description duplicate = null;
-		for (Description thisDesc : c.getDescriptions(ACTIVE_STATE.ACTIVE)) {
+		for (Description thisDesc : c.getDescriptions(ActiveState.ACTIVE)) {
 			if (thisDesc.getTerm().equalsIgnoreCase(newTerm)) {
 				//Have we already found a duplicate?
 				if (duplicate != null) {
@@ -170,7 +170,7 @@ public class AddEntire extends DeltaGenerator {
 		}
 		
 		if (duplicate == null) {
-			for (Description thisDesc : c.getDescriptions(ACTIVE_STATE.INACTIVE)) {
+			for (Description thisDesc : c.getDescriptions(ActiveState.INACTIVE)) {
 				if (thisDesc.getTerm().equalsIgnoreCase(newTerm)) {
 					//Have we already found a duplicate?
 					if (duplicate != null) {
@@ -191,7 +191,7 @@ public class AddEntire extends DeltaGenerator {
 			outputRF2(replacement);
 		} else {
 			SEVERITY severity = SEVERITY.MEDIUM;
-			REPORT_ACTION_TYPE action = REPORT_ACTION_TYPE.VALIDATION_ERROR;
+			REPORT_ACTION_TYPE action = REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE;
 			//If the duplicate is inactive, we need to activate it.
 			String duplicateMsg = "";
 			if (!duplicate.isActive()) {
@@ -199,12 +199,13 @@ public class AddEntire extends DeltaGenerator {
 				duplicateMsg = "Reactivated duplicate term and ";
 			}
 
-			//We need to merge the acceptability of the previous term and that of the duplicate
+			//We need to merge the Acceptability of the previous term and that of the duplicate
 			//so that we get the best of both.  This might promote an acceptable term to a preferred one.
 			if (SnomedUtils.mergeLangRefsetEntries(d, duplicate)) {
 				duplicateMsg += "Modified duplicate term's lang refset entries - " + duplicate;
 				severity = SEVERITY.HIGH;
 			}
+			
 			if (duplicateMsg.isEmpty()) {
 				duplicateMsg="No changes needed to duplicate - " + duplicate;
 				action = REPORT_ACTION_TYPE.NO_CHANGE;

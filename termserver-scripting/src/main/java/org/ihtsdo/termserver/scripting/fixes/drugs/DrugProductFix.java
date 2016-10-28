@@ -322,7 +322,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 	private Set<String> extractMultipleIngredients(List<Concept> concepts) throws TermServerScriptException {
 		Set<String> multipleIngredients = new HashSet<String>();
 		for (Concept thisConcept : concepts) {
-			List<Relationship> ingredients = thisConcept.getRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, ACTIVE_STATE.ACTIVE);
+			List<Relationship> ingredients = thisConcept.getRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE);
 			if (ingredients.size() > 0) {
 				String comboKey = getIngredientCombinationKey(thisConcept, ingredients);
 				multipleIngredients.add(comboKey);
@@ -364,7 +364,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 	}
 
 	private List<Relationship> getIngredients(Concept c) {
-		return c.getRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, ACTIVE_STATE.ACTIVE);
+		return c.getRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE);
 	}
 	
 	/*private String getIngredientList(List<Relationship> ingredientRelationships) {
@@ -383,7 +383,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		Collection<Concept> allConcepts = GraphLoader.getGraphLoader().getAllConcepts();
 		Multimap<String, Concept> ingredientCombos = ArrayListMultimap.create();
 		for (Concept thisConcept : allConcepts) {
-			List<Relationship> ingredients = thisConcept.getRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, ACTIVE_STATE.ACTIVE);
+			List<Relationship> ingredients = thisConcept.getRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE);
 			if (ingredients.size() > 0) {
 				String comboKey = getIngredientCombinationKey(thisConcept, ingredients);
 				ingredientCombos.put(comboKey, thisConcept);
@@ -456,13 +456,13 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		String fullFSN = newFSN + SPACE + semanticTag;
 		concept.setFsn(fullFSN);
 		//FSNs are also preferred so we can just replace all preferred terms
-		List<Description> fsnAndPreferred = concept.getDescriptions(ACCEPTABILITY.PREFERRED, null, ACTIVE_STATE.ACTIVE);
+		List<Description> fsnAndPreferred = concept.getDescriptions(Acceptability.PREFERRED, null, ActiveState.ACTIVE);
 		for (Description thisDescription : fsnAndPreferred) {
 			Description replacement = thisDescription.clone(null);
 			thisDescription.setActive(false);
 			thisDescription.setEffectiveTime(null);
 			thisDescription.setInactivationIndicator(InactivationIndicator.RETIRED);
-			if (thisDescription.getType().equals(DESCRIPTION_TYPE.FSN)) {
+			if (thisDescription.getType().equals(DescriptionType.FSN)) {
 				replacement.setTerm(fullFSN);
 			} else {
 				if (attemptAcceptableSYNPromotion(task, concept, newFSN, thisDescription)) {
@@ -479,11 +479,11 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 			
 			if (replacement != null) {
 				//Check to see if we're adding another description when we could better just increase
-				//the acceptability of an existing preferred term
+				//the Acceptability of an existing preferred term
 				String msg;
 				Description improvedAcceptablity = attemptAcceptabilityImprovement(replacement, concept);
 				if (improvedAcceptablity != null) {
-					msg = "Improved acceptability of existing term: " + improvedAcceptablity + " now " + SnomedUtils.toString(improvedAcceptablity.getAcceptabilityMap());
+					msg = "Improved Acceptability of existing term: " + improvedAcceptablity + " now " + SnomedUtils.toString(improvedAcceptablity.getAcceptabilityMap());
 				} else {
 					concept.addDescription(replacement);
 					msg = "Replaced (inactivated) " + thisDescription.getType() + " " + thisDescription + " with " + replacement;
@@ -498,13 +498,13 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 	private Description attemptAcceptabilityImprovement(
 			Description replacement, Concept concept) throws TermServerScriptException {
 		//Look through all exising Preferred Terms to find if there's an existing one that matches
-		//which could have it's acceptability improved instead of adding the replacement
-		List<Description> preferredTerms = concept.getDescriptions(ACCEPTABILITY.PREFERRED, DESCRIPTION_TYPE.SYNONYM, ACTIVE_STATE.BOTH);
+		//which could have it's Acceptability improved instead of adding the replacement
+		List<Description> preferredTerms = concept.getDescriptions(Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.BOTH);
 		Description improvedDescription = null;
 		for (Description desc : preferredTerms) {
 			if (desc.getTerm().equals(replacement.getTerm())) {
 				int existingScore = SnomedUtils.accetabilityScore(desc.getAcceptabilityMap());
-				Map<String, ACCEPTABILITY> mergedMap = SnomedUtils.mergeAcceptabilityMap(desc.getAcceptabilityMap(), replacement.getAcceptabilityMap());
+				Map<String, Acceptability> mergedMap = SnomedUtils.mergeAcceptabilityMap(desc.getAcceptabilityMap(), replacement.getAcceptabilityMap());
 				int newScore = SnomedUtils.accetabilityScore(mergedMap);
 				if (newScore > existingScore) {
 					improvedDescription = desc;
@@ -526,7 +526,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 			//Demote the original description rather than inactivating it
 			originalDesc.setActive(true);
 			for (String dialect : originalDesc.getAcceptabilityMap().keySet()) {
-				originalDesc.getAcceptabilityMap().put(dialect, ACCEPTABILITY.ACCEPTABLE);
+				originalDesc.getAcceptabilityMap().put(dialect, Acceptability.ACCEPTABLE);
 			}
 			if (isAcetaminophen) {
 				originalDesc.getAcceptabilityMap().remove(GB_ENG_LANG_REFSET);
@@ -541,7 +541,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		//If we have a term which is only Acceptable (ie not preferred in either dialect)
 		//then promote it to Preferred in the appropriate dialect
 		boolean promotionSuccessful = false;
-		List<Description> allAcceptable = concept.getDescriptions(ACCEPTABILITY.ACCEPTABLE, DESCRIPTION_TYPE.SYNONYM, ACTIVE_STATE.BOTH);
+		List<Description> allAcceptable = concept.getDescriptions(Acceptability.ACCEPTABLE, DescriptionType.SYNONYM, ActiveState.BOTH);
 		List<Description> matchingAcceptable = new ArrayList<Description>();
 		for (Description thisDesc : allAcceptable) {
 			if (thisDesc.getTerm().equals(newTerm)) {
@@ -557,11 +557,11 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 			Description promoting = matchingAcceptable.get(0);
 			promoting.setActive(true);
 			//Now find the dialects that were preferred in the old term and copy to new
-			for (Map.Entry<String, ACCEPTABILITY> acceptablityEntry : oldDescription.getAcceptabilityMap().entrySet()) {
+			for (Map.Entry<String, Acceptability> acceptablityEntry : oldDescription.getAcceptabilityMap().entrySet()) {
 				String dialect = acceptablityEntry.getKey();
-				ACCEPTABILITY a = acceptablityEntry.getValue();
-				if (a.equals(ACCEPTABILITY.PREFERRED)) {
-					promoting.getAcceptabilityMap().put(dialect, ACCEPTABILITY.PREFERRED);
+				Acceptability a = acceptablityEntry.getValue();
+				if (a.equals(Acceptability.PREFERRED)) {
+					promoting.getAcceptabilityMap().put(dialect, Acceptability.PREFERRED);
 					promotionSuccessful = true;
 					String msg = "Promoted acceptable term " + promoting + " to be preferred in dialect " + dialect;
 					report (task, concept, SEVERITY.HIGH, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, msg);
@@ -632,7 +632,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 			concept.setConceptType(ConceptType.PRODUCT_STRENGTH);
 		} else {
 			//If the concept has a dose form, then it's a Medicinal Form
-			List<Relationship> doseFormAttributes = concept.getRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, HAS_DOSE_FORM, ACTIVE_STATE.ACTIVE);
+			List<Relationship> doseFormAttributes = concept.getRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, HAS_DOSE_FORM, ActiveState.ACTIVE);
 			if (!doseFormAttributes.isEmpty()) {
 				concept.setConceptType(ConceptType.MEDICINAL_FORM);
 			}

@@ -33,7 +33,7 @@ public class RelationshipReport extends TermServerScript{
 	GraphLoader gl = GraphLoader.getGraphLoader();
 	Concept filterOnType = null; 
 	CHARACTERISTIC_TYPE filterOnCharacteristicType = null;
-	ACTIVE_STATE filterOnActiveState = null;
+	ActiveState filterOnActiveState = null;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		RelationshipReport fix = new RelationshipReport();
@@ -66,7 +66,7 @@ public class RelationshipReport extends TermServerScript{
 				criticalErrors.add(msg);
 				println(msg);
 			}
-			List<Relationship> allConceptRelationships = thisConcept.getRelationships(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP, ACTIVE_STATE.BOTH);
+			List<Relationship> allConceptRelationships = thisConcept.getRelationships(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP, ActiveState.BOTH);
 			
 			for(Relationship thisRel : allConceptRelationships) {
 				//Has this relationship changed in the this release?
@@ -156,11 +156,11 @@ public class RelationshipReport extends TermServerScript{
 			response = STDIN.nextLine().trim();
 			if (!response.isEmpty()) {
 				switch (response.toUpperCase()) {
-					case "A" : filterOnActiveState = ACTIVE_STATE.ACTIVE;
+					case "A" : filterOnActiveState = ActiveState.ACTIVE;
 															break;
-					case "I" : filterOnActiveState = ACTIVE_STATE.INACTIVE;
+					case "I" : filterOnActiveState = ActiveState.INACTIVE;
 															break;
-					case "B" : filterOnActiveState = ACTIVE_STATE.BOTH;
+					case "B" : filterOnActiveState = ActiveState.BOTH;
 				default:
 				}
 			} 

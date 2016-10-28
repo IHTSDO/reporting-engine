@@ -8,7 +8,7 @@ import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Batch;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.CARDINALITY;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.Cardinality;
 import org.ihtsdo.termserver.scripting.domain.Task;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 
@@ -45,7 +45,7 @@ public class MedicinalFormFix extends DrugProductFix implements RF2Constants{
 	public int doFix(Task task, Concept concept) throws TermServerScriptException {
 		int changesMade = 0; //ensureDefinitionStatus(task, concept, DEFINITION_STATUS.FULLY_DEFINED);
 		changesMade += ensureAcceptableParent(task, concept, graph.getConcept(PHARM_BIO_PRODUCT_SCTID));
-		validateAttributeValues(task, concept, HAS_ACTIVE_INGRED, SUBSTANCE, CARDINALITY.AT_LEAST_ONE);
+		validateAttributeValues(task, concept, HAS_ACTIVE_INGRED, SUBSTANCE, Cardinality.AT_LEAST_ONE);
 		validatePrefInFSN(task, concept);
 		changesMade += ensureAcceptableFSN(task, concept, wordSubstitution);
 		return changesMade;

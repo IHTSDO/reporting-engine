@@ -10,7 +10,7 @@ import javax.annotation.Generated;
 
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.ACTIVE_STATE;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.ActiveState;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import com.google.gson.annotations.Expose;
@@ -153,13 +153,13 @@ public class Concept implements RF2Constants {
 		return relationships;
 	}
 	
-	public List<Relationship> getRelationships(CHARACTERISTIC_TYPE characteristicType, ACTIVE_STATE state, String effectiveTime) {
+	public List<Relationship> getRelationships(CHARACTERISTIC_TYPE characteristicType, ActiveState state, String effectiveTime) {
 		List<Relationship> matches = new ArrayList<Relationship>();
 		for (Relationship r : relationships) {
 			if (effectiveTime == null || r.getEffectiveTime().equals(effectiveTime)) {
 				if (characteristicType.equals(CHARACTERISTIC_TYPE.ALL) || r.getCharacteristicType().equals(characteristicType)) {
-					if (state.equals(ACTIVE_STATE.BOTH) || (state.equals(ACTIVE_STATE.ACTIVE) && r.isActive()) ||
-							(state.equals(ACTIVE_STATE.INACTIVE) && !r.isActive())) {
+					if (state.equals(ActiveState.BOTH) || (state.equals(ActiveState.ACTIVE) && r.isActive()) ||
+							(state.equals(ActiveState.INACTIVE) && !r.isActive())) {
 						matches.add(r);
 					}
 				}
@@ -168,11 +168,11 @@ public class Concept implements RF2Constants {
 		return matches;
 	}
 	
-	public List<Relationship> getRelationships(CHARACTERISTIC_TYPE characteristicType, ACTIVE_STATE state) {
+	public List<Relationship> getRelationships(CHARACTERISTIC_TYPE characteristicType, ActiveState state) {
 		return getRelationships(characteristicType, state, null);
 	}
 	
-	public List<Relationship> getRelationships(CHARACTERISTIC_TYPE characteristicType, Concept type, ACTIVE_STATE state) {
+	public List<Relationship> getRelationships(CHARACTERISTIC_TYPE characteristicType, Concept type, ActiveState state) {
 		List<Relationship> potentialMatches = getRelationships(characteristicType, state);
 		List<Relationship> matches = new ArrayList<Relationship>();
 		for (Relationship r : potentialMatches) {
@@ -233,7 +233,7 @@ public class Concept implements RF2Constants {
 		r.setSourceId(this.getConceptId());
 		r.setType(type);
 		r.setTarget(target);
-		r.setModifier(MODIFER.EXISTENTIAL);
+		r.setModifier(Modifier.EXISTENTIAL);
 		relationships.add(r);
 	}
 
@@ -299,40 +299,40 @@ public class Concept implements RF2Constants {
 		}
 	}
 
-	public List<Description> getDescriptions(ACCEPTABILITY acceptability, DESCRIPTION_TYPE descriptionType, ACTIVE_STATE active_state) throws TermServerScriptException {
+	public List<Description> getDescriptions(Acceptability Acceptability, DescriptionType descriptionType, ActiveState activeState) throws TermServerScriptException {
 		List<Description> matchingDescriptions = new ArrayList<Description>();
-		for (Description thisDescription : getDescriptions(active_state)) {
-			if (	( thisDescription.getAcceptabilityMap() != null && thisDescription.getAcceptabilityMap().containsValue(acceptability)) &&
+		for (Description thisDescription : getDescriptions(activeState)) {
+			if (	( thisDescription.getAcceptabilityMap() != null && thisDescription.getAcceptabilityMap().containsValue(Acceptability)) &&
 					( descriptionType == null || thisDescription.getType().equals(descriptionType) )
 				) {
 				//A preferred description can be preferred in either dialect, but if we're looking for an acceptable one, 
 				//then it must not also be preferred in the other dialect
-				if (acceptability.equals(ACCEPTABILITY.PREFERRED) || !thisDescription.getAcceptabilityMap().containsValue(ACCEPTABILITY.PREFERRED)) {
+				if (Acceptability.equals(Acceptability.PREFERRED) || !thisDescription.getAcceptabilityMap().containsValue(Acceptability.PREFERRED)) {
 					matchingDescriptions.add(thisDescription);
 				}
 			} else {
 				if (thisDescription.getAcceptabilityMap() == null && thisDescription.isActive()) {
-					TermServerScript.warn (thisDescription + " is active with no acceptability map");
+					TermServerScript.warn (thisDescription + " is active with no Acceptability map");
 				}
 			}
 		}
 		return matchingDescriptions;
 	}
 	
-	public List<Description> getDescriptions(String langRefsetId, ACCEPTABILITY targetAcceptability, DESCRIPTION_TYPE descriptionType, ACTIVE_STATE active) throws TermServerScriptException {
-		//Get the matching terms, and then pick the ones that have the appropriate acceptability for the specified Refset
+	public List<Description> getDescriptions(String langRefsetId, Acceptability targetAcceptability, DescriptionType descriptionType, ActiveState active) throws TermServerScriptException {
+		//Get the matching terms, and then pick the ones that have the appropriate Acceptability for the specified Refset
 		List<Description> matchingDescriptions = new ArrayList<Description>();
 		for (Description d : getDescriptions(targetAcceptability, descriptionType, active)) {
-			ACCEPTABILITY acceptability = d.getAcceptabilityMap().get(langRefsetId);
-			if (acceptability!= null && acceptability.equals(targetAcceptability)) {
-				//Need to check the acceptability because the first function might match on some other language
+			Acceptability Acceptability = d.getAcceptabilityMap().get(langRefsetId);
+			if (Acceptability!= null && Acceptability.equals(targetAcceptability)) {
+				//Need to check the Acceptability because the first function might match on some other language
 				matchingDescriptions.add(d);
 			}
 		}
 		return matchingDescriptions;
 	}
 	
-	public List<Description> getDescriptions(ACTIVE_STATE a) {
+	public List<Description> getDescriptions(ActiveState a) {
 		List<Description> results = new ArrayList<Description>();
 		for (Description d : descriptions) {
 			if (SnomedUtils.descriptionHasActiveState(d, a)) {
@@ -369,17 +369,17 @@ public class Concept implements RF2Constants {
 
 	public Description getFSNDescription() {
 		for (Description d : descriptions) {
-			if (d.isActive() && d.getType().equals(DESCRIPTION_TYPE.FSN)) {
+			if (d.isActive() && d.getType().equals(DescriptionType.FSN)) {
 				return d;
 			}
 		}
 		return null;
 	}
 	
-	public List<Description> getSynonyms(ACCEPTABILITY acceptability) {
+	public List<Description> getSynonyms(Acceptability Acceptability) {
 		List<Description> synonyms = new ArrayList<Description>();
 		for (Description d : descriptions) {
-			if (d.isActive() && d.getAcceptabilityMap().values().contains(acceptability) && d.getType().equals(DESCRIPTION_TYPE.SYNONYM)) {
+			if (d.isActive() && d.getAcceptabilityMap().values().contains(Acceptability) && d.getType().equals(DescriptionType.SYNONYM)) {
 				synonyms.add(d);
 			}
 		}

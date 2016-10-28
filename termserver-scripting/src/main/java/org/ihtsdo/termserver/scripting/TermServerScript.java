@@ -207,6 +207,8 @@ public abstract class TermServerScript implements RF2Constants {
 				File possibleFile = new File(thisArg);
 				if (possibleFile.exists() && !possibleFile.isDirectory() && possibleFile.canRead()) {
 					inputFile = possibleFile;
+				} else {
+					println ("Warning, unable to read possible input file " + possibleFile.getAbsolutePath());
 				}
 			}
 		}

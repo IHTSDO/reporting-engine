@@ -18,6 +18,7 @@ public class IdGenerator implements RF2Constants{
 	private boolean useDummySequence = false;
 	int idsAssigned = 0;
 	private String namespace = "";
+	private boolean isExtension = false;
 	
 	public static IdGenerator initiateIdGenerator(String sctidFilename) throws TermServerScriptException {
 		if (sctidFilename.equals("dummy")) {
@@ -64,7 +65,7 @@ public class IdGenerator implements RF2Constants{
 	
 	private String getDummySCTID(PartionIdentifier partitionIdentifier) throws TermServerScriptException  {
 		try {
-			String sctIdBase = ++dummySequence + namespace + "0" + partitionIdentifier.ordinal();
+			String sctIdBase = ++dummySequence + namespace + (isExtension?"1":"0") + partitionIdentifier.ordinal();
 			String checkDigit = new VerhoeffCheckDigit().calculate(sctIdBase);
 			return sctIdBase + checkDigit;
 		} catch (CheckDigitException e) {
@@ -81,5 +82,9 @@ public class IdGenerator implements RF2Constants{
 			availableSctIds.close();
 		} catch (Exception e){}
 		return "IdGenerator supplied " + idsAssigned + " sctids.";
+	}
+	
+	public void isExtension(boolean b) {
+		isExtension = b;
 	}
 }

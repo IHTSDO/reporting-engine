@@ -59,8 +59,8 @@ public class MismatchedRelationships extends TermServerScript{
 				criticalErrors.add(msg);
 				println(msg);
 			}
-			List<Relationship> statedRelationships = thisConcept.getRelationships(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP, targetAttribute, ACTIVE_STATE.ACTIVE);
-			List<Relationship> inferredRelationships = thisConcept.getRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, targetAttribute, ACTIVE_STATE.ACTIVE);
+			List<Relationship> statedRelationships = thisConcept.getRelationships(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP, targetAttribute, ActiveState.ACTIVE);
+			List<Relationship> inferredRelationships = thisConcept.getRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, targetAttribute, ActiveState.ACTIVE);
 			
 			if (statedRelationships.size() == 0) {
 				//Nothing to do here, concept not relevant

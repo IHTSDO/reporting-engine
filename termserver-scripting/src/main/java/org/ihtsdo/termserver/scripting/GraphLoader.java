@@ -133,7 +133,7 @@ public class GraphLoader implements RF2Constants {
 					Concept c = getConcept(lineItems[DES_IDX_CONCEPTID]);
 					Description d = loadDescriptionLine(lineItems);
 					c.addDescription(d);
-					if (d.isActive() && d.getType().equals(DESCRIPTION_TYPE.FSN)) {
+					if (d.isActive() && d.getType().equals(DescriptionType.FSN)) {
 						c.setFsn(lineItems[DES_IDX_TERM]);
 					}
 				}
@@ -193,7 +193,7 @@ public class GraphLoader implements RF2Constants {
 				LangRefsetEntry langRefsetEntry = loadLanguageLine(lineItems);
 				d.getLangRefsetEntries().add(langRefsetEntry);
 				if (lineItems[LANG_IDX_ACTIVE].equals("1")) {
-					ACCEPTABILITY a = SnomedUtils.getAcceptability(lineItems[LANG_IDX_ACCEPTABILITY_ID]);
+					Acceptability a = SnomedUtils.getAcceptability(lineItems[LANG_IDX_ACCEPTABILITY_ID]);
 					d.setAcceptablity(lineItems[LANG_IDX_REFSETID], a);
 				}
 			} else {

@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -23,7 +24,7 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.ACTIVE_STATE;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.ActiveState;
 
 public class SnomedUtils implements RF2Constants{
 	
@@ -57,41 +58,41 @@ public class SnomedUtils implements RF2Constants{
 		return elements;
 	}
 	
-	public static String toString(Map<String, ACCEPTABILITY> acceptabilityMap) throws TermServerScriptException {
+	public static String toString(Map<String, Acceptability> AcceptabilityMap) throws TermServerScriptException {
 		String US = "N";
 		String GB = "N";
-		if (acceptabilityMap.containsKey(US_ENG_LANG_REFSET)) {
-			US = translatAcceptability(acceptabilityMap.get(US_ENG_LANG_REFSET));
+		if (AcceptabilityMap.containsKey(US_ENG_LANG_REFSET)) {
+			US = translatAcceptability(AcceptabilityMap.get(US_ENG_LANG_REFSET));
 		}
 		
-		if (acceptabilityMap.containsKey(GB_ENG_LANG_REFSET)) {
-			GB = translatAcceptability(acceptabilityMap.get(GB_ENG_LANG_REFSET));
+		if (AcceptabilityMap.containsKey(GB_ENG_LANG_REFSET)) {
+			GB = translatAcceptability(AcceptabilityMap.get(GB_ENG_LANG_REFSET));
 		}
 		
 		return "US: " + US + ", GB: " + GB;
 	}
 	
-	public static String translatAcceptability (ACCEPTABILITY a) throws TermServerScriptException {
-		if (a.equals(ACCEPTABILITY.PREFERRED)) {
+	public static String translatAcceptability (Acceptability a) throws TermServerScriptException {
+		if (a.equals(Acceptability.PREFERRED)) {
 			return "P";
 		}
 		
-		if (a.equals(ACCEPTABILITY.ACCEPTABLE)) {
+		if (a.equals(Acceptability.ACCEPTABLE)) {
 			return "A";
 		}
-		throw new TermServerScriptException("Unable to translate acceptability " + a);
+		throw new TermServerScriptException("Unable to translate Acceptability " + a);
 	}
 	
-	public static ACCEPTABILITY getAcceptability(String sctid) throws TermServerScriptException {
+	public static Acceptability getAcceptability(String sctid) throws TermServerScriptException {
 		if (sctid.equals(ACCEPTABLE_TERM)) {
-			return ACCEPTABILITY.ACCEPTABLE;
+			return Acceptability.ACCEPTABLE;
 		}
 		
 		if (sctid.equals(PREFERRED_TERM)) {
-			return ACCEPTABILITY.PREFERRED;
+			return Acceptability.PREFERRED;
 		} 
 		
-		throw new TermServerScriptException("Unable to translate acceptability '" + sctid + "'");
+		throw new TermServerScriptException("Unable to translate Acceptability '" + sctid + "'");
 	}
 
 	public static String substitute(String str,
@@ -104,14 +105,14 @@ public class SnomedUtils implements RF2Constants{
 	}
 	
 	/**
-	 * Merge two acceptability maps such that a PREFERRED overrides an ACCEPTABLE
+	 * Merge two Acceptability maps such that a PREFERRED overrides an ACCEPTABLE
 	 * AND ACCEPTABLE overrides not acceptable.
 	 */
-	public static Map<String, ACCEPTABILITY> mergeAcceptabilityMap (Map<String, ACCEPTABILITY> left, Map<String, ACCEPTABILITY> right) {
+	public static Map<String, Acceptability> mergeAcceptabilityMap (Map<String, Acceptability> left, Map<String, Acceptability> right) {
 		Set<String> dialects = new HashSet<String>();
 		dialects.addAll(left.keySet());
 		dialects.addAll(right.keySet());
-		Map<String, ACCEPTABILITY> merged = new HashMap<String, ACCEPTABILITY>();
+		Map<String, Acceptability> merged = new HashMap<String, Acceptability>();
 		
 		for (String thisDialect : dialects) {
 			if (!left.containsKey(thisDialect) && right.containsKey(thisDialect)) {
@@ -121,10 +122,10 @@ public class SnomedUtils implements RF2Constants{
 				merged.put(thisDialect, left.get(thisDialect));
 			} 
 			if (left.containsKey(thisDialect) && right.containsKey(thisDialect)) {
-				if (left.get(thisDialect).equals(ACCEPTABILITY.PREFERRED) || right.get(thisDialect).equals(ACCEPTABILITY.PREFERRED)) {
-					merged.put(thisDialect, ACCEPTABILITY.PREFERRED);
+				if (left.get(thisDialect).equals(Acceptability.PREFERRED) || right.get(thisDialect).equals(Acceptability.PREFERRED)) {
+					merged.put(thisDialect, Acceptability.PREFERRED);
 				} else {
-					merged.put(thisDialect, ACCEPTABILITY.ACCEPTABLE);
+					merged.put(thisDialect, Acceptability.ACCEPTABLE);
 				}
 			}
 		}
@@ -134,12 +135,12 @@ public class SnomedUtils implements RF2Constants{
 	/**
 	 * 2 points for preferred, 1 point for acceptable
 	 */
-	public static int accetabilityScore (Map<String, ACCEPTABILITY> acceptabilityMap) {
+	public static int accetabilityScore (Map<String, Acceptability> AcceptabilityMap) {
 		int score = 0;
-		for (ACCEPTABILITY a : acceptabilityMap.values()) {
-			if (a.equals(ACCEPTABILITY.PREFERRED)) {
+		for (Acceptability a : AcceptabilityMap.values()) {
+			if (a.equals(Acceptability.PREFERRED)) {
 				score += 2;
-			} else if (a.equals(ACCEPTABILITY.ACCEPTABLE)) {
+			} else if (a.equals(Acceptability.ACCEPTABLE)) {
 				score += 1;
 			}
 		}
@@ -190,7 +191,7 @@ public class SnomedUtils implements RF2Constants{
 		return parts;
 	}
 
-	public static String translateDescType(DESCRIPTION_TYPE type) throws TermServerScriptException {
+	public static String translateDescType(DescriptionType type) throws TermServerScriptException {
 		switch (type) {
 			case FSN : return FSN;
 			case SYNONYM : return SYN;
@@ -199,11 +200,11 @@ public class SnomedUtils implements RF2Constants{
 		throw new TermServerScriptException("Unable to translate description type " + type);
 	}
 
-	public static DESCRIPTION_TYPE translateDescType(String descTypeId) throws TermServerScriptException {
+	public static DescriptionType translateDescType(String descTypeId) throws TermServerScriptException {
 		switch (descTypeId) {
-			case FSN : return DESCRIPTION_TYPE.FSN;
-			case SYN : return DESCRIPTION_TYPE.SYNONYM;
-			case DEF : return DESCRIPTION_TYPE.DEFINITION; 
+			case FSN : return DescriptionType.FSN;
+			case SYN : return DescriptionType.SYNONYM;
+			case DEF : return DescriptionType.DEFINITION; 
 		}
 		throw new TermServerScriptException("Unable to translate description type: " + descTypeId);
 	}
@@ -260,21 +261,21 @@ public class SnomedUtils implements RF2Constants{
 		}
 	}
 	
-	public static boolean conceptHasActiveState(Concept c, ACTIVE_STATE a) {
+	public static boolean conceptHasActiveState(Concept c, ActiveState a) {
 		boolean hasActiveState = false;
-		if (a.equals(ACTIVE_STATE.BOTH) ||
-			(a.equals(ACTIVE_STATE.ACTIVE) && c.isActive()) ||
-			(a.equals(ACTIVE_STATE.INACTIVE) && !c.isActive())) {
+		if (a.equals(ActiveState.BOTH) ||
+			(a.equals(ActiveState.ACTIVE) && c.isActive()) ||
+			(a.equals(ActiveState.INACTIVE) && !c.isActive())) {
 			hasActiveState = true;
 		}
 		return hasActiveState;
 	}
 	//TODO See if the JSON will allow us to create the abstract "Component" which allows us to do this with one function
-	public static boolean descriptionHasActiveState(Description d, ACTIVE_STATE a) {
+	public static boolean descriptionHasActiveState(Description d, ActiveState a) {
 		boolean hasActiveState = false;
-		if (a.equals(ACTIVE_STATE.BOTH) ||
-			(a.equals(ACTIVE_STATE.ACTIVE) && d.isActive()) ||
-			(a.equals(ACTIVE_STATE.INACTIVE) && !d.isActive())) {
+		if (a.equals(ActiveState.BOTH) ||
+			(a.equals(ActiveState.ACTIVE) && d.isActive()) ||
+			(a.equals(ActiveState.INACTIVE) && !d.isActive())) {
 			hasActiveState = true;
 		}
 		return hasActiveState;
@@ -285,10 +286,10 @@ public class SnomedUtils implements RF2Constants{
 	public static boolean mergeLangRefsetEntries(Description a,
 			Description b) {
 		boolean changesMade = false;
-		for (LangRefsetEntry la : a.getLangRefsetEntries(ACTIVE_STATE.ACTIVE)) {
+		for (LangRefsetEntry la : a.getLangRefsetEntries(ActiveState.ACTIVE)) {
 			boolean bHasThis = false;
 			//First check for existing active entries.  If they're not found, search inactive
-			for (LangRefsetEntry lb : b.getLangRefsetEntries(ACTIVE_STATE.ACTIVE)) {
+			for (LangRefsetEntry lb : b.getLangRefsetEntries(ActiveState.ACTIVE)) {
 				if (lb.getRefsetId().equals(la.getRefsetId())) {
 					bHasThis = true;
 					if (!lb.getAcceptabilityId().equals(la.getAcceptabilityId())) {
@@ -302,7 +303,7 @@ public class SnomedUtils implements RF2Constants{
 			}
 			
 			if (!bHasThis) {
-				for (LangRefsetEntry lb : b.getLangRefsetEntries(ACTIVE_STATE.INACTIVE)) {
+				for (LangRefsetEntry lb : b.getLangRefsetEntries(ActiveState.INACTIVE)) {
 					if (lb.getRefsetId().equals(la.getRefsetId())) {
 						bHasThis = true;
 						lb.setActive(true);
@@ -338,7 +339,7 @@ public class SnomedUtils implements RF2Constants{
 		}
 	}
 
-	public static String translateModifier(MODIFER modifier) {
+	public static String translateModifier(Modifier modifier) {
 		switch (modifier) {
 			case EXISTENTIAL : return SCTID_EXISTENTIAL_MODIFIER;
 			case UNIVERSAL : return SCTID_UNIVERSAL_MODIFIER;
@@ -347,12 +348,75 @@ public class SnomedUtils implements RF2Constants{
 	}
 	
 
-	public static boolean translateActive(ACTIVE_STATE active) throws TermServerScriptException {
+	public static boolean translateActive(ActiveState active) throws TermServerScriptException {
 		switch (active) {
 			case ACTIVE : return true;
 			case INACTIVE : return false;
 			default: throw new TermServerScriptException("Unable to translate " + active + " into boolean state");
 		}
+	}
+
+	public static ChangeStatus promoteLangRefsetEntries(Description d, String[] dialects) throws TermServerScriptException {
+		//For each dialect check if we have an active existing entry that could be modified, 
+		//inactive entry that could be activated and/or modified
+		//or add a new entry
+		ChangeStatus changeStatus = ChangeStatus.NO_CHANGE_MADE;
+		for (String thisDialectSctid : dialects) {
+			boolean dialectPT = false;
+			//Do we have an active entry we could change?
+			List<LangRefsetEntry> langRefsetEntries = d.getLangRefsetEntries(ActiveState.ACTIVE, thisDialectSctid);
+			if (langRefsetEntries.size() >1) {
+				throw new TermServerScriptException("Description has more than one active langrefset entry for a given dialect: " + d);
+			}
+			changeStatus = promoteLangRefsetEntry(d, langRefsetEntries);
+			//Have we achieved a PT?  Activate inactive term if not.
+			if (changeStatus.equals(ChangeStatus.NO_CHANGE_MADE)) {
+				changeStatus = promoteLangRefsetEntry(d, d.getLangRefsetEntries(ActiveState.INACTIVE, thisDialectSctid));
+			}
+			//Still no?  Create a new entry
+			if (changeStatus.equals(ChangeStatus.NO_CHANGE_MADE)) {
+				createLangRefsetEntry(d,thisDialectSctid, PREFERRED_TERM);
+				changeStatus = ChangeStatus.CHANGE_MADE;
+			}
+		}
+		return changeStatus;
+	}
+
+	private static void createLangRefsetEntry(Description d,
+			String thisDialectSctid, String AcceptabilitySctid) {
+		LangRefsetEntry l = new LangRefsetEntry();
+		l.setId(UUID.randomUUID().toString());
+		l.setActive(true);
+		l.setModuleId(d.getModuleId());
+		l.setRefsetId(thisDialectSctid);
+		l.setReferencedComponentId(d.getDescriptionId());
+		l.setDirty();
+		d.getLangRefsetEntries().add(l);
+	}
+
+	private static ChangeStatus promoteLangRefsetEntry(Description d, List<LangRefsetEntry> langRefsetEntries) throws TermServerScriptException {
+		ChangeStatus changeStatus = ChangeStatus.NO_CHANGE_MADE;
+		for (LangRefsetEntry thisDialectEntry : langRefsetEntries) {
+			if (!thisDialectEntry.getAcceptabilityId().equals(PREFERRED_TERM)) {
+				thisDialectEntry.setAcceptabilityId(PREFERRED_TERM);
+				thisDialectEntry.setEffectiveTime(null);
+				thisDialectEntry.setActive(true);
+				thisDialectEntry.isDirty();
+				changeStatus = ChangeStatus.CHANGE_MADE;
+				break;
+			} else {
+				if (!thisDialectEntry.isActive()) {
+					thisDialectEntry.setEffectiveTime(null);
+					thisDialectEntry.setActive(true);
+					changeStatus = ChangeStatus.CHANGE_MADE;
+					break;
+				} else {
+					//dialect is preferred and is alreayd active so no change needed. Say this so that we don't try anything else
+					changeStatus = ChangeStatus.CHANGE_NOT_REQUIRED;
+				}
+			}
+		}
+		return changeStatus;
 	}
 
 }

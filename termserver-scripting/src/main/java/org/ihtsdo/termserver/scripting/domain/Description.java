@@ -34,7 +34,7 @@ public class Description implements RF2Constants{
 	private String conceptId;
 	@SerializedName("type")
 	@Expose
-	private DESCRIPTION_TYPE type;
+	private DescriptionType type;
 	@SerializedName("lang")
 	@Expose
 	private String lang;
@@ -44,9 +44,9 @@ public class Description implements RF2Constants{
 	@SerializedName("caseSignificance")
 	@Expose
 	private String caseSignificance;
-	@SerializedName("acceptabilityMap")
+	@SerializedName("AcceptabilityMap")
 	@Expose
-	private Map<String, ACCEPTABILITY> acceptabilityMap = new HashMap<String, ACCEPTABILITY> ();
+	private Map<String, Acceptability> AcceptabilityMap = new HashMap<String, Acceptability> ();
 	@SerializedName("inactivationIndicator")
 	@Expose
 	private InactivationIndicator inactivationIndicator;
@@ -70,9 +70,9 @@ public class Description implements RF2Constants{
 	 * @param descriptionId
 	 * @param caseSignificance
 	 * @param lang
-	 * @param acceptabilityMap
+	 * @param AcceptabilityMap
 	 */
-	public Description(String effectiveTime, String moduleId, boolean active, String descriptionId, String conceptId, DESCRIPTION_TYPE type, String lang, String term, String caseSignificance, Map<String, ACCEPTABILITY> acceptabilityMap) {
+	public Description(String effectiveTime, String moduleId, boolean active, String descriptionId, String conceptId, DescriptionType type, String lang, String term, String caseSignificance, Map<String, Acceptability> AcceptabilityMap) {
 		this.effectiveTime = effectiveTime;
 		this.moduleId = moduleId;
 		this.active = active;
@@ -82,7 +82,7 @@ public class Description implements RF2Constants{
 		this.lang = lang;
 		this.term = term;
 		this.caseSignificance = caseSignificance;
-		this.acceptabilityMap = acceptabilityMap;
+		this.AcceptabilityMap = AcceptabilityMap;
 	}
 
 	public Description(String descriptionId) {
@@ -140,11 +140,11 @@ public class Description implements RF2Constants{
 		this.conceptId = conceptId;
 	}
 
-	public DESCRIPTION_TYPE getType() {
+	public DescriptionType getType() {
 		return type;
 	}
 
-	public void setType(DESCRIPTION_TYPE type) {
+	public void setType(DescriptionType type) {
 		this.type = type;
 	}
 
@@ -176,17 +176,17 @@ public class Description implements RF2Constants{
 		this.caseSignificance = caseSignificance;
 	}
 
-	public Map<String, ACCEPTABILITY> getAcceptabilityMap() {
-		return acceptabilityMap;
+	public Map<String, Acceptability> getAcceptabilityMap() {
+		return AcceptabilityMap;
 	}
 
 	/**
 	 * 
-	 * @param acceptabilityMap
-	 *	 The acceptabilityMap
+	 * @param AcceptabilityMap
+	 *	 The AcceptabilityMap
 	 */
-	public void setAcceptabilityMap(Map<String, ACCEPTABILITY> acceptabilityMap) {
-		this.acceptabilityMap = acceptabilityMap;
+	public void setAcceptabilityMap(Map<String, Acceptability> AcceptabilityMap) {
+		this.AcceptabilityMap = AcceptabilityMap;
 	}
 
 	@Override
@@ -222,9 +222,9 @@ public class Description implements RF2Constants{
 		clone.lang = this.lang;
 		clone.term = this.term;
 		clone.caseSignificance = this.caseSignificance;
-		clone.acceptabilityMap = new HashMap<String, ACCEPTABILITY>();
-		if (this.acceptabilityMap != null) { 
-			clone.acceptabilityMap.putAll(this.acceptabilityMap);
+		clone.AcceptabilityMap = new HashMap<String, Acceptability>();
+		if (this.AcceptabilityMap != null) { 
+			clone.AcceptabilityMap.putAll(this.AcceptabilityMap);
 		}
 		if (langRefsetEntries != null) {
 			for (LangRefsetEntry thisDialect : this.getLangRefsetEntries()) {
@@ -245,8 +245,8 @@ public class Description implements RF2Constants{
 		this.inactivationIndicator = inactivationIndicator;
 	}
 
-	public void setAcceptablity(String refsetId, ACCEPTABILITY acceptability) {
-		acceptabilityMap.put(refsetId, acceptability);
+	public void setAcceptablity(String refsetId, Acceptability Acceptability) {
+		AcceptabilityMap.put(refsetId, Acceptability);
 	}
 
 	public String[] toRF2() throws TermServerScriptException {
@@ -262,19 +262,30 @@ public class Description implements RF2Constants{
 		return langRefsetEntries;
 	}
 	
-	public List<LangRefsetEntry> getLangRefsetEntries(ACTIVE_STATE activeState) {
-		if (activeState.equals(ACTIVE_STATE.BOTH)) {
+	public List<LangRefsetEntry> getLangRefsetEntries(ActiveState activeState) {
+		if (activeState.equals(ActiveState.BOTH)) {
 			return getLangRefsetEntries();
 		}
 		List<LangRefsetEntry> result = new ArrayList<LangRefsetEntry>();
 		for (LangRefsetEntry l : getLangRefsetEntries()) {
-			if ((activeState.equals(ACTIVE_STATE.ACTIVE) && l.isActive()) ||
-				(activeState.equals(ACTIVE_STATE.INACTIVE) && !l.isActive()) ) {
+			if ((activeState.equals(ActiveState.ACTIVE) && l.isActive()) ||
+				(activeState.equals(ActiveState.INACTIVE) && !l.isActive()) ) {
 				result.add(l);
 			}
 		}
 		return result;
 	}
+	
+	public List<LangRefsetEntry> getLangRefsetEntries(ActiveState activeState, String langRefsetId) {
+		List<LangRefsetEntry> result = new ArrayList<LangRefsetEntry>();
+		for (LangRefsetEntry thisLangRefSetEntry : getLangRefsetEntries(activeState)) {
+			if (thisLangRefSetEntry.getRefsetId().equals(langRefsetId)) {
+				result.add(thisLangRefSetEntry);
+			}
+		}
+		return result;
+	}
+		
 
 	public boolean isDirty() {
 		return dirty;

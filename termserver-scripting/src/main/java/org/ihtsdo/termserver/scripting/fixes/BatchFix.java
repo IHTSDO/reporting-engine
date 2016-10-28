@@ -184,7 +184,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			}
 	}
 
-	protected int ensureDefinitionStatus(Task t, Concept c, DEFINITION_STATUS targetDefStat) {
+	protected int ensureDefinitionStatus(Task t, Concept c, DefinitionStatus targetDefStat) {
 		int changesMade = 0;
 		if (!c.getDefinitionStatus().equals(targetDefStat.toString())) {
 			report (t, c, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.CONCEPT_CHANGE_MADE, "Definition status changed to " + targetDefStat);
@@ -266,7 +266,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	}
 	
 	protected int ensureAcceptableParent(Task task, Concept c, Concept acceptableParent) {
-		List<Relationship> statedParents = c.getRelationships(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP, IS_A, ACTIVE_STATE.ACTIVE);
+		List<Relationship> statedParents = c.getRelationships(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP, IS_A, ActiveState.ACTIVE);
 		boolean hasAcceptableParent = false;
 		int changesMade = 0;
 		for (Relationship thisParent : statedParents) {
@@ -329,9 +329,9 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	 * @throws TermServerScriptException 
 	 */
 	protected int validateAttributeValues(Task task, Concept concept,
-			Concept attributeType, Concept descendentsOfValue, CARDINALITY cardinality) throws TermServerScriptException {
+			Concept attributeType, Concept descendentsOfValue, Cardinality cardinality) throws TermServerScriptException {
 		
-		List<Relationship> attributes = concept.getRelationships(CHARACTERISTIC_TYPE.ALL, attributeType, ACTIVE_STATE.ACTIVE);
+		List<Relationship> attributes = concept.getRelationships(CHARACTERISTIC_TYPE.ALL, attributeType, ActiveState.ACTIVE);
 		Set<Concept> descendents = ClosureCache.getClosureCache().getClosure(descendentsOfValue);
 		for (Relationship thisAttribute : attributes) {
 			Concept value = thisAttribute.getTarget();
@@ -347,7 +347,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		int changesMade = 0;
 		
 		//Now check cardinality on active stated relationships
-		attributes = concept.getRelationships(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP, attributeType, ACTIVE_STATE.ACTIVE);
+		attributes = concept.getRelationships(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
 		String msg = null;
 		switch (cardinality) {
 			case EXACTLY_ONE : if (attributes.size() != 1) {
@@ -374,13 +374,13 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	
 
 	private int transferInferredRelationshipsToStated(Task task,
-			Concept concept, Concept attributeType, CARDINALITY cardinality) {
-		List<Relationship> replacements = concept.getRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, attributeType, ACTIVE_STATE.ACTIVE);
+			Concept concept, Concept attributeType, Cardinality cardinality) {
+		List<Relationship> replacements = concept.getRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
 		int changesMade = 0;
 		if (replacements.size() == 0) {
 			String msg = "Unable to find any inferred " + attributeType + " relationships to state.";
 			report(task, concept, SEVERITY.HIGH, REPORT_ACTION_TYPE.INFO, msg);
-		} else if (cardinality.equals(CARDINALITY.EXACTLY_ONE) && replacements.size() > 1) {
+		} else if (cardinality.equals(Cardinality.EXACTLY_ONE) && replacements.size() > 1) {
 			String msg = "Found " + replacements.size() + " " + attributeType + " relationships to state but wanted only one!";
 			report(task, concept, SEVERITY.HIGH, REPORT_ACTION_TYPE.INFO, msg);
 		} else {
@@ -400,7 +400,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	protected void validatePrefInFSN(Task task, Concept concept) throws TermServerScriptException {
 		//Check that the FSN with the semantic tags stripped off is
 		//equal to the preferred terms
-		List<Description> preferredTerms = concept.getDescriptions(ACCEPTABILITY.PREFERRED, DESCRIPTION_TYPE.SYNONYM, ACTIVE_STATE.ACTIVE);
+		List<Description> preferredTerms = concept.getDescriptions(Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE);
 		String trimmedFSN = SnomedUtils.deconstructFSN(concept.getFsn())[0];
 		//Special handling for acetaminophen
 		if (trimmedFSN.toLowerCase().contains(ACETAMINOPHEN) || trimmedFSN.toLowerCase().contains(PARACETAMOL)) {

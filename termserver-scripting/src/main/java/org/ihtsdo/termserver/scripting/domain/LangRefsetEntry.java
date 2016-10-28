@@ -48,6 +48,10 @@ public class LangRefsetEntry {
 		return effectiveTime;
 	}
 	public void setEffectiveTime(String effectiveTime) {
+		if (this.effectiveTime != null && !this.effectiveTime.isEmpty() && effectiveTime == null) {
+			//Are we resetting this component to mark a change?
+			dirty = true;
+		}
 		this.effectiveTime = effectiveTime;
 	}
 	public String getModuleId() {
@@ -81,6 +85,9 @@ public class LangRefsetEntry {
 		return acceptabilityId;
 	}
 	public void setAcceptabilityId(String acceptabilityId) {
+		if (this.acceptabilityId != null && !this.acceptabilityId.equals(acceptabilityId)) {
+			dirty = true;
+		}
 		this.acceptabilityId = acceptabilityId;
 	}
 

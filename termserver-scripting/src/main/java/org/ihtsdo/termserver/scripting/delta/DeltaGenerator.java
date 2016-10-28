@@ -31,6 +31,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 	String edition = "INT";
 	
 	protected String languageCode = "en";
+	protected boolean isExtension = false;
 	
 	String[] conHeader = new String[] {"id","effectiveTime","active","moduleId","definitionStatusId"};
 	String[] descHeader = new String[] {"id","effectiveTime","active","moduleId","conceptId","languageCode","typeId","term","caseSignificanceId"};

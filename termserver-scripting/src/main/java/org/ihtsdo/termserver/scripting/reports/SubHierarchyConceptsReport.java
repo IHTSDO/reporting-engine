@@ -31,7 +31,7 @@ public class SubHierarchyConceptsReport extends TermServerScript{
 	List<String> criticalErrors = new ArrayList<String>();
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	GraphLoader gl = GraphLoader.getGraphLoader();
-	ACTIVE_STATE filterOnActiveState = null;
+	ActiveState filterOnActiveState = null;
 	Concept subHierarchy;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
@@ -102,11 +102,11 @@ public class SubHierarchyConceptsReport extends TermServerScript{
 			response = STDIN.nextLine().trim();
 			if (!response.isEmpty()) {
 				switch (response.toUpperCase()) {
-					case "A" : filterOnActiveState = ACTIVE_STATE.ACTIVE;
+					case "A" : filterOnActiveState = ActiveState.ACTIVE;
 															break;
-					case "I" : filterOnActiveState = ACTIVE_STATE.INACTIVE;
+					case "I" : filterOnActiveState = ActiveState.INACTIVE;
 															break;
-					case "B" : filterOnActiveState = ACTIVE_STATE.BOTH;
+					case "B" : filterOnActiveState = ActiveState.BOTH;
 				default:
 				}
 			} 

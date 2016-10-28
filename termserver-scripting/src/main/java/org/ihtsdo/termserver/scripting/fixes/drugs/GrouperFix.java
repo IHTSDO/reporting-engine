@@ -24,7 +24,7 @@ public class GrouperFix extends BatchFix implements RF2Constants{
 
 	@Override
 	public int doFix(Task task, Concept concept) throws TermServerScriptException {
-		int changesMade = ensureDefinitionStatus(task, concept, DEFINITION_STATUS.FULLY_DEFINED);
+		int changesMade = ensureDefinitionStatus(task, concept, DefinitionStatus.FULLY_DEFINED);
 		changesMade += ensureAcceptableParent(task, concept, graph.getConcept(PHARM_BIO_PRODUCT_SCTID));
 		return changesMade;
 	}

@@ -44,6 +44,7 @@ public interface RF2Constants {
 	
 	static final String GB_ENG_LANG_REFSET = "900000000000508004";
 	static final String US_ENG_LANG_REFSET = "900000000000509007";
+	static final String[] ENGLISH_DIALECTS = {GB_ENG_LANG_REFSET, US_ENG_LANG_REFSET};
 	
 	static final String PREFERRED_TERM = "900000000000548007";
 	static final String ACCEPTABLE_TERM = "900000000000549004";
@@ -64,22 +65,24 @@ public interface RF2Constants {
 	public static String SCTID_QUALIFYING_RELATIONSHIP = "900000000000225001";
 	public static String SCTID_ADDITIONAL_RELATIONSHIP = "900000000000227009";
 
-	public enum DEFINITION_STATUS { PRIMITIVE, FULLY_DEFINED };
+	public enum DefinitionStatus { PRIMITIVE, FULLY_DEFINED };
 	
-	public enum MODIFER { EXISTENTIAL, UNIVERSAL};
+	public enum Modifier { EXISTENTIAL, UNIVERSAL};
 	public static String SCTID_EXISTENTIAL_MODIFIER = "900000000000451002";
 	public static String SCTID_UNIVERSAL_MODIFIER = "900000000000450001";
 	
 	
-	public enum ACTIVE_STATE { ACTIVE, INACTIVE, BOTH };
+	public enum ActiveState { ACTIVE, INACTIVE, BOTH };
 	
-	public enum ACCEPTABILITY { ACCEPTABLE, PREFERRED };
+	public enum Acceptability { ACCEPTABLE, PREFERRED };
 	
 	public enum ConceptType { PRODUCT_STRENGTH, MEDICINAL_ENTITY, MEDICINAL_FORM, GROUPER, PRODUCT_ROLE, UNKNOWN };
 	
-	public enum CARDINALITY { AT_LEAST_ONE, EXACTLY_ONE };
+	public enum Cardinality { AT_LEAST_ONE, EXACTLY_ONE };
 	
-	public enum DESCRIPTION_TYPE { FSN, SYNONYM, DEFINITION};
+	public enum DescriptionType { FSN, SYNONYM, DEFINITION};
+	
+	public enum ChangeStatus { CHANGE_MADE, CHANGE_NOT_REQUIRED, NO_CHANGE_MADE };
 	
 	public static final String FIELD_DELIMITER = "\t";
 	public static final String LINE_DELIMITER = "\r\n";

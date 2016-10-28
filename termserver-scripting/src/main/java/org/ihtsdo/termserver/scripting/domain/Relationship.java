@@ -41,7 +41,7 @@ public class Relationship implements RF2Constants, Comparable<Relationship> {
 	private CHARACTERISTIC_TYPE characteristicType;
 	@SerializedName("modifier")
 	@Expose
-	private MODIFER modifier;
+	private Modifier modifier;
 	
 	private Concept source;
 	
@@ -237,7 +237,7 @@ public class Relationship implements RF2Constants, Comparable<Relationship> {
 	 * @return
 	 *	 The modifier
 	 */
-	public MODIFER getModifier() {
+	public Modifier getModifier() {
 		return modifier;
 	}
 
@@ -246,7 +246,7 @@ public class Relationship implements RF2Constants, Comparable<Relationship> {
 	 * @param modifier
 	 *	 The modifier
 	 */
-	public void setModifier(MODIFER modifier) {
+	public void setModifier(Modifier modifier) {
 		this.modifier = modifier;
 	}
 
