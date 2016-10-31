@@ -38,7 +38,7 @@ public class Relationship implements RF2Constants, Comparable<Relationship> {
 	private long groupId;
 	@SerializedName("characteristicType")
 	@Expose
-	private CHARACTERISTIC_TYPE characteristicType;
+	private CharacteristicType characteristicType;
 	@SerializedName("modifier")
 	@Expose
 	private Modifier modifier;
@@ -219,7 +219,7 @@ public class Relationship implements RF2Constants, Comparable<Relationship> {
 	 * @return
 	 *	 The characteristicType
 	 */
-	public CHARACTERISTIC_TYPE getCharacteristicType() {
+	public CharacteristicType getCharacteristicType() {
 		return characteristicType;
 	}
 
@@ -228,7 +228,7 @@ public class Relationship implements RF2Constants, Comparable<Relationship> {
 	 * @param characteristicType
 	 *	 The characteristicType
 	 */
-	public void setCharacteristicType(CHARACTERISTIC_TYPE characteristicType) {
+	public void setCharacteristicType(CharacteristicType characteristicType) {
 		this.characteristicType = characteristicType;
 	}
 

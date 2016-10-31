@@ -71,8 +71,8 @@ public class LostRelationships extends TermServerScript{
 				continue;
 			}
 			//Only looking at relationships that have changed in this release, so pass current effective time
-			for(Relationship thisRel : thisConcept.getRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, ActiveState.INACTIVE, transientEffectiveDate)) {
-				List<Relationship> replacements = thisConcept.getRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, thisRel.getType(), ActiveState.ACTIVE);
+			for(Relationship thisRel : thisConcept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.INACTIVE, transientEffectiveDate)) {
+				List<Relationship> replacements = thisConcept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, thisRel.getType(), ActiveState.ACTIVE);
 				if (replacements.size() == 0) {
 					String msg = thisConcept + " has no replacement for lost relationship " + thisRel;
 					if (!thisConcept.isActive()) {
@@ -145,12 +145,12 @@ public class LostRelationships extends TermServerScript{
 							
 							if (fileName.contains("sct2_Relationship_Snapshot")) {
 								println("Loading Relationship Snapshot File.");
-								gl.loadRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, zis, true);
+								gl.loadRelationships(CharacteristicType.INFERRED_RELATIONSHIP, zis, true);
 							}
 							
 							if (fileName.contains("sct2_Relationship_Delta")) {
 								println("Loading Relationship Delta File.");
-								modifiedConcepts = gl.getModifiedConcepts(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, zis);
+								modifiedConcepts = gl.getModifiedConcepts(CharacteristicType.INFERRED_RELATIONSHIP, zis);
 							}
 						}
 						ze = zis.getNextEntry();

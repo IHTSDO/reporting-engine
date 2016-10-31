@@ -26,22 +26,34 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
-public class SubHierarchyConceptsReport extends TermServerScript{
+import com.google.common.collect.HashMultiset;
+import com.google.common.collect.Multiset;
+
+/**
+ * Reports all concepts that have been defined (stated) using one or more 
+ * Fully Defined Parents
+ */
+public class FdParentsReport extends TermServerScript{
 	
+	Set<Concept> modifiedConcepts = new HashSet<Concept>();
 	List<String> criticalErrors = new ArrayList<String>();
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	GraphLoader gl = GraphLoader.getGraphLoader();
+	Concept filterOnType = null; 
+	CharacteristicType filterOnCharacteristicType = null;
 	ActiveState filterOnActiveState = null;
-	Concept subHierarchy;
+	Multiset<String> allSemanticTags= HashMultiset.create();
+	Multiset<String> semanticTagsReported= HashMultiset.create();
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
-		SubHierarchyConceptsReport fix = new SubHierarchyConceptsReport();
+		FdParentsReport fix = new FdParentsReport();
 		try {
 			fix.init(args);
-			fix.loadProjectSnapshotAndDelta();  //Load FSNs only
-			fix.reportConcepts();
+			fix.loadProjectSnapshot();  //Load FSNs only
+			fix.reportFdParents();
+			fix.reportStats();
 		} catch (Exception e) {
-			println("Failed to produce Report due to " + e.getMessage());
+			println("Failed to produce Changed Relationship Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			fix.finish();
@@ -51,92 +63,76 @@ public class SubHierarchyConceptsReport extends TermServerScript{
 		}
 	}
 	
-	private void reportConcepts() throws TermServerScriptException {
-		Collection<Concept> conceptsToExamine = subHierarchy.getDescendents(NOT_SET);
-		println("Examining " + conceptsToExamine.size() + " concepts");
-		int reportedConcepts = 0;
-		for (Concept thisConcept : conceptsToExamine) {
-			if (SnomedUtils.conceptHasActiveState(thisConcept, filterOnActiveState)) {
-				if (thisConcept.getFsn() == null) {
-					String msg = "Concept " + thisConcept.getConceptId() + " has no FSN";
-					criticalErrors.add(msg);
-					println(msg);
+	
+	
+	private void reportStats() {
+		println ("FD Parents per semantic tag\n========================");
+		int totalConcepts = 0;
+		for (Multiset.Entry<String> entry : semanticTagsReported.entrySet()) {
+			String thisSemanticTag = entry.getElement();
+			int reported = entry.getCount();
+			totalConcepts += reported;
+			int total = allSemanticTags.count(thisSemanticTag);
+			float percentage = ((float)reported / (float)total ) * 100;
+			String percStr = String.format("%1.1f", percentage);
+			println (thisSemanticTag + " - " + reported + " / " + total + " = " + percStr + "%.");
+		}
+		println ("Total concepts reported: " + totalConcepts);
+		
+	}
+
+
+
+	private void reportFdParents() {
+		for (Concept c : gl.getAllConcepts()) {
+			if (c.isActive()) {
+				String semanticTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
+				allSemanticTags.add(semanticTag);
+				for (Concept p : c.getParents(CharacteristicType.STATED_RELATIONSHIP)) {
+					if (p.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
+						semanticTagsReported.add(semanticTag);
+						report(c, semanticTag);
+						break;
+					}
 				}
-				report (thisConcept);
-				reportedConcepts++;
 			}
 		}
-		println("Reported " + reportedConcepts + " concepts in active state: " + filterOnActiveState);
-		println("Graph loader log: \n" + gl.log);
 	}
-	
-	protected void report (Concept c) {
+
+
+
+	protected void report (Concept c, String semanticTag) {
 		String line = 	c.getConceptId() + COMMA_QUOTE + 
 						c.getFsn() + QUOTE_COMMA + 
-						c.isActive() + COMMA + 
-						c.getEffectiveTime().equals(transientEffectiveDate);
-
+						c.getEffectiveTime() + COMMA_QUOTE +
+						semanticTag + QUOTE;
 		writeToFile(line);
 	}
 	
 	protected void init(String[] args) throws IOException, TermServerScriptException {
 		super.init(args);
-		print ("What date identifies 'new' relationships? [" + transientEffectiveDate + "]: ");
-		String response = STDIN.nextLine().trim();
-		if (!response.isEmpty()) {
-			long dateAsNumber = Long.parseLong(response);
-			if (dateAsNumber < 2000000L || dateAsNumber > 30000000) {
-				throw new TermServerScriptException("Invalid date: "  + response);
-			}
-			transientEffectiveDate = response;
-		}
-		
-		print ("Filter for a particular sub-hierarchy? (eg 373873005 or return for none): ");
-		response = STDIN.nextLine().trim();
-		if (!response.isEmpty()) {
-			subHierarchy = gl.getConcept(response);
-		}
-		
-		while (filterOnActiveState == null) {
-			print ("Report which active state(s)? [A,I,B]: ");
-			response = STDIN.nextLine().trim();
-			if (!response.isEmpty()) {
-				switch (response.toUpperCase()) {
-					case "A" : filterOnActiveState = ActiveState.ACTIVE;
-															break;
-					case "I" : filterOnActiveState = ActiveState.INACTIVE;
-															break;
-					case "B" : filterOnActiveState = ActiveState.BOTH;
-				default:
-				}
-			} 
-		}
 		
 		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
-		String reportFilename = "concepts_" + project.toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
+		//String reportFilename = "changed_relationships_" + project.toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
+		String reportFilename = getScriptName() + "_" + project.toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToFile ("Concept, FSN, Concept_Active, Concept_Modified");
+		writeToFile ("Concept, FSN, EffectiveTime, SemanticTag");
 	}
 
-	private void loadProjectSnapshotAndDelta() throws SnowOwlClientException, TermServerScriptException, InterruptedException {
+	private void loadProjectSnapshot() throws SnowOwlClientException, TermServerScriptException, InterruptedException {
 		int SNAPSHOT = 0;
 		File[] archives = new File[] { new File (project + "_snapshot_" + env + ".zip")};
+
 		//Do we already have a copy of the project locally?  If not, recover it.
 		if (!archives[SNAPSHOT].exists()) {
 			println ("Recovering snapshot state of " + project + " from TS (" + env + ")");
-			String branchPath = project.equals("MAIN") ? project : tsRoot + project;
-			tsClient.export(branchPath, null, ExportType.MIXED, ExtractType.SNAPSHOT, archives[SNAPSHOT]);
+			tsClient.export("MAIN/" + project, null, ExportType.MIXED, ExtractType.SNAPSHOT, archives[SNAPSHOT]);
 			initialiseSnowOwlClient();  //re-initialise client to avoid HttpMediaTypeNotAcceptableException.  Cause unknown.
 		}
 		
-		/*if (!archives[DELTA].exists()) {
-			println ("Recovering delta state of " + project + " from TS (" + env + ") for " + transientEffectiveDate);
-			tsClient.export("MAIN/" + project, transientEffectiveDate, ExportType.UNPUBLISHED, ExtractType.DELTA, archives[DELTA]);
-		}*/
-		
-		println ("Loading snapshot terms and delta relationships into memory...");
+		println ("Loading snapshot into memory...");
 		for (File archive : archives) {
 			try {
 				ZipInputStream zis = new ZipInputStream(new FileInputStream(archive));
@@ -165,16 +161,7 @@ public class SubHierarchyConceptsReport extends TermServerScript{
 								println("Loading Stated Relationship Snapshot File.");
 								gl.loadRelationships(CharacteristicType.STATED_RELATIONSHIP,zis, true);
 							}
-							/*
-							if (fileName.contains("sct2_Relationship_Delta")) {
-								println("Loading Relationship Delta File.");
-								modifiedConcepts.addAll(gl.loadRelationshipDelta(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP,zis));
-							}
-							
-							if (fileName.contains("sct2_StatedRelationship_Delta")) {
-								println("Loading Stated Relationship Delta File.");
-								modifiedConcepts.addAll(gl.loadRelationshipDelta(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP,zis));
-							}*/
+
 						}
 						ze = zis.getNextEntry();
 					}
@@ -193,7 +180,6 @@ public class SubHierarchyConceptsReport extends TermServerScript{
 	@Override
 	protected Concept loadLine(String[] lineItems)
 			throws TermServerScriptException {
-		// TODO Auto-generated method stub
 		return null;
 	}
 }

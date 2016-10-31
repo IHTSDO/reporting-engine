@@ -57,7 +57,7 @@ public interface RF2Constants {
 	
 	public enum PartionIdentifier {CONCEPT, DESCRIPTION, RELATIONSHIP};
 	
-	public enum CHARACTERISTIC_TYPE {	STATED_RELATIONSHIP, INFERRED_RELATIONSHIP, 
+	public enum CharacteristicType {	STATED_RELATIONSHIP, INFERRED_RELATIONSHIP, 
 										QUALIFYING_RELATIONSHIP, ADDITIONAL_RELATIONSHIP, ALL};
 										
 	public static String SCTID_STATED_RELATIONSHIP = "900000000000010007";
@@ -66,6 +66,8 @@ public interface RF2Constants {
 	public static String SCTID_ADDITIONAL_RELATIONSHIP = "900000000000227009";
 
 	public enum DefinitionStatus { PRIMITIVE, FULLY_DEFINED };
+	public static String SCTID_PRIMITIVE = "900000000000074008";
+	public static String SCTID_FULLY_DEFINED = "900000000000073002";
 	
 	public enum Modifier { EXISTENTIAL, UNIVERSAL};
 	public static String SCTID_EXISTENTIAL_MODIFIER = "900000000000451002";

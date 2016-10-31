@@ -37,7 +37,7 @@ public class GraphLoader implements RF2Constants {
 		return concepts.values();
 	}
 	
-	public Set<Concept> loadRelationships(CHARACTERISTIC_TYPE characteristicType, InputStream relStream, boolean addRelationshipsToConcepts) 
+	public Set<Concept> loadRelationships(CharacteristicType characteristicType, InputStream relStream, boolean addRelationshipsToConcepts) 
 			throws IOException, TermServerScriptException {
 		Set<Concept> concepts = new HashSet<Concept>();
 		BufferedReader br = new BufferedReader(new InputStreamReader(relStream, StandardCharsets.UTF_8));
@@ -63,7 +63,7 @@ public class GraphLoader implements RF2Constants {
 		return concepts;
 	}
 	
-	private Concept addRelationshipToConcept(CHARACTERISTIC_TYPE characteristicType, String[] lineItems) throws TermServerScriptException {
+	private Concept addRelationshipToConcept(CharacteristicType characteristicType, String[] lineItems) throws TermServerScriptException {
 		Concept source = getConcept(lineItems[REL_IDX_SOURCEID]);
 		Concept type = getConcept(lineItems[REL_IDX_TYPEID]);
 		Concept destination = getConcept(lineItems[REL_IDX_DESTINATIONID]);
@@ -76,8 +76,8 @@ public class GraphLoader implements RF2Constants {
 		source.addRelationship(r);
 		
 		//Only if the relationship is inferred, consider adding it as a parent
-		if (r.isActive() && type.equals(IS_A) && r.getCharacteristicType().equals(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP)) {
-			source.addParent(destination);
+		if (r.isActive() && type.equals(IS_A)) {
+			source.addParent(r.getCharacteristicType(),destination);
 			destination.addChild(source);
 		}
 		return source;
@@ -167,18 +167,19 @@ public class GraphLoader implements RF2Constants {
 				Concept c = getConcept(lineItems[CON_IDX_ID]);
 				c.setActive(lineItems[CON_IDX_ACTIVE].equals("1"));
 				c.setEffectiveTime(lineItems[CON_IDX_EFFECTIVETIME]);
+				c.setDefinitionStatus(SnomedUtils.translateDefnStatus(lineItems[CON_IDX_DEFINITIONSTATUSID]));
 			} else {
 				isHeaderLine = false;
 			}
 		}
 	}
 
-	public Set<Concept> loadRelationshipDelta(CHARACTERISTIC_TYPE characteristicType, InputStream relStream) throws IOException, TermServerScriptException {
+	public Set<Concept> loadRelationshipDelta(CharacteristicType characteristicType, InputStream relStream) throws IOException, TermServerScriptException {
 		return loadRelationships(characteristicType, relStream, true);
 	}
 
 	public Set<Concept> getModifiedConcepts(
-			CHARACTERISTIC_TYPE characteristicType, ZipInputStream relStream) throws IOException, TermServerScriptException {
+			CharacteristicType characteristicType, ZipInputStream relStream) throws IOException, TermServerScriptException {
 		return loadRelationships(characteristicType, relStream, false);
 	}
 

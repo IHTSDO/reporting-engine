@@ -36,7 +36,7 @@ public class Concept implements RF2Constants {
 	private String fsn;
 	@SerializedName("definitionStatus")
 	@Expose
-	private String definitionStatus;
+	private DefinitionStatus definitionStatus;
 	@SerializedName("preferredSynonym")
 	@Expose
 	private String preferredSynonym;
@@ -68,7 +68,8 @@ public class Concept implements RF2Constants {
 		this.reviewer = reviewer;
 	}
 
-	List<Concept> parents = new ArrayList<Concept>();
+	List<Concept> statedParents = new ArrayList<Concept>();
+	List<Concept> inferredParents = new ArrayList<Concept>();
 	List<Concept> children = new ArrayList<Concept>();
 	
 	public Concept(String conceptId) {
@@ -125,11 +126,11 @@ public class Concept implements RF2Constants {
 		this.fsn = fsn;
 	}
 
-	public String getDefinitionStatus() {
+	public DefinitionStatus getDefinitionStatus() {
 		return definitionStatus;
 	}
 
-	public void setDefinitionStatus(String definitionStatus) {
+	public void setDefinitionStatus(DefinitionStatus definitionStatus) {
 		this.definitionStatus = definitionStatus;
 	}
 
@@ -153,11 +154,11 @@ public class Concept implements RF2Constants {
 		return relationships;
 	}
 	
-	public List<Relationship> getRelationships(CHARACTERISTIC_TYPE characteristicType, ActiveState state, String effectiveTime) {
+	public List<Relationship> getRelationships(CharacteristicType characteristicType, ActiveState state, String effectiveTime) {
 		List<Relationship> matches = new ArrayList<Relationship>();
 		for (Relationship r : relationships) {
 			if (effectiveTime == null || r.getEffectiveTime().equals(effectiveTime)) {
-				if (characteristicType.equals(CHARACTERISTIC_TYPE.ALL) || r.getCharacteristicType().equals(characteristicType)) {
+				if (characteristicType.equals(CharacteristicType.ALL) || r.getCharacteristicType().equals(characteristicType)) {
 					if (state.equals(ActiveState.BOTH) || (state.equals(ActiveState.ACTIVE) && r.isActive()) ||
 							(state.equals(ActiveState.INACTIVE) && !r.isActive())) {
 						matches.add(r);
@@ -168,11 +169,11 @@ public class Concept implements RF2Constants {
 		return matches;
 	}
 	
-	public List<Relationship> getRelationships(CHARACTERISTIC_TYPE characteristicType, ActiveState state) {
+	public List<Relationship> getRelationships(CharacteristicType characteristicType, ActiveState state) {
 		return getRelationships(characteristicType, state, null);
 	}
 	
-	public List<Relationship> getRelationships(CHARACTERISTIC_TYPE characteristicType, Concept type, ActiveState state) {
+	public List<Relationship> getRelationships(CharacteristicType characteristicType, Concept type, ActiveState state) {
 		List<Relationship> potentialMatches = getRelationships(characteristicType, state);
 		List<Relationship> matches = new ArrayList<Relationship>();
 		for (Relationship r : potentialMatches) {
@@ -229,7 +230,7 @@ public class Concept implements RF2Constants {
 		Relationship r = new Relationship();
 		r.setActive(true);
 		r.setGroupId(0);
-		r.setCharacteristicType(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP);
+		r.setCharacteristicType(CharacteristicType.STATED_RELATIONSHIP);
 		r.setSourceId(this.getConceptId());
 		r.setType(type);
 		r.setTarget(target);
@@ -257,8 +258,13 @@ public class Concept implements RF2Constants {
 		children.add(c);
 	}
 	
-	public void addParent(Concept p) {
-		parents.add(p);
+	public void addParent(CharacteristicType characteristicType, Concept p) {
+		switch (characteristicType) {
+			case STATED_RELATIONSHIP : statedParents.add(p);
+										break;
+			case INFERRED_RELATIONSHIP: inferredParents.add(p);
+			default:
+		}
 	}
 
 	public ConceptType getConceptType() {
@@ -347,8 +353,12 @@ public class Concept implements RF2Constants {
 		
 	}
 
-	public List<Concept> getParents() {
-		return new ArrayList<Concept>(parents);
+	public List<Concept> getParents(CharacteristicType characteristicType) {
+		switch (characteristicType) {
+			case STATED_RELATIONSHIP : return new ArrayList<Concept>(statedParents);
+			case INFERRED_RELATIONSHIP: return new ArrayList<Concept>(inferredParents);
+			default: return null;
+		}
 	}
 	
 	public List<String>getAssertionFailures() {

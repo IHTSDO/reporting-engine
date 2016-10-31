@@ -59,8 +59,8 @@ public class MismatchedRelationships extends TermServerScript{
 				criticalErrors.add(msg);
 				println(msg);
 			}
-			List<Relationship> statedRelationships = thisConcept.getRelationships(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP, targetAttribute, ActiveState.ACTIVE);
-			List<Relationship> inferredRelationships = thisConcept.getRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, targetAttribute, ActiveState.ACTIVE);
+			List<Relationship> statedRelationships = thisConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, targetAttribute, ActiveState.ACTIVE);
+			List<Relationship> inferredRelationships = thisConcept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, targetAttribute, ActiveState.ACTIVE);
 			
 			if (statedRelationships.size() == 0) {
 				//Nothing to do here, concept not relevant
@@ -149,12 +149,12 @@ public class MismatchedRelationships extends TermServerScript{
 							
 							if (fileName.contains("sct2_Relationship_Snapshot")) {
 								println("Loading Relationship Snapshot File.");
-								gl.loadRelationshipDelta(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP,zis);
+								gl.loadRelationshipDelta(CharacteristicType.INFERRED_RELATIONSHIP,zis);
 							}
 							
 							if (fileName.contains("sct2_StatedRelationship_Snapshot")) {
 								println("Loading Stated Relationship Snapshot File.");
-								gl.loadRelationshipDelta(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP,zis);
+								gl.loadRelationshipDelta(CharacteristicType.STATED_RELATIONSHIP,zis);
 							}
 						}
 						ze = zis.getNextEntry();

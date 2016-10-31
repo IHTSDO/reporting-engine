@@ -32,7 +32,7 @@ public class RelationshipReport extends TermServerScript{
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	GraphLoader gl = GraphLoader.getGraphLoader();
 	Concept filterOnType = null; 
-	CHARACTERISTIC_TYPE filterOnCharacteristicType = null;
+	CharacteristicType filterOnCharacteristicType = null;
 	ActiveState filterOnActiveState = null;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
@@ -66,7 +66,7 @@ public class RelationshipReport extends TermServerScript{
 				criticalErrors.add(msg);
 				println(msg);
 			}
-			List<Relationship> allConceptRelationships = thisConcept.getRelationships(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP, ActiveState.BOTH);
+			List<Relationship> allConceptRelationships = thisConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH);
 			
 			for(Relationship thisRel : allConceptRelationships) {
 				//Has this relationship changed in the this release?
@@ -141,11 +141,11 @@ public class RelationshipReport extends TermServerScript{
 			response = STDIN.nextLine().trim();
 			if (!response.isEmpty()) {
 				switch (response.toUpperCase()) {
-					case "S" : filterOnCharacteristicType = CHARACTERISTIC_TYPE.STATED_RELATIONSHIP;
+					case "S" : filterOnCharacteristicType = CharacteristicType.STATED_RELATIONSHIP;
 															break;
-					case "I" : filterOnCharacteristicType = CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP;
+					case "I" : filterOnCharacteristicType = CharacteristicType.INFERRED_RELATIONSHIP;
 															break;
-					case "B" : filterOnCharacteristicType = CHARACTERISTIC_TYPE.ALL;
+					case "B" : filterOnCharacteristicType = CharacteristicType.ALL;
 				default:
 				}
 			} 
@@ -214,12 +214,12 @@ public class RelationshipReport extends TermServerScript{
 							
 							if (fileName.contains("sct2_Relationship_Snapshot")) {
 								println("Loading Relationship Snapshot File.");
-								gl.loadRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP,zis, true);
+								gl.loadRelationships(CharacteristicType.INFERRED_RELATIONSHIP,zis, true);
 							}
 							
 							if (fileName.contains("sct2_StatedRelationship_Snapshot")) {
 								println("Loading Stated Relationship Snapshot File.");
-								gl.loadRelationships(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP,zis, true);
+								gl.loadRelationships(CharacteristicType.STATED_RELATIONSHIP,zis, true);
 							}
 							/*
 							if (fileName.contains("sct2_Relationship_Delta")) {

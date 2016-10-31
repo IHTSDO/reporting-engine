@@ -329,7 +329,7 @@ public class SnomedUtils implements RF2Constants{
 	}
 
 	public static String translateCharacteristicType(
-			CHARACTERISTIC_TYPE characteristicType) {
+			CharacteristicType characteristicType) {
 		switch (characteristicType) {
 			case STATED_RELATIONSHIP : return SCTID_STATED_RELATIONSHIP;
 			case INFERRED_RELATIONSHIP : return SCTID_INFERRED_RELATIONSHIP;
@@ -345,6 +345,16 @@ public class SnomedUtils implements RF2Constants{
 			case UNIVERSAL : return SCTID_UNIVERSAL_MODIFIER;
 			default : return "";
 		}
+	}
+	
+
+	public static DefinitionStatus translateDefnStatus(String defnStatusSctId) {
+		switch (defnStatusSctId) {
+			case SCTID_PRIMITIVE : return DefinitionStatus.PRIMITIVE;
+			case SCTID_FULLY_DEFINED: return DefinitionStatus.FULLY_DEFINED;
+			default:
+		}
+		return null;
 	}
 	
 
@@ -418,5 +428,6 @@ public class SnomedUtils implements RF2Constants{
 		}
 		return changeStatus;
 	}
+
 
 }

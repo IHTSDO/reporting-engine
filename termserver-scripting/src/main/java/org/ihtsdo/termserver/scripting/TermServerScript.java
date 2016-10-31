@@ -298,7 +298,7 @@ public abstract class TermServerScript implements RF2Constants {
 						String fileName = p.getFileName().toString();
 						if (fileName.contains("sct2_Relationship_Snapshot")) {
 							println("Loading Relationship File.");
-							gl.loadRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, zis, true);
+							gl.loadRelationships(CharacteristicType.INFERRED_RELATIONSHIP, zis, true);
 						} else if (fileName.contains("sct2_Description_Snapshot")) {
 							println("Loading Description File.");
 							gl.loadDescriptionFile(zis, fsnOnly);

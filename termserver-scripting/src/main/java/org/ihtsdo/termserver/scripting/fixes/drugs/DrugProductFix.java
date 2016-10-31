@@ -322,7 +322,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 	private Set<String> extractMultipleIngredients(List<Concept> concepts) throws TermServerScriptException {
 		Set<String> multipleIngredients = new HashSet<String>();
 		for (Concept thisConcept : concepts) {
-			List<Relationship> ingredients = thisConcept.getRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE);
+			List<Relationship> ingredients = thisConcept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE);
 			if (ingredients.size() > 0) {
 				String comboKey = getIngredientCombinationKey(thisConcept, ingredients);
 				multipleIngredients.add(comboKey);
@@ -364,7 +364,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 	}
 
 	private List<Relationship> getIngredients(Concept c) {
-		return c.getRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE);
+		return c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE);
 	}
 	
 	/*private String getIngredientList(List<Relationship> ingredientRelationships) {
@@ -383,7 +383,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		Collection<Concept> allConcepts = GraphLoader.getGraphLoader().getAllConcepts();
 		Multimap<String, Concept> ingredientCombos = ArrayListMultimap.create();
 		for (Concept thisConcept : allConcepts) {
-			List<Relationship> ingredients = thisConcept.getRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE);
+			List<Relationship> ingredients = thisConcept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE);
 			if (ingredients.size() > 0) {
 				String comboKey = getIngredientCombinationKey(thisConcept, ingredients);
 				ingredientCombos.put(comboKey, thisConcept);
@@ -632,7 +632,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 			concept.setConceptType(ConceptType.PRODUCT_STRENGTH);
 		} else {
 			//If the concept has a dose form, then it's a Medicinal Form
-			List<Relationship> doseFormAttributes = concept.getRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, HAS_DOSE_FORM, ActiveState.ACTIVE);
+			List<Relationship> doseFormAttributes = concept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HAS_DOSE_FORM, ActiveState.ACTIVE);
 			if (!doseFormAttributes.isEmpty()) {
 				concept.setConceptType(ConceptType.MEDICINAL_FORM);
 			}

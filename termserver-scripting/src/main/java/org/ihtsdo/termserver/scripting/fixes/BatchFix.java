@@ -186,9 +186,9 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 
 	protected int ensureDefinitionStatus(Task t, Concept c, DefinitionStatus targetDefStat) {
 		int changesMade = 0;
-		if (!c.getDefinitionStatus().equals(targetDefStat.toString())) {
+		if (!c.getDefinitionStatus().equals(targetDefStat)) {
 			report (t, c, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.CONCEPT_CHANGE_MADE, "Definition status changed to " + targetDefStat);
-			c.setDefinitionStatus(targetDefStat.toString());
+			c.setDefinitionStatus(targetDefStat);
 			changesMade++;
 		}
 		return changesMade;
@@ -266,7 +266,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	}
 	
 	protected int ensureAcceptableParent(Task task, Concept c, Concept acceptableParent) {
-		List<Relationship> statedParents = c.getRelationships(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP, IS_A, ActiveState.ACTIVE);
+		List<Relationship> statedParents = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, IS_A, ActiveState.ACTIVE);
 		boolean hasAcceptableParent = false;
 		int changesMade = 0;
 		for (Relationship thisParent : statedParents) {
@@ -331,14 +331,14 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	protected int validateAttributeValues(Task task, Concept concept,
 			Concept attributeType, Concept descendentsOfValue, Cardinality cardinality) throws TermServerScriptException {
 		
-		List<Relationship> attributes = concept.getRelationships(CHARACTERISTIC_TYPE.ALL, attributeType, ActiveState.ACTIVE);
+		List<Relationship> attributes = concept.getRelationships(CharacteristicType.ALL, attributeType, ActiveState.ACTIVE);
 		Set<Concept> descendents = ClosureCache.getClosureCache().getClosure(descendentsOfValue);
 		for (Relationship thisAttribute : attributes) {
 			Concept value = thisAttribute.getTarget();
 			if (!descendents.contains(value)) {
 				SEVERITY severity = thisAttribute.isActive()?SEVERITY.CRITICAL:SEVERITY.LOW;
 				String activeStr = thisAttribute.isActive()?"":"inactive ";
-				String relType = thisAttribute.getCharacteristicType().equals(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP)?"stated ":"inferred ";
+				String relType = thisAttribute.getCharacteristicType().equals(CharacteristicType.STATED_RELATIONSHIP)?"stated ":"inferred ";
 				String msg = "Attribute has " + activeStr + relType + "target which is not a descendent of: " + descendentsOfValue;
 				report (task, concept, severity, REPORT_ACTION_TYPE.VALIDATION_ERROR, msg);
 			}
@@ -347,7 +347,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		int changesMade = 0;
 		
 		//Now check cardinality on active stated relationships
-		attributes = concept.getRelationships(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
+		attributes = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
 		String msg = null;
 		switch (cardinality) {
 			case EXACTLY_ONE : if (attributes.size() != 1) {
@@ -375,7 +375,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 
 	private int transferInferredRelationshipsToStated(Task task,
 			Concept concept, Concept attributeType, Cardinality cardinality) {
-		List<Relationship> replacements = concept.getRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
+		List<Relationship> replacements = concept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
 		int changesMade = 0;
 		if (replacements.size() == 0) {
 			String msg = "Unable to find any inferred " + attributeType + " relationships to state.";
@@ -387,7 +387,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			//Clone the inferred relationships, make them stated and add to concept
 			for (Relationship replacement : replacements) {
 				Relationship statedClone = replacement.clone();
-				statedClone.setCharacteristicType(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP);
+				statedClone.setCharacteristicType(CharacteristicType.STATED_RELATIONSHIP);
 				concept.addRelationship(statedClone);
 				String msg = "Restated inferred relationship: " + replacement;
 				report(task, concept, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.RELATIONSHIP_ADDED, msg);
