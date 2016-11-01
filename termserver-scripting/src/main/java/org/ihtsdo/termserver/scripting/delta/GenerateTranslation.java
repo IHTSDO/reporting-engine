@@ -1,9 +1,7 @@
 package org.ihtsdo.termserver.scripting.delta;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -149,10 +147,35 @@ public class GenerateTranslation extends DeltaGenerator {
 			report (currentState, usPrefTerm, SEVERITY.HIGH, REPORT_ACTION_TYPE.VALIDATION_ERROR, "Current term is not what was translated: " + newState.getExpectedCurrentPreferredTerm());
 		}
 		
-		//Create a new Description to attach to the concept
-		Description d = createTranslatedDescription(newState);
-		report (currentState, d, SEVERITY.LOW, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, "Created new description " + d);
-		outputRF2(d);
+		//Do we already have this term?  Just add the langrefset entry if so.
+		if (currentState.hasTerm(newState.getNewPreferredTerm())) {
+			Description d = currentState.findTerm(newState.getNewPreferredTerm());
+			promoteTerm (d);
+			report (currentState, d, SEVERITY.HIGH, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, "Promoted langrefset on existing term: " + d);
+			outputRF2(d);
+		} else {
+			//Create a new Description to attach to the concept
+			Description d = createTranslatedDescription(newState);
+			report (currentState, d, SEVERITY.LOW, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, "Created new description: " + d);
+			outputRF2(d);
+		}
+	}
+
+	private void promoteTerm(Description d) {
+		//Do we already have a langrefset entry for this dialect?
+		boolean langRefSetEntryCorrect = false;
+		for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.ACTIVE)) {
+			if (l.getRefsetId().equals(langRefsetId)) {
+				if (!l.getAcceptabilityId().equals(PREFERRED_TERM)) {
+					l.setAcceptabilityId(PREFERRED_TERM);
+					l.setDirty();
+					langRefSetEntryCorrect = true;
+				}
+			}
+		}
+		if (!langRefSetEntryCorrect) {
+			addLangRefsetEntry(d);
+		}
 	}
 
 	private Description createTranslatedDescription(ConceptChange newState) throws IOException, TermServerScriptException {
@@ -168,6 +191,11 @@ public class GenerateTranslation extends DeltaGenerator {
 		d.setCaseSignificance(newState.getCaseSensitivitySctId());
 		d.setDirty();
 		
+		addLangRefsetEntry(d);
+		return d;
+	}
+
+	private void addLangRefsetEntry(Description d) {
 		LangRefsetEntry l = new LangRefsetEntry();
 		l.setId(UUID.randomUUID().toString());
 		l.setRefsetId(langRefsetId);
@@ -177,8 +205,6 @@ public class GenerateTranslation extends DeltaGenerator {
 		l.setReferencedComponentId(d.getDescriptionId());
 		l.setDirty();
 		d.getLangRefsetEntries().add(l);
-		
-		return d;
 	}
 
 	private Description getUsPrefTerm(Concept currentState) throws TermServerScriptException {
