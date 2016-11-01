@@ -44,6 +44,7 @@ public class FdParentsReport extends TermServerScript{
 	ActiveState filterOnActiveState = null;
 	Multiset<String> allSemanticTags= HashMultiset.create();
 	Multiset<String> semanticTagsReported= HashMultiset.create();
+	Concept subHierarchy = null;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		FdParentsReport fix = new FdParentsReport();
@@ -84,7 +85,14 @@ public class FdParentsReport extends TermServerScript{
 
 
 	private void reportFdParents() {
-		for (Concept c : gl.getAllConcepts()) {
+		Collection<Concept> concepts = null;
+		if (subHierarchy != null) {
+			concepts = subHierarchy.getDescendents(NOT_SET);
+		} else {
+			concepts = gl.getAllConcepts();
+		}
+		
+		for (Concept c : concepts) {
 			if (c.isActive()) {
 				String semanticTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
 				allSemanticTags.add(semanticTag);
@@ -99,12 +107,11 @@ public class FdParentsReport extends TermServerScript{
 		}
 	}
 
-
-
 	protected void report (Concept c, String semanticTag) {
 		String line = 	c.getConceptId() + COMMA_QUOTE + 
 						c.getFsn() + QUOTE_COMMA + 
 						c.getEffectiveTime() + COMMA_QUOTE +
+						c.getDefinitionStatus() + QUOTE_COMMA_QUOTE +
 						semanticTag + QUOTE;
 		writeToFile(line);
 	}
@@ -112,13 +119,20 @@ public class FdParentsReport extends TermServerScript{
 	protected void init(String[] args) throws IOException, TermServerScriptException {
 		super.init(args);
 		
+		print ("Filter for a particular sub-hierarchy? (eg 373873005 or return for none): ");
+		String response = STDIN.nextLine().trim();
+		if (!response.isEmpty()) {
+			subHierarchy = gl.getConcept(response);
+		}
+		
 		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
 		//String reportFilename = "changed_relationships_" + project.toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
-		String reportFilename = getScriptName() + "_" + project.toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
+		String filter = (subHierarchy == null) ? "" : "_" + subHierarchy.getConceptId();
+		String reportFilename = getScriptName() + filter + "_" + project.toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToFile ("Concept, FSN, EffectiveTime, SemanticTag");
+		writeToFile ("Concept, FSN, EffectiveTime, Definition_Status,SemanticTag");
 	}
 
 	private void loadProjectSnapshot() throws SnowOwlClientException, TermServerScriptException, InterruptedException {
