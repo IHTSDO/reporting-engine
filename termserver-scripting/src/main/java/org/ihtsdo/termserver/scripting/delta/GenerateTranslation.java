@@ -180,7 +180,6 @@ public class GenerateTranslation extends DeltaGenerator {
 
 	private Description createTranslatedDescription(ConceptChange newState) throws IOException, TermServerScriptException {
 		Description d = new Description();
-		
 		d.setDescriptionId(descIdGenerator.getSCTID(PartionIdentifier.DESCRIPTION));
 		d.setConceptId(newState.getConceptId());
 		d.setActive(true);
@@ -189,6 +188,7 @@ public class GenerateTranslation extends DeltaGenerator {
 		d.setTerm(newState.getNewPreferredTerm());
 		d.setType(DescriptionType.SYNONYM);
 		d.setCaseSignificance(newState.getCaseSensitivitySctId());
+		d.setModuleId(moduleId);
 		d.setDirty();
 		
 		addLangRefsetEntry(d);
@@ -201,6 +201,7 @@ public class GenerateTranslation extends DeltaGenerator {
 		l.setRefsetId(langRefsetId);
 		l.setActive(true);
 		l.setEffectiveTime(null);
+		l.setModuleId(moduleId);
 		l.setAcceptabilityId(PREFERRED_TERM);
 		l.setReferencedComponentId(d.getDescriptionId());
 		l.setDirty();
