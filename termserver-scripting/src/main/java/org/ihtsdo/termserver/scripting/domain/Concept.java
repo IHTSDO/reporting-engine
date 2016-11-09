@@ -70,7 +70,8 @@ public class Concept implements RF2Constants {
 
 	List<Concept> statedParents = new ArrayList<Concept>();
 	List<Concept> inferredParents = new ArrayList<Concept>();
-	List<Concept> children = new ArrayList<Concept>();
+	List<Concept> statedChildren = new ArrayList<Concept>();
+	List<Concept> inferredChildren = new ArrayList<Concept>();
 	
 	public Concept(String conceptId) {
 		this.conceptId = conceptId;
@@ -254,17 +255,12 @@ public class Concept implements RF2Constants {
 		relationships.add(r);
 	}
 	
-	public void addChild(Concept c) {
-		children.add(c);
+	public void addChild(CharacteristicType characteristicType, Concept c) {
+		getChildren(characteristicType).add(c);
 	}
 	
 	public void addParent(CharacteristicType characteristicType, Concept p) {
-		switch (characteristicType) {
-			case STATED_RELATIONSHIP : statedParents.add(p);
-										break;
-			case INFERRED_RELATIONSHIP: inferredParents.add(p);
-			default:
-		}
+		getParents(characteristicType).add(p);
 	}
 
 	public ConceptType getConceptType() {
@@ -289,20 +285,35 @@ public class Concept implements RF2Constants {
 		}
 	}
 	
-	public Set<Concept> getDescendents(int depth) {
+	public Set<Concept> getDescendents(int depth) throws TermServerScriptException {
+		return getDescendents(depth, CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE);
+	}
+	
+	public Set<Concept> getDescendents(int depth, CharacteristicType characteristicType, ActiveState activeState) throws TermServerScriptException {
 		Set<Concept> allDescendents = new HashSet<Concept>();
-		this.populateAllDescendents(allDescendents, depth);
+		this.populateAllDescendents(allDescendents, depth, characteristicType, activeState);
 		return allDescendents;
 	}
 	
-	private void populateAllDescendents(Set<Concept> descendents, int depth) {
-		for (Concept thisChild : children) {
-			descendents.add(thisChild);
-			if (depth == NOT_SET || depth > 1) {
-				int newDepth = depth == NOT_SET ? NOT_SET : depth - 1;
-				thisChild.populateAllDescendents(descendents, newDepth);
+	private void populateAllDescendents(Set<Concept> descendents, int depth, CharacteristicType characteristicType, ActiveState activeState) throws TermServerScriptException {
+		for (Concept thisChild : getChildren(characteristicType)) {
+			if (activeState.equals(ActiveState.BOTH) || thisChild.active == SnomedUtils.translateActive(activeState)) {
+				descendents.add(thisChild);
+				if (depth == NOT_SET || depth > 1) {
+					int newDepth = depth == NOT_SET ? NOT_SET : depth - 1;
+					thisChild.populateAllDescendents(descendents, newDepth, characteristicType, activeState);
+				}
 			}
 		}
+	}
+	
+	private List<Concept> getChildren(CharacteristicType characteristicType) {
+		switch (characteristicType) {
+			case STATED_RELATIONSHIP : return statedChildren;
+			case INFERRED_RELATIONSHIP : return inferredChildren;
+			default:
+		}
+		return null;
 	}
 
 	public List<Description> getDescriptions(Acceptability Acceptability, DescriptionType descriptionType, ActiveState activeState) throws TermServerScriptException {

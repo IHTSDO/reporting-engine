@@ -78,7 +78,7 @@ public class GraphLoader implements RF2Constants {
 		//Only if the relationship is inferred, consider adding it as a parent
 		if (r.isActive() && type.equals(IS_A)) {
 			source.addParent(r.getCharacteristicType(),destination);
-			destination.addChild(source);
+			destination.addChild(r.getCharacteristicType(),source);
 		}
 		return source;
 	}
