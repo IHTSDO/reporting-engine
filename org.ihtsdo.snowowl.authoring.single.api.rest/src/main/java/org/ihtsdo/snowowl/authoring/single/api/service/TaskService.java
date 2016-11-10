@@ -76,6 +76,7 @@ public class TaskService {
 	private final String jiraExtensionBaseField;
 	private final String jiraProductCodeField;
 	private final String jiraProjectPromotionField;
+	private final String jiraProjectMrcmField;
 	private final String jiraCrsIdField;
 
 	private LoadingCache<String, ProjectDetails> projectDetailsCache;
@@ -91,6 +92,7 @@ public class TaskService {
 		jiraExtensionBaseField = JiraHelper.fieldIdLookup("Extension Base", jiraClientForFieldLookup);
 		jiraProductCodeField = JiraHelper.fieldIdLookup("Product Code", jiraClientForFieldLookup);
 		jiraProjectPromotionField = JiraHelper.fieldIdLookup("SCA Project Promotion", jiraClientForFieldLookup);
+		jiraProjectMrcmField = JiraHelper.fieldIdLookup("SCA Project MRCM", jiraClientForFieldLookup);
 		jiraCrsIdField = JiraHelper.fieldIdLookup("CRS-ID", jiraClientForFieldLookup);
 
 		init();
@@ -172,7 +174,9 @@ public class TaskService {
 				final String branchPath = PathHelper.getProjectPath(extensionBase, key);
 				final String latestClassificationJson = classificationService.getLatestClassification(branchPath);
 				final boolean promotionDisabled = "Disabled".equals(JiraHelper.toStringOrNull(magicTicket.getField(jiraProjectPromotionField)));
+				final boolean mrcmDisabled = "Disabled".equals(JiraHelper.toStringOrNull(magicTicket.getField(jiraProjectMrcmField)));
 
+				
 				final Branch branchOrNull = branchService.getBranchOrNull(branchPath);
 				final Branch parentBranchOrNull = branchService.getBranchOrNull(PathHelper.getParentPath(branchPath));
 				Branch.BranchState branchState = null;
@@ -185,7 +189,7 @@ public class TaskService {
 				}
 				branchPaths.add(branchPath);
 				final AuthoringProject authoringProject = new AuthoringProject(project.getKey(), project.getName(),
-						getPojoUserOrNull(project.getLead()), branchPath, branchState, latestClassificationJson, promotionDisabled);
+						getPojoUserOrNull(project.getLead()), branchPath, branchState, latestClassificationJson, promotionDisabled, mrcmDisabled);
 				authoringProject.setMetadata(metadata);
 				authoringProjects.add(authoringProject);
 			}
@@ -419,7 +423,6 @@ public class TaskService {
 				final ProjectDetails projectDetails = projectKeyToBranchBaseMap.get(issue.getProject().getKey());
 				if (instanceConfiguration.isJiraProjectVisible(projectDetails.getProductCode())) {
 					AuthoringTask task = new AuthoringTask(issue, projectDetails.getBaseBranchPath());
-
 
 					allTasks.add(task);
 					// We only need to recover classification and validation
@@ -714,10 +717,7 @@ public class TaskService {
 
 		try {
 			Issue issue = getIssue(projectKey, taskKey);
-			/*
-			 * logger.info("issue: " + issue.toString());
-			 */
-
+		
 			for (IssueLink issueLink : issue.getIssueLinks()) {
 
 				Issue linkedIssue = issueLink.getOutwardIssue();
@@ -725,41 +725,44 @@ public class TaskService {
 				// need to forcibly retrieve the issue in order to get
 				// attachments
 				Issue issue1 = this.getIssue(null, linkedIssue.getKey(), true);
-				
+
 				String crsId = issue1.getField(jiraCrsIdField).toString();
 				if (crsId == null) {
 					crsId = "Unknown";
 				}
-				
-				/*
-				 * logger.info("  linked issue: " + linkedIssue.toString());
-				 * logger.info("  - " + issue1.getDescription()); logger.info(
-				 * "  - " + issue1.getSummary()); logger.info("  - " +
-				 * issue1.getUrl()); logger.info("  - " +
-				 * issue1.getAttachments().size() + " attachments");
-				 */
+
+				boolean attachmentFound = false;
+
 				for (Attachment attachment : issue1.getAttachments()) {
 
-					// attachments must be retrieved by relative path --
-					// absolute path will redirect to login
-					final String absolutePath = attachment.getContentUrl();
-					final String relativePath = absolutePath.substring(absolutePath.indexOf("secure"));
+					if (attachment.getFileName().equals("request.json")) {
 
-					try {
-						final String contentUrl = attachment.getContentUrl();
-						final JSON attachmentJson = restClient.get(contentUrl.substring(contentUrl.indexOf("secure")));
-						
-						
-						TaskAttachment taskAttachment = new TaskAttachment(crsId,
-								attachmentJson.toString());
+						// attachments must be retrieved by relative path --
+						// absolute path will redirect to login
+						try {
+							final String contentUrl = attachment.getContentUrl();
+							final JSON attachmentJson = restClient
+									.get(contentUrl.substring(contentUrl.indexOf("secure")));
+
+							TaskAttachment taskAttachment = new TaskAttachment(issue1.getKey(), crsId, attachmentJson.toString());
+
+							attachments.add(taskAttachment);
 							
-						attachments.add(taskAttachment);
+							attachmentFound = true;
 
-					} catch (Exception e) {
-						throw new BusinessServiceException(
-								"Failed to retrieve attachment " + relativePath + ": " + e.getMessage(), e);
+						} catch (Exception e) {
+							throw new BusinessServiceException(
+									"Failed to retrieve attachment " + attachment.getContentUrl() + ": " + e.getMessage(), e);
+						}
 					}
 				}
+				
+				// if no attachments, create a blank one to link CRS ticket id
+ 				if (!attachmentFound) {
+ 					TaskAttachment taskAttachment = new TaskAttachment(issue.getKey(), crsId, null);
+ 					attachments.add(taskAttachment);
+ 				}	
+				
 			}
 		} catch (JiraException e) {
 			if (e.getCause() instanceof RestException && ((RestException) e.getCause()).getHttpStatusCode() == 404) {
@@ -769,6 +772,18 @@ public class TaskService {
 		}
 
 		return attachments;
+	}
+
+	public void leaveCommentForTask(String projectKey, String taskKey, String comment) throws BusinessServiceException {
+		try {
+			addComment(projectKey, taskKey, comment);
+		} catch (JiraException e) {
+			if (e.getCause() instanceof RestException && ((RestException) e.getCause()).getHttpStatusCode() == 404) {
+				throw new ResourceNotFoundException("Task not found " + toString(projectKey, taskKey), e);
+			}
+			throw new BusinessServiceException("Failed to leave comment for task " + toString(projectKey, taskKey), e);
+		
+		}
 	}
 
 }

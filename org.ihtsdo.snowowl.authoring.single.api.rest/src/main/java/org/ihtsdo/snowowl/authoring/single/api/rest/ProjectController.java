@@ -115,11 +115,18 @@ public class ProjectController extends AbstractSnomedRestService {
 		return taskService.updateTask(projectKey, taskKey, updatedTask);
 	}
 	
-	@ApiOperation(value = "Retrieve task attachments")
+	@ApiOperation(value = "Retrieve Task Attachments")
 	@ApiResponses({ @ApiResponse(code = 200, message = "OK") })
 	@RequestMapping(value = "/projects/{projectKey}/tasks/{taskKey}/attachments", method = RequestMethod.GET)
 	public List<TaskAttachment> getAttachmentsForTask(@PathVariable final String projectKey, @PathVariable final String taskKey) throws BusinessServiceException {
 		return taskService.getTaskAttachments(projectKey, taskKey);
+	}
+	
+	@ApiOperation(value = "Leave comment for Task")
+	@ApiResponses({ @ApiResponse(code = 200, message = "OK") })
+	@RequestMapping(value = "/projects/{projectKey}/tasks/{taskKey}/comment", method = RequestMethod.POST)
+	public void leaveComment(@PathVariable final String projectKey, @PathVariable final String taskKey, @RequestBody final String comment) throws BusinessServiceException {
+		taskService.leaveCommentForTask(projectKey, taskKey, comment);
 	}
 
 }
