@@ -51,7 +51,7 @@ public class ValidateLateralityReport extends TermServerScript{
 		Concept side = gl.getConcept("182353008");
 		for (Concept c : gl.getAllConcepts()) {
 			if (c.isActive()) {
-				List<Relationship> lateralized = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP,  laterality, ActiveState.ACTIVE);
+				List<Relationship> lateralized = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,  laterality, ActiveState.ACTIVE);
 				if (lateralized.size() > 0 && lateralized.get(0).getTarget().equals(side)) {
 					if (!lateralizable.contains(c)) {
 						report (c);
