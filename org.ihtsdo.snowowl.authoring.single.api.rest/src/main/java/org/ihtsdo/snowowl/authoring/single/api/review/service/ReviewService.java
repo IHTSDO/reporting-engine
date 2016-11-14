@@ -113,7 +113,7 @@ public class ReviewService {
 		reviewConceptViewRepository.save(new ReviewConceptView(branch, conceptId, username));
 	}
 
-	private Branch getCreateBranch(String projectKey, String taskKey) {
+	private synchronized Branch getCreateBranch(String projectKey, String taskKey) {
 		Branch branch = branchRepository.findOneByProjectAndTask(projectKey, taskKey);
 		if (branch == null) {
 			branch = branchRepository.save(new Branch(projectKey, taskKey));
