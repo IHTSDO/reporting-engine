@@ -81,27 +81,27 @@ public class AddEntire extends DeltaGenerator {
 				case SYN:		addEntireToSynonyms(thisConcept);
 				}
 
-			} catch (Exception e) {
+			} catch (TermServerScriptException e) {
 				report (thisConcept, null, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.API_ERROR, "Exception while processing: " + e.getMessage() + " : " + SnomedUtils.getStackTrace(e));
 			}
 		}
 		return allConcepts;
 	}
 
-	private void addEntireToPrefTerms(Concept c) throws TermServerScriptException, IOException {
+	private void addEntireToPrefTerms(Concept c) throws TermServerScriptException {
 		List<Description> prefTerms = c.getSynonyms(Acceptability.PREFERRED);
 		for (Description d : prefTerms) {
 			addEntireToTerm(c, d, false, true);
 		}
 	}
 
-	private void addEntireToFSN(Concept c) throws TermServerScriptException, IOException {
+	private void addEntireToFSN(Concept c) throws TermServerScriptException {
 		Description fsn = c.getFSNDescription();
 		addEntireToTerm(c, fsn, true, true);	
 	}
 	
 
-	private void addEntireToSynonyms(Concept c) throws TermServerScriptException, IOException {
+	private void addEntireToSynonyms(Concept c) throws TermServerScriptException {
 		List<Description> synonyms = c.getSynonyms(Acceptability.ACCEPTABLE);
 		for (Description d : synonyms) {
 			addEntireToTerm(c, d, false,false);
@@ -109,7 +109,7 @@ public class AddEntire extends DeltaGenerator {
 		
 	}
 
-	private void addEntireToTerm(Concept c, Description d, boolean isFSN, boolean isPT) throws TermServerScriptException, IOException {
+	private void addEntireToTerm(Concept c, Description d, boolean isFSN, boolean isPT) throws TermServerScriptException {
 
 		//We only work with active terms
 		if (d == null) {
@@ -149,7 +149,7 @@ public class AddEntire extends DeltaGenerator {
 		replaceDescription (c,d,newTerm, ONLY_INITIAL_CHAR_CASE_INSENSITIVE, isPT);
 	}
 
-	private void replaceDescription(Concept c, Description d, String newTerm, String newCaseSignificance, boolean isPT) throws TermServerScriptException, IOException {
+	private void replaceDescription(Concept c, Description d, String newTerm, String newCaseSignificance, boolean isPT) throws TermServerScriptException {
 		
 		if (!d.isActive()) {
 			String msg = "Attempting to inactivate an already inactive description";

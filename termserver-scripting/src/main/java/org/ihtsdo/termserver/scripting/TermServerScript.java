@@ -348,6 +348,7 @@ public abstract class TermServerScript implements RF2Constants {
 			
 			//Are we restarting the file from some line number
 			int startPos = (restartPosition == NOT_SET)?0:restartPosition - 1;
+			Concept c;
 			for (int lineNum = startPos; lineNum < lines.size(); lineNum++) {
 				if (lineNum == 0) {
 					//continue; //skip header row  //Current file format has no header
@@ -356,7 +357,11 @@ public abstract class TermServerScript implements RF2Constants {
 				//File format Concept Type, SCTID, FSN with string fields quoted.  Strip quotes also.
 				String[] lineItems = lines.get(lineNum).replace("\"", "").split(inputFileDelimiter);
 				if (lineItems.length >= 1) {
-					Concept c = loadLine(lineItems);
+					try{
+						c = loadLine(lineItems);
+					} catch (Exception e) {
+						throw new TermServerScriptException("Failed to load line " + lineNum,e);
+					}
 					if (c != null) {
 						allConcepts.add(c);
 					} else {
@@ -486,11 +491,15 @@ public abstract class TermServerScript implements RF2Constants {
 		writeToFile (columnHeaders);
 	}
 
-	protected File ensureFileExists(String fileName) throws IOException {
+	protected File ensureFileExists(String fileName) throws TermServerScriptException {
 		File file = new File(fileName);
-		if (!file.exists()) {
-			file.getParentFile().mkdirs();
-			file.createNewFile();
+		try {
+			if (!file.exists()) {
+				file.getParentFile().mkdirs();
+				file.createNewFile();
+			}
+		} catch (IOException e) {
+			throw new TermServerScriptException("Failed to create file " + fileName,e);
 		}
 		return file;
 	}

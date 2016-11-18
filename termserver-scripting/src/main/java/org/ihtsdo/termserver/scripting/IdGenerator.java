@@ -42,7 +42,7 @@ public class IdGenerator implements RF2Constants{
 		useDummySequence = true;
 	}
 	
-	public String getSCTID(PartionIdentifier partitionIdentifier) throws IOException, TermServerScriptException {
+	public String getSCTID(PartionIdentifier partitionIdentifier) throws TermServerScriptException {
 		if (useDummySequence) {
 			idsAssigned++;
 			return getDummySCTID(partitionIdentifier);
@@ -52,10 +52,12 @@ public class IdGenerator implements RF2Constants{
 		try {
 			sctId = availableSctIds.readLine();
 		} catch (IOException e) {
-			throw new TermServerScriptException("Unable to recover SCTID from file " + fileName);
+			throw new RuntimeException("Unable to recover SCTID from file " + fileName, e);
 		}
+		
 		if (sctId == null || sctId.isEmpty()) {
-			throw new TermServerScriptException("No more SCTIDs in file " + fileName + " need more than " + idsAssigned);
+			//Use RuntimeException to ensure we bomb all the way out.
+			throw new RuntimeException("No more SCTIDs in file " + fileName + " need more than " + idsAssigned);
 		}
 		//Check the SCTID is valid, and belongs to the correct partition
 		SnomedUtils.isValid(sctId, partitionIdentifier, true);  //throw exception if not valid

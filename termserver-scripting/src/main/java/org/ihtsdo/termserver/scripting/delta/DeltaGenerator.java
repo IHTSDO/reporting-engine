@@ -82,7 +82,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 		initialiseFileHeaders();
 	}
 	
-	private void initialiseFileHeaders() throws IOException {
+	private void initialiseFileHeaders() throws TermServerScriptException {
 		String termDir = packageDir +"Delta/Terminology/";
 		String refDir =  packageDir +"Delta/Refset/";
 		conDeltaFilename = termDir + "sct2_Concept_Delta_"+edition+"_" + today + ".txt";
@@ -101,7 +101,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 		writeToRF2File(langDeltaFilename, langHeader);
 	}
 
-	protected void outputRF2(Description d) throws TermServerScriptException, IOException {
+	protected void outputRF2(Description d) throws TermServerScriptException {
 		if (d.isDirty()) {
 			writeToRF2File(descDeltaFilename, d.toRF2());
 		}
@@ -112,7 +112,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 		}
 	}
 	
-	protected void writeToRF2File(String fileName, String[] columns) throws IOException {
+	protected void writeToRF2File(String fileName, String[] columns) throws TermServerScriptException {
 		File file = ensureFileExists(fileName);
 		try(	OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(file, true), StandardCharsets.UTF_8);
 				BufferedWriter bw = new BufferedWriter(osw);

@@ -4,7 +4,7 @@ public class ConceptChange extends Concept {
 	
 	private String newPreferredTerm;
 	private String expectedCurrentPreferredTerm;
-	public String caseSensitivitySctId;
+	public String caseSignificanceSctId;
 	
 	public ConceptChange(String conceptId) {
 		super(conceptId);
@@ -23,10 +23,10 @@ public class ConceptChange extends Concept {
 		this.expectedCurrentPreferredTerm = expectedCurrentPreferredTerm;
 	}
 	public String getCaseSensitivitySctId() {
-		return caseSensitivitySctId;
+		return caseSignificanceSctId;
 	}
-	public void setCaseSensitivitySctId(String caseSensitivitySctId) {
-		this.caseSensitivitySctId = caseSensitivitySctId;
+	public void setCaseSignificanceSctId(String caseSignificanceSctId) {
+		this.caseSignificanceSctId = caseSignificanceSctId;
 	}
 
 }

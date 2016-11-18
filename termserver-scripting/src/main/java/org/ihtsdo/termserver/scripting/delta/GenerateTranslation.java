@@ -126,7 +126,9 @@ public class GenerateTranslation extends DeltaGenerator {
 			}
 			try {
 				generateTranslation(currentState, newState);
-			} catch (Exception e) {
+			} catch (TermServerScriptException e) {
+				//Only catching TermServerScript exception because we want unchecked RuntimeExceptions eg
+				//NullPointer and TotalCatastrophicFailure to stop processing
 				report (thisConcept, null, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.API_ERROR, "Exception while processing: " + e.getMessage() + " : " + SnomedUtils.getStackTrace(e));
 			}
 		}
@@ -134,7 +136,7 @@ public class GenerateTranslation extends DeltaGenerator {
 	}
 
 	private void generateTranslation(Concept currentState,
-			ConceptChange newState) throws TermServerScriptException, IOException {
+			ConceptChange newState) throws TermServerScriptException {
 		//Check that the concept is currently active
 		if (!currentState.isActive()) {
 			report (currentState, null, SEVERITY.HIGH, REPORT_ACTION_TYPE.VALIDATION_ERROR, "Concept is inactive, skipping");
@@ -156,7 +158,8 @@ public class GenerateTranslation extends DeltaGenerator {
 		} else {
 			//Create a new Description to attach to the concept
 			Description d = createTranslatedDescription(newState);
-			report (currentState, d, SEVERITY.LOW, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, "Created new description: " + d);
+			String cs = ", with case significance " + SnomedUtils.translateCaseSignificanceFromSctId(d.getCaseSignificance());
+			report (currentState, d, SEVERITY.LOW, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, "Created new description: " + d + cs);
 			outputRF2(d);
 		}
 	}
@@ -178,7 +181,7 @@ public class GenerateTranslation extends DeltaGenerator {
 		}
 	}
 
-	private Description createTranslatedDescription(ConceptChange newState) throws IOException, TermServerScriptException {
+	private Description createTranslatedDescription(ConceptChange newState) throws TermServerScriptException {
 		Description d = new Description();
 		d.setDescriptionId(descIdGenerator.getSCTID(PartionIdentifier.DESCRIPTION));
 		d.setConceptId(newState.getConceptId());
@@ -224,11 +227,8 @@ public class GenerateTranslation extends DeltaGenerator {
 			ConceptChange c = new ConceptChange(lineItems[0]);
 			c.setExpectedCurrentPreferredTerm(lineItems[1]);
 			c.setNewPreferredTerm(lineItems[4]);
-			if (lineItems[5].toUpperCase().equals("YES")) {
-				c.setCaseSensitivitySctId(ENITRE_TERM_CASE_SENSITIVE);
-			} else {
-				c.setCaseSensitivitySctId(ENTIRE_TERM_CASE_INSENSITIVE);
-			}
+			String caseSignificanceSctId = SnomedUtils.translateCaseSignificanceToSctId(lineItems[5]);
+			c.setCaseSignificanceSctId(caseSignificanceSctId);
 			return c;
 		}
 		return null;
