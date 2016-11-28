@@ -2,6 +2,10 @@
 package org.ihtsdo.termserver.scripting.domain;
 
 import javax.annotation.Generated;
+
+import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
@@ -34,12 +38,15 @@ public class Relationship implements RF2Constants, Comparable<Relationship> {
 	private long groupId;
 	@SerializedName("characteristicType")
 	@Expose
-	private CHARACTERISTIC_TYPE characteristicType;
+	private CharacteristicType characteristicType;
 	@SerializedName("modifier")
 	@Expose
-	private MODIFER modifier;
+	private Modifier modifier;
 	
 	private Concept source;
+	
+	public static final String[] rf2Header = new String[] {"id","effectiveTime","active","moduleId","sourceId","destinationId",
+															"relationshipGroup","typeId","characteristicTypeId","modifierId"};
 
 	/**
 	 * No args constructor for use in serialization
@@ -212,7 +219,7 @@ public class Relationship implements RF2Constants, Comparable<Relationship> {
 	 * @return
 	 *	 The characteristicType
 	 */
-	public CHARACTERISTIC_TYPE getCharacteristicType() {
+	public CharacteristicType getCharacteristicType() {
 		return characteristicType;
 	}
 
@@ -221,7 +228,7 @@ public class Relationship implements RF2Constants, Comparable<Relationship> {
 	 * @param characteristicType
 	 *	 The characteristicType
 	 */
-	public void setCharacteristicType(CHARACTERISTIC_TYPE characteristicType) {
+	public void setCharacteristicType(CharacteristicType characteristicType) {
 		this.characteristicType = characteristicType;
 	}
 
@@ -230,7 +237,7 @@ public class Relationship implements RF2Constants, Comparable<Relationship> {
 	 * @return
 	 *	 The modifier
 	 */
-	public MODIFER getModifier() {
+	public Modifier getModifier() {
 		return modifier;
 	}
 
@@ -239,7 +246,7 @@ public class Relationship implements RF2Constants, Comparable<Relationship> {
 	 * @param modifier
 	 *	 The modifier
 	 */
-	public void setModifier(MODIFER modifier) {
+	public void setModifier(Modifier modifier) {
 		this.modifier = modifier;
 	}
 
@@ -305,6 +312,18 @@ public class Relationship implements RF2Constants, Comparable<Relationship> {
 				}
 			}
 		}
+	}
+
+	//"id","effectiveTime","active",
+	//"moduleId","sourceId","destinationId",
+	//"relationshipGroup","typeId",
+	//"characteristicTypeId","modifierId"};
+	public String[] toRF2() throws TermServerScriptException {
+		return new String[] {relationshipId, effectiveTime, (active?"1":"0"), 
+							moduleId, sourceId, target.getConceptId(),
+							Long.toString(groupId), type.getConceptId(), 
+							SnomedUtils.translateCharacteristicType(characteristicType), 
+							SnomedUtils.translateModifier(modifier)};
 	}
 
 }

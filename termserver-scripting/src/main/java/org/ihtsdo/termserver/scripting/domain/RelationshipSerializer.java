@@ -29,7 +29,7 @@ public class RelationshipSerializer implements JsonSerializer<Relationship> {
 		target.addProperty("active", r.getTarget().isActive());
 		target.addProperty("conceptId", r.getTarget().getConceptId());
 		target.addProperty("fsn", r.getTarget().getFsn());
-		target.addProperty("definitionStatus", r.getTarget().getDefinitionStatus());
+		target.addProperty("definitionStatus", r.getTarget().getDefinitionStatus().toString());
 		json.add("target", target);
 		
 		json.addProperty("sourceId", r.getSourceId());

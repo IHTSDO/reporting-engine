@@ -13,8 +13,12 @@ public interface RF2Constants {
 	static Concept DRUG_PREPARATION = new Concept("105904009","Type of drug preparation (qualifier value)");
 	static String ACETAMINOPHEN = "acetaminophen";
 	static String PARACETAMOL = "paracetamol";
+	
+	//Description Type SCTIDs
 	static String SYN = "900000000000013009";
 	static String FSN = "900000000000003001";
+	static String DEF = "900000000000550004"; 
+	
 	static final String FULLY_DEFINED_SCTID = "900000000000073002";
 	static final String FULLY_SPECIFIED_NAME = "900000000000003001";
 	final Long SNOMED_ROOT_CONCEPT = 138875005L;
@@ -31,30 +35,56 @@ public interface RF2Constants {
 	final String INGREDIENT_SEPARATOR = "+";
 	final String INGREDIENT_SEPARATOR_ESCAPED = "\\+";
 	
+	final String CONCEPT_INT_PARTITION = "00";
+	final String DESC_INT_PARTITION = "01";
+	final String REL_INT_PARTITION = "02";
+	
 	enum InactivationIndicator {DUPLICATE, OUTDATED, ERRONEOUS, LIMITED, MOVED_ELSEWHERE, 
 		PENDING_MOVE, INAPPROPRIATE, CONCEPT_NON_CURRENT, RETIRED};
 	
 	static final String GB_ENG_LANG_REFSET = "900000000000508004";
 	static final String US_ENG_LANG_REFSET = "900000000000509007";
+	static final String[] ENGLISH_DIALECTS = {GB_ENG_LANG_REFSET, US_ENG_LANG_REFSET};
+	
+	static final String PREFERRED_TERM = "900000000000548007";
+	static final String ACCEPTABLE_TERM = "900000000000549004";
+	
+	static final String ENITRE_TERM_CASE_SENSITIVE = "900000000000017005";
+	static final String ENTIRE_TERM_CASE_INSENSITIVE = "900000000000448009";
+	static final String ONLY_INITIAL_CHAR_CASE_INSENSITIVE = "900000000000020002";
 	
 	final public String SEMANTIC_TAG_START = "(";
 	
-	public enum CHARACTERISTIC_TYPE {	STATED_RELATIONSHIP, INFERRED_RELATIONSHIP, 
+	public enum PartionIdentifier {CONCEPT, DESCRIPTION, RELATIONSHIP};
+	
+	public enum CharacteristicType {	STATED_RELATIONSHIP, INFERRED_RELATIONSHIP, 
 										QUALIFYING_RELATIONSHIP, ADDITIONAL_RELATIONSHIP, ALL};
+										
+	public static String SCTID_STATED_RELATIONSHIP = "900000000000010007";
+	public static String SCTID_INFERRED_RELATIONSHIP = "900000000000011006";
+	public static String SCTID_QUALIFYING_RELATIONSHIP = "900000000000225001";
+	public static String SCTID_ADDITIONAL_RELATIONSHIP = "900000000000227009";
 
-	public enum DEFINITION_STATUS { PRIMITIVE, FULLY_DEFINED };
+	public enum DefinitionStatus { PRIMITIVE, FULLY_DEFINED };
+	public static String SCTID_PRIMITIVE = "900000000000074008";
+	public static String SCTID_FULLY_DEFINED = "900000000000073002";
 	
-	public enum MODIFER { EXISTENTIAL, UNIVERSAL};
+	public enum Modifier { EXISTENTIAL, UNIVERSAL};
+	public static String SCTID_EXISTENTIAL_MODIFIER = "900000000000451002";
+	public static String SCTID_UNIVERSAL_MODIFIER = "900000000000450001";
 	
-	public enum ACTIVE_STATE { ACTIVE, INACTIVE, BOTH };
 	
-	public enum ACCEPTABILITY { ACCEPTABLE, PREFERRED };
+	public enum ActiveState { ACTIVE, INACTIVE, BOTH };
+	
+	public enum Acceptability { ACCEPTABLE, PREFERRED };
 	
 	public enum ConceptType { PRODUCT_STRENGTH, MEDICINAL_ENTITY, MEDICINAL_FORM, GROUPER, PRODUCT_ROLE, UNKNOWN };
 	
-	public enum CARDINALITY { AT_LEAST_ONE, EXACTLY_ONE };
+	public enum Cardinality { AT_LEAST_ONE, EXACTLY_ONE };
 	
-	public enum DESCRIPTION_TYPE { FSN, SYNONYM };
+	public enum DescriptionType { FSN, SYNONYM, DEFINITION};
+	
+	public enum ChangeStatus { CHANGE_MADE, CHANGE_NOT_REQUIRED, NO_CHANGE_MADE };
 	
 	public static final String FIELD_DELIMITER = "\t";
 	public static final String LINE_DELIMITER = "\r\n";
@@ -94,5 +124,15 @@ public interface RF2Constants {
 	public static final int DES_IDX_TYPEID = 6;
 	public static final int DES_IDX_TERM = 7;
 	public static final int DES_IDX_CASESIGNIFICANCEID = 8;
+	
+	// Language Refset columns
+	// id	effectiveTime	active	moduleId	refsetId	referencedComponentId	acceptabilityId
+	public static final int LANG_IDX_ID = 0;
+	public static final int LANG_IDX_EFFECTIVETIME = 1;
+	public static final int LANG_IDX_ACTIVE = 2;
+	public static final int LANG_IDX_MODULID = 3;
+	public static final int LANG_IDX_REFSETID = 4;
+	public static final int LANG_IDX_REFCOMPID = 5;
+	public static final int LANG_IDX_ACCEPTABILITY_ID = 6;
 
 }

@@ -4,6 +4,7 @@ import static org.junit.Assert.*;
 
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants.ConceptType;
+import org.ihtsdo.termserver.scripting.fixes.drugs.DrugProductFix;
 import org.junit.Test;
 
 public class DrugProductFixTest {

@@ -4,13 +4,14 @@ package org.ihtsdo.termserver.scripting.domain;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.Generated;
 
-import org.ihtsdo.termserver.scripting.fixes.TermServerFix;
-import org.ihtsdo.termserver.scripting.fixes.TermServerFixException;
+import org.ihtsdo.termserver.scripting.TermServerScript;
+import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.ActiveState;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
@@ -35,7 +36,7 @@ public class Concept implements RF2Constants {
 	private String fsn;
 	@SerializedName("definitionStatus")
 	@Expose
-	private String definitionStatus;
+	private DefinitionStatus definitionStatus;
 	@SerializedName("preferredSynonym")
 	@Expose
 	private String preferredSynonym;
@@ -67,8 +68,10 @@ public class Concept implements RF2Constants {
 		this.reviewer = reviewer;
 	}
 
-	List<Concept> parents = new ArrayList<Concept>();
-	List<Concept> children = new ArrayList<Concept>();
+	List<Concept> statedParents = new ArrayList<Concept>();
+	List<Concept> inferredParents = new ArrayList<Concept>();
+	List<Concept> statedChildren = new ArrayList<Concept>();
+	List<Concept> inferredChildren = new ArrayList<Concept>();
 	
 	public Concept(String conceptId) {
 		this.conceptId = conceptId;
@@ -124,11 +127,11 @@ public class Concept implements RF2Constants {
 		this.fsn = fsn;
 	}
 
-	public String getDefinitionStatus() {
+	public DefinitionStatus getDefinitionStatus() {
 		return definitionStatus;
 	}
 
-	public void setDefinitionStatus(String definitionStatus) {
+	public void setDefinitionStatus(DefinitionStatus definitionStatus) {
 		this.definitionStatus = definitionStatus;
 	}
 
@@ -152,20 +155,26 @@ public class Concept implements RF2Constants {
 		return relationships;
 	}
 	
-	public List<Relationship> getRelationships(CHARACTERISTIC_TYPE characteristicType, ACTIVE_STATE state) {
+	public List<Relationship> getRelationships(CharacteristicType characteristicType, ActiveState state, String effectiveTime) {
 		List<Relationship> matches = new ArrayList<Relationship>();
 		for (Relationship r : relationships) {
-			if (characteristicType.equals(CHARACTERISTIC_TYPE.ALL) || r.getCharacteristicType().equals(characteristicType)) {
-				if (state.equals(ACTIVE_STATE.BOTH) || (state.equals(ACTIVE_STATE.ACTIVE) && r.isActive()) ||
-						(state.equals(ACTIVE_STATE.INACTIVE) && !r.isActive())) {
-					matches.add(r);
+			if (effectiveTime == null || r.getEffectiveTime().equals(effectiveTime)) {
+				if (characteristicType.equals(CharacteristicType.ALL) || r.getCharacteristicType().equals(characteristicType)) {
+					if (state.equals(ActiveState.BOTH) || (state.equals(ActiveState.ACTIVE) && r.isActive()) ||
+							(state.equals(ActiveState.INACTIVE) && !r.isActive())) {
+						matches.add(r);
+					}
 				}
 			}
 		}
 		return matches;
 	}
 	
-	public List<Relationship> getRelationships(CHARACTERISTIC_TYPE characteristicType, Concept type, ACTIVE_STATE state) {
+	public List<Relationship> getRelationships(CharacteristicType characteristicType, ActiveState state) {
+		return getRelationships(characteristicType, state, null);
+	}
+	
+	public List<Relationship> getRelationships(CharacteristicType characteristicType, Concept type, ActiveState state) {
 		List<Relationship> potentialMatches = getRelationships(characteristicType, state);
 		List<Relationship> matches = new ArrayList<Relationship>();
 		for (Relationship r : potentialMatches) {
@@ -222,11 +231,11 @@ public class Concept implements RF2Constants {
 		Relationship r = new Relationship();
 		r.setActive(true);
 		r.setGroupId(0);
-		r.setCharacteristicType(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP);
+		r.setCharacteristicType(CharacteristicType.STATED_RELATIONSHIP);
 		r.setSourceId(this.getConceptId());
 		r.setType(type);
 		r.setTarget(target);
-		r.setModifier(MODIFER.EXISTENTIAL);
+		r.setModifier(Modifier.EXISTENTIAL);
 		relationships.add(r);
 	}
 
@@ -246,12 +255,12 @@ public class Concept implements RF2Constants {
 		relationships.add(r);
 	}
 	
-	public void addChild(Concept c) {
-		children.add(c);
+	public void addChild(CharacteristicType characteristicType, Concept c) {
+		getChildren(characteristicType).add(c);
 	}
 	
-	public void addParent(Concept p) {
-		parents.add(p);
+	public void addParent(CharacteristicType characteristicType, Concept p) {
+		getParents(characteristicType).add(p);
 	}
 
 	public ConceptType getConceptType() {
@@ -276,50 +285,78 @@ public class Concept implements RF2Constants {
 		}
 	}
 	
-	public Set<Concept> getDescendents(int depth) {
+	public Set<Concept> getDescendents(int depth) throws TermServerScriptException {
+		return getDescendents(depth, CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE);
+	}
+	
+	public Set<Concept> getDescendents(int depth, CharacteristicType characteristicType, ActiveState activeState) throws TermServerScriptException {
 		Set<Concept> allDescendents = new HashSet<Concept>();
-		this.populateAllDescendents(allDescendents, depth);
+		this.populateAllDescendents(allDescendents, depth, characteristicType, activeState);
 		return allDescendents;
 	}
 	
-	private void populateAllDescendents(Set<Concept> descendents, int depth) {
-		for (Concept thisChild : children) {
-			descendents.add(thisChild);
-			if (depth == NOT_SET || depth > 1) {
-				int newDepth = depth == NOT_SET ? NOT_SET : depth - 1;
-				thisChild.populateAllDescendents(descendents, newDepth);
+	private void populateAllDescendents(Set<Concept> descendents, int depth, CharacteristicType characteristicType, ActiveState activeState) throws TermServerScriptException {
+		for (Concept thisChild : getChildren(characteristicType)) {
+			if (activeState.equals(ActiveState.BOTH) || thisChild.active == SnomedUtils.translateActive(activeState)) {
+				descendents.add(thisChild);
+				if (depth == NOT_SET || depth > 1) {
+					int newDepth = depth == NOT_SET ? NOT_SET : depth - 1;
+					thisChild.populateAllDescendents(descendents, newDepth, characteristicType, activeState);
+				}
 			}
 		}
 	}
+	
+	private List<Concept> getChildren(CharacteristicType characteristicType) {
+		switch (characteristicType) {
+			case STATED_RELATIONSHIP : return statedChildren;
+			case INFERRED_RELATIONSHIP : return inferredChildren;
+			default:
+		}
+		return null;
+	}
 
-	public List<Description> getDescriptions(ACCEPTABILITY acceptability, DESCRIPTION_TYPE descriptionType, ACTIVE_STATE active) throws TermServerFixException {
+	public List<Description> getDescriptions(Acceptability Acceptability, DescriptionType descriptionType, ActiveState activeState) throws TermServerScriptException {
 		List<Description> matchingDescriptions = new ArrayList<Description>();
-		for (Description thisDescription : descriptions) {
-			if (
-					( active.equals(ACTIVE_STATE.BOTH) || thisDescription.isActive() == translateActive(active)) &&
-					( thisDescription.getAcceptabilityMap() != null && thisDescription.getAcceptabilityMap().containsValue(acceptability)) &&
+		for (Description thisDescription : getDescriptions(activeState)) {
+			if (	( thisDescription.getAcceptabilityMap() != null && thisDescription.getAcceptabilityMap().containsValue(Acceptability)) &&
 					( descriptionType == null || thisDescription.getType().equals(descriptionType) )
 				) {
 				//A preferred description can be preferred in either dialect, but if we're looking for an acceptable one, 
 				//then it must not also be preferred in the other dialect
-				if (acceptability.equals(ACCEPTABILITY.PREFERRED) || !thisDescription.getAcceptabilityMap().containsValue(ACCEPTABILITY.PREFERRED)) {
+				if (Acceptability.equals(Acceptability.PREFERRED) || !thisDescription.getAcceptabilityMap().containsValue(Acceptability.PREFERRED)) {
 					matchingDescriptions.add(thisDescription);
 				}
 			} else {
 				if (thisDescription.getAcceptabilityMap() == null && thisDescription.isActive()) {
-					TermServerFix.warn (thisDescription + " is active with no acceptability map");
+					TermServerScript.warn (thisDescription + " is active with no Acceptability map");
 				}
 			}
 		}
 		return matchingDescriptions;
 	}
-
-	private static boolean translateActive(ACTIVE_STATE active) throws TermServerFixException {
-		switch (active) {
-			case ACTIVE : return true;
-			case INACTIVE : return false;
-			default: throw new TermServerFixException("Unable to translate " + active + " into boolean state");
+	
+	public List<Description> getDescriptions(String langRefsetId, Acceptability targetAcceptability, DescriptionType descriptionType, ActiveState active) throws TermServerScriptException {
+		//Get the matching terms, and then pick the ones that have the appropriate Acceptability for the specified Refset
+		List<Description> matchingDescriptions = new ArrayList<Description>();
+		for (Description d : getDescriptions(targetAcceptability, descriptionType, active)) {
+			Acceptability Acceptability = d.getAcceptabilityMap().get(langRefsetId);
+			if (Acceptability!= null && Acceptability.equals(targetAcceptability)) {
+				//Need to check the Acceptability because the first function might match on some other language
+				matchingDescriptions.add(d);
+			}
 		}
+		return matchingDescriptions;
+	}
+	
+	public List<Description> getDescriptions(ActiveState a) {
+		List<Description> results = new ArrayList<Description>();
+		for (Description d : descriptions) {
+			if (SnomedUtils.descriptionHasActiveState(d, a)) {
+					results.add(d);
+			}
+		}
+		return results;
 	}
 
 	public void addDescription(Description description) {
@@ -327,8 +364,12 @@ public class Concept implements RF2Constants {
 		
 	}
 
-	public List<Concept> getParents() {
-		return new ArrayList<Concept>(parents);
+	public List<Concept> getParents(CharacteristicType characteristicType) {
+		switch (characteristicType) {
+			case STATED_RELATIONSHIP : return new ArrayList<Concept>(statedParents);
+			case INFERRED_RELATIONSHIP: return new ArrayList<Concept>(inferredParents);
+			default: return null;
+		}
 	}
 	
 	public List<String>getAssertionFailures() {
@@ -345,6 +386,52 @@ public class Concept implements RF2Constants {
 
 	public void setAssignedAuthor(String assignedAuthor) {
 		this.assignedAuthor = assignedAuthor;
+	}
+
+	public Description getFSNDescription() {
+		for (Description d : descriptions) {
+			if (d.isActive() && d.getType().equals(DescriptionType.FSN)) {
+				return d;
+			}
+		}
+		return null;
+	}
+	
+	public List<Description> getSynonyms(Acceptability Acceptability) {
+		List<Description> synonyms = new ArrayList<Description>();
+		for (Description d : descriptions) {
+			if (d.isActive() && d.getAcceptabilityMap().values().contains(Acceptability) && d.getType().equals(DescriptionType.SYNONYM)) {
+				synonyms.add(d);
+			}
+		}
+		return synonyms;
+	}
+
+	public boolean hasTerm(String term) {
+		boolean hasTerm = false;
+		for (Description d : descriptions) {
+			if (d.getTerm().equals(term)) {
+				hasTerm = true;
+				break;
+			}
+		}
+		return hasTerm;
+	}
+
+	public Description findTerm(String term) {
+		//First look for a match in the active terms, then try inactive
+		for (Description d : getDescriptions(ActiveState.ACTIVE)) {
+			if (d.getTerm().equals(term)) {
+				return d;
+			}
+		}
+		
+		for (Description d : getDescriptions(ActiveState.INACTIVE)) {
+			if (d.getTerm().equals(term)) {
+				return d;
+			}
+		}
+		return null;
 	}
 
 }
