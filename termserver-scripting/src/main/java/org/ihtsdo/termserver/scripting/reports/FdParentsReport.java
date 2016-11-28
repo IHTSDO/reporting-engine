@@ -47,18 +47,18 @@ public class FdParentsReport extends TermServerScript{
 	Concept subHierarchy = null;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
-		FdParentsReport fix = new FdParentsReport();
+		FdParentsReport report = new FdParentsReport();
 		try {
-			fix.init(args);
-			fix.loadProjectSnapshot();  //Load FSNs only
-			fix.reportFdParents();
-			fix.reportStats();
+			report.init(args);
+			report.loadProjectSnapshot();  //Load FSNs only
+			report.reportFdParents();
+			report.reportStats();
 		} catch (Exception e) {
 			println("Failed to produce Changed Relationship Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
-			fix.finish();
-			for (String err : fix.criticalErrors) {
+			report.finish();
+			for (String err : report.criticalErrors) {
 				println (err);
 			}
 		}

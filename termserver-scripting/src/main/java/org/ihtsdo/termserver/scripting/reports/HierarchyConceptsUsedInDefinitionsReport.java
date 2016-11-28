@@ -38,16 +38,16 @@ public class HierarchyConceptsUsedInDefinitionsReport extends TermServerScript{
 	String hierarchy = "49062001"; // |Device (physical object)|
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
-		HierarchyConceptsUsedInDefinitionsReport fix = new HierarchyConceptsUsedInDefinitionsReport();
+		HierarchyConceptsUsedInDefinitionsReport report = new HierarchyConceptsUsedInDefinitionsReport();
 		try {
-			fix.init(args);
-			fix.loadProjectSnapshot();  //Load FSNs only
-			fix.reportConceptsUsedInDefinition();
+			report.init(args);
+			report.loadProjectSnapshot();  //Load FSNs only
+			report.reportConceptsUsedInDefinition();
 		} catch (Exception e) {
 			println("Failed to validate laterality due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
-			fix.finish();
+			report.finish();
 		}
 	}
 

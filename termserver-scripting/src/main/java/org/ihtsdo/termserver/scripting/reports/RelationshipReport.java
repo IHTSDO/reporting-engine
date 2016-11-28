@@ -36,18 +36,18 @@ public class RelationshipReport extends TermServerScript{
 	ActiveState filterOnActiveState = null;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
-		RelationshipReport fix = new RelationshipReport();
+		RelationshipReport report = new RelationshipReport();
 		try {
-			fix.init(args);
-			fix.loadProjectSnapshotAndDelta();  //Load FSNs only
+			report.init(args);
+			report.loadProjectSnapshotAndDelta();  //Load FSNs only
 			//fix.detectChangedRelationships();
-			fix.reportActiveRelationships();
+			report.reportActiveRelationships();
 		} catch (Exception e) {
 			println("Failed to produce Changed Relationship Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
-			fix.finish();
-			for (String err : fix.criticalErrors) {
+			report.finish();
+			for (String err : report.criticalErrors) {
 				println (err);
 			}
 		}

@@ -30,17 +30,17 @@ public class MismatchedRelationships extends TermServerScript{
 	String targetAttributeType = "246075003"; // | Causative agent (attribute) |;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
-		MismatchedRelationships fix = new MismatchedRelationships();
+		MismatchedRelationships report = new MismatchedRelationships();
 		try {
-			fix.init(args);
-			fix.loadProjectSnapshot();
-			fix.detectMismatchedRelationships();
+			report.init(args);
+			report.loadProjectSnapshot();
+			report.detectMismatchedRelationships();
 		} catch (Exception e) {
 			println("Failed to produce Changed Relationship Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
-			fix.finish();
-			for (String err : fix.criticalErrors) {
+			report.finish();
+			for (String err : report.criticalErrors) {
 				println (err);
 			}
 		}

@@ -32,18 +32,18 @@ public class LostRelationships extends TermServerScript{
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
-		LostRelationships fix = new LostRelationships();
+		LostRelationships report = new LostRelationships();
 		try {
-			fix.init(args);
-			fix.loadProjectSnapshotAndDelta();
-			fix.populateProdRoleDesc();
-			fix.detectLostRelationships();
+			report.init(args);
+			report.loadProjectSnapshotAndDelta();
+			report.populateProdRoleDesc();
+			report.detectLostRelationships();
 		} catch (Exception e) {
 			println("Failed to produce Lost Relationship Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
-			fix.finish();
-			for (String err : fix.criticalErrors) {
+			report.finish();
+			for (String err : report.criticalErrors) {
 				println (err);
 			}
 		}

@@ -35,17 +35,17 @@ public class SubHierarchyConceptsReport extends TermServerScript{
 	Concept subHierarchy;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
-		SubHierarchyConceptsReport fix = new SubHierarchyConceptsReport();
+		SubHierarchyConceptsReport report = new SubHierarchyConceptsReport();
 		try {
-			fix.init(args);
-			fix.loadProjectSnapshotAndDelta();  //Load FSNs only
-			fix.reportConcepts();
+			report.init(args);
+			report.loadProjectSnapshotAndDelta();  //Load FSNs only
+			report.reportConcepts();
 		} catch (Exception e) {
 			println("Failed to produce Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
-			fix.finish();
-			for (String err : fix.criticalErrors) {
+			report.finish();
+			for (String err : report.criticalErrors) {
 				println (err);
 			}
 		}

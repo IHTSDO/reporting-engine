@@ -34,16 +34,16 @@ public class ListSemanticTagsByHierarchy extends TermServerScript{
 	GraphLoader gl = GraphLoader.getGraphLoader();
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
-		ListSemanticTagsByHierarchy fix = new ListSemanticTagsByHierarchy();
+		ListSemanticTagsByHierarchy report = new ListSemanticTagsByHierarchy();
 		try {
-			fix.init(args);
-			fix.loadProjectSnapshot();  //Load FSNs only
-			fix.listSemanticTags();
+			report.init(args);
+			report.loadProjectSnapshot();  //Load FSNs only
+			report.listSemanticTags();
 		} catch (Exception e) {
 			println("Failed to validate laterality due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
-			fix.finish();
+			report.finish();
 		}
 	}
 

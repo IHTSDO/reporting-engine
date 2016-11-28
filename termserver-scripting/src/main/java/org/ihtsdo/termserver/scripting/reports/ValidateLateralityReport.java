@@ -30,17 +30,17 @@ public class ValidateLateralityReport extends TermServerScript{
 	GraphLoader gl = GraphLoader.getGraphLoader();
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
-		ValidateLateralityReport fix = new ValidateLateralityReport();
+		ValidateLateralityReport report = new ValidateLateralityReport();
 		try {
-			fix.init(args);
-			fix.loadProjectSnapshot();  //Load FSNs only
-			List<Concept> lateralizable = fix.processFile();
-			fix.validateLaterality(lateralizable);
+			report.init(args);
+			report.loadProjectSnapshot();  //Load FSNs only
+			List<Concept> lateralizable = report.processFile();
+			report.validateLaterality(lateralizable);
 		} catch (Exception e) {
 			println("Failed to validate laterality due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
-			fix.finish();
+			report.finish();
 		}
 	}
 
