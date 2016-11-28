@@ -150,18 +150,26 @@ public class GenerateTranslation extends DeltaGenerator {
 		}
 		
 		//Do we already have this term?  Just add the langrefset entry if so.
-		if (currentState.hasTerm(newState.getNewPreferredTerm())) {
+		/*if (currentState.hasTerm(newState.getNewPreferredTerm())) {
 			Description d = currentState.findTerm(newState.getNewPreferredTerm());
 			promoteTerm (d);
 			report (currentState, d, SEVERITY.HIGH, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, "Promoted langrefset on existing term: " + d);
 			outputRF2(d);
-		} else {
-			//Create a new Description to attach to the concept
-			Description d = createTranslatedDescription(newState);
-			String cs = ", with case significance " + SnomedUtils.translateCaseSignificanceFromSctId(d.getCaseSignificance());
-			report (currentState, d, SEVERITY.LOW, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, "Created new description: " + d + cs);
-			outputRF2(d);
+		} else {*/
+		
+		String msg = "Created new description: ";
+		SEVERITY severity = SEVERITY.LOW;
+		//Do we already have this term?  Add a warning if so.
+		if (currentState.hasTerm(newState.getNewPreferredTerm())) {
+			severity = SEVERITY.HIGH;
+			msg = "Created duplicate new description: ";
 		}
+		
+		//Create a new Description to attach to the concept
+		Description d = createTranslatedDescription(newState);
+		String cs = ", with case significance " + SnomedUtils.translateCaseSignificanceFromSctId(d.getCaseSignificance());
+		report (currentState, d, severity, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, msg + d + cs);
+		outputRF2(d);
 	}
 
 	private void promoteTerm(Description d) {
