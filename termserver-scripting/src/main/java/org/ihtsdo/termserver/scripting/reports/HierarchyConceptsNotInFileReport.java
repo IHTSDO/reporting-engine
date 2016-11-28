@@ -7,6 +7,7 @@ import java.io.PrintStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -15,66 +16,59 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import org.ihtsdo.termserver.scripting.GraphLoader;
-import org.ihtsdo.termserver.scripting.IdGenerator;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExportType;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExtractType;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-
-import com.google.common.collect.HashMultiset;
-import com.google.common.collect.Multiset;
 
 /**
- * Reports all concepts in a hierarchy that are used in the definition of other concepts.
+ * Reports all concepts that have been defined (stated) using one or more 
+ * Fully Defined Parents
  */
-public class HierarchyConceptsUsedInDefinitionsReport extends TermServerScript{
+public class HierarchyConceptsNotInFileReport extends TermServerScript{
 	
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	GraphLoader gl = GraphLoader.getGraphLoader();
 	String publishedArchive;
+	String file2;
+	String file2Purpose = "UsedToDefineConcepts";
 	String hierarchy = "49062001"; // |Device (physical object)|
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
-		HierarchyConceptsUsedInDefinitionsReport fix = new HierarchyConceptsUsedInDefinitionsReport();
+		HierarchyConceptsNotInFileReport report = new HierarchyConceptsNotInFileReport();
 		try {
-			fix.init(args);
-			fix.loadProjectSnapshot();  //Load FSNs only
-			fix.reportConceptsUsedInDefinition();
+			report.init(args);
+			report.loadProjectSnapshot();  //Load FSNs only
+			List<Concept> conceptsInFile = report.processFile();
+			List<Concept> conceptsInFile2 = new ArrayList<Concept>();
+			if (report.file2 != null) {
+				conceptsInFile2 = report.processFile(new File(report.file2));
+			}
+			report.inHierarchyAndNotFile(conceptsInFile, conceptsInFile2);
 		} catch (Exception e) {
 			println("Failed to validate laterality due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
-			fix.finish();
+			report.finish();
 		}
 	}
 
-	private void reportConceptsUsedInDefinition() throws TermServerScriptException {
-
+	private void inHierarchyAndNotFile(List<Concept> conceptsInFile, List<Concept> conceptsInFile2) throws TermServerScriptException {
+		//For all active concepts in the report hierarchy, report if the concept is not
+		//also in the supplied file
 		Concept sourceHierarchy = gl.getConcept(hierarchy);
 		Set<Concept> sourceConcepts = filterActive(sourceHierarchy.getDescendents(NOT_SET));
 		println ("Active source concepts number " + sourceConcepts.size());
-		Multiset<String> tags = HashMultiset.create();
-		for (Concept thisConcept : gl.getAllConcepts()) {
-			if (sourceConcepts.contains(thisConcept) || !thisConcept.isActive()) {
-				continue;
-			}
-			for (Relationship thisRelationship : thisConcept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)){
-				//Does this relationship use one of our source concepts as a target?
-				if (sourceConcepts.contains(thisRelationship.getTarget())) {
-					report (thisRelationship.getTarget(), thisConcept);
-					tags.add(SnomedUtils.deconstructFSN(thisConcept.getFsn())[1]);
-					break;
-				}
-			}
-		}
 		
-		for (String tag : tags.elementSet()) {
-			println ("\t" + tag + ": " + tags.count(tag));
+		for (Concept c : sourceConcepts) {
+			if (!conceptsInFile.contains(c)) {
+				report (c, conceptsInFile2.contains(c));
+			}
 		}
 	}
+	
 
 	private Set<Concept> filterActive(Set<Concept> fullSet) {
 		Set <Concept> activeConcepts = new HashSet<Concept>();
@@ -86,12 +80,13 @@ public class HierarchyConceptsUsedInDefinitionsReport extends TermServerScript{
 		return activeConcepts;
 	}
 
-	protected void report (Concept c, Concept usedIn) {
+
+	protected void report (Concept c, boolean inFile2) {
 		String line = 	c.getConceptId() + COMMA_QUOTE + 
-						c.getFsn().replace(",", "") + QUOTE_COMMA_QUOTE +
-						usedIn + QUOTE_COMMA +
-						usedIn.getDefinitionStatus();
-		
+						c.getFsn() + QUOTE_COMMA + 
+						c.getEffectiveTime() + COMMA_QUOTE +
+						c.getDefinitionStatus() + QUOTE_COMMA +
+						(inFile2 ? "YES":"NO") ;
 		writeToFile(line);
 	}
 	
@@ -102,6 +97,10 @@ public class HierarchyConceptsUsedInDefinitionsReport extends TermServerScript{
 			if (args[x].equals("-z")) {
 				publishedArchive = args[++x];
 			}
+			
+			if (args[x].equals("-f2")) {
+				file2 = args[++x];
+			}
 		}
 		
 		print ("Concepts in which Hierarchy? [" + hierarchy + "]: ");
@@ -110,13 +109,18 @@ public class HierarchyConceptsUsedInDefinitionsReport extends TermServerScript{
 			hierarchy = response;
 		}
 		
+		print ("What header for existing in 2nd file? [" + file2Purpose + "]: ");
+		response = STDIN.nextLine().trim();
+		if (!response.isEmpty()) {
+			file2Purpose = response;
+		}
+		
 		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
-		//String reportFilename = "changed_relationships_" + project.toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
 		String reportFilename = getScriptName() + "_" + project.toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToFile ("Concept, FSN, UsedToDefine, Defn_Status");
+		writeToFile ("Concept, FSN, EffectiveTime, DefinitionStatus," + file2Purpose);
 	}
 
 	private void loadProjectSnapshot() throws SnowOwlClientException, TermServerScriptException, InterruptedException {
@@ -127,7 +131,6 @@ public class HierarchyConceptsUsedInDefinitionsReport extends TermServerScript{
 		} else {
 			archives = new File[] { new File (project + "_snapshot_" + env + ".zip")};
 		}
-
 		//Do we already have a copy of the project locally?  If not, recover it.
 		if (!archives[SNAPSHOT].exists()) {
 			println ("Recovering snapshot state of " + project + " from TS (" + env + ")");

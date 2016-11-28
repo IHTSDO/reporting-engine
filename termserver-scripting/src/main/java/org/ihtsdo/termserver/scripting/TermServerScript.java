@@ -340,10 +340,14 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	protected List<Concept> processFile() throws TermServerScriptException {
+		return processFile(inputFile);
+	}
+	
+	protected List<Concept> processFile(File file) throws TermServerScriptException {
 		List<Concept> allConcepts = new ArrayList<Concept>();
-		debug ("Loading input file " + inputFile.getAbsolutePath());
+		debug ("Loading input file " + file.getAbsolutePath());
 		try {
-			List<String> lines = Files.readLines(inputFile, Charsets.UTF_8);
+			List<String> lines = Files.readLines(file, Charsets.UTF_8);
 			lines = SnomedUtils.removeBlankLines(lines);
 			
 			//Are we restarting the file from some line number
@@ -374,9 +378,9 @@ public abstract class TermServerScript implements RF2Constants {
 			addSummaryInformation(CONCEPTS_IN_FILE, allConcepts);
 
 		} catch (FileNotFoundException e) {
-			throw new TermServerScriptException("Unable to open input file " + inputFile.getAbsolutePath(), e);
+			throw new TermServerScriptException("Unable to open input file " + file.getAbsolutePath(), e);
 		} catch (IOException e) {
-			throw new TermServerScriptException("Error while reading input file " + inputFile.getAbsolutePath(), e);
+			throw new TermServerScriptException("Error while reading input file " + file.getAbsolutePath(), e);
 		}
 		return allConcepts;
 	}
