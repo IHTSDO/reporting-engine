@@ -217,10 +217,7 @@ public class Concept implements RF2Constants {
 
 	@Override
 	public boolean equals(Object other) {
-		if (other == this) {
-			return true;
-		}
-		if ((other instanceof Concept) == false) {
+		if (!(other instanceof Concept)) {
 			return false;
 		}
 		Concept rhs = ((Concept) other);
