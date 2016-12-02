@@ -7,10 +7,12 @@ import java.io.PrintStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -23,6 +25,9 @@ import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExportType;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExtractType;
 import org.ihtsdo.termserver.scripting.domain.*;
 
+import com.google.common.collect.HashMultiset;
+import com.google.common.collect.Multiset;
+
 /**
  * Reports all concepts that appear to have ingredients, with strength / concentration.
  */
@@ -31,15 +36,18 @@ public class IdentifyProductsWithStrengthReport extends TermServerScript{
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	GraphLoader gl = GraphLoader.getGraphLoader();
 	
-	String[] strengthUnits = { "mg/ml", "mg","%","ml","g","mgi", "milligram","micrograms","microgram","units","unit",
-								"iu","mcg","million units", 
-								"mL", "u/mL", "MBq/mL", "MBq", "gm", "million iu", "million/iu", "unt", "nanograms",
-								"million iu","L","meq","kBq", "u", "mmol", "ppm", "GBq", "mol", "gr","gram", "umol",
+	String[] strengthUnitStrs = { "mg/mL", "mg","%","ml", "mL","g","mgi", "milligram","micrograms/mL", 
+								"micrograms","microgram","units/mL", "units","unit/mL","unit",
+								"iu/mL","iu","mcg","million units", 
+								"mL", "u/mL", "MBq/mL", "MBq", "gm", "million iu", "million/iu", "unt/g","unt", "nanograms",
+								"million iu","L","meq","kBq", "u/mL", "u", "mmol", "ppm", "GBq", "mol", "gr","gram", "umol",
 								"molar", "megaunits", "mgI", "million international units", "microliter"};
 	
-	List<StrengthUnit> strengthUnixRegexes;
+	List<StrengthUnit> strengthUnits = new ArrayList<StrengthUnit>();
 	
 	String[] concatenatable = { "%" };
+	
+	Multiset<String> strengthUnitCombos = HashMultiset.create();
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		IdentifyProductsWithStrengthReport report = new IdentifyProductsWithStrengthReport();
@@ -57,25 +65,19 @@ public class IdentifyProductsWithStrengthReport extends TermServerScript{
 		}
 	}
 
-	private void compileRegexes() {
-		for (String strengthUnit : strengthUnits) {
-			strengthUnixRegexes.add(new StrengthUnit(strengthUnit));
-		}
-		
-	}
 
 	private void identifyProductsWithStrength(List<Concept> authorIdentifiedList) throws TermServerScriptException {
 		//For all descendants of 373873005 |Pharmaceutical / biologic product (product)|, 
 		//use a number of criteria to determine if concept is a product with strength.
 		Set<Concept> products = gl.getConcept("373873005").getDescendents(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE);  //|Pharmaceutical / biologic product (product)|
 		Set<Concept> remainingFromList = new HashSet<Concept> (authorIdentifiedList);
-		print ("Original List: " + authorIdentifiedList.size() + " deduplicated: " + remainingFromList.size());
+		println ("Original List: " + authorIdentifiedList.size() + " deduplicated: " + remainingFromList.size());
 		int bothIdentified = 0;
 		int lexOnly = 0;
 		int authorOnly = 0;
 		int conceptsChecked = 0;
 		for (Concept c : products) {
-			boolean lexicalMatch = termIndicatesStrength(c);
+			boolean lexicalMatch = termIndicatesStrength(c.getFsn());
 			boolean authorIdentified = authorIdentifiedList.contains(c);
 			if (lexicalMatch || authorIdentified) {
 				report (c, lexicalMatch, authorIdentified);
@@ -102,15 +104,25 @@ public class IdentifyProductsWithStrengthReport extends TermServerScript{
 		for (Concept lostConcept : remainingFromList) {
 			println ("  " + lostConcept);
 		}
+		
+		println("\n Strength/Unit combinations: " + strengthUnitCombos.elementSet().size());
+		for (String strengthUnit : strengthUnitCombos.elementSet()) {
+			println ("\t" + strengthUnit + ": " + strengthUnitCombos.count(strengthUnit));
+		}
 	}
 
-	private boolean termIndicatesStrength(Concept c) {
+	private boolean termIndicatesStrength(String term) {
 		boolean termIndicatesStrength = false;
-		for (String strengthUnit : strengthUnits) {
-			String strengthUnitNoSpaces = strengthUnit.replace(" ", "");
-			if (c.getFsn().replace(" ", "").matches(".*[\\d]+" + strengthUnitNoSpaces +".*" )) {
-				if (unitCompleteInTerm(strengthUnit, c.getFsn()) && correctlyParsed(strengthUnit, c.getFsn())) {
+		String termNoSpaces = term.replace(" ", "");
+		for (StrengthUnit strengthUnit : strengthUnits) {
+			Matcher matcher = strengthUnit.regex.matcher(termNoSpaces);
+			if (matcher.matches()) {
+				if (unitCompleteInTerm(strengthUnit.strengthUnitStr, term) && correctlyParsed(strengthUnit.strengthUnitStr, term)) {
 					termIndicatesStrength = true;
+					strengthUnitCombos.add(matcher.group(1) + ":" + matcher.group(2));
+					//Are there any further strengthUnitCombos in this term?
+					String remainingString = termNoSpaces.replace( matcher.group(1) + matcher.group(2), "");
+					termIndicatesStrength(remainingString);
 				}
 				continue;
 			}
@@ -139,7 +151,7 @@ public class IdentifyProductsWithStrengthReport extends TermServerScript{
 		int idx = 0;
 		while (idx < term.length() -1 && correctlyParsed == false) {
 			while (!Character.isDigit(term.charAt(idx)) && idx < term.length() -1) { idx++; }
-			while ((Character.isDigit(term.charAt(idx)) || term.charAt(idx) == ' ') && idx < term.length() -1) { idx++; }
+			while ((Character.isDigit(term.charAt(idx)) || term.charAt(idx) == ' ' || term.charAt(idx) == '.') && idx < term.length() -1) { idx++; }
 			//Do we next have the strength Unit?
 			if (term.substring(idx).startsWith(strengthUnit)) {
 				idx += strengthUnit.length();
@@ -238,13 +250,25 @@ public class IdentifyProductsWithStrengthReport extends TermServerScript{
 		return gl.getConcept(lineItems[0]);
 	}
 	
+
+	private void compileRegexes() {
+		for (String strengthUnitStr : strengthUnitStrs) {
+			strengthUnits.add(new StrengthUnit(strengthUnitStr));
+		}
+	}
+	
 	class StrengthUnit {
-		String strengthUnit;
+		String strengthUnitStr;
 		Pattern regex;
 		StrengthUnit(String strengthUnit) {
-			this.strengthUnit = strengthUnit;
+			this.strengthUnitStr = strengthUnit;
 			String strengthUnitNoSpaces = strengthUnit.replace(" ", "");
-			this.regex = Pattern.compile(".*[\\d]+" + strengthUnitNoSpaces +".*");
+			//Match
+			//.*?  As few characters as possible
+			//[\d\.\d*] a numeric optionaly followed by a decimal and further characters
+			//...followed by the strength unit.
+			//Group the number and the unit separately
+			this.regex = Pattern.compile(".*?([\\d\\.?\\d*]+)(" + strengthUnitNoSpaces +").*");
 		}
 	}
 	

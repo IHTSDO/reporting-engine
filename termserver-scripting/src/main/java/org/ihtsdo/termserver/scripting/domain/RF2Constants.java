@@ -21,7 +21,7 @@ public interface RF2Constants {
 	
 	static final String FULLY_DEFINED_SCTID = "900000000000073002";
 	static final String FULLY_SPECIFIED_NAME = "900000000000003001";
-	final Long SNOMED_ROOT_CONCEPT = 138875005L;
+	final Long SCTID_ROOT_CONCEPT = 138875005L;
 	final String ADDITIONAL_RELATIONSHIP = "900000000000227009";
 	final String SPACE = " ";
 	final String COMMA = ",";

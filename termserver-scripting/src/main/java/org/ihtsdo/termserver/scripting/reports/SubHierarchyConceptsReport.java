@@ -95,6 +95,8 @@ public class SubHierarchyConceptsReport extends TermServerScript{
 		response = STDIN.nextLine().trim();
 		if (!response.isEmpty()) {
 			subHierarchy = gl.getConcept(response);
+		} else {
+			subHierarchy = gl.getConcept(SCTID_ROOT_CONCEPT.toString());
 		}
 		
 		while (filterOnActiveState == null) {

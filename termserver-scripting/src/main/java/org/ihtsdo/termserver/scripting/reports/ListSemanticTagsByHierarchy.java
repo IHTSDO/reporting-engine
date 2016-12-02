@@ -49,7 +49,7 @@ public class ListSemanticTagsByHierarchy extends TermServerScript{
 
 	private void listSemanticTags() throws TermServerScriptException {
 		//Work through all top level hierarchies and list semantic tags along with their counts
-		Concept rootConcept = gl.getConcept(SNOMED_ROOT_CONCEPT.toString());
+		Concept rootConcept = gl.getConcept(SCTID_ROOT_CONCEPT.toString());
 		for (Concept topLevel : rootConcept.getDescendents(IMMEDIATE_CHILD)) {
 			Set<Concept> descendents = topLevel.getDescendents(NOT_SET);
 			println (topLevel.toString() + " - total: " + descendents.size());
