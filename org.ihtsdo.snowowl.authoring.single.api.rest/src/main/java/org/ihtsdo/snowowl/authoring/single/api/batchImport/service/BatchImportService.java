@@ -709,7 +709,7 @@ public class BatchImportService {
 		desc.setType(type);
 		desc.setLang(SnomedConstants.LanguageCodeReferenceSetIdentifierMapping.EN_LANGUAGE_CODE);
 		desc.setAcceptabilityMap(acceptabilityMap);
-		desc.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
+		desc.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
 		return desc;
 	}
 	
@@ -723,7 +723,7 @@ public class BatchImportService {
 		desc.setLang(SnomedConstants.LanguageCodeReferenceSetIdentifierMapping.EN_LANGUAGE_CODE);
 		desc.setAcceptabilityMap(getAcceptablityAsMap(biTerm));
 		if (biTerm.getCaseSensitivity() == null || biTerm.getCaseSensitivity().isEmpty()) {
-			desc.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
+			desc.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
 		} else {
 			desc.setCaseSignificance(translateCaseSensitivity(biTerm.getCaseSensitivity()));
 		}
