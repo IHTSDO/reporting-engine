@@ -73,12 +73,15 @@ public class GraphLoader implements RF2Constants {
 		r.setCharacteristicType(characteristicType);
 		r.setActive(lineItems[REL_IDX_ACTIVE].equals("1"));
 		r.setEffectiveTime(lineItems[REL_IDX_EFFECTIVETIME]);
-		source.addRelationship(r);
 		
 		//Only if the relationship is inferred, consider adding it as a parent
 		if (r.isActive() && type.equals(IS_A)) {
 			source.addParent(r.getCharacteristicType(),destination);
 			destination.addChild(r.getCharacteristicType(),source);
+		} 
+		//Only store actual attributes.  Parents/Children and counted separately
+		if (!type.equals(IS_A)) {
+			source.addRelationship(r);
 		}
 		return source;
 	}

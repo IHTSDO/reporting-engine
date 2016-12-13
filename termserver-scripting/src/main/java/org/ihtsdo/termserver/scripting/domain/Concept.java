@@ -363,8 +363,8 @@ public class Concept implements RF2Constants {
 
 	public List<Concept> getParents(CharacteristicType characteristicType) {
 		switch (characteristicType) {
-			case STATED_RELATIONSHIP : return new ArrayList<Concept>(statedParents);
-			case INFERRED_RELATIONSHIP: return new ArrayList<Concept>(inferredParents);
+			case STATED_RELATIONSHIP : return statedParents;
+			case INFERRED_RELATIONSHIP: return inferredParents;
 			default: return null;
 		}
 	}
