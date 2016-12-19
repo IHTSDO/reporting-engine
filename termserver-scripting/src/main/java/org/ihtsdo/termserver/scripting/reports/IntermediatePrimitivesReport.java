@@ -7,6 +7,7 @@ import java.io.PrintStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -27,21 +28,19 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 /**
  * Reports all concepts in a hierarchy that are used in the definition of other concepts.
  */
-public class RequiringProxPrimModellingReport extends TermServerScript{
+public class IntermediatePrimitivesReport extends TermServerScript{
 	
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	GraphLoader gl = GraphLoader.getGraphLoader();
 	String publishedArchive;
-	//String[] hierarchies = {"404684003", "71388002", "243796009"};
 	String[] hierarchies = {"64572001"}; //Disease (disorder)
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
-		RequiringProxPrimModellingReport report = new RequiringProxPrimModellingReport();
+		IntermediatePrimitivesReport report = new IntermediatePrimitivesReport();
 		try {
 			report.init(args);
 			report.loadProjectSnapshot();  //Load FSNs only
-			boolean reportAll = true; //Report all concepts whether they require remodelling or not
-			report.reportRequiringProxPrimModelling(reportAll);
+			report.reportIntermediatePrimitives();
 		} catch (Exception e) {
 			println("Report failed due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
@@ -50,55 +49,66 @@ public class RequiringProxPrimModellingReport extends TermServerScript{
 		}
 	}
 
-	private void reportRequiringProxPrimModelling(boolean reportAll) throws TermServerScriptException {
+	private void reportIntermediatePrimitives() throws TermServerScriptException {
 		for (String hiearchySCTID : hierarchies) {
-			int ok = 0;
-			int multipleParentsCount = 0;
-			int noDifferentiaCount = 0;
-			int fdParentCount = 0;
-			int requireProxPrimModellingCount = 0;
+
+			int fdToTopCount = 0;
+			int immedPrimParentCount = 0;
+			int alreadyModelledCorrectlyCount = 0;
+			int notImmediatePrimitiveCount = 0;
+			
 			Concept hierarchy = gl.getConcept(hiearchySCTID);
+			Set<Concept> outsideSubHierarchy = hierarchy.getAncestors(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE, true);
 			Set<Concept> allHierarchy = hierarchy.getDescendents(NOT_SET, CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
 			Set<Concept> allActiveFD = filterActiveFD(allHierarchy);
 			println (hierarchy + " - " + allActiveFD.size() + "(FD) / " + allHierarchy.size() + "(Active)");
+			
 			for (Concept thisConcept : allActiveFD) {
-				List<Concept> parents = thisConcept.getParents(CharacteristicType.STATED_RELATIONSHIP);
-				boolean hasFDParent = false;
-				boolean noDifferentia = false;
-				boolean multipleParents = false;
-				for (Concept thisParent : parents) {
-					if (thisParent.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
-						hasFDParent = true;
-						fdParentCount++;
-						break;
+				boolean alreadyModelledCorrectly = false;
+				boolean fdToTop = false;
+				boolean immedPrimParent = false;
+				boolean notImmediatePrimitive = false;
+				List<Concept>parents = thisConcept.getParents(CharacteristicType.STATED_RELATIONSHIP); 
+				//If we have a single stated parent of disease, then we're modelled correctly
+				if (parents.size() == 1 && parents.get(0).getConceptId().equals(hiearchySCTID)) {
+					alreadyModelledCorrectlyCount++;
+					alreadyModelledCorrectly = true;
+				} else {
+					//See if ancestors up to subhierarchy start (remove outside of that) are all fully defined
+					Set<Concept> ancestors = thisConcept.getAncestors(NOT_SET, CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE, false);
+					ancestors.removeAll(outsideSubHierarchy);
+					if (allFD(ancestors)) {
+						fdToTopCount++;
+						fdToTop = true;
+					} else {
+						if (!allFD(parents)) {
+							immedPrimParentCount ++;
+							immedPrimParent = true;
+						} else {
+							notImmediatePrimitiveCount++;
+							notImmediatePrimitive = true;
+						}
 					}
 				}
-				
-				List<Relationship> attributes = thisConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
-				if (attributes.size() == 0) {
-					noDifferentia = true;
-					noDifferentiaCount++;
-				}
-				
-				if (parents.size() > 1) {
-					multipleParents = true;
-					multipleParentsCount++;
-				}
-				
-				if (reportAll || hasFDParent || noDifferentia || multipleParents) {
-					requireProxPrimModellingCount++;
-					report(thisConcept, SnomedUtils.deconstructFSN(thisConcept.getFsn())[1],hasFDParent,noDifferentia,multipleParents);
-				} else {
-					ok++;
-				}
+				report(thisConcept, SnomedUtils.deconstructFSN(thisConcept.getFsn())[1], alreadyModelledCorrectly, fdToTop, immedPrimParent, notImmediatePrimitive);
 			}
-			println ("\tHas FD Parent: " + fdParentCount);
-			println ("\tHas no differentia: " + noDifferentiaCount);
-			println ("\tHas multiple parents: " + multipleParentsCount);
-			println ("\tRequires remodelling: " + requireProxPrimModellingCount);
-			println ("\tIs OK: " + ok);
+			println ("\tAlready modelled correctly: " + alreadyModelledCorrectlyCount);
+			println ("\tFully defined to subhierarchy top: " + fdToTopCount);
+			println ("\tHas immediate primitive parent: " + immedPrimParentCount);
+			println ("\tNot-immediate primitive ancestor: " + notImmediatePrimitiveCount);
 		}
 		
+	}
+
+	private boolean allFD(Collection<Concept> concepts) {
+		boolean allFD = true;
+		for (Concept concept : concepts) {
+			if (!concept.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
+				allFD = false;
+				break;
+			}
+		}
+		return allFD;
 	}
 
 	private Set<Concept> filterActiveFD(Set<Concept> fullSet) {
@@ -111,13 +121,14 @@ public class RequiringProxPrimModellingReport extends TermServerScript{
 		return activeConcepts;
 	}
 
-	protected void report (Concept c, String semtag, boolean hasFDParent, boolean noDifferentia, boolean multipleParents) {
+	protected void report (Concept c, String semtag, boolean one, boolean two, boolean three, boolean four) {
 		String line = 	c.getConceptId() + COMMA_QUOTE + 
 						c.getFsn().replace(",", "") + QUOTE_COMMA_QUOTE +
 						semtag + QUOTE_COMMA +
-						hasFDParent + COMMA + 
-						noDifferentia + COMMA +
-						multipleParents;
+						one + COMMA +
+						two + COMMA + 
+						three + COMMA +
+						four;
 		writeToFile(line);
 	}
 	
@@ -137,12 +148,11 @@ public class RequiringProxPrimModellingReport extends TermServerScript{
 		}
 		
 		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
-		//String reportFilename = "changed_relationships_" + project.toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
 		String reportFilename = getScriptName() + "_" + project.toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToFile ("Concept, FSN, Sem_Tag, hasFDParent,noDifferentia,multipleParents");
+		writeToFile ("Concept, FSN, Sem_Tag, alreadyModelledCorrectly, FDToTop, immedPrimParent, notImmediatePrimitive");
 	}
 
 	private void loadProjectSnapshot() throws SnowOwlClientException, TermServerScriptException, InterruptedException {
