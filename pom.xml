@@ -565,7 +565,6 @@
 				<configuration>
 					<autoVersionSubmodules>true</autoVersionSubmodules>
 					<enableSshAgent>true</enableSshAgent>
-					<allowSnapshots>true</allowSnapshots><!-- This is needed because snowowl is on snapshots -->
 					<noDeploy>true</noDeploy>
 				</configuration>
 			</plugin>
