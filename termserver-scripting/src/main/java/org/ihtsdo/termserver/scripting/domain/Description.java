@@ -1,20 +1,21 @@
 
 package org.ihtsdo.termserver.scripting.domain;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Generated;
 
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.ACCEPTABILITY;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.DESCRIPTION_TYPE;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.InactivationIndicator;
+import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
 @Generated("org.jsonschema2pojo")
-public class Description {
+public class Description implements RF2Constants{
 
 	@SerializedName("effectiveTime")
 	@Expose
@@ -24,7 +25,7 @@ public class Description {
 	private String moduleId;
 	@SerializedName("active")
 	@Expose
-	private boolean active;
+	private Boolean active;
 	@SerializedName("descriptionId")
 	@Expose
 	private String descriptionId;
@@ -33,7 +34,7 @@ public class Description {
 	private String conceptId;
 	@SerializedName("type")
 	@Expose
-	private DESCRIPTION_TYPE type;
+	private DescriptionType type;
 	@SerializedName("lang")
 	@Expose
 	private String lang;
@@ -43,13 +44,14 @@ public class Description {
 	@SerializedName("caseSignificance")
 	@Expose
 	private String caseSignificance;
-	@SerializedName("acceptabilityMap")
+	@SerializedName("AcceptabilityMap")
 	@Expose
-	private Map<String, ACCEPTABILITY> acceptabilityMap;
+	private Map<String, Acceptability> AcceptabilityMap = new HashMap<String, Acceptability> ();
 	@SerializedName("inactivationIndicator")
 	@Expose
 	private InactivationIndicator inactivationIndicator;
-
+	List<LangRefsetEntry> langRefsetEntries;
+	private boolean dirty = false;
 	/**
 	 * No args constructor for use in serialization
 	 * 
@@ -68,9 +70,9 @@ public class Description {
 	 * @param descriptionId
 	 * @param caseSignificance
 	 * @param lang
-	 * @param acceptabilityMap
+	 * @param AcceptabilityMap
 	 */
-	public Description(String effectiveTime, String moduleId, boolean active, String descriptionId, String conceptId, DESCRIPTION_TYPE type, String lang, String term, String caseSignificance, Map<String, ACCEPTABILITY> acceptabilityMap) {
+	public Description(String effectiveTime, String moduleId, boolean active, String descriptionId, String conceptId, DescriptionType type, String lang, String term, String caseSignificance, Map<String, Acceptability> AcceptabilityMap) {
 		this.effectiveTime = effectiveTime;
 		this.moduleId = moduleId;
 		this.active = active;
@@ -80,7 +82,11 @@ public class Description {
 		this.lang = lang;
 		this.term = term;
 		this.caseSignificance = caseSignificance;
-		this.acceptabilityMap = acceptabilityMap;
+		this.AcceptabilityMap = AcceptabilityMap;
+	}
+
+	public Description(String descriptionId) {
+		this.descriptionId = descriptionId;
 	}
 
 	public String getEffectiveTime() {
@@ -103,8 +109,19 @@ public class Description {
 		return active;
 	}
 
-	public void setActive(boolean active) {
-		this.active = active;
+	public void setActive(boolean newActiveState) {
+		if (this.active != null && !this.active == newActiveState) {
+			setDirty();
+		}
+		this.active = newActiveState;
+		this.effectiveTime = null;
+		//If we inactivate a description, inactivate all of its LangRefsetEntriesAlso
+		if (active == false && this.langRefsetEntries != null) {
+			for (LangRefsetEntry thisDialect : getLangRefsetEntries()) {
+				thisDialect.setEffectiveTime(null);
+				thisDialect.setActive(false);
+			}
+		}
 	}
 
 	public String getDescriptionId() {
@@ -123,11 +140,11 @@ public class Description {
 		this.conceptId = conceptId;
 	}
 
-	public DESCRIPTION_TYPE getType() {
+	public DescriptionType getType() {
 		return type;
 	}
 
-	public void setType(DESCRIPTION_TYPE type) {
+	public void setType(DescriptionType type) {
 		this.type = type;
 	}
 
@@ -144,6 +161,10 @@ public class Description {
 	}
 
 	public void setTerm(String term) {
+		//Are we changing the term?
+		if (this.term != null && !this.term.equalsIgnoreCase(term)) {
+			dirty = true;
+		}
 		this.term = term;
 	}
 
@@ -155,17 +176,17 @@ public class Description {
 		this.caseSignificance = caseSignificance;
 	}
 
-	public Map<String, ACCEPTABILITY> getAcceptabilityMap() {
-		return acceptabilityMap;
+	public Map<String, Acceptability> getAcceptabilityMap() {
+		return AcceptabilityMap;
 	}
 
 	/**
 	 * 
-	 * @param acceptabilityMap
-	 *	 The acceptabilityMap
+	 * @param AcceptabilityMap
+	 *	 The AcceptabilityMap
 	 */
-	public void setAcceptabilityMap(Map<String, ACCEPTABILITY> acceptabilityMap) {
-		this.acceptabilityMap = acceptabilityMap;
+	public void setAcceptabilityMap(Map<String, Acceptability> AcceptabilityMap) {
+		this.AcceptabilityMap = AcceptabilityMap;
 	}
 
 	@Override
@@ -190,20 +211,29 @@ public class Description {
 		return this.hashCode() == rhs.hashCode();
 	}
 	
-	@Override
-	public Description clone() {
+	public Description clone(String newSCTID) {
 		Description clone = new Description();
 		clone.effectiveTime = null; //New description is unpublished.
 		clone.moduleId = this.moduleId;
 		clone.active = this.active;
-		clone.descriptionId = null;  //Creating a new object, so no id for now.
+		clone.descriptionId = newSCTID;
 		clone.conceptId = this.conceptId;
 		clone.type = this.type;
 		clone.lang = this.lang;
 		clone.term = this.term;
 		clone.caseSignificance = this.caseSignificance;
-		clone.acceptabilityMap = new HashMap<String, ACCEPTABILITY>();
-		clone.acceptabilityMap.putAll(this.acceptabilityMap);
+		clone.AcceptabilityMap = new HashMap<String, Acceptability>();
+		if (this.AcceptabilityMap != null) { 
+			clone.AcceptabilityMap.putAll(this.AcceptabilityMap);
+		}
+		if (langRefsetEntries != null) {
+			for (LangRefsetEntry thisDialect : this.getLangRefsetEntries()) {
+				//The lang refset entres for the cloned description should also point to it
+				LangRefsetEntry thisDialectClone = thisDialect.clone(clone.descriptionId); //will create a new UUID and remove EffectiveTime
+				clone.getLangRefsetEntries().add(thisDialectClone);
+				thisDialectClone.setActive(true);
+			}
+		}
 		return clone;
 	}
 
@@ -213,6 +243,56 @@ public class Description {
 
 	public void setInactivationIndicator(InactivationIndicator inactivationIndicator) {
 		this.inactivationIndicator = inactivationIndicator;
+	}
+
+	public void setAcceptablity(String refsetId, Acceptability Acceptability) {
+		AcceptabilityMap.put(refsetId, Acceptability);
+	}
+
+	public String[] toRF2() throws TermServerScriptException {
+		//"id","effectiveTime","active","moduleId","conceptId","languageCode","typeId","term","caseSignificanceId"
+		return new String[] {descriptionId, effectiveTime, (active?"1":"0"), moduleId, conceptId, lang,
+				SnomedUtils.translateDescType(type), term, caseSignificance};
+	}
+
+	public List<LangRefsetEntry> getLangRefsetEntries() {
+		if (langRefsetEntries == null) {
+			langRefsetEntries = new ArrayList<LangRefsetEntry>();
+		}
+		return langRefsetEntries;
+	}
+	
+	public List<LangRefsetEntry> getLangRefsetEntries(ActiveState activeState) {
+		if (activeState.equals(ActiveState.BOTH)) {
+			return getLangRefsetEntries();
+		}
+		List<LangRefsetEntry> result = new ArrayList<LangRefsetEntry>();
+		for (LangRefsetEntry l : getLangRefsetEntries()) {
+			if ((activeState.equals(ActiveState.ACTIVE) && l.isActive()) ||
+				(activeState.equals(ActiveState.INACTIVE) && !l.isActive()) ) {
+				result.add(l);
+			}
+		}
+		return result;
+	}
+	
+	public List<LangRefsetEntry> getLangRefsetEntries(ActiveState activeState, String langRefsetId) {
+		List<LangRefsetEntry> result = new ArrayList<LangRefsetEntry>();
+		for (LangRefsetEntry thisLangRefSetEntry : getLangRefsetEntries(activeState)) {
+			if (thisLangRefSetEntry.getRefsetId().equals(langRefsetId)) {
+				result.add(thisLangRefSetEntry);
+			}
+		}
+		return result;
+	}
+		
+
+	public boolean isDirty() {
+		return dirty;
+	}
+	
+	public void setDirty() {
+		dirty = true;
 	}
 
 }

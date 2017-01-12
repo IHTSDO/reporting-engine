@@ -1,5 +1,7 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
+import org.ihtsdo.termserver.scripting.TermServerScript;
+import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
@@ -14,16 +16,16 @@ import java.util.*;
 /**
  * Fix script to inactivate the language reference sets of inactive descriptions found in a validation report
  */
-public class LangRefsetInactivationFix extends TermServerFix implements RF2Constants {
+public class LangRefsetInactivationFix extends TermServerScript implements RF2Constants {
 
-	public static void main(String[] args) throws TermServerFixException, IOException, JSONException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, JSONException {
 		LangRefsetInactivationFix fixer = new LangRefsetInactivationFix();
 		fixer.project = "INTQA";
 		fixer.init(args);
 		fixer.fixAll();
 	}
 		
-	public void fixAll () throws TermServerFixException, IOException, JSONException {
+	public void fixAll () throws TermServerScriptException, IOException, JSONException {
 		String validationReportUrl = url + "snowowl/ihtsdo-sca/projects/" + project + "/validation";
 		println(validationReportUrl);
 
@@ -58,7 +60,7 @@ public class LangRefsetInactivationFix extends TermServerFix implements RF2Const
 		}
 	}
 
-	public void doFix(Concept concept, String branchPath) throws TermServerFixException {
+	public void doFix(Concept concept, String branchPath) throws TermServerScriptException {
 		try{
 			JSONObject conceptObj = tsClient.getConcept(concept.getConceptId(), branchPath).object();
 			boolean fixed = false;
@@ -83,14 +85,20 @@ public class LangRefsetInactivationFix extends TermServerFix implements RF2Const
 				println("No issue with " + concept.getConceptId());
 			}
 		}catch (IOException | JSONException | SnowOwlClientException e) {
-			throw new TermServerFixException("Failed to fix issue", e);
+			throw new TermServerScriptException("Failed to fix issue", e);
 		}
 		
 	}
 
 	@Override
-	public String getFixName() {
+	public String getScriptName() {
 		return "LangRefsetInactivationFix";
+	}
+
+	@Override
+	protected Concept loadLine(String[] lineItems)
+			throws TermServerScriptException {
+		return null;
 	}
 
 }

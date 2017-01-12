@@ -1,10 +1,6 @@
-package org.ihtsdo.termserver.scripting.fixes;
+package org.ihtsdo.termserver.scripting.fixes.drugs;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -15,11 +11,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
-import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExportType;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExtractType;
+import org.ihtsdo.termserver.scripting.GraphLoader;
+import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Batch;
 import org.ihtsdo.termserver.scripting.domain.Concept;
@@ -27,9 +21,9 @@ import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.Task;
+import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
-import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
 
 import com.b2international.commons.StringUtils;
@@ -52,7 +46,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		wordSubstitution.put("acetaminophen", "paracetamol");
 	}
 	
-	protected DrugProductFix(BatchFix clone) {
+	public DrugProductFix(BatchFix clone) {
 		super(clone);
 	}
 
@@ -63,12 +57,12 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 	MedicinalEntityFix mef;
 	GrouperFix gf;
 	
-	public static void main(String[] args) throws TermServerFixException, IOException, SnowOwlClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
 		DrugProductFix fix = new DrugProductFix(null);
 		try {
 			fix.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
-			fix.loadProjectSnapshot();
+			fix.loadProjectSnapshot(true);  //Load FSNs only
 			//We won't incude the project export in our timings
 			fix.startTimer();
 			fix.processFile();
@@ -77,7 +71,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		}
 	}
 	
-	protected void init(String[] args) throws TermServerFixException, IOException {
+	protected void init(String[] args) throws TermServerScriptException, IOException {
 		super.init(args);
 		psf = new ProductStrengthFix(this);
 		mff = new MedicinalFormFix(this);
@@ -86,7 +80,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 	}
 
 	@Override
-	public int doFix(Task task, Concept concept) throws TermServerFixException {
+	public int doFix(Task task, Concept concept) throws TermServerScriptException {
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
 		if (concept.getConceptType().equals(ConceptType.UNKNOWN)) {
 			determineConceptType(concept);
@@ -122,7 +116,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 
 
 	@Override
-	Batch formIntoBatch(String fileName, List<Concept> conceptsInFile, String branchPath) throws TermServerFixException {
+	protected Batch formIntoBatch(String fileName, List<Concept> conceptsInFile, String branchPath) throws TermServerScriptException {
 		debug ("Finding all concepts with ingredients...");
 		List<Concept> allConceptsBeingProcessed = new ArrayList<Concept>();
 		Batch batch =  createBatch(fileName, conceptsInFile, allConceptsBeingProcessed);
@@ -210,7 +204,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		return orderedList;
 	}
 
-	Batch createBatch(String fileName, List<Concept> conceptsInFile, List<Concept> allConceptsBeingProcessed ) throws TermServerFixException {
+	Batch createBatch(String fileName, List<Concept> conceptsInFile, List<Concept> allConceptsBeingProcessed ) throws TermServerScriptException {
 		Batch batch = new Batch(fileName);
 		Set<Set<Concept>> groupedConcepts = groupByIngredients(conceptsInFile);
 		Task t = batch.addNewTask();
@@ -262,7 +256,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		return groupedConcepts;
 	}
 
-	private Set<Set<Concept>> groupByIngredients(List<Concept> conceptsInFile) throws TermServerFixException {
+	private Set<Set<Concept>> groupByIngredients(List<Concept> conceptsInFile) throws TermServerScriptException {
 		//We can find the multiple ingredients first, and then try and put common ingredients
 		//in the same task.
 		Set<Set<Concept>> groupedByIngredients = new HashSet<Set<Concept>>();
@@ -325,10 +319,10 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		return ingredientsInCommon;
 	}
 
-	private Set<String> extractMultipleIngredients(List<Concept> concepts) throws TermServerFixException {
+	private Set<String> extractMultipleIngredients(List<Concept> concepts) throws TermServerScriptException {
 		Set<String> multipleIngredients = new HashSet<String>();
 		for (Concept thisConcept : concepts) {
-			List<Relationship> ingredients = thisConcept.getRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, ACTIVE_STATE.ACTIVE);
+			List<Relationship> ingredients = thisConcept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE);
 			if (ingredients.size() > 0) {
 				String comboKey = getIngredientCombinationKey(thisConcept, ingredients);
 				multipleIngredients.add(comboKey);
@@ -370,7 +364,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 	}
 
 	private List<Relationship> getIngredients(Concept c) {
-		return c.getRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, ACTIVE_STATE.ACTIVE);
+		return c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE);
 	}
 	
 	/*private String getIngredientList(List<Relationship> ingredientRelationships) {
@@ -385,11 +379,11 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		return SnomedUtils.capitalize(list);
 	}*/
 	
-	private Multimap<String, Concept> findAllIngredientCombos() throws TermServerFixException {
+	private Multimap<String, Concept> findAllIngredientCombos() throws TermServerScriptException {
 		Collection<Concept> allConcepts = GraphLoader.getGraphLoader().getAllConcepts();
 		Multimap<String, Concept> ingredientCombos = ArrayListMultimap.create();
 		for (Concept thisConcept : allConcepts) {
-			List<Relationship> ingredients = thisConcept.getRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, ACTIVE_STATE.ACTIVE);
+			List<Relationship> ingredients = thisConcept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE);
 			if (ingredients.size() > 0) {
 				String comboKey = getIngredientCombinationKey(thisConcept, ingredients);
 				ingredientCombos.put(comboKey, thisConcept);
@@ -398,7 +392,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		return ingredientCombos;
 	}
 
-	private String getIngredientCombinationKey(Concept loadedConcept, List<Relationship> ingredients) throws TermServerFixException {
+	private String getIngredientCombinationKey(Concept loadedConcept, List<Relationship> ingredients) throws TermServerScriptException {
 		String comboKey = "";
 		Collections.sort(ingredients);  //Ingredient order must be consistent.
 		for (Relationship r : ingredients) {
@@ -414,12 +408,12 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 	}
 
 	@Override
-	public String getFixName() {
+	public String getScriptName() {
 		return "MedicinalEntity";
 	}
 	
 
-	protected int ensureAcceptableFSN(Task task, Concept concept, Map<String, String> wordSubstitution) throws TermServerFixException {
+	protected int ensureAcceptableFSN(Task task, Concept concept, Map<String, String> wordSubstitution) throws TermServerScriptException {
 		String[] fsnParts = SnomedUtils.deconstructFSN(concept.getFsn());
 		String newFSN = removeUnwantedWords(task, concept, fsnParts[0]);
 		int changesMade = 0;
@@ -458,17 +452,17 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 	Change any PT containing acetaminophen to a synonym with US=A, GB=N and no changes eg: alpha order, spaces around +
 	 */
 	private void updateFsnAndPrefTerms(Task task, Concept concept,
-			String newFSN, String semanticTag) throws TermServerFixException {
+			String newFSN, String semanticTag) throws TermServerScriptException {
 		String fullFSN = newFSN + SPACE + semanticTag;
 		concept.setFsn(fullFSN);
 		//FSNs are also preferred so we can just replace all preferred terms
-		List<Description> fsnAndPreferred = concept.getDescriptions(ACCEPTABILITY.PREFERRED, null, ACTIVE_STATE.ACTIVE);
+		List<Description> fsnAndPreferred = concept.getDescriptions(Acceptability.PREFERRED, null, ActiveState.ACTIVE);
 		for (Description thisDescription : fsnAndPreferred) {
-			Description replacement = thisDescription.clone();
+			Description replacement = thisDescription.clone(null);
 			thisDescription.setActive(false);
 			thisDescription.setEffectiveTime(null);
 			thisDescription.setInactivationIndicator(InactivationIndicator.RETIRED);
-			if (thisDescription.getType().equals(DESCRIPTION_TYPE.FSN)) {
+			if (thisDescription.getType().equals(DescriptionType.FSN)) {
 				replacement.setTerm(fullFSN);
 			} else {
 				if (attemptAcceptableSYNPromotion(task, concept, newFSN, thisDescription)) {
@@ -485,11 +479,11 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 			
 			if (replacement != null) {
 				//Check to see if we're adding another description when we could better just increase
-				//the acceptability of an existing preferred term
+				//the Acceptability of an existing preferred term
 				String msg;
 				Description improvedAcceptablity = attemptAcceptabilityImprovement(replacement, concept);
 				if (improvedAcceptablity != null) {
-					msg = "Improved acceptability of existing term: " + improvedAcceptablity + " now " + SnomedUtils.toString(improvedAcceptablity.getAcceptabilityMap());
+					msg = "Improved Acceptability of existing term: " + improvedAcceptablity + " now " + SnomedUtils.toString(improvedAcceptablity.getAcceptabilityMap());
 				} else {
 					concept.addDescription(replacement);
 					msg = "Replaced (inactivated) " + thisDescription.getType() + " " + thisDescription + " with " + replacement;
@@ -502,15 +496,15 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 	}
 
 	private Description attemptAcceptabilityImprovement(
-			Description replacement, Concept concept) throws TermServerFixException {
+			Description replacement, Concept concept) throws TermServerScriptException {
 		//Look through all exising Preferred Terms to find if there's an existing one that matches
-		//which could have it's acceptability improved instead of adding the replacement
-		List<Description> preferredTerms = concept.getDescriptions(ACCEPTABILITY.PREFERRED, DESCRIPTION_TYPE.SYNONYM, ACTIVE_STATE.BOTH);
+		//which could have it's Acceptability improved instead of adding the replacement
+		List<Description> preferredTerms = concept.getDescriptions(Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.BOTH);
 		Description improvedDescription = null;
 		for (Description desc : preferredTerms) {
 			if (desc.getTerm().equals(replacement.getTerm())) {
 				int existingScore = SnomedUtils.accetabilityScore(desc.getAcceptabilityMap());
-				Map<String, ACCEPTABILITY> mergedMap = SnomedUtils.mergeAcceptabilityMap(desc.getAcceptabilityMap(), replacement.getAcceptabilityMap());
+				Map<String, Acceptability> mergedMap = SnomedUtils.mergeAcceptabilityMap(desc.getAcceptabilityMap(), replacement.getAcceptabilityMap());
 				int newScore = SnomedUtils.accetabilityScore(mergedMap);
 				if (newScore > existingScore) {
 					improvedDescription = desc;
@@ -532,7 +526,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 			//Demote the original description rather than inactivating it
 			originalDesc.setActive(true);
 			for (String dialect : originalDesc.getAcceptabilityMap().keySet()) {
-				originalDesc.getAcceptabilityMap().put(dialect, ACCEPTABILITY.ACCEPTABLE);
+				originalDesc.getAcceptabilityMap().put(dialect, Acceptability.ACCEPTABLE);
 			}
 			if (isAcetaminophen) {
 				originalDesc.getAcceptabilityMap().remove(GB_ENG_LANG_REFSET);
@@ -543,11 +537,11 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 	}
 
 	private boolean attemptAcceptableSYNPromotion(Task task, Concept concept,
-			String newTerm, Description oldDescription) throws TermServerFixException {
+			String newTerm, Description oldDescription) throws TermServerScriptException {
 		//If we have a term which is only Acceptable (ie not preferred in either dialect)
 		//then promote it to Preferred in the appropriate dialect
 		boolean promotionSuccessful = false;
-		List<Description> allAcceptable = concept.getDescriptions(ACCEPTABILITY.ACCEPTABLE, DESCRIPTION_TYPE.SYNONYM, ACTIVE_STATE.BOTH);
+		List<Description> allAcceptable = concept.getDescriptions(Acceptability.ACCEPTABLE, DescriptionType.SYNONYM, ActiveState.BOTH);
 		List<Description> matchingAcceptable = new ArrayList<Description>();
 		for (Description thisDesc : allAcceptable) {
 			if (thisDesc.getTerm().equals(newTerm)) {
@@ -563,11 +557,11 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 			Description promoting = matchingAcceptable.get(0);
 			promoting.setActive(true);
 			//Now find the dialects that were preferred in the old term and copy to new
-			for (Map.Entry<String, ACCEPTABILITY> acceptablityEntry : oldDescription.getAcceptabilityMap().entrySet()) {
+			for (Map.Entry<String, Acceptability> acceptablityEntry : oldDescription.getAcceptabilityMap().entrySet()) {
 				String dialect = acceptablityEntry.getKey();
-				ACCEPTABILITY a = acceptablityEntry.getValue();
-				if (a.equals(ACCEPTABILITY.PREFERRED)) {
-					promoting.getAcceptabilityMap().put(dialect, ACCEPTABILITY.PREFERRED);
+				Acceptability a = acceptablityEntry.getValue();
+				if (a.equals(Acceptability.PREFERRED)) {
+					promoting.getAcceptabilityMap().put(dialect, Acceptability.PREFERRED);
 					promotionSuccessful = true;
 					String msg = "Promoted acceptable term " + promoting + " to be preferred in dialect " + dialect;
 					report (task, concept, SEVERITY.HIGH, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, msg);
@@ -630,7 +624,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 	}
 	
 
-	void determineConceptType(Concept concept) {
+	public void determineConceptType(Concept concept) {
 		//Simplest thing for Product Strength is that if there's a number in the FSN then it's probably Product Strength
 		//We'll refine this logic as examples present themselves.
 		String fsn = concept.getFsn();
@@ -638,7 +632,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 			concept.setConceptType(ConceptType.PRODUCT_STRENGTH);
 		} else {
 			//If the concept has a dose form, then it's a Medicinal Form
-			List<Relationship> doseFormAttributes = concept.getRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, HAS_DOSE_FORM, ACTIVE_STATE.ACTIVE);
+			List<Relationship> doseFormAttributes = concept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HAS_DOSE_FORM, ActiveState.ACTIVE);
 			if (!doseFormAttributes.isEmpty()) {
 				concept.setConceptType(ConceptType.MEDICINAL_FORM);
 			}
@@ -659,7 +653,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 	}
 
 	@Override
-	Concept loadLine(String[] lineItems) throws TermServerFixException {
+	protected Concept loadLine(String[] lineItems) throws TermServerScriptException {
 		Concept c = graph.getConcept(lineItems[1]);
 		c.setConceptType(lineItems[0]);
 		return c;

@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.fixes;
+package org.ihtsdo.termserver.scripting.reports;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -13,37 +13,40 @@ import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import org.ihtsdo.termserver.scripting.GraphLoader;
+import org.ihtsdo.termserver.scripting.TermServerScript;
+import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExportType;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExtractType;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 
-public class MismatchedRelationships extends TermServerFix{
+public class MismatchedRelationships extends TermServerScript{
 	
 	GraphLoader gl = GraphLoader.getGraphLoader();
 	List<String> criticalErrors = new ArrayList<String>();
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	String targetAttributeType = "246075003"; // | Causative agent (attribute) |;
 	
-	public static void main(String[] args) throws TermServerFixException, IOException, SnowOwlClientException {
-		MismatchedRelationships fix = new MismatchedRelationships();
+	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
+		MismatchedRelationships report = new MismatchedRelationships();
 		try {
-			fix.init(args);
-			fix.loadProjectSnapshot();
-			fix.detectMismatchedRelationships();
+			report.init(args);
+			report.loadProjectSnapshot();
+			report.detectMismatchedRelationships();
 		} catch (Exception e) {
 			println("Failed to produce Changed Relationship Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
-			fix.finish();
-			for (String err : fix.criticalErrors) {
+			report.finish();
+			for (String err : report.criticalErrors) {
 				println (err);
 			}
 		}
 	}
 	
-	private void detectMismatchedRelationships() throws TermServerFixException {
+	private void detectMismatchedRelationships() throws TermServerScriptException {
 		//Work through the snapshot of stated relationships and - for the target
 		//attribute type, report if the inferred relationship does not
 		//match the inferred one.
@@ -56,8 +59,8 @@ public class MismatchedRelationships extends TermServerFix{
 				criticalErrors.add(msg);
 				println(msg);
 			}
-			List<Relationship> statedRelationships = thisConcept.getRelationships(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP, targetAttribute, ACTIVE_STATE.ACTIVE);
-			List<Relationship> inferredRelationships = thisConcept.getRelationships(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP, targetAttribute, ACTIVE_STATE.ACTIVE);
+			List<Relationship> statedRelationships = thisConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, targetAttribute, ActiveState.ACTIVE);
+			List<Relationship> inferredRelationships = thisConcept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, targetAttribute, ActiveState.ACTIVE);
 			
 			if (statedRelationships.size() == 0) {
 				//Nothing to do here, concept not relevant
@@ -99,7 +102,7 @@ public class MismatchedRelationships extends TermServerFix{
 		writeToFile(line);
 	}
 	
-	protected void init(String[] args) throws IOException, TermServerFixException {
+	protected void init(String[] args) throws IOException, TermServerScriptException {
 		super.init(args);
 		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
 		String reportFilename = "mismatched_relationships_" + project.toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
@@ -109,7 +112,7 @@ public class MismatchedRelationships extends TermServerFix{
 		writeToFile ("Concept, FSN, Concept_Active, Concept_Modified, Stated_or_Inferred, Relationship_Active, GroupNum, Type, Target");
 	}
 
-	private void loadProjectSnapshot() throws SnowOwlClientException, TermServerFixException, InterruptedException {
+	protected void loadProjectSnapshot() throws SnowOwlClientException, TermServerScriptException, InterruptedException {
 		int SNAPSHOT = 0;
 		File[] archives = new File[] { new File (project + "_snapshot_" + env + ".zip") };
 
@@ -136,7 +139,7 @@ public class MismatchedRelationships extends TermServerFix{
 							String fileName = p.getFileName().toString();
 							if (fileName.contains("sct2_Description_Snapshot")) {
 								println("Loading Description File.");
-								gl.loadDescriptionFile(zis);
+								gl.loadDescriptionFile(zis, true);  //Load FSNs only
 							}
 							
 							if (fileName.contains("sct2_Concept_Snapshot")) {
@@ -146,12 +149,12 @@ public class MismatchedRelationships extends TermServerFix{
 							
 							if (fileName.contains("sct2_Relationship_Snapshot")) {
 								println("Loading Relationship Snapshot File.");
-								gl.loadRelationshipDelta(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP,zis);
+								gl.loadRelationshipDelta(CharacteristicType.INFERRED_RELATIONSHIP,zis);
 							}
 							
 							if (fileName.contains("sct2_StatedRelationship_Snapshot")) {
 								println("Loading Stated Relationship Snapshot File.");
-								gl.loadRelationshipDelta(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP,zis);
+								gl.loadRelationshipDelta(CharacteristicType.STATED_RELATIONSHIP,zis);
 							}
 						}
 						ze = zis.getNextEntry();
@@ -163,13 +166,19 @@ public class MismatchedRelationships extends TermServerFix{
 					} catch (Exception e){} //Well, we tried.
 				}
 			} catch (IOException e) {
-				throw new TermServerFixException("Failed to extract project state from archive " + archive.getName(), e);
+				throw new TermServerScriptException("Failed to extract project state from archive " + archive.getName(), e);
 			}
 		}
 	}
 
 	@Override
-	public String getFixName() {
+	public String getScriptName() {
 		return "Lost Relationships";
+	}
+
+	@Override
+	protected Concept loadLine(String[] lineItems)
+			throws TermServerScriptException {
+		return null;
 	}
 }
