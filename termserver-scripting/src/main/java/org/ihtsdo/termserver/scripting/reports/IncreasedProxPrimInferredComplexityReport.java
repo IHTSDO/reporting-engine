@@ -25,23 +25,22 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 /**
- * Reports all concepts in a hierarchy that are used in the definition of other concepts.
+ * Reports all concepts using Prox Prim modelling that have more groups in the 
+ * inferred form, than the stated
  */
-public class RequiringProxPrimModellingReport extends TermServerScript{
+public class IncreasedProxPrimInferredComplexityReport extends TermServerScript{
 	
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	GraphLoader gl = GraphLoader.getGraphLoader();
 	String publishedArchive;
-	//String[] hierarchies = {"404684003", "71388002", "243796009"};
 	String[] hierarchies = {"64572001"}; //Disease (disorder)
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
-		RequiringProxPrimModellingReport report = new RequiringProxPrimModellingReport();
+		IncreasedProxPrimInferredComplexityReport report = new IncreasedProxPrimInferredComplexityReport();
 		try {
 			report.init(args);
 			report.loadProjectSnapshot();  //Load FSNs only
-			boolean reportAll = true; //Report all concepts whether they require remodelling or not
-			report.reportRequiringProxPrimModelling(reportAll);
+			report.reportIncreasedComplexity();
 		} catch (Exception e) {
 			println("Report failed due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
@@ -50,55 +49,40 @@ public class RequiringProxPrimModellingReport extends TermServerScript{
 		}
 	}
 
-	private void reportRequiringProxPrimModelling(boolean reportAll) throws TermServerScriptException {
+	private void reportIncreasedComplexity() throws TermServerScriptException {
 		for (String hiearchySCTID : hierarchies) {
-			int ok = 0;
-			int multipleParentsCount = 0;
-			int noDifferentiaCount = 0;
-			int fdParentCount = 0;
-			int requireProxPrimModellingCount = 0;
 			Concept hierarchy = gl.getConcept(hiearchySCTID);
 			Set<Concept> allHierarchy = hierarchy.getDescendents(NOT_SET, CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
 			Set<Concept> allActiveFD = filterActiveFD(allHierarchy);
 			println (hierarchy + " - " + allActiveFD.size() + "(FD) / " + allHierarchy.size() + "(Active)");
+			
 			for (Concept thisConcept : allActiveFD) {
-				List<Concept> parents = thisConcept.getParents(CharacteristicType.STATED_RELATIONSHIP);
-				boolean hasFDParent = false;
-				boolean noDifferentia = false;
-				boolean multipleParents = false;
-				for (Concept thisParent : parents) {
-					if (thisParent.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
-						hasFDParent = true;
-						fdParentCount++;
-						break;
+				List<Concept>parents = thisConcept.getParents(CharacteristicType.STATED_RELATIONSHIP); 
+				//If we have a single stated parent of disease, then we're modelled correctly
+				if (parents.size() == 1 && parents.get(0).getConceptId().equals(hiearchySCTID)) {
+					//How many groups do we have in the stated and inferred forms?
+					int statedGroups = countGroups(thisConcept, CharacteristicType.STATED_RELATIONSHIP);
+					int inferredGroups = countGroups(thisConcept, CharacteristicType.INFERRED_RELATIONSHIP);
+					println (thisConcept + ":  s=" + statedGroups + ", i=" + inferredGroups);
+					if (inferredGroups > statedGroups) {
+						report(thisConcept, SnomedUtils.deconstructFSN(thisConcept.getFsn())[1]);
 					}
 				}
-				
-				List<Relationship> attributes = thisConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
-				if (attributes.size() == 0) {
-					noDifferentia = true;
-					noDifferentiaCount++;
-				}
-				
-				if (parents.size() > 1) {
-					multipleParents = true;
-					multipleParentsCount++;
-				}
-				
-				if (reportAll || hasFDParent || noDifferentia || multipleParents) {
-					requireProxPrimModellingCount++;
-					report(thisConcept, SnomedUtils.deconstructFSN(thisConcept.getFsn())[1],hasFDParent,noDifferentia,multipleParents);
-				} else {
-					ok++;
-				}
 			}
-			println ("\tHas FD Parent: " + fdParentCount);
-			println ("\tHas no differentia: " + noDifferentiaCount);
-			println ("\tHas multiple parents: " + multipleParentsCount);
-			println ("\tRequires remodelling: " + requireProxPrimModellingCount);
-			println ("\tIs OK: " + ok);
 		}
 		
+	}
+
+	private int countGroups(Concept c, CharacteristicType cType) {
+		Set<Integer> groupNumbersActive = new HashSet<Integer>();
+		List<Relationship> attributes = c.getRelationships(cType, ActiveState.ACTIVE) ;
+		for (Relationship r : attributes){
+			Integer groupNum = new Integer((int)r.getGroupId());
+			if (!groupNumbersActive.contains(groupNum)) {
+				groupNumbersActive.add(groupNum);
+			}
+		}
+		return groupNumbersActive.size();
 	}
 
 	private Set<Concept> filterActiveFD(Set<Concept> fullSet) {
@@ -111,13 +95,10 @@ public class RequiringProxPrimModellingReport extends TermServerScript{
 		return activeConcepts;
 	}
 
-	protected void report (Concept c, String semtag, boolean hasFDParent, boolean noDifferentia, boolean multipleParents) {
+	protected void report (Concept c, String semtag) {
 		String line = 	c.getConceptId() + COMMA_QUOTE + 
 						c.getFsn().replace(",", "") + QUOTE_COMMA_QUOTE +
-						semtag + QUOTE_COMMA +
-						hasFDParent + COMMA + 
-						noDifferentia + COMMA +
-						multipleParents;
+						semtag + QUOTE;
 		writeToFile(line);
 	}
 	
@@ -137,12 +118,11 @@ public class RequiringProxPrimModellingReport extends TermServerScript{
 		}
 		
 		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
-		//String reportFilename = "changed_relationships_" + project.toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
 		String reportFilename = getScriptName() + "_" + project.toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToFile ("Concept, FSN, Sem_Tag, hasFDParent,noDifferentia,multipleParents");
+		writeToFile ("Concept, FSN, Sem_Tag");
 	}
 
 	private void loadProjectSnapshot() throws SnowOwlClientException, TermServerScriptException, InterruptedException {

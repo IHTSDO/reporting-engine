@@ -10,7 +10,6 @@ import javax.annotation.Generated;
 
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.ActiveState;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import com.google.gson.annotations.Expose;
@@ -299,6 +298,27 @@ public class Concept implements RF2Constants {
 				if (depth == NOT_SET || depth > 1) {
 					int newDepth = depth == NOT_SET ? NOT_SET : depth - 1;
 					thisChild.populateAllDescendents(descendents, newDepth, characteristicType, activeState);
+				}
+			}
+		}
+	}
+	
+	public Set<Concept> getAncestors(int depth, CharacteristicType characteristicType, ActiveState activeState, boolean includeSelf) throws TermServerScriptException {
+		Set<Concept> allAncestors = new HashSet<Concept>();
+		this.populateAllAncestors(allAncestors, depth, characteristicType, activeState);
+		if (includeSelf) {
+			allAncestors.add(this);
+		}
+		return allAncestors;
+	}
+	
+	private void populateAllAncestors(Set<Concept> ancestors, int depth, CharacteristicType characteristicType, ActiveState activeState) throws TermServerScriptException {
+		for (Concept thisParent : getParents(characteristicType)) {
+			if (activeState.equals(ActiveState.BOTH) || thisParent.active == SnomedUtils.translateActive(activeState)) {
+				ancestors.add(thisParent);
+				if (depth == NOT_SET || depth > 1) {
+					int newDepth = depth == NOT_SET ? NOT_SET : depth - 1;
+					thisParent.populateAllAncestors(ancestors, newDepth, characteristicType, activeState);
 				}
 			}
 		}
