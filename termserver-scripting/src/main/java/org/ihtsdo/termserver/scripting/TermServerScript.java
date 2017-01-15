@@ -90,7 +90,7 @@ public abstract class TermServerScript implements RF2Constants {
 
 	public enum REPORT_ACTION_TYPE { API_ERROR, CONCEPT_CHANGE_MADE, INFO, UNEXPECTED_CONDITION,
 									 RELATIONSHIP_ADDED, RELATIONSHIP_REMOVED, DESCRIPTION_CHANGE_MADE, 
-									 NO_CHANGE, VALIDATION_ERROR};
+									 NO_CHANGE, VALIDATION_ERROR, VALIDATION_CHECK};
 									 
 	public enum SEVERITY { NONE, LOW, MEDIUM, HIGH, CRITICAL }; 
 
@@ -299,6 +299,9 @@ public abstract class TermServerScript implements RF2Constants {
 						if (fileName.contains("sct2_Relationship_Snapshot")) {
 							println("Loading Relationship File.");
 							gl.loadRelationships(CharacteristicType.INFERRED_RELATIONSHIP, zis, true);
+						} else if (fileName.contains("sct2_StatedRelationship_Snapshot")) {
+							println("Loading StatedRelationship File.");
+							gl.loadRelationships(CharacteristicType.STATED_RELATIONSHIP, zis, true);
 						} else if (fileName.contains("sct2_Description_Snapshot")) {
 							println("Loading Description File.");
 							gl.loadDescriptionFile(zis, fsnOnly);

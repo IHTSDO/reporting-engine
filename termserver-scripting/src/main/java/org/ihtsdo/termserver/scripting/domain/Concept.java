@@ -1,4 +1,3 @@
-
 package org.ihtsdo.termserver.scripting.domain;
 
 import java.util.ArrayList;

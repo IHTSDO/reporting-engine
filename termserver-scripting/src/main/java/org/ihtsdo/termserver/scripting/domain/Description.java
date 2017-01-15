@@ -285,7 +285,6 @@ public class Description implements RF2Constants{
 		}
 		return result;
 	}
-		
 
 	public boolean isDirty() {
 		return dirty;

@@ -21,7 +21,7 @@ public class IdGenerator implements RF2Constants{
 	private boolean isExtension = false;
 	
 	public static IdGenerator initiateIdGenerator(String sctidFilename) throws TermServerScriptException {
-		if (sctidFilename.equals("dummy")) {
+		if (sctidFilename.toLowerCase().equals("dummy")) {
 			return new IdGenerator();
 		}
 		
@@ -81,7 +81,9 @@ public class IdGenerator implements RF2Constants{
 	
 	public String finish() {
 		try {
-			availableSctIds.close();
+			if (!useDummySequence) {
+				availableSctIds.close();
+			}
 		} catch (Exception e){}
 		return "IdGenerator supplied " + idsAssigned + " sctids.";
 	}

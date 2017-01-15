@@ -37,7 +37,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 	String[] descHeader = new String[] {"id","effectiveTime","active","moduleId","conceptId","languageCode","typeId","term","caseSignificanceId"};
 	String[] relHeader = new String[] {"id","effectiveTime","active","moduleId","sourceId","destinationId","relationshipGroup","typeId","characteristicTypeId","modifierId"};
 	String[] langHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","acceptabilityId"};
-	IdGenerator descIdGenerator;
+	IdGenerator idGenerator;
 	
 	protected void report(Concept concept, Description d, SEVERITY severity, REPORT_ACTION_TYPE actionType, String actionDetail) {
 		String line = "";
@@ -61,10 +61,10 @@ public abstract class DeltaGenerator extends TermServerScript {
 		
 		for (int x=0; x<args.length; x++) {
 			if (args[x].equals("-i")) {
-				descIdGenerator = IdGenerator.initiateIdGenerator(args[++x]);
+				idGenerator = IdGenerator.initiateIdGenerator(args[++x]);
 			}
 		}
-		if (descIdGenerator == null) {
+		if (idGenerator == null) {
 			throw new TermServerScriptException("Command line arguments must supply a list of available sctid using the -i option");
 		}
 		initialiseReportFile("Concept,DescSctId,Term,Severity,Action,Detail");

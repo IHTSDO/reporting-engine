@@ -44,8 +44,8 @@ public class AddEntire extends DeltaGenerator {
 			SnomedUtils.createArchive(new File(delta.outputDirName));
 		} finally {
 			delta.finish();
-			if (delta.descIdGenerator != null) {
-				println(delta.descIdGenerator.finish());
+			if (delta.idGenerator != null) {
+				println(delta.idGenerator.finish());
 			}
 		}
 	}
@@ -182,7 +182,7 @@ public class AddEntire extends DeltaGenerator {
 		}
 		
 		if (duplicate == null) {
-			String newSCTID = descIdGenerator.getSCTID(PartionIdentifier.DESCRIPTION);
+			String newSCTID = idGenerator.getSCTID(PartionIdentifier.DESCRIPTION);
 			Description replacement = d.clone(newSCTID);
 			replacement.setTerm(newTerm);
 			replacement.setCaseSignificance(newCaseSignificance);
