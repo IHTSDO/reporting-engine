@@ -296,6 +296,7 @@ public class Relationship implements RF2Constants, Comparable<Relationship> {
 		clone.sourceId = this.sourceId;
 		clone.source = this.source;
 		clone.characteristicType = this.characteristicType;
+		clone.dirty = true;
 		return clone;
 	}
 

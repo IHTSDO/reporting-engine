@@ -341,9 +341,17 @@ public class SnomedUtils implements RF2Constants{
 
 	public static String translateModifier(Modifier modifier) {
 		switch (modifier) {
-			case EXISTENTIAL : return SCTID_EXISTENTIAL_MODIFIER;
 			case UNIVERSAL : return SCTID_UNIVERSAL_MODIFIER;
-			default : return "";
+			case EXISTENTIAL :
+			default : return SCTID_EXISTENTIAL_MODIFIER;
+		}
+	}
+	
+	public static Modifier translateModifier(String modifierSCTID) {
+		switch (modifierSCTID) {
+			case SCTID_UNIVERSAL_MODIFIER : return Modifier.UNIVERSAL;
+			case SCTID_EXISTENTIAL_MODIFIER  :
+			default : return Modifier.EXISTENTIAL;
 		}
 	}
 	

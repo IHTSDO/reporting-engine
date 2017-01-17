@@ -27,6 +27,7 @@ public class ReplaceRelationships extends DeltaGenerator {
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
 		ReplaceRelationships delta = new ReplaceRelationships();
 		try {
+			delta.useAuthenticatedCookie = true;  //TRUE for dev & uat
 			delta.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			delta.loadProjectSnapshot(true);  //Just FSN, not working with all descriptions here
@@ -71,17 +72,24 @@ public class ReplaceRelationships extends DeltaGenerator {
 			}
 		}
 		
-		if (replaceAll.size() > 0) {
-			incrementSummaryInformation("Concepts modified", 1);
-		}
-		
 		for (Relationship replaceMe : replaceAll) {
 			if (replaceMe.getGroupId() == 0) {
 				String msg = "Relationship to replace is in group 0: " + replaceMe;
 				report (concept, concept.getFSNDescription(), SEVERITY.HIGH, REPORT_ACTION_TYPE.VALIDATION_ERROR, msg);
 			} else {
-				replaceRelationship (replaceMe);
+				if (replaceMe.getEffectiveTime().isEmpty()) {
+					String msg = "Relationship already showing as modified: " + replaceMe;
+					report (concept, concept.getFSNDescription(), SEVERITY.HIGH, REPORT_ACTION_TYPE.VALIDATION_ERROR, msg);
+				} else {
+					replaceRelationship (replaceMe);
+				}
 			}
+		}
+		
+		
+		if (replaceAll.size() > 0) {
+			outputRF2(concept);
+			incrementSummaryInformation("Concepts modified", 1);
 		}
 	}
 
@@ -93,7 +101,8 @@ public class ReplaceRelationships extends DeltaGenerator {
 			if (!checkForExistingRelationship(source, replacementTemplate, replaceMe.getGroupId())) {
 				Relationship replacement = replaceMe.clone();
 				replacement.setRelationshipId(idGenerator.getSCTID(PartionIdentifier.RELATIONSHIP));
-				replacement.setActive(false);
+				replaceMe.setActive(false);
+				replacement.setActive(true);
 				replacement.setType(replacementTemplate.getType());
 				replacement.setTarget(replacementTemplate.getTarget());
 				source.addRelationship(replacement);

@@ -70,9 +70,12 @@ public class GraphLoader implements RF2Constants {
 		int groupNum = Integer.parseInt(lineItems[REL_IDX_RELATIONSHIPGROUP]);
 		
 		Relationship r = new Relationship(source, type, destination, groupNum);
+		r.setRelationshipId(lineItems[REL_IDX_ID]);
 		r.setCharacteristicType(characteristicType);
 		r.setActive(lineItems[REL_IDX_ACTIVE].equals("1"));
 		r.setEffectiveTime(lineItems[REL_IDX_EFFECTIVETIME]);
+		r.setModifier(SnomedUtils.translateModifier(lineItems[REL_IDX_MODIFIERID]));
+		r.setModuleId(lineItems[REL_IDX_MODULEID]);
 		
 		//Only if the relationship is inferred, consider adding it as a parent
 		if (r.isActive() && type.equals(IS_A)) {

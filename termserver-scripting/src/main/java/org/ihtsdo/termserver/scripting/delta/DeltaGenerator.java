@@ -16,6 +16,7 @@ import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
+import org.ihtsdo.termserver.scripting.domain.Relationship;
 
 public abstract class DeltaGenerator extends TermServerScript {
 	
@@ -109,6 +110,31 @@ public abstract class DeltaGenerator extends TermServerScript {
 			if (lang.isDirty()) {
 				writeToRF2File(langDeltaFilename, lang.toRF2());
 			}
+		}
+	}
+
+	protected void outputRF2(Relationship r) throws TermServerScriptException {
+		if (r.isDirty()) {
+			switch (r.getCharacteristicType()) {
+				case STATED_RELATIONSHIP : writeToRF2File(sRelDeltaFilename, r.toRF2());
+				break;
+				case INFERRED_RELATIONSHIP : 
+				default: writeToRF2File(relDeltaFilename, r.toRF2());
+			}
+		}
+	}
+	
+	protected void outputRF2(Concept c) throws TermServerScriptException {
+		/*if (c.isDirty()) {
+			writeToRF2File(conDeltaFilenam, c.toRF2());
+		}*/
+		
+		for (Description d : c.getDescriptions(ActiveState.BOTH)) {
+			outputRF2(d);
+		}
+		
+		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH)) {
+			outputRF2(r);
 		}
 	}
 	

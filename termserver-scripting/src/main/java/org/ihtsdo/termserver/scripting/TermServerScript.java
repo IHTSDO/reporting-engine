@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.TreeMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -61,7 +62,7 @@ public abstract class TermServerScript implements RF2Constants {
 	public static final int maxFailures = 5;
 	protected int restartPosition = NOT_SET;
 	private static Date startTime;
-	private static Map<String, Object> summaryDetails = new HashMap<String, Object>();
+	private static Map<String, Object> summaryDetails = new TreeMap<String, Object>();
 	private static String summaryText = "";
 	protected File inputFile;
 	protected File reportFile;
@@ -114,7 +115,7 @@ public abstract class TermServerScript implements RF2Constants {
 
 	private static String[] environments = new String[] {	"http://localhost:8080/",
 															"https://dev-term.ihtsdotools.org/",
-															"https://uat-term.ihtsdotools.org/",
+															"https://uat-authoring.ihtsdotools.org/",
 															"https://uat-flat-termserver.ihtsdotools.org/",
 															"https://authoring.ihtsdotools.org/",
 															"https://dev-ms-authoring.ihtsdotools.org/",
@@ -284,7 +285,8 @@ public abstract class TermServerScript implements RF2Constants {
 		//Do we already have a copy of the project locally?  If not, recover it.
 		if (!snapShotArchive.exists()) {
 			println ("Recovering current state of " + project + " from TS (" + env + ")");
-			tsClient.export(tsRoot + project, null, ExportType.MIXED, ExtractType.SNAPSHOT, snapShotArchive);
+			String branch = tsRoot.startsWith(project)? project : tsRoot + project;
+			tsClient.export(branch, null, ExportType.MIXED, ExtractType.SNAPSHOT, snapShotArchive);
 		}
 		GraphLoader gl = GraphLoader.getGraphLoader();
 		println ("Loading archive contents into memory...");
@@ -296,7 +298,10 @@ public abstract class TermServerScript implements RF2Constants {
 					if (!ze.isDirectory()) {
 						Path p = Paths.get(ze.getName());
 						String fileName = p.getFileName().toString();
-						if (fileName.contains("sct2_Relationship_Snapshot")) {
+						if (fileName.contains("sct2_Concept_Snapshot")) {
+							println("Loading Concept File.");
+							gl.loadConceptFile(zis);
+						} else if (fileName.contains("sct2_Relationship_Snapshot")) {
 							println("Loading Relationship File.");
 							gl.loadRelationships(CharacteristicType.INFERRED_RELATIONSHIP, zis, true);
 						} else if (fileName.contains("sct2_StatedRelationship_Snapshot")) {
