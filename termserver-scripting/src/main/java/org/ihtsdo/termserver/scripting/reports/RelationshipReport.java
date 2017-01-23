@@ -39,8 +39,7 @@ public class RelationshipReport extends TermServerScript{
 		RelationshipReport report = new RelationshipReport();
 		try {
 			report.init(args);
-			report.loadProjectSnapshotAndDelta();  //Load FSNs only
-			//fix.detectChangedRelationships();
+			report.loadProjectSnapshot(true);  //Load FSNs only
 			report.reportActiveRelationships();
 		} catch (Exception e) {
 			println("Failed to produce Changed Relationship Report due to " + e.getMessage());
@@ -51,33 +50,6 @@ public class RelationshipReport extends TermServerScript{
 				println (err);
 			}
 		}
-	}
-	
-	private void detectChangedRelationships() {
-		//Work through our set of modified concepts and if a relationship of a type has 
-		//been inactivated, ensure that we have another relationship of the same time 
-		//that replaces it.
-		Collection<Concept> conceptsToExamine =  gl.getAllConcepts();  //modifiedConcepts
-		println("Examining " + conceptsToExamine.size() + " concepts");
-		int changedRelationships = 0;
-		for (Concept thisConcept : conceptsToExamine) {
-			if (thisConcept.getFsn() == null) {
-				String msg = "Concept " + thisConcept.getConceptId() + " has no FSN";
-				criticalErrors.add(msg);
-				println(msg);
-			}
-			List<Relationship> allConceptRelationships = thisConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH);
-			
-			for(Relationship thisRel : allConceptRelationships) {
-				//Has this relationship changed in the this release?
-				if (thisRel.getEffectiveTime().equals(transientEffectiveDate)) {
-					report (thisConcept, thisRel);
-					changedRelationships++;
-				}
-			}
-		}
-		println("Detected " + changedRelationships + " changed Stated Relationships");
-		println("Graph loader log: \n" + gl.log);
 	}
 	
 	private void reportActiveRelationships() {
@@ -175,80 +147,9 @@ public class RelationshipReport extends TermServerScript{
 		writeToFile ("Concept, FSN, Concept_Active, Concept_Modified, Stated_or_Inferred, Relationship_Active, GroupNum, TypeId, TypeFsn, TargetId, TargetFsn");
 	}
 
-	private void loadProjectSnapshotAndDelta() throws SnowOwlClientException, TermServerScriptException, InterruptedException {
-		int SNAPSHOT = 0;
-		int DELTA = 1;
-		File[] archives = new File[] { new File (project + "_snapshot_" + env + ".zip")};//, new File (project + "_delta_" + env + "_" + transientEffectiveDate + ".zip") };
-
-		//Do we already have a copy of the project locally?  If not, recover it.
-		if (!archives[SNAPSHOT].exists()) {
-			println ("Recovering snapshot state of " + project + " from TS (" + env + ")");
-			tsClient.export("MAIN/" + project, null, ExportType.MIXED, ExtractType.SNAPSHOT, archives[SNAPSHOT]);
-			initialiseSnowOwlClient();  //re-initialise client to avoid HttpMediaTypeNotAcceptableException.  Cause unknown.
-		}
-		
-		/*if (!archives[DELTA].exists()) {
-			println ("Recovering delta state of " + project + " from TS (" + env + ") for " + transientEffectiveDate);
-			tsClient.export("MAIN/" + project, transientEffectiveDate, ExportType.UNPUBLISHED, ExtractType.DELTA, archives[DELTA]);
-		}*/
-		
-		println ("Loading snapshot terms and delta relationships into memory...");
-		for (File archive : archives) {
-			try {
-				ZipInputStream zis = new ZipInputStream(new FileInputStream(archive));
-				ZipEntry ze = zis.getNextEntry();
-				try {
-					while (ze != null) {
-						if (!ze.isDirectory()) {
-							Path p = Paths.get(ze.getName());
-							String fileName = p.getFileName().toString();
-							if (fileName.contains("sct2_Description_Snapshot")) {
-								println("Loading Description File.");
-								gl.loadDescriptionFile(zis, true);  //Load FSNs only
-							}
-							
-							if (fileName.contains("sct2_Concept_Snapshot")) {
-								println("Loading Concept File.");
-								gl.loadConceptFile(zis);
-							}
-							
-							if (fileName.contains("sct2_Relationship_Snapshot")) {
-								println("Loading Relationship Snapshot File.");
-								gl.loadRelationships(CharacteristicType.INFERRED_RELATIONSHIP,zis, true);
-							}
-							
-							if (fileName.contains("sct2_StatedRelationship_Snapshot")) {
-								println("Loading Stated Relationship Snapshot File.");
-								gl.loadRelationships(CharacteristicType.STATED_RELATIONSHIP,zis, true);
-							}
-							/*
-							if (fileName.contains("sct2_Relationship_Delta")) {
-								println("Loading Relationship Delta File.");
-								modifiedConcepts.addAll(gl.loadRelationshipDelta(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP,zis));
-							}
-							
-							if (fileName.contains("sct2_StatedRelationship_Delta")) {
-								println("Loading Stated Relationship Delta File.");
-								modifiedConcepts.addAll(gl.loadRelationshipDelta(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP,zis));
-							}*/
-						}
-						ze = zis.getNextEntry();
-					}
-				} finally {
-					try{
-						zis.closeEntry();
-						zis.close();
-					} catch (Exception e){} //Well, we tried.
-				}
-			} catch (IOException e) {
-				throw new TermServerScriptException("Failed to extract project state from archive " + archive.getName(), e);
-			}
-		}
-	}
-
 	@Override
 	public String getScriptName() {
-		return "Lost Relationships";
+		return "Active Relationships";
 	}
 
 	@Override
