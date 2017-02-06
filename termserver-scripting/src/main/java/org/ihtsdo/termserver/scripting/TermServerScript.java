@@ -495,7 +495,11 @@ public abstract class TermServerScript implements RF2Constants {
 	
 	protected void initialiseReportFile(String columnHeaders) throws IOException {
 		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
-		String reportFilename = "results_" + SnomedUtils.deconstructFilename(inputFile)[1] + "_" + df.format(new Date()) + "_" + env  + ".csv";
+		String specificName = SnomedUtils.deconstructFilename(inputFile)[1];
+		if (specificName.isEmpty()) {
+			specificName = getScriptName();
+		}
+		String reportFilename = "results_" + specificName + "_" + df.format(new Date()) + "_" + env  + ".csv";
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());

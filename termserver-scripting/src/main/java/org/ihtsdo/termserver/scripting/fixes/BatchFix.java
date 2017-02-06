@@ -52,6 +52,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	protected int wiggleRoom = 2;
 	protected String targetAuthor;
 	String[] emailDetails;
+	protected boolean selfDetermining = false; //Set to true if the batch fix calculates its own data to process
 
 	protected BatchFix (BatchFix clone) {
 		if (clone != null) {
@@ -79,7 +80,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	
 	abstract protected int doFix(Task task, Concept concept) throws TermServerScriptException;
 
-	private void batchProcess(Batch batch) throws TermServerScriptException {
+	protected void batchProcess(Batch batch) throws TermServerScriptException {
 		int failureCount = 0;
 		int tasksCreated = 0;
 		boolean isFirst = true;
@@ -244,7 +245,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 				isProjectName = false;
 			} 
 		}
-		if (inputFile == null) {
+		if (!selfDetermining && inputFile == null) {
 			throw new TermServerScriptException("No valid batch import file detected in command line arguments");
 		}
 		
@@ -252,7 +253,9 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			throw new TermServerScriptException("No target author detected in command line arguments");
 		}
 		
-		println("Reading file from line " + restartPosition + " - " + inputFile.getName());
+		if (!selfDetermining) {
+			println("Reading file from line " + restartPosition + " - " + inputFile.getName());
+		}
 		
 		super.init(args);
 		
