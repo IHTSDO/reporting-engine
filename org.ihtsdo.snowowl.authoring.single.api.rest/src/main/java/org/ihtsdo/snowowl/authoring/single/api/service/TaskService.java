@@ -78,6 +78,7 @@ public class TaskService {
 	private final String jiraProjectPromotionField;
 	private final String jiraProjectMrcmField;
 	private final String jiraCrsIdField;
+	private final String jiraProjectTemplatesField;
 
 	private LoadingCache<String, ProjectDetails> projectDetailsCache;
 
@@ -94,6 +95,7 @@ public class TaskService {
 		jiraProjectPromotionField = JiraHelper.fieldIdLookup("SCA Project Promotion", jiraClientForFieldLookup);
 		jiraProjectMrcmField = JiraHelper.fieldIdLookup("SCA Project MRCM", jiraClientForFieldLookup);
 		jiraCrsIdField = JiraHelper.fieldIdLookup("CRS-ID", jiraClientForFieldLookup);
+		jiraProjectTemplatesField = JiraHelper.fieldIdLookup("SCA Project Templates", jiraClientForFieldLookup);
 
 		init();
 	}
@@ -175,6 +177,7 @@ public class TaskService {
 				final String latestClassificationJson = classificationService.getLatestClassification(branchPath);
 				final boolean promotionDisabled = "Disabled".equals(JiraHelper.toStringOrNull(magicTicket.getField(jiraProjectPromotionField)));
 				final boolean mrcmDisabled = "Disabled".equals(JiraHelper.toStringOrNull(magicTicket.getField(jiraProjectMrcmField)));
+				final boolean templatesDisabled = "Disabled".equals(JiraHelper.toStringOrNull(magicTicket.getField(jiraProjectTemplatesField)));
 
 				
 				final Branch branchOrNull = branchService.getBranchOrNull(branchPath);
@@ -189,7 +192,8 @@ public class TaskService {
 				}
 				branchPaths.add(branchPath);
 				final AuthoringProject authoringProject = new AuthoringProject(project.getKey(), project.getName(),
-						getPojoUserOrNull(project.getLead()), branchPath, branchState, latestClassificationJson, promotionDisabled, mrcmDisabled);
+						getPojoUserOrNull(project.getLead()), branchPath, branchState, latestClassificationJson,
+						promotionDisabled, mrcmDisabled, templatesDisabled);
 				authoringProject.setMetadata(metadata);
 				authoringProjects.add(authoringProject);
 			}

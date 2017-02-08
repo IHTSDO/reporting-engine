@@ -15,10 +15,12 @@ public class AuthoringProject {
 	private String validationStatus;
 	private boolean projectPromotionDisabled;
 	private boolean projectMrcmDisabled;
+	private boolean projectTemplatesDisabled;
 	private Metadata metadata;
 
 	public AuthoringProject(String key, String title, User leadUser, String branchPath, Branch.BranchState branchState,
-			String latestClassificationJson, boolean projectPromotionDisabled, boolean projectMrcmDisabled) {
+							String latestClassificationJson, boolean projectPromotionDisabled,
+							boolean projectMrcmDisabled, boolean projectTemplatesDisabled) {
 		this.key = key;
 		this.title = title;
 		this.projectLead = leadUser;
@@ -27,6 +29,7 @@ public class AuthoringProject {
 		this.latestClassificationJson = latestClassificationJson;
 		this.projectPromotionDisabled = projectPromotionDisabled;
 		this.projectMrcmDisabled = projectMrcmDisabled;
+		this.projectTemplatesDisabled = projectTemplatesDisabled;
 	}
 
 	public String getKey() {
@@ -76,6 +79,14 @@ public class AuthoringProject {
 
 	public void setProjectMrcmDisabled(boolean projectMrcmDisabled) {
 		this.projectMrcmDisabled = projectMrcmDisabled;
+	}
+
+	public boolean isProjectTemplatesDisabled() {
+		return projectTemplatesDisabled;
+	}
+
+	public void setProjectTemplatesDisabled(boolean projectTemplatesDisabled) {
+		this.projectTemplatesDisabled = projectTemplatesDisabled;
 	}
 
 	public void setMetadata(Metadata metadata) {
