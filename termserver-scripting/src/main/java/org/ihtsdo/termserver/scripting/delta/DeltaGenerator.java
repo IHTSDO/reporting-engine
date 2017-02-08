@@ -137,24 +137,5 @@ public abstract class DeltaGenerator extends TermServerScript {
 			outputRF2(r);
 		}
 	}
-	
-	protected void writeToRF2File(String fileName, String[] columns) throws TermServerScriptException {
-		File file = ensureFileExists(fileName);
-		try(	OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(file, true), StandardCharsets.UTF_8);
-				BufferedWriter bw = new BufferedWriter(osw);
-				PrintWriter out = new PrintWriter(bw))
-		{
-			StringBuffer line = new StringBuffer();
-			for (int x=0; x<columns.length; x++) {
-				if (x > 0) {
-					line.append(TSV_FIELD_DELIMITER);
-				}
-				line.append(columns[x]==null?"":columns[x]);
-			}
-			out.print(line.toString() + LINE_DELIMITER);
-		} catch (Exception e) {
-			println ("Unable to output report rf2 line due to " + e.getMessage());
-		}
-	}
 
 }

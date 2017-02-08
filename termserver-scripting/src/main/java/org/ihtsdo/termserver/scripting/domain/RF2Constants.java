@@ -134,5 +134,14 @@ public interface RF2Constants {
 	public static final int LANG_IDX_REFSETID = 4;
 	public static final int LANG_IDX_REFCOMPID = 5;
 	public static final int LANG_IDX_ACCEPTABILITY_ID = 6;
+	
+	// Refset columns
+	public static final int REF_IDX_ID = 0;
+	public static final int REF_IDX_EFFECTIVETIME = 1;
+	public static final int REF_IDX_ACTIVE = 2;
+	public static final int REF_IDX_MODULEID = 3;
+	public static final int REF_IDX_REFSETID = 4;
+	public static final int REF_IDX_REFCOMPID = 5;
+	public static final int REF_IDX_FIRST_ADDITIONAL = 6;
 
 }
