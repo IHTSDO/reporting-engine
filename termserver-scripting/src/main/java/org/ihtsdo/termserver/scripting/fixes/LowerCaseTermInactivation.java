@@ -79,7 +79,7 @@ public class LowerCaseTermInactivation extends BatchFix implements RF2Constants{
 			changesMade++;
 			m.inactivate.setActive(false);
 			m.inactivate.setEffectiveTime(null);
-			m.inactivate.setInactivationIndicator(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
+			m.inactivate.setInactivationIndicator(InactivationIndicator.ERRONEOUS);
 			String msg = "Inactivated term '" + m.inactivate.getTerm() + "' due to presence of '" + m.keep.getTerm() + "'.";
 			report(task, concept, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, msg);
 		}
