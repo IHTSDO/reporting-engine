@@ -546,26 +546,6 @@ public class BatchImportService {
 		}
 		return null;
 	}
-	
-
-	/*private String validateConcept(AuthoringTask task,
-			ISnomedBrowserConcept newConcept) throws BusinessServiceException {
-		StringBuilder warnings = new StringBuilder();
-		StringBuilder errors = new StringBuilder();
-		List<ISnomedInvalidContent> validationIssues = validationService.validateConcept(getBranchPath(task), newConcept, defaultLocales);
-		for (ISnomedInvalidContent thisIssue : validationIssues) {
-			if (thisIssue.getSeverity().equals(VALIDATION_ERROR)) {
-				errors.append(" ").append(thisIssue.getMessage());
-			} else {
-				warnings.append(" ").append(thisIssue.getMessage());
-			}
-		}
-		if (errors.length() > 0) {
-			throw new BusinessServiceException("Error for concept " + newConcept.getConceptId() + ": " + errors.toString());
-		}
-		return warnings.toString();
-	}*/
-
 
 	private String prettyPrint(ApiError v) {
 		StringBuilder buff = new StringBuilder (v.getMessage());
@@ -623,11 +603,16 @@ public class BatchImportService {
 			}
 		}
 		
-		//Save the FSN back to the concept for future use eg in Task Summary
-		thisConcept.setFsn(fsnTerm);
+		//Set the FSN
+		CaseSignificance fsnCase = CaseSignificance.CASE_INSENSITIVE;  //default
+		if (formatter.getIndex(FIELD.CAPSFSN) != BatchImportFormat.FIELD_NOT_FOUND) {
+			fsnCase = translateCaseSensitivity(thisConcept.get(formatter.getIndex(FIELD.CAPSFSN)));
+		}
 		
-		ISnomedBrowserDescription fsn = createDescription(fsnTerm, SnomedBrowserDescriptionType.FSN, PREFERRED_ACCEPTABILIY);
+		thisConcept.setFsn(fsnTerm);
+		ISnomedBrowserDescription fsn = createDescription(fsnTerm, SnomedBrowserDescriptionType.FSN, PREFERRED_ACCEPTABILIY, fsnCase);
 		descriptions.add(fsn);
+		//Save the FSN back to the concept for future use eg in Task Summary
 		newConcept.setFsn(fsnTerm);
 		
 		if (formatter.hasMultipleTerms()) {
@@ -638,7 +623,7 @@ public class BatchImportService {
 				termIdx++;
 			}
 		} else {
-			ISnomedBrowserDescription pref = createDescription(prefTerm, SnomedBrowserDescriptionType.SYNONYM, PREFERRED_ACCEPTABILIY);
+			ISnomedBrowserDescription pref = createDescription(prefTerm, SnomedBrowserDescriptionType.SYNONYM, PREFERRED_ACCEPTABILIY, CaseSignificance.CASE_INSENSITIVE);
 			descriptions.add(pref);
 			addSynonyms(descriptions, formatter, thisConcept);
 		}
@@ -669,7 +654,7 @@ public class BatchImportService {
 		List<String> allSynonyms = formatter.getAllSynonyms(thisConcept);
 		for (String thisSyn : allSynonyms) {
 			if (!containsDescription (descriptions, thisSyn)){
-				ISnomedBrowserDescription syn =  createDescription(thisSyn, SnomedBrowserDescriptionType.SYNONYM, ACCEPTABLE_ACCEPTABILIY);
+				ISnomedBrowserDescription syn =  createDescription(thisSyn, SnomedBrowserDescriptionType.SYNONYM, ACCEPTABLE_ACCEPTABILIY, CaseSignificance.CASE_INSENSITIVE);
 				descriptions.add(syn);
 			}
 		}
@@ -706,7 +691,7 @@ public class BatchImportService {
 		return rel;
 	}
 	
-	ISnomedBrowserDescription createDescription(String term, SnomedBrowserDescriptionType type, Map<String, Acceptability> acceptabilityMap) {
+	ISnomedBrowserDescription createDescription(String term, SnomedBrowserDescriptionType type, Map<String, Acceptability> acceptabilityMap, CaseSignificance caseSig) {
 		SnomedBrowserDescription desc = new SnomedBrowserDescription();
 		//Set a temporary id so the user can tell which item failed validation
 		desc.setDescriptionId("desc_" + type.toString());
@@ -715,7 +700,7 @@ public class BatchImportService {
 		desc.setType(type);
 		desc.setLang(SnomedConstants.LanguageCodeReferenceSetIdentifierMapping.EN_LANGUAGE_CODE);
 		desc.setAcceptabilityMap(acceptabilityMap);
-		desc.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
+		desc.setCaseSignificance(caseSig);
 		return desc;
 	}
 	
