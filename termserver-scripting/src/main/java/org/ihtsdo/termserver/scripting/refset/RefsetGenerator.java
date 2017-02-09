@@ -27,7 +27,7 @@ public abstract class RefsetGenerator extends TermServerScript {
 	protected String refsetName;
 	protected String effectiveDate; 
 	protected String moduleId = "900000000000207008";
-	protected String[] headers = new String[] {"id","effectiveTime","active","moduleId"};
+	protected String[] headers = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId"};
 	private String[] additionalHeaders;
 	protected int additionalColumnsCount = 0;
 	protected List<RefsetMember> refsetMembers = new ArrayList<RefsetMember>();
