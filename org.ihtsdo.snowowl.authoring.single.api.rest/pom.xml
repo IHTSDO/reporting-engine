@@ -1,14 +1,14 @@
-<!--suppress MavenModelInspection -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>org.ihtsdo.snowowl</groupId>
 		<artifactId>ihtsdo-snowowl-parent</artifactId>
-		<version>4.9.0-SNAPSHOT</version>
+		<version>4.10.0-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>org.ihtsdo.snowowl.authoring.single.api.rest</artifactId>
-
+	<packaging>bundle</packaging>
+	
 	<properties>
 		<org.ihtsdo.otf.im-version>0.0.3</org.ihtsdo.otf.im-version>
 		<activemq.version>5.10.0</activemq.version>
@@ -237,20 +237,6 @@
 			<artifactId>jira-client</artifactId>
 			<version>0.6.1-IHTSDO</version>
 		</dependency>
-		<!-- IMS -->
-		<dependency>
-			<groupId>org.ihtsdo.otf</groupId>
-			<artifactId>ihtsdo-crowd-resources</artifactId>
-			<version>${org.ihtsdo.otf.im-version}</version>
-			<classifier>resources</classifier>
-			<type>zip</type>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.ihtsdo.otf</groupId>
-			<artifactId>ihtsdo-crowd-bridge</artifactId>
-			<version>${org.ihtsdo.otf.im-version}</version>
-		</dependency>
 		<dependency>
 			<groupId>org.apache.httpcomponents</groupId>
 			<artifactId>httpclient</artifactId>
@@ -300,104 +286,20 @@
 			</resource>
 			<resource>
 				<directory>${project.build.directory}/generated-resources</directory>
-				<filtering>true</filtering>
 			</resource>
 		</resources>
 
 		<plugins>
-			<plugin>
-				<groupId>org.eclipse.tycho</groupId>
-				<artifactId>tycho-packaging-plugin</artifactId>
-				<executions>
-					<execution>
-						<id>generate-qualifier</id>
-						<phase>validate</phase>
-						<goals>
-							<goal>build-qualifier</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>com.google.code.maven-replacer-plugin</groupId>
-				<artifactId>replacer</artifactId>
-				<version>1.5.3</version>
-				<executions>
-					<execution>
-						<phase>prepare-package</phase>
-						<goals>
-							<goal>replace</goal>
-						</goals>
-					</execution>
-				</executions>
-				<configuration>
-					<file>${project.build.directory}/generated/MANIFEST.MF</file>
-					<outputFile>${project.build.directory}/manifest/MANIFEST.MF</outputFile>
-					<regex>true</regex>
-					<token>Bundle-Version: .*\.qualifier</token>
-					<value>Bundle-Version: ${unqualifiedVersion}.${buildQualifier}</value>
-				</configuration>
-			</plugin>
-
-
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-jar-plugin</artifactId>
-				<version>2.5</version>
-				<configuration>
-					<outputDirectory>${project.build.directory}/plain-jar</outputDirectory>
-				</configuration>
-				<executions>
-					<execution>
-						<id>create-jar</id>
-						<phase>package</phase>
-						<goals>
-							<goal>jar</goal>
-						</goals>
-						<configuration>
-
-							<classesDirectory>${project.build.directory}/classes</classesDirectory>
-							<outputDirectory>${project.build.directory}</outputDirectory>
-							<archive>
-								<manifestFile>${project.build.directory}/manifest/MANIFEST.MF</manifestFile>
-							</archive>
-
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-
 			<!-- Generate Manifest -->
 			<plugin>
 				<groupId>org.apache.felix</groupId>
 				<artifactId>maven-bundle-plugin</artifactId>
-				<version>2.5.3</version>
-				<dependencies>
-					<dependency>
-						<groupId>biz.aQute.bnd</groupId>
-						<artifactId>bndlib</artifactId>
-						<version>2.4.0</version>
-					</dependency>
-				</dependencies>
-				<executions>
-					<execution>
-						<id>bundle-manifest</id>
-						<phase>process-classes</phase>
-						<goals>
-							<goal>manifest</goal>
-						</goals>
-					</execution>
-				</executions>
+				<version>3.0.1</version>
+				<extensions>true</extensions>
 				<configuration>
-					<supportedProjectTypes>
-						<supportedProjectType>jar</supportedProjectType>
-					</supportedProjectTypes>
-					<manifestLocation>${project.build.directory}/generated/</manifestLocation>
-
 					<instructions>
-						<Build-Name>IHTSDO Snow Owl REST Single Concept Authoring Service</Build-Name>
+						<Bundle-Name>IHTSDO Snow Owl REST Single Concept Authoring Service</Bundle-Name>
 						<Bundle-SymbolicName>${project.artifactId};singleton:=true</Bundle-SymbolicName>
-						<Bundle-Version>1.0.0.qualifier</Bundle-Version>
 						<Bundle-ManifestVersion>2</Bundle-ManifestVersion>
 						<Bundle-ClassPath>.,{maven-dependencies}</Bundle-ClassPath>
 						<Embed-Directory>WEB-INF/lib</Embed-Directory>
@@ -413,6 +315,7 @@
 							com.b2international.snowowl.snomed.api.impl.validation,
 							com.b2international.snowowl.api.impl.codesystem
 						</Import-Package>
+						<Require-Bundle>org.eclipse.equinox.security;bundle-version="1.1.100"</Require-Bundle>
 					</instructions>
 				</configuration>
 			</plugin>
@@ -420,39 +323,6 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-dependency-plugin</artifactId>
 				<executions>
-					<execution>
-						<id>copy-dependencies</id>
-						<phase>process-resources</phase>
-						<goals>
-							<goal>copy-dependencies</goal>
-						</goals>
-						<configuration>
-							<outputDirectory>${project.build.directory}/classes/WEB-INF/lib</outputDirectory>
-							<overWriteReleases>false</overWriteReleases>
-							<overWriteSnapshots>false</overWriteSnapshots>
-							<overWriteIfNewer>true</overWriteIfNewer>
-							<excludeScope>provided</excludeScope>
-						</configuration>
-					</execution>
-					<execution>
-						<id>unpack-crowd-resources</id>
-						<goals>
-							<goal>unpack-dependencies</goal>
-						</goals>
-						<phase>generate-resources</phase>
-						<configuration>
-							<outputDirectory>${project.build.directory}/generated-resources</outputDirectory>
-							<includeGroupIds>org.ihtsdo.otf</includeGroupIds>
-							<includeArtifactIds>ihtsdo-crowd-resources</includeArtifactIds>
-							<excludeArtifactIds>*</excludeArtifactIds>
-							<excludeTransitive>true</excludeTransitive>
-							<includes>crowd*.properties,
-								application-im-common-security-config.xml,
-								applicationContext-CrowdClient.xml,
-								crowd-ehcache.xml
-							</includes>
-						</configuration>
-					</execution>
 					<execution>
 						<id>unpack-swagger-ui-files</id>
 						<phase>generate-resources</phase>

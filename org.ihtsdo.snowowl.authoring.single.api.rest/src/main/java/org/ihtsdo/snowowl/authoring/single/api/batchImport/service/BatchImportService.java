@@ -448,17 +448,23 @@ public class BatchImportService {
 			.append("<ul>");
 			
 			if (format.getIndex(FIELD.ORIG_REF) != BatchImportFormat.FIELD_NOT_FOUND) {
-				str.append("<li>Originating Reference: ")
-				.append(biConcept.get(format.getIndex(FIELD.ORIG_REF)))
-				.append("</li>");
+				String origRef = biConcept.get(format.getIndex(FIELD.ORIG_REF));
+				if (origRef != null && !origRef.isEmpty()) {
+					str.append("<li>Originating Reference: ")
+					.append(origRef)
+					.append("</li>");
+				}
 			}
 			
 			for (int docIdx : format.getDocumentationFields()) {
-				str.append("<li>")
-				.append(format.getHeaders()[docIdx])
-				.append(": ")
-				.append(biConcept.get(docIdx))
-				.append("</li>");
+				String docStr = biConcept.get(docIdx);
+				if (docStr != null && !docStr.isEmpty()) {
+					str.append("<li>")
+					.append(format.getHeaders()[docIdx])
+					.append(": ")
+					.append(docStr)
+					.append("</li>");
+				}
 			}
 			
 			List<String> notes = run.getFormatter().getAllNotes(biConcept);
