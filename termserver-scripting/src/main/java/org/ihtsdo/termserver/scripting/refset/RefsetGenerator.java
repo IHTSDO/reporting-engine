@@ -22,9 +22,8 @@ public abstract class RefsetGenerator extends TermServerScript {
 	
 	private String outputName;  //Should be controlled by combination of other values eg refsetShape/Name
 	protected String edition = "INT";
-	protected String refsetId;
 	protected String refsetShape;
-	protected String refsetName;
+	protected String refsetFileName;
 	protected String effectiveDate; 
 	protected String moduleId = "900000000000207008";
 	protected String[] headers = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId"};
@@ -55,7 +54,7 @@ public abstract class RefsetGenerator extends TermServerScript {
 		initialiseReportFile("Concept,DescSctId,Term,Severity,Action,Detail");
 
 		int increment = 0;
-		String outputNameBase = "der2_" + refsetShape + "Refset_"+ refsetName + "Snapshot_" + edition +"_" + effectiveDate;
+		String outputNameBase = "der2_" + refsetShape + "Refset_"+ refsetFileName + "Snapshot_" + edition +"_" + effectiveDate;
 		outputName = outputNameBase;
 		while (new File (outputName + ".txt").exists()) {
 			outputName = outputNameBase + "_" + (++increment) ;
@@ -78,7 +77,7 @@ public abstract class RefsetGenerator extends TermServerScript {
 	
 	abstract void generateMembers() throws TermServerScriptException;
 
-	protected void outputRefset () {
+	protected void outputRefset () throws TermServerScriptException {
 		try(	OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(outputName, true), StandardCharsets.UTF_8);
 				BufferedWriter bw = new BufferedWriter(osw);
 				PrintWriter out = new PrintWriter(bw))
@@ -91,7 +90,7 @@ public abstract class RefsetGenerator extends TermServerScript {
 				columns[REF_IDX_EFFECTIVETIME] = effectiveDate;
 				columns[REF_IDX_ACTIVE] = "1";
 				columns[REF_IDX_MODULEID] = moduleId;
-				columns[REF_IDX_REFSETID] = refsetId;
+				columns[REF_IDX_REFSETID] = member.getRefsetId();
 				columns[REF_IDX_REFCOMPID] = member.getReferencedComponentId().getConceptId();
 				for (int i = 0; i < additionalColumnsCount ; i++) {
 					columns [REF_IDX_FIRST_ADDITIONAL + i] = member.getAdditionalValues()[i];
@@ -101,7 +100,7 @@ public abstract class RefsetGenerator extends TermServerScript {
 				out.print(line);
 			}
 		} catch (Exception e) {
-			println ("Unable to output refset due to " + e.getClass().getName() + ": " + e.getMessage());
+			throw new TermServerScriptException("Unable to output refset due to " + e.getClass().getName() + ": " + e.getMessage(), e);
 		}
 	}
 
