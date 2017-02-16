@@ -90,7 +90,7 @@ public abstract class TermServerScript implements RF2Constants {
 
 	public enum REPORT_ACTION_TYPE { API_ERROR, CONCEPT_CHANGE_MADE, INFO, UNEXPECTED_CONDITION,
 									 RELATIONSHIP_ADDED, RELATIONSHIP_REMOVED, DESCRIPTION_CHANGE_MADE, 
-									 NO_CHANGE, VALIDATION_ERROR, VALIDATION_CHECK};
+									 NO_CHANGE, VALIDATION_ERROR, VALIDATION_CHECK, DEBUG_INFO};
 									 
 	public enum SEVERITY { NONE, LOW, MEDIUM, HIGH, CRITICAL }; 
 
@@ -457,7 +457,7 @@ public abstract class TermServerScript implements RF2Constants {
 			recordSummaryText (key + ": " + display);
 		}
 		if (summaryDetails.containsKey("Tasks created") && summaryDetails.containsKey(CONCEPTS_PROCESSED) ) {
-			double c = (double)((Collection<?>)summaryDetails.get("Concepts processed")).size();
+			double c = (double)((Collection<?>)summaryDetails.get(CONCEPTS_PROCESSED)).size();
 			double t = (double)((Integer)summaryDetails.get("Tasks created")).intValue();
 			double avg = Math.round((c/t) * 10) / 10.0;
 			recordSummaryText ("Concepts per task: " + avg);

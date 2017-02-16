@@ -262,7 +262,8 @@ public class Relationship implements RF2Constants, Comparable<Relationship> {
 	
 	@Override
 	public String toString() {
-		return "[" + groupId + "] " + type + " - " + target;
+		String charType = characteristicType.equals(CharacteristicType.STATED_RELATIONSHIP)?"S":"I";
+		return "[" + charType + groupId + "] " + type + " - " + target;
 	}
 
 	@Override
@@ -279,7 +280,7 @@ public class Relationship implements RF2Constants, Comparable<Relationship> {
 			return false;
 		}
 		Relationship rhs = ((Relationship) other);
-		return this.hashCode() == rhs.hashCode();
+		return (this.type.equals(rhs.type) && this.target.equals(rhs.target) && this.groupId == rhs.groupId);
 	}
 	
 	@Override

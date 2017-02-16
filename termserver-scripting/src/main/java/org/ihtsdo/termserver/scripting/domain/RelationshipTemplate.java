@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting.domain;
 
 import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.Modifier;
 
 public class RelationshipTemplate {
 	private Concept type;
@@ -37,5 +38,14 @@ public class RelationshipTemplate {
 			return true;
 		}
 		return false;
+	}
+	
+	public Relationship createRelationship (Concept source, long groupId) {
+		Relationship r = new Relationship(source, type, target, groupId);
+		r.setActive(true);
+		r.setModuleId(source.getModuleId());
+		r.setCharacteristicType(characteristicType);
+		r.setModifier(Modifier.EXISTENTIAL);
+		return r;
 	}
 }
