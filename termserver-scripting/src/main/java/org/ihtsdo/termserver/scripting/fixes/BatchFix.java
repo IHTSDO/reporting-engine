@@ -6,9 +6,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
@@ -38,9 +35,6 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import us.monoid.json.JSONArray;
 import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
-
-import com.google.common.base.Charsets;
-import com.google.common.io.Files;
 
 /**
  * Reads in a file containing a list of concept SCTIDs and processes them in batches
@@ -227,12 +221,11 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		boolean isTaskSize = false;
 		boolean isProjectName = false;
 		boolean isAuthor = false;
-		boolean isMailRecipient = false;
 	
 		for (String thisArg : args) {
 			if (thisArg.equals("-a")) {
 				isAuthor = true;
-			} else if (thisArg.equals("-b")) {
+			} else if (thisArg.equals("-n")) {
 				isTaskSize = true;
 			} else if (isAuthor) {
 				targetAuthor = thisArg.toLowerCase();
