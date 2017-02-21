@@ -48,7 +48,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected static boolean dryRun = true;
 	protected static int dryRunCounter = 0;
 	protected static int taskThrottle = 30;
-	protected static int conceptThrottle = 20;
+	protected static int conceptThrottle = 5;
 	protected String env;
 	protected String url = environments[0];
 	protected boolean useAuthenticatedCookie = false;

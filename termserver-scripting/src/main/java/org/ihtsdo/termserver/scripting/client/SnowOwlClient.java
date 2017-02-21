@@ -265,6 +265,7 @@ public class SnowOwlClient {
 					if (!extractType.equals(ExtractType.SNAPSHOT)) {
 						throw new SnowOwlClientException("Export type " + exportType + " not recognised");
 					}
+					jsonObj.put("includeUnpublished", true);
 				case UNPUBLISHED:
 					String tet = (effectiveDate == null) ?YYYYMMDD.format(new Date()) : effectiveDate;
 					jsonObj.put("transientEffectiveTime", tet);

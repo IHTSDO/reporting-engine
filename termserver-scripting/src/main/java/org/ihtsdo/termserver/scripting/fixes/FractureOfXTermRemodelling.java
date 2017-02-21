@@ -11,28 +11,27 @@ import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Batch;
 import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Task;
-import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-
-import us.monoid.json.JSONObject;
 
 /*
 Assertion Failure fix checks a number of known assertion issues and makes
 changes to the concepts if required
  */
-public class LowerCaseTermInactivation extends BatchFix implements RF2Constants{
+public class FractureOfXTermRemodelling extends BatchFix implements RF2Constants{
 	
 	String[] author_reviewer = new String[] {targetAuthor};
-	String subHierarchyStr = "27268008";
+	String subHierarchyStr = "88230002";  // |Disorder of skeletal system (disorder)|
+	String searchTerm = "fracture";
+	String desiredTerm = "fracture of";
+	String[] prefixes = new String[] {"open", "closed"};
 	
-	protected LowerCaseTermInactivation(BatchFix clone) {
+	protected FractureOfXTermRemodelling(BatchFix clone) {
 		super(clone);
 	}
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
-		LowerCaseTermInactivation fix = new LowerCaseTermInactivation(null);
+		FractureOfXTermRemodelling fix = new FractureOfXTermRemodelling(null);
 		try {
 			fix.useAuthenticatedCookie = true;
 			fix.selfDetermining = true;
@@ -55,7 +54,7 @@ public class LowerCaseTermInactivation extends BatchFix implements RF2Constants{
 
 	@Override
 	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
-		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
+		/*Concept loadedConcept = loadConcept(concept, task.getBranchPath());
 		int changesMade = inactivateLowerCaseTerm(task, loadedConcept);
 		if (changesMade > 0) {
 			try {
@@ -68,23 +67,11 @@ public class LowerCaseTermInactivation extends BatchFix implements RF2Constants{
 				report(task, concept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.API_ERROR, "Failed to save changed concept to TS: " + e.getMessage());
 			}
 		}
-		return changesMade;
+		return changesMade;*/
+		report(task, concept, SEVERITY.NONE, REPORT_ACTION_TYPE.INFO, "");
+		return 1;
 	}
 
-	private int inactivateLowerCaseTerm(Task task, Concept concept) {
-		int changesMade = 0;
-		MatchedSet m = findMatchingDescriptionSet(concept);
-		
-		if (m != null) {
-			changesMade++;
-			m.inactivate.setActive(false);
-			m.inactivate.setEffectiveTime(null);
-			m.inactivate.setInactivationIndicator(InactivationIndicator.ERRONEOUS);
-			String msg = "Inactivated term '" + m.inactivate.getTerm() + "' due to presence of '" + m.keep.getTerm() + "'.";
-			report(task, concept, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, msg);
-		}
-		return changesMade;
-	}
 
 	protected Batch formIntoBatch() throws TermServerScriptException {
 		Batch batch = new Batch(getScriptName());
@@ -111,31 +98,29 @@ public class LowerCaseTermInactivation extends BatchFix implements RF2Constants{
 		Concept subHierarchy = gl.getConcept(subHierarchyStr);
 		Set<Concept>allDescendants = subHierarchy.getDescendents(NOT_SET);
 		for (Concept thisConcept : allDescendants) {
-			MatchedSet lowerCaseMatchingSet = findMatchingDescriptionSet(thisConcept);
-			if (lowerCaseMatchingSet != null) {
+			String fsn = thisConcept.getFsn().toLowerCase();
+			if (fsn.contains(searchTerm) && !startsWithSearchDesiredTerm(fsn)) {
 				processMe.add(thisConcept);
 			}
 		}
 		return processMe;
 	}
 
-	//Find active descriptions that match, where we want to keep the one that has the second
-	//word capitalized, and inactivate the one that has the second word in lower case.
-	private MatchedSet findMatchingDescriptionSet(Concept thisConcept) {
-		for (Description upperCase : thisConcept.getDescriptions(ActiveState.ACTIVE)) {
-			if (upperCase.getType().equals(DescriptionType.SYNONYM)) {  //Only comparing Synonyms 
-				for (Description lowerCase : thisConcept.getDescriptions(ActiveState.ACTIVE)) {	
-					if (lowerCase.getType().equals(DescriptionType.SYNONYM) && 
-							upperCase != lowerCase && 
-							upperCase.getTerm().equalsIgnoreCase(lowerCase.getTerm())) {
-						if (lowerCase.getTerm().equals(SnomedUtils.initialCapitalOnly(lowerCase.getTerm()))) {
-							return new MatchedSet (upperCase, lowerCase);
-						}
-					}
+
+
+	private boolean startsWithSearchDesiredTerm(String fsn) {
+		boolean startsWithSearchTerm = false;
+		
+		if (fsn.startsWith(desiredTerm)) {
+			startsWithSearchTerm = true;
+		} else {
+			for (String prefix : prefixes) {
+				if (fsn.startsWith(prefix + " " + desiredTerm)) {
+					startsWithSearchTerm = true;
 				}
 			}
 		}
-		return null;
+		return startsWithSearchTerm;
 	}
 
 	private void setAuthorReviewer(Task task, String[] author_reviewer) {
@@ -146,23 +131,10 @@ public class LowerCaseTermInactivation extends BatchFix implements RF2Constants{
 	}
 
 	@Override
-	public String getScriptName() {
-		return "LowerCaseTermInactivation";
-	}
-
-	@Override
 	protected Concept loadLine(String[] lineItems) throws TermServerScriptException {
 		return null; // We will identify descriptions to edit from the snapshot
 	}
 	
-	class MatchedSet {
-		MatchedSet (Description keep, Description inactivate) {
-			this.keep = keep;
-			this.inactivate = inactivate;
-		}
-		Description keep;
-		Description inactivate;
-	}
 
 	@Override
 	protected Batch formIntoBatch(String fileName, List<Concept> allConcepts,

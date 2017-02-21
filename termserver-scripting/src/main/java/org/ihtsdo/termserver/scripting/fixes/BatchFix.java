@@ -72,7 +72,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	
 	abstract protected Batch formIntoBatch (String fileName, List<Concept> allConcepts, String branchPath) throws TermServerScriptException;
 	
-	abstract protected int doFix(Task task, Concept concept) throws TermServerScriptException;
+	abstract protected int doFix(Task task, Concept concept, String info) throws TermServerScriptException;
 
 	protected void batchProcess(Batch batch) throws TermServerScriptException {
 		int failureCount = 0;
@@ -127,14 +127,16 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 					task.setTaskKey(taskKey);
 					task.setBranchPath(branchPath);
 					incrementSummaryInformation("Tasks created",1);
-					
+					int conceptInTask = 0;
 					//Process each concept
 					for (Concept concept : task.getConcepts()) {
 						try {
+							conceptInTask++;
 							if (!dryRun && task.getConcepts().indexOf(concept) != 0) {
 								Thread.sleep(conceptThrottle * 1000);
 							}
-							int changesMade = doFix(task, concept);
+							String info = " Task (" + xOfY + ") Concept (" + conceptInTask + " of " + task.getConcepts().size() + ")";
+							int changesMade = doFix(task, concept, info);
 							if (changesMade == 0) {
 								report(task, concept, SEVERITY.NONE, REPORT_ACTION_TYPE.NO_CHANGE, "");
 							}

@@ -67,13 +67,13 @@ public class ProximatePrimitiveRemodeller extends BatchFix implements RF2Constan
 	}
 
 	@Override
-	public int doFix(Task task, Concept concept) throws TermServerScriptException {
+	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
 		int changesMade = remodel(task, loadedConcept);
 		if (changesMade > 0) {
 			try {
 				String conceptSerialised = gson.toJson(loadedConcept);
-				debug ("Updating state of " + loadedConcept);
+				debug ("Updating state of " + loadedConcept + info);
 				if (!dryRun) {
 					tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
 				}
