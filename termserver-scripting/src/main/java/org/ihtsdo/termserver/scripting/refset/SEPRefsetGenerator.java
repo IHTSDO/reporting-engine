@@ -30,7 +30,7 @@ public class SEPRefsetGenerator extends RefsetGenerator{
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
 		SEPRefsetGenerator sep = new SEPRefsetGenerator();
 		try {
-			sep.setAdditionalHeaders(new String[] {"mapTarget"});
+			sep.setAdditionalHeaders(new String[] {"targetComponentId"});
 			sep.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			sep.loadProjectSnapshot(true);  //Just FSN
@@ -44,8 +44,8 @@ public class SEPRefsetGenerator extends RefsetGenerator{
 	
 	protected void init(String[] args) throws IOException, TermServerScriptException {
 		effectiveDate = "20170731";
-		refsetShape = "s";
-		refsetFileName = "SimpleMap";
+		refsetShape = "c";
+		refsetFileName = "AssociationReference";
 		super.init(args);
 	}
 
