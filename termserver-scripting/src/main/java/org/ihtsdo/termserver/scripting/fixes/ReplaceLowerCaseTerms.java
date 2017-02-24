@@ -5,7 +5,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.NotImplementedException;
+import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
@@ -19,20 +21,22 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import us.monoid.json.JSONObject;
 
 /*
-Fix identifies otherwise identical lower case and upper case terms and inactivates
-the lower case term
+Fix finds terms where the 2nd word is lower case and no equivalent upper case term exists.
+The lower case term is inactivated and replaced with the upper case version.
  */
-public class LowerCaseTermInactivation extends BatchFix implements RF2Constants{
+public class ReplaceLowerCaseTerms extends BatchFix implements RF2Constants{
 	
 	String[] author_reviewer = new String[] {targetAuthor};
 	String subHierarchyStr = "27268008";  //Genus Salmonella (organism)
+	String[] exceptions = new String[] {"398393000", "110378009"};
+	String firstWord = "Salmonella";
 	
-	protected LowerCaseTermInactivation(BatchFix clone) {
+	protected ReplaceLowerCaseTerms(BatchFix clone) {
 		super(clone);
 	}
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
-		LowerCaseTermInactivation fix = new LowerCaseTermInactivation(null);
+		ReplaceLowerCaseTerms fix = new ReplaceLowerCaseTerms(null);
 		try {
 			fix.useAuthenticatedCookie = true;
 			fix.selfDetermining = true;
@@ -56,7 +60,7 @@ public class LowerCaseTermInactivation extends BatchFix implements RF2Constants{
 	@Override
 	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
-		int changesMade = inactivateLowerCaseTerm(task, loadedConcept);
+		int changesMade = replaceLowerCaseTerm(task, loadedConcept);
 		if (changesMade > 0) {
 			try {
 				String conceptSerialised = gson.toJson(loadedConcept);
@@ -71,16 +75,21 @@ public class LowerCaseTermInactivation extends BatchFix implements RF2Constants{
 		return changesMade;
 	}
 
-	private int inactivateLowerCaseTerm(Task task, Concept concept) {
+	private int replaceLowerCaseTerm(Task task, Concept concept) {
 		int changesMade = 0;
-		MatchedSet m = findMatchingDescriptionSet(concept);
+		Description lower = findUnmatchedLowerCaseTerm(concept);
 		
-		if (m != null) {
+		if (lower != null) {
 			changesMade++;
-			m.inactivate.setActive(false);
-			m.inactivate.setEffectiveTime(null);
-			m.inactivate.setInactivationIndicator(InactivationIndicator.ERRONEOUS);
-			String msg = "Inactivated term '" + m.inactivate.getTerm() + "' due to presence of '" + m.keep.getTerm() + "'.";
+			String[] words = lower.getTerm().split(" ");
+			words[1] = SnomedUtils.capitalize(words[1]);
+			Description upper = lower.clone("");
+			upper.setTerm(StringUtils.join(words, " "));
+			concept.addDescription(upper);
+			lower.setActive(false);
+			lower.setEffectiveTime(null);
+			lower.setInactivationIndicator(InactivationIndicator.ERRONEOUS);
+			String msg = "Replaced term '" + lower.getTerm() + "' with '" + upper.getTerm() + "'.";
 			report(task, concept, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, msg);
 		}
 		return changesMade;
@@ -111,32 +120,56 @@ public class LowerCaseTermInactivation extends BatchFix implements RF2Constants{
 		Concept subHierarchy = gl.getConcept(subHierarchyStr);
 		Set<Concept>allDescendants = subHierarchy.getDescendents(NOT_SET);
 		for (Concept thisConcept : allDescendants) {
+			//Don't process the exceptions
+			if (ArrayUtils.contains(exceptions, thisConcept.getConceptId())) {
+				continue;
+			}
 			//Find concepts where there are otherwise identical lower and uppercase terms
-			MatchedSet lowerCaseMatchingSet = findMatchingDescriptionSet(thisConcept);
-			if (lowerCaseMatchingSet != null) {
+			Description unmatchedLowerCaseTerm = findUnmatchedLowerCaseTerm(thisConcept);
+			if (unmatchedLowerCaseTerm != null) {
 				processMe.add(thisConcept);
 			}
 		}
 		return processMe;
 	}
 
-	//Find active descriptions that match, where we want to keep the one that has the second
-	//word capitalized, and inactivate the one that has the second word in lower case.
-	private MatchedSet findMatchingDescriptionSet(Concept thisConcept) {
-		for (Description upperCase : thisConcept.getDescriptions(ActiveState.ACTIVE)) {
-			if (upperCase.getType().equals(DescriptionType.SYNONYM)) {  //Only comparing Synonyms 
-				for (Description lowerCase : thisConcept.getDescriptions(ActiveState.ACTIVE)) {	
-					if (lowerCase.getType().equals(DescriptionType.SYNONYM) && 
-							upperCase != lowerCase && 
-							upperCase.getTerm().equalsIgnoreCase(lowerCase.getTerm())) {
-						if (lowerCase.getTerm().equals(SnomedUtils.initialCapitalOnly(lowerCase.getTerm()))) {
-							return new MatchedSet (upperCase, lowerCase);
-						}
+	//Find active descriptions that consist of two words, where the second word is 
+	//lower case, and there is no other active term where it is upper case.
+	private Description findUnmatchedLowerCaseTerm(Concept thisConcept) {
+		for (Description lowerCase : thisConcept.getDescriptions(ActiveState.ACTIVE)) {
+			if (lowerCase.getType().equals(DescriptionType.SYNONYM)) {  //Only comparing Synonyms 
+				//Do we only have two words?  And is word 2 all lower case?
+				//No interested in words containing numbers
+				String [] words = lowerCase.getTerm().split(" ");
+				if (words.length == 2 && 
+						words[0].equals(firstWord) && 
+						!words[1].matches(".*\\d+.*") &&
+						words[1].equals(words[1].toLowerCase())) {
+					//Are there no other terms differing only in case?
+					if (!hasCaseDifferenceTerm(thisConcept, lowerCase)) {
+						return lowerCase;
 					}
 				}
 			}
 		}
 		return null;
+	}
+
+	/*
+	 * Returns true if an active description exists which differs only in case.
+	 */
+	private boolean hasCaseDifferenceTerm(Concept concept,
+			Description matchTerm) {
+		for (Description thisTerm : concept.getDescriptions(ActiveState.ACTIVE)) {
+			//Check it's not exactly the same
+			if (!matchTerm.getTerm().equals(thisTerm.getTerm())) {
+				//Check if it matches ignoring case
+				if (matchTerm.getTerm().equalsIgnoreCase(thisTerm.getTerm())) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 
 	private void setAuthorReviewer(Task task, String[] author_reviewer) {
