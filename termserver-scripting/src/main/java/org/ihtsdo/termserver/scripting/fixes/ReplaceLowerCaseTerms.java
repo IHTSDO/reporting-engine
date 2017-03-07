@@ -77,22 +77,46 @@ public class ReplaceLowerCaseTerms extends BatchFix implements RF2Constants{
 
 	private int replaceLowerCaseTerm(Task task, Concept concept) {
 		int changesMade = 0;
-		Description lower = findUnmatchedLowerCaseTerm(concept);
+		List<Description> lowerCaseTerms = findUnmatchedLowerCaseTerms(concept);
 		
-		if (lower != null) {
+		for (Description lower : lowerCaseTerms) {
 			changesMade++;
 			String[] words = lower.getTerm().split(" ");
-			words[1] = SnomedUtils.capitalize(words[1]);
-			Description upper = lower.clone("");
-			upper.setTerm(StringUtils.join(words, " "));
-			concept.addDescription(upper);
+			//Skip over Roman Numerals.
+			//Also remove any dashes in the 2nd word.
+			if (words.length > 2 && isRomanNumeral(words[1])) {
+				words[2] = SnomedUtils.capitalize(words[2]).replace("-", "");
+			} else {
+				words[1] = SnomedUtils.capitalize(words[1]).replace("-", "");
+			}
+			String newTerm = StringUtils.join(words, " ");
+			String msg;
+			if (!termAlreadyExists(concept, newTerm)) {
+				Description upper = lower.clone("");
+				upper.setTerm(newTerm);
+				upper.setCaseSignificance(CaseSignificance.ENITRE_TERM_CASE_SENSITIVE.toString());
+				concept.addDescription(upper);
+				msg = "Replaced term '" + lower.getTerm() + "' with '" + upper.getTerm() + "'.";
+			} else {
+				msg = "Inactivated term '" + lower.getTerm() + "', replacement already exists.";
+			}
+			
 			lower.setActive(false);
 			lower.setEffectiveTime(null);
 			lower.setInactivationIndicator(InactivationIndicator.ERRONEOUS);
-			String msg = "Replaced term '" + lower.getTerm() + "' with '" + upper.getTerm() + "'.";
 			report(task, concept, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, msg);
 		}
 		return changesMade;
+	}
+
+	private boolean termAlreadyExists(Concept concept, String newTerm) {
+		boolean termAlreadyExists = false;
+		for (Description description : concept.getDescriptions()) {
+			if (description.getTerm().equals(newTerm)) {
+				termAlreadyExists = true;
+			}
+		}
+		return termAlreadyExists;
 	}
 
 	protected Batch formIntoBatch() throws TermServerScriptException {
@@ -114,6 +138,11 @@ public class ReplaceLowerCaseTerms extends BatchFix implements RF2Constants{
 	}
 	
 
+	/**
+	 * Identify any concept 
+	 * @return
+	 * @throws TermServerScriptException
+	 */
 	private List<Concept> identifyConceptsToProcess() throws TermServerScriptException {
 		List<Concept> processMe = new ArrayList<Concept>();
 		GraphLoader gl = GraphLoader.getGraphLoader();
@@ -124,9 +153,9 @@ public class ReplaceLowerCaseTerms extends BatchFix implements RF2Constants{
 			if (ArrayUtils.contains(exceptions, thisConcept.getConceptId())) {
 				continue;
 			}
-			//Find concepts where there are otherwise identical lower and uppercase terms
-			Description unmatchedLowerCaseTerm = findUnmatchedLowerCaseTerm(thisConcept);
-			if (unmatchedLowerCaseTerm != null) {
+			//Find terms which only exist in lower case
+			List<Description> unmatchedLowerCaseTerms = findUnmatchedLowerCaseTerms(thisConcept);
+			if (unmatchedLowerCaseTerms.size() > 0) {
 				processMe.add(thisConcept);
 			}
 		}
@@ -135,24 +164,50 @@ public class ReplaceLowerCaseTerms extends BatchFix implements RF2Constants{
 
 	//Find active descriptions that consist of two words, where the second word is 
 	//lower case, and there is no other active term where it is upper case.
-	private Description findUnmatchedLowerCaseTerm(Concept thisConcept) {
+	private List<Description> findUnmatchedLowerCaseTerms(Concept thisConcept) {
+		List<Description> unmatchedLowerCaseTerms = new ArrayList<Description>();
 		for (Description lowerCase : thisConcept.getDescriptions(ActiveState.ACTIVE)) {
-			if (lowerCase.getType().equals(DescriptionType.SYNONYM)) {  //Only comparing Synonyms 
-				//Do we only have two words?  And is word 2 all lower case?
-				//No interested in words containing numbers
-				String [] words = lowerCase.getTerm().split(" ");
-				if (words.length == 2 && 
-						words[0].equals(firstWord) && 
-						!words[1].matches(".*\\d+.*") &&
-						words[1].equals(words[1].toLowerCase())) {
-					//Are there no other terms differing only in case?
-					if (!hasCaseDifferenceTerm(thisConcept, lowerCase)) {
-						return lowerCase;
-					}
+			//Do we only have two words?  And is word 2 all lower case?
+			//No interested in words containing numbers
+			//Also if it's an FSN, strip off the semantic tag
+			String term = lowerCase.getTerm();
+			if (lowerCase.getType().equals(DescriptionType.FSN)) {
+				term = SnomedUtils.deconstructFSN(term)[0];
+			}
+			String [] words = term.split(" ");
+			words = removeRomanNumerals(words);
+			if (words.length == 2 && 
+					words[0].equals(firstWord) && 
+					!words[1].matches(".*\\d+.*") &&
+					!words[1].contains("[") &&
+					words[1].equals(words[1].toLowerCase())) {
+				//Are there no other terms differing only in case?
+				if (!hasCaseDifferenceTerm(thisConcept, lowerCase)) {
+					unmatchedLowerCaseTerms.add(lowerCase);
 				}
 			}
 		}
-		return null;
+		return unmatchedLowerCaseTerms;
+	}
+
+	private String[] removeRomanNumerals(String[] words) {
+		//Is the 2nd word in composed only of Is, Vs & Xs, and not longer than 3 letters?
+		if (words.length > 2 && isRomanNumeral(words[1])) {
+			String[] withoutRNs = new String[words.length - 1];
+			int newPos = 0;
+			for (int i=0; i<words.length; i++) {
+				if (i!=1) {
+					withoutRNs[newPos++] = words[i];
+				}
+			}
+			return withoutRNs;
+		}
+		return words;
+	}
+	
+	private boolean isRomanNumeral (String word) {
+		return (word.length() <= 3 &&
+				word.replace("I","").replace("V", "").replace("X", "").isEmpty());
 	}
 
 	/*
