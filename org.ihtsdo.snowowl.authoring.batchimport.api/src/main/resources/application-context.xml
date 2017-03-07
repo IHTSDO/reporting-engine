@@ -4,7 +4,11 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd">
 
+	<bean class="com.b2international.snowowl.api.impl.AuthenticationServiceImpl" />
+
 	<import resource="web-context.xml" />
+
+	<bean class="com.b2international.snowowl.snomed.api.impl.SnomedBrowserService" />
 
 	<bean class="org.ihtsdo.snowowl.api.rest.common.ServicesConfiguration" />
 	<bean class="com.mangofactory.swagger.configuration.JacksonSwaggerSupport" init-method="setup" /> <!-- to fix object mapper initialization post SSO -->
