@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans
+	xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd">
+
+	<import resource="jms-api-context.xml"/>
+
+	<bean class="org.ihtsdo.snowowl.authoring.batchimport.api.SpringConfiguration"/>
+
+	<bean class="org.ihtsdo.snowowl.authoring.batchimport.api.service.task.InstanceConfiguration">
+		<constructor-arg value="+{jiraProjectFilterProductCodes}"/>
+	</bean>
+
+	<bean class="org.ihtsdo.snowowl.authoring.batchimport.api.service.task.TaskService">
+		<constructor-arg>
+			<bean class="org.ihtsdo.snowowl.authoring.batchimport.api.service.task.jira.OAuthJiraClientFactory">
+				<constructor-arg value="+{jira.url}"/>
+				<constructor-arg value="+{jira.consumerKey}"/>
+				<constructor-arg value="#{systemProperties['osgi.sharedConfiguration.area']}/+{jira.privateKeyName}"/>
+			</bean>
+		</constructor-arg>
+		<constructor-arg value="+{jira.username}"/>
+	</bean>
+
+	<bean class="org.ihtsdo.snowowl.authoring.batchimport.api.service.BatchImportService"/>
+
+	<bean class="org.ihtsdo.snowowl.authoring.batchimport.api.service.BranchService"/>
+
+	<bean class="org.ihtsdo.otf.rest.client.SnowOwlRestClient">
+		<constructor-arg value="+{snowowl.url}"/>
+		<constructor-arg value="+{snowowl.username}"/>
+		<constructor-arg value="+{snowowl.password}"/>
+		<property name="reasonerId" value="+{snowowl.reasonerId}"/>
+		<property name="logPath" value="+{snowowl.log.path}"/>
+		<property name="rolloverLogPath" value="+{snowowl.rolloverLog.path}"/>
+		<property name="importTimeoutMinutes" value="+{snowowl.import.timeout}"/>
+		<property name="classificationTimeoutMinutes" value="+{snowowl.classification.timeout}"/>
+	</bean>
+	
+	<bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="location" value="#{systemProperties['osgi.sharedConfiguration.area']}/single_authoring.properties"/>
+		<property name="placeholderPrefix" value="+{"/>
+	</bean>
+
+	<bean class="org.ihtsdo.snowowl.authoring.batchimport.api.service.task.UiStateService"/>
+	
+	<bean class="org.ihtsdo.snowowl.authoring.batchimport.api.service.file.dao.ArbitraryFileService"/>
+	
+</beans>
