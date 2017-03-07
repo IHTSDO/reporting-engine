@@ -3,12 +3,12 @@
 	<parent>
 		<groupId>com.b2international.snowowl</groupId>
 		<artifactId>snowowl-parent</artifactId>
-		<version>4.8.0</version>
+		<version>4.9.1</version>
 	</parent>
 
 	<groupId>org.ihtsdo.snowowl</groupId>
 	<artifactId>ihtsdo-snowowl-parent</artifactId>
-	<version>4.10.1-SNAPSHOT</version>
+	<version>4.11.0-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
 	<properties>
@@ -27,7 +27,7 @@
 	
 	<modules>
 		<module>org.ihtsdo.snowowl.api.rest.common</module>
-		<module>org.ihtsdo.snowowl.authoring.single.api.rest</module>
+		<module>org.ihtsdo.snowowl.authoring.batchimport.api</module>
 		<module>termserver-scripting</module>
 	</modules>
 
