@@ -1,10 +1,10 @@
 package org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo;
 
-public class BatchImportDetail {
+class BatchImportDetail {
 	
-	boolean loaded;
-	String failureReason;
-	String sctidCreated;
+	private boolean loaded;
+	private String failureReason;
+	private String sctidCreated;
 	
 	public BatchImportDetail (boolean loaded, String failureReason, String sctidCreated) {
 		this.loaded = loaded;

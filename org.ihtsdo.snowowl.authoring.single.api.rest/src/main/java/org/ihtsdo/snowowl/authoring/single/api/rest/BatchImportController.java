@@ -1,49 +1,36 @@
 package org.ihtsdo.snowowl.authoring.single.api.rest;
 
-import static java.util.UUID.randomUUID;
-
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.Reader;
-import java.io.Writer;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.UUID;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
-import com.wordnik.swagger.annotations.ApiResponse;
-import com.wordnik.swagger.annotations.ApiResponses;
-
+import com.wordnik.swagger.annotations.*;
 import net.rcarz.jiraclient.JiraException;
-
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
-import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.api.rest.common.AbstractRestService;
 import org.ihtsdo.snowowl.api.rest.common.AbstractSnomedRestService;
 import org.ihtsdo.snowowl.api.rest.common.ControllerHelper;
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportRequest;
-import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportState;
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportStatus;
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.service.BatchImportFormat;
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.service.BatchImportService;
-import org.ihtsdo.snowowl.authoring.single.api.service.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.UUID;
+
+import static java.util.UUID.randomUUID;
+
 @Api("Authoring Projects")
 @RestController
 @RequestMapping(produces={AbstractRestService.V1_MEDIA_TYPE, MediaType.APPLICATION_JSON_VALUE})
+@SuppressWarnings("unused")
 public class BatchImportController extends AbstractSnomedRestService {
 
 	@Autowired
@@ -68,7 +55,7 @@ public class BatchImportController extends AbstractSnomedRestService {
 			@RequestPart("file") 
 			final MultipartFile file,
 			HttpServletRequest request,
-			HttpServletResponse response ) throws BusinessServiceException, JiraException, ServiceException {
+			HttpServletResponse response ) throws BusinessServiceException, JiraException {
 		
 		try {
 			final UUID batchImportId = randomUUID();

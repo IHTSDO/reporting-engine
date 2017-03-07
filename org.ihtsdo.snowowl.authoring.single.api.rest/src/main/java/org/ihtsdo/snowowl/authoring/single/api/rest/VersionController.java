@@ -18,6 +18,7 @@ import java.util.Map;
 @Api("Version")
 @RestController
 @RequestMapping(produces = { AbstractRestService.V1_MEDIA_TYPE, MediaType.APPLICATION_JSON_VALUE })
+@SuppressWarnings("unused")
 public class VersionController extends AbstractSnomedRestService {
 
 	public static final String VERSION_FILE_PATH = "/opt/sca/version.txt";

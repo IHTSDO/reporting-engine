@@ -4,7 +4,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 public class BatchImportDocumentation {
-	Map<String, String> items = new TreeMap<String, String>();
+	private Map<String, String> items = new TreeMap<>();
 	
 	public void addItem (String key, String value) {
 		items.put(key, value);

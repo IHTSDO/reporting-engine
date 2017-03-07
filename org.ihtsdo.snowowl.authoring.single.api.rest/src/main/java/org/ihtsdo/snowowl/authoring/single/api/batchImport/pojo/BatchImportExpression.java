@@ -26,9 +26,9 @@ public class BatchImportExpression {
 	public static final String TYPE_SEPARATOR = "=";
 	public static char[] termTerminators = new char[] {'|', ':', '+', '{', ',', '}', '=' };
 
-	DefinitionStatus definitionStatus;
-	List<String> focusConcepts;
-	List<BatchImportGroup> attributeGroups;
+	private DefinitionStatus definitionStatus;
+	private List<String> focusConcepts;
+	private List<BatchImportGroup> attributeGroups;
 
 	private BatchImportExpression(){
 		
@@ -80,7 +80,7 @@ public class BatchImportExpression {
 	}
 
 	static List<BatchImportGroup> extractGroups(StringBuffer expressionBuff) throws ProcessingException {
-		List<BatchImportGroup> groups = new ArrayList<BatchImportGroup>();
+		List<BatchImportGroup> groups = new ArrayList<>();
 		//Do we have any groups to parse?
 		if (expressionBuff == null || expressionBuff.length() == 0) {
 			return groups;

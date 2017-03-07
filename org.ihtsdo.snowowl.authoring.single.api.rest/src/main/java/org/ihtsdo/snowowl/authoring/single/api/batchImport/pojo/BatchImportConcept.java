@@ -8,22 +8,22 @@ import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 
 public class BatchImportConcept {
 	
-	CSVRecord row;
-	String sctid;
-	List<String> parents = new ArrayList<String>();
-	String expressionStr;
-	String fsn;
-	BatchImportExpression expression;
-	BatchImportDocumentation documentation = new BatchImportDocumentation();
-	ArrayList <BatchImportTerm> terms = new ArrayList<BatchImportTerm>();
+	private CSVRecord row;
+	private String sctid;
+	private List<String> parents = new ArrayList<>();
+	private String expressionStr;
+	private String fsn;
+	private BatchImportExpression expression;
+	private BatchImportDocumentation documentation = new BatchImportDocumentation();
+	private ArrayList <BatchImportTerm> terms = new ArrayList<>();
 
 	public BatchImportDocumentation getDocumentation() {
 		return documentation;
 	}
 
-	boolean requiresNewSCTID = false;
+	private boolean requiresNewSCTID = false;
 	
-	List<BatchImportConcept> children = new ArrayList<BatchImportConcept>();
+	private List<BatchImportConcept> children = new ArrayList<>();
 	
 	public BatchImportConcept(String sctid, List<String> parents, CSVRecord row, boolean requiresNewSCTID) {
 		this.sctid = sctid;
@@ -64,7 +64,7 @@ public class BatchImportConcept {
 		return this.requiresNewSCTID;
 	}
 
-	public boolean isRootConcept() {
+	private boolean isRootConcept() {
 		return row == null;
 	}
 

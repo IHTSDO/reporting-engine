@@ -1,10 +1,10 @@
 package org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo;
 
 public class BatchImportStatus {
-	BatchImportState state;
-	Integer target;
-	Integer loaded;
-	Integer processed;
+	private BatchImportState state;
+	private Integer target;
+	private Integer loaded;
+	private Integer processed;
 	
 	public BatchImportStatus(BatchImportState state) {
 		this.state = state;

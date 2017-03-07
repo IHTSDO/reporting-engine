@@ -18,13 +18,13 @@ import org.slf4j.LoggerFactory;
 public class BatchImportRun {
 	
 	private final Logger logger = LoggerFactory.getLogger(getClass());
-	
-	Map <CSVRecord, BatchImportDetail> allRows = new LinkedHashMap<CSVRecord, BatchImportDetail>();
-	Map <String, BatchImportConcept> allValidConcepts = new HashMap<String, BatchImportConcept>();
-	BatchImportConcept rootConcept = BatchImportConcept.createRootConcept();
-	BatchImportRequest importRequest;
-	BatchImportFormat format;
-	UUID id;
+
+	private Map <CSVRecord, BatchImportDetail> allRows = new LinkedHashMap<>();
+	private Map <String, BatchImportConcept> allValidConcepts = new HashMap<>();
+	private BatchImportConcept rootConcept = BatchImportConcept.createRootConcept();
+	private BatchImportRequest importRequest;
+	private BatchImportFormat format;
+	private UUID id;
 	
 	public static BatchImportRun createRun (UUID batchImportId, BatchImportRequest importRequest) throws BusinessServiceException {
 		BatchImportRun run = new BatchImportRun(importRequest);

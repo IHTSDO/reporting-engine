@@ -8,10 +8,10 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 
-public class BatchImportRunner implements Runnable {
+class BatchImportRunner implements Runnable {
 	
-	BatchImportRun batchImportRun;
-	BatchImportService service;
+	private BatchImportRun batchImportRun;
+	private BatchImportService service;
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 	private SecurityContext securityContext;
 	

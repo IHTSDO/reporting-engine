@@ -1,38 +1,32 @@
 package org.ihtsdo.snowowl.authoring.single.api.batchImport.service;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.StringReader;
-import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
+import com.b2international.commons.VerhoeffCheck;
+import com.b2international.commons.http.AcceptHeader;
+import com.b2international.commons.http.ExtendedLocale;
+import com.b2international.snowowl.core.exceptions.AlreadyExistsException;
+import com.b2international.snowowl.core.exceptions.ApiError;
+import com.b2international.snowowl.core.exceptions.BadRequestException;
+import com.b2international.snowowl.core.exceptions.ValidationException;
+import com.b2international.snowowl.snomed.SnomedConstants;
+import com.b2international.snowowl.snomed.SnomedConstants.Concepts;
+import com.b2international.snowowl.snomed.api.domain.browser.ISnomedBrowserConcept;
+import com.b2international.snowowl.snomed.api.domain.browser.ISnomedBrowserDescription;
+import com.b2international.snowowl.snomed.api.domain.browser.ISnomedBrowserRelationship;
+import com.b2international.snowowl.snomed.api.domain.browser.SnomedBrowserDescriptionType;
+import com.b2international.snowowl.snomed.api.impl.SnomedBrowserService;
+import com.b2international.snowowl.snomed.api.impl.domain.browser.*;
+import com.b2international.snowowl.snomed.core.domain.*;
 import net.rcarz.jiraclient.JiraException;
-
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.otf.rest.exception.ProcessingException;
-import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportConcept;
-import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportExpression;
-import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportGroup;
-import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportRequest;
-import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportRun;
-import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportState;
-import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportStatus;
-import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.BatchImportTerm;
+import org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo.*;
 import org.ihtsdo.snowowl.authoring.single.api.batchImport.service.BatchImportFormat.FIELD;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTask;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskCreateRequest;
 import org.ihtsdo.snowowl.authoring.single.api.pojo.AuthoringTaskUpdateRequest;
 import org.ihtsdo.snowowl.authoring.single.api.service.BranchService;
-import org.ihtsdo.snowowl.authoring.single.api.service.ServiceException;
 import org.ihtsdo.snowowl.authoring.single.api.service.TaskService;
 import org.ihtsdo.snowowl.authoring.single.api.service.TaskStatus;
 import org.ihtsdo.snowowl.authoring.single.api.service.UiStateService;
@@ -42,32 +36,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.b2international.commons.VerhoeffCheck;
-import com.b2international.commons.http.AcceptHeader;
-import com.b2international.commons.http.ExtendedLocale;
-import com.b2international.snowowl.core.exceptions.AlreadyExistsException;
-import com.b2international.snowowl.core.exceptions.ApiError;
-import com.b2international.snowowl.core.exceptions.BadRequestException;
-import com.b2international.snowowl.core.exceptions.ValidationException;
-import com.b2international.snowowl.eventbus.IEventBus;
-import com.b2international.snowowl.snomed.SnomedConstants;
-import com.b2international.snowowl.snomed.SnomedConstants.Concepts;
-import com.b2international.snowowl.snomed.api.domain.browser.ISnomedBrowserConcept;
-import com.b2international.snowowl.snomed.api.domain.browser.ISnomedBrowserDescription;
-import com.b2international.snowowl.snomed.api.domain.browser.ISnomedBrowserRelationship;
-import com.b2international.snowowl.snomed.api.domain.browser.SnomedBrowserDescriptionType;
-import com.b2international.snowowl.snomed.api.impl.SnomedBrowserService;
-import com.b2international.snowowl.snomed.api.impl.domain.browser.SnomedBrowserConcept;
-import com.b2international.snowowl.snomed.api.impl.domain.browser.SnomedBrowserDescription;
-import com.b2international.snowowl.snomed.api.impl.domain.browser.SnomedBrowserRelationship;
-import com.b2international.snowowl.snomed.api.impl.domain.browser.SnomedBrowserRelationshipTarget;
-import com.b2international.snowowl.snomed.api.impl.domain.browser.SnomedBrowserRelationshipType;
-import com.b2international.snowowl.snomed.api.validation.ISnomedBrowserValidationService;
-import com.b2international.snowowl.snomed.core.domain.Acceptability;
-import com.b2international.snowowl.snomed.core.domain.CaseSignificance;
-import com.b2international.snowowl.snomed.core.domain.CharacteristicType;
-import com.b2international.snowowl.snomed.core.domain.DefinitionStatus;
-import com.b2international.snowowl.snomed.core.domain.RelationshipModifier;
+import java.io.File;
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @Service
 public class BatchImportService {
@@ -76,21 +50,15 @@ public class BatchImportService {
 	private TaskService taskService;
 	
 	@Autowired
-	SnomedBrowserService browserService;
+	private SnomedBrowserService browserService;
 	
 	@Autowired
-	UiStateService uiStateService;
-	
-	@Autowired
-	private IEventBus eventBus;
+	private UiStateService uiStateService;
 	
 	@Autowired
 	private BranchService branchService;
 	
-	@Autowired
-	private ISnomedBrowserValidationService validationService;
-	
-	ArbitraryTempFileService fileService = new ArbitraryTempFileService("batch_import");
+	private ArbitraryTempFileService fileService = new ArbitraryTempFileService("batch_import");
 	
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 	
@@ -100,13 +68,10 @@ public class BatchImportService {
 	
 	private static final int ROW_UNKNOWN = -1;
 	private static final String DRY_RUN = "DRY_RUN";
-	//private static final String BULLET = "* ";
 	private static final String SCTID_ISA = Concepts.IS_A;
-	public static final int DEFAULT_GROUP = 0;
+	private static final int DEFAULT_GROUP = 0;
 	private static final String SCTID_EN_GB = Concepts.REFSET_LANGUAGE_TYPE_UK;
 	private static final String SCTID_EN_US = Concepts.REFSET_LANGUAGE_TYPE_US;
-	//private static final String JIRA_HEADING5 = "h5. ";
-	//private static final String VALIDATION_ERROR = "ERROR";
 	private static final int MAX_TASK_CREATION_ATTEMPTS = 100;
 	
 	private static final String EDIT_PANEL = "edit-panel";
@@ -115,31 +80,29 @@ public class BatchImportService {
 	
 	private List<ExtendedLocale> defaultLocales;
 	private static final String defaultLocaleStr = "en-US;q=0.8,en-GB;q=0.6";
-	public static final Map<String, Acceptability> ACCEPTABLE_ACCEPTABILIY = new HashMap<String, Acceptability>();
+	private static final Map<String, Acceptability> ACCEPTABLE_ACCEPTABILIY = new HashMap<>();
 	static {
 		ACCEPTABLE_ACCEPTABILIY.put(SCTID_EN_GB, Acceptability.ACCEPTABLE);
 		ACCEPTABLE_ACCEPTABILIY.put(SCTID_EN_US, Acceptability.ACCEPTABLE);
 	}
-	public static final Map<String, Acceptability> PREFERRED_ACCEPTABILIY = new HashMap<String, Acceptability>();
+	private static final Map<String, Acceptability> PREFERRED_ACCEPTABILIY = new HashMap<>();
 	static {
 		PREFERRED_ACCEPTABILIY.put(SCTID_EN_GB, Acceptability.PREFERRED);
 		PREFERRED_ACCEPTABILIY.put(SCTID_EN_US, Acceptability.PREFERRED);
 	}	
 	
-	Map<UUID, BatchImportStatus> currentImports = new HashMap<UUID, BatchImportStatus>();
+	private Map<UUID, BatchImportStatus> currentImports = new HashMap<>();
 	
-	public BatchImportService () {
+	public BatchImportService() {
 		try {
 			defaultLocales = AcceptHeader.parseExtendedLocales(new StringReader(defaultLocaleStr));
 			executor = Executors.newFixedThreadPool(1); //Want this to be Async, but not expecting more than 1 to run at a time.
-		} catch (IOException e) {
-			throw new BadRequestException(e.getMessage());
-		} catch (IllegalArgumentException e) {
+		} catch (IOException | IllegalArgumentException e) {
 			throw new BadRequestException(e.getMessage());
 		}
 	}
 	
-	public void startImport(UUID batchImportId, BatchImportRequest importRequest, List<CSVRecord> rows, String currentUser) throws BusinessServiceException, JiraException, ServiceException {
+	public void startImport(UUID batchImportId, BatchImportRequest importRequest, List<CSVRecord> rows, String currentUser) throws BusinessServiceException, JiraException {
 		BatchImportRun run = BatchImportRun.createRun(batchImportId, importRequest);
 		currentImports.put(batchImportId, new BatchImportStatus(BatchImportState.RUNNING));
 		prepareConcepts(run, rows);
@@ -194,7 +157,7 @@ public class BatchImportService {
 	}
 
 	
-	private boolean validate (BatchImportRun run, BatchImportConcept concept) {
+	private boolean validate(BatchImportRun run, BatchImportConcept concept) {
 		if (!concept.requiresNewSCTID() && !validateSCTID(concept.getSctid())) {
 			run.fail(concept.getRow(), concept.getSctid() + " is not a valid sctid.");
 			return false;
@@ -210,14 +173,14 @@ public class BatchImportService {
 				//Expression expression = (Expression) SCGStandaloneSetup.parse(concept.getExpressionStr());
 				BatchImportExpression exp = BatchImportExpression.parse(concept.getExpressionStr());
 				if (exp.getFocusConcepts() == null || exp.getFocusConcepts().size() < 1) {
-					throw new ProcessingException ("Unable to determine a parent for concept from expression");
+					throw new ProcessingException("Unable to determine a parent for concept from expression");
 				} 
 				String parentStr = exp.getFocusConcepts().get(0);
 				//Check we've got an integer (ok a long) for a parent
 				try {
 					Long.parseLong(parentStr);
 				} catch (NumberFormatException ne) {
-					throw new ProcessingException ("Failed to correctly determine parent in expression: " + concept.getExpressionStr(),ne);
+					throw new ProcessingException("Failed to correctly determine parent in expression: " + concept.getExpressionStr(),ne);
 				}
 				concept.addParent(parentStr);
 				concept.setExpression(exp);
@@ -242,7 +205,7 @@ public class BatchImportService {
 		return false;
 	}
 
-	void loadConceptsOntoTasks(BatchImportRun run) throws JiraException, ServiceException, BusinessServiceException, InterruptedException {
+	void loadConceptsOntoTasks(BatchImportRun run) throws JiraException, BusinessServiceException, InterruptedException {
 		List<List<BatchImportConcept>> batches = collectIntoBatches(run);
 		for (List<BatchImportConcept> thisBatch : batches) {
 			AuthoringTask task = createTask(run, thisBatch);
@@ -327,13 +290,13 @@ public class BatchImportService {
 	}
 
 	private List<List<BatchImportConcept>> collectIntoBatches(BatchImportRun run) {
-		List<List<BatchImportConcept>> batches = new ArrayList<List<BatchImportConcept>>();
+		List<List<BatchImportConcept>> batches = new ArrayList<>();
 	
 		//Loop through all the children of root, starting a new batch every "concepts per task"
 		List<BatchImportConcept> thisBatch = null;
 		for (BatchImportConcept thisChild : run.getRootConcept().getChildren()) {
 			if (thisBatch == null || thisBatch.size() >= run.getImportRequest().getConceptsPerTask()) {
-				thisBatch = new ArrayList<BatchImportConcept>();
+				thisBatch = new ArrayList<>();
 				batches.add(thisBatch);
 			}
 			//We can be sure that all descendants will not exceed our batch limit, having already validated
@@ -344,7 +307,7 @@ public class BatchImportService {
 	}
 
 	private AuthoringTask createTask(BatchImportRun run,
-			List<BatchImportConcept> thisBatch) throws JiraException, ServiceException, BusinessServiceException, InterruptedException {
+			List<BatchImportConcept> thisBatch) throws JiraException, BusinessServiceException, InterruptedException {
 		BatchImportRequest request = run.getImportRequest();
 		AuthoringTaskCreateRequest taskCreateRequest = new AuthoringTask();
 		
@@ -384,7 +347,7 @@ public class BatchImportService {
 			//Because creating a task is relatively expensive and can cause contention, we'll take an optional
 			//pause here to allow other threads to clear and obtain locks
 			if (request.getPostTaskDelay() != null) {
-				Thread.sleep(1000 * request.getPostTaskDelay().intValue());
+				Thread.sleep(1000 * request.getPostTaskDelay());
 			}
 		} else {
 			task = new AuthoringTask();
@@ -433,7 +396,7 @@ public class BatchImportService {
 	}*/
 	// Temporary version using html formatting until WRP-2372 gets done
 	private String getAllNotes(AuthoringTask task, BatchImportRun run,
-			Map<String, ISnomedBrowserConcept> conceptsLoaded) throws BusinessServiceException {
+							   Map<String, ISnomedBrowserConcept> conceptsLoaded) throws BusinessServiceException {
 		StringBuilder str = new StringBuilder();
 		BatchImportFormat format = run.getFormatter();
 		for (Map.Entry<String, ISnomedBrowserConcept> thisEntry: conceptsLoaded.entrySet()) {
@@ -483,7 +446,7 @@ public class BatchImportService {
 		BatchImportRequest request = run.getImportRequest();
 		String branchPath = "MAIN/" + request.getProjectKey() + "/" + task.getKey();
 		
-		Map<String, ISnomedBrowserConcept> conceptsLoaded = new HashMap<String, ISnomedBrowserConcept>();
+		Map<String, ISnomedBrowserConcept> conceptsLoaded = new HashMap<>();
 		for (BatchImportConcept thisConcept : thisBatch) {
 			boolean loadedOK = false;
 			try{
@@ -491,7 +454,7 @@ public class BatchImportService {
 				String warnings = "";
 				validateConcept(run, task, newConcept);
 				removeTemporaryIds(newConcept);
-				ISnomedBrowserConcept createdConcept = null;
+				ISnomedBrowserConcept createdConcept;
 				if (!request.isDryRun()) {
 					createdConcept = browserService.create(branchPath, newConcept, run.getImportRequest().getCreateForAuthor(), defaultLocales);
 				} else {
@@ -534,7 +497,7 @@ public class BatchImportService {
 	}
 	
 	private String validateConcept(BatchImportRun run, AuthoringTask task,
-			ISnomedBrowserConcept newConcept) throws BusinessServiceException {
+								   ISnomedBrowserConcept newConcept) throws BusinessServiceException {
 		
 		if (!run.getImportRequest().isLateralizedContentAllowed()) {
 			//Check for lateralized content
@@ -574,14 +537,14 @@ public class BatchImportService {
 		newConcept.setActive(true);
 
 
-		List<ISnomedBrowserRelationship> relationships = null;
+		List<ISnomedBrowserRelationship> relationships;
 		if (formatter.definesByExpression()) {
 			relationships = convertExpressionToRelationships(thisConcept.getSctid(), thisConcept.getExpression());
 			newConcept.setDefinitionStatus(thisConcept.getExpression().getDefinitionStatus());
 		} else {
 			newConcept.setDefinitionStatus(DefinitionStatus.PRIMITIVE);
 			//Set the Parent
-			relationships = new ArrayList<ISnomedBrowserRelationship>();
+			relationships = new ArrayList<>();
 			for (String thisParent : thisConcept.getParents()) {
 				ISnomedBrowserRelationship isA = createRelationship(DEFAULT_GROUP, "rel_isa", thisConcept.getSctid(), SCTID_ISA, thisParent);
 				relationships.add(isA);
@@ -590,8 +553,8 @@ public class BatchImportService {
 		newConcept.setRelationships(relationships);
 		
 		//Add Descriptions FSN, then Preferred Term
-		List<ISnomedBrowserDescription> descriptions = new ArrayList<ISnomedBrowserDescription>();
-		String prefTerm = null, fsnTerm = null;
+		List<ISnomedBrowserDescription> descriptions = new ArrayList<>();
+		String prefTerm = null, fsnTerm;
 		
 		if (formatter.constructsFSN()) {
 			prefTerm = thisConcept.get(formatter.getIndex(FIELD.FSN_ROOT));
@@ -634,7 +597,7 @@ public class BatchImportService {
 	
 	List<ISnomedBrowserRelationship> convertExpressionToRelationships(String sourceSCTID,
 			BatchImportExpression expression) {
-		List<ISnomedBrowserRelationship> relationships = new ArrayList<ISnomedBrowserRelationship>();
+		List<ISnomedBrowserRelationship> relationships = new ArrayList<>();
 		
 		int parentNum = 0;
 		for (String thisParent : expression.getFocusConcepts()) {
@@ -662,11 +625,10 @@ public class BatchImportService {
 
 	/**
 	 * @param descriptions
-	 * @param thisSyn
+	 * @param term
 	 * @return true if the list of descriptions already contains this term
 	 */
-	private boolean containsDescription(
-			List<ISnomedBrowserDescription> descriptions, String term) {
+	private boolean containsDescription(List<ISnomedBrowserDescription> descriptions, String term) {
 		for (ISnomedBrowserDescription thisDesc : descriptions) {
 			if (thisDesc.getTerm().equals(term)) {
 				return true;
@@ -691,7 +653,7 @@ public class BatchImportService {
 		return rel;
 	}
 	
-	ISnomedBrowserDescription createDescription(String term, SnomedBrowserDescriptionType type, Map<String, Acceptability> acceptabilityMap, CaseSignificance caseSig) {
+	private ISnomedBrowserDescription createDescription(String term, SnomedBrowserDescriptionType type, Map<String, Acceptability> acceptabilityMap, CaseSignificance caseSig) {
 		SnomedBrowserDescription desc = new SnomedBrowserDescription();
 		//Set a temporary id so the user can tell which item failed validation
 		desc.setDescriptionId("desc_" + type.toString());
@@ -704,7 +666,7 @@ public class BatchImportService {
 		return desc;
 	}
 	
-	ISnomedBrowserDescription createDescription(BatchImportTerm biTerm, int idx) throws BusinessServiceException {
+	private ISnomedBrowserDescription createDescription(BatchImportTerm biTerm, int idx) throws BusinessServiceException {
 		SnomedBrowserDescription desc = new SnomedBrowserDescription();
 		//Set a temporary id so the user can tell which item failed validation
 		desc.setDescriptionId("desc_SYN_" + idx);
@@ -721,7 +683,7 @@ public class BatchImportService {
 		return desc;
 	}
 
-	public static  CaseSignificance translateCaseSensitivity(String caseSensitivity) throws BusinessServiceException {
+	private static CaseSignificance translateCaseSensitivity(String caseSensitivity) throws BusinessServiceException {
 		switch (caseSensitivity) {
 			case "CS" : return CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE;
 			case "ci" : return CaseSignificance.CASE_INSENSITIVE;
@@ -730,7 +692,7 @@ public class BatchImportService {
 		}
 	}
 	
-	public static Acceptability translateAcceptability (char acceptability) throws BusinessServiceException {
+	private static Acceptability translateAcceptability(char acceptability) throws BusinessServiceException {
 		switch (Character.toUpperCase(acceptability)) {
 			case 'N' : return null;
 			case 'P' : return Acceptability.PREFERRED;
@@ -739,8 +701,8 @@ public class BatchImportService {
 		}
 	}
 
-	public static Map<String, Acceptability> getAcceptablityAsMap(BatchImportTerm term) throws BusinessServiceException {
-		Map <String, Acceptability> acceptabilityMap = new HashMap<String, Acceptability>();
+	private static Map<String, Acceptability> getAcceptablityAsMap(BatchImportTerm term) throws BusinessServiceException {
+		Map <String, Acceptability> acceptabilityMap = new HashMap<>();
 		Acceptability gbAcceptability = translateAcceptability(term.getAcceptabilityGB());
 		if (gbAcceptability != null) {
 			acceptabilityMap.put(Concepts.REFSET_LANGUAGE_TYPE_UK, gbAcceptability);
@@ -766,7 +728,7 @@ public class BatchImportService {
 		return currentImports.get(batchImportId);
 	}
 	
-	public File getImportResultsFile (String projectKey, UUID batchImportId) {
+	public File getImportResultsFile(String projectKey, UUID batchImportId) {
 		File resultDir = new File (getFileLocation(projectKey, batchImportId.toString()));
 		return fileService.listFiles(resultDir.getPath())[0];
 	}
@@ -783,9 +745,9 @@ public class BatchImportService {
 	
 	synchronized private void incrementProgress(UUID batchImportId, boolean loaded) {
 		BatchImportStatus status = getBatchImportStatus(batchImportId);
-		status.setProcessed(status.getProcessed() == null? 1 : status.getProcessed().intValue() + 1);
+		status.setProcessed(status.getProcessed() == null ? 1 : status.getProcessed() + 1);
 		if (loaded) {
-			status.setLoaded(status.getLoaded() == null? 1 : status.getLoaded().intValue() + 1);
+			status.setLoaded(status.getLoaded() == null ? 1 : status.getLoaded() + 1);
 		}
 	}
 	

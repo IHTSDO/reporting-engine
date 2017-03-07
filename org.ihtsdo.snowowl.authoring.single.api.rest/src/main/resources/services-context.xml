@@ -6,10 +6,6 @@
 
 	<import resource="jms-api-context.xml"/>
 
-	<import resource="review-context.xml"/>
-
-	<import resource="cdo-context.xml"/>
-
 	<bean class="org.ihtsdo.snowowl.authoring.single.api.SpringConfiguration"/>
 
 	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.InstanceConfiguration">
@@ -27,13 +23,9 @@
 		<constructor-arg value="+{jira.username}"/>
 	</bean>
 
-	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.eventhandler.ReviewMessageSentHandler"/>
-
 	<bean class="org.ihtsdo.snowowl.authoring.single.api.batchImport.service.BatchImportService"/>
 
 	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.BranchService"/>
-
-	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.ClassificationService"/>
 
 	<bean class="org.ihtsdo.otf.rest.client.SnowOwlRestClient">
 		<constructor-arg value="+{snowowl.url}"/>
@@ -46,33 +38,13 @@
 		<property name="classificationTimeoutMinutes" value="+{snowowl.classification.timeout}"/>
 	</bean>
 	
-	<bean class="org.ihtsdo.otf.rest.client.OrchestrationRestClient">
-		<constructor-arg value="+{orchestration.url}"/>
-		<constructor-arg value="+{orchestration.username}"/>
-		<constructor-arg value="+{orchestration.password}"/>
-	</bean>
-	
 	<bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
 		<property name="location" value="#{systemProperties['osgi.sharedConfiguration.area']}/single_authoring.properties"/>
 		<property name="placeholderPrefix" value="+{"/>
 	</bean>
 
-	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.SnowOwlHelper"/>
-
 	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.UiStateService"/>
 	
-	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.ValidationService" init-method="init"/>
-
 	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.dao.ArbitraryFileService"/>
 	
-	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.dao.CdoStore" init-method="init" />
-
-
-	<!-- Notifications and user monitors -->
-	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.NotificationService"/>
-
-	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.monitor.MonitorService"/>
-
-	<bean class="org.ihtsdo.snowowl.authoring.single.api.service.monitor.MonitorFactory"/>
-
 </beans>

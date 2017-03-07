@@ -60,13 +60,4 @@ public class TimerUtil {
 		}
 	}
 
-	public static void main(String[] args) throws InterruptedException {
-		final TimerUtil timer = new TimerUtil("A");
-		Thread.sleep(100);
-		timer.checkpoint("thing");
-		Thread.sleep(1000);
-		timer.checkpoint("other thing");
-		timer.finish();
-	}
-
 }

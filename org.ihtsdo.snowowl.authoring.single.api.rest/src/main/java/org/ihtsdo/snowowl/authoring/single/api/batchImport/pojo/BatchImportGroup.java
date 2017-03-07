@@ -10,14 +10,11 @@ import com.b2international.commons.VerhoeffCheck;
 import com.b2international.snowowl.snomed.api.domain.browser.ISnomedBrowserRelationship;
 
 public class BatchImportGroup {
-	int groupNumber;
-	List <ISnomedBrowserRelationship> relationships = new ArrayList<ISnomedBrowserRelationship>();
-	
-	public List<ISnomedBrowserRelationship> getRelationships() {
-		return relationships;
-	}
 
-	private BatchImportGroup (int groupNumber) {
+	private int groupNumber;
+	private List <ISnomedBrowserRelationship> relationships = new ArrayList<>();
+	
+	private BatchImportGroup(int groupNumber) {
 		this.groupNumber = groupNumber;
 	}
 	
@@ -45,7 +42,7 @@ public class BatchImportGroup {
 			verhoeffOK = VerhoeffCheck.validateLastChecksumDigit(attributeParts[0]);
 		} finally {
 			if (!verhoeffOK) {
-				throw new ProcessingException ("Attribute type is not a valid SCTID: " + attributeParts[0]);
+				throw new ProcessingException("Attribute type is not a valid SCTID: " + attributeParts[0]);
 			}
 		}
 		verhoeffOK = false;
@@ -53,10 +50,19 @@ public class BatchImportGroup {
 			verhoeffOK = VerhoeffCheck.validateLastChecksumDigit(attributeParts[1]);
 		} finally {
 			if (!verhoeffOK) {
-				throw new ProcessingException ("Attribute destination is not a valid SCTID: " + attributeParts[1]);
+				throw new ProcessingException("Attribute destination is not a valid SCTID: " + attributeParts[1]);
 			}
 		}
 		
 		return BatchImportService.createRelationship(groupNum, tmpId, null, attributeParts[0], attributeParts[1]);
 	}
+
+	public int getGroupNumber() {
+		return groupNumber;
+	}
+
+	public List<ISnomedBrowserRelationship> getRelationships() {
+		return relationships;
+	}
+
 }

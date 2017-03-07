@@ -72,10 +72,10 @@ public class BatchImportExpressionTest {
 		List<BatchImportGroup> groups = BatchImportExpression.extractGroups(testBuff);
 		Assert.assertTrue(groups.size()==1);
 		BatchImportGroup group = groups.get(0);
-		Assert.assertTrue(group.groupNumber == 1);
-		Assert.assertTrue(group.relationships.size() == 3);
-		Assert.assertEquals(group.relationships.get(2).getType().getConceptId(), expectedType);
-		Assert.assertEquals(group.relationships.get(0).getTarget().getConceptId(), expectedValue);
+		Assert.assertTrue(group.getGroupNumber() == 1);
+		Assert.assertTrue(group.getRelationships().size() == 3);
+		Assert.assertEquals(group.getRelationships().get(2).getType().getConceptId(), expectedType);
+		Assert.assertEquals(group.getRelationships().get(0).getTarget().getConceptId(), expectedValue);
 		
 		String testExpression2 = testExpression + testExpression + testExpression;
 		StringBuffer testBuff2 = new StringBuffer(testExpression2);

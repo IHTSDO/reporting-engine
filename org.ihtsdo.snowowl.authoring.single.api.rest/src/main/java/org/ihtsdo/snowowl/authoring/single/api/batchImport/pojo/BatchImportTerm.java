@@ -1,12 +1,12 @@
 package org.ihtsdo.snowowl.authoring.single.api.batchImport.pojo;
 
 public class BatchImportTerm {
-	String term;
-	boolean isFSN;
-	static char NOT_ACCEPTABLE = 'N';
-	char acceptabilityUS=NOT_ACCEPTABLE;
-	char acceptabilityGB=NOT_ACCEPTABLE;
-	String caseSensitivity;
+	private String term;
+	private boolean isFSN;
+	private static char NOT_ACCEPTABLE = 'N';
+	private char acceptabilityUS=NOT_ACCEPTABLE;
+	private char acceptabilityGB=NOT_ACCEPTABLE;
+	private String caseSensitivity;
 	
 	public BatchImportTerm(String term, boolean isFSN, char usAccept, char gbAccept) {
 		this.term = term;

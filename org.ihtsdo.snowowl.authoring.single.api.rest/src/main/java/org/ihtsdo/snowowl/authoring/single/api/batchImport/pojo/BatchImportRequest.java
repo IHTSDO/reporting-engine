@@ -9,16 +9,16 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class BatchImportRequest {
 
-	UUID id;
-	String createForAuthor;
-	int conceptsPerTask;
-	BatchImportFormat format;
-	String projectKey;
-	String originalFilename;
-	MultipartFile file;
-	Integer postTaskDelay;
-	Boolean dryRun;
-	Boolean allowLateralizedContent;
+	private UUID id;
+	private String createForAuthor;
+	private int conceptsPerTask;
+	private BatchImportFormat format;
+	private String projectKey;
+	private String originalFilename;
+	private MultipartFile file;
+	private Integer postTaskDelay;
+	private Boolean dryRun;
+	private Boolean allowLateralizedContent;
 
 	public BatchImportRequest(){}
 	
