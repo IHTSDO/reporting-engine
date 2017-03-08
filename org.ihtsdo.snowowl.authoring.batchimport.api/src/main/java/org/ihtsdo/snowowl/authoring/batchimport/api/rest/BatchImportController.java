@@ -27,7 +27,7 @@ import java.util.UUID;
 
 import static java.util.UUID.randomUUID;
 
-@Api("Authoring Projects")
+@Api("Batch Import")
 @RestController
 @RequestMapping(produces={AbstractRestService.V1_MEDIA_TYPE, MediaType.APPLICATION_JSON_VALUE})
 @SuppressWarnings("unused")
