@@ -21,8 +21,7 @@ import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 
 /**
- * Reports all concepts that have been defined (stated) using one or more 
- * Fully Defined Parents
+ * Reports all terms that contain the specified text
  */
 public class TermContainsXReport extends TermServerScript{
 	
