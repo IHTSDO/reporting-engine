@@ -17,6 +17,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.validator.routines.checkdigit.VerhoeffCheckDigit;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
@@ -466,5 +467,53 @@ public class SnomedUtils implements RF2Constants{
 		throw new TermServerScriptException("Do not recognise case significance indicator : " + caseSignificanceSctId);
 	}
 
+	public static void makeMachineReadable (StringBuffer hrExp) {
+		int pipeIdx =  hrExp.indexOf(PIPE);
+		while (pipeIdx != -1) {
+			int endIdx = findEndOfTerm(hrExp, pipeIdx);
+			hrExp.delete(pipeIdx, endIdx);
+			pipeIdx =  hrExp.indexOf(PIPE);
+		}
+		remove(hrExp, SPACE_CHAR);
+	}
+	
+	private static int findEndOfTerm(StringBuffer hrExp, int searchStart) {
+		int endIdx = indexOf(hrExp, termTerminators, searchStart+1);
+		//If we didn't find a terminator, cut to the end.
+		if (endIdx == -1) {
+			endIdx = hrExp.length();
+		} else {
+			//If the character found as a terminator is a pipe, then cut that too
+			if (hrExp.charAt(endIdx) == PIPE_CHAR) {
+				endIdx++;
+			} else if (hrExp.charAt(endIdx) == ATTRIBUTE_SEPARATOR.charAt(0)) {
+				//If the character is a comma, then it might be a comma inside a term so find out if the next token is a number
+				if (!StringUtils.isNumericSpace(hrExp.substring(endIdx+1, endIdx+5))) {
+					//OK it's a term, so find the new actual end. 
+					endIdx = findEndOfTerm(hrExp, endIdx);
+				}
+			}
+		}
+		return endIdx;
+	}
 
+	static void remove (StringBuffer haystack, char needle) {
+		for (int idx = 0; idx < haystack.length(); idx++) {
+			if (haystack.charAt(idx) == needle) {
+				haystack.deleteCharAt(idx);
+				idx --;
+			}
+		}
+	}
+	
+	static int indexOf (StringBuffer haystack, char[] needles, int startFrom) {
+		for (int idx = startFrom; idx < haystack.length(); idx++) {
+			for (char thisNeedle : needles) {
+				if (haystack.charAt(idx) == thisNeedle) {
+					return idx;
+				}
+			}
+		}
+		return -1;
+	}
 }

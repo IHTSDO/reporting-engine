@@ -14,6 +14,16 @@ public interface RF2Constants {
 	static String ACETAMINOPHEN = "acetaminophen";
 	static String PARACETAMOL = "paracetamol";
 	
+	//ECL Constants
+	static String DESCENDANT = "<";
+	static String DESCENDANT_OR_SELF = "<<";
+	static String PIPE = "|";
+	static char PIPE_CHAR = '|';
+	static char SPACE_CHAR = ' ';
+	static String UNION = "AND";
+	static String ATTRIBUTE_SEPARATOR = ",";
+	static char[] termTerminators = new char[] {'|', ':', '+', '{', ',', '}', '=' };
+
 	//Description Type SCTIDs
 	static String SYN = "900000000000013009";
 	static String FSN = "900000000000003001";
