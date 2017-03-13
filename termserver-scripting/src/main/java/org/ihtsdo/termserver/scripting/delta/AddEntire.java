@@ -138,7 +138,7 @@ public class AddEntire extends DeltaGenerator {
 		}
 		
 		//If the entire term is case sensitive, then we don't want to decapitalize the first letter
-		boolean caseSensitive = d.getCaseSignificance().equals(ENITRE_TERM_CASE_SENSITIVE_SCTID);
+		boolean caseSensitive = d.getCaseSignificance().equals(ENTIRE_TERM_CASE_SENSITIVE_SCTID);
 		String newTerm = ENTIRE + " " + (caseSensitive? newTermParts[0]:SnomedUtils.deCapitalize(newTermParts[0]));
 		if (isFSN) {
 			newTerm += " " + newTermParts[1];

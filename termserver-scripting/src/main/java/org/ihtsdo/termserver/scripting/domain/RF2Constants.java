@@ -22,6 +22,7 @@ public interface RF2Constants {
 	static char SPACE_CHAR = ' ';
 	static String UNION = "AND";
 	static String ATTRIBUTE_SEPARATOR = ",";
+	static String DASH = "-";
 	static char[] termTerminators = new char[] {'|', ':', '+', '{', ',', '}', '=' };
 
 	//Description Type SCTIDs
@@ -59,7 +60,7 @@ public interface RF2Constants {
 	static final String PREFERRED_TERM = "900000000000548007";
 	static final String ACCEPTABLE_TERM = "900000000000549004";
 	
-	static final String ENITRE_TERM_CASE_SENSITIVE_SCTID = "900000000000017005";
+	static final String ENTIRE_TERM_CASE_SENSITIVE_SCTID = "900000000000017005";
 	static final String ENTIRE_TERM_CASE_INSENSITIVE_SCTID = "900000000000448009";
 	static final String ONLY_INITIAL_CHAR_CASE_INSENSITIVE_SCTID = "900000000000020002";
 	
@@ -89,7 +90,7 @@ public interface RF2Constants {
 	
 	public enum Acceptability { ACCEPTABLE, PREFERRED };
 	
-	public enum CaseSignificance { ENITRE_TERM_CASE_SENSITIVE, ENTIRE_TERM_CASE_INSENSITIVE ,ONLY_INITIAL_CHAR_CASE_INSENSITIVE };
+	public enum CaseSignificance { ENTIRE_TERM_CASE_SENSITIVE, ENTIRE_TERM_CASE_INSENSITIVE ,ONLY_INITIAL_CHAR_CASE_INSENSITIVE };
 	
 	public enum ConceptType { PRODUCT_STRENGTH, MEDICINAL_ENTITY, MEDICINAL_FORM, GROUPER, PRODUCT_ROLE, UNKNOWN };
 	
