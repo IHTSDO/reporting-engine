@@ -2,12 +2,14 @@ package org.ihtsdo.termserver.scripting.fixes;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
@@ -69,7 +71,7 @@ public class ReplaceLowerCaseTerms extends BatchFix implements RF2Constants{
 					tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
 				}
 			} catch (Exception e) {
-				report(task, concept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.API_ERROR, "Failed to save changed concept to TS: " + e.getMessage());
+				report(task, concept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
 			}
 		}
 		return changesMade;
@@ -91,19 +93,31 @@ public class ReplaceLowerCaseTerms extends BatchFix implements RF2Constants{
 			}
 			String newTerm = StringUtils.join(words, " ");
 			String msg;
+			boolean replacementMade = false;
 			if (!termAlreadyExists(concept, newTerm)) {
-				Description upper = lower.clone("");
+				Description upper = lower.clone(null);
 				upper.setTerm(newTerm);
-				upper.setCaseSignificance(CaseSignificance.ENITRE_TERM_CASE_SENSITIVE.toString());
+				upper.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE.toString());
 				concept.addDescription(upper);
+				replacementMade = true;
 				msg = "Replaced term '" + lower.getTerm() + "' with '" + upper.getTerm() + "'.";
 			} else {
 				msg = "Inactivated term '" + lower.getTerm() + "', replacement already exists.";
 			}
 			
-			lower.setActive(false);
-			lower.setEffectiveTime(null);
-			lower.setInactivationIndicator(InactivationIndicator.ERRONEOUS);
+			//We still want terms to turn up in searches, so just make terms with 
+			//dashes removed unacceptable, not inative
+			if (lower.getTerm().contains(DASH)) {
+				//If not inactivating, setting the acceptability to 'Not Acceptable'
+				//with an empty map
+				lower.setAcceptabilityMap(new HashMap<String, Acceptability> ());
+				lower.setEffectiveTime(null);
+				msg = "Removing acceptability of '" + lower.getTerm() + "' " + (replacementMade?msg:"");
+			} else {
+				lower.setActive(false);
+				lower.setEffectiveTime(null);
+				lower.setInactivationIndicator(InactivationIndicator.ERRONEOUS);
+			}
 			report(task, concept, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, msg);
 		}
 		return changesMade;

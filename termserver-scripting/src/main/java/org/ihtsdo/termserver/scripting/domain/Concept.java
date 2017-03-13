@@ -378,7 +378,6 @@ public class Concept implements RF2Constants {
 
 	public void addDescription(Description description) {
 		descriptions.add(description);
-		
 	}
 
 	public List<Concept> getParents(CharacteristicType characteristicType) {
