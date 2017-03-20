@@ -51,7 +51,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected static int conceptThrottle = 5;
 	protected String env;
 	protected String url = environments[0];
-	protected boolean useAuthenticatedCookie = false;
+	protected boolean useAuthenticatedCookie = true;
 	protected SnowOwlClient tsClient;
 	protected SCAClient scaClient;
 	protected String authenticatedCookie;

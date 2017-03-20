@@ -107,6 +107,8 @@ public class BanUsanReport extends TermServerScript{
 							nationalTermRule.nationalTerm;
 					failure = nationalTerm;
 				}
+				//TODO Add check that national term is not acceptable in other lang refsets
+				
 				if (failure != null) {
 					report(c, failure, issue);
 				}
@@ -125,11 +127,17 @@ public class BanUsanReport extends TermServerScript{
 	
 	protected void init(String[] args) throws IOException, TermServerScriptException {
 		super.init(args);
-		File nationalTermsFile;
+		boolean fileLoaded = false;
 		for (int i=0; i < args.length; i++) {
-			if (args[i].equalsIgnoreCase("z")) {
+			if (args[i].equalsIgnoreCase("-z")) {
 				loadNationalTerms(args[i+1]);
+				fileLoaded = true;
 			}
+		}
+		
+		if (!fileLoaded) {
+			println ("Failed to find Ban/Usan file to load.  Specify path with 'z' command line parameter");
+			System.exit(1);
 		}
 
 		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
@@ -137,13 +145,14 @@ public class BanUsanReport extends TermServerScript{
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToFile ("Concept, FSN, Sem_Tag, Desc_SCTID, Term");
+		writeToFile ("Concept, FSN, Desc_SCTID, Term, Issue");
 	}
 
 	private void loadNationalTerms(String fileName) throws TermServerScriptException {
 		try {
 			File nationalTerms = new File(fileName);
 			List<String> lines = Files.readLines(nationalTerms, Charsets.UTF_8);
+			println ("Loading National Terms from " + fileName);
 			nationalTermRules = new ArrayList<NationalTermRule>();
 			for (String line : lines) {
 				NationalTermRule newRule = importNationalTermRule(line);
