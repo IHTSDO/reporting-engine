@@ -1,4 +1,4 @@
-package org.ihtsdo.snowowl.authoring.batchimport.api.service.task;
+package org.ihtsdo.snowowl.authoring.batchimport.api.pojo.task;
 
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 

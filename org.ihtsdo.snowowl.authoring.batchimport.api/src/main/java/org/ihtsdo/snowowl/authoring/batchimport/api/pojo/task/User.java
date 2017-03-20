@@ -1,68 +1,83 @@
+
 package org.ihtsdo.snowowl.authoring.batchimport.api.pojo.task;
 
-import net.sf.json.JSONObject;
+import java.util.HashMap;
+import java.util.Map;
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonPropertyOrder({
+	"avatarUrl",
+	"displayName",
+	"email",
+	"username"
+})
 public class User {
-	
-	private static final String JSON_FIELD_EMAIL = "emailAddress";
-	private static final String JSON_FIELD_DISPLAY_NAME = "displayName";
-	private static final String JSON_FIELD_NAME = "name";
-	private static final String JSON_FIELD_AVATAR = "avatarUrls";
-	private static final String JSON_FIELD_AVATAR_48 = "48x48";
 
-	private String email;
-	private String displayName;
-	private String username;
+	@JsonProperty("avatarUrl")
 	private String avatarUrl;
+	@JsonProperty("displayName")
+	private String displayName;
+	@JsonProperty("email")
+	private String email;
+	@JsonProperty("username")
+	private String username;
+	@JsonIgnore
+	private Map<String, Object> additionalProperties = new HashMap<String, Object>();
 
-	public User() {
-
-	}
-
-	public User(net.rcarz.jiraclient.User assignee) {
-		email = assignee.getEmail();
-		displayName = assignee.getDisplayName();
-		username = assignee.getName();
-		avatarUrl = assignee.getAvatarUrls().get("48x48");
-	}
-
-	public User(JSONObject userJSON) {
-		email = userJSON.getString(JSON_FIELD_EMAIL);
-		username = userJSON.getString(JSON_FIELD_NAME);
-		displayName = userJSON.getString(JSON_FIELD_DISPLAY_NAME);
-		JSONObject avatarUrls = userJSON.getJSONObject(JSON_FIELD_AVATAR);
-		avatarUrl = avatarUrls.getString(JSON_FIELD_AVATAR_48);
-	}
-
-	public String getEmail() {
-		return email;
-	}
-
-	public void setEmail(String email) {
-		this.email = email;
-	}
-
-	public String getDisplayName() {
-		return displayName;
-	}
-
-	public void setDisplayName(String displayName) {
-		this.displayName = displayName;
-	}
-
-	public String getUsername() {
-		return username;
-	}
-
-	public void setUsername(String username) {
-		this.username = username;
-	}
-
+	@JsonProperty("avatarUrl")
 	public String getAvatarUrl() {
 		return avatarUrl;
 	}
 
+	@JsonProperty("avatarUrl")
 	public void setAvatarUrl(String avatarUrl) {
 		this.avatarUrl = avatarUrl;
 	}
+
+	@JsonProperty("displayName")
+	public String getDisplayName() {
+		return displayName;
+	}
+
+	@JsonProperty("displayName")
+	public void setDisplayName(String displayName) {
+		this.displayName = displayName;
+	}
+
+	@JsonProperty("email")
+	public String getEmail() {
+		return email;
+	}
+
+	@JsonProperty("email")
+	public void setEmail(String email) {
+		this.email = email;
+	}
+
+	@JsonProperty("username")
+	public String getUsername() {
+		return username;
+	}
+
+	@JsonProperty("username")
+	public void setUsername(String username) {
+		this.username = username;
+	}
+
+	@JsonAnyGetter
+	public Map<String, Object> getAdditionalProperties() {
+		return this.additionalProperties;
+	}
+
+	@JsonAnySetter
+	public void setAdditionalProperty(String name, Object value) {
+		this.additionalProperties.put(name, value);
+	}
+
 }

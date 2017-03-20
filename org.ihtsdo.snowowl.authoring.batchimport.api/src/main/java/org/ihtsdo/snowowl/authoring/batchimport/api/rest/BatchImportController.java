@@ -1,7 +1,6 @@
 package org.ihtsdo.snowowl.authoring.batchimport.api.rest;
 
 import com.wordnik.swagger.annotations.*;
-import net.rcarz.jiraclient.JiraException;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -55,7 +54,7 @@ public class BatchImportController extends AbstractSnomedRestService {
 			@RequestPart("file") 
 			final MultipartFile file,
 			HttpServletRequest request,
-			HttpServletResponse response ) throws BusinessServiceException, JiraException {
+			HttpServletResponse response ) throws BusinessServiceException {
 		
 		try {
 			final UUID batchImportId = randomUUID();

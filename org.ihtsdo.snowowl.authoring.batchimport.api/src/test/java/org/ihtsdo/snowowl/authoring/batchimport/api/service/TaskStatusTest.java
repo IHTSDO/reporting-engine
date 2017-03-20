@@ -1,7 +1,7 @@
 package org.ihtsdo.snowowl.authoring.batchimport.api.service;
 
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
-import org.ihtsdo.snowowl.authoring.batchimport.api.service.task.TaskStatus;
+import org.ihtsdo.snowowl.authoring.batchimport.api.pojo.task.TaskStatus;
 import org.junit.Assert;
 import org.junit.Test;
 

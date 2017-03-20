@@ -3,7 +3,6 @@ package org.ihtsdo.snowowl.authoring.batchimport.api.service;
 import com.b2international.commons.VerhoeffCheck;
 import com.b2international.commons.http.AcceptHeader;
 import com.b2international.commons.http.ExtendedLocale;
-import com.b2international.snowowl.core.exceptions.AlreadyExistsException;
 import com.b2international.snowowl.core.exceptions.ApiError;
 import com.b2international.snowowl.core.exceptions.BadRequestException;
 import com.b2international.snowowl.core.exceptions.ValidationException;
@@ -16,19 +15,17 @@ import com.b2international.snowowl.snomed.api.domain.browser.SnomedBrowserDescri
 import com.b2international.snowowl.snomed.api.impl.SnomedBrowserService;
 import com.b2international.snowowl.snomed.api.impl.domain.browser.*;
 import com.b2international.snowowl.snomed.core.domain.*;
-import net.rcarz.jiraclient.JiraException;
+
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.otf.rest.exception.ProcessingException;
+import org.ihtsdo.snowowl.authoring.batchimport.api.client.AuthoringServicesClient;
+import org.ihtsdo.snowowl.authoring.batchimport.api.client.AuthoringServicesClientException;
 import org.ihtsdo.snowowl.authoring.batchimport.api.pojo.batch.*;
 import org.ihtsdo.snowowl.authoring.batchimport.api.pojo.task.AuthoringTask;
 import org.ihtsdo.snowowl.authoring.batchimport.api.pojo.task.AuthoringTaskCreateRequest;
-import org.ihtsdo.snowowl.authoring.batchimport.api.pojo.task.AuthoringTaskUpdateRequest;
 import org.ihtsdo.snowowl.authoring.batchimport.api.service.file.dao.ArbitraryTempFileService;
-import org.ihtsdo.snowowl.authoring.batchimport.api.service.task.TaskService;
-import org.ihtsdo.snowowl.authoring.batchimport.api.service.task.TaskStatus;
-import org.ihtsdo.snowowl.authoring.batchimport.api.service.task.UiStateService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,13 +42,10 @@ import java.util.concurrent.Executors;
 public class BatchImportService {
 	
 	@Autowired
-	private TaskService taskService;
-	
-	@Autowired
 	private SnomedBrowserService browserService;
 	
 	@Autowired
-	private UiStateService uiStateService;
+	private AuthoringServicesClient authoringServicesClient;
 	
 	@Autowired
 	private BranchService branchService;
@@ -70,7 +64,6 @@ public class BatchImportService {
 	private static final int DEFAULT_GROUP = 0;
 	private static final String SCTID_EN_GB = Concepts.REFSET_LANGUAGE_TYPE_UK;
 	private static final String SCTID_EN_US = Concepts.REFSET_LANGUAGE_TYPE_US;
-	private static final int MAX_TASK_CREATION_ATTEMPTS = 100;
 	
 	private static final String EDIT_PANEL = "edit-panel";
 	private static final String SAVE_LIST = "saved-list";	
@@ -100,7 +93,7 @@ public class BatchImportService {
 		}
 	}
 	
-	public void startImport(UUID batchImportId, BatchImportRequest importRequest, List<CSVRecord> rows, String currentUser) throws BusinessServiceException, JiraException {
+	public void startImport(UUID batchImportId, BatchImportRequest importRequest, List<CSVRecord> rows, String currentUser) throws BusinessServiceException {
 		BatchImportRun run = BatchImportRun.createRun(batchImportId, importRequest);
 		currentImports.put(batchImportId, new BatchImportStatus(BatchImportState.RUNNING));
 		prepareConcepts(run, rows);
@@ -203,7 +196,7 @@ public class BatchImportService {
 		return false;
 	}
 
-	void loadConceptsOntoTasks(BatchImportRun run) throws JiraException, BusinessServiceException, InterruptedException {
+	void loadConceptsOntoTasks(BatchImportRun run) throws AuthoringServicesClientException, BusinessServiceException {
 		List<List<BatchImportConcept>> batches = collectIntoBatches(run);
 		for (List<BatchImportConcept> thisBatch : batches) {
 			AuthoringTask task = createTask(run, thisBatch);
@@ -225,25 +218,24 @@ public class BatchImportService {
 	}
 
 	private void updateTaskDetails(AuthoringTask task, BatchImportRun run,
-			Map<String, ISnomedBrowserConcept> conceptsLoaded, String newSummary) {
+			Map<String, ISnomedBrowserConcept> conceptsLoaded, String newSummary) throws BusinessServiceException {
 		try {
 			String allNotes = getAllNotes(task, run, conceptsLoaded);
 			if (newSummary != null) {
 				task.setSummary(newSummary);
 			}
 			task.setDescription(allNotes);
-			taskService.updateTask(task.getProjectKey(), task.getKey(), task);
-		} catch (Exception e) {
+			authoringServicesClient.updateTask(task);
+		} catch (AuthoringServicesClientException e) {
 			logger.error("Failed to update description on task {}",task.getKey(),e);
 		}
-		
 	}
 
 	private void primeEditPanel(AuthoringTask task, BatchImportRun run, String conceptsJson) {
 		try {
 			String user = run.getImportRequest().getCreateForAuthor();
-			uiStateService.persistTaskPanelState(task.getProjectKey(), task.getKey(), user, EDIT_PANEL, conceptsJson);
-		} catch (IOException e) {
+			authoringServicesClient.persistTaskPanelState(task.getProjectKey(), task.getKey(), user, EDIT_PANEL, conceptsJson);
+		} catch (AuthoringServicesClientException e) {
 			logger.warn("Failed to prime edit panel for task " + task.getKey(), e );
 		}
 	}
@@ -271,8 +263,8 @@ public class BatchImportService {
 				isFirst = false;
 			}
 			json.append("]}");
-			uiStateService.persistTaskPanelState(task.getProjectKey(), task.getKey(), user, SAVE_LIST, json.toString());
-		} catch (IOException e) {
+			authoringServicesClient.persistTaskPanelState(task.getProjectKey(), task.getKey(), user, SAVE_LIST, json.toString());
+		} catch (AuthoringServicesClientException e) {
 			logger.warn("Failed to prime saved list for task " + task.getKey(), e );
 		}
 	}
@@ -305,7 +297,7 @@ public class BatchImportService {
 	}
 
 	private AuthoringTask createTask(BatchImportRun run,
-			List<BatchImportConcept> thisBatch) throws JiraException, BusinessServiceException, InterruptedException {
+			List<BatchImportConcept> thisBatch) throws AuthoringServicesClientException {
 		BatchImportRequest request = run.getImportRequest();
 		AuthoringTaskCreateRequest taskCreateRequest = new AuthoringTask();
 		
@@ -316,37 +308,9 @@ public class BatchImportService {
 
 		AuthoringTask task = null;
 		if (!request.isDryRun()) {
-			boolean taskFullyCreatedOK = false;
-			int attempts = 0;
-			while (!taskFullyCreatedOK) {
-				try{
-					task = taskService.createTask(request.getProjectKey(), 
-							request.getCreateForAuthor(),
-							taskCreateRequest);
-					//Task service now delays creation of actual task branch, so separate call to do that.
-					branchService.createTaskBranchAndProjectBranchIfNeeded(task.getBranchPath());
-					taskFullyCreatedOK = true;
-				} catch (AlreadyExistsException e) {
-					attempts++;
-					if (attempts > MAX_TASK_CREATION_ATTEMPTS) {
-						throw (new BusinessServiceException ("Exceeded possible attempts at creating branch",e));
-					} else {
-						logger.error("Branch already exists for newly created " + task.getKey() + ", attempting to delete unwanted Jira task", e);
-						try {
-							AuthoringTaskUpdateRequest deleteTask = new AuthoringTask();
-							deleteTask.setStatus(TaskStatus.DELETED);
-							taskService.updateTask(request.getProjectKey(), task.getKey(), deleteTask);
-						} catch (Exception e2) {
-							logger.error("Failed to delete jira task after ts branch creation failed",e2);
-						}
-					}
-				}
-			}
-			//Because creating a task is relatively expensive and can cause contention, we'll take an optional
-			//pause here to allow other threads to clear and obtain locks
-			if (request.getPostTaskDelay() != null) {
-				Thread.sleep(1000 * request.getPostTaskDelay());
-			}
+			task = authoringServicesClient.createTask(request.getProjectKey(), 
+					request.getCreateForAuthor(),
+					taskCreateRequest);
 		} else {
 			task = new AuthoringTask();
 			task.setProjectKey(request.getProjectKey());

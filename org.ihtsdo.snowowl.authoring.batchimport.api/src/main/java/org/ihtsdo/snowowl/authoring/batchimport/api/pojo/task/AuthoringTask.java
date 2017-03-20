@@ -1,154 +1,252 @@
+
 package org.ihtsdo.snowowl.authoring.batchimport.api.pojo.task;
 
-import com.b2international.snowowl.core.branch.Branch;
+import java.util.HashMap;
+import java.util.Map;
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import net.rcarz.jiraclient.Issue;
-import net.sf.json.JSONObject;
-import org.ihtsdo.snowowl.authoring.batchimport.api.service.PathHelper;
-import org.ihtsdo.snowowl.authoring.batchimport.api.service.task.TaskStatus;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
-public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskUpdateRequest {
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonPropertyOrder({
+	"assignee",
+	"branchPath",
+	"branchState",
+	"created",
+	"description",
+	"feedbackMessageDate",
+	"feedbackMessagesStatus",
+	"key",
+	"labels",
+	"latestClassificationJson",
+	"latestValidationStatus",
+	"projectKey",
+	"reviewer",
+	"status",
+	"summary",
+	"updated",
+	"viewDate"
+})
+public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskUpdateRequest{
 
-	public static final String JIRA_CREATED_FIELD = "created";
-	public static final String JIRA_UPDATED_FIELD = "updated";
-
-	public static String jiraReviewerField;
-
-	private String key;
-	private String projectKey;
-	private String summary;
-	private TaskStatus status;
-	private Branch.BranchState branchState;
-	private String description;
+	@JsonProperty("assignee")
 	private User assignee;
-	private User reviewer;
-	private String created;
-	private String updated;
+	@JsonProperty("branchPath")
 	private String branchPath;
-
-	public AuthoringTask() {
-	}
-
-	public AuthoringTask(Issue issue, String extensionBase) {
-		key = issue.getKey();
-		projectKey = issue.getProject().getKey();
-		summary = issue.getSummary();
-		status = TaskStatus.fromLabel(issue.getStatus().getName());
-		description = issue.getDescription();
-		net.rcarz.jiraclient.User assignee = issue.getAssignee();
-		if (assignee != null) {
-			this.assignee = new User(assignee);
-		}
-		created = (String) issue.getField(JIRA_CREATED_FIELD);
-		updated = (String) issue.getField(JIRA_UPDATED_FIELD);
-		
-
-		// set the reviewer object
-		Object reviewerObj = issue.getField(jiraReviewerField);
-		if (reviewerObj != null && reviewerObj instanceof JSONObject) {
-			reviewer = new User((JSONObject)reviewerObj);
-		}
-
-		branchPath = PathHelper.getTaskPath(extensionBase, projectKey, key);
-	}
-
-	public String getKey() {
-		return key;
-	}
-
-	public void setKey(String key) {
-		this.key = key;
-	}
-
-	public String getProjectKey() {
-		return projectKey;
-	}
-
-	public void setProjectKey(String projectKey) {
-		this.projectKey = projectKey;
-	}
-
-	@Override
-	public String getSummary() {
-		return summary;
-	}
-
-	@Override
-	public void setSummary(String summary) {
-		this.summary = summary;
-	}
-
+	@JsonProperty("branchState")
+	private String branchState;
+	@JsonProperty("created")
+	private String created;
+	@JsonProperty("description")
+	private String description;
+	@JsonProperty("feedbackMessageDate")
+	private String feedbackMessageDate;
+	@JsonProperty("feedbackMessagesStatus")
+	private String feedbackMessagesStatus;
+	@JsonProperty("key")
+	private String key;
+	@JsonProperty("labels")
+	private String labels;
+	@JsonProperty("latestClassificationJson")
+	private String latestClassificationJson;
+	@JsonProperty("latestValidationStatus")
+	private String latestValidationStatus;
+	@JsonProperty("projectKey")
+	private String projectKey;
+	@JsonProperty("reviewer")
+	private User reviewer;
 	@JsonProperty("status")
-	public String getStatusName() {
-		return status != null ? status.getLabel() : null;
-	}
+	private TaskStatus status;
+	@JsonProperty("summary")
+	private String summary;
+	@JsonProperty("updated")
+	private String updated;
+	@JsonProperty("viewDate")
+	private String viewDate;
+	@JsonIgnore
+	private Map<String, Object> additionalProperties = new HashMap<String, Object>();
 
-	public TaskStatus getStatus() {
-		return status;
-	}
-
-	public void setStatus(TaskStatus status) {
-		this.status = status;
-	}
-
-	@Override
-	public String getDescription() {
-		return description;
-	}
-
-	@Override
-	public void setDescription(String description) {
-		this.description = description;
-	}
-
-	@Override
+	@JsonProperty("assignee")
 	public User getAssignee() {
 		return assignee;
 	}
 
-	@Override
+	@JsonProperty("assignee")
 	public void setAssignee(User assignee) {
 		this.assignee = assignee;
 	}
 
+	@JsonProperty("branchPath")
+	public String getBranchPath() {
+		return branchPath;
+	}
+
+	@JsonProperty("branchPath")
+	public void setBranchPath(String branchPath) {
+		this.branchPath = branchPath;
+	}
+
+	@JsonProperty("branchState")
+	public String getBranchState() {
+		return branchState;
+	}
+
+	@JsonProperty("branchState")
+	public void setBranchState(String branchState) {
+		this.branchState = branchState;
+	}
+
+	@JsonProperty("created")
 	public String getCreated() {
 		return created;
 	}
 
+	@JsonProperty("created")
 	public void setCreated(String created) {
 		this.created = created;
 	}
 
-	public String getUpdated() {
-		return updated;
+	@JsonProperty("description")
+	public String getDescription() {
+		return description;
 	}
 
-	public void setUpdated(String updated) {
-		this.updated = updated;
+	@JsonProperty("description")
+	public void setDescription(String description) {
+		this.description = description;
 	}
 
+	@JsonProperty("feedbackMessageDate")
+	public String getFeedbackMessageDate() {
+		return feedbackMessageDate;
+	}
+
+	@JsonProperty("feedbackMessageDate")
+	public void setFeedbackMessageDate(String feedbackMessageDate) {
+		this.feedbackMessageDate = feedbackMessageDate;
+	}
+
+	@JsonProperty("feedbackMessagesStatus")
+	public String getFeedbackMessagesStatus() {
+		return feedbackMessagesStatus;
+	}
+
+	@JsonProperty("feedbackMessagesStatus")
+	public void setFeedbackMessagesStatus(String feedbackMessagesStatus) {
+		this.feedbackMessagesStatus = feedbackMessagesStatus;
+	}
+
+	@JsonProperty("key")
+	public String getKey() {
+		return key;
+	}
+
+	@JsonProperty("key")
+	public void setKey(String key) {
+		this.key = key;
+	}
+
+	@JsonProperty("labels")
+	public String getLabels() {
+		return labels;
+	}
+
+	@JsonProperty("labels")
+	public void setLabels(String labels) {
+		this.labels = labels;
+	}
+
+	@JsonProperty("latestClassificationJson")
+	public String getLatestClassificationJson() {
+		return latestClassificationJson;
+	}
+
+	@JsonProperty("latestClassificationJson")
+	public void setLatestClassificationJson(String latestClassificationJson) {
+		this.latestClassificationJson = latestClassificationJson;
+	}
+
+	@JsonProperty("latestValidationStatus")
+	public String getLatestValidationStatus() {
+		return latestValidationStatus;
+	}
+
+	@JsonProperty("latestValidationStatus")
+	public void setLatestValidationStatus(String latestValidationStatus) {
+		this.latestValidationStatus = latestValidationStatus;
+	}
+
+	@JsonProperty("projectKey")
+	public String getProjectKey() {
+		return projectKey;
+	}
+
+	@JsonProperty("projectKey")
+	public void setProjectKey(String projectKey) {
+		this.projectKey = projectKey;
+	}
+
+	@JsonProperty("reviewer")
 	public User getReviewer() {
 		return reviewer;
 	}
 
+	@JsonProperty("reviewer")
 	public void setReviewer(User reviewer) {
 		this.reviewer = reviewer;
 	}
 
-	public void setBranchState(Branch.BranchState branchState) {
-		this.branchState = branchState;
+	@JsonProperty("status")
+	public TaskStatus getStatus() {
+		return status;
 	}
 
-	public Branch.BranchState getBranchState() {
-		return branchState;
+	@JsonProperty("status")
+	public void setStatus(TaskStatus status) {
+		this.status = status;
 	}
 
-	public static void setJiraReviewerField(String jiraReviewerField) {
-		AuthoringTask.jiraReviewerField = jiraReviewerField;
+	@JsonProperty("summary")
+	public String getSummary() {
+		return summary;
 	}
 
-	public String getBranchPath() {
-		return branchPath;
+	@JsonProperty("summary")
+	public void setSummary(String summary) {
+		this.summary = summary;
+	}
+
+	@JsonProperty("updated")
+	public String getUpdated() {
+		return updated;
+	}
+
+	@JsonProperty("updated")
+	public void setUpdated(String updated) {
+		this.updated = updated;
+	}
+
+	@JsonProperty("viewDate")
+	public String getViewDate() {
+		return viewDate;
+	}
+
+	@JsonProperty("viewDate")
+	public void setViewDate(String viewDate) {
+		this.viewDate = viewDate;
+	}
+
+	@JsonAnyGetter
+	public Map<String, Object> getAdditionalProperties() {
+		return this.additionalProperties;
+	}
+
+	@JsonAnySetter
+	public void setAdditionalProperty(String name, Object value) {
+		this.additionalProperties.put(name, value);
 	}
 
 }
