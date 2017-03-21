@@ -145,8 +145,8 @@ public class GenerateTranslation extends DeltaGenerator {
 		
 		//Check that the current preferred term matches what the translation file thinks it is.
 		Description usPrefTerm = getUsPrefTerm(currentState);
-		if (!usPrefTerm.getTerm().equals(newState.getExpectedCurrentPreferredTerm())) {
-			report (currentState, usPrefTerm, SEVERITY.HIGH, REPORT_ACTION_TYPE.VALIDATION_ERROR, "Current term is not what was translated: " + newState.getExpectedCurrentPreferredTerm());
+		if (!usPrefTerm.getTerm().equals(newState.getCurrentTerm())) {
+			report (currentState, usPrefTerm, SEVERITY.HIGH, REPORT_ACTION_TYPE.VALIDATION_ERROR, "Current term is not what was translated: " + newState.getCurrentTerm());
 		}
 		
 		//Do we already have this term?  Just add the langrefset entry if so.
@@ -160,7 +160,7 @@ public class GenerateTranslation extends DeltaGenerator {
 		String msg = "Created new description: ";
 		SEVERITY severity = SEVERITY.LOW;
 		//Do we already have this term?  Add a warning if so.
-		if (currentState.hasTerm(newState.getNewPreferredTerm())) {
+		if (currentState.hasTerm(newState.getNewTerm())) {
 			severity = SEVERITY.HIGH;
 			msg = "Created duplicate new description: ";
 		}
@@ -196,7 +196,7 @@ public class GenerateTranslation extends DeltaGenerator {
 		d.setActive(true);
 		d.setEffectiveTime(null);
 		d.setLang(languageCode);
-		d.setTerm(newState.getNewPreferredTerm());
+		d.setTerm(newState.getNewTerm());
 		d.setType(DescriptionType.SYNONYM);
 		d.setCaseSignificance(newState.getCaseSensitivitySctId());
 		d.setModuleId(moduleId);
@@ -233,8 +233,8 @@ public class GenerateTranslation extends DeltaGenerator {
 			throws TermServerScriptException {
 		if (lineItems.length > 3) {
 			ConceptChange c = new ConceptChange(lineItems[0]);
-			c.setExpectedCurrentPreferredTerm(lineItems[1]);
-			c.setNewPreferredTerm(lineItems[4]);
+			c.setCurrentTerm(lineItems[1]);
+			c.setNewTerm(lineItems[4]);
 			String caseSignificanceSctId = SnomedUtils.translateCaseSignificanceToSctId(lineItems[5]);
 			c.setCaseSignificanceSctId(caseSignificanceSctId);
 			return c;

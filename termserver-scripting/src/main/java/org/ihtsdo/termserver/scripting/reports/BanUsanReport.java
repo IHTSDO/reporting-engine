@@ -161,7 +161,6 @@ public class BanUsanReport extends TermServerScript{
 		} catch (Exception e) {
 			throw new TermServerScriptException("Unable to import national terms file " + fileName, e);
 		}
-		
 	}
 
 	@Override

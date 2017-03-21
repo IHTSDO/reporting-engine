@@ -284,41 +284,6 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		}
 		return changesMade;
 	}
-	
-	/**
-	 * Any description that has been updated (effectiveTime == null) and is now inactive
-	 * should have its inactivation reason set to RETIRED aka "Reason not stated"
-	 * @param loadedConcept
-	 * @throws  
-	 */
-	//The browser endpoint can now handle inactivation reasons, so set when description is inactivated in concept.
-/*	protected void updateDescriptionInactivationReason(Task t, Concept loadedConcept) {
-		for (Description d : loadedConcept.getDescriptions()) {
-			if (d.getEffectiveTime() == null && d.isActive() == false) {
-				try {
-					String descriptionSerialised = gson.toJson(d);
-					JSONObject jsonObjDesc = new JSONObject(descriptionSerialised);
-					//The following fields can't be updated in a description and so are not represented
-					jsonObjDesc.remove("descriptionId");
-					jsonObjDesc.remove("conceptId");
-					jsonObjDesc.remove("type");
-					jsonObjDesc.remove("lang");
-					jsonObjDesc.remove("term");
-					jsonObjDesc.put("inactivationIndicator", InactivationIndicator.RETIRED.toString());
-					jsonObjDesc.put("commitComment", "Batch Script Update");
-					//Description endpoint uses acceptability rather than acceptabilityMap
-					if (jsonObjDesc.optJSONObject("acceptabilityMap") != null) {
-						jsonObjDesc.remove("acceptabilityMap");
-					}
-					jsonObjDesc.put("acceptability", JSONObject.NULL);
-					tsClient.updateDescription(d.getDescriptionId(), jsonObjDesc, t.getBranchPath());
-				} catch (SnowOwlClientException | JSONException e) {
-					String errStr = "Failed to set inactivation reason on description '" + d.getTerm() + "' : " + e.getMessage();
-					report(t, loadedConcept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.API_ERROR, errStr);
-				}
-			}
-		}
-	}*/
 
 	
 	/**
