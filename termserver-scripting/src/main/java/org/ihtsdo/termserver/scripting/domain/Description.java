@@ -46,7 +46,7 @@ public class Description implements RF2Constants{
 	private String caseSignificance;
 	@SerializedName("acceptabilityMap")
 	@Expose
-	private Map<String, Acceptability> acceptabilityMap = new HashMap<String, Acceptability> ();
+	private Map<String, Acceptability> acceptabilityMap = null;
 	@SerializedName("inactivationIndicator")
 	@Expose
 	private InactivationIndicator inactivationIndicator;
@@ -249,6 +249,9 @@ public class Description implements RF2Constants{
 	}
 
 	public void setAcceptablity(String refsetId, Acceptability Acceptability) {
+		if (acceptabilityMap == null) {
+			acceptabilityMap = new HashMap<String, Acceptability> ();
+		}
 		acceptabilityMap.put(refsetId, Acceptability);
 	}
 

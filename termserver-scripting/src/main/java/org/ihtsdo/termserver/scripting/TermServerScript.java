@@ -22,7 +22,7 @@ import java.util.TreeMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import org.ihtsdo.termserver.scripting.client.SCAClient;
+import org.ihtsdo.termserver.scripting.client.AuthoringServicesClient;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClient;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExportType;
@@ -53,16 +53,18 @@ public abstract class TermServerScript implements RF2Constants {
 	protected String url = environments[0];
 	protected boolean useAuthenticatedCookie = true;
 	protected SnowOwlClient tsClient;
-	protected SCAClient scaClient;
+	protected AuthoringServicesClient scaClient;
 	protected String authenticatedCookie;
 	protected Resty resty = new Resty();
 	protected String project;
 	protected String projectPath;
 	public static final int maxFailures = 5;
 	protected int restartPosition = NOT_SET;
+	protected int processingLimit = NOT_SET;
 	private static Date startTime;
 	private static Map<String, Object> summaryDetails = new TreeMap<String, Object>();
 	private static String summaryText = "";
+	protected boolean inputFileHasHeaderRow = false;
 	protected File inputFile;
 	protected File reportFile;
 	protected File outputDir;
@@ -230,7 +232,7 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 		//TODO Make calls through client objects rather than resty direct and remove this member 
 		resty.withHeader("Cookie", authenticatedCookie);  
-		scaClient = new SCAClient(url, authenticatedCookie);
+		scaClient = new AuthoringServicesClient(url, authenticatedCookie);
 		initialiseSnowOwlClient();
 		
 		print ("Specify Project " + (project==null?": ":"[" + project + "]: "));
@@ -361,8 +363,8 @@ public abstract class TermServerScript implements RF2Constants {
 			int startPos = (restartPosition == NOT_SET)?0:restartPosition - 1;
 			Concept c;
 			for (int lineNum = startPos; lineNum < lines.size(); lineNum++) {
-				if (lineNum == 0) {
-					//continue; //skip header row  //Current file format has no header
+				if (lineNum == 0  && inputFileHasHeaderRow) {
+					continue; //skip header row  
 				}
 				
 				//File format Concept Type, SCTID, FSN with string fields quoted.  Strip quotes also.

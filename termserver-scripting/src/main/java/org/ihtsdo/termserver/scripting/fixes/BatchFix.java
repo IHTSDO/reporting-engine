@@ -178,6 +178,11 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 				} catch (Exception e) {
 					throw new TermServerScriptException("Failed to process batch " + task.getDescription() + " on task " + task.getTaskKey(), e);
 				}
+				
+				if (processingLimit > NOT_SET && tasksCreated >= processingLimit) {
+					println ("Processing limit of " + processingLimit + " tasks reached.  Stopping");
+					break;
+				}
 			}
 	}
 
@@ -216,30 +221,46 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 
 	protected void init (String[] args) throws TermServerScriptException, IOException {
 		if (args.length < 3) {
-			println("Usage: java <FixClass> [-a author] [-n <taskSize>] [-r <restart lineNum>] [-t taskCreationDelay] [-c <authenticatedCookie>] [-d <Y/N>] [-p <projectName>] <batch file Location>");
+			println("Usage: java <FixClass> [-a author] [-n <taskSize>] [-r <restart lineNum>] [-l <limit> ] [-t taskCreationDelay] -c <authenticatedCookie> [-d <Y/N>] [-p <projectName>] -f <batch file Location>");
 			println(" d - dry run");
 			System.exit(-1);
 		}
 		boolean isTaskSize = false;
 		boolean isProjectName = false;
 		boolean isAuthor = false;
+		boolean isInputFile = false;
+		boolean isLimit = false;
 	
 		for (String thisArg : args) {
 			if (thisArg.equals("-a")) {
 				isAuthor = true;
 			} else if (thisArg.equals("-n")) {
 				isTaskSize = true;
+			} else if (thisArg.equals("-f")) {
+				isInputFile = true;
+			} else if (thisArg.equals("-l")) {
+				isLimit = true;
 			} else if (isAuthor) {
 				targetAuthor = thisArg.toLowerCase();
 				isAuthor = false;
+			} else if (isInputFile) {
+				inputFile = new File(thisArg);
+				if (!inputFile.canRead()) {
+					throw new TermServerScriptException ("Unable to read input file " + thisArg);
+				}
+				isInputFile = false;
 			} else if (isTaskSize) {
 				taskSize = Integer.parseInt(thisArg);
 				isTaskSize = false;
-			} else if (isProjectName) {
+			} else if (isLimit) {
+				processingLimit = Integer.parseInt(thisArg);
+				isLimit = false;
+			}else if (isProjectName) {
 				project = thisArg;
 				isProjectName = false;
 			} 
 		}
+		
 		if (!selfDetermining && inputFile == null) {
 			throw new TermServerScriptException("No valid batch import file detected in command line arguments");
 		}

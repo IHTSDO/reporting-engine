@@ -99,7 +99,7 @@ public class GraphLoader implements RF2Constants {
 				Concept c = new Concept(sctId);
 				concepts.put(sctId, c);
 			} else {
-				throw new TermServerScriptException("Expected Concept " + sctId + " has not been loaded from archive");
+				throw new TermServerScriptException("Expected Concept '" + sctId + "' has not been loaded from archive");
 			}
 		}
 		return concepts.get(sctId);

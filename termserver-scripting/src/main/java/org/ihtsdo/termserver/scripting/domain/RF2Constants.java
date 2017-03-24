@@ -30,6 +30,8 @@ public interface RF2Constants {
 	static String FSN = "900000000000003001";
 	static String DEF = "900000000000550004"; 
 	
+	static String LANG_EN = "en";
+	
 	static final String FULLY_DEFINED_SCTID = "900000000000073002";
 	static final String FULLY_SPECIFIED_NAME = "900000000000003001";
 	final Long SCTID_ROOT_CONCEPT = 138875005L;
@@ -90,9 +92,9 @@ public interface RF2Constants {
 	
 	public enum Acceptability { ACCEPTABLE, PREFERRED };
 	
-	public enum CaseSignificance { ENTIRE_TERM_CASE_SENSITIVE, ENTIRE_TERM_CASE_INSENSITIVE ,ONLY_INITIAL_CHAR_CASE_INSENSITIVE };
+	public enum CaseSignificance { ENTIRE_TERM_CASE_SENSITIVE, CASE_INSENSITIVE ,ONLY_INITIAL_CHAR_CASE_INSENSITIVE };
 	
-	public enum ConceptType { PRODUCT_STRENGTH, MEDICINAL_ENTITY, MEDICINAL_FORM, GROUPER, PRODUCT_ROLE, UNKNOWN };
+	public enum ConceptType { PRODUCT_STRENGTH, MEDICINAL_ENTITY, MEDICINAL_FORM, GROUPER, PRODUCT_ROLE, PCD, UNKNOWN };
 	
 	public enum Cardinality { AT_LEAST_ONE, EXACTLY_ONE };
 	
