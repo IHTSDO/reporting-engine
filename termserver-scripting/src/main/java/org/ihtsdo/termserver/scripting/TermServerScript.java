@@ -152,7 +152,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected void init(String[] args) throws TermServerScriptException, IOException {
 		
 		if (args.length < 3) {
-			println("Usage: java <TSScriptClass> [-a author] [-b <batchSize>] [-r <restart lineNum>] [-c <authenticatedCookie>] [-d <Y/N>] [-p <projectName>] <batch file Location>");
+			println("Usage: java <TSScriptClass> [-a author] [-b <batchSize>] [-r <restart lineNum>] [-c <authenticatedCookie>] [-d <Y/N>] [-p <projectName>] -f <batch file Location>");
 			println(" d - dry run");
 			System.exit(-1);
 		}
@@ -163,6 +163,7 @@ public abstract class TermServerScript implements RF2Constants {
 		boolean isTaskThrottle = false;
 		boolean isConceptThrottle = false;
 		boolean isOutputDir = false;
+		boolean isInputFile = false;
 	
 		for (String thisArg : args) {
 			if (thisArg.equals("-p")) {
@@ -171,6 +172,8 @@ public abstract class TermServerScript implements RF2Constants {
 				isCookie = true;
 			} else if (thisArg.equals("-d")) {
 				isDryRun = true;
+			} else if (thisArg.equals("-f")) {
+				isInputFile = true;
 			} else if (thisArg.equals("-o")) {
 				isOutputDir = true;
 			} else if (thisArg.equals("-r")) {
@@ -188,6 +191,12 @@ public abstract class TermServerScript implements RF2Constants {
 			} else if (isRestart) {
 				restartPosition = Integer.parseInt(thisArg);
 				isRestart = false;
+			} else if (isInputFile) {
+				inputFile = new File(thisArg);
+				if (!inputFile.canRead()) {
+					throw new TermServerScriptException ("Unable to read input file " + thisArg);
+				}
+				isInputFile = false;
 			} else if (isTaskThrottle) {
 				taskThrottle = Integer.parseInt(thisArg);
 				isTaskThrottle = false;
@@ -205,13 +214,6 @@ public abstract class TermServerScript implements RF2Constants {
 					println ("Unable to use directory " + possibleDir.getAbsolutePath() + " for output.");
 				}
 				isOutputDir = false;
-			} else {
-				File possibleFile = new File(thisArg);
-				if (possibleFile.exists() && !possibleFile.isDirectory() && possibleFile.canRead()) {
-					inputFile = possibleFile;
-				} else {
-					println ("Warning, unable to read possible input file " + possibleFile.getAbsolutePath());
-				}
 			}
 		}
 		
@@ -279,7 +281,6 @@ public abstract class TermServerScript implements RF2Constants {
 			tsClient = new SnowOwlClient(url + "snowowl/snomed-ct/v2", "snowowl", "snowowl");
 		}
 	}
-	
 	
 	protected void loadProjectSnapshot(boolean fsnOnly) throws SnowOwlClientException, TermServerScriptException, InterruptedException {
 		File snapShotArchive = new File (project + "_" + env + ".zip");
@@ -516,15 +517,19 @@ public abstract class TermServerScript implements RF2Constants {
 	
 	protected void initialiseReportFile(String columnHeaders) throws IOException {
 		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
-		String specificName = SnomedUtils.deconstructFilename(inputFile)[1];
-		if (specificName.isEmpty()) {
-			specificName = getScriptName();
-		}
-		String reportFilename = "results_" + specificName + "_" + df.format(new Date()) + "_" + env  + ".csv";
+		String reportFilename = "results_" + getReportName() + "_" + df.format(new Date()) + "_" + env  + ".csv";
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
 		writeToFile (columnHeaders);
+	}
+
+	protected String getReportName() {
+		String reportName = SnomedUtils.deconstructFilename(inputFile)[1];
+		if (reportName.isEmpty()) {
+			reportName = getScriptName();
+		}
+		return reportName;
 	}
 
 	protected File ensureFileExists(String fileName) throws TermServerScriptException {

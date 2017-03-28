@@ -58,6 +58,8 @@ public interface RF2Constants {
 	static final String GB_ENG_LANG_REFSET = "900000000000508004";
 	static final String US_ENG_LANG_REFSET = "900000000000509007";
 	static final String[] ENGLISH_DIALECTS = {GB_ENG_LANG_REFSET, US_ENG_LANG_REFSET};
+	static final String[] US_DIALECT = {US_ENG_LANG_REFSET};
+	
 	
 	static final String PREFERRED_TERM = "900000000000548007";
 	static final String ACCEPTABLE_TERM = "900000000000549004";
@@ -94,7 +96,7 @@ public interface RF2Constants {
 	
 	public enum CaseSignificance { ENTIRE_TERM_CASE_SENSITIVE, CASE_INSENSITIVE ,ONLY_INITIAL_CHAR_CASE_INSENSITIVE };
 	
-	public enum ConceptType { PRODUCT_STRENGTH, MEDICINAL_ENTITY, MEDICINAL_FORM, GROUPER, PRODUCT_ROLE, PCD, UNKNOWN };
+	public enum ConceptType { PRODUCT_STRENGTH, MEDICINAL_ENTITY, MEDICINAL_FORM, GROUPER, PRODUCT_ROLE, PCDF, PCD_PREP, UNKNOWN };
 	
 	public enum Cardinality { AT_LEAST_ONE, EXACTLY_ONE };
 	

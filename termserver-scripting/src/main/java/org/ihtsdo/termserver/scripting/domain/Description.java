@@ -299,5 +299,10 @@ public class Description implements RF2Constants{
 	public void setDirty() {
 		dirty = true;
 	}
+	
+	public void inactivateDescription(InactivationIndicator indicator) {
+		this.setActive(false);
+		this.setInactivationIndicator(indicator);
+	}
 
 }

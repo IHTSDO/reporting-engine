@@ -228,7 +228,6 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		boolean isTaskSize = false;
 		boolean isProjectName = false;
 		boolean isAuthor = false;
-		boolean isInputFile = false;
 		boolean isLimit = false;
 	
 		for (String thisArg : args) {
@@ -236,19 +235,11 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 				isAuthor = true;
 			} else if (thisArg.equals("-n")) {
 				isTaskSize = true;
-			} else if (thisArg.equals("-f")) {
-				isInputFile = true;
-			} else if (thisArg.equals("-l")) {
+			}else if (thisArg.equals("-l")) {
 				isLimit = true;
 			} else if (isAuthor) {
 				targetAuthor = thisArg.toLowerCase();
 				isAuthor = false;
-			} else if (isInputFile) {
-				inputFile = new File(thisArg);
-				if (!inputFile.canRead()) {
-					throw new TermServerScriptException ("Unable to read input file " + thisArg);
-				}
-				isInputFile = false;
 			} else if (isTaskSize) {
 				taskSize = Integer.parseInt(thisArg);
 				isTaskSize = false;
@@ -261,6 +252,8 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			} 
 		}
 		
+		super.init(args);
+		
 		if (!selfDetermining && inputFile == null) {
 			throw new TermServerScriptException("No valid batch import file detected in command line arguments");
 		}
@@ -272,8 +265,6 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		if (!selfDetermining) {
 			println("Reading file from line " + restartPosition + " - " + inputFile.getName());
 		}
-		
-		super.init(args);
 		
 		print ("Number of concepts per task [" + taskSize + "]: ");
 		String response = STDIN.nextLine().trim();

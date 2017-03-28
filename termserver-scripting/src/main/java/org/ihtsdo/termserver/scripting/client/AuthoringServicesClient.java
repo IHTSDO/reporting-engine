@@ -2,8 +2,6 @@ package org.ihtsdo.termserver.scripting.client;
 
 import java.io.IOException;
 
-import org.ihtsdo.termserver.scripting.domain.Task;
-
 import us.monoid.json.JSONObject;
 import us.monoid.web.JSONResource;
 import us.monoid.web.Resty;

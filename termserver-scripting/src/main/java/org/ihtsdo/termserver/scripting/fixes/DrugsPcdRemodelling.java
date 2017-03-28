@@ -30,6 +30,10 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 	
 	String[] author_reviewer = new String[] {targetAuthor};
 	
+	enum Mode { PCDF, PCD_PREP }
+	
+	Mode mode = null;
+	
 	Map <String, List<Relationship>> remodelledAttributes;
 	
 	protected DrugsPcdRemodelling(BatchFix clone) {
@@ -44,7 +48,7 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 			fix.inputFileHasHeaderRow = true;
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			fix.loadProjectSnapshot(false); //Load all descriptions
-			fix.loadRelationshipFile(args);
+			fix.determineProcessingMode(args);
 			//We won't include the project export in our timings
 			fix.startTimer();
 			println ("Processing started.  See results: " + fix.reportFile.getAbsolutePath());
@@ -54,22 +58,28 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 			fix.finish();
 		}
 	}
-
-	private void loadRelationshipFile(String[] args) throws TermServerScriptException {
+	
+	private void determineProcessingMode(String[] args) throws TermServerScriptException {
 		String fileName = null;
+		//Work out what file we're trying to load
+		for (int i=0; i < args.length; i++) {
+			if (args[i].equalsIgnoreCase("-z")) {
+				fileName = args[i+1];
+			}
+		}
+		
+		if (fileName == null) {
+			mode = Mode.PCDF;
+			println ("Processing PCDF - Description updates only.");
+		} else {
+			mode = Mode.PCD_PREP;
+			println ("Processing PCD_Prep - Description and relationship updates.");
+			loadRelationshipFile(fileName);
+		}
+	}
+
+	private void loadRelationshipFile(String fileName) throws TermServerScriptException {
 		try {
-			//Work out what file we're trying to load
-			for (int i=0; i < args.length; i++) {
-				if (args[i].equalsIgnoreCase("-z")) {
-					fileName = args[i+1];
-				}
-			}
-			
-			if (fileName == null) {
-				println ("Failed to find relationship file to load.  Specify path with 'z' command line parameter");
-				System.exit(1);
-			}
-			
 			remodelledAttributes = new HashMap<String, List<Relationship>>();
 			File relationshipFile = new File(fileName);
 			List<String> lines = Files.readLines(relationshipFile, Charsets.UTF_8);
@@ -135,8 +145,11 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 	}
 
 	private int remodelConcept(Task task, Concept concept, Concept tsConcept) throws TermServerScriptException {
-		int changesMade = remodelDescriptions(task, concept, tsConcept);
-		changesMade += remodelAttributes(task, concept, tsConcept);
+		int changesMade = 0;
+		changesMade += remodelDescriptions(task, concept, tsConcept);
+		if (mode == Mode.PCD_PREP) {
+			changesMade += remodelAttributes(task, concept, tsConcept);
+		}
 		return changesMade;
 	}
 
@@ -181,8 +194,8 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 			Description replacement = fsn.clone(null);
 			replacement.setTerm(change.getFsn());
 			replacement.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE.toString());
-			replacement.setAcceptabilityMap(createAcceptabilityMap(Acceptability.PREFERRED));
-			fsn.setActive(false);
+			replacement.setAcceptabilityMap(createAcceptabilityMap(Acceptability.PREFERRED, ENGLISH_DIALECTS));
+			fsn.inactivateDescription(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
 			tsConcept.addDescription(replacement);
 			changesMade++;
 			
@@ -209,7 +222,7 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 			} else {
 				//Reset the acceptability.   Apparently this isn't accepted by the TS.  Must inactivate instead.
 				//d.setAcceptabilityMap(null);
-				d.setActive(false);
+				d.inactivateDescription(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
 			}
 		}
 		//Add back in any remaining descriptions from our change set
@@ -232,7 +245,7 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 
 	@Override
 	protected Batch formIntoBatch (String fileName, List<Concept> allConcepts, String branchPath) throws TermServerScriptException {
-		Batch batch = new Batch(getScriptName());
+		Batch batch = new Batch(getReportName());
 		Task task = batch.addNewTask();
 
 		for (Concept thisConcept : allConcepts) {
@@ -258,30 +271,40 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 	protected Concept loadLine(String[] items) throws TermServerScriptException {
 		String sctid = items[1];
 		ConceptChange concept = new ConceptChange(sctid);
-		concept.setConceptType(ConceptType.PCD);
+		concept.setConceptType((mode==Mode.PCD_PREP)? ConceptType.PCD_PREP : ConceptType.PCDF);
 		concept.setCurrentTerm(items[2]);
 		concept.setFsn(items[3]);
-		addSynonym(concept, items[4], Acceptability.PREFERRED);
-		addSynonym(concept, items[5], Acceptability.ACCEPTABLE);
-		concept.setRelationships(remodelledAttributes.get(sctid));
+		addSynonym(concept, items[4], Acceptability.PREFERRED, ENGLISH_DIALECTS );
+		addSynonym(concept, items[5], Acceptability.ACCEPTABLE, ENGLISH_DIALECTS);
+		if (items.length > 6) {
+			addSynonym(concept, items[6], Acceptability.ACCEPTABLE, US_DIALECT );
+			addSynonym(concept, items[7], Acceptability.ACCEPTABLE, US_DIALECT);
+		}
+		if (mode == Mode.PCD_PREP) {
+			concept.setRelationships(remodelledAttributes.get(sctid));
+		}
 		return concept;
 	}
 
-	private void addSynonym(ConceptChange concept, String term, Acceptability acceptability) {
+	private void addSynonym(ConceptChange concept, String term, Acceptability acceptability, String[] dialects) {
+		if (term.isEmpty()) {
+			return;
+		}
 		Description d = new Description();
 		d.setTerm(term);
 		d.setActive(true);
 		d.setType(DescriptionType.SYNONYM);
 		d.setLang(LANG_EN);
+		//TODO May wish to check for captials at idx > 0 and adjust CS.
 		d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE.toString());
-		d.setAcceptabilityMap(createAcceptabilityMap(acceptability));
+		d.setAcceptabilityMap(createAcceptabilityMap(acceptability, dialects));
 		d.setConceptId(concept.getConceptId());
 		concept.addDescription(d);
 	}
 
-	private Map<String, Acceptability> createAcceptabilityMap(Acceptability acceptability) {
+	private Map<String, Acceptability> createAcceptabilityMap(Acceptability acceptability, String[] dialects) {
 		Map<String, Acceptability> aMap = new HashMap<String, Acceptability>();
-		for (String dialect : ENGLISH_DIALECTS) {
+		for (String dialect : dialects) {
 			aMap.put(dialect, acceptability);
 		}
 		return aMap;
