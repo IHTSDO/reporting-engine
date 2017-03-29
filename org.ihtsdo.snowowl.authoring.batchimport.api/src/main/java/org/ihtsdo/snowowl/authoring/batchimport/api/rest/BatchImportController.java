@@ -1,6 +1,7 @@
 package org.ihtsdo.snowowl.authoring.batchimport.api.rest;
 
 import com.wordnik.swagger.annotations.*;
+
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -8,6 +9,7 @@ import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.api.rest.common.AbstractRestService;
 import org.ihtsdo.snowowl.api.rest.common.AbstractSnomedRestService;
 import org.ihtsdo.snowowl.api.rest.common.ControllerHelper;
+import org.ihtsdo.snowowl.authoring.batchimport.api.client.AuthoringServicesClient;
 import org.ihtsdo.snowowl.authoring.batchimport.api.pojo.batch.BatchImportRequest;
 import org.ihtsdo.snowowl.authoring.batchimport.api.pojo.batch.BatchImportStatus;
 import org.ihtsdo.snowowl.authoring.batchimport.api.service.BatchImportFormat;
@@ -19,6 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -29,7 +32,6 @@ import static java.util.UUID.randomUUID;
 @Api("Batch Import")
 @RestController
 @RequestMapping(produces={AbstractRestService.V1_MEDIA_TYPE, MediaType.APPLICATION_JSON_VALUE})
-@SuppressWarnings("unused")
 public class BatchImportController extends AbstractSnomedRestService {
 
 	@Autowired
@@ -81,13 +83,17 @@ public class BatchImportController extends AbstractSnomedRestService {
 			importRequest.allowLateralizedContent(allowLateralizedContent);
 			parser.close();
 			
-			batchImportService.startImport(batchImportId, importRequest, rows, ControllerHelper.getUsername());
+			batchImportService.startImport(batchImportId, importRequest, rows, ControllerHelper.getUsername(), getASClient(request));
 			response.setHeader("Location", request.getRequestURL() + "/" + batchImportId.toString());
 		} catch (IOException e) {
 			throw new BusinessServiceException ("Unable to import batch file",e);
 		}
 	}
 	
+	private AuthoringServicesClient getASClient(HttpServletRequest request) {
+		return new AuthoringServicesClient(request.getCookies());
+	}
+
 	@ApiOperation(
 			value="Retrieve import run status", 
 			notes="Returns the specified batch import run's status.")
@@ -101,6 +107,7 @@ public class BatchImportController extends AbstractSnomedRestService {
 			@ApiParam(value="The batch import identifier")
 			@PathVariable(value="batchImportId") 
 			final UUID batchImportId,
+			HttpServletResponse request,
 			HttpServletResponse response) {
 
 		return batchImportService.getImportStatus(batchImportId);
@@ -119,6 +126,7 @@ public class BatchImportController extends AbstractSnomedRestService {
 			@ApiParam(value="The import identifier")
 			@PathVariable(value="batchImportId") 
 			final UUID batchImportId,
+			HttpServletResponse request,
 			HttpServletResponse response) throws BusinessServiceException {
 
 		String csvFileName = "results_" + batchImportService.getImportResultsFile(projectKey, batchImportId).getName();

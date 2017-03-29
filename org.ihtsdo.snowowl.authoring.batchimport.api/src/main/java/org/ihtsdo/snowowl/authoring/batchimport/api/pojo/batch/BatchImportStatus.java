@@ -5,6 +5,7 @@ public class BatchImportStatus {
 	private Integer target;
 	private Integer loaded;
 	private Integer processed;
+	private String message;
 	
 	public BatchImportStatus(BatchImportState state) {
 		this.state = state;
@@ -32,6 +33,12 @@ public class BatchImportStatus {
 	}
 	public void setProcessed(Integer processed) {
 		this.processed = processed;
+	}
+	public String getMessage() {
+		return message;
+	}
+	public void setMessage(String message) {
+		this.message = message;
 	}
 
 }

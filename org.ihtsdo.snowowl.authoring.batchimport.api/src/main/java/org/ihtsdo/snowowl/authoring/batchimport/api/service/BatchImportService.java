@@ -44,11 +44,9 @@ public class BatchImportService {
 	@Autowired
 	private SnomedBrowserService browserService;
 	
-	@Autowired
-	private AuthoringServicesClient authoringServicesClient;
-	
-	@Autowired
-	private BranchService branchService;
+	//We need this created for each request, since it will use the authentication
+	//cookie of the requesting user
+	//private AuthoringServicesClient authoringServicesClient;
 	
 	private ArbitraryTempFileService fileService = new ArbitraryTempFileService("batch_import");
 	
@@ -93,7 +91,7 @@ public class BatchImportService {
 		}
 	}
 	
-	public void startImport(UUID batchImportId, BatchImportRequest importRequest, List<CSVRecord> rows, String currentUser) throws BusinessServiceException {
+	public void startImport(UUID batchImportId, BatchImportRequest importRequest, List<CSVRecord> rows, String currentUser, AuthoringServicesClient authoringServicesClient) throws BusinessServiceException {
 		BatchImportRun run = BatchImportRun.createRun(batchImportId, importRequest);
 		currentImports.put(batchImportId, new BatchImportStatus(BatchImportState.RUNNING));
 		prepareConcepts(run, rows);
@@ -102,7 +100,7 @@ public class BatchImportService {
 		logger.info("Batch Importing {} concepts onto new tasks in project {} - batch import id {} ",rowsToProcess, run.getImportRequest().getProjectKey(), run.getId().toString());
 		
 		if (validateLoadHierarchy(run)) {
-			BatchImportRunner runner = new BatchImportRunner(run, this);
+			BatchImportRunner runner = new BatchImportRunner(run, this, authoringServicesClient);
 			executor.execute(runner);
 		} else {
 			run.abortLoad(rows);
@@ -196,10 +194,10 @@ public class BatchImportService {
 		return false;
 	}
 
-	void loadConceptsOntoTasks(BatchImportRun run) throws AuthoringServicesClientException, BusinessServiceException {
+	void loadConceptsOntoTasks(BatchImportRun run, AuthoringServicesClient authoringServicesClient) throws AuthoringServicesClientException, BusinessServiceException {
 		List<List<BatchImportConcept>> batches = collectIntoBatches(run);
 		for (List<BatchImportConcept> thisBatch : batches) {
-			AuthoringTask task = createTask(run, thisBatch);
+			AuthoringTask task = createTask(run, thisBatch, authoringServicesClient);
 			Map<String, ISnomedBrowserConcept> conceptsLoaded = loadConcepts(run, task, thisBatch);
 			String conceptsLoadedJson = conceptList(conceptsLoaded.values());
 			boolean dryRun = run.getImportRequest().isDryRun();
@@ -210,15 +208,15 @@ public class BatchImportService {
 				if (run.getImportRequest().getConceptsPerTask() == 1) {
 					newSummary = "New concept: " + thisBatch.get(0).getFsn();
 				}
-				updateTaskDetails(task, run, conceptsLoaded, newSummary);
-				primeEditPanel(task, run, conceptsLoadedJson);
-				primeSavedList(task, run, conceptsLoaded.values());
+				updateTaskDetails(task, run, conceptsLoaded, newSummary, authoringServicesClient);
+				primeEditPanel(task, run, conceptsLoadedJson, authoringServicesClient);
+				primeSavedList(task, run, conceptsLoaded.values(), authoringServicesClient);
 			}
 		}
 	}
 
 	private void updateTaskDetails(AuthoringTask task, BatchImportRun run,
-			Map<String, ISnomedBrowserConcept> conceptsLoaded, String newSummary) throws BusinessServiceException {
+			Map<String, ISnomedBrowserConcept> conceptsLoaded, String newSummary, AuthoringServicesClient authoringServicesClient) throws BusinessServiceException {
 		try {
 			String allNotes = getAllNotes(task, run, conceptsLoaded);
 			if (newSummary != null) {
@@ -231,7 +229,7 @@ public class BatchImportService {
 		}
 	}
 
-	private void primeEditPanel(AuthoringTask task, BatchImportRun run, String conceptsJson) {
+	private void primeEditPanel(AuthoringTask task, BatchImportRun run, String conceptsJson, AuthoringServicesClient authoringServicesClient) {
 		try {
 			String user = run.getImportRequest().getCreateForAuthor();
 			authoringServicesClient.persistTaskPanelState(task.getProjectKey(), task.getKey(), user, EDIT_PANEL, conceptsJson);
@@ -252,7 +250,7 @@ public class BatchImportService {
 		return json.toString();
 	}
 	
-	private void primeSavedList(AuthoringTask task, BatchImportRun run, Collection<ISnomedBrowserConcept> conceptsLoaded) {
+	private void primeSavedList(AuthoringTask task, BatchImportRun run, Collection<ISnomedBrowserConcept> conceptsLoaded, AuthoringServicesClient authoringServicesClient) {
 		try {
 			String user = run.getImportRequest().getCreateForAuthor();
 			StringBuilder json = new StringBuilder("{\"items\":[");
@@ -297,7 +295,7 @@ public class BatchImportService {
 	}
 
 	private AuthoringTask createTask(BatchImportRun run,
-			List<BatchImportConcept> thisBatch) throws AuthoringServicesClientException {
+			List<BatchImportConcept> thisBatch, AuthoringServicesClient authoringServicesClient) throws AuthoringServicesClientException {
 		BatchImportRequest request = run.getImportRequest();
 		AuthoringTaskCreateRequest taskCreateRequest = new AuthoringTask();
 		

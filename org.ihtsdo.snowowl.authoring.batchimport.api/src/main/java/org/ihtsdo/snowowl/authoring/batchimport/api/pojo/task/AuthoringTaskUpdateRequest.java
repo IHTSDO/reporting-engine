@@ -5,9 +5,9 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 @JsonDeserialize(as = AuthoringTask.class)
 public interface AuthoringTaskUpdateRequest extends AuthoringTaskCreateRequest {
 
-	TaskStatus getStatus();
+	String getStatus();
 
-	void setStatus(TaskStatus status);
+	void setStatus(String status);
 
 	User getAssignee();
 

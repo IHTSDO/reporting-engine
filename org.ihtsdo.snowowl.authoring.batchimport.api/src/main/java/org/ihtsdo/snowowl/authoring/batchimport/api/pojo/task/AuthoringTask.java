@@ -49,7 +49,7 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 	@JsonProperty("key")
 	private String key;
 	@JsonProperty("labels")
-	private String labels;
+	private String[] labels;
 	@JsonProperty("latestClassificationJson")
 	private String latestClassificationJson;
 	@JsonProperty("latestValidationStatus")
@@ -59,7 +59,7 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 	@JsonProperty("reviewer")
 	private User reviewer;
 	@JsonProperty("status")
-	private TaskStatus status;
+	private String status;
 	@JsonProperty("summary")
 	private String summary;
 	@JsonProperty("updated")
@@ -150,12 +150,12 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 	}
 
 	@JsonProperty("labels")
-	public String getLabels() {
+	public String[] getLabels() {
 		return labels;
 	}
 
 	@JsonProperty("labels")
-	public void setLabels(String labels) {
+	public void setLabels(String[] labels) {
 		this.labels = labels;
 	}
 
@@ -200,12 +200,12 @@ public class AuthoringTask implements AuthoringTaskCreateRequest, AuthoringTaskU
 	}
 
 	@JsonProperty("status")
-	public TaskStatus getStatus() {
+	public String getStatus() {
 		return status;
 	}
 
 	@JsonProperty("status")
-	public void setStatus(TaskStatus status) {
+	public void setStatus(String status) {
 		this.status = status;
 	}
 
