@@ -223,6 +223,9 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 				//Reset the acceptability.   Apparently this isn't accepted by the TS.  Must inactivate instead.
 				//d.setAcceptabilityMap(null);
 				d.inactivateDescription(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
+				if (isCaseSensitive(d)) {
+					report (task, tsConcept, SEVERITY.HIGH, REPORT_ACTION_TYPE.VALIDATION_CHECK, "Inactivated description was case sensitive");
+				}
 			}
 		}
 		//Add back in any remaining descriptions from our change set
@@ -231,6 +234,11 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 			changesMade++;
 		}
 		return changesMade;
+	}
+
+	private boolean isCaseSensitive(Description d) {
+		String cs = d.getCaseSignificance();
+		return (cs.equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE) || cs.equals(ONLY_INITIAL_CHAR_CASE_INSENSITIVE_SCTID));
 	}
 
 	//Return the first description that equals the term
