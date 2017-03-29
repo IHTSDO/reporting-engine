@@ -306,6 +306,8 @@ public abstract class TermServerScript implements RF2Constants {
 						} else if (fileName.contains("sct2_Relationship_Snapshot")) {
 							println("Loading Relationship File.");
 							gl.loadRelationships(CharacteristicType.INFERRED_RELATIONSHIP, zis, true);
+							println("Calculating concept depth...");
+							gl.populateHierarchyDepth(ROOT_CONCEPT, 0);
 						} else if (fileName.contains("sct2_StatedRelationship_Snapshot")) {
 							println("Loading StatedRelationship File.");
 							gl.loadRelationships(CharacteristicType.STATED_RELATIONSHIP, zis, true);

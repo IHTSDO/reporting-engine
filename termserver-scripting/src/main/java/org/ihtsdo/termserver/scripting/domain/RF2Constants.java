@@ -5,12 +5,15 @@ public interface RF2Constants {
 	static int NOT_SET = -1;
 	static int IMMEDIATE_CHILD = 1;
 	static int NA = -1;
+	final Long SCTID_ROOT_CONCEPT = 138875005L;
+	
 	static String PHARM_BIO_PRODUCT_SCTID = "373873005" ; //Pharmaceutical / biologic product (product)
 	static Concept IS_A =  new Concept ("116680003");  // | Is a (attribute) |
 	static Concept HAS_ACTIVE_INGRED = new Concept ("127489000","Has active ingredient (attribute)");
 	static Concept SUBSTANCE = new Concept("105590001", "Substance (substance)");
 	static Concept HAS_DOSE_FORM = new Concept ("411116001","Has dose form (attribute)");
 	static Concept DRUG_PREPARATION = new Concept("105904009","Type of drug preparation (qualifier value)");
+	static Concept ROOT_CONCEPT = new Concept (SCTID_ROOT_CONCEPT.toString());
 	static String ACETAMINOPHEN = "acetaminophen";
 	static String PARACETAMOL = "paracetamol";
 	
@@ -34,7 +37,6 @@ public interface RF2Constants {
 	
 	static final String FULLY_DEFINED_SCTID = "900000000000073002";
 	static final String FULLY_SPECIFIED_NAME = "900000000000003001";
-	final Long SCTID_ROOT_CONCEPT = 138875005L;
 	final String ADDITIONAL_RELATIONSHIP = "900000000000227009";
 	final String SPACE = " ";
 	final String COMMA = ",";
