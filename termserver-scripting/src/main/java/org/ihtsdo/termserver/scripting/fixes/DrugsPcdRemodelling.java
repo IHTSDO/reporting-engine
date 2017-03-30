@@ -282,12 +282,16 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 		concept.setConceptType((mode==Mode.PCD_PREP)? ConceptType.PCD_PREP : ConceptType.PCDF);
 		concept.setCurrentTerm(items[2]);
 		concept.setFsn(items[3]);
-		addSynonym(concept, items[4], Acceptability.PREFERRED, ENGLISH_DIALECTS );
-		addSynonym(concept, items[5], Acceptability.ACCEPTABLE, ENGLISH_DIALECTS);
+		//If we have a column 6, then split the preferred terms into US and GB separately
 		if (items.length > 6) {
-			addSynonym(concept, items[6], Acceptability.ACCEPTABLE, US_DIALECT );
+			addSynonym(concept, items[4], Acceptability.PREFERRED, GB_DIALECT );
+			addSynonym(concept, items[6], Acceptability.PREFERRED, US_DIALECT );
 			addSynonym(concept, items[7], Acceptability.ACCEPTABLE, US_DIALECT);
+		} else {
+			addSynonym(concept, items[4], Acceptability.PREFERRED, ENGLISH_DIALECTS );
 		}
+		addSynonym(concept, items[5], Acceptability.ACCEPTABLE, ENGLISH_DIALECTS);
+
 		if (mode == Mode.PCD_PREP) {
 			concept.setRelationships(remodelledAttributes.get(sctid));
 		}

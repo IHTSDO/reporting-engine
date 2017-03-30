@@ -61,6 +61,7 @@ public interface RF2Constants {
 	static final String US_ENG_LANG_REFSET = "900000000000509007";
 	static final String[] ENGLISH_DIALECTS = {GB_ENG_LANG_REFSET, US_ENG_LANG_REFSET};
 	static final String[] US_DIALECT = {US_ENG_LANG_REFSET};
+	static final String[] GB_DIALECT = {GB_ENG_LANG_REFSET};
 	
 	
 	static final String PREFERRED_TERM = "900000000000548007";
