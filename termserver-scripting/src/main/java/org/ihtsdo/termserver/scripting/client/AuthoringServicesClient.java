@@ -2,20 +2,19 @@ package org.ihtsdo.termserver.scripting.client;
 
 import java.io.IOException;
 
-import org.ihtsdo.termserver.scripting.domain.Task;
-
 import us.monoid.json.JSONObject;
 import us.monoid.web.JSONResource;
 import us.monoid.web.Resty;
 
-public class SCAClient {
+public class AuthoringServicesClient {
 	private final Resty resty;
 	private final String serverUrl;
-	private static final String apiRoot = "snowowl/ihtsdo-sca/";
+	//private static final String apiRoot = "snowowl/ihtsdo-sca/";
+	private static final String apiRoot = "authoring-services/";
 	private static final String ALL_CONTENT_TYPE = "*/*";
 	private static final String JSON_CONTENT_TYPE = "application/json";
 
-	public SCAClient(String serverUrl, String cookie) {
+	public AuthoringServicesClient(String serverUrl, String cookie) {
 		this.serverUrl = serverUrl;
 		resty = new Resty(new RestyOverrideAccept(ALL_CONTENT_TYPE));
 		resty.withHeader("Cookie", cookie);

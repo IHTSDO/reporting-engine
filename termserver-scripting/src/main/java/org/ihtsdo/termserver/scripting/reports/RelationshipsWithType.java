@@ -1,11 +1,8 @@
 package org.ihtsdo.termserver.scripting.reports;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -13,34 +10,33 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExportType;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExtractType;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
-public class RelationshipReport extends TermServerScript{
+public class RelationshipsWithType extends TermServerScript{
 	
 	Set<Concept> modifiedConcepts = new HashSet<Concept>();
 	List<String> criticalErrors = new ArrayList<String>();
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	GraphLoader gl = GraphLoader.getGraphLoader();
-	Concept filterOnType = null; 
+	Set<Concept> filterOnType = new HashSet<Concept>();
+	boolean reverse = false;
 	CharacteristicType filterOnCharacteristicType = null;
 	ActiveState filterOnActiveState = null;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
-		RelationshipReport report = new RelationshipReport();
+		RelationshipsWithType report = new RelationshipsWithType();
 		try {
 			report.init(args);
 			report.loadProjectSnapshot(true);  //Load FSNs only
-			report.reportActiveRelationships();
+			report.init2(); //Setup needed after data loaded
+			report.reportRelationshipsWithType();
 		} catch (Exception e) {
 			println("Failed to produce Changed Relationship Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
@@ -52,20 +48,21 @@ public class RelationshipReport extends TermServerScript{
 		}
 	}
 	
-	private void reportActiveRelationships() {
-		Collection<Concept> conceptsToExamine =  gl.getAllConcepts();  //modifiedConcepts
-		println("Examining " + conceptsToExamine.size() + " concepts");
+	private void reportRelationshipsWithType() {
+		Collection<Concept> allConcepts =  gl.getAllConcepts();
+		println("Examining " + allConcepts.size() + " concepts");
 		int reportedRelationships = 0;
-		for (Concept thisConcept : conceptsToExamine) {
+		for (Concept thisConcept : allConcepts) {
 			if (thisConcept.getFsn() == null) {
 				String msg = "Concept " + thisConcept.getConceptId() + " has no FSN";
 				criticalErrors.add(msg);
 				println(msg);
 			}
-			List<Relationship> allConceptRelationships = thisConcept.getRelationships(filterOnCharacteristicType, filterOnActiveState);
 			
+			List<Relationship> allConceptRelationships = thisConcept.getRelationships(filterOnCharacteristicType, filterOnActiveState);
 			for(Relationship thisRel : allConceptRelationships) {
-				if (filterOnType == null || thisRel.getType().equals(filterOnType)){
+				if ((filterOnType.contains(thisRel.getType()) && !reverse) || 
+					(!filterOnType.contains(thisRel.getType()) && reverse)){
 					report (thisConcept, thisRel);
 					reportedRelationships++;
 				}
@@ -77,7 +74,8 @@ public class RelationshipReport extends TermServerScript{
 	
 	protected void report (Concept c, Relationship r) {
 		String line = 	c.getConceptId() + COMMA_QUOTE + 
-						c.getFsn() + QUOTE_COMMA + 
+						c.getFsn() + QUOTE_COMMA_QUOTE +
+						SnomedUtils.deconstructFSN(c.getFsn())[1] + QUOTE_COMMA +
 						c.isActive() + COMMA + 
 						c.getEffectiveTime().equals(transientEffectiveDate) + COMMA_QUOTE + 
 						r.getCharacteristicType().toString() + QUOTE_COMMA +
@@ -100,12 +98,6 @@ public class RelationshipReport extends TermServerScript{
 				throw new TermServerScriptException("Invalid date: "  + response);
 			}
 			transientEffectiveDate = response;
-		}
-		
-		print ("Filter for a particular attribute type? (return for none): ");
-		response = STDIN.nextLine().trim();
-		if (!response.isEmpty()) {
-			filterOnType = gl.getConcept(response);
 		}
 		
 		while (filterOnCharacteristicType == null) {
@@ -144,12 +136,36 @@ public class RelationshipReport extends TermServerScript{
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToFile ("Concept, FSN, Concept_Active, Concept_Modified, Stated_or_Inferred, Relationship_Active, GroupNum, TypeId, TypeFsn, TargetId, TargetFsn");
+		writeToFile ("Concept, FSN, SemTag, Concept_Active, Concept_Modified, Stated_or_Inferred, Relationship_Active, GroupNum, TypeId, TypeFsn, TargetId, TargetFsn");
+	}
+	
+	public void init2() throws TermServerScriptException {
+		String response = null;
+		println ("Filter type example: 106237007 |Linkage concept (linkage concept)|");
+				
+		while (response == null) {
+			print ("Filter for attribute type descendent or self of: ");
+			response = STDIN.nextLine().trim();
+			if (!response.isEmpty()) {
+				Concept hierarchy = gl.getConcept(response);
+				Set<Concept> filteringTargets = hierarchy.getDescendents(NOT_SET,CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE);
+				filterOnType.addAll(filteringTargets); //descendant
+				filterOnType.add(hierarchy);  //and self
+				println ("\nFiltering for type descendents of " + hierarchy + " - " + filteringTargets.size());
+				response = null;
+			}
+		}
+		
+		print ("Reverse results?");
+		response = STDIN.nextLine().trim();
+		if (response.toUpperCase().equals("Y")) {
+			reverse = true;
+		}
 	}
 
 	@Override
 	public String getScriptName() {
-		return "Active Relationships";
+		return "Relationships_with_Target";
 	}
 
 	@Override

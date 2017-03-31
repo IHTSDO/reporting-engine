@@ -6,9 +6,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
@@ -39,9 +36,6 @@ import us.monoid.json.JSONArray;
 import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
 
-import com.google.common.base.Charsets;
-import com.google.common.io.Files;
-
 /**
  * Reads in a file containing a list of concept SCTIDs and processes them in batches
  * in tasks created on the specified project
@@ -52,6 +46,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	protected int wiggleRoom = 2;
 	protected String targetAuthor;
 	String[] emailDetails;
+	protected boolean selfDetermining = false; //Set to true if the batch fix calculates its own data to process
 
 	protected BatchFix (BatchFix clone) {
 		if (clone != null) {
@@ -77,9 +72,9 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	
 	abstract protected Batch formIntoBatch (String fileName, List<Concept> allConcepts, String branchPath) throws TermServerScriptException;
 	
-	abstract protected int doFix(Task task, Concept concept) throws TermServerScriptException;
+	abstract protected int doFix(Task task, Concept concept, String info) throws TermServerScriptException;
 
-	private void batchProcess(Batch batch) throws TermServerScriptException {
+	protected void batchProcess(Batch batch) throws TermServerScriptException {
 		int failureCount = 0;
 		int tasksCreated = 0;
 		boolean isFirst = true;
@@ -132,14 +127,16 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 					task.setTaskKey(taskKey);
 					task.setBranchPath(branchPath);
 					incrementSummaryInformation("Tasks created",1);
-					
+					int conceptInTask = 0;
 					//Process each concept
 					for (Concept concept : task.getConcepts()) {
 						try {
+							conceptInTask++;
 							if (!dryRun && task.getConcepts().indexOf(concept) != 0) {
 								Thread.sleep(conceptThrottle * 1000);
 							}
-							int changesMade = doFix(task, concept);
+							String info = " Task (" + xOfY + ") Concept (" + conceptInTask + " of " + task.getConcepts().size() + ")";
+							int changesMade = doFix(task, concept, info);
 							if (changesMade == 0) {
 								report(task, concept, SEVERITY.NONE, REPORT_ACTION_TYPE.NO_CHANGE, "");
 							}
@@ -181,6 +178,11 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 				} catch (Exception e) {
 					throw new TermServerScriptException("Failed to process batch " + task.getDescription() + " on task " + task.getTaskKey(), e);
 				}
+				
+				if (processingLimit > NOT_SET && tasksCreated >= processingLimit) {
+					println ("Processing limit of " + processingLimit + " tasks reached.  Stopping");
+					break;
+				}
 			}
 	}
 
@@ -219,32 +221,40 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 
 	protected void init (String[] args) throws TermServerScriptException, IOException {
 		if (args.length < 3) {
-			println("Usage: java <FixClass> [-a author] [-n <taskSize>] [-r <restart lineNum>] [-t taskCreationDelay] [-c <authenticatedCookie>] [-d <Y/N>] [-p <projectName>] <batch file Location>");
+			println("Usage: java <FixClass> [-a author] [-n <taskSize>] [-r <restart lineNum>] [-l <limit> ] [-t taskCreationDelay] -c <authenticatedCookie> [-d <Y/N>] [-p <projectName>] -f <batch file Location>");
 			println(" d - dry run");
 			System.exit(-1);
 		}
 		boolean isTaskSize = false;
 		boolean isProjectName = false;
 		boolean isAuthor = false;
-		boolean isMailRecipient = false;
+		boolean isLimit = false;
 	
 		for (String thisArg : args) {
 			if (thisArg.equals("-a")) {
 				isAuthor = true;
-			} else if (thisArg.equals("-b")) {
+			} else if (thisArg.equals("-n")) {
 				isTaskSize = true;
+			}else if (thisArg.equals("-l")) {
+				isLimit = true;
 			} else if (isAuthor) {
 				targetAuthor = thisArg.toLowerCase();
 				isAuthor = false;
 			} else if (isTaskSize) {
 				taskSize = Integer.parseInt(thisArg);
 				isTaskSize = false;
-			} else if (isProjectName) {
+			} else if (isLimit) {
+				processingLimit = Integer.parseInt(thisArg);
+				isLimit = false;
+			}else if (isProjectName) {
 				project = thisArg;
 				isProjectName = false;
 			} 
 		}
-		if (inputFile == null) {
+		
+		super.init(args);
+		
+		if (!selfDetermining && inputFile == null) {
 			throw new TermServerScriptException("No valid batch import file detected in command line arguments");
 		}
 		
@@ -252,9 +262,9 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			throw new TermServerScriptException("No target author detected in command line arguments");
 		}
 		
-		println("Reading file from line " + restartPosition + " - " + inputFile.getName());
-		
-		super.init(args);
+		if (!selfDetermining) {
+			println("Reading file from line " + restartPosition + " - " + inputFile.getName());
+		}
 		
 		print ("Number of concepts per task [" + taskSize + "]: ");
 		String response = STDIN.nextLine().trim();
@@ -286,41 +296,6 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		}
 		return changesMade;
 	}
-	
-	/**
-	 * Any description that has been updated (effectiveTime == null) and is now inactive
-	 * should have its inactivation reason set to RETIRED aka "Reason not stated"
-	 * @param loadedConcept
-	 * @throws  
-	 */
-	//The browser endpoint can now handle inactivation reasons, so set when description is inactivated in concept.
-/*	protected void updateDescriptionInactivationReason(Task t, Concept loadedConcept) {
-		for (Description d : loadedConcept.getDescriptions()) {
-			if (d.getEffectiveTime() == null && d.isActive() == false) {
-				try {
-					String descriptionSerialised = gson.toJson(d);
-					JSONObject jsonObjDesc = new JSONObject(descriptionSerialised);
-					//The following fields can't be updated in a description and so are not represented
-					jsonObjDesc.remove("descriptionId");
-					jsonObjDesc.remove("conceptId");
-					jsonObjDesc.remove("type");
-					jsonObjDesc.remove("lang");
-					jsonObjDesc.remove("term");
-					jsonObjDesc.put("inactivationIndicator", InactivationIndicator.RETIRED.toString());
-					jsonObjDesc.put("commitComment", "Batch Script Update");
-					//Description endpoint uses acceptability rather than acceptabilityMap
-					if (jsonObjDesc.optJSONObject("acceptabilityMap") != null) {
-						jsonObjDesc.remove("acceptabilityMap");
-					}
-					jsonObjDesc.put("acceptability", JSONObject.NULL);
-					tsClient.updateDescription(d.getDescriptionId(), jsonObjDesc, t.getBranchPath());
-				} catch (SnowOwlClientException | JSONException e) {
-					String errStr = "Failed to set inactivation reason on description '" + d.getTerm() + "' : " + e.getMessage();
-					report(t, loadedConcept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.API_ERROR, errStr);
-				}
-			}
-		}
-	}*/
 
 	
 	/**

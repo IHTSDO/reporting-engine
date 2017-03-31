@@ -16,6 +16,7 @@ import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
+import org.ihtsdo.termserver.scripting.domain.Relationship;
 
 public abstract class DeltaGenerator extends TermServerScript {
 	
@@ -37,7 +38,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 	String[] descHeader = new String[] {"id","effectiveTime","active","moduleId","conceptId","languageCode","typeId","term","caseSignificanceId"};
 	String[] relHeader = new String[] {"id","effectiveTime","active","moduleId","sourceId","destinationId","relationshipGroup","typeId","characteristicTypeId","modifierId"};
 	String[] langHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","acceptabilityId"};
-	IdGenerator descIdGenerator;
+	IdGenerator idGenerator;
 	
 	protected void report(Concept concept, Description d, SEVERITY severity, REPORT_ACTION_TYPE actionType, String actionDetail) {
 		String line = "";
@@ -61,10 +62,10 @@ public abstract class DeltaGenerator extends TermServerScript {
 		
 		for (int x=0; x<args.length; x++) {
 			if (args[x].equals("-i")) {
-				descIdGenerator = IdGenerator.initiateIdGenerator(args[++x]);
+				idGenerator = IdGenerator.initiateIdGenerator(args[++x]);
 			}
 		}
-		if (descIdGenerator == null) {
+		if (idGenerator == null) {
 			throw new TermServerScriptException("Command line arguments must supply a list of available sctid using the -i option");
 		}
 		initialiseReportFile("Concept,DescSctId,Term,Severity,Action,Detail");
@@ -111,23 +112,29 @@ public abstract class DeltaGenerator extends TermServerScript {
 			}
 		}
 	}
-	
-	protected void writeToRF2File(String fileName, String[] columns) throws TermServerScriptException {
-		File file = ensureFileExists(fileName);
-		try(	OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(file, true), StandardCharsets.UTF_8);
-				BufferedWriter bw = new BufferedWriter(osw);
-				PrintWriter out = new PrintWriter(bw))
-		{
-			StringBuffer line = new StringBuffer();
-			for (int x=0; x<columns.length; x++) {
-				if (x > 0) {
-					line.append(TSV_FIELD_DELIMITER);
-				}
-				line.append(columns[x]==null?"":columns[x]);
+
+	protected void outputRF2(Relationship r) throws TermServerScriptException {
+		if (r.isDirty()) {
+			switch (r.getCharacteristicType()) {
+				case STATED_RELATIONSHIP : writeToRF2File(sRelDeltaFilename, r.toRF2());
+				break;
+				case INFERRED_RELATIONSHIP : 
+				default: writeToRF2File(relDeltaFilename, r.toRF2());
 			}
-			out.print(line.toString() + LINE_DELIMITER);
-		} catch (Exception e) {
-			println ("Unable to output report rf2 line due to " + e.getMessage());
+		}
+	}
+	
+	protected void outputRF2(Concept c) throws TermServerScriptException {
+		/*if (c.isDirty()) {
+			writeToRF2File(conDeltaFilenam, c.toRF2());
+		}*/
+		
+		for (Description d : c.getDescriptions(ActiveState.BOTH)) {
+			outputRF2(d);
+		}
+		
+		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH)) {
+			outputRF2(r);
 		}
 	}
 

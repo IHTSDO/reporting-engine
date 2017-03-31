@@ -15,14 +15,14 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.TreeMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import org.ihtsdo.termserver.scripting.client.SCAClient;
+import org.ihtsdo.termserver.scripting.client.AuthoringServicesClient;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClient;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExportType;
@@ -48,21 +48,23 @@ public abstract class TermServerScript implements RF2Constants {
 	protected static boolean dryRun = true;
 	protected static int dryRunCounter = 0;
 	protected static int taskThrottle = 30;
-	protected static int conceptThrottle = 20;
+	protected static int conceptThrottle = 5;
 	protected String env;
 	protected String url = environments[0];
-	protected boolean useAuthenticatedCookie = false;
+	protected boolean useAuthenticatedCookie = true;
 	protected SnowOwlClient tsClient;
-	protected SCAClient scaClient;
+	protected AuthoringServicesClient scaClient;
 	protected String authenticatedCookie;
 	protected Resty resty = new Resty();
 	protected String project;
 	protected String projectPath;
 	public static final int maxFailures = 5;
 	protected int restartPosition = NOT_SET;
+	protected int processingLimit = NOT_SET;
 	private static Date startTime;
-	private static Map<String, Object> summaryDetails = new HashMap<String, Object>();
+	private static Map<String, Object> summaryDetails = new TreeMap<String, Object>();
 	private static String summaryText = "";
+	protected boolean inputFileHasHeaderRow = false;
 	protected File inputFile;
 	protected File reportFile;
 	protected File outputDir;
@@ -90,7 +92,7 @@ public abstract class TermServerScript implements RF2Constants {
 
 	public enum REPORT_ACTION_TYPE { API_ERROR, CONCEPT_CHANGE_MADE, INFO, UNEXPECTED_CONDITION,
 									 RELATIONSHIP_ADDED, RELATIONSHIP_REMOVED, DESCRIPTION_CHANGE_MADE, 
-									 NO_CHANGE, VALIDATION_ERROR};
+									 NO_CHANGE, VALIDATION_ERROR, VALIDATION_CHECK, DEBUG_INFO};
 									 
 	public enum SEVERITY { NONE, LOW, MEDIUM, HIGH, CRITICAL }; 
 
@@ -114,7 +116,7 @@ public abstract class TermServerScript implements RF2Constants {
 
 	private static String[] environments = new String[] {	"http://localhost:8080/",
 															"https://dev-term.ihtsdotools.org/",
-															"https://uat-term.ihtsdotools.org/",
+															"https://uat-authoring.ihtsdotools.org/",
 															"https://uat-flat-termserver.ihtsdotools.org/",
 															"https://authoring.ihtsdotools.org/",
 															"https://dev-ms-authoring.ihtsdotools.org/",
@@ -150,7 +152,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected void init(String[] args) throws TermServerScriptException, IOException {
 		
 		if (args.length < 3) {
-			println("Usage: java <TSScriptClass> [-a author] [-b <batchSize>] [-r <restart lineNum>] [-c <authenticatedCookie>] [-d <Y/N>] [-p <projectName>] <batch file Location>");
+			println("Usage: java <TSScriptClass> [-a author] [-b <batchSize>] [-r <restart lineNum>] [-c <authenticatedCookie>] [-d <Y/N>] [-p <projectName>] -f <batch file Location>");
 			println(" d - dry run");
 			System.exit(-1);
 		}
@@ -161,6 +163,7 @@ public abstract class TermServerScript implements RF2Constants {
 		boolean isTaskThrottle = false;
 		boolean isConceptThrottle = false;
 		boolean isOutputDir = false;
+		boolean isInputFile = false;
 	
 		for (String thisArg : args) {
 			if (thisArg.equals("-p")) {
@@ -169,6 +172,8 @@ public abstract class TermServerScript implements RF2Constants {
 				isCookie = true;
 			} else if (thisArg.equals("-d")) {
 				isDryRun = true;
+			} else if (thisArg.equals("-f")) {
+				isInputFile = true;
 			} else if (thisArg.equals("-o")) {
 				isOutputDir = true;
 			} else if (thisArg.equals("-r")) {
@@ -186,6 +191,12 @@ public abstract class TermServerScript implements RF2Constants {
 			} else if (isRestart) {
 				restartPosition = Integer.parseInt(thisArg);
 				isRestart = false;
+			} else if (isInputFile) {
+				inputFile = new File(thisArg);
+				if (!inputFile.canRead()) {
+					throw new TermServerScriptException ("Unable to read input file " + thisArg);
+				}
+				isInputFile = false;
 			} else if (isTaskThrottle) {
 				taskThrottle = Integer.parseInt(thisArg);
 				isTaskThrottle = false;
@@ -203,13 +214,6 @@ public abstract class TermServerScript implements RF2Constants {
 					println ("Unable to use directory " + possibleDir.getAbsolutePath() + " for output.");
 				}
 				isOutputDir = false;
-			} else {
-				File possibleFile = new File(thisArg);
-				if (possibleFile.exists() && !possibleFile.isDirectory() && possibleFile.canRead()) {
-					inputFile = possibleFile;
-				} else {
-					println ("Warning, unable to read possible input file " + possibleFile.getAbsolutePath());
-				}
 			}
 		}
 		
@@ -230,7 +234,7 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 		//TODO Make calls through client objects rather than resty direct and remove this member 
 		resty.withHeader("Cookie", authenticatedCookie);  
-		scaClient = new SCAClient(url, authenticatedCookie);
+		scaClient = new AuthoringServicesClient(url, authenticatedCookie);
 		initialiseSnowOwlClient();
 		
 		print ("Specify Project " + (project==null?": ":"[" + project + "]: "));
@@ -278,13 +282,13 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 	}
 	
-	
 	protected void loadProjectSnapshot(boolean fsnOnly) throws SnowOwlClientException, TermServerScriptException, InterruptedException {
 		File snapShotArchive = new File (project + "_" + env + ".zip");
 		//Do we already have a copy of the project locally?  If not, recover it.
 		if (!snapShotArchive.exists()) {
 			println ("Recovering current state of " + project + " from TS (" + env + ")");
-			tsClient.export(tsRoot + project, null, ExportType.MIXED, ExtractType.SNAPSHOT, snapShotArchive);
+			String branch = tsRoot.startsWith(project)? project : tsRoot + project;
+			tsClient.export(branch, null, ExportType.MIXED, ExtractType.SNAPSHOT, snapShotArchive);
 		}
 		GraphLoader gl = GraphLoader.getGraphLoader();
 		println ("Loading archive contents into memory...");
@@ -296,9 +300,15 @@ public abstract class TermServerScript implements RF2Constants {
 					if (!ze.isDirectory()) {
 						Path p = Paths.get(ze.getName());
 						String fileName = p.getFileName().toString();
-						if (fileName.contains("sct2_Relationship_Snapshot")) {
+						if (fileName.contains("sct2_Concept_Snapshot")) {
+							println("Loading Concept File.");
+							gl.loadConceptFile(zis);
+						} else if (fileName.contains("sct2_Relationship_Snapshot")) {
 							println("Loading Relationship File.");
 							gl.loadRelationships(CharacteristicType.INFERRED_RELATIONSHIP, zis, true);
+						} else if (fileName.contains("sct2_StatedRelationship_Snapshot")) {
+							println("Loading StatedRelationship File.");
+							gl.loadRelationships(CharacteristicType.STATED_RELATIONSHIP, zis, true);
 						} else if (fileName.contains("sct2_Description_Snapshot")) {
 							println("Loading Description File.");
 							gl.loadDescriptionFile(zis, fsnOnly);
@@ -354,8 +364,8 @@ public abstract class TermServerScript implements RF2Constants {
 			int startPos = (restartPosition == NOT_SET)?0:restartPosition - 1;
 			Concept c;
 			for (int lineNum = startPos; lineNum < lines.size(); lineNum++) {
-				if (lineNum == 0) {
-					//continue; //skip header row  //Current file format has no header
+				if (lineNum == 0  && inputFileHasHeaderRow) {
+					continue; //skip header row  
 				}
 				
 				//File format Concept Type, SCTID, FSN with string fields quoted.  Strip quotes also.
@@ -450,7 +460,7 @@ public abstract class TermServerScript implements RF2Constants {
 			recordSummaryText (key + ": " + display);
 		}
 		if (summaryDetails.containsKey("Tasks created") && summaryDetails.containsKey(CONCEPTS_PROCESSED) ) {
-			double c = (double)((Collection<?>)summaryDetails.get("Concepts processed")).size();
+			double c = (double)((Collection<?>)summaryDetails.get(CONCEPTS_PROCESSED)).size();
 			double t = (double)((Integer)summaryDetails.get("Tasks created")).intValue();
 			double avg = Math.round((c/t) * 10) / 10.0;
 			recordSummaryText ("Concepts per task: " + avg);
@@ -475,6 +485,25 @@ public abstract class TermServerScript implements RF2Constants {
 		return summaryText;
 	}
 	
+	protected void writeToRF2File(String fileName, Object[] columns) throws TermServerScriptException {
+		File file = ensureFileExists(fileName);
+		try(	OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(file, true), StandardCharsets.UTF_8);
+				BufferedWriter bw = new BufferedWriter(osw);
+				PrintWriter out = new PrintWriter(bw))
+		{
+			StringBuffer line = new StringBuffer();
+			for (int x=0; x<columns.length; x++) {
+				if (x > 0) {
+					line.append(TSV_FIELD_DELIMITER);
+				}
+				line.append(columns[x]==null?"":columns[x]);
+			}
+			out.print(line.toString() + LINE_DELIMITER);
+		} catch (Exception e) {
+			println ("Unable to output report rf2 line due to " + e.getMessage());
+		}
+	}
+	
 	protected void writeToFile(String line) {
 		try(	OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(reportFile, true), StandardCharsets.UTF_8);
 				BufferedWriter bw = new BufferedWriter(osw);
@@ -488,18 +517,28 @@ public abstract class TermServerScript implements RF2Constants {
 	
 	protected void initialiseReportFile(String columnHeaders) throws IOException {
 		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
-		String reportFilename = "results_" + SnomedUtils.deconstructFilename(inputFile)[1] + "_" + df.format(new Date()) + "_" + env  + ".csv";
+		String reportFilename = "results_" + getReportName() + "_" + df.format(new Date()) + "_" + env  + ".csv";
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
 		writeToFile (columnHeaders);
 	}
 
+	protected String getReportName() {
+		String reportName = SnomedUtils.deconstructFilename(inputFile)[1];
+		if (reportName.isEmpty()) {
+			reportName = getScriptName();
+		}
+		return reportName;
+	}
+
 	protected File ensureFileExists(String fileName) throws TermServerScriptException {
 		File file = new File(fileName);
 		try {
 			if (!file.exists()) {
-				file.getParentFile().mkdirs();
+				if (file.getParentFile() != null) {
+					file.getParentFile().mkdirs();
+				}
 				file.createNewFile();
 			}
 		} catch (IOException e) {

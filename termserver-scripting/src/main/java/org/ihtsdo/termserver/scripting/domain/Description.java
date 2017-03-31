@@ -44,9 +44,9 @@ public class Description implements RF2Constants{
 	@SerializedName("caseSignificance")
 	@Expose
 	private String caseSignificance;
-	@SerializedName("AcceptabilityMap")
+	@SerializedName("acceptabilityMap")
 	@Expose
-	private Map<String, Acceptability> AcceptabilityMap = new HashMap<String, Acceptability> ();
+	private Map<String, Acceptability> acceptabilityMap = null;
 	@SerializedName("inactivationIndicator")
 	@Expose
 	private InactivationIndicator inactivationIndicator;
@@ -82,7 +82,7 @@ public class Description implements RF2Constants{
 		this.lang = lang;
 		this.term = term;
 		this.caseSignificance = caseSignificance;
-		this.AcceptabilityMap = AcceptabilityMap;
+		this.acceptabilityMap = AcceptabilityMap;
 	}
 
 	public Description(String descriptionId) {
@@ -117,10 +117,13 @@ public class Description implements RF2Constants{
 		this.effectiveTime = null;
 		//If we inactivate a description, inactivate all of its LangRefsetEntriesAlso
 		if (active == false && this.langRefsetEntries != null) {
+			//If we're working with RF2, modify the lang ref set
 			for (LangRefsetEntry thisDialect : getLangRefsetEntries()) {
 				thisDialect.setEffectiveTime(null);
 				thisDialect.setActive(false);
 			}
+			//If we're working with TS Concepts, remove the acceptability Map
+			acceptabilityMap = null;
 		}
 	}
 
@@ -177,7 +180,7 @@ public class Description implements RF2Constants{
 	}
 
 	public Map<String, Acceptability> getAcceptabilityMap() {
-		return AcceptabilityMap;
+		return acceptabilityMap;
 	}
 
 	/**
@@ -186,7 +189,7 @@ public class Description implements RF2Constants{
 	 *	 The AcceptabilityMap
 	 */
 	public void setAcceptabilityMap(Map<String, Acceptability> AcceptabilityMap) {
-		this.AcceptabilityMap = AcceptabilityMap;
+		this.acceptabilityMap = AcceptabilityMap;
 	}
 
 	@Override
@@ -222,9 +225,9 @@ public class Description implements RF2Constants{
 		clone.lang = this.lang;
 		clone.term = this.term;
 		clone.caseSignificance = this.caseSignificance;
-		clone.AcceptabilityMap = new HashMap<String, Acceptability>();
-		if (this.AcceptabilityMap != null) { 
-			clone.AcceptabilityMap.putAll(this.AcceptabilityMap);
+		clone.acceptabilityMap = new HashMap<String, Acceptability>();
+		if (this.acceptabilityMap != null) { 
+			clone.acceptabilityMap.putAll(this.acceptabilityMap);
 		}
 		if (langRefsetEntries != null) {
 			for (LangRefsetEntry thisDialect : this.getLangRefsetEntries()) {
@@ -246,7 +249,10 @@ public class Description implements RF2Constants{
 	}
 
 	public void setAcceptablity(String refsetId, Acceptability Acceptability) {
-		AcceptabilityMap.put(refsetId, Acceptability);
+		if (acceptabilityMap == null) {
+			acceptabilityMap = new HashMap<String, Acceptability> ();
+		}
+		acceptabilityMap.put(refsetId, Acceptability);
 	}
 
 	public String[] toRF2() throws TermServerScriptException {
@@ -285,7 +291,6 @@ public class Description implements RF2Constants{
 		}
 		return result;
 	}
-		
 
 	public boolean isDirty() {
 		return dirty;
@@ -293,6 +298,11 @@ public class Description implements RF2Constants{
 	
 	public void setDirty() {
 		dirty = true;
+	}
+	
+	public void inactivateDescription(InactivationIndicator indicator) {
+		this.setActive(false);
+		this.setInactivationIndicator(indicator);
 	}
 
 }

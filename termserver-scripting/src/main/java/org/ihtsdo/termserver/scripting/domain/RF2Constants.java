@@ -14,10 +14,23 @@ public interface RF2Constants {
 	static String ACETAMINOPHEN = "acetaminophen";
 	static String PARACETAMOL = "paracetamol";
 	
+	//ECL Constants
+	static String DESCENDANT = "<";
+	static String DESCENDANT_OR_SELF = "<<";
+	static String PIPE = "|";
+	static char PIPE_CHAR = '|';
+	static char SPACE_CHAR = ' ';
+	static String UNION = "AND";
+	static String ATTRIBUTE_SEPARATOR = ",";
+	static String DASH = "-";
+	static char[] termTerminators = new char[] {'|', ':', '+', '{', ',', '}', '=' };
+
 	//Description Type SCTIDs
 	static String SYN = "900000000000013009";
 	static String FSN = "900000000000003001";
 	static String DEF = "900000000000550004"; 
+	
+	static String LANG_EN = "en";
 	
 	static final String FULLY_DEFINED_SCTID = "900000000000073002";
 	static final String FULLY_SPECIFIED_NAME = "900000000000003001";
@@ -40,18 +53,20 @@ public interface RF2Constants {
 	final String REL_INT_PARTITION = "02";
 	
 	enum InactivationIndicator {DUPLICATE, OUTDATED, ERRONEOUS, LIMITED, MOVED_ELSEWHERE, 
-		PENDING_MOVE, INAPPROPRIATE, CONCEPT_NON_CURRENT, RETIRED};
+		PENDING_MOVE, INAPPROPRIATE, CONCEPT_NON_CURRENT, RETIRED, NONCONFORMANCE_TO_EDITORIAL_POLICY};
 	
 	static final String GB_ENG_LANG_REFSET = "900000000000508004";
 	static final String US_ENG_LANG_REFSET = "900000000000509007";
 	static final String[] ENGLISH_DIALECTS = {GB_ENG_LANG_REFSET, US_ENG_LANG_REFSET};
+	static final String[] US_DIALECT = {US_ENG_LANG_REFSET};
+	
 	
 	static final String PREFERRED_TERM = "900000000000548007";
 	static final String ACCEPTABLE_TERM = "900000000000549004";
 	
-	static final String ENITRE_TERM_CASE_SENSITIVE = "900000000000017005";
-	static final String ENTIRE_TERM_CASE_INSENSITIVE = "900000000000448009";
-	static final String ONLY_INITIAL_CHAR_CASE_INSENSITIVE = "900000000000020002";
+	static final String ENTIRE_TERM_CASE_SENSITIVE_SCTID = "900000000000017005";
+	static final String ENTIRE_TERM_CASE_INSENSITIVE_SCTID = "900000000000448009";
+	static final String ONLY_INITIAL_CHAR_CASE_INSENSITIVE_SCTID = "900000000000020002";
 	
 	final public String SEMANTIC_TAG_START = "(";
 	
@@ -69,6 +84,7 @@ public interface RF2Constants {
 	public static String SCTID_PRIMITIVE = "900000000000074008";
 	public static String SCTID_FULLY_DEFINED = "900000000000073002";
 	
+	public static long UNGROUPED = 0;
 	public enum Modifier { EXISTENTIAL, UNIVERSAL};
 	public static String SCTID_EXISTENTIAL_MODIFIER = "900000000000451002";
 	public static String SCTID_UNIVERSAL_MODIFIER = "900000000000450001";
@@ -78,7 +94,9 @@ public interface RF2Constants {
 	
 	public enum Acceptability { ACCEPTABLE, PREFERRED };
 	
-	public enum ConceptType { PRODUCT_STRENGTH, MEDICINAL_ENTITY, MEDICINAL_FORM, GROUPER, PRODUCT_ROLE, UNKNOWN };
+	public enum CaseSignificance { ENTIRE_TERM_CASE_SENSITIVE, CASE_INSENSITIVE ,ONLY_INITIAL_CHAR_CASE_INSENSITIVE };
+	
+	public enum ConceptType { PRODUCT_STRENGTH, MEDICINAL_ENTITY, MEDICINAL_FORM, GROUPER, PRODUCT_ROLE, PCDF, PCD_PREP, UNKNOWN };
 	
 	public enum Cardinality { AT_LEAST_ONE, EXACTLY_ONE };
 	
@@ -134,5 +152,14 @@ public interface RF2Constants {
 	public static final int LANG_IDX_REFSETID = 4;
 	public static final int LANG_IDX_REFCOMPID = 5;
 	public static final int LANG_IDX_ACCEPTABILITY_ID = 6;
+	
+	// Refset columns
+	public static final int REF_IDX_ID = 0;
+	public static final int REF_IDX_EFFECTIVETIME = 1;
+	public static final int REF_IDX_ACTIVE = 2;
+	public static final int REF_IDX_MODULEID = 3;
+	public static final int REF_IDX_REFSETID = 4;
+	public static final int REF_IDX_REFCOMPID = 5;
+	public static final int REF_IDX_FIRST_ADDITIONAL = 6;
 
 }

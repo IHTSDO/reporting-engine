@@ -17,14 +17,11 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.validator.routines.checkdigit.VerhoeffCheckDigit;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Description;
-import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.ActiveState;
+import org.ihtsdo.termserver.scripting.domain.*;
 
 public class SnomedUtils implements RF2Constants{
 	
@@ -152,6 +149,13 @@ public class SnomedUtils implements RF2Constants{
 			return str;
 		}
 		return str.substring(0, 1).toUpperCase() + str.substring(1);
+	}
+	
+	public static String initialCapitalOnly (String str) {
+		if (str == null || str.isEmpty() || str.length() < 2) {
+			return str;
+		}
+		return str.substring(0, 1).toUpperCase() + str.substring(1).toLowerCase();
 	}
 	
 	public static String deCapitalize (String str) {
@@ -341,9 +345,17 @@ public class SnomedUtils implements RF2Constants{
 
 	public static String translateModifier(Modifier modifier) {
 		switch (modifier) {
-			case EXISTENTIAL : return SCTID_EXISTENTIAL_MODIFIER;
 			case UNIVERSAL : return SCTID_UNIVERSAL_MODIFIER;
-			default : return "";
+			case EXISTENTIAL :
+			default : return SCTID_EXISTENTIAL_MODIFIER;
+		}
+	}
+	
+	public static Modifier translateModifier(String modifierSCTID) {
+		switch (modifierSCTID) {
+			case SCTID_UNIVERSAL_MODIFIER : return Modifier.UNIVERSAL;
+			case SCTID_EXISTENTIAL_MODIFIER  :
+			default : return Modifier.EXISTENTIAL;
 		}
 	}
 	
@@ -431,10 +443,10 @@ public class SnomedUtils implements RF2Constants{
 	
 	public static String translateCaseSignificanceToSctId(String caseSignificanceIndicator) throws TermServerScriptException {
 		switch (caseSignificanceIndicator) {
-			case "CS" : return ENITRE_TERM_CASE_SENSITIVE;
-			case "ci" : return ENTIRE_TERM_CASE_INSENSITIVE;
+			case "CS" : return ENTIRE_TERM_CASE_SENSITIVE_SCTID;
+			case "ci" : return ENTIRE_TERM_CASE_INSENSITIVE_SCTID;
 			case "cl" :
-			case "cI" : return ONLY_INITIAL_CHAR_CASE_INSENSITIVE;
+			case "cI" : return ONLY_INITIAL_CHAR_CASE_INSENSITIVE_SCTID;
 			default :
 		}
 		throw new TermServerScriptException("Do not recognise case significance indicator : " + caseSignificanceIndicator);
@@ -443,13 +455,61 @@ public class SnomedUtils implements RF2Constants{
 	public static String translateCaseSignificanceFromSctId(
 			String caseSignificanceSctId) throws TermServerScriptException {
 		switch (caseSignificanceSctId) {
-			case  ENITRE_TERM_CASE_SENSITIVE: return "CS";
-			case ENTIRE_TERM_CASE_INSENSITIVE: return "ci";
-			case ONLY_INITIAL_CHAR_CASE_INSENSITIVE : return "cI";
+			case  ENTIRE_TERM_CASE_SENSITIVE_SCTID: return "CS";
+			case ENTIRE_TERM_CASE_INSENSITIVE_SCTID: return "ci";
+			case ONLY_INITIAL_CHAR_CASE_INSENSITIVE_SCTID : return "cI";
 			default :
 		}
 		throw new TermServerScriptException("Do not recognise case significance indicator : " + caseSignificanceSctId);
 	}
 
+	public static void makeMachineReadable (StringBuffer hrExp) {
+		int pipeIdx =  hrExp.indexOf(PIPE);
+		while (pipeIdx != -1) {
+			int endIdx = findEndOfTerm(hrExp, pipeIdx);
+			hrExp.delete(pipeIdx, endIdx);
+			pipeIdx =  hrExp.indexOf(PIPE);
+		}
+		remove(hrExp, SPACE_CHAR);
+	}
+	
+	private static int findEndOfTerm(StringBuffer hrExp, int searchStart) {
+		int endIdx = indexOf(hrExp, termTerminators, searchStart+1);
+		//If we didn't find a terminator, cut to the end.
+		if (endIdx == -1) {
+			endIdx = hrExp.length();
+		} else {
+			//If the character found as a terminator is a pipe, then cut that too
+			if (hrExp.charAt(endIdx) == PIPE_CHAR) {
+				endIdx++;
+			} else if (hrExp.charAt(endIdx) == ATTRIBUTE_SEPARATOR.charAt(0)) {
+				//If the character is a comma, then it might be a comma inside a term so find out if the next token is a number
+				if (!StringUtils.isNumericSpace(hrExp.substring(endIdx+1, endIdx+5))) {
+					//OK it's a term, so find the new actual end. 
+					endIdx = findEndOfTerm(hrExp, endIdx);
+				}
+			}
+		}
+		return endIdx;
+	}
 
+	static void remove (StringBuffer haystack, char needle) {
+		for (int idx = 0; idx < haystack.length(); idx++) {
+			if (haystack.charAt(idx) == needle) {
+				haystack.deleteCharAt(idx);
+				idx --;
+			}
+		}
+	}
+	
+	static int indexOf (StringBuffer haystack, char[] needles, int startFrom) {
+		for (int idx = startFrom; idx < haystack.length(); idx++) {
+			for (char thisNeedle : needles) {
+				if (haystack.charAt(idx) == thisNeedle) {
+					return idx;
+				}
+			}
+		}
+		return -1;
+	}
 }

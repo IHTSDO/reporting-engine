@@ -2,25 +2,25 @@ package org.ihtsdo.termserver.scripting.domain;
 
 public class ConceptChange extends Concept {
 	
-	private String newPreferredTerm;
-	private String expectedCurrentPreferredTerm;
+	private String newTerm;
+	private String currentTerm;
 	public String caseSignificanceSctId;
 	
 	public ConceptChange(String conceptId) {
 		super(conceptId);
 	}
-	public String getNewPreferredTerm() {
-		return newPreferredTerm;
+	public String getNewTerm() {
+		return newTerm;
 	}
-	public void setNewPreferredTerm(String newPreferredTerm) {
-		this.newPreferredTerm = newPreferredTerm;
+	public void setNewTerm(String newPreferredTerm) {
+		this.newTerm = newPreferredTerm;
 	}
-	public String getExpectedCurrentPreferredTerm() {
-		return expectedCurrentPreferredTerm;
+	public String getCurrentTerm() {
+		return currentTerm;
 	}
-	public void setExpectedCurrentPreferredTerm(
+	public void setCurrentTerm(
 			String expectedCurrentPreferredTerm) {
-		this.expectedCurrentPreferredTerm = expectedCurrentPreferredTerm;
+		this.currentTerm = expectedCurrentPreferredTerm;
 	}
 	public String getCaseSensitivitySctId() {
 		return caseSignificanceSctId;

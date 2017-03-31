@@ -20,7 +20,7 @@ public class Relationship implements RF2Constants, Comparable<Relationship> {
 	private String moduleId;
 	@SerializedName("active")
 	@Expose
-	private boolean active;
+	private Boolean active = null;
 	@SerializedName("relationshipId")
 	@Expose
 	private String relationshipId;
@@ -44,6 +44,8 @@ public class Relationship implements RF2Constants, Comparable<Relationship> {
 	private Modifier modifier;
 	
 	private Concept source;
+	
+	private boolean dirty = false;
 	
 	public static final String[] rf2Header = new String[] {"id","effectiveTime","active","moduleId","sourceId","destinationId",
 															"relationshipGroup","typeId","characteristicTypeId","modifierId"};
@@ -120,8 +122,12 @@ public class Relationship implements RF2Constants, Comparable<Relationship> {
 	 * @param active
 	 *	 The active
 	 */
-	public void setActive(boolean active) {
-		this.active = active;
+	public void setActive(boolean newActiveState) {
+		if (this.active != null && !this.active == newActiveState) {
+			this.effectiveTime = null;
+			setDirty();
+		}
+		this.active = newActiveState;
 	}
 
 	/**
@@ -256,7 +262,8 @@ public class Relationship implements RF2Constants, Comparable<Relationship> {
 	
 	@Override
 	public String toString() {
-		return type + " - " + target;
+		String charType = characteristicType.equals(CharacteristicType.STATED_RELATIONSHIP)?"S":"I";
+		return "[" + charType + groupId + "] " + type + " - " + target;
 	}
 
 	@Override
@@ -273,7 +280,7 @@ public class Relationship implements RF2Constants, Comparable<Relationship> {
 			return false;
 		}
 		Relationship rhs = ((Relationship) other);
-		return this.hashCode() == rhs.hashCode();
+		return (this.type.equals(rhs.type) && this.target.equals(rhs.target) && this.groupId == rhs.groupId);
 	}
 	
 	@Override
@@ -289,6 +296,8 @@ public class Relationship implements RF2Constants, Comparable<Relationship> {
 		clone.type = this.type;
 		clone.sourceId = this.sourceId;
 		clone.source = this.source;
+		clone.characteristicType = this.characteristicType;
+		clone.dirty = true;
 		return clone;
 	}
 
@@ -326,4 +335,19 @@ public class Relationship implements RF2Constants, Comparable<Relationship> {
 							SnomedUtils.translateModifier(modifier)};
 	}
 
+	public boolean isDirty() {
+		return dirty;
+	}
+	
+	public void setDirty() {
+		dirty = true;
+	}
+
+	public Concept getSource() {
+		return source;
+	}
+
+	public void setSource(Concept source) {
+		this.source = source;
+	}
 }

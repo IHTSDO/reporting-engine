@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Batch;
@@ -27,8 +26,6 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import us.monoid.json.JSONObject;
 
 import com.b2international.commons.StringUtils;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
 
 /*
 Drug Product fix loads the input file, but only really works with the Medicinal Entities.
@@ -80,7 +77,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 	}
 
 	@Override
-	public int doFix(Task task, Concept concept) throws TermServerScriptException {
+	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
 		if (concept.getConceptType().equals(ConceptType.UNKNOWN)) {
 			determineConceptType(concept);
@@ -89,11 +86,11 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		int changesMade = 0;
 		
 		switch (concept.getConceptType()) {
-			case MEDICINAL_ENTITY : changesMade = mef.doFix(task, loadedConcept);
+			case MEDICINAL_ENTITY : changesMade = mef.doFix(task, loadedConcept, info);
 									break;
-			case MEDICINAL_FORM : changesMade = mff.doFix(task, loadedConcept);
+			case MEDICINAL_FORM : changesMade = mff.doFix(task, loadedConcept, info);
 									break;
-			case PRODUCT_STRENGTH : changesMade = psf.doFix(task, loadedConcept);
+			case PRODUCT_STRENGTH : changesMade = psf.doFix(task, loadedConcept, info);
 									break;
 			case GROUPER :			//No fixes being made to groupers for now
 									//changesMade = gf.doFix(batch, loadedConcept);
@@ -104,7 +101,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		}
 		try {
 			String conceptSerialised = gson.toJson(loadedConcept);
-			debug ("Updating state of " + loadedConcept);
+			debug ("Updating state of " + loadedConcept + info);
 			if (!dryRun) {
 				tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
 			}
@@ -379,7 +376,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		return SnomedUtils.capitalize(list);
 	}*/
 	
-	private Multimap<String, Concept> findAllIngredientCombos() throws TermServerScriptException {
+/*	private Multimap<String, Concept> findAllIngredientCombos() throws TermServerScriptException {
 		Collection<Concept> allConcepts = GraphLoader.getGraphLoader().getAllConcepts();
 		Multimap<String, Concept> ingredientCombos = ArrayListMultimap.create();
 		for (Concept thisConcept : allConcepts) {
@@ -390,7 +387,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 			}
 		}
 		return ingredientCombos;
-	}
+	}*/
 
 	private String getIngredientCombinationKey(Concept loadedConcept, List<Relationship> ingredients) throws TermServerScriptException {
 		String comboKey = "";

@@ -1,4 +1,3 @@
-
 package org.ihtsdo.termserver.scripting.domain;
 
 import java.util.ArrayList;
@@ -58,6 +57,7 @@ public class Concept implements RF2Constants {
 	private List<String> assertionFailures = new ArrayList<String>();
 	private String assignedAuthor;
 	private String reviewer;
+	boolean isModified = false; //indicates if has been modified in current processing run
 	
 	public String getReviewer() {
 		return reviewer;
@@ -378,7 +378,6 @@ public class Concept implements RF2Constants {
 
 	public void addDescription(Description description) {
 		descriptions.add(description);
-		
 	}
 
 	public List<Concept> getParents(CharacteristicType characteristicType) {
@@ -449,6 +448,14 @@ public class Concept implements RF2Constants {
 			}
 		}
 		return null;
+	}
+
+	public void setModified() {
+		isModified = true;
+	}
+	
+	public boolean isModified() {
+		return isModified;
 	}
 
 }

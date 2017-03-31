@@ -44,8 +44,8 @@ public class AddEntire extends DeltaGenerator {
 			SnomedUtils.createArchive(new File(delta.outputDirName));
 		} finally {
 			delta.finish();
-			if (delta.descIdGenerator != null) {
-				println(delta.descIdGenerator.finish());
+			if (delta.idGenerator != null) {
+				println(delta.idGenerator.finish());
 			}
 		}
 	}
@@ -138,7 +138,7 @@ public class AddEntire extends DeltaGenerator {
 		}
 		
 		//If the entire term is case sensitive, then we don't want to decapitalize the first letter
-		boolean caseSensitive = d.getCaseSignificance().equals(ENITRE_TERM_CASE_SENSITIVE);
+		boolean caseSensitive = d.getCaseSignificance().equals(ENTIRE_TERM_CASE_SENSITIVE_SCTID);
 		String newTerm = ENTIRE + " " + (caseSensitive? newTermParts[0]:SnomedUtils.deCapitalize(newTermParts[0]));
 		if (isFSN) {
 			newTerm += " " + newTermParts[1];
@@ -146,7 +146,7 @@ public class AddEntire extends DeltaGenerator {
 		
 		//Because we're adding a word that is not case sensitive, we'll sent the case significance
 		//to 900000000000020002 |Only initial character case insensitive (core metadata concept)|
-		replaceDescription (c,d,newTerm, ONLY_INITIAL_CHAR_CASE_INSENSITIVE, isPT);
+		replaceDescription (c,d,newTerm, ONLY_INITIAL_CHAR_CASE_INSENSITIVE_SCTID, isPT);
 	}
 
 	private void replaceDescription(Concept c, Description d, String newTerm, String newCaseSignificance, boolean isPT) throws TermServerScriptException {
@@ -182,7 +182,7 @@ public class AddEntire extends DeltaGenerator {
 		}
 		
 		if (duplicate == null) {
-			String newSCTID = descIdGenerator.getSCTID(PartionIdentifier.DESCRIPTION);
+			String newSCTID = idGenerator.getSCTID(PartionIdentifier.DESCRIPTION);
 			Description replacement = d.clone(newSCTID);
 			replacement.setTerm(newTerm);
 			replacement.setCaseSignificance(newCaseSignificance);
