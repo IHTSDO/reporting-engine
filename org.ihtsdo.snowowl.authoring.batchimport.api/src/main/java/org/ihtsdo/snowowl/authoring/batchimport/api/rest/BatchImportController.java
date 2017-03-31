@@ -5,6 +5,7 @@ import com.wordnik.swagger.annotations.*;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import org.ihtsdo.otf.rest.client.snowowl.SnowOwlRestClient;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.api.rest.common.AbstractRestService;
 import org.ihtsdo.snowowl.api.rest.common.AbstractSnomedRestService;
@@ -83,7 +84,7 @@ public class BatchImportController extends AbstractSnomedRestService {
 			importRequest.allowLateralizedContent(allowLateralizedContent);
 			parser.close();
 			
-			batchImportService.startImport(batchImportId, importRequest, rows, ControllerHelper.getUsername(), getASClient(request));
+			batchImportService.startImport(batchImportId, importRequest, rows, ControllerHelper.getUsername(), getASClient(request), getSOClient(request));
 			response.setHeader("Location", request.getRequestURL() + "/" + batchImportId.toString());
 		} catch (IOException e) {
 			throw new BusinessServiceException ("Unable to import batch file",e);
@@ -93,8 +94,12 @@ public class BatchImportController extends AbstractSnomedRestService {
 	private AuthoringServicesClient getASClient(HttpServletRequest request) {
 		return new AuthoringServicesClient(request.getCookies());
 	}
+	
+	private SnowOwlRestClient getSOClient(HttpServletRequest request) {
+		return new SnowOwlRestClient("http://localhost",request.getCookies());
+	}
 
-	@ApiOperation(
+	@ApiOperation( 
 			value="Retrieve import run status", 
 			notes="Returns the specified batch import run's status.")
 	@ApiResponses({

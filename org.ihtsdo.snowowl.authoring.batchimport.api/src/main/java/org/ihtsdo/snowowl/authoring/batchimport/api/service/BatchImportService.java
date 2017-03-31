@@ -18,6 +18,8 @@ import com.b2international.snowowl.snomed.core.domain.*;
 
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.lang.exception.ExceptionUtils;
+import org.ihtsdo.otf.rest.client.RestClientException;
+import org.ihtsdo.otf.rest.client.snowowl.SnowOwlRestClient;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.otf.rest.exception.ProcessingException;
 import org.ihtsdo.snowowl.authoring.batchimport.api.client.AuthoringServicesClient;
@@ -91,7 +93,7 @@ public class BatchImportService {
 		}
 	}
 	
-	public void startImport(UUID batchImportId, BatchImportRequest importRequest, List<CSVRecord> rows, String currentUser, AuthoringServicesClient authoringServicesClient) throws BusinessServiceException {
+	public void startImport(UUID batchImportId, BatchImportRequest importRequest, List<CSVRecord> rows, String currentUser, AuthoringServicesClient asClient, SnowOwlRestClient soClient) throws BusinessServiceException {
 		BatchImportRun run = BatchImportRun.createRun(batchImportId, importRequest);
 		currentImports.put(batchImportId, new BatchImportStatus(BatchImportState.RUNNING));
 		prepareConcepts(run, rows);
@@ -100,7 +102,7 @@ public class BatchImportService {
 		logger.info("Batch Importing {} concepts onto new tasks in project {} - batch import id {} ",rowsToProcess, run.getImportRequest().getProjectKey(), run.getId().toString());
 		
 		if (validateLoadHierarchy(run)) {
-			BatchImportRunner runner = new BatchImportRunner(run, this, authoringServicesClient);
+			BatchImportRunner runner = new BatchImportRunner(run, this, asClient, soClient);
 			executor.execute(runner);
 		} else {
 			run.abortLoad(rows);
@@ -194,10 +196,12 @@ public class BatchImportService {
 		return false;
 	}
 
-	void loadConceptsOntoTasks(BatchImportRun run, AuthoringServicesClient authoringServicesClient) throws AuthoringServicesClientException, BusinessServiceException {
+	void loadConceptsOntoTasks(BatchImportRun run, 
+			AuthoringServicesClient asClient, 
+			SnowOwlRestClient soClient) throws AuthoringServicesClientException, BusinessServiceException {
 		List<List<BatchImportConcept>> batches = collectIntoBatches(run);
 		for (List<BatchImportConcept> thisBatch : batches) {
-			AuthoringTask task = createTask(run, thisBatch, authoringServicesClient);
+			AuthoringTask task = createTask(run, thisBatch, asClient, soClient);
 			Map<String, ISnomedBrowserConcept> conceptsLoaded = loadConcepts(run, task, thisBatch);
 			String conceptsLoadedJson = conceptList(conceptsLoaded.values());
 			boolean dryRun = run.getImportRequest().isDryRun();
@@ -208,9 +212,9 @@ public class BatchImportService {
 				if (run.getImportRequest().getConceptsPerTask() == 1) {
 					newSummary = "New concept: " + thisBatch.get(0).getFsn();
 				}
-				updateTaskDetails(task, run, conceptsLoaded, newSummary, authoringServicesClient);
-				primeEditPanel(task, run, conceptsLoadedJson, authoringServicesClient);
-				primeSavedList(task, run, conceptsLoaded.values(), authoringServicesClient);
+				updateTaskDetails(task, run, conceptsLoaded, newSummary, asClient);
+				primeEditPanel(task, run, conceptsLoadedJson, asClient);
+				primeSavedList(task, run, conceptsLoaded.values(), asClient);
 			}
 		}
 	}
@@ -295,7 +299,9 @@ public class BatchImportService {
 	}
 
 	private AuthoringTask createTask(BatchImportRun run,
-			List<BatchImportConcept> thisBatch, AuthoringServicesClient authoringServicesClient) throws AuthoringServicesClientException {
+			List<BatchImportConcept> thisBatch, 
+			AuthoringServicesClient asClient,
+			SnowOwlRestClient soClient) throws AuthoringServicesClientException {
 		BatchImportRequest request = run.getImportRequest();
 		AuthoringTaskCreateRequest taskCreateRequest = new AuthoringTask();
 		
@@ -306,9 +312,16 @@ public class BatchImportService {
 
 		AuthoringTask task = null;
 		if (!request.isDryRun()) {
-			task = authoringServicesClient.createTask(request.getProjectKey(), 
+			task = asClient.createTask(request.getProjectKey(), 
 					request.getCreateForAuthor(),
 					taskCreateRequest);
+			
+			//That creates a task in Jira, but we also have to ask the TS to create one so as to actually obtain a branch
+			try {
+				soClient.createProjectTaskIfNeeded(request.getProjectKey(), task.getKey());
+			} catch (RestClientException e) {
+				throw new AuthoringServicesClientException("Failed to create task in TS", e);
+			}
 		} else {
 			task = new AuthoringTask();
 			task.setProjectKey(request.getProjectKey());

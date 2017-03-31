@@ -98,7 +98,7 @@
 		<dependency>
 			<groupId>org.ihtsdo.otf.common</groupId>
 			<artifactId>otf-common</artifactId>
-			<version>0.0.21</version>
+			<version>${otf.common.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.tomcat.embed</groupId>

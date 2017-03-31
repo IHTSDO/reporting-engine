@@ -19,11 +19,11 @@
 	</properties>
 
 	<dependencies>
-		<dependency>
+		<!-- <dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
 			<version>1.2.5.RELEASE</version>
-		</dependency>
+		</dependency> -->
 		<dependency>
 			<groupId>com.h2database</groupId>
 			<artifactId>h2</artifactId>
@@ -53,7 +53,13 @@
 		<dependency>
 			<groupId>org.ihtsdo.otf.common</groupId>
 			<artifactId>otf-common</artifactId>
-			<version>1.1.0</version>
+			<version>${otf.common.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.springframework.boot</groupId>
+					<artifactId>spring-boot-starter-tomcat</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<!-- SnowOwl -->
 		<!-- Plug-in dependencies are repeated here so that the build can resolve
@@ -132,12 +138,12 @@
 			<groupId>org.eclipse.jetty.orbit</groupId>
 			<artifactId>javax.servlet</artifactId>
 		</dependency>
-		<dependency>
+	<!-- <dependency>
 			<groupId>javax.validation</groupId>
 			<artifactId>validation-api</artifactId>
 			<version>1.0.0.GA</version>
 			<scope>provided</scope>
-		</dependency>
+		</dependency> --> 
 
 		<!-- Regular Maven dependencies -->
 		<dependency>
@@ -151,7 +157,7 @@
 			<version>15.0</version>
 			<scope>provided</scope>
 		</dependency>
-		<dependency>
+	<!--  	<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-core</artifactId>
 			<version>${spring.version}</version>
@@ -165,24 +171,24 @@
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-oxm</artifactId>
 			<version>${spring.version}</version>
-		</dependency>
+		</dependency> -->
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-context</artifactId>
 			<version>${spring.version}</version>
 		</dependency>
-		<dependency>
+	<!-- <dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-test</artifactId>
 			<version>${spring.version}</version>
 			<scope>test</scope>
-		</dependency>
+		</dependency>  -->
 		<dependency>
 			<groupId>com.thoughtworks.xstream</groupId>
 			<artifactId>xstream</artifactId>
 			<version>${xstream.version}</version>
 		</dependency>
-		<dependency>
+	<!-- 	<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-webmvc</artifactId>
 			<version>${spring.version}</version>
@@ -206,7 +212,7 @@
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-jms</artifactId>
 			<version>${spring.version}</version>
-		</dependency>
+		</dependency>   -->
 		<dependency>
 			<groupId>org.apache.activemq</groupId>
 			<artifactId>activemq-client</artifactId>

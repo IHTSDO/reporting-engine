@@ -3,6 +3,7 @@ package org.ihtsdo.snowowl.authoring.batchimport.api.service;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
+import org.ihtsdo.otf.rest.client.snowowl.SnowOwlRestClient;
 import org.ihtsdo.snowowl.authoring.batchimport.api.client.AuthoringServicesClient;
 import org.ihtsdo.snowowl.authoring.batchimport.api.pojo.batch.BatchImportRun;
 import org.ihtsdo.snowowl.authoring.batchimport.api.pojo.batch.BatchImportState;
@@ -11,23 +12,24 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import com.google.common.base.Throwables;
-
-
 class BatchImportRunner implements Runnable {
 	
 	private BatchImportRun batchImportRun;
 	private BatchImportService service;
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 	private SecurityContext securityContext;
-	private AuthoringServicesClient client;
+	private AuthoringServicesClient asClient;
+	private SnowOwlRestClient soClient;
 	
 	public BatchImportRunner(BatchImportRun batchImportRun,
-			BatchImportService batchImportService, AuthoringServicesClient client) {
+			BatchImportService batchImportService, 
+			AuthoringServicesClient asClient,
+			SnowOwlRestClient soClient) {
 		this.batchImportRun = batchImportRun;
 		this.service = batchImportService;
 		this.securityContext = SecurityContextHolder.getContext();
-		this.client = client;
+		this.asClient = asClient;
+		this.soClient = soClient;
 	}
 
 	@Override
@@ -36,7 +38,7 @@ class BatchImportRunner implements Runnable {
 		try{
 			//Set the security context on this thread before Jira tries to use it
 			SecurityContextHolder.setContext(this.securityContext);
-			service.loadConceptsOntoTasks(batchImportRun, client);
+			service.loadConceptsOntoTasks(batchImportRun, asClient, soClient);
 			completed = true;
 		} catch (Exception e) {
 			StringWriter sw = new StringWriter();
@@ -53,6 +55,4 @@ class BatchImportRunner implements Runnable {
 			}
 	}
 	
-
-
 }
