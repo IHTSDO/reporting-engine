@@ -16,10 +16,12 @@ import org.ihtsdo.snowowl.authoring.batchimport.api.pojo.batch.BatchImportStatus
 import org.ihtsdo.snowowl.authoring.batchimport.api.service.BatchImportFormat;
 import org.ihtsdo.snowowl.authoring.batchimport.api.service.BatchImportService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -37,6 +39,9 @@ public class BatchImportController extends AbstractSnomedRestService {
 
 	@Autowired
 	private BatchImportService batchImportService;
+	
+	@Value("+{batch.import.snowowl.url}")
+	private String snowOwlUrl;
 
 	@ApiOperation(value="Import 3rd Party Concept file eg SIRS")
 	@ApiResponses({
@@ -86,17 +91,21 @@ public class BatchImportController extends AbstractSnomedRestService {
 			
 			batchImportService.startImport(batchImportId, importRequest, rows, ControllerHelper.getUsername(), getASClient(request), getSOClient(request));
 			response.setHeader("Location", request.getRequestURL() + "/" + batchImportId.toString());
-		} catch (IOException e) {
+		} catch (Exception e) {
 			throw new BusinessServiceException ("Unable to import batch file",e);
 		}
 	}
 	
-	private AuthoringServicesClient getASClient(HttpServletRequest request) {
+	private AuthoringServicesClient getASClient(HttpServletRequest request) throws Exception {
+		Cookie[] cookies = request.getCookies();
+		if (cookies == null) {
+			throw new Exception ("Unable to recover cookies from request.  No further information available.");
+		}
 		return new AuthoringServicesClient(request.getCookies());
 	}
 	
 	private SnowOwlRestClient getSOClient(HttpServletRequest request) {
-		return new SnowOwlRestClient("http://localhost",request.getCookies());
+		return new SnowOwlRestClient(snowOwlUrl,request.getCookies());
 	}
 
 	@ApiOperation( 

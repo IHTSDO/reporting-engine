@@ -9,7 +9,6 @@
 	<import resource="web-context.xml" />
 
 	<bean class="com.b2international.snowowl.snomed.api.impl.SnomedBrowserService" />
-
 	<bean class="org.ihtsdo.snowowl.api.rest.common.ServicesConfiguration" />
 	<bean class="com.mangofactory.swagger.configuration.JacksonSwaggerSupport" init-method="setup" /> <!-- to fix object mapper initialization post SSO -->
 
