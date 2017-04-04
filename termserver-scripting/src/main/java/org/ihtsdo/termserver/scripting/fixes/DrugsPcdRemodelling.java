@@ -223,6 +223,9 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 				//Reset the acceptability.   Apparently this isn't accepted by the TS.  Must inactivate instead.
 				//d.setAcceptabilityMap(null);
 				d.inactivateDescription(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
+				if (isCaseSensitive(d)) {
+					report (task, tsConcept, SEVERITY.HIGH, REPORT_ACTION_TYPE.VALIDATION_CHECK, "Inactivated description was case sensitive");
+				}
 			}
 		}
 		//Add back in any remaining descriptions from our change set
@@ -231,6 +234,11 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 			changesMade++;
 		}
 		return changesMade;
+	}
+
+	private boolean isCaseSensitive(Description d) {
+		String cs = d.getCaseSignificance();
+		return (cs.equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE) || cs.equals(ONLY_INITIAL_CHAR_CASE_INSENSITIVE_SCTID));
 	}
 
 	//Return the first description that equals the term
@@ -274,12 +282,16 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 		concept.setConceptType((mode==Mode.PCD_PREP)? ConceptType.PCD_PREP : ConceptType.PCDF);
 		concept.setCurrentTerm(items[2]);
 		concept.setFsn(items[3]);
-		addSynonym(concept, items[4], Acceptability.PREFERRED, ENGLISH_DIALECTS );
-		addSynonym(concept, items[5], Acceptability.ACCEPTABLE, ENGLISH_DIALECTS);
+		//If we have a column 6, then split the preferred terms into US and GB separately
 		if (items.length > 6) {
-			addSynonym(concept, items[6], Acceptability.ACCEPTABLE, US_DIALECT );
+			addSynonym(concept, items[4], Acceptability.PREFERRED, GB_DIALECT );
+			addSynonym(concept, items[6], Acceptability.PREFERRED, US_DIALECT );
 			addSynonym(concept, items[7], Acceptability.ACCEPTABLE, US_DIALECT);
+		} else {
+			addSynonym(concept, items[4], Acceptability.PREFERRED, ENGLISH_DIALECTS );
 		}
+		addSynonym(concept, items[5], Acceptability.ACCEPTABLE, ENGLISH_DIALECTS);
+
 		if (mode == Mode.PCD_PREP) {
 			concept.setRelationships(remodelledAttributes.get(sctid));
 		}

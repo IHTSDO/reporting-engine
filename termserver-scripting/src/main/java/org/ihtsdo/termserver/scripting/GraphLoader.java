@@ -220,5 +220,16 @@ public class GraphLoader implements RF2Constants {
 		l.setAcceptabilityId(lineItems[LANG_IDX_ACCEPTABILITY_ID]);
 		return l;
 	}
+	
+	/**
+	 * Recurse hierarchy and set shortest path depth for all concepts
+	 * @throws TermServerScriptException 
+	 */
+	public void populateHierarchyDepth(Concept startingPoint, int currentDepth) throws TermServerScriptException {
+		startingPoint.setDepth(currentDepth);
+		for (Concept child : startingPoint.getDescendents(IMMEDIATE_CHILD, CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
+			populateHierarchyDepth(child, currentDepth + 1);
+		}
+	}
 
 }

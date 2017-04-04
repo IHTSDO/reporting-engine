@@ -6,6 +6,8 @@ import java.io.PrintStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -38,7 +40,9 @@ public class SubstanceAcidWithBase extends TermServerScript{
 		try {
 			report.init(args);
 			report.loadProjectSnapshot(false);  //Load all descriptions
+			println("Generating Report");
 			report.reportAcidsWithBases();
+			println("Processing Complete");
 		} catch (Exception e) {
 			println("Failed to produce SubstanceAcidWithBase Report due to " + e.getMessage());
 			e.printStackTrace();
@@ -86,41 +90,69 @@ public class SubstanceAcidWithBase extends TermServerScript{
 	//to find the alternative form and indicates direction.
 	private void findPartner(Concept c, boolean findAcid) throws TermServerScriptException {
 		Set<Concept> parents = c.getAncestors(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE, false);
-		String direction = findAcid? "Downstream" : "Upstream";
+		boolean downstream = findAcid;
 		boolean foundPartnerInParents = false;
-		foundPartnerInParents = findPartner( c, parents, direction, findAcid);
+		foundPartnerInParents = findPartner( c, parents, downstream, findAcid);
 		
 		boolean foundPartnerInChildren = false;
 		Set<Concept> children = c.getDescendents(NOT_SET);
-		direction = findAcid? "Upstream" : "Downstream" ;
-		foundPartnerInChildren = findPartner( c, children, direction, findAcid);
-	
+		downstream = !findAcid;
+		foundPartnerInChildren = findPartner( c, children, downstream, findAcid);
 		if (!foundPartnerInParents && !foundPartnerInChildren) {
 			report (findAcid?null:c, findAcid?c:null, "Unmatched");
 		}
 	}
 
-	private boolean findPartner(Concept matchMe, Set<Concept> parents, String direction, boolean findAcid) {
+	private boolean findPartner(Concept matchMe, Set<Concept> matchSet, final boolean isDownstream, boolean findAcid) {
 		boolean found = false;
-		for (Concept c : parents) {
+		
+		finished:
+		for (Concept c : sort(matchSet, isDownstream)) {
 			if (c.isActive()) {
 				String term = SnomedUtils.deconstructFSN(c.getFsn())[0].toLowerCase();
 				String[] parts = term.split(SPACE);
 				for (String part : parts) {
 					if (part.equals(acid) && findAcid) {
-						report (c,matchMe, direction);
-						reported.add(c);
+						report (c,matchMe, isDownstream?"Downstream":"Upstream");
+						markReported(c);
 						found = true;
+						break finished;
 					}
 					if (part.endsWith(ate) && !findAcid) {
-						report (matchMe, c, direction);
-						reported.add(c);
+						report (matchMe, c, isDownstream?"Downstream":"Upstream");
+						markReported(c);
 						found = true;
+						break finished;
 					}
 				}
 			}
 		}
 		return found;
+	}
+
+	private void markReported(Concept c) {
+		reported.add(c);
+		if (c.getFsn().contains(acid) && c.getFsn().contains(ate)) {
+			report (c, c, "Confusion");
+		}
+	}
+
+	private List<Concept> sort(Set<Concept> matchSet, final boolean isDownstream) {
+		//Sort the set of concepts so that we find the closest one first and stop.
+		//So for upstream we sort by decreasing depth, and for downstream, by increasing
+		List<Concept> matchList = new ArrayList<Concept>(matchSet);
+		Collections.sort(matchList, new Comparator<Concept>() {
+			public int compare(Concept o1, Concept o2) {
+				Integer depth1 = o1.getDepth();
+				Integer depth2 = o2.getDepth();
+				if (isDownstream) {
+					return depth2.compareTo(depth1);
+				} else {
+					return depth1.compareTo(depth2);
+				}
+			}
+		});
+		return matchList;
 	}
 
 	protected void report (Concept acid, Concept base, String notes) {

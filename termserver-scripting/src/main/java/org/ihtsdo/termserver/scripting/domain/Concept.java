@@ -58,6 +58,7 @@ public class Concept implements RF2Constants {
 	private String assignedAuthor;
 	private String reviewer;
 	boolean isModified = false; //indicates if has been modified in current processing run
+	private int depth;
 	
 	public String getReviewer() {
 		return reviewer;
@@ -456,6 +457,17 @@ public class Concept implements RF2Constants {
 	
 	public boolean isModified() {
 		return isModified;
+	}
+	
+	public int getDepth() {
+		return depth;
+	}
+	
+	public void setDepth(int depth) {
+		// We'll maintain the shortest possible path, so don't allow depth to increase
+		if (this.depth == NOT_SET || depth < this.depth) {
+			this.depth = depth;
+		}
 	}
 
 }

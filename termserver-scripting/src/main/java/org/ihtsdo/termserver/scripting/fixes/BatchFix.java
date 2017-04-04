@@ -245,6 +245,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 				isTaskSize = false;
 			} else if (isLimit) {
 				processingLimit = Integer.parseInt(thisArg);
+				println ("Limiting number of tasks being created to " + processingLimit);
 				isLimit = false;
 			}else if (isProjectName) {
 				project = thisArg;
