@@ -294,6 +294,8 @@ public class SnowOwlClient {
 			Object exportLocationURLObj = jsonResponse.getUrlConnection().getHeaderField("Location");
 			if (exportLocationURLObj == null) {
 				throw new SnowOwlClientException("Failed to obtain location of export:");
+			} else {
+				logger.info ("Recovering export from {}",exportLocationURLObj.toString());
 			}
 			return exportLocationURLObj.toString() + "/archive";
 		} catch (Exception e) {
@@ -304,7 +306,9 @@ public class SnowOwlClient {
 
 	private File recoverExportedArchive(String exportLocationURL, File saveLocation) throws SnowOwlClientException {
 		try {
-			logger.debug("Recovering exported archive from {}", exportLocationURL);
+			logger.info("Recovering exported archive from {}", exportLocationURL);
+			logger.info("Sleeping 20 seconds first.");
+			Thread.sleep(20 * 1000);
 			resty.withHeader("Accept", ALL_CONTENT_TYPE);
 			BinaryResource archiveResource = resty.bytes(exportLocationURL);
 			if (saveLocation == null) {
@@ -313,7 +317,7 @@ public class SnowOwlClient {
 			archiveResource.save(saveLocation);
 			logger.debug("Extract saved to {}", saveLocation.getAbsolutePath());
 			return saveLocation;
-		} catch (IOException e) {
+		} catch (IOException|InterruptedException e) {
 			throw new SnowOwlClientException("Unable to recover exported archive from " + exportLocationURL, e);
 		}
 	}

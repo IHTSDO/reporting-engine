@@ -16,6 +16,7 @@ import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.Task;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
@@ -30,7 +31,9 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 	
 	String[] author_reviewer = new String[] {targetAuthor};
 	
-	enum Mode { PCDF, PCD_PREP }
+	public static String SCTID_HAS_ACTIVE_INGREDIENT = "127489000";
+	
+	enum Mode { VMPF, VCD }
 	
 	Mode mode = null;
 	
@@ -69,10 +72,10 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 		}
 		
 		if (fileName == null) {
-			mode = Mode.PCDF;
+			mode = Mode.VMPF;
 			println ("Processing PCDF - Description updates only.");
 		} else {
-			mode = Mode.PCD_PREP;
+			mode = Mode.VCD;
 			println ("Processing PCD_Prep - Description and relationship updates.");
 			loadRelationshipFile(fileName);
 		}
@@ -127,18 +130,23 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 	@Override
 	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
 		Concept tsConcept = loadConcept(concept, task.getBranchPath());
-		int changesMade = remodelConcept(task, concept, tsConcept);
-		if (changesMade > 0) {
-			try {
-				String conceptSerialised = gson.toJson(tsConcept);
-				debug ((dryRun?"Dry run updating":"Updating") + " state of " + tsConcept + info);
-				if (!dryRun) {
-					tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
+		int changesMade = 0;
+		if (tsConcept.isActive() == false) {
+			report(task, concept, SEVERITY.HIGH, REPORT_ACTION_TYPE.VALIDATION_ERROR, "Concept is inactive.  No changes attempted");
+		} else {
+			changesMade = remodelConcept(task, concept, tsConcept);
+			if (changesMade > 0) {
+				try {
+					String conceptSerialised = gson.toJson(tsConcept);
+					debug ((dryRun?"Dry run updating":"Updating") + " state of " + tsConcept + info);
+					if (!dryRun) {
+						tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
+					}
+					report(task, concept, SEVERITY.LOW, REPORT_ACTION_TYPE.CONCEPT_CHANGE_MADE, "Concept successfully remodelled. " + changesMade + " changes made.");
+				} catch (Exception e) {
+					report(task, concept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.API_ERROR, "Failed to save changed concept to TS: " + e.getClass().getSimpleName()  + " - " + e.getMessage());
+					e.printStackTrace();
 				}
-				report(task, concept, SEVERITY.LOW, REPORT_ACTION_TYPE.CONCEPT_CHANGE_MADE, "Concept successfully remodelled. " + changesMade + " changes made.");
-			} catch (Exception e) {
-				report(task, concept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.API_ERROR, "Failed to save changed concept to TS: " + e.getClass().getSimpleName()  + " - " + e.getMessage());
-				e.printStackTrace();
 			}
 		}
 		return changesMade;
@@ -147,7 +155,7 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 	private int remodelConcept(Task task, Concept concept, Concept tsConcept) throws TermServerScriptException {
 		int changesMade = 0;
 		changesMade += remodelDescriptions(task, concept, tsConcept);
-		if (mode == Mode.PCD_PREP) {
+		if (mode == Mode.VCD) {
 			changesMade += remodelAttributes(task, concept, tsConcept);
 		}
 		return changesMade;
@@ -156,13 +164,21 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 	private int remodelAttributes(Task task, Concept remodelledConcept, Concept tsConcept) {
 		//Inactivate all stated relationships unless they're one of the ones we want to add
 		int changesMade = 0;
-		if (remodelledConcept.getRelationships().isEmpty()) {
-			report(task, tsConcept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.VALIDATION_ERROR, "No relationships found to remodel concept");
+		if (remodelledConcept.getRelationships() == null || remodelledConcept.getRelationships().isEmpty()) {
+			report(task, tsConcept, SEVERITY.LOW, REPORT_ACTION_TYPE.VALIDATION_ERROR, "No relationships found to remodel concept. Out of scope?");
 		} else {
 			for (Relationship r : tsConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
 				//Leave existing parents as they are.  Definition status of concept will also not change.
 				if (r.getType().equals(IS_A)) {
 					continue;
+				}
+				
+				if (r.getType().getConceptId().equals(SCTID_HAS_ACTIVE_INGREDIENT)) {
+					//Check the ingredient FSN appears in whole in the product's fsn
+					String ingredient = SnomedUtils.deconstructFSN(r.getTarget().getFsn())[0].toLowerCase();
+					if (!remodelledConcept.getFsn().toLowerCase().contains(ingredient)) {
+						report(task, tsConcept, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.VALIDATION_ERROR, "New FSN does not contain active ingredient: " + ingredient + ":" + remodelledConcept.getFsn());
+					}
 				}
 				
 				if (remodelledConcept.getRelationships().contains(r)) {
@@ -175,8 +191,12 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 			}
 			//Now loop through whatever relationships we have left and add them to the ts concept
 			for (Relationship r : remodelledConcept.getRelationships()) {
-				tsConcept.addRelationship(r);
-				changesMade++;
+				if (r.getType().isActive() == false || r.getTarget().isActive() == false) {
+					report(task, tsConcept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.VALIDATION_ERROR, "Unable to add relationship, inactive type or destination: " + r);
+				} else {
+					tsConcept.addRelationship(r);
+					changesMade++;
+				}
 			}
 		}
 		return changesMade;
@@ -223,6 +243,7 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 				//Reset the acceptability.   Apparently this isn't accepted by the TS.  Must inactivate instead.
 				//d.setAcceptabilityMap(null);
 				d.inactivateDescription(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
+				changesMade++;
 				if (isCaseSensitive(d)) {
 					report (task, tsConcept, SEVERITY.HIGH, REPORT_ACTION_TYPE.VALIDATION_CHECK, "Inactivated description was case sensitive");
 				}
@@ -279,7 +300,7 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 	protected Concept loadLine(String[] items) throws TermServerScriptException {
 		String sctid = items[1];
 		ConceptChange concept = new ConceptChange(sctid);
-		concept.setConceptType((mode==Mode.PCD_PREP)? ConceptType.PCD_PREP : ConceptType.PCDF);
+		concept.setConceptType((mode==Mode.VCD)? ConceptType.PCD_PREP : ConceptType.PCDF);
 		concept.setCurrentTerm(items[2]);
 		concept.setFsn(items[3]);
 		//If we have a column 6, then split the preferred terms into US and GB separately
@@ -292,7 +313,7 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 		}
 		addSynonym(concept, items[5], Acceptability.ACCEPTABLE, ENGLISH_DIALECTS);
 
-		if (mode == Mode.PCD_PREP) {
+		if (mode == Mode.VCD) {
 			concept.setRelationships(remodelledAttributes.get(sctid));
 		}
 		return concept;
