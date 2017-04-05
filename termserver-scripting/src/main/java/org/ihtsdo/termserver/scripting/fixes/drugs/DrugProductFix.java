@@ -97,7 +97,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 									break;
 			case PRODUCT_ROLE : 
 			default : warn ("Don't know what to do with " + concept);
-			report(task, concept, SEVERITY.HIGH, REPORT_ACTION_TYPE.VALIDATION_ERROR, "Concept Type not determined.");
+			report(task, concept, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Concept Type not determined.");
 		}
 		try {
 			String conceptSerialised = gson.toJson(loadedConcept);
@@ -106,7 +106,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 				tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
 			}
 		} catch (Exception e) {
-			report(task, concept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.API_ERROR, "Failed to save changed concept to TS: " + e.getMessage());
+			report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + e.getMessage());
 		}
 		return changesMade;
 	}
@@ -353,7 +353,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 			if (!allConceptsToBeProcessed.contains(thisConcept) && !thisConcept.getConceptType().equals(ConceptType.GROUPER)) {
 				reportedNotProcessed.add(thisConcept);
 				String msg = thisConcept + " was given in input file but did not get included in a batch.  Check active ingredient.";
-				report(null, thisConcept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.UNEXPECTED_CONDITION, msg);
+				report(null, thisConcept, Severity.CRITICAL, ReportActionType.UNEXPECTED_CONDITION, msg);
 			}
 		}
 		println("Processing " + allConceptsToBeProcessed.size() + " concepts.");
@@ -436,7 +436,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		String modifiedFSN = SnomedUtils.substitute(newFSN, wordSubstitution);
 		if (!modifiedFSN.equals(newFSN)) {
 			String msg = "Word substitution changed " + newFSN + " to " + modifiedFSN;
-			report(task, concept, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, msg);
+			report(task, concept, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, msg);
 			newFSN = modifiedFSN;
 		}
 		return newFSN;
@@ -470,7 +470,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 				
 				if (checkForDemotion(thisDescription, newFSN)) {
 					String msg = "Demoted " + thisDescription + " to  " + SnomedUtils.toString(thisDescription.getAcceptabilityMap());
-					report (task, concept, SEVERITY.HIGH, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, msg);
+					report (task, concept, Severity.HIGH, ReportActionType.DESCRIPTION_CHANGE_MADE, msg);
 				}
 			}
 			
@@ -485,7 +485,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 					concept.addDescription(replacement);
 					msg = "Replaced (inactivated) " + thisDescription.getType() + " " + thisDescription + " with " + replacement;
 				}
-				report (task, concept, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, msg);
+				report (task, concept, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, msg);
 				
 			}
 		}
@@ -547,7 +547,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		}
 		
 		if (matchingAcceptable.size() > 1) {
-			report(task, concept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.API_ERROR, "More than one possible description promotion detected.");
+			report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "More than one possible description promotion detected.");
 		}
 		
 		if (matchingAcceptable.size() > 0) {
@@ -561,7 +561,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 					promoting.getAcceptabilityMap().put(dialect, Acceptability.PREFERRED);
 					promotionSuccessful = true;
 					String msg = "Promoted acceptable term " + promoting + " to be preferred in dialect " + dialect;
-					report (task, concept, SEVERITY.HIGH, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, msg);
+					report (task, concept, Severity.HIGH, ReportActionType.DESCRIPTION_CHANGE_MADE, msg);
 				}
 			}
 		}
@@ -615,7 +615,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		String sanitizedFsnRoot = removeUnwantedWords(fsnRoot);
 		if (!sanitizedFsnRoot.equals(fsnRoot)) {
 			String msg = "Removed unwanted word from FSN: " + fsnRoot + " became " + sanitizedFsnRoot;
-			report(task, concept, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, msg);
+			report(task, concept, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, msg);
 		}
 		return sanitizedFsnRoot;
 	}

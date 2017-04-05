@@ -60,7 +60,7 @@ public class SEPRefsetGenerator extends RefsetGenerator{
 			String fsnBase = SnomedUtils.deconstructFSN(thisConcept.getFsn())[0].toLowerCase();
 			//Check we don't have more than one of our target keywords. THAT would be confusing!
 			if (hasMultipleKeywords(fsnBase)) {
-				report (thisConcept, null, SEVERITY.HIGH, REPORT_ACTION_TYPE.VALIDATION_ERROR, "Concept contained multiple keywords");
+				report (thisConcept, null, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Concept contained multiple keywords");
 			} else if (fsnBase.contains(STRUCTURE)) {
 				String[] entireAndPart = getEntireAndPart(thisConcept);
 				for (int i=0; i< entireAndPart.length; i++){
@@ -95,7 +95,7 @@ public class SEPRefsetGenerator extends RefsetGenerator{
 			for (int i=0; i<MAX_VALUE_COUNT; i++) {
 				if (thisChild.getFsn().contains(entirePart[i])) {
 					if (!(entireAndPart[i] == null)) {
-						report (thisConcept, null, SEVERITY.HIGH, REPORT_ACTION_TYPE.VALIDATION_ERROR, "Concept contained more than one " + entirePart[i]);
+						report (thisConcept, null, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Concept contained more than one " + entirePart[i]);
 					} else {
 						entireAndPart[i] = thisChild.getConceptId();
 					}
@@ -104,7 +104,7 @@ public class SEPRefsetGenerator extends RefsetGenerator{
 		}
 		if (entireAndPart[IDX_ENTIRE] == null) {
 			incrementSummaryInformation("Structure without Entire", 1);
-			report (thisConcept, null, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.VALIDATION_ERROR, "Structure concept has no 'Entire' counterpart");
+			report (thisConcept, null, Severity.MEDIUM, ReportActionType.VALIDATION_ERROR, "Structure concept has no 'Entire' counterpart");
 		}
 		return entireAndPart;
 	}

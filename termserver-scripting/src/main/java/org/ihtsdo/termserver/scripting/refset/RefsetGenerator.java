@@ -31,7 +31,7 @@ public abstract class RefsetGenerator extends TermServerScript {
 	protected int additionalColumnsCount = 0;
 	protected List<RefsetMember> refsetMembers = new ArrayList<RefsetMember>();
 
-	protected void report(Concept concept, Description d, SEVERITY severity, REPORT_ACTION_TYPE actionType, String actionDetail) {
+	protected void report(Concept concept, Description d, Severity severity, ReportActionType actionType, String actionDetail) {
 		String line = "";
 		
 		if (d==null) {

@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Batch;
 import org.ihtsdo.termserver.scripting.domain.Concept;
@@ -128,11 +129,11 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 	}
 
 	@Override
-	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
+	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException, ValidationFailure {
 		Concept tsConcept = loadConcept(concept, task.getBranchPath());
 		int changesMade = 0;
 		if (tsConcept.isActive() == false) {
-			report(task, concept, SEVERITY.HIGH, REPORT_ACTION_TYPE.VALIDATION_ERROR, "Concept is inactive.  No changes attempted");
+			report(task, concept, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Concept is inactive.  No changes attempted");
 		} else {
 			changesMade = remodelConcept(task, concept, tsConcept);
 			if (changesMade > 0) {
@@ -142,9 +143,9 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 					if (!dryRun) {
 						tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
 					}
-					report(task, concept, SEVERITY.LOW, REPORT_ACTION_TYPE.CONCEPT_CHANGE_MADE, "Concept successfully remodelled. " + changesMade + " changes made.");
+					report(task, concept, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept successfully remodelled. " + changesMade + " changes made.");
 				} catch (Exception e) {
-					report(task, concept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.API_ERROR, "Failed to save changed concept to TS: " + e.getClass().getSimpleName()  + " - " + e.getMessage());
+					report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + e.getClass().getSimpleName()  + " - " + e.getMessage());
 					e.printStackTrace();
 				}
 			}
@@ -152,7 +153,7 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 		return changesMade;
 	}
 
-	private int remodelConcept(Task task, Concept concept, Concept tsConcept) throws TermServerScriptException {
+	private int remodelConcept(Task task, Concept concept, Concept tsConcept) throws TermServerScriptException, ValidationFailure {
 		int changesMade = 0;
 		changesMade += remodelDescriptions(task, concept, tsConcept);
 		if (mode == Mode.VCD) {
@@ -161,11 +162,11 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 		return changesMade;
 	}
 
-	private int remodelAttributes(Task task, Concept remodelledConcept, Concept tsConcept) {
+	private int remodelAttributes(Task task, Concept remodelledConcept, Concept tsConcept) throws ValidationFailure {
 		//Inactivate all stated relationships unless they're one of the ones we want to add
 		int changesMade = 0;
 		if (remodelledConcept.getRelationships() == null || remodelledConcept.getRelationships().isEmpty()) {
-			report(task, tsConcept, SEVERITY.LOW, REPORT_ACTION_TYPE.VALIDATION_ERROR, "No relationships found to remodel concept. Out of scope?");
+			throw new ValidationFailure(tsConcept, Severity.LOW, ReportActionType.VALIDATION_ERROR, "No relationships found to remodel concept. Out of scope? Skipping.");
 		} else {
 			for (Relationship r : tsConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
 				//Leave existing parents as they are.  Definition status of concept will also not change.
@@ -177,7 +178,7 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 					//Check the ingredient FSN appears in whole in the product's fsn
 					String ingredient = SnomedUtils.deconstructFSN(r.getTarget().getFsn())[0].toLowerCase();
 					if (!remodelledConcept.getFsn().toLowerCase().contains(ingredient)) {
-						report(task, tsConcept, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.VALIDATION_ERROR, "New FSN does not contain active ingredient: " + ingredient + ":" + remodelledConcept.getFsn());
+						report(task, tsConcept, Severity.MEDIUM, ReportActionType.VALIDATION_ERROR, "New FSN does not contain active ingredient: " + ingredient + ":" + remodelledConcept.getFsn());
 					}
 				}
 				
@@ -192,7 +193,7 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 			//Now loop through whatever relationships we have left and add them to the ts concept
 			for (Relationship r : remodelledConcept.getRelationships()) {
 				if (r.getType().isActive() == false || r.getTarget().isActive() == false) {
-					report(task, tsConcept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.VALIDATION_ERROR, "Unable to add relationship, inactive type or destination: " + r);
+					report(task, tsConcept, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Unable to add relationship, inactive type or destination: " + r);
 				} else {
 					tsConcept.addRelationship(r);
 					changesMade++;
@@ -207,7 +208,7 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 		ConceptChange change = (ConceptChange)remodelledConcept;
 		int changesMade = 0;
 		if (!change.getCurrentTerm().equals(tsConcept.getFsn())) {
-			report(task, tsConcept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.VALIDATION_ERROR, "FSN did not meet change file expectations: " + change.getFsn());
+			report(task, tsConcept, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "FSN did not meet change file expectations: " + change.getFsn());
 		} else {
 			//Firstly, inactivate and replace the FSN
 			Description fsn = tsConcept.getDescriptions(Acceptability.PREFERRED, DescriptionType.FSN, ActiveState.ACTIVE).get(0);
@@ -233,7 +234,7 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 			Description keeping = findDescription (remodelledConcept, d.getTerm());
 			if (keeping!=null) {
 				if (!d.isActive()) {
-					report(task, tsConcept, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, "Inactivated description being made active");
+					report(task, tsConcept, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Inactivated description being made active");
 					d.setActive(true);
 				}
 				//TODO Check acceptability of existing term
@@ -245,7 +246,7 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 				d.inactivateDescription(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
 				changesMade++;
 				if (isCaseSensitive(d)) {
-					report (task, tsConcept, SEVERITY.HIGH, REPORT_ACTION_TYPE.VALIDATION_CHECK, "Inactivated description was case sensitive");
+					report (task, tsConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Inactivated description was case sensitive");
 				}
 			}
 		}

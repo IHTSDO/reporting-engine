@@ -90,11 +90,11 @@ public abstract class TermServerScript implements RF2Constants {
 	
 	protected static GraphLoader graph = GraphLoader.getGraphLoader();
 
-	public enum REPORT_ACTION_TYPE { API_ERROR, CONCEPT_CHANGE_MADE, INFO, UNEXPECTED_CONDITION,
+	public enum ReportActionType { API_ERROR, CONCEPT_CHANGE_MADE, INFO, UNEXPECTED_CONDITION,
 									 RELATIONSHIP_ADDED, RELATIONSHIP_REMOVED, DESCRIPTION_CHANGE_MADE, 
 									 NO_CHANGE, VALIDATION_ERROR, VALIDATION_CHECK, DEBUG_INFO};
 									 
-	public enum SEVERITY { NONE, LOW, MEDIUM, HIGH, CRITICAL }; 
+	public enum Severity { NONE, LOW, MEDIUM, HIGH, CRITICAL }; 
 
 	public String getScriptName() {
 		return this.getClass().getSimpleName();

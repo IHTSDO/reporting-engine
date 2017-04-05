@@ -71,7 +71,7 @@ public class ReplaceLowerCaseTerms extends BatchFix implements RF2Constants{
 					tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
 				}
 			} catch (Exception e) {
-				report(task, concept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
+				report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
 			}
 		}
 		return changesMade;
@@ -118,7 +118,7 @@ public class ReplaceLowerCaseTerms extends BatchFix implements RF2Constants{
 				lower.setEffectiveTime(null);
 				lower.setInactivationIndicator(InactivationIndicator.ERRONEOUS);
 			}
-			report(task, concept, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, msg);
+			report(task, concept, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, msg);
 		}
 		return changesMade;
 	}

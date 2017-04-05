@@ -122,14 +122,14 @@ public class GenerateTranslation extends DeltaGenerator {
 			Concept currentState = graph.getConcept(thisConcept.getConceptId());
 			ConceptChange newState = (ConceptChange) thisConcept;
 			if (!currentState.isActive()) {
-				report (thisConcept, null, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.VALIDATION_ERROR, "Concept is inactive, skipping");
+				report (thisConcept, null, Severity.MEDIUM, ReportActionType.VALIDATION_ERROR, "Concept is inactive, skipping");
 			}
 			try {
 				generateTranslation(currentState, newState);
 			} catch (TermServerScriptException e) {
 				//Only catching TermServerScript exception because we want unchecked RuntimeExceptions eg
 				//NullPointer and TotalCatastrophicFailure to stop processing
-				report (thisConcept, null, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.API_ERROR, "Exception while processing: " + e.getMessage() + " : " + SnomedUtils.getStackTrace(e));
+				report (thisConcept, null, Severity.CRITICAL, ReportActionType.API_ERROR, "Exception while processing: " + e.getMessage() + " : " + SnomedUtils.getStackTrace(e));
 			}
 		}
 		return null;
@@ -139,14 +139,14 @@ public class GenerateTranslation extends DeltaGenerator {
 			ConceptChange newState) throws TermServerScriptException {
 		//Check that the concept is currently active
 		if (!currentState.isActive()) {
-			report (currentState, null, SEVERITY.HIGH, REPORT_ACTION_TYPE.VALIDATION_ERROR, "Concept is inactive, skipping");
+			report (currentState, null, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Concept is inactive, skipping");
 			return;
 		}
 		
 		//Check that the current preferred term matches what the translation file thinks it is.
 		Description usPrefTerm = getUsPrefTerm(currentState);
 		if (!usPrefTerm.getTerm().equals(newState.getCurrentTerm())) {
-			report (currentState, usPrefTerm, SEVERITY.HIGH, REPORT_ACTION_TYPE.VALIDATION_ERROR, "Current term is not what was translated: " + newState.getCurrentTerm());
+			report (currentState, usPrefTerm, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Current term is not what was translated: " + newState.getCurrentTerm());
 		}
 		
 		//Do we already have this term?  Just add the langrefset entry if so.
@@ -158,17 +158,17 @@ public class GenerateTranslation extends DeltaGenerator {
 		} else {*/
 		
 		String msg = "Created new description: ";
-		SEVERITY severity = SEVERITY.LOW;
+		Severity severity = Severity.LOW;
 		//Do we already have this term?  Add a warning if so.
 		if (currentState.hasTerm(newState.getNewTerm())) {
-			severity = SEVERITY.HIGH;
+			severity = Severity.HIGH;
 			msg = "Created duplicate new description: ";
 		}
 		
 		//Create a new Description to attach to the concept
 		Description d = createTranslatedDescription(newState);
 		String cs = ", with case significance " + SnomedUtils.translateCaseSignificanceFromSctId(d.getCaseSignificance());
-		report (currentState, d, severity, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, msg + d + cs);
+		report (currentState, d, severity, ReportActionType.DESCRIPTION_CHANGE_MADE, msg + d + cs);
 		outputRF2(d);
 	}
 

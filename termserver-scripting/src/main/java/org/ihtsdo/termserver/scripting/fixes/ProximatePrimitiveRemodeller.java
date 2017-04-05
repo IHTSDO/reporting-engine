@@ -78,7 +78,7 @@ public class ProximatePrimitiveRemodeller extends BatchFix implements RF2Constan
 					tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
 				}
 			} catch (Exception e) {
-				report(task, concept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.API_ERROR, "Failed to save changed concept to TS: " + e.getMessage());
+				report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + e.getMessage());
 			}
 		}
 		return changesMade;
@@ -137,7 +137,7 @@ public class ProximatePrimitiveRemodeller extends BatchFix implements RF2Constan
 			if (stated.equals(inferred)) {
 				alreadyExists = true;
 				String msg = "Stated Relationship already exists for " + inferred;
-				report(task, inferred.getSource(), SEVERITY.LOW, REPORT_ACTION_TYPE.DEBUG_INFO, msg);
+				report(task, inferred.getSource(), Severity.LOW, ReportActionType.DEBUG_INFO, msg);
 			}
 		}
 		if (!alreadyExists) {
@@ -166,7 +166,7 @@ public class ProximatePrimitiveRemodeller extends BatchFix implements RF2Constan
 			//If it's not brand new, log some info about that
 			if (statedGroup.iterator().next().getEffectiveTime() != null) {
 				String msg = "Stated Relationship Group already exists for " + inferred;
-				report(task, inferred.getSource(), SEVERITY.LOW, REPORT_ACTION_TYPE.DEBUG_INFO, msg);
+				report(task, inferred.getSource(), Severity.LOW, ReportActionType.DEBUG_INFO, msg);
 			}
 		} else {
 			//Otherwise add this group with the lowest groupId available
@@ -311,7 +311,7 @@ public class ProximatePrimitiveRemodeller extends BatchFix implements RF2Constan
 				}
 			} catch (TermServerScriptException e) {
 				String msg = "Failed to determine status of " + thisConcept + " due to " + e;
-				report(null,thisConcept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.VALIDATION_ERROR, msg);
+				report(null,thisConcept, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, msg);
 			}
 		}
 		return processMe;

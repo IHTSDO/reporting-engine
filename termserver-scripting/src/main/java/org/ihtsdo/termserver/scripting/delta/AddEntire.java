@@ -70,7 +70,7 @@ public class AddEntire extends DeltaGenerator {
 		Set<Concept> uniqueConcepts = new LinkedHashSet<Concept>(allConcepts);
 		for (Concept thisConcept : uniqueConcepts) {
 			if (!thisConcept.isActive()) {
-				report (thisConcept, null, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.VALIDATION_ERROR, "Concept is inactive, skipping");
+				report (thisConcept, null, Severity.MEDIUM, ReportActionType.VALIDATION_ERROR, "Concept is inactive, skipping");
 				
 			}
 			try {
@@ -82,7 +82,7 @@ public class AddEntire extends DeltaGenerator {
 				}
 
 			} catch (TermServerScriptException e) {
-				report (thisConcept, null, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.API_ERROR, "Exception while processing: " + e.getMessage() + " : " + SnomedUtils.getStackTrace(e));
+				report (thisConcept, null, Severity.CRITICAL, ReportActionType.API_ERROR, "Exception while processing: " + e.getMessage() + " : " + SnomedUtils.getStackTrace(e));
 			}
 		}
 		return allConcepts;
@@ -113,7 +113,7 @@ public class AddEntire extends DeltaGenerator {
 
 		//We only work with active terms
 		if (d == null) {
-			report (c,d,SEVERITY.HIGH, REPORT_ACTION_TYPE.VALIDATION_ERROR, "No active " + (isFSN?"FSN":"SYN") + " found for concept");
+			report (c,d,Severity.HIGH, ReportActionType.VALIDATION_ERROR, "No active " + (isFSN?"FSN":"SYN") + " found for concept");
 			return;
 		}
 		
@@ -126,7 +126,7 @@ public class AddEntire extends DeltaGenerator {
 		
 		//Do we in fact need to do anything?
 		if (newTermParts[0].toLowerCase().contains(ENTIRE.toLowerCase())) {
-			report (c,d,SEVERITY.NONE, REPORT_ACTION_TYPE.NO_CHANGE, "Term already contains 'entire'");
+			report (c,d,Severity.NONE, ReportActionType.NO_CHANGE, "Term already contains 'entire'");
 			return;
 		}
 		
@@ -153,7 +153,7 @@ public class AddEntire extends DeltaGenerator {
 		
 		if (!d.isActive()) {
 			String msg = "Attempting to inactivate an already inactive description";
-			report (c,d,SEVERITY.HIGH, REPORT_ACTION_TYPE.API_ERROR, msg);
+			report (c,d,Severity.HIGH, ReportActionType.API_ERROR, msg);
 			return;
 		}
 		
@@ -163,7 +163,7 @@ public class AddEntire extends DeltaGenerator {
 			if (thisDesc.getTerm().equalsIgnoreCase(newTerm)) {
 				//Have we already found a duplicate?
 				if (duplicate != null) {
-					report (c,duplicate,SEVERITY.CRITICAL, REPORT_ACTION_TYPE.VALIDATION_ERROR, "Multiple matching active duplicates found!");
+					report (c,duplicate,Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Multiple matching active duplicates found!");
 				}
 				duplicate = thisDesc;
 			}
@@ -174,7 +174,7 @@ public class AddEntire extends DeltaGenerator {
 				if (thisDesc.getTerm().equalsIgnoreCase(newTerm)) {
 					//Have we already found a duplicate?
 					if (duplicate != null) {
-						report (c,duplicate,SEVERITY.CRITICAL, REPORT_ACTION_TYPE.VALIDATION_ERROR, "Multiple matching inactivate duplicates found!");
+						report (c,duplicate,Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Multiple matching inactivate duplicates found!");
 					}
 					duplicate = thisDesc;
 				}
@@ -187,11 +187,11 @@ public class AddEntire extends DeltaGenerator {
 			replacement.setTerm(newTerm);
 			replacement.setCaseSignificance(newCaseSignificance);
 			c.addDescription(replacement);
-			report (c,replacement,SEVERITY.MEDIUM, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, "Added new Description");
+			report (c,replacement,Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Added new Description");
 			outputRF2(replacement);
 		} else {
-			SEVERITY severity = SEVERITY.MEDIUM;
-			REPORT_ACTION_TYPE action = REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE;
+			Severity severity = Severity.MEDIUM;
+			ReportActionType action = ReportActionType.DESCRIPTION_CHANGE_MADE;
 			//If the duplicate is inactive, we need to activate it.
 			String duplicateMsg = "";
 			if (!duplicate.isActive()) {
@@ -203,18 +203,18 @@ public class AddEntire extends DeltaGenerator {
 			//so that we get the best of both.  This might promote an acceptable term to a preferred one.
 			if (SnomedUtils.mergeLangRefsetEntries(d, duplicate)) {
 				duplicateMsg += "Modified duplicate term's lang refset entries - " + duplicate;
-				severity = SEVERITY.HIGH;
+				severity = Severity.HIGH;
 			}
 			
 			if (duplicateMsg.isEmpty()) {
 				duplicateMsg="No changes needed to duplicate - " + duplicate;
-				action = REPORT_ACTION_TYPE.NO_CHANGE;
+				action = ReportActionType.NO_CHANGE;
 			}
 			report (c,d,severity,action, duplicateMsg);
 			outputRF2(duplicate);
 		}
 		d.setActive(false);
-		report (c,d,SEVERITY.MEDIUM, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, "Inactivated Description");
+		report (c,d,Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Inactivated Description");
 		outputRF2(d);
 	}
 

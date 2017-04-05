@@ -57,7 +57,7 @@ public class AssertionFailureFix extends BatchFix implements RF2Constants{
 					tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
 				}
 			} catch (Exception e) {
-				report(task, concept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.API_ERROR, "Failed to save changed concept to TS: " + e.getMessage());
+				report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + e.getMessage());
 			}
 		}
 		return changesMade;
@@ -90,7 +90,7 @@ public class AssertionFailureFix extends BatchFix implements RF2Constants{
 					d.setEffectiveTime(null);
 					d.setInactivationIndicator(InactivationIndicator.RETIRED);
 					String msg = "Replaced term '" + d.getTerm() + "' with '" + replacement.getTerm() + "'.";
-					report(task, concept, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, msg);
+					report(task, concept, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, msg);
 				}
 			}
 		}
@@ -155,7 +155,7 @@ public class AssertionFailureFix extends BatchFix implements RF2Constants{
 			if (!allConceptsToBeProcessed.contains(thisConcept)) {
 				reportedNotProcessed.add(thisConcept);
 				String msg = thisConcept + " was given in input file but did not get included in a batch.";
-				report(null, thisConcept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.UNEXPECTED_CONDITION, msg);
+				report(null, thisConcept, Severity.CRITICAL, ReportActionType.UNEXPECTED_CONDITION, msg);
 			}
 		}
 		println("Processing " + allConceptsToBeProcessed.size() + " concepts.");

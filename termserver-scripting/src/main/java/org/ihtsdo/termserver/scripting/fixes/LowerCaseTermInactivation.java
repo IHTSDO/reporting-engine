@@ -65,7 +65,7 @@ public class LowerCaseTermInactivation extends BatchFix implements RF2Constants{
 					tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
 				}
 			} catch (Exception e) {
-				report(task, concept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.API_ERROR, "Failed to save changed concept to TS: " + e.getMessage());
+				report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + e.getMessage());
 			}
 		}
 		return changesMade;
@@ -81,7 +81,7 @@ public class LowerCaseTermInactivation extends BatchFix implements RF2Constants{
 			m.inactivate.setEffectiveTime(null);
 			m.inactivate.setInactivationIndicator(InactivationIndicator.ERRONEOUS);
 			String msg = "Inactivated term '" + m.inactivate.getTerm() + "' due to presence of '" + m.keep.getTerm() + "'.";
-			report(task, concept, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.DESCRIPTION_CHANGE_MADE, msg);
+			report(task, concept, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, msg);
 		}
 		return changesMade;
 	}

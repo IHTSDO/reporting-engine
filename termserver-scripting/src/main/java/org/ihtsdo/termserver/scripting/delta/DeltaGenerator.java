@@ -40,7 +40,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 	String[] langHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","acceptabilityId"};
 	IdGenerator idGenerator;
 	
-	protected void report(Concept concept, Description d, SEVERITY severity, REPORT_ACTION_TYPE actionType, String actionDetail) {
+	protected void report(Concept concept, Description d, Severity severity, ReportActionType actionType, String actionDetail) {
 		String line = "";
 		
 		if (d==null) {

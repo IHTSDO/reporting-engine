@@ -68,7 +68,7 @@ public class FractureOfXTermRemodelling extends BatchFix implements RF2Constants
 			}
 		}
 		return changesMade;*/
-		report(task, concept, SEVERITY.NONE, REPORT_ACTION_TYPE.INFO, "");
+		report(task, concept, Severity.NONE, ReportActionType.INFO, "");
 		return 1;
 	}
 

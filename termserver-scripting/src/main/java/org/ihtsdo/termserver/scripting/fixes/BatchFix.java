@@ -24,6 +24,7 @@ import javax.mail.internet.MimeMultipart;
 
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.Batch;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
@@ -72,7 +73,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	
 	abstract protected Batch formIntoBatch (String fileName, List<Concept> allConcepts, String branchPath) throws TermServerScriptException;
 	
-	abstract protected int doFix(Task task, Concept concept, String info) throws TermServerScriptException;
+	abstract protected int doFix(Task task, Concept concept, String info) throws TermServerScriptException, ValidationFailure;
 
 	protected void batchProcess(Batch batch) throws TermServerScriptException {
 		int failureCount = 0;
@@ -138,10 +139,12 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 							String info = " Task (" + xOfY + ") Concept (" + conceptInTask + " of " + task.getConcepts().size() + ")";
 							int changesMade = doFix(task, concept, info);
 							if (changesMade == 0) {
-								report(task, concept, SEVERITY.NONE, REPORT_ACTION_TYPE.NO_CHANGE, "");
+								report(task, concept, Severity.NONE, ReportActionType.NO_CHANGE, "");
 							}
+						} catch (ValidationFailure f) {
+							report(task, concept, f.getSeverity(),f.getReportActionType(), f.getMessage());
 						} catch (TermServerScriptException e) {
-							report(task, concept, SEVERITY.CRITICAL, REPORT_ACTION_TYPE.API_ERROR, getMessage(e));
+							report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, getMessage(e));
 							if (++failureCount > maxFailures) {
 								throw new TermServerScriptException ("Failure count exceeded " + maxFailures);
 							}
@@ -156,7 +159,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 						} catch (Exception e) {
 							String msg = "Failed to preload edit-panel ui state: " + e.getMessage();
 							warn (msg);
-							report(task, null, SEVERITY.LOW, REPORT_ACTION_TYPE.API_ERROR, msg);
+							report(task, null, Severity.LOW, ReportActionType.API_ERROR, msg);
 						}
 						
 						//Reassign the task to the intended author.  Set at task or processing level
@@ -189,14 +192,14 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	protected int ensureDefinitionStatus(Task t, Concept c, DefinitionStatus targetDefStat) {
 		int changesMade = 0;
 		if (!c.getDefinitionStatus().equals(targetDefStat)) {
-			report (t, c, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.CONCEPT_CHANGE_MADE, "Definition status changed to " + targetDefStat);
+			report (t, c, Severity.MEDIUM, ReportActionType.CONCEPT_CHANGE_MADE, "Definition status changed to " + targetDefStat);
 			c.setDefinitionStatus(targetDefStat);
 			changesMade++;
 		}
 		return changesMade;
 	}
 	
-	protected void report(Task task, Concept concept, SEVERITY severity, REPORT_ACTION_TYPE actionType, String actionDetail) {
+	protected void report(Task task, Concept concept, Severity severity, ReportActionType actionType, String actionDetail) {
 		String sctid = "";
 		String fsn = "";
 		String type = "";
@@ -207,7 +210,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 				type = concept.getConceptType().toString();
 			}
 			
-			if (severity.equals(SEVERITY.CRITICAL)) {
+			if (severity.equals(Severity.CRITICAL)) {
 				String key = CRITICAL_ISSUE + " encountered for " + sctid + " |" + fsn + "|" ;
 				addSummaryInformation(key, actionDetail);
 				println ( key + " : " + actionDetail);
@@ -282,7 +285,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		int changesMade = 0;
 		for (Relationship thisParent : statedParents) {
 			if (!thisParent.getTarget().equals(acceptableParent)) {
-				report(task, c, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.RELATIONSHIP_REMOVED, "Inactivated unwanted parent: " + thisParent.getTarget());
+				report(task, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_REMOVED, "Inactivated unwanted parent: " + thisParent.getTarget());
 				thisParent.setActive(false);
 				changesMade++;
 			} else {
@@ -293,7 +296,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		if (!hasAcceptableParent) {
 			c.addRelationship(IS_A, acceptableParent);
 			changesMade++;
-			report(task, c, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.RELATIONSHIP_ADDED, "Added required parent: " + acceptableParent);
+			report(task, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_ADDED, "Added required parent: " + acceptableParent);
 		}
 		return changesMade;
 	}
@@ -312,11 +315,11 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		for (Relationship thisAttribute : attributes) {
 			Concept value = thisAttribute.getTarget();
 			if (!descendents.contains(value)) {
-				SEVERITY severity = thisAttribute.isActive()?SEVERITY.CRITICAL:SEVERITY.LOW;
+				Severity severity = thisAttribute.isActive()?Severity.CRITICAL:Severity.LOW;
 				String activeStr = thisAttribute.isActive()?"":"inactive ";
 				String relType = thisAttribute.getCharacteristicType().equals(CharacteristicType.STATED_RELATIONSHIP)?"stated ":"inferred ";
 				String msg = "Attribute has " + activeStr + relType + "target which is not a descendent of: " + descendentsOfValue;
-				report (task, concept, severity, REPORT_ACTION_TYPE.VALIDATION_ERROR, msg);
+				report (task, concept, severity, ReportActionType.VALIDATION_ERROR, msg);
 			}
 		}
 		
@@ -343,7 +346,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		
 		//If we have an error message but have not made any changes to the concept, then report that error now
 		if (msg != null && changesMade == 0) {
-			report (task, concept, SEVERITY.HIGH, REPORT_ACTION_TYPE.VALIDATION_ERROR, msg);
+			report (task, concept, Severity.HIGH, ReportActionType.VALIDATION_ERROR, msg);
 		}
 		return changesMade;
 	}
@@ -355,10 +358,10 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		int changesMade = 0;
 		if (replacements.size() == 0) {
 			String msg = "Unable to find any inferred " + attributeType + " relationships to state.";
-			report(task, concept, SEVERITY.HIGH, REPORT_ACTION_TYPE.INFO, msg);
+			report(task, concept, Severity.HIGH, ReportActionType.INFO, msg);
 		} else if (cardinality.equals(Cardinality.EXACTLY_ONE) && replacements.size() > 1) {
 			String msg = "Found " + replacements.size() + " " + attributeType + " relationships to state but wanted only one!";
-			report(task, concept, SEVERITY.HIGH, REPORT_ACTION_TYPE.INFO, msg);
+			report(task, concept, Severity.HIGH, ReportActionType.INFO, msg);
 		} else {
 			//Clone the inferred relationships, make them stated and add to concept
 			for (Relationship replacement : replacements) {
@@ -366,7 +369,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 				statedClone.setCharacteristicType(CharacteristicType.STATED_RELATIONSHIP);
 				concept.addRelationship(statedClone);
 				String msg = "Restated inferred relationship: " + replacement;
-				report(task, concept, SEVERITY.MEDIUM, REPORT_ACTION_TYPE.RELATIONSHIP_ADDED, msg);
+				report(task, concept, Severity.MEDIUM, ReportActionType.RELATIONSHIP_ADDED, msg);
 				changesMade++;
 			}
 		}
@@ -385,7 +388,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			for (Description pref : preferredTerms) {
 				if (!pref.getTerm().equals(trimmedFSN)) {
 					String msg = concept + " has preferred term that does not match FSN: " + pref.getTerm();
-					report (task, concept, SEVERITY.HIGH, REPORT_ACTION_TYPE.VALIDATION_ERROR, msg);
+					report (task, concept, Severity.HIGH, ReportActionType.VALIDATION_ERROR, msg);
 				}
 			}
 		}

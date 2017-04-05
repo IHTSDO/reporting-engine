@@ -96,7 +96,7 @@ public class ReplaceRelationships extends DeltaGenerator {
 				if (findRel.matches(rel)) {
 					if (groupsAffected.contains(rel.getGroupId())) {
 						String msg = "Concept has two matching relationships in same group: " + rel.getGroupId();
-						report (concept, concept.getFSNDescription(), SEVERITY.HIGH, REPORT_ACTION_TYPE.VALIDATION_ERROR, msg);
+						report (concept, concept.getFSNDescription(), Severity.HIGH, ReportActionType.VALIDATION_ERROR, msg);
 						return;
 					} else {
 						matchedRelationships.add(rel);
@@ -108,11 +108,11 @@ public class ReplaceRelationships extends DeltaGenerator {
 		for (Relationship thisMatch : matchedRelationships) {
 			if (thisMatch.getGroupId() == 0) {
 				String msg = "Relationship matched is in group 0: " + thisMatch;
-				report (concept, concept.getFSNDescription(), SEVERITY.HIGH, REPORT_ACTION_TYPE.VALIDATION_ERROR, msg);
+				report (concept, concept.getFSNDescription(), Severity.HIGH, ReportActionType.VALIDATION_ERROR, msg);
 			} else {
 				if (thisMatch.getEffectiveTime().isEmpty()) {
 					String msg = "Matched relationship already showing as modified: " + thisMatch;
-					report (concept, concept.getFSNDescription(), SEVERITY.HIGH, REPORT_ACTION_TYPE.VALIDATION_ERROR, msg);
+					report (concept, concept.getFSNDescription(), Severity.HIGH, ReportActionType.VALIDATION_ERROR, msg);
 				} else {
 					if (replace) {
 						replaceRelationship (thisMatch);
@@ -142,7 +142,7 @@ public class ReplaceRelationships extends DeltaGenerator {
 				replacement.setTarget(replacementTemplate.getTarget());
 				source.addRelationship(replacement);
 				String msg = "Replaced " + replaceMe + " with " + replacement;
-				report (source, source.getFSNDescription(), SEVERITY.MEDIUM, REPORT_ACTION_TYPE.RELATIONSHIP_ADDED, msg);
+				report (source, source.getFSNDescription(), Severity.MEDIUM, ReportActionType.RELATIONSHIP_ADDED, msg);
 			}
 		}
 	}
@@ -159,7 +159,7 @@ public class ReplaceRelationships extends DeltaGenerator {
 				addition.setTarget(addTemplate.getTarget());
 				source.addRelationship(addition);
 				String msg = "Added " + addition + " due to presence of " + addToMe;
-				report (source, source.getFSNDescription(), SEVERITY.MEDIUM, REPORT_ACTION_TYPE.RELATIONSHIP_ADDED, msg);
+				report (source, source.getFSNDescription(), Severity.MEDIUM, ReportActionType.RELATIONSHIP_ADDED, msg);
 			}
 		}
 	}
@@ -168,7 +168,7 @@ public class ReplaceRelationships extends DeltaGenerator {
 			RelationshipTemplate rt, long group) {
 		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH)) {
 			if (r.getGroupId() == group && rt.matches(r)) {
-				report (c, c.getFSNDescription(), SEVERITY.HIGH, REPORT_ACTION_TYPE.VALIDATION_ERROR, "Replacement relationship already exists as " + r);
+				report (c, c.getFSNDescription(), Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Replacement relationship already exists as " + r);
 				return true;
 			}
 		}
