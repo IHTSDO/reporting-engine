@@ -296,6 +296,18 @@ public class Description implements RF2Constants{
 		return dirty;
 	}
 	
+	/**
+	 * @return true if this description is preferred in any dialect.
+	 */
+	public boolean isPreferred() {
+		for (Map.Entry<String, Acceptability> entry: acceptabilityMap.entrySet()) {
+			if (entry.getValue().equals(Acceptability.PREFERRED)) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
 	public void setDirty() {
 		dirty = true;
 	}

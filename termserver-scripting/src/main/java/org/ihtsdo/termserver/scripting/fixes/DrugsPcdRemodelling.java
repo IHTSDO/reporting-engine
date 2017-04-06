@@ -190,7 +190,7 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 					//Check the ingredient FSN appears in whole in the product's fsn
 					String ingredient = SnomedUtils.deconstructFSN(r.getTarget().getFsn())[0].toLowerCase();
 					if (!remodelledConcept.getFsn().toLowerCase().contains(ingredient)) {
-						report(task, tsConcept, Severity.MEDIUM, ReportActionType.VALIDATION_ERROR, "New FSN does not contain active ingredient: " + ingredient + ":" + remodelledConcept.getFsn());
+						report(task, tsConcept, Severity.MEDIUM, ReportActionType.VALIDATION_ERROR, "New FSN does not contain active ingredient: " + ingredient + " - " + remodelledConcept.getFsn());
 					}
 				}
 				
@@ -220,7 +220,7 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 		ConceptChange change = (ConceptChange)remodelledConcept;
 		int changesMade = 0;
 		if (!change.getCurrentTerm().equals(tsConcept.getFsn())) {
-			report(task, tsConcept, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "FSN did not meet change file expectations: " + change.getFsn());
+			report(task, tsConcept, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Existing FSN did not meet change input file expectations: " + change.getFsn());
 		} else {
 			//Firstly, inactivate and replace the FSN
 			Description fsn = tsConcept.getDescriptions(Acceptability.PREFERRED, DescriptionType.FSN, ActiveState.ACTIVE).get(0);
@@ -253,12 +253,18 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 				//And remove the description from our change set, so we don't add it again
 				remodelledConcept.getDescriptions().remove(keeping);
 			} else {
-				//Reset the acceptability.   Apparently this isn't accepted by the TS.  Must inactivate instead.
-				//d.setAcceptabilityMap(null);
-				d.inactivateDescription(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
-				changesMade++;
+				//VMP concepts are going to retain their existing preferred terms
+				if (mode != Mode.VMP || !d.isPreferred()) {
+					d.inactivateDescription(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
+					changesMade++;
+				} else {
+					//Existing preferred terms are being set to case-insensitive
+					d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE.toString());
+					changesMade++;
+				}
+				
 				if (isCaseSensitive(d)) {
-					report (task, tsConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Inactivated description was case sensitive");
+					report (task, tsConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Existing description was case sensitive : " + d);
 				}
 			}
 		}
@@ -272,7 +278,7 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 
 	private boolean isCaseSensitive(Description d) {
 		String cs = d.getCaseSignificance();
-		return (cs.equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE) || cs.equals(ONLY_INITIAL_CHAR_CASE_INSENSITIVE_SCTID));
+		return (cs.equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE.toString()) || cs.equals(ONLY_INITIAL_CHAR_CASE_INSENSITIVE_SCTID.toString()));
 	}
 
 	//Return the first description that equals the term
@@ -331,10 +337,10 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 
 	private void addVmpSynonyms(ConceptChange concept, String[] items) {
 		if (!items[5].trim().isEmpty()) {
-			addSynonym(concept, items[4], Acceptability.PREFERRED, GB_DIALECT );
-			addSynonym(concept, items[5], Acceptability.PREFERRED, US_DIALECT );
+			addSynonym(concept, items[4], Acceptability.ACCEPTABLE, GB_DIALECT );
+			addSynonym(concept, items[5], Acceptability.ACCEPTABLE, US_DIALECT );
 		} else {
-			addSynonym(concept, items[4], Acceptability.PREFERRED, ENGLISH_DIALECTS);
+			addSynonym(concept, items[4], Acceptability.ACCEPTABLE, ENGLISH_DIALECTS);
 		}
 	}
 

@@ -118,7 +118,7 @@ public abstract class TermServerScript implements RF2Constants {
 															"https://dev-term.ihtsdotools.org/",
 															"https://uat-authoring.ihtsdotools.org/",
 															"https://uat-flat-termserver.ihtsdotools.org/",
-															"https://authoring.ihtsdotools.org/",
+															"https://prod-authoring.ihtsdotools.org/",
 															"https://dev-ms-authoring.ihtsdotools.org/",
 															"https://uat-ms-authoring.ihtsdotools.org/",
 															"https://prod-ms-authoring.ihtsdotools.org/",
