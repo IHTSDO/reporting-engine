@@ -1,6 +1,8 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,7 +36,7 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 	
 	public static String SCTID_HAS_ACTIVE_INGREDIENT = "127489000";
 	
-	enum Mode { VMPF, VCD }
+	enum Mode { VMPF, VCD, VMP }
 	
 	Mode mode = null;
 	
@@ -63,7 +65,7 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 		}
 	}
 	
-	private void determineProcessingMode(String[] args) throws TermServerScriptException {
+	private void determineProcessingMode(String[] args) throws TermServerScriptException, IOException {
 		String fileName = null;
 		//Work out what file we're trying to load
 		for (int i=0; i < args.length; i++) {
@@ -73,11 +75,21 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 		}
 		
 		if (fileName == null) {
-			mode = Mode.VMPF;
-			println ("Processing PCDF - Description updates only.");
+			//Peek into the file to see how many columns we have
+			BufferedReader br = new BufferedReader(new FileReader(inputFile));
+			int columnCount = br.readLine().split(TAB).length;
+			br.close();
+			if (columnCount == 7) {
+				mode = Mode.VMP;
+			} else if (columnCount == 8) {
+				mode = Mode.VMPF;
+			} else {
+				throw new TermServerScriptException("Input file type not recognised - " + columnCount + " columns");
+			}
+			println ("Processing VMPF - Description updates only.");
 		} else {
 			mode = Mode.VCD;
-			println ("Processing PCD_Prep - Description and relationship updates.");
+			println ("Processing VCD - Description and relationship updates.");
 			loadRelationshipFile(fileName);
 		}
 	}
@@ -301,10 +313,32 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 	protected Concept loadLine(String[] items) throws TermServerScriptException {
 		String sctid = items[1];
 		ConceptChange concept = new ConceptChange(sctid);
-		concept.setConceptType((mode==Mode.VCD)? ConceptType.PCD_PREP : ConceptType.PCDF);
+		setConceptType(concept);
 		concept.setCurrentTerm(items[2]);
 		concept.setFsn(items[3]);
 		//If we have a column 6, then split the preferred terms into US and GB separately
+		if (mode == Mode.VMP) {
+			addVmpSynonyms(concept, items);
+		} else {
+			addSynonyms(concept, items);
+		}
+
+		if (mode == Mode.VCD) {
+			concept.setRelationships(remodelledAttributes.get(sctid));
+		}
+		return concept;
+	}
+
+	private void addVmpSynonyms(ConceptChange concept, String[] items) {
+		if (!items[5].trim().isEmpty()) {
+			addSynonym(concept, items[4], Acceptability.PREFERRED, GB_DIALECT );
+			addSynonym(concept, items[5], Acceptability.PREFERRED, US_DIALECT );
+		} else {
+			addSynonym(concept, items[4], Acceptability.PREFERRED, ENGLISH_DIALECTS);
+		}
+	}
+
+	private void addSynonyms(ConceptChange concept, String[] items) {
 		if (items.length > 6) {
 			addSynonym(concept, items[4], Acceptability.PREFERRED, GB_DIALECT );
 			addSynonym(concept, items[6], Acceptability.PREFERRED, US_DIALECT );
@@ -313,11 +347,17 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 			addSynonym(concept, items[4], Acceptability.PREFERRED, ENGLISH_DIALECTS );
 		}
 		addSynonym(concept, items[5], Acceptability.ACCEPTABLE, ENGLISH_DIALECTS);
+	}
 
-		if (mode == Mode.VCD) {
-			concept.setRelationships(remodelledAttributes.get(sctid));
+	private void setConceptType(ConceptChange concept) {
+		switch (mode) {
+			case VCD : concept.setConceptType(ConceptType.VCD);
+						break;
+			case VMP : concept.setConceptType(ConceptType.VMP);
+						break;
+			case VMPF : concept.setConceptType(ConceptType.VMPF);
+						break;
 		}
-		return concept;
 	}
 
 	private void addSynonym(ConceptChange concept, String term, Acceptability acceptability, String[] dialects) {
