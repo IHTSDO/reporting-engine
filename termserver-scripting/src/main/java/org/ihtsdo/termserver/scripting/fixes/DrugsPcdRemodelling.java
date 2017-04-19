@@ -264,7 +264,7 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 				}
 				
 				if (isCaseSensitive(d)) {
-					report (task, tsConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Existing description was case sensitive : " + d);
+					report (task, tsConcept, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Existing description was case sensitive : " + d);
 				}
 			}
 		}
@@ -337,11 +337,9 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 
 	private void addVmpSynonyms(ConceptChange concept, String[] items) {
 		if (!items[5].trim().isEmpty()) {
-			addSynonym(concept, items[4], Acceptability.ACCEPTABLE, GB_DIALECT );
 			addSynonym(concept, items[5], Acceptability.ACCEPTABLE, US_DIALECT );
-		} else {
-			addSynonym(concept, items[4], Acceptability.ACCEPTABLE, ENGLISH_DIALECTS);
-		}
+		} 
+		addSynonym(concept, items[4], Acceptability.ACCEPTABLE, ENGLISH_DIALECTS);
 	}
 
 	private void addSynonyms(ConceptChange concept, String[] items) {
