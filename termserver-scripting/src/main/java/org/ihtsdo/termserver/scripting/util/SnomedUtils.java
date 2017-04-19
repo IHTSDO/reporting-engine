@@ -91,6 +91,20 @@ public class SnomedUtils implements RF2Constants{
 		
 		throw new TermServerScriptException("Unable to translate Acceptability '" + sctid + "'");
 	}
+	
+	public static String[] translateLangRefset(Description d) throws TermServerScriptException {
+		String[] acceptabilities = new String[] {"N","N"};
+		for (LangRefsetEntry entry : d.getLangRefsetEntries(ActiveState.ACTIVE)) {
+			int idx = entry.getRefsetId().equals(US_ENG_LANG_REFSET)?0:1;
+			switch (getAcceptability(entry.getAcceptabilityId())) {
+				case ACCEPTABLE : acceptabilities[idx] = "A";
+									break;
+				case PREFERRED : acceptabilities[idx] = "P";
+									break;
+			}
+		}
+		return acceptabilities;
+	}
 
 	public static String substitute(String str,
 			Map<String, String> wordSubstitution) {
