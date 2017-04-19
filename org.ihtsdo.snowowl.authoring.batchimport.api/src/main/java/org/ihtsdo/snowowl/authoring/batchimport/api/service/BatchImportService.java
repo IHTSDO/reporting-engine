@@ -216,6 +216,9 @@ public class BatchImportService {
 				if (conceptsLoadedJson.length() > 2) {
 					primeEditPanel(task, run, conceptsLoadedJson, asClient);
 					primeSavedList(task, run, conceptsLoaded.values(), asClient);
+				} else {
+					logger.info("Skipped update of UI-Panel for {}: {}",task.getKey(),conceptsLoadedJson);
+					
 				}
 			}
 		}
