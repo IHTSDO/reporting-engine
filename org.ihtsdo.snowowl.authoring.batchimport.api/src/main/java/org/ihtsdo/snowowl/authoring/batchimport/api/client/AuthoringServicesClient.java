@@ -120,7 +120,7 @@ public class AuthoringServicesClient {
 
 	public void persistTaskPanelState(String projectKey, String taskKey,
 			String user, String panelId, String uiStateStr) throws AuthoringServicesClientException {
-		String endPoint = serverUrl + apiRoot + "projects/" + projectKey + "/tasks/" + taskKey + "/ui-state" + panelId;
+		String endPoint = serverUrl + apiRoot + "projects/" + projectKey + "/tasks/" + taskKey + "/ui-state/" + panelId;
 		try {
 			if (uiStateStr.startsWith("[")) {
 				JSONArray  uiState = new JSONArray(uiStateStr);
@@ -133,6 +133,7 @@ public class AuthoringServicesClient {
 			String errStr = "Failed to save '" + panelId + "' ui state - " + taskKey + ": " + uiStateStr;
 			throw new AuthoringServicesClientException(errStr, e);
 		}
+		logger.info("Saved UI stated to " + endPoint + " for " + user);
 	}
 
 	public void updateTask(AuthoringTask task) throws AuthoringServicesClientException {
