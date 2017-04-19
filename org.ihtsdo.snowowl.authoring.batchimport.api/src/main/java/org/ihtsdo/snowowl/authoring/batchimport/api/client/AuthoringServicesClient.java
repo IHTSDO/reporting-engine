@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import us.monoid.json.JSONArray;
 import us.monoid.json.JSONObject;
 import us.monoid.web.JSONResource;
 import us.monoid.web.Resty;
@@ -121,10 +122,15 @@ public class AuthoringServicesClient {
 			String user, String panelId, String uiStateStr) throws AuthoringServicesClientException {
 		String endPoint = serverUrl + apiRoot + "projects/" + projectKey + "/tasks/" + taskKey + "/ui-state" + panelId;
 		try {
-			JSONObject uiState = new JSONObject(uiStateStr);
-			resty.json(endPoint, Resty.put(RestyHelper.content(uiState, JSON_CONTENT_TYPE)));
+			if (uiStateStr.startsWith("[")) {
+				JSONArray  uiState = new JSONArray(uiStateStr);
+				resty.json(endPoint, Resty.put(RestyHelper.content(uiState, JSON_CONTENT_TYPE)));
+			} else {
+				JSONObject uiState = new JSONObject(uiStateStr);
+				resty.json(endPoint, Resty.put(RestyHelper.content(uiState, JSON_CONTENT_TYPE)));
+			}
 		} catch (Exception e) {
-			String errStr = "Failed to save ui state - " + taskKey;
+			String errStr = "Failed to save '" + panelId + "' ui state - " + taskKey + ": " + uiStateStr;
 			throw new AuthoringServicesClientException(errStr, e);
 		}
 	}
