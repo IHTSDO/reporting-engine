@@ -44,6 +44,7 @@ public class SnowOwlClient {
 	private static final String SNOWOWL_CONTENT_TYPE = "application/json";
 	private final Set<SnowOwlClientEventListener> eventListeners;
 	private Logger logger = LoggerFactory.getLogger(getClass());
+	public static boolean supportsIncludeUnpublished = true;
 
 	public SnowOwlClient(String url, String username, String password) {
 		this.url = url;
@@ -248,6 +249,7 @@ public class SnowOwlClient {
 	public File export(String branchPath, String effectiveDate, ExportType exportType, ExtractType extractType, File saveLocation)
 			throws SnowOwlClientException {
 		JSONObject jsonObj = prepareExportJSON(branchPath, effectiveDate, exportType, extractType);
+		logger.info ("Initiating export with {}",jsonObj.toString());
 		String exportLocationURL = initiateExport(jsonObj);
 		File recoveredArchive = recoverExportedArchive(exportLocationURL, saveLocation);
 		return recoveredArchive;
@@ -265,7 +267,9 @@ public class SnowOwlClient {
 					if (!extractType.equals(ExtractType.SNAPSHOT)) {
 						throw new SnowOwlClientException("Export type " + exportType + " not recognised");
 					}
-					jsonObj.put("includeUnpublished", true);
+					if (supportsIncludeUnpublished) {
+						jsonObj.put("includeUnpublished", true);
+					}
 				case UNPUBLISHED:
 					String tet = (effectiveDate == null) ?YYYYMMDD.format(new Date()) : effectiveDate;
 					jsonObj.put("transientEffectiveTime", tet);

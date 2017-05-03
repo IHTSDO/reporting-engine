@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.client.SnowOwlClient;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.ConceptChange;
@@ -27,11 +28,13 @@ public class GenerateTranslation extends DeltaGenerator {
 		GenerateTranslation delta = new GenerateTranslation();
 		try {
 			delta.useAuthenticatedCookie = true; //ManagedService uses different authentication.  
-			delta.tsRoot="MAIN/2016-07-31/SNOMEDCT-SE/";
+			delta.inputFileHasHeaderRow = true;
+			delta.tsRoot="MAIN/2017-01-31/SNOMEDCT-SE/";
 			delta.edition="SE1000052";
 			delta.languageCode="sv";
 			delta.inputFileDelimiter = TSV_FIELD_DELIMITER;
 			delta.isExtension = true; //Ensures the correct partition identifier is used.
+			SnowOwlClient.supportsIncludeUnpublished = false;   //This code not yet available in MS
 			delta.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			delta.loadProjectSnapshot(false);  //Not just FSN, load all terms with lang refset also
@@ -99,12 +102,6 @@ public class GenerateTranslation extends DeltaGenerator {
 			edition = response;
 		}
 		
-		/*print ("What's the US Langrefset file? [" + usLangRefsetFilePath + "]: ");
-		response = STDIN.nextLine().trim();
-		if (!response.isEmpty()) {
-			usLangRefsetFilePath = response;
-		}*/
-		
 		if (moduleId.isEmpty() || langRefsetId.isEmpty()) {
 			String msg = "Require both moduleId and langRefset Id to be specified (-m -l parameters)";
 			throw new TermServerScriptException(msg);
@@ -144,10 +141,11 @@ public class GenerateTranslation extends DeltaGenerator {
 		}
 		
 		//Check that the current preferred term matches what the translation file thinks it is.
-		Description usPrefTerm = getUsPrefTerm(currentState);
+		//We're no longer receiving the current US term
+		/*Description usPrefTerm = getUsPrefTerm(currentState);
 		if (!usPrefTerm.getTerm().equals(newState.getCurrentTerm())) {
 			report (currentState, usPrefTerm, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Current term is not what was translated: " + newState.getCurrentTerm());
-		}
+		}*/
 		
 		//Do we already have this term?  Just add the langrefset entry if so.
 		/*if (currentState.hasTerm(newState.getNewPreferredTerm())) {
@@ -172,7 +170,7 @@ public class GenerateTranslation extends DeltaGenerator {
 		outputRF2(d);
 	}
 
-	private void promoteTerm(Description d) {
+	/*private void promoteTerm(Description d) {
 		//Do we already have a langrefset entry for this dialect?
 		boolean langRefSetEntryCorrect = false;
 		for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.ACTIVE)) {
@@ -187,7 +185,7 @@ public class GenerateTranslation extends DeltaGenerator {
 		if (!langRefSetEntryCorrect) {
 			addLangRefsetEntry(d);
 		}
-	}
+	}*/
 
 	private Description createTranslatedDescription(ConceptChange newState) throws TermServerScriptException {
 		Description d = new Description();
@@ -219,24 +217,25 @@ public class GenerateTranslation extends DeltaGenerator {
 		d.getLangRefsetEntries().add(l);
 	}
 
-	private Description getUsPrefTerm(Concept currentState) throws TermServerScriptException {
+/*	private Description getUsPrefTerm(Concept currentState) throws TermServerScriptException {
 		List<Description> terms = currentState.getDescriptions(US_ENG_LANG_REFSET, Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE);
 		if (terms.size() != 1) {
 			throw new TermServerScriptException("Expected to find 1 x US preferred term, found " + terms.size());
 		}
 		return terms.get(0);
-	}
+	}*/
 
 	@Override
-	//SE File format: Concept_Id	English	Case_Significant	Fully_Specified_Name	Swedish	Case_Significant
+	//SE File format: Concept_Id	Swedish_Term	Case_Significance
 	protected Concept loadLine(String[] lineItems)
 			throws TermServerScriptException {
-		if (lineItems.length > 3) {
+		if (lineItems.length == 3) {
 			ConceptChange c = new ConceptChange(lineItems[0]);
-			c.setCurrentTerm(lineItems[1]);
-			c.setNewTerm(lineItems[4]);
-			String caseSignificanceSctId = SnomedUtils.translateCaseSignificanceToSctId(lineItems[5]);
-			c.setCaseSignificanceSctId(caseSignificanceSctId);
+			//c.setCurrentTerm(lineItems[1]);
+			c.setNewTerm(lineItems[1]);
+			//String caseSignificanceSctId = SnomedUtils.translateCaseSignificanceToSctId(lineItems[5]);
+			//c.setCaseSignificanceSctId(caseSignificanceSctId);
+			c.setCaseSignificanceSctId(lineItems[2]);
 			return c;
 		}
 		return null;

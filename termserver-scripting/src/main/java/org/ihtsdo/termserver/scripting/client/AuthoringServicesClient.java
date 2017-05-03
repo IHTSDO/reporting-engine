@@ -9,8 +9,8 @@ import us.monoid.web.Resty;
 public class AuthoringServicesClient {
 	private final Resty resty;
 	private final String serverUrl;
-	private static final String apiRoot = "snowowl/ihtsdo-sca/";
-	//private static final String apiRoot = "authoring-services/";
+	//private static final String apiRoot = "snowowl/ihtsdo-sca/";
+	private static final String apiRoot = "authoring-services/";
 	private static final String ALL_CONTENT_TYPE = "*/*";
 	private static final String JSON_CONTENT_TYPE = "application/json";
 
