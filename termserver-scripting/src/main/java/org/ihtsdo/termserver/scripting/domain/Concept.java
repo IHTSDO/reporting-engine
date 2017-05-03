@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting.domain;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -15,7 +16,7 @@ import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
 @Generated("org.jsonschema2pojo")
-public class Concept implements RF2Constants {
+public class Concept implements RF2Constants, Comparable<Concept> {
 
 	@SerializedName("effectiveTime")
 	@Expose
@@ -468,6 +469,11 @@ public class Concept implements RF2Constants {
 		if (this.depth == NOT_SET || depth < this.depth) {
 			this.depth = depth;
 		}
+	}
+
+	@Override
+	public int compareTo(Concept c) {
+		return getConceptId().compareTo(c.getConceptId());
 	}
 
 }
