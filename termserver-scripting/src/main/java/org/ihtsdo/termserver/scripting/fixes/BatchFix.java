@@ -78,6 +78,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	protected void batchProcess(Batch batch) throws TermServerScriptException {
 		int failureCount = 0;
 		int tasksCreated = 0;
+		int tasksSkipped = 0;
 		boolean isFirst = true;
 			for (Task task : batch.getTasks()) {
 				try {
@@ -86,6 +87,11 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 					//If we don't have any concepts in this task eg this is 100% ME file, then skip
 					if (task.size() == 0) {
 						println ("Skipping Task " + task.getDescription() + " - no concepts to process");
+						continue;
+					} else if (selfDetermining && restartPosition > 1 && (tasksSkipped + 1) < restartPosition) {
+						//For self determining projects we'll restart based on a task count, rather than the line number in the input file
+						tasksSkipped++;
+						println ("Skipping Task " + task.getDescription() + " - restarting from task " + restartPosition);
 						continue;
 					} else if (task.size() > (taskSize + wiggleRoom)) {
 						warn (task + " contains " + task.size() + " concepts");
@@ -224,7 +230,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 
 	protected void init (String[] args) throws TermServerScriptException, IOException {
 		if (args.length < 3) {
-			println("Usage: java <FixClass> [-a author] [-n <taskSize>] [-r <restart lineNum>] [-l <limit> ] [-t taskCreationDelay] -c <authenticatedCookie> [-d <Y/N>] [-p <projectName>] -f <batch file Location>");
+			println("Usage: java <FixClass> [-a author] [-n <taskSize>] [-r <restart position>] [-l <limit> ] [-t taskCreationDelay] -c <authenticatedCookie> [-d <Y/N>] [-p <projectName>] -f <batch file Location>");
 			println(" d - dry run");
 			System.exit(-1);
 		}
