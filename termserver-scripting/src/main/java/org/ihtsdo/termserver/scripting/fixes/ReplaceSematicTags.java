@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.exception.ExceptionUtils;
@@ -23,6 +24,7 @@ import us.monoid.json.JSONObject;
 /*
 Find matching semantic tags and swap for specified replacement
 Currently verifies that the existing FSN is new and unpublished
+-- Also adding in a cheeky fix while we're going through concepts to make GB only preferred terms acceptable in US dialect.
  */
 public class ReplaceSematicTags extends BatchFix implements RF2Constants{
 	
@@ -64,6 +66,7 @@ public class ReplaceSematicTags extends BatchFix implements RF2Constants{
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
 		int changesMade = replaceSemanticTag(task, loadedConcept);
 		if (changesMade > 0) {
+			checkGBPreferredTerms(task, loadedConcept);
 			try {
 				String conceptSerialised = gson.toJson(loadedConcept);
 				debug ("Updating state of " + loadedConcept + info);
@@ -75,6 +78,25 @@ public class ReplaceSematicTags extends BatchFix implements RF2Constants{
 			}
 		}
 		return changesMade;
+	}
+
+	private void checkGBPreferredTerms(Task task, Concept loadedConcept) throws TermServerScriptException {
+		//If we have two preferred terms, then make the GB Pref Term also acceptable in US Dialect
+		List<Description> prefTerms = loadedConcept.getDescriptions(Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE);
+		if (prefTerms.size() == 2) {
+			for (Description d : prefTerms) {
+				Map<String, Acceptability> acceptabilityMap = d.getAcceptabilityMap();
+				if (acceptabilityMap.containsKey(GB_ENG_LANG_REFSET)) {
+					//If this is the GB Preferred Term, add the US Dialect as Acceptable
+					if (acceptabilityMap.size() == 1) {
+						acceptabilityMap.put(US_ENG_LANG_REFSET, Acceptability.ACCEPTABLE);
+						report(task, loadedConcept, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "GB Preferred term made acceptable in en-US");
+					} else {
+						report(task, loadedConcept, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Unable to update acceptability, existing entry count: " + acceptabilityMap.size());
+					}
+				}
+			}
+		}
 	}
 
 	private int replaceSemanticTag(Task task, Concept concept) throws TermServerScriptException {
@@ -136,7 +158,16 @@ public class ReplaceSematicTags extends BatchFix implements RF2Constants{
 	}
 
 	private Set<Concept> identifyConceptsToProcess() throws TermServerScriptException {
-		return GraphLoader.getGraphLoader().getConcept(subHierarchyStr).getDescendents(NOT_SET);
+		Set<Concept> allPotential = GraphLoader.getGraphLoader().getConcept(subHierarchyStr).getDescendents(NOT_SET);
+		Set<Concept> allAffected = new TreeSet<Concept>();  //We want to process in the same order each time, in case we restart and skip some.
+		for (Concept thisConcept : allPotential) {
+			for (String replaceTag : replacementMap.keySet()) {
+				if (thisConcept.getFSNDescription().getTerm().contains(replaceTag)) {
+					allAffected.add(thisConcept);
+				}
+			}
+		}
+		return allAffected;
 	}
 
 	private void setAuthorReviewer(Task task, String[] author_reviewer) {
