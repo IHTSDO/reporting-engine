@@ -152,7 +152,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected void init(String[] args) throws TermServerScriptException, IOException {
 		
 		if (args.length < 3) {
-			println("Usage: java <TSScriptClass> [-a author] [-b <batchSize>] [-r <restart lineNum>] [-c <authenticatedCookie>] [-d <Y/N>] [-p <projectName>] -f <batch file Location>");
+			println("Usage: java <TSScriptClass> [-a author] [-b <batchSize>] [-r <restart position>] [-c <authenticatedCookie>] [-d <Y/N>] [-p <projectName>] -f <batch file Location>");
 			println(" d - dry run");
 			System.exit(-1);
 		}
@@ -245,7 +245,7 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 		
 		if (restartPosition != NOT_SET) {
-			print ("Restarting from line [" +restartPosition + "]: ");
+			print ("Restarting from position [" +restartPosition + "]: ");
 			response = STDIN.nextLine().trim();
 			if (!response.isEmpty()) {
 				restartPosition = Integer.parseInt(response);
