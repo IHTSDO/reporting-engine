@@ -338,12 +338,15 @@ public class Concept implements RF2Constants, Comparable<Concept> {
 	public List<Description> getDescriptions(Acceptability acceptability, DescriptionType descriptionType, ActiveState activeState) throws TermServerScriptException {
 		List<Description> matchingDescriptions = new ArrayList<Description>();
 		for (Description thisDescription : getDescriptions(activeState)) {
-			if (	( thisDescription.getAcceptabilityMap() != null && thisDescription.getAcceptabilityMap().containsValue(acceptability)) &&
+			if (	( thisDescription.getAcceptabilityMap() != null && 
+						( acceptability.equals(Acceptability.BOTH) || thisDescription.getAcceptabilityMap().containsValue(acceptability) )) &&
 					( descriptionType == null || thisDescription.getType().equals(descriptionType) )
 				) {
-				//A preferred description can be preferred in either dialect, but if we're looking for an acceptable one, 
-				//then it must not also be preferred in the other dialect
-				if (acceptability.equals(Acceptability.PREFERRED) || !thisDescription.getAcceptabilityMap().containsValue(Acceptability.PREFERRED)) {
+				if (acceptability.equals(Acceptability.BOTH)) {
+					matchingDescriptions.add(thisDescription);
+				} else if (acceptability.equals(Acceptability.PREFERRED) || !thisDescription.getAcceptabilityMap().containsValue(Acceptability.PREFERRED)) {
+					//A preferred description can be preferred in either dialect, but if we're looking for an acceptable one, 
+					//then it must not also be preferred in the other dialect
 					matchingDescriptions.add(thisDescription);
 				}
 			} else {

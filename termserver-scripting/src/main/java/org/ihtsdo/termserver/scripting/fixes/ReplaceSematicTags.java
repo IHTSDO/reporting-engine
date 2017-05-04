@@ -44,6 +44,7 @@ public class ReplaceSematicTags extends BatchFix implements RF2Constants{
 		ReplaceSematicTags fix = new ReplaceSematicTags(null);
 		try {
 			fix.selfDetermining = true;
+			fix.populateEditPanel = false;
 			fix.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			fix.loadProjectSnapshot(false); //Load all descriptions
@@ -66,7 +67,7 @@ public class ReplaceSematicTags extends BatchFix implements RF2Constants{
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
 		int changesMade = replaceSemanticTag(task, loadedConcept);
 		if (changesMade > 0) {
-			checkGBPreferredTerms(task, loadedConcept);
+			checkAllDescriptionsAcceptable(task, loadedConcept);
 			try {
 				String conceptSerialised = gson.toJson(loadedConcept);
 				debug ("Updating state of " + loadedConcept + info);
@@ -80,21 +81,17 @@ public class ReplaceSematicTags extends BatchFix implements RF2Constants{
 		return changesMade;
 	}
 
-	private void checkGBPreferredTerms(Task task, Concept loadedConcept) throws TermServerScriptException {
+	private void checkAllDescriptionsAcceptable(Task task, Concept loadedConcept) throws TermServerScriptException {
 		//If we have two preferred terms, then make the GB Pref Term also acceptable in US Dialect
-		List<Description> prefTerms = loadedConcept.getDescriptions(Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE);
-		if (prefTerms.size() == 2) {
-			for (Description d : prefTerms) {
-				Map<String, Acceptability> acceptabilityMap = d.getAcceptabilityMap();
-				if (acceptabilityMap.containsKey(GB_ENG_LANG_REFSET)) {
-					//If this is the GB Preferred Term, add the US Dialect as Acceptable
-					if (acceptabilityMap.size() == 1) {
-						acceptabilityMap.put(US_ENG_LANG_REFSET, Acceptability.ACCEPTABLE);
-						report(task, loadedConcept, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "GB Preferred term made acceptable in en-US");
-					} else {
-						report(task, loadedConcept, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Unable to update acceptability, existing entry count: " + acceptabilityMap.size());
-					}
-				}
+		List<Description> synonyms = loadedConcept.getDescriptions(Acceptability.BOTH, DescriptionType.SYNONYM, ActiveState.ACTIVE);
+		for (Description d : synonyms) {
+			Map<String, Acceptability> acceptabilityMap = d.getAcceptabilityMap();
+			if (acceptabilityMap.size() == 1) {
+				//If we only have one acceptability for this term, add the other one.
+				String missing = acceptabilityMap.containsKey(GB_ENG_LANG_REFSET)?US_ENG_LANG_REFSET:GB_ENG_LANG_REFSET;
+				acceptabilityMap.put(missing, Acceptability.ACCEPTABLE);
+				String msg = "Added " + (missing.equals(GB_ENG_LANG_REFSET) ? "GB":"US") + " acceptability";
+				report(task, loadedConcept, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, msg);
 			}
 		}
 	}

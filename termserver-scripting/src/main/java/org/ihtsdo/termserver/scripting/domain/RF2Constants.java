@@ -97,7 +97,7 @@ public interface RF2Constants {
 	
 	public enum ActiveState { ACTIVE, INACTIVE, BOTH };
 	
-	public enum Acceptability { ACCEPTABLE, PREFERRED };
+	public enum Acceptability { ACCEPTABLE, PREFERRED, BOTH };
 	
 	public enum CaseSignificance { ENTIRE_TERM_CASE_SENSITIVE, CASE_INSENSITIVE ,ONLY_INITIAL_CHAR_CASE_INSENSITIVE };
 	
