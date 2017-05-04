@@ -354,12 +354,12 @@ public class SnowOwlClient {
 		}
 	}
 
-	public JSONResource updateRefsetMember(JSONObject langRefsetToUpdate, String branch, boolean toForce) throws SnowOwlClientException {
+	public JSONResource updateRefsetMember(JSONObject refsetUpdate, String branch, boolean toForce) throws SnowOwlClientException {
 		try {
-			final String id = langRefsetToUpdate.getString("id");
+			final String id = refsetUpdate.getString("id");
 			Preconditions.checkNotNull(id);
 			logger.info("Updating refset member " + id);
-			return resty.json(getRefsetMemberUpdateUrl(id, branch, toForce), Resty.put(RestyHelper.content(langRefsetToUpdate, SNOWOWL_CONTENT_TYPE)));
+			return resty.json(getRefsetMemberUpdateUrl(id, branch, toForce), Resty.put(RestyHelper.content(refsetUpdate, SNOWOWL_CONTENT_TYPE)));
 		} catch (Exception e) {
 			throw new SnowOwlClientException(e);
 		}

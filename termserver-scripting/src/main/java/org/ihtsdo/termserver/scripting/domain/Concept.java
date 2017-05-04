@@ -60,6 +60,7 @@ public class Concept implements RF2Constants, Comparable<Concept> {
 	boolean isModified = false; //indicates if has been modified in current processing run
 	private int depth;
 	private List<Description> activeDescriptions = null;  //Cache in case we recover active descriptions frequently
+	List<InactivationIndicatorEntry> inactivationIndicatorEntries;
 	
 	public String getReviewer() {
 		return reviewer;
@@ -492,6 +493,33 @@ public class Concept implements RF2Constants, Comparable<Concept> {
 	@Override
 	public int compareTo(Concept c) {
 		return getConceptId().compareTo(c.getConceptId());
+	}
+
+	public List<InactivationIndicatorEntry> getInactivationIndicatorEntries() {
+		if (inactivationIndicatorEntries == null) {
+			inactivationIndicatorEntries = new ArrayList<InactivationIndicatorEntry>();
+		}
+		return inactivationIndicatorEntries;
+	}
+	
+	public List<InactivationIndicatorEntry> getInactivationIndicatorEntries(ActiveState activeState) {
+		if (activeState.equals(ActiveState.BOTH)) {
+			return getInactivationIndicatorEntries();
+		} else {
+			boolean isActive = activeState.equals(ActiveState.ACTIVE);
+			List<InactivationIndicatorEntry> selectedInactivationIndicatortEntries = new ArrayList<InactivationIndicatorEntry>();
+			for (InactivationIndicatorEntry i : getInactivationIndicatorEntries()) {
+				if (i.isActive() == isActive) {
+					selectedInactivationIndicatortEntries.add(i);
+				}
+			}
+			return selectedInactivationIndicatortEntries;
+		}
+	}
+
+	public void setInactivationIndicatorEntries(
+			List<InactivationIndicatorEntry> inactivationIndicatorEntries) {
+		this.inactivationIndicatorEntries = inactivationIndicatorEntries;
 	}
 
 }
