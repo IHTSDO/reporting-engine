@@ -17,6 +17,8 @@ public interface RF2Constants {
 	static String ACETAMINOPHEN = "acetaminophen";
 	static String PARACETAMOL = "paracetamol";
 	
+	static String SCTID_CORE_MODULE = "900000000000207008";
+	
 	//ECL Constants
 	static String DESCENDANT = "<";
 	static String DESCENDANT_OR_SELF = "<<";

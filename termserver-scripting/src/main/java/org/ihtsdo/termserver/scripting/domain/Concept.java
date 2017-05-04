@@ -1,7 +1,6 @@
 package org.ihtsdo.termserver.scripting.domain;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -60,6 +59,7 @@ public class Concept implements RF2Constants, Comparable<Concept> {
 	private String reviewer;
 	boolean isModified = false; //indicates if has been modified in current processing run
 	private int depth;
+	private List<Description> activeDescriptions = null;  //Cache in case we recover active descriptions frequently
 	
 	public String getReviewer() {
 		return reviewer;
@@ -335,15 +335,15 @@ public class Concept implements RF2Constants, Comparable<Concept> {
 		return null;
 	}
 
-	public List<Description> getDescriptions(Acceptability Acceptability, DescriptionType descriptionType, ActiveState activeState) throws TermServerScriptException {
+	public List<Description> getDescriptions(Acceptability acceptability, DescriptionType descriptionType, ActiveState activeState) throws TermServerScriptException {
 		List<Description> matchingDescriptions = new ArrayList<Description>();
 		for (Description thisDescription : getDescriptions(activeState)) {
-			if (	( thisDescription.getAcceptabilityMap() != null && thisDescription.getAcceptabilityMap().containsValue(Acceptability)) &&
+			if (	( thisDescription.getAcceptabilityMap() != null && thisDescription.getAcceptabilityMap().containsValue(acceptability)) &&
 					( descriptionType == null || thisDescription.getType().equals(descriptionType) )
 				) {
 				//A preferred description can be preferred in either dialect, but if we're looking for an acceptable one, 
 				//then it must not also be preferred in the other dialect
-				if (Acceptability.equals(Acceptability.PREFERRED) || !thisDescription.getAcceptabilityMap().containsValue(Acceptability.PREFERRED)) {
+				if (acceptability.equals(Acceptability.PREFERRED) || !thisDescription.getAcceptabilityMap().containsValue(Acceptability.PREFERRED)) {
 					matchingDescriptions.add(thisDescription);
 				}
 			} else {
@@ -369,6 +369,14 @@ public class Concept implements RF2Constants, Comparable<Concept> {
 	}
 	
 	public List<Description> getDescriptions(ActiveState a) {
+		if (a.equals(ActiveState.ACTIVE)) {
+			return getActiveDescriptions();
+		} else {
+			return getDescriptionsUncached(a);
+		}
+	}
+	
+	private List<Description> getDescriptionsUncached(ActiveState a) {
 		List<Description> results = new ArrayList<Description>();
 		for (Description d : descriptions) {
 			if (SnomedUtils.descriptionHasActiveState(d, a)) {
@@ -376,6 +384,13 @@ public class Concept implements RF2Constants, Comparable<Concept> {
 			}
 		}
 		return results;
+	}
+	
+	private List<Description> getActiveDescriptions() {
+		if (activeDescriptions == null) {
+			activeDescriptions = getDescriptionsUncached(ActiveState.ACTIVE);
+		}
+		return activeDescriptions;
 	}
 
 	public void addDescription(Description description) {

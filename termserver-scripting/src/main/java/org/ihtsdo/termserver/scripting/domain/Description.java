@@ -16,6 +16,8 @@ import com.google.gson.annotations.SerializedName;
 
 @Generated("org.jsonschema2pojo")
 public class Description implements RF2Constants{
+	
+	public static boolean padTerm = false; //Pads terms front and back with spaces to assist whole word matching.
 
 	@SerializedName("effectiveTime")
 	@Expose
@@ -80,7 +82,11 @@ public class Description implements RF2Constants{
 		this.conceptId = conceptId;
 		this.type = type;
 		this.lang = lang;
-		this.term = term;
+		if (padTerm) {
+			this.term = " " + term + " ";
+		} else {
+			this.term = term;
+		}
 		this.caseSignificance = caseSignificance;
 		this.acceptabilityMap = AcceptabilityMap;
 	}
@@ -168,7 +174,12 @@ public class Description implements RF2Constants{
 		if (this.term != null && !this.term.equalsIgnoreCase(term)) {
 			dirty = true;
 		}
-		this.term = term;
+		
+		if (padTerm) {
+			this.term = " " + term + " ";
+		} else {
+			this.term = term;
+		}
 	}
 
 	public String getCaseSignificance() {

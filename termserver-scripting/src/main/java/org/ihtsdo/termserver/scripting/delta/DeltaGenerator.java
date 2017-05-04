@@ -33,6 +33,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 	
 	protected String languageCode = "en";
 	protected boolean isExtension = false;
+	protected boolean newIdsRequired = true;
 	
 	String[] conHeader = new String[] {"id","effectiveTime","active","moduleId","definitionStatusId"};
 	String[] descHeader = new String[] {"id","effectiveTime","active","moduleId","conceptId","languageCode","typeId","term","caseSignificanceId"};
@@ -65,7 +66,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 				idGenerator = IdGenerator.initiateIdGenerator(args[++x]);
 			}
 		}
-		if (idGenerator == null) {
+		if (newIdsRequired && idGenerator == null) {
 			throw new TermServerScriptException("Command line arguments must supply a list of available sctid using the -i option");
 		}
 		initialiseReportFile("Concept,DescSctId,Term,Severity,Action,Detail");
