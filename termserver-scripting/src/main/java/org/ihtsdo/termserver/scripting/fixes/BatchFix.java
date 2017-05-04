@@ -48,6 +48,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	protected String targetAuthor;
 	String[] emailDetails;
 	protected boolean selfDetermining = false; //Set to true if the batch fix calculates its own data to process
+	protected boolean populateEditPanel = true;
 
 	protected BatchFix (BatchFix clone) {
 		if (clone != null) {
@@ -160,7 +161,9 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 					if (!dryRun) {
 						//Prefill the Edit Panel
 						try {
-							scaClient.setEditPanelUIState(project, taskKey, task.toQuotedList());
+							if (populateEditPanel) {
+								scaClient.setEditPanelUIState(project, taskKey, task.toQuotedList());
+							}
 							scaClient.setSavedListUIState(project, taskKey, convertToSavedListJson(task));
 						} catch (Exception e) {
 							String msg = "Failed to preload edit-panel ui state: " + e.getMessage();
