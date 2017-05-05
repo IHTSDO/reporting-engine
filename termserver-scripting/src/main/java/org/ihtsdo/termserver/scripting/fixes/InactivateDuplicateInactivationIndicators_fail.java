@@ -23,17 +23,19 @@ import us.monoid.json.JSONObject;
 /*
 Checks that all inactive concepts have no more than one active inactivation indicator, and attempts to 
 inactivate the surplus.
+* NB This fix fails because the Refset Endpoint only works for Simple Refsets.
+* Reworking this code to generate an RF2 Delta archive for import.
  */
-public class InactivateDuplicateInactivationIndicators extends BatchFix implements RF2Constants{
+public class InactivateDuplicateInactivationIndicators_fail extends BatchFix implements RF2Constants{
 	
 	String[] author_reviewer = new String[] {targetAuthor};
 
-	protected InactivateDuplicateInactivationIndicators(BatchFix clone) {
+	protected InactivateDuplicateInactivationIndicators_fail(BatchFix clone) {
 		super(clone);
 	}
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
-		InactivateDuplicateInactivationIndicators fix = new InactivateDuplicateInactivationIndicators(null);
+		InactivateDuplicateInactivationIndicators_fail fix = new InactivateDuplicateInactivationIndicators_fail(null);
 		try {
 			fix.selfDetermining = true;
 			fix.populateEditPanel = false;

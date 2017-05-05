@@ -10,6 +10,7 @@ import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
+import org.ihtsdo.termserver.scripting.domain.InactivationIndicatorEntry;
 import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 
@@ -21,6 +22,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 	String packageDir;
 	String conDeltaFilename;
 	String relDeltaFilename;
+	String attribValDeltaFilename;
 	String sRelDeltaFilename;
 	String descDeltaFilename;
 	String langDeltaFilename;
@@ -34,6 +36,8 @@ public abstract class DeltaGenerator extends TermServerScript {
 	String[] descHeader = new String[] {"id","effectiveTime","active","moduleId","conceptId","languageCode","typeId","term","caseSignificanceId"};
 	String[] relHeader = new String[] {"id","effectiveTime","active","moduleId","sourceId","destinationId","relationshipGroup","typeId","characteristicTypeId","modifierId"};
 	String[] langHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","acceptabilityId"};
+	String[] attribValHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","valueId"};
+	
 	IdGenerator idGenerator;
 	
 	protected void report(Concept concept, Description d, Severity severity, ReportActionType actionType, String actionDetail) {
@@ -51,6 +55,10 @@ public abstract class DeltaGenerator extends TermServerScript {
 				actionType.toString() + QUOTE_COMMA_QUOTE +
 				actionDetail + QUOTE;
 		writeToFile(line);
+	}
+	
+	protected void report(Concept concept, Severity severity, ReportActionType actionType, String actionDetail) {
+		report (concept, concept.getFSNDescription(), severity, actionType, actionDetail);
 	}
 	
 	protected void init (String[] args) throws IOException, TermServerScriptException {
@@ -96,6 +104,9 @@ public abstract class DeltaGenerator extends TermServerScript {
 		
 		langDeltaFilename = refDir + "Language/der2_cRefset_LanguageDelta-"+languageCode+"_"+edition+"_" + today + ".txt";
 		writeToRF2File(langDeltaFilename, langHeader);
+		
+		attribValDeltaFilename = refDir + "Content/der2_cRefset_AttributeValueDelta_"+edition+"_" + today + ".txt";
+		writeToRF2File(attribValDeltaFilename, attribValHeader);
 	}
 
 	protected void outputRF2(Description d) throws TermServerScriptException {
@@ -120,6 +131,13 @@ public abstract class DeltaGenerator extends TermServerScript {
 		}
 	}
 	
+	protected void outputRF2(InactivationIndicatorEntry i) throws TermServerScriptException {
+		if (i.isDirty()) {
+			writeToRF2File(attribValDeltaFilename, i.toRF2());
+		}
+	}
+
+	
 	protected void outputRF2(Concept c) throws TermServerScriptException {
 		/*if (c.isDirty()) {
 			writeToRF2File(conDeltaFilenam, c.toRF2());
@@ -131,6 +149,10 @@ public abstract class DeltaGenerator extends TermServerScript {
 		
 		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH)) {
 			outputRF2(r);
+		}
+		
+		for (InactivationIndicatorEntry i: c.getInactivationIndicatorEntries()) {
+			outputRF2(i);
 		}
 	}
 
