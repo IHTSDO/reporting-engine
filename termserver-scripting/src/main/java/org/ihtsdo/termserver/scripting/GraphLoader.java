@@ -83,10 +83,7 @@ public class GraphLoader implements RF2Constants {
 			source.addParent(r.getCharacteristicType(),destination);
 			destination.addChild(r.getCharacteristicType(),source);
 		} 
-		//Only store actual attributes.  Parents/Children and counted separately
-		if (!type.equals(IS_A)) {
-			source.addRelationship(r);
-		}
+		source.addRelationship(r);
 		return source;
 	}
 

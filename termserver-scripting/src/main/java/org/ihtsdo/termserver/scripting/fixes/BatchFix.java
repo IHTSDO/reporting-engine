@@ -130,7 +130,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 						branchPath = tsRoot + project + "/" + taskKey;
 					}
 					tasksCreated++;
-					String xOfY =  tasksCreated + " of " + batch.getTasks().size();
+					String xOfY =  (tasksCreated+tasksSkipped) + " of " + batch.getTasks().size();
 					println ( (dryRun?"Dry Run " : "Created ") + "task (" + xOfY + "): " + branchPath);
 					task.setTaskKey(taskKey);
 					task.setBranchPath(branchPath);
