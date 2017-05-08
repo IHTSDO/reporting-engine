@@ -311,8 +311,6 @@ public class SnowOwlClient {
 	private File recoverExportedArchive(String exportLocationURL, File saveLocation) throws SnowOwlClientException {
 		try {
 			logger.info("Recovering exported archive from {}", exportLocationURL);
-			logger.info("Sleeping 20 seconds first.");
-			Thread.sleep(20 * 1000);
 			resty.withHeader("Accept", ALL_CONTENT_TYPE);
 			BinaryResource archiveResource = resty.bytes(exportLocationURL);
 			if (saveLocation == null) {
@@ -321,7 +319,7 @@ public class SnowOwlClient {
 			archiveResource.save(saveLocation);
 			logger.debug("Extract saved to {}", saveLocation.getAbsolutePath());
 			return saveLocation;
-		} catch (IOException|InterruptedException e) {
+		} catch (IOException e) {
 			throw new SnowOwlClientException("Unable to recover exported archive from " + exportLocationURL, e);
 		}
 	}
@@ -356,12 +354,12 @@ public class SnowOwlClient {
 		}
 	}
 
-	public JSONResource updateRefsetMember(JSONObject langRefsetToUpdate, String branch, boolean toForce) throws SnowOwlClientException {
+	public JSONResource updateRefsetMember(JSONObject refsetUpdate, String branch, boolean toForce) throws SnowOwlClientException {
 		try {
-			final String id = langRefsetToUpdate.getString("id");
+			final String id = refsetUpdate.getString("id");
 			Preconditions.checkNotNull(id);
 			logger.info("Updating refset member " + id);
-			return resty.json(getRefsetMemberUpdateUrl(id, branch, toForce), Resty.put(RestyHelper.content(langRefsetToUpdate, SNOWOWL_CONTENT_TYPE)));
+			return resty.json(getRefsetMemberUpdateUrl(id, branch, toForce), Resty.put(RestyHelper.content(refsetUpdate, SNOWOWL_CONTENT_TYPE)));
 		} catch (Exception e) {
 			throw new SnowOwlClientException(e);
 		}

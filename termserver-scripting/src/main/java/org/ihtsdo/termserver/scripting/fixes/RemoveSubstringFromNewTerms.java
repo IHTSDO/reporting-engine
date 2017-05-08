@@ -17,31 +17,25 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Task;
-import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import us.monoid.json.JSONObject;
 
 /*
-Find matching semantic tags and swap for specified replacement
-Currently verifies that the existing FSN is new and unpublished
--- Also adding in a cheeky fix while we're going through concepts to make GB only preferred terms acceptable in US dialect.
+ * Removes a substring from all active Terms, where matched in context for a given subHierarchy
  */
-public class ReplaceSematicTags extends BatchFix implements RF2Constants{
+public class RemoveSubstringFromNewTerms extends BatchFix implements RF2Constants{
 	
 	String[] author_reviewer = new String[] {targetAuthor};
 	String subHierarchyStr = "373873005"; // |Pharmaceutical / biologic product (product)|
 	static Map<String, String> replacementMap = new HashMap<String, String>();
-	static {
-		replacementMap.put("(virtual medicinal product form)","(medicinal product form)");
-		replacementMap.put("(virtual medicinal product)","(medicinal product)");
-		replacementMap.put("(virtual clinical drug)","(clinical drug)");
-	}
-	protected ReplaceSematicTags(BatchFix clone) {
+	static final String match = "mg/1 each oral tablet";
+	static final String remove = "/1 each";
+	protected RemoveSubstringFromNewTerms(BatchFix clone) {
 		super(clone);
 	}
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
-		ReplaceSematicTags fix = new ReplaceSematicTags(null);
+		RemoveSubstringFromNewTerms fix = new RemoveSubstringFromNewTerms(null);
 		try {
 			fix.selfDetermining = true;
 			fix.populateEditPanel = false;
@@ -65,9 +59,8 @@ public class ReplaceSematicTags extends BatchFix implements RF2Constants{
 	@Override
 	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
-		int changesMade = replaceSemanticTag(task, loadedConcept);
+		int changesMade = removeWordsFromTerms(task, loadedConcept);
 		if (changesMade > 0) {
-			checkAllDescriptionsAcceptable(task, loadedConcept);
 			try {
 				String conceptSerialised = gson.toJson(loadedConcept);
 				debug ("Updating state of " + loadedConcept + info);
@@ -81,47 +74,23 @@ public class ReplaceSematicTags extends BatchFix implements RF2Constants{
 		return changesMade;
 	}
 
-	private void checkAllDescriptionsAcceptable(Task task, Concept loadedConcept) throws TermServerScriptException {
-		//If we have two preferred terms, then make the GB Pref Term also acceptable in US Dialect
-		List<Description> synonyms = loadedConcept.getDescriptions(Acceptability.BOTH, DescriptionType.SYNONYM, ActiveState.ACTIVE);
-		for (Description d : synonyms) {
-			Map<String, Acceptability> acceptabilityMap = d.getAcceptabilityMap();
-			if (acceptabilityMap.size() == 1) {
-				//If we only have one acceptability for this term, add the other one.
-				String missing = acceptabilityMap.containsKey(GB_ENG_LANG_REFSET)?US_ENG_LANG_REFSET:GB_ENG_LANG_REFSET;
-				acceptabilityMap.put(missing, Acceptability.ACCEPTABLE);
-				String msg = "Added " + (missing.equals(GB_ENG_LANG_REFSET) ? "GB":"US") + " acceptability";
-				report(task, loadedConcept, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, msg);
-			}
-		}
-	}
 
-	private int replaceSemanticTag(Task task, Concept concept) throws TermServerScriptException {
+	private int removeWordsFromTerms(Task task, Concept concept) throws TermServerScriptException {
 		int changesMade = 0;
-		List<Description> fsnList = concept.getDescriptions(Acceptability.PREFERRED, DescriptionType.FSN, ActiveState.ACTIVE);
-		if (fsnList.size() != 1) {
-			report(task, concept, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Number of active FSNs encountered was: " + fsnList.size());
-		} else {
-			Description fsn = fsnList.get(0);
-			String[] fsnParts = SnomedUtils.deconstructFSN(fsn.getTerm());
-			String newFSN = null;
-			for (Map.Entry<String, String> entry : replacementMap.entrySet()) {
-				if (fsnParts[1].equals(entry.getKey())) {
-					newFSN = fsnParts[0] + " " + entry.getValue();
+		for (Description d : concept.getDescriptions(ActiveState.ACTIVE)) {
+			if (d.getTerm().contains(match)) {
+				String newTerm = d.getTerm().replace(remove, "");
+				if (termAlreadyExists(concept, newTerm)) {
+					report(task, concept, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, "Replacement term already exists: " + newTerm);
+				} else if (d.getEffectiveTime() != null) {
+					report(task, concept, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, "Term already published: " + d);
+				} else {
+					//To delete the description, we'll remove its SCTID and reuse the rest of the body for the new term
+					d.setDescriptionId(null);
+					d.setTerm(newTerm);
+					changesMade++;
+					report(task, concept, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Deleted description, replaced with " + d);
 				}
-			}
-			if (newFSN != null) {
-				if (termAlreadyExists(concept, newFSN)) {
-					throw new TermServerScriptException("Term already exists: " + newFSN);
-				}
-				if (fsn.getEffectiveTime() != null) {
-					throw new TermServerScriptException("Detected attempt to delete published description");
-				}
-				//This will cause the existing fsn to be deleted and a new one created.
-				fsn.setDescriptionId(null);
-				fsn.setTerm(newFSN);
-				changesMade++;
-				report(task, concept, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "FSN set to " + newFSN);
 			}
 		}
 		return changesMade;
@@ -157,10 +126,12 @@ public class ReplaceSematicTags extends BatchFix implements RF2Constants{
 	private Set<Concept> identifyConceptsToProcess() throws TermServerScriptException {
 		Set<Concept> allPotential = GraphLoader.getGraphLoader().getConcept(subHierarchyStr).getDescendents(NOT_SET);
 		Set<Concept> allAffected = new TreeSet<Concept>();  //We want to process in the same order each time, in case we restart and skip some.
-		for (Concept thisConcept : allPotential) {
-			for (String replaceTag : replacementMap.keySet()) {
-				if (thisConcept.getFSNDescription().getTerm().contains(replaceTag)) {
-					allAffected.add(thisConcept);
+		println("Identifying concepts to process");
+		for (Concept c : allPotential) {
+			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+				if (d.getTerm().contains(match)) {
+					allAffected.add(c);
+					break;
 				}
 			}
 		}

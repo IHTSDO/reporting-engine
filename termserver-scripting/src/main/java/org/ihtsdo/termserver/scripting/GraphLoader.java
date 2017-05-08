@@ -14,6 +14,7 @@ import java.util.zip.ZipInputStream;
 
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
+import org.ihtsdo.termserver.scripting.domain.InactivationIndicatorEntry;
 import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
@@ -82,10 +83,7 @@ public class GraphLoader implements RF2Constants {
 			source.addParent(r.getCharacteristicType(),destination);
 			destination.addChild(r.getCharacteristicType(),source);
 		} 
-		//Only store actual attributes.  Parents/Children and counted separately
-		if (!type.equals(IS_A)) {
-			source.addRelationship(r);
-		}
+		source.addRelationship(r);
 		return source;
 	}
 
@@ -230,6 +228,36 @@ public class GraphLoader implements RF2Constants {
 		for (Concept child : startingPoint.getDescendents(IMMEDIATE_CHILD, CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
 			populateHierarchyDepth(child, currentDepth + 1);
 		}
+	}
+
+	public void loadInactivationIndicatorFile(ZipInputStream zis, boolean conceptIndicators) throws IOException, TermServerScriptException {
+		BufferedReader br = new BufferedReader(new InputStreamReader(zis, StandardCharsets.UTF_8));
+		boolean isHeaderLine = true;
+		String line;
+		while ((line = br.readLine()) != null) {
+			if (!isHeaderLine) {
+				String[] lineItems = line.split(FIELD_DELIMITER);
+				if (conceptIndicators) {
+					Concept c = getConcept(lineItems[INACT_IDX_REFCOMPID]);
+					InactivationIndicatorEntry inactivation = loadInactivationLine(lineItems);
+					c.getInactivationIndicatorEntries().add(inactivation);
+				}
+			} else {
+				isHeaderLine = false;
+			}
+		}
+	}
+	
+	private InactivationIndicatorEntry loadInactivationLine(String[] lineItems) {
+		InactivationIndicatorEntry i = new InactivationIndicatorEntry();
+		i.setId(lineItems[INACT_IDX_ID]);
+		i.setEffectiveTime(lineItems[INACT_IDX_EFFECTIVETIME]);
+		i.setActive(lineItems[INACT_IDX_ACTIVE].equals("1"));
+		i.setModuleId(lineItems[INACT_IDX_MODULID]);
+		i.setRefsetId(lineItems[INACT_IDX_REFSETID]);
+		i.setReferencedComponentId(lineItems[INACT_IDX_REFCOMPID]);
+		i.setInactivationReasonId(lineItems[INACT_IDX_REASON_ID]);
+		return i;
 	}
 
 }

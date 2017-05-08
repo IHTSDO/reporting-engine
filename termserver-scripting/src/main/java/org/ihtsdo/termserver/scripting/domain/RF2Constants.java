@@ -17,6 +17,8 @@ public interface RF2Constants {
 	static String ACETAMINOPHEN = "acetaminophen";
 	static String PARACETAMOL = "paracetamol";
 	
+	static String SCTID_CORE_MODULE = "900000000000207008";
+	
 	//ECL Constants
 	static String DESCENDANT = "<";
 	static String DESCENDANT_OR_SELF = "<<";
@@ -95,7 +97,7 @@ public interface RF2Constants {
 	
 	public enum ActiveState { ACTIVE, INACTIVE, BOTH };
 	
-	public enum Acceptability { ACCEPTABLE, PREFERRED };
+	public enum Acceptability { ACCEPTABLE, PREFERRED, BOTH };
 	
 	public enum CaseSignificance { ENTIRE_TERM_CASE_SENSITIVE, CASE_INSENSITIVE ,ONLY_INITIAL_CHAR_CASE_INSENSITIVE };
 	
@@ -155,6 +157,16 @@ public interface RF2Constants {
 	public static final int LANG_IDX_REFSETID = 4;
 	public static final int LANG_IDX_REFCOMPID = 5;
 	public static final int LANG_IDX_ACCEPTABILITY_ID = 6;
+	
+	// Inactivation Refset columns
+	// id	effectiveTime	active	moduleId	refsetId	referencedComponentId	reasonId
+	public static final int INACT_IDX_ID = 0;
+	public static final int INACT_IDX_EFFECTIVETIME = 1;
+	public static final int INACT_IDX_ACTIVE = 2;
+	public static final int INACT_IDX_MODULID = 3;
+	public static final int INACT_IDX_REFSETID = 4;
+	public static final int INACT_IDX_REFCOMPID = 5;
+	public static final int INACT_IDX_REASON_ID = 6;
 	
 	// Refset columns
 	public static final int REF_IDX_ID = 0;

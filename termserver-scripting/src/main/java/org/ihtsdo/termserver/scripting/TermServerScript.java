@@ -47,8 +47,8 @@ public abstract class TermServerScript implements RF2Constants {
 	protected static boolean debug = true;
 	protected static boolean dryRun = true;
 	protected static int dryRunCounter = 0;
-	protected static int taskThrottle = 30;
-	protected static int conceptThrottle = 5;
+	protected int taskThrottle = 30;
+	protected int conceptThrottle = 5;
 	protected String env;
 	protected String url = environments[0];
 	protected boolean useAuthenticatedCookie = true;
@@ -92,7 +92,7 @@ public abstract class TermServerScript implements RF2Constants {
 
 	public enum ReportActionType { API_ERROR, CONCEPT_CHANGE_MADE, INFO, UNEXPECTED_CONDITION,
 									 RELATIONSHIP_ADDED, RELATIONSHIP_REMOVED, DESCRIPTION_CHANGE_MADE, 
-									 NO_CHANGE, VALIDATION_ERROR, VALIDATION_CHECK, DEBUG_INFO};
+									 NO_CHANGE, VALIDATION_ERROR, VALIDATION_CHECK, DEBUG_INFO, REFSET_MEMBER_REMOVED};
 									 
 	public enum Severity { NONE, LOW, MEDIUM, HIGH, CRITICAL }; 
 
@@ -314,6 +314,9 @@ public abstract class TermServerScript implements RF2Constants {
 						} else if (fileName.contains("sct2_Description_Snapshot")) {
 							println("Loading Description File.");
 							gl.loadDescriptionFile(zis, fsnOnly);
+						} else if (fileName.contains("der2_cRefset_ConceptInactivationIndicatorReferenceSetSnapshot")) {
+							println("Loading Concept Inactivation Indicator File.");
+							gl.loadInactivationIndicatorFile(zis, true);
 						}
 						//If we're loading all terms, load the language refset as well
 						if (!fsnOnly && (fileName.contains("EnglishSnapshot") || fileName.contains("LanguageSnapshot-en"))) {
