@@ -46,7 +46,11 @@ public class AuthoringServicesClient {
 			requestJson.put("summary", summary);
 			requestJson.put("description", taskCreateRequest);
 			JSONResource response = resty.json(endPoint, RestyHelper.content(requestJson, JSON_CONTENT_TYPE));
-			logger.info("Create task request received: {} - {}", response.getHTTPStatus() , response.object().toString());
+			String jsonReponse = "Unparsable Response";
+			try {
+				jsonReponse = response.object().toString();
+			} catch (Exception e) {}
+			logger.info("Create task request received: {} - {}", response.getHTTPStatus() , jsonReponse);
 			task = mapper.readValue(response.object().toString(1), AuthoringTask.class);
 		} catch (Exception e) {
 			String errMsg = "Failed to create task in project " + projectKey;
