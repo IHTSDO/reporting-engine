@@ -53,6 +53,7 @@ public class SEPRefsetGenerator extends RefsetGenerator{
 	void generateMembers() throws TermServerScriptException {
 		//Work through the subHierarchy, identifying concepts containing "Structure" in their FSN
 		//Then find immediate child Entire and Part to add to that row in the SEP refset
+		print ("Generating SEP Refset");
 		GraphLoader gl = GraphLoader.getGraphLoader();
 		Concept subHierarchy = gl.getConcept(subHierchyStr);
 		Set<Concept> allConcepts = subHierarchy.getDescendents(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE);
@@ -61,7 +62,7 @@ public class SEPRefsetGenerator extends RefsetGenerator{
 			//Check we don't have more than one of our target keywords. THAT would be confusing!
 			if (hasMultipleKeywords(fsnBase)) {
 				report (thisConcept, null, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Concept contained multiple keywords");
-			} else if (fsnBase.contains(STRUCTURE)) {
+			} else if (fsnBase.contains(STRUCTURE) || hasNoKeywords(fsnBase)) {
 				String[] entireAndPart = getEntireAndPart(thisConcept);
 				for (int i=0; i< entireAndPart.length; i++){
 					if (entireAndPart[i] != null) {
@@ -76,6 +77,13 @@ public class SEPRefsetGenerator extends RefsetGenerator{
 	}
 	
 	private boolean hasMultipleKeywords(String fsnBase) {
+		return (keywordCount(fsnBase) > 1);
+	}
+	private boolean hasNoKeywords(String fsnBase) {
+		return (keywordCount(fsnBase) == 0);
+	}
+	
+	private int keywordCount(String fsnBase) {
 		int keywordsFound = 0;
 		String searchIn = fsnBase.toLowerCase();
 		for (String keyword : targetTermKeywords ) {
@@ -83,7 +91,7 @@ public class SEPRefsetGenerator extends RefsetGenerator{
 				keywordsFound++;
 			}
 		}
-		return (keywordsFound > 1);
+		return keywordsFound;
 	}
 
 	private String[] getEntireAndPart(Concept thisConcept) throws TermServerScriptException {
