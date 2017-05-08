@@ -126,6 +126,7 @@ public class RemoveSubstringFromNewTerms extends BatchFix implements RF2Constant
 	private Set<Concept> identifyConceptsToProcess() throws TermServerScriptException {
 		Set<Concept> allPotential = GraphLoader.getGraphLoader().getConcept(subHierarchyStr).getDescendents(NOT_SET);
 		Set<Concept> allAffected = new TreeSet<Concept>();  //We want to process in the same order each time, in case we restart and skip some.
+		println("Identifying concepts to process");
 		for (Concept c : allPotential) {
 			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 				if (d.getTerm().contains(match)) {
