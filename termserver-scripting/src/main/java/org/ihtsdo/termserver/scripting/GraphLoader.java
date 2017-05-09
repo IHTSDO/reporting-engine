@@ -65,6 +65,14 @@ public class GraphLoader implements RF2Constants {
 	}
 	
 	private Concept addRelationshipToConcept(CharacteristicType characteristicType, String[] lineItems) throws TermServerScriptException {
+		
+		String sourceId = lineItems[REL_IDX_SOURCEID];
+		String destId = lineItems[REL_IDX_DESTINATIONID];
+		String typeId = lineItems[REL_IDX_TYPEID];
+		
+		if (sourceId.length() < 4 || destId.length() < 4 || typeId.length() < 4 ) {
+			System.out.println("*** Invalid SCTID encountered in relationship " + lineItems[REL_IDX_ID] + ": s" + sourceId + " d" + destId + " t" + typeId);
+		}
 		Concept source = getConcept(lineItems[REL_IDX_SOURCEID]);
 		Concept type = getConcept(lineItems[REL_IDX_TYPEID]);
 		Concept destination = getConcept(lineItems[REL_IDX_DESTINATIONID]);

@@ -46,32 +46,74 @@ public class ValidateTaxonomyIntegrity extends TermServerScript{
 	private void validateTaxonomyIntegrity() throws TermServerScriptException {
 		Collection<Concept> concepts = gl.getAllConcepts();
 		println ("Validating all relationships");
+		long issuesEncountered = 0;
 		for (Concept c : concepts) {
-			validateRelationships(c, CharacteristicType.INFERRED_RELATIONSHIP);
-			validateRelationships(c, CharacteristicType.STATED_RELATIONSHIP);
+			issuesEncountered += validateRelationships(c, CharacteristicType.INFERRED_RELATIONSHIP);
+			issuesEncountered += validateRelationships(c, CharacteristicType.STATED_RELATIONSHIP);
+			issuesEncountered += validateRelationships(c, CharacteristicType.ADDITIONAL_RELATIONSHIP);
 		}
 		addSummaryInformation("Concepts checked", concepts.size());
+		addSummaryInformation("Issues encountered", issuesEncountered);
 	}
 
-	private void validateRelationships(Concept c, CharacteristicType charType) {
+	private long validateRelationships(Concept c, CharacteristicType charType) {
+		long issues = 0;
 		for (Relationship r : c.getRelationships(charType, ActiveState.ACTIVE)) {
-			//Check for an FSN to ensure Concept fully exists
-			if (r.getSource().getFsn() == null || r.getSource().getFsn().isEmpty()) {
-				String msg = "Non-existent source in " + charType + " relationship: " + r;
+			//Check for a Definition Status since it's the only thing that's only provided 
+			//by the concept file
+			if (r.getSource().getDefinitionStatus() == null ) {
+				String msg = "Non-existent source (" + r.getSourceId() + " - " + r.getRelationshipId() + ") in " + charType + " relationship: " + r;
 				report (c, msg);
+				issues++;
 			} else if (!r.getSource().isActive()) {
-				String msg = "Inactive source in " + charType + " relationship: " + r;
+				String msg = "Inactive source (" + r.getSourceId() + " - " + r.getRelationshipId() + ") in " + charType + " relationship: " + r;
 				report (c, msg);
+				issues++;
 			}
 			
-			if (r.getTarget().getFsn() == null || r.getTarget().getFsn().isEmpty()) {
-				String msg = "Non-existent target in " + charType + " relationship: " + r;
+			if (r.getType().getDefinitionStatus() == null) {
+				String msg = "Non-existent Type (" + r.getType().getConceptId() + " - " + r.getRelationshipId() + ") in " + charType + " relationship: " + r;
 				report (c, msg);
+				issues++;
+			} else if (!r.getType().isActive()) {
+				String msg = "Inactive Type (" + r.getType().getConceptId() + " - " + r.getRelationshipId() + ") in " + charType + " relationship: " + r;
+				report (c, msg);
+				issues++;
+			}
+			
+			if (r.getTarget().getDefinitionStatus() == null) {
+				String msg = "Non-existent target (" + r.getTarget().getConceptId() + " - " + r.getRelationshipId() + ") in " + charType + " relationship: " + r;
+				report (c, msg);
+				issues++;
 			} else if (!r.getTarget().isActive()) {
-				String msg = "Inactive target in " + charType + " relationship: " + r;
+				String msg = "Inactive target (" + r.getTarget().getConceptId() + " - " + r.getRelationshipId() + ") in " + charType + " relationship: " + r;
 				report (c, msg);
+				issues++;
 			}
 		}
+		
+		//Also check inactive relationships for non-existent concepts
+		for (Relationship r : c.getRelationships(charType, ActiveState.INACTIVE)) {
+			//Check for an FSN to ensure Concept fully exists
+			if (r.getSource().getDefinitionStatus() == null) {
+				String msg = "Non-existent source (" + r.getSourceId() + " - " + r.getRelationshipId() + ") in inactive " + charType + " relationship: " + r;
+				report (c, msg);
+				issues++;
+			} 
+			
+			if (r.getType().getDefinitionStatus() == null) {
+				String msg = "Non-existent Type (" + r.getType().getConceptId() + " - " + r.getRelationshipId() + ") in inactive " + charType + " relationship: " + r;
+				report (c, msg);
+				issues++;
+			}
+			
+			if (r.getTarget().getDefinitionStatus() == null) {
+				String msg = "Non-existent target (" + r.getTarget().getConceptId() + " - " + r.getRelationshipId() + ") in inactive " + charType + " relationship: " + r;
+				report (c, msg);
+				issues++;
+			}
+		}
+		return issues;
 	}
 
 	protected void report (Concept c, String issue) {
