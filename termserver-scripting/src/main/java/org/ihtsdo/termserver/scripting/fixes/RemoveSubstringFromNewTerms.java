@@ -28,7 +28,8 @@ public class RemoveSubstringFromNewTerms extends BatchFix implements RF2Constant
 	String[] author_reviewer = new String[] {targetAuthor};
 	String subHierarchyStr = "373873005"; // |Pharmaceutical / biologic product (product)|
 	static Map<String, String> replacementMap = new HashMap<String, String>();
-	static final String match = "mg/1 each oral tablet";
+	//static final String match = "mg/1 each oral tablet";
+	static final String match = "milligram/1 each oral tablet";
 	static final String remove = "/1 each";
 	protected RemoveSubstringFromNewTerms(BatchFix clone) {
 		super(clone);
@@ -77,7 +78,7 @@ public class RemoveSubstringFromNewTerms extends BatchFix implements RF2Constant
 
 	private int removeWordsFromTerms(Task task, Concept concept) throws TermServerScriptException {
 		int changesMade = 0;
-		for (Description d : concept.getDescriptions(ActiveState.ACTIVE)) {
+		for (Description d : concept.getDescriptions(Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE)) {
 			if (d.getTerm().contains(match)) {
 				String newTerm = d.getTerm().replace(remove, "");
 				if (termAlreadyExists(concept, newTerm)) {
@@ -135,6 +136,7 @@ public class RemoveSubstringFromNewTerms extends BatchFix implements RF2Constant
 				}
 			}
 		}
+		println ("Identified " + allAffected.size() + " concepts to process");
 		return allAffected;
 	}
 
