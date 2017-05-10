@@ -213,7 +213,7 @@ public class SnomedUtils implements RF2Constants{
 		switch (type) {
 			case FSN : return FSN;
 			case SYNONYM : return SYN;
-			case DEFINITION : return DEF;
+			case TEXT_DEFINITION : return DEF;
 		}
 		throw new TermServerScriptException("Unable to translate description type " + type);
 	}
@@ -222,7 +222,7 @@ public class SnomedUtils implements RF2Constants{
 		switch (descTypeId) {
 			case FSN : return DescriptionType.FSN;
 			case SYN : return DescriptionType.SYNONYM;
-			case DEF : return DescriptionType.DEFINITION; 
+			case DEF : return DescriptionType.TEXT_DEFINITION; 
 		}
 		throw new TermServerScriptException("Unable to translate description type: " + descTypeId);
 	}

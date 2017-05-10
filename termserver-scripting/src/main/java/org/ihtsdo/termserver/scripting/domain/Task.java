@@ -8,7 +8,7 @@ public class Task {
 	Batch batch;
 	String taskKey;
 	String branchPath;
-	String description;
+	String summary;
 	List<Concept> concepts = new ArrayList<Concept>();
 	String assignedAuthor = null;
 	String reviewer = null;
@@ -18,11 +18,11 @@ public class Task {
 		this.batch = batch;
 	}
 
-	public String getDescription() {
+	public String getSummary() {
 		return batch.getTaskName(this);
 	}
 
-	public String getSummaryHTML() {
+	public String getDescriptionHTML() {
 		StringBuilder html = new StringBuilder();
 		for (Concept concept : concepts) {
 			html.append("<h5>").append(concept).append("</h5>\n");
@@ -52,9 +52,9 @@ public class Task {
 	}
 	public String toString() {
 		if (taskKey != null) {
-			return taskKey + ": " + getDescription();
+			return taskKey + ": " + getSummary();
 		}
-		return getDescription();
+		return getSummary();
 	}
 	public String toQuotedList() {
 		StringBuilder quotedList = new StringBuilder(concepts.size()*10).append("[");

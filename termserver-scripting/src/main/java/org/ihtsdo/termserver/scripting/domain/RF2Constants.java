@@ -105,7 +105,7 @@ public interface RF2Constants {
 	
 	public enum Cardinality { AT_LEAST_ONE, EXACTLY_ONE };
 	
-	public enum DescriptionType { FSN, SYNONYM, DEFINITION};
+	public enum DescriptionType { FSN, SYNONYM, TEXT_DEFINITION};
 	
 	public enum ChangeStatus { CHANGE_MADE, CHANGE_NOT_REQUIRED, NO_CHANGE_MADE };
 	

@@ -165,6 +165,7 @@ public class GraphLoader implements RF2Constants {
 		d.setLang(lineItems[DES_IDX_LANGUAGECODE]);
 		d.setTerm(lineItems[DES_IDX_TERM]);
 		d.setType(SnomedUtils.translateDescType(lineItems[DES_IDX_TYPEID]));
+		descriptions.put(lineItems[DES_IDX_ID], d);
 		return d;
 	}
 

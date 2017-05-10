@@ -49,6 +49,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	String[] emailDetails;
 	protected boolean selfDetermining = false; //Set to true if the batch fix calculates its own data to process
 	protected boolean populateEditPanel = true;
+	protected boolean populateTaskDescription = true;
 
 	protected BatchFix (BatchFix clone) {
 		if (clone != null) {
@@ -87,12 +88,12 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 					String taskKey="";
 					//If we don't have any concepts in this task eg this is 100% ME file, then skip
 					if (task.size() == 0) {
-						println ("Skipping Task " + task.getDescription() + " - no concepts to process");
+						println ("Skipping Task " + task.getSummary() + " - no concepts to process");
 						continue;
 					} else if (selfDetermining && restartPosition > 1 && (tasksSkipped + 1) < restartPosition) {
 						//For self determining projects we'll restart based on a task count, rather than the line number in the input file
 						tasksSkipped++;
-						println ("Skipping Task " + task.getDescription() + " - restarting from task " + restartPosition);
+						println ("Skipping Task " + task.getSummary() + " - restarting from task " + restartPosition);
 						continue;
 					} else if (task.size() > (taskSize + wiggleRoom)) {
 						warn (task + " contains " + task.size() + " concepts");
@@ -112,7 +113,8 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 						while (!taskCreated) {
 							try{
 								debug ("Creating jira task on project: " + project);
-								taskKey = scaClient.createTask(project, task.getDescription(), task.getSummaryHTML());
+								String taskDescription = populateTaskDescription ? task.getSummary() : "Batch Updates - see spreadsheet for details";
+								taskKey = scaClient.createTask(project, task.getSummary(), taskDescription);
 								debug ("Creating task branch in terminology server: " + taskKey);
 								branchPath = tsClient.createBranch(tsRoot + project, taskKey);
 								taskCreated = true;
@@ -188,7 +190,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 						}
 					}
 				} catch (Exception e) {
-					throw new TermServerScriptException("Failed to process batch " + task.getDescription() + " on task " + task.getTaskKey(), e);
+					throw new TermServerScriptException("Failed to process batch " + task.getSummary() + " on task " + task.getTaskKey(), e);
 				}
 				
 				if (processingLimit > NOT_SET && tasksCreated >= processingLimit) {
@@ -226,7 +228,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			}
 		}
 		String batchKey = (task == null? "" :  task.getTaskKey());
-		String batchDesc = (task == null? "" :  task.getDescription());
+		String batchDesc = (task == null? "" :  task.getSummary());
 		String line = batchKey + COMMA + batchDesc + COMMA + sctid + COMMA_QUOTE + fsn + QUOTE_COMMA + type + COMMA + severity + COMMA + actionType + COMMA_QUOTE + actionDetail + QUOTE;
 		writeToFile (line);
 	}
