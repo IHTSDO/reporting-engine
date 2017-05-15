@@ -54,6 +54,7 @@ public class AuthoringServicesClient {
 			task = mapper.readValue(response.object().toString(1), AuthoringTask.class);
 		} catch (Exception e) {
 			String errMsg = "Failed to create task in project " + projectKey;
+			errMsg += ". With endpoint: " + endPoint + " and request payload: " + requestJson.toString();
 			throw new AuthoringServicesClientException(errMsg, e);
 		}
 		return task;
