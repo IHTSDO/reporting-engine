@@ -38,13 +38,13 @@ public class AuthoringServicesClient {
 		}
 	}
 
-	public AuthoringTask createTask(String projectKey, String summary, AuthoringTaskCreateRequest taskCreateRequest) throws AuthoringServicesClientException {
+	public AuthoringTask createTask(String projectKey, AuthoringTaskCreateRequest taskCreateRequest) throws AuthoringServicesClientException {
 		String endPoint = rootUrl + "projects/" + projectKey + "/tasks";
 		JSONObject requestJson = new JSONObject();
 		AuthoringTask task = null;
 		try {
-			requestJson.put("summary", summary);
-			requestJson.put("description", taskCreateRequest);
+			requestJson.put("summary", taskCreateRequest.getSummary());
+			requestJson.put("description", taskCreateRequest.getDescription());
 			JSONResource response = resty.json(endPoint, RestyHelper.content(requestJson, JSON_CONTENT_TYPE));
 			String jsonReponse = "Unparsable Response";
 			try {
