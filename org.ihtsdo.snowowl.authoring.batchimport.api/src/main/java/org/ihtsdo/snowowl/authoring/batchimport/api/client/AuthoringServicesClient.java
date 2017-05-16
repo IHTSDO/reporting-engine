@@ -32,6 +32,7 @@ public class AuthoringServicesClient {
 		resty = new Resty(new RestyOverrideAccept(ALL_CONTENT_TYPE));
 		this.rootUrl = rootUrl;
 		//Set all the cookies that the user originally came in with
+		logger.info("Sending {} cookies in headers",cookies.length);
 		for (Cookie cookie : cookies) {
 			resty.withHeader("Cookie", cookie.getValue());
 		}
