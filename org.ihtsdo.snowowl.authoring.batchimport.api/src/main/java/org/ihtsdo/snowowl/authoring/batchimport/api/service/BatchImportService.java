@@ -317,9 +317,7 @@ public class BatchImportService {
 
 		AuthoringTask task = null;
 		if (!request.isDryRun()) {
-			task = asClient.createTask(request.getProjectKey(), 
-					request.getCreateForAuthor(),
-					taskCreateRequest);
+			task = asClient.createTask(request.getProjectKey(), taskCreateRequest);
 			
 			//That creates a task in Jira, but we also have to ask the TS to create one so as to actually obtain a branch
 			try {

@@ -20,8 +20,7 @@ import static us.monoid.web.Resty.put;
 public class AuthoringServicesClient {
 	
 	private final Resty resty;
-	private final String serverUrl = "http://localhost/";
-	private static final String apiRoot = "authoring-services/";
+	private String rootUrl;
 	private static final String ALL_CONTENT_TYPE = "*/*";
 	private static final String JSON_CONTENT_TYPE = "application/json";
 	
@@ -29,46 +28,52 @@ public class AuthoringServicesClient {
 	
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
-	public AuthoringServicesClient(Cookie[] cookies) {
+	public AuthoringServicesClient(String rootUrl, Cookie[] cookies) {
 		resty = new Resty(new RestyOverrideAccept(ALL_CONTENT_TYPE));
-		resty.authenticate(this.serverUrl, null,null);
+		this.rootUrl = rootUrl;
 		//Set all the cookies that the user originally came in with
+		logger.info("Sending {} cookies in headers",cookies.length);
 		for (Cookie cookie : cookies) {
 			resty.withHeader("Cookie", cookie.getValue());
 		}
 	}
 
-	public AuthoringTask createTask(String projectKey, String summary, AuthoringTaskCreateRequest taskCreateRequest) throws AuthoringServicesClientException {
-		String endPoint = serverUrl + apiRoot + "projects/" + projectKey + "/tasks";
+	public AuthoringTask createTask(String projectKey, AuthoringTaskCreateRequest taskCreateRequest) throws AuthoringServicesClientException {
+		String endPoint = rootUrl + "projects/" + projectKey + "/tasks";
 		JSONObject requestJson = new JSONObject();
 		AuthoringTask task = null;
 		try {
-			requestJson.put("summary", summary);
-			requestJson.put("description", taskCreateRequest);
+			requestJson.put("summary", taskCreateRequest.getSummary());
+			requestJson.put("description", taskCreateRequest.getDescription());
 			JSONResource response = resty.json(endPoint, RestyHelper.content(requestJson, JSON_CONTENT_TYPE));
-			logger.info("Create task request received: {} - {}", response.getHTTPStatus() , response.object().toString());
+			String jsonReponse = "Unparsable Response";
+			try {
+				jsonReponse = response.object().toString();
+			} catch (Exception e) {}
+			logger.info("Create task request received: {} - {}", response.getHTTPStatus() , jsonReponse);
 			task = mapper.readValue(response.object().toString(1), AuthoringTask.class);
 		} catch (Exception e) {
 			String errMsg = "Failed to create task in project " + projectKey;
+			errMsg += ". With endpoint: " + endPoint + " and request payload: " + requestJson.toString();
 			throw new AuthoringServicesClientException(errMsg, e);
 		}
 		return task;
 	}
 
 	public void setEditPanelUIState(String project, String taskKey, String quotedList) throws IOException {
-		String endPointRoot = serverUrl + apiRoot + "projects/" + project + "/tasks/" + taskKey + "/ui-state/";
+		String endPointRoot = rootUrl + "projects/" + project + "/tasks/" + taskKey + "/ui-state/";
 		String endPoint = endPointRoot + "edit-panel";
 		resty.json(endPoint, RestyHelper.content(quotedList, JSON_CONTENT_TYPE));
 	}
 	
 	public void setSavedListUIState(String project, String taskKey, JSONObject items) throws IOException {
-		String endPointRoot = serverUrl + apiRoot + "projects/" + project + "/tasks/" + taskKey + "/ui-state/";
+		String endPointRoot = rootUrl + "projects/" + project + "/tasks/" + taskKey + "/ui-state/";
 		String endPoint = endPointRoot + "saved-list";
 		resty.json(endPoint, RestyHelper.content(items, JSON_CONTENT_TYPE));
 	}
 	
 	public String updateTask(String project, String taskKey, String summary, String description, String username) throws Exception {
-		String endPoint = serverUrl + apiRoot + "projects/" + project + "/tasks/" + taskKey;
+		String endPoint = rootUrl + "projects/" + project + "/tasks/" + taskKey;
 		
 		JSONObject requestJson = new JSONObject();
 		if (summary != null) {
@@ -89,7 +94,7 @@ public class AuthoringServicesClient {
 	}
 	
 	public String putTaskIntoReview(String project, String taskKey, String reviewer) throws Exception {
-		String endPoint = serverUrl + apiRoot + "projects/" + project + "/tasks/" + taskKey;
+		String endPoint = rootUrl + "projects/" + project + "/tasks/" + taskKey;
 		JSONObject requestJson = new JSONObject();
 		requestJson.put("status", "IN_REVIEW");
 
@@ -103,7 +108,7 @@ public class AuthoringServicesClient {
 	}
 
 	public void deleteTask(String projectKey, String taskKey, boolean optional) throws AuthoringServicesClientException {
-		String endPoint = serverUrl + apiRoot + "projects/" + projectKey + "/tasks/" + taskKey;
+		String endPoint = rootUrl + "projects/" + projectKey + "/tasks/" + taskKey;
 		try {
 			JSONObject requestJson = new JSONObject();
 			requestJson.put("status", "DELETED");
@@ -120,7 +125,7 @@ public class AuthoringServicesClient {
 
 	public void persistTaskPanelState(String projectKey, String taskKey,
 			String user, String panelId, String uiStateStr) throws AuthoringServicesClientException {
-		String endPoint = serverUrl + apiRoot + "projects/" + projectKey + "/tasks/" + taskKey + "/ui-state/" + panelId;
+		String endPoint = rootUrl + "projects/" + projectKey + "/tasks/" + taskKey + "/ui-state/" + panelId;
 		try {
 			if (uiStateStr.startsWith("[")) {
 				JSONArray  uiState = new JSONArray(uiStateStr);
@@ -137,7 +142,7 @@ public class AuthoringServicesClient {
 	}
 
 	public void updateTask(AuthoringTask task) throws AuthoringServicesClientException {
-		String endPoint = serverUrl + apiRoot + "projects/" + task.getProjectKey() + "/tasks/" + task.getKey();
+		String endPoint = rootUrl + "projects/" + task.getProjectKey() + "/tasks/" + task.getKey();
 		JSONObject requestJson = new JSONObject();
 		try {
 			resty.json(endPoint, put(RestyHelper.content(requestJson, JSON_CONTENT_TYPE)));

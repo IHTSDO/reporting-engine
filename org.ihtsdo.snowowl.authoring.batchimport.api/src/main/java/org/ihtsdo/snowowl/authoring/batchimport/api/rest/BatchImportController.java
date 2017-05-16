@@ -42,6 +42,9 @@ public class BatchImportController extends AbstractSnomedRestService {
 	
 	@Value("+{batch.import.snowowl.url}")
 	private String snowOwlUrl;
+	
+	@Value("+{batch.import.authoring-services.url}")
+	private String authoringServicesUrl;
 
 	@ApiOperation(value="Import 3rd Party Concept file eg SIRS")
 	@ApiResponses({
@@ -101,7 +104,7 @@ public class BatchImportController extends AbstractSnomedRestService {
 		if (cookies == null) {
 			throw new Exception ("Unable to recover cookies from request.  No further information available.");
 		}
-		return new AuthoringServicesClient(request.getCookies());
+		return new AuthoringServicesClient(authoringServicesUrl, request.getCookies());
 	}
 	
 	private SnowOwlRestClient getSOClient(HttpServletRequest request) {
