@@ -159,6 +159,8 @@ public class GraphLoader implements RF2Constants {
 		Description d = getDescription(lineItems[DES_IDX_ID]);
 		d.setDescriptionId(lineItems[DES_IDX_ID]);
 		d.setActive(lineItems[DES_IDX_ACTIVE].equals("1"));
+		//Set effective time after active, since changing activate state resets effectiveTime
+		d.setEffectiveTime(lineItems[DES_IDX_EFFECTIVETIME]);
 		d.setModuleId(lineItems[DES_IDX_MODULID]);
 		d.setCaseSignificance(lineItems[DES_IDX_CASESIGNIFICANCEID]);
 		d.setConceptId(lineItems[DES_IDX_CONCEPTID]);

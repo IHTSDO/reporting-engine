@@ -211,7 +211,7 @@ public class GenerateTranslation extends DeltaGenerator {
 		l.setActive(true);
 		l.setEffectiveTime(null);
 		l.setModuleId(moduleId);
-		l.setAcceptabilityId(PREFERRED_TERM);
+		l.setAcceptabilityId(SCTID_PREFERRED_TERM);
 		l.setReferencedComponentId(d.getDescriptionId());
 		l.setDirty();
 		d.getLangRefsetEntries().add(l);

@@ -81,11 +81,11 @@ public class SnomedUtils implements RF2Constants{
 	}
 	
 	public static Acceptability getAcceptability(String sctid) throws TermServerScriptException {
-		if (sctid.equals(ACCEPTABLE_TERM)) {
+		if (sctid.equals(SCTID_ACCEPTABLE_TERM)) {
 			return Acceptability.ACCEPTABLE;
 		}
 		
-		if (sctid.equals(PREFERRED_TERM)) {
+		if (sctid.equals(SCTID_PREFERRED_TERM)) {
 			return Acceptability.PREFERRED;
 		} 
 		
@@ -311,8 +311,8 @@ public class SnomedUtils implements RF2Constants{
 				if (lb.getRefsetId().equals(la.getRefsetId())) {
 					bHasThis = true;
 					if (!lb.getAcceptabilityId().equals(la.getAcceptabilityId())) {
-						if (la.getAcceptabilityId().equals(PREFERRED_TERM)) {
-							lb.setAcceptabilityId(PREFERRED_TERM);
+						if (la.getAcceptabilityId().equals(SCTID_PREFERRED_TERM)) {
+							lb.setAcceptabilityId(SCTID_PREFERRED_TERM);
 							lb.setEffectiveTime(null);
 							changesMade = true;
 						}
@@ -329,8 +329,8 @@ public class SnomedUtils implements RF2Constants{
 						lb.setEffectiveTime(null);
 						//As well as activating, are we also promoting to preferred?
 						if (!lb.getAcceptabilityId().equals(la.getAcceptabilityId())) {
-							if (la.getAcceptabilityId().equals(PREFERRED_TERM)) {
-								lb.setAcceptabilityId(PREFERRED_TERM);
+							if (la.getAcceptabilityId().equals(SCTID_PREFERRED_TERM)) {
+								lb.setAcceptabilityId(SCTID_PREFERRED_TERM);
 							}
 						}
 					}
@@ -411,7 +411,7 @@ public class SnomedUtils implements RF2Constants{
 			}
 			//Still no?  Create a new entry
 			if (changeStatus.equals(ChangeStatus.NO_CHANGE_MADE)) {
-				createLangRefsetEntry(d,thisDialectSctid, PREFERRED_TERM);
+				createLangRefsetEntry(d,thisDialectSctid, SCTID_PREFERRED_TERM);
 				changeStatus = ChangeStatus.CHANGE_MADE;
 			}
 		}
@@ -433,8 +433,8 @@ public class SnomedUtils implements RF2Constants{
 	private static ChangeStatus promoteLangRefsetEntry(Description d, List<LangRefsetEntry> langRefsetEntries) throws TermServerScriptException {
 		ChangeStatus changeStatus = ChangeStatus.NO_CHANGE_MADE;
 		for (LangRefsetEntry thisDialectEntry : langRefsetEntries) {
-			if (!thisDialectEntry.getAcceptabilityId().equals(PREFERRED_TERM)) {
-				thisDialectEntry.setAcceptabilityId(PREFERRED_TERM);
+			if (!thisDialectEntry.getAcceptabilityId().equals(SCTID_PREFERRED_TERM)) {
+				thisDialectEntry.setAcceptabilityId(SCTID_PREFERRED_TERM);
 				thisDialectEntry.setEffectiveTime(null);
 				thisDialectEntry.setActive(true);
 				thisDialectEntry.isDirty();

@@ -294,10 +294,16 @@ public class Description implements RF2Constants{
 	}
 	
 	public List<LangRefsetEntry> getLangRefsetEntries(ActiveState activeState, String langRefsetId) {
+		return getLangRefsetEntries (activeState, langRefsetId, null); // Return all modules
+	}
+	
+	public List<LangRefsetEntry> getLangRefsetEntries(ActiveState activeState, String langRefsetId, String moduleId) {
 		List<LangRefsetEntry> result = new ArrayList<LangRefsetEntry>();
 		for (LangRefsetEntry thisLangRefSetEntry : getLangRefsetEntries(activeState)) {
 			if (thisLangRefSetEntry.getRefsetId().equals(langRefsetId)) {
-				result.add(thisLangRefSetEntry);
+				if (moduleId == null || thisLangRefSetEntry.getModuleId().equals(moduleId)) {
+					result.add(thisLangRefSetEntry);
+				}
 			}
 		}
 		return result;

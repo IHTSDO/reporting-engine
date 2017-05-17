@@ -352,7 +352,7 @@ public class Concept implements RF2Constants, Comparable<Concept> {
 				}
 			} else {
 				if (thisDescription.getAcceptabilityMap() == null && thisDescription.isActive()) {
-					TermServerScript.warn (thisDescription + " is active with no Acceptability map");
+					TermServerScript.warn (thisDescription + " is active with no Acceptability map (since " + thisDescription.getEffectiveTime() + ").");
 				}
 			}
 		}

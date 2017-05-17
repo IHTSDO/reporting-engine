@@ -18,6 +18,7 @@ public interface RF2Constants {
 	static String PARACETAMOL = "paracetamol";
 	
 	static String SCTID_CORE_MODULE = "900000000000207008";
+	static String SCTID_US_MODULE = "731000124108";
 	
 	//ECL Constants
 	static String DESCENDANT = "<";
@@ -66,8 +67,8 @@ public interface RF2Constants {
 	static final String[] GB_DIALECT = {GB_ENG_LANG_REFSET};
 	
 	
-	static final String PREFERRED_TERM = "900000000000548007";
-	static final String ACCEPTABLE_TERM = "900000000000549004";
+	static final String SCTID_PREFERRED_TERM = "900000000000548007";
+	static final String SCTID_ACCEPTABLE_TERM = "900000000000549004";
 	
 	static final String ENTIRE_TERM_CASE_SENSITIVE_SCTID = "900000000000017005";
 	static final String ENTIRE_TERM_CASE_INSENSITIVE_SCTID = "900000000000448009";
