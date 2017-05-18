@@ -53,22 +53,44 @@ public class AttributeCardinalityReport extends TermServerScript{
 		long issuesEncountered = 0;
 		for (Concept c : subHierarchy) {
 			if (c.isActive()) {
-				issuesEncountered += checkAttributeCardinality(c, CharacteristicType.STATED_RELATIONSHIP);
+				issuesEncountered += checkAttributeCardinality(c);
 			}
 		}
 		addSummaryInformation("Concepts checked", subHierarchy.size());
 		addSummaryInformation("Issues encountered", issuesEncountered);
 	}
 
-	private long checkAttributeCardinality(Concept c, CharacteristicType charType) throws TermServerScriptException {
+	private long checkAttributeCardinality(Concept c) throws TermServerScriptException {
 		long issues = 0;
 		Concept typeOfInterest = gl.getConcept(targetAttributeStr);
 		Set<Concept> typesEncountered = new HashSet<Concept>();
-		for (Relationship r : c.getRelationships(charType, typeOfInterest, ActiveState.ACTIVE)) {
+		
+		List<Relationship> statedRelationshipsOfInterest = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, typeOfInterest, ActiveState.ACTIVE);
+		List<Relationship> inferredRelationshipsOfInterest = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, typeOfInterest, ActiveState.ACTIVE);
+		if (statedRelationshipsOfInterest.size() != inferredRelationshipsOfInterest.size()) {
+			String msg = "Cardinality mismatch between stated and inferred relationships - (S: " + statedRelationshipsOfInterest.size() + " I: " + inferredRelationshipsOfInterest.size() + ")";
+			report(c, msg);
+			issues++;
+		}
+		
+		for (Relationship r : statedRelationshipsOfInterest) {
 			//Have we seen this value for the target attribute type before?
 			Concept type = r.getType();
 			if (typesEncountered.contains(type)) {
-				String msg = "Multiple " + charType + " instances of attribute " + type;
+				String msg = "Multiple Stated instances of attribute " + type;
+				report(c, msg);
+				issues++;
+			}
+			
+			//Check that we have an inferred relationship that matches this value
+			boolean matchFound = false;
+			for (Relationship rInf : inferredRelationshipsOfInterest) {
+				if (rInf.getTarget().equals(r.getTarget())) {
+					matchFound = true;
+				}
+			}
+			if (!matchFound) {
+				String msg = "Stated relationship has no inferred counterpart: " + r;
 				report(c, msg);
 				issues++;
 			}
