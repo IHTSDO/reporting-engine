@@ -34,7 +34,9 @@ public class AuthoringServicesClient {
 		//Set all the cookies that the user originally came in with
 		logger.info("Sending {} cookies in headers",cookies.length);
 		for (Cookie cookie : cookies) {
-			resty.withHeader("Cookie", cookie.getValue());
+			String cookieStr = cookie.getName() + "=" + cookie.getValue();
+			logger.info("Setting cookie: {}",cookieStr);
+			resty.withHeader("Cookie", cookieStr);
 		}
 	}
 
