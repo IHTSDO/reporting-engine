@@ -15,6 +15,7 @@ import org.ihtsdo.snowowl.authoring.batchimport.api.pojo.batch.BatchImportReques
 import org.ihtsdo.snowowl.authoring.batchimport.api.pojo.batch.BatchImportStatus;
 import org.ihtsdo.snowowl.authoring.batchimport.api.service.BatchImportFormat;
 import org.ihtsdo.snowowl.authoring.batchimport.api.service.BatchImportService;
+import org.ihtsdo.sso.integration.SecurityUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -104,11 +105,11 @@ public class BatchImportController extends AbstractSnomedRestService {
 		if (cookies == null) {
 			throw new Exception ("Unable to recover cookies from request.  No further information available.");
 		}
-		return new AuthoringServicesClient(authoringServicesUrl, request.getCookies());
+		return new AuthoringServicesClient(authoringServicesUrl, SecurityUtil.getAuthenticationToken());
 	}
 	
 	private SnowOwlRestClient getSOClient(HttpServletRequest request) {
-		return new SnowOwlRestClient(snowOwlUrl,request.getCookies());
+		return new SnowOwlRestClient(snowOwlUrl, SecurityUtil.getAuthenticationToken());
 	}
 
 	@ApiOperation( 

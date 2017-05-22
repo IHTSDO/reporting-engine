@@ -14,15 +14,28 @@
 		<activemq.version>5.10.0</activemq.version>
 		<emf.version>2.11.0-v20150123-0347</emf.version>
 		<slf4j.version>1.7.2</slf4j.version>
+		<spring-boot.version>1.4.3.RELEASE</spring-boot.version>
+		<ihtsdo.sso.version>2.0.0</ihtsdo.sso.version>
 		<!-- manifest properties -->
 		<bundle.webcontext>/snowowl/batch-import</bundle.webcontext>
 	</properties>
 
 	<dependencies>
-		<!-- <dependency>
+	<!--<dependency>
+			<groupId>org.ihtsdo.otf</groupId>
+			<artifactId>ihtsdo-spring-sso</artifactId>
+			<version>${ihtsdo.sso.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.springframework.boot</groupId>
+					<artifactId>spring-boot-starter-tomcat</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-data-jpa</artifactId>
-			<version>1.2.5.RELEASE</version>
+			<artifactId>spring-boot-starter-security</artifactId>
+			<version>${spring-boot.version}</version>
 		</dependency> -->
 		<dependency>
 			<groupId>com.h2database</groupId>
@@ -141,12 +154,6 @@
 			<groupId>org.eclipse.jetty.orbit</groupId>
 			<artifactId>javax.servlet</artifactId>
 		</dependency>
-	<!-- <dependency>
-			<groupId>javax.validation</groupId>
-			<artifactId>validation-api</artifactId>
-			<version>1.0.0.GA</version>
-			<scope>provided</scope>
-		</dependency> --> 
 
 		<!-- Regular Maven dependencies -->
 		<dependency>
@@ -160,62 +167,16 @@
 			<version>15.0</version>
 			<scope>provided</scope>
 		</dependency>
-	<!--  	<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-core</artifactId>
-			<version>${spring.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-web</artifactId>
-			<version>${spring.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-oxm</artifactId>
-			<version>${spring.version}</version>
-		</dependency> -->
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-context</artifactId>
 			<version>${spring.version}</version>
 		</dependency>
-	<!-- <dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-test</artifactId>
-			<version>${spring.version}</version>
-			<scope>test</scope>
-		</dependency>  -->
 		<dependency>
 			<groupId>com.thoughtworks.xstream</groupId>
 			<artifactId>xstream</artifactId>
 			<version>${xstream.version}</version>
 		</dependency>
-	<!-- 	<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-webmvc</artifactId>
-			<version>${spring.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.security</groupId>
-			<artifactId>spring-security-web</artifactId>
-			<version>${spring.security.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.security</groupId>
-			<artifactId>spring-security-config</artifactId>
-			<version>${spring.security.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.hateoas</groupId>
-			<artifactId>spring-hateoas</artifactId>
-			<version>${spring.hateoas.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-jms</artifactId>
-			<version>${spring.version}</version>
-		</dependency>   -->
 		<dependency>
 			<groupId>org.apache.activemq</groupId>
 			<artifactId>activemq-client</artifactId>
@@ -254,7 +215,6 @@
 	</dependencies>
 
 	<build>
-
 		<pluginManagement>
 			<plugins>
 				<plugin>
