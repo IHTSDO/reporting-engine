@@ -2,8 +2,6 @@ package org.ihtsdo.snowowl.authoring.batchimport.api.client;
 
 import java.io.IOException;
 
-import javax.servlet.http.Cookie;
-
 import org.ihtsdo.snowowl.authoring.batchimport.api.pojo.task.AuthoringTask;
 import org.ihtsdo.snowowl.authoring.batchimport.api.pojo.task.AuthoringTaskCreateRequest;
 import org.slf4j.Logger;
@@ -28,16 +26,10 @@ public class AuthoringServicesClient {
 	
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
-	public AuthoringServicesClient(String rootUrl, Cookie[] cookies) {
+	public AuthoringServicesClient(String rootUrl, String authenticatedCookie) {
 		resty = new Resty(new RestyOverrideAccept(ALL_CONTENT_TYPE));
 		this.rootUrl = rootUrl;
-		//Set all the cookies that the user originally came in with
-		logger.info("Sending {} cookies in headers",cookies.length);
-		for (Cookie cookie : cookies) {
-			String cookieStr = cookie.getName() + "=" + cookie.getValue();
-			logger.info("Setting cookie: {}",cookieStr);
-			resty.withHeader("Cookie", cookieStr);
-		}
+		resty.withHeader("Cookie", authenticatedCookie);
 	}
 
 	public AuthoringTask createTask(String projectKey, AuthoringTaskCreateRequest taskCreateRequest) throws AuthoringServicesClientException {
