@@ -23,6 +23,7 @@ public class ValidateDrugModeling extends TermServerScript{
 	
 	String subHierarchyStr = "373873005"; // |Pharmaceutical / biologic product (product)|
 	static final String SCTID_ACTIVE_INGREDIENT = "127489000"; // |Has active ingredient (attribute)|"
+	static final String SCTID_HAS_BOSS = "732943007"; //Has basis of strength substance (attribute)
 	String[] drugTypes = new String[] { "(medicinal product)" };
 	GraphLoader gl = GraphLoader.getGraphLoader();
 	
@@ -41,14 +42,53 @@ public class ValidateDrugModeling extends TermServerScript{
 	private void validateModeling() throws TermServerScriptException {
 		Set<Concept> subHierarchy = gl.getConcept(subHierarchyStr).getDescendents(NOT_SET);
 		Concept activeIngredient = gl.getConcept(SCTID_ACTIVE_INGREDIENT);
+		Concept boss = gl.getConcept(SCTID_HAS_BOSS);
 		long issueCount = 0;
 		for (Concept concept : subHierarchy) {
 			issueCount += validateIngredientsInFSN(concept, activeIngredient);
-			//validateIngredientsAgainstBoSS(concept);
+			issueCount += validateIngredientsAgainstBoSS(concept, activeIngredient, boss);
 		}
 		println ("Validation complete.  Detected " + issueCount + " issues.");
 	}
 	
+	private int validateIngredientsAgainstBoSS(Concept concept, Concept activeIngredient, Concept boss) throws TermServerScriptException {
+		int issueCount = 0;
+		List<Relationship> bossAttributes = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, boss, ActiveState.ACTIVE);
+		if (bossAttributes.size() > 1) {
+			String issue = bossAttributes.size() + " basis of strength attributes detected";
+			report (concept, issue, "");
+			issueCount++;
+		}
+		//Check BOSS attributes against active ingredients
+		List<Relationship> ingredientRels = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, activeIngredient, ActiveState.ACTIVE);
+		for (Relationship bRel : bossAttributes) {
+			boolean matchFound = false;
+			for (Relationship iRel : ingredientRels) {
+				if (isSelfOrSubTypeOf(bRel.getTarget(), iRel.getTarget())) {
+					matchFound = true;
+				}
+			}
+			if (!matchFound) {
+				String issue = "Basis of Strength not equal of subtype of active ingredient";
+				report (concept, issue, bRel.getTarget().toString());
+				issueCount++;
+			}
+		}
+		return issueCount;
+	}
+
+	//Return true if concept c is equal or a subtype of the superType
+	private boolean isSelfOrSubTypeOf(Concept c, Concept superType) throws TermServerScriptException {
+		if (c.equals(superType)) {
+			return true;
+		}
+		Set<Concept> subTypes = superType.getDescendents(NOT_SET);
+		if (subTypes.contains(c)) {
+			return true;
+		}
+		return false;
+	}
+
 	private int validateIngredientsInFSN(Concept concept, Concept activeIngredient) throws TermServerScriptException {
 		int issueCount = 0;
 		//Only check FSN for certain drug types (to be expanded later)
