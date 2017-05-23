@@ -15,7 +15,6 @@ import org.ihtsdo.snowowl.authoring.batchimport.api.pojo.batch.BatchImportReques
 import org.ihtsdo.snowowl.authoring.batchimport.api.pojo.batch.BatchImportStatus;
 import org.ihtsdo.snowowl.authoring.batchimport.api.service.BatchImportFormat;
 import org.ihtsdo.snowowl.authoring.batchimport.api.service.BatchImportService;
-import org.ihtsdo.sso.integration.SecurityUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -46,6 +45,9 @@ public class BatchImportController extends AbstractSnomedRestService {
 	
 	@Value("+{batch.import.authoring-services.url}")
 	private String authoringServicesUrl;
+	
+	@Value("+{batch.import.sso.cookie}")
+	private String cookieName;
 
 	@ApiOperation(value="Import 3rd Party Concept file eg SIRS")
 	@ApiResponses({
@@ -92,24 +94,35 @@ public class BatchImportController extends AbstractSnomedRestService {
 			importRequest.setDryRun(dryRun);
 			importRequest.allowLateralizedContent(allowLateralizedContent);
 			parser.close();
-			
-			batchImportService.startImport(batchImportId, importRequest, rows, ControllerHelper.getUsername(), getASClient(request), getSOClient(request));
+			String ssoCookie = getSsoCookie(request);
+			batchImportService.startImport(batchImportId, importRequest, rows, ControllerHelper.getUsername(), getASClient(ssoCookie), getSOClient(ssoCookie));
 			response.setHeader("Location", request.getRequestURL() + "/" + batchImportId.toString());
 		} catch (Exception e) {
 			throw new BusinessServiceException ("Unable to import batch file",e);
 		}
 	}
 	
-	private AuthoringServicesClient getASClient(HttpServletRequest request) throws Exception {
-		Cookie[] cookies = request.getCookies();
-		if (cookies == null) {
-			throw new Exception ("Unable to recover cookies from request.  No further information available.");
-		}
-		return new AuthoringServicesClient(authoringServicesUrl, SecurityUtil.getAuthenticationToken());
+	private AuthoringServicesClient getASClient(String ssoCookie) throws Exception {
+		return new AuthoringServicesClient(authoringServicesUrl, ssoCookie);
 	}
 	
-	private SnowOwlRestClient getSOClient(HttpServletRequest request) {
-		return new SnowOwlRestClient(snowOwlUrl, SecurityUtil.getAuthenticationToken());
+	private SnowOwlRestClient getSOClient(String ssoCookie) throws Exception {
+		
+		return new SnowOwlRestClient(snowOwlUrl, ssoCookie);
+	}
+
+	private String getSsoCookie(HttpServletRequest request) throws Exception {
+		String ssoCookie = null;
+		for (Cookie cookie : request.getCookies()) {
+			if (cookie.getName().equals(cookieName)) {
+				ssoCookie = cookie.getName() + "=" + cookie.getValue();
+				break;
+ 			}
+		}
+		if (ssoCookie == null) {
+			throw new Exception ("Unable to recover sso cookie '" + cookieName + "' from request - not found.");
+		}
+		return ssoCookie;
 	}
 
 	@ApiOperation( 
