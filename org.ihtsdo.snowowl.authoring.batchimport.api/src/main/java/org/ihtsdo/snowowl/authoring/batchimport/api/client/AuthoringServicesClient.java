@@ -132,7 +132,7 @@ public class AuthoringServicesClient {
 			String errStr = "Failed to save '" + panelId + "' ui state - " + taskKey + ": " + uiStateStr;
 			throw new AuthoringServicesClientException(errStr, e);
 		}
-		logger.info("Saved UI stated to {} for {}", endPoint, user);
+		logger.info("Saved UI state to {} for {}", endPoint, user);
 	}
 
 	public void updateTask(AuthoringTask task) throws AuthoringServicesClientException {

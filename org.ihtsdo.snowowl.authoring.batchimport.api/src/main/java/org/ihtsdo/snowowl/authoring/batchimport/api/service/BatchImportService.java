@@ -214,7 +214,6 @@ public class BatchImportService {
 				}
 				updateTaskDetails(task, run, conceptsLoaded, newSummary, asClient);
 				if (conceptsLoadedJson.length() > 2) {
-					logger.info("Temp Debug: Priming Edit Panels");
 					primeEditPanel(task, run, conceptsLoadedJson, asClient);
 					primeSavedList(task, run, conceptsLoaded.values(), asClient);
 				} else {
