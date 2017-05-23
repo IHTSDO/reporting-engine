@@ -224,15 +224,20 @@ public class BatchImportService {
 	}
 
 	private void updateTaskDetails(AuthoringTask task, BatchImportRun run,
-			Map<String, ISnomedBrowserConcept> conceptsLoaded, String newSummary, AuthoringServicesClient authoringServicesClient) throws BusinessServiceException {
+			Map<String, ISnomedBrowserConcept> conceptsLoaded, String newSummary, 
+			AuthoringServicesClient authoringServicesClient) {
 		try {
 			String allNotes = getAllNotes(task, run, conceptsLoaded);
 			if (newSummary != null) {
 				task.setSummary(newSummary);
 			}
 			task.setDescription(allNotes);
-			authoringServicesClient.updateTask(task);
-		} catch (AuthoringServicesClientException e) {
+			authoringServicesClient.updateTask(	task.getProjectKey(), 
+												task.getKey(),
+												task.getSummary(),
+												task.getDescription(),
+												task.getAssignee().getUsername());
+		} catch (Exception e) {
 			logger.error("Failed to update description on task {}",task.getKey(),e);
 		}
 	}

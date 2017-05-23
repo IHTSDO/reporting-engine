@@ -13,7 +13,6 @@ import us.monoid.json.JSONArray;
 import us.monoid.json.JSONObject;
 import us.monoid.web.JSONResource;
 import us.monoid.web.Resty;
-import static us.monoid.web.Resty.put;
 
 public class AuthoringServicesClient {
 	
@@ -133,16 +132,5 @@ public class AuthoringServicesClient {
 			throw new AuthoringServicesClientException(errStr, e);
 		}
 		logger.info("Saved UI state to {} for {}", endPoint, user);
-	}
-
-	public void updateTask(AuthoringTask task) throws AuthoringServicesClientException {
-		String endPoint = rootUrl + "projects/" + task.getProjectKey() + "/tasks/" + task.getKey();
-		JSONObject requestJson = new JSONObject();
-		try {
-			resty.json(endPoint, put(RestyHelper.content(requestJson, JSON_CONTENT_TYPE)));
-		} catch (IOException e) {
-			String errMsg =  "Failed to update task";
-			throw new AuthoringServicesClientException(errMsg, e);
-		}
 	}
 }
