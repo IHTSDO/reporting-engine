@@ -24,7 +24,7 @@ public class ValidateDrugModeling extends TermServerScript{
 	String subHierarchyStr = "373873005"; // |Pharmaceutical / biologic product (product)|
 	static final String SCTID_ACTIVE_INGREDIENT = "127489000"; // |Has active ingredient (attribute)|"
 	static final String SCTID_HAS_BOSS = "732943007"; //Has basis of strength substance (attribute)
-	String[] drugTypes = new String[] { "(medicinal product)" };
+	static final String SCTID_MAN_DOSE_FORM = "411116001"; //Has manufactured dose form (attribute)
 	GraphLoader gl = GraphLoader.getGraphLoader();
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
@@ -42,34 +42,68 @@ public class ValidateDrugModeling extends TermServerScript{
 	private void validateModeling() throws TermServerScriptException {
 		Set<Concept> subHierarchy = gl.getConcept(subHierarchyStr).getDescendents(NOT_SET);
 		Concept activeIngredient = gl.getConcept(SCTID_ACTIVE_INGREDIENT);
+		Concept hasManufacturedDoseForm = gl.getConcept(SCTID_MAN_DOSE_FORM);
 		Concept boss = gl.getConcept(SCTID_HAS_BOSS);
 		long issueCount = 0;
 		for (Concept concept : subHierarchy) {
-			issueCount += validateIngredientsInFSN(concept, activeIngredient);
-			issueCount += validateIngredientsAgainstBoSS(concept, activeIngredient, boss);
+			//issueCount += validateIngredientsInFSN(concept, activeIngredient);
+			//issueCount += validateIngredientsAgainstBoSS(concept, activeIngredient, boss);
+			
+			String[] drugTypes = new String[] { "(medicinal product form)", "(clinical drug)" };
+			issueCount += validateStatedVsInferredAttributes(concept, activeIngredient, drugTypes);
+			issueCount += validateStatedVsInferredAttributes(concept, hasManufacturedDoseForm, drugTypes);
+			//issueCount += validateAttributeValueCardinality
 		}
 		println ("Validation complete.  Detected " + issueCount + " issues.");
 	}
 	
+	private int validateStatedVsInferredAttributes(Concept concept,
+			Concept attributeType, String[] drugTypes) {
+		int issueCount = 0;
+		if (isDrugType(concept, drugTypes)) {
+			List<Relationship> statedAttributes = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
+			List<Relationship> infAttributes = concept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
+			if (statedAttributes.size() != infAttributes.size()) {
+				String msg = "Cardinality mismatch stated vs inferred " + attributeType;
+				String data = "(s" + statedAttributes.size() + " i" + infAttributes.size() + ")";
+				issueCount++;
+				report (concept, msg, data);
+			} else {
+				for (Relationship statedAttribute : statedAttributes) {
+					boolean found = false;
+					for (Relationship infAttribute : infAttributes) {
+						if (statedAttribute.getTarget().equals(infAttribute.getTarget())) {
+							found = true;
+							break;
+						}
+					}
+					if (!found) {
+						String msg = "Stated " + statedAttribute.getType() + " is not present in inferred view";
+						String data = statedAttribute.toString();
+						issueCount++;
+						report (concept, msg, data);
+					}
+				}
+			}
+		}
+		return issueCount;
+	}
+
 	private int validateIngredientsAgainstBoSS(Concept concept, Concept activeIngredient, Concept boss) throws TermServerScriptException {
 		int issueCount = 0;
 		List<Relationship> bossAttributes = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, boss, ActiveState.ACTIVE);
-		if (bossAttributes.size() > 1) {
-			String issue = bossAttributes.size() + " basis of strength attributes detected";
-			report (concept, issue, "");
-			issueCount++;
-		}
-		//Check BOSS attributes against active ingredients
+
+		//Check BOSS attributes against active ingredients - must be in the same relationship group
 		List<Relationship> ingredientRels = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, activeIngredient, ActiveState.ACTIVE);
 		for (Relationship bRel : bossAttributes) {
 			boolean matchFound = false;
 			for (Relationship iRel : ingredientRels) {
-				if (isSelfOrSubTypeOf(bRel.getTarget(), iRel.getTarget())) {
+				if (bRel.getGroupId() == iRel.getGroupId() && isSelfOrSubTypeOf(bRel.getTarget(), iRel.getTarget())) {
 					matchFound = true;
 				}
 			}
 			if (!matchFound) {
-				String issue = "Basis of Strength not equal of subtype of active ingredient";
+				String issue = "Basis of Strength not equal or subtype of active ingredient";
 				report (concept, issue, bRel.getTarget().toString());
 				issueCount++;
 			}
@@ -91,8 +125,10 @@ public class ValidateDrugModeling extends TermServerScript{
 
 	private int validateIngredientsInFSN(Concept concept, Concept activeIngredient) throws TermServerScriptException {
 		int issueCount = 0;
+		String[] drugTypes = new String[] { "(medicinal product)" };
+		
 		//Only check FSN for certain drug types (to be expanded later)
-		if (!verifyDrugType(concept)) {
+		if (!isDrugType(concept, drugTypes)) {
 			return issueCount;
 		}
 		//Get all the ingredients and put them in order
@@ -121,7 +157,7 @@ public class ValidateDrugModeling extends TermServerScript{
 		return issueCount;
 	}
 
-	private boolean verifyDrugType(Concept concept) {
+	private boolean isDrugType(Concept concept, String[] drugTypes) {
 		boolean isType = false;
 		for (String drugType : drugTypes) {
 			if (SnomedUtils.deconstructFSN(concept.getFsn())[1].equals(drugType)) {
