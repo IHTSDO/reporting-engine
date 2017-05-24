@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -25,6 +26,9 @@ public class ValidateDrugModeling extends TermServerScript{
 	static final String SCTID_ACTIVE_INGREDIENT = "127489000"; // |Has active ingredient (attribute)|"
 	static final String SCTID_HAS_BOSS = "732943007"; //Has basis of strength substance (attribute)
 	static final String SCTID_MAN_DOSE_FORM = "411116001"; //Has manufactured dose form (attribute)
+	Concept activeIngredient;
+	Concept hasManufacturedDoseForm;
+	Concept boss;
 	GraphLoader gl = GraphLoader.getGraphLoader();
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
@@ -41,18 +45,14 @@ public class ValidateDrugModeling extends TermServerScript{
 	
 	private void validateModeling() throws TermServerScriptException {
 		Set<Concept> subHierarchy = gl.getConcept(subHierarchyStr).getDescendents(NOT_SET);
-		Concept activeIngredient = gl.getConcept(SCTID_ACTIVE_INGREDIENT);
-		Concept hasManufacturedDoseForm = gl.getConcept(SCTID_MAN_DOSE_FORM);
-		Concept boss = gl.getConcept(SCTID_HAS_BOSS);
+		String[] drugTypes = new String[] { "(medicinal product form)", "(clinical drug)" };
 		long issueCount = 0;
 		for (Concept concept : subHierarchy) {
-			//issueCount += validateIngredientsInFSN(concept, activeIngredient);
-			//issueCount += validateIngredientsAgainstBoSS(concept, activeIngredient, boss);
-			
-			String[] drugTypes = new String[] { "(medicinal product form)", "(clinical drug)" };
+			issueCount += validateIngredientsInFSN(concept);
+			issueCount += validateIngredientsAgainstBoSS(concept);
 			issueCount += validateStatedVsInferredAttributes(concept, activeIngredient, drugTypes);
 			issueCount += validateStatedVsInferredAttributes(concept, hasManufacturedDoseForm, drugTypes);
-			//issueCount += validateAttributeValueCardinality
+			issueCount += validateAttributeValueCardinality(concept, activeIngredient);
 		}
 		println ("Validation complete.  Detected " + issueCount + " issues.");
 	}
@@ -89,7 +89,7 @@ public class ValidateDrugModeling extends TermServerScript{
 		return issueCount;
 	}
 
-	private int validateIngredientsAgainstBoSS(Concept concept, Concept activeIngredient, Concept boss) throws TermServerScriptException {
+	private int validateIngredientsAgainstBoSS(Concept concept) throws TermServerScriptException {
 		int issueCount = 0;
 		List<Relationship> bossAttributes = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, boss, ActiveState.ACTIVE);
 
@@ -123,7 +123,7 @@ public class ValidateDrugModeling extends TermServerScript{
 		return false;
 	}
 
-	private int validateIngredientsInFSN(Concept concept, Concept activeIngredient) throws TermServerScriptException {
+	private int validateIngredientsInFSN(Concept concept) throws TermServerScriptException {
 		int issueCount = 0;
 		String[] drugTypes = new String[] { "(medicinal product)" };
 		
@@ -156,6 +156,29 @@ public class ValidateDrugModeling extends TermServerScript{
 		}
 		return issueCount;
 	}
+	
+	private int validateAttributeValueCardinality(Concept concept, Concept activeIngredient) throws TermServerScriptException {
+		int issuesEncountered = 0;
+		issuesEncountered += checkforRepeatedAttributeValue(concept, CharacteristicType.INFERRED_RELATIONSHIP, activeIngredient);
+		issuesEncountered += checkforRepeatedAttributeValue(concept, CharacteristicType.STATED_RELATIONSHIP, activeIngredient);
+		return issuesEncountered;
+	}
+
+	private int checkforRepeatedAttributeValue(Concept c, CharacteristicType charType, Concept activeIngredient) throws TermServerScriptException {
+		int issues = 0;
+		Set<Concept> valuesEncountered = new HashSet<Concept>();
+		for (Relationship r : c.getRelationships(charType, activeIngredient, ActiveState.ACTIVE)) {
+			//Have we seen this value for the target attribute type before?
+			Concept target = r.getTarget();
+			if (valuesEncountered.contains(target)) {
+				String msg = "Multiple " + charType + " instances of active ingredient";
+				report(c, msg, target.toString());
+				issues++;
+			}
+			valuesEncountered.add(target);
+		}
+		return issues;
+	}
 
 	private boolean isDrugType(Concept concept, String[] drugTypes) {
 		boolean isType = false;
@@ -186,6 +209,11 @@ public class ValidateDrugModeling extends TermServerScript{
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
 		writeToFile ("Concept, FSN, SemTag, Issue, Data");
+		
+		//Recover static concepts that we'll need to search for in attribute types
+		activeIngredient = gl.getConcept(SCTID_ACTIVE_INGREDIENT);
+		hasManufacturedDoseForm = gl.getConcept(SCTID_MAN_DOSE_FORM);
+		boss = gl.getConcept(SCTID_HAS_BOSS);
 	}
 
 	@Override
