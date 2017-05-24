@@ -39,10 +39,7 @@ public class AuthoringServicesClient {
 			requestJson.put("summary", taskCreateRequest.getSummary());
 			requestJson.put("description", taskCreateRequest.getDescription());
 			JSONResource response = resty.json(endPoint, RestyHelper.content(requestJson, JSON_CONTENT_TYPE));
-			String jsonReponse = "Unparsable Response";
-			try {
-				jsonReponse = response.object().toString();
-			} catch (Exception e) {}
+			String jsonReponse = getJsonResponse(response);
 			logger.info("Create task request received: {} - {}", response.getHTTPStatus() , jsonReponse);
 			task = mapper.readValue(response.object().toString(1), AuthoringTask.class);
 		} catch (Exception e) {
@@ -119,18 +116,32 @@ public class AuthoringServicesClient {
 	public void persistTaskPanelState(String projectKey, String taskKey,
 			String user, String panelId, String uiStateStr) throws AuthoringServicesClientException {
 		String endPoint = rootUrl + "projects/" + projectKey + "/tasks/" + taskKey + "/ui-state/" + panelId;
+		JSONResource response;
 		try {
 			if (uiStateStr.startsWith("[")) {
 				JSONArray uiState = new JSONArray(uiStateStr);
-				resty.json(endPoint, Resty.put(RestyHelper.content(uiState, JSON_CONTENT_TYPE)));
+				response = resty.json(endPoint, Resty.put(RestyHelper.content(uiState, JSON_CONTENT_TYPE)));
 			} else {
 				JSONObject uiState = new JSONObject(uiStateStr);
-				resty.json(endPoint, Resty.put(RestyHelper.content(uiState, JSON_CONTENT_TYPE)));
+				response = resty.json(endPoint, Resty.put(RestyHelper.content(uiState, JSON_CONTENT_TYPE)));
+			}
+			if (response.getHTTPStatus() != 200) {
+				String jsonReponse = getJsonResponse(response);
+				logger.info("Failed to save UI state to {} for {}, received {}:{}", endPoint, user, response.getHTTPStatus(), jsonReponse);
+			} else {
+				logger.info("Saved UI state to {} for {}", endPoint, user);
 			}
 		} catch (Exception e) {
 			String errStr = "Failed to save '" + panelId + "' ui state - " + taskKey + ": " + uiStateStr;
 			throw new AuthoringServicesClientException(errStr, e);
 		}
-		logger.info("Saved UI state to {} for {}", endPoint, user);
+	}
+
+	private String getJsonResponse(JSONResource response) {
+		String jsonReponse ="Unparsable Response";
+		try {
+			jsonReponse = response.object().toString();
+		} catch (Exception e) {}
+		return jsonReponse;
 	}
 }
