@@ -121,7 +121,7 @@ public class AuthoringServicesClient {
 		String endPoint = rootUrl + "projects/" + projectKey + "/tasks/" + taskKey + "/ui-state/" + panelId;
 		try {
 			if (uiStateStr.startsWith("[")) {
-				JSONArray  uiState = new JSONArray(uiStateStr);
+				JSONArray uiState = new JSONArray(uiStateStr);
 				resty.json(endPoint, Resty.put(RestyHelper.content(uiState, JSON_CONTENT_TYPE)));
 			} else {
 				JSONObject uiState = new JSONObject(uiStateStr);
