@@ -49,18 +49,6 @@ public class AuthoringServicesClient {
 		}
 		return task;
 	}
-
-	public void setEditPanelUIState(String project, String taskKey, String quotedList) throws IOException {
-		String endPointRoot = rootUrl + "projects/" + project + "/tasks/" + taskKey + "/ui-state/";
-		String endPoint = endPointRoot + "edit-panel";
-		resty.json(endPoint, RestyHelper.content(quotedList, JSON_CONTENT_TYPE));
-	}
-	
-	public void setSavedListUIState(String project, String taskKey, JSONObject items) throws IOException {
-		String endPointRoot = rootUrl + "projects/" + project + "/tasks/" + taskKey + "/ui-state/";
-		String endPoint = endPointRoot + "saved-list";
-		resty.json(endPoint, RestyHelper.content(items, JSON_CONTENT_TYPE));
-	}
 	
 	public String updateTask(String project, String taskKey, String summary, String description, String username) throws Exception {
 		String endPoint = rootUrl + "projects/" + project + "/tasks/" + taskKey;
@@ -115,15 +103,15 @@ public class AuthoringServicesClient {
 
 	public void persistTaskPanelState(String projectKey, String taskKey,
 			String user, String panelId, String uiStateStr) throws AuthoringServicesClientException {
-		String endPoint = rootUrl + "projects/" + projectKey + "/tasks/" + taskKey + "/ui-state/" + panelId;
-		JSONResource response;
 		try {
+			String endPoint = rootUrl + "projects/" + projectKey + "/tasks/" + taskKey + "/ui-state/" + panelId;
+			JSONResource response;
 			if (uiStateStr.startsWith("[")) {
 				JSONArray uiState = new JSONArray(uiStateStr);
-				response = resty.json(endPoint, Resty.put(RestyHelper.content(uiState, JSON_CONTENT_TYPE)));
+				response = resty.json(endPoint, RestyHelper.content(uiState, JSON_CONTENT_TYPE));
 			} else {
 				JSONObject uiState = new JSONObject(uiStateStr);
-				response = resty.json(endPoint, Resty.put(RestyHelper.content(uiState, JSON_CONTENT_TYPE)));
+				response = resty.json(endPoint, RestyHelper.content(uiState, JSON_CONTENT_TYPE));
 			}
 			if (response.getHTTPStatus() != 200) {
 				String jsonReponse = getJsonResponse(response);
