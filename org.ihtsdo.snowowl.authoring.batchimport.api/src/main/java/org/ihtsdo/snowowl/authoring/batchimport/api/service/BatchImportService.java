@@ -237,6 +237,7 @@ public class BatchImportService {
 												task.getSummary(),
 												task.getDescription(),
 												task.getAssignee().getUsername());
+			logger.info ("Task {} assigned to {}", task.getKey(), task.getAssignee().getUsername());
 		} catch (Exception e) {
 			logger.error("Failed to update description on task {}",task.getKey(),e);
 		}

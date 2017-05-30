@@ -68,6 +68,12 @@ public class AuthoringServicesClient {
 			requestJson.put("assignee", assigneeJson);
 		}
 		JSONResource response = resty.json(endPoint, Resty.put(RestyHelper.content(requestJson, JSON_CONTENT_TYPE)));
+		if (response.getHTTPStatus() != 200) {
+			String jsonReponse = getJsonResponse(response);
+			logger.info("Failed to update task {} for user {}.  Received: {} : {}",taskKey, username, response.getHTTPStatus(), jsonReponse);
+		} else {
+			logger.info("Updated task {} for {}", taskKey, username);
+		}
 		return response.get("key").toString();
 	}
 	
