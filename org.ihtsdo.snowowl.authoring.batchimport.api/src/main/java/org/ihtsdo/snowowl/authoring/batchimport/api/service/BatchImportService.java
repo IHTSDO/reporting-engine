@@ -207,18 +207,20 @@ public class BatchImportService {
 			boolean dryRun = run.getImportRequest().isDryRun();
 			logger.info((dryRun?"Dry ":"") + "Loaded concepts onto task {}: {}",task.getKey(),conceptsLoadedJson);
 			if (!dryRun) {
-				//If we are loading 1 concept per task, then set the summary to be the FSN
-				String newSummary = null;
-				if (run.getImportRequest().getConceptsPerTask() == 1) {
-					newSummary = "New concept: " + thisBatch.get(0).getFsn();
-				}
-				updateTaskDetails(task, run, conceptsLoaded, newSummary, asClient);
+				// Update the edit panel so that the UI state exists before the task is transferred
 				if (conceptsLoadedJson.length() > 2) {
 					primeEditPanel(task, run, conceptsLoadedJson, asClient);
 					primeSavedList(task, run, conceptsLoaded.values(), asClient);
 				} else {
 					logger.info("Skipped update of UI-Panel for {}: {}",task.getKey(),conceptsLoadedJson);
 				}
+				
+				//If we are loading 1 concept per task, then set the summary to be the FSN
+				String newSummary = null;
+				if (run.getImportRequest().getConceptsPerTask() == 1) {
+					newSummary = "New concept: " + thisBatch.get(0).getFsn();
+				}
+				updateTaskDetails(task, run, conceptsLoaded, newSummary, asClient);
 			}
 		}
 	}
