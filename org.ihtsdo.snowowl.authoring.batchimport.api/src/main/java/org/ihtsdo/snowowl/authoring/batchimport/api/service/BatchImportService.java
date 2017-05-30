@@ -232,12 +232,12 @@ public class BatchImportService {
 				task.setSummary(newSummary);
 			}
 			task.setDescription(allNotes);
-			authoringServicesClient.updateTask(	task.getProjectKey(), 
+			authoringServicesClient.updateTask( task.getProjectKey(), 
 												task.getKey(),
 												task.getSummary(),
 												task.getDescription(),
-												task.getAssignee().getUsername());
-			logger.info ("Task {} assigned to {}", task.getKey(), task.getAssignee().getUsername());
+												run.getImportRequest().getCreateForAuthor());
+			logger.info ("Task {} assigned to {}", task.getKey(), run.getImportRequest().getCreateForAuthor());
 		} catch (Exception e) {
 			logger.error("Failed to update description on task {}",task.getKey(),e);
 		}
