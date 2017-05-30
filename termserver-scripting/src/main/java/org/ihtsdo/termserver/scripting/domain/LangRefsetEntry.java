@@ -66,6 +66,7 @@ public class LangRefsetEntry {
 	public void setActive(boolean newActiveState) {
 		if (this.active != null && this.active != newActiveState) {
 			setDirty();
+			setEffectiveTime(null);
 		}
 		this.active = newActiveState;
 	}
