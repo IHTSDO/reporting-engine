@@ -32,12 +32,9 @@ public class ReactivateUSAcceptability extends DeltaGenerator implements RF2Cons
 	}
 
 	private void process() throws TermServerScriptException {
-		print ("Processing concepts to look for redundant IS A relationships");
+		println ("Processing concepts to find issues with US acceptability.");
 		for (Concept concept : GraphLoader.getGraphLoader().getAllConcepts()) {
-			//We're working with inactive concepts
-			if (!concept.isActive()) {
-				fixFsnAcceptability(concept);
-			}
+			fixFsnAcceptability(concept);
 			if (concept.isModified()) {
 				incrementSummaryInformation("Concepts modified", 1);
 				outputRF2(concept);  //Will only output dirty fields.
