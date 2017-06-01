@@ -50,6 +50,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	protected boolean selfDetermining = false; //Set to true if the batch fix calculates its own data to process
 	protected boolean populateEditPanel = true;
 	protected boolean populateTaskDescription = true;
+	protected boolean reportNoChange = true;
 
 	protected BatchFix (BatchFix clone) {
 		if (clone != null) {
@@ -147,7 +148,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 							}
 							String info = " Task (" + xOfY + ") Concept (" + conceptInTask + " of " + task.getConcepts().size() + ")";
 							int changesMade = doFix(task, concept, info);
-							if (changesMade == 0) {
+							if (changesMade == 0 && reportNoChange) {
 								report(task, concept, Severity.NONE, ReportActionType.NO_CHANGE, "");
 							}
 						} catch (ValidationFailure f) {
