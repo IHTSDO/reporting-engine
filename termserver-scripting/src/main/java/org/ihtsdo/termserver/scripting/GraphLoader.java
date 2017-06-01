@@ -182,6 +182,7 @@ public class GraphLoader implements RF2Constants {
 				Concept c = getConcept(lineItems[CON_IDX_ID]);
 				c.setActive(lineItems[CON_IDX_ACTIVE].equals("1"));
 				c.setEffectiveTime(lineItems[CON_IDX_EFFECTIVETIME]);
+				c.setModuleId(lineItems[CON_IDX_MODULID]);
 				c.setDefinitionStatus(SnomedUtils.translateDefnStatus(lineItems[CON_IDX_DEFINITIONSTATUSID]));
 			} else {
 				isHeaderLine = false;

@@ -383,6 +383,15 @@ public class SnomedUtils implements RF2Constants{
 		return null;
 	}
 	
+	public static String translateDefnStatus(DefinitionStatus defn) {
+		switch (defn) {
+			case PRIMITIVE: return SCTID_PRIMITIVE;
+			case FULLY_DEFINED: return SCTID_FULLY_DEFINED;
+			default:
+		}
+		return null;
+	}
+	
 
 	public static boolean translateActive(ActiveState active) throws TermServerScriptException {
 		switch (active) {

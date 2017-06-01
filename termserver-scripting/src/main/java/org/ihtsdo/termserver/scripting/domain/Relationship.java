@@ -47,6 +47,9 @@ public class Relationship implements RF2Constants, Comparable<Relationship> {
 	
 	private boolean dirty = false;
 	
+	private boolean isDeleted = false;
+	private String deletionEffectiveTime;
+	
 	public static final String[] rf2Header = new String[] {"id","effectiveTime","active","moduleId","sourceId","destinationId",
 															"relationshipGroup","typeId","characteristicTypeId","modifierId"};
 
@@ -334,6 +337,17 @@ public class Relationship implements RF2Constants, Comparable<Relationship> {
 							SnomedUtils.translateCharacteristicType(characteristicType), 
 							SnomedUtils.translateModifier(modifier)};
 	}
+	
+	public String[] toRF2Deletion() throws TermServerScriptException {
+		return new String[] {relationshipId, effectiveTime, deletionEffectiveTime,
+							(active?"1":"0"), 
+							"1",
+							moduleId, sourceId, target.getConceptId(),
+							Long.toString(groupId), type.getConceptId(), 
+							SnomedUtils.translateCharacteristicType(characteristicType), 
+							SnomedUtils.translateModifier(modifier)};
+	}
+
 
 	public boolean isDirty() {
 		return dirty;
@@ -350,4 +364,14 @@ public class Relationship implements RF2Constants, Comparable<Relationship> {
 	public void setSource(Concept source) {
 		this.source = source;
 	}
+
+	public boolean isDeleted() {
+		return isDeleted;
+	}
+
+	public void delete(String deletionEffectiveTime) {
+		this.isDeleted = true;
+		this.deletionEffectiveTime = deletionEffectiveTime;
+	}
+
 }

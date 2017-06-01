@@ -54,6 +54,9 @@ public class Description implements RF2Constants{
 	private InactivationIndicator inactivationIndicator;
 	List<LangRefsetEntry> langRefsetEntries;
 	private boolean dirty = false;
+	private boolean isDeleted = false;
+	private String deletionEffectiveTime;
+	
 	/**
 	 * No args constructor for use in serialization
 	 * 
@@ -271,6 +274,14 @@ public class Description implements RF2Constants{
 		return new String[] {descriptionId, effectiveTime, (active?"1":"0"), moduleId, conceptId, lang,
 				SnomedUtils.translateDescType(type), term, caseSignificance};
 	}
+	
+	public String[] toRF2Deletion() throws TermServerScriptException {
+		//"id","effectiveTime","active","moduleId","conceptId","languageCode","typeId","term","caseSignificanceId"
+		return new String[] {descriptionId, effectiveTime, deletionEffectiveTime,
+				(active?"1":"0"), "1",
+				moduleId, conceptId, lang,
+				SnomedUtils.translateDescType(type), term, caseSignificance};
+	}
 
 	public List<LangRefsetEntry> getLangRefsetEntries() {
 		if (langRefsetEntries == null) {
@@ -332,6 +343,15 @@ public class Description implements RF2Constants{
 	public void inactivateDescription(InactivationIndicator indicator) {
 		this.setActive(false);
 		this.setInactivationIndicator(indicator);
+	}
+
+	public boolean isDeleted() {
+		return isDeleted;
+	}
+
+	public void delete(String deletionEffectiveTime) {
+		this.isDeleted = true;
+		this.deletionEffectiveTime = deletionEffectiveTime;
 	}
 
 }

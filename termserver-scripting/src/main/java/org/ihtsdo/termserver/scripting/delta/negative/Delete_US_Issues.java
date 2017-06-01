@@ -1,0 +1,143 @@
+package org.ihtsdo.termserver.scripting.delta.negative;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.ihtsdo.termserver.scripting.GraphLoader;
+import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+
+import com.google.common.base.Charsets;
+import com.google.common.io.Files;
+
+/**
+ * Class to reactivate langrefset entries when they have been inactivated after the international edition has activated ones for the same concept
+ */
+public class Delete_US_Issues extends NegativeDeltaGenerator implements RF2Constants {
+
+	static final String deletionEffectiveTime = "20170901";
+	List<Concept> affectedConcepts = new ArrayList<Concept>();
+	GraphLoader gl = GraphLoader.getGraphLoader();
+
+	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
+		Delete_US_Issues delta = new Delete_US_Issues();
+		try {
+			delta.newIdsRequired = false; // We'll only be reactivating exisiting langrefset entries
+			delta.init(args);
+			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
+			delta.loadProjectSnapshot(false);  
+			//We won't include the project export in our timings
+			delta.startTimer();
+			delta.process();
+			SnomedUtils.createArchive(new File(delta.outputDirName));
+		} finally {
+			delta.finish();
+		}
+	}
+	
+	protected void init(String[] args) throws IOException, TermServerScriptException {
+		super.init(args);
+		boolean fileLoaded = false;
+		for (int i=0; i < args.length; i++) {
+			if (args[i].equalsIgnoreCase("-z")) {
+				loadConcepts(args[i+1]);
+				fileLoaded = true;
+			}
+		}
+		
+		if (!fileLoaded) {
+			println ("Failed to concepts affected.  Specify path with 'z' command line parameter");
+			System.exit(1);
+		}
+	}
+	
+	private void loadConcepts(String fileName) throws TermServerScriptException {
+		try {
+			File affectedConceptFile = new File(fileName);
+			List<String> lines = Files.readLines(affectedConceptFile, Charsets.UTF_8);
+			println ("Loading selected Concepts from " + fileName);
+			for (String line : lines) {
+				affectedConcepts.add(gl.getConcept(line));
+			}
+		} catch (Exception e) {
+			throw new TermServerScriptException("Unable to import concept selection file " + fileName, e);
+		}
+	}
+
+	private void process() throws TermServerScriptException {
+		println ("Processing concepts to find issues with US acceptability.");
+		//First touch all concepts who were erroneously inactivated to remove those rows
+		for (Concept concept : affectedConcepts) {
+			String action = "Deleting last US concept update";
+			report(concept, concept.getFSNDescription(), Severity.MEDIUM, ReportActionType.CONCEPT_CHANGE_MADE, action);
+			concept.delete(deletionEffectiveTime);
+			concept.setModified();
+		}
+		//Now go through all concepts to find FSN Acceptability issues.
+		for (Concept concept : GraphLoader.getGraphLoader().getAllConcepts()) {
+			deleteUnwantedFsnAcceptability(concept);
+			if (concept.isModified()) {
+				incrementSummaryInformation("Concepts modified", 1);
+				outputRF2(concept);  //Will only output deleted rows
+			}
+		}
+	}
+	
+	//Confirm that the active FSN has 1 x US acceptability == preferred
+	private void deleteUnwantedFsnAcceptability(Concept c) throws TermServerScriptException {
+		List<Description> fsns = c.getDescriptions(Acceptability.BOTH, DescriptionType.FSN, ActiveState.ACTIVE);
+		if (fsns.size() != 1) {
+			String msg = "Concept has " + fsns.size() + " active fsns";
+			report(c, c.getFSNDescription(), Severity.HIGH, ReportActionType.VALIDATION_CHECK, msg);
+		} else {
+			String msg = "[" + fsns.get(0).getDescriptionId() + "]: ";
+			List<LangRefsetEntry> langRefEntries = fsns.get(0).getLangRefsetEntries(ActiveState.BOTH, US_ENG_LANG_REFSET);
+			if (langRefEntries.size() != 1) {
+				if (langRefEntries.size() == 2) {
+					List<LangRefsetEntry> uslangRefEntries = fsns.get(0).getLangRefsetEntries(ActiveState.BOTH, US_ENG_LANG_REFSET, SCTID_US_MODULE);
+					List<LangRefsetEntry> corelangRefEntries = fsns.get(0).getLangRefsetEntries(ActiveState.BOTH, US_ENG_LANG_REFSET, SCTID_CORE_MODULE);
+					if (uslangRefEntries.size() > 1 || corelangRefEntries.size() >1) {
+						msg += "Two acceptabilities in the same module";
+						report(c, c.getFSNDescription(), Severity.HIGH, ReportActionType.VALIDATION_CHECK, msg);
+					} else {
+						if (!uslangRefEntries.get(0).isActive() && corelangRefEntries.get(0).isActive() ) {
+							long usET = Long.parseLong(uslangRefEntries.get(0).getEffectiveTime());
+							long coreET = Long.parseLong(corelangRefEntries.get(0).getEffectiveTime());
+							msg += "US langrefset entry inactivated " + (usET > coreET ? "after":"before") + " core row activated - " + usET;
+							report(c, c.getFSNDescription(), Severity.HIGH, ReportActionType.VALIDATION_CHECK, msg);
+							
+							//If the US inactivated AFTER the core activated, then this is the case we need to fix
+							uslangRefEntries.get(0).delete(deletionEffectiveTime);
+							String action = "Deleted US FSN LangRefset entry";
+							report(c, c.getFSNDescription(), Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, action);
+							c.setModified();
+						} else {
+							msg += "Unexpected configuration of us and core lang refset entries";
+							report(c, c.getFSNDescription(), Severity.HIGH, ReportActionType.VALIDATION_CHECK, msg);
+						}
+					}
+				} else {
+					msg += "FSN has " + langRefEntries.size() + " US acceptability values.";
+					report(c, c.getFSNDescription(), Severity.HIGH, ReportActionType.VALIDATION_CHECK, msg);
+				}
+			} else if (!langRefEntries.get(0).getAcceptabilityId().equals(SCTID_PREFERRED_TERM)) {
+				msg += "FSN has an acceptability that is not Preferred.";
+				report(c, c.getFSNDescription(), Severity.HIGH, ReportActionType.VALIDATION_CHECK, msg);
+			} else if (!langRefEntries.get(0).isActive()) {
+				msg += "FSN's US acceptability is inactive.";
+				report(c, c.getFSNDescription(), Severity.HIGH, ReportActionType.VALIDATION_CHECK, msg);
+			}
+		}
+	}
+
+	@Override
+	protected Concept loadLine(String[] lineItems)
+			throws TermServerScriptException {
+		return null;
+	}
+
+}
