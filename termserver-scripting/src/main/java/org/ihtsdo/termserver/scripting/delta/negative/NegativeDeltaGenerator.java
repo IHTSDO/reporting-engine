@@ -41,11 +41,11 @@ public abstract class NegativeDeltaGenerator extends DeltaGenerator {
 
 	protected void outputRF2(Description d) throws TermServerScriptException {
 		if (d.isDeleted()) {
-			writeToRF2File(descDeltaFilename, d.toRF2());
+			writeToRF2File(descDeltaFilename, d.toRF2Deletion());
 		}
 		for (LangRefsetEntry lang : d.getLangRefsetEntries()) {
 			if (lang.isDeleted()) {
-				writeToRF2File(langDeltaFilename, lang.toRF2());
+				writeToRF2File(langDeltaFilename, lang.toRF2Deletion());
 			}
 		}
 	}
