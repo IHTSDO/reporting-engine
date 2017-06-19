@@ -18,6 +18,9 @@ import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.Task;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
+import com.google.common.base.Charsets;
+import com.google.common.io.Files;
+
 import us.monoid.json.JSONObject;
 
 /*
@@ -31,6 +34,7 @@ public class RestateInferredAsStated extends BatchFix implements RF2Constants{
 	String subHierarchyStr = "373873005"; // |Pharmaceutical / biologic product (product)|
 	String targetSemanticTag = "(medicinal product form)";
 	List<Concept> attributesOfInterest = new ArrayList<Concept>();
+	List<Concept> conceptsAgreedToChange = new ArrayList<Concept>();
 	GraphLoader gl = GraphLoader.getGraphLoader();
 	
 	protected RestateInferredAsStated(BatchFix clone) {
@@ -61,10 +65,22 @@ public class RestateInferredAsStated extends BatchFix implements RF2Constants{
 		//Populate our attributes of interest
 		attributesOfInterest.add(gl.getConcept("127489000")); //Has active ingredient (attribute)|)
 		attributesOfInterest.add(gl.getConcept("411116001")); //Has manufactured dose form (attribute)
+		
+		List<String> lines = Files.readLines(inputFile, Charsets.UTF_8);
+		println ("Loading concepts agreed for change from " + inputFile);
+		for (String line : lines) {
+			conceptsAgreedToChange.add(gl.getConcept(line.trim()));
+		}
 	}
 
 	@Override
 	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
+		//Is this one of the concepts we've been told to fix?  Skip if not
+		if (!conceptsAgreedToChange.contains(concept)) {
+			report(task, concept, Severity.LOW, ReportActionType.VALIDATION_CHECK, "Instructed not to process");
+			return 0;
+		}
+		
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
 		int changesMade = restateInferredRelationships(task, loadedConcept);
 		if (changesMade > 0) {
