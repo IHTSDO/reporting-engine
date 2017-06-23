@@ -13,6 +13,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 /**
  * Class to reactivate langrefset entries when they have been inactivated after the international edition has activated ones for the same concept
  */
+@Deprecated
 public class ReactivateUSAcceptability extends DeltaGenerator implements RF2Constants {
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {

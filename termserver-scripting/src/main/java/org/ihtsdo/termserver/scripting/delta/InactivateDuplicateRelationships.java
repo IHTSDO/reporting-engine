@@ -13,9 +13,9 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 /**
  * Class to replace relationships with alternatives
  * Example TS Task: MAIN/2017-01-31/SNOMEDCT-US/USTEST/USTEST-6002
+ * INFRA-1232
  */
 public class InactivateDuplicateRelationships extends DeltaGenerator implements RF2Constants {
-	
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
 		InactivateDuplicateRelationships delta = new InactivateDuplicateRelationships();
