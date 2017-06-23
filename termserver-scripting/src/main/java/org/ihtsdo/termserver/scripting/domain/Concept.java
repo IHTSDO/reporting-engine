@@ -58,6 +58,8 @@ public class Concept implements RF2Constants, Comparable<Concept> {
 	private String assignedAuthor;
 	private String reviewer;
 	boolean isModified = false; //indicates if has been modified in current processing run
+	private String deletionEffectiveTime;
+	private boolean isDeleted = false;
 	private int depth;
 	private List<Description> activeDescriptions = null;  //Cache in case we recover active descriptions frequently
 	List<InactivationIndicatorEntry> inactivationIndicatorEntries;
@@ -516,10 +518,38 @@ public class Concept implements RF2Constants, Comparable<Concept> {
 			return selectedInactivationIndicatortEntries;
 		}
 	}
+	
+	//id	effectiveTime	active	moduleId	definitionStatusId
+	public String[] toRF2() throws TermServerScriptException {
+		return new String[] {conceptId, 
+				effectiveTime, 
+				(active?"1":"0"), 
+				moduleId, 
+				SnomedUtils.translateDefnStatus(definitionStatus)};
+	}
+	
+	public String[] toRF2Deletion() throws TermServerScriptException {
+		return new String[] {conceptId, 
+				effectiveTime, 
+				deletionEffectiveTime,
+				(active?"1":"0"), 
+				"1",  //Deletion is active
+				moduleId, 
+				SnomedUtils.translateDefnStatus(definitionStatus)};
+	}
 
 	public void setInactivationIndicatorEntries(
 			List<InactivationIndicatorEntry> inactivationIndicatorEntries) {
 		this.inactivationIndicatorEntries = inactivationIndicatorEntries;
+	}
+
+	public boolean isDeleted() {
+		return isDeleted;
+	}
+
+	public void delete(String deletionEffectiveTime) {
+		this.isDeleted = true;
+		this.deletionEffectiveTime = deletionEffectiveTime;
 	}
 
 }

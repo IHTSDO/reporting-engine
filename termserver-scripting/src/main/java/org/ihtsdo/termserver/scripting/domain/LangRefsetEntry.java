@@ -14,6 +14,8 @@ public class LangRefsetEntry {
 	private String referencedComponentId;
 	private String acceptabilityId;
 	private boolean dirty = false;
+	private boolean isDeleted = false;
+	private String deletionEffectiveTime;
 	
 	public LangRefsetEntry clone(String newDescriptionSctId) {
 		LangRefsetEntry clone = new LangRefsetEntry();
@@ -32,6 +34,18 @@ public class LangRefsetEntry {
 		return new String[] { id, 
 				(effectiveTime==null?"":effectiveTime), 
 				(active?"1":"0"),
+				moduleId, refsetId,
+				referencedComponentId,
+				acceptabilityId
+		};
+	}
+	
+	public String[] toRF2Deletion() {
+		return new String[] { id, 
+				(effectiveTime==null?"":effectiveTime), 
+				deletionEffectiveTime,
+				(active?"1":"0"),
+				"1",
 				moduleId, refsetId,
 				referencedComponentId,
 				acceptabilityId
@@ -66,6 +80,7 @@ public class LangRefsetEntry {
 	public void setActive(boolean newActiveState) {
 		if (this.active != null && this.active != newActiveState) {
 			setDirty();
+			setEffectiveTime(null);
 		}
 		this.active = newActiveState;
 	}
@@ -97,5 +112,14 @@ public class LangRefsetEntry {
 	
 	public void setDirty() {
 		dirty = true;
+	}
+
+	public boolean isDeleted() {
+		return isDeleted;
+	}
+
+	public void delete(String deletionEffectiveTime) {
+		this.isDeleted = true;
+		this.deletionEffectiveTime = deletionEffectiveTime;
 	}
 }

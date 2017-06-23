@@ -16,29 +16,29 @@ import org.ihtsdo.termserver.scripting.domain.Relationship;
 
 public abstract class DeltaGenerator extends TermServerScript {
 	
-	String outputDirName = "output";
-	String packageRoot;
-	String today = new SimpleDateFormat("yyyyMMdd").format(new Date());
-	String packageDir;
-	String conDeltaFilename;
-	String relDeltaFilename;
-	String attribValDeltaFilename;
-	String sRelDeltaFilename;
-	String descDeltaFilename;
-	String langDeltaFilename;
-	String edition = "INT";
+	protected String outputDirName = "output";
+	protected String packageRoot;
+	protected String today = new SimpleDateFormat("yyyyMMdd").format(new Date());
+	protected String packageDir;
+	protected String conDeltaFilename;
+	protected String relDeltaFilename;
+	protected String attribValDeltaFilename;
+	protected String sRelDeltaFilename;
+	protected String descDeltaFilename;
+	protected String langDeltaFilename;
+	protected String edition = "INT";
 	
 	protected String languageCode = "en";
 	protected boolean isExtension = false;
 	protected boolean newIdsRequired = true;
 	
-	String[] conHeader = new String[] {"id","effectiveTime","active","moduleId","definitionStatusId"};
-	String[] descHeader = new String[] {"id","effectiveTime","active","moduleId","conceptId","languageCode","typeId","term","caseSignificanceId"};
-	String[] relHeader = new String[] {"id","effectiveTime","active","moduleId","sourceId","destinationId","relationshipGroup","typeId","characteristicTypeId","modifierId"};
-	String[] langHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","acceptabilityId"};
-	String[] attribValHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","valueId"};
+	protected String[] conHeader = new String[] {"id","effectiveTime","active","moduleId","definitionStatusId"};
+	protected String[] descHeader = new String[] {"id","effectiveTime","active","moduleId","conceptId","languageCode","typeId","term","caseSignificanceId"};
+	protected String[] relHeader = new String[] {"id","effectiveTime","active","moduleId","sourceId","destinationId","relationshipGroup","typeId","characteristicTypeId","modifierId"};
+	protected String[] langHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","acceptabilityId"};
+	protected String[] attribValHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","valueId"};
 	
-	IdGenerator idGenerator;
+	protected IdGenerator idGenerator;
 	
 	protected void report(Concept concept, Description d, Severity severity, ReportActionType actionType, String actionDetail) {
 		String line = "";
@@ -87,7 +87,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 		initialiseFileHeaders();
 	}
 	
-	private void initialiseFileHeaders() throws TermServerScriptException {
+	protected void initialiseFileHeaders() throws TermServerScriptException {
 		String termDir = packageDir +"Delta/Terminology/";
 		String refDir =  packageDir +"Delta/Refset/";
 		conDeltaFilename = termDir + "sct2_Concept_Delta_"+edition+"_" + today + ".txt";

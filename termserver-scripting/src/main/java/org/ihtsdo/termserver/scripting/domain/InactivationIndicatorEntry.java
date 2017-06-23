@@ -13,6 +13,8 @@ public class InactivationIndicatorEntry {
 	private String referencedComponentId;
 	private String inactivationReasonId;
 	private boolean dirty = false;
+	private boolean isDeleted = false;
+	private String deletionEffectiveTime;
 	
 	public InactivationIndicatorEntry clone(String newComponentSctId) {
 		InactivationIndicatorEntry clone = new InactivationIndicatorEntry();
@@ -35,6 +37,18 @@ public class InactivationIndicatorEntry {
 		return new String[] { id, 
 				(effectiveTime==null?"":effectiveTime), 
 				(active?"1":"0"),
+				moduleId, refsetId,
+				referencedComponentId,
+				inactivationReasonId
+		};
+	}
+	
+	public String[] toRF2Deletion() {
+		return new String[] { id, 
+				(effectiveTime==null?"":effectiveTime), 
+				deletionEffectiveTime,
+				(active?"1":"0"),
+				"1",
 				moduleId, refsetId,
 				referencedComponentId,
 				inactivationReasonId
@@ -101,5 +115,14 @@ public class InactivationIndicatorEntry {
 	
 	public void setDirty() {
 		dirty = true;
+	}
+
+	public boolean isDeleted() {
+		return isDeleted;
+	}
+
+	public void delete(String deletionEffectiveTime) {
+		this.isDeleted = true;
+		this.deletionEffectiveTime = deletionEffectiveTime;
 	}
 }
