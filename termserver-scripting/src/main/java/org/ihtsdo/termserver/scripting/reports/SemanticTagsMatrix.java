@@ -68,11 +68,11 @@ public class SemanticTagsMatrix extends TermServerReport{
 	private void checkForAnomoly(String topTag, String thisTag, Concept c) {
 		//Some hierarchies only expect to use a single semantic tag
 		if (topTag.equals("(product)") && thisTag.equals("(substance)")) {
-			println ("Anomoloy found in " + topTag + " hierarchy: " + c);
+			println ("Anomaly found in " + topTag + " hierarchy: " + c);
 		}
 		
 		if (topTag.equals("(substance)") && thisTag.equals("(product)")) {
-			println ("Anomoloy found in " + topTag + " hierarchy: " + c);
+			println ("Anomaly found in " + topTag + " hierarchy: " + c);
 		}
 	}
 
