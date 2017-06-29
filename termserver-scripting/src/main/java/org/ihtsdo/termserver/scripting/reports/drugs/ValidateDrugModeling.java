@@ -1,26 +1,22 @@
 package org.ihtsdo.termserver.scripting.reports.drugs;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
 import org.apache.commons.lang.StringUtils;
-import org.ihtsdo.termserver.scripting.GraphLoader;
-import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
+import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
-public class ValidateDrugModeling extends TermServerScript{
+public class ValidateDrugModeling extends TermServerReport{
 	
 	String subHierarchyStr = "373873005"; // |Pharmaceutical / biologic product (product)|
 	static final String SCTID_ACTIVE_INGREDIENT = "127489000"; // |Has active ingredient (attribute)|"
@@ -29,7 +25,10 @@ public class ValidateDrugModeling extends TermServerScript{
 	Concept activeIngredient;
 	Concept hasManufacturedDoseForm;
 	Concept boss;
-	GraphLoader gl = GraphLoader.getGraphLoader();
+	
+	private static final String CD = "(clinical drug)";
+	private static final String MP = "(medicinal product)";
+	private static final String MPF = "(medicinal product form)";
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		ValidateDrugModeling report = new ValidateDrugModeling();
@@ -45,14 +44,14 @@ public class ValidateDrugModeling extends TermServerScript{
 	
 	private void validateModeling() throws TermServerScriptException {
 		Set<Concept> subHierarchy = gl.getConcept(subHierarchyStr).getDescendents(NOT_SET);
-		String[] drugTypes = new String[] { "(medicinal product form)", "(clinical drug)" };
+		String[] drugTypes = new String[] { MPF, CD };
 		long issueCount = 0;
 		for (Concept concept : subHierarchy) {
 			issueCount += validateIngredientsInFSN(concept);
-			issueCount += validateIngredientsAgainstBoSS(concept);
-			issueCount += validateStatedVsInferredAttributes(concept, activeIngredient, drugTypes);
-			issueCount += validateStatedVsInferredAttributes(concept, hasManufacturedDoseForm, drugTypes);
-			issueCount += validateAttributeValueCardinality(concept, activeIngredient);
+			//issueCount += validateIngredientsAgainstBoSS(concept);
+			//issueCount += validateStatedVsInferredAttributes(concept, activeIngredient, drugTypes);
+			//issueCount += validateStatedVsInferredAttributes(concept, hasManufacturedDoseForm, drugTypes);
+			//issueCount += validateAttributeValueCardinality(concept, activeIngredient);
 		}
 		println ("Validation complete.  Detected " + issueCount + " issues.");
 	}
@@ -125,7 +124,7 @@ public class ValidateDrugModeling extends TermServerScript{
 
 	private int validateIngredientsInFSN(Concept concept) throws TermServerScriptException {
 		int issueCount = 0;
-		String[] drugTypes = new String[] { "(medicinal product)" };
+		String[] drugTypes = new String[] { /*MP,*/ MPF};
 		
 		//Only check FSN for certain drug types (to be expanded later)
 		if (!isDrugType(concept, drugTypes)) {
@@ -147,6 +146,12 @@ public class ValidateDrugModeling extends TermServerScript{
 		
 		String proposedFSN = "Product containing ";
 		proposedFSN += StringUtils.join(ingredients, " and ");
+		
+		//Do we need to add the dose form?
+		if (isDrugType(concept, new String[]{MPF})) {
+			proposedFSN += " in " + getDosageForm(concept);
+		}
+		
 		proposedFSN += " " + SnomedUtils.deconstructFSN(concept.getFsn())[1];
 		
 		if (!concept.getFsn().equals(proposedFSN)) {
@@ -157,6 +162,30 @@ public class ValidateDrugModeling extends TermServerScript{
 		return issueCount;
 	}
 	
+	private String getDosageForm(Concept concept) {
+		List<Relationship> doseForms = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, hasManufacturedDoseForm, ActiveState.ACTIVE);
+		if (doseForms.size() == 0) {
+			return "NO STATED DOSE FORM DETECTED";
+		} else if (doseForms.size() > 1) {
+			return "MULTIPLE DOSE FORMS";
+		} else {
+			String doseForm = SnomedUtils.deconstructFSN(doseForms.get(0).getTarget().getFsn())[0];
+			doseForm = SnomedUtils.deCapitalize(doseForm);
+			//Translate known issues
+			switch (doseForm) {
+				case "ocular dosage form": doseForm =  "ophthalmic dosage form";
+					break;
+				case "inhalation dosage form": doseForm = "respiratory dosage form";
+					break;
+				case "cutaneous AND/OR transdermal dosage form" : doseForm = "topical dosage form";
+					break;
+				case "oromucosal AND/OR gingival dosage form" : doseForm = "oropharyngeal dosage form";
+					break;
+			}
+			return doseForm;
+		}
+	}
+
 	private int validateAttributeValueCardinality(Concept concept, Concept activeIngredient) throws TermServerScriptException {
 		int issuesEncountered = 0;
 		issuesEncountered += checkforRepeatedAttributeValue(concept, CharacteristicType.INFERRED_RELATIONSHIP, activeIngredient);
@@ -200,25 +229,13 @@ public class ValidateDrugModeling extends TermServerScript{
 		writeToFile(line);
 	}
 	
-	protected void init(String[] args) throws IOException, TermServerScriptException {
+	protected void init(String[] args) throws TermServerScriptException {
 		super.init(args);
-		
-		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
-		String reportFilename = "drug_model_validation_" + project.toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
-		reportFile = new File(outputDir, reportFilename);
-		reportFile.createNewFile();
-		println ("Outputting Report to " + reportFile.getAbsolutePath());
 		writeToFile ("Concept, FSN, SemTag, Issue, Data");
 		
 		//Recover static concepts that we'll need to search for in attribute types
 		activeIngredient = gl.getConcept(SCTID_ACTIVE_INGREDIENT);
 		hasManufacturedDoseForm = gl.getConcept(SCTID_MAN_DOSE_FORM);
 		boss = gl.getConcept(SCTID_HAS_BOSS);
-	}
-
-	@Override
-	protected Concept loadLine(String[] lineItems)
-			throws TermServerScriptException {
-		return null;
 	}
 }
