@@ -1,36 +1,25 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 import org.apache.commons.lang.StringUtils;
-import org.ihtsdo.termserver.scripting.GraphLoader;
-import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.*;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExportType;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExtractType;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 /**
  * Reports all concepts in a hierarchy that are used in the definition of other concepts.
  */
-public class RequiringProxPrimModellingReport extends TermServerScript{
+public class RequiringProxPrimModellingReport extends TermServerReport{
 	
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
-	GraphLoader gl = GraphLoader.getGraphLoader();
 	String publishedArchive;
 	//String[] hierarchies = {"404684003", "71388002", "243796009"};
 	String[] hierarchies = {"64572001"}; //Disease (disorder)
@@ -39,7 +28,7 @@ public class RequiringProxPrimModellingReport extends TermServerScript{
 		RequiringProxPrimModellingReport report = new RequiringProxPrimModellingReport();
 		try {
 			report.init(args);
-			report.loadProjectSnapshot();  //Load FSNs only
+			report.loadProjectSnapshot(true);  //Load FSNs only
 			boolean reportAll = true; //Report all concepts whether they require remodelling or not
 			report.reportRequiringProxPrimModelling(reportAll);
 		} catch (Exception e) {
@@ -121,7 +110,7 @@ public class RequiringProxPrimModellingReport extends TermServerScript{
 		writeToFile(line);
 	}
 	
-	protected void init(String[] args) throws IOException, TermServerScriptException {
+	protected void init(String[] args) throws TermServerScriptException {
 		super.init(args);
 		
 		for (int x=0; x<args.length; x++) {
@@ -136,79 +125,7 @@ public class RequiringProxPrimModellingReport extends TermServerScript{
 			hierarchies = response.split(",");
 		}
 		
-		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
-		//String reportFilename = "changed_relationships_" + project.toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
-		String reportFilename = getScriptName() + "_" + project.toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
-		reportFile = new File(outputDir, reportFilename);
-		reportFile.createNewFile();
-		println ("Outputting Report to " + reportFile.getAbsolutePath());
 		writeToFile ("Concept, FSN, Sem_Tag, hasFDParent,noDifferentia,multipleParents");
 	}
 
-	private void loadProjectSnapshot() throws SnowOwlClientException, TermServerScriptException, InterruptedException {
-		int SNAPSHOT = 0;
-		File[] archives;
-		if (publishedArchive != null && !publishedArchive.isEmpty()) {
-			archives = new File[] { new File(publishedArchive)};
-		} else {
-			archives = new File[] { new File (project + "_snapshot_" + env + ".zip")};
-		}
-
-		//Do we already have a copy of the project locally?  If not, recover it.
-		if (!archives[SNAPSHOT].exists()) {
-			println ("Recovering snapshot state of " + project + " from TS (" + env + ")");
-			tsClient.export("MAIN/" + project, null, ExportType.MIXED, ExtractType.SNAPSHOT, archives[SNAPSHOT]);
-			initialiseSnowOwlClient();  //re-initialise client to avoid HttpMediaTypeNotAcceptableException.  Cause unknown.
-		}
-		
-		println ("Loading snapshot into memory...");
-		for (File archive : archives) {
-			try {
-				ZipInputStream zis = new ZipInputStream(new FileInputStream(archive));
-				ZipEntry ze = zis.getNextEntry();
-				try {
-					while (ze != null) {
-						if (!ze.isDirectory()) {
-							Path p = Paths.get(ze.getName());
-							String fileName = p.getFileName().toString();
-							if (fileName.contains("sct2_Description_Snapshot")) {
-								println("Loading Description File.");
-								gl.loadDescriptionFile(zis, true);  //Load FSNs only
-							}
-							
-							if (fileName.contains("sct2_Concept_Snapshot")) {
-								println("Loading Concept File.");
-								gl.loadConceptFile(zis);
-							}
-							
-							if (fileName.contains("sct2_Relationship_Snapshot")) {
-								println("Loading Relationship Snapshot File.");
-								gl.loadRelationships(CharacteristicType.INFERRED_RELATIONSHIP,zis, true);
-							}
-							
-							if (fileName.contains("sct2_StatedRelationship_Snapshot")) {
-								println("Loading Stated Relationship Snapshot File.");
-								gl.loadRelationships(CharacteristicType.STATED_RELATIONSHIP,zis, true);
-							}
-
-						}
-						ze = zis.getNextEntry();
-					}
-				} finally {
-					try{
-						zis.closeEntry();
-						zis.close();
-					} catch (Exception e){} //Well, we tried.
-				}
-			} catch (IOException e) {
-				throw new TermServerScriptException("Failed to extract project state from archive " + archive.getName(), e);
-			}
-		}
-	}
-
-	@Override
-	protected Concept loadLine(String[] lineItems)
-			throws TermServerScriptException {
-		return gl.getConcept(lineItems[0]);
-	}
 }

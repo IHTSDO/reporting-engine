@@ -68,6 +68,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected File inputFile;
 	protected File reportFile;
 	protected File outputDir;
+	protected GraphLoader gl = GraphLoader.getGraphLoader();
 	
 	protected Scanner STDIN = new Scanner(System.in);
 	
