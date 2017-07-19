@@ -30,6 +30,9 @@ public class ValidateDrugModeling extends TermServerReport{
 	private static final String MP = "(medicinal product)";
 	private static final String MPF = "(medicinal product form)";
 	
+	private static final String[] badWords = new String[] { "preparation", "agent", "+", "product"};
+	private static final String remodelledDrugIndicator = "Product containing";
+	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		ValidateDrugModeling report = new ValidateDrugModeling();
 		try {
@@ -47,15 +50,45 @@ public class ValidateDrugModeling extends TermServerReport{
 		String[] drugTypes = new String[] { MPF, CD };
 		long issueCount = 0;
 		for (Concept concept : subHierarchy) {
-			issueCount += validateIngredientsInFSN(concept);
+			//issueCount += validateIngredientsInFSN(concept);
 			//issueCount += validateIngredientsAgainstBoSS(concept);
 			//issueCount += validateStatedVsInferredAttributes(concept, activeIngredient, drugTypes);
 			//issueCount += validateStatedVsInferredAttributes(concept, hasManufacturedDoseForm, drugTypes);
 			//issueCount += validateAttributeValueCardinality(concept, activeIngredient);
+			issueCount += checkForBadWords(concept);
 		}
 		println ("Validation complete.  Detected " + issueCount + " issues.");
 	}
 	
+	/*
+	Need to identify and update:
+		FSN beginning with "Product containing" that includes any of the following in any active description:
+		agent
+		+
+		preparation
+		product (except in the semantic tag)
+	 */
+	private long checkForBadWords(Concept concept) {
+		long issueCount = 0;
+		//Check if we're product containing and then look for bad words
+		if (concept.getFsn().contains(remodelledDrugIndicator)) {
+			for (Description d : concept.getDescriptions(ActiveState.ACTIVE)) {
+				String term = d.getTerm();
+				if (d.getType().equals(DescriptionType.FSN)) {
+					term = SnomedUtils.deconstructFSN(term)[0];
+				}
+				for (String badWord : badWords ) {
+					if (term.contains(badWord)) {
+						String msg = "Term contains bad word: " + badWord;
+						issueCount++;
+						report (concept, msg, d.toString());
+					}
+				}
+			}
+		}
+		return issueCount;
+	}
+
 	private int validateStatedVsInferredAttributes(Concept concept,
 			Concept attributeType, String[] drugTypes) {
 		int issueCount = 0;
