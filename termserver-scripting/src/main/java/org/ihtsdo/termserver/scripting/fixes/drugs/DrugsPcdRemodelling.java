@@ -279,7 +279,7 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 
 	private boolean isCaseSensitive(Description d) {
 		String cs = d.getCaseSignificance();
-		return (cs.equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE.toString()) || cs.equals(ONLY_INITIAL_CHAR_CASE_INSENSITIVE_SCTID.toString()));
+		return (cs.equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE.toString()) || cs.equals(SCTID_ONLY_INITIAL_CHAR_CASE_INSENSITIVE.toString()));
 	}
 
 	//Return the first description that equals the term

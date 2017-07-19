@@ -70,9 +70,9 @@ public interface RF2Constants {
 	static final String SCTID_PREFERRED_TERM = "900000000000548007";
 	static final String SCTID_ACCEPTABLE_TERM = "900000000000549004";
 	
-	static final String ENTIRE_TERM_CASE_SENSITIVE_SCTID = "900000000000017005";
-	static final String ENTIRE_TERM_CASE_INSENSITIVE_SCTID = "900000000000448009";
-	static final String ONLY_INITIAL_CHAR_CASE_INSENSITIVE_SCTID = "900000000000020002";
+	static final String SCTID_ENTIRE_TERM_CASE_SENSITIVE = "900000000000017005";
+	static final String SCTID_ENTIRE_TERM_CASE_INSENSITIVE = "900000000000448009";
+	static final String SCTID_ONLY_INITIAL_CHAR_CASE_INSENSITIVE = "900000000000020002";
 	
 	final public String SEMANTIC_TAG_START = "(";
 	
@@ -101,6 +101,9 @@ public interface RF2Constants {
 	public enum Acceptability { ACCEPTABLE, PREFERRED, BOTH };
 	
 	public enum CaseSignificance { ENTIRE_TERM_CASE_SENSITIVE, CASE_INSENSITIVE ,ONLY_INITIAL_CHAR_CASE_INSENSITIVE };
+	public static String CS = "CS";
+	public static String ci= "ci";
+	public static String cI = "cI";
 	
 	public enum ConceptType { PRODUCT_STRENGTH, MEDICINAL_ENTITY, MEDICINAL_FORM, GROUPER, PRODUCT_ROLE, VMPF, VCD, VMP, UNKNOWN };
 	
@@ -109,6 +112,8 @@ public interface RF2Constants {
 	public enum DescriptionType { FSN, SYNONYM, TEXT_DEFINITION};
 	
 	public enum ChangeStatus { CHANGE_MADE, CHANGE_NOT_REQUIRED, NO_CHANGE_MADE };
+	
+	public enum Rf2File { CONCEPT, DESCRIPTION, STATED_RELATIONSHIP, RELATIONSHIP }
 	
 	public static final String FIELD_DELIMITER = "\t";
 	public static final String LINE_DELIMITER = "\r\n";
