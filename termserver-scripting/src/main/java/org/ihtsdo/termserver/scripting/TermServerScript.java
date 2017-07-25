@@ -373,9 +373,13 @@ public abstract class TermServerScript implements RF2Constants {
 				if (lineNum == 0  && inputFileHasHeaderRow) {
 					continue; //skip header row  
 				}
-				
-				//File format Concept Type, SCTID, FSN with string fields quoted.  Strip quotes also.
-				String[] lineItems = lines.get(lineNum).replace("\"", "").split(inputFileDelimiter);
+				String[] lineItems;
+				if (inputFileDelimiter == CSV_FIELD_DELIMITER) {
+					//File format Concept Type, SCTID, FSN with string fields quoted.  Strip quotes also.
+					lineItems = splitCarefully(lines.get(lineNum));
+				} else {
+					lineItems = lines.get(lineNum).replace("\"", "").split(inputFileDelimiter);
+				}
 				if (lineItems.length >= 1) {
 					try{
 						c = loadLine(lineItems);
@@ -401,6 +405,33 @@ public abstract class TermServerScript implements RF2Constants {
 		return allConcepts;
 	}
 	
+	/*
+	 * Splits a line, ensuring that any commas that are within a quoted string are not treated as delimiters
+	 * https://stackoverflow.com/questions/1757065/java-splitting-a-comma-separated-string-but-ignoring-commas-in-quotes
+	 */
+	private String[] splitCarefully(String line) {
+		String otherThanQuote = " [^\"] ";
+		String quotedString = String.format(" \" %s* \" ", otherThanQuote);
+		String regex = String.format("(?x) "+ // enable comments, ignore white spaces
+			",                         "+ // match a comma
+			"(?=                       "+ // start positive look ahead
+			"  (?:                     "+ //   start non-capturing group 1
+			"    %s*                   "+ //     match 'otherThanQuote' zero or more times
+			"    %s                    "+ //     match 'quotedString'
+			"  )*                      "+ //   end group 1 and repeat it zero or more times
+			"  %s*                     "+ //   match 'otherThanQuote'
+			"  $                       "+ // match the end of the string
+			")                         ", // stop positive look ahead
+			otherThanQuote, quotedString, otherThanQuote);
+
+		//And now remove the quotes
+		String[] items = line.split(regex, -1);
+		for (int i=0; i<items.length; i++) {
+			items[i] = items[i].replace("\"", "");
+		}
+		return items;
+	}
+
 	protected abstract Concept loadLine(String[] lineItems) throws TermServerScriptException;
 
 	public String getProject() {
