@@ -2,11 +2,15 @@ package org.ihtsdo.termserver.scripting.fixes;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
+import org.ihtsdo.termserver.scripting.TermServerScript.ReportActionType;
+import org.ihtsdo.termserver.scripting.TermServerScript.Severity;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Batch;
 import org.ihtsdo.termserver.scripting.domain.Concept;
@@ -27,6 +31,7 @@ public class AnatomyRemodelling extends BatchFix implements RF2Constants{
 	
 	String[] author_reviewer = new String[] {targetAuthor};
 	Map<String, ConceptChange> conceptsToProcess = new HashMap<String, ConceptChange>();
+	Set<Integer> reportedItems = new HashSet<Integer>();
 	
 	protected AnatomyRemodelling(BatchFix clone) {
 		super(clone);
@@ -57,7 +62,7 @@ public class AnatomyRemodelling extends BatchFix implements RF2Constants{
 		if (tsConcept.isActive() == false) {
 			report(task, concept, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Concept is inactive.  No changes attempted");
 		} else {
-			changesMade = remodelRelationships(task, concept, tsConcept);
+			changesMade = remodelRelationships(task, concept, tsConcept, false);
 			if (changesMade > 0) {
 				try {
 					String conceptSerialised = gson.toJson(tsConcept);
@@ -67,7 +72,12 @@ public class AnatomyRemodelling extends BatchFix implements RF2Constants{
 					}
 					//report(task, concept, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept successfully remodelled. " + changesMade + " changes made.");
 				} catch (Exception e) {
-					report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + e.getClass().getSimpleName()  + " - " + e.getMessage());
+					//See if we can get that 2nd level exception's reason which says what the problem actually was
+					String additionalInfo = "";
+					if (e.getCause().getCause() != null) {
+						additionalInfo = " - " + e.getCause().getCause().getMessage();
+					} 
+					report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + e.getClass().getSimpleName()  + " - " + e.getMessage() + additionalInfo);
 					e.printStackTrace();
 				}
 			}
@@ -75,7 +85,7 @@ public class AnatomyRemodelling extends BatchFix implements RF2Constants{
 		return changesMade;
 	}
 
-	private int remodelRelationships(Task task, Concept remodelledConcept, Concept tsConcept) throws TermServerScriptException {
+	private int remodelRelationships(Task task, Concept remodelledConcept, Concept tsConcept, boolean trialRun) throws TermServerScriptException {
 		ConceptChange changeConcept = (ConceptChange)remodelledConcept;
 		int changesMade = 0;
 		//Loop through the changing relationships in the change concept
@@ -84,12 +94,14 @@ public class AnatomyRemodelling extends BatchFix implements RF2Constants{
 			if (!changingRelationship.isActive()) {
 				Relationship inactivateMe = findStatedRelationship(changingRelationship, tsConcept, ActiveState.ACTIVE);
 				if (inactivateMe == null) {
-					String msg = "Did not find expected active relationship to inactivate: " + changingRelationship.toShortString();
-					report(task, tsConcept, Severity.HIGH, ReportActionType.VALIDATION_ERROR, msg);
+						String msg = "Did not find expected active relationship to inactivate: " + changingRelationship.toString();
+						report(task, tsConcept, Severity.HIGH, ReportActionType.VALIDATION_ERROR, msg);
 				} else {
 					//We'll inactivate this relationship
-					inactivateMe.setActive(false);
-					report(task, tsConcept, Severity.LOW, ReportActionType.RELATIONSHIP_REMOVED, changingRelationship.toShortString());
+					if (!trialRun) {
+						inactivateMe.setActive(false);
+						report(task, tsConcept, Severity.LOW, ReportActionType.RELATIONSHIP_REMOVED, changingRelationship.toString());
+					}
 					changesMade++;
 				}
 			} else {
@@ -100,13 +112,17 @@ public class AnatomyRemodelling extends BatchFix implements RF2Constants{
 				if (exisitingActive != null) {
 					report(task, tsConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "New relationship already exists: " + changingRelationship);
 				} else if (exisitingInactive != null){
-					exisitingInactive.setActive(true);
-					report(task, tsConcept, Severity.MEDIUM, ReportActionType.RELATIONSHIP_ADDED, "Re-activated existing relationship: " + changingRelationship);
+					if (!trialRun) {
+						exisitingInactive.setActive(true);
+						report(task, tsConcept, Severity.MEDIUM, ReportActionType.RELATIONSHIP_ADDED, "Re-activated existing relationship: " + changingRelationship);
+					}
 					changesMade++;
 				} else {
 					//Add the new relationship
-					tsConcept.addRelationship(changingRelationship);
-					report(task, tsConcept, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, "Added new relationship: " + changingRelationship);
+					if (!trialRun) {
+						tsConcept.addRelationship(changingRelationship);
+						report(task, tsConcept, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, "Added new relationship: " + changingRelationship);
+					}
 					changesMade++;
 				}
 			}
@@ -151,20 +167,20 @@ public class AnatomyRemodelling extends BatchFix implements RF2Constants{
 
 	/*
 	FileFormat: sub_sctid	sub_sctfsn	supe_sctid	supe_sctfsn	resource
-	Where the resource is OWL we will inactivate the relationship
-	Where the resource is RF2 will will add a relationship.
+	Where the resource is OWL we will add a relationship.
+	Where the resource is RF2 will inactivate an expected existing relationship
 	 */
 	@Override
 	protected Concept loadLine(String[] items) throws TermServerScriptException {
 
-		String sctid = items[0];
+		String sctId = items[0];
 		ConceptChange concept;
 		//Have we seen a row for this concept before?
-		if (conceptsToProcess.containsKey(sctid)) {
-			concept = conceptsToProcess.get(sctid);
+		if (conceptsToProcess.containsKey(sctId)) {
+			concept = conceptsToProcess.get(sctId);
 		} else {
-			concept = new ConceptChange(sctid);
-			conceptsToProcess.put(sctid, concept);
+			concept = new ConceptChange(sctId);
+			conceptsToProcess.put(sctId, concept);
 		}
 		concept.setConceptType(ConceptType.ANATOMY);
 		concept.setFsn(items[1]);
@@ -173,7 +189,7 @@ public class AnatomyRemodelling extends BatchFix implements RF2Constants{
 		} else {
 			Concept target = gl.getConcept(items[2]);
 			if (!target.getFsn().equals(items[3])) {
-				String msg = "Relationship defined for " + sctid + " |" + concept.getFsn() + "| - ";
+				String msg = "Relationship defined for " + sctId + " |" + concept.getFsn() + "| - ";
 				msg += "Stated target FSN" + items[2] + "|" + items[3] + "| does not match actual FSN |" + target.getFsn() + "|";
 				throw new TermServerScriptException(msg);
 			}
@@ -181,13 +197,30 @@ public class AnatomyRemodelling extends BatchFix implements RF2Constants{
 			Relationship relationship = createNewStatedRelationship(concept, IS_A, target, 0);
 			String resource = items[4];
 			if (resource.equals("OWL")) {
-				relationship.setActive(false);
-			} else if (resource.equals("RF2")) {
 				relationship.setActive(true);
+			} else if (resource.equals("RF2")) {
+				relationship.setActive(false);
 			} else {
 				throw new TermServerScriptException("Unexpected resource: " + resource);
 			}
-			concept.addRelationship(relationship);
+			
+			//Check for contradictory relationship ie if the change concept already has one of these in the opposite state
+			ActiveState contradictoryState = relationship.isActive() ? ActiveState.INACTIVE : ActiveState.ACTIVE;
+			Relationship contradiction = findStatedRelationship(relationship, concept, contradictoryState);
+			if (contradiction != null) {
+				concept.setSkipReason("Input file contains contradictory state for relationship: " + relationship);
+			} else {
+				concept.addRelationship(relationship);
+				
+				//Now check if we do in fact have any changes to make for this concept via a trial run
+				Concept fullConcept = gl.getConcept(sctId);
+				if (remodelRelationships(null, concept, fullConcept, true) == 0) {
+					concept.setSkipReason("No change apparently required");
+				} else {
+					//We might have set a skip reason on a previous line.  Reset if this is no longer the case
+					concept.setSkipReason(null);
+				}
+			}
 		}
 		return concept;
 	}
@@ -201,5 +234,14 @@ public class AnatomyRemodelling extends BatchFix implements RF2Constants{
 		return r;
 	}
 
-
+	@Override
+	public void report (Task task, Concept concept, Severity severity, ReportActionType actionType, String actionDetail) {
+		//Keep a running list of items reported, which we might otherwise repeat due to the trial run
+		String taskStr = (task == null)?"Null":task.toString();
+		String concatonatedLine = taskStr + concept + severity + actionType + actionDetail;
+		if (!reportedItems.contains(concatonatedLine.hashCode())) {
+			super.report(task, concept, severity, actionType, actionDetail);
+			reportedItems.add(concatonatedLine.hashCode());
+		}
+	}
 }
