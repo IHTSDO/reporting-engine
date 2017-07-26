@@ -75,9 +75,9 @@ public class AnatomyRemodelling extends BatchFix implements RF2Constants{
 					//See if we can get that 2nd level exception's reason which says what the problem actually was
 					String additionalInfo = "";
 					if (e.getCause().getCause() != null) {
-						additionalInfo = " - " + e.getCause().getCause().getMessage();
+						additionalInfo = " - " + e.getCause().getCause().getMessage().replaceAll(COMMA, " ").replaceAll(QUOTE, "'");
 					} 
-					report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + e.getClass().getSimpleName()  + " - " + e.getMessage() + additionalInfo);
+					report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + e.getClass().getSimpleName()  + " - " + additionalInfo);
 					e.printStackTrace();
 				}
 			}
