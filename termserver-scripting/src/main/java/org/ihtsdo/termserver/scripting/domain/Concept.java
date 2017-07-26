@@ -61,7 +61,6 @@ public class Concept implements RF2Constants, Comparable<Concept> {
 	private String deletionEffectiveTime;
 	private boolean isDeleted = false;
 	private int depth;
-	private List<Description> activeDescriptions = null;  //Cache in case we recover active descriptions frequently
 	List<InactivationIndicatorEntry> inactivationIndicatorEntries;
 	
 	public String getReviewer() {
@@ -375,14 +374,6 @@ public class Concept implements RF2Constants, Comparable<Concept> {
 	}
 	
 	public List<Description> getDescriptions(ActiveState a) {
-		if (a.equals(ActiveState.ACTIVE)) {
-			return getActiveDescriptions();
-		} else {
-			return getDescriptionsUncached(a);
-		}
-	}
-	
-	private List<Description> getDescriptionsUncached(ActiveState a) {
 		List<Description> results = new ArrayList<Description>();
 		for (Description d : descriptions) {
 			if (SnomedUtils.descriptionHasActiveState(d, a)) {
@@ -392,13 +383,6 @@ public class Concept implements RF2Constants, Comparable<Concept> {
 		return results;
 	}
 	
-	private List<Description> getActiveDescriptions() {
-		if (activeDescriptions == null) {
-			activeDescriptions = getDescriptionsUncached(ActiveState.ACTIVE);
-		}
-		return activeDescriptions;
-	}
-
 	public void addDescription(Description description) {
 		descriptions.add(description);
 	}
