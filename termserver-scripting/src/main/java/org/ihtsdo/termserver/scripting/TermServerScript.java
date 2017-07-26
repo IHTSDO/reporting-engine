@@ -15,9 +15,11 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -360,7 +362,7 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	protected List<Concept> processFile(File file) throws TermServerScriptException {
-		List<Concept> allConcepts = new ArrayList<Concept>();
+		Set<Concept> allConcepts = new HashSet<Concept>();
 		debug ("Loading input file " + file.getAbsolutePath());
 		try {
 			List<String> lines = Files.readLines(file, Charsets.UTF_8);
@@ -402,7 +404,7 @@ public abstract class TermServerScript implements RF2Constants {
 		} catch (IOException e) {
 			throw new TermServerScriptException("Error while reading input file " + file.getAbsolutePath(), e);
 		}
-		return allConcepts;
+		return new ArrayList<Concept>(allConcepts);
 	}
 	
 	/*

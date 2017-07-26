@@ -205,13 +205,6 @@ public class DrugsReTerming extends BatchFix implements RF2Constants{
 		return batch;
 	}
 
-	private void setAuthorReviewer(Task task, String[] author_reviewer) {
-		task.setAssignedAuthor(author_reviewer[0]);
-		if (author_reviewer.length > 1) {
-			task.setReviewer(author_reviewer[1]);
-		}
-	}
-
 	/*
 		A 0) Comment
 		Any row with "Exclude" in the string will be skipped, but reported

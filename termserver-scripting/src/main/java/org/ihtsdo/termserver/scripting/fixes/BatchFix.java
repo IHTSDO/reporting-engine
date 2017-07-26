@@ -61,6 +61,14 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			this.scaClient = clone.scaClient;
 		}
 	}
+	
+	protected void setAuthorReviewer(Task task, String[] author_reviewer) {
+		task.setAssignedAuthor(author_reviewer[0]);
+		if (author_reviewer.length > 1) {
+			task.setReviewer(author_reviewer[1]);
+		}
+	}
+
 
 	protected List<Concept> processFile() throws TermServerScriptException {
 		List<Concept> allConcepts = super.processFile();

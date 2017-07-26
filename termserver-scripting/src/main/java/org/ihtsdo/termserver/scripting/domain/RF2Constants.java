@@ -105,7 +105,7 @@ public interface RF2Constants {
 	public static String ci= "ci";
 	public static String cI = "cI";
 	
-	public enum ConceptType { PRODUCT_STRENGTH, MEDICINAL_ENTITY, MEDICINAL_FORM, MEDICINAL_PRODUCT, GROUPER, PRODUCT_ROLE, VMPF, VCD, VMP, UNKNOWN };
+	public enum ConceptType { PRODUCT_STRENGTH, MEDICINAL_ENTITY, MEDICINAL_FORM, MEDICINAL_PRODUCT, GROUPER, PRODUCT_ROLE, VMPF, VCD, VMP, UNKNOWN, ANATOMY };
 	
 	public enum Cardinality { AT_LEAST_ONE, EXACTLY_ONE };
 	

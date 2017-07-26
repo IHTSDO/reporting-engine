@@ -140,13 +140,6 @@ public class RemoveSubstringFromNewTerms extends BatchFix implements RF2Constant
 		return allAffected;
 	}
 
-	private void setAuthorReviewer(Task task, String[] author_reviewer) {
-		task.setAssignedAuthor(author_reviewer[0]);
-		if (author_reviewer.length > 1) {
-			task.setReviewer(author_reviewer[1]);
-		}
-	}
-
 	@Override
 	protected Concept loadLine(String[] lineItems) throws TermServerScriptException {
 		return null; // We will identify descriptions to edit from the snapshot

@@ -309,13 +309,6 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 		return batch;
 	}
 
-	private void setAuthorReviewer(Task task, String[] author_reviewer) {
-		task.setAssignedAuthor(author_reviewer[0]);
-		if (author_reviewer.length > 1) {
-			task.setReviewer(author_reviewer[1]);
-		}
-	}
-
 	@Override
 	protected Concept loadLine(String[] items) throws TermServerScriptException {
 		String sctid = items[1];

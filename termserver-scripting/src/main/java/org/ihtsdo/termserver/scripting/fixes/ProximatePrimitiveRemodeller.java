@@ -317,13 +317,6 @@ public class ProximatePrimitiveRemodeller extends BatchFix implements RF2Constan
 		return processMe;
 	}
 
-	private void setAuthorReviewer(Task task, String[] author_reviewer) {
-		task.setAssignedAuthor(author_reviewer[0]);
-		if (author_reviewer.length > 1) {
-			task.setReviewer(author_reviewer[1]);
-		}
-	}
-
 	@Override
 	public String getScriptName() {
 		return "ProximatePrimitiveRemodeller";
