@@ -107,7 +107,8 @@ public class DrugsReTerming extends BatchFix implements RF2Constants{
 			Concept tsConcept) {
 		int changesMade = 0;
 		//Now inactivate all synonyms, unless we're keeping them
-		for (Description d : tsConcept.getDescriptions(ActiveState.BOTH)) {
+		List<Description> sortedDescriptions = getDescriptionsSorted(tsConcept);
+		for (Description d : sortedDescriptions) {
 			//Skip the FSN, we've dealt with that separately
 			if (d.getType().equals(DescriptionType.FSN)) {
 				continue;
@@ -146,6 +147,12 @@ public class DrugsReTerming extends BatchFix implements RF2Constants{
 		return changesMade;
 	}
 
+	//Returns a list of descriptions on a concept, but with the active ones first
+	private List<Description> getDescriptionsSorted(Concept tsConcept) {
+		List<Description> sortedDescriptions = tsConcept.getDescriptions(ActiveState.ACTIVE);
+		sortedDescriptions.addAll(tsConcept.getDescriptions(ActiveState.INACTIVE));
+		return sortedDescriptions;
+	}
 
 	/**
 	 * @return true if two acceptability maps are entirely identical
@@ -176,7 +183,7 @@ public class DrugsReTerming extends BatchFix implements RF2Constants{
 
 	//Return the first description that equals the term
 	private Description findDescription(Concept remodelledConcept, String term) {
-		for (Description d : remodelledConcept.getDescriptions()) {
+		for (Description d : remodelledConcept.getDescriptions(ActiveState.ACTIVE)) {
 			if (d.getTerm().equals(term)) {
 				return d;
 			}
@@ -250,10 +257,10 @@ public class DrugsReTerming extends BatchFix implements RF2Constants{
 	}
 
 	private void addSynonyms(ConceptChange concept, String[] items) {
-		if (items.length > 9) {
+		if (items.length > 9 && !items[9].isEmpty()) {
 			addSynonym(concept, items[6], AcceptabilityMode.PREFERRED_GB );
 			addSynonym(concept, items[9], AcceptabilityMode.PREFERRED_US );
-			if (items.length > 10) {
+			if (items.length > 10 &&  !items[10].isEmpty()) {
 				addSynonym(concept, items[10], AcceptabilityMode.ACCEPTABLE_US);
 			}
 		} else {
