@@ -20,6 +20,8 @@ import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
+import com.b2international.snowowl.core.SnowOwlApplication;
+
 public class GraphLoader implements RF2Constants {
 
 	private static GraphLoader singletonGraphLoader = null;
@@ -253,6 +255,16 @@ public class GraphLoader implements RF2Constants {
 					Concept c = getConcept(lineItems[INACT_IDX_REFCOMPID]);
 					InactivationIndicatorEntry inactivation = loadInactivationLine(lineItems);
 					c.getInactivationIndicatorEntries().add(inactivation);
+				} else {
+					//Description inactivation indicators.  We'll only load the current active one, and warn if there is more than one.
+					if (lineItems[INACT_IDX_ACTIVE].equals(ACTIVE_FLAG)) {
+						Description d = getDescription(lineItems[INACT_IDX_REFCOMPID]);
+						InactivationIndicator indicator = SnomedUtils.translateInactivationIndicator(lineItems[INACT_IDX_REASON_ID]);
+						if (d.getInactivationIndicator() != null) {
+							System.out.println ("Warning, description " + d + " changing inactivation indicator from " + d.getInactivationIndicator() + " to " + indicator);
+						}
+						d.setInactivationIndicator(indicator);
+					}
 				}
 			} else {
 				isHeaderLine = false;

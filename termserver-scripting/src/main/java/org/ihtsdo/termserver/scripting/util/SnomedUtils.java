@@ -535,4 +535,21 @@ public class SnomedUtils implements RF2Constants{
 		}
 		return -1;
 	}
+
+	public static InactivationIndicator translateInactivationIndicator(String indicatorSctId) {
+		switch (indicatorSctId) {
+			case SCTID_INACT_AMBIGUOUS: return InactivationIndicator.AMBIGUOUS;
+			case SCTID_INACT_MOVED_ELSEWHERE : return InactivationIndicator.MOVED_ELSEWHERE;
+			case SCTID_INACT_CONCEPT_NON_CURRENT : return InactivationIndicator.CONCEPT_NON_CURRENT;
+			case SCTID_INACT_DUPLICATE : return InactivationIndicator.DUPLICATE;
+			case SCTID_INACT_ERRONEOUS : return InactivationIndicator.ERRONEOUS;
+			case SCTID_INACT_INAPPROPRIATE : return InactivationIndicator.INAPPROPRIATE;
+			case SCTID_INACT_LIMITED : return InactivationIndicator.LIMITED;
+			case SCTID_INACT_OUTDATED : return InactivationIndicator.OUTDATED; 
+			case SCTID_INACT_PENDING_MOVE : return InactivationIndicator.PENDING_MOVE;
+			case SCTID_INACT_NON_CONFORMANCE: return InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY;
+			case SCTID_INACT_NOT_EQUIVALENT : return InactivationIndicator.NOT_EQUIVALENT;
+			default: throw new IllegalArgumentException("Unrecognised inactivation indicator value " + indicatorSctId);
+		}
+	}
 }
