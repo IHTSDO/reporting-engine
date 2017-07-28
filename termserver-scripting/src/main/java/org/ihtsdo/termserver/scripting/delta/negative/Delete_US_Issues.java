@@ -7,6 +7,7 @@ import java.util.List;
 
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.client.SnowOwlClient;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -27,6 +28,8 @@ public class Delete_US_Issues extends NegativeDeltaGenerator implements RF2Const
 		Delete_US_Issues delta = new Delete_US_Issues();
 		try {
 			delta.newIdsRequired = false; // We'll only be reactivating exisiting langrefset entries
+			SnowOwlClient.supportsIncludeUnpublished = false;   //This code not yet available in MS
+			delta.tsRoot="MAIN/2017-01-31/SNOMEDCT-US/";
 			delta.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			delta.loadProjectSnapshot(false);  
@@ -71,14 +74,18 @@ public class Delete_US_Issues extends NegativeDeltaGenerator implements RF2Const
 	private void process() throws TermServerScriptException {
 		println ("Processing concepts to find issues with US acceptability.");
 		//First touch all concepts who were erroneously inactivated to remove those rows
+		//Only if the concept is still 
 		for (Concept concept : affectedConcepts) {
-			String action = "Deleting last US concept update";
-			report(concept, concept.getFSNDescription(), Severity.MEDIUM, ReportActionType.CONCEPT_CHANGE_MADE, action);
-			concept.delete(deletionEffectiveTime);
-			concept.setModified();
+			Concept loadedConcept = gl.getConcept(concept.getConceptId());
+			if (loadedConcept.getModuleId().equals(SCTID_US_MODULE)) {
+				String action = "Deleting last US concept update";
+				report(concept, concept.getFSNDescription(), Severity.MEDIUM, ReportActionType.CONCEPT_CHANGE_MADE, action);
+				concept.delete(deletionEffectiveTime);
+				concept.setModified();
+			}
 		}
 		//Now go through all concepts to find FSN Acceptability issues.
-		for (Concept concept : GraphLoader.getGraphLoader().getAllConcepts()) {
+		for (Concept concept : gl.getAllConcepts()) {
 			deleteUnwantedFsnAcceptability(concept);
 			if (concept.isModified()) {
 				incrementSummaryInformation("Concepts modified", 1);
@@ -115,6 +122,10 @@ public class Delete_US_Issues extends NegativeDeltaGenerator implements RF2Const
 							String action = "Deleted US FSN LangRefset entry";
 							report(c, c.getFSNDescription(), Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, action);
 							c.setModified();
+						} if (uslangRefEntries.get(0).isActive() && corelangRefEntries.get(0).isActive() ) {
+							msg += "Both US and Core module lang refset entries are inactive";
+							report(c, c.getFSNDescription(), Severity.LOW, ReportActionType.VALIDATION_CHECK, msg);
+						
 						} else {
 							msg += "Unexpected configuration of us and core lang refset entries";
 							report(c, c.getFSNDescription(), Severity.HIGH, ReportActionType.VALIDATION_CHECK, msg);

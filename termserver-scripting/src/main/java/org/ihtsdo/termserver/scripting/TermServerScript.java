@@ -15,9 +15,11 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -68,6 +70,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected File inputFile;
 	protected File reportFile;
 	protected File outputDir;
+	protected GraphLoader gl = GraphLoader.getGraphLoader();
 	
 	protected Scanner STDIN = new Scanner(System.in);
 	
@@ -317,6 +320,9 @@ public abstract class TermServerScript implements RF2Constants {
 						} else if (fileName.contains("der2_cRefset_ConceptInactivationIndicatorReferenceSetSnapshot")) {
 							println("Loading Concept Inactivation Indicator File.");
 							gl.loadInactivationIndicatorFile(zis, true);
+						} else if (fileName.contains("der2_cRefset_DescriptionInactivationIndicatorReferenceSetSnapshot")) {
+							println("Loading Description Inactivation Indicator File.");
+							gl.loadInactivationIndicatorFile(zis, false);
 						}
 						//If we're loading all terms, load the language refset as well
 						if (!fsnOnly && (fileName.contains("EnglishSnapshot") || fileName.contains("LanguageSnapshot-en"))) {
@@ -359,7 +365,7 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	protected List<Concept> processFile(File file) throws TermServerScriptException {
-		List<Concept> allConcepts = new ArrayList<Concept>();
+		Set<Concept> allConcepts = new HashSet<Concept>();
 		debug ("Loading input file " + file.getAbsolutePath());
 		try {
 			List<String> lines = Files.readLines(file, Charsets.UTF_8);
@@ -372,9 +378,13 @@ public abstract class TermServerScript implements RF2Constants {
 				if (lineNum == 0  && inputFileHasHeaderRow) {
 					continue; //skip header row  
 				}
-				
-				//File format Concept Type, SCTID, FSN with string fields quoted.  Strip quotes also.
-				String[] lineItems = lines.get(lineNum).replace("\"", "").split(inputFileDelimiter);
+				String[] lineItems;
+				if (inputFileDelimiter == CSV_FIELD_DELIMITER) {
+					//File format Concept Type, SCTID, FSN with string fields quoted.  Strip quotes also.
+					lineItems = splitCarefully(lines.get(lineNum));
+				} else {
+					lineItems = lines.get(lineNum).replace("\"", "").split(inputFileDelimiter);
+				}
 				if (lineItems.length >= 1) {
 					try{
 						c = loadLine(lineItems);
@@ -397,9 +407,36 @@ public abstract class TermServerScript implements RF2Constants {
 		} catch (IOException e) {
 			throw new TermServerScriptException("Error while reading input file " + file.getAbsolutePath(), e);
 		}
-		return allConcepts;
+		return new ArrayList<Concept>(allConcepts);
 	}
 	
+	/*
+	 * Splits a line, ensuring that any commas that are within a quoted string are not treated as delimiters
+	 * https://stackoverflow.com/questions/1757065/java-splitting-a-comma-separated-string-but-ignoring-commas-in-quotes
+	 */
+	private String[] splitCarefully(String line) {
+		String otherThanQuote = " [^\"] ";
+		String quotedString = String.format(" \" %s* \" ", otherThanQuote);
+		String regex = String.format("(?x) "+ // enable comments, ignore white spaces
+			",                         "+ // match a comma
+			"(?=                       "+ // start positive look ahead
+			"  (?:                     "+ //   start non-capturing group 1
+			"    %s*                   "+ //     match 'otherThanQuote' zero or more times
+			"    %s                    "+ //     match 'quotedString'
+			"  )*                      "+ //   end group 1 and repeat it zero or more times
+			"  %s*                     "+ //   match 'otherThanQuote'
+			"  $                       "+ // match the end of the string
+			")                         ", // stop positive look ahead
+			otherThanQuote, quotedString, otherThanQuote);
+
+		//And now remove the quotes
+		String[] items = line.split(regex, -1);
+		for (int i=0; i<items.length; i++) {
+			items[i] = items[i].replace("\"", "");
+		}
+		return items;
+	}
+
 	protected abstract Concept loadLine(String[] lineItems) throws TermServerScriptException;
 
 	public String getProject() {

@@ -5,6 +5,7 @@ public class ConceptChange extends Concept {
 	private String newTerm;
 	private String currentTerm;
 	public String caseSignificanceSctId;
+	public String skipReason;
 	
 	public ConceptChange(String conceptId) {
 		super(conceptId);
@@ -27,6 +28,12 @@ public class ConceptChange extends Concept {
 	}
 	public void setCaseSignificanceSctId(String caseSignificanceSctId) {
 		this.caseSignificanceSctId = caseSignificanceSctId;
+	}
+	public String getSkipReason() {
+		return skipReason;
+	}
+	public void setSkipReason(String skipReason) {
+		this.skipReason = skipReason;
 	}
 
 }

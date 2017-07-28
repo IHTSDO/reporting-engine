@@ -407,7 +407,6 @@ public class SnomedUtils implements RF2Constants{
 		//or add a new entry
 		ChangeStatus changeStatus = ChangeStatus.NO_CHANGE_MADE;
 		for (String thisDialectSctid : dialects) {
-			boolean dialectPT = false;
 			//Do we have an active entry we could change?
 			List<LangRefsetEntry> langRefsetEntries = d.getLangRefsetEntries(ActiveState.ACTIVE, thisDialectSctid);
 			if (langRefsetEntries.size() >1) {
@@ -464,12 +463,22 @@ public class SnomedUtils implements RF2Constants{
 		return changeStatus;
 	}
 	
+	public static CaseSignificance translateCaseSignificance(String caseSignificanceIndicatorStr) throws TermServerScriptException {
+		switch (caseSignificanceIndicatorStr) {
+			case "ENTIRE_TERM_CASE_SENSITIVE" : return CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE;
+			case "CASE_INSENSITIVE" : return CaseSignificance.CASE_INSENSITIVE;
+			case "INITIAL_CHARACTER_CASE_INSENSITIVE" : return CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE;
+			default :
+		}
+		throw new TermServerScriptException("Do not recognise case significance indicator : " + caseSignificanceIndicatorStr);
+	}
+	
 	public static String translateCaseSignificanceToSctId(String caseSignificanceIndicator) throws TermServerScriptException {
 		switch (caseSignificanceIndicator) {
-			case "CS" : return ENTIRE_TERM_CASE_SENSITIVE_SCTID;
-			case "ci" : return ENTIRE_TERM_CASE_INSENSITIVE_SCTID;
+			case "CS" : return SCTID_ENTIRE_TERM_CASE_SENSITIVE;
+			case "ci" : return SCTID_ENTIRE_TERM_CASE_INSENSITIVE;
 			case "cl" :
-			case "cI" : return ONLY_INITIAL_CHAR_CASE_INSENSITIVE_SCTID;
+			case "cI" : return SCTID_ONLY_INITIAL_CHAR_CASE_INSENSITIVE;
 			default :
 		}
 		throw new TermServerScriptException("Do not recognise case significance indicator : " + caseSignificanceIndicator);
@@ -478,9 +487,9 @@ public class SnomedUtils implements RF2Constants{
 	public static String translateCaseSignificanceFromSctId(
 			String caseSignificanceSctId) throws TermServerScriptException {
 		switch (caseSignificanceSctId) {
-			case  ENTIRE_TERM_CASE_SENSITIVE_SCTID: return "CS";
-			case ENTIRE_TERM_CASE_INSENSITIVE_SCTID: return "ci";
-			case ONLY_INITIAL_CHAR_CASE_INSENSITIVE_SCTID : return "cI";
+			case SCTID_ENTIRE_TERM_CASE_SENSITIVE: return "CS";
+			case SCTID_ENTIRE_TERM_CASE_INSENSITIVE: return "ci";
+			case SCTID_ONLY_INITIAL_CHAR_CASE_INSENSITIVE : return "cI";
 			default :
 		}
 		throw new TermServerScriptException("Do not recognise case significance indicator : " + caseSignificanceSctId);
@@ -534,5 +543,22 @@ public class SnomedUtils implements RF2Constants{
 			}
 		}
 		return -1;
+	}
+
+	public static InactivationIndicator translateInactivationIndicator(String indicatorSctId) {
+		switch (indicatorSctId) {
+			case SCTID_INACT_AMBIGUOUS: return InactivationIndicator.AMBIGUOUS;
+			case SCTID_INACT_MOVED_ELSEWHERE : return InactivationIndicator.MOVED_ELSEWHERE;
+			case SCTID_INACT_CONCEPT_NON_CURRENT : return InactivationIndicator.CONCEPT_NON_CURRENT;
+			case SCTID_INACT_DUPLICATE : return InactivationIndicator.DUPLICATE;
+			case SCTID_INACT_ERRONEOUS : return InactivationIndicator.ERRONEOUS;
+			case SCTID_INACT_INAPPROPRIATE : return InactivationIndicator.INAPPROPRIATE;
+			case SCTID_INACT_LIMITED : return InactivationIndicator.LIMITED;
+			case SCTID_INACT_OUTDATED : return InactivationIndicator.OUTDATED; 
+			case SCTID_INACT_PENDING_MOVE : return InactivationIndicator.PENDING_MOVE;
+			case SCTID_INACT_NON_CONFORMANCE: return InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY;
+			case SCTID_INACT_NOT_EQUIVALENT : return InactivationIndicator.NOT_EQUIVALENT;
+			default: throw new IllegalArgumentException("Unrecognised inactivation indicator value " + indicatorSctId);
+		}
 	}
 }

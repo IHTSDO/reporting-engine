@@ -279,7 +279,7 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 
 	private boolean isCaseSensitive(Description d) {
 		String cs = d.getCaseSignificance();
-		return (cs.equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE.toString()) || cs.equals(ONLY_INITIAL_CHAR_CASE_INSENSITIVE_SCTID.toString()));
+		return (cs.equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE.toString()) || cs.equals(SCTID_ONLY_INITIAL_CHAR_CASE_INSENSITIVE.toString()));
 	}
 
 	//Return the first description that equals the term
@@ -307,13 +307,6 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 		addSummaryInformation("Tasks scheduled", batch.getTasks().size());
 		addSummaryInformation(CONCEPTS_PROCESSED, allConcepts);
 		return batch;
-	}
-
-	private void setAuthorReviewer(Task task, String[] author_reviewer) {
-		task.setAssignedAuthor(author_reviewer[0]);
-		if (author_reviewer.length > 1) {
-			task.setReviewer(author_reviewer[1]);
-		}
 	}
 
 	@Override

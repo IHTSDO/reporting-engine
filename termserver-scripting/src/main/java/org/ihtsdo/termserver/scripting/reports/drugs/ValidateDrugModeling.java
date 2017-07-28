@@ -1,62 +1,169 @@
 package org.ihtsdo.termserver.scripting.reports.drugs;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
 import org.apache.commons.lang.StringUtils;
-import org.ihtsdo.termserver.scripting.GraphLoader;
-import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.ActiveState;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
+import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
-public class ValidateDrugModeling extends TermServerScript{
+public class ValidateDrugModeling extends TermServerReport{
 	
-	String subHierarchyStr = "373873005"; // |Pharmaceutical / biologic product (product)|
+	String drugsHierarchyStr = "373873005"; // |Pharmaceutical / biologic product (product)|
+	String substHierarchyStr = "105590001"; // |Substance (substance)|
+	
 	static final String SCTID_ACTIVE_INGREDIENT = "127489000"; // |Has active ingredient (attribute)|"
 	static final String SCTID_HAS_BOSS = "732943007"; //Has basis of strength substance (attribute)
 	static final String SCTID_MAN_DOSE_FORM = "411116001"; //Has manufactured dose form (attribute)
+	static final String SCTID_HAS_DISPOSITION = "726542003"; // |Has disposition (attribute)|
+	
 	Concept activeIngredient;
 	Concept hasManufacturedDoseForm;
 	Concept boss;
-	GraphLoader gl = GraphLoader.getGraphLoader();
+	Concept hasDisposition;
+	
+	private static final String CD = "(clinical drug)";
+	private static final String MP = "(medicinal product)";
+	private static final String MPF = "(medicinal product form)";
+	
+	private static final String[] badWords = new String[] { "preparation", "agent", "+", "product"};
+	private static final String remodelledDrugIndicator = "Product containing";
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		ValidateDrugModeling report = new ValidateDrugModeling();
 		try {
 			report.init(args);
 			report.loadProjectSnapshot(false); //Load all descriptions
-			report.validateModeling();
+			report.validateDrugsModeling();
+			report.validateSubstancesModeling();
 		} catch (Exception e) {
 			println("Failed to produce Druge Model Validation Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} 
 	}
 	
-	private void validateModeling() throws TermServerScriptException {
-		Set<Concept> subHierarchy = gl.getConcept(subHierarchyStr).getDescendents(NOT_SET);
-		String[] drugTypes = new String[] { "(medicinal product form)", "(clinical drug)" };
+	private void validateDrugsModeling() throws TermServerScriptException {
+		Set<Concept> subHierarchy = gl.getConcept(drugsHierarchyStr).getDescendents(NOT_SET);
+		String[] drugTypes = new String[] { MPF, CD };
 		long issueCount = 0;
 		for (Concept concept : subHierarchy) {
-			issueCount += validateIngredientsInFSN(concept);
-			issueCount += validateIngredientsAgainstBoSS(concept);
-			issueCount += validateStatedVsInferredAttributes(concept, activeIngredient, drugTypes);
-			issueCount += validateStatedVsInferredAttributes(concept, hasManufacturedDoseForm, drugTypes);
-			issueCount += validateAttributeValueCardinality(concept, activeIngredient);
+			//issueCount += validateIngredientsInFSN(concept);
+			//issueCount += validateIngredientsAgainstBoSS(concept);
+			//issueCount += validateStatedVsInferredAttributes(concept, activeIngredient, drugTypes);
+			//issueCount += validateStatedVsInferredAttributes(concept, hasManufacturedDoseForm, drugTypes);
+			//issueCount += validateAttributeValueCardinality(concept, activeIngredient);
+			//issueCount += checkForBadWords(concept);
 		}
-		println ("Validation complete.  Detected " + issueCount + " issues.");
+		println ("Drugs validation complete.  Detected " + issueCount + " issues.");
 	}
 	
+	private void validateSubstancesModeling() throws TermServerScriptException {
+		Set<Concept> subHierarchy = gl.getConcept(substHierarchyStr).getDescendents(NOT_SET);
+		long issueCount = 0;
+		for (Concept concept : subHierarchy) {
+			issueCount += validateDisposition(concept);
+		}
+		println ("Substances validation complete.  Detected " + issueCount + " issues.");
+	}
+	
+	//Ensure that all stated dispositions exist as inferred, and visa-versa
+	private long validateDisposition(Concept concept) {
+		long issuesCount = validateAttributeViewsMatch (concept, hasDisposition, CharacteristicType.STATED_RELATIONSHIP);
+		issuesCount += validateAttributeViewsMatch (concept, hasDisposition, CharacteristicType.STATED_RELATIONSHIP);
+		issuesCount += checkForOddlyInferredParent(concept, hasDisposition);
+		return issuesCount;
+	}
+
+	private long validateAttributeViewsMatch(Concept concept,
+			Concept attributeType,
+			CharacteristicType fromCharType) {
+		//Check that all relationships of the given type "From" match "To"
+		long issuesCount = 0;
+		CharacteristicType toCharType = fromCharType.equals(CharacteristicType.STATED_RELATIONSHIP)? CharacteristicType.INFERRED_RELATIONSHIP : CharacteristicType.STATED_RELATIONSHIP;
+		for (Relationship r : concept.getRelationships(fromCharType, attributeType, ActiveState.ACTIVE)) {
+			if (findRelationship(concept, r, toCharType) == null) {
+				String msg = fromCharType.toString() + " has no counterpart";
+				report (concept, msg, r.toString());
+			}
+		}
+		return issuesCount;
+	}
+	
+
+	/**
+	 * list of concepts that have an inferred parent with a stated attribute 
+	 * that is not the same as the that of the concept.
+	 * @return
+	 */
+	private long checkForOddlyInferredParent(Concept concept, Concept attributeType) {
+		//Work through inferred parents
+		long issuesCount = 0;
+		for (Concept parent : concept.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
+			//Find all STATED attributes of interest
+			for (Relationship parentAttribute : parent.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE)) {
+				//Does our original concept have that attribute?  Report if not.
+				if (null == findRelationship(concept, parentAttribute, CharacteristicType.STATED_RELATIONSHIP)) {
+					String msg ="Inferred parent has a stated attribute not stated in child.";
+					report (concept, msg, parentAttribute.toString());
+					issuesCount++;
+				}
+			}
+		}
+		return issuesCount;
+	}
+
+	
+	private Relationship findRelationship(Concept concept, Relationship exampleRel, CharacteristicType charType) {
+		//Find the first relationship matching the type, target and activeState
+		for (Relationship r : concept.getRelationships(charType, exampleRel.getType(),  ActiveState.ACTIVE)) {
+			if (r.getTarget().equals(exampleRel.getTarget())) {
+				return r;
+			}
+		}
+		return null;
+	}
+
+
+	/*
+	Need to identify and update:
+		FSN beginning with "Product containing" that includes any of the following in any active description:
+		agent
+		+
+		preparation
+		product (except in the semantic tag)
+	 */
+	private long checkForBadWords(Concept concept) {
+		long issueCount = 0;
+		//Check if we're product containing and then look for bad words
+		if (concept.getFsn().contains(remodelledDrugIndicator)) {
+			for (Description d : concept.getDescriptions(ActiveState.ACTIVE)) {
+				String term = d.getTerm();
+				if (d.getType().equals(DescriptionType.FSN)) {
+					term = SnomedUtils.deconstructFSN(term)[0];
+				}
+				for (String badWord : badWords ) {
+					if (term.contains(badWord)) {
+						String msg = "Term contains bad word: " + badWord;
+						issueCount++;
+						report (concept, msg, d.toString());
+					}
+				}
+			}
+		}
+		return issueCount;
+	}
+
 	private int validateStatedVsInferredAttributes(Concept concept,
 			Concept attributeType, String[] drugTypes) {
 		int issueCount = 0;
@@ -125,7 +232,7 @@ public class ValidateDrugModeling extends TermServerScript{
 
 	private int validateIngredientsInFSN(Concept concept) throws TermServerScriptException {
 		int issueCount = 0;
-		String[] drugTypes = new String[] { "(medicinal product)" };
+		String[] drugTypes = new String[] { /*MP,*/ MPF};
 		
 		//Only check FSN for certain drug types (to be expanded later)
 		if (!isDrugType(concept, drugTypes)) {
@@ -147,6 +254,12 @@ public class ValidateDrugModeling extends TermServerScript{
 		
 		String proposedFSN = "Product containing ";
 		proposedFSN += StringUtils.join(ingredients, " and ");
+		
+		//Do we need to add the dose form?
+		if (isDrugType(concept, new String[]{MPF})) {
+			proposedFSN += " in " + getDosageForm(concept);
+		}
+		
 		proposedFSN += " " + SnomedUtils.deconstructFSN(concept.getFsn())[1];
 		
 		if (!concept.getFsn().equals(proposedFSN)) {
@@ -157,6 +270,30 @@ public class ValidateDrugModeling extends TermServerScript{
 		return issueCount;
 	}
 	
+	private String getDosageForm(Concept concept) {
+		List<Relationship> doseForms = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, hasManufacturedDoseForm, ActiveState.ACTIVE);
+		if (doseForms.size() == 0) {
+			return "NO STATED DOSE FORM DETECTED";
+		} else if (doseForms.size() > 1) {
+			return "MULTIPLE DOSE FORMS";
+		} else {
+			String doseForm = SnomedUtils.deconstructFSN(doseForms.get(0).getTarget().getFsn())[0];
+			doseForm = SnomedUtils.deCapitalize(doseForm);
+			//Translate known issues
+			switch (doseForm) {
+				case "ocular dosage form": doseForm =  "ophthalmic dosage form";
+					break;
+				case "inhalation dosage form": doseForm = "respiratory dosage form";
+					break;
+				case "cutaneous AND/OR transdermal dosage form" : doseForm = "topical dosage form";
+					break;
+				case "oromucosal AND/OR gingival dosage form" : doseForm = "oropharyngeal dosage form";
+					break;
+			}
+			return doseForm;
+		}
+	}
+
 	private int validateAttributeValueCardinality(Concept concept, Concept activeIngredient) throws TermServerScriptException {
 		int issuesEncountered = 0;
 		issuesEncountered += checkforRepeatedAttributeValue(concept, CharacteristicType.INFERRED_RELATIONSHIP, activeIngredient);
@@ -200,25 +337,14 @@ public class ValidateDrugModeling extends TermServerScript{
 		writeToFile(line);
 	}
 	
-	protected void init(String[] args) throws IOException, TermServerScriptException {
+	protected void init(String[] args) throws TermServerScriptException {
 		super.init(args);
-		
-		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
-		String reportFilename = "drug_model_validation_" + project.toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
-		reportFile = new File(outputDir, reportFilename);
-		reportFile.createNewFile();
-		println ("Outputting Report to " + reportFile.getAbsolutePath());
 		writeToFile ("Concept, FSN, SemTag, Issue, Data");
 		
 		//Recover static concepts that we'll need to search for in attribute types
 		activeIngredient = gl.getConcept(SCTID_ACTIVE_INGREDIENT);
 		hasManufacturedDoseForm = gl.getConcept(SCTID_MAN_DOSE_FORM);
 		boss = gl.getConcept(SCTID_HAS_BOSS);
-	}
-
-	@Override
-	protected Concept loadLine(String[] lineItems)
-			throws TermServerScriptException {
-		return null;
+		hasDisposition = gl.getConcept(SCTID_HAS_DISPOSITION);
 	}
 }
