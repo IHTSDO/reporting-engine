@@ -13,18 +13,25 @@ import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.ActiveState;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 public class ValidateDrugModeling extends TermServerReport{
 	
-	String subHierarchyStr = "373873005"; // |Pharmaceutical / biologic product (product)|
+	String drugsHierarchyStr = "373873005"; // |Pharmaceutical / biologic product (product)|
+	String substHierarchyStr = "105590001"; // |Substance (substance)|
+	
 	static final String SCTID_ACTIVE_INGREDIENT = "127489000"; // |Has active ingredient (attribute)|"
 	static final String SCTID_HAS_BOSS = "732943007"; //Has basis of strength substance (attribute)
 	static final String SCTID_MAN_DOSE_FORM = "411116001"; //Has manufactured dose form (attribute)
+	static final String SCTID_HAS_DISPOSITION = "726542003"; // |Has disposition (attribute)|
+	
 	Concept activeIngredient;
 	Concept hasManufacturedDoseForm;
 	Concept boss;
+	Concept hasDisposition;
 	
 	private static final String CD = "(clinical drug)";
 	private static final String MP = "(medicinal product)";
@@ -38,15 +45,16 @@ public class ValidateDrugModeling extends TermServerReport{
 		try {
 			report.init(args);
 			report.loadProjectSnapshot(false); //Load all descriptions
-			report.validateModeling();
+			report.validateDrugsModeling();
+			report.validateSubstancesModeling();
 		} catch (Exception e) {
 			println("Failed to produce Druge Model Validation Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} 
 	}
 	
-	private void validateModeling() throws TermServerScriptException {
-		Set<Concept> subHierarchy = gl.getConcept(subHierarchyStr).getDescendents(NOT_SET);
+	private void validateDrugsModeling() throws TermServerScriptException {
+		Set<Concept> subHierarchy = gl.getConcept(drugsHierarchyStr).getDescendents(NOT_SET);
 		String[] drugTypes = new String[] { MPF, CD };
 		long issueCount = 0;
 		for (Concept concept : subHierarchy) {
@@ -55,11 +63,78 @@ public class ValidateDrugModeling extends TermServerReport{
 			//issueCount += validateStatedVsInferredAttributes(concept, activeIngredient, drugTypes);
 			//issueCount += validateStatedVsInferredAttributes(concept, hasManufacturedDoseForm, drugTypes);
 			//issueCount += validateAttributeValueCardinality(concept, activeIngredient);
-			issueCount += checkForBadWords(concept);
+			//issueCount += checkForBadWords(concept);
 		}
-		println ("Validation complete.  Detected " + issueCount + " issues.");
+		println ("Drugs validation complete.  Detected " + issueCount + " issues.");
 	}
 	
+	private void validateSubstancesModeling() throws TermServerScriptException {
+		Set<Concept> subHierarchy = gl.getConcept(substHierarchyStr).getDescendents(NOT_SET);
+		long issueCount = 0;
+		for (Concept concept : subHierarchy) {
+			issueCount += validateDisposition(concept);
+		}
+		println ("Substances validation complete.  Detected " + issueCount + " issues.");
+	}
+	
+	//Ensure that all stated dispositions exist as inferred, and visa-versa
+	private long validateDisposition(Concept concept) {
+		long issuesCount = validateAttributeViewsMatch (concept, hasDisposition, CharacteristicType.STATED_RELATIONSHIP);
+		issuesCount += validateAttributeViewsMatch (concept, hasDisposition, CharacteristicType.STATED_RELATIONSHIP);
+		issuesCount += checkForOddlyInferredParent(concept, hasDisposition);
+		return issuesCount;
+	}
+
+	private long validateAttributeViewsMatch(Concept concept,
+			Concept attributeType,
+			CharacteristicType fromCharType) {
+		//Check that all relationships of the given type "From" match "To"
+		long issuesCount = 0;
+		CharacteristicType toCharType = fromCharType.equals(CharacteristicType.STATED_RELATIONSHIP)? CharacteristicType.INFERRED_RELATIONSHIP : CharacteristicType.STATED_RELATIONSHIP;
+		for (Relationship r : concept.getRelationships(fromCharType, attributeType, ActiveState.ACTIVE)) {
+			if (findRelationship(concept, r, toCharType) == null) {
+				String msg = fromCharType.toString() + " has no counterpart";
+				report (concept, msg, r.toString());
+			}
+		}
+		return issuesCount;
+	}
+	
+
+	/**
+	 * list of concepts that have an inferred parent with a stated attribute 
+	 * that is not the same as the that of the concept.
+	 * @return
+	 */
+	private long checkForOddlyInferredParent(Concept concept, Concept attributeType) {
+		//Work through inferred parents
+		long issuesCount = 0;
+		for (Concept parent : concept.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
+			//Find all STATED attributes of interest
+			for (Relationship parentAttribute : parent.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE)) {
+				//Does our original concept have that attribute?  Report if not.
+				if (null == findRelationship(concept, parentAttribute, CharacteristicType.STATED_RELATIONSHIP)) {
+					String msg ="Inferred parent has a stated attribute not stated in child.";
+					report (concept, msg, parentAttribute.toString());
+					issuesCount++;
+				}
+			}
+		}
+		return issuesCount;
+	}
+
+	
+	private Relationship findRelationship(Concept concept, Relationship exampleRel, CharacteristicType charType) {
+		//Find the first relationship matching the type, target and activeState
+		for (Relationship r : concept.getRelationships(charType, exampleRel.getType(),  ActiveState.ACTIVE)) {
+			if (r.getTarget().equals(exampleRel.getTarget())) {
+				return r;
+			}
+		}
+		return null;
+	}
+
+
 	/*
 	Need to identify and update:
 		FSN beginning with "Product containing" that includes any of the following in any active description:
@@ -270,5 +345,6 @@ public class ValidateDrugModeling extends TermServerReport{
 		activeIngredient = gl.getConcept(SCTID_ACTIVE_INGREDIENT);
 		hasManufacturedDoseForm = gl.getConcept(SCTID_MAN_DOSE_FORM);
 		boss = gl.getConcept(SCTID_HAS_BOSS);
+		hasDisposition = gl.getConcept(SCTID_HAS_DISPOSITION);
 	}
 }
