@@ -407,7 +407,6 @@ public class SnomedUtils implements RF2Constants{
 		//or add a new entry
 		ChangeStatus changeStatus = ChangeStatus.NO_CHANGE_MADE;
 		for (String thisDialectSctid : dialects) {
-			boolean dialectPT = false;
 			//Do we have an active entry we could change?
 			List<LangRefsetEntry> langRefsetEntries = d.getLangRefsetEntries(ActiveState.ACTIVE, thisDialectSctid);
 			if (langRefsetEntries.size() >1) {
@@ -462,6 +461,16 @@ public class SnomedUtils implements RF2Constants{
 			}
 		}
 		return changeStatus;
+	}
+	
+	public static CaseSignificance translateCaseSignificance(String caseSignificanceIndicatorStr) throws TermServerScriptException {
+		switch (caseSignificanceIndicatorStr) {
+			case "ENTIRE_TERM_CASE_SENSITIVE" : return CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE;
+			case "CASE_INSENSITIVE" : return CaseSignificance.CASE_INSENSITIVE;
+			case "INITIAL_CHARACTER_CASE_INSENSITIVE" : return CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE;
+			default :
+		}
+		throw new TermServerScriptException("Do not recognise case significance indicator : " + caseSignificanceIndicatorStr);
 	}
 	
 	public static String translateCaseSignificanceToSctId(String caseSignificanceIndicator) throws TermServerScriptException {

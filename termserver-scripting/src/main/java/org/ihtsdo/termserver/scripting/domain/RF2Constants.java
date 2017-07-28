@@ -112,7 +112,7 @@ public interface RF2Constants {
 	
 	public enum Acceptability { ACCEPTABLE, PREFERRED, BOTH };
 	
-	public enum CaseSignificance { ENTIRE_TERM_CASE_SENSITIVE, CASE_INSENSITIVE ,ONLY_INITIAL_CHAR_CASE_INSENSITIVE };
+	public enum CaseSignificance { ENTIRE_TERM_CASE_SENSITIVE, CASE_INSENSITIVE ,INITIAL_CHARACTER_CASE_INSENSITIVE };
 	public static String CS = "CS";
 	public static String ci= "ci";
 	public static String cI = "cI";

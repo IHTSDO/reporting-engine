@@ -16,6 +16,7 @@ import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Task;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import com.b2international.commons.StringUtils;
 
@@ -91,7 +92,9 @@ public class DrugsReTerming extends BatchFix implements RF2Constants{
 			Description fsn = tsConcept.getDescriptions(Acceptability.PREFERRED, DescriptionType.FSN, ActiveState.ACTIVE).get(0);
 			Description replacement = fsn.clone(null);
 			replacement.setTerm(change.getFsn());
-			replacement.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE.toString());
+			String termPart = SnomedUtils.deconstructFSN(change.getFsn())[0];
+			CaseSignificance cs = isCaseSensitive(termPart)? CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE : CaseSignificance.CASE_INSENSITIVE;
+			replacement.setCaseSignificance(cs.toString());
 			replacement.setAcceptabilityMap(createAcceptabilityMap(AcceptabilityMode.PREFERRED_BOTH));
 			fsn.inactivateDescription(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
 			tsConcept.addDescription(replacement);
@@ -104,7 +107,7 @@ public class DrugsReTerming extends BatchFix implements RF2Constants{
 	}
 
 	private int remodelSynonyms(Task task, Concept remodelledConcept,
-			Concept tsConcept) {
+			Concept tsConcept) throws TermServerScriptException {
 		int changesMade = 0;
 		//Now inactivate all synonyms, unless we're keeping them
 		List<Description> sortedDescriptions = getDescriptionsSorted(tsConcept);
@@ -128,11 +131,14 @@ public class DrugsReTerming extends BatchFix implements RF2Constants{
 				}
 				//And remove the description from our change set, so we don't add it again
 				remodelledConcept.getDescriptions().remove(keeping);
+				changesMade += checkCaseSensitivity(task, tsConcept, d);
 			} else {
 				//Inactivate all existing active descriptions that aren't being reused.
 				if (d.isActive()) {
 					if (d.isPreferred()) {
 						report(task, tsConcept, Severity.HIGH, ReportActionType.DESCRIPTION_CHANGE_MADE, "Inactivating preferred term: " + d);
+					} else {
+						report(task, tsConcept, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Inactivating existing synonym: " + d);
 					}
 					d.inactivateDescription(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
 					changesMade++;
@@ -143,6 +149,33 @@ public class DrugsReTerming extends BatchFix implements RF2Constants{
 		for (Description newDesc : remodelledConcept.getDescriptions()) {
 			tsConcept.addDescription(newDesc);
 			changesMade++;
+		}
+		return changesMade;
+	}
+
+	private int checkCaseSensitivity(Task task, Concept tsConcept, Description d) throws TermServerScriptException {
+		//Do we need to change the case sensitivity of this existing term?
+		int changesMade = 0;
+		boolean isCaseSensitive = isCaseSensitive(d.getTerm());
+		CaseSignificance caseSig = SnomedUtils.translateCaseSignificance(d.getCaseSignificance());
+		switch (caseSig) {
+			case INITIAL_CHARACTER_CASE_INSENSITIVE : 
+				if (!isCaseSensitive) {
+					d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE.toString());
+					report(task, tsConcept, Severity.HIGH, ReportActionType.DESCRIPTION_CHANGE_MADE, "Existing cI sensitivity changed to ci : " + d);
+					changesMade++;
+				}
+				break;
+			case ENTIRE_TERM_CASE_SENSITIVE : 
+				break;
+			case CASE_INSENSITIVE : 
+				if (isCaseSensitive) {
+					d.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE.toString());
+					report(task, tsConcept, Severity.HIGH, ReportActionType.DESCRIPTION_CHANGE_MADE, "Existing ci sensitivity changed to cI : " + d);
+					changesMade++;
+				}
+				break;
+			default : throw new TermServerScriptException("Unrecognised case significance " + caseSig + " for " + d);
 		}
 		return changesMade;
 	}
@@ -234,7 +267,7 @@ public class DrugsReTerming extends BatchFix implements RF2Constants{
 		J 9) Synonym generated from modeled ingredients following USAN-acceptable naming with plus sign
 		Where exists, this will be the US PT (and acceptable in GB)
 		K 10) Synonym generated from FSN without semtag following USAN
-		Where exists, this will be an acceptable US Synonym
+		Where exists, this will be an acceptable US Synonym EDIT: acceptable in both dialects
 		Comment	id	Original FSN	FSN generated from modeled ingredient using original substance names	Original matches Generate FSN generated from modeled ingredient using original substance names	FSN generated from modeled ingredient using INN conventions	Synonym generated from modeled ingredients separated by plus signs and following INN	Original matches Generate FSN generated from modeled ingredient separated by plus signs and following INN	Synonym generated from FSN without semantic tag	Synonym generated from modeled ingredients following USAN-acceptable naming with plus sign	Synonym generated from FSN without semtag following USAN																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																					
 
 	 */
@@ -261,7 +294,7 @@ public class DrugsReTerming extends BatchFix implements RF2Constants{
 			addSynonym(concept, items[6], AcceptabilityMode.PREFERRED_GB );
 			addSynonym(concept, items[9], AcceptabilityMode.PREFERRED_US );
 			if (items.length > 10 &&  !items[10].isEmpty()) {
-				addSynonym(concept, items[10], AcceptabilityMode.ACCEPTABLE_US);
+				addSynonym(concept, items[10], AcceptabilityMode.ACCEPTABLE_BOTH);
 			}
 		} else {
 			addSynonym(concept, items[6], AcceptabilityMode.PREFERRED_BOTH );
@@ -283,7 +316,7 @@ public class DrugsReTerming extends BatchFix implements RF2Constants{
 		d.setType(DescriptionType.SYNONYM);
 		d.setLang(LANG_EN);
 		if (isCaseSensitive(term)) {
-			d.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE.toString());
+			d.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE.toString());
 		} else {
 			d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE.toString());
 		}
