@@ -79,9 +79,14 @@ public class ValidateDrugModeling extends TermServerReport{
 	
 	//Ensure that all stated dispositions exist as inferred, and visa-versa
 	private long validateDisposition(Concept concept) {
-		long issuesCount = validateAttributeViewsMatch (concept, hasDisposition, CharacteristicType.STATED_RELATIONSHIP);
+		long issuesCount = 0;
 		issuesCount += validateAttributeViewsMatch (concept, hasDisposition, CharacteristicType.STATED_RELATIONSHIP);
-		issuesCount += checkForOddlyInferredParent(concept, hasDisposition);
+
+		//If this concept has one or more hasDisposition attributes, check if the inferred parent has the same.
+		if (concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, hasDisposition, ActiveState.ACTIVE).size() > 0) {
+			issuesCount += validateAttributeViewsMatch (concept, hasDisposition, CharacteristicType.INFERRED_RELATIONSHIP);
+			issuesCount += checkForOddlyInferredParent(concept, hasDisposition);
+		}
 		return issuesCount;
 	}
 
@@ -95,6 +100,7 @@ public class ValidateDrugModeling extends TermServerReport{
 			if (findRelationship(concept, r, toCharType) == null) {
 				String msg = fromCharType.toString() + " has no counterpart";
 				report (concept, msg, r.toString());
+				issuesCount++;
 			}
 		}
 		return issuesCount;
