@@ -58,10 +58,14 @@ public class ReplaceRelationships extends DeltaGenerator {
 		//replaced by BOTH relationships below.
 		replaceRelationships.add(createTemplate("116676008", "49755003")); //|Associated morphology (attribute)| ->  |Morphologically abnormal structure (morphologic abnormality)|
 		replaceRelationships.add(createTemplate("370135005","308490002")); //  |Pathological process (attribute)| -> |Pathological developmental process (qualifier value)|
-	
+		
+		//should be grouped with the finding site and the occurrence.
+		
+		//Every concept under congenital malformation, should have the pathological process attribute.
 	}
 	
 	protected void prep() throws TermServerScriptException {
+		println("Finding relationships to add...");
 		addRelationships.add(createTemplate("370135005","308490002")); //  |Pathological process (attribute)| -> |Pathological developmental process (qualifier value)|
 		Concept valueSubHierarchy = gl.getConcept("21390004"); //|Developmental anomaly (morphologic abnormality)
 		Set<Concept> valuesToMatch = valueSubHierarchy.getDescendents(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE);
@@ -71,7 +75,7 @@ public class ReplaceRelationships extends DeltaGenerator {
 	}
 	
 	private void process() throws TermServerScriptException {
-		
+		println("Processing...");
 		Concept subHierarchy = gl.getConcept(subHierarchyStr);
 		Set<Concept> concepts = subHierarchy.getDescendents(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE);
 		concepts.add(subHierarchy);  //Descendants and Self
