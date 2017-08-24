@@ -320,9 +320,12 @@ public abstract class TermServerScript implements RF2Constants {
 						} else if (fileName.contains("der2_cRefset_ConceptInactivationIndicatorReferenceSetSnapshot")) {
 							println("Loading Concept Inactivation Indicator File.");
 							gl.loadInactivationIndicatorFile(zis, true);
-						} else if (fileName.contains("der2_cRefset_DescriptionInactivationIndicatorReferenceSetSnapshot")) {
-							println("Loading Description Inactivation Indicator File.");
-							gl.loadInactivationIndicatorFile(zis, false);
+						} else if (fileName.contains("der2_cRefset_ConceptInactivationIndicatorReferenceSetSnapshot")) {
+							println("Loading Concept Inactivation Indicator File.");
+							gl.loadInactivationIndicatorFile(zis, true);
+						} else if (fileName.contains("der2_cRefset_AssociationReferenceSnapshot")) {
+							println("Loading Historical Assocation File.");
+							gl.loadHistoricalAssociationFile(zis);
 						}
 						//If we're loading all terms, load the language refset as well
 						if (!fsnOnly && (fileName.contains("EnglishSnapshot") || fileName.contains("LanguageSnapshot-en"))) {

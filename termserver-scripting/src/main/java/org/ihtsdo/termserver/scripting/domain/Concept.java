@@ -62,6 +62,7 @@ public class Concept implements RF2Constants, Comparable<Concept> {
 	private boolean isDeleted = false;
 	private int depth;
 	List<InactivationIndicatorEntry> inactivationIndicatorEntries;
+	List<HistoricalAssociation> historicalAssociations;
 	
 	public String getReviewer() {
 		return reviewer;
@@ -500,6 +501,28 @@ public class Concept implements RF2Constants, Comparable<Concept> {
 				}
 			}
 			return selectedInactivationIndicatortEntries;
+		}
+	}
+	
+	public List<HistoricalAssociation> getHistorialAssociations() {
+		if (historicalAssociations == null) {
+			historicalAssociations = new ArrayList<HistoricalAssociation>();
+		}
+		return historicalAssociations;
+	}
+	
+	public List<HistoricalAssociation> getHistorialAssociations(ActiveState activeState) {
+		if (activeState.equals(ActiveState.BOTH)) {
+			return getHistorialAssociations();
+		} else {
+			boolean isActive = activeState.equals(ActiveState.ACTIVE);
+			List<HistoricalAssociation> selectedHistorialAssociations = new ArrayList<HistoricalAssociation>();
+			for (HistoricalAssociation h : getHistorialAssociations()) {
+				if (h.isActive() == isActive) {
+					selectedHistorialAssociations.add(h);
+				}
+			}
+			return selectedHistorialAssociations;
 		}
 	}
 	

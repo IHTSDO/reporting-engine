@@ -98,6 +98,11 @@ public interface RF2Constants {
 	public static final String SCTID_INACT_NON_CONFORMANCE  = "723277005"; // |Nonconformance to editorial policy component (foundation metadata concept)|
 	public static final String SCTID_INACT_NOT_EQUIVALENT  = "723278000";  //|Not semantically equivalent component (foundation metadata concept)|
 	
+	//Historical Associations
+	public static final String SCTID_HIST_WAS_A_REFSETID = "900000000000528000"; // |WAS A association reference set (foundation metadata concept)|
+	public static final String SCTID_HIST_REPLACED_BY_REFSETID = "900000000000526001"; // |REPLACED BY association reference set (foundation metadata concept)|
+	
+	
 	public enum DefinitionStatus { PRIMITIVE, FULLY_DEFINED };
 	public static String SCTID_PRIMITIVE = "900000000000074008";
 	public static String SCTID_FULLY_DEFINED = "900000000000073002";

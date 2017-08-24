@@ -14,13 +14,12 @@ import java.util.zip.ZipInputStream;
 
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
+import org.ihtsdo.termserver.scripting.domain.HistoricalAssociation;
 import org.ihtsdo.termserver.scripting.domain.InactivationIndicatorEntry;
 import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-
-import com.b2international.snowowl.core.SnowOwlApplication;
 
 public class GraphLoader implements RF2Constants {
 
@@ -283,5 +282,34 @@ public class GraphLoader implements RF2Constants {
 		i.setInactivationReasonId(lineItems[INACT_IDX_REASON_ID]);
 		return i;
 	}
+	
+	public void loadHistoricalAssociationFile(ZipInputStream zis) throws IOException, TermServerScriptException {
+		BufferedReader br = new BufferedReader(new InputStreamReader(zis, StandardCharsets.UTF_8));
+		boolean isHeaderLine = true;
+		String line;
+		while ((line = br.readLine()) != null) {
+			if (!isHeaderLine) {
+				String[] lineItems = line.split(FIELD_DELIMITER);
+				Concept c = getConcept(lineItems[INACT_IDX_REFCOMPID]);
+				HistoricalAssociation historicalAssociation = loadHistoricalAssociationLine(lineItems);
+				c.getHistorialAssociations().add(historicalAssociation);
+			} else {
+				isHeaderLine = false;
+			}
+		}
+	}
+	
+	private HistoricalAssociation loadHistoricalAssociationLine(String[] lineItems) {
+		HistoricalAssociation h = new HistoricalAssociation();
+		h.setId(lineItems[INACT_IDX_ID]);
+		h.setEffectiveTime(lineItems[INACT_IDX_EFFECTIVETIME]);
+		h.setActive(lineItems[INACT_IDX_ACTIVE].equals("1"));
+		h.setModuleId(lineItems[INACT_IDX_MODULID]);
+		h.setRefsetId(lineItems[INACT_IDX_REFSETID]);
+		h.setReferencedComponentId(lineItems[INACT_IDX_REFCOMPID]);
+		h.setTargetComponentId(lineItems[INACT_IDX_REASON_ID]);
+		return h;
+	}
+
 
 }
