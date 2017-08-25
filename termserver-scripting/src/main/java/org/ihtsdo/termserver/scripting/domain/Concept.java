@@ -50,6 +50,9 @@ public class Concept implements RF2Constants, Comparable<Concept> {
 	@SerializedName("isLeafInferred")
 	@Expose
 	private boolean isLeafInferred;
+	@SerializedName("inactivationIndicator")
+	@Expose
+	private InactivationIndicator inactivationIndicator;
 	
 	private boolean isLoaded = false;
 	private int originalFileLineNumber;
@@ -61,6 +64,9 @@ public class Concept implements RF2Constants, Comparable<Concept> {
 	private String deletionEffectiveTime;
 	private boolean isDeleted = false;
 	private int depth;
+	
+	//Note that these values are used when loading from RF2 where multiple entries can exist.
+	//When interacting with the TS, only one inactivation indicator is used (see above).
 	List<InactivationIndicatorEntry> inactivationIndicatorEntries;
 	List<HistoricalAssociation> historicalAssociations;
 	
@@ -111,8 +117,8 @@ public class Concept implements RF2Constants, Comparable<Concept> {
 		return active;
 	}
 
-	public void setActive(boolean active) {
-		this.active = active;
+	public void setActive(boolean newActiveState) {
+		this.active = newActiveState;
 	}
 
 	public String getConceptId() {
@@ -557,6 +563,14 @@ public class Concept implements RF2Constants, Comparable<Concept> {
 	public void delete(String deletionEffectiveTime) {
 		this.isDeleted = true;
 		this.deletionEffectiveTime = deletionEffectiveTime;
+	}
+
+	public InactivationIndicator getInactivationIndicator() {
+		return inactivationIndicator;
+	}
+
+	public void setInactivationIndicator(InactivationIndicator inactivationIndicator) {
+		this.inactivationIndicator = inactivationIndicator;
 	}
 
 }

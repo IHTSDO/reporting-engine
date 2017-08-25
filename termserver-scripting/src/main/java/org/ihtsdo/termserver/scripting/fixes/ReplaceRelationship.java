@@ -37,7 +37,6 @@ public class ReplaceRelationship extends BatchFix implements RF2Constants{
 		ReplaceRelationship fix = new ReplaceRelationship(null);
 		try {
 			fix.selfDetermining = true;
-			//fix.populateEditPanel = false;
 			fix.reportNoChange = false;
 			fix.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
