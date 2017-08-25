@@ -94,7 +94,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected static GraphLoader graph = GraphLoader.getGraphLoader();
 
 	public enum ReportActionType { API_ERROR, CONCEPT_CHANGE_MADE, INFO, UNEXPECTED_CONDITION,
-									 RELATIONSHIP_ADDED, RELATIONSHIP_REMOVED, DESCRIPTION_CHANGE_MADE, 
+									 RELATIONSHIP_ADDED, RELATIONSHIP_REMOVED, RELATIONSHIP_MODIFIED, DESCRIPTION_CHANGE_MADE, 
 									 NO_CHANGE, VALIDATION_ERROR, VALIDATION_CHECK, DEBUG_INFO, REFSET_MEMBER_REMOVED};
 									 
 	public enum Severity { NONE, LOW, MEDIUM, HIGH, CRITICAL }; 
@@ -118,7 +118,7 @@ public abstract class TermServerScript implements RF2Constants {
 	private static String[] envKeys = new String[] {"local","dev","uat","flat-uat","prod","dev","uat","prod"};
 
 	private static String[] environments = new String[] {	"http://localhost:8080/",
-															"https://dev-term.ihtsdotools.org/",
+															"https://dev-authoring.ihtsdotools.org/",
 															"https://uat-authoring.ihtsdotools.org/",
 															"https://uat-flat-termserver.ihtsdotools.org/",
 															"https://prod-authoring.ihtsdotools.org/",
@@ -320,11 +320,11 @@ public abstract class TermServerScript implements RF2Constants {
 						} else if (fileName.contains("der2_cRefset_ConceptInactivationIndicatorReferenceSetSnapshot")) {
 							println("Loading Concept Inactivation Indicator File.");
 							gl.loadInactivationIndicatorFile(zis, true);
-						} else if (fileName.contains("der2_cRefset_ConceptInactivationIndicatorReferenceSetSnapshot")) {
-							println("Loading Concept Inactivation Indicator File.");
-							gl.loadInactivationIndicatorFile(zis, true);
-						} else if (fileName.contains("der2_cRefset_AssociationReferenceSnapshot")) {
-							println("Loading Historical Assocation File.");
+						}  else if (fileName.contains("der2_cRefset_DescriptionInactivationIndicatorReferenceSetSnapshot")) {
+							println("Loading Description Inactivation Indicator File.");
+							gl.loadInactivationIndicatorFile(zis, false);
+						} else if (fileName.contains("AssociationReferenceSetSnapshot")) {
+							println("Loading Historical Assocation File: " + fileName);
 							gl.loadHistoricalAssociationFile(zis);
 						}
 						//If we're loading all terms, load the language refset as well

@@ -47,11 +47,10 @@ public class InactivationAssocationReport extends TermServerScript{
 	}
 
 	private void reportMatchingInactivations() throws TermServerScriptException {
-		Collection<Concept> concepts = gl.getAllConcepts();
-		Multiset<String> tags = HashMultiset.create();
-		
-		for (Concept c : concepts) {
-			//For a change we're interested in inactivated concepts
+		int rowsReported = 0;
+		println ("Scanning all concepts...");
+		for (Concept c : gl.getAllConcepts()) {
+			//For a change we're interested in inactive concepts!
 			if (!c.isActive()) {
 				//Does this inactivated concept have one of our target inactivation reasons?
 				for (String inactivationReasonSctId : targetInactivationReasons) {
@@ -61,7 +60,8 @@ public class InactivationAssocationReport extends TermServerScript{
 							for (HistoricalAssociation histAssoc : c.getHistorialAssociations(ActiveState.ACTIVE)) {
 								for (String targetAssocationRefsetId : targetAssocationRefsetIds) {
 									if (histAssoc.getRefsetId().equals(targetAssocationRefsetId)) {
-										
+										report(c,inactivationIndicator, histAssoc);
+										rowsReported++;
 									}
 								}
 							}
@@ -70,18 +70,24 @@ public class InactivationAssocationReport extends TermServerScript{
 				}
 			}
 		}
-		addSummaryInformation("Concepts checked", concepts.size());
-		addSummaryInformation("Matching Descriptions", tags.size());
+		addSummaryInformation("Concepts checked", gl.getAllConcepts().size());
+		addSummaryInformation("Rows reported", rowsReported);
 	}
 
 	protected void report (Concept c, InactivationIndicatorEntry inact, HistoricalAssociation assoc) throws TermServerScriptException {
+		
 		String line = 	c.getConceptId() + COMMA_QUOTE + 
 						c.getFsn() + QUOTE_COMMA_QUOTE + 
 						inact.getEffectiveTime() + QUOTE_COMMA_QUOTE + 
-						gl.getConcept(inact.getInactivationReasonId()) + QUOTE_COMMA_QUOTE +
+						simpleName(inact.getInactivationReasonId()) + QUOTE_COMMA_QUOTE +
 						assoc.getEffectiveTime() + QUOTE_COMMA_QUOTE + 
-						gl.getConcept(assoc.getRefsetId()) + QUOTE;
+						simpleName(assoc.getRefsetId()) + " -> " + gl.getConcept(assoc.getTargetComponentId())+ QUOTE;
 		writeToFile(line);
+	}
+	
+	private String simpleName(String sctid) throws TermServerScriptException {
+		Concept c = gl.getConcept(sctid);
+		return SnomedUtils.deconstructFSN(c.getFsn())[0];
 	}
 	
 	protected void init(String[] args) throws IOException, TermServerScriptException {
