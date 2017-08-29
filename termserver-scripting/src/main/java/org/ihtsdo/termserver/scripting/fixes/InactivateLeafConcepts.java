@@ -69,10 +69,12 @@ public class InactivateLeafConcepts extends BatchFix implements RF2Constants{
 			Concept c = gl.getConcept(columns[0]);
 			if (!c.getFsn().equals(columns[1])) {
 				report(null, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "FSN failed to match expected value " + columns[1]);
-			} else if ( c.getDescendents(IMMEDIATE_CHILD).size() > 0) {
-				report(null, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Concept is not a leaf node.  Not safe to inactivate");
 			} else if (!c.isActive()) {
 				report(null, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Concept is already inactive");
+			} else if ( gl.usedAsHistoricalAssociationTarget(c) != null) {
+				report(null, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Concept is used as the target of a historical association");
+			} else if ( c.getDescendents(IMMEDIATE_CHILD).size() > 0) {
+				report(null, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Concept is not a leaf node.  Not safe to inactivate");
 			} else {
 				conceptsToInactivate.add(c);
 			}

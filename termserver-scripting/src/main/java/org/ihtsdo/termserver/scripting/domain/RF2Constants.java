@@ -191,6 +191,16 @@ public interface RF2Constants {
 	public static final int INACT_IDX_REFCOMPID = 5;
 	public static final int INACT_IDX_REASON_ID = 6;
 	
+	// Association Refset columns
+	// id	effectiveTime	active	moduleId	refsetId	referencedComponentId	reasonId
+	public static final int ASSOC_IDX_ID = 0;
+	public static final int ASSOC_IDX_EFFECTIVETIME = 1;
+	public static final int ASSOC_IDX_ACTIVE = 2;
+	public static final int ASSOC_IDX_MODULID = 3;
+	public static final int ASSOC_IDX_REFSETID = 4;
+	public static final int ASSOC_IDX_REFCOMPID = 5;
+	public static final int ASSOC_IDX_TARGET = 6;
+	
 	// Refset columns
 	public static final int REF_IDX_ID = 0;
 	public static final int REF_IDX_EFFECTIVETIME = 1;

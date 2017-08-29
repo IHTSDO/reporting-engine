@@ -5,9 +5,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.zip.ZipInputStream;
@@ -26,6 +28,10 @@ public class GraphLoader implements RF2Constants {
 	private static GraphLoader singletonGraphLoader = null;
 	private Map<String, Concept> concepts = new HashMap<String, Concept>();
 	private Map<String, Description> descriptions = new HashMap<String, Description>();
+	
+	//Watch that this map is of the TARGET of the association, ie all concepts used in a historical association
+	private Map<Concept, List<HistoricalAssociation>> historicalAssociations =  new HashMap<Concept, List<HistoricalAssociation>>();
+	
 	public StringBuffer log = new StringBuffer();
 	
 	public static GraphLoader getGraphLoader() {
@@ -293,21 +299,42 @@ public class GraphLoader implements RF2Constants {
 				Concept c = getConcept(lineItems[INACT_IDX_REFCOMPID]);
 				HistoricalAssociation historicalAssociation = loadHistoricalAssociationLine(lineItems);
 				c.getHistorialAssociations().add(historicalAssociation);
+				if (historicalAssociation.isActive()) {
+					recordHistoricalAssociation(historicalAssociation);
+				}
 			} else {
 				isHeaderLine = false;
 			}
 		}
 	}
 	
+	private void recordHistoricalAssociation(HistoricalAssociation h) throws TermServerScriptException {
+		//Remember we're using the target of the association as the map key here
+		Concept target = getConcept(h.getTargetComponentId());
+		//Have we seen this concept before?
+		List<HistoricalAssociation> associations;
+		if (historicalAssociations.containsKey(target)) {
+			associations = historicalAssociations.get(target);
+		} else {
+			associations = new ArrayList<HistoricalAssociation>();
+			historicalAssociations.put(target, associations);
+		}
+		associations.add(h);
+	}
+	
+	public List<HistoricalAssociation> usedAsHistoricalAssociationTarget (Concept c) {
+		return historicalAssociations.get(c);
+	}
+
 	private HistoricalAssociation loadHistoricalAssociationLine(String[] lineItems) {
 		HistoricalAssociation h = new HistoricalAssociation();
-		h.setId(lineItems[INACT_IDX_ID]);
-		h.setEffectiveTime(lineItems[INACT_IDX_EFFECTIVETIME]);
-		h.setActive(lineItems[INACT_IDX_ACTIVE].equals("1"));
-		h.setModuleId(lineItems[INACT_IDX_MODULID]);
-		h.setRefsetId(lineItems[INACT_IDX_REFSETID]);
-		h.setReferencedComponentId(lineItems[INACT_IDX_REFCOMPID]);
-		h.setTargetComponentId(lineItems[INACT_IDX_REASON_ID]);
+		h.setId(lineItems[ASSOC_IDX_ID]);
+		h.setEffectiveTime(lineItems[ASSOC_IDX_EFFECTIVETIME]);
+		h.setActive(lineItems[ASSOC_IDX_ACTIVE].equals("1"));
+		h.setModuleId(lineItems[ASSOC_IDX_MODULID]);
+		h.setRefsetId(lineItems[ASSOC_IDX_REFSETID]);
+		h.setReferencedComponentId(lineItems[ASSOC_IDX_REFCOMPID]);
+		h.setTargetComponentId(lineItems[ASSOC_IDX_TARGET]);
 		return h;
 	}
 
