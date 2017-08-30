@@ -64,6 +64,10 @@ public class InactivateLeafConcepts extends BatchFix implements RF2Constants{
 		List<String> lines = Files.readLines(inputFile, Charsets.UTF_8);
 		println ("Loading concepts to inactivate from " + inputFile);
 		for (String line : lines) {
+			//Skip any empty lines
+			if (line.trim().isEmpty()) {
+				continue;
+			}
 			//format:   SCTID  FSN
 			String[] columns = line.split(TAB);
 			Concept c = gl.getConcept(columns[0]);
