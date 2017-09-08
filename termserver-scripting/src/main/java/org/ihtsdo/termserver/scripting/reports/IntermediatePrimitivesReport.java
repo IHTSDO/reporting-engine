@@ -1,224 +1,130 @@
 package org.ihtsdo.termserver.scripting.reports;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
+import java.util.TreeMap;
 
-import org.apache.commons.lang.StringUtils;
-import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.*;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExportType;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExtractType;
-import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.domain.HistoricalAssociation;
+import org.ihtsdo.termserver.scripting.domain.InactivationIndicatorEntry;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 /**
- * Reports all concepts in a hierarchy that are used in the definition of other concepts.
- */
+ * Reports concepts that are primitive, and have both fully defined ancestors and descendants 
+ * */
 public class IntermediatePrimitivesReport extends TermServerScript{
 	
-	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
-	GraphLoader gl = GraphLoader.getGraphLoader();
-	String publishedArchive;
-	String[] hierarchies = {"64572001"}; //Disease (disorder)
+	List<Concept> topLevelHierarchies;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		IntermediatePrimitivesReport report = new IntermediatePrimitivesReport();
 		try {
 			report.init(args);
-			report.loadProjectSnapshot();  //Load FSNs only
+			report.loadProjectSnapshot(true);  //just FSNs
+			report.getTopLevelHierarchies();
 			report.reportIntermediatePrimitives();
 		} catch (Exception e) {
-			println("Report failed due to " + e.getMessage());
+			println("Failed to produce Description Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
 		}
 	}
+	
+	private void getTopLevelHierarchies() throws TermServerScriptException {
+		Concept rootConcept = gl.getConcept(SCTID_ROOT_CONCEPT.toString());
+		topLevelHierarchies = new ArrayList<Concept>(rootConcept.getDescendents(IMMEDIATE_CHILD));
+		//Sort by FSN
+		Collections.sort(topLevelHierarchies, new Comparator<Concept>() {
+			@Override
+			public int compare(Concept c1, Concept c2) {
+				return c1.getFsn().compareTo(c2.getFsn());
+			}
+		});
+	}
 
 	private void reportIntermediatePrimitives() throws TermServerScriptException {
-		for (String hiearchySCTID : hierarchies) {
-
-			int fdToTopCount = 0;
-			int immedPrimParentCount = 0;
-			int alreadyModelledCorrectlyCount = 0;
-			int notImmediatePrimitiveCount = 0;
-			
-			Concept hierarchy = gl.getConcept(hiearchySCTID);
-			Set<Concept> outsideSubHierarchy = hierarchy.getAncestors(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE, true);
-			Set<Concept> allHierarchy = hierarchy.getDescendents(NOT_SET, CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
-			Set<Concept> allActiveFD = filterActiveFD(allHierarchy);
-			println (hierarchy + " - " + allActiveFD.size() + "(FD) / " + allHierarchy.size() + "(Active)");
-			
-			for (Concept thisConcept : allActiveFD) {
-				boolean alreadyModelledCorrectly = false;
-				boolean fdToTop = false;
-				boolean immedPrimParent = false;
-				boolean notImmediatePrimitive = false;
-				List<Concept>parents = thisConcept.getParents(CharacteristicType.STATED_RELATIONSHIP); 
-				//If we have a single stated parent of disease, then we're modelled correctly
-				if (parents.size() == 1 && parents.get(0).getConceptId().equals(hiearchySCTID)) {
-					alreadyModelledCorrectlyCount++;
-					alreadyModelledCorrectly = true;
-				} else {
-					//See if ancestors up to subhierarchy start (remove outside of that) are all fully defined
-					Set<Concept> ancestors = thisConcept.getAncestors(NOT_SET, CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE, false);
-					ancestors.removeAll(outsideSubHierarchy);
-					if (allFD(ancestors)) {
-						fdToTopCount++;
-						fdToTop = true;
-					} else {
-						if (!allFD(parents)) {
-							immedPrimParentCount ++;
-							immedPrimParent = true;
-						} else {
-							notImmediatePrimitiveCount++;
-							notImmediatePrimitive = true;
-						}
-					}
+		int rowsReported = 0;
+		println ("Scanning all concepts...");
+		//Work through all top level hierarchies and list semantic tags along with their counts
+		for (Concept thisHierarchy : topLevelHierarchies) {
+			int hierarchyIpCount = 0;
+			Set<Concept> descendents = thisHierarchy.getDescendents(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE);
+			for (Concept c : descendents) {
+				if (c.getDefinitionStatus().equals(DefinitionStatus.PRIMITIVE)) {
+					hierarchyIpCount += checkConceptForIntermediatePrimitive(c);
 				}
-				report(thisConcept, SnomedUtils.deconstructFSN(thisConcept.getFsn())[1], alreadyModelledCorrectly, fdToTop, immedPrimParent, notImmediatePrimitive);
 			}
-			println ("\tAlready modelled correctly: " + alreadyModelledCorrectlyCount);
-			println ("\tFully defined to subhierarchy top: " + fdToTopCount);
-			println ("\tHas immediate primitive parent: " + immedPrimParentCount);
-			println ("\tNot-immediate primitive ancestor: " + notImmediatePrimitiveCount);
+			println(simpleName(thisHierarchy.getConceptId()) + ": " + hierarchyIpCount + " / " + descendents.size());
+			rowsReported += hierarchyIpCount;
 		}
+		addSummaryInformation("Concepts checked", gl.getAllConcepts().size());
+		addSummaryInformation("Rows reported", rowsReported);
+	}
+
+	private int checkConceptForIntermediatePrimitive(Concept c) throws TermServerScriptException {
+		//Do we have both ancestor and descendant fully defined concepts?
+		Set<Concept> descendants = c.getDescendents(NOT_SET);
+		boolean hasFdDescendants = containsFdConcept(descendants);
+		if (hasFdDescendants && containsFdConcept(c.getAncestors(NOT_SET))) {
+			//This is an intermediate primitive, but does it have immediately close FD concepts?
+			boolean hasImmediateFDParent = containsFdConcept(c.getParents(CharacteristicType.INFERRED_RELATIONSHIP));
+			boolean hasImmediateFDChild = containsFdConcept(c.getChildren(CharacteristicType.INFERRED_RELATIONSHIP));
+			report (c, hasImmediateFDParent, hasImmediateFDChild);
+			return 1;
+		}
+		return 0;
+	}
+
+	private boolean containsFdConcept(Collection<Concept> concepts) {
+		for (Concept c : concepts) {
+			if (c.isActive() && c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	protected void report (Concept c, boolean hasImmediateFDParent, boolean hasImmediateFDChild) throws TermServerScriptException {
 		
-	}
-
-	private boolean allFD(Collection<Concept> concepts) {
-		boolean allFD = true;
-		for (Concept concept : concepts) {
-			if (!concept.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
-				allFD = false;
-				break;
-			}
-		}
-		return allFD;
-	}
-
-	private Set<Concept> filterActiveFD(Set<Concept> fullSet) {
-		Set <Concept> activeConcepts = new HashSet<Concept>();
-		for (Concept thisConcept : fullSet ) {
-			if (thisConcept.isActive() && thisConcept.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
-				activeConcepts.add(thisConcept);
-			}
-		}
-		return activeConcepts;
-	}
-
-	protected void report (Concept c, String semtag, boolean one, boolean two, boolean three, boolean four) {
 		String line = 	c.getConceptId() + COMMA_QUOTE + 
-						c.getFsn().replace(",", "") + QUOTE_COMMA_QUOTE +
-						semtag + QUOTE_COMMA +
-						one + COMMA +
-						two + COMMA + 
-						three + COMMA +
-						four;
+						c.getFsn() + QUOTE_COMMA_QUOTE + 
+						SnomedUtils.deconstructFSN(c.getFsn())[1] + QUOTE_COMMA_QUOTE + 
+						(hasImmediateFDParent?"Yes":"No") + QUOTE_COMMA_QUOTE + 
+						(hasImmediateFDChild?"Yes":"No") + QUOTE ;
 		writeToFile(line);
+	}
+	
+	private String simpleName(String sctid) throws TermServerScriptException {
+		Concept c = gl.getConcept(sctid);
+		return SnomedUtils.deconstructFSN(c.getFsn())[0];
 	}
 	
 	protected void init(String[] args) throws IOException, TermServerScriptException {
 		super.init(args);
-		
-		for (int x=0; x<args.length; x++) {
-			if (args[x].equals("-z")) {
-				publishedArchive = args[++x];
-			}
-		}
-		String hierarchiesStr = StringUtils.join(hierarchies,",");
-		print ("Concepts in which Hierarchies? [" + hierarchiesStr + "]: ");
-		String response = STDIN.nextLine().trim();
-		if (!response.isEmpty()) {
-			hierarchies = response.split(",");
-		}
-		
 		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
 		String reportFilename = getScriptName() + "_" + project.toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToFile ("Concept, FSN, Sem_Tag, alreadyModelledCorrectly, FDToTop, immedPrimParent, notImmediatePrimitive");
-	}
-
-	private void loadProjectSnapshot() throws SnowOwlClientException, TermServerScriptException, InterruptedException {
-		int SNAPSHOT = 0;
-		File[] archives;
-		if (publishedArchive != null && !publishedArchive.isEmpty()) {
-			archives = new File[] { new File(publishedArchive)};
-		} else {
-			archives = new File[] { new File (project + "_snapshot_" + env + ".zip")};
-		}
-
-		//Do we already have a copy of the project locally?  If not, recover it.
-		if (!archives[SNAPSHOT].exists()) {
-			println ("Recovering snapshot state of " + project + " from TS (" + env + ")");
-			tsClient.export("MAIN/" + project, null, ExportType.MIXED, ExtractType.SNAPSHOT, archives[SNAPSHOT]);
-			initialiseSnowOwlClient();  //re-initialise client to avoid HttpMediaTypeNotAcceptableException.  Cause unknown.
-		}
-		
-		println ("Loading snapshot into memory...");
-		for (File archive : archives) {
-			try {
-				ZipInputStream zis = new ZipInputStream(new FileInputStream(archive));
-				ZipEntry ze = zis.getNextEntry();
-				try {
-					while (ze != null) {
-						if (!ze.isDirectory()) {
-							Path p = Paths.get(ze.getName());
-							String fileName = p.getFileName().toString();
-							if (fileName.contains("sct2_Description_Snapshot")) {
-								println("Loading Description File.");
-								gl.loadDescriptionFile(zis, true);  //Load FSNs only
-							}
-							
-							if (fileName.contains("sct2_Concept_Snapshot")) {
-								println("Loading Concept File.");
-								gl.loadConceptFile(zis);
-							}
-							
-							if (fileName.contains("sct2_Relationship_Snapshot")) {
-								println("Loading Relationship Snapshot File.");
-								gl.loadRelationships(CharacteristicType.INFERRED_RELATIONSHIP,zis, true);
-							}
-							
-							if (fileName.contains("sct2_StatedRelationship_Snapshot")) {
-								println("Loading Stated Relationship Snapshot File.");
-								gl.loadRelationships(CharacteristicType.STATED_RELATIONSHIP,zis, true);
-							}
-
-						}
-						ze = zis.getNextEntry();
-					}
-				} finally {
-					try{
-						zis.closeEntry();
-						zis.close();
-					} catch (Exception e){} //Well, we tried.
-				}
-			} catch (IOException e) {
-				throw new TermServerScriptException("Failed to extract project state from archive " + archive.getName(), e);
-			}
-		}
+		writeToFile ("Concept, FSN, semanticTag, immediateParentFD, immediateChildFD");
 	}
 
 	@Override
 	protected Concept loadLine(String[] lineItems)
 			throws TermServerScriptException {
-		return gl.getConcept(lineItems[0]);
+		return null;
 	}
 }

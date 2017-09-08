@@ -314,6 +314,10 @@ public class Concept implements RF2Constants, Comparable<Concept> {
 		}
 	}
 	
+	public Set<Concept> getAncestors(int depth) throws TermServerScriptException {
+		return getAncestors(depth, CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE, false);
+	}
+	
 	public Set<Concept> getAncestors(int depth, CharacteristicType characteristicType, ActiveState activeState, boolean includeSelf) throws TermServerScriptException {
 		Set<Concept> allAncestors = new HashSet<Concept>();
 		this.populateAllAncestors(allAncestors, depth, characteristicType, activeState);
@@ -335,7 +339,7 @@ public class Concept implements RF2Constants, Comparable<Concept> {
 		}
 	}
 	
-	private List<Concept> getChildren(CharacteristicType characteristicType) {
+	public List<Concept> getChildren(CharacteristicType characteristicType) {
 		switch (characteristicType) {
 			case STATED_RELATIONSHIP : return statedChildren;
 			case INFERRED_RELATIONSHIP : return inferredChildren;
