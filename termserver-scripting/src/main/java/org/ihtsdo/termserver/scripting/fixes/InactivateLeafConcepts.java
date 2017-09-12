@@ -2,23 +2,14 @@ package org.ihtsdo.termserver.scripting.fixes;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
 
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.exception.ExceptionUtils;
-import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Batch;
 import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Description;
-import org.ihtsdo.termserver.scripting.domain.InactivationIndicatorEntry;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Task;
 
@@ -34,7 +25,6 @@ import us.monoid.json.JSONObject;
  */
 public class InactivateLeafConcepts extends BatchFix implements RF2Constants{
 	
-	String[] author_reviewer = new String[] {targetAuthor};
 	List<Concept> conceptsToInactivate = new ArrayList<Concept>();
 	
 	protected InactivateLeafConcepts(BatchFix clone) {
@@ -110,23 +100,6 @@ public class InactivateLeafConcepts extends BatchFix implements RF2Constants{
 		report(task, concept, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept inactivated");
 		return 1;
 	}
-
-	protected Batch formIntoBatch() throws TermServerScriptException {
-		Batch batch = new Batch(getScriptName());
-		Task task = batch.addNewTask();
-
-		for (Concept thisConcept : conceptsToInactivate) {
-			if (task.size() >= taskSize) {
-				task = batch.addNewTask();
-				setAuthorReviewer(task, author_reviewer);
-			}
-			task.add(thisConcept);
-		}
-		addSummaryInformation("Tasks scheduled", batch.getTasks().size());
-		addSummaryInformation(CONCEPTS_PROCESSED, conceptsToInactivate);
-		return batch;
-	}
-
 
 	@Override
 	protected Concept loadLine(String[] lineItems) throws TermServerScriptException {

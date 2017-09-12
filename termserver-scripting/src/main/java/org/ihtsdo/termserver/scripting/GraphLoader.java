@@ -55,11 +55,9 @@ public class GraphLoader implements RF2Constants {
 		while ((line = br.readLine()) != null) {
 			if (!isHeaderLine) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
-				Concept thisConcept;
+				Concept thisConcept = getConcept(lineItems[REL_IDX_SOURCEID]);
 				if (addRelationshipsToConcepts) {
-					thisConcept = addRelationshipToConcept(characteristicType, lineItems);
-				} else {
-					thisConcept = getConcept(lineItems[REL_IDX_SOURCEID]);
+					addRelationshipToConcept(thisConcept, characteristicType, lineItems);
 				}
 				concepts.add(thisConcept);
 			} else {
@@ -71,7 +69,7 @@ public class GraphLoader implements RF2Constants {
 		return concepts;
 	}
 	
-	private Concept addRelationshipToConcept(CharacteristicType characteristicType, String[] lineItems) throws TermServerScriptException {
+	public void addRelationshipToConcept(Concept source, CharacteristicType characteristicType, String[] lineItems) throws TermServerScriptException {
 		
 		String sourceId = lineItems[REL_IDX_SOURCEID];
 		String destId = lineItems[REL_IDX_DESTINATIONID];
@@ -80,7 +78,6 @@ public class GraphLoader implements RF2Constants {
 		if (sourceId.length() < 4 || destId.length() < 4 || typeId.length() < 4 ) {
 			System.out.println("*** Invalid SCTID encountered in relationship " + lineItems[REL_IDX_ID] + ": s" + sourceId + " d" + destId + " t" + typeId);
 		}
-		Concept source = getConcept(lineItems[REL_IDX_SOURCEID]);
 		Concept type = getConcept(lineItems[REL_IDX_TYPEID]);
 		Concept destination = getConcept(lineItems[REL_IDX_DESTINATIONID]);
 		int groupNum = Integer.parseInt(lineItems[REL_IDX_RELATIONSHIPGROUP]);
@@ -99,39 +96,68 @@ public class GraphLoader implements RF2Constants {
 			destination.addChild(r.getCharacteristicType(),source);
 		} 
 		source.addRelationship(r);
-		return source;
 	}
 
 	public Concept getConcept(String sctId) throws TermServerScriptException {
-		return getConcept(sctId, true);
+		return getConcept(sctId, true, true);
 	}
 	
-	public Concept getConcept(String sctId, boolean createIfRequired) throws TermServerScriptException {
-		if (!concepts.containsKey(sctId)) {
+	public Concept getConcept(Long sctId) throws TermServerScriptException {
+		return getConcept(sctId.toString(), true, true);
+	}
+	
+	public boolean conceptKnown(String sctId) {
+		return concepts.containsKey(sctId);
+	}
+	
+	public Concept getConcept(String sctId, boolean createIfRequired, boolean validateExists) throws TermServerScriptException {
+		Concept c = concepts.get(sctId);
+		if (c == null) {
 			if (createIfRequired) {
-				Concept c = new Concept(sctId);
+				c = new Concept(sctId);
 				concepts.put(sctId, c);
-			} else {
+			} else if (validateExists) {
 				throw new TermServerScriptException("Expected Concept '" + sctId + "' has not been loaded from archive");
 			}
 		}
-		return concepts.get(sctId);
+		return c;
 	}
 	
 	public Description getDescription(String sctId) throws TermServerScriptException {
-		return getDescription(sctId, true);
+		return getDescription(sctId, true, true);
 	}
 	
-	public Description getDescription(String sctId, boolean createIfRequired) throws TermServerScriptException {
-		if (!descriptions.containsKey(sctId)) {
+	public Description getDescription(Long sctId) throws TermServerScriptException {
+		return getDescription(sctId.toString(), true, true);
+	}
+	
+	public Description getDescription(String sctId, boolean createIfRequired, boolean validateExists) throws TermServerScriptException {
+		Description d = descriptions.get(sctId);
+		if (d == null) {
 			if (createIfRequired) {
-				Description d = new Description(sctId);
+				d = new Description(sctId);
 				descriptions.put(sctId, d);
-			} else {
+			} else if (validateExists) {
 				throw new TermServerScriptException("Expected Description " + sctId + " has not been loaded from archive");
 			}
 		}
-		return descriptions.get(sctId);
+		return d;
+	}
+	
+	public void loadConceptFile(InputStream is) throws IOException, TermServerScriptException {
+		//Not putting this in a try resource block otherwise it will close the stream on completion and we've got more to read!
+		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+		String line;
+		boolean isHeaderLine = true;
+		while ((line = br.readLine()) != null) {
+			if (!isHeaderLine) {
+				String[] lineItems = line.split(FIELD_DELIMITER);
+				Concept c = Concept.fromRf2(lineItems);
+				concepts.put(c.getConceptId(), c);
+			} else {
+				isHeaderLine = false;
+			}
+		}
 	}
 	
 	public void loadDescriptionFile(InputStream descStream, boolean fsnOnly) throws IOException, TermServerScriptException {
@@ -150,7 +176,8 @@ public class GraphLoader implements RF2Constants {
 					}
 				} else {
 					Concept c = getConcept(lineItems[DES_IDX_CONCEPTID]);
-					Description d = loadDescriptionLine(lineItems);
+					Description d = Description.fromRf2(lineItems);
+					descriptions.put(lineItems[DES_IDX_ID], d);
 					c.addDescription(d);
 					if (d.isActive() && d.getType().equals(DescriptionType.FSN)) {
 						c.setFsn(lineItems[DES_IDX_TERM]);
@@ -158,41 +185,6 @@ public class GraphLoader implements RF2Constants {
 				}
 			} else {
 				isHeader = false;
-			}
-		}
-	}
-	
-	private Description loadDescriptionLine(String[] lineItems) throws TermServerScriptException {
-		Description d = getDescription(lineItems[DES_IDX_ID]);
-		d.setDescriptionId(lineItems[DES_IDX_ID]);
-		d.setActive(lineItems[DES_IDX_ACTIVE].equals("1"));
-		//Set effective time after active, since changing activate state resets effectiveTime
-		d.setEffectiveTime(lineItems[DES_IDX_EFFECTIVETIME]);
-		d.setModuleId(lineItems[DES_IDX_MODULID]);
-		d.setCaseSignificance(lineItems[DES_IDX_CASESIGNIFICANCEID]);
-		d.setConceptId(lineItems[DES_IDX_CONCEPTID]);
-		d.setLang(lineItems[DES_IDX_LANGUAGECODE]);
-		d.setTerm(lineItems[DES_IDX_TERM]);
-		d.setType(SnomedUtils.translateDescType(lineItems[DES_IDX_TYPEID]));
-		descriptions.put(lineItems[DES_IDX_ID], d);
-		return d;
-	}
-
-	public void loadConceptFile(InputStream is) throws IOException, TermServerScriptException {
-		//Not putting this in a try resource block otherwise it will close the stream on completion and we've got more to read!
-		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
-		String line;
-		boolean isHeaderLine = true;
-		while ((line = br.readLine()) != null) {
-			if (!isHeaderLine) {
-				String[] lineItems = line.split(FIELD_DELIMITER);
-				Concept c = getConcept(lineItems[CON_IDX_ID]);
-				c.setActive(lineItems[CON_IDX_ACTIVE].equals("1"));
-				c.setEffectiveTime(lineItems[CON_IDX_EFFECTIVETIME]);
-				c.setModuleId(lineItems[CON_IDX_MODULID]);
-				c.setDefinitionStatus(SnomedUtils.translateDefnStatus(lineItems[CON_IDX_DEFINITIONSTATUSID]));
-			} else {
-				isHeaderLine = false;
 			}
 		}
 	}

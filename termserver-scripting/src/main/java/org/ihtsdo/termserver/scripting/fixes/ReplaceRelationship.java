@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -25,7 +26,6 @@ with 370130000 |Property (attribute)|
 */
 public class ReplaceRelationship extends BatchFix implements RF2Constants{
 	
-	String[] author_reviewer = new String[] {targetAuthor};
 	Concept findAttribute;
 	Concept replaceAttribute;
 	
@@ -111,24 +111,7 @@ public class ReplaceRelationship extends BatchFix implements RF2Constants{
 		return inactiveStated;
 	}
 
-	protected Batch formIntoBatch() throws TermServerScriptException {
-		Batch batch = new Batch(getScriptName());
-		Task task = batch.addNewTask();
-		Set<Concept> allConceptsBeingProcessed = identifyConceptsToProcess();
-
-		for (Concept thisConcept : allConceptsBeingProcessed) {
-			if (task.size() >= taskSize) {
-				task = batch.addNewTask();
-				setAuthorReviewer(task, author_reviewer);
-			}
-			task.add(thisConcept);
-		}
-		addSummaryInformation("Tasks scheduled", batch.getTasks().size());
-		addSummaryInformation(CONCEPTS_PROCESSED, allConceptsBeingProcessed);
-		return batch;
-	}
-
-	private Set<Concept> identifyConceptsToProcess() throws TermServerScriptException {
+	protected List<Concept> identifyConceptsToProcess() throws TermServerScriptException {
 		Collection<Concept> allPotential = gl.getAllConcepts();
 		Set<Concept> allAffected = new TreeSet<Concept>();  //We want to process in the same order each time, in case we restart and skip some.
 		for (Concept c : allPotential) {
@@ -139,7 +122,7 @@ public class ReplaceRelationship extends BatchFix implements RF2Constants{
 				}
 			}
 		}
-		return allAffected;
+		return new ArrayList<Concept>(allAffected);
 	}
 
 	@Override

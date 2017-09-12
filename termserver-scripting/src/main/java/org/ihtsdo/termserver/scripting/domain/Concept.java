@@ -194,6 +194,16 @@ public class Concept implements RF2Constants, Comparable<Concept> {
 		}
 		return matches;
 	}
+	
+
+	public Relationship getRelationship(String id) {
+		for (Relationship r : relationships) {
+			if (r.getRelationshipId().equals(id)) {
+				return r;
+			}
+		}
+		return null;
+	}
 
 	public void setRelationships(List<Relationship> relationships) {
 		this.relationships = relationships;
@@ -394,8 +404,21 @@ public class Concept implements RF2Constants, Comparable<Concept> {
 		return results;
 	}
 	
+
+	public Description getDescription(String descriptionId) {
+		for (Description d : descriptions) {
+			if (d.getDescriptionId().equals(descriptionId)) {
+				return d;
+			}
+		}
+		return null;
+	}
+	
 	public void addDescription(Description description) {
 		descriptions.add(description);
+		if (description.isActive() && description.getType().equals(DescriptionType.FSN)) {
+			this.setFsn(description.getTerm());
+		}
 	}
 
 	public List<Concept> getParents(CharacteristicType characteristicType) {
@@ -576,5 +599,22 @@ public class Concept implements RF2Constants, Comparable<Concept> {
 	public void setInactivationIndicator(InactivationIndicator inactivationIndicator) {
 		this.inactivationIndicator = inactivationIndicator;
 	}
+
+	public static Concept fromRf2(String[] lineItems) {
+		return fillFromRf2(new Concept(lineItems[CON_IDX_ID]), lineItems);
+	}
+	
+	public static ConceptChange fromRf2Delta(String[] lineItems) {
+		return (ConceptChange) fillFromRf2(new ConceptChange(lineItems[CON_IDX_ID]), lineItems);
+	}
+	
+	public static Concept fillFromRf2(Concept c, String[] lineItems) {
+		c.setActive(lineItems[CON_IDX_ACTIVE].equals("1"));
+		c.setEffectiveTime(lineItems[CON_IDX_EFFECTIVETIME]);
+		c.setModuleId(lineItems[CON_IDX_MODULID]);
+		c.setDefinitionStatus(SnomedUtils.translateDefnStatus(lineItems[CON_IDX_DEFINITIONSTATUSID]));
+		return c;
+	}
+
 
 }

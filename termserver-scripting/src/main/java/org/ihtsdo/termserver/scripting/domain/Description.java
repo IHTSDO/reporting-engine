@@ -354,4 +354,19 @@ public class Description implements RF2Constants{
 		this.deletionEffectiveTime = deletionEffectiveTime;
 	}
 
+	public static Description fromRf2(String[] lineItems) throws TermServerScriptException {
+		Description d = new Description();
+		d.setDescriptionId(lineItems[DES_IDX_ID]);
+		d.setActive(lineItems[DES_IDX_ACTIVE].equals("1"));
+		//Set effective time after active, since changing activate state resets effectiveTime
+		d.setEffectiveTime(lineItems[DES_IDX_EFFECTIVETIME]);
+		d.setModuleId(lineItems[DES_IDX_MODULID]);
+		d.setCaseSignificance(lineItems[DES_IDX_CASESIGNIFICANCEID]);
+		d.setConceptId(lineItems[DES_IDX_CONCEPTID]);
+		d.setLang(lineItems[DES_IDX_LANGUAGECODE]);
+		d.setTerm(lineItems[DES_IDX_TERM]);
+		d.setType(SnomedUtils.translateDescType(lineItems[DES_IDX_TYPEID]));
+		return d;
+	}
+
 }

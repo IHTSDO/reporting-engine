@@ -73,11 +73,6 @@ public interface RF2Constants {
 	
 	final public String SEMANTIC_TAG_START = "(";
 	
-	public enum PartionIdentifier {CONCEPT, DESCRIPTION, RELATIONSHIP};
-	
-	public enum CharacteristicType {	STATED_RELATIONSHIP, INFERRED_RELATIONSHIP, 
-										QUALIFYING_RELATIONSHIP, ADDITIONAL_RELATIONSHIP, ALL};
-										
 	public static String SCTID_STATED_RELATIONSHIP = "900000000000010007";
 	public static String SCTID_INFERRED_RELATIONSHIP = "900000000000011006";
 	public static String SCTID_QUALIFYING_RELATIONSHIP = "900000000000225001";
@@ -122,6 +117,24 @@ public interface RF2Constants {
 	public static String ci= "ci";
 	public static String cI = "cI";
 	
+	public static final String DELTA = "Delta";
+	public static final String SNAPSHOT = "Snapshot";
+	public static final String FULL = "Full";
+	public static final String TYPE = "TYPE";
+	
+	public enum PartionIdentifier {CONCEPT, DESCRIPTION, RELATIONSHIP};
+	
+	public enum CharacteristicType {	STATED_RELATIONSHIP, INFERRED_RELATIONSHIP, 
+										QUALIFYING_RELATIONSHIP, ADDITIONAL_RELATIONSHIP, ALL};
+	
+	public enum FileType { DELTA, SNAPSHOT, FULL };
+
+	public enum Rf2File { CONCEPT, DESCRIPTION, STATED_RELATIONSHIP, RELATIONSHIP, LANGREFSET, ATTRIBUTE_VALUE }
+	
+	public enum ComponentType { CONCEPT, DESCRIPTION, STATED_RELATIONSHIP, RELATIONSHIP }
+	
+	public enum ChangeType { NEW, INACTIVATION, REACTIVATION, MODIFIED, UNKNOWN }
+	
 	public enum ConceptType { PRODUCT_STRENGTH, MEDICINAL_ENTITY, MEDICINAL_FORM, MEDICINAL_PRODUCT, GROUPER, PRODUCT_ROLE, VMPF, VCD, VMP, UNKNOWN, ANATOMY };
 	
 	public enum Cardinality { AT_LEAST_ONE, EXACTLY_ONE };
@@ -130,14 +143,18 @@ public interface RF2Constants {
 	
 	public enum ChangeStatus { CHANGE_MADE, CHANGE_NOT_REQUIRED, NO_CHANGE_MADE };
 	
-	public enum Rf2File { CONCEPT, DESCRIPTION, STATED_RELATIONSHIP, RELATIONSHIP }
-	
 	public static final String FIELD_DELIMITER = "\t";
 	public static final String LINE_DELIMITER = "\r\n";
 	public static final String ACTIVE_FLAG = "1";
 	public static final String INACTIVE_FLAG = "0";
 	public static final String HEADER_ROW = "id\teffectiveTime\tactive\tmoduleId\tsourceId\tdestinationId\trelationshipGroup\ttypeId\tcharacteristicTypeId\tmodifierId\r\n";
 
+	//Common columns
+	public static final int IDX_ID = 0;
+	public static final int IDX_EFFECTIVETIME = 1;
+	public static final int IDX_ACTIVE = 2;
+	public static final int IDX_MODULEID = 3;
+	
 	// Relationship columns
 	public static final int REL_IDX_ID = 0;
 	public static final int REL_IDX_EFFECTIVETIME = 1;

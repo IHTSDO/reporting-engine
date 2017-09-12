@@ -6,6 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
@@ -46,6 +47,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	protected int taskSize = 6;
 	protected int wiggleRoom = 2;
 	protected String targetAuthor;
+	String[] author_reviewer = new String[] {targetAuthor};
 	String[] emailDetails;
 	protected boolean selfDetermining = false; //Set to true if the batch fix calculates its own data to process
 	protected boolean populateEditPanel = true;
@@ -62,14 +64,6 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		}
 	}
 	
-	protected void setAuthorReviewer(Task task, String[] author_reviewer) {
-		task.setAssignedAuthor(author_reviewer[0]);
-		if (author_reviewer.length > 1) {
-			task.setReviewer(author_reviewer[1]);
-		}
-	}
-
-
 	protected List<Concept> processFile() throws TermServerScriptException {
 		List<Concept> allConcepts = super.processFile();
 		Batch batch = formIntoBatch(inputFile.getName(), allConcepts, projectPath);
@@ -86,6 +80,27 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	
 	abstract protected int doFix(Task task, Concept concept, String info) throws TermServerScriptException, ValidationFailure;
 
+	protected List<Concept> identifyConceptsToProcess() throws TermServerScriptException {
+		//Default implementation identifies no concepts.  Override if required.
+		return new ArrayList<Concept>();
+	}
+	
+	protected Batch formIntoBatch() throws TermServerScriptException {
+		Batch batch = new Batch(getScriptName());
+		Task task = batch.addNewTask();
+		List<Concept> allConceptsBeingProcessed = identifyConceptsToProcess();
+		for (Concept thisConcept : allConceptsBeingProcessed) {
+			if (task.size() >= taskSize) {
+				task = batch.addNewTask(author_reviewer);
+			}
+			task.add(thisConcept);
+		}
+		addSummaryInformation("Tasks scheduled", batch.getTasks().size());
+		addSummaryInformation(CONCEPTS_PROCESSED, allConceptsBeingProcessed);
+		return batch;
+	}
+	
+	
 	protected void batchProcess(Batch batch) throws TermServerScriptException {
 		int failureCount = 0;
 		int tasksCreated = 0;
@@ -217,6 +232,10 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			changesMade++;
 		}
 		return changesMade;
+	}
+	
+	protected void report(Concept concept, ReportActionType actionType, String actionDetail) {
+		report (null, concept, Severity.LOW, actionType, actionDetail);
 	}
 	
 	protected void report(Task task, Concept concept, Severity severity, ReportActionType actionType, String actionDetail) {

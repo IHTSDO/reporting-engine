@@ -24,7 +24,6 @@ the lower case term
  */
 public class LowerCaseTermInactivation extends BatchFix implements RF2Constants{
 	
-	String[] author_reviewer = new String[] {targetAuthor};
 	String subHierarchyStr = "27268008";  //Genus Salmonella (organism)
 	
 	protected LowerCaseTermInactivation(BatchFix clone) {
@@ -86,26 +85,7 @@ public class LowerCaseTermInactivation extends BatchFix implements RF2Constants{
 		return changesMade;
 	}
 
-	protected Batch formIntoBatch() throws TermServerScriptException {
-		Batch batch = new Batch(getScriptName());
-		Task task = batch.addNewTask();
-		List<Concept> allConceptsBeingProcessed = identifyConceptsToProcess();
-
-		for (Concept thisConcept : allConceptsBeingProcessed) {
-			if (task.size() >= taskSize) {
-				task = batch.addNewTask();
-				setAuthorReviewer(task, author_reviewer);
-			}
-			task.add(thisConcept);
-		}
-		addSummaryInformation("Tasks scheduled", batch.getTasks().size());
-		addSummaryInformation(CONCEPTS_PROCESSED, allConceptsBeingProcessed);
-		//storeRemainder(CONCEPTS_IN_FILE, CONCEPTS_PROCESSED, REPORTED_NOT_PROCESSED, "Gone Missing");
-		return batch;
-	}
-	
-
-	private List<Concept> identifyConceptsToProcess() throws TermServerScriptException {
+	protected List<Concept> identifyConceptsToProcess() throws TermServerScriptException {
 		List<Concept> processMe = new ArrayList<Concept>();
 		GraphLoader gl = GraphLoader.getGraphLoader();
 		Concept subHierarchy = gl.getConcept(subHierarchyStr);

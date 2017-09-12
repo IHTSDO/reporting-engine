@@ -35,5 +35,4 @@ public class ConceptChange extends Concept {
 	public void setSkipReason(String skipReason) {
 		this.skipReason = skipReason;
 	}
-
 }

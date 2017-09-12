@@ -28,7 +28,6 @@ The lower case term is inactivated and replaced with the upper case version.
  */
 public class ReplaceLowerCaseTerms extends BatchFix implements RF2Constants{
 	
-	String[] author_reviewer = new String[] {targetAuthor};
 	String subHierarchyStr = "27268008";  //Genus Salmonella (organism)
 	String[] exceptions = new String[] {"398393000", "110378009"};
 	String firstWord = "Salmonella";
@@ -133,31 +132,12 @@ public class ReplaceLowerCaseTerms extends BatchFix implements RF2Constants{
 		return termAlreadyExists;
 	}
 
-	protected Batch formIntoBatch() throws TermServerScriptException {
-		Batch batch = new Batch(getScriptName());
-		Task task = batch.addNewTask();
-		List<Concept> allConceptsBeingProcessed = identifyConceptsToProcess();
-
-		for (Concept thisConcept : allConceptsBeingProcessed) {
-			if (task.size() >= taskSize) {
-				task = batch.addNewTask();
-				setAuthorReviewer(task, author_reviewer);
-			}
-			task.add(thisConcept);
-		}
-		addSummaryInformation("Tasks scheduled", batch.getTasks().size());
-		addSummaryInformation(CONCEPTS_PROCESSED, allConceptsBeingProcessed);
-		//storeRemainder(CONCEPTS_IN_FILE, CONCEPTS_PROCESSED, REPORTED_NOT_PROCESSED, "Gone Missing");
-		return batch;
-	}
-	
-
 	/**
 	 * Identify any concept 
 	 * @return
 	 * @throws TermServerScriptException
 	 */
-	private List<Concept> identifyConceptsToProcess() throws TermServerScriptException {
+	protected List<Concept> identifyConceptsToProcess() throws TermServerScriptException {
 		List<Concept> processMe = new ArrayList<Concept>();
 		GraphLoader gl = GraphLoader.getGraphLoader();
 		Concept subHierarchy = gl.getConcept(subHierarchyStr);

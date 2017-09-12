@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,7 +26,6 @@ import us.monoid.json.JSONObject;
  */
 public class RemoveSubstringFromNewTerms extends BatchFix implements RF2Constants{
 	
-	String[] author_reviewer = new String[] {targetAuthor};
 	String subHierarchyStr = "373873005"; // |Pharmaceutical / biologic product (product)|
 	static Map<String, String> replacementMap = new HashMap<String, String>();
 	//static final String match = "mg/1 each oral tablet";
@@ -107,24 +107,7 @@ public class RemoveSubstringFromNewTerms extends BatchFix implements RF2Constant
 		return termAlreadyExists;
 	}
 
-	protected Batch formIntoBatch() throws TermServerScriptException {
-		Batch batch = new Batch(getScriptName());
-		Task task = batch.addNewTask();
-		Set<Concept> allConceptsBeingProcessed = identifyConceptsToProcess();
-
-		for (Concept thisConcept : allConceptsBeingProcessed) {
-			if (task.size() >= taskSize) {
-				task = batch.addNewTask();
-				setAuthorReviewer(task, author_reviewer);
-			}
-			task.add(thisConcept);
-		}
-		addSummaryInformation("Tasks scheduled", batch.getTasks().size());
-		addSummaryInformation(CONCEPTS_PROCESSED, allConceptsBeingProcessed);
-		return batch;
-	}
-
-	private Set<Concept> identifyConceptsToProcess() throws TermServerScriptException {
+	protected List<Concept> identifyConceptsToProcess() throws TermServerScriptException {
 		Set<Concept> allPotential = GraphLoader.getGraphLoader().getConcept(subHierarchyStr).getDescendents(NOT_SET);
 		Set<Concept> allAffected = new TreeSet<Concept>();  //We want to process in the same order each time, in case we restart and skip some.
 		println("Identifying concepts to process");
@@ -137,7 +120,7 @@ public class RemoveSubstringFromNewTerms extends BatchFix implements RF2Constant
 			}
 		}
 		println ("Identified " + allAffected.size() + " concepts to process");
-		return allAffected;
+		return new ArrayList<Concept>(allAffected);
 	}
 
 	@Override

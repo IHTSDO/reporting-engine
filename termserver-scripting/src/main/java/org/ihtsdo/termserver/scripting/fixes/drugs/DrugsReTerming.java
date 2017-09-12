@@ -234,8 +234,7 @@ public class DrugsReTerming extends BatchFix implements RF2Constants{
 				report(task, thisConcept, Severity.LOW, ReportActionType.VALIDATION_CHECK, "Concept marked as excluded");
 			} else {
 				if (task.size() >= taskSize) {
-					task = batch.addNewTask();
-					setAuthorReviewer(task, author_reviewer);
+					task = batch.addNewTask(author_reviewer);
 				}
 				task.add(thisConcept);
 			}

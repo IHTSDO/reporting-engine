@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -28,8 +29,6 @@ inactivate the surplus.
  */
 public class InactivateDuplicateInactivationIndicators_fail extends BatchFix implements RF2Constants{
 	
-	String[] author_reviewer = new String[] {targetAuthor};
-
 	protected InactivateDuplicateInactivationIndicators_fail(BatchFix clone) {
 		super(clone);
 	}
@@ -121,24 +120,7 @@ public class InactivateDuplicateInactivationIndicators_fail extends BatchFix imp
 		return changesMade;
 	}
 
-	protected Batch formIntoBatch() throws TermServerScriptException {
-		Batch batch = new Batch(getScriptName());
-		Task task = batch.addNewTask();
-		Set<Concept> allConceptsBeingProcessed = identifyConceptsToProcess();
-
-		for (Concept thisConcept : allConceptsBeingProcessed) {
-			if (task.size() >= taskSize) {
-				task = batch.addNewTask();
-				setAuthorReviewer(task, author_reviewer);
-			}
-			task.add(thisConcept);
-		}
-		addSummaryInformation("Tasks scheduled", batch.getTasks().size());
-		addSummaryInformation(CONCEPTS_PROCESSED, allConceptsBeingProcessed);
-		return batch;
-	}
-
-	private Set<Concept> identifyConceptsToProcess() throws TermServerScriptException {
+	protected List<Concept> identifyConceptsToProcess() throws TermServerScriptException {
 		Collection<Concept> allPotential = GraphLoader.getGraphLoader().getAllConcepts();
 		Set<Concept> allAffected = new TreeSet<Concept>();  //We want to process in the same order each time, in case we restart and skip some.
 		for (Concept thisConcept : allPotential) {
@@ -149,7 +131,7 @@ public class InactivateDuplicateInactivationIndicators_fail extends BatchFix imp
 				}
 			}
 		}
-		return allAffected;
+		return new ArrayList<Concept>(allAffected);
 	}
 
 	@Override

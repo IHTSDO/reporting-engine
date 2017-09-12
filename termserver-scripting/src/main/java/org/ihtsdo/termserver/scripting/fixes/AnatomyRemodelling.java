@@ -9,8 +9,6 @@ import java.util.Set;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
-import org.ihtsdo.termserver.scripting.TermServerScript.ReportActionType;
-import org.ihtsdo.termserver.scripting.TermServerScript.Severity;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Batch;
 import org.ihtsdo.termserver.scripting.domain.Concept;
@@ -28,8 +26,6 @@ import us.monoid.json.JSONObject;
 */
 public class AnatomyRemodelling extends BatchFix implements RF2Constants{
 	
-	
-	String[] author_reviewer = new String[] {targetAuthor};
 	Map<String, ConceptChange> conceptsToProcess = new HashMap<String, ConceptChange>();
 	Set<Integer> reportedItems = new HashSet<Integer>();
 	
@@ -153,8 +149,7 @@ public class AnatomyRemodelling extends BatchFix implements RF2Constants{
 				report(task, thisConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Concept marked as: " + thisConceptChange.getSkipReason());
 			} else {
 				if (task.size() >= taskSize) {
-					task = batch.addNewTask();
-					setAuthorReviewer(task, author_reviewer);
+					task = batch.addNewTask(author_reviewer);
 				}
 				task.add(thisConcept);
 			}

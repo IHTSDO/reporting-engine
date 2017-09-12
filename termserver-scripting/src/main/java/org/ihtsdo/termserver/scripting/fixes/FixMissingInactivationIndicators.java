@@ -29,7 +29,6 @@ import us.monoid.json.JSONObject;
 */
 public class FixMissingInactivationIndicators extends BatchFix implements RF2Constants{
 	
-	String[] author_reviewer = new String[] {targetAuthor};
 	Map<String, ConceptChange> conceptsToProcess = new HashMap<String, ConceptChange>();
 	Set<Integer> reportedItems = new HashSet<Integer>();
 	
@@ -96,25 +95,8 @@ public class FixMissingInactivationIndicators extends BatchFix implements RF2Con
 		return changesMade;
 	}
 
-	protected Batch formIntoBatch () throws TermServerScriptException {
-		Batch batch = new Batch(getReportName());
-		Task task = batch.addNewTask();
-		List<Concept> allConceptsBeingProcessed = identifyConceptsToProcess();
-		
-		for (Concept thisConcept : allConceptsBeingProcessed) {
-			if (task.size() >= taskSize) {
-				task = batch.addNewTask();
-				setAuthorReviewer(task, author_reviewer);
-			}
-			task.add(thisConcept);
-		}
-		addSummaryInformation("Tasks scheduled", batch.getTasks().size());
-		addSummaryInformation(CONCEPTS_PROCESSED, allConceptsBeingProcessed);
-		return batch;
-	}
-
-
-	private List<Concept> identifyConceptsToProcess() {
+	@Override
+	protected List<Concept> identifyConceptsToProcess() {
 		//Work through all inactive concepts and check the inactivation indicator on all
 		//active descriptions
 		println ("Identifying concepts to process");

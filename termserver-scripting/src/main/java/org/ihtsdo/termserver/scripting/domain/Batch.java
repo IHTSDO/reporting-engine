@@ -12,13 +12,17 @@ public class Batch {
 	}
 	
 	public Task addNewTask() {
-		Task task = new Task(this);
+		return addNewTask(null);
+	}
+	
+	public Task addNewTask(String[] author_reviewer) {
+		Task task = new Task(this, author_reviewer);
 		tasks.add(task);
 		return task;
 	}
-	
-	public Task insertNewTask(Task after) {
-		Task task = new Task(this);
+
+	public Task insertNewTask(Task after, String[] author_reviewer) {
+		Task task = new Task(this, author_reviewer);
 		tasks.add(tasks.indexOf(after), task);
 		return task;
 	}
@@ -44,5 +48,7 @@ public class Batch {
 	public String getTaskName(Task task) {
 		return batchName + ": " + (tasks.indexOf(task) + 1);
 	}
+
+
 
 }

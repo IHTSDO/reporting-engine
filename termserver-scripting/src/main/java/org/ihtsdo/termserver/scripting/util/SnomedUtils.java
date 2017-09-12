@@ -561,4 +561,25 @@ public class SnomedUtils implements RF2Constants{
 			default: throw new IllegalArgumentException("Unrecognised inactivation indicator value " + indicatorSctId);
 		}
 	}
+	
+	public static File ensureFileExists(String fileName) throws TermServerScriptException {
+		File file = new File(fileName);
+		try {
+			if (!file.exists()) {
+				if (file.getParentFile() != null) {
+					file.getParentFile().mkdirs();
+				}
+				file.createNewFile();
+			}
+		} catch (IOException e) {
+			throw new TermServerScriptException("Failed to create file " + fileName,e);
+		}
+		return file;
+	}
+	
+	public static boolean isCaseSensitive(String term) {
+		String afterFirst = term.substring(1);
+		boolean allLowerCase = afterFirst.equals(afterFirst.toLowerCase());
+		return !allLowerCase;
+	}
 }

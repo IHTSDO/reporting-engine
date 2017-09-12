@@ -30,7 +30,6 @@ and repeat them as stated relationships
 */
 public class RestateInferredAsStated extends BatchFix implements RF2Constants{
 	
-	String[] author_reviewer = new String[] {targetAuthor};
 	String subHierarchyStr = "373873005"; // |Pharmaceutical / biologic product (product)|
 	String targetSemanticTag = "(medicinal product form)";
 	List<Concept> attributesOfInterest = new ArrayList<Concept>();
@@ -137,24 +136,7 @@ public class RestateInferredAsStated extends BatchFix implements RF2Constants{
 		return inactiveStated;
 	}
 
-	protected Batch formIntoBatch() throws TermServerScriptException {
-		Batch batch = new Batch(getScriptName());
-		Task task = batch.addNewTask();
-		Set<Concept> allConceptsBeingProcessed = identifyConceptsToProcess();
-
-		for (Concept thisConcept : allConceptsBeingProcessed) {
-			if (task.size() >= taskSize) {
-				task = batch.addNewTask();
-				setAuthorReviewer(task, author_reviewer);
-			}
-			task.add(thisConcept);
-		}
-		addSummaryInformation("Tasks scheduled", batch.getTasks().size());
-		addSummaryInformation(CONCEPTS_PROCESSED, allConceptsBeingProcessed);
-		return batch;
-	}
-
-	private Set<Concept> identifyConceptsToProcess() throws TermServerScriptException {
+	protected List<Concept> identifyConceptsToProcess() throws TermServerScriptException {
 		Set<Concept> allPotential = GraphLoader.getGraphLoader().getConcept(subHierarchyStr).getDescendents(NOT_SET);
 		Set<Concept> allAffected = new TreeSet<Concept>();  //We want to process in the same order each time, in case we restart and skip some.
 		for (Concept thisConcept : allPotential) {
@@ -167,7 +149,7 @@ public class RestateInferredAsStated extends BatchFix implements RF2Constants{
 			}
 		}
 		println (allAffected.size() + " concepts affected.");
-		return allAffected;
+		return new ArrayList<Concept>(allAffected);
 	}
 
 	private List<Relationship> determineInferredMissingFromStated(

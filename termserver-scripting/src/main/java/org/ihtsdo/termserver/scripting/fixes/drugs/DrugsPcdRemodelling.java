@@ -129,10 +129,10 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 
 	private Relationship createRelationship(String[] columns) throws TermServerScriptException {
 		
-		Concept source = graph.getConcept(columns[1], false);
+		Concept source = graph.getConcept(columns[1], false, true);
 		int groupId = Integer.parseInt(columns[3]);
-		Concept type = graph.getConcept(columns[4], false);
-		Concept destination = graph.getConcept(columns[6], false);
+		Concept type = graph.getConcept(columns[4], false, true);
+		Concept destination = graph.getConcept(columns[6], false, true);
 
 		Relationship r = new Relationship(source, type, destination, groupId);
 		r.setActive(true);
@@ -299,8 +299,7 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 
 		for (Concept thisConcept : allConcepts) {
 			if (task.size() >= taskSize) {
-				task = batch.addNewTask();
-				setAuthorReviewer(task, author_reviewer);
+				task = batch.addNewTask(author_reviewer);
 			}
 			task.add(thisConcept);
 		}

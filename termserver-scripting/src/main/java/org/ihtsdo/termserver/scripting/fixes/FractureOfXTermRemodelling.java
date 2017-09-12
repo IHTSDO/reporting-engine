@@ -20,7 +20,6 @@ changes to the concepts if required
  */
 public class FractureOfXTermRemodelling extends BatchFix implements RF2Constants{
 	
-	String[] author_reviewer = new String[] {targetAuthor};
 	String subHierarchyStr = "88230002";  // |Disorder of skeletal system (disorder)|
 	String searchTerm = "fracture";
 	String desiredTerm = "fracture of";
@@ -72,27 +71,7 @@ public class FractureOfXTermRemodelling extends BatchFix implements RF2Constants
 		return 1;
 	}
 
-
-	protected Batch formIntoBatch() throws TermServerScriptException {
-		Batch batch = new Batch(getScriptName());
-		Task task = batch.addNewTask();
-		List<Concept> allConceptsBeingProcessed = identifyConceptsToProcess();
-
-		for (Concept thisConcept : allConceptsBeingProcessed) {
-			if (task.size() >= taskSize) {
-				task = batch.addNewTask();
-				setAuthorReviewer(task, author_reviewer);
-			}
-			task.add(thisConcept);
-		}
-		addSummaryInformation("Tasks scheduled", batch.getTasks().size());
-		addSummaryInformation(CONCEPTS_PROCESSED, allConceptsBeingProcessed);
-		//storeRemainder(CONCEPTS_IN_FILE, CONCEPTS_PROCESSED, REPORTED_NOT_PROCESSED, "Gone Missing");
-		return batch;
-	}
-	
-
-	private List<Concept> identifyConceptsToProcess() throws TermServerScriptException {
+	protected List<Concept> identifyConceptsToProcess() throws TermServerScriptException {
 		List<Concept> processMe = new ArrayList<Concept>();
 		GraphLoader gl = GraphLoader.getGraphLoader();
 		Concept subHierarchy = gl.getConcept(subHierarchyStr);
@@ -105,8 +84,6 @@ public class FractureOfXTermRemodelling extends BatchFix implements RF2Constants
 		}
 		return processMe;
 	}
-
-
 
 	private boolean startsWithSearchDesiredTerm(String fsn) {
 		boolean startsWithSearchTerm = false;

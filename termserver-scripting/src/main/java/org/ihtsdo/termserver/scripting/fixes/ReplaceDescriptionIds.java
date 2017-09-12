@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -30,7 +31,6 @@ import us.monoid.json.JSONObject;
  */
 public class ReplaceDescriptionIds extends BatchFix implements RF2Constants{
 	
-	String[] author_reviewer = new String[] {targetAuthor};
 	Set<String> descIds = new HashSet<String>();
 	protected ReplaceDescriptionIds(BatchFix clone) {
 		super(clone);
@@ -106,37 +106,20 @@ public class ReplaceDescriptionIds extends BatchFix implements RF2Constants{
 		return changesMade;
 	}
 
-	protected Batch formIntoBatch() throws TermServerScriptException {
-		Batch batch = new Batch(getScriptName());
-		Task task = batch.addNewTask();
-		Set<Concept> allConceptsBeingProcessed = identifyConceptsToProcess();
-
-		for (Concept thisConcept : allConceptsBeingProcessed) {
-			if (task.size() >= taskSize) {
-				task = batch.addNewTask();
-				setAuthorReviewer(task, author_reviewer);
-			}
-			task.add(thisConcept);
-		}
-		addSummaryInformation("Tasks scheduled", batch.getTasks().size());
-		addSummaryInformation(CONCEPTS_PROCESSED, allConceptsBeingProcessed);
-		return batch;
-	}
-
-	private Set<Concept> identifyConceptsToProcess() throws TermServerScriptException {
+	protected ArrayList<Concept> identifyConceptsToProcess() throws TermServerScriptException {
 		Set<Concept> allAffected = new TreeSet<Concept>();  //We want to process in the same order each time, in case we restart and skip some.
 		println("Identifying concepts to process");
 		GraphLoader gl = GraphLoader.getGraphLoader();
 		for (String descId : descIds) {
 			Description d = gl.getDescription(descId);
 			if (d.getConceptId() != null) {
-				allAffected.add(gl.getConcept(d.getConceptId(), false));
+				allAffected.add(gl.getConcept(d.getConceptId(), false, true));
 			} else {
 				println (descId + " was not linked to a concept.");
 			}
 		}
 		println("Identified " + allAffected.size() + " concepts to process");
-		return allAffected;
+		return new ArrayList<Concept>(allAffected);
 	}
 
 	@Override

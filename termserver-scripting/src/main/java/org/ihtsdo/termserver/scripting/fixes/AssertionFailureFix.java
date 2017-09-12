@@ -104,13 +104,11 @@ public class AssertionFailureFix extends BatchFix implements RF2Constants{
 		//Sort the concepts into groups per assigned Author
 		for (Map.Entry<String, List<Concept>> thisEntry : groupByAuthor(conceptsInFile).entrySet()) {
 			String[] author_reviewer = thisEntry.getKey().split("_");
-			Task task = batch.addNewTask();
-			setAuthorReviewer(task, author_reviewer);
+			Task task = batch.addNewTask(author_reviewer);
 
 			for (Concept thisConcept : thisEntry.getValue()) {
 				if (task.size() >= taskSize) {
-					task = batch.addNewTask();
-					setAuthorReviewer(task, author_reviewer);
+					task = batch.addNewTask(author_reviewer);
 				}
 				task.add(thisConcept);
 				allConceptsBeingProcessed.add(thisConcept);

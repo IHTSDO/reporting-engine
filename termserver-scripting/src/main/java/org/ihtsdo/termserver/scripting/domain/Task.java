@@ -14,8 +14,16 @@ public class Task {
 	String reviewer = null;
 
 	/* Call Batch.addNewTask instead of creating a Task directly */
-	Task(Batch batch) {
+	Task(Batch batch, String[] author_reviewer) {
 		this.batch = batch;
+		setAuthorReviewer(author_reviewer);
+	}
+	
+	void setAuthorReviewer(String[] author_reviewer) {
+		setAssignedAuthor(author_reviewer[0]);
+		if (author_reviewer.length > 1) {
+			setReviewer(author_reviewer[1]);
+		}
 	}
 
 	public String getSummary() {

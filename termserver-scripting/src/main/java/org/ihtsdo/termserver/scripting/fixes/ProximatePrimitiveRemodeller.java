@@ -25,7 +25,6 @@ Fix identifies concepts that can be safely remodelled using a proximate primitiv
  */
 public class ProximatePrimitiveRemodeller extends BatchFix implements RF2Constants{
 	
-	String[] author_reviewer = new String[] {targetAuthor};
 	String subHierarchyStr = "64572001"; // |Disease (disorder)|
 	Concept subHierarchy;
 	String isaStr = "116680003";
@@ -270,8 +269,7 @@ public class ProximatePrimitiveRemodeller extends BatchFix implements RF2Constan
 						limitReached = true;
 						print ("Stopping collecting concepts to process at " + batchLimit + " tasks");   
 					} else {
-						task = batch.addNewTask();
-						setAuthorReviewer(task, author_reviewer);
+						task = batch.addNewTask(author_reviewer);
 					}
 				}
 				if (!limitReached) {
@@ -287,7 +285,7 @@ public class ProximatePrimitiveRemodeller extends BatchFix implements RF2Constan
 	/**
 	 * Identify concepts that have a parent not equal to the subHierarchy start, and which have all fully defined ancestors
 	 */
-	private List<Concept> identifyConceptsToProcess() throws TermServerScriptException {
+	protected List<Concept> identifyConceptsToProcess() throws TermServerScriptException {
 		List<Concept> processMe = new ArrayList<Concept>();
 		Concept subHierarchy = gl.getConcept(subHierarchyStr);
 		Set<Concept> outsideSubHierarchy = subHierarchy.getAncestors(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE, true);
