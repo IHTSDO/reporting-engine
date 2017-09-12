@@ -11,14 +11,11 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
-import java.util.TreeMap;
 
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.HistoricalAssociation;
-import org.ihtsdo.termserver.scripting.domain.InactivationIndicatorEntry;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 /**
@@ -27,6 +24,8 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 public class IntermediatePrimitivesReport extends TermServerScript{
 	
 	List<Concept> topLevelHierarchies;
+	CharacteristicType targetCharType = CharacteristicType.STATED_RELATIONSHIP;
+	//CharacteristicType targetCharType = CharacteristicType.INFERRED_RELATIONSHIP;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		IntermediatePrimitivesReport report = new IntermediatePrimitivesReport();
@@ -61,7 +60,7 @@ public class IntermediatePrimitivesReport extends TermServerScript{
 		//Work through all top level hierarchies and list semantic tags along with their counts
 		for (Concept thisHierarchy : topLevelHierarchies) {
 			int hierarchyIpCount = 0;
-			Set<Concept> descendents = thisHierarchy.getDescendents(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE);
+			Set<Concept> descendents = thisHierarchy.getDescendents(NOT_SET, targetCharType, ActiveState.ACTIVE);
 			for (Concept c : descendents) {
 				if (c.getDefinitionStatus().equals(DefinitionStatus.PRIMITIVE)) {
 					hierarchyIpCount += checkConceptForIntermediatePrimitive(c);
@@ -76,16 +75,38 @@ public class IntermediatePrimitivesReport extends TermServerScript{
 
 	private int checkConceptForIntermediatePrimitive(Concept c) throws TermServerScriptException {
 		//Do we have both ancestor and descendant fully defined concepts?
-		Set<Concept> descendants = c.getDescendents(NOT_SET);
+		Set<Concept> descendants = c.getDescendents(NOT_SET, targetCharType, ActiveState.ACTIVE);
 		boolean hasFdDescendants = containsFdConcept(descendants);
-		if (hasFdDescendants && containsFdConcept(c.getAncestors(NOT_SET))) {
-			//This is an intermediate primitive, but does it have immediately close FD concepts?
-			boolean hasImmediateFDParent = containsFdConcept(c.getParents(CharacteristicType.INFERRED_RELATIONSHIP));
-			boolean hasImmediateFDChild = containsFdConcept(c.getChildren(CharacteristicType.INFERRED_RELATIONSHIP));
-			report (c, hasImmediateFDParent, hasImmediateFDChild);
+		if (hasFdDescendants && containsFdConcept(c.getAncestors(NOT_SET, targetCharType, ActiveState.ACTIVE, false))) {
+			//This is an intermediate primitive, but does it have immediately close SD concepts?
+			boolean hasImmediateSDParent = containsFdConcept(c.getParents(targetCharType));
+			boolean hasImmediateSDChild = containsFdConcept(c.getChildren(targetCharType));
+			boolean hasAllParentsSD = hasAllParentsSD(c);
+			boolean hasAllSDChildren = hasAllSDChildren(c);
+			report (c, hasImmediateSDParent, hasImmediateSDChild, hasAllParentsSD, hasAllSDChildren);
 			return 1;
 		}
 		return 0;
+	}
+
+	private boolean hasAllParentsSD(Concept c) {
+		List<Concept> parents = c.getParents(targetCharType);
+		for (Concept parent : parents) {
+			if (parent.getDefinitionStatus().equals(DefinitionStatus.PRIMITIVE)) {
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	private boolean hasAllSDChildren(Concept c) {
+		List<Concept> children = c.getChildren(targetCharType);
+		for (Concept child : children) {
+			if (child.getDefinitionStatus().equals(DefinitionStatus.PRIMITIVE)) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	private boolean containsFdConcept(Collection<Concept> concepts) {
@@ -97,13 +118,14 @@ public class IntermediatePrimitivesReport extends TermServerScript{
 		return false;
 	}
 
-	protected void report (Concept c, boolean hasImmediateFDParent, boolean hasImmediateFDChild) throws TermServerScriptException {
-		
+	protected void report (Concept c, boolean hasImmediateSDParent, boolean hasImmediateSDChild, boolean hasAllParentsSD, boolean hasAllSDChildren) throws TermServerScriptException {
 		String line = 	c.getConceptId() + COMMA_QUOTE + 
 						c.getFsn() + QUOTE_COMMA_QUOTE + 
 						SnomedUtils.deconstructFSN(c.getFsn())[1] + QUOTE_COMMA_QUOTE + 
-						(hasImmediateFDParent?"Yes":"No") + QUOTE_COMMA_QUOTE + 
-						(hasImmediateFDChild?"Yes":"No") + QUOTE ;
+						(hasImmediateSDParent?"Yes":"No") + QUOTE_COMMA_QUOTE + 
+						(hasImmediateSDChild?"Yes":"No") + QUOTE_COMMA_QUOTE + 
+						(hasAllParentsSD?"Yes":"No") + QUOTE_COMMA_QUOTE + 
+						(hasAllSDChildren?"Yes":"No") + QUOTE ;
 		writeToFile(line);
 	}
 	
@@ -115,11 +137,12 @@ public class IntermediatePrimitivesReport extends TermServerScript{
 	protected void init(String[] args) throws IOException, TermServerScriptException {
 		super.init(args);
 		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
-		String reportFilename = getScriptName() + "_" + project.toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
+		String charType = (targetCharType.equals(CharacteristicType.STATED_RELATIONSHIP)?"Stated":"Inferred");
+		String reportFilename = getScriptName() + "_" + charType + "_" + project.toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToFile ("Concept, FSN, semanticTag, immediateParentFD, immediateChildFD");
+		writeToFile ("Concept, FSN, semanticTag, hasImmediateSDParent, hasImmediateSDChild, hasAllParentsSD, hasAllSDChildren");
 	}
 
 	@Override
