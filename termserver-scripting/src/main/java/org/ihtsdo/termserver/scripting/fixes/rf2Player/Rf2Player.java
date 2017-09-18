@@ -217,15 +217,29 @@ public abstract class Rf2Player extends BatchFix {
 	@Override
 	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
-		ConceptChange conceptChanges = (ConceptChange)concept; 
-		if (conceptChanges.isModified()) {
-			loadedConcept.setActive(conceptChanges.isActive());
-			loadedConcept.setEffectiveTime(null);
-			loadedConcept.setDefinitionStatus(conceptChanges.getDefinitionStatus());
+		if (hasUnpublishedRelationships(loadedConcept, CharacteristicType.STATED_RELATIONSHIP)) {
+			report (task, loadedConcept, Severity.HIGH, ReportActionType.NO_CHANGE, "Recent stated relationship edits detected on this concept");
+			return 0;
+		} else {
+			ConceptChange conceptChanges = (ConceptChange)concept; 
+			if (conceptChanges.isModified()) {
+				loadedConcept.setActive(conceptChanges.isActive());
+				loadedConcept.setEffectiveTime(null);
+				loadedConcept.setDefinitionStatus(conceptChanges.getDefinitionStatus());
+			}
+			fixDescriptions(task, loadedConcept, conceptChanges.getDescriptions());
+			fixRelationships(task, loadedConcept, conceptChanges.getRelationships());
+			return 1; 
 		}
-		fixDescriptions(task, loadedConcept, conceptChanges.getDescriptions());
-		fixRelationships(task, loadedConcept, conceptChanges.getRelationships());
-		return 1; 
+	}
+
+	private boolean hasUnpublishedRelationships(Concept loadedConcept, CharacteristicType cType) {
+		for (Relationship r : loadedConcept.getRelationships(cType, ActiveState.ACTIVE)) {
+			if (r.getEffectiveTime() == null || r.getEffectiveTime().isEmpty()) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private void fixDescriptions(Task task, Concept loadedConcept, List<Description> descriptions) {
