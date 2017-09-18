@@ -14,6 +14,7 @@ import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Batch;
+import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
@@ -107,7 +108,7 @@ public class RemoveSubstringFromNewTerms extends BatchFix implements RF2Constant
 		return termAlreadyExists;
 	}
 
-	protected List<Concept> identifyConceptsToProcess() throws TermServerScriptException {
+	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		Set<Concept> allPotential = GraphLoader.getGraphLoader().getConcept(subHierarchyStr).getDescendents(NOT_SET);
 		Set<Concept> allAffected = new TreeSet<Concept>();  //We want to process in the same order each time, in case we restart and skip some.
 		println("Identifying concepts to process");
@@ -120,7 +121,7 @@ public class RemoveSubstringFromNewTerms extends BatchFix implements RF2Constant
 			}
 		}
 		println ("Identified " + allAffected.size() + " concepts to process");
-		return new ArrayList<Concept>(allAffected);
+		return new ArrayList<Component>(allAffected);
 	}
 
 	@Override

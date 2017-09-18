@@ -4,4 +4,8 @@ public interface Component {
 
 	String getId();
 	
+	String getName();
+	
+	String getType();
+	
 }

@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.zip.ZipInputStream;
 
+import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.HistoricalAssociation;
@@ -46,7 +47,7 @@ public class GraphLoader implements RF2Constants {
 	}
 	
 	public Set<Concept> loadRelationships(CharacteristicType characteristicType, InputStream relStream, boolean addRelationshipsToConcepts) 
-			throws IOException, TermServerScriptException {
+			throws IOException, TermServerScriptException, SnowOwlClientException {
 		Set<Concept> concepts = new HashSet<Concept>();
 		BufferedReader br = new BufferedReader(new InputStreamReader(relStream, StandardCharsets.UTF_8));
 		String line;
@@ -161,7 +162,7 @@ public class GraphLoader implements RF2Constants {
 		}
 	}
 	
-	public void loadDescriptionFile(InputStream descStream, boolean fsnOnly) throws IOException, TermServerScriptException {
+	public void loadDescriptionFile(InputStream descStream, boolean fsnOnly) throws IOException, TermServerScriptException, SnowOwlClientException {
 		//Not putting this in a try resource block otherwise it will close the stream on completion and we've got more to read!
 		BufferedReader br = new BufferedReader(new InputStreamReader(descStream, StandardCharsets.UTF_8));
 		String line;
@@ -186,16 +187,16 @@ public class GraphLoader implements RF2Constants {
 		}
 	}
 
-	public Set<Concept> loadRelationshipDelta(CharacteristicType characteristicType, InputStream relStream) throws IOException, TermServerScriptException {
+	public Set<Concept> loadRelationshipDelta(CharacteristicType characteristicType, InputStream relStream) throws IOException, TermServerScriptException, SnowOwlClientException {
 		return loadRelationships(characteristicType, relStream, true);
 	}
 
 	public Set<Concept> getModifiedConcepts(
-			CharacteristicType characteristicType, ZipInputStream relStream) throws IOException, TermServerScriptException {
+			CharacteristicType characteristicType, ZipInputStream relStream) throws IOException, TermServerScriptException, SnowOwlClientException {
 		return loadRelationships(characteristicType, relStream, false);
 	}
 
-	public void loadLanguageFile(InputStream is) throws IOException, TermServerScriptException {
+	public void loadLanguageFile(InputStream is) throws IOException, TermServerScriptException, SnowOwlClientException {
 		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 		boolean isHeaderLine = true;
 		String line;
@@ -227,7 +228,7 @@ public class GraphLoader implements RF2Constants {
 		}
 	}
 
-	public void loadInactivationIndicatorFile(ZipInputStream zis, boolean conceptIndicators) throws IOException, TermServerScriptException {
+	public void loadInactivationIndicatorFile(ZipInputStream zis, boolean conceptIndicators) throws IOException, TermServerScriptException, SnowOwlClientException {
 		BufferedReader br = new BufferedReader(new InputStreamReader(zis, StandardCharsets.UTF_8));
 		boolean isHeaderLine = true;
 		String line;
@@ -255,7 +256,7 @@ public class GraphLoader implements RF2Constants {
 		}
 	}
 	
-	public void loadHistoricalAssociationFile(ZipInputStream zis) throws IOException, TermServerScriptException {
+	public void loadHistoricalAssociationFile(ZipInputStream zis) throws IOException, TermServerScriptException, SnowOwlClientException {
 		BufferedReader br = new BufferedReader(new InputStreamReader(zis, StandardCharsets.UTF_8));
 		boolean isHeaderLine = true;
 		String line;

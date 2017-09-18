@@ -9,7 +9,7 @@ public class Task {
 	String taskKey;
 	String branchPath;
 	String summary;
-	List<Concept> concepts = new ArrayList<Concept>();
+	List<Component> components = new ArrayList<Component>();
 	String assignedAuthor = null;
 	String reviewer = null;
 	String taskInfo;
@@ -36,19 +36,19 @@ public class Task {
 		if (taskInfo != null) {
 			html.append("<h3>Task grouping: ").append(taskInfo).append("</h3>\n");
 		}
-		for (Concept concept : concepts) {
-			html.append("<h5>").append(concept).append("</h5>\n");
+		for (Component component : components) {
+			html.append("<h5>").append(component).append("</h5>\n");
 		}
 		return html.toString();
 	}
-	public List<Concept> getConcepts() {
-		return concepts;
+	public List<Component> getComponents() {
+		return components;
 	}
-	public void setConcepts(List<Concept> concepts) {
-		this.concepts = concepts;
+	public void setComponents(List<Component> components) {
+		this.components = components;
 	}
 	public void addConcept(Concept c) {
-		concepts.add(c);
+		components.add(c);
 	}
 	public String getBranchPath() {
 		return branchPath;
@@ -69,29 +69,33 @@ public class Task {
 		return getSummary();
 	}
 	public String toQuotedList() {
-		StringBuilder quotedList = new StringBuilder(concepts.size()*10).append("[");
+		StringBuilder quotedList = new StringBuilder(components.size()*10).append("[");
 		boolean first = true;
-		for (Concept c : concepts) {
+		for (Component c : components) {
 			if (!first) {
 				quotedList.append(", ");
 			}
-			quotedList.append("\"").append(c.getConceptId()).append("\"");
+			quotedList.append("\"").append(c.getId()).append("\"");
 			first = false;
 		}
 		quotedList.append("]");
 		return quotedList.toString();
 	}
 
-	public void addAll(Collection<Concept> concepts) {
-		this.concepts.addAll(concepts);
+	/*public void addAll(Collection<Concept> concepts) {
+		this.components.addAll(concepts);
+	}*/
+	
+	public void addAll(Collection<Component> components) {
+		this.components.addAll(components);
 	}
 
-	public void add(Concept concept) {
-		this.concepts.add(concept);
+	public void add(Component component) {
+		this.components.add(component);
 	}
 	
 	public int size() {
-		return concepts.size();
+		return components.size();
 	}
 	
 	public String getAssignedAuthor() {

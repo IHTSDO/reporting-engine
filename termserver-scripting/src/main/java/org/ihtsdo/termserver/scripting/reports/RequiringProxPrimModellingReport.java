@@ -110,7 +110,7 @@ public class RequiringProxPrimModellingReport extends TermServerReport{
 		writeToFile(line);
 	}
 	
-	protected void init(String[] args) throws TermServerScriptException {
+	protected void init(String[] args) throws TermServerScriptException, SnowOwlClientException {
 		super.init(args);
 		
 		for (int x=0; x<args.length; x++) {

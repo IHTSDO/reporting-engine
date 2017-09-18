@@ -12,6 +12,7 @@ import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Batch;
+import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
@@ -75,7 +76,7 @@ public class DispositionsArchive extends Rf2Player implements RF2Constants{
 		addSummaryInformation("CONCEPTS_NO_DISPOSITION", hasNoDisposition.size());
 		
 		for (Task t : batch.getTasks()) {
-			println (t.getTaskKey() + " (" + t.getConcepts().size() + ") " + t.getTaskInfo());
+			println (t.getTaskKey() + " (" + t.getComponents().size() + ") " + t.getTaskInfo());
 		}
 		
 		println ("\n\n" + BREAK);
@@ -102,7 +103,7 @@ public class DispositionsArchive extends Rf2Player implements RF2Constants{
 			//Now see how many other concepts we'll add if we include it's ancestor's descendants
 			//This recursive function will keep calling until the task is full
 			addAncestorContribution(currentFocus, task, remainingConceptsToGroup);
-			println ("Batch of " + initialSize + " split into " + task.getConcepts().size());
+			println ("Batch of " + initialSize + " split into " + task.getComponents().size());
 		}
 	}
 
@@ -112,15 +113,17 @@ public class DispositionsArchive extends Rf2Player implements RF2Constants{
 		for (Concept thisAncestor : currentFocus.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
 			//Get all descendants and work out which of those we'd want to process
 			Set<Concept> contribution = getAncestorContribution(thisAncestor, remainingConcepts);
-			if (contribution.size() + task.getConcepts().size() <= taskSize) {
-				task.addAll(contribution);
+			if (contribution.size() + task.getComponents().size() <= taskSize) {
+				for (Component c : contribution) {
+					task.add(c);
+				}
 				remainingConcepts.removeAll(contribution);
 			} else {
 				return true;
 			}
 		}
 		
-		boolean isFull =  task.getConcepts().size() >= taskSize;
+		boolean isFull =  task.getComponents().size() >= taskSize;
 		while (!isFull && remainingConcepts.size() > 0) {
 			for (Concept thisAncestor : currentFocus.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
 				isFull = addAncestorContribution(thisAncestor, task, remainingConcepts);

@@ -102,7 +102,7 @@ public class IncreasedProxPrimInferredComplexityReport extends TermServerScript{
 		writeToFile(line);
 	}
 	
-	protected void init(String[] args) throws IOException, TermServerScriptException {
+	protected void init(String[] args) throws IOException, TermServerScriptException, SnowOwlClientException {
 		super.init(args);
 		
 		for (int x=0; x<args.length; x++) {
@@ -118,7 +118,7 @@ public class IncreasedProxPrimInferredComplexityReport extends TermServerScript{
 		}
 		
 		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
-		String reportFilename = getScriptName() + "_" + project.toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
+		String reportFilename = getScriptName() + "_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());

@@ -42,7 +42,7 @@ public class Delete_US_Issues extends NegativeDeltaGenerator implements RF2Const
 		}
 	}
 	
-	protected void init(String[] args) throws IOException, TermServerScriptException {
+	protected void init(String[] args) throws IOException, TermServerScriptException, SnowOwlClientException, SnowOwlClientException {
 		super.init(args);
 		boolean fileLoaded = false;
 		for (int i=0; i < args.length; i++) {

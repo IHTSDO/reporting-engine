@@ -10,12 +10,14 @@ import java.util.Set;
 import org.ihtsdo.termserver.scripting.domain.ConceptHelper;
 import org.ihtsdo.termserver.scripting.domain.Project;
 import org.ihtsdo.termserver.scripting.domain.Refset;
+import org.ihtsdo.termserver.scripting.domain.RefsetEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import us.monoid.json.JSONArray;
 import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
+import us.monoid.web.AbstractContent;
 import us.monoid.web.BinaryResource;
 import us.monoid.web.JSONResource;
 import us.monoid.web.Resty;
@@ -408,13 +410,24 @@ public class SnowOwlClient {
 
 	public Refset loadRefsetEntries(String branchPath, String refsetId, String referencedComponentId) throws SnowOwlClientException {
 		try {
-			String endPoint = this.url + "/" + branchPath + "/members/";
+			String endPoint = this.url + "/" + branchPath + "/members?referenceSet=" + refsetId + "&referencedComponentId=" + referencedComponentId;
 			JSONResource response = resty.json(endPoint);
 			String json = response.toObject().toString();
 			Refset refsetObj = gson.fromJson(json, Refset.class);
 			return refsetObj;
 		} catch (Exception e) {
 			throw new SnowOwlClientException("Unable to recover refset for " + refsetId + " - " + referencedComponentId, e);
+		}
+	}
+
+	public void updateRefsetMember(String branchPath, RefsetEntry refsetEntry) throws SnowOwlClientException {
+		try {
+			String endPoint = this.url + "/" + branchPath + "/members/" + refsetEntry.getId();
+			String json = gson.toJson(refsetEntry);
+			AbstractContent content = Resty.put(RestyHelper.content(new JSONObject(json), SNOWOWL_CONTENT_TYPE));
+			resty.json(endPoint, content);
+		} catch (Exception e) {
+			throw new SnowOwlClientException("Unable to update refset entry " + refsetEntry + " due to " + e.getMessage(), e);
 		}
 	}
 

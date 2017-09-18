@@ -14,6 +14,7 @@ import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Batch;
+import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
@@ -137,7 +138,7 @@ public class ReplaceSematicTags extends BatchFix implements RF2Constants{
 		return termAlreadyExists;
 	}
 
-	protected List<Concept> identifyConceptsToProcess() throws TermServerScriptException {
+	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		Set<Concept> allPotential = GraphLoader.getGraphLoader().getConcept(subHierarchyStr).getDescendents(NOT_SET);
 		Set<Concept> allAffected = new TreeSet<Concept>();  //We want to process in the same order each time, in case we restart and skip some.
 		for (Concept thisConcept : allPotential) {
@@ -147,7 +148,7 @@ public class ReplaceSematicTags extends BatchFix implements RF2Constants{
 				}
 			}
 		}
-		return new ArrayList<Concept>(allAffected);
+		return new ArrayList<Component>(allAffected);
 	}
 
 	@Override

@@ -34,8 +34,8 @@ public class AuthoringServicesClient {
 		resty.authenticate(this.serverUrl, null,null);
 	}
 
-	public String createTask(String project, String summary, String description) throws Exception {
-		String endPoint = serverUrl + apiRoot + "projects/" + project + "/tasks";
+	public String createTask(String projectKey, String summary, String description) throws Exception {
+		String endPoint = serverUrl + apiRoot + "projects/" + projectKey + "/tasks";
 		JSONObject requestJson = new JSONObject();
 		requestJson.put("summary", summary);
 		requestJson.put("description", description);

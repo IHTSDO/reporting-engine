@@ -15,6 +15,7 @@ import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 
@@ -48,7 +49,7 @@ public abstract class RefsetGenerator extends TermServerScript {
 		writeToFile(line);
 	}
 	
-	protected void init (String[] args) throws IOException, TermServerScriptException {
+	protected void init (String[] args) throws IOException, TermServerScriptException, SnowOwlClientException {
 		super.init(args);
 		
 		initialiseReportFile("Concept,DescSctId,Term,Severity,Action,Detail");

@@ -62,7 +62,7 @@ public class CaseSenstivity extends TermServerReport{
 		writeToFile(sb.toString());
 	}
 
-	protected void init(String[] args) throws TermServerScriptException {
+	protected void init(String[] args) throws TermServerScriptException, SnowOwlClientException {
 		super.init(args);
 		targetHierarchies.add(gl.getConcept("373873005")); // |Pharmaceutical / biologic product (product)|
 		targetHierarchies.add(gl.getConcept("105590001")); // |Substance (substance)|

@@ -38,7 +38,7 @@ public class SubHierarchyConceptsReport extends TermServerScript{
 		SubHierarchyConceptsReport report = new SubHierarchyConceptsReport();
 		try {
 			report.init(args);
-			report.loadProjectSnapshotAndDelta();  //Load FSNs only
+			report.loadProjectSnapshot(true);  //Load FSNs only
 			report.reportConcepts();
 		} catch (Exception e) {
 			println("Failed to produce Report due to " + e.getMessage());
@@ -79,7 +79,7 @@ public class SubHierarchyConceptsReport extends TermServerScript{
 		writeToFile(line);
 	}
 	
-	protected void init(String[] args) throws IOException, TermServerScriptException {
+	protected void init(String[] args) throws IOException, TermServerScriptException, SnowOwlClientException {
 		super.init(args);
 		print ("What date identifies 'new' relationships? [" + transientEffectiveDate + "]: ");
 		String response = STDIN.nextLine().trim();
@@ -115,81 +115,11 @@ public class SubHierarchyConceptsReport extends TermServerScript{
 		}
 		
 		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
-		String reportFilename = "concepts_" + project.toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
+		String reportFilename = "concepts_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
 		writeToFile ("Concept, FSN, Concept_Active, Concept_Modified");
-	}
-
-	private void loadProjectSnapshotAndDelta() throws SnowOwlClientException, TermServerScriptException, InterruptedException {
-		int SNAPSHOT = 0;
-		File[] archives = new File[] { new File (project + "_snapshot_" + env + ".zip")};
-		//Do we already have a copy of the project locally?  If not, recover it.
-		if (!archives[SNAPSHOT].exists()) {
-			println ("Recovering snapshot state of " + project + " from TS (" + env + ")");
-			String branchPath = project.equals("MAIN") ? project : tsRoot + project;
-			tsClient.export(branchPath, null, ExportType.MIXED, ExtractType.SNAPSHOT, archives[SNAPSHOT]);
-			initialiseSnowOwlClient();  //re-initialise client to avoid HttpMediaTypeNotAcceptableException.  Cause unknown.
-		}
-		
-		/*if (!archives[DELTA].exists()) {
-			println ("Recovering delta state of " + project + " from TS (" + env + ") for " + transientEffectiveDate);
-			tsClient.export("MAIN/" + project, transientEffectiveDate, ExportType.UNPUBLISHED, ExtractType.DELTA, archives[DELTA]);
-		}*/
-		
-		println ("Loading snapshot terms and delta relationships into memory...");
-		for (File archive : archives) {
-			try {
-				ZipInputStream zis = new ZipInputStream(new FileInputStream(archive));
-				ZipEntry ze = zis.getNextEntry();
-				try {
-					while (ze != null) {
-						if (!ze.isDirectory()) {
-							Path p = Paths.get(ze.getName());
-							String fileName = p.getFileName().toString();
-							if (fileName.contains("sct2_Description_Snapshot")) {
-								println("Loading Description File.");
-								gl.loadDescriptionFile(zis, true);  //Load FSNs only
-							}
-							
-							if (fileName.contains("sct2_Concept_Snapshot")) {
-								println("Loading Concept File.");
-								gl.loadConceptFile(zis);
-							}
-							
-							if (fileName.contains("sct2_Relationship_Snapshot")) {
-								println("Loading Relationship Snapshot File.");
-								gl.loadRelationships(CharacteristicType.INFERRED_RELATIONSHIP,zis, true);
-							}
-							
-							if (fileName.contains("sct2_StatedRelationship_Snapshot")) {
-								println("Loading Stated Relationship Snapshot File.");
-								gl.loadRelationships(CharacteristicType.STATED_RELATIONSHIP,zis, true);
-							}
-							/*
-							if (fileName.contains("sct2_Relationship_Delta")) {
-								println("Loading Relationship Delta File.");
-								modifiedConcepts.addAll(gl.loadRelationshipDelta(CHARACTERISTIC_TYPE.INFERRED_RELATIONSHIP,zis));
-							}
-							
-							if (fileName.contains("sct2_StatedRelationship_Delta")) {
-								println("Loading Stated Relationship Delta File.");
-								modifiedConcepts.addAll(gl.loadRelationshipDelta(CHARACTERISTIC_TYPE.STATED_RELATIONSHIP,zis));
-							}*/
-						}
-						ze = zis.getNextEntry();
-					}
-				} finally {
-					try{
-						zis.closeEntry();
-						zis.close();
-					} catch (Exception e){} //Well, we tried.
-				}
-			} catch (IOException e) {
-				throw new TermServerScriptException("Failed to extract project state from archive " + archive.getName(), e);
-			}
-		}
 	}
 
 	@Override

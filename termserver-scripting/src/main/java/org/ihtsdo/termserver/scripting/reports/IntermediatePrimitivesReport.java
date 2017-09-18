@@ -134,11 +134,11 @@ public class IntermediatePrimitivesReport extends TermServerScript{
 		return SnomedUtils.deconstructFSN(c.getFsn())[0];
 	}
 	
-	protected void init(String[] args) throws IOException, TermServerScriptException {
+	protected void init(String[] args) throws IOException, TermServerScriptException, SnowOwlClientException {
 		super.init(args);
 		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
 		String charType = (targetCharType.equals(CharacteristicType.STATED_RELATIONSHIP)?"Stated":"Inferred");
-		String reportFilename = getScriptName() + "_" + charType + "_" + project.toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
+		String reportFilename = getScriptName() + "_" + charType + "_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());

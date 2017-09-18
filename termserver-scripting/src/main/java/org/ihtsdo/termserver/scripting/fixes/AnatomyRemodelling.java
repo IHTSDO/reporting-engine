@@ -11,6 +11,7 @@ import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Batch;
+import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.ConceptChange;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
@@ -230,7 +231,7 @@ public class AnatomyRemodelling extends BatchFix implements RF2Constants{
 	}
 
 	@Override
-	public void report (Task task, Concept concept, Severity severity, ReportActionType actionType, String actionDetail) {
+	public void report (Task task, Component concept, Severity severity, ReportActionType actionType, String actionDetail) {
 		//Keep a running list of items reported, which we might otherwise repeat due to the trial run
 		String taskStr = (task == null)?"Null":task.toString();
 		String concatonatedLine = taskStr + concept + severity + actionType + actionDetail;

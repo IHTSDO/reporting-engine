@@ -94,7 +94,7 @@ public class SemanticTagsMatrix extends TermServerReport{
 	
 	private void initialiseAlternativeFile() throws IOException {
 		//We need a 2nd output file to put the results with the dimensions reversed
-		String reportFilename = getScriptName() + "_" + project.toLowerCase() + "_" + currentTimeStamp + "_reversed_" + env  + ".csv";
+		String reportFilename = getScriptName() + "_" + project.getKey().toLowerCase() + "_" + currentTimeStamp + "_reversed_" + env  + ".csv";
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());

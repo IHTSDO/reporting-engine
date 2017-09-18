@@ -8,6 +8,7 @@ import java.util.Date;
 import org.ihtsdo.termserver.scripting.IdGenerator;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.InactivationIndicatorEntry;
@@ -61,7 +62,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 		report (concept, concept.getFSNDescription(), severity, actionType, actionDetail);
 	}
 	
-	protected void init (String[] args) throws IOException, TermServerScriptException {
+	protected void init (String[] args) throws IOException, TermServerScriptException, SnowOwlClientException, SnowOwlClientException {
 		super.init(args);
 		
 		for (int x=0; x<args.length; x++) {

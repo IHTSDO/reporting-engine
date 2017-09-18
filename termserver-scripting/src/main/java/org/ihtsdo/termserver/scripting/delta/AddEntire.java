@@ -50,7 +50,7 @@ public class AddEntire extends DeltaGenerator {
 		}
 	}
 	
-	protected void init (String[] args) throws IOException, TermServerScriptException {
+	protected void init (String[] args) throws IOException, TermServerScriptException, SnowOwlClientException, SnowOwlClientException {
 		super.init(args);
 		
 		for (int x=0; x<args.length; x++) {

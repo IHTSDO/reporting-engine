@@ -52,7 +52,7 @@ public class GenerateTranslation extends DeltaGenerator {
 		}
 	}
 	
-	protected void init (String[] args) throws IOException, TermServerScriptException {
+	protected void init (String[] args) throws IOException, TermServerScriptException, SnowOwlClientException, SnowOwlClientException {
 		super.init(args);
 		idGenerator.setNamespace("1000052");
 		idGenerator.isExtension(true);

@@ -48,7 +48,7 @@ public class ReplaceRelationships extends DeltaGenerator {
 		}
 	}
 
-	protected void init (String[] args) throws IOException, TermServerScriptException {
+	protected void init (String[] args) throws IOException, TermServerScriptException, SnowOwlClientException, SnowOwlClientException {
 		super.init(args);
 		
 		findRelationshipsForReplace.add(createTemplate("116676008", "107656002")); //|Associated morphology (attribute)| -> |Congenital anomaly (morphologic abnormality)| 

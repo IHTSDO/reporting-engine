@@ -12,6 +12,7 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Batch;
+import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
@@ -111,7 +112,7 @@ public class ReplaceRelationship extends BatchFix implements RF2Constants{
 		return inactiveStated;
 	}
 
-	protected List<Concept> identifyConceptsToProcess() throws TermServerScriptException {
+	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		Collection<Concept> allPotential = gl.getAllConcepts();
 		Set<Concept> allAffected = new TreeSet<Concept>();  //We want to process in the same order each time, in case we restart and skip some.
 		for (Concept c : allPotential) {
@@ -122,7 +123,7 @@ public class ReplaceRelationship extends BatchFix implements RF2Constants{
 				}
 			}
 		}
-		return new ArrayList<Concept>(allAffected);
+		return new ArrayList<Component>(allAffected);
 	}
 
 	@Override

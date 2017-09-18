@@ -13,6 +13,7 @@ import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Batch;
+import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.ConceptChange;
 import org.ihtsdo.termserver.scripting.domain.Description;
@@ -96,11 +97,11 @@ public class FixMissingInactivationIndicators extends BatchFix implements RF2Con
 	}
 
 	@Override
-	protected List<Concept> identifyConceptsToProcess() {
+	protected List<Component> identifyComponentsToProcess() {
 		//Work through all inactive concepts and check the inactivation indicator on all
 		//active descriptions
 		println ("Identifying concepts to process");
-		List<Concept> processMe = new ArrayList<Concept>();
+		List<Component> processMe = new ArrayList<Component>();
 		nextConcept:
 		for (Concept c : gl.getAllConcepts()) {
 			if (!c.isActive()) {

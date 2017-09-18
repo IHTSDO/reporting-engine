@@ -7,6 +7,7 @@ import java.util.Date;
 
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 
 public abstract class TermServerReport extends TermServerScript {
@@ -14,11 +15,11 @@ public abstract class TermServerReport extends TermServerScript {
 	SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
 	String currentTimeStamp = df.format(new Date());
 	
-	protected void init(String[] args) throws TermServerScriptException {
+	protected void init(String[] args) throws TermServerScriptException, SnowOwlClientException {
 		try {
 			super.init(args);
 			
-			String reportFilename = getScriptName() + "_" + project.toLowerCase() + "_" + currentTimeStamp + "_" + env  + ".csv";
+			String reportFilename = getScriptName() + "_" + project.getKey().toLowerCase() + "_" + currentTimeStamp + "_" + env  + ".csv";
 			reportFile = new File(outputDir, reportFilename);
 			reportFile.createNewFile();
 			println ("Outputting Report to " + reportFile.getAbsolutePath());

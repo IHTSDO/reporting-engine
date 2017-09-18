@@ -27,6 +27,9 @@ public class RefsetEntry implements Component {
     @SerializedName("valueId")
     @Expose
     private String valueId;
+    @SerializedName("commitComment")
+    @Expose
+    private String commitComment = "TermserverScript update";
 
     /**
      * No args constructor for use in serialization
@@ -110,6 +113,25 @@ public class RefsetEntry implements Component {
 
     public void setValueId(String valueId) {
         this.valueId = valueId;
+    }
+
+	@Override
+	public String getName() {
+		return referenceSetId;
+	}
+
+	@Override
+	public String getType() {
+		return "RefsetEntry";
+	}
+	
+	public String toString() {
+		return id;
+	}
+	
+
+    public String getCommitComment() {
+    	return commitComment;
     }
 
 }

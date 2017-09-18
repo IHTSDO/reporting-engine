@@ -16,6 +16,7 @@ import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Batch;
+import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
@@ -106,7 +107,7 @@ public class ReplaceDescriptionIds extends BatchFix implements RF2Constants{
 		return changesMade;
 	}
 
-	protected ArrayList<Concept> identifyConceptsToProcess() throws TermServerScriptException {
+	protected ArrayList<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		Set<Concept> allAffected = new TreeSet<Concept>();  //We want to process in the same order each time, in case we restart and skip some.
 		println("Identifying concepts to process");
 		GraphLoader gl = GraphLoader.getGraphLoader();
@@ -119,7 +120,7 @@ public class ReplaceDescriptionIds extends BatchFix implements RF2Constants{
 			}
 		}
 		println("Identified " + allAffected.size() + " concepts to process");
-		return new ArrayList<Concept>(allAffected);
+		return new ArrayList<Component>(allAffected);
 	}
 
 	@Override

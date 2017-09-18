@@ -13,8 +13,6 @@ import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.ActiveState;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
@@ -343,7 +341,7 @@ public class ValidateDrugModeling extends TermServerReport{
 		writeToFile(line);
 	}
 	
-	protected void init(String[] args) throws TermServerScriptException {
+	protected void init(String[] args) throws TermServerScriptException, SnowOwlClientException {
 		super.init(args);
 		writeToFile ("Concept, FSN, SemTag, Issue, Data");
 		

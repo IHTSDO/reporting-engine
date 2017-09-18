@@ -12,6 +12,7 @@ import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Batch;
+import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
@@ -254,11 +255,11 @@ public class ProximatePrimitiveRemodeller extends BatchFix implements RF2Constan
 	protected Batch formIntoBatch() throws TermServerScriptException {
 		Batch batch = new Batch(getScriptName());
 		Task task = batch.addNewTask();
-		List<Concept> allConceptsToProcessed = identifyConceptsToProcess();
+		List<Component> allConceptsToProcessed = identifyComponentsToProcess();
 		int conceptsBeingProcessed = 0;
 		boolean limitReached = false;
 		
-		for (Concept thisConcept : allConceptsToProcessed) {
+		for (Component thisConcept : allConceptsToProcessed) {
 			conceptsBeingProcessed++;
 			if (restartPosition > conceptsBeingProcessed) {
 				continue;
@@ -285,8 +286,8 @@ public class ProximatePrimitiveRemodeller extends BatchFix implements RF2Constan
 	/**
 	 * Identify concepts that have a parent not equal to the subHierarchy start, and which have all fully defined ancestors
 	 */
-	protected List<Concept> identifyConceptsToProcess() throws TermServerScriptException {
-		List<Concept> processMe = new ArrayList<Concept>();
+	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
+		List<Component> processMe = new ArrayList<Component>();
 		Concept subHierarchy = gl.getConcept(subHierarchyStr);
 		Set<Concept> outsideSubHierarchy = subHierarchy.getAncestors(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE, true);
 		Set<Concept> allDescendants = subHierarchy.getDescendents(NOT_SET);

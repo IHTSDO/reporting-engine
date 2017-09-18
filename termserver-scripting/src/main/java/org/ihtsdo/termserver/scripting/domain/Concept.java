@@ -9,7 +9,6 @@ import javax.annotation.Generated;
 
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import com.google.gson.annotations.Expose;
@@ -633,6 +632,16 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 	@Override
 	public String getId() {
 		return conceptId;
+	}
+
+	@Override
+	public String getName() {
+		return fsn;
+	}
+
+	@Override
+	public String getType() {
+		return conceptType.toString();
 	}
 
 

@@ -18,11 +18,10 @@ import java.util.*;
  */
 public class LangRefsetInactivationFix extends TermServerScript implements RF2Constants {
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, JSONException {
-		LangRefsetInactivationFix fixer = new LangRefsetInactivationFix();
-		fixer.project = "INTQA";
-		fixer.init(args);
-		fixer.fixAll();
+	public static void main(String[] args) throws TermServerScriptException, IOException, JSONException, SnowOwlClientException {
+		LangRefsetInactivationFix fix = new LangRefsetInactivationFix();
+		fix.init(args);
+		fix.fixAll();
 	}
 		
 	public void fixAll () throws TermServerScriptException, IOException, JSONException {

@@ -50,7 +50,7 @@ public class InactivateLeafConcepts extends BatchFix implements RF2Constants{
 	}
 	
 	
-	private void loadDescIds() throws IOException, TermServerScriptException {
+	private void loadDescIds() throws IOException, TermServerScriptException, SnowOwlClientException {
 		List<String> lines = Files.readLines(inputFile, Charsets.UTF_8);
 		println ("Loading concepts to inactivate from " + inputFile);
 		for (String line : lines) {

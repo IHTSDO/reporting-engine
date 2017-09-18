@@ -14,6 +14,7 @@ import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClient;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Batch;
+import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.InactivationIndicatorEntry;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
@@ -120,7 +121,7 @@ public class InactivateDuplicateInactivationIndicators_fail extends BatchFix imp
 		return changesMade;
 	}
 
-	protected List<Concept> identifyConceptsToProcess() throws TermServerScriptException {
+	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		Collection<Concept> allPotential = GraphLoader.getGraphLoader().getAllConcepts();
 		Set<Concept> allAffected = new TreeSet<Concept>();  //We want to process in the same order each time, in case we restart and skip some.
 		for (Concept thisConcept : allPotential) {
@@ -131,7 +132,7 @@ public class InactivateDuplicateInactivationIndicators_fail extends BatchFix imp
 				}
 			}
 		}
-		return new ArrayList<Concept>(allAffected);
+		return new ArrayList<Component>(allAffected);
 	}
 
 	@Override

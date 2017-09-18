@@ -42,7 +42,7 @@ public class SEPRefsetGenerator extends RefsetGenerator{
 		}
 	}
 	
-	protected void init(String[] args) throws IOException, TermServerScriptException {
+	protected void init(String[] args) throws IOException, TermServerScriptException, SnowOwlClientException {
 		effectiveDate = "20170731";
 		refsetShape = "c";
 		refsetFileName = "AssociationReference";

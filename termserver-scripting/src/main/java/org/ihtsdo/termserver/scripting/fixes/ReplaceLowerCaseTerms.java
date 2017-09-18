@@ -14,6 +14,7 @@ import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Batch;
+import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
@@ -137,8 +138,8 @@ public class ReplaceLowerCaseTerms extends BatchFix implements RF2Constants{
 	 * @return
 	 * @throws TermServerScriptException
 	 */
-	protected List<Concept> identifyConceptsToProcess() throws TermServerScriptException {
-		List<Concept> processMe = new ArrayList<Concept>();
+	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
+		List<Component> processMe = new ArrayList<Component>();
 		GraphLoader gl = GraphLoader.getGraphLoader();
 		Concept subHierarchy = gl.getConcept(subHierarchyStr);
 		Set<Concept>allDescendants = subHierarchy.getDescendents(NOT_SET);

@@ -30,6 +30,7 @@ import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExportType;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExtractType;
 import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.domain.Project;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.RelationshipSerializer;
@@ -58,7 +59,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected AuthoringServicesClient scaClient;
 	protected String authenticatedCookie;
 	protected Resty resty = new Resty();
-	protected String project;
+	protected Project project;
 	protected String projectPath;
 	public static final int maxFailures = 5;
 	protected int restartPosition = NOT_SET;
@@ -155,7 +156,7 @@ public abstract class TermServerScript implements RF2Constants {
 		return msg;
 	}
 	
-	protected void init(String[] args) throws TermServerScriptException, IOException {
+	protected void init(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		
 		if (args.length < 3) {
 			println("Usage: java <TSScriptClass> [-a author] [-b <batchSize>] [-r <restart position>] [-c <authenticatedCookie>] [-d <Y/N>] [-p <projectName>] -f <batch file Location>");
@@ -170,6 +171,7 @@ public abstract class TermServerScript implements RF2Constants {
 		boolean isConceptThrottle = false;
 		boolean isOutputDir = false;
 		boolean isInputFile = false;
+		String projectName = "unknown";
 	
 		for (String thisArg : args) {
 			if (thisArg.equals("-p")) {
@@ -189,7 +191,7 @@ public abstract class TermServerScript implements RF2Constants {
 			} else if (thisArg.equals("-t2")) {
 				isConceptThrottle = true;
 			} else if (isProjectName) {
-				project = thisArg;
+				projectName = thisArg;
 				isProjectName = false;
 			} else if (isDryRun) {
 				dryRun = thisArg.toUpperCase().equals("Y");
@@ -243,12 +245,16 @@ public abstract class TermServerScript implements RF2Constants {
 		scaClient = new AuthoringServicesClient(url, authenticatedCookie);
 		initialiseSnowOwlClient();
 		
-		print ("Specify Project " + (project==null?": ":"[" + project + "]: "));
+		print ("Specify Project " + (projectName==null?": ":"[" + projectName + "]: "));
 		String response = STDIN.nextLine().trim();
 		if (!response.isEmpty()) {
-			project = response;
-			projectPath = tsRoot + project;
+			projectName = response;
 		}
+		
+		//Recover the full project path from authoring services
+		project = scaClient.getProject(projectName);
+		projectPath = project.getBranchPath();
+		println("Full path for projected determined to be: " + projectPath);
 		
 		if (restartPosition != NOT_SET) {
 			print ("Restarting from position [" +restartPosition + "]: ");
@@ -293,8 +299,7 @@ public abstract class TermServerScript implements RF2Constants {
 		//Do we already have a copy of the project locally?  If not, recover it.
 		if (!snapShotArchive.exists()) {
 			println ("Recovering current state of " + project + " from TS (" + env + ")");
-			String branch = tsRoot.startsWith(project)? project : tsRoot + project;
-			tsClient.export(branch, null, ExportType.MIXED, ExtractType.SNAPSHOT, snapShotArchive);
+			tsClient.export(projectPath, null, ExportType.MIXED, ExtractType.SNAPSHOT, snapShotArchive);
 		}
 		GraphLoader gl = GraphLoader.getGraphLoader();
 		println ("Loading archive contents into memory...");
@@ -445,14 +450,10 @@ public abstract class TermServerScript implements RF2Constants {
 
 	protected abstract Concept loadLine(String[] lineItems) throws TermServerScriptException;
 
-	public String getProject() {
+	public Project getProject() {
 		return project;
 	}
 
-	public void setProject(String project) {
-		this.project = project;
-	}
-	
 	public void startTimer() {
 		startTime = new Date();
 	}

@@ -57,7 +57,7 @@ public class Batch {
 	}
 
 	public void merge(Task thisLargeTask, Task thisSmallTask) {
-		thisLargeTask.addAll(thisSmallTask.getConcepts());
+		thisLargeTask.addAll(thisSmallTask.getComponents());
 		if (thisSmallTask.getTaskInfo()!=null) {
 			if (thisLargeTask.getTaskInfo() == null) {
 				thisLargeTask.setTaskInfo(thisSmallTask.getTaskInfo());
@@ -118,7 +118,7 @@ public class Batch {
 			nextCandidate:
 			for (Task candidateForMerge : tasks) {
 				if (candidateForMerge.equals(smallTask) || 
-					candidateForMerge.concepts.size() + smallTask.concepts.size() > taskSize + wiggleRoom) {
+					candidateForMerge.components.size() + smallTask.components.size() > taskSize + wiggleRoom) {
 					continue nextCandidate;
 				}
 				if (smallTask.getTaskInfo().equals(candidateForMerge.getTaskInfo())) {
@@ -131,7 +131,7 @@ public class Batch {
 			nextCandidate:
 			for (Task candidateForMerge : tasks) {
 				if (candidateForMerge.equals(smallTask) || 
-					candidateForMerge.concepts.size() + smallTask.concepts.size() > taskSize + wiggleRoom) {
+					candidateForMerge.components.size() + smallTask.components.size() > taskSize + wiggleRoom) {
 					continue nextCandidate;
 				}
 				if (candidateForMerge.getTaskInfo().contains(smallTask.getTaskInfo()) || 
@@ -148,7 +148,7 @@ public class Batch {
 		List<Task> smallToLarge = orderTasks(true);
 		for (Task smallTask : smallToLarge) {
 			//Once the task is more than 50% full, we probabably can't consolidate any further
-			if (smallTask.getConcepts().size() > (0.5 * taskSize)) {
+			if (smallTask.getComponents().size() > (0.5 * taskSize)) {
 				break;
 			}
 			//If one of the siblings of all of the concepts in this task appear in another task
@@ -161,11 +161,11 @@ public class Batch {
 				}
 				//If our siblings have nothing in common with the task ie is disjoint, then reject it.
 				for (List<Concept> thisConceptSiblings : allConceptSiblings) {
-					if (Collections.disjoint(candidateForMerge.getConcepts(), thisConceptSiblings)) {
+					if (Collections.disjoint(candidateForMerge.getComponents(), thisConceptSiblings)) {
 						continue candidate;
 					}
 				}
-				if (candidateForMerge.concepts.size() > taskSize + wiggleRoom) {
+				if (candidateForMerge.components.size() > taskSize + wiggleRoom) {
 					continue candidate;
 				}
 				merge (candidateForMerge, smallTask);
@@ -176,10 +176,10 @@ public class Batch {
 
 	private List<List<Concept>> getTaskConceptSiblings(Task task, CharacteristicType cType) throws TermServerScriptException {
 		List<List<Concept>> conceptSiblings = new ArrayList<List<Concept>>();
-		for (Concept thisTaskConcept : task.getConcepts()) {
+		for (Component thisTaskConcept : task.getComponents()) {
 			//Get the locally loaded concept which has all relationships, rather than the
 			//concept held in the task, which might just be a ChangeTask 
-			Concept thisLocallyLoadedConcept = gl.getConcept(thisTaskConcept.getConceptId());
+			Concept thisLocallyLoadedConcept = gl.getConcept(thisTaskConcept.getId());
 			conceptSiblings.add(thisLocallyLoadedConcept.getSiblings(cType));
 		}
 		return conceptSiblings;

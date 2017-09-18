@@ -19,6 +19,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Batch;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.ConceptChange;
@@ -67,7 +68,7 @@ public abstract class Rf2Player extends BatchFix {
 		}
 	}
 	
-	private void processDelta() throws TermServerScriptException, FileNotFoundException, IOException {
+	private void processDelta() throws TermServerScriptException, FileNotFoundException, IOException, SnowOwlClientException {
 		try {
 			ZipInputStream zis = new ZipInputStream(new FileInputStream(inputFile));
 			ZipEntry ze = zis.getNextEntry();
@@ -103,7 +104,7 @@ public abstract class Rf2Player extends BatchFix {
 		}
 	}
 
-	private void processRf2Delta(InputStream is, Rf2File rf2File, String fileName) throws IOException, TermServerScriptException {
+	private void processRf2Delta(InputStream is, Rf2File rf2File, String fileName) throws IOException, TermServerScriptException, SnowOwlClientException {
 		//Not putting this in a try resource block otherwise it will close the stream on completion and we've got more to read!
 		println ("Processing " + fileName);
 		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
