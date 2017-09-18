@@ -8,6 +8,7 @@ import java.util.Map;
 
 import javax.annotation.Generated;
 
+import org.eclipse.xtext.xtext.ecoreInference.TransformationErrorCode;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
@@ -268,6 +269,13 @@ public class Description implements RF2Constants{
 		}
 		acceptabilityMap.put(refsetId, Acceptability);
 	}
+	
+	private void removeAcceptability(String refsetId) {
+		//If we've no acceptability yet, then nothing to do here
+		if (acceptabilityMap != null) {
+			acceptabilityMap.remove(refsetId);
+		}
+	}
 
 	public String[] toRF2() throws TermServerScriptException {
 		//"id","effectiveTime","active","moduleId","conceptId","languageCode","typeId","term","caseSignificanceId"
@@ -353,9 +361,8 @@ public class Description implements RF2Constants{
 		this.isDeleted = true;
 		this.deletionEffectiveTime = deletionEffectiveTime;
 	}
-
-	public static Description fromRf2(String[] lineItems) throws TermServerScriptException {
-		Description d = new Description();
+	
+	public static void fillFromRf2(Description d, String[] lineItems) throws TermServerScriptException {
 		d.setDescriptionId(lineItems[DES_IDX_ID]);
 		d.setActive(lineItems[DES_IDX_ACTIVE].equals("1"));
 		//Set effective time after active, since changing activate state resets effectiveTime
@@ -366,7 +373,20 @@ public class Description implements RF2Constants{
 		d.setLang(lineItems[DES_IDX_LANGUAGECODE]);
 		d.setTerm(lineItems[DES_IDX_TERM]);
 		d.setType(SnomedUtils.translateDescType(lineItems[DES_IDX_TYPEID]));
-		return d;
 	}
+
+	//A langrefset entry is an RF2 representation, where the acceptability map
+	//is a text based json representation.   This method allos the former to 
+	//be converted to the latter.
+	public void addAcceptability(LangRefsetEntry lang) throws TermServerScriptException {
+		if (lang.isActive()) {
+			Acceptability acceptability = SnomedUtils.translateAcceptability(lang.getAcceptabilityId());
+			setAcceptablity(lang.getRefsetId(), acceptability);
+		} else {
+			removeAcceptability(lang.getRefsetId());
+		}
+	}
+
+
 
 }

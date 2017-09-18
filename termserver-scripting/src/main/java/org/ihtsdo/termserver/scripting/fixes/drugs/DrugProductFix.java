@@ -118,7 +118,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		List<Concept> allConceptsBeingProcessed = new ArrayList<Concept>();
 		Batch batch =  createBatch(fileName, conceptsInFile, allConceptsBeingProcessed);
 		//Did we end up with small tasks that can be merged with larger ones? 
-		mergeSmallTasks(batch);
+		batch.consolidateIntoLargeTasks(taskSize, wiggleRoom);
 		listTaskSizes(batch);
 		addSummaryInformation("Tasks scheduled", batch.getTasks().size());
 		addSummaryInformation(CONCEPTS_PROCESSED, allConceptsBeingProcessed);
@@ -166,39 +166,6 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		for (Task thisTask : batch.getTasks()) {
 			debug (thisTask + " size = " + thisTask.size());
 		}
-	}
-
-	private void mergeSmallTasks(Batch batch) {
-		//Order the tasks by size and put the smallest tasks into the largest ones with space
-		List<Task> smallToLarge = orderTasks(batch, true);
-		nextSmallTask:
-		for (Task thisSmallTask : smallToLarge) {
-			if (thisSmallTask.size() < taskSize) {
-				for (Task thisLargeTask : orderTasks(batch, false)) {
-					if (thisLargeTask.size() + thisSmallTask.size() <= taskSize + wiggleRoom && !thisLargeTask.equals(thisSmallTask)) {
-						debug ("Merging task " + thisLargeTask + " (" + thisLargeTask.size() + ") with " + thisSmallTask + " (" + thisSmallTask.size() + ")");
-						batch.merge(thisLargeTask, thisSmallTask);
-						continue nextSmallTask;
-					}
-				}
-			}
-		}
-		
-	}
-	
-	List<Task> orderTasks(Batch batch, boolean ascending) {
-		List<Task> orderedList = (List<Task>)batch.getTasks().clone();
-		Collections.sort(orderedList, new Comparator<Task>() 
-		{
-			public int compare(Task t1, Task t2) 
-			{
-				return ((Integer)(t1.size())).compareTo((Integer)(t2.size()));
-			}
-		});
-		if (!ascending) {
-			Collections.reverse(orderedList);
-		}
-		return orderedList;
 	}
 
 	Batch createBatch(String fileName, List<Concept> conceptsInFile, List<Concept> allConceptsBeingProcessed ) throws TermServerScriptException {

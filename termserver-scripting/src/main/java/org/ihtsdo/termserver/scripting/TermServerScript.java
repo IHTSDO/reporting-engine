@@ -480,8 +480,10 @@ public abstract class TermServerScript implements RF2Constants {
 		summaryDetails.put(storeAs, differences.toString());
 	}
 	
+
+	
 	public void finish() {
-		println ("===========================================");
+		println (BREAK);
 		Date endTime = new Date();
 		SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
 		//I've not had to adjust for timezones when creating a date before?

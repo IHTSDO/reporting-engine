@@ -44,8 +44,8 @@ import us.monoid.json.JSONObject;
  */
 public abstract class BatchFix extends TermServerScript implements RF2Constants {
 	
-	protected int taskSize = 6;
-	protected int wiggleRoom = 2;
+	protected int taskSize = 10;
+	protected int wiggleRoom = 5;
 	protected String targetAuthor;
 	String[] author_reviewer = new String[] {targetAuthor};
 	String[] emailDetails;

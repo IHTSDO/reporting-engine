@@ -152,8 +152,9 @@ public class GraphLoader implements RF2Constants {
 		while ((line = br.readLine()) != null) {
 			if (!isHeaderLine) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
-				Concept c = Concept.fromRf2(lineItems);
-				concepts.put(c.getConceptId(), c);
+				//We might already have received some details about this concept
+				Concept c = getConcept(lineItems[IDX_ID]);
+				Concept.fillFromRf2(c, lineItems);
 			} else {
 				isHeaderLine = false;
 			}
@@ -168,20 +169,16 @@ public class GraphLoader implements RF2Constants {
 		while ((line = br.readLine()) != null) {
 			if (!isHeader) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
-				if (fsnOnly) {
-					// Only store active descriptions.  
-					if (lineItems[DES_IDX_ACTIVE].equals(ACTIVE_FLAG) && lineItems[DES_IDX_TYPEID].equals(FULLY_SPECIFIED_NAME)) {
-						Concept c = getConcept(lineItems[DES_IDX_CONCEPTID]);
-						c.setFsn(lineItems[DES_IDX_TERM]);
-					}
-				} else {
-					Concept c = getConcept(lineItems[DES_IDX_CONCEPTID]);
-					Description d = Description.fromRf2(lineItems);
-					descriptions.put(lineItems[DES_IDX_ID], d);
+				Concept c = getConcept(lineItems[DES_IDX_CONCEPTID]);
+				if (lineItems[DES_IDX_ACTIVE].equals(ACTIVE_FLAG) && lineItems[DES_IDX_TYPEID].equals(FULLY_SPECIFIED_NAME)) {
+					c.setFsn(lineItems[DES_IDX_TERM]);
+				}
+				
+				if (!fsnOnly) {
+					//We might already have information about this description, eg langrefset entries
+					Description d = getDescription (lineItems[DES_IDX_ID]);
+					Description.fillFromRf2(d,lineItems);
 					c.addDescription(d);
-					if (d.isActive() && d.getType().equals(DescriptionType.FSN)) {
-						c.setFsn(lineItems[DES_IDX_TERM]);
-					}
 				}
 			} else {
 				isHeader = false;
@@ -206,10 +203,10 @@ public class GraphLoader implements RF2Constants {
 			if (!isHeaderLine) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
 				Description d = getDescription(lineItems[LANG_IDX_REFCOMPID]);
-				LangRefsetEntry langRefsetEntry = loadLanguageLine(lineItems);
+				LangRefsetEntry langRefsetEntry = LangRefsetEntry.fromRf2(lineItems);
 				d.getLangRefsetEntries().add(langRefsetEntry);
 				if (lineItems[LANG_IDX_ACTIVE].equals("1")) {
-					Acceptability a = SnomedUtils.getAcceptability(lineItems[LANG_IDX_ACCEPTABILITY_ID]);
+					Acceptability a = SnomedUtils.translateAcceptability(lineItems[LANG_IDX_ACCEPTABILITY_ID]);
 					d.setAcceptablity(lineItems[LANG_IDX_REFSETID], a);
 				}
 			} else {
@@ -218,17 +215,6 @@ public class GraphLoader implements RF2Constants {
 		}
 	}
 
-	private LangRefsetEntry loadLanguageLine(String[] lineItems) {
-		LangRefsetEntry l = new LangRefsetEntry();
-		l.setId(lineItems[LANG_IDX_ID]);
-		l.setEffectiveTime(lineItems[LANG_IDX_EFFECTIVETIME]);
-		l.setActive(lineItems[LANG_IDX_ACTIVE].equals("1"));
-		l.setModuleId(lineItems[LANG_IDX_MODULID]);
-		l.setRefsetId(lineItems[LANG_IDX_REFSETID]);
-		l.setReferencedComponentId(lineItems[LANG_IDX_REFCOMPID]);
-		l.setAcceptabilityId(lineItems[LANG_IDX_ACCEPTABILITY_ID]);
-		return l;
-	}
 	
 	/**
 	 * Recurse hierarchy and set shortest path depth for all concepts
@@ -250,7 +236,7 @@ public class GraphLoader implements RF2Constants {
 				String[] lineItems = line.split(FIELD_DELIMITER);
 				if (conceptIndicators) {
 					Concept c = getConcept(lineItems[INACT_IDX_REFCOMPID]);
-					InactivationIndicatorEntry inactivation = loadInactivationLine(lineItems);
+					InactivationIndicatorEntry inactivation = InactivationIndicatorEntry.fromRf2(lineItems);
 					c.getInactivationIndicatorEntries().add(inactivation);
 				} else {
 					//Description inactivation indicators.  We'll only load the current active one, and warn if there is more than one.
@@ -267,18 +253,6 @@ public class GraphLoader implements RF2Constants {
 				isHeaderLine = false;
 			}
 		}
-	}
-	
-	private InactivationIndicatorEntry loadInactivationLine(String[] lineItems) {
-		InactivationIndicatorEntry i = new InactivationIndicatorEntry();
-		i.setId(lineItems[INACT_IDX_ID]);
-		i.setEffectiveTime(lineItems[INACT_IDX_EFFECTIVETIME]);
-		i.setActive(lineItems[INACT_IDX_ACTIVE].equals("1"));
-		i.setModuleId(lineItems[INACT_IDX_MODULID]);
-		i.setRefsetId(lineItems[INACT_IDX_REFSETID]);
-		i.setReferencedComponentId(lineItems[INACT_IDX_REFCOMPID]);
-		i.setInactivationReasonId(lineItems[INACT_IDX_REASON_ID]);
-		return i;
 	}
 	
 	public void loadHistoricalAssociationFile(ZipInputStream zis) throws IOException, TermServerScriptException {

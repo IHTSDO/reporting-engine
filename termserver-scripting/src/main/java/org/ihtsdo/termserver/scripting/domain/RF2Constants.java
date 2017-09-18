@@ -30,6 +30,7 @@ public interface RF2Constants {
 	static String ATTRIBUTE_SEPARATOR = ",";
 	static String DASH = "-";
 	static char[] termTerminators = new char[] {'|', ':', '+', '{', ',', '}', '=' };
+	static String BREAK = "===========================================";
 
 	//Description Type SCTIDs
 	static String SYN = "900000000000013009";

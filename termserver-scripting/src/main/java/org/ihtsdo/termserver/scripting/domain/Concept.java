@@ -9,6 +9,7 @@ import javax.annotation.Generated;
 
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import com.google.gson.annotations.Expose;
@@ -223,6 +224,14 @@ public class Concept implements RF2Constants, Comparable<Concept> {
 
 	public void setIsLeafInferred(boolean isLeafInferred) {
 		this.isLeafInferred = isLeafInferred;
+	}
+	
+	public boolean isLeaf (CharacteristicType c) {
+		if (c.equals(CharacteristicType.STATED_RELATIONSHIP)) {
+			return statedChildren.size() == 0;
+		} else {
+			return inferredChildren.size() == 0;
+		}
 	}
 
 	@Override
@@ -600,10 +609,6 @@ public class Concept implements RF2Constants, Comparable<Concept> {
 		this.inactivationIndicator = inactivationIndicator;
 	}
 
-	public static Concept fromRf2(String[] lineItems) {
-		return fillFromRf2(new Concept(lineItems[CON_IDX_ID]), lineItems);
-	}
-	
 	public static ConceptChange fromRf2Delta(String[] lineItems) {
 		return (ConceptChange) fillFromRf2(new ConceptChange(lineItems[CON_IDX_ID]), lineItems);
 	}
@@ -614,6 +619,15 @@ public class Concept implements RF2Constants, Comparable<Concept> {
 		c.setModuleId(lineItems[CON_IDX_MODULID]);
 		c.setDefinitionStatus(SnomedUtils.translateDefnStatus(lineItems[CON_IDX_DEFINITIONSTATUSID]));
 		return c;
+	}
+
+	public List<Concept> getSiblings(CharacteristicType cType) {
+		List<Concept> siblings = new ArrayList<Concept>();
+		//Get all the immediate children of the immediate parents
+		for (Concept thisParent : getParents(cType)) {
+			siblings.addAll(thisParent.getChildren(cType));
+		}
+		return siblings;
 	}
 
 

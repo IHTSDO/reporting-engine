@@ -23,6 +23,7 @@ import org.ihtsdo.termserver.scripting.domain.Batch;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.ConceptChange;
 import org.ihtsdo.termserver.scripting.domain.Description;
+import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.SnomedRf2File;
 import org.ihtsdo.termserver.scripting.domain.Task;
@@ -39,6 +40,8 @@ public abstract class Rf2Player extends BatchFix {
 	String[] author_reviewer = new String[] {targetAuthor};
 	Set<Rf2File> filesProcessed = new HashSet<Rf2File>();
 	Map<String, ConceptChange> changingConcepts = new HashMap<String, ConceptChange>();
+	Map<String, Description> changingDescriptions = new HashMap<String, Description>();
+	
 	Set<Concept> deltaModifications = new HashSet<Concept>();
 	List<String[]> langRefsetStorage = new ArrayList<String[]>();
 	
@@ -90,6 +93,14 @@ public abstract class Rf2Player extends BatchFix {
 		} catch (IOException e) {
 			throw new TermServerScriptException("Failed to expand archive " + inputFile.getName(), e);
 		}
+		
+		for (Concept changingConcept : changingConcepts.values()) {
+			//If we didn't get an fsn from the delta, we should have it from the snapshot load
+			//This will not be processed, it's just so we know where it's coming from.
+			if (changingConcept.getFsn() == null) {
+				changingConcept.setFsn(gl.getConcept(changingConcept.getConceptId()).getFsn());
+			}
+		}
 	}
 
 	private void processRf2Delta(InputStream is, Rf2File rf2File, String fileName) throws IOException, TermServerScriptException {
@@ -114,10 +125,11 @@ public abstract class Rf2Player extends BatchFix {
 							break; 
 						case STATED_RELATIONSHIP : processRelationship(lineItems, true);
 							break;
-						case LANGREFSET : langRefsetStorage.add(lineItems);
+						case LANGREFSET : processLangrefset(lineItems);
 							break;
-						/*case RELATIONSHIP : processRelationship(lineItems, false, rf2File, fileName);
-							break;*/
+						case RELATIONSHIP : processRelationship(lineItems, false);
+							break;
+						//case ATTRIBUTE_VALUE : processInactivation(lineItems);
 						default:
 					}
 				} else {
@@ -130,9 +142,10 @@ public abstract class Rf2Player extends BatchFix {
 	}
 
 	private void processConcept(String[] lineItems, Rf2File rf2File, String fileName) throws TermServerScriptException {
+		String id = lineItems[IDX_ID];
 		ConceptChange changingConcept;
-		if (changingConcepts.containsKey(lineItems[IDX_ID])) {
-			changingConcept = changingConcepts.get(lineItems[IDX_ID]);
+		if (changingConcepts.containsKey(id)) {
+			changingConcept = changingConcepts.get(id);
 			Concept.fillFromRf2(changingConcept, lineItems);
 		} else {
 			changingConcept = Concept.fromRf2Delta(lineItems);
@@ -140,6 +153,7 @@ public abstract class Rf2Player extends BatchFix {
 		//This concept is in fact changing, not just a holder for rels and desc
 		changingConcept.isModified();
 		changingConcepts.put(changingConcept.getConceptId(), changingConcept);
+		
 	}
 
 	private void processRelationship(String[] lineItems, boolean isStated) throws NumberFormatException, TermServerScriptException {
@@ -157,13 +171,33 @@ public abstract class Rf2Player extends BatchFix {
 
 	private void processDescription(String[] lineItems) throws TermServerScriptException {
 		String conceptId = lineItems[DES_IDX_CONCEPTID];
+		String descId = lineItems[IDX_ID];
+		Description changingDescription = changingDescriptions.get(descId);
+		if (changingDescription == null) {
+			changingDescription = new Description();
+			changingDescriptions.put(descId, changingDescription);
+		}
+		
 		ConceptChange changingConcept = changingConcepts.get(conceptId);
 		if (changingConcept == null) {
 			changingConcept = new ConceptChange(conceptId);
 			changingConcepts.put(conceptId, changingConcept);
 		}
-		Description d = Description.fromRf2(lineItems);
-		changingConcept.addDescription(d);
+		
+		Description.fillFromRf2(changingDescription, lineItems);
+		changingConcept.addDescription(changingDescription);
+	}
+	
+	private void processLangrefset(String[] lineItems) throws TermServerScriptException {
+		String descId = lineItems[LANG_IDX_REFCOMPID];
+		Description changingDescription = changingDescriptions.get(descId);
+		if (changingDescription == null) {
+			changingDescription = new Description();
+			changingDescriptions.put(descId, changingDescription);
+		}
+		
+		LangRefsetEntry lang = LangRefsetEntry.fromRf2(lineItems);
+		changingDescription.addAcceptability(lang);
 	}
 
 	private String relationshipToString(String typeId, String destId) throws TermServerScriptException {

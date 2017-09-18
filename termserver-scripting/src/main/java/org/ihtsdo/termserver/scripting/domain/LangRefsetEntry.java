@@ -4,7 +4,7 @@ import java.util.UUID;
 
 
 //id	effectiveTime	active	moduleId	refsetId	referencedComponentId	acceptabilityId
-public class LangRefsetEntry {
+public class LangRefsetEntry implements RF2Constants{
 
 	private String id;
 	private String effectiveTime;
@@ -121,5 +121,17 @@ public class LangRefsetEntry {
 	public void delete(String deletionEffectiveTime) {
 		this.isDeleted = true;
 		this.deletionEffectiveTime = deletionEffectiveTime;
+	}
+	
+	public static LangRefsetEntry fromRf2 (String[] lineItems) {
+		LangRefsetEntry l = new LangRefsetEntry();
+		l.setId(lineItems[LANG_IDX_ID]);
+		l.setEffectiveTime(lineItems[LANG_IDX_EFFECTIVETIME]);
+		l.setActive(lineItems[LANG_IDX_ACTIVE].equals("1"));
+		l.setModuleId(lineItems[LANG_IDX_MODULID]);
+		l.setRefsetId(lineItems[LANG_IDX_REFSETID]);
+		l.setReferencedComponentId(lineItems[LANG_IDX_REFCOMPID]);
+		l.setAcceptabilityId(lineItems[LANG_IDX_ACCEPTABILITY_ID]);
+		return l;
 	}
 }

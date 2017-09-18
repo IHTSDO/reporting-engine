@@ -59,17 +59,17 @@ public class SnomedUtils implements RF2Constants{
 		String US = "N";
 		String GB = "N";
 		if (AcceptabilityMap.containsKey(US_ENG_LANG_REFSET)) {
-			US = translatAcceptability(AcceptabilityMap.get(US_ENG_LANG_REFSET));
+			US = translateAcceptability(AcceptabilityMap.get(US_ENG_LANG_REFSET));
 		}
 		
 		if (AcceptabilityMap.containsKey(GB_ENG_LANG_REFSET)) {
-			GB = translatAcceptability(AcceptabilityMap.get(GB_ENG_LANG_REFSET));
+			GB = translateAcceptability(AcceptabilityMap.get(GB_ENG_LANG_REFSET));
 		}
 		
 		return "US: " + US + ", GB: " + GB;
 	}
 	
-	public static String translatAcceptability (Acceptability a) throws TermServerScriptException {
+	public static String translateAcceptability (Acceptability a) throws TermServerScriptException {
 		if (a.equals(Acceptability.PREFERRED)) {
 			return "P";
 		}
@@ -80,7 +80,7 @@ public class SnomedUtils implements RF2Constants{
 		throw new TermServerScriptException("Unable to translate Acceptability " + a);
 	}
 	
-	public static Acceptability getAcceptability(String sctid) throws TermServerScriptException {
+	public static Acceptability translateAcceptability(String sctid) throws TermServerScriptException {
 		if (sctid.equals(SCTID_ACCEPTABLE_TERM)) {
 			return Acceptability.ACCEPTABLE;
 		}
@@ -96,11 +96,14 @@ public class SnomedUtils implements RF2Constants{
 		String[] acceptabilities = new String[] {"N","N"};
 		for (LangRefsetEntry entry : d.getLangRefsetEntries(ActiveState.ACTIVE)) {
 			int idx = entry.getRefsetId().equals(US_ENG_LANG_REFSET)?0:1;
-			switch (getAcceptability(entry.getAcceptabilityId())) {
+			Acceptability a = translateAcceptability(entry.getAcceptabilityId());
+			switch (a) {
 				case ACCEPTABLE : acceptabilities[idx] = "A";
 									break;
 				case PREFERRED : acceptabilities[idx] = "P";
 									break;
+				default :
+					throw new TermServerScriptException("Unable to translate Acceptability '" + a + "'");
 			}
 		}
 		return acceptabilities;
@@ -582,4 +585,5 @@ public class SnomedUtils implements RF2Constants{
 		boolean allLowerCase = afterFirst.equals(afterFirst.toLowerCase());
 		return !allLowerCase;
 	}
+
 }

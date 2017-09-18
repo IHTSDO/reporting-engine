@@ -12,6 +12,7 @@ public class Task {
 	List<Concept> concepts = new ArrayList<Concept>();
 	String assignedAuthor = null;
 	String reviewer = null;
+	String taskInfo;
 
 	/* Call Batch.addNewTask instead of creating a Task directly */
 	Task(Batch batch, String[] author_reviewer) {
@@ -32,6 +33,9 @@ public class Task {
 
 	public String getDescriptionHTML() {
 		StringBuilder html = new StringBuilder();
+		if (taskInfo != null) {
+			html.append("<h3>Task grouping: ").append(taskInfo).append("</h3>\n");
+		}
 		for (Concept concept : concepts) {
 			html.append("<h5>").append(concept).append("</h5>\n");
 		}
@@ -104,6 +108,14 @@ public class Task {
 
 	public void setReviewer(String reviewer) {
 		this.reviewer = reviewer;
+	}
+
+	public String getTaskInfo() {
+		return taskInfo;
+	}
+
+	public void setTaskInfo(String taskInfo) {
+		this.taskInfo = taskInfo;
 	}
 
 }

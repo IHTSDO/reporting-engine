@@ -3,7 +3,7 @@ package org.ihtsdo.termserver.scripting.domain;
 import java.util.UUID;
 
 //id	effectiveTime	active	moduleId	refsetId	referencedComponentId	inactivationReasonId
-public class InactivationIndicatorEntry {
+public class InactivationIndicatorEntry implements RF2Constants{
 
 	private String id;
 	private String effectiveTime;
@@ -124,5 +124,17 @@ public class InactivationIndicatorEntry {
 	public void delete(String deletionEffectiveTime) {
 		this.isDeleted = true;
 		this.deletionEffectiveTime = deletionEffectiveTime;
+	}
+	
+	public static InactivationIndicatorEntry fromRf2(String[] lineItems) {
+		InactivationIndicatorEntry i = new InactivationIndicatorEntry();
+		i.setId(lineItems[INACT_IDX_ID]);
+		i.setEffectiveTime(lineItems[INACT_IDX_EFFECTIVETIME]);
+		i.setActive(lineItems[INACT_IDX_ACTIVE].equals("1"));
+		i.setModuleId(lineItems[INACT_IDX_MODULID]);
+		i.setRefsetId(lineItems[INACT_IDX_REFSETID]);
+		i.setReferencedComponentId(lineItems[INACT_IDX_REFCOMPID]);
+		i.setInactivationReasonId(lineItems[INACT_IDX_REASON_ID]);
+		return i;
 	}
 }
