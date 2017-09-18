@@ -8,6 +8,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.ihtsdo.termserver.scripting.domain.ConceptHelper;
+import org.ihtsdo.termserver.scripting.domain.Project;
+import org.ihtsdo.termserver.scripting.domain.Refset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,6 +21,8 @@ import us.monoid.web.JSONResource;
 import us.monoid.web.Resty;
 
 import com.google.common.base.Preconditions;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 public class SnowOwlClient {
 	
@@ -32,6 +36,14 @@ public class SnowOwlClient {
 
 	public enum ExportType {
 		PUBLISHED, UNPUBLISHED, MIXED;
+	}
+	
+	protected static Gson gson;
+	static {
+		GsonBuilder gsonBuilder = new GsonBuilder();
+		gsonBuilder.setPrettyPrinting();
+		gsonBuilder.excludeFieldsWithoutExposeAnnotation();
+		gson = gsonBuilder.create();
 	}
 	
 	public static SimpleDateFormat YYYYMMDD = new SimpleDateFormat("yyyyMMdd");
@@ -391,6 +403,18 @@ public class SnowOwlClient {
 			return resty.json(getDescriptionUrl(descriptionId, branch));
 		} catch (IOException e) {
 			throw new SnowOwlClientException(e);
+		}
+	}
+
+	public Refset loadRefsetEntries(String branchPath, String refsetId, String referencedComponentId) throws SnowOwlClientException {
+		try {
+			String endPoint = this.url + "/" + branchPath + "/members/";
+			JSONResource response = resty.json(endPoint);
+			String json = response.toObject().toString();
+			Refset refsetObj = gson.fromJson(json, Refset.class);
+			return refsetObj;
+		} catch (Exception e) {
+			throw new SnowOwlClientException("Unable to recover refset for " + refsetId + " - " + referencedComponentId, e);
 		}
 	}
 

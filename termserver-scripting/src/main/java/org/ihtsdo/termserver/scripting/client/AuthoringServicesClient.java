@@ -2,6 +2,11 @@ package org.ihtsdo.termserver.scripting.client;
 
 import java.io.IOException;
 
+import org.ihtsdo.termserver.scripting.domain.Project;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
 import us.monoid.json.JSONObject;
 import us.monoid.web.JSONResource;
 import us.monoid.web.Resty;
@@ -13,6 +18,14 @@ public class AuthoringServicesClient {
 	private static final String apiRoot = "authoring-services/";
 	private static final String ALL_CONTENT_TYPE = "*/*";
 	private static final String JSON_CONTENT_TYPE = "application/json";
+	
+	protected static Gson gson;
+	static {
+		GsonBuilder gsonBuilder = new GsonBuilder();
+		gsonBuilder.setPrettyPrinting();
+		gsonBuilder.excludeFieldsWithoutExposeAnnotation();
+		gson = gsonBuilder.create();
+	}
 
 	public AuthoringServicesClient(String serverUrl, String cookie) {
 		this.serverUrl = serverUrl;
@@ -91,6 +104,18 @@ public class AuthoringServicesClient {
 			} else {
 				throw new SnowOwlClientException (errStr, e);
 			}
+		}
+	}
+
+	public Project getProject(String projectStr) throws SnowOwlClientException {
+		try {
+			String endPoint = serverUrl + apiRoot + "projects/" + projectStr;
+			JSONResource response = resty.json(endPoint);
+			String json = response.toObject().toString();
+			Project projectObj = gson.fromJson(json, Project.class);
+			return projectObj;
+		} catch (Exception e) {
+			throw new SnowOwlClientException("Unable to recover project " + projectStr, e);
 		}
 	}
 }

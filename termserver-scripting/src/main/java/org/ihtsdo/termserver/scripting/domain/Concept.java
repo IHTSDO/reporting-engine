@@ -16,7 +16,7 @@ import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
 @Generated("org.jsonschema2pojo")
-public class Concept implements RF2Constants, Comparable<Concept> {
+public class Concept implements RF2Constants, Comparable<Concept>, Component {
 
 	@SerializedName("effectiveTime")
 	@Expose
@@ -628,6 +628,11 @@ public class Concept implements RF2Constants, Comparable<Concept> {
 			siblings.addAll(thisParent.getChildren(cType));
 		}
 		return siblings;
+	}
+
+	@Override
+	public String getId() {
+		return conceptId;
 	}
 
 
