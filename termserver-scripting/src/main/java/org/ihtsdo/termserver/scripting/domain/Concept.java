@@ -5,8 +5,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import javax.annotation.Generated;
-
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -14,7 +12,6 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
-@Generated("org.jsonschema2pojo")
 public class Concept implements RF2Constants, Comparable<Concept>, Component {
 
 	@SerializedName("effectiveTime")
@@ -641,8 +638,7 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 
 	@Override
 	public String getType() {
-		return conceptType.toString();
+		return conceptType==null?"": conceptType.toString();
 	}
-
 
 }

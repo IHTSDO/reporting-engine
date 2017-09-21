@@ -4,11 +4,20 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import com.google.gson.annotations.Expose;
+
 public class Task {
-	Batch batch;
-	String taskKey;
+	
+	@Expose
+	String key;
+	
+	@Expose
 	String branchPath;
+	
+	@Expose
 	String summary;
+	
+	Batch batch;
 	List<Component> components = new ArrayList<Component>();
 	String assignedAuthor = null;
 	String reviewer = null;
@@ -28,7 +37,11 @@ public class Task {
 	}
 
 	public String getSummary() {
-		return batch.getTaskName(this);
+		if (batch != null) {
+			return batch.getTaskName(this);
+		} else {
+			return summary;
+		}
 	}
 
 	public String getDescriptionHTML() {
@@ -53,18 +66,18 @@ public class Task {
 	public String getBranchPath() {
 		return branchPath;
 	}
-	public String getTaskKey() {
-		return taskKey;
+	public String getKey() {
+		return key;
 	}
-	public void setTaskKey(String taskKey) {
-		this.taskKey = taskKey;
+	public void setKey(String taskKey) {
+		this.key = taskKey;
 	}
 	public void setBranchPath(String branchPath) {
 		this.branchPath = branchPath;
 	}
 	public String toString() {
-		if (taskKey != null) {
-			return taskKey + ": " + getSummary();
+		if (key != null) {
+			return key + ": " + getSummary();
 		}
 		return getSummary();
 	}

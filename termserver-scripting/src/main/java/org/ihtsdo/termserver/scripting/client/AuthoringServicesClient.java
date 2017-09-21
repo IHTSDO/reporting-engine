@@ -3,6 +3,7 @@ package org.ihtsdo.termserver.scripting.client;
 import java.io.IOException;
 
 import org.ihtsdo.termserver.scripting.domain.Project;
+import org.ihtsdo.termserver.scripting.domain.Task;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -116,6 +117,19 @@ public class AuthoringServicesClient {
 			return projectObj;
 		} catch (Exception e) {
 			throw new SnowOwlClientException("Unable to recover project " + projectStr, e);
+		}
+	}
+	
+	public Task getTask(String taskStr) throws SnowOwlClientException {
+		try {
+			String projectStr = taskStr.substring(0, taskStr.indexOf("-"));
+			String endPoint = serverUrl + apiRoot + "projects/" + projectStr + "/tasks/" + taskStr;
+			JSONResource response = resty.json(endPoint);
+			String json = response.toObject().toString();
+			Task taskObj = gson.fromJson(json, Task.class);
+			return taskObj;
+		} catch (Exception e) {
+			throw new SnowOwlClientException("Unable to recover task " + taskStr, e);
 		}
 	}
 }

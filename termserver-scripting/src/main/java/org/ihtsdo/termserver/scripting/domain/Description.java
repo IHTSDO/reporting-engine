@@ -6,16 +6,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.annotation.Generated;
-
-import org.eclipse.xtext.xtext.ecoreInference.TransformationErrorCode;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
-@Generated("org.jsonschema2pojo")
 public class Description implements RF2Constants{
 	
 	public static boolean padTerm = false; //Pads terms front and back with spaces to assist whole word matching.

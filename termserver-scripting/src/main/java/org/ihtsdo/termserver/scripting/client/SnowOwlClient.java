@@ -8,7 +8,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.ihtsdo.termserver.scripting.domain.ConceptHelper;
-import org.ihtsdo.termserver.scripting.domain.Project;
 import org.ihtsdo.termserver.scripting.domain.Refset;
 import org.ihtsdo.termserver.scripting.domain.RefsetEntry;
 import org.slf4j.Logger;

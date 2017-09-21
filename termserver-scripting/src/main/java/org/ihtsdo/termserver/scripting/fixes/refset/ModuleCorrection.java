@@ -8,7 +8,6 @@ import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Project;
 import org.ihtsdo.termserver.scripting.domain.Refset;
 import org.ihtsdo.termserver.scripting.domain.RefsetEntry;
 
@@ -29,7 +28,7 @@ public class ModuleCorrection extends TermServerScript/*extends RefsetFixer*/ {
 		app.init(args);
 		app.loadEntriesToFix();
 		app.doFix();
-		println ("Processing complete. ");
+		println ("Processing complete.");
 	}
 	
 	private void loadEntriesToFix() throws IOException {

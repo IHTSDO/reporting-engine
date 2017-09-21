@@ -76,7 +76,7 @@ public class DispositionsArchive extends Rf2Player implements RF2Constants{
 		addSummaryInformation("CONCEPTS_NO_DISPOSITION", hasNoDisposition.size());
 		
 		for (Task t : batch.getTasks()) {
-			println (t.getTaskKey() + " (" + t.getComponents().size() + ") " + t.getTaskInfo());
+			println (t.getKey() + " (" + t.getComponents().size() + ") " + t.getTaskInfo());
 		}
 		
 		println ("\n\n" + BREAK);

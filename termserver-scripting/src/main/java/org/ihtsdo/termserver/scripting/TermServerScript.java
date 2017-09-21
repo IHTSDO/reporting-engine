@@ -251,11 +251,6 @@ public abstract class TermServerScript implements RF2Constants {
 			projectName = response;
 		}
 		
-		//Recover the full project path from authoring services
-		project = scaClient.getProject(projectName);
-		projectPath = project.getBranchPath();
-		println("Full path for projected determined to be: " + projectPath);
-		
 		if (restartPosition != NOT_SET) {
 			print ("Restarting from position [" +restartPosition + "]: ");
 			response = STDIN.nextLine().trim();
@@ -284,6 +279,11 @@ public abstract class TermServerScript implements RF2Constants {
 			println ("Restart position given as 0 but line numbering starts from 1.  Starting at line 1.");
 			restartPosition = 1;
 		}
+		
+		//Recover the full project path from authoring services
+		project = scaClient.getProject(projectName);
+		projectPath = project.getBranchPath();
+		println("Full path for projected determined to be: " + projectPath);
 	}
 	
 	protected void initialiseSnowOwlClient() {
@@ -355,7 +355,7 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	protected Concept loadConcept(Concept concept, String branchPath) throws TermServerScriptException {
-		debug ("Loading: " + concept + " from TS.");
+		debug ("Loading: " + concept + " from TS branch " + branchPath);
 		try {
 			//In a dry run situation, the task branch is not created so use the Project instead
 			if (dryRun) {
@@ -366,7 +366,7 @@ public abstract class TermServerScript implements RF2Constants {
 			concept = gson.fromJson(json, Concept.class);
 			concept.setLoaded(true);
 		} catch (SnowOwlClientException | JSONException | IOException e) {
-			throw new TermServerScriptException("Failed to recover " + concept + " from TS",e);
+			throw new TermServerScriptException("Failed to recover " + concept + " from TS due to " + e.getMessage(),e);
 		}
 		return concept;
 	}

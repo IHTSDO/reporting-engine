@@ -160,7 +160,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 					tasksCreated++;
 					String xOfY =  (tasksCreated+tasksSkipped) + " of " + batch.getTasks().size();
 					println ( (dryRun?"Dry Run " : "Created ") + "task (" + xOfY + "): " + branchPath);
-					task.setTaskKey(taskKey);
+					task.setKey(taskKey);
 					task.setBranchPath(branchPath);
 					incrementSummaryInformation("Tasks created",1);
 					int conceptInTask = 0;
@@ -222,7 +222,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 						}
 					}
 				} catch (Exception e) {
-					throw new TermServerScriptException("Failed to process batch " + task.getSummary() + " on task " + task.getTaskKey(), e);
+					throw new TermServerScriptException("Failed to process batch " + task.getSummary() + " on task " + task.getKey(), e);
 				}
 				
 				if (processingLimit > NOT_SET && tasksCreated >= processingLimit) {
@@ -259,10 +259,13 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 				println ( key + " : " + actionDetail);
 			}
 		}
-		String batchKey = (task == null? "" :  task.getTaskKey());
-		String batchDesc = (task == null? "" :  task.getSummary());
-		String line = batchKey + COMMA + batchDesc + COMMA + component.getId() + COMMA_QUOTE + 
-				component.getName() + QUOTE_COMMA + component.getType() + COMMA + severity + COMMA + actionType + COMMA_QUOTE + actionDetail + QUOTE;
+		String key = (task == null? "" :  task.getKey());
+		String desc = (task == null? "" :  task.getSummary());
+		String name = (component == null ? "" : component.getName());
+		String type = (component == null ? "" : component.getType());
+		String line = key + COMMA + desc + COMMA + component.getId() + COMMA_QUOTE + 
+						name + QUOTE_COMMA + type + COMMA + severity + 
+						COMMA + actionType + COMMA_QUOTE + actionDetail + QUOTE;
 		writeToFile (line);
 	}
 

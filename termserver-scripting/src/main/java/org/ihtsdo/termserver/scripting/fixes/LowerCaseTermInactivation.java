@@ -34,7 +34,6 @@ public class LowerCaseTermInactivation extends BatchFix implements RF2Constants{
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
 		LowerCaseTermInactivation fix = new LowerCaseTermInactivation(null);
 		try {
-			fix.useAuthenticatedCookie = true;
 			fix.selfDetermining = true;
 			fix.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
