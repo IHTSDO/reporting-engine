@@ -142,7 +142,7 @@ public class AnatomyRemodelling extends BatchFix implements RF2Constants{
 	@Override
 	protected Batch formIntoBatch (String fileName, List<Concept> allConcepts, String branchPath) throws TermServerScriptException {
 		Batch batch = new Batch(getReportName());
-		Task task = batch.addNewTask();
+		Task task = batch.addNewTask(author_reviewer);
 
 		for (Concept thisConcept : allConcepts) {
 			ConceptChange thisConceptChange = (ConceptChange) thisConcept;

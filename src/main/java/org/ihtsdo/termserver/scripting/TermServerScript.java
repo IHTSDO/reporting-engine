@@ -96,7 +96,7 @@ public abstract class TermServerScript implements RF2Constants {
 
 	public enum ReportActionType { API_ERROR, DEBUG_INFO, INFO, UNEXPECTED_CONDITION,
 									 CONCEPT_CHANGE_MADE, CONCEPT_ADDED,
-									 DESCRIPTION_CHANGE_MADE, DESCRIPTION_ADDED,
+									 DESCRIPTION_CHANGE_MADE, DESCRIPTION_ADDED, DESCRIPTION_REMOVED,
 									 RELATIONSHIP_ADDED, RELATIONSHIP_REMOVED, RELATIONSHIP_MODIFIED, 
 									 NO_CHANGE, VALIDATION_ERROR, VALIDATION_CHECK, 
 									 REFSET_MEMBER_REMOVED, UNKNOWN};
@@ -280,9 +280,15 @@ public abstract class TermServerScript implements RF2Constants {
 			restartPosition = 1;
 		}
 		
-		//Recover the full project path from authoring services
-		project = scaClient.getProject(projectName);
-		projectPath = project.getBranchPath();
+		//Recover the full project path from authoring services, if not already fully specified
+		if (projectName.startsWith("MAIN")) {
+			project = new Project();
+			project.setBranchPath(projectName);
+			projectPath = projectName;
+		} else {
+			project = scaClient.getProject(projectName);
+			projectPath = project.getBranchPath();
+		}
 		println("Full path for projected determined to be: " + projectPath);
 	}
 	
@@ -511,10 +517,12 @@ public abstract class TermServerScript implements RF2Constants {
 			recordSummaryText (key + ": " + display);
 		}
 		if (summaryDetails.containsKey("Tasks created") && summaryDetails.containsKey(CONCEPTS_PROCESSED) ) {
-			double c = (double)((Collection<?>)summaryDetails.get(CONCEPTS_PROCESSED)).size();
-			double t = (double)((Integer)summaryDetails.get("Tasks created")).intValue();
-			double avg = Math.round((c/t) * 10) / 10.0;
-			recordSummaryText ("Concepts per task: " + avg);
+			if (summaryDetails.get(CONCEPTS_PROCESSED) != null &&  summaryDetails.get(CONCEPTS_PROCESSED) instanceof Collection) {
+				double c = (double)((Collection<?>)summaryDetails.get(CONCEPTS_PROCESSED)).size();
+				double t = (double)((Integer)summaryDetails.get("Tasks created")).intValue();
+				double avg = Math.round((c/t) * 10) / 10.0;
+				recordSummaryText ("Concepts per task: " + avg);
+			}
 		}
 		
 		if (criticalIssues.size() > 0) {

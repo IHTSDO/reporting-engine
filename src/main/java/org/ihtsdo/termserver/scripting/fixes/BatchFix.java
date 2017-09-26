@@ -48,8 +48,8 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	protected int taskSize = 10;
 	protected int wiggleRoom = 5;
 	protected String targetAuthor;
-	String[] author_reviewer = new String[] {targetAuthor};
-	String[] emailDetails;
+	protected String[] author_reviewer = new String[] {targetAuthor};
+	protected String[] emailDetails;
 	protected boolean selfDetermining = false; //Set to true if the batch fix calculates its own data to process
 	protected boolean populateEditPanel = true;
 	protected boolean populateTaskDescription = true;
@@ -89,7 +89,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	
 	protected Batch formIntoBatch() throws TermServerScriptException {
 		Batch batch = new Batch(getScriptName());
-		Task task = batch.addNewTask();
+		Task task = batch.addNewTask(author_reviewer);
 		List<Component> allComponentsBeingProcessed = identifyComponentsToProcess();
 		for (Component thisComponent : allComponentsBeingProcessed) {
 			if (task.size() >= taskSize) {
@@ -175,9 +175,9 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 							
 							int changesMade = 0;
 							if (worksWithConcepts) {
-								doFix(task, (Concept)component, info);
+								changesMade = doFix(task, (Concept)component, info);
 							} else {
-								doFix(task, component, info);
+								changesMade = doFix(task, component, info);
 							}
 							if (changesMade == 0 && reportNoChange) {
 								report(task, component, Severity.NONE, ReportActionType.NO_CHANGE, "");
@@ -233,8 +233,8 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	}
 
 	//Override if working with Refsets or Descriptions directly
-	protected void doFix(Task task, Component component, String info) {
-		
+	protected int doFix(Task task, Component component, String info) {
+		return 0;
 	}
 
 	protected int ensureDefinitionStatus(Task t, Concept c, DefinitionStatus targetDefStat) {

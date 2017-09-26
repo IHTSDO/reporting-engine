@@ -16,7 +16,7 @@ import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
 public class Batch {
 	String batchName;
 	GraphLoader gl;
-	ArrayList<Task> tasks = new ArrayList<Task>();
+	List<Task> tasks = new ArrayList<Task>();
 	
 	public Batch(String fileName) {
 		batchName = fileName;
@@ -27,11 +27,7 @@ public class Batch {
 		this(fileName);
 		this.gl = gl;
 	}
-	
-	public Task addNewTask() {
-		return addNewTask(null);
-	}
-	
+
 	public Task addNewTask(String[] author_reviewer) {
 		Task task = new Task(this, author_reviewer);
 		tasks.add(task);
@@ -44,7 +40,7 @@ public class Batch {
 		return task;
 	}
 
-	public ArrayList<Task> getTasks() {
+	public List<Task> getTasks() {
 		return tasks;
 	}
 	
@@ -96,7 +92,7 @@ public class Batch {
 	}
 	
 	List<Task> orderTasks(boolean ascending) {
-		List<Task> orderedList = (List<Task>)getTasks().clone();
+		List<Task> orderedList = new ArrayList<Task>(getTasks());
 		Collections.sort(orderedList, new Comparator<Task>() 
 		{
 			public int compare(Task t1, Task t2) 
@@ -183,5 +179,9 @@ public class Batch {
 			conceptSiblings.add(thisLocallyLoadedConcept.getSiblings(cType));
 		}
 		return conceptSiblings;
+	}
+
+	public void setTasks(List<Task> filteredTasks) {
+		this.tasks = filteredTasks;
 	}
 }

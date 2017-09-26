@@ -171,11 +171,11 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 	Batch createBatch(String fileName, List<Concept> conceptsInFile, List<Concept> allConceptsBeingProcessed ) throws TermServerScriptException {
 		Batch batch = new Batch(fileName);
 		Set<Set<Concept>> groupedConcepts = groupByIngredients(conceptsInFile);
-		Task t = batch.addNewTask();
+		Task t = batch.addNewTask(author_reviewer);
 		for (Set<Concept> theseConcepts : groupedConcepts) {
 			//Do we need to start a new task?
 			if (t.size() > 0 && t.size() + theseConcepts.size() > taskSize) {
-				t = batch.addNewTask();
+				t = batch.addNewTask(author_reviewer);
 			}
 			
 			List<List<Concept>> groupedBySingle = separateOutSingleIngredients(theseConcepts); 
@@ -187,7 +187,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 					if (isSingle) {
 						isSingle = false;
 					} else {
-						t = batch.addNewTask();
+						t = batch.addNewTask(author_reviewer);
 					}
 					for (Concept thisConcept : thisGroup) {
 						t.add(thisConcept);

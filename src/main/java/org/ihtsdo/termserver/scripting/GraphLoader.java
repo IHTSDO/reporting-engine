@@ -87,7 +87,7 @@ public class GraphLoader implements RF2Constants {
 		r.setRelationshipId(lineItems[REL_IDX_ID]);
 		r.setCharacteristicType(characteristicType);
 		r.setActive(lineItems[REL_IDX_ACTIVE].equals("1"));
-		r.setEffectiveTime(lineItems[REL_IDX_EFFECTIVETIME]);
+		r.setEffectiveTime(lineItems[REL_IDX_EFFECTIVETIME].isEmpty()?null:lineItems[REL_IDX_EFFECTIVETIME]);
 		r.setModifier(SnomedUtils.translateModifier(lineItems[REL_IDX_MODIFIERID]));
 		r.setModuleId(lineItems[REL_IDX_MODULEID]);
 		

@@ -254,7 +254,7 @@ public class ProximatePrimitiveRemodeller extends BatchFix implements RF2Constan
 
 	protected Batch formIntoBatch() throws TermServerScriptException {
 		Batch batch = new Batch(getScriptName());
-		Task task = batch.addNewTask();
+		Task task = batch.addNewTask(author_reviewer);
 		List<Component> allConceptsToProcessed = identifyComponentsToProcess();
 		int conceptsBeingProcessed = 0;
 		boolean limitReached = false;
