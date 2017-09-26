@@ -497,6 +497,17 @@ public class SnomedUtils implements RF2Constants{
 		}
 		throw new TermServerScriptException("Do not recognise case significance indicator : " + caseSignificanceSctId);
 	}
+	
+	public static CaseSignificance translateCaseSignificanceToEnum(
+			String caseSignificanceSctId) throws TermServerScriptException {
+		switch (caseSignificanceSctId) {
+			case SCTID_ENTIRE_TERM_CASE_SENSITIVE: return CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE;
+			case SCTID_ENTIRE_TERM_CASE_INSENSITIVE: return CaseSignificance.CASE_INSENSITIVE;
+			case SCTID_ONLY_INITIAL_CHAR_CASE_INSENSITIVE : return CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE;
+			default :
+		}
+		throw new TermServerScriptException("Do not recognise case significance indicator : " + caseSignificanceSctId);
+	}
 
 	public static void makeMachineReadable (StringBuffer hrExp) {
 		int pipeIdx =  hrExp.indexOf(PIPE);

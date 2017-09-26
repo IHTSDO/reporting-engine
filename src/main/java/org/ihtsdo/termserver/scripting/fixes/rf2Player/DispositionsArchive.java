@@ -31,11 +31,19 @@ public class DispositionsArchive extends Rf2Player implements RF2Constants{
 	Set<Concept> hasNoDisposition = new HashSet<Concept>();	
 	Set<Concept> inactivations = new HashSet<Concept>();
 	
+	//Temporary - select some dispositions to process
+	String[] subset = new String[] { 
+			"734551003",
+			"734592007",
+			"734596005",
+			"734597001"};
+	
 	Concept hasDisposition;
 	
 	protected DispositionsArchive(DispositionsArchive clone) {
 		super(clone);
 		this.wiggleRoom = 2;
+		this.populateEditPanel = false;
 	}
 
 	public static void main(String[] args) throws TermServerScriptException {
@@ -87,7 +95,27 @@ public class DispositionsArchive extends Rf2Player implements RF2Constants{
 				println (gl.getConcept(bucketId) + ": " + thisBucket.size());
 			}
 		}
+		
+		filterBatch(batch);
+		
+		for (Task t : batch.getTasks()) {
+			println ("Filtered: " + t.getKey() + " (" + t.getComponents().size() + ") " + t.getTaskInfo());
+		}
 		return batch;
+	}
+
+	private void filterBatch(Batch batch) {
+		List<Task> originalTasks = new ArrayList<>(batch.getTasks());
+		List<Task> filteredTasks = new ArrayList<>();
+		for (Task task : originalTasks) {
+			for (String subSetStr : subset) {
+				if (task.getTaskInfo().contains(subSetStr)) {
+					filteredTasks.add(task);
+					break;
+				}
+			}
+		}
+		batch.setTasks(filteredTasks);
 	}
 
 	private void splitBucketIntoNeighbourhoods(Batch batch, String bucketId, Collection<Concept> remainingConceptsToGroup) throws TermServerScriptException {

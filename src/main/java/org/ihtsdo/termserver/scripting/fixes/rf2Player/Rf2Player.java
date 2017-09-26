@@ -19,6 +19,8 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.TermServerScript.ReportActionType;
+import org.ihtsdo.termserver.scripting.TermServerScript.Severity;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Batch;
 import org.ihtsdo.termserver.scripting.domain.Concept;
@@ -30,6 +32,8 @@ import org.ihtsdo.termserver.scripting.domain.SnomedRf2File;
 import org.ihtsdo.termserver.scripting.domain.Task;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+
+import us.monoid.json.JSONObject;
 
 /*
  * Reads from an RF2 Archive and uses the changes indicated to drive the 
@@ -59,7 +63,7 @@ public abstract class Rf2Player extends BatchFix {
 			startTimer();
 			processDelta();
 			Batch batch = formIntoBatch();
-			//batchProcess(batch);
+			batchProcess(batch);
 			println ("Processing complete.  See results: " + reportFile.getAbsolutePath());
 		} catch (Exception e) {
 			throw new TermServerScriptException("Failed to play Rf2Archive", e);
@@ -130,7 +134,7 @@ public abstract class Rf2Player extends BatchFix {
 							break;
 						case RELATIONSHIP : processRelationship(lineItems, false);
 							break;
-						//case ATTRIBUTE_VALUE : processInactivation(lineItems);
+						case ATTRIBUTE_VALUE : processInactivation(lineItems);
 						default:
 					}
 				} else {
@@ -154,7 +158,6 @@ public abstract class Rf2Player extends BatchFix {
 		//This concept is in fact changing, not just a holder for rels and desc
 		changingConcept.isModified();
 		changingConcepts.put(changingConcept.getConceptId(), changingConcept);
-		
 	}
 
 	private void processRelationship(String[] lineItems, boolean isStated) throws NumberFormatException, TermServerScriptException {
@@ -168,7 +171,6 @@ public abstract class Rf2Player extends BatchFix {
 		CharacteristicType cType = isStated ? CharacteristicType.STATED_RELATIONSHIP : CharacteristicType.INFERRED_RELATIONSHIP;
 		gl.addRelationshipToConcept(changingConcept, cType, lineItems);
 	}
-	
 
 	private void processDescription(String[] lineItems) throws TermServerScriptException {
 		String conceptId = lineItems[DES_IDX_CONCEPTID];
@@ -200,7 +202,22 @@ public abstract class Rf2Player extends BatchFix {
 		LangRefsetEntry lang = LangRefsetEntry.fromRf2(lineItems);
 		changingDescription.addAcceptability(lang);
 	}
+	
 
+	private void processInactivation(String[] lineItems) {
+		//TODO Check if we've got a concept or description inactivation
+		//for the moment, we know that they're all description based
+		String descId = lineItems[REF_IDX_REFCOMPID];
+		Description changingDescription = changingDescriptions.get(descId);
+		if (changingDescription == null) {
+			changingDescription = new Description();
+			changingDescriptions.put(descId, changingDescription);
+		}
+		
+		InactivationIndicator inact = SnomedUtils.translateInactivationIndicator(lineItems[REF_IDX_FIRST_ADDITIONAL]);
+		changingDescription.setInactivationIndicator(inact);
+	}
+		
 	private String relationshipToString(String typeId, String destId) throws TermServerScriptException {
 		Concept destination = gl.getConcept(destId, false, false);  //Don't create, don't validate
 		Concept type = gl.getConcept(typeId, false, false);
@@ -216,21 +233,50 @@ public abstract class Rf2Player extends BatchFix {
 
 	@Override
 	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
-		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
-		if (hasUnpublishedRelationships(loadedConcept, CharacteristicType.STATED_RELATIONSHIP)) {
-			report (task, loadedConcept, Severity.HIGH, ReportActionType.NO_CHANGE, "Recent stated relationship edits detected on this concept");
-			return 0;
-		} else {
-			ConceptChange conceptChanges = (ConceptChange)concept; 
-			if (conceptChanges.isModified()) {
-				loadedConcept.setActive(conceptChanges.isActive());
-				loadedConcept.setEffectiveTime(null);
-				loadedConcept.setDefinitionStatus(conceptChanges.getDefinitionStatus());
+		Concept loadedConcept = null;
+		try{
+			loadedConcept = loadConcept(concept, task.getBranchPath());
+			if (hasUnpublishedRelationships(loadedConcept, CharacteristicType.STATED_RELATIONSHIP)) {
+				report (task, loadedConcept, Severity.HIGH, ReportActionType.NO_CHANGE, "Recent stated relationship edits detected on this concept");
+				return 0;
+			} else {
+				ConceptChange conceptChanges = (ConceptChange)concept; 
+				if (conceptChanges.isModified()) {
+					loadedConcept.setActive(conceptChanges.isActive());
+					loadedConcept.setEffectiveTime(null);
+					loadedConcept.setDefinitionStatus(conceptChanges.getDefinitionStatus());
+					report (task, loadedConcept, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Definition status set to " + conceptChanges.getDefinitionStatus());
+				}
+				fixDescriptions(task, loadedConcept, conceptChanges.getDescriptions());
+				fixRelationships(task, loadedConcept, conceptChanges.getRelationships());
 			}
-			fixDescriptions(task, loadedConcept, conceptChanges.getDescriptions());
-			fixRelationships(task, loadedConcept, conceptChanges.getRelationships());
-			return 1; 
+		} catch (Exception e) {
+			//See if we can get that 2nd level exception's reason which says what the problem actually was
+			String additionalInfo = "";
+			if (e.getCause() != null && e.getCause().getCause() != null) {
+				additionalInfo = " - " + e.getCause().getCause().getMessage().replaceAll(COMMA, " ").replaceAll(QUOTE, "'");
+			} 
+			report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to make changes to concept " + concept.toString() + ": " + e.getClass().getSimpleName()  + " - " + additionalInfo);
+			e.printStackTrace();
+			return 0;
 		}
+		
+		try{
+			String conceptSerialised = gson.toJson(loadedConcept);
+			debug ((dryRun?"Dry run updating":"Updating") + " state of " + loadedConcept + info);
+			if (!dryRun) {
+				tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
+			}
+		} catch (Exception e) {
+			//See if we can get that 2nd level exception's reason which says what the problem actually was
+			String additionalInfo = "";
+			if (e.getCause().getCause() != null) {
+				additionalInfo = " - " + e.getCause().getCause().getMessage().replaceAll(COMMA, " ").replaceAll(QUOTE, "'");
+			} 
+			report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + e.getClass().getSimpleName()  + " - " + additionalInfo);
+			e.printStackTrace();
+		}
+		return 1;
 	}
 
 	private boolean hasUnpublishedRelationships(Concept loadedConcept, CharacteristicType cType) {
@@ -247,7 +293,11 @@ public abstract class Rf2Player extends BatchFix {
 			//Are we adding or deleting a description?
 			if (d.isActive()) {
 				//TODO Check description doesn't already exist
+				//Remove the sctid so that the TS notices it has a new description
+				d.setDescriptionId(null);
+				d.setEffectiveTime(null);
 				loadedConcept.addDescription(d);
+				report (task, loadedConcept, Severity.LOW, ReportActionType.DESCRIPTION_ADDED, d.toString());
 			} else {
 				Description loadedDescription = loadedConcept.getDescription(d.getDescriptionId());
 				InactivationIndicator i = d.getInactivationIndicator();
@@ -257,6 +307,7 @@ public abstract class Rf2Player extends BatchFix {
 				}
 				loadedDescription.setInactivationIndicator(i);
 				loadedDescription.setActive(false);
+				report (task, loadedConcept, Severity.LOW, ReportActionType.DESCRIPTION_REMOVED, loadedDescription.toString());
 			}
 		}
 	}
@@ -267,10 +318,19 @@ public abstract class Rf2Player extends BatchFix {
 			//Are we adding or deleting a Relationship?
 			if (r.isActive()) {
 				//TODO Check relationship doesn't already exist
+				//Remove the sctid so that the TS notices it has a new relationship
+				r.setRelationshipId(null);
+				r.setEffectiveTime(null);
 				loadedConcept.addRelationship(r);
+				report (task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, r.toString());
 			} else {
 				Relationship loadedRelationship = loadedConcept.getRelationship(r.getRelationshipId());
-				loadedRelationship.setActive(false);
+				if (loadedRelationship == null) {
+					report (task, loadedConcept, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Relationship " + r.getRelationshipId() + " did not exist in TS to inactivate");
+				} else {
+					loadedRelationship.setActive(false);
+					report (task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_REMOVED, loadedRelationship.toString());
+				}
 			}
 		}
 	}
