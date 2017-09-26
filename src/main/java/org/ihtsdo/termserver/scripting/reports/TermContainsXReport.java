@@ -26,7 +26,8 @@ public class TermContainsXReport extends TermServerScript{
 	
 	List<String> criticalErrors = new ArrayList<String>();
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
-	String matchText = "+"; 
+	//String matchText = "+"; 
+	String matchText = "/1 each";
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		TermContainsXReport report = new TermContainsXReport();
@@ -51,13 +52,15 @@ public class TermContainsXReport extends TermServerScript{
 		
 		for (Concept c : concepts) {
 			if (c.isActive()) {
-				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+				for (Description d : c.getDescriptions(Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE)) {
+				//for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 					if (d.getTerm().contains(matchText)) {
 						String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
 						report(c, d, semTag);
 						tags.add(semTag);
 					}
 				}
+				
 			}
 		}
 		addSummaryInformation("Concepts checked", concepts.size());
