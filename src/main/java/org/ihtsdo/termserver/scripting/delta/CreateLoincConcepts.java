@@ -18,11 +18,6 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 public class CreateLoincConcepts extends DeltaGenerator {
 	
-	String moduleId="900000000000207008";
-	String[] langRefsetIds = new String[] { "900000000000508004",  //GB
-											"900000000000509007" }; //US
-
-	String nameSpace="0";
 	DefinitionStatus defStatus = DefinitionStatus.FULLY_DEFINED;
 	Map<LoincElement, Concept> loincAttributes;
 	
@@ -62,54 +57,6 @@ public class CreateLoincConcepts extends DeltaGenerator {
 			SnomedUtils.createArchive(new File(delta.outputDirName));
 		} finally {
 			delta.finish();
-		}
-	}
-	
-	protected void init (String[] args) throws IOException, TermServerScriptException, SnowOwlClientException, SnowOwlClientException {
-		super.init(args);
-		descIdGenerator.setNamespace(nameSpace);
-		descIdGenerator.isExtension(isExtension);
-		
-		for (int x=0; x<args.length; x++) {
-			if (args[x].equals("-m")) {
-				moduleId = args[++x];
-			}
-		}
-		
-		print ("Targetting which namespace? [" + nameSpace + "]: ");
-		String response = STDIN.nextLine().trim();
-		if (!response.isEmpty()) {
-			nameSpace = response;
-		}
-		
-		print ("Targetting which moduleId? [" + moduleId + "]: ");
-		response = STDIN.nextLine().trim();
-		if (!response.isEmpty()) {
-			moduleId = response;
-		}
-		
-		print ("Targetting which language code? [" + languageCode + "]: ");
-		response = STDIN.nextLine().trim();
-		if (!response.isEmpty()) {
-			languageCode = response;
-		}
-		
-		String langRefsetIdStr = StringUtils.join(langRefsetIds, ",");  
-		print ("Targetting which language refset(s)? [" + langRefsetIdStr + "]: ");
-		response = STDIN.nextLine().trim();
-		if (!response.isEmpty()) {
-			langRefsetIds = response.split(COMMA);
-		}
-		
-		print ("What's the Edition? [" + edition + "]: ");
-		response = STDIN.nextLine().trim();
-		if (!response.isEmpty()) {
-			edition = response;
-		}
-		
-		if (moduleId.isEmpty() || langRefsetIds  == null) {
-			String msg = "Require both moduleId and langRefset Id to be specified (-m -l parameters)";
-			throw new TermServerScriptException(msg);
 		}
 	}
 	

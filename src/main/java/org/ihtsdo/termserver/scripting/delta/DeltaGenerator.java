@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.termserver.scripting.IdGenerator;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
@@ -32,6 +33,12 @@ public abstract class DeltaGenerator extends TermServerScript {
 	protected String languageCode = "en";
 	protected boolean isExtension = false;
 	protected boolean newIdsRequired = true;
+	protected String moduleId="900000000000207008";
+	protected String nameSpace="0";
+	protected String[] langRefsetIds = new String[] { "900000000000508004",  //GB
+											"900000000000509007" }; //US
+
+
 	
 	protected String[] conHeader = new String[] {"id","effectiveTime","active","moduleId","definitionStatusId"};
 	protected String[] descHeader = new String[] {"id","effectiveTime","active","moduleId","conceptId","languageCode","typeId","term","caseSignificanceId"};
@@ -68,18 +75,64 @@ public abstract class DeltaGenerator extends TermServerScript {
 		super.init(args);
 		
 		for (int x=0; x<args.length; x++) {
+			if (args[x].equals("-m")) {
+				moduleId = args[++x];
+			}
 			if (args[x].equals("-iC")) {
 				conIdGenerator = IdGenerator.initiateIdGenerator(args[++x], PartitionIdentifier.CONCEPT);
+				conIdGenerator.setNamespace(nameSpace);
+				conIdGenerator.isExtension(isExtension);
 			}
 			if (args[x].equals("-iD")) {
 				descIdGenerator = IdGenerator.initiateIdGenerator(args[++x], PartitionIdentifier.DESCRIPTION);
+				descIdGenerator.setNamespace(nameSpace);
+				descIdGenerator.isExtension(isExtension);
 			}
 			if (args[x].equals("-iR")) {
 				relIdGenerator = IdGenerator.initiateIdGenerator(args[++x], PartitionIdentifier.RELATIONSHIP);
+				relIdGenerator.setNamespace(nameSpace);
+				relIdGenerator.isExtension(isExtension);
 			}
 		}
+
+		print ("Targetting which namespace? [" + nameSpace + "]: ");
+		String response = STDIN.nextLine().trim();
+		if (!response.isEmpty()) {
+			nameSpace = response;
+		}
+		
+		print ("Targetting which moduleId? [" + moduleId + "]: ");
+		response = STDIN.nextLine().trim();
+		if (!response.isEmpty()) {
+			moduleId = response;
+		}
+		
+		print ("Targetting which language code? [" + languageCode + "]: ");
+		response = STDIN.nextLine().trim();
+		if (!response.isEmpty()) {
+			languageCode = response;
+		}
+		
+		String langRefsetIdStr = StringUtils.join(langRefsetIds, ",");  
+		print ("Targetting which language refset(s)? [" + langRefsetIdStr + "]: ");
+		response = STDIN.nextLine().trim();
+		if (!response.isEmpty()) {
+			langRefsetIds = response.split(COMMA);
+		}
+		
+		print ("What's the Edition? [" + edition + "]: ");
+		response = STDIN.nextLine().trim();
+		if (!response.isEmpty()) {
+			edition = response;
+		}
+		
+		if (moduleId.isEmpty() || langRefsetIds  == null) {
+			String msg = "Require both moduleId and langRefset Id to be specified (-m -l parameters)";
+			throw new TermServerScriptException(msg);
+		}
+		
 		if (newIdsRequired && descIdGenerator == null) {
-			throw new TermServerScriptException("Command line arguments must supply a list of available sctid using the -i option");
+			throw new TermServerScriptException("Command line arguments must supply a list of available sctid using the -iC/D/R option");
 		}
 		initialiseReportFile("Concept,DescSctId,Term,Severity,Action,Detail");
 		//Don't add to previously exported data

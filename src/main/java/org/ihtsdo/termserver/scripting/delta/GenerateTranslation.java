@@ -33,6 +33,7 @@ public class GenerateTranslation extends DeltaGenerator {
 			delta.edition="SE1000052";
 			delta.languageCode="sv";
 			delta.inputFileDelimiter = TSV_FIELD_DELIMITER;
+			delta.nameSpace = "1000052";
 			delta.isExtension = true; //Ensures the correct partition identifier is used.
 			SnowOwlClient.supportsIncludeUnpublished = false;   //This code not yet available in MS
 			delta.init(args);
@@ -49,62 +50,6 @@ public class GenerateTranslation extends DeltaGenerator {
 			if (delta.descIdGenerator != null) {
 				println(delta.descIdGenerator.finish());
 			}
-		}
-	}
-	
-	protected void init (String[] args) throws IOException, TermServerScriptException, SnowOwlClientException, SnowOwlClientException {
-		super.init(args);
-		descIdGenerator.setNamespace("1000052");
-		descIdGenerator.isExtension(true);
-		
-		for (int x=0; x<args.length; x++) {
-			if (args[x].equals("-m")) {
-				moduleId = args[++x];
-			}
-			if (args[x].equals("-l")) {
-				langRefsetId = args[++x];
-			}
-		}
-		
-		print ("Targetting which namespace? [" + nameSpace + "]: ");
-		String response = STDIN.nextLine().trim();
-		if (!response.isEmpty()) {
-			nameSpace = response;
-		}
-		
-		print ("Targetting which moduleId? [" + moduleId + "]: ");
-		response = STDIN.nextLine().trim();
-		if (!response.isEmpty()) {
-			moduleId = response;
-		}
-		
-		print ("Targetting which language code? [" + languageCode + "]: ");
-		response = STDIN.nextLine().trim();
-		if (!response.isEmpty()) {
-			languageCode = response;
-		}
-		
-		print ("Targetting which language refset? [" + langRefsetId + "]: ");
-		response = STDIN.nextLine().trim();
-		if (!response.isEmpty()) {
-			langRefsetId = response;
-		}
-		
-		print ("What's the Termserver root? [" + tsRoot + "]: ");
-		response = STDIN.nextLine().trim();
-		if (!response.isEmpty()) {
-			tsRoot = response;
-		}
-		
-		print ("What's the Edition? [" + edition + "]: ");
-		response = STDIN.nextLine().trim();
-		if (!response.isEmpty()) {
-			edition = response;
-		}
-		
-		if (moduleId.isEmpty() || langRefsetId.isEmpty()) {
-			String msg = "Require both moduleId and langRefset Id to be specified (-m -l parameters)";
-			throw new TermServerScriptException(msg);
 		}
 	}
 
