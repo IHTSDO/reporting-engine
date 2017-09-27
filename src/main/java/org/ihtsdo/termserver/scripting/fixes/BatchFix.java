@@ -68,7 +68,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	
 	protected List<Concept> processFile() throws TermServerScriptException {
 		List<Concept> allConcepts = super.processFile();
-		Batch batch = formIntoBatch(inputFile.getName(), allConcepts, projectPath);
+		Batch batch = formIntoBatch(inputFile.getName(), allConcepts, project.getBranchPath());
 		batchProcess(batch);
 		if (emailDetails != null) {
 			String msg = "Batch Scripting has completed successfully." + getSummaryText();

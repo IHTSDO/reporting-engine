@@ -61,7 +61,6 @@ public abstract class TermServerScript implements RF2Constants {
 	protected String authenticatedCookie;
 	protected Resty resty = new Resty();
 	protected Project project;
-	protected String projectPath;
 	public static final int maxFailures = 5;
 	protected int restartPosition = NOT_SET;
 	protected int processingLimit = NOT_SET;
@@ -287,12 +286,10 @@ public abstract class TermServerScript implements RF2Constants {
 		if (projectName.startsWith("MAIN")) {
 			project = new Project();
 			project.setBranchPath(projectName);
-			projectPath = projectName;
 		} else {
 			project = scaClient.getProject(projectName);
-			projectPath = project.getBranchPath();
 		}
-		println("Full path for projected determined to be: " + projectPath);
+		println("Full path for projected determined to be: " + project.getBranchPath());
 	}
 	
 	protected void initialiseSnowOwlClient() {
@@ -308,7 +305,7 @@ public abstract class TermServerScript implements RF2Constants {
 		//Do we already have a copy of the project locally?  If not, recover it.
 		if (!snapShotArchive.exists()) {
 			println ("Recovering current state of " + project + " from TS (" + env + ")");
-			tsClient.export(projectPath, null, ExportType.MIXED, ExtractType.SNAPSHOT, snapShotArchive);
+			tsClient.export(project.getBranchPath(), null, ExportType.MIXED, ExtractType.SNAPSHOT, snapShotArchive);
 		}
 		GraphLoader gl = GraphLoader.getGraphLoader();
 		println ("Loading archive contents into memory...");
