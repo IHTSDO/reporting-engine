@@ -92,7 +92,7 @@ public class HierarchyConceptsUsedInDefinitionsReport extends TermServerScript{
 						usedIn + QUOTE_COMMA +
 						usedIn.getDefinitionStatus();
 		
-		writeToFile(line);
+		writeToReportFile(line);
 	}
 	
 	protected void init(String[] args) throws IOException, TermServerScriptException, SnowOwlClientException {
@@ -116,7 +116,7 @@ public class HierarchyConceptsUsedInDefinitionsReport extends TermServerScript{
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToFile ("Concept, FSN, UsedToDefine, Defn_Status");
+		writeToReportFile ("Concept, FSN, UsedToDefine, Defn_Status");
 	}
 
 	private void loadProjectSnapshot() throws SnowOwlClientException, TermServerScriptException, InterruptedException {

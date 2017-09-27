@@ -15,6 +15,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -81,6 +82,8 @@ public abstract class TermServerScript implements RF2Constants {
 	public static String CRITICAL_ISSUE = "CRITICAL ISSUE";
 	protected String inputFileDelimiter = CSV_FIELD_DELIMITER;
 	protected String tsRoot = "MAIN/"; //"MAIN/2016-01-31/SNOMEDCT-DK/";
+	
+	protected Map<String, PrintWriter> fileMap = new HashMap<>();
 	
 	protected static Gson gson;
 	static {
@@ -487,10 +490,19 @@ public abstract class TermServerScript implements RF2Constants {
 		summaryDetails.put(storeAs, differences.toString());
 	}
 	
-
+	public void closeFiles() {
+		for (PrintWriter pw : fileMap.values()) {
+			try {
+				pw.flush();
+				pw.close();
+			} catch (Exception e) {}
+		}
+		fileMap = new HashMap<>();
+	}
 	
 	public void finish() {
 		println (BREAK);
+		closeFiles();
 		Date endTime = new Date();
 		SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
 		//I've not had to adjust for timezones when creating a date before?
@@ -545,11 +557,8 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	protected void writeToRF2File(String fileName, Object[] columns) throws TermServerScriptException {
-		File file = ensureFileExists(fileName);
-		try(	OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(file, true), StandardCharsets.UTF_8);
-				BufferedWriter bw = new BufferedWriter(osw);
-				PrintWriter out = new PrintWriter(bw))
-		{
+		PrintWriter out = getPrintWriter(fileName);
+		try {
 			StringBuffer line = new StringBuffer();
 			for (int x=0; x<columns.length; x++) {
 				if (x > 0) {
@@ -563,7 +572,7 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 	}
 	
-	protected void writeToFile(String line) {
+	protected void writeToReportFile(String line) {
 		try(	OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(reportFile, true), StandardCharsets.UTF_8);
 				BufferedWriter bw = new BufferedWriter(osw);
 				PrintWriter out = new PrintWriter(bw))
@@ -580,7 +589,7 @@ public abstract class TermServerScript implements RF2Constants {
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToFile (columnHeaders);
+		writeToReportFile (columnHeaders);
 	}
 
 	protected String getReportName() {
@@ -604,6 +613,22 @@ public abstract class TermServerScript implements RF2Constants {
 			throw new TermServerScriptException("Failed to create file " + fileName,e);
 		}
 		return file;
+	}
+	
+	PrintWriter getPrintWriter(String fileName) throws TermServerScriptException {
+		try {
+			PrintWriter pw = fileMap.get(fileName);
+			if (pw == null) {
+				File file = ensureFileExists(fileName);
+				OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(file, true), StandardCharsets.UTF_8);
+				BufferedWriter bw = new BufferedWriter(osw);
+				pw = new PrintWriter(bw);
+				fileMap.put(fileName, pw);
+			}
+			return pw;
+		} catch (Exception e) {
+			throw new TermServerScriptException("Unable to write to " + fileName + " due to " + e.getMessage(), e);
+		}
 	}
 
 }

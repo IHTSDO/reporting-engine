@@ -19,33 +19,36 @@ public class IdGenerator implements RF2Constants{
 	int idsAssigned = 0;
 	private String namespace = "";
 	private boolean isExtension = false;
+	private PartitionIdentifier partitionIdentifier;
 	
-	public static IdGenerator initiateIdGenerator(String sctidFilename) throws TermServerScriptException {
+	public static IdGenerator initiateIdGenerator(String sctidFilename, PartitionIdentifier p) throws TermServerScriptException {
 		if (sctidFilename.toLowerCase().equals("dummy")) {
-			return new IdGenerator();
+			return new IdGenerator(p);
 		}
 		
 		File sctIdFile = new File (sctidFilename);
 		try {
 			if (sctIdFile.canRead()) {
-				return new IdGenerator(sctIdFile);
+				return new IdGenerator(sctIdFile, p);
 			}
 		} catch (Exception e) {}
 		
 		throw new TermServerScriptException("Unable to read sctids from " + sctidFilename);
 	}
-	private IdGenerator(File sctidFile) throws FileNotFoundException {
+	private IdGenerator(File sctidFile, PartitionIdentifier p) throws FileNotFoundException {
 		fileName = sctidFile.getAbsolutePath();
 		availableSctIds = new BufferedReader(new FileReader(sctidFile));
+		partitionIdentifier = p;
 	}
-	private IdGenerator() {
+	private IdGenerator(PartitionIdentifier p) {
+		partitionIdentifier = p;
 		useDummySequence = true;
 	}
 	
-	public String getSCTID(PartionIdentifier partitionIdentifier) throws TermServerScriptException {
+	public String getSCTID() throws TermServerScriptException {
 		if (useDummySequence) {
 			idsAssigned++;
-			return getDummySCTID(partitionIdentifier);
+			return getDummySCTID();
 		}
 		
 		String sctId;
@@ -65,7 +68,7 @@ public class IdGenerator implements RF2Constants{
 		return sctId;
 	}
 	
-	private String getDummySCTID(PartionIdentifier partitionIdentifier) throws TermServerScriptException  {
+	private String getDummySCTID() throws TermServerScriptException  {
 		try {
 			String sctIdBase = ++dummySequence + namespace + (isExtension?"1":"0") + partitionIdentifier.ordinal();
 			String checkDigit = new VerhoeffCheckDigit().calculate(sctIdBase);
@@ -85,7 +88,7 @@ public class IdGenerator implements RF2Constants{
 				availableSctIds.close();
 			}
 		} catch (Exception e){}
-		return "IdGenerator supplied " + idsAssigned + " sctids.";
+		return "IdGenerator supplied " + idsAssigned + " " + partitionIdentifier + " sctids.";
 	}
 	
 	public void isExtension(boolean b) {

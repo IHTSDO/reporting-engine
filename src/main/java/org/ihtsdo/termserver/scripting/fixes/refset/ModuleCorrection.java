@@ -21,6 +21,9 @@ public class ModuleCorrection extends TermServerScript/*extends RefsetFixer*/ {
 	String refsetId = "900000000000490003"; //Description Inactivations
 	String fileToProcess = "";
 	
+	//Set this to null when working with pre-versioned content
+	String forceEffectiveTime = "20170930";
+	
 	List<String> descIds = new ArrayList<String>();
 	
 	public static void main (String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
@@ -59,7 +62,10 @@ public class ModuleCorrection extends TermServerScript/*extends RefsetFixer*/ {
 		}
 		
 		RefsetEntry refsetEntry = refset.getItems().get(0);
-		if (refsetEntry.getModuleId().equals(wrongModule)) {
+		if (forceEffectiveTime != null || refsetEntry.getModuleId().equals(wrongModule)) {
+			if (forceEffectiveTime != null) {
+				refsetEntry.setEffectiveTime(forceEffectiveTime);
+			}
 			refsetEntry.setModuleId(rightModule);
 		} else {
 			println ("No change required - "+ refsetEntry.getId() + " for " + descId);
@@ -67,7 +73,7 @@ public class ModuleCorrection extends TermServerScript/*extends RefsetFixer*/ {
 		}
 		
 		//Save
-		tsClient.updateRefsetMember(project.getBranchPath(), refsetEntry);
+		tsClient.updateRefsetMember(project.getBranchPath(), refsetEntry, (forceEffectiveTime != null));
 		println ("Fixed " + refsetEntry.getId() + " for " + descId);
 	}
 
@@ -77,35 +83,5 @@ public class ModuleCorrection extends TermServerScript/*extends RefsetFixer*/ {
 		// TODO Auto-generated method stub
 		return null;
 	}
-
-/*
-	@Override
-	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
-		return 1;
-	}
-
-	protected List<Concept> identifyConceptsToProcess() throws TermServerScriptException {
-
-	}
-
-	@Override
-	protected Concept loadLine(String[] lineItems) throws TermServerScriptException {
-		return null; // We will identify descriptions to edit from the snapshot
-	}
-
-	@Override
-	protected Batch formIntoBatch(String fileName, List<Concept> allConcepts,
-			String branchPath) throws TermServerScriptException {
-		throw new NotImplementedException();
-	}
-
-	@Override
-	protected Batch formIntoBatch(String fileName,
-			java.util.List<Concept> allConcepts, String branchPath)
-			throws TermServerScriptException {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	*/
 }
 

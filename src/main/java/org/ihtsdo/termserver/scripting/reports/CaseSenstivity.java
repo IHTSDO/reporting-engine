@@ -59,14 +59,14 @@ public class CaseSenstivity extends TermServerReport{
 			.append(caseSig).append(QUOTE_COMMA_QUOTE)
 			.append(issue).append(QUOTE_COMMA_QUOTE)
 			.append(d.getTerm()).append(QUOTE);
-		writeToFile(sb.toString());
+		writeToReportFile(sb.toString());
 	}
 
 	protected void init(String[] args) throws TermServerScriptException, SnowOwlClientException {
 		super.init(args);
 		targetHierarchies.add(gl.getConcept("373873005")); // |Pharmaceutical / biologic product (product)|
 		targetHierarchies.add(gl.getConcept("105590001")); // |Substance (substance)|
-		writeToFile("concept, fsn, descId, caseSignificance, issue, description");
+		writeToReportFile("concept, fsn, descId, caseSignificance, issue, description");
 	}
 
 }

@@ -99,7 +99,7 @@ public class MismatchedRelationships extends TermServerScript{
 			line += COMMA + COMMA + COMMA + COMMA;
 		}
 		line += QUOTE + msg + QUOTE;
-		writeToFile(line);
+		writeToReportFile(line);
 	}
 	
 	protected void init(String[] args) throws IOException, TermServerScriptException, SnowOwlClientException {
@@ -109,7 +109,7 @@ public class MismatchedRelationships extends TermServerScript{
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToFile ("Concept, FSN, Concept_Active, Concept_Modified, Stated_or_Inferred, Relationship_Active, GroupNum, Type, Target");
+		writeToReportFile ("Concept, FSN, Concept_Active, Concept_Modified, Stated_or_Inferred, Relationship_Active, GroupNum, Type, Target");
 	}
 
 	protected void loadProjectSnapshot() throws SnowOwlClientException, TermServerScriptException, InterruptedException {

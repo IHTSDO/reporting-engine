@@ -178,7 +178,7 @@ public class ValidateTaxonomyIntegrity extends TermServerScript{
 		String line = 	c.getConceptId() + COMMA_QUOTE + 
 						c.getFsn() + QUOTE_COMMA_QUOTE + 
 						issue + QUOTE;
-		writeToFile(line);
+		writeToReportFile(line);
 	}
 	
 	protected void init(String[] args) throws IOException, TermServerScriptException, SnowOwlClientException {
@@ -189,7 +189,7 @@ public class ValidateTaxonomyIntegrity extends TermServerScript{
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToFile ("Concept, FSN, Issue");
+		writeToReportFile ("Concept, FSN, Issue");
 	}
 
 	@Override

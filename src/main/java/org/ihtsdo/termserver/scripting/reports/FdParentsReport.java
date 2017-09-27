@@ -113,7 +113,7 @@ public class FdParentsReport extends TermServerScript{
 						c.getEffectiveTime() + COMMA_QUOTE +
 						c.getDefinitionStatus() + QUOTE_COMMA_QUOTE +
 						semanticTag + QUOTE;
-		writeToFile(line);
+		writeToReportFile(line);
 	}
 	
 	protected void init(String[] args) throws IOException, TermServerScriptException, SnowOwlClientException {
@@ -132,7 +132,7 @@ public class FdParentsReport extends TermServerScript{
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToFile ("Concept, FSN, EffectiveTime, Definition_Status,SemanticTag");
+		writeToReportFile ("Concept, FSN, EffectiveTime, Definition_Status,SemanticTag");
 	}
 
 	private void loadProjectSnapshot() throws SnowOwlClientException, TermServerScriptException, InterruptedException {

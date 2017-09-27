@@ -46,16 +46,16 @@ public class GenerateTranslation extends DeltaGenerator {
 			SnomedUtils.createArchive(new File(delta.outputDirName));
 		} finally {
 			delta.finish();
-			if (delta.idGenerator != null) {
-				println(delta.idGenerator.finish());
+			if (delta.descIdGenerator != null) {
+				println(delta.descIdGenerator.finish());
 			}
 		}
 	}
 	
 	protected void init (String[] args) throws IOException, TermServerScriptException, SnowOwlClientException, SnowOwlClientException {
 		super.init(args);
-		idGenerator.setNamespace("1000052");
-		idGenerator.isExtension(true);
+		descIdGenerator.setNamespace("1000052");
+		descIdGenerator.isExtension(true);
 		
 		for (int x=0; x<args.length; x++) {
 			if (args[x].equals("-m")) {
@@ -189,7 +189,7 @@ public class GenerateTranslation extends DeltaGenerator {
 
 	private Description createTranslatedDescription(ConceptChange newState) throws TermServerScriptException {
 		Description d = new Description();
-		d.setDescriptionId(idGenerator.getSCTID(PartionIdentifier.DESCRIPTION));
+		d.setDescriptionId(descIdGenerator.getSCTID());
 		d.setConceptId(newState.getConceptId());
 		d.setActive(true);
 		d.setEffectiveTime(null);

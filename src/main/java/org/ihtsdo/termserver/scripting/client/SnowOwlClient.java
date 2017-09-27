@@ -419,9 +419,12 @@ public class SnowOwlClient {
 		}
 	}
 
-	public void updateRefsetMember(String branchPath, RefsetEntry refsetEntry) throws SnowOwlClientException {
+	public void updateRefsetMember(String branchPath, RefsetEntry refsetEntry, boolean forceUpdate) throws SnowOwlClientException {
 		try {
 			String endPoint = this.url + "/" + branchPath + "/members/" + refsetEntry.getId();
+			if (forceUpdate) {
+				endPoint += "?force=true";
+			}
 			String json = gson.toJson(refsetEntry);
 			AbstractContent content = Resty.put(RestyHelper.content(new JSONObject(json), SNOWOWL_CONTENT_TYPE));
 			resty.json(endPoint, content);

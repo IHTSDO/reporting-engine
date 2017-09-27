@@ -83,12 +83,12 @@ public class SemanticTagsMatrix extends TermServerReport{
 			headerRow.append(COMMA)
 				.append(SnomedUtils.deconstructFSN(c.getFsn())[0]);
 		}
-		writeToFile(headerRow.toString());
+		writeToReportFile(headerRow.toString());
 		//Each row is a semantic tag
 		for (String tag : tagToUsageMap.keySet()) {
 			String row = Arrays.toString(tagToUsageMap.get(tag));
 			row = tag + "," + row.substring(1, row.length() -1);  //Take off the square brackets
-			writeToFile(row);
+			writeToReportFile(row);
 		}
 	}
 	
@@ -104,7 +104,7 @@ public class SemanticTagsMatrix extends TermServerReport{
 			headerRow.append(COMMA)
 				.append(tag);
 		}
-		writeToFile (headerRow.toString());
+		writeToReportFile (headerRow.toString());
 	}
 	
 	private void outputResultsYX() throws IOException {
@@ -117,7 +117,7 @@ public class SemanticTagsMatrix extends TermServerReport{
 				int[] usage = tagToUsageMap.get(tag);
 				row.append(usage[h]);
 			}
-			writeToFile(row.toString());
+			writeToReportFile(row.toString());
 		}
 	}
 

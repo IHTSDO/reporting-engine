@@ -27,7 +27,7 @@ public class SnomedUtils implements RF2Constants{
 	
 	private static VerhoeffCheckDigit verhoeffCheck = new VerhoeffCheckDigit();
 
-	public static String isValid(String sctId, PartionIdentifier partitionIdentifier) {
+	public static String isValid(String sctId, PartitionIdentifier partitionIdentifier) {
 		String errorMsg=null;
 		int partitionNumber = Integer.valueOf("" + sctId.charAt(sctId.length() -2));
 		if ( partitionNumber != partitionIdentifier.ordinal()) {
@@ -39,7 +39,7 @@ public class SnomedUtils implements RF2Constants{
 		return errorMsg;
 	}
 
-	public static void isValid(String sctId, PartionIdentifier partitionIdentifier,
+	public static void isValid(String sctId, PartitionIdentifier partitionIdentifier,
 			boolean errorIfInvalid) throws TermServerScriptException {
 		String errMsg = isValid(sctId,partitionIdentifier);
 		if (errorIfInvalid && errMsg != null) {

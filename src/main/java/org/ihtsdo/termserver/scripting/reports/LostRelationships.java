@@ -93,7 +93,7 @@ public class LostRelationships extends TermServerScript{
 		//Adding a column to indicate if the relationship value is a descendant of Product Role
 		boolean isProdRoleDesc = descendentOfProductRole.contains(r.getTarget());
 		String line = c.getConceptId() + COMMA_QUOTE + c.getFsn() + QUOTE_COMMA + c.isActive() + COMMA_QUOTE + r + QUOTE_COMMA + isProdRoleDesc;
-		writeToFile(line);
+		writeToReportFile(line);
 	}
 	
 	protected void init(String[] args) throws IOException, TermServerScriptException, SnowOwlClientException {
@@ -103,7 +103,7 @@ public class LostRelationships extends TermServerScript{
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToFile ("Concept, FSN, Active, Not Replaced Relationship, ValueIsProdRoleDesc");
+		writeToReportFile ("Concept, FSN, Active, Not Replaced Relationship, ValueIsProdRoleDesc");
 	}
 
 	private void loadProjectSnapshotAndDelta() throws SnowOwlClientException, TermServerScriptException, InterruptedException {

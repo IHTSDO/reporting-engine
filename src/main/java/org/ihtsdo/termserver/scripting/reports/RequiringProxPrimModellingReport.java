@@ -107,7 +107,7 @@ public class RequiringProxPrimModellingReport extends TermServerReport{
 						hasFDParent + COMMA + 
 						noDifferentia + COMMA +
 						multipleParents;
-		writeToFile(line);
+		writeToReportFile(line);
 	}
 	
 	protected void init(String[] args) throws TermServerScriptException, SnowOwlClientException {
@@ -125,7 +125,7 @@ public class RequiringProxPrimModellingReport extends TermServerReport{
 			hierarchies = response.split(",");
 		}
 		
-		writeToFile ("Concept, FSN, Sem_Tag, hasFDParent,noDifferentia,multipleParents");
+		writeToReportFile ("Concept, FSN, Sem_Tag, hasFDParent,noDifferentia,multipleParents");
 	}
 
 }

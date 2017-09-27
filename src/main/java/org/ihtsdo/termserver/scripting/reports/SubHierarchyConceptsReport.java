@@ -76,7 +76,7 @@ public class SubHierarchyConceptsReport extends TermServerScript{
 						c.isActive() + COMMA + 
 						c.getEffectiveTime().equals(transientEffectiveDate);
 
-		writeToFile(line);
+		writeToReportFile(line);
 	}
 	
 	protected void init(String[] args) throws IOException, TermServerScriptException, SnowOwlClientException {
@@ -119,7 +119,7 @@ public class SubHierarchyConceptsReport extends TermServerScript{
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToFile ("Concept, FSN, Concept_Active, Concept_Modified");
+		writeToReportFile ("Concept, FSN, Concept_Active, Concept_Modified");
 	}
 
 	@Override

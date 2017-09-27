@@ -87,7 +87,7 @@ public class HierarchyConceptsNotInFileReport extends TermServerScript{
 						c.getEffectiveTime() + COMMA_QUOTE +
 						c.getDefinitionStatus() + QUOTE_COMMA +
 						(inFile2 ? "YES":"NO") ;
-		writeToFile(line);
+		writeToReportFile(line);
 	}
 	
 	protected void init(String[] args) throws IOException, TermServerScriptException, SnowOwlClientException {
@@ -120,7 +120,7 @@ public class HierarchyConceptsNotInFileReport extends TermServerScript{
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToFile ("Concept, FSN, EffectiveTime, DefinitionStatus," + file2Purpose);
+		writeToReportFile ("Concept, FSN, EffectiveTime, DefinitionStatus," + file2Purpose);
 	}
 
 	private void loadProjectSnapshot() throws SnowOwlClientException, TermServerScriptException, InterruptedException {

@@ -42,8 +42,8 @@ public class ReplaceRelationships extends DeltaGenerator {
 			SnomedUtils.createArchive(new File(delta.outputDirName));
 		} finally {
 			delta.finish();
-			if (delta.idGenerator != null) {
-				println(delta.idGenerator.finish());
+			if (delta.descIdGenerator != null) {
+				println(delta.descIdGenerator.finish());
 			}
 		}
 	}
@@ -139,7 +139,7 @@ public class ReplaceRelationships extends DeltaGenerator {
 		for (RelationshipTemplate replacementTemplate : replaceRelationships) {
 			if (!checkForExistingRelationship(source, replacementTemplate, replaceMe.getGroupId())) {
 				Relationship replacement = replaceMe.clone();
-				replacement.setRelationshipId(idGenerator.getSCTID(PartionIdentifier.RELATIONSHIP));
+				replacement.setRelationshipId(relIdGenerator.getSCTID());
 				replaceMe.setActive(false);
 				replacement.setActive(true);
 				replacement.setType(replacementTemplate.getType());
@@ -157,7 +157,7 @@ public class ReplaceRelationships extends DeltaGenerator {
 		for (RelationshipTemplate addTemplate : addRelationships) {
 			if (!checkForExistingRelationship(source, addTemplate, addToMe.getGroupId())) {
 				Relationship addition = addToMe.clone();
-				addition.setRelationshipId(idGenerator.getSCTID(PartionIdentifier.RELATIONSHIP));
+				addition.setRelationshipId(relIdGenerator.getSCTID());
 				addition.setActive(true);
 				addition.setType(addTemplate.getType());
 				addition.setTarget(addTemplate.getTarget());

@@ -38,8 +38,10 @@ public abstract class DeltaGenerator extends TermServerScript {
 	protected String[] relHeader = new String[] {"id","effectiveTime","active","moduleId","sourceId","destinationId","relationshipGroup","typeId","characteristicTypeId","modifierId"};
 	protected String[] langHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","acceptabilityId"};
 	protected String[] attribValHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","valueId"};
-	
-	protected IdGenerator idGenerator;
+
+	protected IdGenerator conIdGenerator;
+	protected IdGenerator descIdGenerator;
+	protected IdGenerator relIdGenerator;
 	
 	protected void report(Concept concept, Description d, Severity severity, ReportActionType actionType, String actionDetail) {
 		String line = "";
@@ -55,7 +57,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 		line += severity + QUOTE_COMMA_QUOTE + 
 				actionType.toString() + QUOTE_COMMA_QUOTE +
 				actionDetail + QUOTE;
-		writeToFile(line);
+		writeToReportFile(line);
 	}
 	
 	protected void report(Concept concept, Severity severity, ReportActionType actionType, String actionDetail) {
@@ -66,11 +68,17 @@ public abstract class DeltaGenerator extends TermServerScript {
 		super.init(args);
 		
 		for (int x=0; x<args.length; x++) {
-			if (args[x].equals("-i")) {
-				idGenerator = IdGenerator.initiateIdGenerator(args[++x]);
+			if (args[x].equals("-iC")) {
+				conIdGenerator = IdGenerator.initiateIdGenerator(args[++x], PartitionIdentifier.CONCEPT);
+			}
+			if (args[x].equals("-iD")) {
+				descIdGenerator = IdGenerator.initiateIdGenerator(args[++x], PartitionIdentifier.DESCRIPTION);
+			}
+			if (args[x].equals("-iR")) {
+				relIdGenerator = IdGenerator.initiateIdGenerator(args[++x], PartitionIdentifier.RELATIONSHIP);
 			}
 		}
-		if (newIdsRequired && idGenerator == null) {
+		if (newIdsRequired && descIdGenerator == null) {
 			throw new TermServerScriptException("Command line arguments must supply a list of available sctid using the -i option");
 		}
 		initialiseReportFile("Concept,DescSctId,Term,Severity,Action,Detail");
@@ -88,6 +96,19 @@ public abstract class DeltaGenerator extends TermServerScript {
 		initialiseFileHeaders();
 	}
 	
+	public void finish() {
+		super.finish();
+		if (conIdGenerator != null) {
+			println(conIdGenerator.finish());
+		}
+		if (descIdGenerator != null) {
+			println(descIdGenerator.finish());
+		}
+		if (relIdGenerator != null) {
+			println(relIdGenerator.finish());
+		}
+	}
+	
 	protected void initialiseFileHeaders() throws TermServerScriptException {
 		String termDir = packageDir +"Delta/Terminology/";
 		String refDir =  packageDir +"Delta/Refset/";
@@ -96,7 +117,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 		
 		relDeltaFilename = termDir + "sct2_Relationship_Delta_"+edition+"_" + today + ".txt";
 		writeToRF2File(relDeltaFilename, relHeader);
-		
+
 		sRelDeltaFilename = termDir + "sct2_StatedRelationship_Delta_"+edition+"_" + today + ".txt";
 		writeToRF2File(sRelDeltaFilename, relHeader);
 		
@@ -140,12 +161,12 @@ public abstract class DeltaGenerator extends TermServerScript {
 
 	
 	protected void outputRF2(Concept c) throws TermServerScriptException {
-		/*if (c.isDirty()) {
-			writeToRF2File(conDeltaFilenam, c.toRF2());
-		}*/
+		if (c.isDirty()) {
+			writeToRF2File(conDeltaFilename, c.toRF2());
+		}
 		
 		for (Description d : c.getDescriptions(ActiveState.BOTH)) {
-			outputRF2(d);
+			outputRF2(d);  //Will output langrefset in turn
 		}
 		
 		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH)) {

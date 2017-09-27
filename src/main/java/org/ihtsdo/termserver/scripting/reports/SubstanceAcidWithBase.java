@@ -161,7 +161,7 @@ public class SubstanceAcidWithBase extends TermServerScript{
 						(base==null?"":base.getConceptId()) + COMMA_QUOTE + 
 						(base==null?"":base.getFsn()) + QUOTE_COMMA_QUOTE +
 						notes + QUOTE;
-		writeToFile(line);
+		writeToReportFile(line);
 	}
 	
 	protected void init(String[] args) throws IOException, TermServerScriptException, SnowOwlClientException {
@@ -172,7 +172,7 @@ public class SubstanceAcidWithBase extends TermServerScript{
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToFile ("Acid_SCTID, Acid FSN, Base_SCTID, Base FSN, Notes");
+		writeToReportFile ("Acid_SCTID, Acid FSN, Base_SCTID, Base FSN, Notes");
 	}
 
 	@Override

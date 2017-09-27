@@ -122,7 +122,7 @@ public class BanUsanReport extends TermServerScript{
 						d.getDescriptionId() + QUOTE_COMMA_QUOTE +
 						d.getTerm() + QUOTE_COMMA_QUOTE +
 						issue + QUOTE;
-		writeToFile(line);
+		writeToReportFile(line);
 	}
 	
 	protected void init(String[] args) throws IOException, TermServerScriptException, SnowOwlClientException, SnowOwlClientException {
@@ -145,7 +145,7 @@ public class BanUsanReport extends TermServerScript{
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToFile ("Concept, FSN, Desc_SCTID, Term, Issue");
+		writeToReportFile ("Concept, FSN, Desc_SCTID, Term, Issue");
 	}
 
 	private void loadNationalTerms(String fileName) throws TermServerScriptException {

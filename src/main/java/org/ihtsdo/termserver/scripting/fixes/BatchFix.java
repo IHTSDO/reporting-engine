@@ -266,7 +266,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		String line = key + COMMA + desc + COMMA + component.getId() + COMMA_QUOTE + 
 						name + QUOTE_COMMA + type + COMMA + severity + 
 						COMMA + actionType + COMMA_QUOTE + actionDetail + QUOTE;
-		writeToFile (line);
+		writeToReportFile (line);
 	}
 
 	protected void init (String[] args) throws TermServerScriptException, IOException {

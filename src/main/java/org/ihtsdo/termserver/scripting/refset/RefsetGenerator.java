@@ -46,7 +46,7 @@ public abstract class RefsetGenerator extends TermServerScript {
 		line += severity + QUOTE_COMMA_QUOTE + 
 				actionType.toString() + QUOTE_COMMA_QUOTE +
 				actionDetail + QUOTE;
-		writeToFile(line);
+		writeToReportFile(line);
 	}
 	
 	protected void init (String[] args) throws IOException, TermServerScriptException, SnowOwlClientException {

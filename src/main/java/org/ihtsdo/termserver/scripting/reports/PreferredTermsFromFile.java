@@ -60,7 +60,7 @@ public class PreferredTermsFromFile extends TermServerScript{
 						pt.getTerm() + QUOTE_COMMA_QUOTE +
 						usPref + QUOTE_COMMA_QUOTE +
 						gbPref + QUOTE;
-		writeToFile(line);
+		writeToReportFile(line);
 	}
 	
 	protected void init(String[] args) throws IOException, TermServerScriptException, SnowOwlClientException {
@@ -83,7 +83,7 @@ public class PreferredTermsFromFile extends TermServerScript{
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToFile ("Concept, FSN, Desc_SCTID, Term, USPref, GBPref");
+		writeToReportFile ("Concept, FSN, Desc_SCTID, Term, USPref, GBPref");
 	}
 
 	private void loadConceptsSelected(String fileName) throws TermServerScriptException {

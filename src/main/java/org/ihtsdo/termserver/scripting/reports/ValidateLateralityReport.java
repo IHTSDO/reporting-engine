@@ -66,7 +66,7 @@ public class ValidateLateralityReport extends TermServerScript{
 						c.getFsn() + QUOTE_COMMA + 
 						c.getEffectiveTime() + COMMA_QUOTE +
 						c.getDefinitionStatus() + QUOTE;
-		writeToFile(line);
+		writeToReportFile(line);
 	}
 	
 	protected void init(String[] args) throws IOException, TermServerScriptException, SnowOwlClientException {
@@ -78,7 +78,7 @@ public class ValidateLateralityReport extends TermServerScript{
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToFile ("Concept, FSN, EffectiveTime, Definition_Status,SemanticTag");
+		writeToReportFile ("Concept, FSN, EffectiveTime, Definition_Status,SemanticTag");
 	}
 
 	private void loadProjectSnapshot() throws SnowOwlClientException, TermServerScriptException, InterruptedException {

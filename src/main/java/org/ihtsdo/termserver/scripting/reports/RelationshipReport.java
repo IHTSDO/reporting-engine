@@ -87,7 +87,7 @@ public class RelationshipReport extends TermServerScript{
 						r.getType().getFsn() + QUOTE_COMMA_QUOTE +
 						r.getTarget().getConceptId() + QUOTE_COMMA_QUOTE +
 						r.getTarget().getFsn() + QUOTE;
-		writeToFile(line);
+		writeToReportFile(line);
 	}
 	
 	protected void init(String[] args) throws IOException, TermServerScriptException, SnowOwlClientException {
@@ -144,7 +144,7 @@ public class RelationshipReport extends TermServerScript{
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToFile ("Concept, FSN, Concept_Active, Concept_Modified, Stated_or_Inferred, Relationship_Active, GroupNum, TypeId, TypeFsn, TargetId, TargetFsn");
+		writeToReportFile ("Concept, FSN, Concept_Active, Concept_Modified, Stated_or_Inferred, Relationship_Active, GroupNum, TypeId, TypeFsn, TargetId, TargetFsn");
 	}
 
 	@Override

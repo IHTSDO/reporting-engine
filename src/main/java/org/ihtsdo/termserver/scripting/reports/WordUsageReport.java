@@ -88,7 +88,7 @@ public class WordUsageReport extends TermServerScript{
 						usage.instances + COMMA_QUOTE + 
 						usage.reportTags() + QUOTE_COMMA_QUOTE +
 						usage.reportExamples() + QUOTE;
-		writeToFile(line);
+		writeToReportFile(line);
 	}
 	
 	protected void init(String[] args) throws IOException, TermServerScriptException, SnowOwlClientException {
@@ -98,7 +98,7 @@ public class WordUsageReport extends TermServerScript{
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToFile ("Word, Total Instance, Distribution, Examples");
+		writeToReportFile ("Word, Total Instance, Distribution, Examples");
 	}
 
 	@Override

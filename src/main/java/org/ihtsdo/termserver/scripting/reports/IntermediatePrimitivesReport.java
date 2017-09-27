@@ -126,7 +126,7 @@ public class IntermediatePrimitivesReport extends TermServerScript{
 						(hasImmediateSDChild?"Yes":"No") + QUOTE_COMMA_QUOTE + 
 						(hasAllParentsSD?"Yes":"No") + QUOTE_COMMA_QUOTE + 
 						(hasAllSDChildren?"Yes":"No") + QUOTE ;
-		writeToFile(line);
+		writeToReportFile(line);
 	}
 	
 	private String simpleName(String sctid) throws TermServerScriptException {
@@ -142,7 +142,7 @@ public class IntermediatePrimitivesReport extends TermServerScript{
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToFile ("Concept, FSN, semanticTag, hasImmediateSDParent, hasImmediateSDChild, hasAllParentsSD, hasAllSDChildren");
+		writeToReportFile ("Concept, FSN, semanticTag, hasImmediateSDParent, hasImmediateSDChild, hasAllParentsSD, hasAllSDChildren");
 	}
 
 	@Override

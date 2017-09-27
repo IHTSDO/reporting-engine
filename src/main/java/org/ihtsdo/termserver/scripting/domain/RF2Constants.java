@@ -123,7 +123,7 @@ public interface RF2Constants {
 	public static final String FULL = "Full";
 	public static final String TYPE = "TYPE";
 	
-	public enum PartionIdentifier {CONCEPT, DESCRIPTION, RELATIONSHIP};
+	public enum PartitionIdentifier {CONCEPT, DESCRIPTION, RELATIONSHIP};
 	
 	public enum CharacteristicType {	STATED_RELATIONSHIP, INFERRED_RELATIONSHIP, 
 										QUALIFYING_RELATIONSHIP, ADDITIONAL_RELATIONSHIP, ALL};

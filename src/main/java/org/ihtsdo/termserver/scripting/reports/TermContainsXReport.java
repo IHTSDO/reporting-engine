@@ -76,7 +76,7 @@ public class TermContainsXReport extends TermServerScript{
 						semTag + QUOTE_COMMA_QUOTE +
 						d.getDescriptionId() + QUOTE_COMMA_QUOTE +
 						d.getTerm() + QUOTE;
-		writeToFile(line);
+		writeToReportFile(line);
 	}
 	
 	protected void init(String[] args) throws IOException, TermServerScriptException, SnowOwlClientException {
@@ -95,7 +95,7 @@ public class TermContainsXReport extends TermServerScript{
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToFile ("Concept, FSN, Sem_Tag, Desc_SCTID, Term");
+		writeToReportFile ("Concept, FSN, Sem_Tag, Desc_SCTID, Term");
 	}
 
 	@Override

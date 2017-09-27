@@ -173,7 +173,7 @@ public class IdentifyProductsWithStrengthReport extends TermServerScript{
 						c.getDefinitionStatus() + QUOTE_COMMA +
 						(lexicalMatch?"YES":"NO") + COMMA +
 						(authorIdentified?"YES":"NO");
-		writeToFile(line);
+		writeToReportFile(line);
 	}
 	
 	protected void init(String[] args) throws IOException, TermServerScriptException, SnowOwlClientException {
@@ -185,7 +185,7 @@ public class IdentifyProductsWithStrengthReport extends TermServerScript{
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToFile ("Concept, FSN, EffectiveTime, Definition_Status,lexicalMatch, authorIdentified");
+		writeToReportFile ("Concept, FSN, EffectiveTime, Definition_Status,lexicalMatch, authorIdentified");
 	}
 
 	private void loadProjectSnapshot() throws SnowOwlClientException, TermServerScriptException, InterruptedException {

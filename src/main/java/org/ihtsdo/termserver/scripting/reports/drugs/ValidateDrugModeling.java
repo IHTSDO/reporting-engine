@@ -338,12 +338,12 @@ public class ValidateDrugModeling extends TermServerReport{
 						SnomedUtils.deconstructFSN(c.getFsn())[1] + QUOTE_COMMA_QUOTE +
 						issue + QUOTE_COMMA_QUOTE +
 						data + QUOTE;
-		writeToFile(line);
+		writeToReportFile(line);
 	}
 	
 	protected void init(String[] args) throws TermServerScriptException, SnowOwlClientException {
 		super.init(args);
-		writeToFile ("Concept, FSN, SemTag, Issue, Data");
+		writeToReportFile ("Concept, FSN, SemTag, Issue, Data");
 		
 		//Recover static concepts that we'll need to search for in attribute types
 		activeIngredient = gl.getConcept(SCTID_ACTIVE_INGREDIENT);

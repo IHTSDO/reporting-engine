@@ -9,6 +9,9 @@ public class RefsetEntry implements Component {
     @SerializedName("id")
     @Expose
     private String id;
+    @SerializedName("effectiveTime")
+    @Expose
+    private String effectiveTime;
     @SerializedName("released")
     @Expose
     private Boolean released;
@@ -133,5 +136,13 @@ public class RefsetEntry implements Component {
     public String getCommitComment() {
     	return commitComment;
     }
+
+	public String getEffectiveTime() {
+		return effectiveTime;
+	}
+
+	public void setEffectiveTime(String effectiveTime) {
+		this.effectiveTime = effectiveTime;
+	}
 
 }

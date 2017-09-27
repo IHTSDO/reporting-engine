@@ -82,7 +82,7 @@ public class InactivationAssocationReport extends TermServerScript{
 						simpleName(inact.getInactivationReasonId()) + QUOTE_COMMA_QUOTE +
 						assoc.getEffectiveTime() + QUOTE_COMMA_QUOTE + 
 						simpleName(assoc.getRefsetId()) + " -> " + gl.getConcept(assoc.getTargetComponentId())+ QUOTE;
-		writeToFile(line);
+		writeToReportFile(line);
 	}
 	
 	private String simpleName(String sctid) throws TermServerScriptException {
@@ -97,7 +97,7 @@ public class InactivationAssocationReport extends TermServerScript{
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToFile ("Concept, FSN, inact_effective, inactivation_reason, assocation_effective, association");
+		writeToReportFile ("Concept, FSN, inact_effective, inactivation_reason, assocation_effective, association");
 	}
 
 	@Override

@@ -32,8 +32,8 @@ public class InactivateDuplicateRelationships extends DeltaGenerator implements 
 			SnomedUtils.createArchive(new File(delta.outputDirName));
 		} finally {
 			delta.finish();
-			if (delta.idGenerator != null) {
-				println(delta.idGenerator.finish());
+			if (delta.descIdGenerator != null) {
+				println(delta.descIdGenerator.finish());
 			}
 		}
 	}

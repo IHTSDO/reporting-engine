@@ -61,6 +61,7 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 	private String deletionEffectiveTime;
 	private boolean isDeleted = false;
 	private int depth;
+	private boolean isDirty = false;
 	
 	//Note that these values are used when loading from RF2 where multiple entries can exist.
 	//When interacting with the TS, only one inactivation indicator is used (see above).
@@ -639,6 +640,14 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 	@Override
 	public String getType() {
 		return conceptType==null?"": conceptType.toString();
+	}
+
+	public boolean isDirty() {
+		return isDirty;
+	}
+
+	public void setDirty() {
+		this.isDirty = true;
 	}
 
 }
