@@ -19,8 +19,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.TermServerScript.ReportActionType;
-import org.ihtsdo.termserver.scripting.TermServerScript.Severity;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Batch;
 import org.ihtsdo.termserver.scripting.domain.Concept;
@@ -42,13 +40,11 @@ import us.monoid.json.JSONObject;
  */
 public abstract class Rf2Player extends BatchFix {
 	
-	String[] author_reviewer = new String[] {targetAuthor};
-	Set<Rf2File> filesProcessed = new HashSet<Rf2File>();
-	Map<String, ConceptChange> changingConcepts = new HashMap<String, ConceptChange>();
-	Map<String, Description> changingDescriptions = new HashMap<String, Description>();
-	
-	Set<Concept> deltaModifications = new HashSet<Concept>();
-	List<String[]> langRefsetStorage = new ArrayList<String[]>();
+	protected Map<String, ConceptChange> changingConcepts = new HashMap<String, ConceptChange>();
+	protected Map<String, Description> changingDescriptions = new HashMap<String, Description>();
+		protected Set<Concept> deltaModifications = new HashSet<Concept>();
+	protected List<String[]> langRefsetStorage = new ArrayList<String[]>();
+	protected boolean allowRecentChanges = false;
 	
 	protected Rf2Player(Rf2Player clone) {
 		super(clone);
@@ -82,7 +78,6 @@ public abstract class Rf2Player extends BatchFix {
 						Path p = Paths.get(ze.getName());
 						String fileName = p.getFileName().toString();
 						Rf2File rf2File = SnomedRf2File.getRf2File(fileName, FileType.DELTA);
-						filesProcessed.add(rf2File);
 						if (rf2File != null) {
 							processRf2Delta(zis, rf2File, fileName);
 						} else {
@@ -156,7 +151,7 @@ public abstract class Rf2Player extends BatchFix {
 			changingConcept = Concept.fromRf2Delta(lineItems);
 		}
 		//This concept is in fact changing, not just a holder for rels and desc
-		changingConcept.isModified();
+		changingConcept.setModified();
 		changingConcepts.put(changingConcept.getConceptId(), changingConcept);
 	}
 
@@ -218,7 +213,7 @@ public abstract class Rf2Player extends BatchFix {
 		changingDescription.setInactivationIndicator(inact);
 	}
 		
-	private String relationshipToString(String typeId, String destId) throws TermServerScriptException {
+	/*private String relationshipToString(String typeId, String destId) throws TermServerScriptException {
 		Concept destination = gl.getConcept(destId, false, false);  //Don't create, don't validate
 		Concept type = gl.getConcept(typeId, false, false);
 		String typeStr = SnomedUtils.deconstructFSN(type.getFsn())[0];
@@ -228,7 +223,7 @@ public abstract class Rf2Player extends BatchFix {
 		}
 		String destStr = SnomedUtils.deconstructFSN(destination.getFsn())[0];
 		return typeStr + " -> " + destId + "|"  + destStr + "|";
-	}
+	}*/
 	
 
 	@Override
@@ -237,19 +232,21 @@ public abstract class Rf2Player extends BatchFix {
 		try{
 			loadedConcept = loadConcept(concept, task.getBranchPath());
 			if (hasUnpublishedRelationships(loadedConcept, CharacteristicType.STATED_RELATIONSHIP)) {
-				report (task, loadedConcept, Severity.HIGH, ReportActionType.NO_CHANGE, "Recent stated relationship edits detected on this concept");
-				return 0;
-			} else {
-				ConceptChange conceptChanges = (ConceptChange)concept; 
-				if (conceptChanges.isModified()) {
-					loadedConcept.setActive(conceptChanges.isActive());
-					loadedConcept.setEffectiveTime(null);
-					loadedConcept.setDefinitionStatus(conceptChanges.getDefinitionStatus());
-					report (task, loadedConcept, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Definition status set to " + conceptChanges.getDefinitionStatus());
+				report (task, loadedConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Recent stated relationship edits detected on this concept");
+				if (!allowRecentChanges) {
+					return 0;
 				}
-				fixDescriptions(task, loadedConcept, conceptChanges.getDescriptions());
-				fixRelationships(task, loadedConcept, conceptChanges.getRelationships());
 			}
+				
+			ConceptChange conceptChanges = (ConceptChange)concept; 
+			if (conceptChanges.isModified()) {
+				loadedConcept.setActive(conceptChanges.isActive());
+				loadedConcept.setEffectiveTime(null);
+				loadedConcept.setDefinitionStatus(conceptChanges.getDefinitionStatus());
+				report (task, loadedConcept, Severity.MEDIUM, ReportActionType.CONCEPT_CHANGE_MADE, "Definition status set to " + conceptChanges.getDefinitionStatus());
+			}
+			fixDescriptions(task, loadedConcept, conceptChanges.getDescriptions());
+			fixRelationships(task, loadedConcept, conceptChanges.getRelationships());
 		} catch (Exception e) {
 			//See if we can get that 2nd level exception's reason which says what the problem actually was
 			String additionalInfo = "";

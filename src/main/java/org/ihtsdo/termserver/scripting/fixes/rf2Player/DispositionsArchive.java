@@ -44,6 +44,7 @@ public class DispositionsArchive extends Rf2Player implements RF2Constants{
 		super(clone);
 		this.wiggleRoom = 2;
 		this.populateEditPanel = false;
+		this.allowRecentChanges = true;
 	}
 
 	public static void main(String[] args) throws TermServerScriptException {

@@ -570,11 +570,9 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	protected void writeToReportFile(String line) {
-		try(	OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(reportFile, true), StandardCharsets.UTF_8);
-				BufferedWriter bw = new BufferedWriter(osw);
-				PrintWriter out = new PrintWriter(bw))
-		{
-			out.println(line);
+		try {
+			PrintWriter pw = getPrintWriter(reportFile.getAbsolutePath());
+			pw.println(line);
 		} catch (Exception e) {
 			println ("Unable to output report line: " + line + " due to " + e.getMessage());
 		}

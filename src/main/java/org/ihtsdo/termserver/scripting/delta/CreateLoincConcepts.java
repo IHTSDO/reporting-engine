@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
@@ -140,6 +139,7 @@ public class CreateLoincConcepts extends DeltaGenerator {
 		syn.setLang(languageCode);
 		syn.setType(DescriptionType.SYNONYM);
 		syn.setConceptId(concept.getConceptId());
+		syn.setDirty();
 		syn.setCaseSignificance(SCTID_ENTIRE_TERM_CASE_SENSITIVE);
 		addLangRefsetEntry(syn, SCTID_ACCEPTABLE_TERM);
 		concept.addDescription(syn);
