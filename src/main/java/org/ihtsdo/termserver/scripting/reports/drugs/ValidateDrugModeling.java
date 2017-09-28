@@ -61,7 +61,7 @@ public class ValidateDrugModeling extends TermServerReport{
 			//issueCount += validateStatedVsInferredAttributes(concept, activeIngredient, drugTypes);
 			//issueCount += validateStatedVsInferredAttributes(concept, hasManufacturedDoseForm, drugTypes);
 			//issueCount += validateAttributeValueCardinality(concept, activeIngredient);
-			//issueCount += checkForBadWords(concept);
+			issueCount += checkForBadWords(concept);  //DRUGS-93
 		}
 		println ("Drugs validation complete.  Detected " + issueCount + " issues.");
 	}
@@ -70,7 +70,8 @@ public class ValidateDrugModeling extends TermServerReport{
 		Set<Concept> subHierarchy = gl.getConcept(substHierarchyStr).getDescendents(NOT_SET);
 		long issueCount = 0;
 		for (Concept concept : subHierarchy) {
-			issueCount += validateDisposition(concept);
+			//issueCount += validateDisposition(concept);
+			issueCount += checkForBadWords(concept);  //DRUGS-93
 		}
 		println ("Substances validation complete.  Detected " + issueCount + " issues.");
 	}
