@@ -141,7 +141,7 @@ public class ProximatePrimitiveRemodeller extends BatchFix implements RF2Constan
 			}
 		}
 		if (!alreadyExists) {
-			Relationship newStated = inferred.clone();
+			Relationship newStated = inferred.clone(null);
 			newStated.setCharacteristicType(CharacteristicType.STATED_RELATIONSHIP);
 			//Add to both the loaded concept (TS view) and the local model concept so both are in step
 			loadedConcept.addRelationship(newStated);
@@ -172,7 +172,7 @@ public class ProximatePrimitiveRemodeller extends BatchFix implements RF2Constan
 			//Otherwise add this group with the lowest groupId available
 			long newGroupId = getMaxGroupId(inferred.getSource(), CharacteristicType.STATED_RELATIONSHIP) + 1;
 			for (Relationship thisGroupMember : inferredGroup) {
-				Relationship newStated = thisGroupMember.clone();
+				Relationship newStated = thisGroupMember.clone(null);
 				newStated.setCharacteristicType(CharacteristicType.STATED_RELATIONSHIP);
 				newStated.setGroupId(newGroupId);
 				//Add to both the loaded concept (TS view) and the local model concept so both are in step

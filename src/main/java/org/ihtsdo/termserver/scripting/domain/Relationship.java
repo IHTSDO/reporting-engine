@@ -286,12 +286,11 @@ public class Relationship implements RF2Constants, Comparable<Relationship> {
 		return (this.type.equals(rhs.type) && this.target.equals(rhs.target) && this.groupId == rhs.groupId);
 	}
 	
-	@Override
-	public Relationship clone() {
+	public Relationship clone(String newSCTID) {
 		Relationship clone = new Relationship();
 		clone.modifier = this.modifier;
 		clone.groupId = this.groupId;
-		clone.relationshipId = null; //New relationship needs own 
+		clone.relationshipId = newSCTID; 
 		clone.moduleId = this.moduleId;
 		clone.target = this.target;
 		clone.active = this.active;

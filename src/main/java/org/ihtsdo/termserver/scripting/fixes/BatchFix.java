@@ -412,7 +412,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		} else {
 			//Clone the inferred relationships, make them stated and add to concept
 			for (Relationship replacement : replacements) {
-				Relationship statedClone = replacement.clone();
+				Relationship statedClone = replacement.clone(null);
 				statedClone.setCharacteristicType(CharacteristicType.STATED_RELATIONSHIP);
 				concept.addRelationship(statedClone);
 				String msg = "Restated inferred relationship: " + replacement;

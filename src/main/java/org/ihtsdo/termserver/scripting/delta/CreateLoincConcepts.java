@@ -19,6 +19,7 @@ public class CreateLoincConcepts extends DeltaGenerator {
 	
 	DefinitionStatus defStatus = DefinitionStatus.FULLY_DEFINED;
 	Map<LoincElement, Concept> loincAttributes;
+	Relationship isAObservable;
 	
 	enum LoincElement { Component(0),
 						PropertyType(1),
@@ -67,6 +68,15 @@ public class CreateLoincConcepts extends DeltaGenerator {
 		loincAttributes.put(LoincElement.DirectSite, gl.getConcept(704327008L));
 		loincAttributes.put(LoincElement.InheresIn, gl.getConcept(704319004L));
 		loincAttributes.put(LoincElement.ScaleType, gl.getConcept(370132008L));
+		
+		isAObservable = new Relationship();
+		isAObservable.setType(IS_A);
+		isAObservable.setTarget(OBSERVABLE_ENTITY);
+		isAObservable.setActive(true);
+		isAObservable.setGroupId(UNGROUPED);
+		isAObservable.setCharacteristicType(CharacteristicType.STATED_RELATIONSHIP);
+		isAObservable.setModuleId(moduleId);
+		isAObservable.setModifier(Modifier.EXISTENTIAL);
 	}
 
 	protected List<Concept> processFile() throws TermServerScriptException {
@@ -107,6 +117,9 @@ public class CreateLoincConcepts extends DeltaGenerator {
 			addSyn(concept, "LOINC Unique ID:", lineItems[LoincElement.LOINC_Unique_ID.geIdx()]);
 			addAttributes(concept, lineItems);
 			concept.setDefinitionStatus(defStatus);
+			Relationship parent = isAObservable.clone(relIdGenerator.getSCTID());
+			parent.setSourceId(concept.getId());
+			concept.addRelationship(parent);
 			return concept;
 		}
 		return null;

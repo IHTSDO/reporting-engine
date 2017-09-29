@@ -84,7 +84,7 @@ public class ReplaceRelationship extends BatchFix implements RF2Constants{
 		for (Relationship r : loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
 			if (r.getType().equals(findAttribute)) {
 				//Clone r and modify
-				Relationship replacement = r.clone();
+				Relationship replacement = r.clone(null);
 				replacement.setType(replaceAttribute);
 				r.setActive(false); 
 				//Do we already have a replacement attached, but inactive?

@@ -48,7 +48,9 @@ public class ValidateDrugModeling extends TermServerReport{
 		} catch (Exception e) {
 			println("Failed to produce Druge Model Validation Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
-		} 
+		} finally {
+			report.finish();
+		}
 	}
 	
 	private void validateDrugsModeling() throws TermServerScriptException {

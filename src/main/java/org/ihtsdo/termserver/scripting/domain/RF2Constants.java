@@ -14,6 +14,7 @@ public interface RF2Constants {
 	static Concept HAS_DOSE_FORM = new Concept ("411116001","Has dose form (attribute)");
 	static Concept DRUG_PREPARATION = new Concept("105904009","Type of drug preparation (qualifier value)");
 	static Concept ROOT_CONCEPT = new Concept (SCTID_ROOT_CONCEPT.toString());
+	static Concept OBSERVABLE_ENTITY = new Concept("363787002"); // |Observable entity (observable entity)|
 	static String ACETAMINOPHEN = "acetaminophen";
 	static String PARACETAMOL = "paracetamol";
 	

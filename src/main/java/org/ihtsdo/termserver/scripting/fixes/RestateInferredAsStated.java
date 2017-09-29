@@ -105,7 +105,7 @@ public class RestateInferredAsStated extends BatchFix implements RF2Constants{
 			//Does this inferred type exist as stated, just with a different value?
 			List<Relationship> alreadyExists = loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, inferred.getType(), ActiveState.ACTIVE);
 			if (alreadyExists.isEmpty()) {
-				Relationship stated = inferred.clone();
+				Relationship stated = inferred.clone(null);
 				stated.setCharacteristicType(CharacteristicType.STATED_RELATIONSHIP);
 				//Does this relationship already exist inactive? Reactivate if so.
 				Relationship inactiveStated = checkForInactiveRel(loadedConcept, stated);

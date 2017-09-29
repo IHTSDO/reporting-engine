@@ -138,8 +138,7 @@ public class ReplaceRelationships extends DeltaGenerator {
 		Concept source = replaceMe.getSource();
 		for (RelationshipTemplate replacementTemplate : replaceRelationships) {
 			if (!checkForExistingRelationship(source, replacementTemplate, replaceMe.getGroupId())) {
-				Relationship replacement = replaceMe.clone();
-				replacement.setRelationshipId(relIdGenerator.getSCTID());
+				Relationship replacement = replaceMe.clone(relIdGenerator.getSCTID());
 				replaceMe.setActive(false);
 				replacement.setActive(true);
 				replacement.setType(replacementTemplate.getType());
@@ -156,8 +155,7 @@ public class ReplaceRelationships extends DeltaGenerator {
 		Concept source = addToMe.getSource();
 		for (RelationshipTemplate addTemplate : addRelationships) {
 			if (!checkForExistingRelationship(source, addTemplate, addToMe.getGroupId())) {
-				Relationship addition = addToMe.clone();
-				addition.setRelationshipId(relIdGenerator.getSCTID());
+				Relationship addition = addToMe.clone(relIdGenerator.getSCTID());
 				addition.setActive(true);
 				addition.setType(addTemplate.getType());
 				addition.setTarget(addTemplate.getTarget());

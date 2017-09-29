@@ -59,8 +59,10 @@ public class IdGenerator implements RF2Constants{
 		}
 		
 		if (sctId == null || sctId.isEmpty()) {
-			//Use RuntimeException to ensure we bomb all the way out.
-			throw new RuntimeException("No more SCTIDs in file " + fileName + " need more than " + idsAssigned);
+			//Report switch to use dummy strategy
+			useDummySequence = true;
+			System.out.println("Ran out of ids for partition " + partitionIdentifier  + " at " + idsAssigned + " switching to dummy...");
+			return getSCTID(); 
 		}
 		//Check the SCTID is valid, and belongs to the correct partition
 		SnomedUtils.isValid(sctId, partitionIdentifier, true);  //throw exception if not valid
