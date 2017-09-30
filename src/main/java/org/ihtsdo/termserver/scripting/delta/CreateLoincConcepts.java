@@ -1,6 +1,9 @@
 package org.ihtsdo.termserver.scripting.delta;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -20,6 +23,7 @@ public class CreateLoincConcepts extends DeltaGenerator {
 	DefinitionStatus defStatus = DefinitionStatus.FULLY_DEFINED;
 	Map<LoincElement, Concept> loincAttributes;
 	Relationship isAObservable;
+	boolean is99_2 = false;
 	
 	enum LoincElement { Component(0),
 						PropertyType(1),
@@ -27,9 +31,13 @@ public class CreateLoincConcepts extends DeltaGenerator {
 						DirectSite(3),
 						InheresIn(4),
 						ScaleType(5),
-						LOINC_FSN(6),
-						LOINC_Unique_ID (7),
-						Correlation_ID(8);
+						Technique(6),
+						LOINC_FSN_99_1(6),
+						LOINC_FSN_99_2(7),
+						LOINC_Unique_ID_99_1 (7),
+						LOINC_Unique_ID_99_2 (8),
+						Correlation_ID_99_1 (8),
+						Correlation_ID_99_2 (9);
 		private int idx;
 		LoincElement(int idx) {
 			this.idx = idx;
@@ -60,7 +68,17 @@ public class CreateLoincConcepts extends DeltaGenerator {
 		}
 	}
 	
-	private void initMap() throws TermServerScriptException {
+	private void initMap() throws TermServerScriptException, FileNotFoundException, IOException {
+		String header;
+		try (BufferedReader br =  new BufferedReader(new FileReader(inputFile))) {
+			header = br.readLine();
+		}
+		if (header.contains("Technique")) {
+			print ("LOINC file format identified as 99-2");
+			is99_2 = true;
+		} else {
+			print ("LOINC file format identified as 99-1");
+		}
 		loincAttributes = new HashMap<>();
 		loincAttributes.put(LoincElement.Component, gl.getConcept(246093002L));
 		loincAttributes.put(LoincElement.PropertyType, gl.getConcept(704318007L));
@@ -68,6 +86,10 @@ public class CreateLoincConcepts extends DeltaGenerator {
 		loincAttributes.put(LoincElement.DirectSite, gl.getConcept(704327008L));
 		loincAttributes.put(LoincElement.InheresIn, gl.getConcept(704319004L));
 		loincAttributes.put(LoincElement.ScaleType, gl.getConcept(370132008L));
+		
+		if (is99_2) {
+			loincAttributes.put(LoincElement.Technique, gl.getConcept(246501002L));
+		}
 		
 		isAObservable = new Relationship();
 		isAObservable.setType(IS_A);
@@ -112,9 +134,15 @@ public class CreateLoincConcepts extends DeltaGenerator {
 			Concept concept = new Concept(conIdGenerator.getSCTID());
 			concept.setModuleId(moduleId);
 			concept.setDirty();
-			addFsnAndPT(concept, lineItems[LoincElement.LOINC_FSN.geIdx()]);
-			addSyn(concept, "Correlation ID:", lineItems[LoincElement.Correlation_ID.geIdx()]);
-			addSyn(concept, "LOINC Unique ID:", lineItems[LoincElement.LOINC_Unique_ID.geIdx()]);
+			if (is99_2) {
+				addFsnAndPT(concept, lineItems[LoincElement.LOINC_FSN_99_2.geIdx()]);
+				addSyn(concept, "Correlation ID:", lineItems[LoincElement.Correlation_ID_99_2.geIdx()]);
+				addSyn(concept, "LOINC Unique ID:", lineItems[LoincElement.LOINC_Unique_ID_99_2.geIdx()]);
+			} else {
+				addFsnAndPT(concept, lineItems[LoincElement.LOINC_FSN_99_1.geIdx()]);
+				addSyn(concept, "Correlation ID:", lineItems[LoincElement.Correlation_ID_99_1.geIdx()]);
+				addSyn(concept, "LOINC Unique ID:", lineItems[LoincElement.LOINC_Unique_ID_99_1.geIdx()]);
+			}
 			addAttributes(concept, lineItems);
 			concept.setDefinitionStatus(defStatus);
 			Relationship parent = isAObservable.clone(relIdGenerator.getSCTID());
