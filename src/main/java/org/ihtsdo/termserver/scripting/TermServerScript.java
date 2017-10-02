@@ -286,8 +286,14 @@ public abstract class TermServerScript implements RF2Constants {
 		if (projectName.startsWith("MAIN")) {
 			project = new Project();
 			project.setBranchPath(projectName);
+			if (projectName.equals("MAIN")) {
+				project.setKey(projectName);
+			} else {
+				project.setKey(projectName.substring(projectName.lastIndexOf("/")));
+			}
 		} else {
 			project = scaClient.getProject(projectName);
+			project.setKey(projectName);
 		}
 		println("Full path for projected determined to be: " + project.getBranchPath());
 	}
