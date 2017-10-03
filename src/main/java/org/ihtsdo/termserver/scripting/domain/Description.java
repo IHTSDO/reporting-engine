@@ -25,6 +25,9 @@ public class Description implements RF2Constants{
 	@SerializedName("active")
 	@Expose
 	private Boolean active;
+	@SerializedName("released")
+	@Expose
+	private Boolean released;
 	@SerializedName("descriptionId")
 	@Expose
 	private String descriptionId;
@@ -382,6 +385,14 @@ public class Description implements RF2Constants{
 		} else {
 			removeAcceptability(lang.getRefsetId());
 		}
+	}
+
+	public Boolean isReleased() {
+		return released;
+	}
+
+	public void setReleased(Boolean released) {
+		this.released = released;
 	}
 
 

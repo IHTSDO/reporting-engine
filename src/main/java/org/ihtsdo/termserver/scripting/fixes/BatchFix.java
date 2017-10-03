@@ -155,7 +155,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 						}
 					} else {
 						taskKey = project + "-" + getNextDryRunNum();
-						branchPath = tsRoot + project + "/" + taskKey;
+						branchPath = project + "/" + taskKey;
 					}
 					tasksCreated++;
 					String xOfY =  (tasksCreated+tasksSkipped) + " of " + batch.getTasks().size();
@@ -182,6 +182,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 							if (changesMade == 0 && reportNoChange) {
 								report(task, component, Severity.NONE, ReportActionType.NO_CHANGE, "");
 							}
+							flushFiles(false);
 						} catch (ValidationFailure f) {
 							report(task, component, f.getSeverity(),f.getReportActionType(), f.getMessage());
 						} catch (TermServerScriptException e) {

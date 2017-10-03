@@ -369,8 +369,8 @@ public abstract class TermServerScript implements RF2Constants {
 	protected Concept loadConcept(Concept concept, String branchPath) throws TermServerScriptException {
 		debug ("Loading: " + concept + " from TS branch " + branchPath);
 		try {
-			//In a dry run situation, the task branch is not created so use the Project instead
 			if (dryRun) {
+				//In a dry run situation, the task branch is not created so use the Project instead
 				branchPath = branchPath.substring(0, branchPath.lastIndexOf("/"));
 			}
 			JSONResource response = tsClient.getConcept(concept.getConceptId(), branchPath);
@@ -493,11 +493,13 @@ public abstract class TermServerScript implements RF2Constants {
 		summaryDetails.put(storeAs, differences.toString());
 	}
 	
-	public void closeFiles() {
+	public void flushFiles(boolean andClose) {
 		for (PrintWriter pw : fileMap.values()) {
 			try {
 				pw.flush();
-				pw.close();
+				if (andClose) {
+					pw.close();
+				}
 			} catch (Exception e) {}
 		}
 		fileMap = new HashMap<>();
@@ -505,7 +507,7 @@ public abstract class TermServerScript implements RF2Constants {
 	
 	public void finish() {
 		println (BREAK);
-		closeFiles();
+		flushFiles(true);
 		Date endTime = new Date();
 		SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
 		//I've not had to adjust for timezones when creating a date before?
