@@ -36,7 +36,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 	protected String moduleId="900000000000207008";
 	protected String nameSpace="0";
 	protected String[] langRefsetIds = new String[] { "900000000000508004",  //GB
-											"900000000000509007" }; //US
+														"900000000000509007" }; //US
 
 
 	
