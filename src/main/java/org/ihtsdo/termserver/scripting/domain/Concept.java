@@ -470,10 +470,10 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 		return synonyms;
 	}
 
-	public boolean hasTerm(String term) {
+	public boolean hasTerm(String term, String langCode) {
 		boolean hasTerm = false;
 		for (Description d : descriptions) {
-			if (d.getTerm().equals(term)) {
+			if (d.getTerm().equals(term) && d.getLang().equals(langCode)) {
 				hasTerm = true;
 				break;
 			}
