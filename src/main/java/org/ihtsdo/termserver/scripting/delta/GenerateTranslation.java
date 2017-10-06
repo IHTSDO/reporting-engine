@@ -56,7 +56,7 @@ public class GenerateTranslation extends DeltaGenerator {
 				break;
 			case BELGIUM:
 				nameSpace = "1000172";
-				languageCode="both";
+				languageCode="en";
 				edition="BE1000172";
 				langToRefsetMap.put("fr", "21000172104");
 				langToRefsetMap.put("nl", "31000172101");
