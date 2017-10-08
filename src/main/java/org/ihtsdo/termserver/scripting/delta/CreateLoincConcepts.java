@@ -26,7 +26,7 @@ public class CreateLoincConcepts extends DeltaGenerator {
 	boolean is99_2 = false;
 	
 	enum LoincElement { Component(0),
-						PropertyType(1),
+						Property(1),  //Now using Property(attribute) instead of Property Type
 						TimeAspect(2),
 						DirectSite(3),
 						InheresIn(4),
@@ -82,7 +82,7 @@ public class CreateLoincConcepts extends DeltaGenerator {
 		}
 		loincAttributes = new HashMap<>();
 		loincAttributes.put(LoincElement.Component, gl.getConcept(246093002L));
-		loincAttributes.put(LoincElement.PropertyType, gl.getConcept(704318007L));
+		loincAttributes.put(LoincElement.Property, gl.getConcept(370130000L)); // |Property (attribute)|
 		loincAttributes.put(LoincElement.TimeAspect, gl.getConcept(370134009L));
 		loincAttributes.put(LoincElement.DirectSite, gl.getConcept(704327008L));
 		loincAttributes.put(LoincElement.InheresIn, gl.getConcept(704319004L));
