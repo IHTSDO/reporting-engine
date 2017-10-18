@@ -12,7 +12,6 @@ import java.util.UUID;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.ConceptChange;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -22,14 +21,14 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  */
 public class GenerateTranslation extends DeltaGenerator {
 	
-	KnownTranslations thisTranslation = KnownTranslations.BELGIUM;
+	KnownTranslations thisTranslation = KnownTranslations.SWEDEN;
 	enum KnownTranslations { SWEDEN, BELGIUM };
 	Map<String, String> langToRefsetMap = new HashMap<>();
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
 		GenerateTranslation delta = new GenerateTranslation();
 		try {
-			delta.config(KnownTranslations.BELGIUM);
+			delta.config();
 			delta.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			delta.loadProjectSnapshot(false);  //Not just FSN, load all terms with lang refset also
@@ -42,11 +41,11 @@ public class GenerateTranslation extends DeltaGenerator {
 		}
 	}
 
-	private void config(KnownTranslations country) {
+	private void config() {
 		inputFileHasHeaderRow = true;
 		inputFileDelimiter = TSV_FIELD_DELIMITER;
 		isExtension = true; //Ensures the correct partition identifier is used.
-		switch (country) {
+		switch (thisTranslation) {
 			case SWEDEN:
 				nameSpace = "1000052";
 				languageCode="sv";
@@ -159,15 +158,15 @@ public class GenerateTranslation extends DeltaGenerator {
 
 	//SE File format: Concept_Id	Swedish_Term	Case_Significance
 	private Concept LoadSELine(String[] lineItems) throws TermServerScriptException {
-		if (lineItems.length == 3) {
+		if (lineItems.length == 5) {
 			Description d = createDescription (lineItems[0],  //conceptId
-					lineItems[1], //term
+					lineItems[3], //swedish term
 					languageCode,
-					lineItems[2], //case significance
+					SnomedUtils.translateCaseSignificanceToSctId(lineItems[2]), //case significance
 					SCTID_PREFERRED_TERM
 					);
 			Concept concept = gl.getConcept(lineItems[0]);
-			addTranslation(concept, null, d);  //Doesn't specify expected existing term 
+			addTranslation(concept, lineItems[1], d); 
 			return concept;
 		}
 		return null;
