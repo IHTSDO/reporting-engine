@@ -41,8 +41,8 @@ public class HierarchyConceptsNotInFileReport extends TermServerScript{
 		try {
 			report.init(args);
 			report.loadProjectSnapshot();  //Load FSNs only
-			List<Concept> conceptsInFile = report.processFile();
-			List<Concept> conceptsInFile2 = new ArrayList<Concept>();
+			List<Component> conceptsInFile = report.processFile();
+			List<Component> conceptsInFile2 = new ArrayList<Component>();
 			if (report.file2 != null) {
 				conceptsInFile2 = report.processFile(new File(report.file2));
 			}
@@ -55,7 +55,7 @@ public class HierarchyConceptsNotInFileReport extends TermServerScript{
 		}
 	}
 
-	private void inHierarchyAndNotFile(List<Concept> conceptsInFile, List<Concept> conceptsInFile2) throws TermServerScriptException {
+	private void inHierarchyAndNotFile(List<Component> conceptsInFile, List<Component> conceptsInFile2) throws TermServerScriptException {
 		//For all active concepts in the report hierarchy, report if the concept is not
 		//also in the supplied file
 		Concept sourceHierarchy = gl.getConcept(hierarchy);

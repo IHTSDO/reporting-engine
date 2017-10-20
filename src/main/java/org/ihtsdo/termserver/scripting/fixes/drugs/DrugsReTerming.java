@@ -224,7 +224,6 @@ public class DrugsReTerming extends BatchFix implements RF2Constants{
 		return null;
 	}
 
-	@Override
 	protected Batch formIntoBatch (String fileName, List<Concept> allConcepts, String branchPath) throws TermServerScriptException {
 		Batch batch = new Batch(getReportName());
 		Task task = batch.addNewTask(author_reviewer);

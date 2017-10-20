@@ -236,10 +236,4 @@ public class ReplaceLowerCaseTerms extends BatchFix implements RF2Constants{
 		Description inactivate;
 	}
 
-	@Override
-	protected Batch formIntoBatch(String fileName, List<Concept> allConcepts,
-			String branchPath) throws TermServerScriptException {
-		throw new NotImplementedException();
-	}
-
 }

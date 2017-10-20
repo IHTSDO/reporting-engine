@@ -259,10 +259,4 @@ public class NormalizeDrugTerms extends BatchFix implements RF2Constants{
 	protected Concept loadLine(String[] lineItems) throws TermServerScriptException {
 		return null; // We will identify descriptions to edit from the snapshot
 	}
-
-	@Override
-	protected Batch formIntoBatch(String fileName, List<Concept> allConcepts,
-			String branchPath) throws TermServerScriptException {
-		throw new NotImplementedException();
-	}
 }

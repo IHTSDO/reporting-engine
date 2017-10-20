@@ -112,7 +112,6 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 	}
 
 
-	@Override
 	protected Batch formIntoBatch(String fileName, List<Concept> conceptsInFile, String branchPath) throws TermServerScriptException {
 		debug ("Finding all concepts with ingredients...");
 		List<Concept> allConceptsBeingProcessed = new ArrayList<Concept>();

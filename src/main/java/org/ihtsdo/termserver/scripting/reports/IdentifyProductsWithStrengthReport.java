@@ -55,7 +55,7 @@ public class IdentifyProductsWithStrengthReport extends TermServerScript{
 			report.init(args);
 			report.compileRegexes();
 			report.loadProjectSnapshot();  //Load FSNs only
-			List<Concept> authorIdentified = report.processFile();
+			List<Component> authorIdentified = report.processFile();
 			report.identifyProductsWithStrength(authorIdentified);
 		} catch (Exception e) {
 			println("Failed to validate laterality due to " + e.getMessage());
@@ -66,11 +66,11 @@ public class IdentifyProductsWithStrengthReport extends TermServerScript{
 	}
 
 
-	private void identifyProductsWithStrength(List<Concept> authorIdentifiedList) throws TermServerScriptException {
+	private void identifyProductsWithStrength(List<Component> authorIdentifiedList) throws TermServerScriptException {
 		//For all descendants of 373873005 |Pharmaceutical / biologic product (product)|, 
 		//use a number of criteria to determine if concept is a product with strength.
 		Set<Concept> products = gl.getConcept("373873005").getDescendents(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE);  //|Pharmaceutical / biologic product (product)|
-		Set<Concept> remainingFromList = new HashSet<Concept> (authorIdentifiedList);
+		Set<Component> remainingFromList = new HashSet<Component> (authorIdentifiedList);
 		println ("Original List: " + authorIdentifiedList.size() + " deduplicated: " + remainingFromList.size());
 		int bothIdentified = 0;
 		int lexOnly = 0;
@@ -101,7 +101,7 @@ public class IdentifyProductsWithStrengthReport extends TermServerScript{
 		println ("Author only: " + authorOnly);
 		
 		println("\nOn list but not active in hierarchy (" + remainingFromList.size() + ") : ");
-		for (Concept lostConcept : remainingFromList) {
+		for (Component lostConcept : remainingFromList) {
 			println ("  " + lostConcept);
 		}
 		

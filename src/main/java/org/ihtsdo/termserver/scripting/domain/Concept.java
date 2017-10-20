@@ -206,6 +206,13 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 	public void setRelationships(List<Relationship> relationships) {
 		this.relationships = relationships;
 	}
+	
+	public void removeRelationship(Relationship r) {
+		if (r.getEffectiveTime() != null) {
+			throw new IllegalArgumentException("Attempt to deleted published relationship " + r);
+		}
+		this.relationships.remove(r);
+	}
 
 	public boolean isIsLeafStated() {
 		return isLeafStated;

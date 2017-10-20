@@ -139,28 +139,6 @@ public class AnatomyRemodelling extends BatchFix implements RF2Constants{
 		return null;
 	}
 
-	@Override
-	protected Batch formIntoBatch (String fileName, List<Concept> allConcepts, String branchPath) throws TermServerScriptException {
-		Batch batch = new Batch(getReportName());
-		Task task = batch.addNewTask(author_reviewer);
-
-		for (Concept thisConcept : allConcepts) {
-			ConceptChange thisConceptChange = (ConceptChange) thisConcept;
-			if (thisConceptChange.getSkipReason() != null) {
-				report(task, thisConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Concept marked as: " + thisConceptChange.getSkipReason());
-			} else {
-				if (task.size() >= taskSize) {
-					task = batch.addNewTask(author_reviewer);
-				}
-				task.add(thisConcept);
-			}
-		}
-		addSummaryInformation("Tasks scheduled", batch.getTasks().size());
-		addSummaryInformation(CONCEPTS_PROCESSED, allConcepts);
-		return batch;
-	}
-
-
 	/*
 	FileFormat: sub_sctid	sub_sctfsn	supe_sctid	supe_sctfsn	resource
 	Where the resource is OWL we will add a relationship.

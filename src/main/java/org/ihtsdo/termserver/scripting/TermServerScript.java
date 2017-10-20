@@ -30,6 +30,7 @@ import org.ihtsdo.termserver.scripting.client.SnowOwlClient;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExportType;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExtractType;
+import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Project;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
@@ -68,6 +69,7 @@ public abstract class TermServerScript implements RF2Constants {
 	private static Map<String, Object> summaryDetails = new TreeMap<String, Object>();
 	private static String summaryText = "";
 	protected boolean inputFileHasHeaderRow = false;
+	protected boolean runStandAlone = false; //Set to true to avoid loading concepts from Termserver.  Should be used with Dry Run only.
 	protected File inputFile;
 	protected File reportFile;
 	protected File outputDir;
@@ -99,7 +101,7 @@ public abstract class TermServerScript implements RF2Constants {
 	public enum ReportActionType { API_ERROR, DEBUG_INFO, INFO, UNEXPECTED_CONDITION,
 									 CONCEPT_CHANGE_MADE, CONCEPT_ADDED,
 									 DESCRIPTION_CHANGE_MADE, DESCRIPTION_ADDED, DESCRIPTION_REMOVED,
-									 RELATIONSHIP_ADDED, RELATIONSHIP_REMOVED, RELATIONSHIP_MODIFIED, 
+									 RELATIONSHIP_ADDED, RELATIONSHIP_REMOVED, RELATIONSHIP_DELETED, RELATIONSHIP_MODIFIED, 
 									 NO_CHANGE, VALIDATION_ERROR, VALIDATION_CHECK, 
 									 REFSET_MEMBER_REMOVED, UNKNOWN};
 									 
@@ -367,12 +369,15 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	protected Concept loadConcept(Concept concept, String branchPath) throws TermServerScriptException {
-		debug ("Loading: " + concept + " from TS branch " + branchPath);
 		try {
 			if (dryRun) {
 				//In a dry run situation, the task branch is not created so use the Project instead
 				branchPath = branchPath.substring(0, branchPath.lastIndexOf("/"));
+				if (runStandAlone) {
+					return gl.getConcept(concept.getConceptId());
+				}
 			}
+			debug ("Loading: " + gl.getConcept(concept.getConceptId()) + " from TS branch " + branchPath);
 			JSONResource response = tsClient.getConcept(concept.getConceptId(), branchPath);
 			String json = response.toObject().toString();
 			concept = gson.fromJson(json, Concept.class);
@@ -383,11 +388,11 @@ public abstract class TermServerScript implements RF2Constants {
 		return concept;
 	}
 	
-	protected List<Concept> processFile() throws TermServerScriptException {
+	protected List<Component> processFile() throws TermServerScriptException {
 		return processFile(inputFile);
 	}
 	
-	protected List<Concept> processFile(File file) throws TermServerScriptException {
+	protected List<Component> processFile(File file) throws TermServerScriptException {
 		Set<Concept> allConcepts = new HashSet<Concept>();
 		debug ("Loading input file " + file.getAbsolutePath());
 		try {
@@ -430,7 +435,7 @@ public abstract class TermServerScript implements RF2Constants {
 		} catch (IOException e) {
 			throw new TermServerScriptException("Error while reading input file " + file.getAbsolutePath(), e);
 		}
-		return new ArrayList<Concept>(allConcepts);
+		return new ArrayList<Component>(allConcepts);
 	}
 	
 	/*

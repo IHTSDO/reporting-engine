@@ -122,11 +122,5 @@ public class FixMissingInactivationIndicators extends BatchFix implements RF2Con
 			throws TermServerScriptException {
 		throw new NotImplementedException("This class self determines concepts to process");
 	}
-	
-	@Override
-	protected Batch formIntoBatch(String fileName, List<Concept> allConcepts,
-			String branchPath) throws TermServerScriptException {
-		throw new NotImplementedException();
-	}
 
 }

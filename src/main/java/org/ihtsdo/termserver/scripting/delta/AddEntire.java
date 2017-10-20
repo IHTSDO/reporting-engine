@@ -10,6 +10,7 @@ import java.util.Set;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -64,11 +65,12 @@ public class AddEntire extends DeltaGenerator {
 		}
 	}
 
-	protected List<Concept> processFile() throws TermServerScriptException {
-		List<Concept> allConcepts = super.processFile();
+	protected List<Component> processFile() throws TermServerScriptException {
+		List<Component> allConcepts = super.processFile();
 		//Since our code works through all descriptions for a concept, we can remove duplicate entries of concepts, 
-		Set<Concept> uniqueConcepts = new LinkedHashSet<Concept>(allConcepts);
-		for (Concept thisConcept : uniqueConcepts) {
+		Set<Component> uniqueComponents = new LinkedHashSet<Component>(allConcepts);
+		for (Component thisComponent : uniqueComponents) {
+			Concept thisConcept = (Concept)thisComponent;
 			if (!thisConcept.isActive()) {
 				report (thisConcept, null, Severity.MEDIUM, ReportActionType.VALIDATION_ERROR, "Concept is inactive, skipping");
 				

@@ -132,11 +132,4 @@ public class LowerCaseTermInactivation extends BatchFix implements RF2Constants{
 		Description keep;
 		Description inactivate;
 	}
-
-	@Override
-	protected Batch formIntoBatch(String fileName, List<Concept> allConcepts,
-			String branchPath) throws TermServerScriptException {
-		throw new NotImplementedException();
-	}
-
 }

@@ -35,12 +35,6 @@ public class GrouperFix extends BatchFix implements RF2Constants{
 	}
 
 	@Override
-	protected Batch formIntoBatch(String fileName, List<Concept> allConcepts,
-			String branchPath) throws TermServerScriptException {
-		throw new TermServerScriptException("Not Implemented");
-	}
-
-	@Override
 	protected Concept loadLine(String[] lineItems) throws TermServerScriptException {
 		throw new TermServerScriptException("Not Implemented");
 	}

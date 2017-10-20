@@ -12,6 +12,7 @@ import java.util.UUID;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
@@ -102,11 +103,11 @@ public class CreateLoincConcepts extends DeltaGenerator {
 		isAObservable.setModifier(Modifier.EXISTENTIAL);
 	}
 
-	protected List<Concept> processFile() throws TermServerScriptException {
-		List<Concept> newConcepts = super.processFile();
+	protected List<Component> processFile() throws TermServerScriptException {
+		List<Component> newConcepts = super.processFile();
 		print ("Outputting RF2 files");
-		for (Concept thisConcept : newConcepts) {
-			outputRF2(thisConcept);
+		for (Component thisConcept : newConcepts) {
+			outputRF2((Concept)thisConcept);
 		}
 		println("\nOutputting complete");
 		return null;

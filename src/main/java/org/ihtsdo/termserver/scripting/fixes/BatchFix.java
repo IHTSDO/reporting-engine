@@ -55,7 +55,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	protected boolean populateTaskDescription = true;
 	protected boolean reportNoChange = true;
 	protected boolean worksWithConcepts = true;
-
+	
 	protected BatchFix (BatchFix clone) {
 		if (clone != null) {
 			this.inputFile = clone.inputFile;
@@ -66,9 +66,15 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		}
 	}
 	
-	protected List<Concept> processFile() throws TermServerScriptException {
-		List<Concept> allConcepts = super.processFile();
-		Batch batch = formIntoBatch(inputFile.getName(), allConcepts, project.getBranchPath());
+	protected List<Component> processFile() throws TermServerScriptException {
+		List<Component> allConcepts = new ArrayList<>();
+		Batch batch;
+		if (selfDetermining) {
+			batch = formIntoBatch();
+		} else {
+			allConcepts = super.processFile();
+			batch = formIntoBatch(allConcepts);
+		}
 		batchProcess(batch);
 		if (emailDetails != null) {
 			String msg = "Batch Scripting has completed successfully." + getSummaryText();
@@ -78,7 +84,6 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		return allConcepts;
 	}
 	
-	abstract protected Batch formIntoBatch (String fileName, List<Concept> allConcepts, String branchPath) throws TermServerScriptException;
 	
 	abstract protected int doFix(Task task, Concept concept, String info) throws TermServerScriptException, ValidationFailure;
 
@@ -87,19 +92,26 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		return new ArrayList<Component>();
 	}
 	
-	protected Batch formIntoBatch() throws TermServerScriptException {
+	protected Batch formIntoBatch (List<Component> allConcepts) throws TermServerScriptException {
 		Batch batch = new Batch(getScriptName());
 		Task task = batch.addNewTask(author_reviewer);
-		List<Component> allComponentsBeingProcessed = identifyComponentsToProcess();
-		for (Component thisComponent : allComponentsBeingProcessed) {
+		for (Component thisComponent : allConcepts) {
 			if (task.size() >= taskSize) {
 				task = batch.addNewTask(author_reviewer);
 			}
 			task.add(thisComponent);
 		}
 		addSummaryInformation("Tasks scheduled", batch.getTasks().size());
-		addSummaryInformation(CONCEPTS_PROCESSED, allComponentsBeingProcessed);
+		addSummaryInformation(CONCEPTS_PROCESSED, allConcepts);
 		return batch;
+	}
+
+	/*
+	 * Default batching strategy is just to allocate the concepts in order
+	 */
+	protected Batch formIntoBatch() throws TermServerScriptException {
+		List<Component> allComponentsBeingProcessed = identifyComponentsToProcess();
+		return formIntoBatch(allComponentsBeingProcessed);
 	}
 	
 	
@@ -110,8 +122,6 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		boolean isFirst = true;
 			for (Task task : batch.getTasks()) {
 				try {
-					String branchPath="";
-					String taskKey="";
 					//If we don't have any concepts in this task eg this is 100% ME file, then skip
 					if (task.size() == 0) {
 						println ("Skipping Task " + task.getSummary() + " - no concepts to process");
@@ -140,13 +150,13 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 							try{
 								debug ("Creating jira task on project: " + project);
 								String taskDescription = populateTaskDescription ? task.getSummary() : "Batch Updates - see spreadsheet for details";
-								taskKey = scaClient.createTask(project.getKey(), task.getSummary(), taskDescription);
-								debug ("Creating task branch in terminology server: " + taskKey);
-								branchPath = tsClient.createBranch(project.getBranchPath(), taskKey);
+								task.setKey(scaClient.createTask(project.getKey(), task.getSummary(), taskDescription));
+								debug ("Creating task branch in terminology server: " + task);
+								task.setBranchPath(tsClient.createBranch(project.getBranchPath(), task.getKey()));
 								taskCreated = true;
 							} catch (Exception e) {
 								taskCreationAttempts++;
-								scaClient.deleteTask(project.getKey(), taskKey, true);  //Don't worry if deletion fails
+								scaClient.deleteTask(project.getKey(), task.getKey(), true);  //Don't worry if deletion fails
 								if (taskCreationAttempts >= 3) {
 									throw new TermServerScriptException("Maxed out failure attempts", e);
 								}
@@ -154,14 +164,12 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 							}
 						}
 					} else {
-						taskKey = project + "-" + getNextDryRunNum();
-						branchPath = project + "/" + taskKey;
+						task.setKey(project + "-" + getNextDryRunNum());
+						task.setBranchPath(project.getBranchPath() + "/" + task.getKey());
 					}
 					tasksCreated++;
 					String xOfY =  (tasksCreated+tasksSkipped) + " of " + batch.getTasks().size();
-					println ( (dryRun?"Dry Run " : "Created ") + "task (" + xOfY + "): " + branchPath);
-					task.setKey(taskKey);
-					task.setBranchPath(branchPath);
+					println ( (dryRun?"Dry Run " : "Created ") + "task (" + xOfY + "): " + task.getBranchPath());
 					incrementSummaryInformation("Tasks created",1);
 					int conceptInTask = 0;
 					//Process each component
@@ -197,9 +205,9 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 						//Prefill the Edit Panel
 						try {
 							if (populateEditPanel) {
-								scaClient.setEditPanelUIState(project.getKey(), taskKey, task.toQuotedList());
+								scaClient.setEditPanelUIState(project.getKey(), task.getKey(), task.toQuotedList());
 							}
-							scaClient.setSavedListUIState(project.getKey(), taskKey, convertToSavedListJson(task));
+							scaClient.setSavedListUIState(project.getKey(), task.getKey(), convertToSavedListJson(task));
 						} catch (Exception e) {
 							String msg = "Failed to preload edit-panel ui state: " + e.getMessage();
 							warn (msg);
@@ -212,14 +220,14 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 							taskAuthor = targetAuthor;
 						}
 						if (taskAuthor != null && !taskAuthor.isEmpty()) {
-							debug("Assigning " + taskKey + " to " + taskAuthor);
-							scaClient.updateTask(project.getKey(), taskKey, null, null, taskAuthor);
+							debug("Assigning " + task + " to " + taskAuthor);
+							scaClient.updateTask(project.getKey(), task.getKey(), null, null, taskAuthor);
 						}
 						
 						String taskReviewer = task.getReviewer();
 						if (taskReviewer != null && !taskReviewer.isEmpty()) {
-							debug("Assigning " + taskKey + " to reviewer " + taskReviewer);
-							scaClient.putTaskIntoReview(project.getKey(), taskKey, taskReviewer);
+							debug("Assigning " + task + " to reviewer " + taskReviewer);
+							scaClient.putTaskIntoReview(project.getKey(), task.getKey(), taskReviewer);
 						}
 					}
 				} catch (Exception e) {

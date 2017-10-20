@@ -56,6 +56,9 @@ public class GraphLoader implements RF2Constants {
 		while ((line = br.readLine()) != null) {
 			if (!isHeaderLine) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
+				if (!isConcept(lineItems[REL_IDX_SOURCEID])) {
+					System.out.println (characteristicType + " relationship " + lineItems[REL_IDX_ID] + " referenced a non concept identifier: " + lineItems[REL_IDX_SOURCEID]);
+				}
 				Concept thisConcept = getConcept(lineItems[REL_IDX_SOURCEID]);
 				if (addRelationshipsToConcepts) {
 					addRelationshipToConcept(thisConcept, characteristicType, lineItems);
@@ -70,6 +73,10 @@ public class GraphLoader implements RF2Constants {
 		return concepts;
 	}
 	
+	private boolean isConcept(String sctId) {
+		return sctId.charAt(sctId.length()-2) == '0';
+	}
+
 	public void addRelationshipToConcept(Concept source, CharacteristicType characteristicType, String[] lineItems) throws TermServerScriptException {
 		
 		String sourceId = lineItems[REL_IDX_SOURCEID];
@@ -112,6 +119,10 @@ public class GraphLoader implements RF2Constants {
 	}
 	
 	public Concept getConcept(String sctId, boolean createIfRequired, boolean validateExists) throws TermServerScriptException {
+		//Make sure we're actually being asked for a concept
+		if (!isConcept(sctId)) {
+			throw new IllegalArgumentException("Request made for non concept sctid: " + sctId);
+		}
 		Concept c = concepts.get(sctId);
 		if (c == null) {
 			if (createIfRequired) {
@@ -156,6 +167,9 @@ public class GraphLoader implements RF2Constants {
 				//We might already have received some details about this concept
 				Concept c = getConcept(lineItems[IDX_ID]);
 				Concept.fillFromRf2(c, lineItems);
+				if (c.getDefinitionStatus() == null) {
+					throw new TermServerScriptException("Concept did not define valud definition status " + c);
+				}
 			} else {
 				isHeaderLine = false;
 			}
@@ -263,11 +277,14 @@ public class GraphLoader implements RF2Constants {
 		while ((line = br.readLine()) != null) {
 			if (!isHeaderLine) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
-				Concept c = getConcept(lineItems[INACT_IDX_REFCOMPID]);
-				HistoricalAssociation historicalAssociation = loadHistoricalAssociationLine(lineItems);
-				c.getHistorialAssociations().add(historicalAssociation);
-				if (historicalAssociation.isActive()) {
-					recordHistoricalAssociation(historicalAssociation);
+				String referencedComponent = lineItems[INACT_IDX_REFCOMPID];
+				if (isConcept(referencedComponent)) {
+					Concept c = getConcept(referencedComponent);
+					HistoricalAssociation historicalAssociation = loadHistoricalAssociationLine(lineItems);
+					c.getHistorialAssociations().add(historicalAssociation);
+					if (historicalAssociation.isActive()) {
+						recordHistoricalAssociation(historicalAssociation);
+					}
 				}
 			} else {
 				isHeaderLine = false;

@@ -11,6 +11,7 @@ import java.util.UUID;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
@@ -64,20 +65,20 @@ public class GenerateTranslation extends DeltaGenerator {
 		}
 	}
 
-	protected List<Concept> processFile() throws TermServerScriptException {
-		List<Concept> newTranslationsLoaded = super.processFile();
-		Set<Concept> newTranslations = new HashSet<Concept>(newTranslationsLoaded);
+	protected List<Component> processFile() throws TermServerScriptException {
+		List<Component> newTranslationsLoaded = super.processFile();
+		Set<Component> newTranslations = new HashSet<Component>(newTranslationsLoaded);
 		if (newTranslationsLoaded.size() != newTranslations.size()) {
 			throw new TermServerScriptException("Duplicate concepts found in file");
 		}
 		
-		for (Concept thisConcept : newTranslations) {
+		for (Component thisConcept : newTranslations) {
 			try {
-				outputRF2(thisConcept);
+				outputRF2((Concept)thisConcept);
 			} catch (TermServerScriptException e) {
 				//Only catching TermServerScript exception because we want unchecked RuntimeExceptions eg
 				//NullPointer and TotalCatastrophicFailure to stop processing
-				report (thisConcept, null, Severity.CRITICAL, ReportActionType.API_ERROR, "Exception while processing: " + e.getMessage() + " : " + SnomedUtils.getStackTrace(e));
+				report ((Concept)thisConcept, null, Severity.CRITICAL, ReportActionType.API_ERROR, "Exception while processing: " + e.getMessage() + " : " + SnomedUtils.getStackTrace(e));
 			}
 		}
 		return null;

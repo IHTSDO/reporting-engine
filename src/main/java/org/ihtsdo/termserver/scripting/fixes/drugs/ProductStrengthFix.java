@@ -33,12 +33,6 @@ public class ProductStrengthFix extends BatchFix implements RF2Constants{
 		return changesMade;
 	}
 
-
-	@Override
-	protected Batch formIntoBatch(String fileName, List<Concept> concepts, String projectPath) throws TermServerScriptException {
-		throw new TermServerScriptException("Not Implemented");
-	}
-
 	@Override
 	public String getScriptName() {
 		return "ProductStrength";

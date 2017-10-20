@@ -9,6 +9,7 @@ import java.util.Map;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Batch;
+import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
@@ -98,9 +99,9 @@ public class AssertionFailureFix extends BatchFix implements RF2Constants{
 	}
 
 	@Override
-	protected Batch formIntoBatch(String fileName, List<Concept> conceptsInFile, String branchPath) throws TermServerScriptException {
-		Batch batch = new Batch(fileName);
-		List<Concept> allConceptsBeingProcessed = new ArrayList<Concept>();
+	protected Batch formIntoBatch(List<Component> conceptsInFile) throws TermServerScriptException {
+		Batch batch = new Batch(getScriptName());
+		List<Component> allConceptsBeingProcessed = new ArrayList<Component>();
 		//Sort the concepts into groups per assigned Author
 		for (Map.Entry<String, List<Concept>> thisEntry : groupByAuthor(conceptsInFile).entrySet()) {
 			String[] author_reviewer = thisEntry.getKey().split("_");
@@ -116,16 +117,17 @@ public class AssertionFailureFix extends BatchFix implements RF2Constants{
 		}
 		addSummaryInformation("Tasks scheduled", batch.getTasks().size());
 		addSummaryInformation(CONCEPTS_PROCESSED, allConceptsBeingProcessed);
-		List <Concept> reportedNotProcessed = validateAllInputConceptsBatched (conceptsInFile, allConceptsBeingProcessed);
+		List <Component> reportedNotProcessed = validateAllInputConceptsBatched (conceptsInFile, allConceptsBeingProcessed);
 		addSummaryInformation(REPORTED_NOT_PROCESSED, reportedNotProcessed);
 		storeRemainder(CONCEPTS_IN_FILE, CONCEPTS_PROCESSED, REPORTED_NOT_PROCESSED, "Gone Missing");
 		return batch;
 	}
 
 	/**Actually we're going to group by both Author and Reviewer **/
-	private Map<String, List<Concept>> groupByAuthor(List<Concept> conceptsInFile) {
+	private Map<String, List<Concept>> groupByAuthor(List<Component> conceptsInFile) {
 		Map<String, List<Concept>> groupedByAuthor = new HashMap<String,List<Concept>>();
-		for (Concept thisConcept : conceptsInFile) {
+		for (Component thisComponent : conceptsInFile) {
+			Concept thisConcept = (Concept)thisComponent;
 			String author_reviewer = thisConcept.getAssignedAuthor() + "_" + thisConcept.getReviewer();
 			List<Concept> thisAuthorsConcepts = groupedByAuthor.get(author_reviewer);
 			if (thisAuthorsConcepts == null) {
@@ -137,11 +139,11 @@ public class AssertionFailureFix extends BatchFix implements RF2Constants{
 		return groupedByAuthor;
 	}
 
-	private List<Concept> validateAllInputConceptsBatched(List<Concept> concepts,
-			List<Concept> allConceptsToBeProcessed) {
-		List<Concept> reportedNotProcessed = new ArrayList<Concept>();
+	private List<Component> validateAllInputConceptsBatched(List<Component> concepts,
+			List<Component> allConceptsToBeProcessed) {
+		List<Component> reportedNotProcessed = new ArrayList<Component>();
 		//Ensure that all concepts we got given to process were captured in one batch or another
-		for (Concept thisConcept : concepts) {
+		for (Component thisConcept : concepts) {
 			if (!allConceptsToBeProcessed.contains(thisConcept)) {
 				reportedNotProcessed.add(thisConcept);
 				String msg = thisConcept + " was given in input file but did not get included in a batch.";

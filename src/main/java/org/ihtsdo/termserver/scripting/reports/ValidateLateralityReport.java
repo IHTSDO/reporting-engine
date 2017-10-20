@@ -34,7 +34,7 @@ public class ValidateLateralityReport extends TermServerScript{
 		try {
 			report.init(args);
 			report.loadProjectSnapshot();  //Load FSNs only
-			List<Concept> lateralizable = report.processFile();
+			List<Component> lateralizable = report.processFile();
 			report.validateLaterality(lateralizable);
 		} catch (Exception e) {
 			println("Failed to validate laterality due to " + e.getMessage());
@@ -44,7 +44,7 @@ public class ValidateLateralityReport extends TermServerScript{
 		}
 	}
 
-	private void validateLaterality(List<Concept> lateralizable) throws TermServerScriptException {
+	private void validateLaterality(List<Component> lateralizable) throws TermServerScriptException {
 		//For all concepts, if it is lateralized, check that concept is listed in our
 		//set of lateralizable concepts.
 		Concept laterality = gl.getConcept("272741003");

@@ -214,12 +214,6 @@ public class DispositionsArchive extends Rf2Player implements RF2Constants{
 	}
 
 	@Override
-	protected Batch formIntoBatch(String fileName, List<Concept> allConcepts,
-			String branchPath) throws TermServerScriptException {
-		throw new NotImplementedException();
-	}
-
-	@Override
 	protected Concept loadLine(String[] lineItems)
 			throws TermServerScriptException {
 		// TODO Auto-generated method stub
