@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting.delta;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -149,7 +150,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 		initialiseFileHeaders();
 	}
 	
-	public void finish() {
+	public void finish() throws FileNotFoundException {
 		super.finish();
 		if (conIdGenerator != null) {
 			println(conIdGenerator.finish());

@@ -1,11 +1,17 @@
 package org.ihtsdo.termserver.scripting;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.validator.routines.checkdigit.CheckDigitException;
 import org.apache.commons.validator.routines.checkdigit.VerhoeffCheckDigit;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
@@ -20,6 +26,10 @@ public class IdGenerator implements RF2Constants{
 	private String namespace = "";
 	private boolean isExtension = false;
 	private PartitionIdentifier partitionIdentifier;
+	private int runForwardCount = 0;
+	
+	static private String ID_CONFIG = "running_id_config.txt";
+	static private boolean configFileReset = false;
 	
 	public static IdGenerator initiateIdGenerator(String sctidFilename, PartitionIdentifier p) throws TermServerScriptException {
 		if (sctidFilename.toLowerCase().equals("dummy")) {
@@ -29,20 +39,42 @@ public class IdGenerator implements RF2Constants{
 		File sctIdFile = new File (sctidFilename);
 		try {
 			if (sctIdFile.canRead()) {
-				return new IdGenerator(sctIdFile, p);
+				IdGenerator idGen = new IdGenerator(sctIdFile, p);
+				//Does the config say we have to run this forward?
+				runForward(idGen);
+				return idGen;
 			}
 		} catch (Exception e) {}
 		
 		throw new TermServerScriptException("Unable to read sctids from " + sctidFilename);
 	}
+	
 	private IdGenerator(File sctidFile, PartitionIdentifier p) throws FileNotFoundException {
 		fileName = sctidFile.getAbsolutePath();
 		availableSctIds = new BufferedReader(new FileReader(sctidFile));
 		partitionIdentifier = p;
 	}
+	
 	private IdGenerator(PartitionIdentifier p) {
 		partitionIdentifier = p;
 		useDummySequence = true;
+	}
+	
+	private static void runForward (IdGenerator idGen) throws NumberFormatException, IOException {
+		//Is there a config file to consider? If not, do nothing.
+		File idConfigFile = new File (ID_CONFIG);
+		if (idConfigFile.canRead()) {
+			for (String line : FileUtils.readLines(idConfigFile)) {
+				String[] lineItems = line.split(TAB);
+				if (lineItems[0].equals(idGen.partitionIdentifier.toString())) {
+					idGen.runForwardCount = Integer.parseInt(lineItems[1]);
+					System.out.println(idGen.partitionIdentifier +" running forward by " + idGen.runForwardCount);
+					for (int i=0; i<idGen.runForwardCount; i++) {
+						idGen.availableSctIds.readLine();
+					}
+				}
+			}
+		}
 	}
 	
 	public String getSCTID() throws TermServerScriptException {
@@ -84,12 +116,26 @@ public class IdGenerator implements RF2Constants{
 		this.namespace = namespace;
 	}	
 	
-	public String finish() {
+	public String finish() throws FileNotFoundException {
 		try {
 			if (!useDummySequence) {
 				availableSctIds.close();
 			}
 		} catch (Exception e){}
+		//Are we the first generator to write out the final state?  Blitz the file if so, otherwise append.
+		OutputStreamWriter osw; 
+		String dataLine = partitionIdentifier + TAB + (runForwardCount + idsAssigned);
+ 		if (!IdGenerator.configFileReset) {
+ 			System.out.println("Writing " + dataLine + " to " + ID_CONFIG);
+ 			osw = new OutputStreamWriter(new FileOutputStream(new File(ID_CONFIG), false), StandardCharsets.UTF_8);
+			IdGenerator.configFileReset = true;
+ 		} else {
+			System.out.println("Appending " + dataLine + " to " + ID_CONFIG);
+			osw = new OutputStreamWriter(new FileOutputStream(new File(ID_CONFIG), true), StandardCharsets.UTF_8);
+		}
+		PrintWriter pw = new PrintWriter(new BufferedWriter(osw));
+		pw.write(dataLine + LINE_DELIMITER);
+		pw.close();
 		return "IdGenerator supplied " + idsAssigned + " " + partitionIdentifier + " sctids.";
 	}
 	

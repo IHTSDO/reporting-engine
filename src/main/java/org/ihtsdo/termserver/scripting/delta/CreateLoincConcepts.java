@@ -76,10 +76,10 @@ public class CreateLoincConcepts extends DeltaGenerator {
 			header = br.readLine();
 		}
 		if (header.contains("Technique")) {
-			print ("LOINC file format identified as 99-2");
+			println ("LOINC file format identified as 99-2");
 			is99_2 = true;
 		} else {
-			print ("LOINC file format identified as 99-1");
+			println ("LOINC file format identified as 99-1");
 		}
 		loincAttributes = new HashMap<>();
 		loincAttributes.put(LoincElement.Component, gl.getConcept(246093002L));

@@ -510,7 +510,7 @@ public abstract class TermServerScript implements RF2Constants {
 		fileMap = new HashMap<>();
 	}
 	
-	public void finish() {
+	public void finish() throws FileNotFoundException {
 		println (BREAK);
 		flushFiles(true);
 		Date endTime = new Date();
