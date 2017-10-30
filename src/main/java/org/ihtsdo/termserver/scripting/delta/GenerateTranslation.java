@@ -163,7 +163,7 @@ public class GenerateTranslation extends DeltaGenerator {
 			Description d = createDescription (lineItems[0],  //conceptId
 					lineItems[3], //swedish term
 					languageCode,
-					SnomedUtils.translateCaseSignificanceToSctId(lineItems[2]), //case significance
+					SnomedUtils.translateCaseSignificanceToSctId(lineItems[4]), //case significance
 					SCTID_PREFERRED_TERM
 					);
 			Concept concept = gl.getConcept(lineItems[0]);
