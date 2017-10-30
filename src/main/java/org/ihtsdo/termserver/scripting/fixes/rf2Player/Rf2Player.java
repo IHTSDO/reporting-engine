@@ -50,7 +50,7 @@ public abstract class Rf2Player extends BatchFix {
 		super(clone);
 	}
 	
-	protected void playRf2Archive(String[] args) throws TermServerScriptException {
+	protected void playRf2Archive(String[] args) throws TermServerScriptException, FileNotFoundException {
 		try {
 			selfDetermining = true;
 			init(args);

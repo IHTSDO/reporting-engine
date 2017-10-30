@@ -1,5 +1,6 @@
 package org.ihtsdo.termserver.scripting.fixes.rf2Player;
 
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -8,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Batch;
@@ -47,7 +47,7 @@ public class DispositionsArchive extends Rf2Player implements RF2Constants{
 		this.allowRecentChanges = true;
 	}
 
-	public static void main(String[] args) throws TermServerScriptException {
+	public static void main(String[] args) throws TermServerScriptException, FileNotFoundException {
 		new DispositionsArchive(null).playRf2Archive(args);
 	}
 
