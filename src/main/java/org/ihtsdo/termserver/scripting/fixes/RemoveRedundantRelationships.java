@@ -33,7 +33,7 @@ public class RemoveRedundantRelationships extends BatchFix implements RF2Constan
 		RemoveRedundantRelationships fix = new RemoveRedundantRelationships(null);
 		try {
 			fix.reportNoChange = true;
-			fix.selfDetermining = true;
+			//fix.selfDetermining = true;
 			fix.runStandAlone = true;
 			fix.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
@@ -131,7 +131,7 @@ public class RemoveRedundantRelationships extends BatchFix implements RF2Constan
 		return new Concept(lineItems[0]);
 	}
 	
-	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
+	/*protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		//Find primitive concepts with redundant stated parents
 		println ("Identifying concepts to process");
 		Collection<Concept> checkMe = gl.getAllConcepts();
@@ -161,6 +161,6 @@ public class RemoveRedundantRelationships extends BatchFix implements RF2Constan
 		}
 		println ("Identified " + processMe.size() + " concepts to process");
 		return processMe;
-	}
+	}*/
 
 }
