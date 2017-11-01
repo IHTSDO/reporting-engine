@@ -315,42 +315,45 @@ public abstract class TermServerScript implements RF2Constants {
 			println ("Recovering current state of " + project + " from TS (" + env + ")");
 			tsClient.export(project.getBranchPath(), null, ExportType.MIXED, ExtractType.SNAPSHOT, snapShotArchive);
 		}
-		GraphLoader gl = GraphLoader.getGraphLoader();
-		println ("Loading archive contents into memory...");
+		println ("Loading snapshot archive contents into memory...");
+		loadArchive(snapShotArchive, fsnOnly, "Snapshot");
+	}
+	
+	protected void loadArchive(File archive, boolean fsnOnly, String fileType) throws TermServerScriptException, SnowOwlClientException {
 		try {
-			ZipInputStream zis = new ZipInputStream(new FileInputStream(snapShotArchive));
+			ZipInputStream zis = new ZipInputStream(new FileInputStream(archive));
 			ZipEntry ze = zis.getNextEntry();
 			try {
 				while (ze != null) {
 					if (!ze.isDirectory()) {
 						Path p = Paths.get(ze.getName());
 						String fileName = p.getFileName().toString();
-						if (fileName.contains("sct2_Concept_Snapshot")) {
-							println("Loading Concept File.");
+						if (fileName.contains("sct2_Concept_" + fileType )) {
+							println("Loading Concept " + fileType + " file.");
 							gl.loadConceptFile(zis);
-						} else if (fileName.contains("sct2_Relationship_Snapshot")) {
-							println("Loading Relationship File.");
+						} else if (fileName.contains("sct2_Relationship_" + fileType )) {
+							println("Loading Relationship " + fileType + " file.");
 							gl.loadRelationships(CharacteristicType.INFERRED_RELATIONSHIP, zis, true);
 							println("Calculating concept depth...");
 							gl.populateHierarchyDepth(ROOT_CONCEPT, 0);
-						} else if (fileName.contains("sct2_StatedRelationship_Snapshot")) {
-							println("Loading StatedRelationship File.");
+						} else if (fileName.contains("sct2_StatedRelationship_" + fileType )) {
+							println("Loading StatedRelationship " + fileType + " file.");
 							gl.loadRelationships(CharacteristicType.STATED_RELATIONSHIP, zis, true);
-						} else if (fileName.contains("sct2_Description_Snapshot")) {
-							println("Loading Description File.");
+						} else if (fileName.contains("sct2_Description_" + fileType )) {
+							println("Loading Description " + fileType + " file.");
 							gl.loadDescriptionFile(zis, fsnOnly);
-						} else if (fileName.contains("der2_cRefset_ConceptInactivationIndicatorReferenceSetSnapshot")) {
-							println("Loading Concept Inactivation Indicator File.");
+						} else if (fileName.contains("der2_cRefset_ConceptInactivationIndicatorReferenceSet" + fileType )) {
+							println("Loading Concept Inactivation Indicator " + fileType + " file.");
 							gl.loadInactivationIndicatorFile(zis, true);
-						}  else if (fileName.contains("der2_cRefset_DescriptionInactivationIndicatorReferenceSetSnapshot")) {
-							println("Loading Description Inactivation Indicator File.");
+						}  else if (fileName.contains("der2_cRefset_DescriptionInactivationIndicatorReferenceSet" + fileType )) {
+							println("Loading Description Inactivation Indicator " + fileType + " file.");
 							gl.loadInactivationIndicatorFile(zis, false);
-						} else if (fileName.contains("AssociationReferenceSetSnapshot")) {
+						} else if (fileName.contains("AssociationReferenceSet" + fileType )) {
 							println("Loading Historical Assocation File: " + fileName);
 							gl.loadHistoricalAssociationFile(zis);
 						}
 						//If we're loading all terms, load the language refset as well
-						if (!fsnOnly && (fileName.contains("EnglishSnapshot") || fileName.contains("LanguageSnapshot-en"))) {
+						if (!fsnOnly && (fileName.contains("English" + fileType ) || fileName.contains("Language" + fileType + "-en"))) {
 							println("Loading Language Reference Set File - " + fileName);
 							gl.loadLanguageFile(zis);
 						}
@@ -364,7 +367,7 @@ public abstract class TermServerScript implements RF2Constants {
 				} catch (Exception e){} //Well, we tried.
 			}
 		} catch (IOException e) {
-			throw new TermServerScriptException("Failed to extract project state from archive " + snapShotArchive.getName(), e);
+			throw new TermServerScriptException("Failed to extract project state from archive " + archive.getName(), e);
 		}
 	}
 	

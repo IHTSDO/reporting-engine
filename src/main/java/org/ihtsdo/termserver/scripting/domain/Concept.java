@@ -282,6 +282,10 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 	}
 	
 	public void addRelationship(Relationship r) {
+		//Do we already had a relationship with this id?  Replace if so
+		if (relationships.contains(r)) {
+			relationships.remove(r);
+		}
 		relationships.add(r);
 	}
 	
@@ -289,8 +293,16 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 		getChildren(characteristicType).add(c);
 	}
 	
+	public void removeChild(CharacteristicType characteristicType, Concept c) {
+		getChildren(characteristicType).remove(c);
+	}
+	
 	public void addParent(CharacteristicType characteristicType, Concept p) {
 		getParents(characteristicType).add(p);
+	}
+	
+	public void removeParent(CharacteristicType characteristicType, Concept p) {
+		getParents(characteristicType).remove(p);
 	}
 
 	public ConceptType getConceptType() {
@@ -427,10 +439,15 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 		return null;
 	}
 	
-	public void addDescription(Description description) {
-		descriptions.add(description);
-		if (description.isActive() && description.getType().equals(DescriptionType.FSN)) {
-			this.setFsn(description.getTerm());
+	public void addDescription(Description d) {
+		//Do we already have a description with this SCTID?
+		if (descriptions.contains(d)) {
+			descriptions.remove(d);
+		}
+		
+		descriptions.add(d);
+		if (d.isActive() && d.getType().equals(DescriptionType.FSN)) {
+			this.setFsn(d.getTerm());
 		}
 	}
 

@@ -64,10 +64,10 @@ public class GraphLoader implements RF2Constants {
 					addRelationshipToConcept(thisConcept, characteristicType, lineItems);
 				}
 				concepts.add(thisConcept);
+				relationshipsLoaded++;
 			} else {
 				isHeaderLine = false;
 			}
-			relationshipsLoaded++;
 		}
 		log.append("\tLoaded " + relationshipsLoaded + " relationships of type " + characteristicType + " which were " + (addRelationshipsToConcepts?"":"not ") + "added to concepts\n");
 		return concepts;
@@ -98,10 +98,15 @@ public class GraphLoader implements RF2Constants {
 		r.setModifier(SnomedUtils.translateModifier(lineItems[REL_IDX_MODIFIERID]));
 		r.setModuleId(lineItems[REL_IDX_MODULEID]);
 		
-		//Only if the relationship is inferred, consider adding it as a parent
-		if (r.isActive() && type.equals(IS_A)) {
-			source.addParent(r.getCharacteristicType(),destination);
-			destination.addChild(r.getCharacteristicType(),source);
+		//Consider adding or removing parents if the relationship is ISA
+		if (type.equals(IS_A)) {
+			if (r.isActive()) {
+				source.addParent(r.getCharacteristicType(),destination);
+				destination.addChild(r.getCharacteristicType(),source);
+			} else {
+				source.removeParent(r.getCharacteristicType(),destination);
+				destination.removeChild(r.getCharacteristicType(),source);
+			}
 		} 
 		source.addRelationship(r);
 	}
@@ -168,7 +173,7 @@ public class GraphLoader implements RF2Constants {
 				Concept c = getConcept(lineItems[IDX_ID]);
 				Concept.fillFromRf2(c, lineItems);
 				if (c.getDefinitionStatus() == null) {
-					throw new TermServerScriptException("Concept did not define valud definition status " + c);
+					throw new TermServerScriptException("Concept " + c + " did not define definition status");
 				}
 			} else {
 				isHeaderLine = false;
@@ -219,6 +224,10 @@ public class GraphLoader implements RF2Constants {
 				String[] lineItems = line.split(FIELD_DELIMITER);
 				Description d = getDescription(lineItems[LANG_IDX_REFCOMPID]);
 				LangRefsetEntry langRefsetEntry = LangRefsetEntry.fromRf2(lineItems);
+				//Are we adding or replacing this entry?
+				if (d.getLangRefsetEntries().contains(langRefsetEntry)) {
+					d.getLangRefsetEntries().remove(langRefsetEntry);
+				}
 				d.getLangRefsetEntries().add(langRefsetEntry);
 				if (lineItems[LANG_IDX_ACTIVE].equals("1")) {
 					Acceptability a = SnomedUtils.translateAcceptability(lineItems[LANG_IDX_ACCEPTABILITY_ID]);

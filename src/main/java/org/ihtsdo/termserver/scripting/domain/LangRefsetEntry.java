@@ -134,4 +134,21 @@ public class LangRefsetEntry implements RF2Constants{
 		l.setAcceptabilityId(lineItems[LANG_IDX_ACCEPTABILITY_ID]);
 		return l;
 	}
+	
+	@Override
+	public boolean equals(Object other) {
+		if (other == this) {
+			return true;
+		}
+		if ((other instanceof LangRefsetEntry) == false) {
+			return false;
+		}
+		LangRefsetEntry rhs = ((LangRefsetEntry) other);
+		//If both sides have an SCTID, then compare that
+		if (this.getId() != null && rhs.getId() != null) {
+			return this.getId().equals(rhs.getId());
+		}
+		//TODO Otherwise compare contents
+		return false;
+	}
 }

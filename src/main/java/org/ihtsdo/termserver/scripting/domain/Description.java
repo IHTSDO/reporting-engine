@@ -225,6 +225,11 @@ public class Description implements RF2Constants{
 			return false;
 		}
 		Description rhs = ((Description) other);
+		//If both sides have an SCTID, then compare that
+		if (this.getDescriptionId() != null && rhs.getDescriptionId() != null) {
+			return this.getDescriptionId().equals(rhs.getDescriptionId());
+		}
+		//Otherwise compare term
 		return this.hashCode() == rhs.hashCode();
 	}
 	

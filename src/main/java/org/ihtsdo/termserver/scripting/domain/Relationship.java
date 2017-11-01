@@ -283,6 +283,12 @@ public class Relationship implements RF2Constants, Comparable<Relationship> {
 			return false;
 		}
 		Relationship rhs = ((Relationship) other);
+		
+		//If both sides have an SCTID, then compare that
+		if (this.getRelationshipId() != null && rhs.getRelationshipId() != null) {
+			return this.getRelationshipId().equals(rhs.getRelationshipId());
+		}
+		//Otherwise compare triple + group
 		return (this.type.equals(rhs.type) && this.target.equals(rhs.target) && this.groupId == rhs.groupId);
 	}
 	
