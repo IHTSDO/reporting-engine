@@ -149,7 +149,6 @@ public class GenerateTranslation extends DeltaGenerator {
 		
 		String cs = " (" + newDescription.getLang() + " " +  descAccept + " - "+ SnomedUtils.translateCaseSignificanceFromSctId(newDescription.getCaseSignificance()) + ")";
 		report (concept, newDescription, severity, ReportActionType.DESCRIPTION_ADDED, msg +  cs + ": " + newDescription.getTerm());
-		
 	}
 
 	private Description getUsPrefTerm(Concept currentState) throws TermServerScriptException {
@@ -194,10 +193,11 @@ public class GenerateTranslation extends DeltaGenerator {
 				acceptabilityId = SCTID_PREFERRED_TERM;
 			}
 			String lang = lineItems[3].substring(0, 2);
+			String term = lineItems[2].trim().replace("  ", " ");
 			Description d = createDescription (lineItems[0],  //conceptId
-												lineItems[2], //term
+												term,
 												lang,
-												calculateBEcaseSignificanceSCTID(lineItems[2]),
+												calculateBEcaseSignificanceSCTID(term),
 												acceptabilityId
 												);
 			Concept concept = gl.getConcept(lineItems[0]);
