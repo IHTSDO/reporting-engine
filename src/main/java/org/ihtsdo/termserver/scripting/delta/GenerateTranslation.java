@@ -22,7 +22,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  */
 public class GenerateTranslation extends DeltaGenerator {
 	
-	KnownTranslations thisTranslation = KnownTranslations.SWEDEN;
+	KnownTranslations thisTranslation = KnownTranslations.BELGIUM;
 	enum KnownTranslations { SWEDEN, BELGIUM };
 	Map<String, String> langToRefsetMap = new HashMap<>();
 	
@@ -113,7 +113,7 @@ public class GenerateTranslation extends DeltaGenerator {
 			//We're no longer receiving the current US term
 			Description usPrefTerm = getUsPrefTerm(concept);
 			if (!usPrefTerm.getTerm().equals(expectedUSTerm)) {
-				report (concept, usPrefTerm, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Current term is not what was translated: " + expectedUSTerm);
+				report (concept, usPrefTerm, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Current term is not what was translated.  Translation file expected: " + expectedUSTerm);
 				return;
 			}
 		}
@@ -128,10 +128,20 @@ public class GenerateTranslation extends DeltaGenerator {
 		
 		String msg = "Created new description";
 		Severity severity = Severity.LOW;
-		//Do we already have this term?  Add a warning if so.
-		if (concept.hasTerm(newDescription.getTerm(), newDescription.getLang())) {
-			severity = Severity.HIGH;
-			msg = "Created duplicate new description";
+		
+		//Do we already have this term? 
+		Description duplicate = concept.findTerm(newDescription.getTerm(), newDescription.getLang());
+		if (duplicate != null) {
+			//We won't create a duplicate, but any preferred term will take priority
+			msg = "Attempt to duplicate description: '" + newDescription.getTerm() + "'";
+			if (!duplicate.isPreferred() && newDescription.isPreferred()) {
+				SnomedUtils.mergeLangRefsetEntries(newDescription, duplicate);
+				msg += " - first term promoted to Preferred";
+			} else {
+				msg += " - ignoring duplicate acceptable term";
+			}
+			severity = Severity.MEDIUM;
+			
 		}
 		concept.addDescription(newDescription);
 		String cs = " (" + newDescription.getLang() + " - "+ SnomedUtils.translateCaseSignificanceFromSctId(newDescription.getCaseSignificance()) + ")";

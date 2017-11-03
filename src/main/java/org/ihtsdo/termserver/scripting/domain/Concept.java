@@ -504,17 +504,23 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 		}
 		return hasTerm;
 	}
-
+	
 	public Description findTerm(String term) {
+		return findTerm (term, null);
+	}
+
+	public Description findTerm(String term , String lang) {
 		//First look for a match in the active terms, then try inactive
 		for (Description d : getDescriptions(ActiveState.ACTIVE)) {
-			if (d.getTerm().equals(term)) {
+			if (d.getTerm().equals(term) && 
+					(lang == null || lang.equals(d.getLang()))) {
 				return d;
 			}
 		}
 		
 		for (Description d : getDescriptions(ActiveState.INACTIVE)) {
-			if (d.getTerm().equals(term)) {
+			if (d.getTerm().equals(term) && 
+					(lang == null || lang.equals(d.getLang()))) {
 				return d;
 			}
 		}
