@@ -104,7 +104,7 @@ public class GenerateTranslation extends DeltaGenerator {
 	
 	private void addTranslation(Concept concept, String expectedUSTerm, Description newDescription) throws TermServerScriptException {
 		if (!concept.isActive()) {
-			report (concept, null, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Concept is inactive, skipping");
+			report (concept, null, Severity.MEDIUM, ReportActionType.VALIDATION_ERROR, "Concept is inactive, skipping");
 			return;
 		}
 		
@@ -131,6 +131,7 @@ public class GenerateTranslation extends DeltaGenerator {
 		
 		//Do we already have this term? 
 		Description duplicate = concept.findTerm(newDescription.getTerm(), newDescription.getLang());
+		String descAccept = "";
 		if (duplicate != null) {
 			//We won't create a duplicate, but any preferred term will take priority
 			msg = "Attempt to duplicate description: '" + newDescription.getTerm() + "'";
@@ -140,12 +141,14 @@ public class GenerateTranslation extends DeltaGenerator {
 			} else {
 				msg += " - ignoring duplicate acceptable term";
 			}
-			severity = Severity.MEDIUM;
-			
+			severity = Severity.HIGH;
+		} else {
+			descAccept = newDescription.isPreferred() ? "P":"A";
 		}
 		concept.addDescription(newDescription);
-		String cs = " (" + newDescription.getLang() + " - "+ SnomedUtils.translateCaseSignificanceFromSctId(newDescription.getCaseSignificance()) + ")";
-		report (concept, newDescription, severity, ReportActionType.DESCRIPTION_ADDED, msg +  cs);
+		
+		String cs = " (" + newDescription.getLang() + " " +  descAccept + " - "+ SnomedUtils.translateCaseSignificanceFromSctId(newDescription.getCaseSignificance()) + ")";
+		report (concept, newDescription, severity, ReportActionType.DESCRIPTION_ADDED, msg +  cs + ": " + newDescription.getTerm());
 		
 	}
 
@@ -194,7 +197,7 @@ public class GenerateTranslation extends DeltaGenerator {
 			Description d = createDescription (lineItems[0],  //conceptId
 												lineItems[2], //term
 												lang,
-												SCTID_ENTIRE_TERM_CASE_INSENSITIVE,
+												calculateBEcaseSignificanceSCTID(lineItems[2]),
 												acceptabilityId
 												);
 			Concept concept = gl.getConcept(lineItems[0]);
@@ -204,6 +207,18 @@ public class GenerateTranslation extends DeltaGenerator {
 		return null;
 	}
 	
+	private String calculateBEcaseSignificanceSCTID(String term) {
+		//BE Terms are in general lower case, so any term that starts with a capital letter
+		//can be considered CS.   Otherwise if it is case sensitive then cI
+		String firstLetter = term.substring(0, 1);
+		if (!firstLetter.equals(firstLetter.toLowerCase())) {
+			return SCTID_ENTIRE_TERM_CASE_SENSITIVE;
+		} else if (SnomedUtils.isCaseSensitive(term)) {
+			return SCTID_ONLY_INITIAL_CHAR_CASE_INSENSITIVE;
+		}
+		return SCTID_ENTIRE_TERM_CASE_INSENSITIVE;
+	}
+
 	private Description createDescription(String conceptId, String term, String lang, String caseSensitityId, String acceptabilityId) throws TermServerScriptException {
 		Description d = new Description();
 		d.setDescriptionId(descIdGenerator.getSCTID());
