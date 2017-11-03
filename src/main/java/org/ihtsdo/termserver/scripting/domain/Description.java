@@ -340,11 +340,25 @@ public class Description implements RF2Constants{
 	 * @return true if this description is preferred in any dialect.
 	 */
 	public boolean isPreferred() {
-		for (Map.Entry<String, Acceptability> entry: acceptabilityMap.entrySet()) {
-			if (entry.getValue().equals(Acceptability.PREFERRED)) {
-				return true;
+		//Are we working with the JSON map, or RF2 Lang refset entries?
+		if (acceptabilityMap != null) {
+			for (Map.Entry<String, Acceptability> entry: acceptabilityMap.entrySet()) {
+				if (entry.getValue().equals(Acceptability.PREFERRED)) {
+					return true;
+				}
 			}
+			return false;
 		}
+		
+		if (langRefsetEntries != null) {
+			for (LangRefsetEntry entry : langRefsetEntries) {
+				if (entry.getAcceptabilityId().equals(SCTID_PREFERRED_TERM)) {
+					return true;
+				}
+			}
+			return false;
+		}
+		
 		return false;
 	}
 	
