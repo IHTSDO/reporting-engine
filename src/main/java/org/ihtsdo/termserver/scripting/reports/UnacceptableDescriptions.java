@@ -19,7 +19,7 @@ public class UnacceptableDescriptions extends TermServerReport{
 		try {
 			report.init(args);
 			report.loadProjectSnapshot(false);  //Load all descriptions
-			println ("Producing unacceptable terms report...");
+			println ("Producing active unacceptable terms report...");
 			report.checkCaseSignificance();
 		} finally {
 			report.finish();
@@ -28,15 +28,22 @@ public class UnacceptableDescriptions extends TermServerReport{
 
 	private void checkCaseSignificance() throws TermServerScriptException {
 		//Work through all active descriptions of all hierarchies
+		Collection<Concept> topLevelHierarchies = gl.getConcept(SCTID_ROOT_CONCEPT).getDescendents(IMMEDIATE_CHILD);
+		targetHierarchies.addAll(topLevelHierarchies);
+		int count = 0;
+		int conceptsChecked = 0;
 		for (Concept targetHierarchy : targetHierarchies) {
 			for (Concept c : targetHierarchy.getDescendents(NOT_SET)) {
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 					if (d.getLangRefsetEntries(ActiveState.ACTIVE).isEmpty()) {
 						report (c, d, d.getEffectiveTime(), "Active term has no acceptability");
+						count++;
 					}
 				}
+				conceptsChecked++;
 			}
 		}
+		println (count + " unacceptable descriptions reported in " + conceptsChecked + " concepts.");
 	}
 	
 	private void report(Concept c, Description d, String effectiveTime, String issue) {
@@ -52,7 +59,6 @@ public class UnacceptableDescriptions extends TermServerReport{
 
 	protected void init(String[] args) throws TermServerScriptException, SnowOwlClientException {
 		super.init(args);
-		targetHierarchies.addAll(ROOT_CONCEPT.getDescendents(IMMEDIATE_CHILD));
 		writeToReportFile("concept, fsn, descId, effectiveTime, issue, description");
 	}
 
