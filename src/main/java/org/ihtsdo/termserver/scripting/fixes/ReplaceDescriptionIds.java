@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
@@ -18,6 +17,7 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Task;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
@@ -96,7 +96,10 @@ public class ReplaceDescriptionIds extends BatchFix implements RF2Constants{
 						String oldDescId = d.getDescriptionId();
 						d.setDescriptionId(null);
 						changesMade++;
-						report(task, concept, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Replaced description id for SCTID: " + oldDescId + " - " + d.getTerm());
+						report(task, concept, Severity.LOW, ReportActionType.DESCRIPTION_CHANGE_MADE, "Replaced description id for SCTID: " + oldDescId + " - " + d.getTerm());
+						if (!d.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE.toString()) && !SnomedUtils.isCaseSensitive(d.getTerm())) {
+							report(task, concept, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Check why term marked case sensitive");
+						}
 					}
 				}
 			}
