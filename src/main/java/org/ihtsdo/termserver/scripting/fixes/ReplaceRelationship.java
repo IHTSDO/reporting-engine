@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;

@@ -42,7 +42,6 @@ public class DuplicateLangRefsetsFix {
 						System.out.println("item" + i);
 						System.out.println(jsonObject);
 						boolean isActive = jsonObject.getBoolean("active");
-						boolean isReleased = jsonObject.getBoolean("released");
 						if (isActive) {
 							duplicateRefMemberId = (String)jsonObject.get("id");
 							acceptabilityId = jsonObject.getString("acceptabilityId");

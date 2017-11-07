@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;

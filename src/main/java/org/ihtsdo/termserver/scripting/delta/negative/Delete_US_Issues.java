@@ -88,7 +88,7 @@ public class Delete_US_Issues extends NegativeDeltaGenerator implements RF2Const
 		for (Concept concept : gl.getAllConcepts()) {
 			deleteUnwantedFsnAcceptability(concept);
 			if (concept.isModified()) {
-				incrementSummaryInformation("Concepts modified", 1);
+				incrementSummaryInformation("Concepts modified");
 				outputRF2(concept);  //Will only output deleted rows
 			}
 		}

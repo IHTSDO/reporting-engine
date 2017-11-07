@@ -61,7 +61,7 @@ public class InactivateRedundantStatedRelationships extends DeltaGenerator imple
 				}
 			}
 			if (concept.isModified()) {
-				incrementSummaryInformation("Concepts modified", 1);
+				incrementSummaryInformation("Concepts modified");
 				if (concept.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
 					report(concept, concept.getFSNDescription(), Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Concept is fully defined");
 				}

@@ -37,7 +37,7 @@ public class ReactivateUSAcceptability extends DeltaGenerator implements RF2Cons
 		for (Concept concept : GraphLoader.getGraphLoader().getAllConcepts()) {
 			fixFsnAcceptability(concept);
 			if (concept.isModified()) {
-				incrementSummaryInformation("Concepts modified", 1);
+				incrementSummaryInformation("Concepts modified");
 				outputRF2(concept);  //Will only output dirty fields.
 			}
 		}

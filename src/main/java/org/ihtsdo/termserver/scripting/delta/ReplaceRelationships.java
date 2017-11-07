@@ -84,7 +84,7 @@ public class ReplaceRelationships extends DeltaGenerator {
 			processRelationships(concept, findRelationshipsForReplace, true);
 			processRelationships(concept, findRelationshipsForAdd, false);
 			if (concept.isModified()) {
-				incrementSummaryInformation("Concepts modified", 1);
+				incrementSummaryInformation("Concepts modified");
 				outputRF2(concept);  //Will only ouput dirty fields.
 			}
 		}

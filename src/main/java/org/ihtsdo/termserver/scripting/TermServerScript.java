@@ -482,6 +482,10 @@ public abstract class TermServerScript implements RF2Constants {
 		summaryDetails.put(item, detail);
 	}
 	
+	public void incrementSummaryInformation(String key) {
+		incrementSummaryInformation(key, 1);
+	}
+	
 	public void incrementSummaryInformation(String key, int incrementAmount) {
 		if (!summaryDetails.containsKey(key)) {
 			summaryDetails.put (key, new Integer(0));

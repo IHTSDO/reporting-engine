@@ -55,6 +55,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	protected boolean populateTaskDescription = true;
 	protected boolean reportNoChange = true;
 	protected boolean worksWithConcepts = true;
+	protected String additionalReportColumns = "ACTION_DETAIL";
 	
 	protected BatchFix (BatchFix clone) {
 		if (clone != null) {
@@ -256,16 +257,20 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		return changesMade;
 	}
 	
-	protected void report(Concept concept, ReportActionType actionType, String actionDetail) {
-		report (null, concept, Severity.LOW, actionType, actionDetail);
+	protected void report(Concept concept, Severity severity, ReportActionType actionType, String... actionDetails) {
+		report (null, concept, severity, actionType, actionDetails);
 	}
 	
-	protected void report(Task task, Component component, Severity severity, ReportActionType actionType, String actionDetail) {
+	protected void report(Concept concept, ReportActionType actionType, String... actionDetails) {
+		report (null, concept, Severity.LOW, actionType, actionDetails);
+	}
+	
+	protected void report(Task task, Component component, Severity severity, ReportActionType actionType, String... details) {
 		if (component != null) {
 			if (severity.equals(Severity.CRITICAL)) {
 				String key = CRITICAL_ISSUE + " encountered for " + component.toString();
-				addSummaryInformation(key, actionDetail);
-				println ( key + " : " + actionDetail);
+				addSummaryInformation(key, details[0]);
+				println ( key + " : " + details[0]);
 			}
 		}
 		String key = (task == null? "" :  task.getKey());
@@ -274,7 +279,10 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		String type = (component == null ? "" : component.getType());
 		String line = key + COMMA + desc + COMMA + component.getId() + COMMA_QUOTE + 
 						name + QUOTE_COMMA + type + COMMA + severity + 
-						COMMA + actionType + COMMA_QUOTE + actionDetail + QUOTE;
+						COMMA + actionType;
+		for (String detail : details) {
+			 line += COMMA_QUOTE + detail + QUOTE;
+		}
 		writeToReportFile (line);
 	}
 
@@ -332,7 +340,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			taskSize = Integer.parseInt(response);
 		}
 		println ("\nBatching " + taskSize + " concepts per task");
-		initialiseReportFile("TASK_KEY, TASK_DESC, SCTID, FSN, CONCEPT_TYPE,SEVERITY,ACTION_TYPE,ACTION_DETAIL");
+		initialiseReportFile("TASK_KEY, TASK_DESC, SCTID, FSN, CONCEPT_TYPE,SEVERITY,ACTION_TYPE," + additionalReportColumns );
 	}
 	
 	protected int ensureAcceptableParent(Task task, Concept c, Concept acceptableParent) {

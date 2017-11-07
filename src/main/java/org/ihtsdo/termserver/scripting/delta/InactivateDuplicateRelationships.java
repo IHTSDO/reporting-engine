@@ -58,7 +58,7 @@ public class InactivateDuplicateRelationships extends DeltaGenerator implements 
 				}
 			}
 			if (concept.isModified()) {
-				incrementSummaryInformation("Concepts modified", 1);
+				incrementSummaryInformation("Concepts modified");
 				outputRF2(concept);  //Will only output dirty fields.
 			}
 		}

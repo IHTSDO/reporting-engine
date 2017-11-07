@@ -3,14 +3,12 @@ package org.ihtsdo.termserver.scripting.fixes;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
-import org.ihtsdo.termserver.scripting.domain.Batch;
 import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.ConceptChange;
@@ -209,12 +207,12 @@ public class AnatomyRemodelling extends BatchFix implements RF2Constants{
 	}
 
 	@Override
-	public void report (Task task, Component concept, Severity severity, ReportActionType actionType, String actionDetail) {
+	public void report (Task task, Component concept, Severity severity, ReportActionType actionType, String... details) {
 		//Keep a running list of items reported, which we might otherwise repeat due to the trial run
 		String taskStr = (task == null)?"Null":task.toString();
-		String concatonatedLine = taskStr + concept + severity + actionType + actionDetail;
+		String concatonatedLine = taskStr + concept + severity + actionType + details[0];
 		if (!reportedItems.contains(concatonatedLine.hashCode())) {
-			super.report(task, concept, severity, actionType, actionDetail);
+			super.report(task, concept, severity, actionType, details[0]);
 			reportedItems.add(concatonatedLine.hashCode());
 		}
 	}
