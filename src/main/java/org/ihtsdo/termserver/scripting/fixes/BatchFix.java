@@ -54,6 +54,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	protected boolean populateEditPanel = true;
 	protected boolean populateTaskDescription = true;
 	protected boolean reportNoChange = true;
+	protected boolean putTaskIntoReview = false;
 	protected boolean worksWithConcepts = true;
 	protected String additionalReportColumns = "ACTION_DETAIL";
 	
@@ -150,7 +151,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 						while (!taskCreated) {
 							try{
 								debug ("Creating jira task on project: " + project);
-								String taskDescription = populateTaskDescription ? task.getSummary() : "Batch Updates - see spreadsheet for details";
+								String taskDescription = populateTaskDescription ? task.getDescriptionHTML() : "Batch Updates - see spreadsheet for details";
 								task.setKey(scaClient.createTask(project.getKey(), task.getSummary(), taskDescription));
 								debug ("Creating task branch in terminology server: " + task);
 								task.setBranchPath(tsClient.createBranch(project.getBranchPath(), task.getKey()));
@@ -229,6 +230,9 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 						if (taskReviewer != null && !taskReviewer.isEmpty()) {
 							debug("Assigning " + task + " to reviewer " + taskReviewer);
 							scaClient.putTaskIntoReview(project.getKey(), task.getKey(), taskReviewer);
+						} else if (putTaskIntoReview) {
+							debug("Putting " + task + " into review");
+							scaClient.putTaskIntoReview(project.getKey(), task.getKey(), null);
 						}
 					}
 				} catch (Exception e) {
