@@ -21,6 +21,7 @@ import java.util.zip.ZipInputStream;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Batch;
+import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.ConceptChange;
 import org.ihtsdo.termserver.scripting.domain.Description;
@@ -36,29 +37,43 @@ import us.monoid.json.JSONObject;
 /*
  * Reads from an RF2 Archive and uses the changes indicated to drive the 
  * TermServer browser API, with tasks grouped by criteria specified by 
- * the concrete class
+ * the concrete class (or just randomly if run directly)
  */
-public abstract class Rf2Player extends BatchFix {
+public class Rf2Player extends BatchFix {
 	
 	protected Map<String, ConceptChange> changingConcepts = new HashMap<String, ConceptChange>();
 	protected Map<String, Description> changingDescriptions = new HashMap<String, Description>();
-		protected Set<Concept> deltaModifications = new HashSet<Concept>();
+	protected Set<Concept> deltaModifications = new HashSet<Concept>();
 	protected List<String[]> langRefsetStorage = new ArrayList<String[]>();
 	protected boolean allowRecentChanges = false;
+	protected String processName = "BE Problematic";
+	
+	public static void main (String[] args) throws FileNotFoundException, TermServerScriptException {
+		Rf2Player player = new Rf2Player(null);
+		player.playRf2Archive(args);
+	}
 	
 	protected Rf2Player(Rf2Player clone) {
 		super(clone);
 	}
 	
+	public String getScriptName() {
+		return processName;
+	}
+	
 	protected void playRf2Archive(String[] args) throws TermServerScriptException, FileNotFoundException {
 		try {
 			selfDetermining = true;
+			//putTaskIntoReview = true;
 			init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			loadProjectSnapshot(false);
 			startTimer();
+			println ("Processing delta");
 			processDelta();
+			println ("Grouping changes into tasks");
 			Batch batch = formIntoBatch();
+			println ("Batch processing tasks...");
 			batchProcess(batch);
 			println ("Processing complete.  See results: " + reportFile.getAbsolutePath());
 		} catch (Exception e) {
@@ -101,6 +116,10 @@ public abstract class Rf2Player extends BatchFix {
 				changingConcept.setFsn(gl.getConcept(changingConcept.getConceptId()).getFsn());
 			}
 		}
+	}
+	
+	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
+		return new ArrayList<Component> (changingConcepts.values());
 	}
 
 	private void processRf2Delta(InputStream is, Rf2File rf2File, String fileName) throws IOException, TermServerScriptException, SnowOwlClientException {
@@ -330,6 +349,13 @@ public abstract class Rf2Player extends BatchFix {
 				}
 			}
 		}
+	}
+
+	@Override
+	protected Concept loadLine(String[] lineItems)
+			throws TermServerScriptException {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }
 
