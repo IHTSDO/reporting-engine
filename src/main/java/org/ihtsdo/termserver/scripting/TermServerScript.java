@@ -32,10 +32,12 @@ import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExportType;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExtractType;
 import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.domain.HistoricalAssociation;
 import org.ihtsdo.termserver.scripting.domain.Project;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.RelationshipSerializer;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.ActiveState;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import com.google.common.base.Charsets;
@@ -644,6 +646,19 @@ public abstract class TermServerScript implements RF2Constants {
 		} catch (Exception e) {
 			throw new TermServerScriptException("Unable to write to " + fileName + " due to " + e.getMessage(), e);
 		}
+	}
+	
+	protected String getPrettyHistoricalAssociation (Concept c) throws TermServerScriptException {
+		String prettyString = "No association specified.";
+		if (c.getHistorialAssociations(ActiveState.ACTIVE).size() > 0) {
+			prettyString = " ";
+			for (HistoricalAssociation assoc : c.getHistorialAssociations(ActiveState.ACTIVE)) {
+				prettyString += SnomedUtils.deconstructFSN(gl.getConcept(assoc.getRefsetId()).getFsn())[0];
+				prettyString += " ->";
+				prettyString += SnomedUtils.deconstructFSN(gl.getConcept(assoc.getTargetComponentId()).getFsn())[0];
+			}
+		}
+		return prettyString;
 	}
 
 }

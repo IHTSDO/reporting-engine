@@ -104,7 +104,9 @@ public class GenerateTranslation extends DeltaGenerator {
 	
 	private void addTranslation(Concept concept, String expectedUSTerm, Description newDescription) throws TermServerScriptException {
 		if (!concept.isActive()) {
-			report (concept, null, Severity.MEDIUM, ReportActionType.VALIDATION_ERROR, "Concept is inactive, skipping");
+			String reason = concept.getInactivationIndicator() != null ? concept.getInactivationIndicator().toString() : "Reason unknown.";
+			String assoc = getPrettyHistoricalAssociation(concept);
+			report (concept, null, Severity.MEDIUM, ReportActionType.VALIDATION_ERROR, "Concept is inactive, skipping. " + reason + assoc);
 			return;
 		}
 		
