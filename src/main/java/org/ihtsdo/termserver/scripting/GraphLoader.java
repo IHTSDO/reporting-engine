@@ -261,7 +261,7 @@ public class GraphLoader implements RF2Constants {
 				if (conceptIndicators) {
 					Concept c = getConcept(lineItems[INACT_IDX_REFCOMPID]);
 					InactivationIndicatorEntry inactivation = InactivationIndicatorEntry.fromRf2(lineItems);
-					c.getInactivationIndicatorEntries().add(inactivation);
+					c.addInactivationIndicator(inactivation);
 				} else {
 					//Description inactivation indicators.  We'll only load the current active one, and warn if there is more than one.
 					if (lineItems[INACT_IDX_ACTIVE].equals(ACTIVE_FLAG)) {

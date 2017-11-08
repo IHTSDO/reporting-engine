@@ -653,9 +653,9 @@ public abstract class TermServerScript implements RF2Constants {
 		if (c.getHistorialAssociations(ActiveState.ACTIVE).size() > 0) {
 			prettyString = " ";
 			for (HistoricalAssociation assoc : c.getHistorialAssociations(ActiveState.ACTIVE)) {
-				prettyString += SnomedUtils.deconstructFSN(gl.getConcept(assoc.getRefsetId()).getFsn())[0];
-				prettyString += " ->";
-				prettyString += SnomedUtils.deconstructFSN(gl.getConcept(assoc.getTargetComponentId()).getFsn())[0];
+				prettyString += SnomedUtils.deconstructFSN(gl.getConcept(assoc.getRefsetId()).getFsn())[0].replace(" association reference set", "");
+				prettyString += " -> ";
+				prettyString += gl.getConcept(assoc.getTargetComponentId());
 			}
 		}
 		return prettyString;

@@ -691,4 +691,11 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 		this.isDirty = true;
 	}
 
+	public void addInactivationIndicator(InactivationIndicatorEntry i) {
+		getInactivationIndicatorEntries().add(i);
+		if (i.isActive()) {
+			setInactivationIndicator(SnomedUtils.translateInactivationIndicator(i.getInactivationReasonId()));
+		}
+	}
+
 }
