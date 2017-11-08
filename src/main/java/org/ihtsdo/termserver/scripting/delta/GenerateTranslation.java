@@ -144,7 +144,20 @@ public class GenerateTranslation extends DeltaGenerator {
 			severity = Severity.HIGH;
 		} else {
 			descAccept = newDescription.isPreferred() ? "P":"A";
+			
+			//If not rejecting completely due to being an exact duplicate,
+			//are we trying to add a PT when we already have one in that language?
+			if (newDescription.isPreferred()) {
+				String refsetId = langToRefsetMap.get(newDescription.getLang());
+				Description existingPT = concept.getPreferredSynonym(refsetId);
+				if (existingPT != null) {
+					msg = "Existing PT existing for " + newDescription.getLang() + ", demoting to acceptable.";
+					demoteLangRefsetEntry(newDescription);
+					severity = Severity.HIGH;
+				}
+			}
 		}
+		
 		concept.addDescription(newDescription);
 		
 		String cs = " (" + newDescription.getLang() + " " +  descAccept + " - "+ SnomedUtils.translateCaseSignificanceFromSctId(newDescription.getCaseSignificance()) + ")";
@@ -246,6 +259,21 @@ public class GenerateTranslation extends DeltaGenerator {
 		l.setReferencedComponentId(d.getDescriptionId());
 		l.setDirty();
 		d.getLangRefsetEntries().add(l);
+	}
+	
+	private void demoteLangRefsetEntry(Description d) {
+		//find the language refset entry for this description which is expected to be PT
+		//and modify to be acceptable
+		int changesMade = 0;
+		for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.ACTIVE, langToRefsetMap.get(d.getLang()))) {
+			if (l.getAcceptabilityId().equals(SCTID_PREFERRED_TERM)) {
+				l.setAcceptabilityId(SCTID_ACCEPTABLE_TERM);
+				changesMade++;
+			}
+		}
+		if (changesMade != 1) {
+			System.out.println ("*** Warning " + changesMade + " lang refset changes made to " + d);
+		}
 	}
 
 }

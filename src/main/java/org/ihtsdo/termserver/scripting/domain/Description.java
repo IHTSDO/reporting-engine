@@ -414,6 +414,26 @@ public class Description implements RF2Constants{
 		this.released = released;
 	}
 
+	public Acceptability getAcceptability(String langRefsetId) throws TermServerScriptException {
+		//Are we working with the JSON map, or RF2 Lang refset entries?
+		if (acceptabilityMap != null) {
+			for (Map.Entry<String, Acceptability> entry: acceptabilityMap.entrySet()) {
+				if (entry.getKey().equals(langRefsetId)) {
+					return entry.getValue();
+				}
+			}
+		}
+		
+		if (langRefsetEntries != null) {
+			for (LangRefsetEntry entry : langRefsetEntries) {
+				if (entry.getRefsetId().equals(langRefsetId)) {
+					SnomedUtils.translateAcceptability(entry.getAcceptabilityId());
+				}
+			}
+		}
+		return null;
+	}
+
 
 
 }

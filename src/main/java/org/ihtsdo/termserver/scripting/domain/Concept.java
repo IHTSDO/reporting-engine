@@ -143,8 +143,18 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 		this.definitionStatus = definitionStatus;
 	}
 
+	/**
+	 * This doesn't make any sense without saying which dialect to work in.  It must
+	 * come from the json representation which is requested with a dialect setting
+	 * @return
+	 */
 	public String getPreferredSynonym() {
 		return preferredSynonym;
+	}
+	
+	public Description getPreferredSynonym(String refsetId) throws TermServerScriptException {
+		List<Description> pts = getDescriptions(refsetId, Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE);
+		return pts.size() == 0 ? null : pts.get(0);
 	}
 
 	public void setPreferredSynonym(String preferredSynonym) {
@@ -410,7 +420,8 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 		//Get the matching terms, and then pick the ones that have the appropriate Acceptability for the specified Refset
 		List<Description> matchingDescriptions = new ArrayList<Description>();
 		for (Description d : getDescriptions(targetAcceptability, descriptionType, active)) {
-			Acceptability Acceptability = d.getAcceptabilityMap().get(langRefsetId);
+			//We might have this acceptability either from a Map (JSON) or Langrefset entry (RF2)
+			Acceptability Acceptability = d.getAcceptability(langRefsetId);
 			if (Acceptability!= null && Acceptability.equals(targetAcceptability)) {
 				//Need to check the Acceptability because the first function might match on some other language
 				matchingDescriptions.add(d);
