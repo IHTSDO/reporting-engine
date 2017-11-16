@@ -106,8 +106,7 @@ public class GenerateTranslation extends DeltaGenerator {
 		if (!concept.isActive()) {
 			String reason = concept.getInactivationIndicator() != null ? concept.getInactivationIndicator().toString() : "Reason unknown.";
 			String assoc = getPrettyHistoricalAssociation(concept);
-			report (concept, null, Severity.MEDIUM, ReportActionType.VALIDATION_ERROR, "Concept is inactive, skipping. " + reason + ", " + assoc);
-			return;
+			report (concept, null, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Warning! Concept is inactive. " + reason + ", " + assoc);
 		}
 		
 		if (expectedUSTerm != null) {
