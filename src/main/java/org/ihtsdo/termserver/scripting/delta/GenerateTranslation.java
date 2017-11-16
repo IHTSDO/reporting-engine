@@ -115,8 +115,12 @@ public class GenerateTranslation extends DeltaGenerator {
 			//We're no longer receiving the current US term
 			Description usPrefTerm = getUsPrefTerm(concept);
 			if (!usPrefTerm.getTerm().equals(expectedUSTerm)) {
-				report (concept, usPrefTerm, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Current term is not what was translated.  Translation file expected: " + expectedUSTerm);
-				return;
+				//Check if we're perhaps using the FSN (without the semantic tag)
+				String fsn = SnomedUtils.deconstructFSN(concept.getFsn())[0];
+				if (!fsn.equals(expectedUSTerm)) {
+					report (concept, usPrefTerm, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Current term is not what was translated.  Translation file expected: " + expectedUSTerm);
+					return;
+				}
 			}
 		}
 		
