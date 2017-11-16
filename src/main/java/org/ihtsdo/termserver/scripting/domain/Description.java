@@ -274,7 +274,7 @@ public class Description implements RF2Constants{
 		acceptabilityMap.put(refsetId, Acceptability);
 	}
 	
-	private void removeAcceptability(String refsetId) {
+	public void removeAcceptability(String refsetId) {
 		//If we've no acceptability yet, then nothing to do here
 		if (acceptabilityMap != null) {
 			acceptabilityMap.remove(refsetId);
@@ -395,7 +395,7 @@ public class Description implements RF2Constants{
 	}
 
 	//A langrefset entry is an RF2 representation, where the acceptability map
-	//is a text based json representation.   This method allos the former to 
+	//is a text based json representation.   This method allows the former to 
 	//be converted to the latter.
 	public void addAcceptability(LangRefsetEntry lang) throws TermServerScriptException {
 		if (lang.isActive()) {
@@ -426,14 +426,12 @@ public class Description implements RF2Constants{
 		
 		if (langRefsetEntries != null) {
 			for (LangRefsetEntry entry : langRefsetEntries) {
-				if (entry.getRefsetId().equals(langRefsetId)) {
-					SnomedUtils.translateAcceptability(entry.getAcceptabilityId());
+				if (entry.getRefsetId().equals(langRefsetId) && entry.isActive()) {
+					return SnomedUtils.translateAcceptability(entry.getAcceptabilityId());
 				}
 			}
 		}
 		return null;
 	}
-
-
 
 }

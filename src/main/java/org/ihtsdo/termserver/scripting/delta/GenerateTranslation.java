@@ -141,7 +141,7 @@ public class GenerateTranslation extends DeltaGenerator {
 				SnomedUtils.mergeLangRefsetEntries(newDescription, duplicate);
 				msg += " - first term promoted to Preferred";
 			} else {
-				msg += " - ignoring duplicate acceptable term";
+				msg += " - ignoring duplicate term";
 			}
 			severity = Severity.HIGH;
 		} else {
@@ -153,7 +153,7 @@ public class GenerateTranslation extends DeltaGenerator {
 				String refsetId = langToRefsetMap.get(newDescription.getLang());
 				Description existingPT = concept.getPreferredSynonym(refsetId);
 				if (existingPT != null) {
-					msg = "Existing PT existing for " + newDescription.getLang() + ", demoting to acceptable.";
+					msg = "Existing PT detected, demoting to acceptable.";
 					demoteLangRefsetEntry(newDescription);
 					severity = Severity.HIGH;
 				}
@@ -169,7 +169,12 @@ public class GenerateTranslation extends DeltaGenerator {
 	private Description getUsPrefTerm(Concept currentState) throws TermServerScriptException {
 		List<Description> terms = currentState.getDescriptions(US_ENG_LANG_REFSET, Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE);
 		if (terms.size() != 1) {
-			throw new TermServerScriptException("Expected to find 1 x US preferred term, found " + terms.size());
+			String msg = "";
+			for (Description term : terms) {
+				msg += ", " + term;
+			}
+			//throw new TermServerScriptException("Expected to find 1 x US preferred term, found " + terms.size() + msg);
+			warn(currentState + " - expected to find 1 x US preferred term, found " + terms.size() + msg);
 		}
 		return terms.get(0);
 	}

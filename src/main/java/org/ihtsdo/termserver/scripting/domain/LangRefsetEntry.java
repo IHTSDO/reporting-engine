@@ -2,6 +2,8 @@ package org.ihtsdo.termserver.scripting.domain;
 
 import java.util.UUID;
 
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+
 
 //id	effectiveTime	active	moduleId	refsetId	referencedComponentId	acceptabilityId
 public class LangRefsetEntry implements RF2Constants{
@@ -150,5 +152,16 @@ public class LangRefsetEntry implements RF2Constants{
 		}
 		//TODO Otherwise compare contents
 		return false;
+	}
+	
+	@Override
+	public String toString() {
+		try {
+		return "[ " + getReferencedComponentId() + " is " + 
+				SnomedUtils.translateAcceptability(getAcceptabilityId()) + " in " +
+				getRefsetId() + " ]";
+		} catch (Exception e) {
+			return e.getMessage();
+		}
 	}
 }

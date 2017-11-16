@@ -9,6 +9,8 @@ import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
+import sun.security.action.GetLongAction;
+
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
@@ -393,23 +395,48 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 		return null;
 	}
 
+	//A preferred description can be preferred in either dialect, but if we're looking for an acceptable one, 
+	//then it must not also be preferred in the other dialect
 	public List<Description> getDescriptions(Acceptability acceptability, DescriptionType descriptionType, ActiveState activeState) throws TermServerScriptException {
 		List<Description> matchingDescriptions = new ArrayList<Description>();
 		for (Description thisDescription : getDescriptions(activeState)) {
-			if (	( thisDescription.getAcceptabilityMap() != null && 
-						( acceptability.equals(Acceptability.BOTH) || thisDescription.getAcceptabilityMap().containsValue(acceptability) )) &&
-					( descriptionType == null || thisDescription.getType().equals(descriptionType) )
-				) {
-				if (acceptability.equals(Acceptability.BOTH)) {
-					matchingDescriptions.add(thisDescription);
-				} else if (acceptability.equals(Acceptability.PREFERRED) || !thisDescription.getAcceptabilityMap().containsValue(Acceptability.PREFERRED)) {
-					//A preferred description can be preferred in either dialect, but if we're looking for an acceptable one, 
-					//then it must not also be preferred in the other dialect
-					matchingDescriptions.add(thisDescription);
-				}
-			} else {
-				if (thisDescription.getAcceptabilityMap() == null && thisDescription.isActive()) {
-					TermServerScript.warn (thisDescription + " is active with no Acceptability map (since " + thisDescription.getEffectiveTime() + ").");
+			//Is this description of the right type?
+			if ( descriptionType == null || thisDescription.getType().equals(descriptionType)) {
+				//Are we working with JSON representation and acceptability map, or an RF2 representation
+				//with language refset entries?
+				if (thisDescription.getAcceptabilityMap() != null) {
+					if ( acceptability.equals(Acceptability.BOTH) || thisDescription.getAcceptabilityMap().containsValue(acceptability)) {
+						if (acceptability.equals(Acceptability.BOTH)) {
+							matchingDescriptions.add(thisDescription);
+						} else if (acceptability.equals(Acceptability.PREFERRED) || !thisDescription.getAcceptabilityMap().containsValue(Acceptability.PREFERRED)) {
+							matchingDescriptions.add(thisDescription);
+						}
+					}
+				} else if (!thisDescription.getLangRefsetEntries().isEmpty()) {
+					boolean match = false;
+					boolean preferredFound = false;
+					for (LangRefsetEntry l : thisDescription.getLangRefsetEntries(ActiveState.ACTIVE)) {
+						if (acceptability.equals(Acceptability.BOTH) || 
+							acceptability.equals(SnomedUtils.translateAcceptability(l.getAcceptabilityId()))) {
+							match = true;
+						} 
+						
+						if (l.getAcceptabilityId().equals(SCTID_PREFERRED_TERM)) {
+							preferredFound = true;
+						}
+					}
+					//Did we find one, and if it's acceptable, did we also not find another preferred
+					if (match) {
+						if (acceptability.equals(Acceptability.ACCEPTABLE)) {
+							if (!preferredFound) {
+								matchingDescriptions.add(thisDescription);
+							}
+						} else {
+							matchingDescriptions.add(thisDescription);
+						}
+					}
+				} else {
+					TermServerScript.warn (thisDescription + " is active with no Acceptability map or Language Refset entries (since " + thisDescription.getEffectiveTime() + ").");
 				}
 			}
 		}
@@ -421,8 +448,8 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 		List<Description> matchingDescriptions = new ArrayList<Description>();
 		for (Description d : getDescriptions(targetAcceptability, descriptionType, active)) {
 			//We might have this acceptability either from a Map (JSON) or Langrefset entry (RF2)
-			Acceptability Acceptability = d.getAcceptability(langRefsetId);
-			if (Acceptability!= null && Acceptability.equals(targetAcceptability)) {
+			Acceptability acceptability = d.getAcceptability(langRefsetId);
+			if (targetAcceptability == Acceptability.BOTH || (acceptability!= null && acceptability.equals(targetAcceptability))) {
 				//Need to check the Acceptability because the first function might match on some other language
 				matchingDescriptions.add(d);
 			}

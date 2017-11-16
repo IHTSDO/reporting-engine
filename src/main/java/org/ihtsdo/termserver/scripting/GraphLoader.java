@@ -224,14 +224,44 @@ public class GraphLoader implements RF2Constants {
 				String[] lineItems = line.split(FIELD_DELIMITER);
 				Description d = getDescription(lineItems[LANG_IDX_REFCOMPID]);
 				LangRefsetEntry langRefsetEntry = LangRefsetEntry.fromRf2(lineItems);
+				
 				//Are we adding or replacing this entry?
 				if (d.getLangRefsetEntries().contains(langRefsetEntry)) {
 					d.getLangRefsetEntries().remove(langRefsetEntry);
 				}
-				d.getLangRefsetEntries().add(langRefsetEntry);
-				if (lineItems[LANG_IDX_ACTIVE].equals("1")) {
-					Acceptability a = SnomedUtils.translateAcceptability(lineItems[LANG_IDX_ACCEPTABILITY_ID]);
-					d.setAcceptablity(lineItems[LANG_IDX_REFSETID], a);
+				
+				//Complexity here that we've historically had language refset entries
+				//for the same description which attempt to cancel each other out using
+				//different UUIDs.  Therefore if we get a later entry inactivating a given
+				//dialect, then allow that to overwrite an earlier value with a different UUUID
+				
+				//Do we have an existing entry for this description & dialect that is later and inactive?
+				boolean clearToAdd = true;
+				String issue = "";
+				List<LangRefsetEntry> allExisting = d.getLangRefsetEntries(ActiveState.BOTH, langRefsetEntry.getRefsetId());
+				for (LangRefsetEntry existing : allExisting) {
+					if (existing.getEffectiveTime().compareTo(langRefsetEntry.getEffectiveTime()) > 1) {
+						clearToAdd = false;
+						issue = "Existing " + (existing.isActive()? "active":"inactive") +  " langrefset entry taking priority as later : " + existing;
+					} else {
+						//New entry is later than one we already know about
+						d.getLangRefsetEntries().remove(existing);
+						issue = "Existing langrefset entry being overwritten by subsequent value " + existing;
+					}
+				}
+				
+				if (!issue.isEmpty()) {
+					System.out.println("**Warning: " + issue);
+				}
+				
+				if (clearToAdd) {
+					d.getLangRefsetEntries().add(langRefsetEntry);
+					if (lineItems[LANG_IDX_ACTIVE].equals("1")) {
+						Acceptability a = SnomedUtils.translateAcceptability(lineItems[LANG_IDX_ACCEPTABILITY_ID]);
+						d.setAcceptablity(lineItems[LANG_IDX_REFSETID], a);
+					} else {
+						d.removeAcceptability(lineItems[LANG_IDX_REFSETID]);
+					}
 				}
 			} else {
 				isHeaderLine = false;
