@@ -22,7 +22,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  */
 public class GenerateTranslation extends DeltaGenerator {
 	
-	KnownTranslations thisTranslation = KnownTranslations.BELGIUM;
+	KnownTranslations thisTranslation = KnownTranslations.SWEDEN;
 	enum KnownTranslations { SWEDEN, BELGIUM };
 	Map<String, String> langToRefsetMap = new HashMap<>();
 	
