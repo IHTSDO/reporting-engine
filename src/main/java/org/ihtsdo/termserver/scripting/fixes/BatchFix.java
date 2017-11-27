@@ -57,6 +57,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	protected boolean putTaskIntoReview = false;
 	protected boolean worksWithConcepts = true;
 	protected String additionalReportColumns = "ACTION_DETAIL";
+	protected List<Component> allConceptsToProcess = new ArrayList<>();
 	
 	protected BatchFix (BatchFix clone) {
 		if (clone != null) {
@@ -69,13 +70,12 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	}
 	
 	protected List<Component> processFile() throws TermServerScriptException {
-		List<Component> allConcepts = new ArrayList<>();
 		Batch batch;
 		if (selfDetermining) {
 			batch = formIntoBatch();
 		} else {
-			allConcepts = super.processFile();
-			batch = formIntoBatch(allConcepts);
+			allConceptsToProcess = super.processFile();
+			batch = formIntoBatch(allConceptsToProcess);
 		}
 		batchProcess(batch);
 		if (emailDetails != null) {
@@ -83,7 +83,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			sendEmail(msg, reportFile);
 		}
 		println ("Processing complete.  See results: " + reportFile.getAbsolutePath());
-		return allConcepts;
+		return allConceptsToProcess;
 	}
 	
 	
@@ -353,7 +353,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		int changesMade = 0;
 		for (Relationship thisParent : statedParents) {
 			if (!thisParent.getTarget().equals(acceptableParent)) {
-				report(task, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_REMOVED, "Inactivated unwanted parent: " + thisParent.getTarget());
+				report(task, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_INACTIVATED, "Inactivated unwanted parent: " + thisParent.getTarget());
 				thisParent.setActive(false);
 				changesMade++;
 			} else {

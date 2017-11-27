@@ -345,7 +345,7 @@ public class Rf2Player extends BatchFix {
 					report (task, loadedConcept, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Relationship " + r.getRelationshipId() + " did not exist in TS to inactivate");
 				} else {
 					loadedRelationship.setActive(false);
-					report (task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_REMOVED, loadedRelationship.toString());
+					report (task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_INACTIVATED, loadedRelationship.toString());
 				}
 			}
 		}

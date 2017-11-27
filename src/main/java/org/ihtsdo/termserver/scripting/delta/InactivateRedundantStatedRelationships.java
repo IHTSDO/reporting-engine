@@ -54,7 +54,7 @@ public class InactivateRedundantStatedRelationships extends DeltaGenerator imple
 								lessSpecificISA.setActive(false);
 								concept.setModified();
 								String msg = "Inactivated " + lessSpecificISA + " in favour of more specific " + moreSpecificISA;
-								report(concept, concept.getFSNDescription(), Severity.MEDIUM, ReportActionType.RELATIONSHIP_REMOVED, msg);
+								report(concept, concept.getFSNDescription(), Severity.MEDIUM, ReportActionType.RELATIONSHIP_INACTIVATED, msg);
 							}
 						}
 					}

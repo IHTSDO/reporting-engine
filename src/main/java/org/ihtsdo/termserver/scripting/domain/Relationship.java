@@ -71,8 +71,15 @@ public class Relationship implements RF2Constants, Comparable<Relationship> {
 		this.type = type;
 		this.target = target;
 		this.source = source;
-		this.sourceId = source.getConceptId();
+		if (source != null) {
+			this.sourceId = source.getConceptId();
+		}
 		this.groupId = groupId;
+		
+		//Default values
+		this.active = true;
+		this.characteristicType = CharacteristicType.STATED_RELATIONSHIP;
+		this.modifier = Modifier.EXISTENTIAL;
 	}
 
 	/**
@@ -284,6 +291,11 @@ public class Relationship implements RF2Constants, Comparable<Relationship> {
 		}
 		Relationship rhs = ((Relationship) other);
 		
+		//Must be of the same characteristic type
+		if (!this.getCharacteristicType().equals(rhs.characteristicType)) {
+			return false;
+		}
+		
 		//If both sides have an SCTID, then compare that
 		if (this.getRelationshipId() != null && rhs.getRelationshipId() != null) {
 			return this.getRelationshipId().equals(rhs.getRelationshipId());
@@ -368,6 +380,9 @@ public class Relationship implements RF2Constants, Comparable<Relationship> {
 
 	public void setSource(Concept source) {
 		this.source = source;
+		if (source != null) {
+			this.sourceId = source.getConceptId();
+		}
 	}
 
 	public boolean isDeleted() {

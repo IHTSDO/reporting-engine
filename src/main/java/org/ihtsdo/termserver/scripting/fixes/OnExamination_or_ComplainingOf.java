@@ -137,7 +137,7 @@ public class OnExamination_or_ComplainingOf extends BatchFix implements RF2Const
 		} else {
 			rel.setEffectiveTime(null);
 			rel.setActive(false);
-			report (t, loadedConcept, Severity.MEDIUM, ReportActionType.RELATIONSHIP_REMOVED, "Inactivated parent: " + rel.getTarget() + " in favour of " + retained);
+			report (t, loadedConcept, Severity.MEDIUM, ReportActionType.RELATIONSHIP_INACTIVATED, "Inactivated parent: " + rel.getTarget() + " in favour of " + retained);
 		}
 	}
 

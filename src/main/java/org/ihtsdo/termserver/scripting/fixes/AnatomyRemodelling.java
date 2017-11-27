@@ -95,7 +95,7 @@ public class AnatomyRemodelling extends BatchFix implements RF2Constants{
 					//We'll inactivate this relationship
 					if (!trialRun) {
 						inactivateMe.setActive(false);
-						report(task, tsConcept, Severity.LOW, ReportActionType.RELATIONSHIP_REMOVED, changingRelationship.toString());
+						report(task, tsConcept, Severity.LOW, ReportActionType.RELATIONSHIP_INACTIVATED, changingRelationship.toString());
 					}
 					changesMade++;
 				}

@@ -85,15 +85,18 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 	
 	public Concept(String conceptId) {
 		this.conceptId = conceptId;
+		
+		//default values
+		this.definitionStatus = DefinitionStatus.PRIMITIVE;
 	}
 	
 	public Concept(String conceptId, String fsn) {
-		this.conceptId = conceptId;
+		this(conceptId);
 		this.fsn = fsn;
 	}
 
 	public Concept(String conceptId, int originalFileLineNumber) {
-		this.conceptId = conceptId;
+		this(conceptId);
 		this.originalFileLineNumber = originalFileLineNumber;
 	}
 
