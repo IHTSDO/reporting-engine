@@ -88,7 +88,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		switch (concept.getConceptType()) {
 			case MEDICINAL_ENTITY : changesMade = mef.doFix(task, loadedConcept, info);
 									break;
-			case MEDICINAL_FORM : changesMade = mff.doFix(task, loadedConcept, info);
+			case MEDICINAL_PRODUCT_FORM : changesMade = mff.doFix(task, loadedConcept, info);
 									break;
 			case PRODUCT_STRENGTH : changesMade = psf.doFix(task, loadedConcept, info);
 									break;
@@ -597,7 +597,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 			//If the concept has a dose form, then it's a Medicinal Form
 			List<Relationship> doseFormAttributes = concept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HAS_DOSE_FORM, ActiveState.ACTIVE);
 			if (!doseFormAttributes.isEmpty()) {
-				concept.setConceptType(ConceptType.MEDICINAL_FORM);
+				concept.setConceptType(ConceptType.MEDICINAL_PRODUCT_FORM);
 			}
 		}
 		debug ("Determined " + concept + " to be " + concept.getConceptType());

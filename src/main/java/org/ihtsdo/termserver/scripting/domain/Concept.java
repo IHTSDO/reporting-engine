@@ -334,7 +334,7 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 		} else if (conceptTypeStr.contains("Entity")) {
 			this.setConceptType(ConceptType.MEDICINAL_ENTITY);
 		} else if (conceptTypeStr.contains("Form")) {
-			this.setConceptType(ConceptType.MEDICINAL_FORM);
+			this.setConceptType(ConceptType.MEDICINAL_PRODUCT_FORM);
 		} else if (conceptTypeStr.contains("Grouper")) {
 			this.setConceptType(ConceptType.GROUPER);
 		} else {

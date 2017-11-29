@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
@@ -20,6 +19,7 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Task;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.ConceptType;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
@@ -52,6 +52,8 @@ public class NormalizeDrugTerms extends BatchFix implements RF2Constants{
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
 		NormalizeDrugTerms fix = new NormalizeDrugTerms(null);
 		try {
+			fix.populateEditPanel = false;
+			fix.populateTaskDescription = false;
 			fix.selfDetermining = true;
 			fix.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
@@ -122,25 +124,32 @@ public class NormalizeDrugTerms extends BatchFix implements RF2Constants{
 
 			//Have we made any changes?  Create a new description if so
 			if (!replacementTerm.equals(d.getTerm())) {
+				boolean doReplacement = true;
 				if (termAlreadyExists(concept, replacementTerm)) {
-					report(task, concept, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, "Replacement term already exists: " + replacementTerm);
-				} else {
-					Description replacement = d.clone(null);
-					replacement.setTerm(replacementTerm);
-					String msg;
-					//Has our description been published?  Remove entirely if not
-					if (d.isReleased()) {
-						d.setActive(false);
-						d.setInactivationIndicator(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
-						msg = "Replaced " + d.getDescriptionId() + " - '" + d.getTerm().toString() + "' with '" + replacementTerm + "'";
-					} else {
-						concept.getDescriptions().remove(d);
-						msg = "Deleted " + d.getDescriptionId() + " - '" + d.getTerm().toString() + "' in favour of '" + replacementTerm + "'";
-					}
-					concept.addDescription(replacement);
-					changesMade++;
-					report(task, concept, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, msg);
+					report(task, concept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Replacement term already exists: '" + replacementTerm + "' inactivating abnormal term only.");
+					doReplacement = false;
 				}
+				
+				Description replacement = d.clone(null);
+				replacement.setTerm(replacementTerm);
+				String msg;
+				//Has our description been published?  Remove entirely if not
+				if (d.isReleased()) {
+					d.setActive(false);
+					d.setInactivationIndicator(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
+					msg = "Inactivated ";
+				} else {
+					concept.getDescriptions().remove(d);
+					msg = "Deleted ";
+				}
+				msg +=  d.getDescriptionId() + " - '" + d.getTerm().toString();
+				
+				if (doReplacement) {
+					msg += "' in favour of '" + replacementTerm + "'";
+					concept.addDescription(replacement);
+				}
+				changesMade++;
+				report(task, concept, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, msg);
 			}
 		}
 		return changesMade;
@@ -162,6 +171,18 @@ public class NormalizeDrugTerms extends BatchFix implements RF2Constants{
 		println("Identifying concepts to process");
 		for (Concept c : allPotential) {
 			if (c.getFsn().startsWith(findConceptsStarting)) {
+				//We're going to skip Clinical Drugs
+				String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
+				switch (semTag) {
+					case "(medicinal product)" : c.setConceptType(ConceptType.MEDICINAL_PRODUCT);
+												 break;
+					case "(medicinal product form)" : c.setConceptType(ConceptType.MEDICINAL_PRODUCT_FORM);
+					 							break;
+					case "(clinical drug)" : c.setConceptType(ConceptType.CLINICAL_DRUG);
+												continue;  //Skip CDs for now.
+					default : c.setConceptType(ConceptType.UNKNOWN);
+				}
+				
 				//Identify either PT contains /1 each OR ingredients in wrong order 
 				//OR contains a + sign
 				Description pt = c.getDescriptions(Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE).get(0);
