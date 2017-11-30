@@ -19,7 +19,6 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Task;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.ConceptType;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
@@ -44,6 +43,8 @@ public class NormalizeDrugTerms extends BatchFix implements RF2Constants{
 	static final String ONLY = "only ";
 	final String AND = " and ";
 	List<String> doseForms = new ArrayList<String>();
+	private List<String> exceptions = new ArrayList<>();
+	private String[] vitamins = new String[] {" A ", " B ", " C ", " D ", " E " };
 	
 	protected NormalizeDrugTerms(BatchFix clone) {
 		super(clone);
@@ -55,6 +56,7 @@ public class NormalizeDrugTerms extends BatchFix implements RF2Constants{
 			fix.populateEditPanel = false;
 			fix.populateTaskDescription = false;
 			fix.selfDetermining = true;
+			fix.runStandAlone = true;
 			fix.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			fix.loadProjectSnapshot(false); //Load all descriptions
@@ -80,6 +82,9 @@ public class NormalizeDrugTerms extends BatchFix implements RF2Constants{
 
 	protected void init(String[] args) throws TermServerScriptException, IOException {
 		super.init(args);
+		exceptions.add("423967005");
+		exceptions.add("319925005");
+		exceptions.add("423967005");
 	}
 
 	@Override
@@ -89,8 +94,8 @@ public class NormalizeDrugTerms extends BatchFix implements RF2Constants{
 		if (changesMade > 0) {
 			try {
 				String conceptSerialised = gson.toJson(loadedConcept);
+				debug ((dryRun?"Skipping update":"Updating state") + " of " + loadedConcept + info);
 				if (!dryRun) {
-					debug ("Updating state of " + loadedConcept + info);
 					tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
 				}
 			} catch (Exception e) {
@@ -170,7 +175,9 @@ public class NormalizeDrugTerms extends BatchFix implements RF2Constants{
 		Set<Concept> allAffected = new TreeSet<Concept>();  //We want to process in the same order each time, in case we restart and skip some.
 		println("Identifying concepts to process");
 		for (Concept c : allPotential) {
-			if (c.getFsn().startsWith(findConceptsStarting)) {
+			if (exceptions.contains(c.getId())) {
+				report (c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Concept manually listed as an exception");
+			} else if (c.getFsn().startsWith(findConceptsStarting)) {
 				//We're going to skip Clinical Drugs
 				String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
 				switch (semTag) {
@@ -216,6 +223,7 @@ public class NormalizeDrugTerms extends BatchFix implements RF2Constants{
 			semanticTag = " " + parts[1];
 		}
 		
+		String origTerm = term;
 		String prefix = "";
 		if (term.startsWith(findConceptsStarting)) {
 			prefix = findConceptsStarting + " ";
@@ -236,6 +244,22 @@ public class NormalizeDrugTerms extends BatchFix implements RF2Constants{
 		if (prefix.isEmpty()) {
 			term = StringUtils.capitalizeFirstLetter(term);
 		}
+		
+		//See if we've accidentally made vitamin letters lower case and switch back
+		for (String vitamin : vitamins) {
+			if (origTerm.contains(vitamin)) {
+				term = term.replace(vitamin.toLowerCase(), vitamin);
+			} else if (origTerm.endsWith(vitamin.substring(0, 2))) {
+				//Is it still at the end?
+				if (term.endsWith(vitamin.toLowerCase().substring(0, 2))) {
+					term = term.replace(vitamin.toLowerCase().substring(0, 2), vitamin.substring(0, 2));
+				} else {
+					//It should now have a space around it
+					term = term.replace(vitamin.toLowerCase(), vitamin);
+				}
+			}
+		}
+		
 		return prefix + term + oneEach + suffix + semanticTag;
 	}
 

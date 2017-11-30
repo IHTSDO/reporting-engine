@@ -379,6 +379,7 @@ public abstract class TermServerScript implements RF2Constants {
 				//In a dry run situation, the task branch is not created so use the Project instead
 				branchPath = branchPath.substring(0, branchPath.lastIndexOf("/"));
 				if (runStandAlone) {
+					debug ("Loading: " + gl.getConcept(concept.getConceptId()) + " from local store");
 					return gl.getConcept(concept.getConceptId());
 				}
 			}
