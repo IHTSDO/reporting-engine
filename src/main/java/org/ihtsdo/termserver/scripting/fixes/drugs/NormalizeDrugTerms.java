@@ -56,7 +56,7 @@ public class NormalizeDrugTerms extends BatchFix implements RF2Constants{
 			fix.populateEditPanel = false;
 			fix.populateTaskDescription = false;
 			fix.selfDetermining = true;
-			fix.runStandAlone = true;
+			//fix.runStandAlone = true;
 			fix.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			fix.loadProjectSnapshot(false); //Load all descriptions

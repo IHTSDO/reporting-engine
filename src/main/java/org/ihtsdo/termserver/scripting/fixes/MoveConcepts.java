@@ -41,6 +41,7 @@ public class MoveConcepts extends BatchFix implements RF2Constants{
 			fix.reportNoChange = true;
 			fix.populateEditPanel = false;
 			fix.populateTaskDescription = true;
+			fix.additionalReportColumns = "ACTION_DETAIL, DEF_STATUS, ATTRIBUTES";
 			fix.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			fix.loadProjectSnapshot(true); 
@@ -234,21 +235,36 @@ public class MoveConcepts extends BatchFix implements RF2Constants{
 		
 		//Get our local copy of the concept since it knows the ConceptType
 		Concept concept = gl.getConcept(loadedConcept.getConceptId());
+		Integer attributeCount = countAttributes(loadedConcept);
 		
 		//Are we inactivating or deleting this relationship?
 		if (rel.getEffectiveTime() == null || rel.getEffectiveTime().isEmpty()) {
 			loadedConcept.removeRelationship(rel);
-			report (t, concept, Severity.LOW, ReportActionType.RELATIONSHIP_DELETED, "Deleted " + msgQualifier + " parent relationship: " + rel.getTarget() + " in favour of " + retained);
+			String msg = "Deleted " + msgQualifier + " parent relationship: " + rel.getTarget() + " in favour of " + retained;
+			report (t, concept, Severity.LOW, ReportActionType.RELATIONSHIP_DELETED, msg, concept.getDefinitionStatus().toString(), attributeCount.toString());
 		} else {
 			rel.setEffectiveTime(null);
 			rel.setActive(false);
-			report (t, concept, Severity.LOW, ReportActionType.RELATIONSHIP_INACTIVATED, "Inactivated " + msgQualifier + " parent relationship: " + rel.getTarget() + " in favour of " + retained);
+			String msg = "Inactivated " + msgQualifier + " parent relationship: " + rel.getTarget() + " in favour of " + retained;
+			report (t, concept, Severity.LOW, ReportActionType.RELATIONSHIP_INACTIVATED, msg, concept.getDefinitionStatus().toString(), attributeCount.toString());
 		}
+	}
+
+	private Integer countAttributes(Concept c) {
+		int attributeCount = 0;
+		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
+			if (!r.getType().equals(IS_A)) {
+				attributeCount++;
+			}
+		}
+		return attributeCount;
 	}
 
 	@Override
 	protected Concept loadLine(String[] lineItems) throws TermServerScriptException {
-		return gl.getConcept(lineItems[0]);
+		Concept c = gl.getConcept(lineItems[0]);
+		c.setConceptType(ConceptType.THERAPEUTIC_ROLE);
+		return c;
 	}
 
 }
