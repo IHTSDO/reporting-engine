@@ -27,7 +27,8 @@ public class MoveConcepts extends BatchFix implements RF2Constants{
 	//String parentNewLocation = "763019005"; // ** UAT **  |TEMPORARY parent for concepts representing roles (product)
 	Relationship newParentRel;
 	
-	String childNewLocation = "373873005"; // |Pharmaceutical / biologic product (product)|
+	//String childNewLocation = "373873005"; // |Pharmaceutical / biologic product (product)|
+	String childNewLocation = "763158003"; // |Medicinal product (product)| 
 	Relationship newChildRel;
 	
 	protected MoveConcepts(BatchFix clone) {
