@@ -25,6 +25,7 @@ public class CaseSignificanceFixAll extends DeltaGenerator implements RF2Constan
 		try {
 			delta.newIdsRequired = false; // We'll only be modifying existing descriptions\
 			delta.additionalReportColumns = "Old, New, EffectiveTime, Notes";
+			delta.inputFileHasHeaderRow = false;
 			delta.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			delta.loadProjectSnapshot(false); 
@@ -227,6 +228,22 @@ public class CaseSignificanceFixAll extends DeltaGenerator implements RF2Constan
 		exceptions.add("737546002");
 		exceptions.add("737547006");
 		exceptions.add("77860012");
+		
+		exceptions.add("3444259016");
+		exceptions.add("3444260014");
+		exceptions.add("3450282018");
+		exceptions.add("3452124015");
+		exceptions.add("3464334019");
+		exceptions.add("3464453011");
+		exceptions.add("3491133013");
+		exceptions.add("3491689017");
+		exceptions.add("3509526012");
+		exceptions.add("3509527015");
+		exceptions.add("3525383017");
+		exceptions.add("3526666012");
+		exceptions.add("3526671017");
+		exceptions.add("3533581011");
+		exceptions.add("3542839015");
 	}	
 	
 }

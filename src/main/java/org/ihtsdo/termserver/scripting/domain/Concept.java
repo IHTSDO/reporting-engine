@@ -9,8 +9,6 @@ import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
-import sun.security.action.GetLongAction;
-
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
@@ -52,6 +50,9 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 	@SerializedName("inactivationIndicator")
 	@Expose
 	private InactivationIndicator inactivationIndicator;
+	@SerializedName("associationTargets")
+	@Expose
+	private AssociationTargets associationTargets;
 	
 	private boolean isLoaded = false;
 	private int originalFileLineNumber;
@@ -113,6 +114,10 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 	}
 
 	public void setModuleId(String moduleId) {
+		if (this.moduleId != null && !this.moduleId.equals(moduleId)) {
+			setDirty();
+			this.effectiveTime = null;
+		}
 		this.moduleId = moduleId;
 	}
 
@@ -726,6 +731,14 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 		if (i.isActive()) {
 			setInactivationIndicator(SnomedUtils.translateInactivationIndicator(i.getInactivationReasonId()));
 		}
+	}
+
+	public AssociationTargets getAssociationTargets() {
+		return associationTargets;
+	}
+
+	public void setAssociationTargets(AssociationTargets associationTargets) {
+		this.associationTargets = associationTargets;
 	}
 
 }

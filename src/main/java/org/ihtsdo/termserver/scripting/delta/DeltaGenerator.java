@@ -214,11 +214,12 @@ public abstract class DeltaGenerator extends TermServerScript {
 			writeToRF2File(attribValDeltaFilename, i.toRF2());
 		}
 	}
-
 	
-	protected void outputRF2(Concept c) throws TermServerScriptException {
+	protected void outputRF2(Concept c, boolean checkAllComponents) throws TermServerScriptException {
 		if (c.isDirty()) {
 			writeToRF2File(conDeltaFilename, c.toRF2());
+		} else if (!checkAllComponents) {
+			return;
 		}
 		
 		for (Description d : c.getDescriptions(ActiveState.BOTH)) {
@@ -232,6 +233,13 @@ public abstract class DeltaGenerator extends TermServerScript {
 		for (InactivationIndicatorEntry i: c.getInactivationIndicatorEntries()) {
 			outputRF2(i);
 		}
+	}
+
+	
+	protected void outputRF2(Concept c) throws TermServerScriptException {
+		//By default, check for modified descriptions and relationships 
+		//even if the concept has not been modified.
+		outputRF2(c, true);
 	}
 
 }

@@ -125,9 +125,9 @@ public abstract class TermServerScript implements RF2Constants {
 		this.authenticatedCookie = authenticatedCookie;
 	}
 	
-	private static String[] envKeys = new String[] {"local","dev","uat","flat-uat","prod","dev","uat","prod"};
+	protected static String[] envKeys = new String[] {"local","dev","uat","flat-uat","prod","dev","uat","prod"};
 
-	private static String[] environments = new String[] {	"http://localhost:8080/",
+	protected static String[] environments = new String[] {	"http://localhost:8080/",
 															"https://dev-authoring.ihtsdotools.org/",
 															"https://uat-authoring.ihtsdotools.org/",
 															"https://uat-flat-termserver.ihtsdotools.org/",
@@ -287,8 +287,8 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 		
 		//Recover the full project path from authoring services, if not already fully specified
+		project = new Project();
 		if (projectName.startsWith("MAIN")) {
-			project = new Project();
 			project.setBranchPath(projectName);
 			if (projectName.equals("MAIN")) {
 				project.setKey(projectName);
@@ -296,7 +296,12 @@ public abstract class TermServerScript implements RF2Constants {
 				project.setKey(projectName.substring(projectName.lastIndexOf("/")));
 			}
 		} else {
-			project = scaClient.getProject(projectName);
+			if (runStandAlone) {
+				println ("Running stand alone. Guessing project path to be MAIN/" + projectName);
+				project.setBranchPath("MAIN/" + projectName);
+			} else {
+				project = scaClient.getProject(projectName);
+			}
 			project.setKey(projectName);
 		}
 		println("Full path for projected determined to be: " + project.getBranchPath());
@@ -374,26 +379,31 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	protected Concept loadConcept(Concept concept, String branchPath) throws TermServerScriptException {
-		try {
-			if (dryRun) {
-				//In a dry run situation, the task branch is not created so use the Project instead
-				branchPath = branchPath.substring(0, branchPath.lastIndexOf("/"));
-				if (runStandAlone) {
-					debug ("Loading: " + gl.getConcept(concept.getConceptId()) + " from local store");
-					return gl.getConcept(concept.getConceptId());
-				}
+		if (dryRun) {
+			//In a dry run situation, the task branch is not created so use the Project instead
+			branchPath = branchPath.substring(0, branchPath.lastIndexOf("/"));
+			if (runStandAlone) {
+				debug ("Loading: " + gl.getConcept(concept.getConceptId()) + " from local store");
+				return gl.getConcept(concept.getConceptId());
 			}
+		}
+		
+		return loadConcept (tsClient, concept, branchPath);
+	}
+	
+	protected Concept loadConcept(SnowOwlClient client, Concept concept, String branchPath) throws TermServerScriptException {
+		try {
 			debug ("Loading: " + gl.getConcept(concept.getConceptId()) + " from TS branch " + branchPath);
-			JSONResource response = tsClient.getConcept(concept.getConceptId(), branchPath);
+			JSONResource response = client.getConcept(concept.getConceptId(), branchPath);
 			String json = response.toObject().toString();
-			concept = gson.fromJson(json, Concept.class);
-			concept.setLoaded(true);
+			Concept loadedConcept = gson.fromJson(json, Concept.class);
+			loadedConcept.setLoaded(true);
+			return loadedConcept;
 		} catch (SnowOwlClientException | JSONException | IOException e) {
 			throw new TermServerScriptException("Failed to recover " + concept + " from TS due to " + e.getMessage(),e);
 		}
-		return concept;
 	}
-	
+
 	protected List<Component> processFile() throws TermServerScriptException {
 		return processFile(inputFile);
 	}

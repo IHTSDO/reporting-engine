@@ -74,6 +74,10 @@ public class LangRefsetEntry implements RF2Constants{
 		return moduleId;
 	}
 	public void setModuleId(String moduleId) {
+		if (this.moduleId != null && !this.moduleId.equals(moduleId)) {
+			setDirty();
+			this.effectiveTime = null;
+		}
 		this.moduleId = moduleId;
 	}
 	public boolean isActive() {
@@ -115,6 +119,10 @@ public class LangRefsetEntry implements RF2Constants{
 	public void setDirty() {
 		dirty = true;
 	}
+	
+	public void setClean() {
+		dirty = false;
+	}
 
 	public boolean isDeleted() {
 		return isDeleted;
@@ -134,6 +142,7 @@ public class LangRefsetEntry implements RF2Constants{
 		l.setRefsetId(lineItems[LANG_IDX_REFSETID]);
 		l.setReferencedComponentId(lineItems[LANG_IDX_REFCOMPID]);
 		l.setAcceptabilityId(lineItems[LANG_IDX_ACCEPTABILITY_ID]);
+		l.setClean();
 		return l;
 	}
 	

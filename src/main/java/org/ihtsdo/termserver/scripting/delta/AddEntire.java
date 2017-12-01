@@ -45,9 +45,6 @@ public class AddEntire extends DeltaGenerator {
 			SnomedUtils.createArchive(new File(delta.outputDirName));
 		} finally {
 			delta.finish();
-			if (delta.descIdGenerator != null) {
-				println(delta.descIdGenerator.finish());
-			}
 		}
 	}
 	

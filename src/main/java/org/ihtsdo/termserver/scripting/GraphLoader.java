@@ -97,6 +97,8 @@ public class GraphLoader implements RF2Constants {
 		r.setEffectiveTime(lineItems[REL_IDX_EFFECTIVETIME].isEmpty()?null:lineItems[REL_IDX_EFFECTIVETIME]);
 		r.setModifier(SnomedUtils.translateModifier(lineItems[REL_IDX_MODIFIERID]));
 		r.setModuleId(lineItems[REL_IDX_MODULEID]);
+		//Changing those values after the defaults were set in the contstructor will incorrectly mark dirty
+		r.setClean();
 		
 		//Consider adding or removing parents if the relationship is ISA
 		if (type.equals(IS_A)) {

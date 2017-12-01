@@ -111,6 +111,10 @@ public class Description implements RF2Constants{
 	}
 
 	public void setModuleId(String moduleId) {
+		if (this.moduleId != null && !this.moduleId.equals(moduleId)) {
+			setDirty();
+			this.effectiveTime = null;
+		}
 		this.moduleId = moduleId;
 	}
 
@@ -121,19 +125,18 @@ public class Description implements RF2Constants{
 	public void setActive(boolean newActiveState) {
 		if (this.active != null && !this.active == newActiveState) {
 			setDirty();
+			//If we inactivate a description, inactivate all of its LangRefsetEntriesAlso
+			if (newActiveState == false && this.langRefsetEntries != null) {
+				//If we're working with RF2, modify the lang ref set
+				for (LangRefsetEntry thisDialect : getLangRefsetEntries()) {
+					thisDialect.setActive(false);
+				}
+				//If we're working with TS Concepts, remove the acceptability Map
+				acceptabilityMap = null;
+			}
+			this.effectiveTime = null;
 		}
 		this.active = newActiveState;
-		this.effectiveTime = null;
-		//If we inactivate a description, inactivate all of its LangRefsetEntriesAlso
-		if (active == false && this.langRefsetEntries != null) {
-			//If we're working with RF2, modify the lang ref set
-			for (LangRefsetEntry thisDialect : getLangRefsetEntries()) {
-				thisDialect.setEffectiveTime(null);
-				thisDialect.setActive(false);
-			}
-			//If we're working with TS Concepts, remove the acceptability Map
-			acceptabilityMap = null;
-		}
 	}
 
 	public String getDescriptionId() {
