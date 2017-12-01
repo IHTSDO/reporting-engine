@@ -30,6 +30,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 	protected String descDeltaFilename;
 	protected String langDeltaFilename;
 	protected String edition = "INT";
+	protected String additionalReportColumns = "ACTION_DETAIL";
 	
 	protected String languageCode = "en";
 	protected boolean isExtension = false;
@@ -39,8 +40,6 @@ public abstract class DeltaGenerator extends TermServerScript {
 	protected String[] langRefsetIds = new String[] { "900000000000508004",  //GB
 														"900000000000509007" }; //US
 
-
-	
 	protected String[] conHeader = new String[] {"id","effectiveTime","active","moduleId","definitionStatusId"};
 	protected String[] descHeader = new String[] {"id","effectiveTime","active","moduleId","conceptId","languageCode","typeId","term","caseSignificanceId"};
 	protected String[] relHeader = new String[] {"id","effectiveTime","active","moduleId","sourceId","destinationId","relationshipGroup","typeId","characteristicTypeId","modifierId"};
@@ -51,7 +50,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 	protected IdGenerator descIdGenerator;
 	protected IdGenerator relIdGenerator;
 	
-	protected void report(Concept concept, Description d, Severity severity, ReportActionType actionType, String actionDetail) {
+	protected void report(Concept concept, Description d, Severity severity, ReportActionType actionType, String... details) {
 		String line = "";
 		
 		if (d==null) {
@@ -60,16 +59,19 @@ public abstract class DeltaGenerator extends TermServerScript {
 		} else {
 			line = concept.getConceptId() + COMMA + 
 				d.getDescriptionId() + COMMA_QUOTE + 
-				d.getTerm() + QUOTE_COMMA_QUOTE ; 
+				d.getTerm().replace("\"", "'") + QUOTE_COMMA_QUOTE ; 
 		}
 		line += severity + QUOTE_COMMA_QUOTE + 
-				actionType.toString() + QUOTE_COMMA_QUOTE +
-				actionDetail + QUOTE;
+				actionType.toString() + QUOTE;
+		
+		for (String detail : details) {
+			 line += COMMA_QUOTE + detail + QUOTE;
+		}
 		writeToReportFile(line);
 	}
 	
-	protected void report(Concept concept, Severity severity, ReportActionType actionType, String actionDetail) {
-		report (concept, concept.getFSNDescription(), severity, actionType, actionDetail);
+	protected void report(Concept concept, Severity severity, ReportActionType actionType, String... details) {
+		report (concept, concept.getFSNDescription(), severity, actionType, details);
 	}
 	
 	protected void init (String[] args) throws IOException, TermServerScriptException, SnowOwlClientException, SnowOwlClientException {
@@ -135,7 +137,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 		if (newIdsRequired && descIdGenerator == null) {
 			throw new TermServerScriptException("Command line arguments must supply a list of available sctid using the -iC/D/R option");
 		}
-		initialiseReportFile("Concept,DescSctId,Term,Severity,Action,Detail");
+		initialiseReportFile("Concept,DescSctId,Term,Severity,Action," + additionalReportColumns );
 		//Don't add to previously exported data
 		File outputDir = new File (outputDirName);
 		int increment = 0;

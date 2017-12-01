@@ -486,6 +486,16 @@ public class SnomedUtils implements RF2Constants{
 		}
 		throw new TermServerScriptException("Do not recognise case significance indicator : " + caseSignificanceIndicator);
 	}
+	
+	public static String translateCaseSignificanceToSctId(CaseSignificance caseSignificance) throws TermServerScriptException {
+		switch (caseSignificance) {
+			case ENTIRE_TERM_CASE_SENSITIVE : return SCTID_ENTIRE_TERM_CASE_SENSITIVE;
+			case CASE_INSENSITIVE : return SCTID_ENTIRE_TERM_CASE_INSENSITIVE;
+			case INITIAL_CHARACTER_CASE_INSENSITIVE : return SCTID_ONLY_INITIAL_CHAR_CASE_INSENSITIVE;
+			default :
+		}
+		throw new TermServerScriptException("Do not recognise case significance indicator : " + caseSignificance);
+	}
 
 	public static String translateCaseSignificanceFromSctId(
 			String caseSignificanceSctId) throws TermServerScriptException {
@@ -496,6 +506,17 @@ public class SnomedUtils implements RF2Constants{
 			default :
 		}
 		throw new TermServerScriptException("Do not recognise case significance indicator : " + caseSignificanceSctId);
+	}
+	
+	public static String translateCaseSignificanceFromEnum(
+			CaseSignificance caseSignificance) throws TermServerScriptException {
+		switch (caseSignificance) {
+			case ENTIRE_TERM_CASE_SENSITIVE: return "CS";
+			case CASE_INSENSITIVE: return "ci";
+			case INITIAL_CHARACTER_CASE_INSENSITIVE : return "cI";
+			default :
+		}
+		throw new TermServerScriptException("Do not recognise case significance indicator : " + caseSignificance);
 	}
 	
 	public static CaseSignificance translateCaseSignificanceToEnum(

@@ -227,7 +227,7 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 			Description fsn = tsConcept.getDescriptions(Acceptability.PREFERRED, DescriptionType.FSN, ActiveState.ACTIVE).get(0);
 			Description replacement = fsn.clone(null);
 			replacement.setTerm(change.getFsn());
-			replacement.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE.toString());
+			replacement.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
 			replacement.setAcceptabilityMap(createAcceptabilityMap(Acceptability.PREFERRED, ENGLISH_DIALECTS));
 			fsn.inactivateDescription(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
 			tsConcept.addDescription(replacement);
@@ -260,7 +260,7 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 					changesMade++;
 				} else {
 					//Existing preferred terms are being set to case-insensitive
-					d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE.toString());
+					d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
 					changesMade++;
 				}
 				
@@ -278,8 +278,8 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 	}
 
 	private boolean isCaseSensitive(Description d) {
-		String cs = d.getCaseSignificance();
-		return (cs.equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE.toString()) || cs.equals(SCTID_ONLY_INITIAL_CHAR_CASE_INSENSITIVE.toString()));
+		CaseSignificance cs = d.getCaseSignificance();
+		return (cs.equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE) || cs.equals(SCTID_ONLY_INITIAL_CHAR_CASE_INSENSITIVE));
 	}
 
 	//Return the first description that equals the term
@@ -366,7 +366,7 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 		d.setType(DescriptionType.SYNONYM);
 		d.setLang(LANG_EN);
 		//TODO May wish to check for captials at idx > 0 and adjust CS.
-		d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE.toString());
+		d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
 		d.setAcceptabilityMap(createAcceptabilityMap(acceptability, dialects));
 		d.setConceptId(concept.getConceptId());
 		concept.addDescription(d);

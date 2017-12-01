@@ -148,10 +148,10 @@ public class AddEntire extends DeltaGenerator {
 		
 		//Because we're adding a word that is not case sensitive, we'll sent the case significance
 		//to 900000000000020002 |Only initial character case insensitive (core metadata concept)|
-		replaceDescription (c,d,newTerm, SCTID_ONLY_INITIAL_CHAR_CASE_INSENSITIVE, isPT);
+		replaceDescription (c,d,newTerm, CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE, isPT);
 	}
 
-	private void replaceDescription(Concept c, Description d, String newTerm, String newCaseSignificance, boolean isPT) throws TermServerScriptException {
+	private void replaceDescription(Concept c, Description d, String newTerm, CaseSignificance newCaseSignificance, boolean isPT) throws TermServerScriptException {
 		
 		if (!d.isActive()) {
 			String msg = "Attempting to inactivate an already inactive description";

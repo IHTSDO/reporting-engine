@@ -87,7 +87,7 @@ public class GenerateMSStarterArchive extends DeltaGenerator {
 		}
 	}
 	
-	private Description createDescription(String conceptId, String term, String lang, String caseSensitityId, String acceptabilityId) throws TermServerScriptException {
+	private Description createDescription(String conceptId, String term, String lang, CaseSignificance caseSignificance, String acceptabilityId) throws TermServerScriptException {
 		Description d = new Description();
 		d.setDescriptionId(descIdGenerator.getSCTID());
 		d.setConceptId(conceptId);
@@ -96,7 +96,7 @@ public class GenerateMSStarterArchive extends DeltaGenerator {
 		d.setLang(lang);
 		d.setTerm(term);
 		d.setType(DescriptionType.SYNONYM);
-		d.setCaseSignificance(caseSensitityId);
+		d.setCaseSignificance(caseSignificance);
 		d.setModuleId(moduleId);
 		d.setDirty();
 		addLangRefsetEntry(d, acceptabilityId);

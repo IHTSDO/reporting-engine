@@ -165,7 +165,7 @@ public class GenerateTranslation extends DeltaGenerator {
 		
 		concept.addDescription(newDescription);
 		
-		String cs = " (" + newDescription.getLang() + " " +  descAccept + " - "+ SnomedUtils.translateCaseSignificanceFromSctId(newDescription.getCaseSignificance()) + ")";
+		String cs = " (" + newDescription.getLang() + " " +  descAccept + " - "+ SnomedUtils.translateCaseSignificanceFromEnum(newDescription.getCaseSignificance()) + ")";
 		report (concept, newDescription, severity, ReportActionType.DESCRIPTION_ADDED, msg +  cs + ": " + newDescription.getTerm());
 	}
 
@@ -198,7 +198,7 @@ public class GenerateTranslation extends DeltaGenerator {
 			Description d = createDescription (lineItems[0],  //conceptId
 					lineItems[3], //swedish term
 					languageCode,
-					SnomedUtils.translateCaseSignificanceToSctId(lineItems[4]), //case significance
+					SnomedUtils.translateCaseSignificanceToEnum(lineItems[4]), //case significance
 					SCTID_PREFERRED_TERM
 					);
 			Concept concept = gl.getConcept(lineItems[0]);
@@ -230,19 +230,19 @@ public class GenerateTranslation extends DeltaGenerator {
 		return null;
 	}
 	
-	private String calculateBEcaseSignificanceSCTID(String term) {
+	private CaseSignificance calculateBEcaseSignificanceSCTID(String term) {
 		//BE Terms are in general lower case, so any term that starts with a capital letter
 		//can be considered CS.   Otherwise if it is case sensitive then cI
 		String firstLetter = term.substring(0, 1);
 		if (!firstLetter.equals(firstLetter.toLowerCase())) {
-			return SCTID_ENTIRE_TERM_CASE_SENSITIVE;
+			return CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE;
 		} else if (SnomedUtils.isCaseSensitive(term)) {
-			return SCTID_ONLY_INITIAL_CHAR_CASE_INSENSITIVE;
+			return CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE;
 		}
-		return SCTID_ENTIRE_TERM_CASE_INSENSITIVE;
+		return CaseSignificance.CASE_INSENSITIVE;
 	}
 
-	private Description createDescription(String conceptId, String term, String lang, String caseSensitityId, String acceptabilityId) throws TermServerScriptException {
+	private Description createDescription(String conceptId, String term, String lang, CaseSignificance caseSignificance, String acceptabilityId) throws TermServerScriptException {
 		Description d = new Description();
 		d.setDescriptionId(descIdGenerator.getSCTID());
 		d.setConceptId(conceptId);
@@ -251,7 +251,7 @@ public class GenerateTranslation extends DeltaGenerator {
 		d.setLang(lang);
 		d.setTerm(term);
 		d.setType(DescriptionType.SYNONYM);
-		d.setCaseSignificance(caseSensitityId);
+		d.setCaseSignificance(caseSignificance);
 		d.setModuleId(moduleId);
 		d.setDirty();
 		addLangRefsetEntry(d, acceptabilityId);

@@ -46,7 +46,7 @@ public class CaseSenstivity extends TermServerReport{
 		//Chop off the first letter, then see if the lower case equals the original
 		String chopped = d.getTerm().substring(1);
 		if (chopped.equals(chopped.toLowerCase())) {
-			String caseSig = SnomedUtils.translateCaseSignificanceFromSctId(d.getCaseSignificance());
+			String caseSig = SnomedUtils.translateCaseSignificanceFromEnum(d.getCaseSignificance());
 			report (c, d, caseSig, "Case sensitive term does not have capital after first letter");
 		}
 	}

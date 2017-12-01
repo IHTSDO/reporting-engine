@@ -84,7 +84,6 @@ public class NormalizeDrugTerms extends BatchFix implements RF2Constants{
 		super.init(args);
 		exceptions.add("423967005");
 		exceptions.add("319925005");
-		exceptions.add("423967005");
 	}
 
 	@Override

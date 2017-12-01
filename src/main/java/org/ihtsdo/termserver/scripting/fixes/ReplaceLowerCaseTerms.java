@@ -96,7 +96,7 @@ public class ReplaceLowerCaseTerms extends BatchFix implements RF2Constants{
 			if (!termAlreadyExists(concept, newTerm)) {
 				Description upper = lower.clone(null);
 				upper.setTerm(newTerm);
-				upper.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE.toString());
+				upper.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
 				concept.addDescription(upper);
 				replacementMade = true;
 				msg = "Replaced term '" + lower.getTerm() + "' with '" + upper.getTerm() + "'.";

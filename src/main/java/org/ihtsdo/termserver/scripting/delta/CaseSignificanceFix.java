@@ -21,7 +21,7 @@ public class CaseSignificanceFix extends DeltaGenerator implements RF2Constants 
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
 		CaseSignificanceFix delta = new CaseSignificanceFix();
 		try {
-			delta.newIdsRequired = false; // We'll only be inactivating existing relationships
+			delta.newIdsRequired = false; // We'll only be modifying existing descriptions
 			delta.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			delta.loadProjectSnapshot(false); 
@@ -101,7 +101,7 @@ public class CaseSignificanceFix extends DeltaGenerator implements RF2Constants 
 					for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 						if (d.getCaseSignificance().equals(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE.toString()) &&
 								!SnomedUtils.isCaseSensitive(d.getTerm())) {
-							d.setCaseSignificance(SCTID_ENTIRE_TERM_CASE_INSENSITIVE);
+							d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
 							String msg = "Set to entire term case insensitive.  Last modified " + d.getEffectiveTime();
 							report(c,d,Severity.LOW,ReportActionType.DESCRIPTION_CHANGE_MADE, msg);
 							d.setEffectiveTime(null);

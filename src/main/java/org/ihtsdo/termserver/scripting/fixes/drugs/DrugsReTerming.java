@@ -94,7 +94,7 @@ public class DrugsReTerming extends BatchFix implements RF2Constants{
 			replacement.setTerm(change.getFsn());
 			String termPart = SnomedUtils.deconstructFSN(change.getFsn())[0];
 			CaseSignificance cs = isCaseSensitive(termPart)? CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE : CaseSignificance.CASE_INSENSITIVE;
-			replacement.setCaseSignificance(cs.toString());
+			replacement.setCaseSignificance(cs);
 			replacement.setAcceptabilityMap(createAcceptabilityMap(AcceptabilityMode.PREFERRED_BOTH));
 			fsn.inactivateDescription(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
 			tsConcept.addDescription(replacement);
@@ -157,11 +157,11 @@ public class DrugsReTerming extends BatchFix implements RF2Constants{
 		//Do we need to change the case sensitivity of this existing term?
 		int changesMade = 0;
 		boolean isCaseSensitive = isCaseSensitive(d.getTerm());
-		CaseSignificance caseSig = SnomedUtils.translateCaseSignificance(d.getCaseSignificance());
+		CaseSignificance caseSig =d.getCaseSignificance();
 		switch (caseSig) {
 			case INITIAL_CHARACTER_CASE_INSENSITIVE : 
 				if (!isCaseSensitive) {
-					d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE.toString());
+					d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
 					report(task, tsConcept, Severity.HIGH, ReportActionType.DESCRIPTION_CHANGE_MADE, "Existing cI sensitivity changed to ci : " + d);
 					changesMade++;
 				}
@@ -170,7 +170,7 @@ public class DrugsReTerming extends BatchFix implements RF2Constants{
 				break;
 			case CASE_INSENSITIVE : 
 				if (isCaseSensitive) {
-					d.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE.toString());
+					d.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
 					report(task, tsConcept, Severity.HIGH, ReportActionType.DESCRIPTION_CHANGE_MADE, "Existing ci sensitivity changed to cI : " + d);
 					changesMade++;
 				}
@@ -314,9 +314,9 @@ public class DrugsReTerming extends BatchFix implements RF2Constants{
 		d.setType(DescriptionType.SYNONYM);
 		d.setLang(LANG_EN);
 		if (isCaseSensitive(term)) {
-			d.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE.toString());
+			d.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
 		} else {
-			d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE.toString());
+			d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
 		}
 		d.setAcceptabilityMap(createAcceptabilityMap(acceptabilityMode));
 		d.setConceptId(concept.getConceptId());

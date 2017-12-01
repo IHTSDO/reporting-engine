@@ -45,7 +45,7 @@ public class Description implements RF2Constants{
 	private String term;
 	@SerializedName("caseSignificance")
 	@Expose
-	private String caseSignificance;
+	private CaseSignificance caseSignificance;
 	@SerializedName("acceptabilityMap")
 	@Expose
 	private Map<String, Acceptability> acceptabilityMap = null;
@@ -77,7 +77,7 @@ public class Description implements RF2Constants{
 	 * @param lang
 	 * @param AcceptabilityMap
 	 */
-	public Description(String effectiveTime, String moduleId, boolean active, String descriptionId, String conceptId, DescriptionType type, String lang, String term, String caseSignificance, Map<String, Acceptability> AcceptabilityMap) {
+	public Description(String effectiveTime, String moduleId, boolean active, String descriptionId, String conceptId, DescriptionType type, String lang, String term, CaseSignificance caseSignificance, Map<String, Acceptability> AcceptabilityMap) {
 		this.effectiveTime = effectiveTime;
 		this.moduleId = moduleId;
 		this.active = active;
@@ -185,11 +185,11 @@ public class Description implements RF2Constants{
 		}
 	}
 
-	public String getCaseSignificance() {
+	public CaseSignificance getCaseSignificance() {
 		return caseSignificance;
 	}
 
-	public void setCaseSignificance(String caseSignificance) {
+	public void setCaseSignificance(CaseSignificance caseSignificance) {
 		this.caseSignificance = caseSignificance;
 	}
 
@@ -284,7 +284,7 @@ public class Description implements RF2Constants{
 	public String[] toRF2() throws TermServerScriptException {
 		//"id","effectiveTime","active","moduleId","conceptId","languageCode","typeId","term","caseSignificanceId"
 		return new String[] {descriptionId, effectiveTime, (active?"1":"0"), moduleId, conceptId, lang,
-				SnomedUtils.translateDescType(type), term, caseSignificance};
+				SnomedUtils.translateDescType(type), term, SnomedUtils.translateCaseSignificanceToSctId(getCaseSignificance())};
 	}
 	
 	public String[] toRF2Deletion() throws TermServerScriptException {
@@ -292,7 +292,7 @@ public class Description implements RF2Constants{
 		return new String[] {descriptionId, effectiveTime, deletionEffectiveTime,
 				(active?"1":"0"), "1",
 				moduleId, conceptId, lang,
-				SnomedUtils.translateDescType(type), term, caseSignificance};
+				SnomedUtils.translateDescType(type), term, SnomedUtils.translateCaseSignificanceToSctId(getCaseSignificance())};
 	}
 
 	public List<LangRefsetEntry> getLangRefsetEntries() {
@@ -389,8 +389,7 @@ public class Description implements RF2Constants{
 			d.setReleased(true);
 		}
 		d.setModuleId(lineItems[DES_IDX_MODULID]);
-		CaseSignificance cs = SnomedUtils.translateCaseSignificanceToEnum(lineItems[DES_IDX_CASESIGNIFICANCEID]);
-		d.setCaseSignificance(cs.toString());
+		d.setCaseSignificance(SnomedUtils.translateCaseSignificanceToEnum(lineItems[DES_IDX_CASESIGNIFICANCEID]));
 		d.setConceptId(lineItems[DES_IDX_CONCEPTID]);
 		d.setLang(lineItems[DES_IDX_LANGUAGECODE]);
 		d.setTerm(lineItems[DES_IDX_TERM]);

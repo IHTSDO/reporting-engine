@@ -162,7 +162,7 @@ public class CreateLoincConcepts extends DeltaGenerator {
 		pt.setLang(languageCode);
 		pt.setConceptId(concept.getConceptId());
 		pt.setType(DescriptionType.SYNONYM);
-		pt.setCaseSignificance(SCTID_ENTIRE_TERM_CASE_SENSITIVE);
+		pt.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
 		pt.setModuleId(moduleId);
 		pt.setDirty();
 		addLangRefsetEntry(pt, SCTID_PREFERRED_TERM);
@@ -183,7 +183,7 @@ public class CreateLoincConcepts extends DeltaGenerator {
 		syn.setType(DescriptionType.SYNONYM);
 		syn.setConceptId(concept.getConceptId());
 		syn.setDirty();
-		syn.setCaseSignificance(SCTID_ENTIRE_TERM_CASE_SENSITIVE);
+		syn.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
 		addLangRefsetEntry(syn, SCTID_ACCEPTABLE_TERM);
 		concept.addDescription(syn);
 	}
