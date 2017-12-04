@@ -476,6 +476,16 @@ public class SnomedUtils implements RF2Constants{
 		throw new TermServerScriptException("Do not recognise case significance indicator : " + caseSignificanceIndicatorStr);
 	}
 	
+	public static CaseSignificance translateCaseSignificanceFromString(String caseSignificanceIndicatorStr) throws TermServerScriptException {
+		switch (caseSignificanceIndicatorStr) {
+			case "CS" : return CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE;
+			case "ci" : return CaseSignificance.CASE_INSENSITIVE;
+			case "cI" : return CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE;
+			default :
+		}
+		throw new TermServerScriptException("Do not recognise case significance indicator : " + caseSignificanceIndicatorStr);
+	}
+	
 	public static String translateCaseSignificanceToSctId(String caseSignificanceIndicator) throws TermServerScriptException {
 		switch (caseSignificanceIndicator) {
 			case "CS" : return SCTID_ENTIRE_TERM_CASE_SENSITIVE;

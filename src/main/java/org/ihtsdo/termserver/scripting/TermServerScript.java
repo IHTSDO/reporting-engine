@@ -83,7 +83,7 @@ public abstract class TermServerScript implements RF2Constants {
 	public static String CONCEPTS_PROCESSED = "Concepts processed";
 	public static String REPORTED_NOT_PROCESSED = "Reported not processed";
 	public static String CRITICAL_ISSUE = "CRITICAL ISSUE";
-	protected String inputFileDelimiter = CSV_FIELD_DELIMITER;
+	protected String inputFileDelimiter = TSV_FIELD_DELIMITER;
 	protected String tsRoot = "MAIN/"; //"MAIN/2016-01-31/SNOMEDCT-DK/";
 	
 	protected Map<String, PrintWriter> fileMap = new HashMap<>();

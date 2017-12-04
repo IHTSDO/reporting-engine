@@ -47,14 +47,18 @@ public class CaseSignificanceFixAll extends DeltaGenerator implements RF2Constan
 					report (c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "","","","Concept manually listed as an exception");
 				} else {
 					for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-						switch (d.getCaseSignificance()) {
-						case INITIAL_CHARACTER_CASE_INSENSITIVE : normalizeCaseSignificance_cI(c,d);
-																	break;
-						case CASE_INSENSITIVE : normalizeCaseSignificance_ci(c,d);
-																	break;
-						case ENTIRE_TERM_CASE_SENSITIVE:  //Have to assume author is correct here
+						if (exceptions.contains(c.getId())) {
+							report (c, d, Severity.MEDIUM, ReportActionType.NO_CHANGE, "","","","Description manually listed as an exception");
+						} else {
+							switch (d.getCaseSignificance()) {
+							case INITIAL_CHARACTER_CASE_INSENSITIVE : normalizeCaseSignificance_cI(c,d);
 																		break;
-																	
+							case CASE_INSENSITIVE : normalizeCaseSignificance_ci(c,d);
+																		break;
+							case ENTIRE_TERM_CASE_SENSITIVE:  //Have to assume author is correct here
+																			break;
+																		
+							}
 						}
 					}
 				}
@@ -110,12 +114,23 @@ public class CaseSignificanceFixAll extends DeltaGenerator implements RF2Constan
 	}
 
 	private boolean startsLower(String term) {
-		//Numbers and symbols should not be considered to be lower case in this situation
+		/*Chop off any leading non-numeric characters - ignore
+		int nonNumericCount = 0;
+		while (!Character.isLetter(term.charAt(nonNumericCount))) {
+			nonNumericCount++;
+			//Is there nothing left?
+			if (nonNumericCount == term.length()) {
+				return false;
+			}
+		}
+		term = term.substring(nonNumericCount, term.length());
+		*/
+		
+		String firstLetter = term.substring(0, 1);
+		//If the first character is not a letter, then there is no significance to the case of the subsequent character
 		if (!Character.isLetter(term.charAt(0))) {
 			return false;
 		}
-		
-		String firstLetter = term.substring(0, 1);
 		return firstLetter.equals(firstLetter.toLowerCase());
 	}
 
@@ -244,6 +259,13 @@ public class CaseSignificanceFixAll extends DeltaGenerator implements RF2Constan
 		exceptions.add("3526671017");
 		exceptions.add("3533581011");
 		exceptions.add("3542839015");
+		
+		exceptions.add("3438142014");
+		exceptions.add("3467349017");
+		exceptions.add("3467350017");
+		exceptions.add("3514389013");
+		exceptions.add("3516254012");
+		exceptions.add("3516255013");
 	}	
 	
 }
