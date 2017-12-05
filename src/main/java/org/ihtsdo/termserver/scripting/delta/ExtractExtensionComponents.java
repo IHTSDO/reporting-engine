@@ -34,7 +34,6 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		try {
 			delta.runStandAlone = true;
 			delta.moduleId = "731000124108";  //US Module
-			delta.newIdsRequired = false;
 			delta.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			delta.loadProjectSnapshot(false);  //Not just FSN, load all terms with lang refset also
@@ -46,7 +45,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			SnomedUtils.createArchive(new File(delta.outputDirName));
 		} finally {
 			delta.finish();
-		}
+  		}
 	}
 	
 	protected void init (String[] args) throws IOException, TermServerScriptException, SnowOwlClientException, SnowOwlClientException {
@@ -151,6 +150,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 					target = replacement;
 					Relationship newRel = new Relationship(r.getSource(),r.getType(), replacement, r.getGroupId());
 					newRel.setDirty();
+					newRel.setRelationshipId(relIdGenerator.getSCTID());
 					r.getSource().removeRelationship(r);
 					r.getSource().addRelationship(newRel);
 				}
@@ -200,6 +200,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			}
 			LangRefsetEntry gbEntry = usEntry.clone(d.getDescriptionId());
 			gbEntry.setRefsetId(GB_ENG_LANG_REFSET);
+			d.addAcceptability(gbEntry);
 		}
 	}
 
