@@ -39,6 +39,7 @@ public class ReplaceRelationships extends DeltaGenerator {
 			delta.prep(); //Further initiation once hierarchy is available
 			delta.startTimer();
 			delta.process();
+			delta.flushFiles(false);
 			SnomedUtils.createArchive(new File(delta.outputDirName));
 		} finally {
 			delta.finish();
@@ -60,6 +61,8 @@ public class ReplaceRelationships extends DeltaGenerator {
 		replaceRelationships.add(createTemplate("370135005","308490002")); //  |Pathological process (attribute)| -> |Pathological developmental process (qualifier value)|
 		
 		//should be grouped with the finding site and the occurrence.
+		//Where multiple finding sites exist, multiple role groups should be created
+		//Occurrance should be restated from ancestor.
 		
 		//Every concept under congenital malformation, should have the pathological process attribute.
 	}
