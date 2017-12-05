@@ -134,7 +134,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 			throw new TermServerScriptException(msg);
 		}
 		
-		if (newIdsRequired && descIdGenerator == null) {
+		if (newIdsRequired && descIdGenerator == null && relIdGenerator == null && conIdGenerator == null) {
 			throw new TermServerScriptException("Command line arguments must supply a list of available sctid using the -iC/D/R option");
 		}
 		initialiseReportFile("Concept,DescSctId,Term,Severity,Action," + additionalReportColumns );
