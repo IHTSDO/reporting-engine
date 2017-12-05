@@ -409,6 +409,7 @@ public class Description implements RF2Constants{
 		} else {
 			removeAcceptability(lang.getRefsetId());
 		}
+		langRefsetEntries.add(lang);
 	}
 
 	public Boolean isReleased() {
