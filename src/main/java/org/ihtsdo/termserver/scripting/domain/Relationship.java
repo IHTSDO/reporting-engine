@@ -69,6 +69,7 @@ public class Relationship implements RF2Constants, Comparable<Relationship> {
 		this.active = true;
 		this.characteristicType = CharacteristicType.STATED_RELATIONSHIP;
 		this.modifier = Modifier.EXISTENTIAL;
+		this.moduleId = SCTID_CORE_MODULE;
 	}
 
 	public String getEffectiveTime() {
