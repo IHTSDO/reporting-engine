@@ -22,7 +22,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  */
 public class GenerateTranslation extends DeltaGenerator {
 	
-	KnownTranslations thisTranslation = KnownTranslations.SWEDEN;
+	KnownTranslations thisTranslation = KnownTranslations.BELGIUM;
 	enum KnownTranslations { SWEDEN, BELGIUM };
 	Map<String, String> langToRefsetMap = new HashMap<>();
 	
@@ -114,10 +114,10 @@ public class GenerateTranslation extends DeltaGenerator {
 			//We're no longer receiving the current US term
 			Description usPrefTerm = getUsPrefTerm(concept);
 			if (!usPrefTerm.getTerm().equals(expectedUSTerm)) {
-				//Check if we're perhaps using the FSN (without the semantic tag)
-				String fsn = SnomedUtils.deconstructFSN(concept.getFsn())[0];
-				if (!fsn.equals(expectedUSTerm)) {
-					report (concept, usPrefTerm, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Current term is not what was translated.  Translation file expected: " + expectedUSTerm);
+				//Check if we're perhaps using the FSN (with or without the semantic tag)
+				String fsnPart = SnomedUtils.deconstructFSN(concept.getFsn())[0];
+				if (!concept.getFsn().equals(expectedUSTerm) && !fsnPart.equals(expectedUSTerm)) {
+					report (concept, usPrefTerm, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Current term is not what was translated.  Translation file expected: '" + expectedUSTerm + "'");
 					return;
 				}
 			}
@@ -202,7 +202,7 @@ public class GenerateTranslation extends DeltaGenerator {
 					SCTID_PREFERRED_TERM
 					);
 			Concept concept = gl.getConcept(lineItems[0]);
-			addTranslation(concept, lineItems[1], d); 
+			addTranslation(concept, lineItems[1].trim(), d); 
 			return concept;
 		}
 		return null;
@@ -210,13 +210,13 @@ public class GenerateTranslation extends DeltaGenerator {
 	
 	//BE File format: ConceptID	Source term	Target term	Language	Type	Comment
 	private Concept LoadBELine(String[] lineItems) throws TermServerScriptException {
-		if (lineItems.length >= 3) {
+		if (lineItems.length >= 4) {
 			String acceptabilityId = SCTID_ACCEPTABLE_TERM;
-			if (lineItems[4].contains("Preferred")) {
+			if (lineItems[5].toLowerCase().contains("preferred")) {
 				acceptabilityId = SCTID_PREFERRED_TERM;
 			}
-			String lang = lineItems[3].substring(0, 2);
-			String term = lineItems[2].trim().replace("  ", " ");
+			String lang = lineItems[4].substring(0, 2);
+			String term = lineItems[3].trim().replace("  ", " ");
 			Description d = createDescription (lineItems[0],  //conceptId
 												term,
 												lang,
@@ -224,7 +224,7 @@ public class GenerateTranslation extends DeltaGenerator {
 												acceptabilityId
 												);
 			Concept concept = gl.getConcept(lineItems[0]);
-			addTranslation(concept, lineItems[1], d);
+			addTranslation(concept, lineItems[1].trim(), d);
 			return concept;
 		}
 		return null;
