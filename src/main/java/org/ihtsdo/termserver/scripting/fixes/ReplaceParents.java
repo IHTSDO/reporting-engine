@@ -1,0 +1,142 @@
+package org.ihtsdo.termserver.scripting.fixes;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.commons.lang.exception.ExceptionUtils;
+import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants;
+import org.ihtsdo.termserver.scripting.domain.Relationship;
+import org.ihtsdo.termserver.scripting.domain.Task;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+
+import us.monoid.json.JSONObject;
+
+/*
+For DRUG-422
+Driven by a text file of concepts, move specified concepts to exist under
+a parent concept.
+*/
+public class ReplaceParents extends BatchFix implements RF2Constants{
+	
+	Relationship newParentRel;
+	String newParent = "763158003"; // |Medicinal product (product)| 
+	
+	protected ReplaceParents(BatchFix clone) {
+		super(clone);
+	}
+
+	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
+		ReplaceParents fix = new ReplaceParents(null);
+		try {
+			fix.reportNoChange = true;
+			fix.populateEditPanel = false;
+			fix.populateTaskDescription = true;
+			fix.additionalReportColumns = "ACTION_DETAIL, DEF_STATUS, PARENT_COUNT, ATTRIBUTE_COUNT";
+			fix.init(args);
+			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
+			fix.loadProjectSnapshot(true); 
+			fix.postLoadInit();
+			fix.startTimer();
+			fix.processFile();
+			println ("Processing complete.  See results: " + fix.reportFile.getAbsolutePath());
+		} finally {
+			fix.finish();
+		}
+	}
+
+	private void postLoadInit() throws TermServerScriptException {
+		Concept parentConcept =  gl.getConcept(newParent);
+		newParentRel = new Relationship(null, IS_A, parentConcept, 0);
+	}
+
+	@Override
+	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
+		
+		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
+		List<Concept> modifiedConcepts = new ArrayList<Concept>();
+		replaceParents(task, loadedConcept, modifiedConcepts);
+		for (Concept thisModifiedConcept : modifiedConcepts) {
+			try {
+				String conceptSerialised = gson.toJson(thisModifiedConcept);
+				debug ((dryRun ?"Dry run ":"Updating state of ") + thisModifiedConcept + info);
+				if (!dryRun) {
+					tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
+				}
+			} catch (Exception e) {
+				report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
+			}
+		}
+		incrementSummaryInformation(task.getKey(), modifiedConcepts.size());
+		return modifiedConcepts.size();
+	}
+
+	private void replaceParents(Task task, Concept loadedConcept, List<Concept> modifiedConcepts) throws TermServerScriptException {
+		
+		List<Relationship> parentRels = new ArrayList<Relationship> (loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
+																		IS_A,
+																		ActiveState.ACTIVE));
+		String parentCount = Integer.toString(parentRels.size());
+		String attributeCount = Integer.toString(countAttributes(loadedConcept));
+		
+		String semTag = SnomedUtils.deconstructFSN(loadedConcept.getFsn())[1];
+		switch (semTag) {
+			case "(medicinal product form)" : loadedConcept.setConceptType(ConceptType.MEDICINAL_PRODUCT_FORM);
+												break;
+			case "(product)" : loadedConcept.setConceptType(ConceptType.PRODUCT);
+								break;
+			case "(medicinal product)" : loadedConcept.setConceptType(ConceptType.MEDICINAL_PRODUCT);
+										 break;
+			case "(clinical drug)" : loadedConcept.setConceptType(ConceptType.CLINICAL_DRUG);
+										break;
+			default : loadedConcept.setConceptType(ConceptType.UNKNOWN);
+		}
+		
+		for (Relationship parentRel : parentRels) {
+			remove (task, parentRel, loadedConcept, newParentRel.getTarget().toString(), true);
+		}
+		
+		Relationship thisNewParentRel = newParentRel.clone(null);
+		thisNewParentRel.setSource(loadedConcept);
+		loadedConcept.addRelationship(thisNewParentRel);
+		modifiedConcepts.add(loadedConcept);
+		String msg = "Single parent set to " + newParent;
+		report (task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_INACTIVATED, msg, loadedConcept.getDefinitionStatus().toString(), parentCount, attributeCount);
+		
+	}
+
+	private void remove(Task t, Relationship rel, Concept c, String retained, boolean isParent) throws TermServerScriptException {
+		
+		//Are we inactivating or deleting this relationship?
+		if (rel.getEffectiveTime() == null || rel.getEffectiveTime().isEmpty()) {
+			c.removeRelationship(rel);
+			String msg = "Deleted parent relationship: " + rel.getTarget() + " in favour of " + retained;
+			report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_DELETED, msg);
+		} else {
+			rel.setEffectiveTime(null);
+			rel.setActive(false);
+			String msg = "Inactivated parent relationship: " + rel.getTarget() + " in favour of " + retained;
+			report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_INACTIVATED, msg);
+		}
+	}
+
+	private Integer countAttributes(Concept c) {
+		int attributeCount = 0;
+		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
+			if (!r.getType().equals(IS_A)) {
+				attributeCount++;
+			}
+		}
+		return attributeCount;
+	}
+
+	@Override
+	protected Concept loadLine(String[] lineItems) throws TermServerScriptException {
+		Concept c = gl.getConcept(lineItems[0]);
+		return c;
+	}
+
+}

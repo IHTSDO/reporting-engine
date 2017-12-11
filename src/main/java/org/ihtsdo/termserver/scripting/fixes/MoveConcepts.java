@@ -18,8 +18,7 @@ import us.monoid.json.JSONObject;
 /*
 For DRUG-413
 Driven by a text file of concepts, move specified concepts to exist under
-a parent concept (but keep relative position the same).  Reassign orphaned
-children to their grandparents.
+a parent concept.  Reassign orphaned children to their grandparents.
 */
 public class MoveConcepts extends BatchFix implements RF2Constants{
 	
