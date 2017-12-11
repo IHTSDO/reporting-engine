@@ -24,6 +24,7 @@ public class CaseSignificanceSpecified extends DeltaGenerator implements RF2Cons
 			delta.newIdsRequired = false; // We'll only be modifying existing descriptions\
 			delta.additionalReportColumns = "Old, New, EffectiveTime, Notes";
 			delta.inputFileHasHeaderRow = true;
+			delta.runStandAlone = true;
 			delta.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			delta.loadProjectSnapshot(false); 
@@ -58,11 +59,17 @@ public class CaseSignificanceSpecified extends DeltaGenerator implements RF2Cons
 			report(c,d,Severity.MEDIUM,ReportActionType.VALIDATION_CHECK, currentIndicator, "", d.getEffectiveTime(), newIndicator);
 			incrementSummaryInformation("descriptionsSkipped");
 		} else {
-			report(c,d,Severity.LOW,ReportActionType.DESCRIPTION_CHANGE_MADE, currentIndicator, newIndicator, d.getEffectiveTime());
-			d.setCaseSignificance(SnomedUtils.translateCaseSignificanceFromString(newIndicator));
-			d.setEffectiveTime(newEffectiveTime);
-			d.setDirty();
-			incrementSummaryInformation("descriptionsModified");
+			//Is this actually a change?
+			if (currentIndicator.equals(newIndicator)) {
+				report(c,d,Severity.LOW,ReportActionType.VALIDATION_CHECK, currentIndicator, newIndicator, d.getEffectiveTime(), "Case Significance already at correct value");
+				incrementSummaryInformation("descriptionsSkipped");
+			} else {
+				report(c,d,Severity.LOW,ReportActionType.DESCRIPTION_CHANGE_MADE, currentIndicator, newIndicator, d.getEffectiveTime());
+				d.setCaseSignificance(SnomedUtils.translateCaseSignificanceFromString(newIndicator));
+				d.setEffectiveTime(newEffectiveTime);
+				d.setDirty();
+				incrementSummaryInformation("descriptionsModified");
+			}
 		}
 		return c;
 	}
