@@ -26,9 +26,7 @@ import us.monoid.json.JSONObject;
 	Makes modifications to terms, driven by an input CSV file
 	See DRUGS-291
 */
-public class DrugsReTerming extends BatchFix implements RF2Constants{
-	
-	enum AcceptabilityMode { PREFERRED_BOTH, PREFERRED_US, PREFERRED_GB, ACCEPTABLE_BOTH, ACCEPTABLE_US }
+public class DrugsReTerming extends DrugBatchFix implements RF2Constants{
 	
 	String[] author_reviewer = new String[] {targetAuthor};
 	
@@ -352,30 +350,4 @@ public class DrugsReTerming extends BatchFix implements RF2Constants{
 		return StringUtils.capitalizeFirstLetter(term);
 	}
 
-	private Map<String, Acceptability> createAcceptabilityMap(AcceptabilityMode acceptabilityMode) {
-		Map<String, Acceptability> aMap = new HashMap<String, Acceptability>();
-		//Note that when a term is preferred in one dialect, we'll make it acceptable in the other
-		switch (acceptabilityMode) {
-			case PREFERRED_BOTH :
-				aMap.put(US_ENG_LANG_REFSET, Acceptability.PREFERRED);
-				aMap.put(GB_ENG_LANG_REFSET, Acceptability.PREFERRED);
-				break;
-			case PREFERRED_US :
-				aMap.put(US_ENG_LANG_REFSET, Acceptability.PREFERRED);
-				aMap.put(GB_ENG_LANG_REFSET, Acceptability.ACCEPTABLE);
-				break;
-			case PREFERRED_GB :
-				aMap.put(US_ENG_LANG_REFSET, Acceptability.ACCEPTABLE);
-				aMap.put(GB_ENG_LANG_REFSET, Acceptability.PREFERRED);
-				break;
-			case ACCEPTABLE_BOTH :
-				aMap.put(US_ENG_LANG_REFSET, Acceptability.ACCEPTABLE);
-				aMap.put(GB_ENG_LANG_REFSET, Acceptability.ACCEPTABLE);
-				break;
-			case ACCEPTABLE_US :
-				aMap.put(US_ENG_LANG_REFSET, Acceptability.ACCEPTABLE);
-				break;
-		}
-		return aMap;
-	}
 }

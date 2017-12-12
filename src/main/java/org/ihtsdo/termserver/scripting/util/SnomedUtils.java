@@ -50,8 +50,13 @@ public class SnomedUtils implements RF2Constants{
 	public static String[] deconstructFSN(String fsn) {
 		String[] elements = new String[2];
 		int cutPoint = fsn.lastIndexOf(SEMANTIC_TAG_START);
-		elements[0] = fsn.substring(0, cutPoint).trim();
-		elements[1] = fsn.substring(cutPoint);
+		if (cutPoint == -1) {
+			System.out.println("'" + fsn + "' does not contain a semantic tag!");
+			elements[0] = fsn;
+		} else {
+			elements[0] = fsn.substring(0, cutPoint).trim();
+			elements[1] = fsn.substring(cutPoint);
+		}
 		return elements;
 	}
 	

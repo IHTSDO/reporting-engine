@@ -34,7 +34,7 @@ that have the exact same combination of ingredients.
 These same ingredient concepts are worked on together in a single task.
 What rules are applied to each one depends on the type - Medicinal Entity, Product Strength, Medicinal Form
  */
-public class DrugProductFix extends BatchFix implements RF2Constants{
+public class DrugProductFix extends DrugBatchFix implements RF2Constants{
 	
 	String [] unwantedWords = new String[] { "preparation", "product" };
 	
@@ -382,7 +382,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		int changesMade = 0;
 		boolean isMultiIngredient = fsnParts[0].contains(INGREDIENT_SEPARATOR);
 		if (isMultiIngredient) {
-			newFSN = normalizeMultiIngredientTerm(newFSN);
+			newFSN = normalizeMultiIngredientTerm(newFSN, DescriptionType.FSN);
 		}
 
 		if (wordSubstitution != null) {
@@ -483,7 +483,7 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		boolean demotionPerformed = false;
 		//Normalise the original Description to see if the ingredients look like they've changed
 		String sanitizedTerm = removeUnwantedWords(originalDesc.getTerm());
-		String origDescNorm = normalizeMultiIngredientTerm(sanitizedTerm);
+		String origDescNorm = normalizeMultiIngredientTerm(sanitizedTerm, originalDesc.getType());
 		boolean isAcetaminophen = origDescNorm.toLowerCase().contains(ACETAMINOPHEN);
 		if (!origDescNorm.equals(newFSN)) {
 			//Demote the original description rather than inactivating it
@@ -533,34 +533,6 @@ public class DrugProductFix extends BatchFix implements RF2Constants{
 		}
 		
 		return promotionSuccessful;
-	}
-
-	protected String normalizeMultiIngredientTerm(String term) {
-		//Terms like Oral form, Topical form, Vaginal form should not be moved around 
-		//as these are not ingredients.  Return unchanged.
-		if (term.contains(" form")) {
-			debug ("Skipping normalization of term " + term);
-			return term;
-		}
-		
-		String[] ingredients = term.split(INGREDIENT_SEPARATOR_ESCAPED);
-		//ingredients should be in alphabetical order, also trim spaces
-		for (int i = 0; i < ingredients.length; i++) {
-			ingredients[i] = ingredients[i].toLowerCase().trim();
-		}
-		Arrays.sort(ingredients);
-
-		//Reform with spaces around + sign and only first letter capitalized
-		boolean isFirstIngredient = true;
-		term = "";
-		for (String thisIngredient : ingredients) {
-			if (!isFirstIngredient) {
-				term += SPACE + INGREDIENT_SEPARATOR + SPACE;
-			} 
-			term += thisIngredient.toLowerCase();
-			isFirstIngredient = false;
-		}
-		return StringUtils.capitalizeFirstLetter(term);
 	}
 
 	private String removeUnwantedWords(String str) {
