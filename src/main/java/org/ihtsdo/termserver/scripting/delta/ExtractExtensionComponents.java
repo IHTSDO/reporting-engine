@@ -34,6 +34,8 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		try {
 			delta.runStandAlone = true;
 			delta.moduleId = "731000124108";  //US Module
+			delta.additionalReportColumns = "ACTION_DETAIL, DEF_STATUS, PARENT";
+			
 			delta.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			delta.loadProjectSnapshot(false);  //Not just FSN, load all terms with lang refset also
@@ -101,10 +103,11 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			c.setModuleId(SCTID_CORE_MODULE);
 			allModifiedConcepts.add(c);
 			//Was this concept originally specified, or picked up as a dependency?
+			String parents = parentsToString(c);
 			if (allIdentifiedConcepts.contains(c)) {
-				report (c, null, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Specified concept, module set to core");
+				report (c, null, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Specified concept, module set to core", c.getDefinitionStatus().toString(), parents);
 			} else {
-				report (c, null, Severity.MEDIUM, ReportActionType.CONCEPT_CHANGE_MADE, "Dependency concept, module set to core");
+				report (c, null, Severity.MEDIUM, ReportActionType.CONCEPT_CHANGE_MADE, "Dependency concept, module set to core", c.getDefinitionStatus().toString(), parents);
 			}
 			incrementSummaryInformation("Concepts moved");
 		} else {
@@ -124,6 +127,20 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		for (Relationship r : activeRels) {
 			moveRelationshipToCore(r);
 		}
+	}
+
+	private String parentsToString(Concept c) {
+		StringBuffer parentsStr = new StringBuffer();
+		boolean firstParent = true;
+		for (Concept p : c.getParents(CharacteristicType.STATED_RELATIONSHIP)) {
+			if (!firstParent) {
+				parentsStr.append(", ");
+			} else {
+				firstParent = false;
+			}
+			parentsStr.append(p.toString());
+		}
+		return parentsStr.toString();
 	}
 
 	private void moveRelationshipToCore(Relationship r) throws TermServerScriptException {
