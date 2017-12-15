@@ -47,6 +47,7 @@ public class SnapshotGenerator extends TermServerScript {
 	public static void main (String[] args) throws IOException, TermServerScriptException, SnowOwlClientException, InterruptedException {
 		SnapshotGenerator snapGen = new SnapshotGenerator();
 		try {
+			snapGen.runStandAlone = true;
 			snapGen.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			snapGen.loadProjectSnapshot(false);  //Not just FSN, load all terms with lang refset also
