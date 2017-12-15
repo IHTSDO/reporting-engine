@@ -60,7 +60,7 @@ public class NormalizeDrugs extends DrugBatchFix implements RF2Constants{
 		
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
 		int changes = replaceParents (task, loadedConcept);
-		changes += normalizeDrugConceptTerms (task, loadedConcept);
+		changes += normalizeDrugTerms (task, loadedConcept);
 		
 		if (loadedConcept.getDefinitionStatus().equals(DefinitionStatus.PRIMITIVE)) {
 			if (countAttributes(loadedConcept) > 0) {

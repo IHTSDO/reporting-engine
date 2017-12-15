@@ -496,6 +496,10 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 			this.setFsn(d.getTerm());
 		}
 	}
+	
+	public void removeDescription (Description d) {
+		descriptions.remove(d);
+	}
 
 	public List<Concept> getParents(CharacteristicType characteristicType) {
 		switch (characteristicType) {

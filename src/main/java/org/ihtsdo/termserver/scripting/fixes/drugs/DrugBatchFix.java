@@ -11,7 +11,6 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Task;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.Acceptability;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
@@ -37,7 +36,7 @@ public abstract class DrugBatchFix extends BatchFix implements RF2Constants{
 		super(clone);
 	}
 	
-	protected int normalizeDrugConceptTerms(Task task, Concept concept) throws TermServerScriptException {
+	protected int normalizeDrugTerms(Task task, Concept concept) throws TermServerScriptException {
 		int changesMade = 0;
 		for (Description d : concept.getDescriptions(ActiveState.ACTIVE)) {
 

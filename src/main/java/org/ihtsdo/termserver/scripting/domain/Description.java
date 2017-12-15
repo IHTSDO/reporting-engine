@@ -97,6 +97,15 @@ public class Description implements RF2Constants{
 	public Description(String descriptionId) {
 		this.descriptionId = descriptionId;
 	}
+	
+	public static Description withDefaults (String term, DescriptionType type) {
+		Description d = new Description();
+		d.setModuleId(SCTID_CORE_MODULE);
+		d.setActive(true);
+		d.setTerm(term);
+		d.setType(type);
+		return d;
+	}
 
 	public String getEffectiveTime() {
 		return effectiveTime;

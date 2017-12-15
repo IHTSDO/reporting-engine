@@ -75,7 +75,7 @@ public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants{
 	@Override
 	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
-		int changesMade = normalizeDrugConceptTerms(task, loadedConcept);
+		int changesMade = normalizeDrugTerms(task, loadedConcept);
 		if (changesMade > 0) {
 			try {
 				String conceptSerialised = gson.toJson(loadedConcept);
