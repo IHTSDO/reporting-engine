@@ -319,6 +319,13 @@ public abstract class TermServerScript implements RF2Constants {
 		File snapShotArchive = new File (project + "_" + env + ".zip");
 		//Do we already have a copy of the project locally?  If not, recover it.
 		if (!snapShotArchive.exists()) {
+			//Add in a double check if we're working in prod - else we could scupper validation and classification for 90 minutes!
+			if (env.equals("prod")) {
+				print ("About to request snapshot export from production - are you sure? Y/N");
+				if (!STDIN.nextLine().trim().toUpperCase().equals("Y")) {
+					throw new TermServerScriptException("Snapshot export aborted.");
+				}
+			}
 			println ("Recovering current state of " + project + " from TS (" + env + ")");
 			tsClient.export(project.getBranchPath(), null, ExportType.MIXED, ExtractType.SNAPSHOT, snapShotArchive);
 		}
