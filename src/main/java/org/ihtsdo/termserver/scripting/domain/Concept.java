@@ -213,6 +213,17 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 		return matches;
 	}
 	
+	public List<Relationship> getRelationships(CharacteristicType characteristicType, Concept type, Concept target, ActiveState state) {
+		List<Relationship> potentialMatches = getRelationships(characteristicType, type, state);
+		List<Relationship> matches = new ArrayList<Relationship>();
+		for (Relationship r : potentialMatches) {
+			if (r.getTarget().equals(target)) {
+				matches.add(r);
+			}
+		}
+		return matches;
+	}
+	
 
 	public Relationship getRelationship(String id) {
 		for (Relationship r : relationships) {

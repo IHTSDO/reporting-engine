@@ -127,7 +127,7 @@ public class GraphLoader implements RF2Constants {
 	
 	public Concept getConcept(String sctId, boolean createIfRequired, boolean validateExists) throws TermServerScriptException {
 		//Make sure we're actually being asked for a concept
-		if (!isConcept(sctId)) {
+		if (sctId.length() < 6 || !isConcept(sctId)) {
 			throw new IllegalArgumentException("Request made for non concept sctid: " + sctId);
 		}
 		Concept c = concepts.get(sctId);

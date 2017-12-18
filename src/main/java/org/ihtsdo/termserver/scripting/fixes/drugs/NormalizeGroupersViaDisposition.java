@@ -15,6 +15,7 @@ import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.Task;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import us.monoid.json.JSONObject;
 
@@ -34,13 +35,14 @@ public class NormalizeGroupersViaDisposition extends DrugBatchFix implements RF2
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
 		NormalizeGroupersViaDisposition fix = new NormalizeGroupersViaDisposition(null);
 		try {
+			fix.inputFileHasHeaderRow = true;
 			fix.reportNoChange = true;
 			fix.populateEditPanel = true;
 			fix.populateTaskDescription = true;
 			fix.additionalReportColumns = "ACTION_DETAIL, ATTRIBUTE_COUNT";
 			fix.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
-			fix.loadProjectSnapshot(true); 
+			fix.loadProjectSnapshot(false); //Need full descriptions so we can get PT of target (not loaded from TS)
 			fix.postLoadInit();
 			fix.startTimer();
 			fix.processFile();
@@ -64,7 +66,7 @@ public class NormalizeGroupersViaDisposition extends DrugBatchFix implements RF2
 			if (countAttributes(loadedConcept) > 0) {
 				loadedConcept.setDefinitionStatus(DefinitionStatus.FULLY_DEFINED);
 				changes++;
-				report (task, loadedConcept, Severity.MEDIUM, ReportActionType.CONCEPT_CHANGE_MADE, "Concept market as fully defined");
+				report (task, loadedConcept, Severity.MEDIUM, ReportActionType.CONCEPT_CHANGE_MADE, "Concept marked as fully defined");
 			} else {
 				report (task, loadedConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Unable to mark fully defined - no attributes!");
 			}
@@ -89,18 +91,27 @@ public class NormalizeGroupersViaDisposition extends DrugBatchFix implements RF2
 		//What is our new active ingredient?   Do we have that relationship already?  If not, add ungrouped.
 		Concept target = getTarget(loadedConcept);
 		Relationship targetRel = new Relationship (loadedConcept, HAS_ACTIVE_INGRED, target, 0);
-		List<Relationship> existingRels = new ArrayList<Relationship> (loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
+		List<Relationship> existingRels = loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
+				HAS_ACTIVE_INGRED,
 				target,
-				ActiveState.ACTIVE));
+				ActiveState.BOTH);
 		
 		if (existingRels.size() > 0) {
-			report(task, loadedConcept, Severity.LOW, ReportActionType.NO_CHANGE, "Specified relationship already exists: " + targetRel);
-			return 0;
+			//If the existing relationship is active then we have nothing more to do
+			if (existingRels.get(0).isActive()) {
+				report(task, loadedConcept, Severity.LOW, ReportActionType.NO_CHANGE, "Specified relationship already exists: " + targetRel);
+				return 0;
+			} else {
+				//Otherwise, we'll activate it
+				existingRels.get(0).setActive(true);
+				String msg = "Reactivating inactive relationshiop - active ingredient " + target;
+				report (task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_MODIFIED, msg, attributeCount);
+			}
+		} else {
+			loadedConcept.addRelationship(targetRel);
+			String msg = "Added new active ingredient " + target;
+			report (task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, msg, attributeCount);
 		}
-		
-		loadedConcept.addRelationship(targetRel);
-		String msg = "Added new active ingredient " + target;
-		report (task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, msg, attributeCount);
 		return 1;
 	}
 
@@ -125,11 +136,11 @@ public class NormalizeGroupersViaDisposition extends DrugBatchFix implements RF2
 		//Do we have a gb_X ?
 		String gbX = null;
 		Description gbDescX = getTarget(loadedConcept).getPreferredSynonym(GB_ENG_LANG_REFSET);
-		if (gbDescX != null) {
+		if (gbDescX != null && !gbDescX.getTerm().equals(X)) {
 			gbX = gbDescX.getTerm();
 		}
 		
-		String fsnPartner = "Product containing " + X;
+		String fsnPartner = "Product containing " + SnomedUtils.deCapitalize(X);
 		String fsn = fsnPartner + " (product)";
 		String pt = X + " product";
 		String gbPT = null;
@@ -143,6 +154,7 @@ public class NormalizeGroupersViaDisposition extends DrugBatchFix implements RF2
 		//And add the fsnPartner if it doesn't already exist
 		if (!termAlreadyExists(loadedConcept, fsnPartner)) {
 			Description d = Description.withDefaults(fsnPartner, DescriptionType.SYNONYM);
+			d.setAcceptabilityMap(createAcceptabilityMap(AcceptabilityMode.ACCEPTABLE_BOTH));
 			loadedConcept.addDescription(d);
 			report (task, loadedConcept, Severity.LOW, ReportActionType.DESCRIPTION_ADDED, fsnPartner);
 		}
@@ -175,11 +187,19 @@ public class NormalizeGroupersViaDisposition extends DrugBatchFix implements RF2
 				gbDesc.setAcceptabilityMap(createAcceptabilityMap(AcceptabilityMode.PREFERRED_GB));
 			}
 		} else {
-			//We're replacing each PT with its appropriate partner
 			Description usPTDesc = c.getPreferredSynonym(US_ENG_LANG_REFSET);
-			replaceTerm(t, c, usPTDesc, pt, AcceptabilityMode.PREFERRED_US);
 			Description gbPTDesc = c.getPreferredSynonym(GB_ENG_LANG_REFSET);
-			replaceTerm(t, c, gbPTDesc, gbPT, AcceptabilityMode.PREFERRED_GB);
+			if (gbPT != null) {
+				//If we have a replacement gbPt, we're replacing each PT with its appropriate partner
+				replaceTerm(t, c, usPTDesc, pt, AcceptabilityMode.PREFERRED_US);
+				replaceTerm(t, c, gbPTDesc, gbPT, AcceptabilityMode.PREFERRED_GB);
+			} else {
+				//Otherwise we're replacing the US preferred term, and inactivating the other.  Warn about this!
+				replaceTerm(t, c, usPTDesc, pt, AcceptabilityMode.PREFERRED_BOTH);
+				gbPTDesc.setActive(false);
+				gbPTDesc.setInactivationIndicator(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
+				report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Replaced US/GB variants with single.  Please check");
+			}
 		}
 	}
 
@@ -205,7 +225,7 @@ public class NormalizeGroupersViaDisposition extends DrugBatchFix implements RF2
 		}
 		c.addDescription(newDesc);
 		newDesc.setAcceptabilityMap(createAcceptabilityMap(mode));
-		String msg = action + d + " in favour of " + newTerm + " (" + mode + ")";
+		String msg = action + d + " in favour of '" + newTerm + "' (" + mode.toString().toLowerCase() + ")";
 		report (t, c, Severity.LOW, ReportActionType.DESCRIPTION_CHANGE_MADE, msg);
 	}
 
@@ -222,11 +242,13 @@ public class NormalizeGroupersViaDisposition extends DrugBatchFix implements RF2
 	@Override
 	protected Concept loadLine(String[] lineItems) throws TermServerScriptException {
 		Concept c = gl.getConcept(lineItems[0]);
-		String targetStr = lineItems[2];
-		//Take off the PT from the column to leave just the SCTID
-		int pipe = targetStr.indexOf(PIPE);
-		if (pipe != -1) {
-			substancesMap.put(lineItems[0], targetStr.substring(0, pipe).trim());
+		if (lineItems.length > 2) {
+			String targetStr = lineItems[2];
+			//Take off the PT from the column to leave just the SCTID
+			int pipe = targetStr.indexOf(PIPE);
+			if (pipe != -1) {
+				substancesMap.put(lineItems[0], targetStr.substring(0, pipe).trim());
+			}
 		}
 		return c;
 	}
