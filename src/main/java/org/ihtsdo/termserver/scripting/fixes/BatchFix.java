@@ -190,7 +190,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 								changesMade = doFix(task, component, info);
 							}
 							if (changesMade == 0 && reportNoChange) {
-								report(task, component, Severity.NONE, ReportActionType.NO_CHANGE, "");
+								report(task, component, Severity.MEDIUM, ReportActionType.NO_CHANGE, "");
 							}
 							flushFiles(false);
 						} catch (ValidationFailure f) {

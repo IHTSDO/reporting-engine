@@ -27,6 +27,7 @@ import us.monoid.json.JSONObject;
 	Where a concept is inactive, it's active descriptions should have the inactivation indicator 
 	900000000000495008 |Concept non-current (foundation metadata concept)| applied against them.
 	See INFRA-1407
+	Also ISRS-225
 */
 public class FixMissingInactivationIndicators extends BatchFix implements RF2Constants{
 	

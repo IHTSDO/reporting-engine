@@ -16,7 +16,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import us.monoid.json.JSONObject;
 
 /*
-For DRUG-422
+For DRUG-422, DRUG-431
 Driven by a text file of concepts, move specified concepts to exist under
 a parent concept.
 */
@@ -57,25 +57,34 @@ public class ReplaceParents extends BatchFix implements RF2Constants{
 	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
 		
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
-		List<Concept> modifiedConcepts = new ArrayList<Concept>();
-		replaceParents(task, loadedConcept, modifiedConcepts);
-		for (Concept thisModifiedConcept : modifiedConcepts) {
-			try {
-				String conceptSerialised = gson.toJson(thisModifiedConcept);
-				debug ((dryRun ?"Dry run ":"Updating state of ") + thisModifiedConcept + info);
-				if (!dryRun) {
-					tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
-				}
-			} catch (Exception e) {
-				report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
+		int changesMade = replaceParents(task, loadedConcept);
+		
+		//All concepts should be fully defined, if possible
+		if (loadedConcept.getDefinitionStatus().equals(DefinitionStatus.PRIMITIVE)) {
+			if (countAttributes(loadedConcept) > 0) {
+				loadedConcept.setDefinitionStatus(DefinitionStatus.FULLY_DEFINED);
+				changesMade++;
+				report (task, loadedConcept, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept marked as fully defined");
+			} else {
+				report (task, loadedConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Unable to mark fully defined - no attributes!");
 			}
 		}
-		incrementSummaryInformation(task.getKey(), modifiedConcepts.size());
-		return modifiedConcepts.size();
+		
+		try {
+			String conceptSerialised = gson.toJson(loadedConcept);
+			debug ((dryRun ?"Dry run ":"Updating state of ") + loadedConcept + info);
+			if (!dryRun) {
+				tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
+			}
+		} catch (Exception e) {
+			report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
+		}
+		return changesMade;
 	}
 
-	private void replaceParents(Task task, Concept loadedConcept, List<Concept> modifiedConcepts) throws TermServerScriptException {
+	private int replaceParents(Task task, Concept loadedConcept) throws TermServerScriptException {
 		
+		int changesMade = 0;
 		List<Relationship> parentRels = new ArrayList<Relationship> (loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
 																		IS_A,
 																		ActiveState.ACTIVE));
@@ -95,21 +104,28 @@ public class ReplaceParents extends BatchFix implements RF2Constants{
 			default : loadedConcept.setConceptType(ConceptType.UNKNOWN);
 		}
 		
+		boolean replacementNeeded = true;
 		for (Relationship parentRel : parentRels) {
-			remove (task, parentRel, loadedConcept, newParentRel.getTarget().toString(), true);
+			if (!parentRel.equals(newParentRel)) {
+				remove (task, parentRel, loadedConcept, newParentRel.getTarget().toString(), true);
+				changesMade++;
+			} else {
+				replacementNeeded = false;
+			}
 		}
 		
-		Relationship thisNewParentRel = newParentRel.clone(null);
-		thisNewParentRel.setSource(loadedConcept);
-		loadedConcept.addRelationship(thisNewParentRel);
-		modifiedConcepts.add(loadedConcept);
-		String msg = "Single parent set to " + newParent;
-		report (task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_INACTIVATED, msg, loadedConcept.getDefinitionStatus().toString(), parentCount, attributeCount);
-		
+		if (replacementNeeded) {
+			Relationship thisNewParentRel = newParentRel.clone(null);
+			thisNewParentRel.setSource(loadedConcept);
+			loadedConcept.addRelationship(thisNewParentRel);
+			changesMade++;
+			String msg = "Single parent set to " + newParent;
+			report (task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_INACTIVATED, msg, loadedConcept.getDefinitionStatus().toString(), parentCount, attributeCount);
+		}
+		return changesMade;
 	}
 
 	private void remove(Task t, Relationship rel, Concept c, String retained, boolean isParent) throws TermServerScriptException {
-		
 		//Are we inactivating or deleting this relationship?
 		if (rel.getEffectiveTime() == null || rel.getEffectiveTime().isEmpty()) {
 			c.removeRelationship(rel);
