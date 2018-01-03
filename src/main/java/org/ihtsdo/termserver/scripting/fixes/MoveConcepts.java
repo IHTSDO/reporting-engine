@@ -16,7 +16,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import us.monoid.json.JSONObject;
 
 /*
-For DRUG-413
+For DRUGS-413, DRUGS-432
 Driven by a text file of concepts, move specified concepts to exist under
 a parent concept.  Reassign orphaned children to their grandparents.
 */
@@ -69,7 +69,7 @@ public class MoveConcepts extends BatchFix implements RF2Constants{
 		for (Concept thisModifiedConcept : modifiedConcepts) {
 			try {
 				String conceptSerialised = gson.toJson(thisModifiedConcept);
-				debug ("Updating state of " + thisModifiedConcept + info);
+				debug ((dryRun ?"Dry run ":"Updating state of ") + thisModifiedConcept + info);
 				if (!dryRun) {
 					tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
 				}
