@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.ActiveState;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import com.google.gson.annotations.Expose;
@@ -56,6 +57,10 @@ public class Description implements RF2Constants{
 	private boolean dirty = false;
 	private boolean isDeleted = false;
 	private String deletionEffectiveTime;
+	
+	//Note that these values are used when loading from RF2 where multiple entries can exist.
+	//When interacting with the TS, only one inactivation indicator is used (see above).
+	List<InactivationIndicatorEntry> inactivationIndicatorEntries;
 	
 	/**
 	 * No args constructor for use in serialization
@@ -449,6 +454,40 @@ public class Description implements RF2Constants{
 			}
 		}
 		return null;
+	}
+	
+	public List<InactivationIndicatorEntry> getInactivationIndicatorEntries() {
+		if (inactivationIndicatorEntries == null) {
+			inactivationIndicatorEntries = new ArrayList<InactivationIndicatorEntry>();
+		}
+		return inactivationIndicatorEntries;
+	}
+	
+	public void addInactivationIndicator(InactivationIndicatorEntry i) {
+		getInactivationIndicatorEntries().add(i);
+		if (i.isActive()) {
+			setInactivationIndicator(SnomedUtils.translateInactivationIndicator(i.getInactivationReasonId()));
+		}
+	}
+	
+	public List<InactivationIndicatorEntry> getInactivationIndicatorEntries(ActiveState activeState) {
+		if (activeState.equals(ActiveState.BOTH)) {
+			return getInactivationIndicatorEntries();
+		} else {
+			boolean isActive = activeState.equals(ActiveState.ACTIVE);
+			List<InactivationIndicatorEntry> selectedInactivationIndicatortEntries = new ArrayList<InactivationIndicatorEntry>();
+			for (InactivationIndicatorEntry i : getInactivationIndicatorEntries()) {
+				if (i.isActive() == isActive) {
+					selectedInactivationIndicatortEntries.add(i);
+				}
+			}
+			return selectedInactivationIndicatortEntries;
+		}
+	}
+	
+	public void setInactivationIndicatorEntries(
+			List<InactivationIndicatorEntry> inactivationIndicatorEntries) {
+		this.inactivationIndicatorEntries = inactivationIndicatorEntries;
 	}
 
 }

@@ -112,7 +112,7 @@ public class SnapshotGenerator extends TermServerScript {
 		writeToRF2File(conSnapshotFilename, c.toRF2());
 		
 		for (Description d : c.getDescriptions(ActiveState.BOTH)) {
-			outputRF2(d);  //Will output langrefset in turn
+			outputRF2(d);  //Will output langrefset and inactivation indicators in turn
 		}
 		
 		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH)) {
@@ -124,14 +124,19 @@ public class SnapshotGenerator extends TermServerScript {
 		}
 		
 		for (InactivationIndicatorEntry i: c.getInactivationIndicatorEntries()) {
-			outputRF2(i);
+			writeToRF2File(attribValSnapshotFilename, i.toRF2());
 		}
 	}
 
 	protected void outputRF2(Description d) throws TermServerScriptException {
 		writeToRF2File(descSnapshotFilename, d.toRF2());
+		
 		for (LangRefsetEntry lang : d.getLangRefsetEntries()) {
 			writeToRF2File(langSnapshotFilename, lang.toRF2());
+		}
+		
+		for (InactivationIndicatorEntry inact : d.getInactivationIndicatorEntries()) {
+			writeToRF2File(attribValSnapshotFilename, inact.toRF2());
 		}
 	}
 
@@ -144,10 +149,6 @@ public class SnapshotGenerator extends TermServerScript {
 		}
 	}
 	
-	protected void outputRF2(InactivationIndicatorEntry i) throws TermServerScriptException {
-		writeToRF2File(attribValSnapshotFilename, i.toRF2());
-	}
-
 	@Override
 	protected Concept loadLine(String[] lineItems)
 			throws TermServerScriptException {

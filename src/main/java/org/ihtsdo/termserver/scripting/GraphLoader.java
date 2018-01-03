@@ -290,20 +290,13 @@ public class GraphLoader implements RF2Constants {
 		while ((line = br.readLine()) != null) {
 			if (!isHeaderLine) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
+				InactivationIndicatorEntry inactivation = InactivationIndicatorEntry.fromRf2(lineItems);
 				if (conceptIndicators) {
 					Concept c = getConcept(lineItems[INACT_IDX_REFCOMPID]);
-					InactivationIndicatorEntry inactivation = InactivationIndicatorEntry.fromRf2(lineItems);
 					c.addInactivationIndicator(inactivation);
 				} else {
-					//Description inactivation indicators.  We'll only load the current active one, and warn if there is more than one.
-					if (lineItems[INACT_IDX_ACTIVE].equals(ACTIVE_FLAG)) {
-						Description d = getDescription(lineItems[INACT_IDX_REFCOMPID]);
-						InactivationIndicator indicator = SnomedUtils.translateInactivationIndicator(lineItems[INACT_IDX_REASON_ID]);
-						if (d.getInactivationIndicator() != null) {
-							System.out.println ("Warning, description " + d + " changing inactivation indicator from " + d.getInactivationIndicator() + " to " + indicator);
-						}
-						d.setInactivationIndicator(indicator);
-					}
+					Description d = getDescription(lineItems[INACT_IDX_REFCOMPID]);
+					d.addInactivationIndicator(inactivation);
 				}
 			} else {
 				isHeaderLine = false;
