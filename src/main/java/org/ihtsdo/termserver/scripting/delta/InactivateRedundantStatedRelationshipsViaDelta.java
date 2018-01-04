@@ -14,10 +14,10 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 /**
  * Class to inactivate redundant IS A relationships where a more specific parent exists
  */
-public class InactivateRedundantStatedRelationships extends DeltaGenerator implements RF2Constants {
+public class InactivateRedundantStatedRelationshipsViaDelta extends DeltaGenerator implements RF2Constants {
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
-		InactivateRedundantStatedRelationships delta = new InactivateRedundantStatedRelationships();
+		InactivateRedundantStatedRelationshipsViaDelta delta = new InactivateRedundantStatedRelationshipsViaDelta();
 		try {
 			delta.newIdsRequired = false; // We'll only be inactivating existing relationships
 			delta.init(args);
