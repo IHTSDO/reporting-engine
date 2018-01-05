@@ -114,11 +114,21 @@ public class SnomedUtils implements RF2Constants{
 		return acceptabilities;
 	}
 
-	public static String substitute(String str,
-			Map<String, String> wordSubstitution) {
+	public static String substitute(String str, Map<String, String> wordSubstitution) {
 		//Replace any instances of the map key with the corresponding value
 		for (Map.Entry<String, String> substitution : wordSubstitution.entrySet()) {
-			str = str.replace(substitution.getKey(), substitution.getValue());
+			//Check for the word existing in lower case, and then replace with same setting
+			if (str.toLowerCase().contains(substitution.getKey().toLowerCase())) {
+				//Did we match as is, do direct replacement if so
+				if (str.contains(substitution.getKey())) {
+					str = str.replace(substitution.getKey(), substitution.getValue());
+				} else {
+					//Otherwise, we should capitalize
+					String find = SnomedUtils.capitalize(substitution.getKey());
+					String subst = SnomedUtils.capitalize(substitution.getValue());
+					str = str.replace(find, subst);
+				}
+			}
 		}
 		return str;
 	}

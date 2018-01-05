@@ -17,7 +17,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import us.monoid.json.JSONObject;
 
 /*
-For DRUGS-422, DRUGS-434
+For DRUGS-422, DRUGS-434, DRUGS-435
 Driven by a text file of concepts, move specified concepts to exist under
 a new parent concept and remodel Terms.
 */
@@ -68,7 +68,7 @@ public class NormalizeDrugs extends DrugBatchFix implements RF2Constants{
 				changes++;
 				report (task, loadedConcept, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept marked as fully defined");
 			} else {
-				report (task, loadedConcept, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Unable to mark fully defined - no attributes!");
+				report (task, loadedConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Unable to mark fully defined - no attributes!");
 			}
 		}
 		

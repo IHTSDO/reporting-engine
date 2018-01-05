@@ -17,6 +17,14 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 public abstract class DrugBatchFix extends BatchFix implements RF2Constants{
 	
 	enum AcceptabilityMode { PREFERRED_BOTH, PREFERRED_US, PREFERRED_GB, ACCEPTABLE_BOTH, ACCEPTABLE_US }
+
+	static Map<String, String> wordSubstitution = new HashMap<String, String>();
+	static {
+		wordSubstitution.put("acetaminophen", "paracetamol");
+	}
+	
+	String [] unwantedWords = new String[] { "preparation", "product" };
+	String [] forceCS = new String[] { "N-" };
 	
 	static final String productPrefix = "Product containing ";
 	static final String find = "/1 each";
@@ -41,6 +49,10 @@ public abstract class DrugBatchFix extends BatchFix implements RF2Constants{
 		for (Description d : concept.getDescriptions(ActiveState.ACTIVE)) {
 
 			String replacementTerm = d.getTerm();
+			boolean isFSN = d.getType().equals(DescriptionType.FSN);
+			
+			ensureCaptialization(d);
+			
 			//If any term contains a PLUS sign, flag validation
 			if (replacementTerm.contains(PLUS)) {
 				//Try for the properly spaced version first, so we don't introduce extra spaces.
@@ -52,15 +64,22 @@ public abstract class DrugBatchFix extends BatchFix implements RF2Constants{
 			if (d.isPreferred() && d.getType().equals(DescriptionType.SYNONYM) && replacementTerm.contains(find)) {
 				replacementTerm = replacementTerm.replace(find, replace);
 			}
+			
+			//Remove any unwanted words (PT and FSN only)
+			//Swap known replacements 
+			if (d.isPreferred()) {
+				replacementTerm = removeUnwantedWords(replacementTerm, isFSN);
+				replacementTerm = SnomedUtils.substitute(replacementTerm, wordSubstitution);
+			}
 
 			//Check ingredient order
 			if (replacementTerm.contains(AND)) {
 				replacementTerm = normalizeMultiIngredientTerm(replacementTerm, d.getType());
 			}
-			
+
 			//If this is an FSN, make sure we start with the "Product containing" prefix
 			//and force the semantic tag
-			if (d.getType().equals(DescriptionType.FSN)) {
+			if (isFSN) {
 				if (!replacementTerm.startsWith(productPrefix)) {
 					//If we're not case sensitive, make the first letter lower case
 					if (!d.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE)) {
@@ -78,7 +97,7 @@ public abstract class DrugBatchFix extends BatchFix implements RF2Constants{
 			if (!replacementTerm.equals(d.getTerm())) {
 				boolean doReplacement = true;
 				if (termAlreadyExists(concept, replacementTerm)) {
-					report(task, concept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Replacement term already exists: '" + replacementTerm + "' inactivating abnormal term only.");
+					report(task, concept, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Replacement term already exists: '" + replacementTerm + "' inactivating abnormal term only.");
 					doReplacement = false;
 				}
 				
@@ -116,6 +135,15 @@ public abstract class DrugBatchFix extends BatchFix implements RF2Constants{
 			}
 		}
 		return changesMade;
+	}
+
+	private void ensureCaptialization(Description d) {
+		String term = d.getTerm();
+		for (String checkStr : forceCS) {
+			if (term.startsWith(checkStr)) {
+				d.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
+			}
+		}
 	}
 
 	protected String normalizeMultiIngredientTerm(String term, DescriptionType descriptionType) {
@@ -240,6 +268,26 @@ public abstract class DrugBatchFix extends BatchFix implements RF2Constants{
 				break;
 		}
 		return aMap;
+	}
+	
+	protected String removeUnwantedWords(String str, boolean isFSN) {
+		String semTag = "";
+		//Keep the semantic tag separate
+		if (isFSN) {
+			String[] parts = SnomedUtils.deconstructFSN(str);
+			str = parts[0];
+			semTag = " " + parts[1];
+		}
+		
+		for (String unwantedWord : unwantedWords) {
+			String[] unwantedWordCombinations = new String[] { SPACE + unwantedWord, unwantedWord + SPACE };
+			for (String thisUnwantedWord : unwantedWordCombinations) {
+				if (str.contains(thisUnwantedWord)) {
+					str = str.replace(thisUnwantedWord,"");
+				}
+			}
+		}
+		return str + semTag;
 	}
 
 }

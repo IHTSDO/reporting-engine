@@ -2,10 +2,8 @@ package org.ihtsdo.termserver.scripting.fixes.drugs;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -25,8 +23,6 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import us.monoid.json.JSONObject;
 
-import com.b2international.commons.StringUtils;
-
 /*
 Drug Product fix loads the input file, but only really works with the Medicinal Entities.
 The full project hierarchy is exported and loaded locally so we can scan for other concepts
@@ -35,13 +31,6 @@ These same ingredient concepts are worked on together in a single task.
 What rules are applied to each one depends on the type - Medicinal Entity, Product Strength, Medicinal Form
  */
 public class DrugProductFix extends DrugBatchFix implements RF2Constants{
-	
-	String [] unwantedWords = new String[] { "preparation", "product" };
-	
-	static Map<String, String> wordSubstitution = new HashMap<String, String>();
-	static {
-		wordSubstitution.put("acetaminophen", "paracetamol");
-	}
 	
 	public DrugProductFix(BatchFix clone) {
 		super(clone);
@@ -482,7 +471,7 @@ public class DrugProductFix extends DrugBatchFix implements RF2Constants{
 	private boolean checkForDemotion(Description originalDesc, String newFSN) {
 		boolean demotionPerformed = false;
 		//Normalise the original Description to see if the ingredients look like they've changed
-		String sanitizedTerm = removeUnwantedWords(originalDesc.getTerm());
+		String sanitizedTerm = removeUnwantedWords(originalDesc.getTerm(), false);
 		String origDescNorm = normalizeMultiIngredientTerm(sanitizedTerm, originalDesc.getType());
 		boolean isAcetaminophen = origDescNorm.toLowerCase().contains(ACETAMINOPHEN);
 		if (!origDescNorm.equals(newFSN)) {
@@ -535,22 +524,9 @@ public class DrugProductFix extends DrugBatchFix implements RF2Constants{
 		return promotionSuccessful;
 	}
 
-	private String removeUnwantedWords(String str) {
-		for (String unwantedWord : unwantedWords) {
-			String[] unwantedWordCombinations = new String[] { SPACE + unwantedWord, unwantedWord + SPACE };
-			for (String thisUnwantedWord : unwantedWordCombinations) {
-				if (str.contains(thisUnwantedWord)) {
-					str = str.replace(thisUnwantedWord,"");
-				}
-			}
-			
-		}
-		return str;
-	}
-	
 	private String removeUnwantedWords(Task task, Concept concept,
 			String fsnRoot) {
-		String sanitizedFsnRoot = removeUnwantedWords(fsnRoot);
+		String sanitizedFsnRoot = removeUnwantedWords(fsnRoot, false);
 		if (!sanitizedFsnRoot.equals(fsnRoot)) {
 			String msg = "Removed unwanted word from FSN: " + fsnRoot + " became " + sanitizedFsnRoot;
 			report(task, concept, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, msg);
