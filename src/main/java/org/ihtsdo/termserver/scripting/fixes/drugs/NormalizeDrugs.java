@@ -17,7 +17,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import us.monoid.json.JSONObject;
 
 /*
-For DRUG-422
+For DRUGS-422, DRUGS-434
 Driven by a text file of concepts, move specified concepts to exist under
 a new parent concept and remodel Terms.
 */
@@ -66,9 +66,9 @@ public class NormalizeDrugs extends DrugBatchFix implements RF2Constants{
 			if (countAttributes(loadedConcept) > 0) {
 				loadedConcept.setDefinitionStatus(DefinitionStatus.FULLY_DEFINED);
 				changes++;
-				report (task, loadedConcept, Severity.MEDIUM, ReportActionType.CONCEPT_CHANGE_MADE, "Concept market as fully defined");
+				report (task, loadedConcept, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept marked as fully defined");
 			} else {
-				report (task, loadedConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Unable to mark fully defined - no attributes!");
+				report (task, loadedConcept, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Unable to mark fully defined - no attributes!");
 			}
 		}
 		
@@ -85,7 +85,7 @@ public class NormalizeDrugs extends DrugBatchFix implements RF2Constants{
 	}
 
 	private int replaceParents(Task task, Concept loadedConcept) throws TermServerScriptException {
-		
+		int changesMade = 0;
 		List<Relationship> parentRels = new ArrayList<Relationship> (loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
 																		IS_A,
 																		ActiveState.ACTIVE));
@@ -105,14 +105,23 @@ public class NormalizeDrugs extends DrugBatchFix implements RF2Constants{
 			default : loadedConcept.setConceptType(ConceptType.UNKNOWN);
 		}
 		
+		boolean replacementRequired = true;
 		for (Relationship parentRel : parentRels) {
-			remove (task, parentRel, loadedConcept, newParentRel.getTarget().toString(), parentCount, attributeCount);
+			if (!parentRel.equals(newParentRel)) {
+				remove (task, parentRel, loadedConcept, newParentRel.getTarget().toString(), parentCount, attributeCount);
+				changesMade++;
+			} else {
+				replacementRequired = false;
+			}
 		}
 		
-		Relationship thisNewParentRel = newParentRel.clone(null);
-		thisNewParentRel.setSource(loadedConcept);
-		loadedConcept.addRelationship(thisNewParentRel);
-		return 1;
+		if (replacementRequired) {
+			Relationship thisNewParentRel = newParentRel.clone(null);
+			thisNewParentRel.setSource(loadedConcept);
+			loadedConcept.addRelationship(thisNewParentRel);
+			changesMade++;
+		}
+		return changesMade;
 	}
 
 	private void remove(Task t, Relationship rel, Concept c, String retained, String parentCount, String attributeCount) throws TermServerScriptException {

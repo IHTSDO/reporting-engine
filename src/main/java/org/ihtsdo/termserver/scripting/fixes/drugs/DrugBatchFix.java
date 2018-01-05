@@ -87,10 +87,10 @@ public abstract class DrugBatchFix extends BatchFix implements RF2Constants{
 				if (d.isReleased()) {
 					d.setActive(false);
 					d.setInactivationIndicator(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
-					msg = "Inactivated ";
+					msg = "Inactivated desc ";
 				} else {
 					concept.getDescriptions().remove(d);
-					msg = "Deleted ";
+					msg = "Deleted desc ";
 				}
 				msg +=  d.getDescriptionId() + " - '" + d.getTerm().toString();
 				if (doReplacement) {
