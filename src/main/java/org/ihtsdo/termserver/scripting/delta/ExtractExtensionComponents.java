@@ -28,6 +28,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	private List<Component> allModifiedConcepts = new ArrayList<>();
 	private Map<String, Concept> loadedConcepts = new HashMap<>();
 	SnowOwlClient secondaryConnection;
+	private static Concept NULL_CONCEPT = new Concept("-1");
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
 		ExtractExtensionComponents delta = new ExtractExtensionComponents();
@@ -98,17 +99,28 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	}
 
 	private void switchModule(Concept c) throws TermServerScriptException {
+		
 		//Switch the module of this concept, then all active descriptions and relationships
 		if (c.getModuleId().equals(moduleId)) {
-			c.setModuleId(SCTID_CORE_MODULE);
-			allModifiedConcepts.add(c);
 			//Was this concept originally specified, or picked up as a dependency?
 			String parents = parentsToString(c);
+			
+			//It's possible that this concept has already been transferred by an earlier run if it was identified as a dependecy, so 
+			//we have to check every concept.
+			Concept dependency = loadConcept(c);
+			if (!dependency.equals(NULL_CONCEPT)) {
+				report (c, null, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Concept has already been promoted to core (possibly as a dependency)", c.getDefinitionStatus().toString(), parents);
+				return;
+			}
+			
+			
 			if (allIdentifiedConcepts.contains(c)) {
 				report (c, null, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Specified concept, module set to core", c.getDefinitionStatus().toString(), parents);
 			} else {
 				report (c, null, Severity.MEDIUM, ReportActionType.CONCEPT_CHANGE_MADE, "Dependency concept, module set to core", c.getDefinitionStatus().toString(), parents);
 			}
+			c.setModuleId(SCTID_CORE_MODULE);
+			allModifiedConcepts.add(c);
 			incrementSummaryInformation("Concepts moved");
 		} else {
 			if (allIdentifiedConcepts.contains(c)) {
@@ -202,6 +214,10 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		Concept loadedConcept = loadedConcepts.get(c.getConceptId());
 		if (loadedConcept == null) {
 			loadedConcept = loadConcept(secondaryConnection, c, "MAIN");
+			//If the concept was not found, that may be OK
+			if (loadedConcept == null) {
+				loadedConcept = NULL_CONCEPT;
+			}
 			loadedConcepts.put(loadedConcept.getConceptId(), loadedConcept);
 		}
 		return loadedConcept;

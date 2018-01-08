@@ -46,6 +46,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import us.monoid.json.JSONException;
+import us.monoid.json.JSONObject;
 import us.monoid.web.JSONResource;
 import us.monoid.web.Resty;
 
@@ -407,6 +408,10 @@ public abstract class TermServerScript implements RF2Constants {
 			loadedConcept.setLoaded(true);
 			return loadedConcept;
 		} catch (SnowOwlClientException | JSONException | IOException e) {
+			if (e.getMessage().contains("[404] Not Found")) {
+				debug ("Unable to find " + concept + " on branch " + branchPath);
+				return null;
+			}
 			throw new TermServerScriptException("Failed to recover " + concept + " from TS due to " + e.getMessage(),e);
 		}
 	}
