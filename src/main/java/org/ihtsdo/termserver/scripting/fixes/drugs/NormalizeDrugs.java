@@ -60,15 +60,35 @@ public class NormalizeDrugs extends DrugBatchFix implements RF2Constants{
 		
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
 		int changes = replaceParents (task, loadedConcept);
-		changes += normalizeDrugTerms (task, loadedConcept);
+		
+		if (!loadedConcept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM)) {
+			changes += normalizeDrugTerms (task, loadedConcept);
+		}
 		
 		if (loadedConcept.getDefinitionStatus().equals(DefinitionStatus.PRIMITIVE)) {
-			if (countAttributes(loadedConcept) > 0) {
+			
+			int activeIngredientCount = loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, Concept.HAS_ACTIVE_INGRED, ActiveState.ACTIVE).size();
+			int doseFormCount = loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, Concept.HAS_MANUFACTURED_DOSE_FORM, ActiveState.ACTIVE).size();
+			boolean canFullyDefine = true;
+			
+			if (loadedConcept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM) || loadedConcept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT)) {
+				if (activeIngredientCount == 0) {
+					canFullyDefine = false;
+				}
+				if (loadedConcept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM) && doseFormCount == 0) {
+					canFullyDefine = false;
+				}
+			} else {
+				canFullyDefine = countAttributes(loadedConcept) > 0;
+			}
+			
+			
+			if (canFullyDefine) {
 				loadedConcept.setDefinitionStatus(DefinitionStatus.FULLY_DEFINED);
 				changes++;
 				report (task, loadedConcept, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept marked as fully defined");
 			} else {
-				report (task, loadedConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Unable to mark fully defined - no attributes!");
+				report (task, loadedConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Unable to mark fully defined - insufficient attributes!");
 			}
 		}
 		

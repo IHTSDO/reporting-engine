@@ -29,7 +29,7 @@ public class ProductStrengthFix extends BatchFix implements RF2Constants{
 		int changesMade = ensureDefinitionStatus(task, concept, DefinitionStatus.PRIMITIVE);
 		changesMade += ensureAcceptableParent(task, concept, graph.getConcept(PHARM_BIO_PRODUCT_SCTID));
 		validateAttributeValues(task, concept, HAS_ACTIVE_INGRED, SUBSTANCE, Cardinality.AT_LEAST_ONE);
-		validateAttributeValues(task, concept, HAS_DOSE_FORM, DRUG_PREPARATION, Cardinality.EXACTLY_ONE);
+		validateAttributeValues(task, concept, HAS_MANUFACTURED_DOSE_FORM, DRUG_PREPARATION, Cardinality.EXACTLY_ONE);
 		return changesMade;
 	}
 

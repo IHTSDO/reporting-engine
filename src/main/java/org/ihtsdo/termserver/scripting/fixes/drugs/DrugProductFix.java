@@ -543,7 +543,7 @@ public class DrugProductFix extends DrugBatchFix implements RF2Constants{
 			concept.setConceptType(ConceptType.PRODUCT_STRENGTH);
 		} else {
 			//If the concept has a dose form, then it's a Medicinal Form
-			List<Relationship> doseFormAttributes = concept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HAS_DOSE_FORM, ActiveState.ACTIVE);
+			List<Relationship> doseFormAttributes = concept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HAS_MANUFACTURED_DOSE_FORM, ActiveState.ACTIVE);
 			if (!doseFormAttributes.isEmpty()) {
 				concept.setConceptType(ConceptType.MEDICINAL_PRODUCT_FORM);
 			}
