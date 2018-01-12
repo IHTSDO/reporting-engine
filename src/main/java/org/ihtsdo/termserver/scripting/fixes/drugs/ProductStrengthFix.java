@@ -1,9 +1,6 @@
 package org.ihtsdo.termserver.scripting.fixes.drugs;
 
-import java.util.List;
-
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.domain.Batch;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Task;

@@ -104,7 +104,7 @@ public abstract class TermServerScript implements RF2Constants {
 	public enum ReportActionType { API_ERROR, DEBUG_INFO, INFO, UNEXPECTED_CONDITION,
 									 CONCEPT_CHANGE_MADE, CONCEPT_ADDED,
 									 DESCRIPTION_CHANGE_MADE, DESCRIPTION_ADDED, DESCRIPTION_REMOVED,
-									 RELATIONSHIP_ADDED, RELATIONSHIP_INACTIVATED, RELATIONSHIP_DELETED, RELATIONSHIP_MODIFIED, 
+									 RELATIONSHIP_ADDED, RELATIONSHIP_REPLACED, RELATIONSHIP_INACTIVATED, RELATIONSHIP_DELETED, RELATIONSHIP_MODIFIED, 
 									 NO_CHANGE, VALIDATION_ERROR, VALIDATION_CHECK, 
 									 REFSET_MEMBER_REMOVED, UNKNOWN};
 									 
@@ -450,7 +450,7 @@ public abstract class TermServerScript implements RF2Constants {
 					if (c != null) {
 						allConcepts.add(c);
 					} else {
-						debug ("Malformed line " + lineNum + ": " + lines.get(lineNum));
+						debug ("Skipped line " + lineNum + ": " + lines.get(lineNum) + ", malformed or not required?");
 					}
 				} else {
 					debug ("Skipping blank line " + lineNum);
