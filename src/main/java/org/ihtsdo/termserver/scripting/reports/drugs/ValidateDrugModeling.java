@@ -58,12 +58,12 @@ public class ValidateDrugModeling extends TermServerReport{
 		String[] drugTypes = new String[] { MPF, CD };
 		long issueCount = 0;
 		for (Concept concept : subHierarchy) {
-			//issueCount += validateIngredientsInFSN(concept);
+			issueCount += validateIngredientsInFSN(concept);
 			//issueCount += validateIngredientsAgainstBoSS(concept);
 			//issueCount += validateStatedVsInferredAttributes(concept, activeIngredient, drugTypes);
 			//issueCount += validateStatedVsInferredAttributes(concept, hasManufacturedDoseForm, drugTypes);
 			//issueCount += validateAttributeValueCardinality(concept, activeIngredient);
-			issueCount += checkForBadWords(concept);  //DRUGS-93
+			//issueCount += checkForBadWords(concept);  //DRUGS-93
 		}
 		println ("Drugs validation complete.  Detected " + issueCount + " issues.");
 	}
@@ -239,7 +239,7 @@ public class ValidateDrugModeling extends TermServerReport{
 
 	private int validateIngredientsInFSN(Concept concept) throws TermServerScriptException {
 		int issueCount = 0;
-		String[] drugTypes = new String[] { /*MP,*/ MPF};
+		String[] drugTypes = new String[] { MP, /*MPF*/ };
 		
 		//Only check FSN for certain drug types (to be expanded later)
 		if (!isDrugType(concept, drugTypes)) {
@@ -253,7 +253,7 @@ public class ValidateDrugModeling extends TermServerReport{
 			Description ingredientFSN = gl.getConcept(r.getTarget().getConceptId()).getFSNDescription();
 			String ingredientName = SnomedUtils.deconstructFSN(ingredientFSN.getTerm())[0];
 			//If the ingredient name is not case sensitive, decaptialize
-			if (!ingredientFSN.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE)) {
+			if (!ingredientFSN.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE)) {
 				ingredientName = SnomedUtils.deCapitalize(ingredientName);
 			}
 			ingredients.add(ingredientName);
@@ -271,12 +271,35 @@ public class ValidateDrugModeling extends TermServerReport{
 		
 		if (!concept.getFsn().equals(proposedFSN)) {
 			String issue = "FSN did not match expected pattern";
-			report (concept, issue, proposedFSN);
+			String differences = findDifferences (concept.getFsn(), proposedFSN);
+			report (concept, issue, proposedFSN, differences);
 			issueCount++;
 		}
 		return issueCount;
 	}
 	
+	private String findDifferences(String actual, String expected) {
+		String differences = "";
+		//For each word, see if it exists in the other 
+		String[] actuals = actual.split(" ");
+		String[] expecteds = expected.split(" ");
+		int maxLoop = (actuals.length>expecteds.length)?actuals.length:expecteds.length;
+		for (int x=0; x < maxLoop; x++) {
+			if (actuals.length > x) {
+				if (! expected.contains(actuals[x])) {
+					differences += actuals[x] + " ";
+				}
+			}
+			
+			if (expecteds.length > x) {
+				if (! actual.contains(expecteds[x])) {
+					differences += expecteds[x] + " ";
+				}
+			}
+		}
+		return differences;
+	}
+
 	private String getDosageForm(Concept concept) {
 		List<Relationship> doseForms = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, hasManufacturedDoseForm, ActiveState.ACTIVE);
 		if (doseForms.size() == 0) {
@@ -297,6 +320,10 @@ public class ValidateDrugModeling extends TermServerReport{
 				case "oromucosal AND/OR gingival dosage form" : doseForm = "oropharyngeal dosage form";
 					break;
 			}
+			
+			//In the product we say "doseage form", so make that switch
+			doseForm = doseForm.replace(" dose ", " dosage ");
+			
 			return doseForm;
 		}
 	}
@@ -335,12 +362,14 @@ public class ValidateDrugModeling extends TermServerReport{
 		return isType;
 	}
 
-	protected void report (Concept c, String issue, String data) {
+	protected void report (Concept c, String issue, String... data) {
 		String line =	c.getConceptId() + COMMA_QUOTE + 
 						c.getFsn() + QUOTE_COMMA_QUOTE +
 						SnomedUtils.deconstructFSN(c.getFsn())[1] + QUOTE_COMMA_QUOTE +
-						issue + QUOTE_COMMA_QUOTE +
-						data + QUOTE;
+						issue + QUOTE;
+		for (String detail : data) {
+			 line += COMMA_QUOTE + detail + QUOTE;
+		}
 		writeToReportFile(line);
 	}
 	
