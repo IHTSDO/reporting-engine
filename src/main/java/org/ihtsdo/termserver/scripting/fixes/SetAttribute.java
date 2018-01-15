@@ -73,13 +73,15 @@ public class SetAttribute extends BatchFix implements RF2Constants{
 	}
 
 	private int setAttributeValue(Task task, Concept loadedConcept) throws TermServerScriptException {
-		
 		int changesMade = 0;
 		Concept targetValue = targetValues.get(loadedConcept); 
 		
 		//Get the target attribute relationship and ensure there is 0 or 1
 		List<Relationship> attributesOfType = loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
-		if (attributesOfType.size() > 1) {
+		if (!loadedConcept.isActive()) {
+			String msg = "Concept now inactive ";
+			report (task, loadedConcept, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, msg, loadedConcept.getDefinitionStatus().toString(), countParents(loadedConcept), countAttributes(loadedConcept));
+		} else if (attributesOfType.size() > 1) {
 			String msg = "Concept stating multiple " + attributeType;
 			report (task, loadedConcept, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, msg, loadedConcept.getDefinitionStatus().toString(), countParents(loadedConcept), countAttributes(loadedConcept));
 		} else if ( attributesOfType.size() == 0 ) {

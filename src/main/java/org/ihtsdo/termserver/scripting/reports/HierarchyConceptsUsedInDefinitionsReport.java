@@ -91,7 +91,7 @@ public class HierarchyConceptsUsedInDefinitionsReport extends TermServerScript{
 
 	private Concept getTopLevel(Concept thisConcept) throws TermServerScriptException {
 		//Is this itself a top level concept?
-		if (thisConcept.getDepth() == 1) {
+		if (thisConcept.getDepth() == 1 || thisConcept.getDepth() == 0) {
 			return thisConcept;
 		}
 		
