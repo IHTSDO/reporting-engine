@@ -63,7 +63,7 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 	boolean isModified = false; //indicates if has been modified in current processing run
 	private String deletionEffectiveTime;
 	private boolean isDeleted = false;
-	private int depth;
+	private int depth = NOT_SET;
 	private boolean isDirty = false;
 	
 	//Note that these values are used when loading from RF2 where multiple entries can exist.
@@ -406,6 +406,7 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 	}
 	
 	public List<Concept> getChildren(CharacteristicType characteristicType) {
+		
 		switch (characteristicType) {
 			case STATED_RELATIONSHIP : return statedChildren;
 			case INFERRED_RELATIONSHIP : return inferredChildren;

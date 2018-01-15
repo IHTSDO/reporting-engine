@@ -6,6 +6,7 @@ public interface RF2Constants {
 	static int IMMEDIATE_CHILD = 1;
 	static int NA = -1;
 	final Long SCTID_ROOT_CONCEPT = 138875005L;
+	final Long SCTID_IS_A_CONCEPT = 116680003L;
 	
 	static String PHARM_BIO_PRODUCT_SCTID = "373873005" ; //Pharmaceutical / biologic product (product)
 	static Concept IS_A =  new Concept ("116680003");  // | Is a (attribute) |

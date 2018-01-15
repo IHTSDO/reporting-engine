@@ -164,10 +164,17 @@ public class Relationship implements RF2Constants, Comparable<Relationship> {
 		return "[S: " + sourceId + ", T: " + type.getConceptId() + ", D: " + target.getConceptId() + "]";
 	}
 	
+	public String toLongString() {
+		String charType = characteristicType.equals(CharacteristicType.STATED_RELATIONSHIP)?"S":"I";
+		String activeIndicator = this.isActive()?"":"*";
+		return "[" + activeIndicator +  charType + groupId + "] " + source + ": "+ type + " -> " + target;
+	}
+	
 	@Override
 	public String toString() {
 		String charType = characteristicType.equals(CharacteristicType.STATED_RELATIONSHIP)?"S":"I";
-		return "[" + charType + groupId + "] " + type + " -> " + target;
+		String activeIndicator = this.isActive()?"":"*";
+		return "[" + activeIndicator +  charType + groupId + "] " + type + " -> " + target;
 	}
 
 	@Override

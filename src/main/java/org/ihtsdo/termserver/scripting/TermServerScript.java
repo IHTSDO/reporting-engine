@@ -336,6 +336,7 @@ public abstract class TermServerScript implements RF2Constants {
 	
 	protected void loadArchive(File archive, boolean fsnOnly, String fileType) throws TermServerScriptException, SnowOwlClientException {
 		try {
+			boolean isDelta = (fileType.equals(DELTA));
 			ZipInputStream zis = new ZipInputStream(new FileInputStream(archive));
 			ZipEntry ze = zis.getNextEntry();
 			try {
@@ -348,12 +349,12 @@ public abstract class TermServerScript implements RF2Constants {
 							gl.loadConceptFile(zis);
 						} else if (fileName.contains("sct2_Relationship_" + fileType )) {
 							println("Loading Relationship " + fileType + " file.");
-							gl.loadRelationships(CharacteristicType.INFERRED_RELATIONSHIP, zis, true);
+							gl.loadRelationships(CharacteristicType.INFERRED_RELATIONSHIP, zis, true, isDelta);
 							println("Calculating concept depth...");
 							gl.populateHierarchyDepth(ROOT_CONCEPT, 0);
 						} else if (fileName.contains("sct2_StatedRelationship_" + fileType )) {
 							println("Loading StatedRelationship " + fileType + " file.");
-							gl.loadRelationships(CharacteristicType.STATED_RELATIONSHIP, zis, true);
+							gl.loadRelationships(CharacteristicType.STATED_RELATIONSHIP, zis, true, isDelta);
 						} else if (fileName.contains("sct2_Description_" + fileType )) {
 							println("Loading Description " + fileType + " file.");
 							gl.loadDescriptionFile(zis, fsnOnly);

@@ -1,26 +1,18 @@
 package org.ihtsdo.termserver.scripting.reports;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
-import org.ihtsdo.termserver.scripting.GraphLoader;
-import org.ihtsdo.termserver.scripting.IdGenerator;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.*;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExportType;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExtractType;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
@@ -28,20 +20,24 @@ import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 
 /**
- * Reports all concepts in a hierarchy that are used in the definition of other concepts.
+ * Reports all concepts in a hierarchy
+ * - or from a list
+ * - optionally using a specific attribute
+ * that are used in the definition of other concepts.
+ * DRUGS-445
  */
 public class HierarchyConceptsUsedInDefinitionsReport extends TermServerScript{
 	
-	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
-	GraphLoader gl = GraphLoader.getGraphLoader();
-	String publishedArchive;
 	String hierarchy = "49062001"; // |Device (physical object)|
+	Concept attributeType = null; // Not currently needed because concepts coming from file
+	Set<Concept> ignoredHierarchies;
+	Set<String> alreadyReported = new HashSet<>();
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		HierarchyConceptsUsedInDefinitionsReport report = new HierarchyConceptsUsedInDefinitionsReport();
 		try {
 			report.init(args);
-			report.loadProjectSnapshot();  //Load FSNs only
+			report.loadProjectSnapshot(true);  //Load FSNs only
 			report.reportConceptsUsedInDefinition();
 		} catch (Exception e) {
 			println("Failed to validate laterality due to " + e.getMessage());
@@ -53,20 +49,37 @@ public class HierarchyConceptsUsedInDefinitionsReport extends TermServerScript{
 
 	private void reportConceptsUsedInDefinition() throws TermServerScriptException {
 
-		Concept sourceHierarchy = gl.getConcept(hierarchy);
-		Set<Concept> sourceConcepts = filterActive(sourceHierarchy.getDescendents(NOT_SET));
+		//Concept sourceHierarchy = gl.getConcept(hierarchy);
+		//Set<Concept> sourceConcepts = filterActive(sourceHierarchy.getDescendents(NOT_SET));
+		List<Component> sourceConcepts = processFile();
+		
 		println ("Active source concepts number " + sourceConcepts.size());
 		Multiset<String> tags = HashMultiset.create();
-		for (Concept thisConcept : gl.getAllConcepts()) {
+		for (Concept thisConcept : filterActive(gl.getAllConcepts())) {
+			//What hierarchy is this concept in?
+			Concept thisHierarchy = getTopLevel(thisConcept);
+			if (thisHierarchy == null) {
+				debug ("Unable to determine top level hierarchy for: "  + thisConcept);
+			}
+			//Skip ignored hierarchies
+			if (ignoredHierarchies.contains(thisHierarchy)) {
+				continue;
+			}
+			//Ignore concepts checking themselves
 			if (sourceConcepts.contains(thisConcept) || !thisConcept.isActive()) {
 				continue;
 			}
 			for (Relationship thisRelationship : thisConcept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)){
 				//Does this relationship use one of our source concepts as a target?
 				if (sourceConcepts.contains(thisRelationship.getTarget())) {
-					report (thisRelationship.getTarget(), thisConcept);
-					tags.add(SnomedUtils.deconstructFSN(thisConcept.getFsn())[1]);
-					break;
+					//Only report each source / hierarchy / attribute combination once
+					String source_hierarchy_attribute = thisRelationship.getTarget().getConceptId() + "_" +  thisHierarchy.getConceptId() + "_" + thisRelationship.getType().getConceptId();
+					if (true /*!alreadyReported.contains(source_hierarchy_attribute)*/) {
+						report (thisRelationship.getTarget(), thisConcept, thisRelationship.getType());
+						tags.add(SnomedUtils.deconstructFSN(thisConcept.getFsn())[1]);
+						alreadyReported.add(source_hierarchy_attribute);
+						break;
+					}
 				}
 			}
 		}
@@ -76,9 +89,24 @@ public class HierarchyConceptsUsedInDefinitionsReport extends TermServerScript{
 		}
 	}
 
-	private Set<Concept> filterActive(Set<Concept> fullSet) {
+	private Concept getTopLevel(Concept thisConcept) throws TermServerScriptException {
+		//Is this itself a top level concept?
+		if (thisConcept.getDepth() == 1) {
+			return thisConcept;
+		}
+		
+		Set<Concept> ancestors = thisConcept.getAncestors(NOT_SET);
+		for (Concept ancestor : ancestors) {
+			if (ancestor.getDepth() == 1) {
+				return ancestor;
+			}
+		}
+		return null;
+	}
+
+	private Set<Concept> filterActive(Collection<Concept> collection) {
 		Set <Concept> activeConcepts = new HashSet<Concept>();
-		for (Concept thisConcept : fullSet ) {
+		for (Concept thisConcept : collection ) {
 			if (thisConcept.isActive()) {
 				activeConcepts.add(thisConcept);
 			}
@@ -86,10 +114,11 @@ public class HierarchyConceptsUsedInDefinitionsReport extends TermServerScript{
 		return activeConcepts;
 	}
 
-	protected void report (Concept c, Concept usedIn) {
+	protected void report (Concept c, Concept usedIn, Concept via) {
 		String line = 	c.getConceptId() + COMMA_QUOTE + 
 						c.getFsn().replace(",", "") + QUOTE_COMMA_QUOTE +
-						usedIn + QUOTE_COMMA +
+						usedIn + QUOTE_COMMA_QUOTE +
+						via + QUOTE_COMMA +
 						usedIn.getDefinitionStatus();
 		
 		writeToReportFile(line);
@@ -98,86 +127,22 @@ public class HierarchyConceptsUsedInDefinitionsReport extends TermServerScript{
 	protected void init(String[] args) throws IOException, TermServerScriptException, SnowOwlClientException {
 		super.init(args);
 		
-		for (int x=0; x<args.length; x++) {
-			if (args[x].equals("-z")) {
-				publishedArchive = args[++x];
-			}
-		}
-		
-		print ("Concepts in which Hierarchy? [" + hierarchy + "]: ");
+		/*print ("Concepts in which Hierarchy? [" + hierarchy + "]: ");
 		String response = STDIN.nextLine().trim();
 		if (!response.isEmpty()) {
 			hierarchy = response;
-		}
+		}*/
 		
 		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
-		//String reportFilename = "changed_relationships_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
 		String reportFilename = getScriptName() + "_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToReportFile ("Concept, FSN, UsedToDefine, Defn_Status");
-	}
-
-	private void loadProjectSnapshot() throws SnowOwlClientException, TermServerScriptException, InterruptedException {
-		int SNAPSHOT = 0;
-		File[] archives;
-		if (publishedArchive != null && !publishedArchive.isEmpty()) {
-			archives = new File[] { new File(publishedArchive)};
-		} else {
-			archives = new File[] { new File (project + "_snapshot_" + env + ".zip")};
-		}
-
-		//Do we already have a copy of the project locally?  If not, recover it.
-		if (!archives[SNAPSHOT].exists()) {
-			println ("Recovering snapshot state of " + project + " from TS (" + env + ")");
-			tsClient.export("MAIN/" + project, null, ExportType.MIXED, ExtractType.SNAPSHOT, archives[SNAPSHOT]);
-			initialiseSnowOwlClient();  //re-initialise client to avoid HttpMediaTypeNotAcceptableException.  Cause unknown.
-		}
+		writeToReportFile ("Concept, FSN, UsedToDefine, InAttribute, Defn_Status");
 		
-		println ("Loading snapshot into memory...");
-		for (File archive : archives) {
-			try {
-				ZipInputStream zis = new ZipInputStream(new FileInputStream(archive));
-				ZipEntry ze = zis.getNextEntry();
-				try {
-					while (ze != null) {
-						if (!ze.isDirectory()) {
-							Path p = Paths.get(ze.getName());
-							String fileName = p.getFileName().toString();
-							if (fileName.contains("sct2_Description_Snapshot")) {
-								println("Loading Description File.");
-								gl.loadDescriptionFile(zis, true);  //Load FSNs only
-							}
-							
-							if (fileName.contains("sct2_Concept_Snapshot")) {
-								println("Loading Concept File.");
-								gl.loadConceptFile(zis);
-							}
-							
-							if (fileName.contains("sct2_Relationship_Snapshot")) {
-								println("Loading Relationship Snapshot File.");
-								gl.loadRelationships(CharacteristicType.INFERRED_RELATIONSHIP,zis, true);
-							}
-							
-							if (fileName.contains("sct2_StatedRelationship_Snapshot")) {
-								println("Loading Stated Relationship Snapshot File.");
-								gl.loadRelationships(CharacteristicType.STATED_RELATIONSHIP,zis, true);
-							}
-
-						}
-						ze = zis.getNextEntry();
-					}
-				} finally {
-					try{
-						zis.closeEntry();
-						zis.close();
-					} catch (Exception e){} //Well, we tried.
-				}
-			} catch (IOException e) {
-				throw new TermServerScriptException("Failed to extract project state from archive " + archive.getName(), e);
-			}
-		}
+		ignoredHierarchies = new HashSet<>();
+		ignoredHierarchies.add (gl.getConcept("105590001")); // |Substance (substance)|
+		ignoredHierarchies.add (gl.getConcept("373873005")); // |Pharmaceutical / biologic product (product)|
 	}
 
 	@Override

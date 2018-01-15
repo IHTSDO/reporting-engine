@@ -183,7 +183,7 @@ public class Rf2Player extends BatchFix {
 			changingConcepts.put(sourceId, changingConcept);
 		}
 		CharacteristicType cType = isStated ? CharacteristicType.STATED_RELATIONSHIP : CharacteristicType.INFERRED_RELATIONSHIP;
-		gl.addRelationshipToConcept(changingConcept, cType, lineItems);
+		gl.addRelationshipToConcept(changingConcept, cType, lineItems, true);
 	}
 
 	private void processDescription(String[] lineItems) throws TermServerScriptException {

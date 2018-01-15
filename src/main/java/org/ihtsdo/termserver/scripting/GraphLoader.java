@@ -38,6 +38,9 @@ public class GraphLoader implements RF2Constants {
 	public static GraphLoader getGraphLoader() {
 		if (singletonGraphLoader == null) {
 			singletonGraphLoader = new GraphLoader();
+			//Pre populate some known concepts to ensure we only ever refer to one object
+			singletonGraphLoader.concepts.put(SCTID_ROOT_CONCEPT.toString(), ROOT_CONCEPT);
+			singletonGraphLoader.concepts.put(SCTID_IS_A_CONCEPT.toString(), IS_A);
 		}
 		return singletonGraphLoader;
 	}
@@ -46,7 +49,7 @@ public class GraphLoader implements RF2Constants {
 		return concepts.values();
 	}
 	
-	public Set<Concept> loadRelationships(CharacteristicType characteristicType, InputStream relStream, boolean addRelationshipsToConcepts) 
+	public Set<Concept> loadRelationships(CharacteristicType characteristicType, InputStream relStream, boolean addRelationshipsToConcepts, boolean isDelta) 
 			throws IOException, TermServerScriptException, SnowOwlClientException {
 		Set<Concept> concepts = new HashSet<Concept>();
 		BufferedReader br = new BufferedReader(new InputStreamReader(relStream, StandardCharsets.UTF_8));
@@ -61,7 +64,7 @@ public class GraphLoader implements RF2Constants {
 				}
 				Concept thisConcept = getConcept(lineItems[REL_IDX_SOURCEID]);
 				if (addRelationshipsToConcepts) {
-					addRelationshipToConcept(thisConcept, characteristicType, lineItems);
+					addRelationshipToConcept(thisConcept, characteristicType, lineItems, isDelta);
 				}
 				concepts.add(thisConcept);
 				relationshipsLoaded++;
@@ -77,7 +80,7 @@ public class GraphLoader implements RF2Constants {
 		return sctId.charAt(sctId.length()-2) == '0';
 	}
 
-	public void addRelationshipToConcept(Concept source, CharacteristicType characteristicType, String[] lineItems) throws TermServerScriptException {
+	public void addRelationshipToConcept(Concept source, CharacteristicType characteristicType, String[] lineItems, boolean isDelta) throws TermServerScriptException {
 		
 		String sourceId = lineItems[REL_IDX_SOURCEID];
 		String destId = lineItems[REL_IDX_DESTINATIONID];
@@ -97,15 +100,16 @@ public class GraphLoader implements RF2Constants {
 		r.setEffectiveTime(lineItems[REL_IDX_EFFECTIVETIME].isEmpty()?null:lineItems[REL_IDX_EFFECTIVETIME]);
 		r.setModifier(SnomedUtils.translateModifier(lineItems[REL_IDX_MODIFIERID]));
 		r.setModuleId(lineItems[REL_IDX_MODULEID]);
-		//Changing those values after the defaults were set in the contstructor will incorrectly mark dirty
+		//Changing those values after the defaults were set in the constructor will incorrectly mark dirty
 		r.setClean();
 		
 		//Consider adding or removing parents if the relationship is ISA
+		//But only remove items if we're processing a delta
 		if (type.equals(IS_A)) {
 			if (r.isActive()) {
 				source.addParent(r.getCharacteristicType(),destination);
 				destination.addChild(r.getCharacteristicType(),source);
-			} else {
+			} else if (isDelta) {
 				source.removeParent(r.getCharacteristicType(),destination);
 				destination.removeChild(r.getCharacteristicType(),source);
 			}
@@ -209,12 +213,12 @@ public class GraphLoader implements RF2Constants {
 	}
 
 	public Set<Concept> loadRelationshipDelta(CharacteristicType characteristicType, InputStream relStream) throws IOException, TermServerScriptException, SnowOwlClientException {
-		return loadRelationships(characteristicType, relStream, true);
+		return loadRelationships(characteristicType, relStream, true, true);
 	}
 
 	public Set<Concept> getModifiedConcepts(
 			CharacteristicType characteristicType, ZipInputStream relStream) throws IOException, TermServerScriptException, SnowOwlClientException {
-		return loadRelationships(characteristicType, relStream, false);
+		return loadRelationships(characteristicType, relStream, false, false);
 	}
 
 	public void loadLanguageFile(InputStream is) throws IOException, TermServerScriptException, SnowOwlClientException {
