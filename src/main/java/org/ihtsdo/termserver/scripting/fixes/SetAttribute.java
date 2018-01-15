@@ -84,12 +84,6 @@ public class SetAttribute extends BatchFix implements RF2Constants{
 		} else if (attributesOfType.size() > 1) {
 			String msg = "Concept stating multiple " + attributeType;
 			report (task, loadedConcept, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, msg, loadedConcept.getDefinitionStatus().toString(), countParents(loadedConcept), countAttributes(loadedConcept));
-		} else if ( attributesOfType.size() == 0 ) {
-			//No existing attribute, we'll have to create one
-			Relationship r = new Relationship (loadedConcept, attributeType, targetValue, 0);
-			loadedConcept.addRelationship(r);
-			changesMade++;
-			report (task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, targetValues.get(loadedConcept).toString(), loadedConcept.getDefinitionStatus().toString(), countParents(loadedConcept), countAttributes(loadedConcept));
 		} else if (relationshipExists(loadedConcept, targetValue)) {
 			List<Relationship> allExisting = loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
 					attributeType,
@@ -107,7 +101,22 @@ public class SetAttribute extends BatchFix implements RF2Constants{
 					report (task, loadedConcept, Severity.MEDIUM, ReportActionType.RELATIONSHIP_MODIFIED, msg, loadedConcept.getDefinitionStatus().toString(), countParents(loadedConcept), countAttributes(loadedConcept));
 					changesMade++;
 				}
+				//Are there any other relationships here that need to be inactivated?
+				for (Relationship checkMe : attributesOfType) {
+					if (!checkMe.getTarget().equals(targetValue)) {
+						checkMe.setActive(false);
+						String msg = "Inactivated " + checkMe;
+						report (task, loadedConcept, Severity.MEDIUM, ReportActionType.RELATIONSHIP_MODIFIED, msg, loadedConcept.getDefinitionStatus().toString(), countParents(loadedConcept), countAttributes(loadedConcept));
+						changesMade++;
+					}
+				}
 			}
+		} else if ( attributesOfType.size() == 0 ) {
+			//No existing attribute, we'll have to create one
+			Relationship r = new Relationship (loadedConcept, attributeType, targetValue, 0);
+			loadedConcept.addRelationship(r);
+			changesMade++;
+			report (task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, targetValues.get(loadedConcept).toString(), loadedConcept.getDefinitionStatus().toString(), countParents(loadedConcept), countAttributes(loadedConcept));
 		} else {
 			//Case where yes we have 1 existing active relationship, but not with the correct target value
 			Relationship current = attributesOfType.get(0);
