@@ -11,12 +11,12 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 /**
  * Lists all case sensitive terms that do not have capital letters after the first letter
  */
-public class CaseSenstivity extends TermServerReport{
+public class CaseSensitivity extends TermServerReport{
 	
 	List<Concept> targetHierarchies = new ArrayList<Concept>();
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
-		CaseSenstivity report = new CaseSenstivity();
+		CaseSensitivity report = new CaseSensitivity();
 		try {
 			report.init(args);
 			report.loadProjectSnapshot(false);  //Load all descriptions
@@ -32,22 +32,27 @@ public class CaseSenstivity extends TermServerReport{
 		for (Concept targetHierarchy : targetHierarchies) {
 			for (Concept c : targetHierarchy.getDescendents(NOT_SET)) {
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-					if (d.getCaseSignificance().equals(SCTID_ENTIRE_TERM_CASE_SENSITIVE) || d.getCaseSignificance().equals(SCTID_ONLY_INITIAL_CHAR_CASE_INSENSITIVE)) {
-						valiateDescriptionCS(c,d);
+					String caseSig = SnomedUtils.translateCaseSignificanceFromEnum(d.getCaseSignificance());
+					String firstLetter = d.getTerm().substring(0,1);
+					String chopped = d.getTerm().substring(1);
+					//Lower case first letters must be entire term case sensitive
+					if (Character.isLetter(firstLetter.charAt(0)) && firstLetter.equals(firstLetter.toLowerCase()) && !caseSig.equals(CS)) {
+						report (c, d, caseSig, "Terms starting with lower case letter must be CS");
+						incrementSummaryInformation("issues");
+					} else if (caseSig.equals(CS) || caseSig.equals(cI)) {
+						if (chopped.equals(chopped.toLowerCase())) {
+							report (c, d, caseSig, "Case sensitive term does not have capital after first letter");
+							incrementSummaryInformation("issues");
+						}
+					} else {
+						//For case insensitive terms, we're on the look out for capitial letters after the first letter
+						if (!chopped.equals(chopped.toLowerCase())) {
+							report (c, d, caseSig, "Case insensitive term has a capital after first letter");
+							incrementSummaryInformation("issues");
+						}
 					}
 				}
 			}
-		}
-	}
-	
-	private void valiateDescriptionCS(Concept c, Description d) throws TermServerScriptException {
-		//This is a case sensitive term.
-		//If it doesn't have any capital letters after the first term, then it potentially doesn't need to be.
-		//Chop off the first letter, then see if the lower case equals the original
-		String chopped = d.getTerm().substring(1);
-		if (chopped.equals(chopped.toLowerCase())) {
-			String caseSig = SnomedUtils.translateCaseSignificanceFromEnum(d.getCaseSignificance());
-			report (c, d, caseSig, "Case sensitive term does not have capital after first letter");
 		}
 	}
 

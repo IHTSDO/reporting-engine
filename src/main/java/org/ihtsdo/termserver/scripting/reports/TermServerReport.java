@@ -19,7 +19,7 @@ public abstract class TermServerReport extends TermServerScript {
 		try {
 			super.init(args);
 			
-			String reportFilename = getScriptName() + "_" + project.getKey().toLowerCase() + "_" + currentTimeStamp + "_" + env  + ".csv";
+			String reportFilename = getScriptName() + "_" + project.getKey() + "_" + currentTimeStamp + "_" + env  + ".csv";
 			reportFile = new File(outputDir, reportFilename);
 			reportFile.createNewFile();
 			println ("Outputting Report to " + reportFile.getAbsolutePath());
