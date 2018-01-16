@@ -43,6 +43,9 @@ public class FixMissingInactivationIndicators extends BatchFix implements RF2Con
 		try {
 			fix.selfDetermining = true;
 			fix.init(args);
+			if (dryRun) {
+				fix.runStandAlone = true;
+			}
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			fix.loadProjectSnapshot(false); //Load all descriptions
 			fix.startTimer();
@@ -59,8 +62,8 @@ public class FixMissingInactivationIndicators extends BatchFix implements RF2Con
 	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException, ValidationFailure {
 		Concept tsConcept = loadConcept(concept, task.getBranchPath());
 		int changesMade = 0;
-		if (tsConcept.isActive() == false) {
-			report(task, concept, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Concept is inactive.  No changes attempted");
+		if (tsConcept.isActive()) {
+			report(task, concept, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Concept is active. Won't be adding inactivation indicators to descriptions.");
 		} else {
 			changesMade = addConceptNonCurrentIndicator(task, tsConcept, false);
 			if (changesMade > 0) {

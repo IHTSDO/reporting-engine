@@ -37,7 +37,6 @@ import org.ihtsdo.termserver.scripting.domain.Project;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.RelationshipSerializer;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.ActiveState;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import com.google.common.base.Charsets;
@@ -46,7 +45,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import us.monoid.json.JSONException;
-import us.monoid.json.JSONObject;
 import us.monoid.web.JSONResource;
 import us.monoid.web.Resty;
 
@@ -243,7 +241,7 @@ public abstract class TermServerScript implements RF2Constants {
 		url = environments[envChoice];
 		env = envKeys[envChoice];
 	
-		if (authenticatedCookie == null) {
+		if (authenticatedCookie == null || authenticatedCookie.trim().isEmpty()) {
 			print ("Please enter your authenticated cookie for connection to " + url + " : ");
 			authenticatedCookie = STDIN.nextLine().trim();
 		}
@@ -540,7 +538,9 @@ public abstract class TermServerScript implements RF2Constants {
 				}
 			} catch (Exception e) {}
 		}
-		fileMap = new HashMap<>();
+		if (andClose) {
+			fileMap = new HashMap<>();
+		}
 	}
 	
 	public void finish() throws FileNotFoundException {
@@ -621,6 +621,7 @@ public abstract class TermServerScript implements RF2Constants {
 			pw.println(line);
 		} catch (Exception e) {
 			println ("Unable to output report line: " + line + " due to " + e.getMessage());
+			println (org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(e));
 		}
 	}
 	
@@ -664,11 +665,15 @@ public abstract class TermServerScript implements RF2Constants {
 				OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(file, true), StandardCharsets.UTF_8);
 				BufferedWriter bw = new BufferedWriter(osw);
 				pw = new PrintWriter(bw);
-				fileMap.put(fileName, pw);
+				if (pw != null) {
+					fileMap.put(fileName, pw);
+				} else {
+					throw new IOException ("Unable to create PrintWriter for " + fileName);
+				}
 			}
 			return pw;
 		} catch (Exception e) {
-			throw new TermServerScriptException("Unable to write to " + fileName + " due to " + e.getMessage(), e);
+			throw new TermServerScriptException("Unable to initialise " + fileName + " due to " + e.getMessage(), e);
 		}
 	}
 	
