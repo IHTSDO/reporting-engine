@@ -287,7 +287,7 @@ public class GraphLoader implements RF2Constants {
 		}
 	}
 
-	public void loadInactivationIndicatorFile(ZipInputStream zis, boolean conceptIndicators) throws IOException, TermServerScriptException, SnowOwlClientException {
+	public void loadInactivationIndicatorFile(ZipInputStream zis) throws IOException, TermServerScriptException, SnowOwlClientException {
 		BufferedReader br = new BufferedReader(new InputStreamReader(zis, StandardCharsets.UTF_8));
 		boolean isHeaderLine = true;
 		String line;
@@ -295,10 +295,10 @@ public class GraphLoader implements RF2Constants {
 			if (!isHeaderLine) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
 				InactivationIndicatorEntry inactivation = InactivationIndicatorEntry.fromRf2(lineItems);
-				if (conceptIndicators) {
+				if (inactivation.getRefsetId().equals(SCTID_CON_INACT_IND_REFSET)) {
 					Concept c = getConcept(lineItems[INACT_IDX_REFCOMPID]);
 					c.addInactivationIndicator(inactivation);
-				} else {
+				} else if (inactivation.getRefsetId().equals(SCTID_DESC_INACT_IND_REFSET)) {
 					Description d = getDescription(lineItems[INACT_IDX_REFCOMPID]);
 					d.addInactivationIndicator(inactivation);
 				}
