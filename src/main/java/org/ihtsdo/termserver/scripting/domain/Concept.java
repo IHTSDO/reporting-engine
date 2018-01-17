@@ -363,6 +363,8 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 	}
 	
 	public Set<Concept> getDescendents(int depth, CharacteristicType characteristicType, ActiveState activeState) throws TermServerScriptException {
+		//Inactive children actually make no sense.  They wouldn't have relationships to be in the 
+		//hierarchy in the first place?!
 		Set<Concept> allDescendents = new HashSet<Concept>();
 		this.populateAllDescendents(allDescendents, depth, characteristicType, activeState);
 		return allDescendents;
@@ -406,7 +408,6 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 	}
 	
 	public List<Concept> getChildren(CharacteristicType characteristicType) {
-		
 		switch (characteristicType) {
 			case STATED_RELATIONSHIP : return statedChildren;
 			case INFERRED_RELATIONSHIP : return inferredChildren;

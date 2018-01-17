@@ -11,6 +11,8 @@ import java.util.Set;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.domain.Batch;
+import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
@@ -24,13 +26,20 @@ For SUBST-215 From a given (now filtered) list of concepts, check that a current
 expected target. Replace that parent relationship with "Is Modification Of" and
 make the original grandparent(s) the new parent
 
+Modifications added that siblings of concepts (via Modification Of parent) should be automatically included
+And batch siblings together.
+
+Also, if the base has any disposition, this will be copied into the modified concepts
+
 Input file structure:  SourceId	SourceTerm	AttributeName	TargetId	TargetTerm
 */
 public class FlattenHierarchy extends BatchFix implements RF2Constants{
 	
 	Map<String,String> expectedTargetMap = new HashMap<>();
 	Concept isModificationOf;
+	Concept hasDisposition;
 	Set<Concept> allRemodeledConcepts = new HashSet<>();
+	List<Concept> finalCompleteSetConceptsToProcess;
 	
 	protected FlattenHierarchy(BatchFix clone) {
 		super(clone);
@@ -44,6 +53,7 @@ public class FlattenHierarchy extends BatchFix implements RF2Constants{
 			fix.populateEditPanel = false;
 			fix.populateTaskDescription = true;
 			fix.additionalReportColumns = "ACTION_DETAIL, DEF_STATUS, PARENT_COUNT, ATTRIBUTE_COUNT";
+			//fix.runStandAlone = true;
 			fix.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			fix.loadProjectSnapshot(true); 
@@ -58,16 +68,21 @@ public class FlattenHierarchy extends BatchFix implements RF2Constants{
 
 	private void postLoadInit() throws TermServerScriptException {
 		isModificationOf = gl.getConcept("738774007"); // |Is modification of (attribute)|
+		hasDisposition = gl.getConcept("726542003");   // |Has disposition (attribute)|
 	}
 
 	@Override
 	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
 		
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
+		if (!loadedConcept.isActive()) {
+			report (task, loadedConcept, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept is recently inactive - skipping");
+			return 0;
+		}
 		loadedConcept.setConceptType(ConceptType.SUBSTANCE);
 		List<Concept> modifiedConcepts = new ArrayList<Concept>();
 		//At top level, we'll recover the expected target from the file, and we'll calculate the grandparents to be used.
-		flattenHierarchy(task, loadedConcept, null, modifiedConcepts, null);
+		flattenHierarchy(task, loadedConcept, null, modifiedConcepts, null, null);
 		for (Concept thisModifiedConcept : modifiedConcepts) {
 			try {
 				String conceptSerialised = gson.toJson(thisModifiedConcept);
@@ -84,7 +99,7 @@ public class FlattenHierarchy extends BatchFix implements RF2Constants{
 		return modifiedConcepts.size();
 	}
 
-	private void flattenHierarchy(Task task, Concept loadedConcept, Concept expectedTarget, List<Concept> modifiedConcepts, List<Relationship> potentialGrandParentRels) throws TermServerScriptException {
+	private void flattenHierarchy(Task task, Concept loadedConcept, Concept expectedTarget, List<Concept> modifiedConcepts, List<Relationship> potentialGrandParentRels, List<Concept> dispositions) throws TermServerScriptException {
 		
 		List<Relationship> parentRels = new ArrayList<Relationship> (loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
 																		IS_A,
@@ -95,6 +110,15 @@ public class FlattenHierarchy extends BatchFix implements RF2Constants{
 		if (expectedTarget == null) {
 			String expectedTargetStr = expectedTargetMap.get(loadedConcept.getConceptId());
 			expectedTarget = gl.getConcept(expectedTargetStr);
+		}
+		
+		//Does our target have a disposition we need to copy to all modified descendants?
+		if (dispositions == null) {
+			List<Relationship> dispositionRels = expectedTarget.getRelationships(CharacteristicType.STATED_RELATIONSHIP, hasDisposition, ActiveState.ACTIVE);
+			dispositions = new ArrayList<>();
+			for (Relationship r : dispositionRels) {
+				dispositions.add(r.getTarget());
+			}
 		}
 		
 		//If we have more than one parent, or the parent is not as expected, then warn
@@ -153,25 +177,48 @@ public class FlattenHierarchy extends BatchFix implements RF2Constants{
 		}
 		modifiedConcepts.add(loadedConcept);
 		
+		//Do we need to add one or more dispositions?
+		if (dispositions != null && dispositions.size() > 0) {
+			for (Concept disposition : dispositions) {
+				Relationship dispRel = new Relationship (loadedConcept, hasDisposition, disposition, 0);
+				if (!relationshipExists(loadedConcept, dispRel)) {
+					String msg = "Adding disposition: " + disposition;
+					loadedConcept.addRelationship(dispRel);
+					report (task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, msg, loadedConcept.getDefinitionStatus().toString(), parentCount, attributeCount);
+				}
+			}
+		}
+		
 		//Also add the original parent as a "modification of"
 		Relationship modification = new Relationship(loadedConcept, isModificationOf, expectedTarget, 0);
-		String msg = "Adding modification: " + modification;
-		loadedConcept.addRelationship(modification);
-		report (task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, msg, loadedConcept.getDefinitionStatus().toString(), parentCount, attributeCount);
-		
+		if (!relationshipExists(loadedConcept, modification)) {
+			String msg = "Adding modification: " + modification;
+			loadedConcept.addRelationship(modification);
+			report (task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, msg, loadedConcept.getDefinitionStatus().toString(), parentCount, attributeCount);
+		}
 		//Now modify all children (recursively) using this concept as the new target
 		//Work with the local concept, not the loaded one
 		Concept localConcept = gl.getConcept(loadedConcept.getConceptId());
 		for (Concept thisChild : localConcept.getChildren(CharacteristicType.INFERRED_RELATIONSHIP)) {
-			//Have we already modified this child via another concept?
-			if (allRemodeledConcepts.contains(thisChild)) {
-				report (task, thisChild, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Concept receiving multiple 'Is Modification Of' attributes");
+			//If the concept has been specified specifically in the file, don't also process it as a descendant
+			if (finalCompleteSetConceptsToProcess.contains(thisChild)) {
+				String msg = "Ignoring attempt to process child " + thisChild + " of " + localConcept + " as specified originally in file.";
+				report (task, thisChild, Severity.MEDIUM, ReportActionType.INFO, msg);
 			} else {
-				allRemodeledConcepts.add(thisChild);
+				//Have we already modified this child via another concept?
+				if (allRemodeledConcepts.contains(thisChild)) {
+					report (task, thisChild, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Concept receiving multiple 'Is Modification Of' attributes");
+				} else {
+					allRemodeledConcepts.add(thisChild);
+				}
+				Concept thisChildLoaded = loadConcept(thisChild, task.getBranchPath());
+				flattenHierarchy(task, thisChildLoaded, localConcept, modifiedConcepts, ancestorRels, dispositions);
 			}
-			Concept thisChildLoaded = loadConcept(thisChild, task.getBranchPath());
-			flattenHierarchy(task, thisChildLoaded, localConcept, modifiedConcepts, ancestorRels);
 		}
+	}
+
+	private boolean relationshipExists(Concept c , Relationship r) {
+		return c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE).contains(r);
 	}
 
 	private List<Relationship> determineNonRedundantAncestors(Task task, Concept loadedConcept, Concept expectedTarget, List<Relationship> parentRels, List<Relationship> potentialGrandParentRels) throws TermServerScriptException {
@@ -214,6 +261,128 @@ public class FlattenHierarchy extends BatchFix implements RF2Constants{
 			report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_INACTIVATED, msg);
 		}
 	}
+	
+	@Override
+	protected Batch formIntoBatch (List<Component> allConcepts) throws TermServerScriptException {
+		Batch batch = new Batch(getScriptName());
+		Task task = batch.addNewTask(author_reviewer);
+		
+		//Include siblings of the specified concepts
+		includeSiblings(allConcepts);
+		//Take a copy of this list so we know what's been specified
+		finalCompleteSetConceptsToProcess = asConcepts(allConcepts);
+		
+		List<Concept> unallocated = asConcepts(allConcepts);
+		
+		//Work through all concepts and find siblings (and descendants) to batch together
+		//until we reach our batch size limit
+		for (Component thisConcept : allConcepts) {
+			//Have we already picked up this concept as a sibling or descendant?  Skip if so
+			if (unallocated.contains(thisConcept)) {
+				//Recursively work up and down and across hierarchy to group near concepts together
+				allocateConceptToTask(task, thisConcept, unallocated);
+				if (task.size() == 0) {
+					throw new TermServerScriptException("Failed to allocate " + thisConcept + " to a task ");
+				}
+				debug (task + " (" + task.size() + ")");
+				task = batch.addNewTask(author_reviewer);
+			}
+		}
+		batch.consolidateIntoLargeTasks(taskSize, 0); //Tasks are large enough already, no wiggle room!
+		addSummaryInformation("Tasks scheduled", batch.getTasks().size());
+		addSummaryInformation(CONCEPTS_PROCESSED, allConcepts);
+		for (Task t : batch.getTasks()) {
+			debug (t + " (" + t.size() + ")");
+		}
+		return batch;
+	}
+
+	private void allocateConceptToTask(Task task, Component thisConcept, List<Concept> unallocated) throws TermServerScriptException {
+		String sctId = ((Concept)thisConcept).getConceptId();
+		String newTargetSctid = expectedTargetMap.get(sctId);
+		Concept newTarget = gl.getConcept(newTargetSctid);
+		
+		//What siblings are still unallocated?  Clone list as we're modifying
+		Set<Concept> siblings = new HashSet<>(newTarget.getChildren(CharacteristicType.INFERRED_RELATIONSHIP));
+		siblings.retainAll(unallocated);
+		
+		if (task.size() == 0  || task.size() + siblings.size() <= taskSize * wiggleRoom) {
+			task.addAll(asComponents(siblings));
+			unallocated.removeAll(siblings);
+		} else {
+			warn ("Unable to add " + siblings.size() + " siblings of " + thisConcept + " to task " + task);
+		}
+		
+		//Work down the hierarchy from the siblings to try to include as many as possible
+		Set<Concept> descendants = new HashSet<>();
+		if (task.size() < taskSize) {
+			for (Concept sibling : siblings) {
+				//Are any of it's descendents unallocated?
+				descendants = sibling.getDescendents(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE);
+				descendants.retainAll(unallocated);
+				if (descendants.size() > 0) {
+					if (task.size() + descendants.size() <= taskSize * wiggleRoom) {
+					task.addAll(asComponents(descendants));
+					unallocated.removeAll(descendants);
+					} else {
+						warn ("Unable to add " + descendants.size() + " descendants of " + sibling + " to task " + task);
+					}
+				}
+			}
+		}
+		
+		//Recursively check for siblings of the descendants, if we've space
+		if (descendants.size() > 0 && task.size() < taskSize) {
+			for (Concept descendant : descendants) {
+				 allocateConceptToTask(task, descendant, unallocated);
+			}
+		}
+		
+		//Work up the hierarchy from the siblings to try to include as many as possible
+		Set<Concept> ancestors = new HashSet<>();
+		if (task.size() < taskSize) {
+			for (Concept sibling : siblings) {
+				//Are any of it's descendents unallocated?
+				ancestors = sibling.getAncestors(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE, false);
+				ancestors.retainAll(unallocated);
+				if (ancestors.size() > 0) {
+					if (task.size() + ancestors.size() <= taskSize * wiggleRoom) {
+						task.addAll(asComponents(ancestors));
+						unallocated.removeAll(ancestors);
+					} else {
+						warn ("Unable to add " + ancestors.size() + " ancestors of " + sibling + " to task " + task);
+					}
+				}
+			}
+		}
+		
+		//Recursively check for siblings of the ancestors
+		if (ancestors.size() > 0 && task.size() < taskSize) {
+			for (Concept ancestor : ancestors) {
+				 allocateConceptToTask(task, ancestor, unallocated);
+			}
+		}
+	}
+
+	private void includeSiblings(List<Component> allConcepts) throws TermServerScriptException {
+		//For each concept, see if it has a sibling (via the base substance parent)
+		//that has not been specifically specified.  Include it.
+		List<Concept> previouslySpecified = asConcepts(allConcepts);
+		for (Component c : previouslySpecified) {
+			String newTargetSctid = expectedTargetMap.get(((Concept) c).getConceptId());
+			Concept newTarget = gl.getConcept(newTargetSctid);
+			//We need a copy of this list because we're going to remove from it.
+			Set<Concept> siblings = new HashSet<>(newTarget.getChildren(CharacteristicType.INFERRED_RELATIONSHIP));
+			//What siblings do we not already know about?
+			siblings.removeAll(allConcepts);
+			for (Concept sibling : siblings) {
+				//Sibling will have 
+				expectedTargetMap.put(sibling.getConceptId(), newTargetSctid);
+				warn ("Including " + sibling + ", the sibling of " + c  + " as a modification of " + newTarget);
+			}
+			allConcepts.addAll(siblings);
+		}
+	}
 
 	private Integer countAttributes(Concept c) {
 		int attributeCount = 0;
@@ -228,6 +397,10 @@ public class FlattenHierarchy extends BatchFix implements RF2Constants{
 	@Override
 	protected Concept loadLine(String[] lineItems) throws TermServerScriptException {
 		Concept c = gl.getConcept(lineItems[0]);
+		if (!c.isActive()) {
+			report (null, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept is inactive - skipping");
+			return null;
+		}
 		expectedTargetMap.put(lineItems[0], lineItems[3]);
 		return c;
 	}

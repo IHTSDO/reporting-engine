@@ -668,11 +668,7 @@ public abstract class TermServerScript implements RF2Constants {
 				OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(file, true), StandardCharsets.UTF_8);
 				BufferedWriter bw = new BufferedWriter(osw);
 				pw = new PrintWriter(bw);
-				if (pw != null) {
-					fileMap.put(fileName, pw);
-				} else {
-					throw new IOException ("Unable to create PrintWriter for " + fileName);
-				}
+				fileMap.put(fileName, pw);
 			}
 			return pw;
 		} catch (Exception e) {
@@ -691,6 +687,22 @@ public abstract class TermServerScript implements RF2Constants {
 			}
 		}
 		return prettyString;
+	}
+
+	public static List<Concept> asConcepts(Collection<Component> components) {
+		List<Concept> concepts = new ArrayList<>();
+		for (Component c : components) {
+			concepts.add((Concept)c);
+		}
+		return concepts;
+	}
+	
+	public static List<Component> asComponents(Collection<Concept> concepts) {
+		List<Component> components = new ArrayList<>();
+		for (Concept c : concepts) {
+			components.add((Concept)c);
+		}
+		return components;
 	}
 
 }

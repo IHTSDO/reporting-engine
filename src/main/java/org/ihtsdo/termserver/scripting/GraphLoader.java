@@ -93,6 +93,10 @@ public class GraphLoader implements RF2Constants {
 		Concept destination = getConcept(lineItems[REL_IDX_DESTINATIONID]);
 		int groupNum = Integer.parseInt(lineItems[REL_IDX_RELATIONSHIPGROUP]);
 		
+		/*if (destination.getConceptId().equals("372876009") && type.equals(IS_A)) {
+			System.out.println ("Checkpoint for child of 372876009 |Mafenide (substance)|");
+		}*/
+		
 		Relationship r = new Relationship(source, type, destination, groupNum);
 		r.setRelationshipId(lineItems[REL_IDX_ID]);
 		r.setCharacteristicType(characteristicType);
