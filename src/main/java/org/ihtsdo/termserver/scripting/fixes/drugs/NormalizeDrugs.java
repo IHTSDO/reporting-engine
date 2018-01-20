@@ -17,7 +17,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import us.monoid.json.JSONObject;
 
 /*
-For DRUGS-422, DRUGS-434, DRUGS-435
+For DRUGS-422, DRUGS-434, DRUGS-435, DRUGS-447
 Driven by a text file of concepts, move specified concepts to exist under
 a new parent concept and remodel Terms.
 */
