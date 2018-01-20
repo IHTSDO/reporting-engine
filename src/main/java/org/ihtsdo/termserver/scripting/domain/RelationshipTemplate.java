@@ -40,12 +40,26 @@ public class RelationshipTemplate {
 		return false;
 	}
 	
-	public Relationship createRelationship (Concept source, long groupId) {
+	public Relationship createRelationship (Concept source, long groupId, String sctid) {
 		Relationship r = new Relationship(source, type, target, groupId);
+		r.setRelationshipId(sctid);
 		r.setActive(true);
 		r.setModuleId(source.getModuleId());
 		r.setCharacteristicType(characteristicType);
-		r.setModifier(Modifier.EXISTENTIAL);
+		r.setDirty();
+		return r;
+	}
+	
+	public String toString() {
+		return type + " -> " + target;
+	}
+
+	public Relationship toRelationship(Relationship cloneMe, String sctid) {
+		Relationship r = cloneMe.clone(sctid);
+		r.setActive(true);
+		r.setType(type);
+		r.setTarget(target);
+		r.setDirty();
 		return r;
 	}
 }

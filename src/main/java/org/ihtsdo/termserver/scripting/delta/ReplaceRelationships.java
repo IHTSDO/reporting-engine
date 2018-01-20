@@ -7,7 +7,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -19,19 +18,22 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 public class ReplaceRelationships extends DeltaGenerator {
 	
 	String subHierarchyStr = "276654001"; // | Congenital malformation (disorder) |
-
+	Concept findingSite;
+	Concept occurrence;
+	Concept pathologicalProcess;
+	Concept associatedMorphology;
+	
 	List<RelationshipTemplate> findRelationshipsForReplace = new ArrayList<RelationshipTemplate>();
-	List<RelationshipTemplate> replaceRelationships = new ArrayList<RelationshipTemplate>();
+	List<RelationshipTemplate> replacements = new ArrayList<RelationshipTemplate>();
 	
 	List<RelationshipTemplate> findRelationshipsForAdd = new ArrayList<RelationshipTemplate>();
 	List<RelationshipTemplate> addRelationships = new ArrayList<RelationshipTemplate>();
 
-	GraphLoader gl = GraphLoader.getGraphLoader();
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
 		ReplaceRelationships delta = new ReplaceRelationships();
 		try {
-			delta.useAuthenticatedCookie = true;  //TRUE for dev & uat
+			delta.runStandAlone = true;
 			delta.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			delta.loadProjectSnapshot(true);  //Just FSN, not working with all descriptions here
@@ -57,19 +59,25 @@ public class ReplaceRelationships extends DeltaGenerator {
 		
 		//Note that this is not a 1 for 1 replacement.  Either of the relationships above will be 
 		//replaced by BOTH relationships below.
-		replaceRelationships.add(createTemplate("116676008", "49755003")); //|Associated morphology (attribute)| ->  |Morphologically abnormal structure (morphologic abnormality)|
-		replaceRelationships.add(createTemplate("370135005","308490002")); //  |Pathological process (attribute)| -> |Pathological developmental process (qualifier value)|
+		replacements.add(createTemplate("116676008", "49755003")); //|Associated morphology (attribute)| ->  |Morphologically abnormal structure (morphologic abnormality)|
+		replacements.add(createTemplate("370135005","308490002")); //  |Pathological process (attribute)| -> |Pathological developmental process (qualifier value)|
 		
-		//should be grouped with the finding site and the occurrence.
+		//these should be grouped with the finding site and the occurrence.
 		//Where multiple finding sites exist, multiple role groups should be created
-		//Occurrance should be restated from ancestor.
-		
+		//Occurrence should be restated from ancestor.
 		//Every concept under congenital malformation, should have the pathological process attribute.
 	}
 	
 	protected void prep() throws TermServerScriptException {
-		println("Finding relationships to add...");
+		
+		findingSite = gl.getConcept("363698007"); // |Finding site (attribute)|
+		occurrence = gl.getConcept("246454002");  // |Occurrence (attribute)|
+		pathologicalProcess = gl.getConcept("370135005");  // |Pathological Process (attribute)|
+		associatedMorphology = gl.getConcept("116676008");  //|Associated morphology (attribute)|
+		
 		addRelationships.add(createTemplate("370135005","308490002")); //  |Pathological process (attribute)| -> |Pathological developmental process (qualifier value)|
+		
+		println("Finding relationships to add...");
 		Concept valueSubHierarchy = gl.getConcept("21390004"); //|Developmental anomaly (morphologic abnormality)
 		Set<Concept> valuesToMatch = valueSubHierarchy.getDescendents(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE);
 		for (Concept thisValue : valuesToMatch) {
@@ -84,17 +92,69 @@ public class ReplaceRelationships extends DeltaGenerator {
 		concepts.add(subHierarchy);  //Descendants and Self
 		addSummaryInformation("Concepts considered", concepts.size());
 		for (Concept concept : concepts) {
-			processRelationships(concept, findRelationshipsForReplace, true);
-			processRelationships(concept, findRelationshipsForAdd, false);
-			if (concept.isModified()) {
-				incrementSummaryInformation("Concepts modified");
-				outputRF2(concept);  //Will only ouput dirty fields.
+			//If the concept has no modelling, or no we'll skip it.
+			if (concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, associatedMorphology, ActiveState.ACTIVE).size() == 0) {
+				String msg = "Concept has no stated associated morphology, skipping";
+				report (concept, concept.getFSNDescription(), Severity.MEDIUM, ReportActionType.NO_CHANGE, msg);
+			} else {
+				int changesMade = 0;
+				changesMade += moveFindingSite(concept);
+				changesMade += checkOccurrences (concept);
+				changesMade += processRelationships(concept, findRelationshipsForReplace, true);
+				changesMade += processRelationships(concept, findRelationshipsForAdd, false);
+				changesMade += checkFindingSite(concept);
+				
+				if (changesMade > 0) {
+					concept.setModified();
+					incrementSummaryInformation("Concepts modified");
+					outputRF2(concept);  //Will only output dirty fields.
+				}
 			}
 		}
 	}
 
-	private void processRelationships(Concept concept, List<RelationshipTemplate> findRelationships, boolean replace) throws TermServerScriptException {
+	private int moveFindingSite(Concept concept) {
+		int changesMade = 0;
+		//Now find our finding sites 
+		List<Relationship> findingSites = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, findingSite, ActiveState.ACTIVE);
+
+		//Move any group 0 finding site into its own group where it will pick up 
+		//occurrence and pathological process
+		for (Relationship findingSite : findingSites) {
+			if (findingSite.getGroupId() == 0) {
+				int newGroup = getFirstFreeGroup(concept);
+				findingSite.setGroupId(newGroup);
+				findingSite.setDirty();
+				String msg = "Moving group 0 finding site to group " + newGroup;
+				report (concept, concept.getFSNDescription(), Severity.MEDIUM, ReportActionType.RELATIONSHIP_ADDED, msg);
+				changesMade++;
+			}
+		}
+		return changesMade;
+	}
+
+	private int checkFindingSite(Concept concept) throws TermServerScriptException {
+		int changesMade = 0;
+		//Check each finding site has a pathological process, add one if not
+		List<Relationship>findingSites = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, findingSite, ActiveState.ACTIVE);
+		for (Relationship f : findingSites) {
+			if (!existsInGroup(concept, pathologicalProcess, f.getGroupId())) {
+				for (RelationshipTemplate addMe : addRelationships) {
+					Relationship r = addMe.createRelationship(concept, f.getGroupId(), relIdGenerator.getSCTID());
+					concept.addRelationship(r);
+					String msg = "Ensuring finding site grouped with " + r;
+					report (concept, concept.getFSNDescription(), Severity.MEDIUM, ReportActionType.RELATIONSHIP_ADDED, msg);
+					changesMade++;
+				}
+			}
+		}
+		return changesMade;
+	}
+
+	private int processRelationships(Concept concept, List<RelationshipTemplate> findRelationships, boolean replace) throws TermServerScriptException {
+		int changesMade = 0;
 		List<Relationship> rels = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
+		
 		//Work through the relationships looking for matches
 		List<Relationship> matchedRelationships = new ArrayList<Relationship>();
 		Set<Integer>groupsAffected = new HashSet<Integer>();
@@ -104,7 +164,7 @@ public class ReplaceRelationships extends DeltaGenerator {
 					if (groupsAffected.contains(rel.getGroupId())) {
 						String msg = "Concept has two matching relationships in same group: " + rel.getGroupId();
 						report (concept, concept.getFSNDescription(), Severity.HIGH, ReportActionType.VALIDATION_ERROR, msg);
-						return;
+						return changesMade;
 					} else {
 						matchedRelationships.add(rel);
 					}
@@ -112,61 +172,129 @@ public class ReplaceRelationships extends DeltaGenerator {
 			}
 		}
 		
+		//Now make additions or replacements to the matching relationships as required
 		for (Relationship thisMatch : matchedRelationships) {
 			if (thisMatch.getGroupId() == 0) {
 				String msg = "Relationship matched is in group 0: " + thisMatch;
-				report (concept, concept.getFSNDescription(), Severity.HIGH, ReportActionType.VALIDATION_ERROR, msg);
+				report (concept, concept.getFSNDescription(), Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, msg);
+				//TODO If this comes up, move the relationships into a free group
+				//and remove "else"
 			} else {
-				if (thisMatch.getEffectiveTime().isEmpty()) {
-					String msg = "Matched relationship already showing as modified: " + thisMatch;
-					report (concept, concept.getFSNDescription(), Severity.HIGH, ReportActionType.VALIDATION_ERROR, msg);
+				if (replace) {
+					changesMade += replaceRelationship (thisMatch);
 				} else {
-					if (replace) {
-						replaceRelationship (thisMatch);
-					} else {
-						addRelationship(thisMatch);
-					}
+					changesMade += addRelationship(thisMatch);
 				}
 			}
 		}
-		
-		if (matchedRelationships.size() > 0) {
-			concept.setModified();
-		}
+		return changesMade;
 	}
 
-	private void replaceRelationship(Relationship replaceMe) throws TermServerScriptException {
-
-		replaceMe.setActive(false);
-		Concept source = replaceMe.getSource();
-		for (RelationshipTemplate replacementTemplate : replaceRelationships) {
-			if (!checkForExistingRelationship(source, replacementTemplate, replaceMe.getGroupId())) {
-				Relationship replacement = replaceMe.clone(relIdGenerator.getSCTID());
-				replaceMe.setActive(false);
-				replacement.setActive(true);
-				replacement.setType(replacementTemplate.getType());
-				replacement.setTarget(replacementTemplate.getTarget());
-				source.addRelationship(replacement);
-				String msg = "Replaced " + replaceMe + " with " + replacement;
-				report (source, source.getFSNDescription(), Severity.MEDIUM, ReportActionType.RELATIONSHIP_ADDED, msg);
+/*	private int groupFindingSite(Concept c, Relationship f) throws TermServerScriptException {
+		int changesMade = 0;
+		//Put finding site in all active groups that doesn't already have one
+		for (Integer groupId : getActiveGroups(c)) {
+			if (!existsInGroup(c, findingSite, groupId)) {
+				Relationship groupedF = f.clone(relIdGenerator.getSCTID());
+				groupedF.setGroupId(groupId);
+				c.addRelationship(groupedF);
+				changesMade++;
+				report (c, c.getFSNDescription(), Severity.MEDIUM, ReportActionType.RELATIONSHIP_MODIFIED, "Finding site copied to group" + groupedF);
 			}
 		}
+		
+		//And we'll retire the group 0 finding site
+		if (changesMade > 0) {
+			f.setActive(false);
+			report (c, c.getFSNDescription(), Severity.MEDIUM, ReportActionType.RELATIONSHIP_INACTIVATED, "Inactivated group 0 finding site: " + f);
+		} else {
+			warn ("Failed to move finding site for " + c);
+		}
+		return changesMade;
+	}
+	*/
+
+	/**
+	 * @return true if a relationship with the specified type exists in the specified group
+	 */
+	private boolean existsInGroup(Concept c, Concept type, long groupId) {
+		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, type, ActiveState.ACTIVE)) {
+			if (r.getGroupId() == groupId) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private int checkOccurrences(Concept concept) throws TermServerScriptException {
+		int changesMade = 0;
+		//Make sure we have all the occurrences stated by all parents
+		Set<Concept> existingOccurrenceTargets = getRelationshipTargets(concept, occurrence );
+		Set<Concept> allParentOccurrenceTargets = new HashSet<>();
+		for (Concept parent : concept.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
+			allParentOccurrenceTargets.addAll(getRelationshipTargets(parent, occurrence ));
+		}
+		
+		//Which occurrences are we missing?
+		allParentOccurrenceTargets.removeAll(existingOccurrenceTargets);
+		if (allParentOccurrenceTargets.size() > 1) {
+			warn (concept + " is gaining " + allParentOccurrenceTargets.size() + " occurrances");
+		}
+		
+		for (Concept requiredOccurrenceTarget : allParentOccurrenceTargets) {
+			//We need an occurrence for each active group
+			for (Integer groupId : getActiveGroups(concept)) {
+				Relationship addMe = new Relationship(concept, occurrence, requiredOccurrenceTarget, groupId);
+				addMe.setRelationshipId(relIdGenerator.getSCTID());
+				addMe.setDirty();
+				concept.addRelationship(addMe);
+				report (concept, concept.getFSNDescription(), Severity.MEDIUM, ReportActionType.RELATIONSHIP_ADDED, addMe.toString());
+				changesMade++;
+			}
+		}
+		return changesMade;
+	}
+
+	private Set<Concept> getRelationshipTargets(Concept c, Concept type) {
+		Set<Concept> targets = new HashSet<>();
+		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, type, ActiveState.ACTIVE)) {
+			targets.add(r.getTarget());
+		}
+		return targets;
+	}
+
+	private int replaceRelationship(Relationship replaceMe) throws TermServerScriptException {
+		int changesMade = 0;
+		replaceMe.setActive(false);
+		Concept source = replaceMe.getSource();
+		boolean firstReplacement = true;
+		for (RelationshipTemplate replacementTemplate : replacements) {
+			if (!checkForExistingRelationship(source, replacementTemplate, replaceMe.getGroupId())) {
+				Relationship replacement = replacementTemplate.toRelationship(replaceMe, relIdGenerator.getSCTID());
+				replaceMe.setActive(false);
+				source.addRelationship(replacement);
+				changesMade++;
+				String msg = (firstReplacement ?"Replaced " + replaceMe :"Also") + " with " + replacement;
+				report (source, source.getFSNDescription(), Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, msg);
+				firstReplacement = false;
+			}
+		}
+		return changesMade;
 	}
 	
-	private void addRelationship(Relationship addToMe) throws TermServerScriptException {
-
+	private int addRelationship(Relationship addToMe) throws TermServerScriptException {
+		int changesMade = 0;
 		Concept source = addToMe.getSource();
 		for (RelationshipTemplate addTemplate : addRelationships) {
 			if (!checkForExistingRelationship(source, addTemplate, addToMe.getGroupId())) {
-				Relationship addition = addToMe.clone(relIdGenerator.getSCTID());
-				addition.setActive(true);
-				addition.setType(addTemplate.getType());
-				addition.setTarget(addTemplate.getTarget());
+				Relationship addition = addTemplate.toRelationship(addToMe,relIdGenerator.getSCTID());
 				source.addRelationship(addition);
+				changesMade++;
 				String msg = "Added " + addition + " due to presence of " + addToMe;
-				report (source, source.getFSNDescription(), Severity.MEDIUM, ReportActionType.RELATIONSHIP_ADDED, msg);
+				report (source, source.getFSNDescription(), Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, msg);
 			}
 		}
+		return changesMade;
 	}
 
 	private boolean checkForExistingRelationship(Concept c,
@@ -185,6 +313,26 @@ public class ReplaceRelationships extends DeltaGenerator {
 		Concept target = gl.getConcept(targetStr);
 		CharacteristicType ct = CharacteristicType.STATED_RELATIONSHIP;
 		return new RelationshipTemplate(type, target, ct);
+	}
+	
+	//Return a set of groups where there is an active non-isa relationship
+	private Set<Integer> getActiveGroups(Concept c) {
+		Set<Integer> activeGroups = new HashSet<>();
+		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
+			if (!r.getType().equals(IS_A)) {
+				activeGroups.add((int)r.getGroupId());
+			}
+		}
+		return activeGroups;
+	}
+	
+	private int getFirstFreeGroup(Concept c) {
+		Set<Integer> activeGroups = getActiveGroups(c);
+		for (int i = 1; ; i++) {
+			if (!activeGroups.contains(i)) {
+				return i;
+			}
+		}
 	}
 
 	@Override

@@ -136,7 +136,11 @@ public class IdGenerator implements RF2Constants{
 		PrintWriter pw = new PrintWriter(new BufferedWriter(osw));
 		pw.write(dataLine + LINE_DELIMITER);
 		pw.close();
-		return "IdGenerator supplied " + idsAssigned + " " + partitionIdentifier + " sctids.";
+		String ofWhich = ".";
+		if (dummySequence > 100) {
+			ofWhich = " of which " + (dummySequence - 100) + " were dummy.";
+		}
+		return "IdGenerator supplied " + idsAssigned + " " + partitionIdentifier + " sctids" + ofWhich;
 	}
 	
 	public void isExtension(boolean b) {
