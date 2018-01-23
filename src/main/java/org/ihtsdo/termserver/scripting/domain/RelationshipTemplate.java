@@ -1,7 +1,6 @@
 package org.ihtsdo.termserver.scripting.domain;
 
 import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.Modifier;
 
 public class RelationshipTemplate {
 	private Concept type;

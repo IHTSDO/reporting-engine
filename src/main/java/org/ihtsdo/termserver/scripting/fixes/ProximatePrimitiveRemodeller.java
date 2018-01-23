@@ -124,7 +124,7 @@ public class ProximatePrimitiveRemodeller extends BatchFix implements RF2Constan
 			}
 		}
 		//And add the new proximate primitive as a parent
-		Relationship ppParent = newParent.createRelationship(concept, UNGROUPED);
+		Relationship ppParent = newParent.createRelationship(concept, UNGROUPED, null);
 		concept.addRelationship(ppParent);
 	}
 
