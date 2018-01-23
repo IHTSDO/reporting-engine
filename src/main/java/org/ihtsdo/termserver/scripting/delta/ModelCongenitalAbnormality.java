@@ -13,9 +13,10 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 /**
+ * INFRA-2133
  * Class to replace relationships with alternatives
  */
-public class ReplaceRelationships extends DeltaGenerator {
+public class ModelCongenitalAbnormality extends DeltaGenerator {
 	
 	String subHierarchyStr = "276654001"; // | Congenital malformation (disorder) |
 	Concept findingSite;
@@ -31,7 +32,7 @@ public class ReplaceRelationships extends DeltaGenerator {
 
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
-		ReplaceRelationships delta = new ReplaceRelationships();
+		ModelCongenitalAbnormality delta = new ModelCongenitalAbnormality();
 		try {
 			delta.runStandAlone = true;
 			delta.init(args);
@@ -98,7 +99,12 @@ public class ReplaceRelationships extends DeltaGenerator {
 				report (concept, concept.getFSNDescription(), Severity.MEDIUM, ReportActionType.NO_CHANGE, msg);
 			} else {
 				int changesMade = 0;
-				changesMade += moveFindingSite(concept);
+				int firstFreeGroup = getFirstFreeGroup(concept);
+				//If we move the finding site, also try to mvoe the occurrence
+				changesMade += moveGroup0Attribute(concept, findingSite, firstFreeGroup);
+				if (changesMade > 0) {
+					changesMade += moveGroup0Attribute(concept, occurrence, firstFreeGroup);
+				}
 				changesMade += checkOccurrences (concept);
 				changesMade += processRelationships(concept, findRelationshipsForReplace, true);
 				changesMade += processRelationships(concept, findRelationshipsForAdd, false);
@@ -113,20 +119,21 @@ public class ReplaceRelationships extends DeltaGenerator {
 		}
 	}
 
-	private int moveFindingSite(Concept concept) {
+	private int moveGroup0Attribute(Concept concept, Concept type, int targetGroup) throws TermServerScriptException {
 		int changesMade = 0;
-		//Now find our finding sites 
-		List<Relationship> findingSites = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, findingSite, ActiveState.ACTIVE);
+		//Now find our attributes of interest
+		List<Relationship> matchingGroup0Attribs = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, findingSite, ActiveState.ACTIVE);
 
 		//Move any group 0 finding site into its own group where it will pick up 
 		//occurrence and pathological process
-		for (Relationship findingSite : findingSites) {
-			if (findingSite.getGroupId() == 0) {
-				int newGroup = getFirstFreeGroup(concept);
-				findingSite.setGroupId(newGroup);
-				findingSite.setDirty();
-				String msg = "Moving group 0 finding site to group " + newGroup;
-				report (concept, concept.getFSNDescription(), Severity.MEDIUM, ReportActionType.RELATIONSHIP_ADDED, msg);
+		for (Relationship r : matchingGroup0Attribs) {
+			if (r.getGroupId() == 0) {
+				Relationship movedRel = r.clone(relIdGenerator.getSCTID());
+				movedRel.setGroupId(targetGroup);
+				concept.addRelationship(movedRel);
+				r.setActive(false);
+				String msg = "Recreated group 0 attribute of type " + type + " in group " + movedRel.getGroupId();
+				report (concept, concept.getFSNDescription(), Severity.MEDIUM, ReportActionType.RELATIONSHIP_MODIFIED, msg);
 				changesMade++;
 			}
 		}
