@@ -2,11 +2,13 @@ package org.ihtsdo.termserver.scripting.fixes;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
@@ -15,24 +17,24 @@ import org.ihtsdo.termserver.scripting.domain.Task;
 import us.monoid.json.JSONObject;
 
 /*
-For SUBST-200
-Driven by a text file of concepts, check parents for redundancy and - assuming 
+For SUBST-200, DRUGS-448
+Optionally driven by a text file of concepts, check parents for redundancy and - assuming 
 the concept is primitive, retain the more specific parent.
 */
-public class RemoveRedundantRelationships extends BatchFix implements RF2Constants{
+public class RemoveRedundantParents extends BatchFix implements RF2Constants{
 	
 	String exclude = "105590001"; // |Substance (substance)|
 	
-	protected RemoveRedundantRelationships(BatchFix clone) {
+	protected RemoveRedundantParents(BatchFix clone) {
 		super(clone);
 	}
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
-		RemoveRedundantRelationships fix = new RemoveRedundantRelationships(null);
+		RemoveRedundantParents fix = new RemoveRedundantParents(null);
 		try {
 			fix.reportNoChange = true;
-			//fix.selfDetermining = true;
-			fix.runStandAlone = true;
+			fix.selfDetermining = true;
+			//fix.runStandAlone = true;
 			fix.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			fix.loadProjectSnapshot(true); 
@@ -129,7 +131,7 @@ public class RemoveRedundantRelationships extends BatchFix implements RF2Constan
 		return new Concept(lineItems[0]);
 	}
 	
-	/*protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
+	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		//Find primitive concepts with redundant stated parents
 		println ("Identifying concepts to process");
 		Collection<Concept> checkMe = gl.getAllConcepts();
@@ -159,6 +161,6 @@ public class RemoveRedundantRelationships extends BatchFix implements RF2Constan
 		}
 		println ("Identified " + processMe.size() + " concepts to process");
 		return processMe;
-	}*/
+	}
 
 }
