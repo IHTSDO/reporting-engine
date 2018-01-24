@@ -122,7 +122,7 @@ public class ModelCongenitalAbnormality extends DeltaGenerator {
 	private int moveGroup0Attribute(Concept concept, Concept type, int targetGroup) throws TermServerScriptException {
 		int changesMade = 0;
 		//Now find our attributes of interest
-		List<Relationship> matchingGroup0Attribs = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, findingSite, ActiveState.ACTIVE);
+		List<Relationship> matchingGroup0Attribs = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, type, ActiveState.ACTIVE);
 
 		//Move any group 0 finding site into its own group where it will pick up 
 		//occurrence and pathological process
