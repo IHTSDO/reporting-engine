@@ -14,6 +14,7 @@ public abstract class TermServerReport extends TermServerScript {
 	
 	SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
 	String currentTimeStamp = df.format(new Date());
+	protected String headers = null;
 	
 	protected void init(String[] args) throws TermServerScriptException, SnowOwlClientException {
 		try {
@@ -23,6 +24,9 @@ public abstract class TermServerReport extends TermServerScript {
 			reportFile = new File(outputDir, reportFilename);
 			reportFile.createNewFile();
 			println ("Outputting Report to " + reportFile.getAbsolutePath());
+			if (headers!=null) {
+				writeToReportFile(headers);
+			}
 		} catch (IOException e) {
 			throw new TermServerScriptException("Unable to initialise output report",e);
 		}
@@ -34,4 +38,15 @@ public abstract class TermServerReport extends TermServerScript {
 			throws TermServerScriptException {
 		return gl.getConcept(lineItems[0]);
 	}
+	
+	protected void report (Concept c, String... details) {
+		String line = 	c.getConceptId() + COMMA_QUOTE + 
+						c.getFsn() + QUOTE;
+		
+		for (String detail : details) {
+			 line += COMMA_QUOTE + detail + QUOTE;
+		}
+		writeToReportFile(line);
+	}
+
 }
