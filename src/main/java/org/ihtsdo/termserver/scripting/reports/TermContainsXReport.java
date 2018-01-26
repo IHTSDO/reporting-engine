@@ -24,7 +24,6 @@ public class TermContainsXReport extends TermServerReport {
 	String[] textsToMatch = new String[] {"remission", "diabet" };
 	boolean reportConceptOnceOnly = true;
 	
-	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		TermContainsXReport report = new TermContainsXReport();
 		try {
@@ -61,7 +60,7 @@ public class TermContainsXReport extends TermServerReport {
 							incrementSummaryInformation("Matched " + matchText);
 						}
 					}
-					if (reported) {
+					if (reported && reportConceptOnceOnly) {
 						continue nextConcept;
 					}
 				}
