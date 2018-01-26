@@ -37,6 +37,7 @@ import org.ihtsdo.termserver.scripting.domain.Project;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.RelationshipSerializer;
+import org.ihtsdo.termserver.scripting.domain.Task;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import com.google.common.base.Charsets;
@@ -45,6 +46,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import us.monoid.json.JSONException;
+import us.monoid.json.JSONObject;
 import us.monoid.web.JSONResource;
 import us.monoid.web.Resty;
 
@@ -100,7 +102,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected static GraphLoader graph = GraphLoader.getGraphLoader();
 
 	public enum ReportActionType { API_ERROR, DEBUG_INFO, INFO, UNEXPECTED_CONDITION,
-									 CONCEPT_CHANGE_MADE, CONCEPT_ADDED,
+									 CONCEPT_CHANGE_MADE, CONCEPT_ADDED, CONCEPT_INACTIVATED,
 									 DESCRIPTION_CHANGE_MADE, DESCRIPTION_ADDED, DESCRIPTION_REMOVED,
 									 RELATIONSHIP_ADDED, RELATIONSHIP_REPLACED, RELATIONSHIP_INACTIVATED, RELATIONSHIP_DELETED, RELATIONSHIP_MODIFIED, 
 									 NO_CHANGE, VALIDATION_ERROR, VALIDATION_CHECK, 
@@ -415,6 +417,21 @@ public abstract class TermServerScript implements RF2Constants {
 				return null;
 			}
 			throw new TermServerScriptException("Failed to recover " + concept + " from TS due to " + e.getMessage(),e);
+		}
+	}
+	
+	protected Concept updateConcept(Task t, Concept c, String info) throws TermServerScriptException {
+		try {
+			String conceptSerialised = gson.toJson(c);
+			debug ((dryRun ?"Dry run ":"Updating state of ") + c + info);
+			if (!dryRun) {
+				JSONResource response = tsClient.updateConcept(new JSONObject(conceptSerialised), t.getBranchPath());
+				String json = response.toObject().toString();
+				c = gson.fromJson(json, Concept.class);
+			}
+			return c;
+		} catch (SnowOwlClientException | JSONException | IOException e) {
+			throw new TermServerScriptException("Failed to update " + c + " in TS due to " + e.getMessage(),e);
 		}
 	}
 

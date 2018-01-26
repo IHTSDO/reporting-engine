@@ -757,5 +757,23 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 	public void setAssociationTargets(AssociationTargets associationTargets) {
 		this.associationTargets = associationTargets;
 	}
+	
+	public Concept clone() {
+		Concept clone = new Concept(null, getFsn());
+		clone.setActive(true);
+		clone.setDefinitionStatus(getDefinitionStatus());
+		clone.setModuleId(getModuleId());
+		
+		//Copy all descriptions
+		for (Description d : getDescriptions(ActiveState.ACTIVE)) {
+			clone.addDescription(d.clone(null));
+		}
+		
+		//Copy all stated relationships
+		for (Relationship r : getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
+			clone.addRelationship(r.clone(null));
+		}
+		return clone;
+	}
 
 }
