@@ -2,11 +2,7 @@ package org.ihtsdo.termserver.scripting.reports;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
-import java.util.List;
 import java.util.Set;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
@@ -21,11 +17,10 @@ import com.google.common.collect.Multiset;
 /**
  * FD19459
  * Reports all terms that contain the specified text
+ * Optionally only report the first description matched for each concept
  */
 public class TermContainsXReport extends TermServerReport {
 	
-	List<String> criticalErrors = new ArrayList<String>();
-	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	String[] textsToMatch = new String[] {"remission", "diabet" };
 	boolean reportConceptOnceOnly = true;
 	
@@ -43,9 +38,6 @@ public class TermContainsXReport extends TermServerReport {
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
-			for (String err : report.criticalErrors) {
-				println (err);
-			}
 		}
 	}
 
@@ -77,7 +69,6 @@ public class TermContainsXReport extends TermServerReport {
 		}
 		
 		addSummaryInformation("Concepts checked", concepts.size());
-		addSummaryInformation("Matching Descriptions", tags.size());
 		for (String tag : tags.elementSet()) {
 			addSummaryInformation( "Tag: " + tag , tags.count(tag));
 		}
