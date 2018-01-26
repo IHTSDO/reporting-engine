@@ -5,6 +5,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.termserver.scripting.IdGenerator;
@@ -26,6 +28,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 	protected String conDeltaFilename;
 	protected String relDeltaFilename;
 	protected String attribValDeltaFilename;
+	protected String assocDeltaFilename;
 	protected String sRelDeltaFilename;
 	protected String descDeltaFilename;
 	protected String langDeltaFilename;
@@ -45,10 +48,13 @@ public abstract class DeltaGenerator extends TermServerScript {
 	protected String[] relHeader = new String[] {"id","effectiveTime","active","moduleId","sourceId","destinationId","relationshipGroup","typeId","characteristicTypeId","modifierId"};
 	protected String[] langHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","acceptabilityId"};
 	protected String[] attribValHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","valueId"};
+	protected String[] assocHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","targetComponentId"};
 
 	protected IdGenerator conIdGenerator;
 	protected IdGenerator descIdGenerator;
 	protected IdGenerator relIdGenerator;
+	
+	private Map<ComponentType, String> fileMap = new HashMap<ComponentType, String>();
 	
 	protected void report(Concept concept, Description d, Severity severity, ReportActionType actionType, String... details) {
 		String line = "";
@@ -169,22 +175,37 @@ public abstract class DeltaGenerator extends TermServerScript {
 		String termDir = packageDir +"Delta/Terminology/";
 		String refDir =  packageDir +"Delta/Refset/";
 		conDeltaFilename = termDir + "sct2_Concept_Delta_"+edition+"_" + today + ".txt";
+		fileMap.put(ComponentType.CONCEPT, conDeltaFilename);
 		writeToRF2File(conDeltaFilename, conHeader);
 		
 		relDeltaFilename = termDir + "sct2_Relationship_Delta_"+edition+"_" + today + ".txt";
+		fileMap.put(ComponentType.RELATIONSHIP, relDeltaFilename);
 		writeToRF2File(relDeltaFilename, relHeader);
 
 		sRelDeltaFilename = termDir + "sct2_StatedRelationship_Delta_"+edition+"_" + today + ".txt";
+		fileMap.put(ComponentType.STATED_RELATIONSHIP, sRelDeltaFilename);
 		writeToRF2File(sRelDeltaFilename, relHeader);
 		
 		descDeltaFilename = termDir + "sct2_Description_Delta-"+languageCode+"_"+edition+"_" + today + ".txt";
+		fileMap.put(ComponentType.DESCRIPTION, descDeltaFilename);
 		writeToRF2File(descDeltaFilename, descHeader);
 		
 		langDeltaFilename = refDir + "Language/der2_cRefset_LanguageDelta-"+languageCode+"_"+edition+"_" + today + ".txt";
+		fileMap.put(ComponentType.LANGREFSET, langDeltaFilename);
 		writeToRF2File(langDeltaFilename, langHeader);
 		
 		attribValDeltaFilename = refDir + "Content/der2_cRefset_AttributeValueDelta_"+edition+"_" + today + ".txt";
+		fileMap.put(ComponentType.ATTRIBUTE_VALUE, attribValDeltaFilename);
 		writeToRF2File(attribValDeltaFilename, attribValHeader);
+		
+		assocDeltaFilename = refDir + "Content/der2_cRefset_AssociationDelta_"+edition+"_" + today + ".txt";
+		fileMap.put(ComponentType.HISTORICAL_ASSOCIATION, assocDeltaFilename);
+		writeToRF2File(assocDeltaFilename, assocHeader);
+	}
+	
+	protected void outputRF2(ComponentType componentType, String[] columns) throws TermServerScriptException {
+		String fileName = fileMap.get(componentType);
+		writeToRF2File(fileName, columns);
 	}
 
 	protected void outputRF2(Description d) throws TermServerScriptException {

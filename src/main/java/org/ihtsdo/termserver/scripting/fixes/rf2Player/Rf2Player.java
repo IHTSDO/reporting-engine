@@ -27,7 +27,7 @@ import org.ihtsdo.termserver.scripting.domain.ConceptChange;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
-import org.ihtsdo.termserver.scripting.domain.SnomedRf2File;
+import org.ihtsdo.termserver.scripting.domain.Rf2File;
 import org.ihtsdo.termserver.scripting.domain.Task;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -92,7 +92,7 @@ public class Rf2Player extends BatchFix {
 					if (!ze.isDirectory()) {
 						Path p = Paths.get(ze.getName());
 						String fileName = p.getFileName().toString();
-						Rf2File rf2File = SnomedRf2File.getRf2File(fileName, FileType.DELTA);
+						ComponentType rf2File = Rf2File.getComponentType(fileName, FileType.DELTA);
 						if (rf2File != null) {
 							processRf2Delta(zis, rf2File, fileName);
 						} else {
@@ -122,7 +122,7 @@ public class Rf2Player extends BatchFix {
 		return new ArrayList<Component> (changingConcepts.values());
 	}
 
-	private void processRf2Delta(InputStream is, Rf2File rf2File, String fileName) throws IOException, TermServerScriptException, SnowOwlClientException {
+	private void processRf2Delta(InputStream is, ComponentType rf2File, String fileName) throws IOException, TermServerScriptException, SnowOwlClientException {
 		//Not putting this in a try resource block otherwise it will close the stream on completion and we've got more to read!
 		println ("Processing " + fileName);
 		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
@@ -160,7 +160,7 @@ public class Rf2Player extends BatchFix {
 		}
 	}
 
-	private void processConcept(String[] lineItems, Rf2File rf2File, String fileName) throws TermServerScriptException {
+	private void processConcept(String[] lineItems, ComponentType rf2File, String fileName) throws TermServerScriptException {
 		String id = lineItems[IDX_ID];
 		ConceptChange changingConcept;
 		if (changingConcepts.containsKey(id)) {

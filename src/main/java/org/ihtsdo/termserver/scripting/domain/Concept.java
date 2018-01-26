@@ -726,12 +726,12 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 	}
 
 	@Override
-	public String getName() {
+	public String getReportedName() {
 		return fsn;
 	}
 
 	@Override
-	public String getType() {
+	public String getReportedType() {
 		return conceptType==null?"": conceptType.toString();
 	}
 
@@ -774,6 +774,11 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 			clone.addRelationship(r.clone(null));
 		}
 		return clone;
+	}
+
+	@Override
+	public ComponentType getComponentType() {
+		return ComponentType.CONCEPT;
 	}
 
 }

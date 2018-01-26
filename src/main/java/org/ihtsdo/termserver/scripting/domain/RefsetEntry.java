@@ -1,6 +1,10 @@
 
 package org.ihtsdo.termserver.scripting.domain;
 
+import org.apache.commons.lang.NotImplementedException;
+import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.ComponentType;
+
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
@@ -119,12 +123,12 @@ public class RefsetEntry implements Component {
     }
 
 	@Override
-	public String getName() {
+	public String getReportedName() {
 		return referenceSetId;
 	}
 
 	@Override
-	public String getType() {
+	public String getReportedType() {
 		return "RefsetEntry";
 	}
 	
@@ -143,6 +147,17 @@ public class RefsetEntry implements Component {
 
 	public void setEffectiveTime(String effectiveTime) {
 		this.effectiveTime = effectiveTime;
+	}
+
+	@Override
+	public String[] toRF2() throws TermServerScriptException {
+		throw new NotImplementedException();
+	}
+
+	@Override
+	public ComponentType getComponentType() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

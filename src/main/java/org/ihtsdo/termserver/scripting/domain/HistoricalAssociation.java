@@ -2,8 +2,10 @@ package org.ihtsdo.termserver.scripting.domain;
 
 import java.util.UUID;
 
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.ComponentType;
+
 //id	effectiveTime	active	moduleId	refsetId	referencedComponentId	inactivationReasonId
-public class HistoricalAssociation {
+public class HistoricalAssociation implements Component {
 
 	private String id;
 	private String effectiveTime;
@@ -124,5 +126,20 @@ public class HistoricalAssociation {
 	public void delete(String deletionEffectiveTime) {
 		this.isDeleted = true;
 		this.deletionEffectiveTime = deletionEffectiveTime;
+	}
+
+	@Override
+	public String getReportedName() {
+		return this.toString();
+	}
+
+	@Override
+	public String getReportedType() {
+		return getComponentType().toString();
+	}
+
+	@Override
+	public ComponentType getComponentType() {
+		return ComponentType.HISTORICAL_ASSOCIATION;
 	}
 }

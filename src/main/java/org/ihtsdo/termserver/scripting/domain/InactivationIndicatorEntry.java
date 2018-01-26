@@ -3,7 +3,7 @@ package org.ihtsdo.termserver.scripting.domain;
 import java.util.UUID;
 
 //id	effectiveTime	active	moduleId	refsetId	referencedComponentId	inactivationReasonId
-public class InactivationIndicatorEntry implements RF2Constants{
+public class InactivationIndicatorEntry implements RF2Constants, Component{
 
 	private String id;
 	private String effectiveTime;
@@ -136,5 +136,20 @@ public class InactivationIndicatorEntry implements RF2Constants{
 		i.setReferencedComponentId(lineItems[INACT_IDX_REFCOMPID]);
 		i.setInactivationReasonId(lineItems[INACT_IDX_REASON_ID]);
 		return i;
+	}
+
+	@Override
+	public ComponentType getComponentType() {
+		return ComponentType.ATTRIBUTE_VALUE;
+	}
+
+	@Override
+	public String getReportedName() {
+		return getId();
+	}
+
+	@Override
+	public String getReportedType() {
+		return getComponentType().toString();
 	}
 }

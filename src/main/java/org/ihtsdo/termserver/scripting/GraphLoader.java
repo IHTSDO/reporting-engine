@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.zip.ZipInputStream;
 
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.HistoricalAssociation;
@@ -29,6 +30,8 @@ public class GraphLoader implements RF2Constants {
 	private static GraphLoader singletonGraphLoader = null;
 	private Map<String, Concept> concepts = new HashMap<String, Concept>();
 	private Map<String, Description> descriptions = new HashMap<String, Description>();
+	private Map<String, Component> allComponents = null;
+	private Map<Component, Concept> componentOwnerMap = null;
 	
 	//Watch that this map is of the TARGET of the association, ie all concepts used in a historical association
 	private Map<Concept, List<HistoricalAssociation>> historicalAssociations =  new HashMap<Concept, List<HistoricalAssociation>>();
@@ -362,6 +365,61 @@ public class GraphLoader implements RF2Constants {
 		h.setReferencedComponentId(lineItems[ASSOC_IDX_REFCOMPID]);
 		h.setTargetComponentId(lineItems[ASSOC_IDX_TARGET]);
 		return h;
+	}
+	
+	public Component getComponent(String id) {
+		if (allComponents == null) {
+			populateAllComponents();
+		}
+		return allComponents.get(id);
+	}
+	
+	public Concept getComponentOwner(String id) {
+		Component component = getComponent(id);
+		return componentOwnerMap.get(component);
+	}
+
+	private void populateAllComponents() {
+		allComponents = new HashMap<String, Component>();
+		componentOwnerMap = new HashMap<Component, Concept>();
+		
+		for (Concept c : getAllConcepts()) {
+			allComponents.put(c.getId(), c);
+			componentOwnerMap.put(c,  c);
+			for (Description d : c.getDescriptions()) {
+				populateDescriptionComponents(c, d);
+			}
+			
+			for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH)) {
+				allComponents.put(r.getRelationshipId(), r);
+			}
+			
+			for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.BOTH)) {
+				allComponents.put(r.getRelationshipId(), r);
+			}
+			
+			for (InactivationIndicatorEntry i : c.getInactivationIndicatorEntries()) {
+				allComponents.put(i.getId(), i);
+				componentOwnerMap.put(i,  c);
+			}
+			
+			for (HistoricalAssociation h : c.getHistorialAssociations()) {
+				allComponents.put(h.getId(), h);
+				componentOwnerMap.put(h,  c);
+			}
+		}
+		
+	}
+
+	private void populateDescriptionComponents(Concept c, Description d) {
+		allComponents.put(d.getDescriptionId(), d);
+		componentOwnerMap.put(d,  c);
+		
+		for (InactivationIndicatorEntry i : d.getInactivationIndicatorEntries()) {
+			allComponents.put(i.getId(), i);
+			componentOwnerMap.put(i,  c);
+		}
+		
 	}
 
 

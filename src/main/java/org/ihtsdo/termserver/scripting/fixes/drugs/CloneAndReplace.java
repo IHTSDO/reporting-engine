@@ -1,7 +1,7 @@
 package org.ihtsdo.termserver.scripting.fixes.drugs;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -12,13 +12,12 @@ import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.AssociationTargets;
 import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.Task;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-
-import us.monoid.json.JSONObject;
 
 /*
 For DRUG-450
@@ -31,6 +30,7 @@ public class CloneAndReplace extends BatchFix implements RF2Constants{
 	Set<Concept> allInferredTargets = new HashSet<>();
 	
 	Map<Concept, Concept> newDoseForms = new HashMap<>();
+	Map<Concept, String> newFSNs = new HashMap<>();
 	Concept hasDoseForm;
 	
 	protected CloneAndReplace(BatchFix clone) {
@@ -81,9 +81,9 @@ public class CloneAndReplace extends BatchFix implements RF2Constants{
 		identifyType(loadedConcept);
 		
 		//Can we safely save this clone before we inactivate the original?
-		if (!isSafeToInactivate(task, loadedConcept)) {
-			report(task, concept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Concept not safe to inactivate");
-		} else {
+		if (!loadedConcept.isActive()) {
+			report(task, concept, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept is already inactive");
+		} else if (isSafeToInactivate(task, loadedConcept)) {
 			changesMade = cloneAndReplace(task, loadedConcept);
 			if (changesMade > 0) {
 				try {
@@ -133,44 +133,57 @@ public class CloneAndReplace extends BatchFix implements RF2Constants{
 
 	private int cloneAndReplace(Task task, Concept loadedConcept) throws TermServerScriptException {
 		Concept clone = loadedConcept.clone();
-		clone.setDefinitionStatus(DefinitionStatus.PRIMITIVE);
+		remodel(clone, loadedConcept);
 		clone = updateConcept(task, clone, " cloned from " + loadedConcept);
 		report (task, loadedConcept, Severity.LOW, ReportActionType.CONCEPT_ADDED, clone.toString());
 		
 		loadedConcept.setActive(false);
 		loadedConcept.setInactivationIndicator(InactivationIndicator.AMBIGUOUS);
 		loadedConcept.setAssociationTargets(AssociationTargets.mayBeA(clone));
+		report (task, loadedConcept, Severity.LOW, ReportActionType.CONCEPT_INACTIVATED, "");
 		
-		
+		return 1;
 	}
 
-	private void remove(Task t, Relationship rel, Concept c, String retained, boolean isParent) throws TermServerScriptException {
-		//Are we inactivating or deleting this relationship?
-		if (rel.getEffectiveTime() == null || rel.getEffectiveTime().isEmpty()) {
-			c.removeRelationship(rel);
-			String msg = "Deleted parent relationship: " + rel.getTarget() + " in favour of " + retained;
-			report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_DELETED, msg);
-		} else {
-			rel.setEffectiveTime(null);
-			rel.setActive(false);
-			String msg = "Inactivated parent relationship: " + rel.getTarget() + " in favour of " + retained;
-			report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_INACTIVATED, msg);
-		}
-	}
 
-	private Integer countAttributes(Concept c) {
-		int attributeCount = 0;
-		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
-			if (!r.getType().equals(IS_A)) {
-				attributeCount++;
-			}
+	/*
+	 * Set the FSN and correct dose form on the cloned concept
+	 */
+	private void remodel(Concept clone, Concept original) throws TermServerScriptException {
+		//The FSN is a new object, so no need to inactivate, just change directly
+		String newFSN = newFSNs.get(original);
+		Description fsn = clone.getFSNDescription();
+		fsn.setTerm(newFSN);
+		
+		//Also the preferred term.  Remove all current preferred terms and replace
+		//to avoid clashes with US / GB spellings
+		List<Description> PTs = clone.getDescriptions(Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE);
+		for (Description thisPT : PTs) {
+			clone.removeDescription(thisPT);
 		}
-		return attributeCount;
+		
+		Description newPT = new Description();
+		
+		
+		//Now find the dose form and replace that - again directly.
+		for (Relationship r : clone.getRelationships(CharacteristicType.STATED_RELATIONSHIP, hasDoseForm, ActiveState.ACTIVE)) {
+			r.setTarget(newDoseForms.get(original));
+		}
 	}
 
 	@Override
 	protected Concept loadLine(String[] lineItems) throws TermServerScriptException {
 		Concept c = gl.getConcept(lineItems[0]);
+		
+		//What's the new FSN?
+		String newFSN = lineItems[2].trim();
+		newFSNs.put(c, newFSN);
+		
+		//What's the correct dose Form
+		String newDoseForm = lineItems[3];
+		String newDoseFormSctid = newDoseForm.replaceFirst("|", " ").split(" ")[0];
+		Concept newDoseFormConcept = gl.getConcept(newDoseFormSctid);
+		newDoseForms.put(c, newDoseFormConcept);
 		return c;
 	}
 

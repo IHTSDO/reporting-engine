@@ -12,7 +12,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
-public class Description implements RF2Constants{
+public class Description implements RF2Constants, Component{
 	
 	public static boolean padTerm = false; //Pads terms front and back with spaces to assist whole word matching.
 
@@ -487,6 +487,26 @@ public class Description implements RF2Constants{
 	public void setInactivationIndicatorEntries(
 			List<InactivationIndicatorEntry> inactivationIndicatorEntries) {
 		this.inactivationIndicatorEntries = inactivationIndicatorEntries;
+	}
+
+	@Override
+	public String getId() {
+		return descriptionId;
+	}
+
+	@Override
+	public ComponentType getComponentType() {
+		return ComponentType.DESCRIPTION;
+	}
+
+	@Override
+	public String getReportedName() {
+		return term;
+	}
+
+	@Override
+	public String getReportedType() {
+		return type.toString();
 	}
 
 }

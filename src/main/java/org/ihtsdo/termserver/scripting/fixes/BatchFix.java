@@ -279,8 +279,8 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		}
 		String key = (task == null? "" :  task.getKey());
 		String desc = (task == null? "" :  task.getSummary());
-		String name = (component == null ? "" : component.getName());
-		String type = (component == null ? "" : component.getType());
+		String name = (component == null ? "" : component.getReportedName());
+		String type = (component == null ? "" : component.getReportedType());
 		String line = key + COMMA + desc + COMMA + component.getId() + COMMA_QUOTE + 
 						name + QUOTE_COMMA + type + COMMA + severity + 
 						COMMA + actionType;

@@ -3,6 +3,7 @@ package org.ihtsdo.termserver.scripting.domain;
 
 import javax.annotation.Generated;
 
+import org.apache.commons.lang.NotImplementedException;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
@@ -10,7 +11,7 @@ import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
 @Generated("org.jsonschema2pojo")
-public class Relationship implements RF2Constants, Comparable<Relationship> {
+public class Relationship implements RF2Constants, Component, Comparable<Relationship> {
 
 	@SerializedName("effectiveTime")
 	@Expose
@@ -297,6 +298,31 @@ public class Relationship implements RF2Constants, Comparable<Relationship> {
 	public void delete(String deletionEffectiveTime) {
 		this.isDeleted = true;
 		this.deletionEffectiveTime = deletionEffectiveTime;
+	}
+
+	@Override
+	public String getId() {
+		return relationshipId;
+	}
+
+	@Override
+	public ComponentType getComponentType() {
+		switch (characteristicType) {
+			case STATED_RELATIONSHIP : return ComponentType.STATED_RELATIONSHIP;
+			case INFERRED_RELATIONSHIP : return ComponentType.RELATIONSHIP;
+		default:
+			throw new NotImplementedException();
+		}
+	}
+
+	@Override
+	public String getReportedName() {
+		return this.toString();
+	}
+
+	@Override
+	public String getReportedType() {
+		return getComponentType().toString();
 	}
 
 }

@@ -15,36 +15,36 @@ import java.util.Set;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
-public class SnomedRf2File implements RF2Constants {
+public class Rf2File implements RF2Constants {
 
-	static Map<Rf2File, SnomedRf2File> snomedRf2Files = new HashMap<Rf2File,SnomedRf2File>();
+	static Map<ComponentType, Rf2File> snomedRf2Files = new HashMap<ComponentType,Rf2File>();
 	static {
 		String termDir = "TYPE/Terminology/";
 		String refDir =  "TYPE/Refset/";
-		snomedRf2Files.put(Rf2File.CONCEPT, new SnomedRf2File("sct2_Concept_TYPE", 
+		snomedRf2Files.put(ComponentType.CONCEPT, new Rf2File("sct2_Concept_TYPE", 
 				termDir + "sct2_Concept_TYPE_EDITION_DATE.txt",
 				"id\teffectiveTime\tactive\tmoduleId\tdefinitionStatusId"));
-		snomedRf2Files.put(Rf2File.DESCRIPTION, new SnomedRf2File("sct2_Description_TYPE",  
+		snomedRf2Files.put(ComponentType.DESCRIPTION, new Rf2File("sct2_Description_TYPE",  
 				termDir + "sct2_Description_TYPE-LNG_EDITION_DATE.txt",
 				"id\teffectiveTime\tactive\tmoduleId\tconceptId\tlanguageCode\ttypeId\tterm\tcaseSignificanceId"));
 		/*SnomedRf2Files.put(Rf2File.TEXT_DEFINITION, new SnomedRf2File("textdefinition","sct2_TextDefinition_TYPE", 
 		 + "sct2_TextDefinition_Snapshot-LNG_EDITION_DATE.txt")); */
-		snomedRf2Files.put(Rf2File.LANGREFSET, new SnomedRf2File("der2_cRefset_LanguageTYPE", 
+		snomedRf2Files.put(ComponentType.LANGREFSET, new Rf2File("der2_cRefset_LanguageTYPE", 
 				refDir + "Language/der2_cRefset_LanguageTYPE-LNG_EDITION_DATE.txt",
 				"id\teffectiveTime\tactive\tmoduleId\trefsetId\treferencedComponentId\tacceptabilityId")); 
-		snomedRf2Files.put(Rf2File.RELATIONSHIP, new SnomedRf2File("sct2_Relationship_TYPE",
+		snomedRf2Files.put(ComponentType.RELATIONSHIP, new Rf2File("sct2_Relationship_TYPE",
 				termDir + "sct2_Relationship_TYPE_EDITION_DATE.txt",
 				"id\teffectiveTime\tactive\tmoduleId\tsourceId\tdestinationId\trelationshipGroup\ttypeId\tcharacteristicTypeId\tmodifierId"));
-		snomedRf2Files.put(Rf2File.STATED_RELATIONSHIP, new SnomedRf2File("sct2_StatedRelationship_TYPE", 
+		snomedRf2Files.put(ComponentType.STATED_RELATIONSHIP, new Rf2File("sct2_StatedRelationship_TYPE", 
 				termDir + "sct2_StatedRelationship_TYPE_EDITION_DATE.txt",
 				"id\teffectiveTime\tactive\tmoduleId\tsourceId\tdestinationId\trelationshipGroup\ttypeId\tcharacteristicTypeId\tmodifierId"));
 		/*snomedRf2Files.put(Rf2File.new SnomedRf2File("simplerefset","der2_Refset_SimpleTYPE", 
 				refDir + "Content/der2_Refset_SimpleTYPE_EDITION_DATE.txt",
-				"id\teffectiveTime\tactive\tmoduleId\trefsetId\treferencedComponentId"));
-		snomedRf2Files.put(Rf2File.new SnomedRf2File("associationrefset","der2_cRefset_AssociationReferenceTYPE",  
+				"id\teffectiveTime\tactive\tmoduleId\trefsetId\treferencedComponentId"));*/
+		snomedRf2Files.put(ComponentType.HISTORICAL_ASSOCIATION, new Rf2File("der2_cRefset_AssociationTYPE",  
 				refDir + "Content/der2_cRefset_AssociationReferenceTYPE_EDITION_DATE.txt",
-				"id\teffectiveTime\tactive\tmoduleId\trefsetId\treferencedComponentId\ttargetComponentId"));*/
-		snomedRf2Files.put(Rf2File.ATTRIBUTE_VALUE, new SnomedRf2File("der2_cRefset_AttributeValueTYPE", 
+				"id\teffectiveTime\tactive\tmoduleId\trefsetId\treferencedComponentId\ttargetComponentId"));
+		snomedRf2Files.put(ComponentType.ATTRIBUTE_VALUE, new Rf2File("der2_cRefset_AttributeValueTYPE", 
 				refDir + "Content/der2_cRefset_AttributeValueTYPE_EDITION_DATE.txt",
 				"id\teffectiveTime\tactive\tmoduleId\trefsetId\treferencedComponentId\tvalueId"));
 		/*snomedRf2Files.put(Rf2File.new SnomedRf2File("extendedmaprefset","der2_iisssccRefset_ExtendedMapTYPE", 
@@ -66,7 +66,7 @@ public class SnomedRf2File implements RF2Constants {
 	private String header;
 
 	
-	public SnomedRf2File (String filenamePart, String filenameTemplate, String header) {
+	public Rf2File (String filenamePart, String filenameTemplate, String header) {
 		this.filenamePart = filenamePart;
 		this.filenameTemplate = filenameTemplate;
 		this.header = header;
@@ -97,13 +97,22 @@ public class SnomedRf2File implements RF2Constants {
 		}
 	}
 	
-	public static SnomedRf2File get(Rf2File file) {
+	public String getHeaderField(int i) {
+		return header.split("\t")[i];
+	}
+	
+	public static Rf2File get(ComponentType file) {
 		return snomedRf2Files.get(file);
 	}
 	
-	public static Rf2File getRf2File(String fileName, FileType fileType) {
+	public static Rf2File get(String fileName, FileType fileType) {
+		ComponentType type = getComponentType(fileName, fileType);
+		return snomedRf2Files.get(type);
+	}
+	
+	public static ComponentType getComponentType(String fileName, FileType fileType) {
 		String fileTypeStr = getFileType(fileType);
-		for (Map.Entry<Rf2File, SnomedRf2File> mapEntry : snomedRf2Files.entrySet()) {
+		for (Map.Entry<ComponentType, Rf2File> mapEntry : snomedRf2Files.entrySet()) {
 			String fileNamePart = mapEntry.getValue().getFilenamePart().replace(TYPE, fileTypeStr);
 			if (fileName.contains(fileNamePart)) {
 				return mapEntry.getKey();
@@ -112,18 +121,18 @@ public class SnomedRf2File implements RF2Constants {
 		return null;
 	}
 
-	public static String getOutputFile(File outputLocation, Rf2File rf2File, String edition, FileType fileType, String languageCode, String targetEffectiveTime) {
-		SnomedRf2File rf2FileObj = snomedRf2Files.get(rf2File);
+	public static String getOutputFile(File outputLocation, ComponentType rf2File, String edition, FileType fileType, String languageCode, String targetEffectiveTime) {
+		Rf2File rf2FileObj = snomedRf2Files.get(rf2File);
 		String fileName = rf2FileObj.getFilename(edition, languageCode, targetEffectiveTime, fileType);
 		return outputLocation + File.separator +  fileName;
 	}
-
+	
 	public static void outputHeaders(File outputLocation,
-			Set<Rf2File> filesProcessed, String edition, FileType fileType,
+			Set<ComponentType> filesProcessed, String edition, FileType fileType,
 			String languageCode, String targetEffectiveTime) throws TermServerScriptException, FileNotFoundException, IOException {
 		//Loop through all the files known, check if we've already processed it, and if not, output headers
-		for (Map.Entry<Rf2File, SnomedRf2File> mapEntry : snomedRf2Files.entrySet()) {
-			Rf2File rf2File = mapEntry.getKey();
+		for (Map.Entry<ComponentType, Rf2File> mapEntry : snomedRf2Files.entrySet()) {
+			ComponentType rf2File = mapEntry.getKey();
 			if (!filesProcessed.contains(rf2File)) {
 				
 				String outputFile = getOutputFile(outputLocation, rf2File, edition, fileType, languageCode, targetEffectiveTime);
