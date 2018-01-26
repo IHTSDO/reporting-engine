@@ -11,9 +11,6 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
-import com.google.common.collect.HashMultiset;
-import com.google.common.collect.Multiset;
-
 /**
  * FD19459
  * Reports all terms that contain the specified text
@@ -42,7 +39,6 @@ public class TermContainsXReport extends TermServerReport {
 
 	private void reportDescriptionContainsX() throws TermServerScriptException {
 		Collection<Concept> concepts = gl.getAllConcepts();
-		Multiset<String> tags = HashMultiset.create();
 		
 		nextConcept:
 		for (Concept c : concepts) {
@@ -56,8 +52,8 @@ public class TermContainsXReport extends TermServerReport {
 							String[] hiearchies = getHierarchies(c);
 							report(c, semTag, matchText, hiearchies[0], hiearchies[1], hiearchies[2]);
 							reported = true;
-							tags.add(semTag);
 							incrementSummaryInformation("Matched " + matchText);
+							incrementSummaryInformation( "Tag: " + semTag);
 						}
 					}
 					if (reported && reportConceptOnceOnly) {
@@ -67,10 +63,6 @@ public class TermContainsXReport extends TermServerReport {
 			}
 		}
 		
-		addSummaryInformation("Concepts checked", concepts.size());
-		for (String tag : tags.elementSet()) {
-			addSummaryInformation( "Tag: " + tag , tags.count(tag));
-		}
 	}
 
 	//Return hierarchy depths 1, 2, 3
