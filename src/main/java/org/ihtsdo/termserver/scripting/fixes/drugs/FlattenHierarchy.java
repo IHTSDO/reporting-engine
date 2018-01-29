@@ -173,7 +173,7 @@ public class FlattenHierarchy extends BatchFix implements RF2Constants{
 			String msg = "Ancestor now parent: " + ancestor.toString();
 			report (task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, msg, loadedConcept.getDefinitionStatus().toString(), parentCount, attributeCount);
 			Relationship newParentRel = new Relationship(loadedConcept, IS_A, ancestor, 0);
-			loadedConcept.addRelationship(newParentRel);
+			addOrReactivateRelationship(task, loadedConcept, newParentRel);
 		}
 		modifiedConcepts.add(loadedConcept);
 		
@@ -183,7 +183,7 @@ public class FlattenHierarchy extends BatchFix implements RF2Constants{
 				Relationship dispRel = new Relationship (loadedConcept, hasDisposition, disposition, 0);
 				if (!relationshipExists(loadedConcept, dispRel)) {
 					String msg = "Adding disposition: " + disposition;
-					loadedConcept.addRelationship(dispRel);
+					addOrReactivateRelationship(task, loadedConcept, dispRel);
 					report (task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, msg, loadedConcept.getDefinitionStatus().toString(), parentCount, attributeCount);
 				}
 			}
@@ -193,7 +193,7 @@ public class FlattenHierarchy extends BatchFix implements RF2Constants{
 		Relationship modification = new Relationship(loadedConcept, isModificationOf, expectedTarget, 0);
 		if (!relationshipExists(loadedConcept, modification)) {
 			String msg = "Adding modification: " + modification;
-			loadedConcept.addRelationship(modification);
+			addOrReactivateRelationship(task, loadedConcept, modification);
 			report (task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, msg, loadedConcept.getDefinitionStatus().toString(), parentCount, attributeCount);
 		}
 		//Now modify all children (recursively) using this concept as the new target
@@ -219,6 +219,24 @@ public class FlattenHierarchy extends BatchFix implements RF2Constants{
 
 	private boolean relationshipExists(Concept c , Relationship r) {
 		return c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE).contains(r);
+	}
+	
+	private void addOrReactivateRelationship(Task t, Concept c , Relationship newRel) {
+		//If it already exists active, skip it
+		if (relationshipExists(c, newRel)) {
+			report (t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Relationship already exists active: " + newRel);
+		} else {
+			//Does it exists but inactive?
+			for ( Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.INACTIVE)) {
+				if (newRel.equals(r)) {
+					r.setActive(true);
+					report (t, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_REACTIVATED, "Reactivated: " + r);
+					return;
+				}
+			}
+		}
+		//Otherwise, we're safe to add the relationship
+		c.addRelationship(newRel);
 	}
 
 	private List<Relationship> determineNonRedundantAncestors(Task task, Concept loadedConcept, Concept expectedTarget, List<Relationship> parentRels, List<Relationship> potentialGrandParentRels) throws TermServerScriptException {
