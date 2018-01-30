@@ -220,7 +220,7 @@ public class GenerateTranslation extends DeltaGenerator {
 			Description d = createDescription (lineItems[0],  //conceptId
 												term,
 												lang,
-												calculateBEcaseSignificanceSCTID(term),
+												calculateBECaseSignificance(term),
 												acceptabilityId
 												);
 			Concept concept = gl.getConcept(lineItems[0]);
@@ -230,9 +230,10 @@ public class GenerateTranslation extends DeltaGenerator {
 		return null;
 	}
 	
-	private CaseSignificance calculateBEcaseSignificanceSCTID(String term) {
-		//BE Terms are in general lower case, so any term that starts with a capital letter
-		//can be considered CS.   Otherwise if it is case sensitive then cI
+	private CaseSignificance calculateBECaseSignificance(String term) {
+		//BE Terms are in general all lower case, so any term that starts with a capital letter
+		//can be considered CS.   This is the opposite of the International Edition
+		//Otherwise if it is case sensitive then cI
 		String firstLetter = term.substring(0, 1);
 		if (!firstLetter.equals(firstLetter.toLowerCase())) {
 			return CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE;

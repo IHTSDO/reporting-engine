@@ -22,6 +22,7 @@ import org.apache.commons.validator.routines.checkdigit.VerhoeffCheckDigit;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.CaseSignificance;
 
 public class SnomedUtils implements RF2Constants{
 	
@@ -641,6 +642,18 @@ public class SnomedUtils implements RF2Constants{
 		String afterFirst = term.substring(1);
 		boolean allLowerCase = afterFirst.equals(afterFirst.toLowerCase());
 		return !allLowerCase;
+	}
+	
+	public static CaseSignificance calculateCaseSignificance(String term) {
+		//Any term that starts with a lower case letter
+		//can be considered CS.   Otherwise if it is case sensitive then cI
+		String firstLetter = term.substring(0, 1);
+		if (firstLetter.equals(firstLetter.toLowerCase())) {
+			return CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE;
+		} else if (isCaseSensitive(term)) {
+			return CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE;
+		}
+		return CaseSignificance.CASE_INSENSITIVE;
 	}
 
 }

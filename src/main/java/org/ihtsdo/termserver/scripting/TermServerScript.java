@@ -32,12 +32,17 @@ import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExportType;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExtractType;
 import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.domain.ConceptChange;
+import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.HistoricalAssociation;
 import org.ihtsdo.termserver.scripting.domain.Project;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.RelationshipSerializer;
 import org.ihtsdo.termserver.scripting.domain.Task;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.Acceptability;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.CaseSignificance;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.DescriptionType;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import com.google.common.base.Charsets;
@@ -434,6 +439,21 @@ public abstract class TermServerScript implements RF2Constants {
 			throw new TermServerScriptException("Failed to update " + c + " in TS due to " + e.getMessage(),e);
 		}
 	}
+	
+	protected Concept createConcept(Task t, Concept c, String info) throws TermServerScriptException {
+		try {
+			String conceptSerialised = gson.toJson(c);
+			debug ((dryRun ?"Dry run ":"Creating ") + c + info);
+			if (!dryRun) {
+				JSONResource response = tsClient.createConcept(new JSONObject(conceptSerialised), t.getBranchPath());
+				String json = response.toObject().toString();
+				c = gson.fromJson(json, Concept.class);
+			}
+			return c;
+		} catch (SnowOwlClientException | JSONException | IOException e) {
+			throw new TermServerScriptException("Failed to create " + c + " in TS due to " + e.getMessage(),e);
+		}
+	}
 
 	protected List<Component> processFile() throws TermServerScriptException {
 		return processFile(inputFile);
@@ -720,6 +740,29 @@ public abstract class TermServerScript implements RF2Constants {
 			components.add((Concept)c);
 		}
 		return components;
+	}
+	
+	protected void addSynonym(Concept concept, String term, Acceptability acceptability, String[] dialects) {
+		if (term.isEmpty()) {
+			return;
+		}
+		Description d = new Description();
+		d.setTerm(term);
+		d.setActive(true);
+		d.setType(DescriptionType.SYNONYM);
+		d.setLang(LANG_EN);
+		d.setCaseSignificance(SnomedUtils.calculateCaseSignificance(term));
+		d.setAcceptabilityMap(createAcceptabilityMap(acceptability, dialects));
+		d.setConceptId(concept.getConceptId());
+		concept.addDescription(d);
+	}
+
+	protected Map<String, Acceptability> createAcceptabilityMap(Acceptability acceptability, String[] dialects) {
+		Map<String, Acceptability> aMap = new HashMap<String, Acceptability>();
+		for (String dialect : dialects) {
+			aMap.put(dialect, acceptability);
+		}
+		return aMap;
 	}
 
 }

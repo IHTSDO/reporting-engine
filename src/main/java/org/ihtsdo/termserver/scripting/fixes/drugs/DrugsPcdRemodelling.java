@@ -356,27 +356,4 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 		}
 	}
 
-	private void addSynonym(ConceptChange concept, String term, Acceptability acceptability, String[] dialects) {
-		if (term.isEmpty()) {
-			return;
-		}
-		Description d = new Description();
-		d.setTerm(term);
-		d.setActive(true);
-		d.setType(DescriptionType.SYNONYM);
-		d.setLang(LANG_EN);
-		//TODO May wish to check for captials at idx > 0 and adjust CS.
-		d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
-		d.setAcceptabilityMap(createAcceptabilityMap(acceptability, dialects));
-		d.setConceptId(concept.getConceptId());
-		concept.addDescription(d);
-	}
-
-	private Map<String, Acceptability> createAcceptabilityMap(Acceptability acceptability, String[] dialects) {
-		Map<String, Acceptability> aMap = new HashMap<String, Acceptability>();
-		for (String dialect : dialects) {
-			aMap.put(dialect, acceptability);
-		}
-		return aMap;
-	}
 }

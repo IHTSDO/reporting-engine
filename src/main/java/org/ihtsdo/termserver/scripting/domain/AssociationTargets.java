@@ -16,9 +16,9 @@ public class AssociationTargets {
 	@Expose
 	private List<String> replacedBy = null;
 	
-	@SerializedName("MAY_BE_A")
+	@SerializedName("POSSIBLY_EQUIVALENT_TO")
 	@Expose
-	private List<String> mayBeA = null;
+	private List<String> possEquivTo = null;
 
 	public List<String> getReplacedBy() {
 	return replacedBy;
@@ -28,19 +28,19 @@ public class AssociationTargets {
 		this.replacedBy = replacedBy;
 	}
 	
-	public List<String> getMayBeA() {
-	return mayBeA;
+	public List<String> getPossEquivTo() {
+	return possEquivTo;
 	}
 
-	public void setMayBeA(List<String> mayBeA) {
-		this.mayBeA = mayBeA;
+	public void setPossEquivTo(List<String> possEquivTo) {
+		this.possEquivTo = possEquivTo;
 	}
 
-	public static AssociationTargets mayBeA(Concept c) {
+	public static AssociationTargets possEquivTo(Concept c) {
 		AssociationTargets targets = new AssociationTargets();
 		List<String> targetList = new ArrayList<>();
 		targetList.add(c.getId());
-		targets.setMayBeA(targetList);
+		targets.setPossEquivTo(targetList);
 		return targets;
 	}
 

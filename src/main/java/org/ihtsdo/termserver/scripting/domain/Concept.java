@@ -766,12 +766,18 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 		
 		//Copy all descriptions
 		for (Description d : getDescriptions(ActiveState.ACTIVE)) {
-			clone.addDescription(d.clone(null));
+			//We need to null out the conceptId since the clone is a new concept
+			Description dClone = d.clone(null);
+			dClone.setConceptId(null);
+			clone.addDescription(dClone);
 		}
 		
 		//Copy all stated relationships
 		for (Relationship r : getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
-			clone.addRelationship(r.clone(null));
+			//We need to null out the sourceId since the clone is a new concept
+			Relationship rClone = r.clone(null);
+			rClone.setSourceId(null);
+			clone.addRelationship(rClone);
 		}
 		return clone;
 	}

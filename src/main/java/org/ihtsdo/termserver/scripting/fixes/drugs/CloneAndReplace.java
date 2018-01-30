@@ -40,13 +40,14 @@ public class CloneAndReplace extends BatchFix implements RF2Constants{
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
 		CloneAndReplace fix = new CloneAndReplace(null);
 		try {
+			//fix.runStandAlone = true;
 			fix.reportNoChange = true;
 			fix.populateEditPanel = false;
 			fix.populateTaskDescription = true;
 			fix.additionalReportColumns = "ACTION_DETAIL, DEF_STATUS, PARENT_COUNT, ATTRIBUTE_COUNT";
 			fix.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
-			fix.loadProjectSnapshot(true); 
+			fix.loadProjectSnapshot(false); 
 			fix.postLoadInit();
 			fix.startTimer();
 			fix.processFile();
@@ -83,7 +84,7 @@ public class CloneAndReplace extends BatchFix implements RF2Constants{
 		//Can we safely save this clone before we inactivate the original?
 		if (!loadedConcept.isActive()) {
 			report(task, concept, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept is already inactive");
-		} else if (isSafeToInactivate(task, loadedConcept)) {
+		} else if (isSafeToInactivate(task, concept)) {  //Need to use local version since loadedConcept will not have parents populated
 			changesMade = cloneAndReplace(task, loadedConcept);
 			if (changesMade > 0) {
 				try {
@@ -101,8 +102,8 @@ public class CloneAndReplace extends BatchFix implements RF2Constants{
 		//it's not safe to inactivate
 		String msg = "Concept is not safe to inactivate. ";
 
-		if (c.getParents(CharacteristicType.STATED_RELATIONSHIP).size() > 0 ||
-			c.getParents(CharacteristicType.INFERRED_RELATIONSHIP).size() > 0) {
+		if (c.getChildren(CharacteristicType.STATED_RELATIONSHIP).size() > 0 ||
+			c.getChildren(CharacteristicType.INFERRED_RELATIONSHIP).size() > 0) {
 			msg += "It has descendants";
 			report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, msg);
 			return false;
@@ -134,12 +135,15 @@ public class CloneAndReplace extends BatchFix implements RF2Constants{
 	private int cloneAndReplace(Task task, Concept loadedConcept) throws TermServerScriptException {
 		Concept clone = loadedConcept.clone();
 		remodel(clone, loadedConcept);
-		clone = updateConcept(task, clone, " cloned from " + loadedConcept);
+		
+		//Save clone to TS
+		clone = createConcept(task, clone, " cloned from " + loadedConcept);
 		report (task, loadedConcept, Severity.LOW, ReportActionType.CONCEPT_ADDED, clone.toString());
 		
+		//If the save of the clone didn't throw an exception, we can inactivate the original
 		loadedConcept.setActive(false);
 		loadedConcept.setInactivationIndicator(InactivationIndicator.AMBIGUOUS);
-		loadedConcept.setAssociationTargets(AssociationTargets.mayBeA(clone));
+		loadedConcept.setAssociationTargets(AssociationTargets.possEquivTo(clone));
 		report (task, loadedConcept, Severity.LOW, ReportActionType.CONCEPT_INACTIVATED, "");
 		
 		return 1;
@@ -162,8 +166,9 @@ public class CloneAndReplace extends BatchFix implements RF2Constants{
 			clone.removeDescription(thisPT);
 		}
 		
-		Description newPT = new Description();
-		
+		//Remove the semantic tag
+		String pTerm = SnomedUtils.deconstructFSN(newFSN)[0];
+		addSynonym(clone, pTerm, Acceptability.PREFERRED, ENGLISH_DIALECTS);
 		
 		//Now find the dose form and replace that - again directly.
 		for (Relationship r : clone.getRelationships(CharacteristicType.STATED_RELATIONSHIP, hasDoseForm, ActiveState.ACTIVE)) {
@@ -181,7 +186,7 @@ public class CloneAndReplace extends BatchFix implements RF2Constants{
 		
 		//What's the correct dose Form
 		String newDoseForm = lineItems[3];
-		String newDoseFormSctid = newDoseForm.replaceFirst("|", " ").split(" ")[0];
+		String newDoseFormSctid = newDoseForm.trim().replaceFirst("\\|", " ").split(" ")[0];
 		Concept newDoseFormConcept = gl.getConcept(newDoseFormSctid);
 		newDoseForms.put(c, newDoseFormConcept);
 		return c;
