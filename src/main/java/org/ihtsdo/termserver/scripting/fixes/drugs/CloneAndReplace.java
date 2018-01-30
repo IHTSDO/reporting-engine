@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting.fixes.drugs;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -141,14 +142,26 @@ public class CloneAndReplace extends BatchFix implements RF2Constants{
 		report (task, loadedConcept, Severity.LOW, ReportActionType.CONCEPT_ADDED, clone.toString());
 		
 		//If the save of the clone didn't throw an exception, we can inactivate the original
-		loadedConcept.setActive(false);
-		loadedConcept.setInactivationIndicator(InactivationIndicator.AMBIGUOUS);
-		loadedConcept.setAssociationTargets(AssociationTargets.possEquivTo(clone));
+		inactivateConcept(loadedConcept, clone);
 		report (task, loadedConcept, Severity.LOW, ReportActionType.CONCEPT_INACTIVATED, "");
 		
 		return 1;
 	}
 
+
+	private void inactivateConcept(Concept original, Concept clone) {
+		original.setActive(false);
+		original.setInactivationIndicator(InactivationIndicator.AMBIGUOUS);
+		original.setAssociationTargets(AssociationTargets.possEquivTo(clone));
+		
+		//Need to also remove any unpublished relationships
+		List<Relationship> allRelationships = new ArrayList<>(original.getRelationships());
+		for (Relationship r : allRelationships) {
+			if (r.getEffectiveTime() == null || r.getEffectiveTime().isEmpty()) {
+				original.removeRelationship(r);
+			}
+		}
+	}
 
 	/*
 	 * Set the FSN and correct dose form on the cloned concept
