@@ -14,6 +14,7 @@ import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.AssociationTargets;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
+import org.ihtsdo.termserver.scripting.domain.HistoricalAssociation;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.Task;
@@ -98,7 +99,7 @@ public class CloneAndReplace extends BatchFix implements RF2Constants{
 		return changesMade;
 	}
 
-	private boolean isSafeToInactivate(Task t, Concept c) {
+	private boolean isSafeToInactivate(Task t, Concept c) throws TermServerScriptException {
 		//If this concept has stated or inferred children OR if it's used as the target to some relationship, then 
 		//it's not safe to inactivate
 		String msg = "Concept is not safe to inactivate. ";
@@ -113,6 +114,17 @@ public class CloneAndReplace extends BatchFix implements RF2Constants{
 		if (allStatedTargets.contains(c) || allInferredTargets.contains(c)) {
 			msg += "It is used as the target of a relationship";
 			report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, msg);
+			return false;
+		}
+		
+		List<HistoricalAssociation> histAssocs = gl.usedAsHistoricalAssociationTarget(c);
+		if (histAssocs != null && histAssocs.size() > 0) {
+			for (HistoricalAssociation histAssoc : histAssocs) {
+				Concept source = gl.getConcept(histAssoc.getReferencedComponentId());
+				msg += "It is used as the target of a historical association for " + source;
+				report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, msg);
+				return false;
+			}
 			return false;
 		}
 		return true;
