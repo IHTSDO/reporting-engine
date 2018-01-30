@@ -13,6 +13,7 @@ import java.nio.file.Paths;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.termserver.scripting.FlatFileLoader;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
@@ -35,6 +36,7 @@ public class MergeDeltas extends DeltaGenerator {
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
 		MergeDeltas app = new MergeDeltas();
 		try {
+			app.newIdsRequired = false;
 			app.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			app.loadProjectSnapshot(false);  //Not just FSN, load all terms with lang refset also
@@ -102,7 +104,7 @@ public class MergeDeltas extends DeltaGenerator {
 		while ((line = br.readLine()) != null) {
 			if (!isHeader) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
-				String[] output = processFixDeltaLine(lineItems);
+				String[] output = processFixDeltaLine(compoonentType, lineItems);
 				outputRF2(compoonentType, output);
 			} else {
 				isHeader = false;
@@ -110,17 +112,31 @@ public class MergeDeltas extends DeltaGenerator {
 		}
 	}
 
-	private String[] processFixDeltaLine(String[] fixLineItems) throws TermServerScriptException {
+	private String[] processFixDeltaLine(ComponentType compoonentType, String[] fixLineItems) throws TermServerScriptException {
 		String id = fixLineItems[IDX_ID];
+		String fixEffectiveTime = fixLineItems[IDX_EFFECTIVETIME];
 		String[] releasedFields;
 		String[] currentFields = currentDelta.get(id);
 		String[] output = new String[fixLineItems.length];
 		Concept relevantComponent = gl.getComponentOwner(id);
 		
-		//Is this fix a reversion?
-		boolean isReversion = false;
-		if (fixLineItems[IDX_EFFECTIVETIME] != "" && Long.parseLong(fixLineItems[IDX_EFFECTIVETIME]) < publishedEffectiveTime) {
-			isReversion = true;
+		//If the current delta does not know about this component, then it's not changed at all since release
+		if (currentFields==null) {
+			String msg = "Fixed component has not been changed since versioning.  Using fix version";
+			report (relevantComponent, Severity.HIGH, ReportActionType.INFO, msg, compoonentType.toString(), StringUtils.join(fixLineItems, "\t"));
+			return fixLineItems;			
+		}
+		String currentEffectiveTime = currentFields[IDX_EFFECTIVETIME];
+		
+		//Is this fix a reversion?  We'll either take the whole thing, or ignore the whole thing.
+		if (fixEffectiveTime != "" && Long.parseLong(fixEffectiveTime) < publishedEffectiveTime) {
+			//If the current version has not changed since we versioned, then we'll apply the fix.
+			//Otherwise, apply the current state
+			if (currentEffectiveTime == "") {
+				String msg = "Current state has changed since versioning.  Ignoring reversion.";
+				report (relevantComponent, Severity.HIGH, ReportActionType.INFO, msg, compoonentType.toString(), StringUtils.join(fixLineItems, "\t"));
+				return null;
+			}
 		}
 		
 		//Get the released fields for this component
@@ -134,10 +150,13 @@ public class MergeDeltas extends DeltaGenerator {
 		
 		//Check each field to see if it has changed since the release
 		for (int i=0; i < releasedFields.length; i++ ) {
-			boolean fixChangedSinceRelease = releasedFields[i].equals(fixLineItems[i]);
-			boolean currentChangedSinceRelease = releasedFields[i].equals(currentFields[i]);
-			if (isReversion) {
-				
+			//If the current has changed, that takes priority.  Otherwise, take the fix
+			if (!releasedFields[i].equals(currentFields[i])) {
+				output[i] = currentFields[i];
+				String msg = "Using field modified since versioning " + i + ": " + currentFields[i] + " compared to fix " + fixLineItems[i];
+				report (relevantComponent, Severity.MEDIUM, ReportActionType.INFO,compoonentType.toString(), msg);
+			} else {
+				output[i] = fixLineItems[i];
 			}
 		}
 		return output;

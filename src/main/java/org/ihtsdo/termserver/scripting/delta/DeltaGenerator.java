@@ -58,8 +58,10 @@ public abstract class DeltaGenerator extends TermServerScript {
 	
 	protected void report(Concept concept, Description d, Severity severity, ReportActionType actionType, String... details) {
 		String line = "";
-		
-		if (d==null) {
+		if (concept == null) {
+			line = "" + COMMA + COMMA_QUOTE + 
+					"Unknown" + QUOTE_COMMA_QUOTE; 
+		} else if (d==null) {
 			line = concept.getConceptId() + COMMA + COMMA_QUOTE + 
 					concept.getFsn() + QUOTE_COMMA_QUOTE; 
 		} else {
@@ -77,7 +79,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 	}
 	
 	protected void report(Concept concept, Severity severity, ReportActionType actionType, String... details) {
-		report (concept, concept.getFSNDescription(), severity, actionType, details);
+		report (concept, concept==null?null:concept.getFSNDescription() , severity, actionType, details);
 	}
 	
 	protected void init (String[] args) throws IOException, TermServerScriptException, SnowOwlClientException, SnowOwlClientException {
@@ -141,7 +143,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 		}
 		
 		if (newIdsRequired && descIdGenerator == null && relIdGenerator == null && conIdGenerator == null) {
-			throw new TermServerScriptException("Command line arguments must supply a list of available sctid using the -iC/D/R option");
+			throw new TermServerScriptException("Command line arguments must supply a list of available sctid using the -iC/D/R option, or specify newIdsRequired=false");
 		}
 		initialiseReportFile("Concept,DescSctId,Term,Severity,Action," + additionalReportColumns );
 		//Don't add to previously exported data

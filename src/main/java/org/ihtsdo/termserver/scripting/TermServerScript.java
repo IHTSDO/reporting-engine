@@ -588,9 +588,8 @@ public abstract class TermServerScript implements RF2Constants {
 		flushFiles(true);
 		Date endTime = new Date();
 		SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
-		//I've not had to adjust for timezones when creating a date before?
 		if (startTime != null) {
-			Date diff = new Date(endTime.getTime() - startTime.getTime() + (endTime.getTimezoneOffset() * 60 * 1000));
+			Date diff = new Date(endTime.getTime() - startTime.getTime());
 			recordSummaryText ("Completed processing in " + sdf.format(diff));
 			recordSummaryText ("Started at: " + startTime);
 		}
