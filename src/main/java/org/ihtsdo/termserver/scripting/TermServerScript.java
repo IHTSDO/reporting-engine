@@ -25,6 +25,7 @@ import java.util.TreeMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import org.apache.commons.lang.time.DurationFormatUtils;
 import org.ihtsdo.termserver.scripting.client.AuthoringServicesClient;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClient;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
@@ -32,7 +33,6 @@ import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExportType;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExtractType;
 import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.ConceptChange;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.HistoricalAssociation;
 import org.ihtsdo.termserver.scripting.domain.Project;
@@ -40,9 +40,6 @@ import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.RelationshipSerializer;
 import org.ihtsdo.termserver.scripting.domain.Task;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.Acceptability;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.CaseSignificance;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.DescriptionType;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import com.google.common.base.Charsets;
@@ -73,9 +70,9 @@ public abstract class TermServerScript implements RF2Constants {
 	public static final int maxFailures = 5;
 	protected int restartPosition = NOT_SET;
 	protected int processingLimit = NOT_SET;
-	private static Date startTime;
-	private static Map<String, Object> summaryDetails = new TreeMap<String, Object>();
-	private static String summaryText = "";
+	private Date startTime;
+	private Map<String, Object> summaryDetails = new TreeMap<String, Object>();
+	private String summaryText = "";
 	protected boolean inputFileHasHeaderRow = false;
 	protected boolean runStandAlone = false; //Set to true to avoid loading concepts from Termserver.  Should be used with Dry Run only.
 	protected File inputFile;
@@ -589,8 +586,8 @@ public abstract class TermServerScript implements RF2Constants {
 		Date endTime = new Date();
 		SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
 		if (startTime != null) {
-			Date diff = new Date(endTime.getTime() - startTime.getTime());
-			recordSummaryText ("Completed processing in " + sdf.format(diff));
+			long diff = endTime.getTime() - startTime.getTime();
+			recordSummaryText ("Completed processing in " + DurationFormatUtils.formatDuration(diff, "HH:mm:ss"));
 			recordSummaryText ("Started at: " + startTime);
 		}
 		recordSummaryText ("Finished at: " + endTime);
@@ -634,7 +631,7 @@ public abstract class TermServerScript implements RF2Constants {
 		summaryText += msg + "\n<br/>";
 	}
 	
-	public static String getSummaryText() {
+	public String getSummaryText() {
 		return summaryText;
 	}
 	

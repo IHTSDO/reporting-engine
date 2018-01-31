@@ -37,6 +37,7 @@ public class MergeDeltas extends DeltaGenerator {
 		MergeDeltas app = new MergeDeltas();
 		try {
 			app.newIdsRequired = false;
+			app.additionalReportColumns="ComponentType, ComponentId, Info, Data";
 			app.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			app.loadProjectSnapshot(false);  //Not just FSN, load all terms with lang refset also
@@ -47,6 +48,11 @@ public class MergeDeltas extends DeltaGenerator {
 		} finally {
 			app.finish();
 		}
+	}
+	
+	@Override
+	protected String getReportName() {
+		return "MergedDeltaFixes";
 	}
 	
 	protected void init (String[] args) throws IOException, TermServerScriptException, SnowOwlClientException, SnowOwlClientException {
@@ -78,7 +84,7 @@ public class MergeDeltas extends DeltaGenerator {
 						Path p = Paths.get(ze.getName());
 						String fileName = p.getFileName().toString();
 						ComponentType compoonentType = Rf2File.getComponentType(fileName, FileType.DELTA);
-						if (compoonentType != null) {
+						if (compoonentType != null && !fileName.startsWith("._")) {
 							println ("Processing " + fileName);
 							processFixDeltaFile(zis, compoonentType);
 						} else {
@@ -120,10 +126,10 @@ public class MergeDeltas extends DeltaGenerator {
 		String[] output = new String[fixLineItems.length];
 		Concept relevantComponent = gl.getComponentOwner(id);
 		
-		//If the current delta does not know about this component, then it's not changed at all since release
+		//If the current delta does not know about this component, then it's not changed at all since release, so we should use the fix
 		if (currentFields==null) {
 			String msg = "Fixed component has not been changed since versioning.  Using fix version";
-			report (relevantComponent, Severity.HIGH, ReportActionType.INFO, msg, compoonentType.toString(), StringUtils.join(fixLineItems, "\t"));
+			report (relevantComponent, Severity.LOW, ReportActionType.INFO,compoonentType.toString(), id, msg, StringUtils.join(fixLineItems, "|"));
 			return fixLineItems;			
 		}
 		String currentEffectiveTime = currentFields[IDX_EFFECTIVETIME];
@@ -134,10 +140,12 @@ public class MergeDeltas extends DeltaGenerator {
 			//Otherwise, apply the current state
 			if (currentEffectiveTime == "") {
 				String msg = "Current state has changed since versioning.  Ignoring reversion.";
-				report (relevantComponent, Severity.HIGH, ReportActionType.INFO, msg, compoonentType.toString(), StringUtils.join(fixLineItems, "\t"));
+				report (relevantComponent, Severity.HIGH, ReportActionType.INFO, compoonentType.toString(), id, msg, StringUtils.join(fixLineItems, "|"));
 				return null;
 			}
 		}
+		
+		//Otherwise, we'll work on a field by field basis to form merge of the two.
 		
 		//Get the released fields for this component
 		Component releasedComponent = gl.getComponent(id);
@@ -148,16 +156,28 @@ public class MergeDeltas extends DeltaGenerator {
 			releasedFields = releasedComponent.toRF2();
 		}
 		
-		//Check each field to see if it has changed since the release
+		//Check each field to see if it has changed since the release.
+		String fieldsChanged = "";
+		String dataComparisons = "";		
 		for (int i=0; i < releasedFields.length; i++ ) {
 			//If the current has changed, that takes priority.  Otherwise, take the fix
 			if (!releasedFields[i].equals(currentFields[i])) {
+				fieldsChanged += fieldsChanged.isEmpty()?i:"," +i;
+				dataComparisons += dataComparisons.isEmpty()?"":", ";
+				dataComparisons += "current '" + currentFields[i] + "' vs fix '" + fixLineItems[i] + "'";
 				output[i] = currentFields[i];
-				String msg = "Using field modified since versioning " + i + ": " + currentFields[i] + " compared to fix " + fixLineItems[i];
-				report (relevantComponent, Severity.MEDIUM, ReportActionType.INFO,compoonentType.toString(), msg);
 			} else {
 				output[i] = fixLineItems[i];
 			}
+		}
+		//HOWEVER, if the ONLY field to be different to the fix is the effective date, then we actually want to reset that component back to being released, ie use the fix line
+		if (fieldsChanged.equals(Integer.toString(IDX_EFFECTIVETIME)) && currentEffectiveTime.isEmpty()) {
+			String msg = "Current rows shows as unpublished, but is otherwise the same as the published fix.  Resetting to fix row to prevent no-change delta in next release.";
+			report (relevantComponent, Severity.HIGH, ReportActionType.INFO,compoonentType.toString(), id, msg,  StringUtils.join(fixLineItems, "|"));	
+			output = fixLineItems;
+		} else {
+			String msg = "Using fields " + fieldsChanged + ", modified since versioning: " + dataComparisons;
+			report (relevantComponent, Severity.MEDIUM, ReportActionType.INFO,compoonentType.toString(), id, msg);
 		}
 		return output;
 	}

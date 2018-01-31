@@ -33,7 +33,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 	protected String descDeltaFilename;
 	protected String langDeltaFilename;
 	protected String edition = "INT";
-	protected String additionalReportColumns = "ACTION_DETAIL";
+	protected String additionalReportColumns = "ActionDetail";
 	
 	protected String languageCode = "en";
 	protected boolean isExtension = false;
@@ -73,7 +73,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 				actionType.toString() + QUOTE;
 		
 		for (String detail : details) {
-			 line += COMMA_QUOTE + detail + QUOTE;
+			 line += COMMA_QUOTE + detail.replace("\"", "'") + QUOTE;
 		}
 		writeToReportFile(line);
 	}
