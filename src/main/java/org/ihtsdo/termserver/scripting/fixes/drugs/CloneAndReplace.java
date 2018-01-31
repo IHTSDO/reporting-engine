@@ -42,7 +42,7 @@ public class CloneAndReplace extends BatchFix implements RF2Constants{
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
 		CloneAndReplace fix = new CloneAndReplace(null);
 		try {
-			//fix.runStandAlone = true;
+			fix.runStandAlone = true;
 			fix.reportNoChange = true;
 			fix.populateEditPanel = false;
 			fix.populateTaskDescription = true;
@@ -121,9 +121,10 @@ public class CloneAndReplace extends BatchFix implements RF2Constants{
 		if (histAssocs != null && histAssocs.size() > 0) {
 			for (HistoricalAssociation histAssoc : histAssocs) {
 				Concept source = gl.getConcept(histAssoc.getReferencedComponentId());
-				msg += "It is used as the target of a historical association for " + source;
-				report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, msg);
-				return false;
+				String assocType = gl.getConcept(histAssoc.getRefsetId()).getPreferredSynonym(US_ENG_LANG_REFSET).getTerm().replace("association reference set", "");
+				String thisDetail = "It is used as the " + assocType + " target of a historical association for " + source;
+				thisDetail += " (since " + (histAssoc.getEffectiveTime().isEmpty()?" prospective release":histAssoc.getEffectiveTime()) + ")";
+				report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, msg + thisDetail);
 			}
 			return false;
 		}

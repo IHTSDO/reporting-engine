@@ -11,6 +11,7 @@ import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
+import org.ihtsdo.termserver.scripting.domain.HistoricalAssociation;
 import org.ihtsdo.termserver.scripting.domain.InactivationIndicatorEntry;
 import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
@@ -25,6 +26,7 @@ public class SnapshotGenerator extends TermServerScript {
 	protected String conSnapshotFilename;
 	protected String relSnapshotFilename;
 	protected String attribValSnapshotFilename;
+	protected String assocSnapshotFilename;
 	protected String sRelSnapshotFilename;
 	protected String descSnapshotFilename;
 	protected String langSnapshotFilename;
@@ -43,6 +45,7 @@ public class SnapshotGenerator extends TermServerScript {
 	protected String[] relHeader = new String[] {"id","effectiveTime","active","moduleId","sourceId","destinationId","relationshipGroup","typeId","characteristicTypeId","modifierId"};
 	protected String[] langHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","acceptabilityId"};
 	protected String[] attribValHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","valueId"};
+	protected String[] assocHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","targetComponentId"};
 
 	public static void main (String[] args) throws IOException, TermServerScriptException, SnowOwlClientException, InterruptedException {
 		SnapshotGenerator snapGen = new SnapshotGenerator();
@@ -100,6 +103,9 @@ public class SnapshotGenerator extends TermServerScript {
 		
 		attribValSnapshotFilename = refDir + "Content/der2_cRefset_AttributeValueSnapshot_"+edition+"_" + today + ".txt";
 		writeToRF2File(attribValSnapshotFilename, attribValHeader);
+		
+		assocSnapshotFilename = refDir + "Content/der2_cRefset_AssociationSnapshot_"+edition+"_" + today + ".txt";
+		writeToRF2File(assocSnapshotFilename, assocHeader);
 	}
 	
 	private void outputRF2() throws TermServerScriptException {
@@ -125,6 +131,10 @@ public class SnapshotGenerator extends TermServerScript {
 		
 		for (InactivationIndicatorEntry i: c.getInactivationIndicatorEntries()) {
 			writeToRF2File(attribValSnapshotFilename, i.toRF2());
+		}
+		
+		for (HistoricalAssociation h: c.getHistorialAssociations()) {
+			writeToRF2File(assocSnapshotFilename, h.toRF2());
 		}
 	}
 

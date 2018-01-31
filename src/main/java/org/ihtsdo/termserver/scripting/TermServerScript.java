@@ -372,7 +372,7 @@ public abstract class TermServerScript implements RF2Constants {
 						} else if (fileName.contains("der2_cRefset_AttributeValue" + fileType )) {
 							println("Loading Concept/Description Inactivation Indicators " + fileType + " file.");
 							gl.loadInactivationIndicatorFile(zis);
-						}  else if (fileName.contains("AssociationReferenceSet" + fileType )) {
+						}  else if (fileName.contains("Association" + fileType ) || fileName.contains("AssociationReferenceSet" + fileType )) {
 							println("Loading Historical Assocation File: " + fileName);
 							gl.loadHistoricalAssociationFile(zis);
 						}

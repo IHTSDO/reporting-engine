@@ -4,7 +4,7 @@ import java.util.UUID;
 
 import org.ihtsdo.termserver.scripting.domain.RF2Constants.ComponentType;
 
-//id	effectiveTime	active	moduleId	refsetId	referencedComponentId	inactivationReasonId
+//id	effectiveTime	active	moduleId 	refsetId 	referencedComponentId	targetComponentId
 public class HistoricalAssociation implements Component {
 
 	private String id;
