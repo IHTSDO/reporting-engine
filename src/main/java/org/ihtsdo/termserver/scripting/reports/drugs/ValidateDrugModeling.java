@@ -361,17 +361,6 @@ public class ValidateDrugModeling extends TermServerReport{
 		}
 		return isType;
 	}
-
-	protected void report (Concept c, String issue, String... data) {
-		String line =	c.getConceptId() + COMMA_QUOTE + 
-						c.getFsn() + QUOTE_COMMA_QUOTE +
-						SnomedUtils.deconstructFSN(c.getFsn())[1] + QUOTE_COMMA_QUOTE +
-						issue + QUOTE;
-		for (String detail : data) {
-			 line += COMMA_QUOTE + detail + QUOTE;
-		}
-		writeToReportFile(line);
-	}
 	
 	protected void init(String[] args) throws TermServerScriptException, SnowOwlClientException {
 		super.init(args);
