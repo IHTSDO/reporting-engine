@@ -37,6 +37,7 @@ public class MergeDeltas extends DeltaGenerator {
 		MergeDeltas app = new MergeDeltas();
 		try {
 			app.newIdsRequired = false;
+			app.runStandAlone = true;
 			app.additionalReportColumns="ComponentType, ComponentId, Info, Data";
 			app.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
@@ -121,7 +122,7 @@ public class MergeDeltas extends DeltaGenerator {
 	private String[] processFixDeltaLine(ComponentType compoonentType, String[] fixLineItems) throws TermServerScriptException {
 		String id = fixLineItems[IDX_ID];
 		String fixEffectiveTime = fixLineItems[IDX_EFFECTIVETIME];
-		String[] releasedFields;
+		String[] alphaFields;
 		String[] currentFields = currentDelta.get(id);
 		String[] output = new String[fixLineItems.length];
 		Concept relevantComponent = gl.getComponentOwner(id);
@@ -147,31 +148,35 @@ public class MergeDeltas extends DeltaGenerator {
 		
 		//Otherwise, we'll work on a field by field basis to form merge of the two.
 		
-		//Get the released fields for this component
-		Component releasedComponent = gl.getComponent(id);
-		if (releasedComponent == null) {
+		//Get the alpha fields for this component
+		Component alphaComponent = gl.getComponent(id);
+		if (alphaComponent == null) {
 			//This is a new component since the release
-			releasedFields = new String[fixLineItems.length];
+			alphaFields = new String[fixLineItems.length];
 		} else {
-			releasedFields = releasedComponent.toRF2();
+			alphaFields = alphaComponent.toRF2();
 		}
 		
-		//Check each field to see if it has changed since the release.
+		//Check each field to see if it has changed since versioning.
 		String fieldsChanged = "";
 		String dataComparisons = "";		
-		for (int i=0; i < releasedFields.length; i++ ) {
+		for (int i=0; i < alphaFields.length; i++ ) {
 			//If the current has changed, that takes priority.  Otherwise, take the fix
-			if (!releasedFields[i].equals(currentFields[i])) {
+			if (!alphaFields[i].equals(currentFields[i])) {
 				fieldsChanged += fieldsChanged.isEmpty()?i:"," +i;
 				dataComparisons += dataComparisons.isEmpty()?"":", ";
 				dataComparisons += "current '" + currentFields[i] + "' vs fix '" + fixLineItems[i] + "'";
 				output[i] = currentFields[i];
 			} else {
 				output[i] = fixLineItems[i];
+				if (!alphaFields[i].equals(fixLineItems[i])) {
+					dataComparisons += dataComparisons.isEmpty()?"":", ";
+					dataComparisons += " taking fix '" + fixLineItems[i] + "'";
+				}
 			}
 		}
-		//HOWEVER, if the ONLY field to be different to the fix is the effective date, then we actually want to reset that component back to being released, ie use the fix line
-		if (fieldsChanged.equals(Integer.toString(IDX_EFFECTIVETIME)) && currentEffectiveTime.isEmpty()) {
+		//HOWEVER, if the ONLY field to be different to the fix is the effective date, then we actually want to reset that component back to being alpha, ie use the fix line
+		if (differsOnlyInEffectiveTime(output, fixLineItems)) {
 			String msg = "Current rows shows as unpublished, but is otherwise the same as the published fix.  Resetting to fix row to prevent no-change delta in next release.";
 			report (relevantComponent, Severity.HIGH, ReportActionType.INFO,compoonentType.toString(), id, msg,  StringUtils.join(fixLineItems, "|"));	
 			output = fixLineItems;
@@ -180,6 +185,23 @@ public class MergeDeltas extends DeltaGenerator {
 			report (relevantComponent, Severity.MEDIUM, ReportActionType.INFO,compoonentType.toString(), id, msg);
 		}
 		return output;
+	}
+
+	private boolean differsOnlyInEffectiveTime(String[] a, String[] b) {
+		//First check the effectiveTime is different
+		boolean differsOnlyInEffectiveTime = true;
+		if (!a[IDX_EFFECTIVETIME].equals(b[IDX_EFFECTIVETIME])) {
+			//Now check all the other fields are the same
+			for (int i=0; i<a.length; i++) {
+				if (i != IDX_EFFECTIVETIME && !a[i].equals(b[i])) {
+					differsOnlyInEffectiveTime = false;
+					break;
+				}
+			}
+		} else {
+			differsOnlyInEffectiveTime = false;
+		}
+		return differsOnlyInEffectiveTime;
 	}
 
 	@Override

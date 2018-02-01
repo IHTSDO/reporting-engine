@@ -27,8 +27,9 @@ public class Rf2File implements RF2Constants {
 		snomedRf2Files.put(ComponentType.DESCRIPTION, new Rf2File("sct2_Description_TYPE",  
 				termDir + "sct2_Description_TYPE-LNG_EDITION_DATE.txt",
 				"id\teffectiveTime\tactive\tmoduleId\tconceptId\tlanguageCode\ttypeId\tterm\tcaseSignificanceId"));
-		/*SnomedRf2Files.put(Rf2File.TEXT_DEFINITION, new SnomedRf2File("textdefinition","sct2_TextDefinition_TYPE", 
-		 + "sct2_TextDefinition_Snapshot-LNG_EDITION_DATE.txt")); */
+		snomedRf2Files.put(ComponentType.TEXT_DEFINITION, new Rf2File("sct2_TextDefinition_TYPE", 
+				termDir + "sct2_TextDefinition_Snapshot-LNG_EDITION_DATE.txt",
+				"id\teffectiveTime\tactive\tmoduleId\tconceptId\tlanguageCode\ttypeId\tterm\tcaseSignificanceId"));
 		snomedRf2Files.put(ComponentType.LANGREFSET, new Rf2File("der2_cRefset_LanguageTYPE", 
 				refDir + "Language/der2_cRefset_LanguageTYPE-LNG_EDITION_DATE.txt",
 				"id\teffectiveTime\tactive\tmoduleId\trefsetId\treferencedComponentId\tacceptabilityId")); 
@@ -41,10 +42,10 @@ public class Rf2File implements RF2Constants {
 		/*snomedRf2Files.put(Rf2File.new SnomedRf2File("simplerefset","der2_Refset_SimpleTYPE", 
 				refDir + "Content/der2_Refset_SimpleTYPE_EDITION_DATE.txt",
 				"id\teffectiveTime\tactive\tmoduleId\trefsetId\treferencedComponentId"));*/
-		snomedRf2Files.put(ComponentType.HISTORICAL_ASSOCIATION, new Rf2File("der2_cRefset_AssociationTYPE",  
-				refDir + "Content/der2_cRefset_AssociationReferenceTYPE_EDITION_DATE.txt",
+		snomedRf2Files.put(ComponentType.HISTORICAL_ASSOCIATION, new Rf2File("AssociationReferenceSetTYPE",  
+				refDir + "Content/der2_cRefset_AssociationTYPE_EDITION_DATE.txt",
 				"id\teffectiveTime\tactive\tmoduleId\trefsetId\treferencedComponentId\ttargetComponentId"));
-		snomedRf2Files.put(ComponentType.ATTRIBUTE_VALUE, new Rf2File("der2_cRefset_AttributeValueTYPE", 
+		snomedRf2Files.put(ComponentType.ATTRIBUTE_VALUE, new Rf2File("InactivationIndicatorReferenceSetTYPE", 
 				refDir + "Content/der2_cRefset_AttributeValueTYPE_EDITION_DATE.txt",
 				"id\teffectiveTime\tactive\tmoduleId\trefsetId\treferencedComponentId\tvalueId"));
 		/*snomedRf2Files.put(Rf2File.new SnomedRf2File("extendedmaprefset","der2_iisssccRefset_ExtendedMapTYPE", 
@@ -60,7 +61,7 @@ public class Rf2File implements RF2Constants {
 				refDir + "Map/der2_sRefset_SimpleMapTYPE_EDITION_DATE.txt",
 				"id\teffectiveTime\tactive\tmoduleId\trefsetId\treferencedComponentId\tmapTarget")); */
 	}
-	
+	 
 	private String filenamePart;
 	private String filenameTemplate;
 	private String header;
