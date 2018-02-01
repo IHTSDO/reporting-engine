@@ -42,7 +42,7 @@ public class CloneAndReplace extends BatchFix implements RF2Constants{
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
 		CloneAndReplace fix = new CloneAndReplace(null);
 		try {
-			fix.runStandAlone = true;
+			//fix.runStandAlone = true;
 			fix.reportNoChange = true;
 			fix.populateEditPanel = false;
 			fix.populateTaskDescription = true;
@@ -117,17 +117,6 @@ public class CloneAndReplace extends BatchFix implements RF2Constants{
 			return false;
 		}
 		
-		List<HistoricalAssociation> histAssocs = gl.usedAsHistoricalAssociationTarget(c);
-		if (histAssocs != null && histAssocs.size() > 0) {
-			for (HistoricalAssociation histAssoc : histAssocs) {
-				Concept source = gl.getConcept(histAssoc.getReferencedComponentId());
-				String assocType = gl.getConcept(histAssoc.getRefsetId()).getPreferredSynonym(US_ENG_LANG_REFSET).getTerm().replace("association reference set", "");
-				String thisDetail = "It is used as the " + assocType + " target of a historical association for " + source;
-				thisDetail += " (since " + (histAssoc.getEffectiveTime().isEmpty()?" prospective release":histAssoc.getEffectiveTime()) + ")";
-				report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, msg + thisDetail);
-			}
-			return false;
-		}
 		return true;
 	}
 
@@ -154,6 +143,10 @@ public class CloneAndReplace extends BatchFix implements RF2Constants{
 		clone = createConcept(task, clone, " cloned from " + loadedConcept);
 		report (task, loadedConcept, Severity.LOW, ReportActionType.CONCEPT_ADDED, clone.toString());
 		
+		//Check if the concept we're about to inactivate is used as the target of a historical association
+		//and rewire that to point to our new clone
+		checkAndReplaceHistoricalAssociations(task, loadedConcept, clone);
+		
 		//If the save of the clone didn't throw an exception, we can inactivate the original
 		inactivateConcept(loadedConcept, clone);
 		report (task, loadedConcept, Severity.LOW, ReportActionType.CONCEPT_INACTIVATED, "");
@@ -161,6 +154,35 @@ public class CloneAndReplace extends BatchFix implements RF2Constants{
 		return 1;
 	}
 
+
+	private void checkAndReplaceHistoricalAssociations(Task t, Concept inactivating, Concept replacing) throws TermServerScriptException {
+		List<HistoricalAssociation> histAssocs = gl.usedAsHistoricalAssociationTarget(inactivating);
+		if (histAssocs != null && histAssocs.size() > 0) {
+			for (HistoricalAssociation histAssoc : histAssocs) {
+				Concept source = gl.getConcept(histAssoc.getReferencedComponentId());
+				String assocType = gl.getConcept(histAssoc.getRefsetId()).getPreferredSynonym(US_ENG_LANG_REFSET).getTerm().replace("association reference set", "");
+				String thisDetail = "Concept was as used as the " + assocType + "target of a historical association for " + source;
+				thisDetail += " (since " + (histAssoc.getEffectiveTime().isEmpty()?" prospective release":histAssoc.getEffectiveTime()) + ")";
+				report (t, inactivating, Severity.HIGH, ReportActionType.INFO, thisDetail);
+				replaceHistoricalAssociation(t, source, inactivating, replacing);
+			}
+		}
+	}
+
+	private void replaceHistoricalAssociation(Task t, Concept concept, Concept current, Concept replacement) throws TermServerScriptException {
+		//We need a copy from the TS
+		Concept loadedConcept = loadConcept(concept, t.getBranchPath());
+		loadedConcept.setInactivationIndicator(InactivationIndicator.AMBIGUOUS);
+		//Make sure we only have one current association target
+		int targetCount = loadedConcept.getAssociationTargets().size();
+		if (targetCount > 1) {
+			report (t, concept, Severity.HIGH, ReportActionType.INFO, "Replacing 1 historical association out of " + targetCount);
+		}
+		AssociationTargets targets = loadedConcept.getAssociationTargets();
+		targets.remove(current.getConceptId());
+		targets.getPossEquivTo().add(replacement.getConceptId());
+		report (t, loadedConcept, Severity.MEDIUM, ReportActionType.ASSOCIATION_ADDED, "InactReason set to Ambiguous and PossiblyEquivalentTo: " + replacement);
+	}
 
 	private void inactivateConcept(Concept original, Concept clone) {
 		original.setActive(false);
@@ -170,7 +192,7 @@ public class CloneAndReplace extends BatchFix implements RF2Constants{
 		//Need to also remove any unpublished relationships
 		List<Relationship> allRelationships = new ArrayList<>(original.getRelationships());
 		for (Relationship r : allRelationships) {
-			if (r.getEffectiveTime() == null || r.getEffectiveTime().isEmpty()) {
+			if (r.isActive() && (r.getEffectiveTime() == null || r.getEffectiveTime().isEmpty())) {
 				original.removeRelationship(r);
 			}
 		}

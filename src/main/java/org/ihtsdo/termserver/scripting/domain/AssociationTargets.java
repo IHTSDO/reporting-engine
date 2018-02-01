@@ -14,14 +14,18 @@ public class AssociationTargets {
 
 	@SerializedName("REPLACED_BY")
 	@Expose
-	private List<String> replacedBy = null;
+	private List<String> replacedBy = new ArrayList<>();
 	
 	@SerializedName("POSSIBLY_EQUIVALENT_TO")
 	@Expose
-	private List<String> possEquivTo = null;
+	private List<String> possEquivTo = new ArrayList<>();
+	
+	@SerializedName("SAME_AS")
+	@Expose
+	private List<String> sameAs = new ArrayList<>();
 
 	public List<String> getReplacedBy() {
-	return replacedBy;
+		return replacedBy;
 	}
 
 	public void setReplacedBy(List<String> replacedBy) {
@@ -29,11 +33,19 @@ public class AssociationTargets {
 	}
 	
 	public List<String> getPossEquivTo() {
-	return possEquivTo;
+		return possEquivTo;
 	}
 
 	public void setPossEquivTo(List<String> possEquivTo) {
 		this.possEquivTo = possEquivTo;
+	}
+	
+	public List<String> getSameAs() {
+		return sameAs;
+	}
+
+	public void setSameAs(List<String> sameAs) {
+		this.sameAs = sameAs;
 	}
 
 	public static AssociationTargets possEquivTo(Concept c) {
@@ -42,6 +54,29 @@ public class AssociationTargets {
 		targetList.add(c.getId());
 		targets.setPossEquivTo(targetList);
 		return targets;
+	}
+	
+	public int size() {
+		int total = 0;
+		
+		if (replacedBy != null) {
+			total += replacedBy.size();
+		}
+		
+		if (possEquivTo != null) {
+			total += possEquivTo.size();
+		}
+		
+		if (sameAs != null) {
+			total += sameAs.size();
+		}
+		return total;
+	}
+
+	public void remove(String conceptId) {
+		replacedBy.remove(conceptId);
+		possEquivTo.remove(conceptId);
+		sameAs.remove(conceptId);
 	}
 
 }

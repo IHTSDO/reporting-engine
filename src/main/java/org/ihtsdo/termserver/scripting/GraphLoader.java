@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.zip.ZipInputStream;
 
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.domain.AssociationTargets;
 import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
@@ -328,6 +329,7 @@ public class GraphLoader implements RF2Constants {
 					HistoricalAssociation historicalAssociation = loadHistoricalAssociationLine(lineItems);
 					c.getHistorialAssociations().add(historicalAssociation);
 					if (historicalAssociation.isActive()) {
+						addHistoricalAssociationInTsForm(c, historicalAssociation);
 						recordHistoricalAssociation(historicalAssociation);
 					}
 				}
@@ -337,6 +339,27 @@ public class GraphLoader implements RF2Constants {
 		}
 	}
 	
+	/*
+	 * Adds a historical association using the string based map format as per the Terminology Server's API
+	 */
+	private void addHistoricalAssociationInTsForm(Concept c, HistoricalAssociation historicalAssociation) {
+		AssociationTargets targets = c.getAssociationTargets();
+		if (targets == null) {
+			targets = new AssociationTargets();
+			c.setAssociationTargets(targets);
+		}
+		String target = historicalAssociation.getTargetComponentId();
+		switch (historicalAssociation.getRefsetId()) {
+			case (SCTID_HIST_REPLACED_BY_REFSETID) : targets.getReplacedBy().add(target);
+													break;
+			case (SCTID_HIST_SAME_AS_REFSETID) : targets.getSameAs().add(target);
+													break;	
+			case (SCTID_HIST_POSS_EQUIV_REFSETID) : targets.getPossEquivTo().add(target);
+													break;	
+		}
+		
+	}
+
 	private void recordHistoricalAssociation(HistoricalAssociation h) throws TermServerScriptException {
 		//Remember we're using the target of the association as the map key here
 		Concept target = getConcept(h.getTargetComponentId());

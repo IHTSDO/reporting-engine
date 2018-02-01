@@ -108,7 +108,7 @@ public abstract class TermServerScript implements RF2Constants {
 									 DESCRIPTION_CHANGE_MADE, DESCRIPTION_ADDED, DESCRIPTION_REMOVED,
 									 RELATIONSHIP_ADDED, RELATIONSHIP_REPLACED, RELATIONSHIP_INACTIVATED, RELATIONSHIP_DELETED, RELATIONSHIP_MODIFIED, 
 									 NO_CHANGE, VALIDATION_ERROR, VALIDATION_CHECK, 
-									 REFSET_MEMBER_REMOVED, UNKNOWN, RELATIONSHIP_REACTIVATED};
+									 REFSET_MEMBER_REMOVED, UNKNOWN, RELATIONSHIP_REACTIVATED, ASSOCIATION_ADDED};
 									 
 	public enum Severity { NONE, LOW, MEDIUM, HIGH, CRITICAL }; 
 
@@ -370,7 +370,7 @@ public abstract class TermServerScript implements RF2Constants {
 							println("Loading Concept/Description Inactivation Indicators " + fileType + " file.");
 							gl.loadInactivationIndicatorFile(zis);
 						}  else if (fileName.contains("Association" + fileType ) || fileName.contains("AssociationReferenceSet" + fileType )) {
-							println("Loading Historical Assocation File: " + fileName);
+							println("Loading Historical Association File: " + fileName);
 							gl.loadHistoricalAssociationFile(zis);
 						}
 						//If we're loading all terms, load the language refset as well

@@ -751,6 +751,9 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 	}
 
 	public AssociationTargets getAssociationTargets() {
+		if (associationTargets == null) {
+			associationTargets = new AssociationTargets();
+		}
 		return associationTargets;
 	}
 

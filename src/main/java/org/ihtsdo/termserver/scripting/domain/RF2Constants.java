@@ -99,7 +99,9 @@ public interface RF2Constants {
 	//Historical Associations
 	public static final String SCTID_HIST_WAS_A_REFSETID = "900000000000528000"; // |WAS A association reference set (foundation metadata concept)|
 	public static final String SCTID_HIST_REPLACED_BY_REFSETID = "900000000000526001"; // |REPLACED BY association reference set (foundation metadata concept)|
-	
+	public static final String SCTID_HIST_SAME_AS_REFSETID = "900000000000527005"; // |SAME AS association reference set (foundation metadata concept)|"
+	public static final String SCTID_HIST_POSS_EQUIV_REFSETID = "900000000000523009" ;// |POSSIBLY EQUIVALENT TO association reference set (foundation metadata concept)|"
+			
 	//Inactivation Indicators
 	public static final String SCTID_CON_INACT_IND_REFSET = "900000000000489007";
 	public static final String SCTID_DESC_INACT_IND_REFSET = "900000000000490003";
