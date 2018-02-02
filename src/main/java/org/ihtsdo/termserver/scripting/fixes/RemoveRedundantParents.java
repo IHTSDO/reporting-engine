@@ -17,13 +17,14 @@ import org.ihtsdo.termserver.scripting.domain.Task;
 import us.monoid.json.JSONObject;
 
 /*
-For SUBST-200, DRUGS-448
+For SUBST-200, DRUGS-448, DRUGS-451
 Optionally driven by a text file of concepts, check parents for redundancy and - assuming 
 the concept is primitive, retain the more specific parent.
 */
 public class RemoveRedundantParents extends BatchFix implements RF2Constants{
 	
-	String exclude = "105590001"; // |Substance (substance)|
+	String exclude = null; //"105590001"; // |Substance (substance)|
+	String include = "105590001"; // |Substance (substance)|
 	
 	protected RemoveRedundantParents(BatchFix clone) {
 		super(clone);
@@ -116,13 +117,13 @@ public class RemoveRedundantParents extends BatchFix implements RF2Constants{
 
 	private void remove(Task t, Relationship rel, Concept loadedConcept, Concept retained) {
 		//Are we inactivating or deleting this relationship?
-		if (rel.getEffectiveTime() == null || rel.getEffectiveTime().isEmpty()) {
-			loadedConcept.removeRelationship(rel);
-			report (t, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_DELETED, "Deleted parent: " + rel.getTarget() + " in favour of " + retained);
-		} else {
+		if (rel.isReleased()) {
 			rel.setEffectiveTime(null);
 			rel.setActive(false);
 			report (t, loadedConcept, Severity.MEDIUM, ReportActionType.RELATIONSHIP_INACTIVATED, "Inactivated parent: " + rel.getTarget() + " in favour of " + retained);
+		} else {
+			loadedConcept.removeRelationship(rel);
+			report (t, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_DELETED, "Deleted parent: " + rel.getTarget() + " in favour of " + retained);
 		}
 	}
 
@@ -134,8 +135,16 @@ public class RemoveRedundantParents extends BatchFix implements RF2Constants{
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		//Find primitive concepts with redundant stated parents
 		println ("Identifying concepts to process");
-		Collection<Concept> checkMe = gl.getAllConcepts();
-		checkMe.removeAll(gl.getConcept(exclude).getDescendents(NOT_SET));
+		Collection<Concept> checkMe;
+		if (include != null) {
+			checkMe = gl.getConcept(include).getDescendents(NOT_SET);
+		} else { 
+			checkMe = gl.getAllConcepts();
+		}
+		
+		if (exclude != null) {
+			checkMe.removeAll(gl.getConcept(exclude).getDescendents(NOT_SET));
+		}
 		List<Component> processMe = new ArrayList<>();
 		
 		nextConcept:

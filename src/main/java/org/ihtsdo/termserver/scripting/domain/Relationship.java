@@ -43,7 +43,10 @@ public class Relationship implements RF2Constants, Component, Comparable<Relatio
 	@SerializedName("modifier")
 	@Expose
 	private Modifier modifier;
-	
+	@SerializedName("released")
+	@Expose
+	private Boolean released;
+
 	private Concept source;
 	
 	private boolean dirty = false;
@@ -324,5 +327,19 @@ public class Relationship implements RF2Constants, Component, Comparable<Relatio
 	public String getReportedType() {
 		return getComponentType().toString();
 	}
+	
+	
+	public Boolean isReleased() {
+		//If we don't know if it's been released, fall back to the presence of an effectiveTime
+		if (released == null) {
+			return !(effectiveTime == null || effectiveTime.isEmpty());
+		}
+		return released;
+	}
+
+	public void setReleased(Boolean released) {
+		this.released = released;
+	}
+
 
 }
