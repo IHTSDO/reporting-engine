@@ -79,6 +79,8 @@ public abstract class TermServerScript implements RF2Constants {
 	protected File reportFile;
 	protected File outputDir;
 	protected GraphLoader gl = GraphLoader.getGraphLoader();
+	protected String additionalReportColumns = "ACTION_DETAIL";
+	protected String currentTimeStamp; 
 	
 	protected Scanner STDIN = new Scanner(System.in);
 	
@@ -584,7 +586,6 @@ public abstract class TermServerScript implements RF2Constants {
 		println (BREAK);
 		flushFiles(true);
 		Date endTime = new Date();
-		SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
 		if (startTime != null) {
 			long diff = endTime.getTime() - startTime.getTime();
 			recordSummaryText ("Completed processing in " + DurationFormatUtils.formatDuration(diff, "HH:mm:ss"));
@@ -663,7 +664,8 @@ public abstract class TermServerScript implements RF2Constants {
 	
 	protected void initialiseReportFile(String columnHeaders) throws IOException {
 		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
-		String reportFilename = "results_" + getReportName() + "_" + df.format(new Date()) + "_" + env  + ".csv";
+		currentTimeStamp = df.format(new Date());
+		String reportFilename = "results_" + getReportName() + "_" + currentTimeStamp + "_" + env  + ".csv";
 		reportFile = new File(outputDir, reportFilename);
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
 		writeToReportFile (columnHeaders);

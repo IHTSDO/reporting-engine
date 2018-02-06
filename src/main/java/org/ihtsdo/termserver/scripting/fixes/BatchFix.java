@@ -56,7 +56,6 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	protected boolean reportNoChange = true;
 	protected boolean putTaskIntoReview = false;
 	protected boolean worksWithConcepts = true;
-	protected String additionalReportColumns = "ACTION_DETAIL";
 	protected List<Component> allConceptsToProcess = new ArrayList<>();
 	
 	protected BatchFix (BatchFix clone) {
