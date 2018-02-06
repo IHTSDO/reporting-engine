@@ -22,7 +22,7 @@ import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 /*
-For DRUG-450
+For DRUGS-450, DRUGS-452
 Driven by a text file of concepts, clone concepts - adjusting FSN and attributes
 then inactivate original and add a historical association to the clone
 */
@@ -181,6 +181,7 @@ public class CloneAndReplace extends BatchFix implements RF2Constants{
 		AssociationTargets targets = loadedConcept.getAssociationTargets();
 		targets.remove(current.getConceptId());
 		targets.getPossEquivTo().add(replacement.getConceptId());
+		updateConcept(t, loadedConcept, " with re-jigged inactivation indicator and historical associations");
 		report (t, loadedConcept, Severity.MEDIUM, ReportActionType.ASSOCIATION_ADDED, "InactReason set to Ambiguous and PossiblyEquivalentTo: " + replacement);
 	}
 
