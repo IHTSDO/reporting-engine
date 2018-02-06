@@ -665,9 +665,9 @@ public abstract class TermServerScript implements RF2Constants {
 		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
 		String reportFilename = "results_" + getReportName() + "_" + df.format(new Date()) + "_" + env  + ".csv";
 		reportFile = new File(outputDir, reportFilename);
-		reportFile.createNewFile();
 		println ("Outputting Report to " + reportFile.getAbsolutePath());
 		writeToReportFile (columnHeaders);
+		flushFiles(false);
 	}
 
 	protected String getReportName() {

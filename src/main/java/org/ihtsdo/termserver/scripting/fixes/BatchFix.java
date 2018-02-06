@@ -192,6 +192,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 							if (changesMade == 0 && reportNoChange) {
 								report(task, component, Severity.MEDIUM, ReportActionType.NO_CHANGE, "");
 							}
+							flushFiles(false);
 						} catch (ValidationFailure f) {
 							report(task, component, f.getSeverity(),f.getReportActionType(), f.getMessage());
 						} catch (TermServerScriptException e) {
@@ -201,7 +202,6 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 							}
 						}
 					}
-					flushFiles(false);
 					
 					if (!dryRun) {
 						//Prefill the Edit Panel
