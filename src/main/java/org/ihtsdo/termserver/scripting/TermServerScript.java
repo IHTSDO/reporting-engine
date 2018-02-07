@@ -17,11 +17,13 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -79,7 +81,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected File reportFile;
 	protected File outputDir;
 	protected GraphLoader gl = GraphLoader.getGraphLoader();
-	protected String additionalReportColumns = "ACTION_DETAIL";
+	protected String additionalReportColumns = "ActionDetail";
 	protected String currentTimeStamp; 
 	
 	protected Scanner STDIN = new Scanner(System.in);
@@ -459,7 +461,7 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	protected List<Component> processFile(File file) throws TermServerScriptException {
-		Set<Concept> allConcepts = new HashSet<Concept>();
+		Set<Concept> allConcepts = new LinkedHashSet<Concept>();
 		debug ("Loading input file " + file.getAbsolutePath());
 		try {
 			List<String> lines = Files.readLines(file, Charsets.UTF_8);
