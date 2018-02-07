@@ -22,9 +22,10 @@ import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 /*
-For DRUGS-450, DRUGS-452
+For DRUGS-450, DRUGS-452, DRUGS-455, DRUGS-456
 Driven by a text file of concepts, clone concepts - adjusting FSN and attributes
 then inactivate original and add a historical association to the clone
+Edit: Added column to specify inactivation reason on a per concept basis
 */
 public class CloneAndReplace extends BatchFix implements RF2Constants{
 	
@@ -33,6 +34,8 @@ public class CloneAndReplace extends BatchFix implements RF2Constants{
 	
 	Map<Concept, Concept> newDoseForms = new HashMap<>();
 	Map<Concept, String> newFSNs = new HashMap<>();
+	Map<Concept, InactivationIndicator> inactivationReasons = new HashMap<>();
+	Map<Concept, String> historicalAssociations = new HashMap<>();
 	Concept hasDoseForm;
 	
 	protected CloneAndReplace(BatchFix clone) {
@@ -172,7 +175,7 @@ public class CloneAndReplace extends BatchFix implements RF2Constants{
 	private void replaceHistoricalAssociation(Task t, Concept concept, Concept current, Concept replacement) throws TermServerScriptException {
 		//We need a copy from the TS
 		Concept loadedConcept = loadConcept(concept, t.getBranchPath());
-		loadedConcept.setInactivationIndicator(InactivationIndicator.AMBIGUOUS);
+		loadedConcept.setInactivationIndicator(inactivationReasons.get(current));
 		//Make sure we only have one current association target
 		int targetCount = loadedConcept.getAssociationTargets().size();
 		if (targetCount > 1) {
@@ -182,12 +185,12 @@ public class CloneAndReplace extends BatchFix implements RF2Constants{
 		targets.remove(current.getConceptId());
 		targets.getPossEquivTo().add(replacement.getConceptId());
 		updateConcept(t, loadedConcept, " with re-jigged inactivation indicator and historical associations");
-		report (t, loadedConcept, Severity.MEDIUM, ReportActionType.ASSOCIATION_ADDED, "InactReason set to Ambiguous and PossiblyEquivalentTo: " + replacement);
+		report (t, loadedConcept, Severity.MEDIUM, ReportActionType.ASSOCIATION_ADDED, "InactReason set to " + inactivationReasons.get(current) + " and PossiblyEquivalentTo: " + replacement);
 	}
 
 	private void inactivateConcept(Concept original, Concept clone) {
 		original.setActive(false);
-		original.setInactivationIndicator(InactivationIndicator.AMBIGUOUS);
+		original.setInactivationIndicator(inactivationReasons.get(original));
 		original.setAssociationTargets(AssociationTargets.possEquivTo(clone));
 		
 		//Need to also remove any unpublished relationships
@@ -227,14 +230,17 @@ public class CloneAndReplace extends BatchFix implements RF2Constants{
 
 	@Override
 	protected Concept loadLine(String[] lineItems) throws TermServerScriptException {
-		Concept c = gl.getConcept(lineItems[0]);
+		
+		Concept c = gl.getConcept(lineItems[2]);
+		inactivationReasons.put(c, InactivationIndicator.valueOf(lineItems[0].trim().toUpperCase()));
+		historicalAssociations.put(c, lineItems[1]);
 		
 		//What's the new FSN?
-		String newFSN = lineItems[2].trim();
+		String newFSN = lineItems[4].trim();
 		newFSNs.put(c, newFSN);
 		
 		//What's the correct dose Form
-		String newDoseForm = lineItems[3];
+		String newDoseForm = lineItems[5];
 		String newDoseFormSctid = newDoseForm.trim().replaceFirst("\\|", " ").split(" ")[0];
 		Concept newDoseFormConcept = gl.getConcept(newDoseFormSctid);
 		newDoseForms.put(c, newDoseFormConcept);
