@@ -22,7 +22,7 @@ import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 /*
-For DRUGS-450, DRUGS-452, DRUGS-455, DRUGS-456
+For DRUGS-450, DRUGS-452, DRUGS-455, DRUGS-456, DRUGS-458
 Driven by a text file of concepts, clone concepts - adjusting FSN and attributes
 then inactivate original and add a historical association to the clone
 Edit: Added column to specify inactivation reason on a per concept basis
@@ -140,7 +140,7 @@ public class CloneAndReplace extends BatchFix implements RF2Constants{
 
 	private int cloneAndReplace(Task task, Concept loadedConcept) throws TermServerScriptException {
 		Concept clone = loadedConcept.clone();
-		remodel(clone, loadedConcept);
+		remodel(task, clone, loadedConcept);
 		
 		//Save clone to TS
 		clone = createConcept(task, clone, " cloned from " + loadedConcept);
@@ -205,7 +205,7 @@ public class CloneAndReplace extends BatchFix implements RF2Constants{
 	/*
 	 * Set the FSN and correct dose form on the cloned concept
 	 */
-	private void remodel(Concept clone, Concept original) throws TermServerScriptException {
+	private void remodel(Task t, Concept clone, Concept original) throws TermServerScriptException {
 		//The FSN is a new object, so no need to inactivate, just change directly
 		String newFSN = newFSNs.get(original);
 		Description fsn = clone.getFSNDescription();
@@ -223,12 +223,23 @@ public class CloneAndReplace extends BatchFix implements RF2Constants{
 		addSynonym(clone, pTerm, Acceptability.PREFERRED, ENGLISH_DIALECTS);
 		
 		//Now find the dose form and replace that - again directly.
+		int doseFormsReplaced = 0;
 		for (Relationship r : clone.getRelationships(CharacteristicType.STATED_RELATIONSHIP, hasDoseForm, ActiveState.ACTIVE)) {
 			r.setTarget(newDoseForms.get(original));
+			doseFormsReplaced++;
+		}
+		
+		if (doseFormsReplaced == 0) {
+			//If we didn't replace a relationship, we need to add a new one
+			Relationship newDoseForm = new Relationship(clone, hasDoseForm, newDoseForms.get(original), 0);
+			clone.addRelationship(newDoseForm);
+			report (t, clone, Severity.HIGH, ReportActionType.RELATIONSHIP_ADDED, "Original had no stated dose form.  Added " + newDoseForm  );
+		} else if (doseFormsReplaced > 1) {
+			report (t, clone, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, doseFormsReplaced + " dose form attributes replaced!?" );
 		}
 	}
 
-	@Override
+	/*	@Override
 	protected Concept loadLine(String[] lineItems) throws TermServerScriptException {
 		
 		Concept c = gl.getConcept(lineItems[2]);
@@ -245,6 +256,27 @@ public class CloneAndReplace extends BatchFix implements RF2Constants{
 		Concept newDoseFormConcept = gl.getConcept(newDoseFormSctid);
 		newDoseForms.put(c, newDoseFormConcept);
 		return c;
-	}
+	}*/
+	
+	@Override
+	protected Concept loadLine(String[] lineItems) throws TermServerScriptException {
+			
+			Concept c = gl.getConcept(lineItems[0]);
+			//inactivationReasons.put(c, InactivationIndicator.valueOf(lineItems[0].trim().toUpperCase()));
+			inactivationReasons.put(c, InactivationIndicator.AMBIGUOUS);
+			//historicalAssociations.put(c, lineItems[1]);
+			historicalAssociations.put(c, "POSSIBLY EQUIVALENT TO");
+			
+			//What's the new FSN?
+			String newFSN = lineItems[2].trim();
+			newFSNs.put(c, newFSN);
+			
+			//What's the correct dose Form
+			String newDoseForm = lineItems[3];
+			String newDoseFormSctid = newDoseForm.trim().replaceFirst("\\|", " ").split(" ")[0];
+			Concept newDoseFormConcept = gl.getConcept(newDoseFormSctid);
+			newDoseForms.put(c, newDoseFormConcept);
+			return c;
+		}
 
 }
