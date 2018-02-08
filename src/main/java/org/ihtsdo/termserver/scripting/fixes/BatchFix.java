@@ -319,6 +319,12 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			}
 		}
 		
+		print ("Number of concepts per task [" + taskSize + "]: ");
+		String response = STDIN.nextLine().trim();
+		if (!response.isEmpty()) {
+			taskSize = Integer.parseInt(response);
+		}
+		
 		try {
 			super.init(args);
 		} catch (Exception e) {
@@ -337,11 +343,6 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			println("Reading file from line " + restartPosition + " - " + inputFile.getName());
 		}
 		
-		print ("Number of concepts per task [" + taskSize + "]: ");
-		String response = STDIN.nextLine().trim();
-		if (!response.isEmpty()) {
-			taskSize = Integer.parseInt(response);
-		}
 		println ("\nBatching " + taskSize + " concepts per task");
 		initialiseReportFile("TASK_KEY, TASK_DESC, SCTID, FSN, CONCEPT_TYPE,SEVERITY,ACTION_TYPE," + additionalReportColumns );
 	}
