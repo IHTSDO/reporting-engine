@@ -1,8 +1,11 @@
 package org.ihtsdo.termserver.scripting.domain;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.ihtsdo.termserver.scripting.TermServerScript;
@@ -198,12 +201,12 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 		return matches;
 	}
 	
-	public List<Relationship> getRelationships(CharacteristicType characteristicType, ActiveState state) {
-		return getRelationships(characteristicType, state, null);
+	public List<Relationship> getRelationships(CharacteristicType characteristicType, ActiveState activeState) {
+		return getRelationships(characteristicType, activeState, null);
 	}
 	
-	public List<Relationship> getRelationships(CharacteristicType characteristicType, Concept type, ActiveState state) {
-		List<Relationship> potentialMatches = getRelationships(characteristicType, state);
+	public List<Relationship> getRelationships(CharacteristicType characteristicType, Concept type, ActiveState activeState) {
+		List<Relationship> potentialMatches = getRelationships(characteristicType, activeState);
 		List<Relationship> matches = new ArrayList<Relationship>();
 		for (Relationship r : potentialMatches) {
 			if (r.getType().equals(type)) {
@@ -213,8 +216,8 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 		return matches;
 	}
 	
-	public List<Relationship> getRelationships(CharacteristicType characteristicType, Concept type, Concept target, ActiveState state) {
-		List<Relationship> potentialMatches = getRelationships(characteristicType, type, state);
+	public List<Relationship> getRelationships(CharacteristicType characteristicType, Concept type, Concept target, ActiveState activeState) {
+		List<Relationship> potentialMatches = getRelationships(characteristicType, type, activeState);
 		List<Relationship> matches = new ArrayList<Relationship>();
 		for (Relationship r : potentialMatches) {
 			if (r.getTarget().equals(target)) {
@@ -789,5 +792,22 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 	public ComponentType getComponentType() {
 		return ComponentType.CONCEPT;
 	}
+	
+	public Collection<RelationshipGroup> getRelationshipGroups(CharacteristicType characteristicType, ActiveState activeState) {
+		Map<Long, RelationshipGroup> groups = new HashMap<>();
+		for (Relationship r : getRelationships(characteristicType, activeState)) {
+			//Do we know about this Relationship Group yet?
+			RelationshipGroup group = groups.get(r.getGroupId());
+			if (group == null) {
+				group = new RelationshipGroup(r.getGroupId() , r);
+				groups.put(r.getGroupId(), group);
+			} else {
+				group.getRelationships().add(r);
+			}
+		}
+		return groups.values();
+	}
+	
+
 
 }
