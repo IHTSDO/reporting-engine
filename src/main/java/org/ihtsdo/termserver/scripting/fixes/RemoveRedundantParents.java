@@ -17,14 +17,14 @@ import org.ihtsdo.termserver.scripting.domain.Task;
 import us.monoid.json.JSONObject;
 
 /*
-For SUBST-200, DRUGS-448, DRUGS-451
+For SUBST-200, DRUGS-448, DRUGS-451, DRUGS-466
 Optionally driven by a text file of concepts, check parents for redundancy and - assuming 
 the concept is primitive, retain the more specific parent.
 */
 public class RemoveRedundantParents extends BatchFix implements RF2Constants{
 	
 	String exclude = null; //"105590001"; // |Substance (substance)|
-	String include = "105590001"; // |Substance (substance)|
+	String[] includes = {"373873005", "105590001"}; // Drugs & Substances
 	
 	protected RemoveRedundantParents(BatchFix clone) {
 		super(clone);
@@ -55,7 +55,7 @@ public class RemoveRedundantParents extends BatchFix implements RF2Constants{
 		if (changesMade > 0) {
 			try {
 				String conceptSerialised = gson.toJson(loadedConcept);
-				debug ("Updating state of " + loadedConcept + info);
+				debug ((dryRun ?"Dry run ":"Updating state of ") + loadedConcept + info);
 				if (!dryRun) {
 					tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
 				}
@@ -135,9 +135,11 @@ public class RemoveRedundantParents extends BatchFix implements RF2Constants{
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		//Find primitive concepts with redundant stated parents
 		println ("Identifying concepts to process");
-		Collection<Concept> checkMe;
-		if (include != null) {
-			checkMe = gl.getConcept(include).getDescendents(NOT_SET);
+		Collection<Concept> checkMe = new ArrayList<>();
+		if (includes != null) {
+			for (String include : includes) {
+				checkMe.addAll(gl.getConcept(include).getDescendents(NOT_SET));
+			}
 		} else { 
 			checkMe = gl.getAllConcepts();
 		}
