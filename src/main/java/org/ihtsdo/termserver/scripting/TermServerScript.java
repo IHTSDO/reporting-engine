@@ -415,7 +415,7 @@ public abstract class TermServerScript implements RF2Constants {
 			Concept loadedConcept = gson.fromJson(json, Concept.class);
 			loadedConcept.setLoaded(true);
 			return loadedConcept;
-		} catch (SnowOwlClientException | JSONException | IOException e) {
+		} catch (Exception e) {
 			if (e.getMessage().contains("[404] Not Found")) {
 				debug ("Unable to find " + concept + " on branch " + branchPath);
 				return null;
@@ -434,7 +434,7 @@ public abstract class TermServerScript implements RF2Constants {
 				c = gson.fromJson(json, Concept.class);
 			}
 			return c;
-		} catch (SnowOwlClientException | JSONException | IOException e) {
+		} catch (Exception e) {
 			throw new TermServerScriptException("Failed to update " + c + " in TS due to " + e.getMessage(),e);
 		}
 	}
@@ -449,7 +449,7 @@ public abstract class TermServerScript implements RF2Constants {
 				c = gson.fromJson(json, Concept.class);
 			}
 			return c;
-		} catch (SnowOwlClientException | JSONException | IOException e) {
+		} catch (Exception e) {
 			throw new TermServerScriptException("Failed to create " + c + " in TS due to " + e.getMessage(),e);
 		}
 	}

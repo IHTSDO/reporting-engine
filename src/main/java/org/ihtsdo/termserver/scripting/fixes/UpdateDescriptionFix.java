@@ -1,18 +1,15 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
-import java.io.IOException;
 
 import org.ihtsdo.termserver.scripting.client.SnowOwlClient;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 
 import us.monoid.json.JSONArray;
-import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
 import us.monoid.web.JSONResource;
 
 public class UpdateDescriptionFix {
 
-	public static void main(String[] args) throws SnowOwlClientException, IOException, JSONException {
+	public static void main(String[] args) throws Exception {
 		
 		String url = "http://localhost:8080/";
 		//CONREQEXT-1715

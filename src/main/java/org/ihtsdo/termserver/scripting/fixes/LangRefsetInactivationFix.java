@@ -2,15 +2,12 @@ package org.ihtsdo.termserver.scripting.fixes;
 
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 
 import us.monoid.json.JSONArray;
-import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
 
-import java.io.IOException;
 import java.util.*;
 
 /**
@@ -18,13 +15,13 @@ import java.util.*;
  */
 public class LangRefsetInactivationFix extends TermServerScript implements RF2Constants {
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, JSONException, SnowOwlClientException {
+	public static void main(String[] args) throws Exception {
 		LangRefsetInactivationFix fix = new LangRefsetInactivationFix();
 		fix.init(args);
 		fix.fixAll();
 	}
 		
-	public void fixAll () throws TermServerScriptException, IOException, JSONException {
+	public void fixAll () throws Exception {
 		String validationReportUrl = url + "snowowl/ihtsdo-sca/projects/" + project + "/validation";
 		println(validationReportUrl);
 
@@ -83,7 +80,7 @@ public class LangRefsetInactivationFix extends TermServerScript implements RF2Co
 			} else {
 				println("No issue with " + concept.getConceptId());
 			}
-		}catch (IOException | JSONException | SnowOwlClientException e) {
+		}catch (Exception e) {
 			throw new TermServerScriptException("Failed to fix issue", e);
 		}
 		

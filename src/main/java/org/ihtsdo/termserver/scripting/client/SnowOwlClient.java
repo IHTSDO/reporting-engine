@@ -218,7 +218,7 @@ public class SnowOwlClient {
 			} else {
 				throw new SnowOwlClientException("Unexpected classification state " + status);
 			}
-		} catch (InterruptedException | IOException | JSONException e) {
+		} catch (Exception e) {
 			throw new SnowOwlClientException(e);
 		}
 	}
@@ -240,7 +240,7 @@ public class SnowOwlClient {
 		logger.info("Getting merge review {}", mergeReviewId);
 		try {
 			return resty.json(getMergeReviewUrl(mergeReviewId) + "/details").array();
-		} catch (IOException | JSONException e) {
+		} catch (Exception e) {
 			throw new SnowOwlClientException(e);
 		}
 	}
