@@ -794,8 +794,16 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 	}
 	
 	public Collection<RelationshipGroup> getRelationshipGroups(CharacteristicType characteristicType, ActiveState activeState) {
+		//Include group 0 by default
+		return getRelationshipGroups(characteristicType, activeState, true);
+	}
+	
+	public Collection<RelationshipGroup> getRelationshipGroups(CharacteristicType characteristicType, ActiveState activeState, boolean includeGroup0) {
 		Map<Long, RelationshipGroup> groups = new HashMap<>();
 		for (Relationship r : getRelationships(characteristicType, activeState)) {
+			if (!includeGroup0 && r.getGroupId() == 0) {
+				continue;
+			}
 			//Do we know about this Relationship Group yet?
 			RelationshipGroup group = groups.get(r.getGroupId());
 			if (group == null) {

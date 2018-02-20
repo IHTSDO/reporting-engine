@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.domain;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class RelationshipGroup {
 	List<Relationship> relationships;
@@ -49,6 +50,14 @@ public class RelationshipGroup {
 			issues = new ArrayList<>();
 		}
 		issues.add(c);
+	}
+	
+	@Override
+	public String toString() {
+		return "{ " + relationships.stream()
+				.sorted((r1, r2) -> r1.getType().getFsn().compareTo(r2.getType().getFsn()))
+				.map(i -> i.toString())
+				.collect (Collectors.joining(", ")) + " }";
 	}
 	
 	
