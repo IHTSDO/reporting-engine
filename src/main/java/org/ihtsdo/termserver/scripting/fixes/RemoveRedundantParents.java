@@ -132,6 +132,14 @@ public class RemoveRedundantParents extends BatchFix implements RF2Constants{
 		return new Concept(lineItems[0]);
 	}
 	
+	/*protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
+		//Find primitive concepts with redundant stated parents
+		println ("This concept causing a problem");
+		List<Component> processMe = new ArrayList<>();
+		processMe.add(gl.getConcept("429990006"));
+		return processMe;
+	}*/
+	
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		//Find primitive concepts with redundant stated parents
 		println ("Identifying concepts to process");
