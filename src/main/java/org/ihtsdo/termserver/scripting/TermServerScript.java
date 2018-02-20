@@ -16,14 +16,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -172,7 +170,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected void init(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		
 		if (args.length < 3) {
-			println("Usage: java <TSScriptClass> [-a author] [-b <batchSize>] [-r <restart position>] [-c <authenticatedCookie>] [-d <Y/N>] [-p <projectName>] -f <batch file Location>");
+			println("Usage: java <TSScriptClass> [-a author] [-n <taskSize>] [-r <restart position>] [-c <authenticatedCookie>] [-d <Y/N>] [-p <projectName>] -f <batch file Location>");
 			println(" d - dry run");
 			System.exit(-1);
 		}
