@@ -667,7 +667,7 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 				effectiveTime, 
 				(active?"1":"0"), 
 				moduleId, 
-				SnomedUtils.translateDefnStatus(definitionStatus)};
+				SnomedUtils.translateDefnStatusToSctid(definitionStatus)};
 	}
 	
 	public String[] toRF2Deletion() throws TermServerScriptException {
@@ -677,7 +677,7 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 				(active?"1":"0"), 
 				"1",  //Deletion is active
 				moduleId, 
-				SnomedUtils.translateDefnStatus(definitionStatus)};
+				SnomedUtils.translateDefnStatusToSctid(definitionStatus)};
 	}
 
 	public void setInactivationIndicatorEntries(

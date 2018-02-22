@@ -11,6 +11,8 @@ import java.util.stream.Collectors;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.domain.Relationship;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 /**
  * Reports concepts that are intermediate primitives from point of view of some subhierarchy
@@ -22,7 +24,7 @@ public class IntermediatePrimitivesFromSubHierarchy extends TermServerReport{
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		IntermediatePrimitivesFromSubHierarchy report = new IntermediatePrimitivesFromSubHierarchy();
 		try {
-			report.additionalReportColumns = "ProximalPrimitiveParent, isIntermediate, firstStatedParent";
+			report.additionalReportColumns = "ProximalPrimitiveParent, isIntermediate, StatedAttributes, StatedRoleGroups, InferredRoleGroups, StatedParents";
 			report.init(args);
 			report.loadProjectSnapshot(true);  //just FSNs
 			report.postInit();
@@ -46,19 +48,53 @@ public class IntermediatePrimitivesFromSubHierarchy extends TermServerReport{
 				List<Concept> proxPrimParents = determineProximalPrimitiveParents(c);
 				//Do those parents themselves have sufficiently defined ancestors ie making them intermediate primitives
 				for (Concept thisPPP : proxPrimParents) {
+					boolean isIntermediate = false;
 					if (containsFdConcept(thisPPP.getAncestors(NOT_SET))) {
-						report (c, thisPPP.toString(), "Yes", c.getParents(CharacteristicType.STATED_RELATIONSHIP).get(0).toString());
+						isIntermediate = true;
 						incrementSummaryInformation("Intermediate Primitives reported");
 						incrementSummaryInformation(thisPPP.toString());
 					} else {
 						incrementSummaryInformation("Safely modelled count");
-						report (c, thisPPP.toString(), "No", c.getParents(CharacteristicType.STATED_RELATIONSHIP).get(0).toString());
 					}
+					report (c, thisPPP.toString(), 
+							isIntermediate?"Yes":"No", 
+							Integer.toString(countAttributes(c, CharacteristicType.STATED_RELATIONSHIP)),
+							Integer.toString(c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE, false).size()),
+							Integer.toString(c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE, false).size()),
+							getParentsWithDefnStatus(c)
+							);
 				}
 				incrementSummaryInformation("FD Concepts checked");
 			}
 			incrementSummaryInformation("Concepts checked");
 		}
+	}
+
+	private String getParentsWithDefnStatus(Concept c) {
+		StringBuffer sb = new StringBuffer();
+		boolean isFirst = true;
+		for (Concept p : c.getParents(CharacteristicType.STATED_RELATIONSHIP)) {
+			if (!isFirst) {
+				sb.append(", ");
+			} else { 
+				isFirst = false;
+			}
+			sb.append("[")
+			.append(SnomedUtils.translateDefnStatus(p.getDefinitionStatus()))
+			.append("] ")
+			.append(p.toString());
+		}
+		return sb.toString();
+	}
+
+	private int countAttributes(Concept c, CharacteristicType charType) {
+		int attributes = 0;
+		for (Relationship r : c.getRelationships(charType, ActiveState.ACTIVE)) {
+			if (!r.getType().equals(IS_A)) {
+				attributes++;
+			}
+		}
+		return attributes;
 	}
 
 	private List<Concept> determineProximalPrimitiveParents(Concept c) throws TermServerScriptException {
