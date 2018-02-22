@@ -1,93 +1,42 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
-import org.ihtsdo.termserver.scripting.GraphLoader;
-import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExportType;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExtractType;
 import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
-import com.google.common.collect.HashMultiset;
-import com.google.common.collect.Multiset;
-
 /**
+ * Updated for SUBST-153
  * Reports all concepts that have been defined (stated) using one or more 
  * Fully Defined Parents
  */
-public class FdParentsReport extends TermServerScript{
+public class FdParentsReport extends TermServerReport {
 	
-	Set<Concept> modifiedConcepts = new HashSet<Concept>();
-	List<String> criticalErrors = new ArrayList<String>();
-	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
-	GraphLoader gl = GraphLoader.getGraphLoader();
-	Concept filterOnType = null; 
-	CharacteristicType filterOnCharacteristicType = null;
-	ActiveState filterOnActiveState = null;
-	Multiset<String> allSemanticTags= HashMultiset.create();
-	Multiset<String> semanticTagsReported= HashMultiset.create();
-	Concept subHierarchy = null;
+	String subHierarchy = "105590001"; // |Substance (substance)|
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		FdParentsReport report = new FdParentsReport();
 		try {
+			report.additionalReportColumns = "SemanticTag, DefinitionStatus, FdParent";
 			report.init(args);
 			report.loadProjectSnapshot(true);  //Load FSNs only
 			report.reportFdParents();
-			report.reportStats();
 		} catch (Exception e) {
-			println("Failed to produce Changed Relationship Report due to " + e.getMessage());
+			println("Failed to produce FdParentsReport due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
-			for (String err : report.criticalErrors) {
-				println (err);
-			}
 		}
 	}
-	
-	
-	
-	private void reportStats() {
-		println ("FD Parents per semantic tag\n========================");
-		int totalConcepts = 0;
-		for (Multiset.Entry<String> entry : semanticTagsReported.entrySet()) {
-			String thisSemanticTag = entry.getElement();
-			int reported = entry.getCount();
-			totalConcepts += reported;
-			int total = allSemanticTags.count(thisSemanticTag);
-			float percentage = ((float)reported / (float)total ) * 100;
-			String percStr = String.format("%1.1f", percentage);
-			println (thisSemanticTag + " - " + reported + " / " + total + " = " + percStr + "%.");
-		}
-		println ("Total concepts reported: " + totalConcepts);
-		
-	}
-
-
 
 	private void reportFdParents() throws TermServerScriptException {
 		Collection<Concept> concepts = null;
 		if (subHierarchy != null) {
-			concepts = subHierarchy.getDescendents(NOT_SET);
+			concepts = gl.getConcept(subHierarchy).getDescendents(NOT_SET);
 		} else {
 			concepts = gl.getAllConcepts();
 		}
@@ -95,49 +44,14 @@ public class FdParentsReport extends TermServerScript{
 		for (Concept c : concepts) {
 			if (c.isActive()) {
 				String semanticTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
-				allSemanticTags.add(semanticTag);
 				for (Concept p : c.getParents(CharacteristicType.STATED_RELATIONSHIP)) {
 					if (p.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
-						semanticTagsReported.add(semanticTag);
-						report(c, semanticTag);
-						break;
+						incrementSummaryInformation(semanticTag);
+						report(c, semanticTag, c.getDefinitionStatus().toString(), p.toString());
 					}
 				}
 			}
 		}
 	}
-
-	protected void report (Concept c, String semanticTag) {
-		String line = 	c.getConceptId() + COMMA_QUOTE + 
-						c.getFsn() + QUOTE_COMMA + 
-						c.getEffectiveTime() + COMMA_QUOTE +
-						c.getDefinitionStatus() + QUOTE_COMMA_QUOTE +
-						semanticTag + QUOTE;
-		writeToReportFile(line);
-	}
 	
-	protected void init(String[] args) throws IOException, TermServerScriptException, SnowOwlClientException {
-		super.init(args);
-		
-		print ("Filter for a particular sub-hierarchy? (eg 373873005 or return for none): ");
-		String response = STDIN.nextLine().trim();
-		if (!response.isEmpty()) {
-			subHierarchy = gl.getConcept(response);
-		}
-		
-		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
-		//String reportFilename = "changed_relationships_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
-		String filter = (subHierarchy == null) ? "" : "_" + subHierarchy.getConceptId();
-		String reportFilename = getScriptName() + filter + "_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
-		reportFile = new File(outputDir, reportFilename);
-		reportFile.createNewFile();
-		println ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToReportFile ("Concept, FSN, EffectiveTime, Definition_Status,SemanticTag");
-	}
-
-	@Override
-	protected Concept loadLine(String[] lineItems)
-			throws TermServerScriptException {
-		return null;
-	}
 }
