@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.client;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashSet;
@@ -77,7 +78,7 @@ public class SnowOwlClient {
 	public JSONResource createConcept(JSONObject json, String branchPath) throws SnowOwlClientException {
 		final JSONResource newConcept;
 		try {
-			newConcept = resty.json(getConceptsPath(branchPath), RestyHelper.content(json, SNOWOWL_CONTENT_TYPE));
+			newConcept = resty.json(getConceptBrowserPath(branchPath), RestyHelper.content(json, SNOWOWL_CONTENT_TYPE));
 			logger.info("Created concept " + newConcept.get("conceptId"));
 			return newConcept;
 		} catch (Exception e) {
@@ -94,7 +95,7 @@ public class SnowOwlClient {
 			int tries = 0;
 			while (!updatedOK) {
 				try {
-					response =  resty.json(getConceptsPath(branchPath) + "/" + id, Resty.put(RestyHelper.content(concept, SNOWOWL_CONTENT_TYPE)));
+					response =  resty.json(getConceptBrowserPath(branchPath) + "/" + id, Resty.put(RestyHelper.content(concept, SNOWOWL_CONTENT_TYPE)));
 					updatedOK = true;
 					logger.info("Updated concept " + id);
 				} catch (Exception e) {
@@ -114,13 +115,26 @@ public class SnowOwlClient {
 
 	public JSONResource getConcept(String sctid, String branchPath) throws SnowOwlClientException {
 		try {
-			return resty.json(getConceptsPath(branchPath) + "/" + sctid);
+			return resty.json(getConceptBrowserPath(branchPath) + "/" + sctid);
 		} catch (IOException e) {
 			throw new SnowOwlClientException(e);
 		}
 	}
+	
 
+	public JSONResource getConcepts(String ecl, String branchPath) throws SnowOwlClientException {
+		try {
+			return resty.json(getConceptsPath(branchPath) + "?ecl=" + URLEncoder.encode(ecl, "UTF-8"));
+		} catch (IOException e) {
+			throw new SnowOwlClientException(e);
+		}
+	}
+	
 	private String getConceptsPath(String branchPath) {
+		return url + "/" + branchPath + "/concepts";
+	}
+
+	private String getConceptBrowserPath(String branchPath) {
 		return url + "/browser/" + branchPath + "/concepts";
 	}
 	

@@ -33,6 +33,7 @@ import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExportType;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExtractType;
 import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.domain.ConceptCollection;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.HistoricalAssociation;
 import org.ihtsdo.termserver.scripting.domain.Project;
@@ -146,12 +147,12 @@ public abstract class TermServerScript implements RF2Constants {
 		System.out.println (msg);
 	}
 	
-	public static void print (String msg) {
-		System.out.print (msg);
+	public static void print (Object msg) {
+		System.out.print (msg.toString());
 	}
 	
-	public static void debug (String msg) {
-		System.out.println (msg);
+	public static void debug (Object msg) {
+		System.out.println (msg.toString());
 	}
 	
 	public static void warn (String msg) {
@@ -451,6 +452,17 @@ public abstract class TermServerScript implements RF2Constants {
 			return c;
 		} catch (Exception e) {
 			throw new TermServerScriptException("Failed to create " + c + " in TS due to " + e.getMessage(),e);
+		}
+	}
+	
+	protected List<Concept> findConcepts(String branch, String ecl) throws TermServerScriptException {
+		try {
+				JSONResource response = tsClient.getConcepts(ecl, branch);
+				String json = response.toObject().toString();
+				ConceptCollection collection = gson.fromJson(json, ConceptCollection.class);
+				return collection.getItems();
+		} catch (Exception e) {
+			throw new TermServerScriptException("Failed to recover concepts due to " + e.getMessage(),e);
 		}
 	}
 
