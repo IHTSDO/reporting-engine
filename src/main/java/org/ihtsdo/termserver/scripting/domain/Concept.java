@@ -379,10 +379,17 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 	}
 	
 	public Set<Concept> getDescendents(int depth, CharacteristicType characteristicType, ActiveState activeState) throws TermServerScriptException {
+		return getDescendents(depth, characteristicType, activeState, false);
+	}
+	
+	public Set<Concept> getDescendents(int depth, CharacteristicType characteristicType, ActiveState activeState, boolean includeSelf) throws TermServerScriptException {
 		//Inactive children actually make no sense.  They wouldn't have relationships to be in the 
 		//hierarchy in the first place?!
 		Set<Concept> allDescendents = new HashSet<Concept>();
 		this.populateAllDescendents(allDescendents, depth, characteristicType, activeState);
+		if (includeSelf) {
+			allDescendents.add(this);
+		}
 		return allDescendents;
 	}
 	
