@@ -12,6 +12,7 @@ import org.ihtsdo.termserver.scripting.domain.Relationship;
 /**
  * SUBST-235 A report to identify any concepts which have the same concept as both
  * a parent and the target value of some other attribute 
+ * Update: Added column to say what was inferred - the parent, attribute or both
  */
 public class ConceptsWithAttributesAsParents extends TermServerReport {
 	
@@ -20,7 +21,7 @@ public class ConceptsWithAttributesAsParents extends TermServerReport {
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		ConceptsWithAttributesAsParents report = new ConceptsWithAttributesAsParents();
 		try {
-			report.additionalReportColumns = "CharacteristicType, Attribute";
+			report.additionalReportColumns = "CharacteristicType, Attribute, WhatWasInferred?";
 			report.init(args);
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.postInit();
@@ -56,13 +57,44 @@ public class ConceptsWithAttributesAsParents extends TermServerReport {
 		for (Relationship r : c.getRelationships(type, ActiveState.ACTIVE)) {
 			if (r.getType().equals(attributeType)) {
 				if (parents.contains(r.getTarget())) {
-					report (c, type.toString(), r.toString());
+					if (type.equals(CharacteristicType.STATED_RELATIONSHIP)) {
+						report (c, type.toString(), r.toString());
+					} else {
+						String whatWasInferred = determineWhatWasInferred(c, r.getTarget());
+						report (c, type.toString(), r.toString(), whatWasInferred);
+					}
 					incrementSummaryInformation("Issues found - " + type.toString());
 					issueFound = true;
 				}
 			}
 		}
 		return issueFound;
+	}
+
+
+	private String determineWhatWasInferred(Concept c, Concept value) {
+		String whatWasInferred = "Undetermined";
+		boolean parentStated = false;
+		boolean attributeStated = false;
+		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
+			if (r.getTarget().equals(value)) {
+				if (r.getType().equals(IS_A)) {
+					parentStated = true;
+				} else {
+					attributeStated = true;
+				}
+			}
+		}
+		if (parentStated == false && attributeStated == false) {
+			whatWasInferred = "both";
+		} else {
+			if (parentStated) {
+				whatWasInferred = "attribute";
+			} else if (attributeStated) {
+				whatWasInferred = "parent";
+			}
+		}
+		return whatWasInferred;
 	}
 
 }

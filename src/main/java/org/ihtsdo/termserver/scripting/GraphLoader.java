@@ -122,7 +122,10 @@ public class GraphLoader implements RF2Constants {
 				destination.removeChild(r.getCharacteristicType(),source);
 			}
 		} 
-		source.addRelationship(r);
+		
+		//In the case of importing an Inferred Delta, we could end up adding a relationship instead of replacing
+		//if it has a different SCTID.  We need to check for equality using triple, not SCTID in that case.
+		source.addRelationship(r, isDelta);
 	}
 
 	public Concept getConcept(String sctId) throws TermServerScriptException {

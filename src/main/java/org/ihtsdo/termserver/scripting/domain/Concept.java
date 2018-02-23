@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.domain;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -316,10 +317,22 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 	}
 	
 	public void addRelationship(Relationship r) {
-		//Do we already had a relationship with this id?  Replace if so
-		if (relationships.contains(r)) {
-			relationships.remove(r);
+		addRelationship(r, false);
+	}
+	
+	public void addRelationship(Relationship r, boolean replaceTripleMatch) {
+		//Do we already had a relationship with this id?  Replace if so.
+		//Actually since delta files from the TS could have different SCTIDs
+		//Null out the ID temporarily to force a triple + groupId comparison
+		String id = r.getRelationshipId();
+		if (replaceTripleMatch) {
+			r.setRelationshipId(null);
 		}
+		if (relationships.contains(r)) {
+			//Might match more than one if we have historical overlapping triples
+			relationships.removeAll(Collections.singleton(r));
+		}
+		r.setRelationshipId(id);
 		relationships.add(r);
 	}
 	
