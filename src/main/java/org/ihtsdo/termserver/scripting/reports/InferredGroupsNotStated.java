@@ -25,7 +25,8 @@ public class InferredGroupsNotStated extends TermServerReport {
 	
 	Concept subHierarchy;
 	List<Concept> largeHierarchies = new ArrayList<>();
-	static int LARGE = 6000;
+	static int LARGE = 8000;
+	static int consolidationGrouping = 100;
 	Map<Concept, Integer> instancesPerSubHierarchy = new HashMap<>();
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
@@ -160,7 +161,7 @@ public class InferredGroupsNotStated extends TermServerReport {
 	
 
 	private void listInstancesPerSubHierarchy() throws TermServerScriptException {
-		consolidateList(50);
+		consolidateList(consolidationGrouping);
 		DecimalFormat df = new DecimalFormat("##.#%");
 		for (Map.Entry<Concept, Integer> entry : instancesPerSubHierarchy.entrySet()) {
 			Concept subHierarchy = entry.getKey();
