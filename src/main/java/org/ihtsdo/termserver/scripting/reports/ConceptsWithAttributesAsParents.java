@@ -2,12 +2,14 @@ package org.ihtsdo.termserver.scripting.reports;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 /**
  * SUBST-235 A report to identify any concepts which have the same concept as both
@@ -17,11 +19,12 @@ import org.ihtsdo.termserver.scripting.domain.Relationship;
 public class ConceptsWithAttributesAsParents extends TermServerReport {
 	
 	Concept attributeType;
+	List<Concept> ignoreTypes;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		ConceptsWithAttributesAsParents report = new ConceptsWithAttributesAsParents();
 		try {
-			report.additionalReportColumns = "CharacteristicType, Attribute, WhatWasInferred?";
+			report.additionalReportColumns = "Semtag, CharacteristicType, Attribute, WhatWasInferred?";
 			report.init(args);
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.postInit();
@@ -37,6 +40,9 @@ public class ConceptsWithAttributesAsParents extends TermServerReport {
 
 	private void postInit() throws TermServerScriptException {
 		attributeType = gl.getConcept("738774007"); // |Is modification of (attribute)|)
+		ignoreTypes = new ArrayList<>();
+		ignoreTypes.add(DUE_TO);
+		ignoreTypes.add(PART_OF);
 	}
 
 
@@ -55,13 +61,14 @@ public class ConceptsWithAttributesAsParents extends TermServerReport {
 		boolean issueFound = false;
 		//Now work through the attribute values checking for parents
 		for (Relationship r : c.getRelationships(type, ActiveState.ACTIVE)) {
-			if (r.getType().equals(attributeType)) {
+			if (!r.getType().equals(IS_A) && isOfInterest(r.getType())) {
 				if (parents.contains(r.getTarget())) {
+					String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
 					if (type.equals(CharacteristicType.STATED_RELATIONSHIP)) {
-						report (c, type.toString(), r.toString());
+						report (c, semTag, type.toString(), r.toString());
 					} else {
 						String whatWasInferred = determineWhatWasInferred(c, r.getTarget());
-						report (c, type.toString(), r.toString(), whatWasInferred);
+						report (c, semTag, type.toString(), r.toString(), whatWasInferred);
 					}
 					incrementSummaryInformation("Issues found - " + type.toString());
 					issueFound = true;
@@ -69,6 +76,16 @@ public class ConceptsWithAttributesAsParents extends TermServerReport {
 			}
 		}
 		return issueFound;
+	}
+
+
+	private boolean isOfInterest(Concept type) {
+		if (type.equals(attributeType)) {
+			return true;
+		} else if (ignoreTypes.contains(type)) {
+			return false;
+		}
+		return true;
 	}
 
 
