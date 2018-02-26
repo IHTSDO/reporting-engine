@@ -48,7 +48,6 @@ import com.google.common.io.Files;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
 import us.monoid.web.JSONResource;
 import us.monoid.web.Resty;
@@ -104,8 +103,6 @@ public abstract class TermServerScript implements RF2Constants {
 		gson = gsonBuilder.create();
 	}
 	
-	protected static GraphLoader graph = GraphLoader.getGraphLoader();
-
 	public enum ReportActionType { API_ERROR, DEBUG_INFO, INFO, UNEXPECTED_CONDITION,
 									 CONCEPT_CHANGE_MADE, CONCEPT_ADDED, CONCEPT_INACTIVATED,
 									 DESCRIPTION_CHANGE_MADE, DESCRIPTION_ADDED, DESCRIPTION_REMOVED,

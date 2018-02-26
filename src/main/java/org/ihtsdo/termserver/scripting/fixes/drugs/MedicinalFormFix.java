@@ -43,7 +43,7 @@ public class MedicinalFormFix extends DrugProductFix implements RF2Constants{
 	@Override
 	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
 		int changesMade = 0; //ensureDefinitionStatus(task, concept, DEFINITION_STATUS.FULLY_DEFINED);
-		changesMade += ensureAcceptableParent(task, concept, graph.getConcept(PHARM_BIO_PRODUCT_SCTID));
+		changesMade += ensureAcceptableParent(task, concept, PHARM_BIO_PRODUCT);
 		validateAttributeValues(task, concept, HAS_ACTIVE_INGRED, SUBSTANCE, Cardinality.AT_LEAST_ONE);
 		validatePrefInFSN(task, concept);
 		changesMade += ensureAcceptableFSN(task, concept, wordSubstitution);

@@ -161,7 +161,7 @@ public class AssertionFailureFix extends BatchFix implements RF2Constants{
 
 	@Override
 	protected Concept loadLine(String[] lineItems) throws TermServerScriptException {
-		Concept c = graph.getConcept(lineItems[2]);
+		Concept c = gl.getConcept(lineItems[2]);
 		c.setAssignedAuthor(lineItems[0]);
 		c.setReviewer(lineItems[1]);
 		c.addAssertionFailure(lineItems[3]);

@@ -225,7 +225,7 @@ public class AddEntire extends DeltaGenerator {
 	@Override
 	protected Concept loadLine(String[] lineItems)
 			throws TermServerScriptException {
-		Concept c = graph.getConcept(lineItems[0]);
+		Concept c = gl.getConcept(lineItems[0]);
 		return c;
 	}
 }

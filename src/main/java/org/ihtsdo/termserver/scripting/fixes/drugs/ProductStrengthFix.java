@@ -24,7 +24,7 @@ public class ProductStrengthFix extends BatchFix implements RF2Constants{
 	@Override
 	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
 		int changesMade = ensureDefinitionStatus(task, concept, DefinitionStatus.PRIMITIVE);
-		changesMade += ensureAcceptableParent(task, concept, graph.getConcept(PHARM_BIO_PRODUCT_SCTID));
+		changesMade += ensureAcceptableParent(task, concept, PHARM_BIO_PRODUCT);
 		validateAttributeValues(task, concept, HAS_ACTIVE_INGRED, SUBSTANCE, Cardinality.AT_LEAST_ONE);
 		validateAttributeValues(task, concept, HAS_MANUFACTURED_DOSE_FORM, DRUG_PREPARATION, Cardinality.EXACTLY_ONE);
 		return changesMade;

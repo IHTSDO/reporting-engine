@@ -8,7 +8,8 @@ public interface RF2Constants {
 	final Long SCTID_ROOT_CONCEPT = 138875005L;
 	final Long SCTID_IS_A_CONCEPT = 116680003L;
 	
-	static String PHARM_BIO_PRODUCT_SCTID = "373873005" ; //Pharmaceutical / biologic product (product)
+	static Concept PHARM_BIO_PRODUCT = new Concept ("373873005") ; //Pharmaceutical / biologic product (product)
+	static Concept MEDICINAL_PRODUCT = new Concept ("763158003"); // |Medicinal product (product)|
 	static Concept IS_A =  new Concept ("116680003");  // | Is a (attribute) |
 	static Concept HAS_ACTIVE_INGRED = new Concept ("127489000","Has active ingredient (attribute)");
 	static Concept SUBSTANCE = new Concept("105590001", "Substance (substance)");
