@@ -23,6 +23,7 @@ public class SplitRoleGroupsWithRepeatedAttributes extends BatchFix implements R
 	
 	Concept subHierarchy;
 	List<Concept> attributesToSplit;
+	List<Concept> attributesToIgnore;
 	
 	protected SplitRoleGroupsWithRepeatedAttributes(BatchFix clone) {
 		super(clone);
@@ -52,17 +53,21 @@ public class SplitRoleGroupsWithRepeatedAttributes extends BatchFix implements R
 
 	private void postLoadInit() throws TermServerScriptException {
 		subHierarchy = gl.getConcept("46866001"); // |Fracture of lower limb (disorder)|
-		attributesToSplit = new ArrayList<Concept>();
+		/*attributesToSplit = new ArrayList<Concept>();
 		attributesToSplit.add(gl.getConcept("116676008")); // |Associated morphology (attribute)|"))
 		attributesToSplit.add(gl.getConcept("363698007")); // |Finding site (attribute)|
-		attributesToSplit.add(gl.getConcept("246075003")); // |Causative agent (attribute)|
+		attributesToSplit.add(gl.getConcept("246075003")); // |Causative agent (attribute)|*/
+		
+		attributesToIgnore = new ArrayList<Concept>();
+		attributesToIgnore.add(IS_A);
 	}
 	
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		Set<Concept> concepts = subHierarchy.getDescendents(NOT_SET);
 		List<Component> componentsToProcess = new ArrayList<>();
 		for (Concept c : concepts) {
-			if (hasRepeatedAttributeType(c).size() > 0) {
+			if (hasRepeatedAttributeType(c, CharacteristicType.STATED_RELATIONSHIP).size() > 0 ||
+					hasRepeatedAttributeType(c, CharacteristicType.INFERRED_RELATIONSHIP).size() > 0	) {
 				componentsToProcess.add(c);
 			}
 		}
@@ -70,14 +75,15 @@ public class SplitRoleGroupsWithRepeatedAttributes extends BatchFix implements R
 		return componentsToProcess;
 	}
 	
-	protected Set<RelationshipGroup> hasRepeatedAttributeType (Concept c) {
+	protected Set<RelationshipGroup> hasRepeatedAttributeType (Concept c, CharacteristicType charType) {
 		Set<RelationshipGroup> repeatedAttributeDetected = new HashSet<>();
 		Set<Concept> attributeDetected = new HashSet<>();
-		for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
+		for (RelationshipGroup g : c.getRelationshipGroups(charType, ActiveState.ACTIVE)) {
 			attributeDetected.clear();
 			for (Relationship r : g.getRelationships()) {
 				//Is this an attribute of interest?
-				if (attributesToSplit.contains(r.getType())) {
+				//if (attributesToSplit.contains(r.getType())) {
+				if (!attributesToIgnore.contains(r.getType())) {
 					//Have we already seen it in this group?  Report if so, otherwise record sighting.
 					if (attributeDetected.contains(r.getType())) {
 						repeatedAttributeDetected.add(g);
@@ -119,10 +125,22 @@ public class SplitRoleGroupsWithRepeatedAttributes extends BatchFix implements R
 	}
 
 	private void fixRepeatedAttributesInGroup(Task t, Concept loadedConcept) {
-		for (RelationshipGroup g : hasRepeatedAttributeType(loadedConcept)) {
+		int issuesReported = 0;
+		for (RelationshipGroup g : hasRepeatedAttributeType(loadedConcept, CharacteristicType.STATED_RELATIONSHIP)) {
 			//What types have we noted as an issue here?
 			for (Concept repeatedAttributeType : g.getIssue()) {
 				report(t, loadedConcept, Severity.LOW, ReportActionType.INFO, Long.toString(g.getGroupId()), repeatedAttributeType.toString());
+				issuesReported++;
+			}
+		}
+		//If we didn't find any problems in the Stated view, report the inferred view
+		if (issuesReported == 0) {
+			for (RelationshipGroup g : hasRepeatedAttributeType(loadedConcept, CharacteristicType.INFERRED_RELATIONSHIP)) {
+				//What types have we noted as an issue here?
+				for (Concept repeatedAttributeType : g.getIssue()) {
+					report(t, loadedConcept, Severity.LOW, ReportActionType.INFO, Long.toString(g.getGroupId()), repeatedAttributeType.toString());
+					issuesReported++;
+				}
 			}
 		}
 	}

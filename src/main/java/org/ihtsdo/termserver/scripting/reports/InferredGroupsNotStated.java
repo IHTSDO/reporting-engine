@@ -6,6 +6,7 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -16,6 +17,8 @@ import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.RelationshipGroup;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.ActiveState;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 /**
@@ -25,14 +28,14 @@ public class InferredGroupsNotStated extends TermServerReport {
 	
 	Concept subHierarchy;
 	List<Concept> largeHierarchies = new ArrayList<>();
-	static int LARGE = 8000;
+	static int LARGE = 6000;
 	static int consolidationGrouping = 100;
 	Map<Concept, Integer> instancesPerSubHierarchy = new HashMap<>();
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		InferredGroupsNotStated report = new InferredGroupsNotStated();
 		try {
-			report.additionalReportColumns = "SemTag, UnstatedGroup, nth level ancestor";
+			report.additionalReportColumns = "SemTag, DefnStatus, statedAttribs, infAttribs, UnstatedGroup, ReasonableAncestors";
 			report.init(args);
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.postInit();
@@ -47,8 +50,8 @@ public class InferredGroupsNotStated extends TermServerReport {
 	}
 
 	private void postInit() throws TermServerScriptException {
-		subHierarchy = gl.getConcept("138875005"); // |SNOMED CT Concept (SNOMED RT+CTV3)|
-		//subHierarchy = gl.getConcept("46866001"); // |Fracture of lower limb (disorder)|
+		//subHierarchy = gl.getConcept("138875005"); // |SNOMED CT Concept (SNOMED RT+CTV3)|
+		subHierarchy = gl.getConcept("46866001"); // |Fracture of lower limb (disorder)|
 		
 		//Identify large hierarchies from depth 2 to 6
 		for (Concept hierarchy : ROOT_CONCEPT.getDescendents(4)) {
@@ -85,30 +88,49 @@ public class InferredGroupsNotStated extends TermServerReport {
 			incrementSummaryInformation("Relationship groups reported");
 			String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
 			incrementSummaryInformation(semTag);
-			List<Concept> ancestorsAtDepth = getAncestorAtDepth(c,2);
-			ancestorsAtDepth.stream().forEach(a -> incrementInstanceCount(a, 1));
-			String thirdLevel = ancestorsAtDepth.stream()
+			Set<Concept> reasonableLevel = getReasonableAncestors(c);
+			reasonableLevel.stream().forEach(a -> incrementInstanceCount(a, 1));
+			String reasonableLevelStr = reasonableLevel.stream()
 					.map(a -> a.toString())
 					.collect (Collectors.joining(", "));
-			report (c, semTag, inferredGroup.toString(), thirdLevel);
+			report (c, semTag, 
+					c.getDefinitionStatus(),
+					countAttributes(c, CharacteristicType.STATED_RELATIONSHIP),
+					countAttributes(c, CharacteristicType.INFERRED_RELATIONSHIP),
+					inferredGroup, 
+					reasonableLevelStr);
 		}
 	}
 
-	private List<Concept> getAncestorAtDepth(Concept c, int depth) throws TermServerScriptException {
-		List<Concept> ancestorsAtDepth = new ArrayList<>();
-		if (c.getDepth() >= depth) {
-			for (Concept ancestor : c.getAncestors(NOT_SET)) {
-				if (ancestor.getDepth() == depth) {
-					//If this ancestor is from a large hierarchy, then return the next level down
-					if (largeHierarchies.contains(ancestor)) {
-						return getAncestorAtDepth(c, depth+1);
-					} else {
-						ancestorsAtDepth.add(ancestor);
-					}
-				}
+	/**
+	 * Return the ancestors that are below the level of "Large" hierarchies
+	 * @param c
+	 * @return
+	 * @throws TermServerScriptException
+	 */
+	private Set<Concept> getReasonableAncestors(Concept c) throws TermServerScriptException {
+		Set<Concept> ancestors = new HashSet<>(c.getParents(CharacteristicType.INFERRED_RELATIONSHIP));
+		boolean movementDetected = true;
+		Set<Concept> addAncestors = new HashSet<>();
+		Set<Concept> removeAncestors = new HashSet<>();
+		do {
+			movementDetected= false;
+			addAncestors.clear();
+			removeAncestors.clear();
+ 			for (Concept ancestor : ancestors) {
+				//Check this ancestors parents and see if we can safely go up a level
+ 				for (Concept aParent : ancestor.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
+ 					if (!largeHierarchies.contains(aParent)) {
+ 						addAncestors.add(aParent);
+ 						removeAncestors.add(ancestor);
+ 						movementDetected = true;
+ 					}
+ 				}
 			}
-		}
-		return ancestorsAtDepth;
+			ancestors.addAll(addAncestors);
+			ancestors.removeAll(removeAncestors);
+		} while (movementDetected == true);
+		return ancestors;
 	}
 
 	private boolean groupIsSubsumedBy(RelationshipGroup a, RelationshipGroup b) throws TermServerScriptException {
@@ -192,7 +214,15 @@ public class InferredGroupsNotStated extends TermServerReport {
 		} while (consolidationMade);
 		debug ("After consolidation size = " + instancesPerSubHierarchy.size());
 	}
+	
+	private Integer countAttributes(Concept c, CharacteristicType charType) {
+		int attributeCount = 0;
+		for (Relationship r : c.getRelationships(charType, ActiveState.ACTIVE)) {
+			if (!r.getType().equals(IS_A)) {
+				attributeCount++;
+			}
+		}
+		return attributeCount;
+	}
 
 }
-
-

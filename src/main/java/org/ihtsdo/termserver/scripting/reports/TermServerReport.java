@@ -27,12 +27,12 @@ public abstract class TermServerReport extends TermServerScript {
 		return gl.getConcept(lineItems[0]);
 	}
 	
-	protected void report (Concept c, String... details) {
+	protected void report (Concept c, Object... details) {
 		String line = 	c.getConceptId() + COMMA_QUOTE + 
 						c.getFsn() + QUOTE;
 		
-		for (String detail : details) {
-			 line += COMMA_QUOTE + detail + QUOTE;
+		for (Object detail : details) {
+			 line += COMMA_QUOTE + detail.toString() + QUOTE;
 		}
 		writeToReportFile(line);
 	}
