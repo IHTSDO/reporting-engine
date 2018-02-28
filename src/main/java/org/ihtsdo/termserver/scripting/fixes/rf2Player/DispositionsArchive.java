@@ -66,7 +66,7 @@ public class DispositionsArchive extends Rf2Player implements RF2Constants{
 					task.add(concept);
 				}
 				String bucketName = bucketId.contains("+")?bucketId : gl.getConcept(bucketId).toString();
-				println(bucketName + ": " + task.size());
+				info(bucketName + ": " + task.size());
 			} else {
 				//Clone to prevent editing of collection while looping thorugh it.
 				splitBucketIntoNeighbourhoods(batch, bucketId, new ArrayList<Concept>(dispositionBuckets.get(bucketId)));
@@ -85,22 +85,22 @@ public class DispositionsArchive extends Rf2Player implements RF2Constants{
 		addSummaryInformation("CONCEPTS_NO_DISPOSITION", hasNoDisposition.size());
 		
 		for (Task t : batch.getTasks()) {
-			println (t.getKey() + " (" + t.getComponents().size() + ") " + t.getTaskInfo());
+			info (t.getKey() + " (" + t.getComponents().size() + ") " + t.getTaskInfo());
 		}
 		
-		println ("\n\n" + BREAK);
-		println ("Large Dispositions are: ");
+		info ("\n\n" + BREAK);
+		info ("Large Dispositions are: ");
 		for (String bucketId : dispositionBuckets.keySet()) {
 			Collection<Concept> thisBucket = dispositionBuckets.get(bucketId);
 			if (thisBucket.size() > taskSize) {
-				println (gl.getConcept(bucketId) + ": " + thisBucket.size());
+				info (gl.getConcept(bucketId) + ": " + thisBucket.size());
 			}
 		}
 		
 		filterBatch(batch);
 		
 		for (Task t : batch.getTasks()) {
-			println ("Filtered: " + t.getKey() + " (" + t.getComponents().size() + ") " + t.getTaskInfo());
+			info ("Filtered: " + t.getKey() + " (" + t.getComponents().size() + ") " + t.getTaskInfo());
 		}
 		return batch;
 	}
@@ -132,7 +132,7 @@ public class DispositionsArchive extends Rf2Player implements RF2Constants{
 			//Now see how many other concepts we'll add if we include it's ancestor's descendants
 			//This recursive function will keep calling until the task is full
 			addAncestorContribution(currentFocus, task, remainingConceptsToGroup);
-			println ("Batch of " + initialSize + " split into " + task.getComponents().size());
+			info ("Batch of " + initialSize + " split into " + task.getComponents().size());
 		}
 	}
 

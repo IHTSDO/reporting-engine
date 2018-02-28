@@ -9,15 +9,9 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
-import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
-import org.ihtsdo.termserver.scripting.domain.Batch;
-import org.ihtsdo.termserver.scripting.domain.Component;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Description;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants;
-import org.ihtsdo.termserver.scripting.domain.Task;
+import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
@@ -25,6 +19,7 @@ import us.monoid.json.JSONObject;
 
 /*
  * Combination of DRUGS-363 to remove "/1 each" from preferred terms
+ * DRUGS-461
  */
 public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants{
 	
@@ -42,7 +37,7 @@ public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants{
 			fix.populateEditPanel = false;
 			fix.populateTaskDescription = false;
 			fix.selfDetermining = true;
-			//fix.runStandAlone = true;
+			fix.runStandAlone = true;
 			fix.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			fix.loadProjectSnapshot(false); //Load all descriptions
@@ -50,7 +45,7 @@ public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants{
 			fix.startTimer();
 			Batch batch = fix.formIntoBatch();
 			fix.batchProcess(batch);
-			println ("Processing complete.  See results: " + fix.reportFile.getAbsolutePath());
+			info ("Processing complete.  See results: " + fix.reportFile.getAbsolutePath());
 		} finally {
 			fix.finish();
 		}
@@ -75,7 +70,8 @@ public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants{
 	@Override
 	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
-		int changesMade = normalizeDrugTerms(task, loadedConcept);
+		SnomedUtils.populateConceptType(loadedConcept);
+		int changesMade = ensureDrugTermsConform(task, loadedConcept);
 		if (changesMade > 0) {
 			try {
 				String conceptSerialised = gson.toJson(loadedConcept);
@@ -91,46 +87,31 @@ public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants{
 	}
 
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		Set<Concept> allPotential = GraphLoader.getGraphLoader().getConcept(subHierarchyStr).getDescendents(NOT_SET);
+		debug("Identifying concepts to process");
 		Set<Concept> allAffected = new TreeSet<Concept>();  //We want to process in the same order each time, in case we restart and skip some.
-		println("Identifying concepts to process");
-		for (Concept c : allPotential) {
+		for (Concept c : gl.getConcept(subHierarchyStr).getDescendents(NOT_SET)) {
 			if (exceptions.contains(c.getId())) {
 				report (c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Concept manually listed as an exception");
-			} else if (c.getFsn().startsWith(productPrefix)) {
-				//We're going to skip Clinical Drugs
-				String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
-				switch (semTag) {
-					case "(medicinal product)" : c.setConceptType(ConceptType.MEDICINAL_PRODUCT);
-												 break;
-					case "(medicinal product form)" : c.setConceptType(ConceptType.MEDICINAL_PRODUCT_FORM);
-					 							break;
-					case "(clinical drug)" : c.setConceptType(ConceptType.CLINICAL_DRUG);
-												continue;  //Skip CDs for now.
-					default : c.setConceptType(ConceptType.UNKNOWN);
-				}
-				
-				//Identify either PT contains /1 each OR ingredients in wrong order 
-				//OR contains a + sign
-				Description pt = c.getDescriptions(Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE).get(0);
-				
-				if (pt.getTerm().contains(find) || pt.getTerm().contains(PLUS)) {
+			} else {
+				SnomedUtils.populateConceptType(c);
+				if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT)) {
 					allAffected.add(c);
-					continue;
+					
 				}
+				
 				//Now check for multi ingredients out of order in any term
-				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+				/*for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 					if (d.getTerm().contains(AND)) {
-						String normalized = normalizeMultiIngredientTerm(d.getTerm(), d.getType());
+						String normalized = normalizeMultiIngredientTerm(d.getTerm(), d.getType(), c.getConceptType());
 						if (!normalized.equals(d.getTerm())) {
 							allAffected.add(c);
 							break;
 						}
 					}
-				}
+				}*/
 			}
 		}
-		println ("Identified " + allAffected.size() + " concepts to process");
+		info ("Identified " + allAffected.size() + " concepts to process");
 		return new ArrayList<Component>(allAffected);
 	}
 

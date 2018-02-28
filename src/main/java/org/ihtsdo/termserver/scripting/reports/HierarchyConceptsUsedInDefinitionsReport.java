@@ -40,7 +40,7 @@ public class HierarchyConceptsUsedInDefinitionsReport extends TermServerScript{
 			report.loadProjectSnapshot(true);  //Load FSNs only
 			report.reportConceptsUsedInDefinition();
 		} catch (Exception e) {
-			println("Failed to validate laterality due to " + e.getMessage());
+			info("Failed to validate laterality due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -53,7 +53,7 @@ public class HierarchyConceptsUsedInDefinitionsReport extends TermServerScript{
 		//Set<Concept> sourceConcepts = filterActive(sourceHierarchy.getDescendents(NOT_SET));
 		List<Component> sourceConcepts = processFile();
 		
-		println ("Active source concepts number " + sourceConcepts.size());
+		info ("Active source concepts number " + sourceConcepts.size());
 		Multiset<String> tags = HashMultiset.create();
 		for (Concept thisConcept : filterActive(gl.getAllConcepts())) {
 			//What hierarchy is this concept in?
@@ -85,7 +85,7 @@ public class HierarchyConceptsUsedInDefinitionsReport extends TermServerScript{
 		}
 		
 		for (String tag : tags.elementSet()) {
-			println ("\t" + tag + ": " + tags.count(tag));
+			info ("\t" + tag + ": " + tags.count(tag));
 		}
 	}
 
@@ -137,7 +137,7 @@ public class HierarchyConceptsUsedInDefinitionsReport extends TermServerScript{
 		String reportFilename = getScriptName() + "_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
-		println ("Outputting Report to " + reportFile.getAbsolutePath());
+		info ("Outputting Report to " + reportFile.getAbsolutePath());
 		writeToReportFile ("Concept, FSN, UsedToDefine, InAttribute, Defn_Status");
 		
 		ignoredHierarchies = new HashSet<>();

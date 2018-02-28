@@ -37,25 +37,25 @@ public class RelationshipsWithTarget extends TermServerScript{
 			report.init2(); //Setup needed after data loaded
 			report.reportRelationshipsWithTarget();
 		} catch (Exception e) {
-			println("Failed to produce Changed Relationship Report due to " + e.getMessage());
+			info("Failed to produce Changed Relationship Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
 			for (String err : report.criticalErrors) {
-				println (err);
+				info (err);
 			}
 		}
 	}
 	
 	private void reportRelationshipsWithTarget() {
 		Collection<Concept> allConcepts =  gl.getAllConcepts();
-		println("Examining " + allConcepts.size() + " concepts");
+		info("Examining " + allConcepts.size() + " concepts");
 		int reportedRelationships = 0;
 		for (Concept thisConcept : allConcepts) {
 			if (thisConcept.getFsn() == null) {
 				String msg = "Concept " + thisConcept.getConceptId() + " has no FSN";
 				criticalErrors.add(msg);
-				println(msg);
+				info(msg);
 			}
 			
 			List<Relationship> allConceptRelationships = thisConcept.getRelationships(filterOnCharacteristicType, filterOnActiveState);
@@ -66,8 +66,8 @@ public class RelationshipsWithTarget extends TermServerScript{
 				}
 			}
 		}
-		println("Reported " + reportedRelationships + " active Stated Relationships");
-		println("Graph loader log: \n" + gl.log);
+		info("Reported " + reportedRelationships + " active Stated Relationships");
+		info("Graph loader log: \n" + gl.log);
 	}
 	
 	protected void report (Concept c, Relationship r) {
@@ -133,14 +133,14 @@ public class RelationshipsWithTarget extends TermServerScript{
 		String reportFilename = "relationships_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
-		println ("Outputting Report to " + reportFile.getAbsolutePath());
+		info ("Outputting Report to " + reportFile.getAbsolutePath());
 		writeToReportFile ("Concept, FSN, SemTag, Concept_Active, Concept_Modified, Stated_or_Inferred, Relationship_Active, GroupNum, TypeId, TypeFsn, TargetId, TargetFsn");
 	}
 	
 	public void init2() throws TermServerScriptException {
 		String response = null;
-		println ("Filter target example: 105590001 |Substance (substance)|");
-		println ("Filter target example: 373873005 |Pharmaceutical / biologic product (product)|");
+		info ("Filter target example: 105590001 |Substance (substance)|");
+		info ("Filter target example: 373873005 |Pharmaceutical / biologic product (product)|");
 				
 		while (response == null) {
 			print ("Filter for attribute target descendent or self of: ");
@@ -150,7 +150,7 @@ public class RelationshipsWithTarget extends TermServerScript{
 				Set<Concept> filteringTargets = hierarchy.getDescendents(NOT_SET,CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE);
 				filterOnTarget.addAll(filteringTargets); //descendant
 				filterOnTarget.add(hierarchy);  //and self
-				println ("\nFiltering for target descendents of " + hierarchy + " - " + filteringTargets.size());
+				info ("\nFiltering for target descendents of " + hierarchy + " - " + filteringTargets.size());
 				response = null;
 			}
 		}

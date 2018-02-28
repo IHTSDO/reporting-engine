@@ -380,6 +380,31 @@ public class Description implements RF2Constants, Component{
 		return false;
 	}
 	
+	public boolean isPreferred(String langRefsetSctId) {
+		//Are we working with the JSON map, or RF2 Lang refset entries?
+		if (acceptabilityMap != null) {
+			for (Map.Entry<String, Acceptability> entry: acceptabilityMap.entrySet()) {
+				if (entry.getKey().equals(langRefsetSctId) && 
+					entry.getValue().equals(Acceptability.PREFERRED)) {
+					return true;
+				}
+			}
+			return false;
+		}
+		
+		if (langRefsetEntries != null) {
+			for (LangRefsetEntry entry : langRefsetEntries) {
+				if (entry.getRefsetId().equals(langRefsetSctId) &&
+					entry.getAcceptabilityId().equals(SCTID_PREFERRED_TERM)) {
+					return true;
+				}
+			}
+			return false;
+		}
+		
+		return false;
+	}
+	
 	public void setDirty() {
 		dirty = true;
 	}
@@ -428,6 +453,10 @@ public class Description implements RF2Constants, Component{
 	}
 
 	public Boolean isReleased() {
+		//If the field has not been populated (say because its not been loaded from the TS) then use effectiveTime
+		if (released == null) {
+			return !(effectiveTime == null || effectiveTime.isEmpty());
+		}
 		return released;
 	}
 

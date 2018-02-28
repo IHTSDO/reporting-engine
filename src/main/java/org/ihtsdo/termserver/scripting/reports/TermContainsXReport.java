@@ -30,7 +30,7 @@ public class TermContainsXReport extends TermServerReport {
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.reportDescriptionContainsX();
 		} catch (Exception e) {
-			println("Failed to produce Description Report due to " + e.getMessage());
+			info("Failed to produce Description Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();

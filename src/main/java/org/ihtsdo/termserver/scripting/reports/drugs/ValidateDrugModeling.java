@@ -14,6 +14,7 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
+import org.ihtsdo.termserver.scripting.util.DrugUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 public class ValidateDrugModeling extends TermServerReport{
@@ -31,10 +32,6 @@ public class ValidateDrugModeling extends TermServerReport{
 	Concept boss;
 	Concept hasDisposition;
 	
-	private static final String CD = "(clinical drug)";
-	private static final String MP = "(medicinal product)";
-	private static final String MPF = "(medicinal product form)";
-	
 	private static final String[] badWords = new String[] { "preparation", "agent", "+", "product"};
 	private static final String remodelledDrugIndicator = "Product containing";
 	
@@ -46,7 +43,7 @@ public class ValidateDrugModeling extends TermServerReport{
 			report.validateDrugsModeling();
 			report.validateSubstancesModeling();
 		} catch (Exception e) {
-			println("Failed to produce Druge Model Validation Report due to " + e.getMessage());
+			info("Failed to produce Druge Model Validation Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -55,7 +52,7 @@ public class ValidateDrugModeling extends TermServerReport{
 	
 	private void validateDrugsModeling() throws TermServerScriptException {
 		Set<Concept> subHierarchy = gl.getConcept(drugsHierarchyStr).getDescendents(NOT_SET);
-		String[] drugTypes = new String[] { MPF, CD };
+		ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.CLINICAL_DRUG };
 		long issueCount = 0;
 		for (Concept concept : subHierarchy) {
 			issueCount += validateIngredientsInFSN(concept);
@@ -65,7 +62,7 @@ public class ValidateDrugModeling extends TermServerReport{
 			//issueCount += validateAttributeValueCardinality(concept, activeIngredient);
 			//issueCount += checkForBadWords(concept);  //DRUGS-93
 		}
-		println ("Drugs validation complete.  Detected " + issueCount + " issues.");
+		info ("Drugs validation complete.  Detected " + issueCount + " issues.");
 	}
 	
 	private void validateSubstancesModeling() throws TermServerScriptException {
@@ -75,7 +72,7 @@ public class ValidateDrugModeling extends TermServerReport{
 			//issueCount += validateDisposition(concept);
 			issueCount += checkForBadWords(concept);  //DRUGS-93
 		}
-		println ("Substances validation complete.  Detected " + issueCount + " issues.");
+		info ("Substances validation complete.  Detected " + issueCount + " issues.");
 	}
 	
 	//Ensure that all stated dispositions exist as inferred, and visa-versa
@@ -172,9 +169,9 @@ public class ValidateDrugModeling extends TermServerReport{
 	}
 
 	private int validateStatedVsInferredAttributes(Concept concept,
-			Concept attributeType, String[] drugTypes) {
+			Concept attributeType, ConceptType[] drugTypes) {
 		int issueCount = 0;
-		if (isDrugType(concept, drugTypes)) {
+		if (SnomedUtils.isConceptType(concept, drugTypes)) {
 			List<Relationship> statedAttributes = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
 			List<Relationship> infAttributes = concept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
 			if (statedAttributes.size() != infAttributes.size()) {
@@ -239,35 +236,12 @@ public class ValidateDrugModeling extends TermServerReport{
 
 	private int validateIngredientsInFSN(Concept concept) throws TermServerScriptException {
 		int issueCount = 0;
-		String[] drugTypes = new String[] { MP, /*MPF*/ };
 		
 		//Only check FSN for certain drug types (to be expanded later)
-		if (!isDrugType(concept, drugTypes)) {
+		if (!SnomedUtils.isConceptType(concept, ConceptType.MEDICINAL_PRODUCT)) {
 			return issueCount;
 		}
-		//Get all the ingredients and put them in order
-		List<Relationship> ingredientRels = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, activeIngredient, ActiveState.ACTIVE);
-		Set<String> ingredients = new TreeSet<String>();  //Will naturally sort in alphabetical order
-		for (Relationship r : ingredientRels) {
-			//Need to recover the full concept to have all descriptions, not the partial one stored as the target.
-			Description ingredientFSN = gl.getConcept(r.getTarget().getConceptId()).getFSNDescription();
-			String ingredientName = SnomedUtils.deconstructFSN(ingredientFSN.getTerm())[0];
-			//If the ingredient name is not case sensitive, decaptialize
-			if (!ingredientFSN.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE)) {
-				ingredientName = SnomedUtils.deCapitalize(ingredientName);
-			}
-			ingredients.add(ingredientName);
-		}
-		
-		String proposedFSN = "Product containing ";
-		proposedFSN += StringUtils.join(ingredients, " and ");
-		
-		//Do we need to add the dose form?
-		if (isDrugType(concept, new String[]{MPF})) {
-			proposedFSN += " in " + getDosageForm(concept);
-		}
-		
-		proposedFSN += " " + SnomedUtils.deconstructFSN(concept.getFsn())[1];
+		String proposedFSN = DrugUtils.calculateTermFromIngredients(concept, true, false, US_ENG_LANG_REFSET);
 		
 		if (!concept.getFsn().equals(proposedFSN)) {
 			String issue = "FSN did not match expected pattern";
@@ -300,34 +274,6 @@ public class ValidateDrugModeling extends TermServerReport{
 		return differences;
 	}
 
-	private String getDosageForm(Concept concept) {
-		List<Relationship> doseForms = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, hasManufacturedDoseForm, ActiveState.ACTIVE);
-		if (doseForms.size() == 0) {
-			return "NO STATED DOSE FORM DETECTED";
-		} else if (doseForms.size() > 1) {
-			return "MULTIPLE DOSE FORMS";
-		} else {
-			String doseForm = SnomedUtils.deconstructFSN(doseForms.get(0).getTarget().getFsn())[0];
-			doseForm = SnomedUtils.deCapitalize(doseForm);
-			//Translate known issues
-			switch (doseForm) {
-				case "ocular dosage form": doseForm =  "ophthalmic dosage form";
-					break;
-				case "inhalation dosage form": doseForm = "respiratory dosage form";
-					break;
-				case "cutaneous AND/OR transdermal dosage form" : doseForm = "topical dosage form";
-					break;
-				case "oromucosal AND/OR gingival dosage form" : doseForm = "oropharyngeal dosage form";
-					break;
-			}
-			
-			//In the product we say "doseage form", so make that switch
-			doseForm = doseForm.replace(" dose ", " dosage ");
-			
-			return doseForm;
-		}
-	}
-
 	private int validateAttributeValueCardinality(Concept concept, Concept activeIngredient) throws TermServerScriptException {
 		int issuesEncountered = 0;
 		issuesEncountered += checkforRepeatedAttributeValue(concept, CharacteristicType.INFERRED_RELATIONSHIP, activeIngredient);
@@ -351,17 +297,6 @@ public class ValidateDrugModeling extends TermServerReport{
 		return issues;
 	}
 
-	private boolean isDrugType(Concept concept, String[] drugTypes) {
-		boolean isType = false;
-		for (String drugType : drugTypes) {
-			if (SnomedUtils.deconstructFSN(concept.getFsn())[1].equals(drugType)) {
-				isType = true;
-				break;
-			}
-		}
-		return isType;
-	}
-	
 	protected void init(String[] args) throws TermServerScriptException, SnowOwlClientException {
 		super.init(args);
 		writeToReportFile ("Concept, FSN, SemTag, Issue, Data");

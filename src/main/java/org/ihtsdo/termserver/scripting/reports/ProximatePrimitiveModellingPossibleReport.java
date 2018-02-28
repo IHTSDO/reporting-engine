@@ -40,7 +40,7 @@ public class ProximatePrimitiveModellingPossibleReport extends TermServerScript{
 			report.loadProjectSnapshot(true);  //Load FSNs only
 			report.reportIntermediatePrimitives();
 		} catch (Exception e) {
-			println("Report failed due to " + e.getMessage());
+			info("Report failed due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -59,7 +59,7 @@ public class ProximatePrimitiveModellingPossibleReport extends TermServerScript{
 			Set<Concept> outsideSubHierarchy = hierarchy.getAncestors(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE, true);
 			Set<Concept> allHierarchy = hierarchy.getDescendents(NOT_SET, CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
 			Set<Concept> allActiveFD = filterActiveFD(allHierarchy);
-			println (hierarchy + " - " + allActiveFD.size() + "(FD) / " + allHierarchy.size() + "(Active)");
+			info (hierarchy + " - " + allActiveFD.size() + "(FD) / " + allHierarchy.size() + "(Active)");
 			
 			for (Concept thisConcept : allActiveFD) {
 				boolean alreadyModelledCorrectly = false;
@@ -90,10 +90,10 @@ public class ProximatePrimitiveModellingPossibleReport extends TermServerScript{
 				}
 				report(thisConcept, SnomedUtils.deconstructFSN(thisConcept.getFsn())[1], alreadyModelledCorrectly, fdToTop, immedPrimParent, notImmediatePrimitive);
 			}
-			println ("\tAlready modelled correctly: " + alreadyModelledCorrectlyCount);
-			println ("\tFully defined to subhierarchy top: " + fdToTopCount);
-			println ("\tHas immediate primitive parent: " + immedPrimParentCount);
-			println ("\tNot-immediate primitive ancestor: " + notImmediatePrimitiveCount);
+			info ("\tAlready modelled correctly: " + alreadyModelledCorrectlyCount);
+			info ("\tFully defined to subhierarchy top: " + fdToTopCount);
+			info ("\tHas immediate primitive parent: " + immedPrimParentCount);
+			info ("\tNot-immediate primitive ancestor: " + notImmediatePrimitiveCount);
 		}
 		
 	}
@@ -149,7 +149,7 @@ public class ProximatePrimitiveModellingPossibleReport extends TermServerScript{
 		String reportFilename = getScriptName() + "_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
-		println ("Outputting Report to " + reportFile.getAbsolutePath());
+		info ("Outputting Report to " + reportFile.getAbsolutePath());
 		writeToReportFile ("Concept, FSN, Sem_Tag, alreadyModelledCorrectly, FDToTop, immedPrimParent, notImmediatePrimitive");
 	}
 

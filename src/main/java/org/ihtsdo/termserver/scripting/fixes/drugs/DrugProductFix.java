@@ -311,7 +311,7 @@ public class DrugProductFix extends DrugBatchFix implements RF2Constants{
 				report(null, thisConcept, Severity.CRITICAL, ReportActionType.UNEXPECTED_CONDITION, msg);
 			}
 		}
-		println("Processing " + allConceptsToBeProcessed.size() + " concepts.");
+		info("Processing " + allConceptsToBeProcessed.size() + " concepts.");
 		return reportedNotProcessed;
 	}
 
@@ -353,7 +353,7 @@ public class DrugProductFix extends DrugBatchFix implements RF2Constants{
 			}
 		}
 		if (comboKey.isEmpty()) {
-			println ("*** Unable to find ingredients for " + loadedConcept);
+			info ("*** Unable to find ingredients for " + loadedConcept);
 			comboKey = "NONE";
 		}
 		return comboKey;
@@ -371,7 +371,7 @@ public class DrugProductFix extends DrugBatchFix implements RF2Constants{
 		int changesMade = 0;
 		boolean isMultiIngredient = fsnParts[0].contains(INGREDIENT_SEPARATOR);
 		if (isMultiIngredient) {
-			newFSN = normalizeMultiIngredientTerm(newFSN, DescriptionType.FSN);
+			newFSN = normalizeMultiIngredientTerm(newFSN, DescriptionType.FSN, ConceptType.MEDICINAL_PRODUCT);
 		}
 
 		if (wordSubstitution != null) {
@@ -472,7 +472,7 @@ public class DrugProductFix extends DrugBatchFix implements RF2Constants{
 		boolean demotionPerformed = false;
 		//Normalise the original Description to see if the ingredients look like they've changed
 		String sanitizedTerm = removeUnwantedWords(originalDesc.getTerm(), false);
-		String origDescNorm = normalizeMultiIngredientTerm(sanitizedTerm, originalDesc.getType());
+		String origDescNorm = normalizeMultiIngredientTerm(sanitizedTerm, originalDesc.getType(), ConceptType.MEDICINAL_PRODUCT);
 		boolean isAcetaminophen = origDescNorm.toLowerCase().contains(ACETAMINOPHEN);
 		if (!origDescNorm.equals(newFSN)) {
 			//Demote the original description rather than inactivating it

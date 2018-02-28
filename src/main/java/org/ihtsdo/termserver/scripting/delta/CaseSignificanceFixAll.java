@@ -40,7 +40,7 @@ public class CaseSignificanceFixAll extends DeltaGenerator implements RF2Constan
 	}
 	
 	private void process() throws TermServerScriptException {
-		println("Processing...");
+		info("Processing...");
 		for (Concept c : GraphLoader.getGraphLoader().getAllConcepts()) {
 			if (c.isActive()) {
 				if (exceptions.contains(c.getId())) {

@@ -41,7 +41,7 @@ public class RemoveRedundantParents extends BatchFix implements RF2Constants{
 			fix.loadProjectSnapshot(true); 
 			fix.startTimer();
 			fix.processFile();
-			println ("Processing complete.  See results: " + fix.reportFile.getAbsolutePath());
+			info ("Processing complete.  See results: " + fix.reportFile.getAbsolutePath());
 		} finally {
 			fix.finish();
 		}
@@ -142,7 +142,7 @@ public class RemoveRedundantParents extends BatchFix implements RF2Constants{
 	
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		//Find primitive concepts with redundant stated parents
-		println ("Identifying concepts to process");
+		info ("Identifying concepts to process");
 		Collection<Concept> checkMe = new ArrayList<>();
 		if (includes != null) {
 			for (String include : includes) {
@@ -160,7 +160,7 @@ public class RemoveRedundantParents extends BatchFix implements RF2Constants{
 		nextConcept:
 		for (Concept c : checkMe) {
 			if (c.getDefinitionStatus() == null) {
-				println ("Concept " + c.getConceptId() + " not properly imported");
+				info ("Concept " + c.getConceptId() + " not properly imported");
 			} else {
 				if (c.isActive()) {
 					List<Relationship> parentRels = new ArrayList<Relationship> (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
@@ -178,7 +178,7 @@ public class RemoveRedundantParents extends BatchFix implements RF2Constants{
 				}
 			}
 		}
-		println ("Identified " + processMe.size() + " concepts to process");
+		info ("Identified " + processMe.size() + " concepts to process");
 		return processMe;
 	}
 

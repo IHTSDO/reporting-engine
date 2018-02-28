@@ -33,7 +33,7 @@ public class InactivateDuplicateRelationships extends DeltaGenerator implements 
 		} finally {
 			delta.finish();
 			if (delta.descIdGenerator != null) {
-				println(delta.descIdGenerator.finish());
+				info(delta.descIdGenerator.finish());
 			}
 		}
 	}

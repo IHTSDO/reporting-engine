@@ -23,7 +23,7 @@ public class LangRefsetInactivationFix extends TermServerScript implements RF2Co
 		
 	public void fixAll () throws Exception {
 		String validationReportUrl = url + "snowowl/ihtsdo-sca/projects/" + project + "/validation";
-		println(validationReportUrl);
+		info(validationReportUrl);
 
 		Set<Concept> concepts = new LinkedHashSet<>();
 
@@ -45,14 +45,14 @@ public class LangRefsetInactivationFix extends TermServerScript implements RF2Co
 		}
 
 		if (!concepts.isEmpty()) {
-			println("Concepts in the report that need fixing - " + concepts);
+			info("Concepts in the report that need fixing - " + concepts);
 
 			String branchPath = "MAIN/" + project;
 			for (Concept concept : concepts) {
 				doFix(concept, branchPath);
 			}
 		} else {
-			println("No lang refset failures found in report " + validationReportUrl);
+			info("No lang refset failures found in report " + validationReportUrl);
 		}
 	}
 
@@ -75,10 +75,10 @@ public class LangRefsetInactivationFix extends TermServerScript implements RF2Co
 				}
 			}
 			if (fixed) {
-				println("Fixing " + concept.getConceptId());
+				info("Fixing " + concept.getConceptId());
 				tsClient.updateConcept(conceptObj, branchPath);
 			} else {
-				println("No issue with " + concept.getConceptId());
+				info("No issue with " + concept.getConceptId());
 			}
 		}catch (Exception e) {
 			throw new TermServerScriptException("Failed to fix issue", e);

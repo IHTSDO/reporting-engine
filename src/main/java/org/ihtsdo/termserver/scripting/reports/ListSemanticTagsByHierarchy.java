@@ -31,7 +31,7 @@ public class ListSemanticTagsByHierarchy extends TermServerScript{
 			report.loadProjectSnapshot(true);  //Load FSNs only
 			report.listSemanticTags();
 		} catch (Exception e) {
-			println("Failed to validate laterality due to " + e.getMessage());
+			info("Failed to validate laterality due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -43,13 +43,13 @@ public class ListSemanticTagsByHierarchy extends TermServerScript{
 		Concept rootConcept = gl.getConcept(SCTID_ROOT_CONCEPT.toString());
 		for (Concept topLevel : rootConcept.getDescendents(IMMEDIATE_CHILD)) {
 			Set<Concept> descendents = topLevel.getDescendents(NOT_SET);
-			println (topLevel.toString() + " - total: " + descendents.size());
+			info (topLevel.toString() + " - total: " + descendents.size());
 			Multiset<String> tags = HashMultiset.create();
 			for (Concept thisDescendent : descendents) {
 				tags.add(SnomedUtils.deconstructFSN(thisDescendent.getFsn())[1]);
 			}
 			for (String tag : tags.elementSet()) {
-				println ("\t" + tag + ": " + tags.count(tag));
+				info ("\t" + tag + ": " + tags.count(tag));
 			}
 		}
 	}

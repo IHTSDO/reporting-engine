@@ -53,7 +53,7 @@ public class Delete_US_Issues extends NegativeDeltaGenerator implements RF2Const
 		}
 		
 		if (!fileLoaded) {
-			println ("Failed to concepts affected.  Specify path with 'z' command line parameter");
+			info ("Failed to concepts affected.  Specify path with 'z' command line parameter");
 			System.exit(1);
 		}
 	}
@@ -62,7 +62,7 @@ public class Delete_US_Issues extends NegativeDeltaGenerator implements RF2Const
 		try {
 			File affectedConceptFile = new File(fileName);
 			List<String> lines = Files.readLines(affectedConceptFile, Charsets.UTF_8);
-			println ("Loading selected Concepts from " + fileName);
+			info ("Loading selected Concepts from " + fileName);
 			for (String line : lines) {
 				affectedConcepts.add(gl.getConcept(line));
 			}
@@ -72,7 +72,7 @@ public class Delete_US_Issues extends NegativeDeltaGenerator implements RF2Const
 	}
 
 	private void process() throws TermServerScriptException {
-		println ("Processing concepts to find issues with US acceptability.");
+		info ("Processing concepts to find issues with US acceptability.");
 		//First touch all concepts who were erroneously inactivated to remove those rows
 		//Only if the concept is still 
 		for (Concept concept : affectedConcepts) {

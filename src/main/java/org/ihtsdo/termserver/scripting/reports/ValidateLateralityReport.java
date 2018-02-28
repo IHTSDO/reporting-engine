@@ -37,7 +37,7 @@ public class ValidateLateralityReport extends TermServerScript{
 			List<Component> lateralizable = report.processFile();
 			report.validateLaterality(lateralizable);
 		} catch (Exception e) {
-			println("Failed to validate laterality due to " + e.getMessage());
+			info("Failed to validate laterality due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -77,7 +77,7 @@ public class ValidateLateralityReport extends TermServerScript{
 		String reportFilename = getScriptName() + "_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
-		println ("Outputting Report to " + reportFile.getAbsolutePath());
+		info ("Outputting Report to " + reportFile.getAbsolutePath());
 		writeToReportFile ("Concept, FSN, EffectiveTime, Definition_Status,SemanticTag");
 	}
 

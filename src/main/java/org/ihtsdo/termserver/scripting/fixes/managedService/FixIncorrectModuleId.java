@@ -46,7 +46,7 @@ public class FixIncorrectModuleId extends BatchFix implements RF2Constants{
 			fix.init(args);
 			fix.loadEntriesToFix();
 			fix.process();
-			println ("Processing complete.  See results: " + fix.reportFile.getAbsolutePath());
+			info ("Processing complete.  See results: " + fix.reportFile.getAbsolutePath());
 		} finally {
 			fix.finish();
 		}
@@ -55,7 +55,7 @@ public class FixIncorrectModuleId extends BatchFix implements RF2Constants{
 	protected void init(String[] args) throws TermServerScriptException, IOException {
 		super.init(args);
 		intendedModuleId = project.getMetadata().getDefaultModuleId();
-		println ("Identified correct module to be " + intendedModuleId);
+		info ("Identified correct module to be " + intendedModuleId);
 	}
 	
 	protected void process() {
@@ -115,7 +115,7 @@ public class FixIncorrectModuleId extends BatchFix implements RF2Constants{
 
 	private void loadEntriesToFix() throws IOException, SnowOwlClientException, TermServerScriptException {
 		List<String> lines = Files.readLines(inputFile, Charsets.UTF_8);
-		println ("Loading affected description ids from " + inputFile);
+		info ("Loading affected description ids from " + inputFile);
 		for (String line : lines) {
 			String trimmedLine = line.trim();
 			if (trimmedLine.isEmpty()) {

@@ -22,7 +22,7 @@ import org.apache.commons.validator.routines.checkdigit.VerhoeffCheckDigit;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.CaseSignificance;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.ConceptType;
 
 public class SnomedUtils implements RF2Constants{
 	
@@ -264,7 +264,7 @@ public class SnomedUtils implements RF2Constants{
 			}
 			ZipOutputStream out = new ZipOutputStream(new FileOutputStream(zipFileName));
 			String rootLocation = dirToZip.getAbsolutePath() + File.separator;
-			TermServerScript.println("Creating archive : " + zipFileName + " from files found in " + rootLocation);
+			TermServerScript.info("Creating archive : " + zipFileName + " from files found in " + rootLocation);
 			addDir(rootLocation, dirToZip, out);
 			out.close();
 		} catch (IOException e) {
@@ -663,6 +663,40 @@ public class SnomedUtils implements RF2Constants{
 			return CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE;
 		}
 		return CaseSignificance.CASE_INSENSITIVE;
+	}
+	
+	public static boolean isConceptType(Concept c, ConceptType conceptType) {
+		//Does this concept know it's type?  Assign if not
+		if (c.getConceptType() == null) {
+			populateConceptType(c);
+		}
+		return c.getConceptType().equals(conceptType);
+	}
+	
+	public static boolean isConceptType(Concept c, ConceptType[] conceptTypes) {
+		//Does this concept know it's type?  Assign if not
+		if (c.getConceptType() == null) {
+			populateConceptType(c);
+		}
+		for (ConceptType conceptType : conceptTypes) {
+			if (c.getConceptType().equals(conceptType)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public static void populateConceptType(Concept c) {
+		String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
+		switch (semTag) {
+			case DrugUtils.MP : c.setConceptType(ConceptType.MEDICINAL_PRODUCT);
+										break;
+			case DrugUtils.MPF : c.setConceptType(ConceptType.MEDICINAL_PRODUCT_FORM);
+										break;
+			case DrugUtils.CD : c.setConceptType(ConceptType.CLINICAL_DRUG);
+										break;
+			default : c.setConceptType(ConceptType.UNKNOWN);
+		}
 	}
 
 }

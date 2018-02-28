@@ -19,7 +19,7 @@ public class UnacceptableDescriptions extends TermServerReport{
 		try {
 			report.init(args);
 			report.loadProjectSnapshot(false);  //Load all descriptions
-			println ("Producing active unacceptable terms report...");
+			info ("Producing active unacceptable terms report...");
 			report.checkCaseSignificance();
 		} finally {
 			report.finish();
@@ -43,7 +43,7 @@ public class UnacceptableDescriptions extends TermServerReport{
 				conceptsChecked++;
 			}
 		}
-		println (count + " unacceptable descriptions reported in " + conceptsChecked + " concepts.");
+		info (count + " unacceptable descriptions reported in " + conceptsChecked + " concepts.");
 	}
 	
 	private void report(Concept c, Description d, String effectiveTime, String issue) {

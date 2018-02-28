@@ -42,25 +42,25 @@ public class RelationshipReport extends TermServerScript{
 			report.loadProjectSnapshot(true);  //Load FSNs only
 			report.reportActiveRelationships();
 		} catch (Exception e) {
-			println("Failed to produce Changed Relationship Report due to " + e.getMessage());
+			info("Failed to produce Changed Relationship Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
 			for (String err : report.criticalErrors) {
-				println (err);
+				info (err);
 			}
 		}
 	}
 	
 	private void reportActiveRelationships() {
 		Collection<Concept> conceptsToExamine =  gl.getAllConcepts();  //modifiedConcepts
-		println("Examining " + conceptsToExamine.size() + " concepts");
+		info("Examining " + conceptsToExamine.size() + " concepts");
 		int reportedRelationships = 0;
 		for (Concept thisConcept : conceptsToExamine) {
 			if (thisConcept.getFsn() == null) {
 				String msg = "Concept " + thisConcept.getConceptId() + " has no FSN";
 				criticalErrors.add(msg);
-				println(msg);
+				info(msg);
 			}
 			List<Relationship> allConceptRelationships = thisConcept.getRelationships(filterOnCharacteristicType, filterOnActiveState);
 			
@@ -71,8 +71,8 @@ public class RelationshipReport extends TermServerScript{
 				}
 			}
 		}
-		println("Reported " + reportedRelationships + " active Stated Relationships");
-		println("Graph loader log: \n" + gl.log);
+		info("Reported " + reportedRelationships + " active Stated Relationships");
+		info("Graph loader log: \n" + gl.log);
 	}
 	
 	protected void report (Concept c, Relationship r) {
@@ -143,7 +143,7 @@ public class RelationshipReport extends TermServerScript{
 		String reportFilename = "relationships_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
-		println ("Outputting Report to " + reportFile.getAbsolutePath());
+		info ("Outputting Report to " + reportFile.getAbsolutePath());
 		writeToReportFile ("Concept, FSN, Concept_Active, Concept_Modified, Stated_or_Inferred, Relationship_Active, GroupNum, TypeId, TypeFsn, TargetId, TargetFsn");
 	}
 

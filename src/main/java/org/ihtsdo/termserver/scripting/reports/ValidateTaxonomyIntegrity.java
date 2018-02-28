@@ -35,19 +35,19 @@ public class ValidateTaxonomyIntegrity extends TermServerScript{
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.validateTaxonomyIntegrity();
 		} catch (Exception e) {
-			println("Failed to produce Description Report due to " + e.getMessage());
+			info("Failed to produce Description Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
 			for (String err : report.criticalErrors) {
-				println (err);
+				info (err);
 			}
 		}
 	}
 
 	private void validateTaxonomyIntegrity() throws TermServerScriptException {
 		Collection<Concept> concepts = gl.getAllConcepts();
-		println ("Validating all concepts");
+		info ("Validating all concepts");
 		long issuesEncountered = 0;
 		long conceptsValidated = 0;
 		for (Concept c : concepts) {
@@ -188,7 +188,7 @@ public class ValidateTaxonomyIntegrity extends TermServerScript{
 		String reportFilename = getScriptName() + "_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
-		println ("Outputting Report to " + reportFile.getAbsolutePath());
+		info ("Outputting Report to " + reportFile.getAbsolutePath());
 		writeToReportFile ("Concept, FSN, Issue");
 	}
 

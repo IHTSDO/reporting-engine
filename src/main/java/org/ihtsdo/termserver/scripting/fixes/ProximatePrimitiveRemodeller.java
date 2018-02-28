@@ -49,7 +49,7 @@ public class ProximatePrimitiveRemodeller extends BatchFix implements RF2Constan
 			fix.startTimer();
 			Batch batch = fix.formIntoBatch();
 			fix.batchProcess(batch);
-			println ("Processing complete.  See results: " + fix.reportFile.getAbsolutePath());
+			info ("Processing complete.  See results: " + fix.reportFile.getAbsolutePath());
 		} finally {
 			fix.finish();
 		}
@@ -291,14 +291,14 @@ public class ProximatePrimitiveRemodeller extends BatchFix implements RF2Constan
 		Set<Concept> outsideSubHierarchy = subHierarchy.getAncestors(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE, true);
 		Set<Concept> allDescendants = subHierarchy.getDescendents(NOT_SET);
 		Set<Concept> allActiveFD = filterActiveFD(allDescendants);
-		println (subHierarchy + " - " + allActiveFD.size() + "(FD) / " + allDescendants.size() + "(Active)");
+		info (subHierarchy + " - " + allActiveFD.size() + "(FD) / " + allDescendants.size() + "(Active)");
 		
 		for (Concept thisConcept : allActiveFD) {
 			try {
 				List<Concept>parents = thisConcept.getParents(CharacteristicType.STATED_RELATIONSHIP); 
 				//If we have a single stated parent of disease, then we're modelled correctly
 				if (parents.isEmpty()) {
-					println (thisConcept + " says it has no parents!");
+					info (thisConcept + " says it has no parents!");
 				} else if (!parents.get(0).getConceptId().equals(subHierarchyStr)) {
 					//See if ancestors up to subHierarchy start (remove outside of that) are all fully defined
 					Set<Concept> ancestors = thisConcept.getAncestors(NOT_SET, CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE, false);
@@ -343,7 +343,7 @@ public class ProximatePrimitiveRemodeller extends BatchFix implements RF2Constan
 		Set <Concept> activeConcepts = new HashSet<Concept>();
 		for (Concept thisConcept : fullSet ) {
 			if (thisConcept.getDefinitionStatus() == null) {
-				println(thisConcept + " did not load properly - no definition status.");
+				info(thisConcept + " did not load properly - no definition status.");
 			} else if (thisConcept.isActive() && thisConcept.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
 				activeConcepts.add(thisConcept);
 			}

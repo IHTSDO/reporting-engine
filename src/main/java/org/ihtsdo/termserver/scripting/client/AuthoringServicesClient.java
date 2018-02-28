@@ -109,15 +109,16 @@ public class AuthoringServicesClient {
 	}
 
 	public Project getProject(String projectStr) throws SnowOwlClientException {
-		String json = "unrecovered";
+		JSONResource response = null;
+		String json = null;
 		try {
 			String endPoint = serverUrl + apiRoot + "projects/" + projectStr;
-			JSONResource response = resty.json(endPoint);
+			response = resty.json(endPoint);
 			json = response.toObject().toString();
 			Project projectObj = gson.fromJson(json, Project.class);
 			return projectObj;
 		} catch (Exception e) {
-			throw new SnowOwlClientException("Unable to recover project " + projectStr +". Received: " + json, e);
+			throw new SnowOwlClientException("Unable to recover project " + projectStr +". Received: " + (json==null?response.getHTTPStatus() : json), e);
 		}
 	}
 	

@@ -37,19 +37,19 @@ public class AttributeCardinalityReport extends TermServerScript{
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.runAttributeCardinalityReport();
 		} catch (Exception e) {
-			println("Failed to produce AttributeCardinalityReport Report due to " + e.getMessage());
+			info("Failed to produce AttributeCardinalityReport Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
 			for (String err : report.criticalErrors) {
-				println (err);
+				info (err);
 			}
 		}
 	}
 
 	private void runAttributeCardinalityReport() throws TermServerScriptException {
 		Collection<Concept> subHierarchy = gl.getConcept(subHierarchyStr).getDescendents(NOT_SET);
-		println ("Validating all relationships");
+		info ("Validating all relationships");
 		long issuesEncountered = 0;
 		for (Concept c : subHierarchy) {
 			if (c.isActive()) {
@@ -113,7 +113,7 @@ public class AttributeCardinalityReport extends TermServerScript{
 		String reportFilename = getScriptName() + "_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
-		println ("Outputting Report to " + reportFile.getAbsolutePath());
+		info ("Outputting Report to " + reportFile.getAbsolutePath());
 		writeToReportFile ("Concept, FSN, Issue");
 	}
 

@@ -28,7 +28,7 @@ public class ListAcceptableSynonyms extends TermServerReport {
 			report.conceptsOfInterest = report.processFile();
 			report.listAcceptableSynonyms();
 		} catch (Exception e) {
-			println("Failed to ListAcceptableSynonyms due to " + e.getMessage());
+			info("Failed to ListAcceptableSynonyms due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();

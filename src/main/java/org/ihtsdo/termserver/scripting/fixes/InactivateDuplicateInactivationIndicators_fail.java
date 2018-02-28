@@ -47,7 +47,7 @@ public class InactivateDuplicateInactivationIndicators_fail extends BatchFix imp
 			fix.startTimer();
 			Batch batch = fix.formIntoBatch();
 			fix.batchProcess(batch);
-			println ("Processing complete. See results: " + fix.reportFile.getAbsolutePath());
+			info ("Processing complete. See results: " + fix.reportFile.getAbsolutePath());
 		} finally {
 			fix.finish();
 		}

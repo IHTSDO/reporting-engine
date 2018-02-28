@@ -86,10 +86,10 @@ public class MergeDeltas extends DeltaGenerator {
 						String fileName = p.getFileName().toString();
 						ComponentType compoonentType = Rf2File.getComponentType(fileName, FileType.DELTA);
 						if (compoonentType != null && !fileName.startsWith("._")) {
-							println ("Processing " + fileName);
+							info ("Processing " + fileName);
 							processFixDeltaFile(zis, compoonentType);
 						} else {
-							println ("Skipping unrecognised file: " + fileName);
+							info ("Skipping unrecognised file: " + fileName);
 						}
 					}
 					ze = zis.getNextEntry();

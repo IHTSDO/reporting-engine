@@ -30,7 +30,7 @@ public class IntermediatePrimitivesFromSubHierarchy extends TermServerReport{
 			report.postInit();
 			report.reportIntermediatePrimitives();
 		} catch (Exception e) {
-			println("Failed to produce Description Report due to " + e.getMessage());
+			info("Failed to produce Description Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();

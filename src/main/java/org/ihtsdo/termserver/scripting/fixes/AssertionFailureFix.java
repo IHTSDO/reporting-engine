@@ -150,7 +150,7 @@ public class AssertionFailureFix extends BatchFix implements RF2Constants{
 				report(null, thisConcept, Severity.CRITICAL, ReportActionType.UNEXPECTED_CONDITION, msg);
 			}
 		}
-		println("Processing " + allConceptsToBeProcessed.size() + " concepts.");
+		info("Processing " + allConceptsToBeProcessed.size() + " concepts.");
 		return reportedNotProcessed;
 	}
 

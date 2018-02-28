@@ -75,7 +75,7 @@ public class SnapshotGenerator extends TermServerScript {
 		outputDirName = outputDir.getName();
 		packageRoot = outputDirName + File.separator + "SnomedCT_RF2Release_" + edition +"_";
 		packageDir = packageRoot + today + File.separator;
-		println ("Outputting data to " + packageDir);
+		info ("Outputting data to " + packageDir);
 		initialiseFileHeaders();
 	}
 	

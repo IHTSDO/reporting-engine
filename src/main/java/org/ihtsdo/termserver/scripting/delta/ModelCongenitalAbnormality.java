@@ -47,7 +47,7 @@ public class ModelCongenitalAbnormality extends DeltaGenerator {
 		} finally {
 			delta.finish();
 			if (delta.descIdGenerator != null) {
-				println(delta.descIdGenerator.finish());
+				info(delta.descIdGenerator.finish());
 			}
 		}
 	}
@@ -78,7 +78,7 @@ public class ModelCongenitalAbnormality extends DeltaGenerator {
 		
 		addRelationships.add(createTemplate("370135005","308490002")); //  |Pathological process (attribute)| -> |Pathological developmental process (qualifier value)|
 		
-		println("Finding relationships to add...");
+		info("Finding relationships to add...");
 		Concept valueSubHierarchy = gl.getConcept("21390004"); //|Developmental anomaly (morphologic abnormality)
 		Set<Concept> valuesToMatch = valueSubHierarchy.getDescendents(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE);
 		for (Concept thisValue : valuesToMatch) {
@@ -87,7 +87,7 @@ public class ModelCongenitalAbnormality extends DeltaGenerator {
 	}
 	
 	private void process() throws TermServerScriptException {
-		println("Processing...");
+		info("Processing...");
 		Concept subHierarchy = gl.getConcept(subHierarchyStr);
 		Set<Concept> concepts = subHierarchy.getDescendents(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE);
 		concepts.add(subHierarchy);  //Descendants and Self

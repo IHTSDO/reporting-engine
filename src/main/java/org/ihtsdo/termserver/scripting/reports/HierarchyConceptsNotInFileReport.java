@@ -48,7 +48,7 @@ public class HierarchyConceptsNotInFileReport extends TermServerScript{
 			}
 			report.inHierarchyAndNotFile(conceptsInFile, conceptsInFile2);
 		} catch (Exception e) {
-			println("Failed to validate laterality due to " + e.getMessage());
+			info("Failed to validate laterality due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -60,7 +60,7 @@ public class HierarchyConceptsNotInFileReport extends TermServerScript{
 		//also in the supplied file
 		Concept sourceHierarchy = gl.getConcept(hierarchy);
 		Set<Concept> sourceConcepts = filterActive(sourceHierarchy.getDescendents(NOT_SET));
-		println ("Active source concepts number " + sourceConcepts.size());
+		info ("Active source concepts number " + sourceConcepts.size());
 		
 		for (Concept c : sourceConcepts) {
 			if (!conceptsInFile.contains(c)) {
@@ -119,7 +119,7 @@ public class HierarchyConceptsNotInFileReport extends TermServerScript{
 		String reportFilename = getScriptName() + "_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
-		println ("Outputting Report to " + reportFile.getAbsolutePath());
+		info ("Outputting Report to " + reportFile.getAbsolutePath());
 		writeToReportFile ("Concept, FSN, EffectiveTime, DefinitionStatus," + file2Purpose);
 	}
 

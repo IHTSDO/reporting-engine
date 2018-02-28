@@ -54,9 +54,9 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	protected void init (String[] args) throws IOException, TermServerScriptException, SnowOwlClientException, SnowOwlClientException {
 		super.init(args);
 		
-		println ("Select an environment for secondary checking ");
+		info ("Select an environment for secondary checking ");
 		for (int i=0; i < environments.length; i++) {
-			println ("  " + i + ": " + environments[i]);
+			info ("  " + i + ": " + environments[i]);
 		}
 		
 		print ("Choice: ");
@@ -72,7 +72,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	protected List<Component> processFile() throws TermServerScriptException {
 		allIdentifiedConcepts = super.processFile();
 		addSummaryInformation("Concepts specified", allIdentifiedConcepts.size());
-		println ("Extracting specified concepts");
+		info ("Extracting specified concepts");
 		for (Component thisComponent : allIdentifiedConcepts) {
 			Concept thisConcept = (Concept)thisComponent;
 			if (!thisConcept.isActive()) {

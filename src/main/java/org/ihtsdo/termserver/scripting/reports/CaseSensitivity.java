@@ -20,7 +20,7 @@ public class CaseSensitivity extends TermServerReport{
 		try {
 			report.init(args);
 			report.loadProjectSnapshot(false);  //Load all descriptions
-			println ("Producing case sensitivity report...");
+			info ("Producing case sensitivity report...");
 			report.checkCaseSignificance();
 		} finally {
 			report.finish();

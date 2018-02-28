@@ -48,7 +48,7 @@ public class ReplaceExistingTerms extends BatchFix implements RF2Constants{
 			fix.startTimer();
 			Batch batch = fix.formIntoBatch();
 			fix.batchProcess(batch);
-			println ("Processing complete.  See results: " + fix.reportFile.getAbsolutePath());
+			info ("Processing complete.  See results: " + fix.reportFile.getAbsolutePath());
 		} finally {
 			fix.finish();
 		}
@@ -111,7 +111,7 @@ public class ReplaceExistingTerms extends BatchFix implements RF2Constants{
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		Set<Concept> allPotential = GraphLoader.getGraphLoader().getConcept(subHierarchyStr).getDescendents(NOT_SET);
 		Set<Concept> allAffected = new TreeSet<Concept>();  //We want to process in the same order each time, in case we restart and skip some.
-		println("Identifying concepts to process");
+		info("Identifying concepts to process");
 		for (Concept c : allPotential) {
 			String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
 			if (semTag.equals("(clinical drug)")) {
@@ -123,7 +123,7 @@ public class ReplaceExistingTerms extends BatchFix implements RF2Constants{
 				}
 			}
 		}
-		println ("Identified " + allAffected.size() + " concepts to process");
+		info ("Identified " + allAffected.size() + " concepts to process");
 		return new ArrayList<Component>(allAffected);
 	}
 

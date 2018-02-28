@@ -69,13 +69,13 @@ public class Rf2Player extends BatchFix {
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			loadProjectSnapshot(false);
 			startTimer();
-			println ("Processing delta");
+			info ("Processing delta");
 			processDelta();
-			println ("Grouping changes into tasks");
+			info ("Grouping changes into tasks");
 			Batch batch = formIntoBatch();
-			println ("Batch processing tasks...");
+			info ("Batch processing tasks...");
 			batchProcess(batch);
-			println ("Processing complete.  See results: " + reportFile.getAbsolutePath());
+			info ("Processing complete.  See results: " + reportFile.getAbsolutePath());
 		} catch (Exception e) {
 			throw new TermServerScriptException("Failed to play Rf2Archive", e);
 		} finally {
@@ -96,7 +96,7 @@ public class Rf2Player extends BatchFix {
 						if (rf2File != null) {
 							processRf2Delta(zis, rf2File, fileName);
 						} else {
-							println ("Skipping unrecognised file: " + fileName);
+							info ("Skipping unrecognised file: " + fileName);
 						}
 					}
 					ze = zis.getNextEntry();
@@ -124,7 +124,7 @@ public class Rf2Player extends BatchFix {
 
 	private void processRf2Delta(InputStream is, ComponentType rf2File, String fileName) throws IOException, TermServerScriptException, SnowOwlClientException {
 		//Not putting this in a try resource block otherwise it will close the stream on completion and we've got more to read!
-		println ("Processing " + fileName);
+		info ("Processing " + fileName);
 		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 		String line;
 		boolean isHeader = true;

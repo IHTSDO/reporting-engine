@@ -42,9 +42,9 @@ public class DrugsReTerming extends DrugBatchFix implements RF2Constants{
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			fix.loadProjectSnapshot(false); //Load all descriptions
 			fix.startTimer();
-			println ("Processing started.  See results: " + fix.reportFile.getAbsolutePath());
+			info ("Processing started.  See results: " + fix.reportFile.getAbsolutePath());
 			fix.processFile();
-			println ("Processing complete.  See results: " + fix.reportFile.getAbsolutePath());
+			info ("Processing complete.  See results: " + fix.reportFile.getAbsolutePath());
 		} finally {
 			fix.finish();
 		}

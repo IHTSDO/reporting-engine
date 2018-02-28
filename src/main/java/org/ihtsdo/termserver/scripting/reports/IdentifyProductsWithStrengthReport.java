@@ -58,7 +58,7 @@ public class IdentifyProductsWithStrengthReport extends TermServerScript{
 			List<Component> authorIdentified = report.processFile();
 			report.identifyProductsWithStrength(authorIdentified);
 		} catch (Exception e) {
-			println("Failed to validate laterality due to " + e.getMessage());
+			info("Failed to validate laterality due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -71,7 +71,7 @@ public class IdentifyProductsWithStrengthReport extends TermServerScript{
 		//use a number of criteria to determine if concept is a product with strength.
 		Set<Concept> products = gl.getConcept("373873005").getDescendents(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE);  //|Pharmaceutical / biologic product (product)|
 		Set<Component> remainingFromList = new HashSet<Component> (authorIdentifiedList);
-		println ("Original List: " + authorIdentifiedList.size() + " deduplicated: " + remainingFromList.size());
+		info ("Original List: " + authorIdentifiedList.size() + " deduplicated: " + remainingFromList.size());
 		int bothIdentified = 0;
 		int lexOnly = 0;
 		int authorOnly = 0;
@@ -95,19 +95,19 @@ public class IdentifyProductsWithStrengthReport extends TermServerScript{
 			}
 		}
 		
-		println ("\n\nMatching Counts\n===============");
-		println ("Both agree: " + bothIdentified);
-		println ("Lexical only: " + lexOnly);
-		println ("Author only: " + authorOnly);
+		info ("\n\nMatching Counts\n===============");
+		info ("Both agree: " + bothIdentified);
+		info ("Lexical only: " + lexOnly);
+		info ("Author only: " + authorOnly);
 		
-		println("\nOn list but not active in hierarchy (" + remainingFromList.size() + ") : ");
+		info("\nOn list but not active in hierarchy (" + remainingFromList.size() + ") : ");
 		for (Component lostConcept : remainingFromList) {
-			println ("  " + lostConcept);
+			info ("  " + lostConcept);
 		}
 		
-		println("\n Strength/Unit combinations: " + strengthUnitCombos.elementSet().size());
+		info("\n Strength/Unit combinations: " + strengthUnitCombos.elementSet().size());
 		for (String strengthUnit : strengthUnitCombos.elementSet()) {
-			println ("\t" + strengthUnit + ": " + strengthUnitCombos.count(strengthUnit));
+			info ("\t" + strengthUnit + ": " + strengthUnitCombos.count(strengthUnit));
 		}
 	}
 
@@ -184,7 +184,7 @@ public class IdentifyProductsWithStrengthReport extends TermServerScript{
 		String reportFilename = getScriptName() + "_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
-		println ("Outputting Report to " + reportFile.getAbsolutePath());
+		info ("Outputting Report to " + reportFile.getAbsolutePath());
 		writeToReportFile ("Concept, FSN, EffectiveTime, Definition_Status,lexicalMatch, authorIdentified");
 	}
 

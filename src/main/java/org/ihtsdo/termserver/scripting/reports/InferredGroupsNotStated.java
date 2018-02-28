@@ -42,7 +42,7 @@ public class InferredGroupsNotStated extends TermServerReport {
 			report.runCheckForInferredGroupsNotStated();
 			report.listInstancesPerSubHierarchy();
 		} catch (Exception e) {
-			println("Failed to produce InferredGroupsNotStated Report due to " + e.getMessage());
+			info("Failed to produce InferredGroupsNotStated Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();

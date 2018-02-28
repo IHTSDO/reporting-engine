@@ -41,7 +41,7 @@ public class WordUsageReport extends TermServerScript{
 			report.loadWords();
 			report.reportWordUsage();
 		} catch (Exception e) {
-			println("Failed to produce Description Report due to " + e.getMessage());
+			info("Failed to produce Description Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -50,14 +50,14 @@ public class WordUsageReport extends TermServerScript{
 
 	private void loadWords() throws IOException {
 		List<String> lines = Files.readLines(inputFile, Charsets.UTF_8);
-		println ("Loading words of interest from " + inputFile);
+		info ("Loading words of interest from " + inputFile);
 		for (String line : lines) {
 			wordUsage.put(line, new Usage());
 		}
 	}
 
 	private void reportWordUsage() throws TermServerScriptException {
-		println ("Loading words of interest from " + inputFile);
+		info ("Loading words of interest from " + inputFile);
 		Collection<Concept> concepts = GraphLoader.getGraphLoader().getAllConcepts();
 		for (Map.Entry<String, Usage> wordUsageEntry : wordUsage.entrySet()) {
 			//We'll add a space to the word to ensure we don't have partial matches
@@ -77,7 +77,7 @@ public class WordUsageReport extends TermServerScript{
 					wordUsageEntry.getValue().registerUsage(c);
 				}
 			}
-			println("- " + wordUsageEntry.getValue().instances);
+			info("- " + wordUsageEntry.getValue().instances);
 			report (word, wordUsageEntry.getValue());
 		}
 		addSummaryInformation("Concepts checked", concepts.size());
@@ -97,7 +97,7 @@ public class WordUsageReport extends TermServerScript{
 		String reportFilename = getScriptName() + "_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
-		println ("Outputting Report to " + reportFile.getAbsolutePath());
+		info ("Outputting Report to " + reportFile.getAbsolutePath());
 		writeToReportFile ("Word, Total Instance, Distribution, Examples");
 	}
 

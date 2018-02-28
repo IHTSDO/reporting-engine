@@ -39,12 +39,12 @@ public class LostRelationships extends TermServerScript{
 			report.populateProdRoleDesc();
 			report.detectLostRelationships();
 		} catch (Exception e) {
-			println("Failed to produce Lost Relationship Report due to " + e.getMessage());
+			info("Failed to produce Lost Relationship Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
 			for (String err : report.criticalErrors) {
-				println (err);
+				info (err);
 			}
 		}
 	}
@@ -58,14 +58,14 @@ public class LostRelationships extends TermServerScript{
 		//Work through our set of modified concepts and if a relationship of a type has 
 		//been inactivated, ensure that we have another relationship of the same time 
 		//that replaces it.
-		println("Examining " + modifiedConcepts.size() + " modified concepts");
+		info("Examining " + modifiedConcepts.size() + " modified concepts");
 		nextConcept:
 		for (Concept thisConcept : modifiedConcepts) {
 			//Only working with product concepts
 			if (thisConcept.getFsn() == null) {
 				String msg = "Concept " + thisConcept.getConceptId() + " has no FSN";
 				criticalErrors.add(msg);
-				println(msg);
+				info(msg);
 			} else if (!thisConcept.getFsn().contains("(product)")) {
 				debug ("Skipping " + thisConcept);
 				continue;
@@ -102,7 +102,7 @@ public class LostRelationships extends TermServerScript{
 		String reportFilename = "lost_relationships_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
-		println ("Outputting Report to " + reportFile.getAbsolutePath());
+		info ("Outputting Report to " + reportFile.getAbsolutePath());
 		writeToReportFile ("Concept, FSN, Active, Not Replaced Relationship, ValueIsProdRoleDesc");
 	}
 
@@ -113,17 +113,17 @@ public class LostRelationships extends TermServerScript{
 
 		//Do we already have a copy of the project locally?  If not, recover it.
 		if (!archives[SNAPSHOT].exists()) {
-			println ("Recovering snapshot state of " + project + " from TS (" + env + ")");
+			info ("Recovering snapshot state of " + project + " from TS (" + env + ")");
 			tsClient.export("MAIN/" + project, null, ExportType.MIXED, ExtractType.SNAPSHOT, archives[SNAPSHOT]);
 			initialiseSnowOwlClient();  //re-initialise client to avoid HttpMediaTypeNotAcceptableException.  Cause unknown.
 		}
 		
 		if (!archives[DELTA].exists()) {
-			println ("Recovering delta state of " + project + " from TS (" + env + ")");
+			info ("Recovering delta state of " + project + " from TS (" + env + ")");
 			tsClient.export("MAIN/" + project, transientEffectiveDate, ExportType.UNPUBLISHED, ExtractType.DELTA, archives[DELTA]);
 		}
 		
-		println ("Loading snapshot terms and delta relationships into memory...");
+		info ("Loading snapshot terms and delta relationships into memory...");
 		for (File archive : archives) {
 			try {
 				ZipInputStream zis = new ZipInputStream(new FileInputStream(archive));
@@ -134,22 +134,22 @@ public class LostRelationships extends TermServerScript{
 							Path p = Paths.get(ze.getName());
 							String fileName = p.getFileName().toString();
 							if (fileName.contains("sct2_Description_Snapshot")) {
-								println("Loading Description File.");
+								info("Loading Description File.");
 								gl.loadDescriptionFile(zis, true);  //Load FSNs only
 							}
 							
 							if (fileName.contains("sct2_Concept_Snapshot")) {
-								println("Loading Concept File.");
+								info("Loading Concept File.");
 								gl.loadConceptFile(zis);
 							}
 							
 							if (fileName.contains("sct2_Relationship_Snapshot")) {
-								println("Loading Relationship Snapshot File.");
+								info("Loading Relationship Snapshot File.");
 								gl.loadRelationships(CharacteristicType.INFERRED_RELATIONSHIP, zis, true, false);
 							}
 							
 							if (fileName.contains("sct2_Relationship_Delta")) {
-								println("Loading Relationship Delta File.");
+								info("Loading Relationship Delta File.");
 								modifiedConcepts = gl.getModifiedConcepts(CharacteristicType.INFERRED_RELATIONSHIP, zis);
 							}
 						}

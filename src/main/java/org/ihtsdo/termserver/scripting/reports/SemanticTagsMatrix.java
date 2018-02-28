@@ -32,7 +32,7 @@ public class SemanticTagsMatrix extends TermServerReport{
 			report.outputResultsYX();
 			report.outputWithoutCounts();
 		} catch (Exception e) {
-			println("Failed to validate laterality due to " + e.getMessage());
+			info("Failed to validate laterality due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -49,7 +49,7 @@ public class SemanticTagsMatrix extends TermServerReport{
 		//Work through all top level hierarchies and list semantic tags along with their counts
 		for (int h=0; h < topLevelHierarchies.size(); h++) {
 			Set<Concept> descendents = topLevelHierarchies.get(h).getDescendents(NOT_SET);
-			println (topLevelHierarchies.get(h) + " - total: " + descendents.size());
+			info (topLevelHierarchies.get(h) + " - total: " + descendents.size());
 			String topTag = SnomedUtils.deconstructFSN(topLevelHierarchies.get(h).getFsn())[1];
 			for (Concept c : descendents) {
 				String tag = SnomedUtils.deconstructFSN(c.getFsn())[1];
@@ -68,11 +68,11 @@ public class SemanticTagsMatrix extends TermServerReport{
 	private void checkForAnomoly(String topTag, String thisTag, Concept c) {
 		//Some hierarchies only expect to use a single semantic tag
 		if (topTag.equals("(product)") && thisTag.equals("(substance)")) {
-			println ("Anomaly found in " + topTag + " hierarchy: " + c);
+			info ("Anomaly found in " + topTag + " hierarchy: " + c);
 		}
 		
 		if (topTag.equals("(substance)") && thisTag.equals("(product)")) {
-			println ("Anomaly found in " + topTag + " hierarchy: " + c);
+			info ("Anomaly found in " + topTag + " hierarchy: " + c);
 		}
 	}
 
@@ -97,7 +97,7 @@ public class SemanticTagsMatrix extends TermServerReport{
 		String reportFilename = getScriptName() + "_" + project.getKey().toLowerCase() + "_" + currentTimeStamp + "_reversed_" + env  + ".csv";
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
-		println ("Outputting Report to " + reportFile.getAbsolutePath());
+		info ("Outputting Report to " + reportFile.getAbsolutePath());
 		
 		StringBuffer headerRow = new StringBuffer("Hierarchy");
 		for (String tag : tagToUsageMap.keySet()) {
@@ -134,7 +134,7 @@ public class SemanticTagsMatrix extends TermServerReport{
 					hierarchiesFeatured++;
 				}
 			}
-			println (row.toString());
+			info (row.toString());
 		}
 		
 	}

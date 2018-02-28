@@ -42,7 +42,7 @@ public class ConceptsWithOrTargetsOfAttribute extends TermServerReport {
 			report.populateSourceTargetMaps();
 			report.runRepeatedAttributeValueReport();
 		} catch (Exception e) {
-			println("Failed to produce ConceptsWithOrTargetsOfAttribute Report due to " + e.getMessage());
+			info("Failed to produce ConceptsWithOrTargetsOfAttribute Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();

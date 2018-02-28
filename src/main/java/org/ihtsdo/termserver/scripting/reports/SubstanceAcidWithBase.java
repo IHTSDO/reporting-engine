@@ -40,11 +40,11 @@ public class SubstanceAcidWithBase extends TermServerScript{
 		try {
 			report.init(args);
 			report.loadProjectSnapshot(false);  //Load all descriptions
-			println("Generating Report");
+			info("Generating Report");
 			report.reportAcidsWithBases();
-			println("Processing Complete");
+			info("Processing Complete");
 		} catch (Exception e) {
-			println("Failed to produce SubstanceAcidWithBase Report due to " + e.getMessage());
+			info("Failed to produce SubstanceAcidWithBase Report due to " + e.getMessage());
 			e.printStackTrace();
 		} 
 	}
@@ -171,7 +171,7 @@ public class SubstanceAcidWithBase extends TermServerScript{
 		String reportFilename = getScriptName() + "_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
-		println ("Outputting Report to " + reportFile.getAbsolutePath());
+		info ("Outputting Report to " + reportFile.getAbsolutePath());
 		writeToReportFile ("Acid_SCTID, Acid FSN, Base_SCTID, Base FSN, Notes");
 	}
 

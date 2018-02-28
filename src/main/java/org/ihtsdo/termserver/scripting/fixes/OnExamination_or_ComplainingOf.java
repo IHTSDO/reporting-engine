@@ -48,7 +48,7 @@ public class OnExamination_or_ComplainingOf extends BatchFix implements RF2Const
 			fix.postLoadInit();
 			fix.startTimer();
 			fix.processFile();
-			println ("Processing complete.  See results: " + fix.reportFile.getAbsolutePath());
+			info ("Processing complete.  See results: " + fix.reportFile.getAbsolutePath());
 		} finally {
 			fix.finish();
 		}
@@ -148,7 +148,7 @@ public class OnExamination_or_ComplainingOf extends BatchFix implements RF2Const
 	
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		//Find primitive concepts with redundant stated parents
-		println ("Identifying concepts to process");
+		info ("Identifying concepts to process");
 		Collection<Concept> checkMe = gl.getConcept(targetHierarchy).getDescendents(NOT_SET);
 		List<Component> processMe = new ArrayList<>();
 		
@@ -164,7 +164,7 @@ public class OnExamination_or_ComplainingOf extends BatchFix implements RF2Const
 				print(".");
 			}
 		}
-		println ("Identified " + processMe.size() + " concepts to process");
+		info ("Identified " + processMe.size() + " concepts to process");
 		return processMe;
 	}
 

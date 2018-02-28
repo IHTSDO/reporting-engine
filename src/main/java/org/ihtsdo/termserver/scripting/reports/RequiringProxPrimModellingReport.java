@@ -32,7 +32,7 @@ public class RequiringProxPrimModellingReport extends TermServerReport{
 			boolean reportAll = true; //Report all concepts whether they require remodelling or not
 			report.reportRequiringProxPrimModelling(reportAll);
 		} catch (Exception e) {
-			println("Report failed due to " + e.getMessage());
+			info("Report failed due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -49,7 +49,7 @@ public class RequiringProxPrimModellingReport extends TermServerReport{
 			Concept hierarchy = gl.getConcept(hiearchySCTID);
 			Set<Concept> allHierarchy = hierarchy.getDescendents(NOT_SET, CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
 			Set<Concept> allActiveFD = filterActiveFD(allHierarchy);
-			println (hierarchy + " - " + allActiveFD.size() + "(FD) / " + allHierarchy.size() + "(Active)");
+			info (hierarchy + " - " + allActiveFD.size() + "(FD) / " + allHierarchy.size() + "(Active)");
 			for (Concept thisConcept : allActiveFD) {
 				List<Concept> parents = thisConcept.getParents(CharacteristicType.STATED_RELATIONSHIP);
 				boolean hasFDParent = false;
@@ -81,11 +81,11 @@ public class RequiringProxPrimModellingReport extends TermServerReport{
 					ok++;
 				}
 			}
-			println ("\tHas FD Parent: " + fdParentCount);
-			println ("\tHas no differentia: " + noDifferentiaCount);
-			println ("\tHas multiple parents: " + multipleParentsCount);
-			println ("\tRequires remodelling: " + requireProxPrimModellingCount);
-			println ("\tIs OK: " + ok);
+			info ("\tHas FD Parent: " + fdParentCount);
+			info ("\tHas no differentia: " + noDifferentiaCount);
+			info ("\tHas multiple parents: " + multipleParentsCount);
+			info ("\tRequires remodelling: " + requireProxPrimModellingCount);
+			info ("\tIs OK: " + ok);
 		}
 		
 	}

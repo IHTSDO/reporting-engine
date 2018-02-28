@@ -10,8 +10,10 @@ import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
+import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.Task;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
+import org.ihtsdo.termserver.scripting.util.DrugUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 public abstract class DrugBatchFix extends BatchFix implements RF2Constants{
@@ -53,29 +55,7 @@ public abstract class DrugBatchFix extends BatchFix implements RF2Constants{
 			
 			ensureCaptialization(d);
 			
-			//If any term contains a PLUS sign, flag validation
-			if (replacementTerm.contains(PLUS)) {
-				//Try for the properly spaced version first, so we don't introduce extra spaces.
-				replacementTerm = replacementTerm.replaceAll(PLUS_SPACED_ESCAPED, AND);
-				replacementTerm = replacementTerm.replaceAll(PLUS_ESCAPED, AND);
-			}
-			
-			//If this is the PT, remove any /1 each
-			if (d.isPreferred() && d.getType().equals(DescriptionType.SYNONYM) && replacementTerm.contains(find)) {
-				replacementTerm = replacementTerm.replace(find, replace);
-			}
-			
-			//Remove any unwanted words (PT and FSN only)
-			//Swap known replacements 
-			if (d.isPreferred()) {
-				replacementTerm = removeUnwantedWords(replacementTerm, isFSN);
-				replacementTerm = SnomedUtils.substitute(replacementTerm, wordSubstitution);
-			}
 
-			//Check ingredient order
-			if (replacementTerm.contains(AND)) {
-				replacementTerm = normalizeMultiIngredientTerm(replacementTerm, d.getType());
-			}
 
 			//If this is an FSN, make sure we start with the "Product containing" prefix
 			//and force the semantic tag
@@ -136,6 +116,144 @@ public abstract class DrugBatchFix extends BatchFix implements RF2Constants{
 		}
 		return changesMade;
 	}
+	
+	protected int ensureDrugTermsConform(Task t, Concept c) throws TermServerScriptException {
+		int changesMade = 0;
+		validateUsGbVarianceInIngredients(t,c);
+		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+			boolean isFSN = d.getType().equals(DescriptionType.FSN);
+			boolean isGbPT = d.isPreferred(GB_ENG_LANG_REFSET);
+			boolean isUsPT = d.isPreferred(US_ENG_LANG_REFSET);
+			boolean isPT = (isGbPT || isUsPT);
+			boolean hasUsGbVariance = !(isGbPT && isUsPT);
+			String langRefset = US_ENG_LANG_REFSET;
+			if (isGbPT && hasUsGbVariance) {
+				langRefset = GB_ENG_LANG_REFSET;
+			}
+			
+			//If it's not the PT or FSN, skip it.   We'll delete later if it's not the FSN counterpart
+			if (!isPT && !isFSN) {
+				continue;
+			}
+			
+			//Check the existing term has correct capitalization
+			ensureCaptialization(d);
+			String replacementTerm = DrugUtils.calculateTermFromIngredients(c, isFSN, isPT, langRefset);
+			replacementTerm = checkForVitamins(replacementTerm, d.getTerm());
+			Description replacement = d.clone(null);
+			replacement.setTerm(replacementTerm);
+			
+			//Have we made any changes?  Create a new description if so
+			if (!replacementTerm.equals(d.getTerm())) {
+				changesMade += replaceTerm(t, c, d, replacement);
+			}
+			
+			//If this is the FSN, then we should have another description without the semantic tag as an acceptable term
+			if (isFSN) {
+				Description fsnCounterpart = replacement.clone(null);
+				String counterpartTerm = SnomedUtils.deconstructFSN(fsnCounterpart.getTerm())[0];
+				
+				if (!termAlreadyExists(c, counterpartTerm)) {
+					fsnCounterpart.setTerm(counterpartTerm);
+					report(t, c, Severity.LOW, ReportActionType.DESCRIPTION_ADDED, "FSN Counterpart added: " + counterpartTerm);
+					fsnCounterpart.setType(DescriptionType.SYNONYM);
+					fsnCounterpart.setAcceptabilityMap(createAcceptabilityMap(AcceptabilityMode.ACCEPTABLE_BOTH));
+					c.addDescription(fsnCounterpart);
+				}
+			}
+		}
+		//Now that the FSN is resolved, remove any redundant terms
+		changesMade += removeRedundantTerms(t,c);
+		return changesMade;
+	}
+
+	private int replaceTerm(Task t, Concept c, Description d, Description replacement) {
+		int changesMade = 0;
+		boolean doReplacement = true;
+		if (termAlreadyExists(c, replacement.getTerm())) {
+			//But does it exist inactive?
+			if (termAlreadyExists(c, replacement.getTerm(), ActiveState.INACTIVE)) {
+				reactivateMatchingTerm(t, c, replacement);
+			} else {
+				report(t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Replacement term already exists: '" + replacement.getTerm() + "' inactivating unwanted term only.");
+			}
+			doReplacement = false;
+		}
+		
+		//Has our description been published?  Remove entirely if not
+		boolean isInactivated = removeDescription(c,d);
+		String msg = (isInactivated?"Inactivated desc ":"Deleted desc ") +  d;
+		if (doReplacement) {
+			msg += " in favour of '" + replacement.getTerm() + "'";
+			c.addDescription(replacement);
+		}
+		changesMade++;
+		report(t, c, Severity.LOW, ReportActionType.DESCRIPTION_CHANGE_MADE, msg);
+		return changesMade;
+	}
+
+	private void reactivateMatchingTerm(Task t, Concept c, Description replacement) {
+		//Loop through the inactive terms and reactivate the one that matches the replacement
+		for (Description d : c.getDescriptions(ActiveState.INACTIVE)) {
+			if (d.getTerm().equals(replacement.getTerm())) {
+				d.setActive(true);
+				d.setCaseSignificance(replacement.getCaseSignificance());
+				d.setAcceptabilityMap(replacement.getAcceptabilityMap());
+				report(t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Re-activated inactive term " + d);
+				return;
+			}
+		}
+	}
+
+	private int removeRedundantTerms(Task t, Concept c) {
+		int changesMade = 0;
+		List<Description> allTerms = c.getDescriptions(ActiveState.ACTIVE);
+		for (Description d : allTerms) {
+			boolean isFSN = d.getType().equals(DescriptionType.FSN);
+			if (!isFSN && !d.isPreferred()) {
+				//Is this term the FSN counterpart?  Remove if not
+				String fsnCounterpart = SnomedUtils.deconstructFSN(c.getFsn())[0];
+				if (!d.getTerm().equals(fsnCounterpart)) {
+					boolean isInactivated = removeDescription(c,d);
+					String msg = (isInactivated?"Inactivated redundant desc ":"Deleted redundant desc ") +  d;
+					report(t, c, Severity.LOW, ReportActionType.DESCRIPTION_REMOVED, msg);
+					changesMade++;
+				}
+			}
+		}
+		return changesMade;
+	}
+
+	private boolean removeDescription(Concept c, Description d) {
+		if (d.isReleased()) {
+			d.setActive(false);
+			d.setInactivationIndicator(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
+			return true;
+		} else {
+			c.getDescriptions().remove(d);
+			return false;
+		}
+	}
+
+	private void validateUsGbVarianceInIngredients(Task t, Concept c) throws TermServerScriptException {
+		//If the ingredient names have US/GB variance, the Drug should too.
+		//Do we have two preferred terms?
+		boolean drugVariance = c.getDescriptions(Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE).size() > 1;
+		boolean ingredientVariance = false;
+		//Now check the ingredients
+		for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE)) {
+			Concept ingredient = gl.getConcept(r.getTarget().getConceptId());
+			//Does the ingredient have more than one PT?
+			if (ingredient.getDescriptions(Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE).size() > 1 ) {
+				ingredientVariance = true;
+				break;
+			}
+		}
+		if (drugVariance != ingredientVariance) {
+			String msg = "Drug vs Ingredient US/GB term variance mismatch : Drug=" + drugVariance + " Ingredients=" + ingredientVariance;
+			report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, msg); 
+		}
+	}
 
 	private void ensureCaptialization(Description d) {
 		String term = d.getTerm();
@@ -146,7 +264,7 @@ public abstract class DrugBatchFix extends BatchFix implements RF2Constants{
 		}
 	}
 
-	protected String normalizeMultiIngredientTerm(String term, DescriptionType descriptionType) {
+	protected String normalizeMultiIngredientTerm(String term, DescriptionType descriptionType, ConceptType conceptType) {
 		
 		String semanticTag = "";
 		if (descriptionType.equals(DescriptionType.FSN)) {
@@ -165,17 +283,26 @@ public abstract class DrugBatchFix extends BatchFix implements RF2Constants{
 				term = term.substring(ONLY.length());
 			}*/
 		}
-		
-		String[] parts = deconstructDoseForm(term);
-		term = parts[0];
-		String oneEach = parts[1];
-		String suffix = parts[2]; 
-		term = sortIngredients(term);
+		String oneEach ="";
+		String suffix = "";
+		if (conceptType.equals(ConceptType.MEDICINAL_PRODUCT_FORM)) {
+			String[] parts = deconstructDoseForm(term);
+			term = parts[0];
+			oneEach = parts[1];
+			suffix = parts[2]; 
+			term = sortIngredients(term);
+		}
 		
 		if (!doProductPrefix) {
 			term = SnomedUtils.capitalize(term);
 		}
 		
+		term = checkForVitamins(term, origTerm);
+		
+		return (doProductPrefix?productPrefix:"") + term + oneEach + suffix + semanticTag;
+	}
+
+	private String checkForVitamins(String term, String origTerm) {
 		//See if we've accidentally made vitamin letters lower case and switch back
 		for (String vitamin : vitamins) {
 			if (origTerm.contains(vitamin)) {
@@ -190,8 +317,7 @@ public abstract class DrugBatchFix extends BatchFix implements RF2Constants{
 				}
 			}
 		}
-		
-		return (doProductPrefix?productPrefix:"") + term + oneEach + suffix + semanticTag;
+		return term;
 	}
 
 	private String sortIngredients(String term) {
@@ -215,10 +341,13 @@ public abstract class DrugBatchFix extends BatchFix implements RF2Constants{
 		return term;
 	}
 	
-
 	protected boolean termAlreadyExists(Concept concept, String newTerm) {
+		return termAlreadyExists(concept, newTerm, ActiveState.BOTH);
+	}
+
+	protected boolean termAlreadyExists(Concept concept, String newTerm, ActiveState activeState) {
 		boolean termAlreadyExists = false;
-		for (Description description : concept.getDescriptions()) {
+		for (Description description : concept.getDescriptions(activeState)) {
 			if (description.getTerm().equals(newTerm)) {
 				termAlreadyExists = true;
 			}

@@ -35,7 +35,7 @@ public class PreferredTermsFromFile extends TermServerScript{
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.reportPreferredTerms();
 		} catch (Exception e) {
-			println("Failed to produce Description Report due to " + e.getMessage());
+			info("Failed to produce Description Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -74,7 +74,7 @@ public class PreferredTermsFromFile extends TermServerScript{
 		}
 		
 		if (!fileLoaded) {
-			println ("Failed to concept filter file to load.  Specify path with 'z' command line parameter");
+			info ("Failed to concept filter file to load.  Specify path with 'z' command line parameter");
 			System.exit(1);
 		}
 
@@ -82,7 +82,7 @@ public class PreferredTermsFromFile extends TermServerScript{
 		String reportFilename = getScriptName() + /*filter +*/ "_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
-		println ("Outputting Report to " + reportFile.getAbsolutePath());
+		info ("Outputting Report to " + reportFile.getAbsolutePath());
 		writeToReportFile ("Concept, FSN, Desc_SCTID, Term, USPref, GBPref");
 	}
 
@@ -90,7 +90,7 @@ public class PreferredTermsFromFile extends TermServerScript{
 		try {
 			File nationalTerms = new File(fileName);
 			List<String> lines = Files.readLines(nationalTerms, Charsets.UTF_8);
-			println ("Loading selected Concepts from " + fileName);
+			info ("Loading selected Concepts from " + fileName);
 			conceptFilter = new ArrayList<Concept>();
 			for (String line : lines) {
 				conceptFilter.add(gl.getConcept(line));

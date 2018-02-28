@@ -41,33 +41,33 @@ public class SubHierarchyConceptsReport extends TermServerScript{
 			report.loadProjectSnapshot(true);  //Load FSNs only
 			report.reportConcepts();
 		} catch (Exception e) {
-			println("Failed to produce Report due to " + e.getMessage());
+			info("Failed to produce Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
 			for (String err : report.criticalErrors) {
-				println (err);
+				info (err);
 			}
 		}
 	}
 	
 	private void reportConcepts() throws TermServerScriptException {
 		Collection<Concept> conceptsToExamine = subHierarchy.getDescendents(NOT_SET);
-		println("Examining " + conceptsToExamine.size() + " concepts");
+		info("Examining " + conceptsToExamine.size() + " concepts");
 		int reportedConcepts = 0;
 		for (Concept thisConcept : conceptsToExamine) {
 			if (SnomedUtils.conceptHasActiveState(thisConcept, filterOnActiveState)) {
 				if (thisConcept.getFsn() == null) {
 					String msg = "Concept " + thisConcept.getConceptId() + " has no FSN";
 					criticalErrors.add(msg);
-					println(msg);
+					info(msg);
 				}
 				report (thisConcept);
 				reportedConcepts++;
 			}
 		}
-		println("Reported " + reportedConcepts + " concepts in active state: " + filterOnActiveState);
-		println("Graph loader log: \n" + gl.log);
+		info("Reported " + reportedConcepts + " concepts in active state: " + filterOnActiveState);
+		info("Graph loader log: \n" + gl.log);
 	}
 	
 	protected void report (Concept c) {
@@ -118,7 +118,7 @@ public class SubHierarchyConceptsReport extends TermServerScript{
 		String reportFilename = "concepts_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
-		println ("Outputting Report to " + reportFile.getAbsolutePath());
+		info ("Outputting Report to " + reportFile.getAbsolutePath());
 		writeToReportFile ("Concept, FSN, Concept_Active, Concept_Modified");
 	}
 

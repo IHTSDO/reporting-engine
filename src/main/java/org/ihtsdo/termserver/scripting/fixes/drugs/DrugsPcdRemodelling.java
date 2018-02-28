@@ -58,9 +58,9 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 			fix.determineProcessingMode(args);
 			//We won't include the project export in our timings
 			fix.startTimer();
-			println ("Processing started.  See results: " + fix.reportFile.getAbsolutePath());
+			info ("Processing started.  See results: " + fix.reportFile.getAbsolutePath());
 			fix.processFile();
-			println ("Processing complete.  See results: " + fix.reportFile.getAbsolutePath());
+			info ("Processing complete.  See results: " + fix.reportFile.getAbsolutePath());
 		} finally {
 			fix.finish();
 		}
@@ -87,10 +87,10 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 			} else {
 				throw new TermServerScriptException("Input file type not recognised - " + columnCount + " columns");
 			}
-			println ("Processing VMPF - Description updates only.");
+			info ("Processing VMPF - Description updates only.");
 		} else {
 			mode = Mode.VCD;
-			println ("Processing VCD - Description and relationship updates.");
+			info ("Processing VCD - Description and relationship updates.");
 			loadRelationshipFile(fileName);
 		}
 	}
@@ -101,7 +101,7 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 			File relationshipFile = new File(fileName);
 			List<String> lines = Files.readLines(relationshipFile, Charsets.UTF_8);
 			lines.remove(0); //Delete the header line
-			println ("Loading relationships from " + fileName);
+			info ("Loading relationships from " + fileName);
 
 			for (String line : lines) {
 				String[] columns = line.split(TAB);

@@ -32,7 +32,7 @@ public class IntermediatePrimitivesReport extends TermServerReport{
 			report.getTopLevelHierarchies();
 			report.reportIntermediatePrimitives();
 		} catch (Exception e) {
-			println("Failed to produce Description Report due to " + e.getMessage());
+			info("Failed to produce Description Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -53,7 +53,7 @@ public class IntermediatePrimitivesReport extends TermServerReport{
 
 	private void reportIntermediatePrimitives() throws TermServerScriptException {
 		int rowsReported = 0;
-		println ("Scanning all concepts...");
+		info ("Scanning all concepts...");
 		//Work through all top level hierarchies and list semantic tags along with their counts
 		for (Concept thisHierarchy : topLevelHierarchies) {
 			int hierarchyIpCount = 0;
@@ -63,7 +63,7 @@ public class IntermediatePrimitivesReport extends TermServerReport{
 					hierarchyIpCount += checkConceptForIntermediatePrimitive(c);
 				}
 			}
-			println(simpleName(thisHierarchy.getConceptId()) + ": " + hierarchyIpCount + " / " + descendents.size());
+			info(simpleName(thisHierarchy.getConceptId()) + ": " + hierarchyIpCount + " / " + descendents.size());
 			rowsReported += hierarchyIpCount;
 		}
 		addSummaryInformation("Concepts checked", gl.getAllConcepts().size());

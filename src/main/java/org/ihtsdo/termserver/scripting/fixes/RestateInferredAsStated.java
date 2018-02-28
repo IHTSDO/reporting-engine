@@ -53,7 +53,7 @@ public class RestateInferredAsStated extends BatchFix implements RF2Constants{
 			fix.startTimer();
 			Batch batch = fix.formIntoBatch();
 			fix.batchProcess(batch);
-			println ("Processing complete.  See results: " + fix.reportFile.getAbsolutePath());
+			info ("Processing complete.  See results: " + fix.reportFile.getAbsolutePath());
 		} finally {
 			fix.finish();
 		}
@@ -66,7 +66,7 @@ public class RestateInferredAsStated extends BatchFix implements RF2Constants{
 		attributesOfInterest.add(gl.getConcept("411116001")); //Has manufactured dose form (attribute)
 		
 		List<String> lines = Files.readLines(inputFile, Charsets.UTF_8);
-		println ("Loading concepts agreed for change from " + inputFile);
+		info ("Loading concepts agreed for change from " + inputFile);
 		for (String line : lines) {
 			conceptsAgreedToChange.add(gl.getConcept(line.trim()));
 		}
@@ -148,7 +148,7 @@ public class RestateInferredAsStated extends BatchFix implements RF2Constants{
 				}
 			}
 		}
-		println (allAffected.size() + " concepts affected.");
+		info (allAffected.size() + " concepts affected.");
 		return new ArrayList<Component>(allAffected);
 	}
 
@@ -159,7 +159,7 @@ public class RestateInferredAsStated extends BatchFix implements RF2Constants{
 		for (Relationship inferred : thisConcept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
 			if (attributesOfInterest.contains(inferred.getType())) {
 				if (inferred.getGroupId() != 0) {
-					println ("Relationship being compared is not group 0: " + inferred);
+					info ("Relationship being compared is not group 0: " + inferred);
 				}
 				boolean statedMatchFound = false;
 				for (Relationship stated : thisConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {

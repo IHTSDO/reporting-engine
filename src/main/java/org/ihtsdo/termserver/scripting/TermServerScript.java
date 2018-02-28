@@ -140,20 +140,20 @@ public abstract class TermServerScript implements RF2Constants {
 															"https://prod-ms-authoring.ihtsdotools.org/",
 	};
 	
-	public static void println (String msg) {
+	public static void info (String msg) {
 		System.out.println (msg);
-	}
-	
-	public static void print (Object msg) {
-		System.out.print (msg.toString());
 	}
 	
 	public static void debug (Object msg) {
 		System.out.println (msg.toString());
 	}
 	
-	public static void warn (String msg) {
-		System.out.println ("*** " + msg);
+	public static void warn (Object msg) {
+		System.out.println ("*** " + msg.toString());
+	}
+	
+	public static void print (Object msg) {
+		System.out.print (msg.toString());
 	}
 	
 	public static String getMessage (Exception e) {
@@ -168,8 +168,8 @@ public abstract class TermServerScript implements RF2Constants {
 	protected void init(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		
 		if (args.length < 3) {
-			println("Usage: java <TSScriptClass> [-a author] [-n <taskSize>] [-r <restart position>] [-c <authenticatedCookie>] [-d <Y/N>] [-p <projectName>] -f <batch file Location>");
-			println(" d - dry run");
+			info("Usage: java <TSScriptClass> [-a author] [-n <taskSize>] [-r <restart position>] [-c <authenticatedCookie>] [-d <Y/N>] [-p <projectName>] -f <batch file Location>");
+			info(" d - dry run");
 			System.exit(-1);
 		}
 		boolean isProjectName = false;
@@ -228,15 +228,15 @@ public abstract class TermServerScript implements RF2Constants {
 				if (possibleDir.exists() && possibleDir.isDirectory() && possibleDir.canRead()) {
 					outputDir = possibleDir;
 				} else {
-					println ("Unable to use directory " + possibleDir.getAbsolutePath() + " for output.");
+					info ("Unable to use directory " + possibleDir.getAbsolutePath() + " for output.");
 				}
 				isOutputDir = false;
 			}
 		}
 		
-		println ("Select an environment ");
+		info ("Select an environment ");
 		for (int i=0; i < environments.length; i++) {
-			println ("  " + i + ": " + environments[i]);
+			info ("  " + i + ": " + environments[i]);
 		}
 		
 		print ("Choice: ");
@@ -285,7 +285,7 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 
 		if (restartPosition == 0) {
-			println ("Restart position given as 0 but line numbering starts from 1.  Starting at line 1.");
+			info ("Restart position given as 0 but line numbering starts from 1.  Starting at line 1.");
 			restartPosition = 1;
 		}
 		
@@ -300,14 +300,14 @@ public abstract class TermServerScript implements RF2Constants {
 			}
 		} else {
 			if (runStandAlone) {
-				println ("Running stand alone. Guessing project path to be MAIN/" + projectName);
+				info ("Running stand alone. Guessing project path to be MAIN/" + projectName);
 				project.setBranchPath("MAIN/" + projectName);
 			} else {
 				project = scaClient.getProject(projectName);
 			}
 			project.setKey(projectName);
 		}
-		println("Full path for projected determined to be: " + project.getBranchPath());
+		info("Full path for projected determined to be: " + project.getBranchPath());
 	}
 	
 	protected void initialiseSnowOwlClient() {
@@ -329,10 +329,10 @@ public abstract class TermServerScript implements RF2Constants {
 					throw new TermServerScriptException("Snapshot export aborted.");
 				}
 			}
-			println ("Recovering current state of " + project + " from TS (" + env + ")");
+			info ("Recovering current state of " + project + " from TS (" + env + ")");
 			tsClient.export(project.getBranchPath(), null, ExportType.MIXED, ExtractType.SNAPSHOT, snapShotArchive);
 		}
-		println ("Loading snapshot archive contents into memory...");
+		info ("Loading snapshot archive contents into memory...");
 		loadArchive(snapShotArchive, fsnOnly, "Snapshot");
 	}
 	
@@ -347,35 +347,35 @@ public abstract class TermServerScript implements RF2Constants {
 						Path p = Paths.get(ze.getName());
 						String fileName = p.getFileName().toString();
 						if (fileName.contains("sct2_Concept_" + fileType )) {
-							println("Loading Concept " + fileType + " file.");
+							info("Loading Concept " + fileType + " file.");
 							gl.loadConceptFile(zis);
 						} else if (fileName.contains("sct2_Relationship_" + fileType )) {
-							println("Loading Relationship " + fileType + " file.");
+							info("Loading Relationship " + fileType + " file.");
 							gl.loadRelationships(CharacteristicType.INFERRED_RELATIONSHIP, zis, true, isDelta);
-							println("Calculating concept depth...");
+							info("Calculating concept depth...");
 							gl.populateHierarchyDepth(ROOT_CONCEPT, 0);
 						} else if (fileName.contains("sct2_StatedRelationship_" + fileType )) {
-							println("Loading StatedRelationship " + fileType + " file.");
+							info("Loading StatedRelationship " + fileType + " file.");
 							gl.loadRelationships(CharacteristicType.STATED_RELATIONSHIP, zis, true, isDelta);
 						} else if (fileName.contains("sct2_Description_" + fileType )) {
-							println("Loading Description " + fileType + " file.");
+							info("Loading Description " + fileType + " file.");
 							gl.loadDescriptionFile(zis, fsnOnly);
 						} else if (fileName.contains("der2_cRefset_ConceptInactivationIndicatorReferenceSet" + fileType )) {
-							println("Loading Concept Inactivation Indicator " + fileType + " file.");
+							info("Loading Concept Inactivation Indicator " + fileType + " file.");
 							gl.loadInactivationIndicatorFile(zis);
 						}  else if (fileName.contains("der2_cRefset_DescriptionInactivationIndicatorReferenceSet" + fileType )) {
-							println("Loading Description Inactivation Indicator " + fileType + " file.");
+							info("Loading Description Inactivation Indicator " + fileType + " file.");
 							gl.loadInactivationIndicatorFile(zis);
 						} else if (fileName.contains("der2_cRefset_AttributeValue" + fileType )) {
-							println("Loading Concept/Description Inactivation Indicators " + fileType + " file.");
+							info("Loading Concept/Description Inactivation Indicators " + fileType + " file.");
 							gl.loadInactivationIndicatorFile(zis);
 						}  else if (fileName.contains("Association" + fileType ) || fileName.contains("AssociationReferenceSet" + fileType )) {
-							println("Loading Historical Association File: " + fileName);
+							info("Loading Historical Association File: " + fileName);
 							gl.loadHistoricalAssociationFile(zis);
 						}
 						//If we're loading all terms, load the language refset as well
 						if (!fsnOnly && (fileName.contains("English" + fileType ) || fileName.contains("Language" + fileType + "-en"))) {
-							println("Loading Language Reference Set File - " + fileName);
+							info("Loading Language Reference Set File - " + fileName);
 							gl.loadLanguageFile(zis);
 						}
 					}
@@ -596,7 +596,7 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	public void finish() throws FileNotFoundException {
-		println (BREAK);
+		info (BREAK);
 		flushFiles(true);
 		Date endTime = new Date();
 		if (startTime != null) {
@@ -640,7 +640,7 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	private synchronized void recordSummaryText(String msg) {
-		println (msg);
+		info (msg);
 		msg = msg.replace("\n", "\n</br>");
 		summaryText += msg + "\n<br/>";
 	}
@@ -661,7 +661,7 @@ public abstract class TermServerScript implements RF2Constants {
 			}
 			out.print(line.toString() + LINE_DELIMITER);
 		} catch (Exception e) {
-			println ("Unable to output report rf2 line due to " + e.getMessage());
+			info ("Unable to output report rf2 line due to " + e.getMessage());
 		}
 	}
 	
@@ -670,8 +670,8 @@ public abstract class TermServerScript implements RF2Constants {
 			PrintWriter pw = getPrintWriter(reportFile.getAbsolutePath());
 			pw.println(line);
 		} catch (Exception e) {
-			println ("Unable to output report line: " + line + " due to " + e.getMessage());
-			println (org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(e));
+			info ("Unable to output report line: " + line + " due to " + e.getMessage());
+			info (org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(e));
 		}
 	}
 	
@@ -680,7 +680,7 @@ public abstract class TermServerScript implements RF2Constants {
 		currentTimeStamp = df.format(new Date());
 		String reportFilename = "results_" + getReportName() + "_" + currentTimeStamp + "_" + env  + ".csv";
 		reportFile = new File(outputDir, reportFilename);
-		println ("Outputting Report to " + reportFile.getAbsolutePath());
+		info ("Outputting Report to " + reportFile.getAbsolutePath());
 		writeToReportFile (columnHeaders);
 		flushFiles(false);
 	}

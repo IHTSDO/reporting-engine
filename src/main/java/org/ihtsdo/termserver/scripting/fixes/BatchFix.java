@@ -81,7 +81,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			String msg = "Batch Scripting has completed successfully." + getSummaryText();
 			sendEmail(msg, reportFile);
 		}
-		println ("Processing complete.  See results: " + reportFile.getAbsolutePath());
+		info ("Processing complete.  See results: " + reportFile.getAbsolutePath());
 		return allConceptsToProcess;
 	}
 	
@@ -125,12 +125,12 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 				try {
 					//If we don't have any concepts in this task eg this is 100% ME file, then skip
 					if (task.size() == 0) {
-						println ("Skipping Task " + task.getSummary() + " - no concepts to process");
+						info ("Skipping Task " + task.getSummary() + " - no concepts to process");
 						continue;
 					} else if (selfDetermining && restartPosition > 1 && (tasksSkipped + 1) < restartPosition) {
 						//For self determining projects we'll restart based on a task count, rather than the line number in the input file
 						tasksSkipped++;
-						println ("Skipping Task " + task.getSummary() + " - restarting from task " + restartPosition);
+						info ("Skipping Task " + task.getSummary() + " - restarting from task " + restartPosition);
 						continue;
 					} else if (task.size() > (taskSize + wiggleRoom)) {
 						warn (task + " contains " + task.size() + " concepts");
@@ -170,7 +170,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 					}
 					tasksCreated++;
 					String xOfY =  (tasksCreated+tasksSkipped) + " of " + batch.getTasks().size();
-					println ( (dryRun?"Dry Run " : "Created ") + "task (" + xOfY + "): " + task.getBranchPath());
+					info ( (dryRun?"Dry Run " : "Created ") + "task (" + xOfY + "): " + task.getBranchPath());
 					incrementSummaryInformation("Tasks created",1);
 					int conceptInTask = 0;
 					//Process each component
@@ -239,7 +239,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 				}
 				
 				if (processingLimit > NOT_SET && tasksCreated >= processingLimit) {
-					println ("Processing limit of " + processingLimit + " tasks reached.  Stopping");
+					info ("Processing limit of " + processingLimit + " tasks reached.  Stopping");
 					break;
 				}
 			}
@@ -273,7 +273,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			if (severity.equals(Severity.CRITICAL)) {
 				String key = CRITICAL_ISSUE + " encountered for " + component.toString();
 				addSummaryInformation(key, details[0]);
-				println ( key + " : " + details[0]);
+				info ( key + " : " + details[0]);
 			}
 		}
 		String key = (task == null? "" :  task.getKey());
@@ -291,8 +291,8 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 
 	protected void init (String[] args) throws TermServerScriptException, IOException {
 		if (args.length < 3) {
-			println("Usage: java <FixClass> [-a author] [-n <taskSize>] [-r <restart position>] [-l <limit> ] [-t taskCreationDelay] -c <authenticatedCookie> [-d <Y/N>] [-p <projectName>] -f <batch file Location>");
-			println(" d - dry run");
+			info("Usage: java <FixClass> [-a author] [-n <taskSize>] [-r <restart position>] [-l <limit> ] [-t taskCreationDelay] -c <authenticatedCookie> [-d <Y/N>] [-p <projectName>] -f <batch file Location>");
+			info(" d - dry run");
 			System.exit(-1);
 		}
 		boolean isTaskSize = false;
@@ -314,7 +314,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 				isTaskSize = false;
 			} else if (isLimit) {
 				processingLimit = Integer.parseInt(thisArg);
-				println ("Limiting number of tasks being created to " + processingLimit);
+				info ("Limiting number of tasks being created to " + processingLimit);
 				isLimit = false;
 			}
 		}
@@ -340,10 +340,10 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		}
 		
 		if (!selfDetermining) {
-			println("Reading file from line " + restartPosition + " - " + inputFile.getName());
+			info("Reading file from line " + restartPosition + " - " + inputFile.getName());
 		}
 		
-		println ("\nBatching " + taskSize + " concepts per task");
+		info ("\nBatching " + taskSize + " concepts per task");
 		initialiseReportFile("TASK_KEY, TASK_DESC, SCTID, FSN, CONCEPT_TYPE,SEVERITY,ACTION_TYPE," + additionalReportColumns );
 	}
 	
@@ -451,7 +451,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		String trimmedFSN = SnomedUtils.deconstructFSN(concept.getFsn())[0];
 		//Special handling for acetaminophen
 		if (trimmedFSN.toLowerCase().contains(ACETAMINOPHEN) || trimmedFSN.toLowerCase().contains(PARACETAMOL)) {
-			println ("Doing ACETAMINOPHEN processing for " + concept);
+			info ("Doing ACETAMINOPHEN processing for " + concept);
 		} else {
 			for (Description pref : preferredTerms) {
 				if (!pref.getTerm().equals(trimmedFSN)) {
@@ -492,7 +492,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			mp.addBodyPart(attachment);
 			Transport.send(msg);
 		} catch (MessagingException | FileNotFoundException | UnsupportedEncodingException e) {
-			println ("Failed to send email " + e.getMessage());
+			info ("Failed to send email " + e.getMessage());
 		}
 	}
 

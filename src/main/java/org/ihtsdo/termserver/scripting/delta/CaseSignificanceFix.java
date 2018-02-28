@@ -92,7 +92,7 @@ public class CaseSignificanceFix extends DeltaGenerator implements RF2Constants 
 	}
 
 	private void process() throws TermServerScriptException {
-		println("Processing...");
+		info("Processing...");
 		for (Concept c : GraphLoader.getGraphLoader().getAllConcepts()) {
 			if (c.isActive()) {
 				if (exceptions.contains(c.getId())) {

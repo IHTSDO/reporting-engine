@@ -33,7 +33,7 @@ public class ReactivateUSAcceptability extends DeltaGenerator implements RF2Cons
 	}
 
 	private void process() throws TermServerScriptException {
-		println ("Processing concepts to find issues with US acceptability.");
+		info ("Processing concepts to find issues with US acceptability.");
 		for (Concept concept : GraphLoader.getGraphLoader().getAllConcepts()) {
 			fixFsnAcceptability(concept);
 			if (concept.isModified()) {

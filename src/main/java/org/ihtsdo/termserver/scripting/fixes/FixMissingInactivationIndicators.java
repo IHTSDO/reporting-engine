@@ -49,10 +49,10 @@ public class FixMissingInactivationIndicators extends BatchFix implements RF2Con
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			fix.loadProjectSnapshot(false); //Load all descriptions
 			fix.startTimer();
-			println ("Processing started.  See results: " + fix.reportFile.getAbsolutePath());
+			info ("Processing started.  See results: " + fix.reportFile.getAbsolutePath());
 			Batch batch = fix.formIntoBatch();
 			fix.batchProcess(batch);
-			println ("Processing complete.  See results: " + fix.reportFile.getAbsolutePath());
+			info ("Processing complete.  See results: " + fix.reportFile.getAbsolutePath());
 		} finally {
 			fix.finish();
 		}
@@ -104,7 +104,7 @@ public class FixMissingInactivationIndicators extends BatchFix implements RF2Con
 	protected List<Component> identifyComponentsToProcess() {
 		//Work through all inactive concepts and check the inactivation indicator on all
 		//active descriptions
-		println ("Identifying concepts to process");
+		info ("Identifying concepts to process");
 		List<Component> processMe = new ArrayList<Component>();
 		nextConcept:
 		for (Concept c : gl.getAllConcepts()) {
@@ -117,7 +117,7 @@ public class FixMissingInactivationIndicators extends BatchFix implements RF2Con
 				}
 			}
 		}
-		println ("Identified " + processMe.size() + " concepts to process");
+		info ("Identified " + processMe.size() + " concepts to process");
 		return processMe;
 	}
 

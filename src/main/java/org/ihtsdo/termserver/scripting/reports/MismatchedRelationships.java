@@ -36,12 +36,12 @@ public class MismatchedRelationships extends TermServerScript{
 			report.loadProjectSnapshot();
 			report.detectMismatchedRelationships();
 		} catch (Exception e) {
-			println("Failed to produce Changed Relationship Report due to " + e.getMessage());
+			info("Failed to produce Changed Relationship Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
 			for (String err : report.criticalErrors) {
-				println (err);
+				info (err);
 			}
 		}
 	}
@@ -51,13 +51,13 @@ public class MismatchedRelationships extends TermServerScript{
 		//attribute type, report if the inferred relationship does not
 		//match the inferred one.
 		Concept targetAttribute = gl.getConcept(targetAttributeType);
-		println("Checking " + gl.getAllConcepts().size() + " concepts for mismatched " + targetAttribute);
+		info("Checking " + gl.getAllConcepts().size() + " concepts for mismatched " + targetAttribute);
 		int mismatchedRelationships = 0;
 		for (Concept thisConcept : gl.getAllConcepts()) {
 			if (thisConcept.getFsn() == null) {
 				String msg = "Concept " + thisConcept.getConceptId() + " has no FSN";
 				criticalErrors.add(msg);
-				println(msg);
+				info(msg);
 			}
 			List<Relationship> statedRelationships = thisConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, targetAttribute, ActiveState.ACTIVE);
 			List<Relationship> inferredRelationships = thisConcept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, targetAttribute, ActiveState.ACTIVE);
@@ -81,7 +81,7 @@ public class MismatchedRelationships extends TermServerScript{
 				}
 			}
 		}
-		println("Detected " + mismatchedRelationships + " mismatched Relationships");
+		info("Detected " + mismatchedRelationships + " mismatched Relationships");
 	}
 	
 	protected void report (Concept c, Relationship r, String msg) {
@@ -108,7 +108,7 @@ public class MismatchedRelationships extends TermServerScript{
 		String reportFilename = "mismatched_relationships_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
-		println ("Outputting Report to " + reportFile.getAbsolutePath());
+		info ("Outputting Report to " + reportFile.getAbsolutePath());
 		writeToReportFile ("Concept, FSN, Concept_Active, Concept_Modified, Stated_or_Inferred, Relationship_Active, GroupNum, Type, Target");
 	}
 
@@ -118,7 +118,7 @@ public class MismatchedRelationships extends TermServerScript{
 
 		//Do we already have a copy of the project locally?  If not, recover it.
 		if (!archives[SNAPSHOT].exists()) {
-			println ("Recovering snapshot state of " + project + " from TS (" + env + ")");
+			info ("Recovering snapshot state of " + project + " from TS (" + env + ")");
 			String branchPath = project.equals("MAIN")?"MAIN":"MAIN/" + project;
 			tsClient.export(branchPath, null, ExportType.MIXED, ExtractType.SNAPSHOT, archives[SNAPSHOT]);
 			initialiseSnowOwlClient();  //re-initialise client to avoid HttpMediaTypeNotAcceptableException.  Cause unknown.
@@ -127,7 +127,7 @@ public class MismatchedRelationships extends TermServerScript{
 		//No need for a delta for this report.  We can tell if the relationship has
 		//changed by the null effective time.
 		
-		println ("Loading snapshot data into memory...");
+		info ("Loading snapshot data into memory...");
 		for (File archive : archives) {
 			try {
 				ZipInputStream zis = new ZipInputStream(new FileInputStream(archive));
@@ -138,22 +138,22 @@ public class MismatchedRelationships extends TermServerScript{
 							Path p = Paths.get(ze.getName());
 							String fileName = p.getFileName().toString();
 							if (fileName.contains("sct2_Description_Snapshot")) {
-								println("Loading Description File.");
+								info("Loading Description File.");
 								gl.loadDescriptionFile(zis, true);  //Load FSNs only
 							}
 							
 							if (fileName.contains("sct2_Concept_Snapshot")) {
-								println("Loading Concept File.");
+								info("Loading Concept File.");
 								gl.loadConceptFile(zis);
 							}
 							
 							if (fileName.contains("sct2_Relationship_Snapshot")) {
-								println("Loading Relationship Snapshot File.");
+								info("Loading Relationship Snapshot File.");
 								gl.loadRelationshipDelta(CharacteristicType.INFERRED_RELATIONSHIP,zis);
 							}
 							
 							if (fileName.contains("sct2_StatedRelationship_Snapshot")) {
-								println("Loading Stated Relationship Snapshot File.");
+								info("Loading Stated Relationship Snapshot File.");
 								gl.loadRelationshipDelta(CharacteristicType.STATED_RELATIONSHIP,zis);
 							}
 						}

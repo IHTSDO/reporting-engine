@@ -47,7 +47,7 @@ public class ReplaceDescriptionIds extends BatchFix implements RF2Constants{
 			fix.startTimer();
 			Batch batch = fix.formIntoBatch();
 			fix.batchProcess(batch);
-			println ("Processing complete.  See results: " + fix.reportFile.getAbsolutePath());
+			info ("Processing complete.  See results: " + fix.reportFile.getAbsolutePath());
 		} finally {
 			fix.finish();
 		}
@@ -60,7 +60,7 @@ public class ReplaceDescriptionIds extends BatchFix implements RF2Constants{
 	
 	private void loadDescIds() throws IOException {
 		List<String> lines = Files.readLines(inputFile, Charsets.UTF_8);
-		println ("Loading description ids from " + inputFile);
+		info ("Loading description ids from " + inputFile);
 		for (String line : lines) {
 			descIds.add(line);
 		}
@@ -109,17 +109,17 @@ public class ReplaceDescriptionIds extends BatchFix implements RF2Constants{
 
 	protected ArrayList<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		Set<Concept> allAffected = new TreeSet<Concept>();  //We want to process in the same order each time, in case we restart and skip some.
-		println("Identifying concepts to process");
+		info("Identifying concepts to process");
 		GraphLoader gl = GraphLoader.getGraphLoader();
 		for (String descId : descIds) {
 			Description d = gl.getDescription(descId);
 			if (d.getConceptId() != null) {
 				allAffected.add(gl.getConcept(d.getConceptId(), false, true));
 			} else {
-				println (descId + " was not linked to a concept.");
+				info (descId + " was not linked to a concept.");
 			}
 		}
-		println("Identified " + allAffected.size() + " concepts to process");
+		info("Identified " + allAffected.size() + " concepts to process");
 		return new ArrayList<Component>(allAffected);
 	}
 

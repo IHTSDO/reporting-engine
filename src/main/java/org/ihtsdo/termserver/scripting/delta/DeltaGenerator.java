@@ -156,20 +156,20 @@ public abstract class DeltaGenerator extends TermServerScript {
 		outputDirName = outputDir.getName();
 		packageRoot = outputDirName + File.separator + "SnomedCT_RF2Release_" + edition +"_";
 		packageDir = packageRoot + today + File.separator;
-		println ("Outputting data to " + packageDir);
+		info ("Outputting data to " + packageDir);
 		initialiseFileHeaders();
 	}
 	
 	public void finish() throws FileNotFoundException {
 		super.finish();
 		if (conIdGenerator != null) {
-			println(conIdGenerator.finish());
+			info(conIdGenerator.finish());
 		}
 		if (descIdGenerator != null) {
-			println(descIdGenerator.finish());
+			info(descIdGenerator.finish());
 		}
 		if (relIdGenerator != null) {
-			println(relIdGenerator.finish());
+			info(relIdGenerator.finish());
 		}
 	}
 	

@@ -27,7 +27,7 @@ public class MissingAttributeReport extends TermServerReport {
 			report.postLoadInit();
 			report.runMissingAttributeReport();
 		} catch (Exception e) {
-			println("Failed to produce MissingAttributeReport due to " + e.getMessage());
+			info("Failed to produce MissingAttributeReport due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();

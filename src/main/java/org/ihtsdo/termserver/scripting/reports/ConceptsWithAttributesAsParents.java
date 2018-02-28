@@ -30,7 +30,7 @@ public class ConceptsWithAttributesAsParents extends TermServerReport {
 			report.postInit();
 			report.runConceptsWithAttributesAsParentsReport();
 		} catch (Exception e) {
-			println("Failed to produce ConceptsWithOrTargetsOfAttribute Report due to " + e.getMessage());
+			info("Failed to produce ConceptsWithOrTargetsOfAttribute Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();

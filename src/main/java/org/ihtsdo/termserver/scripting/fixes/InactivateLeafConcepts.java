@@ -42,7 +42,7 @@ public class InactivateLeafConcepts extends BatchFix implements RF2Constants{
 			fix.startTimer();
 			Batch batch = fix.formIntoBatch();
 			fix.batchProcess(batch);
-			println ("Processing complete.  See results: " + fix.reportFile.getAbsolutePath());
+			info ("Processing complete.  See results: " + fix.reportFile.getAbsolutePath());
 		} finally {
 			fix.finish();
 		}
@@ -51,7 +51,7 @@ public class InactivateLeafConcepts extends BatchFix implements RF2Constants{
 	
 	private void loadDescIds() throws IOException, TermServerScriptException, SnowOwlClientException {
 		List<String> lines = Files.readLines(inputFile, Charsets.UTF_8);
-		println ("Loading concepts to inactivate from " + inputFile);
+		info ("Loading concepts to inactivate from " + inputFile);
 		for (String line : lines) {
 			//Skip any empty lines
 			if (line.trim().isEmpty()) {

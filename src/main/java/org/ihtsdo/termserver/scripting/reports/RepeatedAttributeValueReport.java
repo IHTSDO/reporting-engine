@@ -27,7 +27,7 @@ public class RepeatedAttributeValueReport extends TermServerReport {
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.runRepeatedAttributeValueReport();
 		} catch (Exception e) {
-			println("Failed to produce RepeatedAttributeValueReport Report due to " + e.getMessage());
+			info("Failed to produce RepeatedAttributeValueReport Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -36,7 +36,7 @@ public class RepeatedAttributeValueReport extends TermServerReport {
 
 	private void runRepeatedAttributeValueReport() throws TermServerScriptException {
 		Collection<Concept> subHierarchy = gl.getConcept(subHierarchyStr).getDescendents(NOT_SET);
-		println ("Validating all relationships");
+		info ("Validating all relationships");
 		long issuesEncountered = 0;
 		for (Concept c : subHierarchy) {
 			if (c.isActive()) {

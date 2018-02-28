@@ -42,7 +42,7 @@ public class IncreasedProxPrimInferredComplexityReport extends TermServerScript{
 			report.loadProjectSnapshot(true);  //Load FSNs only
 			report.reportIncreasedComplexity();
 		} catch (Exception e) {
-			println("Report failed due to " + e.getMessage());
+			info("Report failed due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -54,7 +54,7 @@ public class IncreasedProxPrimInferredComplexityReport extends TermServerScript{
 			Concept hierarchy = gl.getConcept(hiearchySCTID);
 			Set<Concept> allHierarchy = hierarchy.getDescendents(NOT_SET, CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
 			Set<Concept> allActiveFD = filterActiveFD(allHierarchy);
-			println (hierarchy + " - " + allActiveFD.size() + "(FD) / " + allHierarchy.size() + "(Active)");
+			info (hierarchy + " - " + allActiveFD.size() + "(FD) / " + allHierarchy.size() + "(Active)");
 			
 			for (Concept thisConcept : allActiveFD) {
 				List<Concept>parents = thisConcept.getParents(CharacteristicType.STATED_RELATIONSHIP); 
@@ -63,7 +63,7 @@ public class IncreasedProxPrimInferredComplexityReport extends TermServerScript{
 					//How many groups do we have in the stated and inferred forms?
 					int statedGroups = countGroups(thisConcept, CharacteristicType.STATED_RELATIONSHIP);
 					int inferredGroups = countGroups(thisConcept, CharacteristicType.INFERRED_RELATIONSHIP);
-					println (thisConcept + ":  s=" + statedGroups + ", i=" + inferredGroups);
+					info (thisConcept + ":  s=" + statedGroups + ", i=" + inferredGroups);
 					if (inferredGroups > statedGroups) {
 						report(thisConcept, SnomedUtils.deconstructFSN(thisConcept.getFsn())[1]);
 					}
@@ -121,7 +121,7 @@ public class IncreasedProxPrimInferredComplexityReport extends TermServerScript{
 		String reportFilename = getScriptName() + "_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
-		println ("Outputting Report to " + reportFile.getAbsolutePath());
+		info ("Outputting Report to " + reportFile.getAbsolutePath());
 		writeToReportFile ("Concept, FSN, Sem_Tag");
 	}
 

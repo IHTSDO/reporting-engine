@@ -26,7 +26,7 @@ public class FdParentsReport extends TermServerReport {
 			report.loadProjectSnapshot(true);  //Load FSNs only
 			report.reportFdParents();
 		} catch (Exception e) {
-			println("Failed to produce FdParentsReport due to " + e.getMessage());
+			info("Failed to produce FdParentsReport due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();

@@ -48,7 +48,7 @@ public class NormalizeGroupersViaDisposition extends DrugBatchFix implements RF2
 			fix.postLoadInit();
 			fix.startTimer();
 			fix.processFile();
-			println ("Processing complete.  See results: " + fix.reportFile.getAbsolutePath());
+			info ("Processing complete.  See results: " + fix.reportFile.getAbsolutePath());
 		} finally {
 			fix.finish();
 		}

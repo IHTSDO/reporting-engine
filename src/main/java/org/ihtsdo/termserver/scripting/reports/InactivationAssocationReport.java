@@ -39,7 +39,7 @@ public class InactivationAssocationReport extends TermServerScript{
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.reportMatchingInactivations();
 		} catch (Exception e) {
-			println("Failed to produce Description Report due to " + e.getMessage());
+			info("Failed to produce Description Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -48,7 +48,7 @@ public class InactivationAssocationReport extends TermServerScript{
 
 	private void reportMatchingInactivations() throws TermServerScriptException {
 		int rowsReported = 0;
-		println ("Scanning all concepts...");
+		info ("Scanning all concepts...");
 		for (Concept c : gl.getAllConcepts()) {
 			//For a change we're interested in inactive concepts!
 			if (!c.isActive()) {
@@ -96,7 +96,7 @@ public class InactivationAssocationReport extends TermServerScript{
 		String reportFilename = getScriptName() + "_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
-		println ("Outputting Report to " + reportFile.getAbsolutePath());
+		info ("Outputting Report to " + reportFile.getAbsolutePath());
 		writeToReportFile ("Concept, FSN, inact_effective, inactivation_reason, assocation_effective, association");
 	}
 

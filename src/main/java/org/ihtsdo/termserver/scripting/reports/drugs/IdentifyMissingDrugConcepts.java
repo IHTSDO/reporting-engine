@@ -37,7 +37,7 @@ public class IdentifyMissingDrugConcepts extends TermServerReport {
 			//report.runIdentifyMissingMPConceptsReport();
 			report.runIdentifyMissingMPFConceptsReport();
 		} catch (Exception e) {
-			println("Failed to produce ConceptsWithOrTargetsOfAttribute Report due to " + e.getMessage());
+			info("Failed to produce ConceptsWithOrTargetsOfAttribute Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();

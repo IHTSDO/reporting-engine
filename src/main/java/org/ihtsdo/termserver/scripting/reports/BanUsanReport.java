@@ -37,7 +37,7 @@ public class BanUsanReport extends TermServerScript{
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.reportUnMatchedNationalTerms();
 		} catch (Exception e) {
-			println("Failed to produce Description Report due to " + e.getMessage());
+			info("Failed to produce Description Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -136,7 +136,7 @@ public class BanUsanReport extends TermServerScript{
 		}
 		
 		if (!fileLoaded) {
-			println ("Failed to find Ban/Usan file to load.  Specify path with 'z' command line parameter");
+			info ("Failed to find Ban/Usan file to load.  Specify path with 'z' command line parameter");
 			System.exit(1);
 		}
 
@@ -144,7 +144,7 @@ public class BanUsanReport extends TermServerScript{
 		String reportFilename = getScriptName() + /*filter +*/ "_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
 		reportFile = new File(outputDir, reportFilename);
 		reportFile.createNewFile();
-		println ("Outputting Report to " + reportFile.getAbsolutePath());
+		info ("Outputting Report to " + reportFile.getAbsolutePath());
 		writeToReportFile ("Concept, FSN, Desc_SCTID, Term, Issue");
 	}
 
@@ -152,7 +152,7 @@ public class BanUsanReport extends TermServerScript{
 		try {
 			File nationalTerms = new File(fileName);
 			List<String> lines = Files.readLines(nationalTerms, Charsets.UTF_8);
-			println ("Loading National Terms from " + fileName);
+			info ("Loading National Terms from " + fileName);
 			nationalTermRules = new ArrayList<NationalTermRule>();
 			for (String line : lines) {
 				NationalTermRule newRule = importNationalTermRule(line);

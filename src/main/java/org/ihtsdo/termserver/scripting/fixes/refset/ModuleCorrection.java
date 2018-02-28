@@ -31,12 +31,12 @@ public class ModuleCorrection extends TermServerScript/*extends RefsetFixer*/ {
 		app.init(args);
 		app.loadEntriesToFix();
 		app.doFix();
-		println ("Processing complete.");
+		info ("Processing complete.");
 	}
 	
 	private void loadEntriesToFix() throws IOException {
 		List<String> lines = Files.readLines(inputFile, Charsets.UTF_8);
-		println ("Loading affected description ids from " + inputFile);
+		info ("Loading affected description ids from " + inputFile);
 		for (String line : lines) {
 			descIds.add(line);
 		}
@@ -47,7 +47,7 @@ public class ModuleCorrection extends TermServerScript/*extends RefsetFixer*/ {
 			try {
 				fixRefsetEntry(descId);
 			} catch (Exception e) {
-				println ("Unable to fix refsetEntry " + descId + " due to " + e);
+				info ("Unable to fix refsetEntry " + descId + " due to " + e);
 			}
 		}
 	}
@@ -68,13 +68,13 @@ public class ModuleCorrection extends TermServerScript/*extends RefsetFixer*/ {
 			}
 			refsetEntry.setModuleId(rightModule);
 		} else {
-			println ("No change required - "+ refsetEntry.getId() + " for " + descId);
+			info ("No change required - "+ refsetEntry.getId() + " for " + descId);
 			return;
 		}
 		
 		//Save
 		tsClient.updateRefsetMember(project.getBranchPath(), refsetEntry, (forceEffectiveTime != null));
-		println ("Fixed " + refsetEntry.getId() + " for " + descId);
+		info ("Fixed " + refsetEntry.getId() + " for " + descId);
 	}
 
 	@Override

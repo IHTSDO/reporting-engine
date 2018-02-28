@@ -42,9 +42,10 @@ public class GraphLoader implements RF2Constants {
 	public static GraphLoader getGraphLoader() {
 		if (singletonGraphLoader == null) {
 			singletonGraphLoader = new GraphLoader();
-			//Pre populate some known concepts to ensure we only ever refer to one object
+			//Pre populate known concepts to ensure we only ever refer to one object
 			singletonGraphLoader.concepts.put(SCTID_ROOT_CONCEPT.toString(), ROOT_CONCEPT);
 			singletonGraphLoader.concepts.put(SCTID_IS_A_CONCEPT.toString(), IS_A);
+			singletonGraphLoader.concepts.put(PHARM_BIO_PRODUCT.getConceptId(), PHARM_BIO_PRODUCT);
 		}
 		return singletonGraphLoader;
 	}
