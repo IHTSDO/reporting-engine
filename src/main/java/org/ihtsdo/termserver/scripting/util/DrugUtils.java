@@ -17,20 +17,9 @@ public class DrugUtils implements RF2Constants {
 
 	public static String calculateTermFromIngredients(Concept c, boolean isFSN, boolean isPT, String langRefset) throws TermServerScriptException {
 		String proposedTerm = "";
-		//Get all the ingredients and put them in order
-		List<Relationship> ingredientRels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE);
-		Set<String> ingredients = new TreeSet<String>();  //Will naturally sort in alphabetical order
-		for (Relationship r : ingredientRels) {
-			//Need to recover the full concept to have all descriptions, not the partial one stored as the target.
-			Concept ingredient = GraphLoader.getGraphLoader().getConcept(r.getTarget().getConceptId());
-			Description ingredientDesc = ingredient.getPreferredSynonym(langRefset);
-			String ingredientTerm = ingredientDesc.getTerm();
-			//If the ingredient name is not case sensitive, decaptialize
-			if (!ingredientDesc.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE)) {
-				ingredientTerm = SnomedUtils.deCapitalize(ingredientTerm);
-			}
-			ingredients.add(ingredientTerm);
-		}
+		//Get all the ingredients in order
+		Set<String> ingredients = getIngredientTerms(c, isFSN, langRefset);
+		
 		//What prefixes and suffixes do we need?
 		String prefix = "";
 		String suffix = "";
@@ -55,6 +44,31 @@ public class DrugUtils implements RF2Constants {
 		return proposedTerm;
 	}
 	
+	private static Set<String> getIngredientTerms(Concept c, boolean isFSN, String langRefset) throws TermServerScriptException {
+		List<Relationship> ingredientRels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE);
+		Set<String> ingredients = new TreeSet<String>();  //Will naturally sort in alphabetical order
+		for (Relationship r : ingredientRels) {
+			//Need to recover the full concept to have all descriptions, not the partial one stored as the target.
+			Concept ingredient = GraphLoader.getGraphLoader().getConcept(r.getTarget().getConceptId());
+			Description ingredientDesc;
+			String ingredientTerm;
+			if (isFSN) {
+				ingredientDesc = ingredient.getFSNDescription();
+				ingredientTerm = SnomedUtils.deconstructFSN(ingredient.getFsn())[0];
+			} else {
+				ingredientDesc = ingredient.getPreferredSynonym(langRefset);
+				ingredientTerm = ingredientDesc.getTerm();
+			}
+			
+			//If the ingredient name is not case sensitive, decaptialize
+			if (!ingredientDesc.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE)) {
+				ingredientTerm = SnomedUtils.deCapitalize(ingredientTerm);
+			}
+			ingredients.add(ingredientTerm);
+		}
+		return ingredients;
+	}
+
 	private static  String getDosageForm(Concept concept) {
 		List<Relationship> doseForms = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_MANUFACTURED_DOSE_FORM, ActiveState.ACTIVE);
 		if (doseForms.size() == 0) {

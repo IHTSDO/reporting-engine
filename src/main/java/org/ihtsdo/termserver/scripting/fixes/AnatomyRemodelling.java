@@ -206,7 +206,6 @@ public class AnatomyRemodelling extends BatchFix implements RF2Constants{
 		return r;
 	}
 
-	@Override
 	public void report (Task task, Component concept, Severity severity, ReportActionType actionType, String... details) {
 		//Keep a running list of items reported, which we might otherwise repeat due to the trial run
 		String taskStr = (task == null)?"Null":task.toString();

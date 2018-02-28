@@ -70,14 +70,14 @@ public class InactivateDuplicateInactivationIndicators extends DeltaGenerator im
 		}	
 			
 		if (coreIndicators > 1) {
-			report(concept, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, coreIndicators + " active inactivation indicators in core module.  Skipping.");
+			report(concept, concept.getFSNDescription(), Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, coreIndicators + " active inactivation indicators in core module.  Skipping.");
 		} else if (coreIndicators == 1) {
 			for (InactivationIndicatorEntry i : activeIndicators) {
 				if (!i.getModuleId().equals(SCTID_CORE_MODULE)) {
 					i.setActive(false);
 					concept.setModified();
 					String msg = "Inactivated " + i;
-					report(concept, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, msg);
+					report(concept, concept.getFSNDescription(), Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, msg);
 				} 
 			}	
 		} else if (extensionIndicators > 1) {
@@ -91,17 +91,17 @@ public class InactivateDuplicateInactivationIndicators extends DeltaGenerator im
 					if (erroneous == null) {
 						erroneous = i;
 					} else {
-						report(concept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Multiple active Erroneous indicators encountered");
+						report(concept, concept.getFSNDescription(), Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Multiple active Erroneous indicators encountered");
 					}
 				} else if (i.getInactivationReasonId().equals(SCTID_DUPLICATE)) {
 					//Is this our first one?
 					if (duplicate == null) {
 						duplicate = i;
 					} else {
-						report(concept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Multiple active Duplicate indicators encountered");
+						report(concept, concept.getFSNDescription(), Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Multiple active Duplicate indicators encountered");
 					} 
 				} else {
-					report(concept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Multiple active indicators encountered: " + i.getInactivationReasonId());
+					report(concept, concept.getFSNDescription(), Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Multiple active indicators encountered: " + i.getInactivationReasonId());
 				}
 			}
 			//Did we just get one of each?
@@ -109,7 +109,7 @@ public class InactivateDuplicateInactivationIndicators extends DeltaGenerator im
 				erroneous.setActive(false);
 				concept.setModified();
 				String msg = "Inactivated " + erroneous;
-				report(concept, Severity.MEDIUM, ReportActionType.REFSET_MEMBER_REMOVED, msg);
+				report(concept, concept.getFSNDescription(), Severity.MEDIUM, ReportActionType.REFSET_MEMBER_REMOVED, msg);
 			}
 		}
 	}

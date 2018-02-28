@@ -130,7 +130,7 @@ public class MergeDeltas extends DeltaGenerator {
 		//If the current delta does not know about this component, then it's not changed at all since release, so we should use the fix
 		if (currentFields==null) {
 			String msg = "Fixed component has not been changed since versioning.  Using fix version";
-			report (relevantComponent, Severity.LOW, ReportActionType.INFO,compoonentType.toString(), id, msg, StringUtils.join(fixLineItems, "|"));
+			report (relevantComponent, null, Severity.LOW, ReportActionType.INFO,compoonentType.toString(), id, msg, StringUtils.join(fixLineItems, "|"));
 			return fixLineItems;			
 		}
 		String currentEffectiveTime = currentFields[IDX_EFFECTIVETIME];
@@ -141,7 +141,7 @@ public class MergeDeltas extends DeltaGenerator {
 			//Otherwise, apply the current state
 			if (currentEffectiveTime == "") {
 				String msg = "Current state has changed since versioning.  Ignoring reversion.";
-				report (relevantComponent, Severity.HIGH, ReportActionType.INFO, compoonentType.toString(), id, msg, StringUtils.join(fixLineItems, "|"));
+				report (relevantComponent, null, Severity.HIGH, ReportActionType.INFO, compoonentType.toString(), id, msg, StringUtils.join(fixLineItems, "|"));
 				return null;
 			}
 		}
@@ -178,11 +178,11 @@ public class MergeDeltas extends DeltaGenerator {
 		//HOWEVER, if the ONLY field to be different to the fix is the effective date, then we actually want to reset that component back to being alpha, ie use the fix line
 		if (differsOnlyInEffectiveTime(output, fixLineItems)) {
 			String msg = "Current rows shows as unpublished, but is otherwise the same as the published fix.  Resetting to fix row to prevent no-change delta in next release.";
-			report (relevantComponent, Severity.HIGH, ReportActionType.INFO,compoonentType.toString(), id, msg,  StringUtils.join(fixLineItems, "|"));	
+			report (relevantComponent, null, Severity.HIGH, ReportActionType.INFO,compoonentType.toString(), id, msg,  StringUtils.join(fixLineItems, "|"));	
 			output = fixLineItems;
 		} else {
 			String msg = "Using fields " + fieldsChanged + ", modified since versioning: " + dataComparisons;
-			report (relevantComponent, Severity.MEDIUM, ReportActionType.INFO,compoonentType.toString(), id, msg);
+			report (relevantComponent, null, Severity.MEDIUM, ReportActionType.INFO,compoonentType.toString(), id, msg);
 		}
 		return output;
 	}

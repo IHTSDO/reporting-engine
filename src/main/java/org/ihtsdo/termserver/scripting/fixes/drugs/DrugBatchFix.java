@@ -119,7 +119,13 @@ public abstract class DrugBatchFix extends BatchFix implements RF2Constants{
 	
 	protected int ensureDrugTermsConform(Task t, Concept c) throws TermServerScriptException {
 		int changesMade = 0;
+		
+		//This function will split out the US / GB terms if the ingredients show variance where the product does not
 		validateUsGbVarianceInIngredients(t,c);
+		
+		if (c.getConceptId().equals("108943009")) {
+			debug ("Check this concept");
+		}
 		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 			boolean isFSN = d.getType().equals(DescriptionType.FSN);
 			boolean isGbPT = d.isPreferred(GB_ENG_LANG_REFSET);
@@ -133,6 +139,12 @@ public abstract class DrugBatchFix extends BatchFix implements RF2Constants{
 			
 			//If it's not the PT or FSN, skip it.   We'll delete later if it's not the FSN counterpart
 			if (!isPT && !isFSN) {
+				continue;
+			}
+			
+			//Skip FSNs that contain the word vitamin
+			if (isFSN && d.getTerm().toLowerCase().contains("vitamin")) {
+				report(t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Skipped vitamin FSN");
 				continue;
 			}
 			
@@ -177,6 +189,10 @@ public abstract class DrugBatchFix extends BatchFix implements RF2Constants{
 			} else {
 				report(t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Replacement term already exists: '" + replacement.getTerm() + "' inactivating unwanted term only.");
 			}
+			//If we're removing a PT, merge the acceptability with the existing term
+			if (d.isPreferred()) {
+				mergeAcceptability(t, c, d, replacement.getTerm());
+			}
 			doReplacement = false;
 		}
 		
@@ -188,8 +204,21 @@ public abstract class DrugBatchFix extends BatchFix implements RF2Constants{
 			c.addDescription(replacement);
 		}
 		changesMade++;
-		report(t, c, Severity.LOW, ReportActionType.DESCRIPTION_CHANGE_MADE, msg);
+		Severity severity = d.getType().equals(DescriptionType.FSN)?Severity.MEDIUM:Severity.LOW;
+		report(t, c, severity, ReportActionType.DESCRIPTION_CHANGE_MADE, msg);
 		return changesMade;
+	}
+
+	private void mergeAcceptability(Task t, Concept c, Description d, String term) {
+		//Find the matching term that is not d and merge that with the acceptability of d
+		for (Description match : c.getDescriptions(ActiveState.ACTIVE)) {
+			if (!d.equals(match) && match.getTerm().equals(term)) {
+				Map<String,Acceptability> mergedMap = SnomedUtils.mergeAcceptabilityMap(d.getAcceptabilityMap(), match.getAcceptabilityMap());
+				report(t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Merged acceptability map:" + SnomedUtils.toString(mergedMap));
+				d.setAcceptabilityMap(mergedMap);
+			}
+		}
+		
 	}
 
 	private void reactivateMatchingTerm(Task t, Concept c, Description replacement) {
@@ -199,7 +228,7 @@ public abstract class DrugBatchFix extends BatchFix implements RF2Constants{
 				d.setActive(true);
 				d.setCaseSignificance(replacement.getCaseSignificance());
 				d.setAcceptabilityMap(replacement.getAcceptabilityMap());
-				report(t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Re-activated inactive term " + d);
+				report(t, c, Severity.LOW, ReportActionType.DESCRIPTION_CHANGE_MADE, "Re-activated inactive term " + d);
 				return;
 			}
 		}
@@ -251,7 +280,30 @@ public abstract class DrugBatchFix extends BatchFix implements RF2Constants{
 		}
 		if (drugVariance != ingredientVariance) {
 			String msg = "Drug vs Ingredient US/GB term variance mismatch : Drug=" + drugVariance + " Ingredients=" + ingredientVariance;
-			report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, msg); 
+			report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, msg);
+			if (!drugVariance && ingredientVariance) {
+				splitPreferredTerm(t, c);
+			}
+		}
+	}
+
+	/**
+	 * Take the preferred term and create US and GB specific copies
+	 * @param t
+	 * @param c
+	 * @throws TermServerScriptException 
+	 */
+	private void splitPreferredTerm(Task t, Concept c) throws TermServerScriptException {
+		List<Description> preferredTerms = c.getDescriptions(Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE);
+		if (preferredTerms.size() != 1) {
+			report (t, c, Severity.CRITICAL, ReportActionType.API_ERROR, "Unexpected number of preferred terms: " + preferredTerms.size());
+		} else {
+			Description usPT = preferredTerms.get(0);
+			usPT.setAcceptabilityMap(SnomedUtils.createPreferredAcceptableMap(US_ENG_LANG_REFSET, GB_ENG_LANG_REFSET));
+			Description gbPT = usPT.clone(null);
+			gbPT.setAcceptabilityMap(SnomedUtils.createPreferredAcceptableMap(GB_ENG_LANG_REFSET, US_ENG_LANG_REFSET));
+			report (t, c, Severity.HIGH, ReportActionType.DESCRIPTION_ADDED, "Split PT into US/GB variants: " + gbPT);
+			c.addDescription(gbPT);
 		}
 	}
 

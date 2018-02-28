@@ -8,14 +8,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.delta.CaseSignificanceFixAll;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-
-import us.monoid.json.JSONObject;
 
 /*
  * Combination of DRUGS-363 to remove "/1 each" from preferred terms
@@ -26,6 +24,7 @@ public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants{
 	String subHierarchyStr = "373873005"; // |Pharmaceutical / biologic product (product)|
 	static Map<String, String> replacementMap = new HashMap<String, String>();
 	private List<String> exceptions = new ArrayList<>();
+	CaseSignificanceFixAll csFixer;
 	
 	protected NormalizeDrugTerms(BatchFix clone) {
 		super(clone);
@@ -41,7 +40,7 @@ public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants{
 			fix.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			fix.loadProjectSnapshot(false); //Load all descriptions
-			fix.getDoseForms();
+			fix.postInit();
 			fix.startTimer();
 			Batch batch = fix.formIntoBatch();
 			fix.batchProcess(batch);
@@ -51,7 +50,10 @@ public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants{
 		}
 	}
 	
-	private void getDoseForms() throws TermServerScriptException {
+	private void postInit() throws TermServerScriptException {
+		//When we use the CS Fixer, we'll tell it to use our report printWriter rather than its own,
+		//otherwise things get horribly confused!
+		csFixer = new CaseSignificanceFixAll(reportFile, printWriterMap);
 		Concept doseFormRoot = gl.getConcept(421967003L);  // |Drug dose form (qualifier value)|);
 		doseForms.add(" oral tablet");
 		doseForms.add(" in oral dosage form");
@@ -71,19 +73,32 @@ public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants{
 	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
 		SnomedUtils.populateConceptType(loadedConcept);
+		if (loadedConcept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT) && loadedConcept.getDefinitionStatus().equals(DefinitionStatus.PRIMITIVE)) {
+			report (null, loadedConcept, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Skipping primitive MP");
+			return 0;
+		}
+		//We'll take a little diversion here to correct the case significance of the ingredients
+		correctIngredientCaseSignficance(task, loadedConcept);
 		int changesMade = ensureDrugTermsConform(task, loadedConcept);
 		if (changesMade > 0) {
-			try {
-				String conceptSerialised = gson.toJson(loadedConcept);
-				debug ((dryRun?"Skipping update":"Updating state") + " of " + loadedConcept + info);
-				if (!dryRun) {
-					tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
-				}
-			} catch (Exception e) {
-				report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
-			}
+			saveConcept(task, loadedConcept, info);
 		}
 		return changesMade;
+	}
+
+	private void correctIngredientCaseSignficance(Task task, Concept c) throws TermServerScriptException {
+		for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE)) {
+			//Test making changes first, and then if it looks like fixes are needed, load substance and change for real
+			Concept ingredient = gl.getConcept(r.getTarget().getConceptId());
+			int changesMade = csFixer.normalizeCaseSignificance(ingredient, true, !runStandAlone);  //Only silent if we're not standalone, otherwise changes aren't reported due changing same concept twice.
+			if (changesMade > 0) {
+				Concept loadedIngredient = loadConcept(ingredient, task.getBranchPath());
+				changesMade = csFixer.normalizeCaseSignificance(loadedIngredient, true, false); //Not silently this time!
+				if (changesMade > 0) {
+					saveConcept(task, loadedIngredient, "");
+				}
+			}
+		}
 	}
 
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
@@ -91,12 +106,11 @@ public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants{
 		Set<Concept> allAffected = new TreeSet<Concept>();  //We want to process in the same order each time, in case we restart and skip some.
 		for (Concept c : gl.getConcept(subHierarchyStr).getDescendents(NOT_SET)) {
 			if (exceptions.contains(c.getId())) {
-				report (c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Concept manually listed as an exception");
+				report (null, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Concept manually listed as an exception");
 			} else {
 				SnomedUtils.populateConceptType(c);
 				if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT)) {
 					allAffected.add(c);
-					
 				}
 				
 				//Now check for multi ingredients out of order in any term

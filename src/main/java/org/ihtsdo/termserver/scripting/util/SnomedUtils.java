@@ -22,7 +22,7 @@ import org.apache.commons.validator.routines.checkdigit.VerhoeffCheckDigit;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.ConceptType;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.Acceptability;
 
 public class SnomedUtils implements RF2Constants{
 	
@@ -61,18 +61,26 @@ public class SnomedUtils implements RF2Constants{
 		return elements;
 	}
 	
-	public static String toString(Map<String, Acceptability> AcceptabilityMap) throws TermServerScriptException {
-		String US = "N";
-		String GB = "N";
-		if (AcceptabilityMap.containsKey(US_ENG_LANG_REFSET)) {
-			US = translateAcceptability(AcceptabilityMap.get(US_ENG_LANG_REFSET));
+	public static String toString(Map<String, Acceptability> acceptabilityMap) {
+		if (acceptabilityMap == null) {
+			return "";
 		}
-		
-		if (AcceptabilityMap.containsKey(GB_ENG_LANG_REFSET)) {
-			GB = translateAcceptability(AcceptabilityMap.get(GB_ENG_LANG_REFSET));
+		try {
+			String US = "N";
+			String GB = "N";
+			if (acceptabilityMap.containsKey(US_ENG_LANG_REFSET)) {
+				US = translateAcceptability(acceptabilityMap.get(US_ENG_LANG_REFSET));
+			}
+			
+			if (acceptabilityMap.containsKey(GB_ENG_LANG_REFSET)) {
+				GB = translateAcceptability(acceptabilityMap.get(GB_ENG_LANG_REFSET));
+			}
+			
+			return "US: " + US + ", GB: " + GB;
+		} catch (TermServerScriptException e) {
+			System.out.println("Failed to convert acceptability map to string: " + e);
 		}
-		
-		return "US: " + US + ", GB: " + GB;
+		return "";
 	}
 	
 	public static String translateAcceptability (Acceptability a) throws TermServerScriptException {
@@ -132,6 +140,21 @@ public class SnomedUtils implements RF2Constants{
 			}
 		}
 		return str;
+	}
+	
+	public static Map<String, Acceptability> createAcceptabilityMap(Acceptability acceptability, String[] dialects) {
+		Map<String, Acceptability> aMap = new HashMap<String, Acceptability>();
+		for (String dialect : dialects) {
+			aMap.put(dialect, acceptability);
+		}
+		return aMap;
+	}
+	
+	public static Map<String, Acceptability> createPreferredAcceptableMap(String preferredRefset, String acceptableRefset) {
+		Map<String, Acceptability> aMap = new HashMap<String, Acceptability>();
+		aMap.put(preferredRefset, Acceptability.PREFERRED);
+		aMap.put(acceptableRefset, Acceptability.ACCEPTABLE);
+		return aMap;
 	}
 	
 	/**

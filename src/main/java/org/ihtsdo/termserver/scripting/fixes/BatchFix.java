@@ -23,9 +23,12 @@ import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
+import org.ihtsdo.termserver.scripting.TermServerScript.ReportActionType;
+import org.ihtsdo.termserver.scripting.TermServerScript.Severity;
 import org.ihtsdo.termserver.scripting.domain.Batch;
 import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
@@ -114,7 +117,18 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		List<Component> allComponentsBeingProcessed = identifyComponentsToProcess();
 		return formIntoBatch(allComponentsBeingProcessed);
 	}
-	
+
+	protected void saveConcept(Task t, Concept c, String info) {
+		try {
+			String conceptSerialised = gson.toJson(c);
+			debug ((dryRun?"Skipping update":"Updating state") + " of " + c + info);
+			if (!dryRun) {
+				tsClient.updateConcept(new JSONObject(conceptSerialised), t.getBranchPath());
+			}
+		} catch (Exception e) {
+			report(t, c, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
+		}
+	}
 	
 	protected void batchProcess(Batch batch) throws TermServerScriptException {
 		int failureCount = 0;
@@ -258,35 +272,6 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			changesMade++;
 		}
 		return changesMade;
-	}
-	
-	protected void report(Concept concept, Severity severity, ReportActionType actionType, String... actionDetails) {
-		report (null, concept, severity, actionType, actionDetails);
-	}
-	
-	protected void report(Concept concept, ReportActionType actionType, String... actionDetails) {
-		report (null, concept, Severity.LOW, actionType, actionDetails);
-	}
-	
-	protected void report(Task task, Component component, Severity severity, ReportActionType actionType, String... details) {
-		if (component != null) {
-			if (severity.equals(Severity.CRITICAL)) {
-				String key = CRITICAL_ISSUE + " encountered for " + component.toString();
-				addSummaryInformation(key, details[0]);
-				info ( key + " : " + details[0]);
-			}
-		}
-		String key = (task == null? "" :  task.getKey());
-		String desc = (task == null? "" :  task.getSummary());
-		String name = (component == null ? "" : component.getReportedName());
-		String type = (component == null ? "" : component.getReportedType());
-		String line = key + COMMA + desc + COMMA + component.getId() + COMMA_QUOTE + 
-						name + QUOTE_COMMA + type + COMMA + severity + 
-						COMMA + actionType;
-		for (String detail : details) {
-			 line += COMMA_QUOTE + detail + QUOTE;
-		}
-		writeToReportFile (line);
 	}
 
 	protected void init (String[] args) throws TermServerScriptException, IOException {

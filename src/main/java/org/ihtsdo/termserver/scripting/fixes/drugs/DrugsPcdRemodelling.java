@@ -228,7 +228,7 @@ public class DrugsPcdRemodelling extends BatchFix implements RF2Constants{
 			Description replacement = fsn.clone(null);
 			replacement.setTerm(change.getFsn());
 			replacement.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
-			replacement.setAcceptabilityMap(createAcceptabilityMap(Acceptability.PREFERRED, ENGLISH_DIALECTS));
+			replacement.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(Acceptability.PREFERRED, ENGLISH_DIALECTS));
 			fsn.inactivateDescription(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
 			tsConcept.addDescription(replacement);
 			changesMade++;

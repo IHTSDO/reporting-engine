@@ -91,7 +91,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected String inputFileDelimiter = TSV_FIELD_DELIMITER;
 	protected String tsRoot = "MAIN/"; //"MAIN/2016-01-31/SNOMEDCT-DK/";
 	
-	protected Map<String, PrintWriter> fileMap = new HashMap<>();
+	protected Map<String, PrintWriter> printWriterMap = new HashMap<>();
 	
 	protected static Gson gson;
 	static {
@@ -105,7 +105,7 @@ public abstract class TermServerScript implements RF2Constants {
 	
 	public enum ReportActionType { API_ERROR, DEBUG_INFO, INFO, UNEXPECTED_CONDITION,
 									 CONCEPT_CHANGE_MADE, CONCEPT_ADDED, CONCEPT_INACTIVATED,
-									 DESCRIPTION_CHANGE_MADE, DESCRIPTION_ADDED, DESCRIPTION_REMOVED,
+									 DESCRIPTION_CHANGE_MADE, DESCRIPTION_ADDED, DESCRIPTION_REMOVED, CASE_SIGNIFICANCE_CHANGE_MADE,
 									 RELATIONSHIP_ADDED, RELATIONSHIP_REPLACED, RELATIONSHIP_INACTIVATED, RELATIONSHIP_DELETED, RELATIONSHIP_MODIFIED, 
 									 NO_CHANGE, VALIDATION_ERROR, VALIDATION_CHECK, 
 									 REFSET_MEMBER_REMOVED, UNKNOWN, RELATIONSHIP_REACTIVATED, ASSOCIATION_ADDED};
@@ -582,7 +582,7 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	public void flushFiles(boolean andClose) {
-		for (PrintWriter pw : fileMap.values()) {
+		for (PrintWriter pw : printWriterMap.values()) {
 			try {
 				pw.flush();
 				if (andClose) {
@@ -591,7 +591,7 @@ public abstract class TermServerScript implements RF2Constants {
 			} catch (Exception e) {}
 		}
 		if (andClose) {
-			fileMap = new HashMap<>();
+			printWriterMap = new HashMap<>();
 		}
 	}
 	
@@ -710,13 +710,13 @@ public abstract class TermServerScript implements RF2Constants {
 	
 	PrintWriter getPrintWriter(String fileName) throws TermServerScriptException {
 		try {
-			PrintWriter pw = fileMap.get(fileName);
+			PrintWriter pw = printWriterMap.get(fileName);
 			if (pw == null) {
 				File file = ensureFileExists(fileName);
 				OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(file, true), StandardCharsets.UTF_8);
 				BufferedWriter bw = new BufferedWriter(osw);
 				pw = new PrintWriter(bw);
-				fileMap.put(fileName, pw);
+				printWriterMap.put(fileName, pw);
 			}
 			return pw;
 		} catch (Exception e) {
@@ -763,17 +763,48 @@ public abstract class TermServerScript implements RF2Constants {
 		d.setType(DescriptionType.SYNONYM);
 		d.setLang(LANG_EN);
 		d.setCaseSignificance(SnomedUtils.calculateCaseSignificance(term));
-		d.setAcceptabilityMap(createAcceptabilityMap(acceptability, dialects));
+		d.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(acceptability, dialects));
 		d.setConceptId(concept.getConceptId());
 		concept.addDescription(d);
 	}
 
-	protected Map<String, Acceptability> createAcceptabilityMap(Acceptability acceptability, String[] dialects) {
-		Map<String, Acceptability> aMap = new HashMap<String, Acceptability>();
-		for (String dialect : dialects) {
-			aMap.put(dialect, acceptability);
+	protected void report(Task task, Component component, Severity severity, ReportActionType actionType, Object... details) {
+		if (component != null) {
+			if (severity.equals(Severity.CRITICAL)) {
+				String key = CRITICAL_ISSUE + " encountered for " + component.toString();
+				addSummaryInformation(key, details[0]);
+				info ( key + " : " + details[0]);
+			}
 		}
-		return aMap;
+		String key = (task == null? "" :  task.getKey());
+		String desc = (task == null? "" :  task.getSummary());
+		String name = (component == null ? "" : component.getReportedName());
+		String type = (component == null ? "" : component.getReportedType());
+		String line = key + COMMA + desc + COMMA + component.getId() + COMMA_QUOTE + 
+						name + QUOTE_COMMA + type + COMMA + severity + 
+						COMMA + actionType;
+		for (Object detail : details) {
+			 line += COMMA_QUOTE + detail + QUOTE;
+		}
+		writeToReportFile (line);
+	}
+	
+
+	
+	protected void report (Concept c, Description d, Object...details) {
+		StringBuffer sb = new StringBuffer();
+		sb.append (QUOTE)
+		.append(c==null?"":c.getConceptId())
+		.append(QUOTE_COMMA_QUOTE)
+		.append(d==null?"":d)
+		.append(QUOTE);
+		
+		for (Object detail : details) {
+			 sb.append(COMMA_QUOTE)
+			 .append(detail)
+			 .append(QUOTE);
+		}
+		writeToReportFile (sb.toString());
 	}
 
 }

@@ -262,7 +262,7 @@ public class OnExamination_or_ComplainingOf extends BatchFix implements RF2Const
 			incrementSummaryInformation ("SuggestedCreation");
 		}
 		
-		report (c, severity, ReportActionType.INFO, 
+		report (c, c.getFSNDescription(), severity, ReportActionType.INFO, 
 				exactMatch == null? "" : exactMatch.toString(), 
 				closeMatch == null ? "" : closeMatch.toString(), 
 				suggestedAddition == null ? "" : suggestedAddition.toString(), 

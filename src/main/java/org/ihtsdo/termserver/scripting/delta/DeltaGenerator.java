@@ -54,33 +54,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 	protected IdGenerator descIdGenerator;
 	protected IdGenerator relIdGenerator;
 	
-	private Map<ComponentType, String> fileMap = new HashMap<ComponentType, String>();
-	
-	protected void report(Concept concept, Description d, Severity severity, ReportActionType actionType, String... details) {
-		String line = "";
-		if (concept == null) {
-			line = "" + COMMA + COMMA_QUOTE + 
-					"Unknown" + QUOTE_COMMA_QUOTE; 
-		} else if (d==null) {
-			line = concept.getConceptId() + COMMA + COMMA_QUOTE + 
-					concept.getFsn() + QUOTE_COMMA_QUOTE; 
-		} else {
-			line = concept.getConceptId() + COMMA + 
-				d.getDescriptionId() + COMMA_QUOTE + 
-				d.getTerm().replace("\"", "'") + QUOTE_COMMA_QUOTE ; 
-		}
-		line += severity + QUOTE_COMMA_QUOTE + 
-				actionType.toString() + QUOTE;
-		
-		for (String detail : details) {
-			 line += COMMA_QUOTE + detail.replace("\"", "'") + QUOTE;
-		}
-		writeToReportFile(line);
-	}
-	
-	protected void report(Concept concept, Severity severity, ReportActionType actionType, String... details) {
-		report (concept, concept==null?null:concept.getFSNDescription() , severity, actionType, details);
-	}
+	protected Map<ComponentType, String> fileMap = new HashMap<ComponentType, String>();
 	
 	protected void init (String[] args) throws IOException, TermServerScriptException, SnowOwlClientException, SnowOwlClientException {
 		super.init(args);

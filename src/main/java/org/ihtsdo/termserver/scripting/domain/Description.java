@@ -226,7 +226,15 @@ public class Description implements RF2Constants, Component{
 
 	@Override
 	public String toString() {
-		return (descriptionId==null?"NEW":descriptionId) + "[" + conceptId + "]: " + term;
+		StringBuffer sb = new StringBuffer();
+		sb.append(descriptionId==null?"NEW":descriptionId)
+		.append(" [")
+		.append(conceptId)
+		.append( "] ")
+		.append(SnomedUtils.toString(acceptabilityMap))
+		.append(": ")
+		.append(term);
+		return sb.toString();
 	}
 
 	@Override
@@ -358,34 +366,15 @@ public class Description implements RF2Constants, Component{
 	 * @return true if this description is preferred in any dialect.
 	 */
 	public boolean isPreferred() {
-		//Are we working with the JSON map, or RF2 Lang refset entries?
-		if (acceptabilityMap != null) {
-			for (Map.Entry<String, Acceptability> entry: acceptabilityMap.entrySet()) {
-				if (entry.getValue().equals(Acceptability.PREFERRED)) {
-					return true;
-				}
-			}
-			return false;
-		}
-		
-		if (langRefsetEntries != null) {
-			for (LangRefsetEntry entry : langRefsetEntries) {
-				if (entry.getAcceptabilityId().equals(SCTID_PREFERRED_TERM)) {
-					return true;
-				}
-			}
-			return false;
-		}
-		
-		return false;
+		return isPreferred(null);
 	}
 	
 	public boolean isPreferred(String langRefsetSctId) {
 		//Are we working with the JSON map, or RF2 Lang refset entries?
 		if (acceptabilityMap != null) {
 			for (Map.Entry<String, Acceptability> entry: acceptabilityMap.entrySet()) {
-				if (entry.getKey().equals(langRefsetSctId) && 
-					entry.getValue().equals(Acceptability.PREFERRED)) {
+				if ((langRefsetSctId == null || entry.getKey().equals(langRefsetSctId)) && 
+						entry.getValue().equals(Acceptability.PREFERRED)) {
 					return true;
 				}
 			}
@@ -394,7 +383,7 @@ public class Description implements RF2Constants, Component{
 		
 		if (langRefsetEntries != null) {
 			for (LangRefsetEntry entry : langRefsetEntries) {
-				if (entry.getRefsetId().equals(langRefsetSctId) &&
+				if ((langRefsetSctId == null || entry.getRefsetId().equals(langRefsetSctId)) &&
 					entry.getAcceptabilityId().equals(SCTID_PREFERRED_TERM)) {
 					return true;
 				}
@@ -536,6 +525,10 @@ public class Description implements RF2Constants, Component{
 	@Override
 	public String getReportedType() {
 		return type.toString();
+	}
+
+	public String getEffectiveTimeSafely() {
+		return effectiveTime == null ? "" : effectiveTime;
 	}
 
 }

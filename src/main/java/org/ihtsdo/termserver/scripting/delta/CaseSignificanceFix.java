@@ -96,10 +96,10 @@ public class CaseSignificanceFix extends DeltaGenerator implements RF2Constants 
 		for (Concept c : GraphLoader.getGraphLoader().getAllConcepts()) {
 			if (c.isActive()) {
 				if (exceptions.contains(c.getId())) {
-					report (c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Concept manually listed as an exception");
+					report (c, null, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Concept manually listed as an exception");
 				} else {
 					for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-						if (d.getCaseSignificance().equals(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE.toString()) &&
+						if (d.getCaseSignificance().equals(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE) &&
 								!SnomedUtils.isCaseSensitive(d.getTerm())) {
 							d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
 							String msg = "Set to entire term case insensitive.  Last modified " + d.getEffectiveTime();
