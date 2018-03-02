@@ -227,13 +227,21 @@ public class Description implements RF2Constants, Component{
 	@Override
 	public String toString() {
 		StringBuffer sb = new StringBuffer();
+		String caseSig = caseSignificance.toString();
+		try {
+			caseSig = SnomedUtils.translateCaseSignificanceFromEnum(caseSignificance); 
+		} catch (Exception e) {}
+		
 		sb.append(descriptionId==null?"NEW":descriptionId)
 		.append(" [")
 		.append(conceptId)
 		.append( "] ")
 		.append(SnomedUtils.toString(acceptabilityMap))
 		.append(": ")
-		.append(term);
+		.append(term)
+		.append(" [")
+		.append(caseSig)
+		.append("]");
 		return sb.toString();
 	}
 

@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.hamcrest.text.IsEqualIgnoringCase;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
@@ -123,7 +124,7 @@ public abstract class DrugBatchFix extends BatchFix implements RF2Constants{
 		//This function will split out the US / GB terms if the ingredients show variance where the product does not
 		validateUsGbVarianceInIngredients(t,c);
 		
-		if (c.getConceptId().equals("108943009")) {
+		if (c.getConceptId().equals("109044007")) {
 			debug ("Check this concept");
 		}
 		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
@@ -155,6 +156,11 @@ public abstract class DrugBatchFix extends BatchFix implements RF2Constants{
 			Description replacement = d.clone(null);
 			replacement.setTerm(replacementTerm);
 			
+			//Does the case significance of the ingredients suggest a need to modify the term?
+			if (replacement.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE) && SnomedUtils.isCaseSensitive(replacementTerm)) {
+				replacement.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
+			}
+			
 			//Have we made any changes?  Create a new description if so
 			if (!replacementTerm.equals(d.getTerm())) {
 				changesMade += replaceTerm(t, c, d, replacement);
@@ -179,7 +185,7 @@ public abstract class DrugBatchFix extends BatchFix implements RF2Constants{
 		return changesMade;
 	}
 
-	private int replaceTerm(Task t, Concept c, Description d, Description replacement) {
+	private int replaceTerm(Task t, Concept c, Description removing, Description replacement) {
 		int changesMade = 0;
 		boolean doReplacement = true;
 		if (termAlreadyExists(c, replacement.getTerm())) {
@@ -189,36 +195,43 @@ public abstract class DrugBatchFix extends BatchFix implements RF2Constants{
 			} else {
 				report(t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Replacement term already exists: '" + replacement.getTerm() + "' inactivating unwanted term only.");
 			}
-			//If we're removing a PT, merge the acceptability with the existing term
-			if (d.isPreferred()) {
-				mergeAcceptability(t, c, d, replacement.getTerm());
+			//If we're removing a PT, merge the acceptability into the existing term, also any from the replacement
+			if (removing.isPreferred()) {
+				mergeAcceptability(t, c, removing, replacement);
 			}
 			doReplacement = false;
 		}
 		
 		//Has our description been published?  Remove entirely if not
-		boolean isInactivated = removeDescription(c,d);
-		String msg = (isInactivated?"Inactivated desc ":"Deleted desc ") +  d;
+		boolean isInactivated = removeDescription(c,removing);
+		String msg = (isInactivated?"Inactivated desc ":"Deleted desc ") +  removing;
 		if (doReplacement) {
-			msg += " in favour of '" + replacement.getTerm() + "'";
+			msg += " in favour of " + replacement;
 			c.addDescription(replacement);
 		}
 		changesMade++;
-		Severity severity = d.getType().equals(DescriptionType.FSN)?Severity.MEDIUM:Severity.LOW;
+		Severity severity = removing.getType().equals(DescriptionType.FSN)?Severity.MEDIUM:Severity.LOW;
 		report(t, c, severity, ReportActionType.DESCRIPTION_CHANGE_MADE, msg);
 		return changesMade;
 	}
 
-	private void mergeAcceptability(Task t, Concept c, Description d, String term) {
-		//Find the matching term that is not d and merge that with the acceptability of d
+	private void mergeAcceptability(Task t, Concept c, Description removing, Description replacement) {
+		//Find the matching term that is not removing and merge that with the acceptability of removing
+		boolean merged = false;
 		for (Description match : c.getDescriptions(ActiveState.ACTIVE)) {
-			if (!d.equals(match) && match.getTerm().equals(term)) {
-				Map<String,Acceptability> mergedMap = SnomedUtils.mergeAcceptabilityMap(d.getAcceptabilityMap(), match.getAcceptabilityMap());
-				report(t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Merged acceptability map:" + SnomedUtils.toString(mergedMap));
-				d.setAcceptabilityMap(mergedMap);
+			if (!removing.equals(match) && match.getTerm().equals(replacement.getTerm())) {
+				Map<String,Acceptability> mergedMap = SnomedUtils.mergeAcceptabilityMap(removing.getAcceptabilityMap(), match.getAcceptabilityMap());
+				match.setAcceptabilityMap(mergedMap);
+				//Now add in any improved acceptability that was coming from the replacement 
+				mergedMap = SnomedUtils.mergeAcceptabilityMap(match.getAcceptabilityMap(), replacement.getAcceptabilityMap());
+				match.setAcceptabilityMap(mergedMap);
+				report(t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Merged acceptability from description being replaced and replacement into term that already exists: " + match);
+				merged = true;
 			}
 		}
-		
+		if (!merged) {
+			report(t, c, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to find existing term to receive accepabilty merge with " + removing);
+		}
 	}
 
 	private void reactivateMatchingTerm(Task t, Concept c, Description replacement) {

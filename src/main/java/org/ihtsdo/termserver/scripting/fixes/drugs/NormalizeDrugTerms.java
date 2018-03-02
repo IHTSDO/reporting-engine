@@ -53,7 +53,8 @@ public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants{
 	private void postInit() throws TermServerScriptException {
 		//When we use the CS Fixer, we'll tell it to use our report printWriter rather than its own,
 		//otherwise things get horribly confused!
-		csFixer = new CaseSignificanceFixAll(reportFile, printWriterMap);
+		//This code modified to only report possible issues, not fix them.
+		csFixer = new CaseSignificanceFixAll(reportFile, printWriterMap, CaseSignificanceFixAll.Mode.REPORT_ONLY);
 		Concept doseFormRoot = gl.getConcept(421967003L);  // |Drug dose form (qualifier value)|);
 		doseForms.add(" oral tablet");
 		doseForms.add(" in oral dosage form");
@@ -78,7 +79,7 @@ public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants{
 			return 0;
 		}
 		//We'll take a little diversion here to correct the case significance of the ingredients
-		correctIngredientCaseSignficance(task, loadedConcept);
+		validateIngredientCaseSignficance(task, loadedConcept);
 		int changesMade = ensureDrugTermsConform(task, loadedConcept);
 		if (changesMade > 0) {
 			saveConcept(task, loadedConcept, info);
@@ -86,18 +87,18 @@ public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants{
 		return changesMade;
 	}
 
-	private void correctIngredientCaseSignficance(Task task, Concept c) throws TermServerScriptException {
+	private void validateIngredientCaseSignficance(Task task, Concept c) throws TermServerScriptException {
 		for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE)) {
 			//Test making changes first, and then if it looks like fixes are needed, load substance and change for real
 			Concept ingredient = gl.getConcept(r.getTarget().getConceptId());
-			int changesMade = csFixer.normalizeCaseSignificance(ingredient, true, !runStandAlone);  //Only silent if we're not standalone, otherwise changes aren't reported due changing same concept twice.
-			if (changesMade > 0) {
+			csFixer.normalizeCaseSignificance(ingredient, true);  
+			/*if (changesMade > 0) {
 				Concept loadedIngredient = loadConcept(ingredient, task.getBranchPath());
 				changesMade = csFixer.normalizeCaseSignificance(loadedIngredient, true, false); //Not silently this time!
 				if (changesMade > 0) {
 					saveConcept(task, loadedIngredient, "");
 				}
-			}
+			}*/
 		}
 	}
 

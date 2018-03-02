@@ -19,18 +19,22 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * 
  */
 public class CaseSignificanceFixAll extends DeltaGenerator implements RF2Constants {
+	
+	public enum Mode{ REPORT_ONLY, SILENT_CHANGE, REPORT_CHANGE };
+	public Mode mode;
 
 	private List<String> exceptions = new ArrayList<>();
 	boolean padReport = false;
 	
-	public CaseSignificanceFixAll (File reportFile, Map<String, PrintWriter> printWriterMap) {
+	public CaseSignificanceFixAll (File reportFile, Map<String, PrintWriter> printWriterMap, Mode mode) {
 		this.reportFile = reportFile;
 		this.printWriterMap = printWriterMap;
 		padReport = true;  //Add two blank columns to make output compatible with a BatchFix
+		this.mode = mode;
 	}
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
-		CaseSignificanceFixAll delta = new CaseSignificanceFixAll(null, null);
+		CaseSignificanceFixAll delta = new CaseSignificanceFixAll(null, null, Mode.REPORT_CHANGE);
 		try {
 			delta.newIdsRequired = false; // We'll only be modifying existing descriptions\
 			delta.additionalReportColumns = "Old, New, EffectiveTime, Notes";
@@ -52,7 +56,7 @@ public class CaseSignificanceFixAll extends DeltaGenerator implements RF2Constan
 		info("Processing...");
 		for (Concept c : GraphLoader.getGraphLoader().getAllConcepts()) {
 			if (c.isActive()) {
-				normalizeCaseSignificance(c, false, false);
+				normalizeCaseSignificance(c, false);
 			}
 			if (c.isModified()) {
 				incrementSummaryInformation("Concepts modified", 1);
@@ -61,27 +65,27 @@ public class CaseSignificanceFixAll extends DeltaGenerator implements RF2Constan
 		}
 	}
 
-	public int normalizeCaseSignificance(Concept c, boolean aggressive, boolean silent) throws TermServerScriptException {
+	public int normalizeCaseSignificance(Concept c, boolean aggressive) throws TermServerScriptException {
 		int changesMade = 0;
 		if (exceptions.contains(c.getId())) {
-			if (!silent) {
+			if (!mode.equals(Mode.SILENT_CHANGE)) {
 				report (c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "", "","","","Concept manually listed as an exception");
 			}
 		} else {
 			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 				if (exceptions.contains(c.getId())) {
-					if (!silent) {
+					if (!mode.equals(Mode.SILENT_CHANGE)) {
 						report (c, Severity.MEDIUM, ReportActionType.NO_CHANGE, d, "","","","Description manually listed as an exception");
 					}
 				} else {
 					switch (d.getCaseSignificance()) {
-					case INITIAL_CHARACTER_CASE_INSENSITIVE : changesMade += normalizeCaseSignificance_cI(c, d, silent);
+					case INITIAL_CHARACTER_CASE_INSENSITIVE : changesMade += normalizeCaseSignificance_cI(c, d);
 																break;
-					case CASE_INSENSITIVE : changesMade += normalizeCaseSignificance_ci(c, d, silent);
+					case CASE_INSENSITIVE : changesMade += normalizeCaseSignificance_ci(c, d);
 																break;
 					case ENTIRE_TERM_CASE_SENSITIVE:  //Have to assume author is correct here, unless we're being aggressive
 												if (aggressive) {
-													changesMade += normalizeCaseSignificance_CS(c, d, silent);
+													changesMade += normalizeCaseSignificance_CS(c, d);
 												}
 												break;
 					}
@@ -91,7 +95,7 @@ public class CaseSignificanceFixAll extends DeltaGenerator implements RF2Constan
 		return changesMade;
 	}
 
-	private int normalizeCaseSignificance_cI(Concept c, Description d, boolean silent) {
+	private int normalizeCaseSignificance_cI(Concept c, Description d) {
 		int changesMade = 0;
 		String term = d.getTerm();
 		if (d.getType().equals(DescriptionType.FSN)) {
@@ -99,12 +103,14 @@ public class CaseSignificanceFixAll extends DeltaGenerator implements RF2Constan
 		}
 		//First letter lower case should always be CS
 		if (startsLower(term)) {
-			d.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
-			d.setEffectiveTime(null);
-			d.setDirty();
-			changesMade++;
-			c.setModified();  //Indicates concept contains changes, without necessarily needing a concept RF2 line output
-			if (!silent) {
+			if (!mode.equals(Mode.REPORT_ONLY)) {
+				d.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
+				d.setEffectiveTime(null);
+				d.setDirty();
+				changesMade++;
+				c.setModified();  //Indicates concept contains changes, without necessarily needing a concept RF2 line output
+			}
+			if (!mode.equals(Mode.SILENT_CHANGE)) {
 				report(c, Severity.LOW,ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, d, "cI", "CS", d.getEffectiveTimeSafely());
 				incrementSummaryInformation("Descriptions modified", 1);
 			}
@@ -114,19 +120,21 @@ public class CaseSignificanceFixAll extends DeltaGenerator implements RF2Constan
 		return changesMade;
 	}
 	
-	private int normalizeCaseSignificance_ci(Concept c, Description d, boolean silent) throws TermServerScriptException {
+	private int normalizeCaseSignificance_ci(Concept c, Description d) throws TermServerScriptException {
 		String term = d.getTerm();
 		if (d.getType().equals(DescriptionType.FSN)) {
 			term = SnomedUtils.deconstructFSN(term)[0];
 		}
 		boolean changeMade = false;
 		//First letter lower case should always be CS
-		if (startsLower(term)) {
-			d.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
-			changeMade = true;
-		} else if (SnomedUtils.isCaseSensitive(term)) {
-			d.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
-			changeMade = true;	
+		if (!mode.equals(Mode.REPORT_ONLY)) {
+			if (startsLower(term)) {
+				d.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
+				changeMade = true;
+			} else if (SnomedUtils.isCaseSensitive(term)) {
+				d.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
+				changeMade = true;	
+			}
 		}
 		
 		if (changeMade) {
@@ -134,7 +142,7 @@ public class CaseSignificanceFixAll extends DeltaGenerator implements RF2Constan
 			d.setEffectiveTime(null);
 			d.setDirty();
 			c.setModified();  //Indicates concept contains changes, without necessarily needing a concept RF2 line output
-			if (!silent) {
+			if (!mode.equals(Mode.SILENT_CHANGE)) {
 				report(c,Severity.LOW,ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, d, "ci", newValue, d.getEffectiveTimeSafely());
 				incrementSummaryInformation("Descriptions modified", 1);
 			}
@@ -149,7 +157,7 @@ public class CaseSignificanceFixAll extends DeltaGenerator implements RF2Constan
 	 * @param d
 	 * @param silent 
 	 */
-	private int normalizeCaseSignificance_CS(Concept c, Description d, boolean silent) {
+	private int normalizeCaseSignificance_CS(Concept c, Description d) {
 		int changesMade = 0;
 		String term = d.getTerm();
 		if (d.getType().equals(DescriptionType.FSN)) {
@@ -159,12 +167,17 @@ public class CaseSignificanceFixAll extends DeltaGenerator implements RF2Constan
 		//Otherwise if we've no further upper case letters, we *could* be ok to say this
 		//is "ci", but only if we're being aggressive about it.
 		if (!startsLower(term) && !SnomedUtils.isCaseSensitive(term)) {
-			d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
-			d.setEffectiveTime(null);
-			d.setDirty();
-			changesMade++;
-			c.setModified();  //Indicates concept contains changes, without necessarily needing a concept RF2 line output
-			if (!silent) {
+			if (!mode.equals(Mode.REPORT_ONLY)) {
+				d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
+				d.setEffectiveTime(null);
+				d.setDirty();
+				changesMade++;
+				c.setModified();  //Indicates concept contains changes, without necessarily needing a concept RF2 line output
+			}
+			
+			if (mode.equals(Mode.REPORT_ONLY)) {
+				report(c,Severity.MEDIUM,ReportActionType.VALIDATION_CHECK, d, "Algorithm would suggest change from CS to ci");
+			} else if (mode.equals(Mode.REPORT_CHANGE)) {
 				report(c,Severity.MEDIUM,ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, d, "CS", "ci", d.getEffectiveTimeSafely());
 				incrementSummaryInformation("Descriptions modified", 1);
 			}
