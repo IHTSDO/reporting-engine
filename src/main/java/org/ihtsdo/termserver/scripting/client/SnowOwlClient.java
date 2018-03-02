@@ -130,6 +130,13 @@ public class SnowOwlClient {
 		}
 	}
 	
+	private String encode(String ecl) {
+		//Perform minimal encoding to URL string since a full encode appears to cause problems.
+		String eclEncoded = ecl.replaceAll(" ", "%20");
+		eclEncoded = eclEncoded.replaceAll("<", "%3C");
+		return eclEncoded;
+	}
+
 	private String getConceptsPath(String branchPath) {
 		return url + "/" + branchPath + "/concepts";
 	}

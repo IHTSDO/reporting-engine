@@ -7,6 +7,9 @@ import java.util.stream.Collectors;
 public class RelationshipGroup {
 	List<Relationship> relationships;
 	long groupId;
+	
+	//Generic flag to say if group should be highlighted for some reason, eg cause a template match to fail
+	String indicators = "";
 	//Generic holder to record some property of this relationship which we need to deal with
 	List<Concept> issues;
 	
@@ -54,12 +57,14 @@ public class RelationshipGroup {
 	
 	@Override
 	public String toString() {
-		return "{ " + relationships.stream()
+		return indicators + "{ " + relationships.stream()
 				.sorted((r1, r2) -> r1.getType().getFsn().compareTo(r2.getType().getFsn()))
 				.map(i -> i.toString())
 				.collect (Collectors.joining(", ")) + " }";
 	}
 	
-	
+	public void addIndicator(char indicator) {
+		this.indicators += indicator;
+	}
 	
 }

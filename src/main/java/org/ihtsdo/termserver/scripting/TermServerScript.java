@@ -42,6 +42,7 @@ import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.RelationshipSerializer;
 import org.ihtsdo.termserver.scripting.domain.Task;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.springframework.web.client.HttpClientErrorException;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
@@ -455,11 +456,14 @@ public abstract class TermServerScript implements RF2Constants {
 	protected List<Concept> findConcepts(String branch, String ecl) throws TermServerScriptException {
 		try {
 				JSONResource response = tsClient.getConcepts(ecl, branch);
+				if (response.getHTTPStatus() != 200) {
+					throw new TermServerScriptException ("HTTP " + response.getHTTPStatus());
+				}
 				String json = response.toObject().toString();
 				ConceptCollection collection = gson.fromJson(json, ConceptCollection.class);
 				return collection.getItems();
 		} catch (Exception e) {
-			throw new TermServerScriptException("Failed to recover concepts due to " + e.getMessage(),e);
+			throw new TermServerScriptException("Failed to recover concepts using ECL '" + ecl + "' due to " + e.getMessage(),e);
 		}
 	}
 

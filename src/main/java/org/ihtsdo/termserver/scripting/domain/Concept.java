@@ -74,6 +74,7 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 	//When interacting with the TS, only one inactivation indicator is used (see above).
 	List<InactivationIndicatorEntry> inactivationIndicatorEntries;
 	List<HistoricalAssociation> historicalAssociations;
+	Collection<RelationshipGroup> relationshipGroups;
 	
 	public String getReviewer() {
 		return reviewer;
@@ -302,6 +303,8 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 		r.setTarget(target);
 		r.setModifier(Modifier.EXISTENTIAL);
 		relationships.add(r);
+		//Reset our cache of relationship groups
+		relationshipGroups = null;
 	}
 
 	public boolean isLoaded() {
@@ -334,6 +337,9 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 		}
 		r.setRelationshipId(id);
 		relationships.add(r);
+		
+		//Reset our cache of relationship groups, recalculate next time it's requested
+		relationshipGroups = null;
 	}
 	
 	public void addChild(CharacteristicType characteristicType, Concept c) {
@@ -819,23 +825,23 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 	}
 	
 	public Collection<RelationshipGroup> getRelationshipGroups(CharacteristicType characteristicType, ActiveState activeState, boolean includeGroup0) {
-		Map<Long, RelationshipGroup> groups = new HashMap<>();
-		for (Relationship r : getRelationships(characteristicType, activeState)) {
-			if (!includeGroup0 && r.getGroupId() == 0) {
-				continue;
+		if (relationshipGroups == null) {
+			Map<Long, RelationshipGroup> groups = new HashMap<>();
+			for (Relationship r : getRelationships(characteristicType, activeState)) {
+				if (!includeGroup0 && r.getGroupId() == 0) {
+					continue;
+				}
+				//Do we know about this Relationship Group yet?
+				RelationshipGroup group = groups.get(r.getGroupId());
+				if (group == null) {
+					group = new RelationshipGroup(r.getGroupId() , r);
+					groups.put(r.getGroupId(), group);
+				} else {
+					group.getRelationships().add(r);
+				}
 			}
-			//Do we know about this Relationship Group yet?
-			RelationshipGroup group = groups.get(r.getGroupId());
-			if (group == null) {
-				group = new RelationshipGroup(r.getGroupId() , r);
-				groups.put(r.getGroupId(), group);
-			} else {
-				group.getRelationships().add(r);
-			}
+			relationshipGroups = groups.values();
 		}
-		return groups.values();
+		return relationshipGroups;
 	}
-	
-
-
 }
