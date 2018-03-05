@@ -26,7 +26,7 @@ public class TemplateUtils {
 	public static String ECL_DESCENDANT_OR_SELF = "<<";
 	public static Pattern p = Pattern.compile("[0-9]+");
 	
-	public static String covertToECL (LogicalTemplate template) {
+	public static String covertToECL (LogicalTemplate template, boolean restrictive) {
 		StringBuffer sb = new StringBuffer();
 		
 		//Comma separated focus concepts as descendants
@@ -51,33 +51,35 @@ public class TemplateUtils {
 		
 		//And we want zero groups that contain any other attributes
 		//Now add the grouped attributes
-		for (AttributeGroup group : template.getAttributeGroups()) {
-			sb.append(",[0..0]{ (<< 246061005 |Attribute (attribute)| MINUS (")
-				.append(group.getAttributes().stream()
-					.map( a -> a.getType() )
-					.collect (Collectors.joining(" AND ")))
-				.append(")) = * }");
+		if (restrictive) {
+			for (AttributeGroup group : template.getAttributeGroups()) {
+				sb.append(",[0..0]{ (<< 246061005 |Attribute (attribute)| MINUS (")
+					.append(group.getAttributes().stream()
+						.map( a -> a.getType() )
+						.collect (Collectors.joining(" AND ")))
+					.append(")) = * }");
+			}
 		}
 		
 		return sb.toString();
 	}
 
-	public static boolean matchesTemplate(Concept c, LogicalTemplate t, DescendentsCache cache, char templateId, CharacteristicType charType) throws TermServerScriptException {
+	public static boolean matchesTemplate(Concept c, Template t, DescendentsCache cache, CharacteristicType charType) throws TermServerScriptException {
 		//TODO Check the focus concept
 		//TODO Check the ungrouped attributes
-		
+		LogicalTemplate lt = t.getLogicalTemplate();
 		//Map relGroups to template attribute groups, and visa versa
 		Map<RelationshipGroup, List<AttributeGroup>> relGroupMatchesTemplateGroups = new HashMap<>();
 		Map<AttributeGroup,  List<RelationshipGroup>> templateGroupMatchesRelGroups = new HashMap<>();
 		
 		//Pre-populate the attributeGroups in case we have no relationship groups, and the relationship groups in case we have no matching template groups
-		t.getAttributeGroups().stream().forEach(attributeGroup -> templateGroupMatchesRelGroups.put(attributeGroup, new ArrayList<RelationshipGroup>()));
+		lt.getAttributeGroups().stream().forEach(attributeGroup -> templateGroupMatchesRelGroups.put(attributeGroup, new ArrayList<RelationshipGroup>()));
 		c.getRelationshipGroups(charType, ActiveState.ACTIVE, false).stream().forEach(relGroup -> relGroupMatchesTemplateGroups.put(relGroup, new ArrayList<AttributeGroup>()));
 		
 		//Work through each group (except 0) and check which of the groups in the template it matches
 		for (RelationshipGroup relGroup : c.getRelationshipGroups(charType, ActiveState.ACTIVE, false)) {
 			//Work through each template group and confirm that one of them matches
-			for (AttributeGroup templateGroup : t.getAttributeGroups()) {
+			for (AttributeGroup templateGroup : lt.getAttributeGroups()) {
 				if (matchesTemplateGroup (relGroup, templateGroup, cache)) {
 					//Update map of concept relationship groups matching template attribute groups
 					List<AttributeGroup> matchedAttributeGroups = relGroupMatchesTemplateGroups.get(relGroup);
@@ -89,7 +91,7 @@ public class TemplateUtils {
 				}
 			}
 		}
-		return validateCardinality(relGroupMatchesTemplateGroups, templateGroupMatchesRelGroups, c, templateId);
+		return validateCardinality(relGroupMatchesTemplateGroups, templateGroupMatchesRelGroups, c, t.getId());
 	}
 
 	private static boolean validateCardinality(
@@ -200,5 +202,9 @@ public class TemplateUtils {
 		.append(g.getCardinalityMax())
 		.append("]");
 		return sb.toString();
+	}
+
+	public static String toString(LogicalTemplate logicalTemplate) {
+		return covertToECL (logicalTemplate, false);
 	}
 }

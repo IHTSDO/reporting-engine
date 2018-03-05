@@ -164,7 +164,7 @@ public class FlattenHierarchy extends BatchFix implements RF2Constants{
 		for (Relationship parentRel : parentRels) {
 			//Only removing the parent that we're replacing as a modification
 			if (parentRel.getTarget().equals(expectedTarget)) {
-				remove (task, parentRel, loadedConcept, grandParentsDesc, true);
+				removeParentRelationship (task, parentRel, loadedConcept, grandParentsDesc);
 			}
 		}
 		
@@ -263,21 +263,6 @@ public class FlattenHierarchy extends BatchFix implements RF2Constants{
 			}
 		}
 		return grandParentRels;
-	}
-
-	private void remove(Task t, Relationship rel, Concept c, String retained, boolean isParent) throws TermServerScriptException {
-		
-		//Are we inactivating or deleting this relationship?
-		if (rel.getEffectiveTime() == null || rel.getEffectiveTime().isEmpty()) {
-			c.removeRelationship(rel);
-			String msg = "Deleted parent relationship: " + rel.getTarget() + " in favour of " + retained;
-			report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_DELETED, msg);
-		} else {
-			rel.setEffectiveTime(null);
-			rel.setActive(false);
-			String msg = "Inactivated parent relationship: " + rel.getTarget() + " in favour of " + retained;
-			report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_INACTIVATED, msg);
-		}
 	}
 	
 	@Override

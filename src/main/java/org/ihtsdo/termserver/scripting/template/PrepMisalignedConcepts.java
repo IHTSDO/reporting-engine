@@ -2,18 +2,14 @@ package org.ihtsdo.termserver.scripting.template;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
-import org.ihtsdo.otf.authoringtemplate.domain.logical.AttributeGroup;
-import org.ihtsdo.otf.authoringtemplate.domain.logical.LogicalTemplate;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
-import org.ihtsdo.termserver.scripting.client.TemplateServiceClient;
 import org.ihtsdo.termserver.scripting.domain.Batch;
 import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
@@ -21,26 +17,16 @@ import org.ihtsdo.termserver.scripting.domain.RelationshipGroup;
 import org.ihtsdo.termserver.scripting.domain.Task;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-
 import us.monoid.json.JSONObject;
 
-public class AlignSubHierarchyToTemplate extends BatchFix {
+public class PrepMisalignedConcepts extends TemplateFix {
 
-	String subHierarchyStr = "46866001"; //|Fracture of lower limb (disorder)|
-	Concept subHierarchy;
-	List<LogicalTemplate> templates = new ArrayList<>();
-	DescendentsCache cache = new DescendentsCache();
-	String[] ignoreFSNsContaining = new String[] { "avulsion" };
-	
-	
-	protected AlignSubHierarchyToTemplate(BatchFix clone) {
+	protected PrepMisalignedConcepts(BatchFix clone) {
 		super(clone);
 	}
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
-		AlignSubHierarchyToTemplate app = new AlignSubHierarchyToTemplate(null);
+		PrepMisalignedConcepts app = new PrepMisalignedConcepts(null);
 		try {
 			app.selfDetermining = true;
 			app.additionalReportColumns = "CharacteristicType, Attribute";
@@ -57,22 +43,6 @@ public class AlignSubHierarchyToTemplate extends BatchFix {
 		}
 	}
 
-	private void postInit() throws TermServerScriptException, JsonParseException, JsonMappingException, IOException {
-		subHierarchy = gl.getConcept(subHierarchyStr);
-		TemplateServiceClient tsc = new TemplateServiceClient();
-		templates.add(tsc.loadLogicalTemplate("Fracture of Bone Structure.json"));
-		templates.add(tsc.loadLogicalTemplate("Fracture Dislocation of Bone Structure.json"));
-		info(templates.size() + " Templates loaded successfully");
-		
-		//Seems to be an issue with parsing cardianality.  Add this in manually.
-		for (LogicalTemplate template : templates ) {
-			for (AttributeGroup group : template.getAttributeGroups()) {
-				group.setCardinalityMin("1");
-				group.setCardinalityMax("*");
-			}
-		}
-	}
-	
 	@Override
 	protected int doFix(Task task, Concept concept, String info) throws TermServerScriptException, ValidationFailure {
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
@@ -106,11 +76,9 @@ public class AlignSubHierarchyToTemplate extends BatchFix {
 		Set<Concept> unalignedConcepts = cache.getDescendentsOrSelf(subHierarchy);
 		Set<Concept> ignoredConcepts = new HashSet<>();
 		
-		char templateId = 'A';
-		for (LogicalTemplate template : templates) {
-			Set<Concept> matches = findTemplateMatches(template, templateId);
+		for (Template template : templates) {
+			Set<Concept> matches = findTemplateMatches(template);
 			unalignedConcepts.removeAll(matches);
-			templateId++;
 		}
 		
 		for (Concept c : unalignedConcepts) {
@@ -126,33 +94,6 @@ public class AlignSubHierarchyToTemplate extends BatchFix {
 		}
 		unalignedConcepts.removeAll(ignoredConcepts);
 		return asComponents(unalignedConcepts);
-	}
-
-	private boolean isIngnored(Concept c) {
-		//We could ignore on the basis of a word, or SCTID
-		for (String word : ignoreFSNsContaining) {
-			if (c.getFsn().toLowerCase().contains(word)) {
-				debug (c + "ignored due to fsn containing: " + word);
-				incrementSummaryInformation("Ignored concepts");
-				return true;
-			}
-		}
-		return false;
-	}
-
-	private Set<Concept> findTemplateMatches(LogicalTemplate t, char templateId) throws TermServerScriptException {
-		Set<Concept> matches = new HashSet<Concept>();
-		for (Concept c : cache.getDescendentsOrSelf(subHierarchy)) {
-			
-			if (c.getConceptId().equals("263114007")) {
-				debug ("Checking concept 263114007");
-			}
-			
-			if (TemplateUtils.matchesTemplate(c, t, cache, templateId, CharacteristicType.INFERRED_RELATIONSHIP)) {
-				matches.add(c);
-			}
-		}
-		return matches;
 	}
 
 	@Override

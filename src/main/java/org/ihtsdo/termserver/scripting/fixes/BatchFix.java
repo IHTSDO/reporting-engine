@@ -447,6 +447,22 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		}
 	}
 	
+
+	protected void removeParentRelationship (Task t, Relationship rel, Concept c, String retained) throws TermServerScriptException {
+		
+		//Are we inactivating or deleting this relationship?
+		if (!rel.isReleased()) {
+			c.removeRelationship(rel);
+			String msg = "Deleted parent relationship: " + rel.getTarget() + " in favour of " + retained;
+			report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_DELETED, msg);
+		} else {
+			rel.setEffectiveTime(null);
+			rel.setActive(false);
+			String msg = "Inactivated parent relationship: " + rel.getTarget() + " in favour of " + retained;
+			report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_INACTIVATED, msg);
+		}
+	}
+	
 	protected void sendEmail(String content, File resultsFile)  {
 		Properties props = new Properties();
 		props.put("mail.transport.protocol", emailDetails[0]);
