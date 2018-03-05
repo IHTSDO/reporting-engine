@@ -7,43 +7,50 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.otf.authoringtemplate.domain.logical.LogicalTemplate;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.client.TemplateServiceClient;
+import org.ihtsdo.termserver.scripting.domain.Batch;
+import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RelationshipGroup;
-import org.ihtsdo.termserver.scripting.reports.TermServerReport;
+import org.ihtsdo.termserver.scripting.domain.Task;
+import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 
-public class AlignSubHierarchyToTemplate extends TermServerReport {
+import us.monoid.json.JSONObject;
+
+public class AlignSubHierarchyToTemplate extends BatchFix {
 	
+	protected AlignSubHierarchyToTemplate(BatchFix clone) {
+		super(clone);
+	}
+
 	String subHierarchyStr = "46866001"; //|Fracture of lower limb (disorder)|
 	Concept subHierarchy;
 	List<LogicalTemplate> templates = new ArrayList<>();
 	DescendentsCache cache = new DescendentsCache();
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
-		AlignSubHierarchyToTemplate report = new AlignSubHierarchyToTemplate();
+		AlignSubHierarchyToTemplate app = new AlignSubHierarchyToTemplate(null);
 		try {
-			report.additionalReportColumns = "CharacteristicType, Attribute";
-			report.init(args);
-			report.loadProjectSnapshot(false);  //Load all descriptions
-			report.postInit();
-			//while (true) {
-				try {
-					report.reportUnlignedConcepts();
-				} catch (Exception e) {
-					debug ("Failure due to " + e.getMessage());
-				}
-			//}
+			app.selfDetermining = true;
+			app.additionalReportColumns = "CharacteristicType, Attribute";
+			app.init(args);
+			app.loadProjectSnapshot(false);  //Load all descriptions
+			app.postInit();
+			Batch batch = app.formIntoBatch();
+			app.batchProcess(batch);
 		} catch (Exception e) {
 			info("Failed to produce ConceptsWithOrTargetsOfAttribute Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
-			report.finish();
+			app.finish();
 		}
 	}
 
@@ -53,6 +60,23 @@ public class AlignSubHierarchyToTemplate extends TermServerReport {
 		templates.add(tsc.loadLogicalTemplate("Fracture of Bone Structure.json"));
 		templates.add(tsc.loadLogicalTemplate("Fracture Dislocation of Bone Structure.json"));
 		info(templates.size() + " Templates loaded successfully");
+	}
+	
+	@Override
+	protected int doFix(Task task, Concept concept, String info) throws TermServerScriptException, ValidationFailure {
+		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
+		//We're not currently able to programmatically fix template infractions, so we'll save
+		//the concept unaltered so it appears in the task description and for review.
+		try {
+			String conceptSerialised = gson.toJson(loadedConcept);
+			debug ((dryRun ?"Dry run ":"Updating state of ") + loadedConcept + info);
+			if (!dryRun) {
+				tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
+			}
+		} catch (Exception e) {
+			report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
+		}
+		return 0;
 	}
 
 	/*private void reportUnlignedConcepts() throws TermServerScriptException {	
@@ -66,7 +90,7 @@ public class AlignSubHierarchyToTemplate extends TermServerReport {
 		}
 	}*/
 	
-	protected void reportUnlignedConcepts() throws TermServerScriptException {
+	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		//Start with the whole subHierarchy and remove concepts that match each of our templates
 		Set<Concept> unalignedConcepts = cache.getDescendentsOrSelf(subHierarchy);
 		char templateId = 'A';
@@ -82,19 +106,24 @@ public class AlignSubHierarchyToTemplate extends TermServerReport {
 				debug ("    " + g);
 			}
 		}
+		
+		return asComponents(unalignedConcepts);
 	}
 
 	private Set<Concept> findTemplateMatches(LogicalTemplate t, char templateId) throws TermServerScriptException {
 		Set<Concept> matches = new HashSet<Concept>();
 		for (Concept c : cache.getDescendentsOrSelf(subHierarchy)) {
-			if (c.getConceptId().equals("263093003")) {
-				debug("Check Me");
-			}
 			if (TemplateUtils.matchesTemplate(c, t, cache, templateId)) {
 				matches.add(c);
 			}
 		}
 		return matches;
+	}
+
+	@Override
+	protected Concept loadLine(String[] lineItems) throws TermServerScriptException {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

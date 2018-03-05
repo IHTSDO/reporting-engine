@@ -76,6 +76,10 @@ public class SplitRoleGroupsWithRepeatedAttributes extends BatchFix implements R
 	}
 	
 	protected Set<RelationshipGroup> hasRepeatedAttributeType (Concept c, CharacteristicType charType) {
+		
+		if (c.getConceptId().equals("77572008")) {
+			debug ("Checkpoint " + c);
+		}
 		Set<RelationshipGroup> repeatedAttributeDetected = new HashSet<>();
 		Set<Concept> attributeDetected = new HashSet<>();
 		for (RelationshipGroup g : c.getRelationshipGroups(charType, ActiveState.ACTIVE)) {
