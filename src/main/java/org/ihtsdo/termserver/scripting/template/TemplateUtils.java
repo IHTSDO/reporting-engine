@@ -1,5 +1,10 @@
 package org.ihtsdo.termserver.scripting.template;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -57,30 +62,68 @@ public class TemplateUtils {
 		return sb.toString();
 	}
 
-	public static boolean matchesTemplate(Concept c, LogicalTemplate t, DescendentsCache cache, char templateId) throws TermServerScriptException {
+	public static boolean matchesTemplate(Concept c, LogicalTemplate t, DescendentsCache cache, char templateId, CharacteristicType charType) throws TermServerScriptException {
 		//TODO Check the focus concept
 		//TODO Check the ungrouped attributes
 		
-		//Work through each group (except 0) and check it matches one of the groups in the template
-		nextRelGroup:
-		for (RelationshipGroup relGroup : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE, false)) {
+		//Map relGroups to template attribute groups, and visa versa
+		Map<RelationshipGroup, List<AttributeGroup>> relGroupMatchesTemplateGroups = new HashMap<>();
+		Map<AttributeGroup,  List<RelationshipGroup>> templateGroupMatchesRelGroups = new HashMap<>();
+		
+		//Pre-populate the attributeGroups in case we have no relationship groups, and the relationship groups in case we have no matching template groups
+		t.getAttributeGroups().stream().forEach(attributeGroup -> templateGroupMatchesRelGroups.put(attributeGroup, new ArrayList<RelationshipGroup>()));
+		c.getRelationshipGroups(charType, ActiveState.ACTIVE, false).stream().forEach(relGroup -> relGroupMatchesTemplateGroups.put(relGroup, new ArrayList<AttributeGroup>()));
+		
+		//Work through each group (except 0) and check which of the groups in the template it matches
+		for (RelationshipGroup relGroup : c.getRelationshipGroups(charType, ActiveState.ACTIVE, false)) {
 			//Work through each template group and confirm that one of them matches
 			for (AttributeGroup templateGroup : t.getAttributeGroups()) {
 				if (matchesTemplateGroup (relGroup, templateGroup, cache)) {
-					//We can go straight on to check the next relationship group now
-					continue nextRelGroup;
+					//Update map of concept relationship groups matching template attribute groups
+					List<AttributeGroup> matchedAttributeGroups = relGroupMatchesTemplateGroups.get(relGroup);
+					matchedAttributeGroups.add(templateGroup);
+					
+					//Update map of template attribute groups matching concept relationship groups  
+					List<RelationshipGroup> matchedRelGroups = templateGroupMatchesRelGroups.get(templateGroup);
+					matchedRelGroups.add(relGroup);
 				}
 			}
-			relGroup.addIndicator(templateId);
-			return false;
 		}
-		return true;
+		return validateCardinality(relGroupMatchesTemplateGroups, templateGroupMatchesRelGroups, c, templateId);
+	}
+
+	private static boolean validateCardinality(
+			Map<RelationshipGroup, List<AttributeGroup>> relGroupMatchesTemplateGroups,
+			Map<AttributeGroup, List<RelationshipGroup>> templateGroupMatchesRelGroups,
+			Concept c,
+			char templateId) {
+		boolean isValid = true;
+		//Does every relationship group match at least one attribute group?  If not, record that failure
+		for (Entry<RelationshipGroup, List<AttributeGroup>> entry : relGroupMatchesTemplateGroups.entrySet()) {
+			if (entry.getValue().size() == 0) {
+				isValid = false;
+				entry.getKey().addIndicator(templateId);
+			}
+		}
+		
+		//Are there the correct number of relationship groups for each template attribute group?
+		for (Entry<AttributeGroup, List<RelationshipGroup>> entry : templateGroupMatchesRelGroups.entrySet()) {
+			Cardinality cardinality = getCardinality(entry.getKey());
+			int count = entry.getValue().size();
+			if (count < cardinality.getMin() || count > cardinality.getMax()) {
+				isValid = false;
+				c.addIssue(templateId + "(" + count + "!=" + getCardinalityStr(entry.getKey()) + ")");
+				break;
+			}
+		}
+		return isValid;
 	}
 
 	private static boolean matchesTemplateGroup(RelationshipGroup relGroup, AttributeGroup templateGroup, DescendentsCache cache) throws TermServerScriptException {
 		//For each attribute, check if there's a match in the template
 		nextRel:
 		for (Relationship r : relGroup.getRelationships()) {
+			//TODO Check attribute cardinality here
 			for (Attribute a : templateGroup.getAttributes()) {
 				if (matchesAttribute(r, a, cache)) {
 					//We can check the next relationship
@@ -126,5 +169,36 @@ public class TemplateUtils {
 	private static boolean matchesAttributeType(Concept c1, String c2Str) throws TermServerScriptException {
 		Concept c2 = GraphLoader.getGraphLoader().getConcept(c2Str);
 		return c1.equals(c2);
+	}
+
+	public static Cardinality getCardinality(AttributeGroup group) {
+		Cardinality cardinality = new Cardinality();
+		cardinality.setMin(getCardinality(group.getCardinalityMin()));
+		cardinality.setMax(getCardinality(group.getCardinalityMax()));
+		return cardinality;
+	}
+
+	private static int getCardinality(String cStr) {
+		if (cStr == null || cStr.isEmpty()) {
+			return 0;
+		}
+		//The ~ character indicates a replacement.  Not needed for testing
+		cStr = cStr.replace("~", "");
+		
+		if (cStr.equals("*")) {
+			return Integer.MAX_VALUE;
+		} else {
+			return Integer.parseInt(cStr);
+		}
+	}
+	
+	private static String getCardinalityStr(AttributeGroup g) {
+		StringBuffer sb = new StringBuffer();
+		sb.append("[")
+		.append(g.getCardinalityMin())
+		.append("..")
+		.append(g.getCardinalityMax())
+		.append("]");
+		return sb.toString();
 	}
 }

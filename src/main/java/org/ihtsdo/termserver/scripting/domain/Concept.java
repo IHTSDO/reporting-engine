@@ -70,6 +70,9 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 	private int depth = NOT_SET;
 	private boolean isDirty = false;
 	
+	//Generic debug string to say if concept should be highlighted for some reason, eg cause a template match to fail
+	String issues = "";
+	
 	//Note that these values are used when loading from RF2 where multiple entries can exist.
 	//When interacting with the TS, only one inactivation indicator is used (see above).
 	List<InactivationIndicatorEntry> inactivationIndicatorEntries;
@@ -843,5 +846,13 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 			relationshipGroups = groups.values();
 		}
 		return relationshipGroups;
+	}
+	
+	public void addIssue(String issue) {
+		this.issues += issue;
+	}
+	
+	public String getIssues() {
+		return issues;
 	}
 }

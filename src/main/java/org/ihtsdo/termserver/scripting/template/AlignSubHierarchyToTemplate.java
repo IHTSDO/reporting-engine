@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
+import org.ihtsdo.otf.authoringtemplate.domain.logical.AttributeGroup;
 import org.ihtsdo.otf.authoringtemplate.domain.logical.LogicalTemplate;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
@@ -62,6 +63,14 @@ public class AlignSubHierarchyToTemplate extends BatchFix {
 		templates.add(tsc.loadLogicalTemplate("Fracture of Bone Structure.json"));
 		templates.add(tsc.loadLogicalTemplate("Fracture Dislocation of Bone Structure.json"));
 		info(templates.size() + " Templates loaded successfully");
+		
+		//Seems to be an issue with parsing cardianality.  Add this in manually.
+		for (LogicalTemplate template : templates ) {
+			for (AttributeGroup group : template.getAttributeGroups()) {
+				group.setCardinalityMin("1");
+				group.setCardinalityMax("*");
+			}
+		}
 	}
 	
 	@Override
@@ -95,6 +104,8 @@ public class AlignSubHierarchyToTemplate extends BatchFix {
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		//Start with the whole subHierarchy and remove concepts that match each of our templates
 		Set<Concept> unalignedConcepts = cache.getDescendentsOrSelf(subHierarchy);
+		Set<Concept> ignoredConcepts = new HashSet<>();
+		
 		char templateId = 'A';
 		for (LogicalTemplate template : templates) {
 			Set<Concept> matches = findTemplateMatches(template, templateId);
@@ -104,13 +115,16 @@ public class AlignSubHierarchyToTemplate extends BatchFix {
 		
 		for (Concept c : unalignedConcepts) {
 			if (!isIngnored(c)) {
-				debug (c);
+				debug (c + " - " + c.getIssues());
 				for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
 					debug ("    " + g);
 				}
+				incrementSummaryInformation("Concepts identified as not matching any template");
+			} else {
+				ignoredConcepts.add(c);
 			}
 		}
-		
+		unalignedConcepts.removeAll(ignoredConcepts);
 		return asComponents(unalignedConcepts);
 	}
 
@@ -118,7 +132,8 @@ public class AlignSubHierarchyToTemplate extends BatchFix {
 		//We could ignore on the basis of a word, or SCTID
 		for (String word : ignoreFSNsContaining) {
 			if (c.getFsn().toLowerCase().contains(word)) {
-				debug ("Ignoring " + c + " due to fsn containing: " + word);
+				debug (c + "ignored due to fsn containing: " + word);
+				incrementSummaryInformation("Ignored concepts");
 				return true;
 			}
 		}
@@ -128,7 +143,12 @@ public class AlignSubHierarchyToTemplate extends BatchFix {
 	private Set<Concept> findTemplateMatches(LogicalTemplate t, char templateId) throws TermServerScriptException {
 		Set<Concept> matches = new HashSet<Concept>();
 		for (Concept c : cache.getDescendentsOrSelf(subHierarchy)) {
-			if (TemplateUtils.matchesTemplate(c, t, cache, templateId)) {
+			
+			if (c.getConceptId().equals("263114007")) {
+				debug ("Checking concept 263114007");
+			}
+			
+			if (TemplateUtils.matchesTemplate(c, t, cache, templateId, CharacteristicType.INFERRED_RELATIONSHIP)) {
 				matches.add(c);
 			}
 		}
