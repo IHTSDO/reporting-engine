@@ -26,15 +26,17 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import us.monoid.json.JSONObject;
 
 public class AlignSubHierarchyToTemplate extends BatchFix {
-	
-	protected AlignSubHierarchyToTemplate(BatchFix clone) {
-		super(clone);
-	}
 
 	String subHierarchyStr = "46866001"; //|Fracture of lower limb (disorder)|
 	Concept subHierarchy;
 	List<LogicalTemplate> templates = new ArrayList<>();
 	DescendentsCache cache = new DescendentsCache();
+	String[] ignoreFSNsContaining = new String[] { "avulsion" };
+	
+	
+	protected AlignSubHierarchyToTemplate(BatchFix clone) {
+		super(clone);
+	}
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		AlignSubHierarchyToTemplate app = new AlignSubHierarchyToTemplate(null);
@@ -101,13 +103,26 @@ public class AlignSubHierarchyToTemplate extends BatchFix {
 		}
 		
 		for (Concept c : unalignedConcepts) {
-			debug (c);
-			for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
-				debug ("    " + g);
+			if (!isIngnored(c)) {
+				debug (c);
+				for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
+					debug ("    " + g);
+				}
 			}
 		}
 		
 		return asComponents(unalignedConcepts);
+	}
+
+	private boolean isIngnored(Concept c) {
+		//We could ignore on the basis of a word, or SCTID
+		for (String word : ignoreFSNsContaining) {
+			if (c.getFsn().toLowerCase().contains(word)) {
+				debug ("Ignoring " + c + " due to fsn containing: " + word);
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private Set<Concept> findTemplateMatches(LogicalTemplate t, char templateId) throws TermServerScriptException {
