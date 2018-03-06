@@ -23,7 +23,7 @@ import us.monoid.json.JSONObject;
  * QI2018
  * For concepts that align to a given template, we can normalise them.
  * That is to say, copy all the inferred relationships into the stated form
- * and set the proximal primitive parent.
+ * and set the proximal primitive parent - if it matches the template expectation
  */
 public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 

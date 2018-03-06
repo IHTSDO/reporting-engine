@@ -849,6 +849,9 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 	}
 	
 	public void addIssue(String issue) {
+		if (!this.issues.isEmpty()) {
+			this.issues += ", ";
+		}
 		this.issues += issue;
 	}
 	
