@@ -51,7 +51,8 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	protected int taskSize = 10;
 	protected int wiggleRoom = 5;
 	protected String targetAuthor;
-	protected String[] author_reviewer = new String[] {targetAuthor};
+	protected String targetReviewer;
+	protected String[] author_reviewer;
 	protected String[] emailDetails;
 	protected boolean selfDetermining = false; //Set to true if the batch fix calculates its own data to process
 	protected boolean populateEditPanel = true;
@@ -276,24 +277,30 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 
 	protected void init (String[] args) throws TermServerScriptException, IOException {
 		if (args.length < 3) {
-			info("Usage: java <FixClass> [-a author] [-n <taskSize>] [-r <restart position>] [-l <limit> ] [-t taskCreationDelay] -c <authenticatedCookie> [-d <Y/N>] [-p <projectName>] -f <batch file Location>");
+			info("Usage: java <FixClass> [-a author][-a2 reviewer ][-n <taskSize>] [-r <restart position>] [-l <limit> ] [-t taskCreationDelay] -c <authenticatedCookie> [-d <Y/N>] [-p <projectName>] -f <batch file Location>");
 			info(" d - dry run");
 			System.exit(-1);
 		}
 		boolean isTaskSize = false;
 		boolean isAuthor = false;
+		boolean isReviewer = false;
 		boolean isLimit = false;
 	
 		for (String thisArg : args) {
 			if (thisArg.equals("-a")) {
 				isAuthor = true;
+			} else if (thisArg.equals("-a2")) {
+				isReviewer = true;
 			} else if (thisArg.equals("-n")) {
 				isTaskSize = true;
-			}else if (thisArg.equals("-l")) {
+			} else if (thisArg.equals("-l")) {
 				isLimit = true;
 			} else if (isAuthor) {
 				targetAuthor = thisArg.toLowerCase();
 				isAuthor = false;
+			} else if (isReviewer) {
+				targetReviewer = thisArg.toLowerCase();
+				isReviewer = false;
 			} else if (isTaskSize) {
 				taskSize = Integer.parseInt(thisArg);
 				isTaskSize = false;
@@ -322,6 +329,12 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		
 		if (targetAuthor == null) {
 			throw new TermServerScriptException("No target author detected in command line arguments");
+		} else {
+			if (targetReviewer != null) {
+				author_reviewer = new String[] { targetAuthor, targetReviewer };
+			} else {
+				author_reviewer = new String[] { targetAuthor };
+			}
 		}
 		
 		if (!selfDetermining) {
