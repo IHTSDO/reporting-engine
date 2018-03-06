@@ -20,6 +20,7 @@ import org.ihtsdo.termserver.scripting.domain.RelationshipGroup;
 import org.ihtsdo.termserver.scripting.domain.Task;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 
+import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
 
 public class PrepMisalignedConcepts extends TemplateFix {
@@ -56,15 +57,31 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		//the concept unaltered so it appears in the task description and for review.
 		report(task, loadedConcept);
 		try {
-			String conceptSerialised = gson.toJson(loadedConcept);
-			debug ((dryRun ?"Dry run ":"Updating state of ") + loadedConcept + info);
 			if (!dryRun) {
-				tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
+				touchConcept(task, loadedConcept, info);
+			} else {
+				debug ("Skipping concept touch for " + loadedConcept);
 			}
 		} catch (Exception e) {
 			report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
 		}
 		return 0;
+	}
+
+	private void touchConcept(Task t, Concept c, String info) throws SnowOwlClientException, JSONException {
+		debug ("Touching FSN CS for " + c + info);
+		CaseSignificance orig = c.getFSNDescription().getCaseSignificance();
+		CaseSignificance flip = orig.equals(CaseSignificance.CASE_INSENSITIVE)?CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE : CaseSignificance.CASE_INSENSITIVE;
+		
+		//Flip it
+		c.getFSNDescription().setCaseSignificance(flip);
+		String conceptSerialised = gson.toJson(c);
+		tsClient.updateConcept(new JSONObject(conceptSerialised), t.getBranchPath());
+		
+		//Flip it back
+		c.getFSNDescription().setCaseSignificance(orig);
+		conceptSerialised = gson.toJson(c);
+		tsClient.updateConcept(new JSONObject(conceptSerialised), t.getBranchPath());
 	}
 
 	private void report(Task t, Concept c) {
