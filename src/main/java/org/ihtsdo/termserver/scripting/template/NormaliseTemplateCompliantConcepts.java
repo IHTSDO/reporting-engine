@@ -2,6 +2,8 @@ package org.ihtsdo.termserver.scripting.template;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -14,8 +16,10 @@ import org.ihtsdo.termserver.scripting.domain.Batch;
 import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
+import org.ihtsdo.termserver.scripting.domain.RelationshipGroup;
 import org.ihtsdo.termserver.scripting.domain.Task;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import us.monoid.json.JSONObject;
 
@@ -76,6 +80,16 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		}
 		
 		//If the proximal primitive parent matches the template, we can set that
+		changesMade += checkAndSetProximalPrimitiveParent(t, c, template);
+		
+		//Restate inferred relationships as stated where required
+		changesMade += restateInferredRelationships(t,c);
+		
+		return changesMade;
+	}
+
+	private int checkAndSetProximalPrimitiveParent(Task t, Concept c, Template template) throws TermServerScriptException {
+		int changesMade = 0;
 		List<Concept> ppps = determineProximalPrimitiveParents(c);
 		if (template.getLogicalTemplate().getFocusConcepts().size() != 1) {
 			report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Template " + template.getId() + " does not have 1 focus concept.  Cannot remodel.");
@@ -85,13 +99,11 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 			Concept ppp = ppps.get(0);
 			Concept templatePPP = gl.getConcept(template.getLogicalTemplate().getFocusConcepts().get(0));
 			if (ppp.equals(templatePPP)) {
-				setProximalPrimitiveParent(t, c, ppp);
+				changesMade += setProximalPrimitiveParent(t, c, ppp);
 			} else {
 				report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Calculated PPP " + ppp + " does not match that suggested by template: " + templatePPP + ", cannot remodel.");
 			}
-			
 		}
-		
 		return changesMade;
 	}
 
@@ -119,6 +131,52 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 			}
 		}
 		return changesMade;
+	}
+
+	private int restateInferredRelationships(Task t, Concept c) {
+		//Work through all inferred groups and collect any that aren't also stated, to state
+		int changesMade = 0;
+		List<RelationshipGroup> toBeStated = new ArrayList<>();
+		Collection<RelationshipGroup> inferredGroups = c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE);
+		Collection<RelationshipGroup> statedGroups = c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
+		
+		nextInferredGroup:
+		for (RelationshipGroup inferredGroup : inferredGroups) {
+			boolean matchFound = false;
+			for (RelationshipGroup statedGroup : statedGroups) {
+				if (inferredGroup.equals(statedGroup)) {
+					matchFound = true;
+					continue nextInferredGroup;
+				}
+			}
+			if (!matchFound) {
+				toBeStated.add(inferredGroup);
+			}
+		}
+		changesMade += stateRelationshipGroups(t, c, toBeStated);
+		if (changesMade == 0) {
+			report (t, c, Severity.NONE, ReportActionType.NO_CHANGE, "Stated/Inferred groups already matched: " + statedGroups.size() + "/" + inferredGroups);
+		}
+		return changesMade;
+	}
+
+	private int stateRelationshipGroups(Task t, Concept c, List<RelationshipGroup> toBeStated) {
+		int changesMade = 0;
+		for (RelationshipGroup g : toBeStated) {
+			int freeGroup = SnomedUtils.getFirstFreeGroup(c);
+			stateRelationshipGroup(t, c, g, freeGroup);
+			changesMade++;
+			report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, g);
+		}
+		return changesMade;
+	}
+
+	private void stateRelationshipGroup(Task t, Concept c, RelationshipGroup g, int groupId) {
+		for (Relationship r : g.getRelationships()) {
+			Relationship newRel = r.clone(null);
+			newRel.setGroupId(groupId);
+			c.addRelationship(newRel);
+		}
 	}
 
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {

@@ -67,19 +67,20 @@ public class TemplateUtils {
 	public static boolean matchesTemplate(Concept c, Template t, DescendentsCache cache, CharacteristicType charType) throws TermServerScriptException {
 		//TODO Check the focus concept
 		//TODO Check the ungrouped attributes
-		LogicalTemplate lt = t.getLogicalTemplate();
+
 		//Map relGroups to template attribute groups, and visa versa
 		Map<RelationshipGroup, List<AttributeGroup>> relGroupMatchesTemplateGroups = new HashMap<>();
 		Map<AttributeGroup,  List<RelationshipGroup>> templateGroupMatchesRelGroups = new HashMap<>();
 		
 		//Pre-populate the attributeGroups in case we have no relationship groups, and the relationship groups in case we have no matching template groups
-		lt.getAttributeGroups().stream().forEach(attributeGroup -> templateGroupMatchesRelGroups.put(attributeGroup, new ArrayList<RelationshipGroup>()));
-		c.getRelationshipGroups(charType, ActiveState.ACTIVE, false).stream().forEach(relGroup -> relGroupMatchesTemplateGroups.put(relGroup, new ArrayList<AttributeGroup>()));
+		t.getAttributeGroups().stream().forEach(attributeGroup -> templateGroupMatchesRelGroups.put(attributeGroup, new ArrayList<RelationshipGroup>()));
+		//Include group 0
+		c.getRelationshipGroups(charType, ActiveState.ACTIVE).stream().forEach(relGroup -> relGroupMatchesTemplateGroups.put(relGroup, new ArrayList<AttributeGroup>()));
 		
-		//Work through each group (except 0) and check which of the groups in the template it matches
-		for (RelationshipGroup relGroup : c.getRelationshipGroups(charType, ActiveState.ACTIVE, false)) {
+		//Work through each group (including 0) and check which of the groups in the template it matches
+		for (RelationshipGroup relGroup : c.getRelationshipGroups(charType, ActiveState.ACTIVE)) {
 			//Work through each template group and confirm that one of them matches
-			for (AttributeGroup templateGroup : lt.getAttributeGroups()) {
+			for (AttributeGroup templateGroup : t.getAttributeGroups()) {
 				if (matchesTemplateGroup (relGroup, templateGroup, cache)) {
 					//Update map of concept relationship groups matching template attribute groups
 					List<AttributeGroup> matchedAttributeGroups = relGroupMatchesTemplateGroups.get(relGroup);

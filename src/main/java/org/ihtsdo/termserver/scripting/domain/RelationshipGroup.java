@@ -67,4 +67,29 @@ public class RelationshipGroup {
 		this.indicators += indicator;
 	}
 	
+	@Override
+	public boolean equals (Object other) {
+		if (!(other instanceof RelationshipGroup)) {
+			return false;
+		}
+		//Groups will be compared by triples, but not group id
+		RelationshipGroup otherGroup = (RelationshipGroup) other;
+		
+		//If the count if different, we don't need to check individual items.
+		if (this.getRelationships().size() != otherGroup.getRelationships().size()) {
+			return false;
+		}
+		
+		nextLhsRel:
+		for (Relationship lhs : this.getRelationships()) {
+			//Can we find a matching relationship.  We're sure of source, so just check type and target
+			for (Relationship rhs : otherGroup.getRelationships()) {
+				if (lhs.getType().equals(rhs.getType()) && rhs.getTarget().equals(rhs.getTarget())) {
+					continue nextLhsRel;
+				}
+			}
+			return false;
+		}
+		return true;
+	}
 }

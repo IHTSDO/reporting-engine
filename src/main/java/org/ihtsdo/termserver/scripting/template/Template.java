@@ -1,5 +1,11 @@
 package org.ihtsdo.termserver.scripting.template;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
+import org.ihtsdo.otf.authoringtemplate.domain.logical.Attribute;
+import org.ihtsdo.otf.authoringtemplate.domain.logical.AttributeGroup;
 import org.ihtsdo.otf.authoringtemplate.domain.logical.LogicalTemplate;
 
 public class Template {
@@ -32,5 +38,21 @@ public class Template {
 	
 	public String toString () {
 		return id + ": " + TemplateUtils.toString(logicalTemplate);
+	}
+
+	public Collection<AttributeGroup> getAttributeGroups() {
+		//Does the logical template have any ungrouped attributes?  We can simplify the code by calling that 
+		//a group.
+		
+		List<Attribute> ungrouped = logicalTemplate.getUngroupedAttributes();
+		if (ungrouped != null && ungrouped.size() > 0) {
+			List<AttributeGroup> combinedGroups = new ArrayList<>();
+			AttributeGroup group0 = new AttributeGroup();
+			group0.setAttributes(ungrouped);
+			combinedGroups.add(group0);
+			combinedGroups.addAll(logicalTemplate.getAttributeGroups());
+			return combinedGroups;
+		}
+		return logicalTemplate.getAttributeGroups();
 	}
 }

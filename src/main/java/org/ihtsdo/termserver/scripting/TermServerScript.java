@@ -44,6 +44,8 @@ import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.RelationshipSerializer;
 import org.ihtsdo.termserver.scripting.domain.Task;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants.DefinitionStatus;
+import org.ihtsdo.termserver.scripting.template.AncestorsCache;
+import org.ihtsdo.termserver.scripting.template.DescendentsCache;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.springframework.web.client.HttpClientErrorException;
 
@@ -96,6 +98,8 @@ public abstract class TermServerScript implements RF2Constants {
 	protected String tsRoot = "MAIN/"; //"MAIN/2016-01-31/SNOMEDCT-DK/";
 	
 	protected Map<String, PrintWriter> printWriterMap = new HashMap<>();
+	protected DescendentsCache descendantsCache = new DescendentsCache();
+	protected AncestorsCache ancestorsCache = new AncestorsCache();
 	
 	protected static Gson gson;
 	static {
@@ -817,7 +821,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected List<Concept> determineProximalPrimitiveParents(Concept c) throws TermServerScriptException {
 		//Filter for only the primitive ancestors
 		//Sort to work with the lowest level concepts first for efficiency
-		List<Concept> primitiveAncestors = c.getAncestors(NOT_SET).stream()
+		List<Concept> primitiveAncestors = ancestorsCache.getAncestors(c).stream()
 											.filter(ancestor -> ancestor.getDefinitionStatus().equals(DefinitionStatus.PRIMITIVE))
 											.sorted((c1, c2) -> Integer.compare(c2.getDepth(), c1.getDepth()))
 											.collect(Collectors.toList());

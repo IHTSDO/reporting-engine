@@ -20,7 +20,6 @@ abstract public class TemplateFix extends BatchFix {
 	Concept subHierarchy;
 	List<String> templateNames;
 	List<Template> templates = new ArrayList<>();
-	DescendentsCache cache = new DescendentsCache();
 	String[] ignoreFSNsContaining = new String[] { "avulsion" };
 	TemplateServiceClient tsc = new TemplateServiceClient();
 	
@@ -56,13 +55,13 @@ abstract public class TemplateFix extends BatchFix {
 	
 	protected Set<Concept> findTemplateMatches(Template t) throws TermServerScriptException {
 		Set<Concept> matches = new HashSet<Concept>();
-		for (Concept c : cache.getDescendentsOrSelf(subHierarchy)) {
+		for (Concept c : descendantsCache.getDescendentsOrSelf(subHierarchy)) {
 			
 			if (c.getConceptId().equals("263114007")) {
 				debug ("Checking concept 263114007");
 			}
 			
-			if (TemplateUtils.matchesTemplate(c, t, cache, CharacteristicType.INFERRED_RELATIONSHIP)) {
+			if (TemplateUtils.matchesTemplate(c, t, descendantsCache, CharacteristicType.INFERRED_RELATIONSHIP)) {
 				//Do we already have a template for this concept?  
 				//TODO Assign the most specific template if so
 				if (conceptToTemplateMap.containsKey(c)) {

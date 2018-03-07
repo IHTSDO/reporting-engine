@@ -23,6 +23,8 @@ import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants.Acceptability;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.ActiveState;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
 
 public class SnomedUtils implements RF2Constants{
 	
@@ -719,6 +721,26 @@ public class SnomedUtils implements RF2Constants{
 			case DrugUtils.CD : c.setConceptType(ConceptType.CLINICAL_DRUG);
 										break;
 			default : c.setConceptType(ConceptType.UNKNOWN);
+		}
+	}
+	
+	//Return a set of groups where there is an active non-isa relationship
+	public static Set<Integer> getActiveGroups(Concept c) {
+		Set<Integer> activeGroups = new HashSet<>();
+		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
+			if (!r.getType().equals(IS_A)) {
+				activeGroups.add((int)r.getGroupId());
+			}
+		}
+		return activeGroups;
+	}
+	
+	public static int getFirstFreeGroup(Concept c) {
+		Set<Integer> activeGroups = getActiveGroups(c);
+		for (int i = 1; ; i++) {
+			if (!activeGroups.contains(i)) {
+				return i;
+			}
 		}
 	}
 

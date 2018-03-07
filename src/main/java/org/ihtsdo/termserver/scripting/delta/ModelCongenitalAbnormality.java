@@ -99,7 +99,7 @@ public class ModelCongenitalAbnormality extends DeltaGenerator {
 				report (concept, concept.getFSNDescription(), Severity.MEDIUM, ReportActionType.NO_CHANGE, msg);
 			} else {
 				int changesMade = 0;
-				int firstFreeGroup = getFirstFreeGroup(concept);
+				int firstFreeGroup = SnomedUtils.getFirstFreeGroup(concept);
 				//If we move the finding site, also try to mvoe the occurrence
 				changesMade += moveGroup0Attribute(concept, findingSite, firstFreeGroup);
 				if (changesMade > 0) {
@@ -250,7 +250,7 @@ public class ModelCongenitalAbnormality extends DeltaGenerator {
 		
 		for (Concept requiredOccurrenceTarget : allParentOccurrenceTargets) {
 			//We need an occurrence for each active group
-			for (Integer groupId : getActiveGroups(concept)) {
+			for (Integer groupId : SnomedUtils.getActiveGroups(concept)) {
 				Relationship addMe = new Relationship(concept, occurrence, requiredOccurrenceTarget, groupId);
 				addMe.setRelationshipId(relIdGenerator.getSCTID());
 				addMe.setDirty();
@@ -322,25 +322,6 @@ public class ModelCongenitalAbnormality extends DeltaGenerator {
 		return new RelationshipTemplate(type, target, ct);
 	}
 	
-	//Return a set of groups where there is an active non-isa relationship
-	private Set<Integer> getActiveGroups(Concept c) {
-		Set<Integer> activeGroups = new HashSet<>();
-		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
-			if (!r.getType().equals(IS_A)) {
-				activeGroups.add((int)r.getGroupId());
-			}
-		}
-		return activeGroups;
-	}
-	
-	private int getFirstFreeGroup(Concept c) {
-		Set<Integer> activeGroups = getActiveGroups(c);
-		for (int i = 1; ; i++) {
-			if (!activeGroups.contains(i)) {
-				return i;
-			}
-		}
-	}
 
 	@Override
 	protected Concept loadLine(String[] lineItems)

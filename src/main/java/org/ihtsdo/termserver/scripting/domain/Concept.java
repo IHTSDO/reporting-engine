@@ -827,11 +827,14 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 		return getRelationshipGroups(characteristicType, activeState, true);
 	}
 	
+	/**
+	 * Relationship groups will not include IS A relationships
+	 */
 	public Collection<RelationshipGroup> getRelationshipGroups(CharacteristicType characteristicType, ActiveState activeState, boolean includeGroup0) {
 		if (relationshipGroups == null) {
 			Map<Long, RelationshipGroup> groups = new HashMap<>();
 			for (Relationship r : getRelationships(characteristicType, activeState)) {
-				if (!includeGroup0 && r.getGroupId() == 0) {
+				if (r.getType().equals(IS_A) || !includeGroup0 && r.getGroupId() == 0) {
 					continue;
 				}
 				//Do we know about this Relationship Group yet?
