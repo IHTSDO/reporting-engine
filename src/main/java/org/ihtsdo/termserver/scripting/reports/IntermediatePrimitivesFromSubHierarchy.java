@@ -12,6 +12,7 @@ import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 /**
+ * QI-2
  * Reports concepts that are intermediate primitives from point of view of some subhierarchy
  * */
 public class IntermediatePrimitivesFromSubHierarchy extends TermServerReport{
@@ -35,7 +36,8 @@ public class IntermediatePrimitivesFromSubHierarchy extends TermServerReport{
 	}
 	
 	private void postInit() throws TermServerScriptException {
-		subHierarchy = gl.getConcept("46866001"); // |Fracture of lower limb (disorder)|
+		//subHierarchy = gl.getConcept("46866001"); // |Fracture of lower limb (disorder)|
+		subHierarchy = gl.getConcept("125605004"); // |Fracture of bone (disorder)|
 	}
 
 	private void reportIntermediatePrimitives() throws TermServerScriptException {
