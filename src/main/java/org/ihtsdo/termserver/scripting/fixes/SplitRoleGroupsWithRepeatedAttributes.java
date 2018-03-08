@@ -82,7 +82,7 @@ public class SplitRoleGroupsWithRepeatedAttributes extends BatchFix implements R
 		}
 		Set<RelationshipGroup> repeatedAttributeDetected = new HashSet<>();
 		Set<Concept> attributeDetected = new HashSet<>();
-		for (RelationshipGroup g : c.getRelationshipGroups(charType, ActiveState.ACTIVE)) {
+		for (RelationshipGroup g : c.getRelationshipGroups(charType)) {
 			attributeDetected.clear();
 			for (Relationship r : g.getRelationships()) {
 				//Is this an attribute of interest?

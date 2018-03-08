@@ -10,8 +10,12 @@ import java.util.Set;
 
 import org.ihtsdo.otf.authoringtemplate.domain.logical.LogicalTemplate;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.TermServerScript.ReportActionType;
+import org.ihtsdo.termserver.scripting.TermServerScript.Severity;
 import org.ihtsdo.termserver.scripting.client.TemplateServiceClient;
+import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.domain.Task;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 
 abstract public class TemplateFix extends BatchFix {
@@ -33,6 +37,7 @@ abstract public class TemplateFix extends BatchFix {
 		subHierarchy = gl.getConcept(subHierarchyStr);
 		templates.add(loadTemplate('A', "Fracture of Bone Structure.json"));
 		templates.add(loadTemplate('B', "Fracture Dislocation of Bone Structure.json"));
+		templates.add(loadTemplate('C', "Pathologic fracture of bone due to Disease.json"));
 		info(templates.size() + " Templates loaded successfully");
 		
 		/*//Seems to be an issue with parsing cardianality.  Add this in manually.
@@ -57,8 +62,8 @@ abstract public class TemplateFix extends BatchFix {
 		Set<Concept> matches = new HashSet<Concept>();
 		for (Concept c : descendantsCache.getDescendentsOrSelf(subHierarchy)) {
 			
-			if (c.getConceptId().equals("263114007")) {
-				debug ("Checking concept 263114007");
+			if (c.getConceptId().equals("704293000")) {
+				debug ("Checking concept 704293000");
 			}
 			
 			if (TemplateUtils.matchesTemplate(c, t, descendantsCache, CharacteristicType.INFERRED_RELATIONSHIP)) {
@@ -90,5 +95,9 @@ abstract public class TemplateFix extends BatchFix {
 			}
 		}
 		return false;
+	}
+	
+	protected void report(Task t, Concept c, Severity severity, ReportActionType actionType, String detail) {
+		report (t, c, severity, actionType, c.getDefinitionStatus(), conceptToTemplateMap.get(c).getId(), detail);
 	}
 }

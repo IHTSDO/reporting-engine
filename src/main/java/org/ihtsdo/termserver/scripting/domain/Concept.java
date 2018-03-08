@@ -77,7 +77,8 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 	//When interacting with the TS, only one inactivation indicator is used (see above).
 	List<InactivationIndicatorEntry> inactivationIndicatorEntries;
 	List<HistoricalAssociation> historicalAssociations;
-	Collection<RelationshipGroup> relationshipGroups;
+	Collection<RelationshipGroup> statedRelationshipGroups;
+	Collection<RelationshipGroup> inferredRelationshipGroups;
 	
 	public String getReviewer() {
 		return reviewer;
@@ -307,7 +308,7 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 		r.setModifier(Modifier.EXISTENTIAL);
 		relationships.add(r);
 		//Reset our cache of relationship groups
-		relationshipGroups = null;
+		statedRelationshipGroups = null;
 	}
 
 	public boolean isLoaded() {
@@ -342,7 +343,11 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 		relationships.add(r);
 		
 		//Reset our cache of relationship groups, recalculate next time it's requested
-		relationshipGroups = null;
+		if (r.getCharacteristicType().equals(CharacteristicType.STATED_RELATIONSHIP)) {
+			statedRelationshipGroups = null;
+		} else {
+			inferredRelationshipGroups = null;
+		}
 	}
 	
 	public void addChild(CharacteristicType characteristicType, Concept c) {
@@ -822,15 +827,25 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 		return ComponentType.CONCEPT;
 	}
 	
-	public Collection<RelationshipGroup> getRelationshipGroups(CharacteristicType characteristicType, ActiveState activeState) {
+	public RelationshipGroup getRelationshipGroup(CharacteristicType characteristicType, long groupId ) {
+		for (RelationshipGroup g : getRelationshipGroups(characteristicType)) {
+			if (g.getGroupId() == groupId) {
+				return g;
+			}
+		}
+		return null;
+	}
+	
+	public Collection<RelationshipGroup> getRelationshipGroups(CharacteristicType characteristicType) {
 		//Include group 0 by default
-		return getRelationshipGroups(characteristicType, activeState, true);
+		return getRelationshipGroups(characteristicType, ActiveState.ACTIVE, true);
 	}
 	
 	/**
 	 * Relationship groups will not include IS A relationships
 	 */
 	public Collection<RelationshipGroup> getRelationshipGroups(CharacteristicType characteristicType, ActiveState activeState, boolean includeGroup0) {
+		Collection<RelationshipGroup> relationshipGroups = characteristicType.equals(CharacteristicType.STATED_RELATIONSHIP) ? statedRelationshipGroups : inferredRelationshipGroups;
 		if (relationshipGroups == null) {
 			Map<Long, RelationshipGroup> groups = new HashMap<>();
 			for (Relationship r : getRelationships(characteristicType, activeState)) {
@@ -847,6 +862,11 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 				}
 			}
 			relationshipGroups = groups.values();
+			if (characteristicType.equals(CharacteristicType.STATED_RELATIONSHIP)) {
+				statedRelationshipGroups = relationshipGroups;
+			} else {
+				inferredRelationshipGroups = relationshipGroups;
+			}
 		}
 		return relationshipGroups;
 	}

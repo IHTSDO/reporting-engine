@@ -16,7 +16,6 @@ import org.ihtsdo.otf.authoringtemplate.domain.logical.LogicalTemplate;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.ActiveState;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.RelationshipGroup;
@@ -24,6 +23,7 @@ import org.ihtsdo.termserver.scripting.domain.RelationshipGroup;
 public class TemplateUtils {
 	
 	public static String ECL_DESCENDANT_OR_SELF = "<<";
+	public static String ECL_OR = "OR";
 	public static Pattern p = Pattern.compile("[0-9]+");
 	
 	public static String covertToECL (LogicalTemplate template, boolean restrictive) {
@@ -37,7 +37,7 @@ public class TemplateUtils {
 		
 		//Now add the ungrouped attributes
 		sb.append(template.getUngroupedAttributes().stream()
-				.map( a -> a.getType() + "=" + a.getValue())
+				.map( a -> a.getType() + "=" + a.getAllowableRangeECL())
 				.collect (Collectors.joining(",")));
 		
 		//Now add the grouped attributes
@@ -75,10 +75,10 @@ public class TemplateUtils {
 		//Pre-populate the attributeGroups in case we have no relationship groups, and the relationship groups in case we have no matching template groups
 		t.getAttributeGroups().stream().forEach(attributeGroup -> templateGroupMatchesRelGroups.put(attributeGroup, new ArrayList<RelationshipGroup>()));
 		//Include group 0
-		c.getRelationshipGroups(charType, ActiveState.ACTIVE).stream().forEach(relGroup -> relGroupMatchesTemplateGroups.put(relGroup, new ArrayList<AttributeGroup>()));
+		c.getRelationshipGroups(charType).stream().forEach(relGroup -> relGroupMatchesTemplateGroups.put(relGroup, new ArrayList<AttributeGroup>()));
 		
 		//Work through each group (including 0) and check which of the groups in the template it matches
-		for (RelationshipGroup relGroup : c.getRelationshipGroups(charType, ActiveState.ACTIVE)) {
+		for (RelationshipGroup relGroup : c.getRelationshipGroups(charType)) {
 			//Work through each template group and confirm that one of them matches
 			for (AttributeGroup templateGroup : t.getAttributeGroups()) {
 				if (matchesTemplateGroup (relGroup, templateGroup, cache)) {
@@ -148,15 +148,20 @@ public class TemplateUtils {
 
 	private static boolean matchesAttributeValue(Concept target, String ecl, DescendentsCache cache) throws TermServerScriptException {
 		//We'll only handle the simplest of ECL here
-		if (ecl.startsWith(ECL_DESCENDANT_OR_SELF)) {
-			String valueRangeSctId = recoverSctId(ecl);
-			Concept valueRange = GraphLoader.getGraphLoader().getConcept(valueRangeSctId);
-			if (valueRange != null) {
-				return cache.getDescendentsOrSelf(valueRange).contains(target);
+		//TODO Parse the ECL properly
+		String[] eclAlternatives = ecl.split(ECL_OR);  //Any of the alternatives can match
+		for (String thisEcl : eclAlternatives) {
+			thisEcl = thisEcl.trim();
+			if (thisEcl.startsWith(ECL_DESCENDANT_OR_SELF)) {
+				String valueRangeSctId = recoverSctId(thisEcl);
+				Concept valueRange = GraphLoader.getGraphLoader().getConcept(valueRangeSctId);
+				if (valueRange != null && cache.getDescendentsOrSelf(valueRange).contains(target)) {
+					return true;
+				}
+			} else {
+				//TODO Call the server to resolve this, and cache result
+				throw new NotImplementedException("Unable to handle ecl: " + ecl);
 			}
-		} else {
-			//TODO Call the server to resolve this, and cache result
-			throw new NotImplementedException("Unable to handle ecl: " + ecl);
 		}
 		return false;
 	}

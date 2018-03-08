@@ -13,6 +13,7 @@ public class Template {
 	char id;
 	String fileName;
 	LogicalTemplate logicalTemplate;
+	List<AttributeGroup> attributeGroups;
 
 	public Template (char id, LogicalTemplate logicalTemplate, String fileName) {
 		this.id = id;
@@ -42,17 +43,22 @@ public class Template {
 
 	public Collection<AttributeGroup> getAttributeGroups() {
 		//Does the logical template have any ungrouped attributes?  We can simplify the code by calling that 
-		//a group.
-		
-		List<Attribute> ungrouped = logicalTemplate.getUngroupedAttributes();
-		if (ungrouped != null && ungrouped.size() > 0) {
-			List<AttributeGroup> combinedGroups = new ArrayList<>();
-			AttributeGroup group0 = new AttributeGroup();
-			group0.setAttributes(ungrouped);
-			combinedGroups.add(group0);
-			combinedGroups.addAll(logicalTemplate.getAttributeGroups());
-			return combinedGroups;
+		//a group.  Must store it though so that the object is recognised for comparison
+		if (attributeGroups == null) {
+			List<Attribute> ungrouped = logicalTemplate.getUngroupedAttributes();
+			if (ungrouped != null && ungrouped.size() > 0) {
+				List<AttributeGroup> combinedGroups = new ArrayList<>();
+				AttributeGroup group0 = new AttributeGroup();
+				group0.setAttributes(ungrouped);
+				group0.setCardinalityMin("1");
+				group0.setCardinalityMax("1");
+				combinedGroups.add(group0);
+				combinedGroups.addAll(logicalTemplate.getAttributeGroups());
+				attributeGroups = combinedGroups;
+			} else {
+				attributeGroups = logicalTemplate.getAttributeGroups();
+			}
 		}
-		return logicalTemplate.getAttributeGroups();
+		return attributeGroups;
 	}
 }

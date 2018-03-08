@@ -120,7 +120,7 @@ public class PrepMisalignedConcepts extends TemplateFix {
 				debug (c + ".  " + msg);
 				diagnostics.add(msg);
 				diagnostics.add("Relationship Group mismatches:");
-				for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
+				for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
 					msg = "    " + g;
 					debug (msg);
 					diagnostics.add(msg);

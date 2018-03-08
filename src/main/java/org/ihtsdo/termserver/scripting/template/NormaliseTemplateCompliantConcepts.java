@@ -40,7 +40,10 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		try {
 			app.reportNoChange = false;
 			app.selfDetermining = true;
-			app.additionalReportColumns = "CharacteristicType, Attribute";
+			//app.runStandAlone = true;
+			app.classifyTasks = true;
+			app.validateTasks = true;
+			app.additionalReportColumns = "CharacteristicType, Template, ActionDetail";
 			app.init(args);
 			app.loadProjectSnapshot(false);  //Load all descriptions
 			app.postInit();
@@ -137,8 +140,11 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		//Work through all inferred groups and collect any that aren't also stated, to state
 		int changesMade = 0;
 		List<RelationshipGroup> toBeStated = new ArrayList<>();
-		Collection<RelationshipGroup> inferredGroups = c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE);
-		Collection<RelationshipGroup> statedGroups = c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
+		if (c.getConceptId().equals("311822009")) {
+			debug ("Check me");
+		}
+		Collection<RelationshipGroup> inferredGroups = c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP);
+		Collection<RelationshipGroup> statedGroups = c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP);
 		
 		nextInferredGroup:
 		for (RelationshipGroup inferredGroup : inferredGroups) {
@@ -155,7 +161,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		}
 		changesMade += stateRelationshipGroups(t, c, toBeStated);
 		if (changesMade == 0) {
-			report (t, c, Severity.NONE, ReportActionType.NO_CHANGE, "Stated/Inferred groups already matched: " + statedGroups.size() + "/" + inferredGroups);
+			report (t, c, Severity.NONE, ReportActionType.NO_CHANGE, "Stated/Inferred groups already matched " + statedGroups.size() + "/" + inferredGroups.size());
 		}
 		return changesMade;
 	}
@@ -163,18 +169,20 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 	private int stateRelationshipGroups(Task t, Concept c, List<RelationshipGroup> toBeStated) {
 		int changesMade = 0;
 		for (RelationshipGroup g : toBeStated) {
-			int freeGroup = SnomedUtils.getFirstFreeGroup(c);
+			//Group 0 must remain group 0.  Otherwise find an available group number
+			long freeGroup = g.getGroupId()==0?0:SnomedUtils.getFirstFreeGroup(c);
 			stateRelationshipGroup(t, c, g, freeGroup);
 			changesMade++;
-			report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, g);
+			report (t, c, Severity.HIGH, ReportActionType.RELATIONSHIP_GROUP_ADDED, c.getRelationshipGroup(CharacteristicType.STATED_RELATIONSHIP, freeGroup));
 		}
 		return changesMade;
 	}
 
-	private void stateRelationshipGroup(Task t, Concept c, RelationshipGroup g, int groupId) {
+	private void stateRelationshipGroup(Task t, Concept c, RelationshipGroup g, long freeGroup) {
 		for (Relationship r : g.getRelationships()) {
 			Relationship newRel = r.clone(null);
-			newRel.setGroupId(groupId);
+			newRel.setCharacteristicType(CharacteristicType.STATED_RELATIONSHIP);
+			newRel.setGroupId(freeGroup);
 			c.addRelationship(newRel);
 		}
 	}
