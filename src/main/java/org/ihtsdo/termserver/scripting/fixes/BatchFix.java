@@ -27,6 +27,7 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
+import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.TermServerScript.ReportActionType;
 import org.ihtsdo.termserver.scripting.TermServerScript.Severity;
 import org.ihtsdo.termserver.scripting.domain.Batch;
@@ -50,6 +51,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	
 	protected int taskSize = 10;
 	protected int wiggleRoom = 5;
+	protected int failureCount = 0;
 	protected String targetAuthor;
 	protected String targetReviewer;
 	protected String[] author_reviewer;
@@ -63,6 +65,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	protected boolean classifyTasks = false;
 	protected boolean validateTasks = false;
 	protected List<Component> allConceptsToProcess = new ArrayList<>();
+	private boolean firstTaskCreated = false;
 	
 	protected BatchFix (BatchFix clone) {
 		if (clone != null) {
@@ -134,132 +137,145 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	}
 	
 	protected void batchProcess(Batch batch) throws TermServerScriptException {
-		int failureCount = 0;
 		int tasksCreated = 0;
 		int tasksSkipped = 0;
-		boolean isFirst = true;
-			for (Task task : batch.getTasks()) {
-				try {
-					//If we don't have any concepts in this task eg this is 100% ME file, then skip
-					if (task.size() == 0) {
-						info ("Skipping Task " + task.getSummary() + " - no concepts to process");
-						continue;
-					} else if (selfDetermining && restartPosition > 1 && (tasksSkipped + 1) < restartPosition) {
-						//For self determining projects we'll restart based on a task count, rather than the line number in the input file
-						tasksSkipped++;
-						info ("Skipping Task " + task.getSummary() + " - restarting from task " + restartPosition);
-						continue;
-					} else if (task.size() > (taskSize + wiggleRoom)) {
-						warn (task + " contains " + task.size() + " concepts");
-					}
-					
-					//Create a task for this batch of concepts
-					if (!dryRun) {
-						if (!isFirst) {
-							debug ("Letting TS catch up - " + taskThrottle + "s nap.");
-							Thread.sleep(taskThrottle * 1000);
-						} else {
-							isFirst = false;
-						}
-						
-						boolean taskCreated = false;
-						int taskCreationAttempts = 0; 
-						while (!taskCreated) {
-							try{
-								debug ("Creating jira task on project: " + project);
-								String taskDescription = populateTaskDescription ? task.getDescriptionHTML() : "Batch Updates - see spreadsheet for details";
-								task.setKey(scaClient.createTask(project.getKey(), task.getSummary(), taskDescription));
-								debug ("Creating task branch in terminology server: " + task);
-								task.setBranchPath(tsClient.createBranch(project.getBranchPath(), task.getKey()));
-								taskCreated = true;
-							} catch (Exception e) {
-								taskCreationAttempts++;
-								scaClient.deleteTask(project.getKey(), task.getKey(), true);  //Don't worry if deletion fails
-								if (taskCreationAttempts >= 3) {
-									throw new TermServerScriptException("Maxed out failure attempts", e);
-								}
-								warn ("Branch creation failed (" + e.getMessage() + "), retrying...");
-							}
-						}
-					} else {
-						task.setKey(project + "-" + getNextDryRunNum());
-						task.setBranchPath(project.getBranchPath() + "/" + task.getKey());
-					}
-					tasksCreated++;
-					String xOfY =  (tasksCreated+tasksSkipped) + " of " + batch.getTasks().size();
-					info ( (dryRun?"Dry Run " : "Created ") + "task (" + xOfY + "): " + task.getBranchPath());
-					incrementSummaryInformation("Tasks created",1);
-					int conceptInTask = 0;
-					//Process each component
-					for (Component component : task.getComponents()) {
-						try {
-							conceptInTask++;
-							if (!dryRun && task.getComponents().indexOf(component) != 0) {
-								Thread.sleep(conceptThrottle * 1000);
-							}
-							String info = " Task (" + xOfY + ") Concept (" + conceptInTask + " of " + task.getComponents().size() + ")";
-							
-							int changesMade = 0;
-							if (worksWithConcepts) {
-								changesMade = doFix(task, (Concept)component, info);
-							} else {
-								changesMade = doFix(task, component, info);
-							}
-							if (changesMade == 0 && reportNoChange) {
-								report(task, component, Severity.MEDIUM, ReportActionType.NO_CHANGE, "");
-							}
-							flushFiles(false);
-						} catch (ValidationFailure f) {
-							report(task, component, f.getSeverity(),f.getReportActionType(), f.getMessage());
-						} catch (TermServerScriptException e) {
-							report(task, component, Severity.CRITICAL, ReportActionType.API_ERROR, getMessage(e));
-							if (++failureCount > maxFailures) {
-								throw new TermServerScriptException ("Failure count exceeded " + maxFailures);
-							}
-						}
-					}
-					
-					if (!dryRun) {
-						//Prefill the Edit Panel
-						try {
-							if (populateEditPanel) {
-								scaClient.setEditPanelUIState(project.getKey(), task.getKey(), task.toQuotedList());
-							}
-							scaClient.setSavedListUIState(project.getKey(), task.getKey(), convertToSavedListJson(task));
-						} catch (Exception e) {
-							String msg = "Failed to preload edit-panel ui state: " + e.getMessage();
-							warn (msg);
-							report(task, null, Severity.LOW, ReportActionType.API_ERROR, msg);
-						}
-						
-						//Reassign the task to the intended author.  Set at task or processing level
-						String taskAuthor = task.getAssignedAuthor();
-						if (taskAuthor == null) {
-							taskAuthor = targetAuthor;
-						}
-						if (taskAuthor != null && !taskAuthor.isEmpty()) {
-							debug("Assigning " + task + " to " + taskAuthor);
-							scaClient.updateTask(project.getKey(), task.getKey(), null, null, taskAuthor);
-						}
-						
-						String taskReviewer = task.getReviewer();
-						if (taskReviewer != null && !taskReviewer.isEmpty()) {
-							debug("Assigning " + task + " to reviewer " + taskReviewer);
-							scaClient.putTaskIntoReview(project.getKey(), task.getKey(), taskReviewer);
-						} else if (putTaskIntoReview) {
-							debug("Putting " + task + " into review");
-							scaClient.putTaskIntoReview(project.getKey(), task.getKey(), null);
-						}
-					}
-				} catch (Exception e) {
-					throw new TermServerScriptException("Failed to process batch " + task.getSummary() + " on task " + task.getKey(), e);
+		for (Task task : batch.getTasks()) {
+			try {
+				//If we don't have any concepts in this task eg this is 100% ME file, then skip
+				if (task.size() == 0) {
+					info ("Skipping Task " + task.getSummary() + " - no concepts to process");
+					continue;
+				} else if (selfDetermining && restartPosition > 1 && (tasksSkipped + 1) < restartPosition) {
+					//For self determining projects we'll restart based on a task count, rather than the line number in the input file
+					tasksSkipped++;
+					info ("Skipping Task " + task.getSummary() + " - restarting from task " + restartPosition);
+					continue;
+				} else if (task.size() > (taskSize + wiggleRoom)) {
+					warn (task + " contains " + task.size() + " concepts");
 				}
 				
-				if (processingLimit > NOT_SET && tasksCreated >= processingLimit) {
-					info ("Processing limit of " + processingLimit + " tasks reached.  Stopping");
-					break;
+				//Create a task for this batch of concepts
+				createTask(task);
+				tasksCreated++;
+				String xOfY =  (tasksCreated+tasksSkipped) + " of " + batch.getTasks().size();
+				info ( (dryRun?"Dry Run " : "Created ") + "task (" + xOfY + "): " + task.getBranchPath());
+				incrementSummaryInformation("Tasks created",1);
+				
+				//Process each component
+				int conceptInTask = 0;
+				for (Component component : task.getComponents()) {
+					conceptInTask++;
+					processComponent(task, component, conceptInTask, xOfY);
+				}
+				
+				if (!dryRun) {
+					populateEditAndDescription(task);
+					assignTaskToAuthor(task);
+				}
+			} catch (Exception e) {
+				throw new TermServerScriptException("Failed to process batch " + task.getSummary() + " on task " + task.getKey(), e);
+			}
+			
+			if (processingLimit > NOT_SET && tasksCreated >= processingLimit) {
+				info ("Processing limit of " + processingLimit + " tasks reached.  Stopping");
+				break;
+			}
+		}
+	}
+
+	private void createTask(Task task) throws SnowOwlClientException, TermServerScriptException, InterruptedException {
+		if (!dryRun) {
+			if (!firstTaskCreated) {
+				debug ("Letting TS catch up - " + taskThrottle + "s nap.");
+				Thread.sleep(taskThrottle * 1000);
+			} else {
+				firstTaskCreated = true;
+			}
+			boolean taskCreated = false;
+			int taskCreationAttempts = 0; 
+			while (!taskCreated) {
+				try{
+					debug ("Creating jira task on project: " + project);
+					String taskDescription = populateTaskDescription ? task.getDescriptionHTML() : "Batch Updates - see spreadsheet for details";
+					task.setKey(scaClient.createTask(project.getKey(), task.getSummary(), taskDescription));
+					debug ("Creating task branch in terminology server: " + task);
+					task.setBranchPath(tsClient.createBranch(project.getBranchPath(), task.getKey()));
+					taskCreated = true;
+				} catch (Exception e) {
+					taskCreationAttempts++;
+					scaClient.deleteTask(project.getKey(), task.getKey(), true);  //Don't worry if deletion fails
+					if (taskCreationAttempts >= 3) {
+						throw new TermServerScriptException("Maxed out failure attempts", e);
+					}
+					warn ("Branch creation failed (" + e.getMessage() + "), retrying...");
 				}
 			}
+		} else {
+			task.setKey(project + "-" + getNextDryRunNum());
+			task.setBranchPath(project.getBranchPath() + "/" + task.getKey());
+		}
+	}
+
+	private void processComponent(Task task, Component component, int conceptInTask, String xOfY) throws TermServerScriptException {
+		try {
+			if (!dryRun && task.getComponents().indexOf(component) != 0) {
+				Thread.sleep(conceptThrottle * 1000);
+			}
+			String info = " Task (" + xOfY + ") Concept (" + conceptInTask + " of " + task.getComponents().size() + ")";
+			
+			int changesMade = 0;
+			if (worksWithConcepts) {
+				changesMade = doFix(task, (Concept)component, info);
+			} else {
+				changesMade = doFix(task, component, info);
+			}
+			if (changesMade == 0 && reportNoChange) {
+				report(task, component, Severity.MEDIUM, ReportActionType.NO_CHANGE, "");
+			}
+			flushFiles(false);
+		} catch (ValidationFailure f) {
+			report(task, component, f.getSeverity(),f.getReportActionType(), f.getMessage());
+		} catch (InterruptedException | TermServerScriptException e) {
+			report(task, component, Severity.CRITICAL, ReportActionType.API_ERROR, getMessage(e));
+			if (++failureCount > maxFailures) {
+				throw new TermServerScriptException ("Failure count exceeded " + maxFailures);
+			}
+		}
+	}
+
+	private void populateEditAndDescription(Task task) {
+		//Prefill the Edit Panel
+		try {
+			if (populateEditPanel) {
+				scaClient.setEditPanelUIState(project.getKey(), task.getKey(), task.toQuotedList());
+			}
+			scaClient.setSavedListUIState(project.getKey(), task.getKey(), convertToSavedListJson(task));
+		} catch (Exception e) {
+			String msg = "Failed to preload edit-panel ui state: " + e.getMessage();
+			warn (msg);
+			report(task, null, Severity.LOW, ReportActionType.API_ERROR, msg);
+		}
+	}
+	
+	private void assignTaskToAuthor(Task task) throws Exception {
+		//Reassign the task to the intended author.  Set at task or processing level
+		String taskAuthor = task.getAssignedAuthor();
+		if (taskAuthor == null) {
+			taskAuthor = targetAuthor;
+		}
+		if (taskAuthor != null && !taskAuthor.isEmpty()) {
+			debug("Assigning " + task + " to " + taskAuthor);
+			scaClient.updateTask(project.getKey(), task.getKey(), null, null, taskAuthor);
+		}
+		
+		String taskReviewer = task.getReviewer();
+		if (taskReviewer != null && !taskReviewer.isEmpty()) {
+			debug("Assigning " + task + " to reviewer " + taskReviewer);
+			scaClient.putTaskIntoReview(project.getKey(), task.getKey(), taskReviewer);
+		} else if (putTaskIntoReview) {
+			debug("Putting " + task + " into review");
+			scaClient.putTaskIntoReview(project.getKey(), task.getKey(), null);
+		}
 	}
 
 	//Override if working with Refsets or Descriptions directly
