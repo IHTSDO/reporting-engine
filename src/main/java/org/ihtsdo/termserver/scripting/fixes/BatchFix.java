@@ -30,8 +30,6 @@ import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.client.Classification;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.client.Status;
-import org.ihtsdo.termserver.scripting.TermServerScript.ReportActionType;
-import org.ihtsdo.termserver.scripting.TermServerScript.Severity;
 import org.ihtsdo.termserver.scripting.domain.Batch;
 import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
@@ -174,15 +172,20 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 					populateEditAndDescription(task);
 					assignTaskToAuthor(task);
 					
+					Classification classification = null;
 					if (classifyTasks) {
 						info ("Classifying " + task);
-						Classification classification = scaClient.classify(task.getKey());
+						classification = scaClient.classify(task.getKey());
 						debug(classification);
 					}
 					if (validateTasks) {
 						info ("Validating " + task);
 						Status status = scaClient.validate(task.getKey());
 						debug(status);
+					}
+					
+					if (classification != null) {
+						tsClient.waitForCompletion(task.getBranchPath(), classification);
 					}
 				}
 			} catch (Exception e) {

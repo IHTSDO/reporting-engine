@@ -32,13 +32,13 @@ public class SnowOwlClient {
 		DELTA, SNAPSHOT, FULL;
 	};
 
-	public enum ProcessingStatus {
-		COMPLETED, SAVED
-	}
-
 	public enum ExportType {
 		PUBLISHED, UNPUBLISHED, MIXED;
 	}
+	
+	public static SimpleDateFormat YYYYMMDD = new SimpleDateFormat("yyyyMMdd");
+	public static final int MAX_TRIES = 3;
+	public static final int retry = 15;
 	
 	protected static Gson gson;
 	static {
@@ -48,10 +48,6 @@ public class SnowOwlClient {
 		gson = gsonBuilder.create();
 	}
 	
-	public static SimpleDateFormat YYYYMMDD = new SimpleDateFormat("yyyyMMdd");
-	
-	public static final int MAX_TRIES = 3;
-
 	private final Resty resty;
 	private final String url;
 	private static final String ALL_CONTENT_TYPE = "*/*";
@@ -128,13 +124,6 @@ public class SnowOwlClient {
 		} catch (IOException e) {
 			throw new SnowOwlClientException(e);
 		}
-	}
-	
-	private String encode(String ecl) {
-		//Perform minimal encoding to URL string since a full encode appears to cause problems.
-		String eclEncoded = ecl.replaceAll(" ", "%20");
-		eclEncoded = eclEncoded.replaceAll("<", "%3C");
-		return eclEncoded;
 	}
 
 	private String getConceptsPath(String branchPath) {
@@ -451,6 +440,29 @@ public class SnowOwlClient {
 			resty.json(endPoint, content);
 		} catch (Exception e) {
 			throw new SnowOwlClientException("Unable to update refset entry " + refsetEntry + " due to " + e.getMessage(), e);
+		}
+	}
+	
+
+	public void waitForCompletion(String branchPath, Classification classification) throws SnowOwlClientException {
+		try {
+			String endPoint = this.url + "/" + branchPath + "/classifications/" + classification.getId();
+			Status status = new Status("Unknown");
+			long sleptSecs = 0;
+			do {
+				JSONResource response = resty.json(endPoint);
+				String json = response.toObject().toString();
+				status = gson.fromJson(json, Status.class);
+				if (!status.isFinalState()) {
+					Thread.sleep(retry * 1000);
+					sleptSecs += retry;
+					if (sleptSecs % 60 == 0) {
+						System.out.println("Waited for " + sleptSecs + " for classification " + classification.getId() + " on " + branchPath);
+					}
+				}
+			} while (!status.isFinalState());
+		} catch (Exception e) {
+			throw new SnowOwlClientException("Unable to recover status of classification " + classification.getId() + " due to " + e.getMessage(), e);
 		}
 	}
 

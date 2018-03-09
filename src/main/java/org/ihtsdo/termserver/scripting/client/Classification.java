@@ -1,7 +1,5 @@
 package org.ihtsdo.termserver.scripting.client;
 
-import org.ihtsdo.otf.rest.client.snowowl.pojo.ClassificationResults;
-
 import com.google.gson.annotations.Expose;
 
 public class Classification {

@@ -159,4 +159,5 @@ public class AuthoringServicesClient {
 			throw new SnowOwlClientException("Unable to initiate validation on " + taskKey, e);
 		}
 	}
+
 }
