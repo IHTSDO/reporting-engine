@@ -10,6 +10,7 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 public abstract class TermServerReport extends TermServerScript {
 	
 	protected String headers = "Concept,FSN,";
+	protected boolean quiet = false; 
 	
 	protected void init(String[] args) throws TermServerScriptException, SnowOwlClientException {
 		try {
@@ -24,7 +25,13 @@ public abstract class TermServerReport extends TermServerScript {
 	@Override
 	protected Concept loadLine(String[] lineItems)
 			throws TermServerScriptException {
-		return gl.getConcept(lineItems[0]);
+		String field = lineItems[0];
+		//Do we have the FSN in here?
+		if (field.contains(PIPE)) {
+			String[] parts = field.split(ESCAPED_PIPE);
+			field = parts[0].trim();
+		}
+		return gl.getConcept(field);
 	}
 	
 	protected void report (Concept c, Object... details) {
@@ -35,6 +42,17 @@ public abstract class TermServerReport extends TermServerScript {
 			 line += COMMA_QUOTE + detail.toString() + QUOTE;
 		}
 		writeToReportFile(line);
+	}
+	
+	public void setQuiet(boolean quiet) {
+		this.quiet = quiet;
+	}
+	
+	@Override
+	public void incrementSummaryInformation(String key) {
+		if (!quiet) {
+			super.incrementSummaryInformation(key);
+		}
 	}
 
 }

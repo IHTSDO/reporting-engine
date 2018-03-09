@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.reports;
+package org.ihtsdo.termserver.scripting.reports.qi;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -17,8 +17,7 @@ import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.RelationshipGroup;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.ActiveState;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
+import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 /**
@@ -31,6 +30,7 @@ public class InferredGroupsNotStated extends TermServerReport {
 	static int LARGE = 6000;
 	static int consolidationGrouping = 100;
 	Map<Concept, Integer> instancesPerSubHierarchy = new HashMap<>();
+	public boolean includeParents = true;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		InferredGroupsNotStated report = new InferredGroupsNotStated();
@@ -64,18 +64,21 @@ public class InferredGroupsNotStated extends TermServerReport {
 	}
 
 
-	private void runCheckForInferredGroupsNotStated() throws TermServerScriptException {
-		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
-			checkForInferredGroupsNotStated(c);
+	public int runCheckForInferredGroupsNotStated() throws TermServerScriptException {
+		int inferredNotStated = 0;
+		for (Concept c : descendantsCache.getDescendentsOrSelf(subHierarchy)) {
+			inferredNotStated += checkForInferredGroupsNotStated(c);
 			incrementSummaryInformation("Concepts checked");
 		}
+		return inferredNotStated;
 	}
 
 
-	private void checkForInferredGroupsNotStated(Concept c) throws TermServerScriptException {
+	private int checkForInferredGroupsNotStated(Concept c) throws TermServerScriptException {
+		boolean unmatchedGroupDetected = false;
 		//Work through all inferred groups and see if they're subsumed by a stated group
-		Collection<RelationshipGroup> inferredGroups = c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE, false);
-		Collection<RelationshipGroup> statedGroups = c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE, false);
+		Collection<RelationshipGroup> inferredGroups = c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP);
+		Collection<RelationshipGroup> statedGroups = c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP);
 		
 		nextGroup:
 		for (RelationshipGroup inferredGroup : inferredGroups) {
@@ -85,21 +88,30 @@ public class InferredGroupsNotStated extends TermServerReport {
 					continue nextGroup;
 				}
 			}
-			incrementSummaryInformation("Relationship groups reported");
-			String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
-			incrementSummaryInformation(semTag);
-			Set<Concept> reasonableLevel = getReasonableAncestors(c);
-			reasonableLevel.stream().forEach(a -> incrementInstanceCount(a, 1));
-			String reasonableLevelStr = reasonableLevel.stream()
-					.map(a -> a.toString())
-					.collect (Collectors.joining(", "));
-			report (c, semTag, 
-					c.getDefinitionStatus(),
-					countAttributes(c, CharacteristicType.STATED_RELATIONSHIP),
-					countAttributes(c, CharacteristicType.INFERRED_RELATIONSHIP),
-					inferredGroup, 
-					reasonableLevelStr);
+			
+			//If we get to here, then an inferred group has not been matched by a stated one
+			unmatchedGroupDetected = true;
+			
+			if (!quiet) {
+				Integer statedAttributes = countAttributes(c, CharacteristicType.STATED_RELATIONSHIP);
+				Integer inferredAttributes = countAttributes(c, CharacteristicType.INFERRED_RELATIONSHIP);
+				incrementSummaryInformation("Relationship groups reported");
+				String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
+				incrementSummaryInformation(semTag);
+				Set<Concept> reasonableLevel = getReasonableAncestors(c);
+				reasonableLevel.stream().forEach(a -> incrementInstanceCount(a, 1));
+				String reasonableLevelStr = reasonableLevel.stream()
+						.map(a -> a.toString())
+						.collect (Collectors.joining(", "));
+				report (c, semTag, 
+						c.getDefinitionStatus(),
+						statedAttributes,
+						inferredAttributes,
+						inferredGroup, 
+						reasonableLevelStr);
+			}
 		}
+		return unmatchedGroupDetected ? 1 : 0;
 	}
 
 	/**

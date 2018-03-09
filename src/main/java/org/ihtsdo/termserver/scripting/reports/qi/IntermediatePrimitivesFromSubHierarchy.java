@@ -1,9 +1,11 @@
-package org.ihtsdo.termserver.scripting.qi;
+package org.ihtsdo.termserver.scripting.reports.qi;
 
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
@@ -19,6 +21,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 public class IntermediatePrimitivesFromSubHierarchy extends TermServerReport{
 	
 	Concept subHierarchy;
+	public Set<Concept> intermediatePrimitives = new HashSet<>();
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		IntermediatePrimitivesFromSubHierarchy report = new IntermediatePrimitivesFromSubHierarchy();
@@ -36,12 +39,21 @@ public class IntermediatePrimitivesFromSubHierarchy extends TermServerReport{
 		}
 	}
 	
+	public void setQuiet(boolean quiet) {
+		this.quiet = quiet;
+	}
+	
 	private void postInit() throws TermServerScriptException {
-		//subHierarchy = gl.getConcept("46866001"); // |Fracture of lower limb (disorder)|
-		subHierarchy = gl.getConcept("125605004"); // |Fracture of bone (disorder)|
+		//setSubHierarchy(gl.getConcept("46866001")); // |Fracture of lower limb (disorder)|
+		setSubHierarchy(gl.getConcept("125605004")); // |Fracture of bone (disorder)|
+	}
+	
+	public void setSubHierarchy(Concept subHierarchy) {
+		this.subHierarchy = subHierarchy;
+		intermediatePrimitives = new HashSet<>();
 	}
 
-	private void reportIntermediatePrimitives() throws TermServerScriptException {
+	public void reportIntermediatePrimitives() throws TermServerScriptException {
 		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
 			//We're only interested in fully defined concepts
 			if (c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
@@ -49,20 +61,24 @@ public class IntermediatePrimitivesFromSubHierarchy extends TermServerReport{
 				//Do those parents themselves have sufficiently defined ancestors ie making them intermediate primitives
 				for (Concept thisPPP : proxPrimParents) {
 					boolean isIntermediate = false;
-					if (containsFdConcept(thisPPP.getAncestors(NOT_SET))) {
+					if (containsFdConcept(ancestorsCache.getAncestors(thisPPP))) {
 						isIntermediate = true;
 						incrementSummaryInformation("Intermediate Primitives reported");
 						incrementSummaryInformation(thisPPP.toString());
+						intermediatePrimitives.add(thisPPP);
 					} else {
 						incrementSummaryInformation("Safely modelled count");
 					}
-					report (c, thisPPP.toString(), 
-							isIntermediate?"Yes":"No", 
-							Integer.toString(countAttributes(c, CharacteristicType.STATED_RELATIONSHIP)),
-							Integer.toString(c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE, false).size()),
-							Integer.toString(c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE, false).size()),
-							getParentsWithDefnStatus(c)
-							);
+					
+					if (!quiet) {
+						report (c, thisPPP.toString(), 
+								isIntermediate?"Yes":"No", 
+								Integer.toString(countAttributes(c, CharacteristicType.STATED_RELATIONSHIP)),
+								Integer.toString(c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE, false).size()),
+								Integer.toString(c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE, false).size()),
+								getParentsWithDefnStatus(c)
+								);
+					}
 				}
 				incrementSummaryInformation("FD Concepts checked");
 			}

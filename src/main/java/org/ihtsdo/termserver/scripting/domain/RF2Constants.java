@@ -31,6 +31,7 @@ public interface RF2Constants {
 	static String DESCENDANT = "<";
 	static String DESCENDANT_OR_SELF = "<<";
 	static String PIPE = "|";
+	static String ESCAPED_PIPE = "\\|";
 	static char PIPE_CHAR = '|';
 	static char SPACE_CHAR = ' ';
 	static String UNION = "AND";

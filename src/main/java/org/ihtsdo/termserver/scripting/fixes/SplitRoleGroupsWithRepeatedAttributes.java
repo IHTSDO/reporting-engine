@@ -21,11 +21,11 @@ import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 */
 public class SplitRoleGroupsWithRepeatedAttributes extends BatchFix implements RF2Constants{
 	
-	Concept subHierarchy;
+	public Concept subHierarchy;
 	List<Concept> attributesToSplit;
 	List<Concept> attributesToIgnore;
 	
-	protected SplitRoleGroupsWithRepeatedAttributes(BatchFix clone) {
+	public SplitRoleGroupsWithRepeatedAttributes(BatchFix clone) {
 		super(clone);
 	}
 
@@ -51,7 +51,7 @@ public class SplitRoleGroupsWithRepeatedAttributes extends BatchFix implements R
 		}
 	}
 
-	private void postLoadInit() throws TermServerScriptException {
+	public void postLoadInit() throws TermServerScriptException {
 		subHierarchy = gl.getConcept("46866001"); // |Fracture of lower limb (disorder)|
 		/*attributesToSplit = new ArrayList<Concept>();
 		attributesToSplit.add(gl.getConcept("116676008")); // |Associated morphology (attribute)|"))
@@ -62,7 +62,7 @@ public class SplitRoleGroupsWithRepeatedAttributes extends BatchFix implements R
 		attributesToIgnore.add(IS_A);
 	}
 	
-	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
+	public List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		Set<Concept> concepts = subHierarchy.getDescendents(NOT_SET);
 		List<Component> componentsToProcess = new ArrayList<>();
 		for (Concept c : concepts) {
@@ -76,10 +76,6 @@ public class SplitRoleGroupsWithRepeatedAttributes extends BatchFix implements R
 	}
 	
 	protected Set<RelationshipGroup> hasRepeatedAttributeType (Concept c, CharacteristicType charType) {
-		
-		if (c.getConceptId().equals("77572008")) {
-			debug ("Checkpoint " + c);
-		}
 		Set<RelationshipGroup> repeatedAttributeDetected = new HashSet<>();
 		Set<Concept> attributeDetected = new HashSet<>();
 		for (RelationshipGroup g : c.getRelationshipGroups(charType)) {
