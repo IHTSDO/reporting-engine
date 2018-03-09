@@ -19,7 +19,6 @@ public class AncestorsCache implements RF2Constants {
 			//Ensure we're working with the local copy rather than TS JSON
 			Concept localConcept = GraphLoader.getGraphLoader().getConcept(c.getConceptId());
 			ancestors = localConcept.getAncestors(NOT_SET);
-			ancestors.add(localConcept); //Or Self
 			ancestorsCache.put(localConcept, ancestors);
 		}
 		return ancestors;

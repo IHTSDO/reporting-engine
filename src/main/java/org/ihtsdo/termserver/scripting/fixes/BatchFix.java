@@ -27,7 +27,9 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
+import org.ihtsdo.termserver.scripting.client.Classification;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.client.Status;
 import org.ihtsdo.termserver.scripting.TermServerScript.ReportActionType;
 import org.ihtsdo.termserver.scripting.TermServerScript.Severity;
 import org.ihtsdo.termserver.scripting.domain.Batch;
@@ -171,6 +173,17 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 				if (!dryRun) {
 					populateEditAndDescription(task);
 					assignTaskToAuthor(task);
+					
+					if (classifyTasks) {
+						info ("Classifying " + task);
+						Classification classification = scaClient.classify(task.getKey());
+						debug(classification);
+					}
+					if (validateTasks) {
+						info ("Validating " + task);
+						Status status = scaClient.validate(task.getKey());
+						debug(status);
+					}
 				}
 			} catch (Exception e) {
 				throw new TermServerScriptException("Failed to process batch " + task.getSummary() + " on task " + task.getKey(), e);
@@ -360,7 +373,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		}
 		
 		info ("\nBatching " + taskSize + " concepts per task");
-		initialiseReportFile("TASK_KEY, TASK_DESC, SCTID, FSN, CONCEPT_TYPE,SEVERITY,ACTION_TYPE," + additionalReportColumns );
+		initialiseReportFile("TASK_KEY, TASK_DESC, SCTID, FSN, " + (stateComponentType?"CONCEPT_TYPE,":"") + "SEVERITY,ACTION_TYPE," + additionalReportColumns );
 	}
 	
 	protected int ensureAcceptableParent(Task task, Concept c, Concept acceptableParent) {

@@ -68,6 +68,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected String env;
 	protected String url = environments[0];
 	protected boolean useAuthenticatedCookie = true;
+	protected boolean stateComponentType = true;
 	protected SnowOwlClient tsClient;
 	protected AuthoringServicesClient scaClient;
 	protected String authenticatedCookie;
@@ -153,12 +154,12 @@ public abstract class TermServerScript implements RF2Constants {
 		System.out.println (msg);
 	}
 	
-	public static void debug (Object msg) {
-		System.out.println (msg.toString());
+	public static void debug (Object obj) {
+		System.out.println (obj==null?"NULL":obj.toString());
 	}
 	
-	public static void warn (Object msg) {
-		System.out.println ("*** " + msg.toString());
+	public static void warn (Object obj) {
+		System.out.println ("*** " + (obj==null?"NULL":obj.toString()));
 	}
 	
 	public static void print (Object msg) {
@@ -792,13 +793,25 @@ public abstract class TermServerScript implements RF2Constants {
 		String desc = (task == null? "" :  task.getSummary());
 		String name = (component == null ? "" : component.getReportedName());
 		String type = (component == null ? "" : component.getReportedType());
-		String line = key + COMMA + desc + COMMA + component.getId() + COMMA_QUOTE + 
-						name + QUOTE_COMMA + type + COMMA + severity + 
-						COMMA + actionType;
-		for (Object detail : details) {
-			 line += COMMA_QUOTE + detail + QUOTE;
+		StringBuffer sb = new StringBuffer();
+		
+		sb.append(key + COMMA + desc + COMMA + component.getId() + COMMA_QUOTE)
+		.append( name + QUOTE_COMMA);
+		if (stateComponentType) {
+			sb.append(type + COMMA );
 		}
-		writeToReportFile (line);
+		sb.append( severity + COMMA + actionType );
+		for (Object detail : details) {
+			if (detail instanceof Object[]) {
+				Object[] arr = (Object[]) detail;
+				for (Object obj : arr) {
+					sb.append(COMMA_QUOTE + obj + QUOTE);
+				}
+			} else {
+				sb.append(COMMA_QUOTE + detail + QUOTE);
+			}
+		}
+		writeToReportFile (sb.toString());
 	}
 	
 

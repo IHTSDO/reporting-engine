@@ -97,7 +97,9 @@ abstract public class TemplateFix extends BatchFix {
 		return false;
 	}
 	
-	protected void report(Task t, Concept c, Severity severity, ReportActionType actionType, String detail) {
-		report (t, c, severity, actionType, c.getDefinitionStatus(), conceptToTemplateMap.get(c).getId(), detail);
+	@Override
+	protected void report (Task task, Component component, Severity severity, ReportActionType actionType, Object... details) {
+		Concept c = (Concept)component;
+		super.report (task, component, severity, actionType, c.getDefinitionStatus(), conceptToTemplateMap.get(c).getId(), details);
 	}
 }

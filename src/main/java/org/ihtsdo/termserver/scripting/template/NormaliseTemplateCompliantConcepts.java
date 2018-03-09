@@ -40,7 +40,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		try {
 			app.reportNoChange = false;
 			app.selfDetermining = true;
-			//app.runStandAlone = true;
+			app.runStandAlone = true;
 			app.classifyTasks = true;
 			app.validateTasks = true;
 			app.additionalReportColumns = "CharacteristicType, Template, ActionDetail";
@@ -141,7 +141,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		int changesMade = 0;
 		List<RelationshipGroup> toBeStated = new ArrayList<>();
 		if (c.getConceptId().equals("311822009")) {
-			debug ("Check me");
+			debug ("Check 311822009");
 		}
 		Collection<RelationshipGroup> inferredGroups = c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP);
 		Collection<RelationshipGroup> statedGroups = c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP);

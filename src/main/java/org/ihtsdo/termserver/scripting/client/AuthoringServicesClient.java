@@ -15,7 +15,6 @@ import us.monoid.web.Resty;
 public class AuthoringServicesClient {
 	private final Resty resty;
 	private final String serverUrl;
-	//private static final String apiRoot = "snowowl/ihtsdo-sca/";
 	private static final String apiRoot = "authoring-services/";
 	private static final String ALL_CONTENT_TYPE = "*/*";
 	private static final String JSON_CONTENT_TYPE = "application/json";
@@ -122,16 +121,42 @@ public class AuthoringServicesClient {
 		}
 	}
 	
-	public Task getTask(String taskStr) throws SnowOwlClientException {
+	public Task getTask(String taskKey) throws SnowOwlClientException {
 		try {
-			String projectStr = taskStr.substring(0, taskStr.indexOf("-"));
-			String endPoint = serverUrl + apiRoot + "projects/" + projectStr + "/tasks/" + taskStr;
+			String projectStr = taskKey.substring(0, taskKey.indexOf("-"));
+			String endPoint = serverUrl + apiRoot + "projects/" + projectStr + "/tasks/" + taskKey;
 			JSONResource response = resty.json(endPoint);
 			String json = response.toObject().toString();
 			Task taskObj = gson.fromJson(json, Task.class);
 			return taskObj;
 		} catch (Exception e) {
-			throw new SnowOwlClientException("Unable to recover task " + taskStr, e);
+			throw new SnowOwlClientException("Unable to recover task " + taskKey, e);
+		}
+	}
+
+	public Classification classify(String taskKey) throws SnowOwlClientException {
+		try {
+			String projectStr = taskKey.substring(0, taskKey.indexOf("-"));
+			String endPoint = serverUrl + apiRoot + "projects/" + projectStr + "/tasks/" + taskKey + "/classifications";
+			JSONResource response = resty.json(endPoint, Resty.content(""));
+			String json = response.toObject().toString();
+			Classification classification = gson.fromJson(json, Classification.class);
+			return classification;
+		} catch (Exception e) {
+			throw new SnowOwlClientException("Unable to classify " + taskKey, e);
+		}
+	}
+	
+	public Status validate(String taskKey) throws SnowOwlClientException {
+		try {
+			String projectStr = taskKey.substring(0, taskKey.indexOf("-"));
+			String endPoint = serverUrl + apiRoot + "projects/" + projectStr + "/tasks/" + taskKey + "/validation";
+			JSONResource response = resty.json(endPoint, Resty.content(""));
+			String json = response.toObject().toString();
+			Status status = gson.fromJson(json, Status.class);
+			return status;
+		} catch (Exception e) {
+			throw new SnowOwlClientException("Unable to initiate validation on " + taskKey, e);
 		}
 	}
 }
