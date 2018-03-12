@@ -39,7 +39,7 @@ public class RelationshipTemplate {
 		return false;
 	}
 	
-	public Relationship createRelationship (Concept source, long groupId, String sctid) {
+	public Relationship createRelationship (Concept source, int groupId, String sctid) {
 		Relationship r = new Relationship(source, type, target, groupId);
 		r.setRelationshipId(sctid);
 		r.setActive(true);

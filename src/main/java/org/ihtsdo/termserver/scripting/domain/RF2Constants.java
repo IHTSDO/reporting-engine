@@ -5,17 +5,28 @@ public interface RF2Constants {
 	static int NOT_SET = -1;
 	static int IMMEDIATE_CHILD = 1;
 	static int NA = -1;
+	static int NO_CHANGES_MADE = 0;
+	static int CHANGE_MADE = 1;
 	final Long SCTID_ROOT_CONCEPT = 138875005L;
 	final Long SCTID_IS_A_CONCEPT = 116680003L;
 	
+		static Concept IS_A =  new Concept ("116680003");  // | Is a (attribute) |
+	
+	//Drugs and Substances
 	static Concept PHARM_BIO_PRODUCT = new Concept ("373873005") ; //Pharmaceutical / biologic product (product)
 	static Concept MEDICINAL_PRODUCT = new Concept ("763158003"); // |Medicinal product (product)|
-	static Concept IS_A =  new Concept ("116680003");  // | Is a (attribute) |
 	static Concept HAS_ACTIVE_INGRED = new Concept ("127489000","Has active ingredient (attribute)");
 	static Concept SUBSTANCE = new Concept("105590001", "Substance (substance)");
 	static Concept HAS_MANUFACTURED_DOSE_FORM = new Concept ("411116001","Has manufactured dose form (attribute)");
+	static Concept HAS_BOSS = new Concept ("732943007"); // |Has basis of strength substance (attribute)|
+	static Concept HAS_STRENGTH_VALUE = new Concept ("732944001"); // |Has presentation strength numerator value (attribute)|
+	static Concept HAS_STRENGTH_UNIT = new Concept ("732945000"); //|Has presentation strength numerator unit (attribute)|
+	static Concept HAS_STRENGTH_DENOM_VALUE = new Concept ("732946004"); // |Has presentation strength denominator value (attribute)|
+	static Concept HAS_STRENGTH_DENOM_UNIT = new Concept ("732947008"); // |Has presentation strength denominator unit (attribute)|
+	static Concept HAS_UNIT_OF_PRESENTATION = new Concept ("763032000"); // |Has unit of presentation (attribute)|
 	static Concept IS_MODIFICATION_OF = new Concept ("738774007", "Is modification of (attribute)");
 	static Concept DRUG_PREPARATION = new Concept("105904009","Type of drug preparation (qualifier value)");
+	
 	static Concept ROOT_CONCEPT = new Concept (SCTID_ROOT_CONCEPT.toString());
 	static Concept OBSERVABLE_ENTITY = new Concept("363787002"); // |Observable entity (observable entity)|
 	static Concept DUE_TO = new Concept("42752001"); // |Due to (attribute)|
@@ -116,7 +127,7 @@ public interface RF2Constants {
 	public static String SCTID_PRIMITIVE = "900000000000074008";
 	public static String SCTID_FULLY_DEFINED = "900000000000073002";
 	
-	public static long UNGROUPED = 0;
+	public static int UNGROUPED = 0;
 	public enum Modifier { EXISTENTIAL, UNIVERSAL};
 	public static String SCTID_EXISTENTIAL_MODIFIER = "900000000000451002";
 	public static String SCTID_UNIVERSAL_MODIFIER = "900000000000450001";

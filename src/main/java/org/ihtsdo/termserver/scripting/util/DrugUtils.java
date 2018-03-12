@@ -1,6 +1,8 @@
 package org.ihtsdo.termserver.scripting.util;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -14,6 +16,59 @@ public class DrugUtils implements RF2Constants {
 	public static final String CD = "(clinical drug)";
 	public static final String MP = "(medicinal product)";
 	public static final String MPF = "(medicinal product form)";
+	
+	static Map<String, Concept> numberConceptMap;
+	static Map<String, Concept> doseFormConceptMap;
+	static Map<String, Concept> unitConceptMap;
+
+	public static Concept getNumberAsConcept(String number) throws TermServerScriptException {
+		if (numberConceptMap == null) {
+			populateNumberConceptMap();
+		}
+		return numberConceptMap.get(number);
+	}
+
+	private static void populateNumberConceptMap() throws TermServerScriptException {
+		numberConceptMap = new HashMap<>();
+		Concept numberSubHierarchy = GraphLoader.getGraphLoader().getConcept("260299005"); // |Number (qualifier value)|
+		for (Concept number : numberSubHierarchy.getDescendents(NOT_SET)) {
+			String numStr = SnomedUtils.deconstructFSN(number.getFsn())[0].trim();
+			try {
+				Double.parseDouble(numStr);
+				numberConceptMap.put(numStr, number);
+			} catch (Exception e) {}
+		}
+	}
+	
+	public static Concept findDoseForm(String fsn) throws TermServerScriptException {
+		if (doseFormConceptMap == null) {
+			populateDoseFormConceptMap();
+		}
+		return doseFormConceptMap.get(fsn);
+	}
+
+	private static void populateDoseFormConceptMap() throws TermServerScriptException {
+		doseFormConceptMap = new HashMap<>();
+		Concept doseFormSubHierarchy = GraphLoader.getGraphLoader().getConcept("736542009"); // |Pharmaceutical dose form (dose form)|
+		for (Concept doseForm : doseFormSubHierarchy.getDescendents(NOT_SET)) {
+			doseFormConceptMap.put(doseForm.getFsn(), doseForm);
+		}
+	}
+	
+	public static Concept findUnit(String unit) throws TermServerScriptException {
+		if (unitConceptMap == null) {
+			populateUnitConceptMap();
+		}
+		return unitConceptMap.get(unit);
+	}
+
+	private static void populateUnitConceptMap() throws TermServerScriptException {
+		unitConceptMap = new HashMap<>();
+		Concept unitSubHierarchy = GraphLoader.getGraphLoader().getConcept("258666001"); // |Unit (qualifier value)|
+		for (Concept unit : unitSubHierarchy.getDescendents(NOT_SET)) {
+			unitConceptMap.put(unit.getFsn(), unit);
+		}
+	}
 
 	public static String calculateTermFromIngredients(Concept c, boolean isFSN, boolean isPT, String langRefset) throws TermServerScriptException {
 		String proposedTerm = "";

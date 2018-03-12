@@ -17,6 +17,7 @@ import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
 import org.ihtsdo.termserver.scripting.domain.Task;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import us.monoid.json.JSONObject;
 
@@ -169,7 +170,7 @@ public class ProximatePrimitiveRemodeller extends BatchFix implements RF2Constan
 			}
 		} else {
 			//Otherwise add this group with the lowest groupId available
-			long newGroupId = getMaxGroupId(inferred.getSource(), CharacteristicType.STATED_RELATIONSHIP) + 1;
+			int newGroupId = SnomedUtils.getFirstFreeGroup(loadedConcept);
 			for (Relationship thisGroupMember : inferredGroup) {
 				Relationship newStated = thisGroupMember.clone(null);
 				newStated.setCharacteristicType(CharacteristicType.STATED_RELATIONSHIP);
@@ -186,7 +187,7 @@ public class ProximatePrimitiveRemodeller extends BatchFix implements RF2Constan
 	private Set<Relationship> getMatchingStatedGroup(
 			Set<Relationship> inferredGroup) throws TermServerScriptException {
 		Concept concept = inferredGroup.iterator().next().getSource();
-		long maxGroupId = getMaxGroupId(concept, CharacteristicType.STATED_RELATIONSHIP);
+		int maxGroupId = SnomedUtils.getFirstFreeGroup(concept);
 		//Work through all the stated groups to see if any are a match
 		
 		nextGroup:
@@ -238,17 +239,6 @@ public class ProximatePrimitiveRemodeller extends BatchFix implements RF2Constan
 			}
 		}
 		return groupSiblings;
-	}
-
-	//Find the current highest group id
-	private long getMaxGroupId(Concept concept, CharacteristicType characteristicType) {
-		long highestGroupId = 0;
-		for (Relationship r : concept.getRelationships(characteristicType, ActiveState.ACTIVE)) {
-			if (r.getGroupId() > highestGroupId) {
-				highestGroupId = r.getGroupId();
-			}
-		}
-		return highestGroupId;
 	}
 
 	protected Batch formIntoBatch() throws TermServerScriptException {

@@ -847,7 +847,7 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 	public Collection<RelationshipGroup> getRelationshipGroups(CharacteristicType characteristicType, ActiveState activeState, boolean includeGroup0) {
 		Collection<RelationshipGroup> relationshipGroups = characteristicType.equals(CharacteristicType.STATED_RELATIONSHIP) ? statedRelationshipGroups : inferredRelationshipGroups;
 		if (relationshipGroups == null) {
-			Map<Long, RelationshipGroup> groups = new HashMap<>();
+			Map<Integer, RelationshipGroup> groups = new HashMap<>();
 			for (Relationship r : getRelationships(characteristicType, activeState)) {
 				if (r.getType().equals(IS_A) || !includeGroup0 && r.getGroupId() == 0) {
 					continue;

@@ -129,8 +129,12 @@ public class GraphLoader implements RF2Constants {
 		source.addRelationship(r, isDelta);
 	}
 
-	public Concept getConcept(String sctId) throws TermServerScriptException {
-		return getConcept(sctId, true, true);
+	public Concept getConcept(String identifier) throws TermServerScriptException {
+		//Have we been passed a full identifier for the concept eg SCTID |FSN| ?
+		if (identifier.contains(PIPE)) {
+			identifier = identifier.split(ESCAPED_PIPE)[0].trim();
+		}
+		return getConcept(identifier, true, true);
 	}
 	
 	public Concept getConcept(Long sctId) throws TermServerScriptException {

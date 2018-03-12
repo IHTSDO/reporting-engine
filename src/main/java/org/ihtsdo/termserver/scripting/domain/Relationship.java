@@ -36,7 +36,7 @@ public class Relationship implements RF2Constants, Component, Comparable<Relatio
 	private String sourceId;
 	@SerializedName("groupId")
 	@Expose
-	private long groupId;
+	private int groupId;
 	@SerializedName("characteristicType")
 	@Expose
 	private CharacteristicType characteristicType;
@@ -60,7 +60,7 @@ public class Relationship implements RF2Constants, Component, Comparable<Relatio
 	public Relationship() {
 	}
 
-	public Relationship(Concept source, Concept type, Concept target, long groupId) {
+	public Relationship(Concept source, Concept type, Concept target, int groupId) {
 		this.type = type;
 		this.target = target;
 		this.source = source;
@@ -140,11 +140,11 @@ public class Relationship implements RF2Constants, Component, Comparable<Relatio
 		this.sourceId = sourceId;
 	}
 
-	public long getGroupId() {
+	public int getGroupId() {
 		return groupId;
 	}
 
-	public void setGroupId(long groupId) {
+	public void setGroupId(int groupId) {
 		this.groupId = groupId;
 	}
 
@@ -239,7 +239,7 @@ public class Relationship implements RF2Constants, Component, Comparable<Relatio
 					return this.getTarget().getConceptId().compareTo(other.getTarget().getConceptId());
 				} else {
 					if (this.getGroupId() != other.getGroupId()) {
-						return ((Long)this.getGroupId()).compareTo(other.getGroupId());
+						return ((Integer)this.getGroupId()).compareTo(other.getGroupId());
 					} else {
 						return 0;  //Equal in all four values
 					}

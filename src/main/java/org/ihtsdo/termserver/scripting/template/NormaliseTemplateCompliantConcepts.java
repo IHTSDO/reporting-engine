@@ -170,7 +170,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		int changesMade = 0;
 		for (RelationshipGroup g : toBeStated) {
 			//Group 0 must remain group 0.  Otherwise find an available group number
-			long freeGroup = g.getGroupId()==0?0:SnomedUtils.getFirstFreeGroup(c);
+			int freeGroup = g.getGroupId()==0?0:SnomedUtils.getFirstFreeGroup(c);
 			stateRelationshipGroup(t, c, g, freeGroup);
 			changesMade++;
 			report (t, c, Severity.HIGH, ReportActionType.RELATIONSHIP_GROUP_ADDED, c.getRelationshipGroup(CharacteristicType.STATED_RELATIONSHIP, freeGroup));
@@ -178,7 +178,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		return changesMade;
 	}
 
-	private void stateRelationshipGroup(Task t, Concept c, RelationshipGroup g, long freeGroup) {
+	private void stateRelationshipGroup(Task t, Concept c, RelationshipGroup g, int freeGroup) {
 		for (Relationship r : g.getRelationships()) {
 			Relationship newRel = r.clone(null);
 			newRel.setCharacteristicType(CharacteristicType.STATED_RELATIONSHIP);
