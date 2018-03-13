@@ -110,7 +110,7 @@ public class DrugTermGenerator implements RF2Constants{
 		//This function will split out the US / GB terms if the ingredients show variance where the product does not
 		validateUsGbVarianceInIngredients(t,c);
 		
-		if (c.getConceptId().equals("109044007")) {
+		if (c.getConceptId() != null && c.getConceptId().equals("109044007")) {
 			System.out.println ("Check this concept");
 		}
 		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
@@ -181,6 +181,11 @@ public class DrugTermGenerator implements RF2Constants{
 		String suffix = "";
 		if (isFSN) {
 			prefix = "Product containing ";
+			switch (c.getConceptType()) {
+				case MEDICINAL_PRODUCT_FORM : suffix =  " in " + DrugUtils.getDosageForm(c);
+										break;
+				default:
+			}
 		} else if (isPT) {
 			switch (c.getConceptType()) {
 				case MEDICINAL_PRODUCT : suffix = " product";

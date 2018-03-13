@@ -3,20 +3,10 @@ package org.ihtsdo.termserver.scripting.util;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
 
-import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.TermServerScript.ReportActionType;
-import org.ihtsdo.termserver.scripting.TermServerScript.Severity;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.Acceptability;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.ActiveState;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.CaseSignificance;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.DescriptionType;
 
 public class DrugUtils implements RF2Constants {
 	
@@ -103,9 +93,9 @@ public class DrugUtils implements RF2Constants {
 			doseForm = SnomedUtils.deCapitalize(doseForm);
 			//Translate known issues
 			switch (doseForm) {
-				case "ocular dosage form": doseForm =  "ophthalmic dosage form";
+				case "ocular dose form": doseForm =  "ophthalmic dosage form";
 					break;
-				case "inhalation dosage form": doseForm = "respiratory dosage form";
+				case "inhalation dose form": doseForm = "respiratory dosage form";
 					break;
 				case "cutaneous AND/OR transdermal dosage form" : doseForm = "topical dosage form";
 					break;

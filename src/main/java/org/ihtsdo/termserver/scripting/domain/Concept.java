@@ -813,6 +813,7 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 		clone.setActive(true);
 		clone.setDefinitionStatus(getDefinitionStatus());
 		clone.setModuleId(getModuleId());
+		clone.setConceptType(conceptType);
 		
 		//Copy all descriptions
 		for (Description d : getDescriptions(ActiveState.ACTIVE)) {

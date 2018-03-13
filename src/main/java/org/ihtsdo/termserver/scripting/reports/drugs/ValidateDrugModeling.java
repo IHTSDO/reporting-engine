@@ -28,7 +28,7 @@ public class ValidateDrugModeling extends TermServerReport{
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		ValidateDrugModeling report = new ValidateDrugModeling();
 		try {
-			report.additionalReportColumns = "Issue, Data";
+			report.additionalReportColumns = "Issue, Data, Detail";
 			report.init(args);
 			report.loadProjectSnapshot(false); //Load all descriptions
 			report.validateDrugsModeling();
@@ -44,13 +44,20 @@ public class ValidateDrugModeling extends TermServerReport{
 	private void validateDrugsModeling() throws TermServerScriptException {
 		Set<Concept> subHierarchy = gl.getConcept(drugsHierarchyStr).getDescendents(NOT_SET);
 		//ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.CLINICAL_DRUG };
-		ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.MEDICINAL_PRODUCT };
-		
+		//ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT_FORM};
+		ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT };
 		long issueCount = 0;
 		for (Concept concept : subHierarchy) {
-			issueCount += validateIngredientsInFSN(concept, drugTypes);
+			DrugUtils.setConceptType(concept);
+			
+			// DRUGS-281, DRUGS-282
+			issueCount += validateIngredientsInFSN(concept, drugTypes);  
+			
 			//issueCount += validateIngredientsAgainstBoSS(concept);
-			//issueCount += validateStatedVsInferredAttributes(concept, activeIngredient, drugTypes);
+			
+			//DRUGS-296
+			issueCount += validateStatedVsInferredAttributes(concept, HAS_ACTIVE_INGRED, null);
+			
 			//issueCount += validateStatedVsInferredAttributes(concept, hasManufacturedDoseForm, drugTypes);
 			//issueCount += validateAttributeValueCardinality(concept, activeIngredient);
 			//issueCount += checkForBadWords(concept);  //DRUGS-93
@@ -241,16 +248,17 @@ public class ValidateDrugModeling extends TermServerReport{
 			incrementSummaryInformation("Concepts ignored - wrong type");
 			return issueCount;
 		}
-		incrementSummaryInformation("Concepts validates for ingredients correct in FSN");
+		incrementSummaryInformation("Concepts validated to ensure ingredients correct in FSN");
 		Description currentFSN = c.getFSNDescription();
 		termGenerator.setQuiet(true);
-		termGenerator.ensureDrugTermsConform(null, c);
-		Description proposedFSN = c.getFSNDescription();
+		Concept clone = c.clone();
+		termGenerator.ensureDrugTermsConform(null, clone);
+		Description proposedFSN = clone.getFSNDescription();
 		
 		if (!currentFSN.getTerm().equals(proposedFSN.getTerm())) {
 			String issue = "FSN did not match expected pattern";
 			String differences = findDifferences (currentFSN.getTerm(), proposedFSN.getTerm());
-			report (c, issue, proposedFSN, differences);
+			report (c, issue, proposedFSN.getTerm(), differences);
 			issueCount++;
 		}
 		return issueCount;
