@@ -352,7 +352,7 @@ public abstract class TermServerScript implements RF2Constants {
 							gl.loadHistoricalAssociationFile(zis);
 						}
 						//If we're loading all terms, load the language refset as well
-						if (!fsnOnly && (fileName.contains("English" + fileType ) || fileName.contains("Language" + fileType + "-en"))) {
+						if (!fsnOnly && (fileName.contains("English" + fileType ) || fileName.contains("Language" + fileType))) {
 							info("Loading Language Reference Set File - " + fileName);
 							gl.loadLanguageFile(zis);
 						}
