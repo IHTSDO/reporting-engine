@@ -26,6 +26,7 @@ public interface RF2Constants {
 	static Concept HAS_UNIT_OF_PRESENTATION = new Concept ("763032000"); // |Has unit of presentation (attribute)|
 	static Concept IS_MODIFICATION_OF = new Concept ("738774007", "Is modification of (attribute)");
 	static Concept DRUG_PREPARATION = new Concept("105904009","Type of drug preparation (qualifier value)");
+	static Concept HAS_DISPOSITION = new Concept ("726542003"); // |Has disposition (attribute)|
 	
 	static Concept ROOT_CONCEPT = new Concept (SCTID_ROOT_CONCEPT.toString());
 	static Concept ASSOC_MORPH = new Concept ("116676008");  // |Associated morphology (attribute)|

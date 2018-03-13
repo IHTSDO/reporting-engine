@@ -166,4 +166,16 @@ public class DrugUtils implements RF2Constants {
 			return doseForm;
 		}
 	}
+
+	public static boolean isModificationOf(Concept specific, Concept general) {
+		//Check if the specific concept has a modification attribute of the more general substance
+		//and if there is a Modification Of attribute, can also call recursively
+		List<Relationship> modifications = specific.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, IS_MODIFICATION_OF, ActiveState.ACTIVE);
+		for (Relationship modification : modifications) {
+			if (modification.getTarget().equals(general) || isModificationOf(specific, modification.getTarget())) {
+				return true;
+			}
+		}
+		return false;
+	}
 }

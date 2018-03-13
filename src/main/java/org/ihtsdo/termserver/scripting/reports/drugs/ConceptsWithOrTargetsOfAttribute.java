@@ -15,7 +15,7 @@ import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 
 /**
- * DRUGS-454 A report to identify the following:
+ * DRUGS-453 A report to identify the following:
 	Substance concept that has both:
 	1 - stated descendants
 	2 - is target of Is modification of attribute
@@ -108,5 +108,3 @@ public class ConceptsWithOrTargetsOfAttribute extends TermServerReport {
 	}
 
 }
-
-

@@ -5,9 +5,7 @@ import java.io.PrintStream;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.TreeSet;
 
-import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
@@ -22,22 +20,13 @@ public class ValidateDrugModeling extends TermServerReport{
 	String drugsHierarchyStr = "373873005"; // |Pharmaceutical / biologic product (product)|
 	String substHierarchyStr = "105590001"; // |Substance (substance)|
 	
-	static final String SCTID_ACTIVE_INGREDIENT = "127489000"; // |Has active ingredient (attribute)|"
-	static final String SCTID_HAS_BOSS = "732943007"; //Has basis of strength substance (attribute)
-	static final String SCTID_MAN_DOSE_FORM = "411116001"; //Has manufactured dose form (attribute)
-	static final String SCTID_HAS_DISPOSITION = "726542003"; // |Has disposition (attribute)|
-	
-	Concept activeIngredient;
-	Concept hasManufacturedDoseForm;
-	Concept boss;
-	Concept hasDisposition;
-	
 	private static final String[] badWords = new String[] { "preparation", "agent", "+", "product"};
 	private static final String remodelledDrugIndicator = "Product containing";
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		ValidateDrugModeling report = new ValidateDrugModeling();
 		try {
+			report.additionalReportColumns = "Issue, Ingredient, BoSS";
 			report.init(args);
 			report.loadProjectSnapshot(false); //Load all descriptions
 			report.validateDrugsModeling();
@@ -55,8 +44,8 @@ public class ValidateDrugModeling extends TermServerReport{
 		ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.CLINICAL_DRUG };
 		long issueCount = 0;
 		for (Concept concept : subHierarchy) {
-			issueCount += validateIngredientsInFSN(concept);
-			//issueCount += validateIngredientsAgainstBoSS(concept);
+			//issueCount += validateIngredientsInFSN(concept);
+			issueCount += validateIngredientsAgainstBoSS(concept);
 			//issueCount += validateStatedVsInferredAttributes(concept, activeIngredient, drugTypes);
 			//issueCount += validateStatedVsInferredAttributes(concept, hasManufacturedDoseForm, drugTypes);
 			//issueCount += validateAttributeValueCardinality(concept, activeIngredient);
@@ -78,12 +67,12 @@ public class ValidateDrugModeling extends TermServerReport{
 	//Ensure that all stated dispositions exist as inferred, and visa-versa
 	private long validateDisposition(Concept concept) {
 		long issuesCount = 0;
-		issuesCount += validateAttributeViewsMatch (concept, hasDisposition, CharacteristicType.STATED_RELATIONSHIP);
+		issuesCount += validateAttributeViewsMatch (concept, HAS_DISPOSITION, CharacteristicType.STATED_RELATIONSHIP);
 
 		//If this concept has one or more hasDisposition attributes, check if the inferred parent has the same.
-		if (concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, hasDisposition, ActiveState.ACTIVE).size() > 0) {
-			issuesCount += validateAttributeViewsMatch (concept, hasDisposition, CharacteristicType.INFERRED_RELATIONSHIP);
-			issuesCount += checkForOddlyInferredParent(concept, hasDisposition);
+		if (concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_DISPOSITION, ActiveState.ACTIVE).size() > 0) {
+			issuesCount += validateAttributeViewsMatch (concept, HAS_DISPOSITION, CharacteristicType.INFERRED_RELATIONSHIP);
+			issuesCount += checkForOddlyInferredParent(concept, HAS_DISPOSITION);
 		}
 		return issuesCount;
 	}
@@ -202,36 +191,42 @@ public class ValidateDrugModeling extends TermServerReport{
 
 	private int validateIngredientsAgainstBoSS(Concept concept) throws TermServerScriptException {
 		int issueCount = 0;
-		List<Relationship> bossAttributes = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, boss, ActiveState.ACTIVE);
+		List<Relationship> bossAttributes = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_BOSS, ActiveState.ACTIVE);
 
 		//Check BOSS attributes against active ingredients - must be in the same relationship group
-		List<Relationship> ingredientRels = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, activeIngredient, ActiveState.ACTIVE);
+		List<Relationship> ingredientRels = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE);
 		for (Relationship bRel : bossAttributes) {
+			incrementSummaryInformation("BoSS attributes checked");
 			boolean matchFound = false;
+			Concept boSS = bRel.getTarget();
 			for (Relationship iRel : ingredientRels) {
-				if (bRel.getGroupId() == iRel.getGroupId() && isSelfOrSubTypeOf(bRel.getTarget(), iRel.getTarget())) {
-					matchFound = true;
+				Concept ingred = iRel.getTarget();
+				if (bRel.getGroupId() == iRel.getGroupId()) {
+					boolean isSelf = boSS.equals(ingred);
+					boolean isSubType = descendantsCache.getDescendents(boSS).contains(ingred);
+					boolean isModificationOf = DrugUtils.isModificationOf(ingred, boSS);
+					
+					if (isSelf || isSubType || isModificationOf) {
+						matchFound = true;
+						if (isSubType) {
+							incrementSummaryInformation("Active ingredient is a subtype of BoSS");
+							String issue = "Active ingredient is a subtype of BoSS.  Expected modification.";
+							report (concept, issue, ingred, boSS);
+						} else if (isModificationOf) {
+							incrementSummaryInformation("Valid Ingredients as Modification of BoSS");
+						} else if (isSelf) {
+							incrementSummaryInformation("BoSS matches ingredient");
+						}
+					}
 				}
 			}
 			if (!matchFound) {
-				String issue = "Basis of Strength not equal or subtype of active ingredient";
-				report (concept, issue, bRel.getTarget().toString());
+				String issue = "Basis of Strength not equal or subtype of active ingredient, neither is active ingredient a modification of the BoSS";
+				report (concept, issue, null, boSS);
 				issueCount++;
 			}
 		}
 		return issueCount;
-	}
-
-	//Return true if concept c is equal or a subtype of the superType
-	private boolean isSelfOrSubTypeOf(Concept c, Concept superType) throws TermServerScriptException {
-		if (c.equals(superType)) {
-			return true;
-		}
-		Set<Concept> subTypes = superType.getDescendents(NOT_SET);
-		if (subTypes.contains(c)) {
-			return true;
-		}
-		return false;
 	}
 
 	private int validateIngredientsInFSN(Concept concept) throws TermServerScriptException {
@@ -297,7 +292,7 @@ public class ValidateDrugModeling extends TermServerReport{
 		return issues;
 	}
 
-	protected void init(String[] args) throws TermServerScriptException, SnowOwlClientException {
+/*	protected void init(String[] args) throws TermServerScriptException, SnowOwlClientException {
 		super.init(args);
 		writeToReportFile ("Concept, FSN, SemTag, Issue, Data");
 		
@@ -306,5 +301,5 @@ public class ValidateDrugModeling extends TermServerReport{
 		hasManufacturedDoseForm = gl.getConcept(SCTID_MAN_DOSE_FORM);
 		boss = gl.getConcept(SCTID_HAS_BOSS);
 		hasDisposition = gl.getConcept(SCTID_HAS_DISPOSITION);
-	}
+	}*/
 }
