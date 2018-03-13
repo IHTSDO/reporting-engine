@@ -96,7 +96,7 @@ abstract public class TemplateFix extends BatchFix {
 	}
 	
 	@Override
-	protected void report (Task task, Component component, Severity severity, ReportActionType actionType, Object... details) {
+	public void report (Task task, Component component, Severity severity, ReportActionType actionType, Object... details) {
 		Concept c = (Concept)component;
 		char relevantTemplate = templates.get(0).getId();
 		if (conceptToTemplateMap != null && conceptToTemplateMap.containsKey(c)) {

@@ -15,6 +15,7 @@ import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Task;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
+import org.ihtsdo.termserver.scripting.util.AcceptabilityMode;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import com.b2international.commons.StringUtils;
@@ -92,7 +93,7 @@ public class DrugsReTerming extends DrugBatchFix implements RF2Constants{
 			String termPart = SnomedUtils.deconstructFSN(change.getFsn())[0];
 			CaseSignificance cs = isCaseSensitive(termPart)? CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE : CaseSignificance.CASE_INSENSITIVE;
 			replacement.setCaseSignificance(cs);
-			replacement.setAcceptabilityMap(createAcceptabilityMap(AcceptabilityMode.PREFERRED_BOTH));
+			replacement.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(AcceptabilityMode.PREFERRED_BOTH));
 			fsn.inactivateDescription(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
 			tsConcept.addDescription(replacement);
 			changesMade += 2;  //One inactivation and one addition
@@ -315,7 +316,7 @@ public class DrugsReTerming extends DrugBatchFix implements RF2Constants{
 		} else {
 			d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
 		}
-		d.setAcceptabilityMap(createAcceptabilityMap(acceptabilityMode));
+		d.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(acceptabilityMode));
 		d.setConceptId(concept.getConceptId());
 		concept.addDescription(d);
 	}

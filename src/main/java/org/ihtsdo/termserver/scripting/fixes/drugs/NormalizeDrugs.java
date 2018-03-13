@@ -12,6 +12,7 @@ import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.Task;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
+import org.ihtsdo.termserver.scripting.util.DrugTermGenerator;
 
 import us.monoid.json.JSONObject;
 
@@ -24,6 +25,7 @@ public class NormalizeDrugs extends DrugBatchFix implements RF2Constants{
 	
 	Relationship newParentRel;
 	String newParent = "763158003"; // |Medicinal product (product)| 
+	DrugTermGenerator termGenerator = new DrugTermGenerator(this);
 	
 	protected NormalizeDrugs(BatchFix clone) {
 		super(clone);
@@ -66,7 +68,7 @@ public class NormalizeDrugs extends DrugBatchFix implements RF2Constants{
 		int changes = replaceParents (task, loadedConcept, newParentRel, new String[] { parentCount, attributeCount });
 		
 		if (!loadedConcept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM)) {
-			changes += normalizeDrugTerms (task, loadedConcept);
+			changes += termGenerator.ensureDrugTermsConform(task, loadedConcept);
 		}
 		
 		if (loadedConcept.getDefinitionStatus().equals(DefinitionStatus.PRIMITIVE)) {

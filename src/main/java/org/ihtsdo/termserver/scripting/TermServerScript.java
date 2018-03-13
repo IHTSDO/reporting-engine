@@ -61,8 +61,6 @@ public abstract class TermServerScript implements RF2Constants {
 	protected static boolean debug = true;
 	protected static boolean dryRun = true;
 	protected static int dryRunCounter = 0;
-	protected int taskThrottle = 30;
-	protected int conceptThrottle = 5;
 	protected String env;
 	protected String url = environments[0];
 	protected boolean useAuthenticatedCookie = true;
@@ -184,8 +182,6 @@ public abstract class TermServerScript implements RF2Constants {
 		boolean isCookie = false;
 		boolean isDryRun = false;
 		boolean isRestart = false;
-		boolean isTaskThrottle = false;
-		boolean isConceptThrottle = false;
 		boolean isOutputDir = false;
 		boolean isInputFile = false;
 		String projectName = "unknown";
@@ -203,10 +199,6 @@ public abstract class TermServerScript implements RF2Constants {
 				isOutputDir = true;
 			} else if (thisArg.equals("-r")) {
 				isRestart = true;
-			} else if (thisArg.equals("-t") || thisArg.equals("-t1")) {
-				isTaskThrottle = true;
-			} else if (thisArg.equals("-t2")) {
-				isConceptThrottle = true;
 			} else if (isProjectName) {
 				projectName = thisArg;
 				isProjectName = false;
@@ -222,12 +214,6 @@ public abstract class TermServerScript implements RF2Constants {
 					throw new TermServerScriptException ("Unable to read input file " + thisArg);
 				}
 				isInputFile = false;
-			} else if (isTaskThrottle) {
-				taskThrottle = Integer.parseInt(thisArg);
-				isTaskThrottle = false;
-			} else if (isConceptThrottle) {
-				conceptThrottle = Integer.parseInt(thisArg);
-				isConceptThrottle = false;
 			} else if (isCookie) {
 				authenticatedCookie = thisArg;
 				isCookie = false;
@@ -273,22 +259,6 @@ public abstract class TermServerScript implements RF2Constants {
 			response = STDIN.nextLine().trim();
 			if (!response.isEmpty()) {
 				restartPosition = Integer.parseInt(response);
-			}
-		}
-		
-		if (taskThrottle > 0) {
-			print ("Time delay between tasks (throttle) seconds [" +taskThrottle + "]: ");
-			response = STDIN.nextLine().trim();
-			if (!response.isEmpty()) {
-				taskThrottle = Integer.parseInt(response);
-			}
-		}
-		
-		if (conceptThrottle > 0) {
-			print ("Time delay between concepts (throttle) seconds [" +conceptThrottle + "]: ");
-			response = STDIN.nextLine().trim();
-			if (!response.isEmpty()) {
-				conceptThrottle = Integer.parseInt(response);
 			}
 		}
 
@@ -779,7 +749,7 @@ public abstract class TermServerScript implements RF2Constants {
 		concept.addDescription(d);
 	}
 
-	protected void report(Task task, Component component, Severity severity, ReportActionType actionType, Object... details) {
+	public void report(Task task, Component component, Severity severity, ReportActionType actionType, Object... details) {
 		if (component != null) {
 			if (severity.equals(Severity.CRITICAL)) {
 				String key = CRITICAL_ISSUE + " encountered for " + component.toString();

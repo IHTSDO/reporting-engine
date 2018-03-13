@@ -60,7 +60,7 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 	
 	private boolean isLoaded = false;
 	private int originalFileLineNumber;
-	private ConceptType conceptType = ConceptType.UNKNOWN;
+	private ConceptType conceptType;
 	private List<String> assertionFailures = new ArrayList<String>();
 	private String assignedAuthor;
 	private String reviewer;

@@ -15,6 +15,7 @@ import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.Task;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
+import org.ihtsdo.termserver.scripting.util.AcceptabilityMode;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import us.monoid.json.JSONObject;
@@ -205,9 +206,9 @@ public class NormalizeGroupersViaDisposition extends DrugBatchFix implements RF2
 		replacePT(task, loadedConcept, pt, gbPT, csOfX);
 		
 		//And add the fsnPartner if it doesn't already exist
-		if (!termAlreadyExists(loadedConcept, fsnPartner)) {
+		if (!SnomedUtils.termAlreadyExists(loadedConcept, fsnPartner)) {
 			Description d = Description.withDefaults(fsnPartner, DescriptionType.SYNONYM);
-			d.setAcceptabilityMap(createAcceptabilityMap(AcceptabilityMode.ACCEPTABLE_BOTH));
+			d.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(AcceptabilityMode.ACCEPTABLE_BOTH));
 			d.setCaseSignificance(csOfX);
 			loadedConcept.addDescription(d);
 			report (task, loadedConcept, Severity.LOW, ReportActionType.DESCRIPTION_ADDED, fsnPartner);
@@ -238,7 +239,7 @@ public class NormalizeGroupersViaDisposition extends DrugBatchFix implements RF2
 				Description gbDesc = existingPTs.get(0).clone(null);
 				gbDesc.setTerm(gbPT);
 				gbDesc.setActive(true);
-				gbDesc.setAcceptabilityMap(createAcceptabilityMap(AcceptabilityMode.PREFERRED_GB));
+				gbDesc.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(AcceptabilityMode.PREFERRED_GB));
 				gbDesc.setCaseSignificance(cs);
 			}
 		} else {
@@ -260,7 +261,7 @@ public class NormalizeGroupersViaDisposition extends DrugBatchFix implements RF2
 
 	private void replaceTerm(Task t, Concept c, Description d, String newTerm, AcceptabilityMode mode, CaseSignificance cs) throws TermServerScriptException {
 		
-		if (termAlreadyExists(c, newTerm)) {
+		if (SnomedUtils.termAlreadyExists(c, newTerm)) {
 			report (t, c, Severity.LOW, ReportActionType.NO_CHANGE, "Term already exists: " + newTerm);
 			return;
 		}
@@ -283,7 +284,7 @@ public class NormalizeGroupersViaDisposition extends DrugBatchFix implements RF2
 			action = "Inactivated ";
 		}
 		c.addDescription(newDesc);
-		newDesc.setAcceptabilityMap(createAcceptabilityMap(mode));
+		newDesc.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(mode));
 		String msg = action + d + " in favour of '" + newTerm + "' (" + mode.toString().toLowerCase() + ")";
 		report (t, c, Severity.LOW, ReportActionType.DESCRIPTION_CHANGE_MADE, msg, "", activeAcceptableCount);
 	}

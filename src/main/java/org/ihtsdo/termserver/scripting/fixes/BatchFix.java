@@ -52,6 +52,8 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	protected int taskSize = 10;
 	protected int wiggleRoom = 5;
 	protected int failureCount = 0;
+	protected int taskThrottle = 30;
+	protected int conceptThrottle = 5;
 	protected String targetAuthor;
 	protected String targetReviewer;
 	protected String[] author_reviewer;
@@ -319,6 +321,8 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		boolean isAuthor = false;
 		boolean isReviewer = false;
 		boolean isLimit = false;
+		boolean isTaskThrottle = false;
+		boolean isConceptThrottle = false;
 	
 		for (String thisArg : args) {
 			if (thisArg.equals("-a")) {
@@ -329,6 +333,16 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 				isTaskSize = true;
 			} else if (thisArg.equals("-l")) {
 				isLimit = true;
+			} else if (thisArg.equals("-t") || thisArg.equals("-t1")) {
+				isTaskThrottle = true;
+			} else if (thisArg.equals("-t2")) {
+				isConceptThrottle = true;
+			} else if (isTaskThrottle) {
+				taskThrottle = Integer.parseInt(thisArg);
+				isTaskThrottle = false;
+			} else if (isConceptThrottle) {
+				conceptThrottle = Integer.parseInt(thisArg);
+				isConceptThrottle = false;
 			} else if (isAuthor) {
 				targetAuthor = thisArg.toLowerCase();
 				isAuthor = false;
@@ -351,6 +365,23 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			taskSize = Integer.parseInt(response);
 		}
 		
+		
+		if (taskThrottle > 0) {
+			print ("Time delay between tasks (throttle) seconds [" +taskThrottle + "]: ");
+			response = STDIN.nextLine().trim();
+			if (!response.isEmpty()) {
+				taskThrottle = Integer.parseInt(response);
+			}
+		}
+		
+		if (conceptThrottle > 0) {
+			print ("Time delay between concepts (throttle) seconds [" +conceptThrottle + "]: ");
+			response = STDIN.nextLine().trim();
+			if (!response.isEmpty()) {
+				conceptThrottle = Integer.parseInt(response);
+			}
+		}
+
 		try {
 			super.init(args);
 		} catch (Exception e) {

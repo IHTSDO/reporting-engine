@@ -10,7 +10,7 @@ public interface RF2Constants {
 	final Long SCTID_ROOT_CONCEPT = 138875005L;
 	final Long SCTID_IS_A_CONCEPT = 116680003L;
 	
-		static Concept IS_A =  new Concept ("116680003");  // | Is a (attribute) |
+	static Concept IS_A =  new Concept ("116680003");  // | Is a (attribute) |
 	
 	//Drugs and Substances
 	static Concept PHARM_BIO_PRODUCT = new Concept ("373873005") ; //Pharmaceutical / biologic product (product)
@@ -34,8 +34,10 @@ public interface RF2Constants {
 	static Concept DUE_TO = new Concept("42752001"); // |Due to (attribute)|
 	static Concept PART_OF = new Concept("123005000"); // |Part of (attribute)|
 	
+	//Drug Terms
 	static String ACETAMINOPHEN = "acetaminophen";
 	static String PARACETAMOL = "paracetamol";
+	static String productPrefix = "Product containing ";
 	
 	static String SCTID_CORE_MODULE = "900000000000207008";
 	static String SCTID_US_MODULE = "731000124108";

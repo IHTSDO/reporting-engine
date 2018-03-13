@@ -743,5 +743,46 @@ public class SnomedUtils implements RF2Constants{
 			}
 		}
 	}
+	
+	public static boolean termAlreadyExists(Concept concept, String newTerm) {
+		return termAlreadyExists(concept, newTerm, ActiveState.BOTH);
+	}
+
+	public static boolean termAlreadyExists(Concept concept, String newTerm, ActiveState activeState) {
+		boolean termAlreadyExists = false;
+		for (Description description : concept.getDescriptions(activeState)) {
+			if (description.getTerm().equals(newTerm)) {
+				termAlreadyExists = true;
+			}
+		}
+		return termAlreadyExists;
+	}
+	
+	public static Map<String, Acceptability> createAcceptabilityMap(AcceptabilityMode acceptabilityMode) {
+		Map<String, Acceptability> aMap = new HashMap<String, Acceptability>();
+		//Note that when a term is preferred in one dialect, we'll make it acceptable in the other
+		switch (acceptabilityMode) {
+			case PREFERRED_BOTH :
+				aMap.put(US_ENG_LANG_REFSET, Acceptability.PREFERRED);
+				aMap.put(GB_ENG_LANG_REFSET, Acceptability.PREFERRED);
+				break;
+			case PREFERRED_US :
+				aMap.put(US_ENG_LANG_REFSET, Acceptability.PREFERRED);
+				aMap.put(GB_ENG_LANG_REFSET, Acceptability.ACCEPTABLE);
+				break;
+			case PREFERRED_GB :
+				aMap.put(US_ENG_LANG_REFSET, Acceptability.ACCEPTABLE);
+				aMap.put(GB_ENG_LANG_REFSET, Acceptability.PREFERRED);
+				break;
+			case ACCEPTABLE_BOTH :
+				aMap.put(US_ENG_LANG_REFSET, Acceptability.ACCEPTABLE);
+				aMap.put(GB_ENG_LANG_REFSET, Acceptability.ACCEPTABLE);
+				break;
+			case ACCEPTABLE_US :
+				aMap.put(US_ENG_LANG_REFSET, Acceptability.ACCEPTABLE);
+				break;
+		}
+		return aMap;
+	}
 
 }

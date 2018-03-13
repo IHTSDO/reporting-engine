@@ -13,6 +13,7 @@ import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.Task;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
+import org.ihtsdo.termserver.scripting.util.DrugTermGenerator;
 import org.ihtsdo.termserver.scripting.util.DrugUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
@@ -24,6 +25,7 @@ DRUGS-? Remodelling of Clinical Drugs including Basis of Strength Substance (BoS
 public class CDRemodelling extends DrugBatchFix implements RF2Constants{
 	
 	Map<Concept, List<Ingredient>> spreadsheet;
+	DrugTermGenerator termGenerator = new DrugTermGenerator(this);
 	
 	protected CDRemodelling(BatchFix clone) {
 		super(clone);
@@ -82,7 +84,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants{
 		for (Ingredient ingredient : ingredients) {
 			changesMade += remodel(t,c,ingredient, isMultiIngredient);
 		}
-		changesMade += ensureDrugTermsConform(t,c);
+		changesMade += termGenerator.ensureDrugTermsConform(t,c);
 		return changesMade;
 	}
 

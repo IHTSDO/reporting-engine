@@ -9,7 +9,14 @@ import java.util.TreeSet;
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.TermServerScript.ReportActionType;
+import org.ihtsdo.termserver.scripting.TermServerScript.Severity;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.Acceptability;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.ActiveState;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.CaseSignificance;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.DescriptionType;
 
 public class DrugUtils implements RF2Constants {
 	
@@ -85,61 +92,7 @@ public class DrugUtils implements RF2Constants {
 		}
 	}
 
-	public static String calculateTermFromIngredients(Concept c, boolean isFSN, boolean isPT, String langRefset) throws TermServerScriptException {
-		String proposedTerm = "";
-		//Get all the ingredients in order
-		Set<String> ingredients = getIngredientTerms(c, isFSN, langRefset);
-		
-		//What prefixes and suffixes do we need?
-		String prefix = "";
-		String suffix = "";
-		if (isFSN) {
-			prefix = "Product containing ";
-		} else if (isPT) {
-			switch (c.getConceptType()) {
-				case MEDICINAL_PRODUCT : suffix = " product";
-										break;
-				case MEDICINAL_PRODUCT_FORM : suffix =  " in " + getDosageForm(c);
-										break;
-				default:
-			}
-		}
-		
-		//Form the term from the ingredients with prefixes and suffixes as required.
-		proposedTerm = prefix + StringUtils.join(ingredients, " and ") + suffix;
-		if (isFSN) {
-			proposedTerm += " " + SnomedUtils.deconstructFSN(c.getFsn())[1];
-		}
-		proposedTerm = SnomedUtils.capitalize(proposedTerm);
-		return proposedTerm;
-	}
-	
-	private static Set<String> getIngredientTerms(Concept c, boolean isFSN, String langRefset) throws TermServerScriptException {
-		List<Relationship> ingredientRels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE);
-		Set<String> ingredients = new TreeSet<String>();  //Will naturally sort in alphabetical order
-		for (Relationship r : ingredientRels) {
-			//Need to recover the full concept to have all descriptions, not the partial one stored as the target.
-			Concept ingredient = GraphLoader.getGraphLoader().getConcept(r.getTarget().getConceptId());
-			Description ingredientDesc;
-			String ingredientTerm;
-			if (isFSN) {
-				ingredientDesc = ingredient.getFSNDescription();
-				ingredientTerm = SnomedUtils.deconstructFSN(ingredient.getFsn())[0];
-			} else {
-				ingredientDesc = ingredient.getPreferredSynonym(langRefset);
-				ingredientTerm = ingredientDesc.getTerm();
-			}
-			
-			//If the ingredient name is not case sensitive, decaptialize
-			if (!ingredientDesc.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE)) {
-				ingredientTerm = SnomedUtils.deCapitalize(ingredientTerm);
-			}
-			ingredients.add(ingredientTerm);
-		}
-		return ingredients;
-	}
-
-	private static  String getDosageForm(Concept concept) {
+	public static  String getDosageForm(Concept concept) {
 		List<Relationship> doseForms = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_MANUFACTURED_DOSE_FORM, ActiveState.ACTIVE);
 		if (doseForms.size() == 0) {
 			return "NO STATED DOSE FORM DETECTED";

@@ -12,6 +12,7 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
+import org.ihtsdo.termserver.scripting.util.DrugTermGenerator;
 import org.ihtsdo.termserver.scripting.util.DrugUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
@@ -22,11 +23,12 @@ public class ValidateDrugModeling extends TermServerReport{
 	
 	private static final String[] badWords = new String[] { "preparation", "agent", "+", "product"};
 	private static final String remodelledDrugIndicator = "Product containing";
+	DrugTermGenerator termGenerator = new DrugTermGenerator(this);
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		ValidateDrugModeling report = new ValidateDrugModeling();
 		try {
-			report.additionalReportColumns = "Issue, Ingredient, BoSS";
+			report.additionalReportColumns = "Issue, Data";
 			report.init(args);
 			report.loadProjectSnapshot(false); //Load all descriptions
 			report.validateDrugsModeling();
@@ -41,11 +43,13 @@ public class ValidateDrugModeling extends TermServerReport{
 	
 	private void validateDrugsModeling() throws TermServerScriptException {
 		Set<Concept> subHierarchy = gl.getConcept(drugsHierarchyStr).getDescendents(NOT_SET);
-		ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.CLINICAL_DRUG };
+		//ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.CLINICAL_DRUG };
+		ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.MEDICINAL_PRODUCT };
+		
 		long issueCount = 0;
 		for (Concept concept : subHierarchy) {
-			//issueCount += validateIngredientsInFSN(concept);
-			issueCount += validateIngredientsAgainstBoSS(concept);
+			issueCount += validateIngredientsInFSN(concept, drugTypes);
+			//issueCount += validateIngredientsAgainstBoSS(concept);
 			//issueCount += validateStatedVsInferredAttributes(concept, activeIngredient, drugTypes);
 			//issueCount += validateStatedVsInferredAttributes(concept, hasManufacturedDoseForm, drugTypes);
 			//issueCount += validateAttributeValueCardinality(concept, activeIngredient);
@@ -229,19 +233,24 @@ public class ValidateDrugModeling extends TermServerReport{
 		return issueCount;
 	}
 
-	private int validateIngredientsInFSN(Concept concept) throws TermServerScriptException {
+	private int validateIngredientsInFSN(Concept c, ConceptType[] drugTypes) throws TermServerScriptException {
 		int issueCount = 0;
 		
 		//Only check FSN for certain drug types (to be expanded later)
-		if (!SnomedUtils.isConceptType(concept, ConceptType.MEDICINAL_PRODUCT)) {
+		if (!SnomedUtils.isConceptType(c, drugTypes)) {
+			incrementSummaryInformation("Concepts ignored - wrong type");
 			return issueCount;
 		}
-		String proposedFSN = DrugUtils.calculateTermFromIngredients(concept, true, false, US_ENG_LANG_REFSET);
+		incrementSummaryInformation("Concepts validates for ingredients correct in FSN");
+		Description currentFSN = c.getFSNDescription();
+		termGenerator.setQuiet(true);
+		termGenerator.ensureDrugTermsConform(null, c);
+		Description proposedFSN = c.getFSNDescription();
 		
-		if (!concept.getFsn().equals(proposedFSN)) {
+		if (!currentFSN.getTerm().equals(proposedFSN.getTerm())) {
 			String issue = "FSN did not match expected pattern";
-			String differences = findDifferences (concept.getFsn(), proposedFSN);
-			report (concept, issue, proposedFSN, differences);
+			String differences = findDifferences (currentFSN.getTerm(), proposedFSN.getTerm());
+			report (c, issue, proposedFSN, differences);
 			issueCount++;
 		}
 		return issueCount;
