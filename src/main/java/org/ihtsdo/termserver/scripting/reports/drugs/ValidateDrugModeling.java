@@ -43,22 +43,29 @@ public class ValidateDrugModeling extends TermServerReport{
 	
 	private void validateDrugsModeling() throws TermServerScriptException {
 		Set<Concept> subHierarchy = gl.getConcept(drugsHierarchyStr).getDescendents(NOT_SET);
+		ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT, ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.CLINICAL_DRUG };
 		//ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.CLINICAL_DRUG };
 		//ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT_FORM};
-		ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT };
+		//ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT };
 		long issueCount = 0;
 		for (Concept concept : subHierarchy) {
 			DrugUtils.setConceptType(concept);
 			
+			if (concept.getConceptId().equals("346644007")) {
+				debug ("Check here");
+			}
+			
 			// DRUGS-281, DRUGS-282
-			issueCount += validateIngredientsInFSN(concept, drugTypes);  
+			//issueCount += validateIngredientsInFSN(concept, drugTypes);  
 			
 			//issueCount += validateIngredientsAgainstBoSS(concept);
 			
 			//DRUGS-296
-			issueCount += validateStatedVsInferredAttributes(concept, HAS_ACTIVE_INGRED, null);
-			
-			//issueCount += validateStatedVsInferredAttributes(concept, hasManufacturedDoseForm, drugTypes);
+			if (concept.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED) && 
+				concept.getParents(CharacteristicType.STATED_RELATIONSHIP).get(0).equals(MEDICINAL_PRODUCT)) {
+				issueCount += validateStatedVsInferredAttributes(concept, HAS_ACTIVE_INGRED, drugTypes);
+				issueCount += validateStatedVsInferredAttributes(concept, HAS_MANUFACTURED_DOSE_FORM, drugTypes);
+			}
 			//issueCount += validateAttributeValueCardinality(concept, activeIngredient);
 			//issueCount += checkForBadWords(concept);  //DRUGS-93
 		}
@@ -171,7 +178,7 @@ public class ValidateDrugModeling extends TermServerReport{
 	private int validateStatedVsInferredAttributes(Concept concept,
 			Concept attributeType, ConceptType[] drugTypes) {
 		int issueCount = 0;
-		if (SnomedUtils.isConceptType(concept, drugTypes)) {
+		if (drugTypes==null || SnomedUtils.isConceptType(concept, drugTypes)) {
 			List<Relationship> statedAttributes = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
 			List<Relationship> infAttributes = concept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
 			if (statedAttributes.size() != infAttributes.size()) {
@@ -307,6 +314,10 @@ public class ValidateDrugModeling extends TermServerReport{
 			valuesEncountered.add(target);
 		}
 		return issues;
+	}
+	
+	private void report (Concept c, String data, String detail) {
+		super.report(c, c.getConceptType(), data, detail);
 	}
 
 /*	protected void init(String[] args) throws TermServerScriptException, SnowOwlClientException {
