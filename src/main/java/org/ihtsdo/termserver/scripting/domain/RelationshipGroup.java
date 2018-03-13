@@ -6,7 +6,7 @@ import java.util.stream.Collectors;
 
 public class RelationshipGroup {
 	List<Relationship> relationships;
-	long groupId;
+	int groupId;
 	
 	//Generic flag to say if group should be highlighted for some reason, eg cause a template match to fail
 	String indicators = "";
@@ -18,7 +18,7 @@ public class RelationshipGroup {
 		this.relationships = relationships;
 	}
 	
-	public RelationshipGroup(long groupId, Relationship r) {
+	public RelationshipGroup(int groupId, Relationship r) {
 		relationships = new ArrayList<>();
 		this.groupId = groupId;
 		relationships.add(r);
@@ -32,7 +32,7 @@ public class RelationshipGroup {
 		this.relationships = relationships;
 	}
 	
-	public long getGroupId() {
+	public int getGroupId() {
 		return groupId;
 	}
 	

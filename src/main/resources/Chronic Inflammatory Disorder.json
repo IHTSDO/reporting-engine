@@ -1,0 +1,6 @@
+{
+  "name": "Chronic inflammatory disorder",
+  "documentation": "https://confluence.ihtsdotools.org/pages/viewpage.action?pageId=57813204",
+  "version": 1,
+  "logicalTemplate": "64572001 |Disease (disorder)|:\n\t 263502005 |Clinical course (attribute)| = 90734009 |Chronic (qualifier value)|, [[~1..*]]{\n\t\t116676008 |Associated morphology (attribute)| = 409777003 |Chronic inflammatory morphology (morphologic abnormality)|\n\t}\n"
+}

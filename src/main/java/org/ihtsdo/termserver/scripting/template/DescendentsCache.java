@@ -14,14 +14,20 @@ public class DescendentsCache implements RF2Constants {
 	Map<Concept, Set<Concept>> descendentOrSelfCache = new HashMap<>();
 	
 	public Set<Concept> getDescendentsOrSelf (Concept c) throws TermServerScriptException {
-		Set<Concept> descendents = descendentOrSelfCache.get(c);
+		//Ensure we're working with the local copy rather than TS JSON
+		Concept localConcept = GraphLoader.getGraphLoader().getConcept(c.getConceptId());
+		Set<Concept> descendents = descendentOrSelfCache.get(localConcept);
 		if (descendents == null) {
-			//Ensure we're working with the local copy rather than TS JSON
-			Concept localConcept = GraphLoader.getGraphLoader().getConcept(c.getConceptId());
 			descendents = localConcept.getDescendents(NOT_SET);
-			descendents.add(localConcept); //Or Self
 			descendentOrSelfCache.put(localConcept, descendents);
 		}
+		descendents.add(localConcept); //Or Self
+		return descendents;
+	}
+
+	public Set<Concept>  getDescendents(Concept c) throws TermServerScriptException {
+		Set<Concept> descendents = getDescendentsOrSelf(c);
+		descendents.remove(c);  // Not self!
 		return descendents;
 	}
 }

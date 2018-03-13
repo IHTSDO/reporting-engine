@@ -27,6 +27,8 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
+import org.ihtsdo.termserver.scripting.TermServerScript.ReportActionType;
+import org.ihtsdo.termserver.scripting.TermServerScript.Severity;
 import org.ihtsdo.termserver.scripting.client.Classification;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.client.Status;
@@ -37,6 +39,8 @@ import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.Task;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.ActiveState;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import us.monoid.json.JSONArray;
@@ -473,6 +477,99 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 				changesMade++;
 			}
 		}
+		return changesMade;
+	}
+	
+	protected int replaceParents(Task task, Concept loadedConcept, Relationship newParentRel, Object[] additionalDetails) throws TermServerScriptException {
+		int changesMade = 0;
+		List<Relationship> parentRels = new ArrayList<Relationship> (loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
+																	IS_A,
+																	ActiveState.ACTIVE));
+		boolean replacementRequired = true;
+		for (Relationship parentRel : parentRels) {
+			if (!parentRel.equals(newParentRel)) {
+				removeParent (task, parentRel, loadedConcept, newParentRel.getTarget().toString(), additionalDetails);
+				changesMade++;
+			} else {
+				replacementRequired = false;
+			}
+		}
+		
+		if (replacementRequired) {
+			Relationship thisNewParentRel = newParentRel.clone(null);
+			thisNewParentRel.setSource(loadedConcept);
+			loadedConcept.addRelationship(thisNewParentRel);
+			changesMade++;
+		}
+		return changesMade;
+	}
+
+	protected void removeParent(Task t, Relationship rel, Concept c, String retained, Object[] additionalDetails) throws TermServerScriptException {
+		
+		//Are we inactivating or deleting this relationship?
+		String msg;
+		ReportActionType action = ReportActionType.UNKNOWN;
+		if (rel.getEffectiveTime() == null || rel.getEffectiveTime().isEmpty()) {
+			c.removeRelationship(rel);
+			msg = "Deleted parent relationship: " + rel.getTarget() + " in favour of " + retained;
+			action = ReportActionType.RELATIONSHIP_DELETED;
+		} else {
+			rel.setEffectiveTime(null);
+			rel.setActive(false);
+			msg = "Inactivated parent relationship: " + rel.getTarget() + " in favour of " + retained;
+			action = ReportActionType.RELATIONSHIP_INACTIVATED;
+		}
+		
+		report (t, c, Severity.LOW, action, msg, c.getDefinitionStatus().toString(), additionalDetails);
+	}
+	
+	protected int replaceRelationship(Task t, Concept c, Concept type, Concept value, int groupId, boolean ensureTypeUnique) {
+		int changesMade = 0;
+		//Do we already have this relationship active in the target group?
+		List<Relationship> rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
+													type,
+													value,
+													groupId,
+													ActiveState.ACTIVE);
+		if (rels.size() > 1) {
+			report (t, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Found two active relationships for " + type + " -> " + value);
+			return NO_CHANGES_MADE;
+		} else if (rels.size() == 1) {
+			return NO_CHANGES_MADE;
+		}
+		
+		//Do we have it inactive?
+		rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
+				type,
+				value,
+				groupId,
+				ActiveState.INACTIVE);
+		if (rels.size() >= 1) {
+			Relationship rel = rels.get(0);
+			report (t, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_REACTIVATED, rel);
+			rel.setActive(true);
+			return CHANGE_MADE;
+		}
+		
+		//Or do we need to create and add?
+		//Is this type unique for the concept?  Inactivate any others if so
+		if (ensureTypeUnique) {
+			rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
+					type,
+					ActiveState.ACTIVE);
+			for (Relationship rel : rels) {
+				rel.setActive(false);
+				report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_INACTIVATED, rel);
+				changesMade++;
+			}
+		}
+		
+		//Add the new relationship
+		Relationship newRel = new Relationship (c, type, value, groupId);
+		report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, newRel);
+		c.addRelationship(newRel);
+		changesMade++;
+		
 		return changesMade;
 	}
 

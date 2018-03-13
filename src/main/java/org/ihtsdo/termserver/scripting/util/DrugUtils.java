@@ -20,6 +20,21 @@ public class DrugUtils implements RF2Constants {
 	static Map<String, Concept> numberConceptMap;
 	static Map<String, Concept> doseFormConceptMap;
 	static Map<String, Concept> unitConceptMap;
+	
+	public static void setConceptType(Concept c) {
+		String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
+		switch (semTag) {
+			case "(medicinal product form)" : c.setConceptType(ConceptType.MEDICINAL_PRODUCT_FORM);
+												break;
+			case "(product)" : c.setConceptType(ConceptType.PRODUCT);
+								break;
+			case "(medicinal product)" : c.setConceptType(ConceptType.MEDICINAL_PRODUCT);
+										 break;
+			case "(clinical drug)" : c.setConceptType(ConceptType.CLINICAL_DRUG);
+										break;
+			default : c.setConceptType(ConceptType.UNKNOWN);
+		}
+	}
 
 	public static Concept getNumberAsConcept(String number) throws TermServerScriptException {
 		if (numberConceptMap == null) {

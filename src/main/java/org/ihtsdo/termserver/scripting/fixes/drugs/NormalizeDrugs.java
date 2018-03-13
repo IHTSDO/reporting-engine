@@ -12,7 +12,6 @@ import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.Task;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
-import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import us.monoid.json.JSONObject;
 
@@ -59,7 +58,12 @@ public class NormalizeDrugs extends DrugBatchFix implements RF2Constants{
 	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
 		
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
-		int changes = replaceParents (task, loadedConcept);
+		List<Relationship> parentRels = new ArrayList<Relationship> (loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
+				IS_A,
+				ActiveState.ACTIVE));
+		String parentCount = Integer.toString(parentRels.size());
+		String attributeCount = Integer.toString(countAttributes(loadedConcept));
+		int changes = replaceParents (task, loadedConcept, newParentRel, new String[] { parentCount, attributeCount });
 		
 		if (!loadedConcept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM)) {
 			changes += normalizeDrugTerms (task, loadedConcept);
@@ -102,65 +106,6 @@ public class NormalizeDrugs extends DrugBatchFix implements RF2Constants{
 			report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
 		}
 		return changes;
-	}
-
-	private int replaceParents(Task task, Concept loadedConcept) throws TermServerScriptException {
-		int changesMade = 0;
-		List<Relationship> parentRels = new ArrayList<Relationship> (loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
-																		IS_A,
-																		ActiveState.ACTIVE));
-		String parentCount = Integer.toString(parentRels.size());
-		String attributeCount = Integer.toString(countAttributes(loadedConcept));
-		
-		String semTag = SnomedUtils.deconstructFSN(loadedConcept.getFsn())[1];
-		switch (semTag) {
-			case "(medicinal product form)" : loadedConcept.setConceptType(ConceptType.MEDICINAL_PRODUCT_FORM);
-												break;
-			case "(product)" : loadedConcept.setConceptType(ConceptType.PRODUCT);
-								break;
-			case "(medicinal product)" : loadedConcept.setConceptType(ConceptType.MEDICINAL_PRODUCT);
-										 break;
-			case "(clinical drug)" : loadedConcept.setConceptType(ConceptType.CLINICAL_DRUG);
-										break;
-			default : loadedConcept.setConceptType(ConceptType.UNKNOWN);
-		}
-		
-		boolean replacementRequired = true;
-		for (Relationship parentRel : parentRels) {
-			if (!parentRel.equals(newParentRel)) {
-				remove (task, parentRel, loadedConcept, newParentRel.getTarget().toString(), parentCount, attributeCount);
-				changesMade++;
-			} else {
-				replacementRequired = false;
-			}
-		}
-		
-		if (replacementRequired) {
-			Relationship thisNewParentRel = newParentRel.clone(null);
-			thisNewParentRel.setSource(loadedConcept);
-			loadedConcept.addRelationship(thisNewParentRel);
-			changesMade++;
-		}
-		return changesMade;
-	}
-
-	private void remove(Task t, Relationship rel, Concept c, String retained, String parentCount, String attributeCount) throws TermServerScriptException {
-		
-		//Are we inactivating or deleting this relationship?
-		String msg;
-		ReportActionType action = ReportActionType.UNKNOWN;
-		if (rel.getEffectiveTime() == null || rel.getEffectiveTime().isEmpty()) {
-			c.removeRelationship(rel);
-			msg = "Deleted parent relationship: " + rel.getTarget() + " in favour of " + retained;
-			action = ReportActionType.RELATIONSHIP_DELETED;
-		} else {
-			rel.setEffectiveTime(null);
-			rel.setActive(false);
-			msg = "Inactivated parent relationship: " + rel.getTarget() + " in favour of " + retained;
-			action = ReportActionType.RELATIONSHIP_INACTIVATED;
-		}
-		
-		report (t, c, Severity.LOW, action, msg, c.getDefinitionStatus().toString(), parentCount, attributeCount);
 	}
 
 	private Integer countAttributes(Concept c) {

@@ -118,62 +118,6 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants{
 		return matchingRels.get(0);
 	}
 	
-	private int replaceRelationship(Task t, Concept c, Concept type, Concept value, int groupId, boolean ensureTypeUnique) {
-		int changesMade = 0;
-		//Do we already have this relationship active? Nothing to do here, unless the groupId is wrong
-		List<Relationship> rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
-													type,
-													value,
-													ActiveState.ACTIVE);
-		if (rels.size() > 1) {
-			report (t, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Found two active relationships for " + type + " -> " + value);
-			return NO_CHANGES_MADE;
-		} else if (rels.size() == 1) {
-			Relationship rel = rels.get(0);
-			if (rel.getGroupId() != groupId) {
-				report (t, c, Severity.CRITICAL, ReportActionType.RELATIONSHIP_MODIFIED, "Group Id forced to " + groupId + " for " + rel);
-				rel.setGroupId(groupId);
-				rel.setEffectiveTime(null);
-				return CHANGE_MADE;
-			}
-			return NO_CHANGES_MADE;
-		}
-		
-		//Do we have it inactive? Activate into the correct group if so
-		rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
-				type,
-				value,
-				ActiveState.ACTIVE);
-		if (rels.size() >= 1) {
-			Relationship rel = rels.get(0);
-			report (t, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_REACTIVATED, rel);
-			rel.setActive(true);
-			rel.setGroupId(groupId);
-			return CHANGE_MADE;
-		}
-		
-		//Or do we need to create and add?
-		//Is this type unique for the concept?  Inactivate any others if so
-		if (ensureTypeUnique) {
-			rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
-					type,
-					ActiveState.ACTIVE);
-			for (Relationship rel : rels) {
-				rel.setActive(false);
-				report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_INACTIVATED, rel);
-				changesMade++;
-			}
-		}
-		
-		//Add the new relationship
-		Relationship newRel = new Relationship (c, type, value, groupId);
-		report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, newRel);
-		c.addRelationship(newRel);
-		changesMade++;
-		
-		return changesMade;
-	}
-
 	@Override
 	/**
 	 * Spreadsheet columns:

@@ -10,8 +10,6 @@ import java.util.Set;
 
 import org.ihtsdo.otf.authoringtemplate.domain.logical.LogicalTemplate;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.TermServerScript.ReportActionType;
-import org.ihtsdo.termserver.scripting.TermServerScript.Severity;
 import org.ihtsdo.termserver.scripting.client.TemplateServiceClient;
 import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
@@ -100,6 +98,10 @@ abstract public class TemplateFix extends BatchFix {
 	@Override
 	protected void report (Task task, Component component, Severity severity, ReportActionType actionType, Object... details) {
 		Concept c = (Concept)component;
-		super.report (task, component, severity, actionType, c.getDefinitionStatus(), conceptToTemplateMap.get(c).getId(), details);
+		char relevantTemplate = templates.get(0).getId();
+		if (conceptToTemplateMap != null && conceptToTemplateMap.containsKey(c)) {
+			relevantTemplate = conceptToTemplateMap.get(c).getId();
+		}
+		super.report (task, component, severity, actionType, c.getDefinitionStatus(), relevantTemplate, details);
 	}
 }
