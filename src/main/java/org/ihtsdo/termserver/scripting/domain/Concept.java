@@ -211,6 +211,11 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 		return getRelationships(characteristicType, activeState, null);
 	}
 	
+	//Gets relationships that match the triple + group
+	public List<Relationship> getRelationships(Relationship r) {
+		return getRelationships(r.getCharacteristicType(), r.getType(), r.getTarget(), r.getGroupId(), ActiveState.ACTIVE);
+	}
+	
 	public List<Relationship> getRelationships(CharacteristicType characteristicType, Concept type, ActiveState activeState) {
 		List<Relationship> potentialMatches = getRelationships(characteristicType, activeState);
 		List<Relationship> matches = new ArrayList<Relationship>();
@@ -347,6 +352,18 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 		}
 		if (relationships.contains(r)) {
 			//Might match more than one if we have historical overlapping triples
+			
+			//Special case were we receive conflicting rows for the same triple in a delta.
+			//keep the active row in that case.
+			if (replaceTripleMatch && r.getEffectiveTime() == null && !r.isActive()) {
+				for (Relationship match : getRelationships(r)) {
+					if (match.isActive() && match.getEffectiveTime() == null) {
+						System.out.println ("Ignoring inactivation between " + match + " and " + r);
+						return;
+					}
+				}
+			}
+			
 			relationships.removeAll(Collections.singleton(r));
 		}
 		r.setRelationshipId(id);
