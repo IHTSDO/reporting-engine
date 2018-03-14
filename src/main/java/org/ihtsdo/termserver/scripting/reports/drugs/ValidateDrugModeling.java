@@ -58,15 +58,19 @@ public class ValidateDrugModeling extends TermServerReport{
 			// DRUGS-281, DRUGS-282
 			//issueCount += validateIngredientsInFSN(concept, drugTypes);  
 			
+			// DRUGS-267
 			//issueCount += validateIngredientsAgainstBoSS(concept);
 			
-			//DRUGS-296
-			if (concept.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED) && 
+			// DRUGS-296
+			/*if (concept.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED) && 
 				concept.getParents(CharacteristicType.STATED_RELATIONSHIP).get(0).equals(MEDICINAL_PRODUCT)) {
 				issueCount += validateStatedVsInferredAttributes(concept, HAS_ACTIVE_INGRED, drugTypes);
 				issueCount += validateStatedVsInferredAttributes(concept, HAS_MANUFACTURED_DOSE_FORM, drugTypes);
-			}
-			//issueCount += validateAttributeValueCardinality(concept, activeIngredient);
+			}*/
+			
+			// DRUGS-288
+			issueCount += validateAttributeValueCardinality(concept, HAS_ACTIVE_INGRED);
+			
 			//issueCount += checkForBadWords(concept);  //DRUGS-93
 		}
 		info ("Drugs validation complete.  Detected " + issueCount + " issues.");
