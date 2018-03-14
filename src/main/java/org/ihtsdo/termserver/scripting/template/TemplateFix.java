@@ -37,14 +37,6 @@ abstract public class TemplateFix extends BatchFix {
 		templates.add(loadTemplate('B', "Fracture Dislocation of Bone Structure.json"));
 		templates.add(loadTemplate('C', "Pathologic fracture of bone due to Disease.json"));
 		info(templates.size() + " Templates loaded successfully");
-		
-		/*//Seems to be an issue with parsing cardianality.  Add this in manually.
-		for (LogicalTemplate template : templates ) {
-			for (AttributeGroup group : template.getAttributeGroups()) {
-				group.setCardinalityMin("1");
-				group.setCardinalityMax("*");
-			}
-		} */
 	}
 	
 	protected Template loadTemplate (char id, String fileName) throws TermServerScriptException {
@@ -59,11 +51,6 @@ abstract public class TemplateFix extends BatchFix {
 	protected Set<Concept> findTemplateMatches(Template t) throws TermServerScriptException {
 		Set<Concept> matches = new HashSet<Concept>();
 		for (Concept c : descendantsCache.getDescendentsOrSelf(subHierarchy)) {
-			
-			if (c.getConceptId().equals("704293000")) {
-				debug ("Checking concept 704293000");
-			}
-			
 			if (TemplateUtils.matchesTemplate(c, t, descendantsCache, CharacteristicType.INFERRED_RELATIONSHIP)) {
 				//Do we already have a template for this concept?  
 				//TODO Assign the most specific template if so

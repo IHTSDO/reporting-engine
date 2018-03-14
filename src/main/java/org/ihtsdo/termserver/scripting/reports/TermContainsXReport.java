@@ -24,7 +24,6 @@ public class TermContainsXReport extends TermServerReport {
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		TermContainsXReport report = new TermContainsXReport();
 		try {
-			//report.headers="Concept, FSN, Sem_Tag, Desc_SCTID, Term";
 			report.headers="Concept, FSN, Sem_Tag, TermMatched, TopLevelHierarchy, SubHierarchy, SpecificHierarchy";
 			report.init(args);
 			report.loadProjectSnapshot(false);  //Load all descriptions

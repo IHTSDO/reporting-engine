@@ -109,10 +109,7 @@ public class DrugTermGenerator implements RF2Constants{
 		
 		//This function will split out the US / GB terms if the ingredients show variance where the product does not
 		validateUsGbVarianceInIngredients(t,c);
-		
-		if (c.getConceptId() != null && c.getConceptId().equals("109044007")) {
-			System.out.println ("Check this concept");
-		}
+
 		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 			boolean isFSN = d.getType().equals(DescriptionType.FSN);
 			boolean isGbPT = d.isPreferred(GB_ENG_LANG_REFSET);
@@ -174,7 +171,7 @@ public class DrugTermGenerator implements RF2Constants{
 	public String calculateTermFromIngredients(Concept c, boolean isFSN, boolean isPT, String langRefset) throws TermServerScriptException {
 		String proposedTerm = "";
 		//Get all the ingredients in order
-		Set<String> ingredients = getIngredientTerms(c, isFSN, langRefset);
+		Set<String> ingredients = getIngredientsWithStrengths(c, isFSN, langRefset);
 		
 		//What prefixes and suffixes do we need?
 		String prefix = "";
@@ -183,6 +180,10 @@ public class DrugTermGenerator implements RF2Constants{
 			prefix = "Product containing ";
 			switch (c.getConceptType()) {
 				case MEDICINAL_PRODUCT_FORM : suffix =  " in " + DrugUtils.getDosageForm(c);
+										break;
+				case CLINICAL_DRUG : 	prefix = "Product containing only ";
+										//TODO Check that presentation is solid before adding 1 each
+										suffix =  "/1 each "  + DrugUtils.getDosageForm(c);
 										break;
 				default:
 			}
@@ -345,29 +346,81 @@ public class DrugTermGenerator implements RF2Constants{
 		return term;
 	}
 	
-	private static Set<String> getIngredientTerms(Concept c, boolean isFSN, String langRefset) throws TermServerScriptException {
-		List<Relationship> ingredientRels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE);
+	private static Set<String> getIngredientsWithStrengths(Concept c, boolean isFSN, String langRefset) throws TermServerScriptException {
+		List<Relationship> ingredientRels = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE);
 		Set<String> ingredients = new TreeSet<String>();  //Will naturally sort in alphabetical order
 		for (Relationship r : ingredientRels) {
 			//Need to recover the full concept to have all descriptions, not the partial one stored as the target.
 			Concept ingredient = GraphLoader.getGraphLoader().getConcept(r.getTarget().getConceptId());
-			Description ingredientDesc;
-			String ingredientTerm;
-			if (isFSN) {
-				ingredientDesc = ingredient.getFSNDescription();
-				ingredientTerm = SnomedUtils.deconstructFSN(ingredient.getFsn())[0];
-			} else {
-				ingredientDesc = ingredient.getPreferredSynonym(langRefset);
-				ingredientTerm = ingredientDesc.getTerm();
-			}
 			
-			//If the ingredient name is not case sensitive, decaptialize
-			if (!ingredientDesc.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE)) {
-				ingredientTerm = SnomedUtils.deCapitalize(ingredientTerm);
-			}
-			ingredients.add(ingredientTerm);
+			//Do we have a BoSS in the same group?
+			Concept boSS = getTarget(c, HAS_BOSS, r.getGroupId());
+			
+			//Are we adding the strength?
+			Concept strength = getTarget (c, HAS_STRENGTH_VALUE, r.getGroupId());
+			
+			//And the unit
+			Concept unit = getTarget(c, HAS_STRENGTH_UNIT, r.getGroupId());
+			
+			String ingredientWithStrengthTerm = formIngredientWithStrengthTerm (ingredient, boSS, strength, unit, isFSN, langRefset);
+			ingredients.add(ingredientWithStrengthTerm);
 		}
 		return ingredients;
+	}
+
+	private static String formIngredientWithStrengthTerm(Concept ingredient, Concept boSS, Concept strength, Concept unit, boolean isFSN, String langRefset) throws TermServerScriptException {
+		boolean separateBoSS = (boSS!= null && !boSS.equals(ingredient));
+		String ingredientTerm="";
+		
+		//First the ingredient, with the BoSS first if different
+		if (separateBoSS) {
+			ingredientTerm = getTermForConcat(boSS, isFSN, langRefset);
+			ingredientTerm += " as (";
+		}
+		
+		ingredientTerm += getTermForConcat(ingredient, isFSN, langRefset);
+		
+		if (separateBoSS) {
+			ingredientTerm += ")";
+		}
+
+		
+		//Now add the Strength
+		if (strength != null) {
+			ingredientTerm += " " + SnomedUtils.deconstructFSN(strength.getFsn())[0];
+		}
+		
+		if (unit != null) {
+			ingredientTerm += " " + getTermForConcat(ingredient, isFSN || unit.equals(MILLIGRAM), langRefset);
+		}
+		
+		return ingredientTerm;
+	}
+
+	private static String getTermForConcat(Concept c, boolean useFSN, String langRefset) throws TermServerScriptException {
+		Description desc;
+		String term;
+		if (useFSN) {
+			desc = c.getFSNDescription();
+			term = SnomedUtils.deconstructFSN(desc.getTerm())[0];
+		} else {
+			desc = c.getPreferredSynonym(langRefset);
+			term = desc.getTerm();
+		}
+		if (!desc.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE)) {
+			term = SnomedUtils.deCapitalize(term);
+		}
+		return term;
+	}
+
+	private static Concept getTarget(Concept c, Concept type, int groupId) {
+		List<Relationship> rels = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, type, groupId);
+		if (rels.size() > 1) {
+			TermServerScript.warn(c + " has multiple " + type + " in group " + groupId);
+		} else if (rels.size() == 1) {
+			return rels.get(0).getTarget();
+		}
+		return null;
 	}
 
 	private void reactivateMatchingTerm(Task t, Concept c, Description replacement) {

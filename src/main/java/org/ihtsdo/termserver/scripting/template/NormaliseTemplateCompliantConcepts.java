@@ -24,7 +24,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import us.monoid.json.JSONObject;
 
 /**
- * QI2018
+ * QI-3
  * For concepts that align to a given template, we can normalise them.
  * That is to say, copy all the inferred relationships into the stated form
  * and set the proximal primitive parent - if it matches the template expectation
@@ -74,7 +74,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		}
 		return changesMade;
 	}
-	
+
 	private int normaliseConceptToTemplate(Task t, Concept c, Template template) throws TermServerScriptException {
 		int changesMade = 0;
 		if (t == null) {
@@ -126,7 +126,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 					changesMade++;
 				}
 			}
-			
+
 			if (doAddition) {
 				Relationship newParentRel = new Relationship(c, IS_A, newParent, 0);
 				c.addRelationship(newParentRel);
@@ -140,9 +140,6 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		//Work through all inferred groups and collect any that aren't also stated, to state
 		int changesMade = 0;
 		List<RelationshipGroup> toBeStated = new ArrayList<>();
-		if (c.getConceptId().equals("311822009")) {
-			debug ("Check 311822009");
-		}
 		Collection<RelationshipGroup> inferredGroups = c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP);
 		Collection<RelationshipGroup> statedGroups = c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP);
 		
