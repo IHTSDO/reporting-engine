@@ -14,13 +14,16 @@ import org.ihtsdo.termserver.scripting.client.TemplateServiceClient;
 import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Task;
+import org.ihtsdo.termserver.scripting.domain.Template;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 abstract public class TemplateFix extends BatchFix {
 	
-	String subHierarchyStr = "46866001"; //|Fracture of lower limb (disorder)|
+	String subHierarchyStr;
 	Concept subHierarchy;
-	List<String> templateNames;
+	String[] templateNames;
+	
 	List<Template> templates = new ArrayList<>();
 	String[] ignoreFSNsContaining = new String[] { "avulsion" };
 	TemplateServiceClient tsc = new TemplateServiceClient();
@@ -33,9 +36,11 @@ abstract public class TemplateFix extends BatchFix {
 
 	protected void postInit() throws TermServerScriptException {
 		subHierarchy = gl.getConcept(subHierarchyStr);
-		templates.add(loadTemplate('A', "Fracture of Bone Structure.json"));
-		templates.add(loadTemplate('B', "Fracture Dislocation of Bone Structure.json"));
-		templates.add(loadTemplate('C', "Pathologic fracture of bone due to Disease.json"));
+		char id = 'A';
+		for (int x = 0; x < templateNames.length; x++, id++) {
+			templates.add(loadTemplate(id, templateNames[x]));
+			info ("Loaded template: " + templates.get(x).toIdString());
+		}
 		info(templates.size() + " Templates loaded successfully");
 	}
 	
@@ -51,13 +56,20 @@ abstract public class TemplateFix extends BatchFix {
 	protected Set<Concept> findTemplateMatches(Template t) throws TermServerScriptException {
 		Set<Concept> matches = new HashSet<Concept>();
 		for (Concept c : descendantsCache.getDescendentsOrSelf(subHierarchy)) {
+			if (c.getConceptId().equals("206211008")) {
+				debug ("here");
+			}
 			if (TemplateUtils.matchesTemplate(c, t, descendantsCache, CharacteristicType.INFERRED_RELATIONSHIP)) {
 				//Do we already have a template for this concept?  
 				//TODO Assign the most specific template if so
 				if (conceptToTemplateMap.containsKey(c)) {
-					throw new IllegalArgumentException("Concept matches two templates: " + t.getId() + " & " + conceptToTemplateMap.get(c).getId());
+					Template existing = conceptToTemplateMap.get(c);
+					Template moreSpecific = t.getId() > existing.getId() ? t : existing; 
+					warn( c + "matches two templates: " + t.getId() + " & " + existing.getId() + " using most specific " + moreSpecific.getId());
+					conceptToTemplateMap.put(c, moreSpecific);
+				} else {
+					conceptToTemplateMap.put(c, t);
 				}
-				conceptToTemplateMap.put(c, t);
 				matches.add(c);
 			}
 		}
@@ -85,10 +97,10 @@ abstract public class TemplateFix extends BatchFix {
 	@Override
 	public void report (Task task, Component component, Severity severity, ReportActionType actionType, Object... details) {
 		Concept c = (Concept)component;
-		char relevantTemplate = templates.get(0).getId();
+		char relevantTemplate = ' ';
 		if (conceptToTemplateMap != null && conceptToTemplateMap.containsKey(c)) {
 			relevantTemplate = conceptToTemplateMap.get(c).getId();
 		}
-		super.report (task, component, severity, actionType, c.getDefinitionStatus(), relevantTemplate, details);
+		super.report (task, component, severity, actionType, SnomedUtils.translateDefnStatus(c.getDefinitionStatus()), relevantTemplate, details);
 	}
 }

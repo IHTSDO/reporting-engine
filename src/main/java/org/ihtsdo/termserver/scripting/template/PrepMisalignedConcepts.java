@@ -18,11 +18,16 @@ import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RelationshipGroup;
 import org.ihtsdo.termserver.scripting.domain.Task;
+import org.ihtsdo.termserver.scripting.domain.Template;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 
 import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
 
+/**
+ * QI-1, QI-5
+ * See https://confluence.ihtsdotools.org/display/IAP/Quality+Improvements+2018
+ */
 public class PrepMisalignedConcepts extends TemplateFix {
 	
 	Map<Concept, List<String>> conceptDiagnostics = new HashMap<>();
@@ -34,9 +39,6 @@ public class PrepMisalignedConcepts extends TemplateFix {
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		PrepMisalignedConcepts app = new PrepMisalignedConcepts(null);
 		try {
-			app.selfDetermining = true;
-			app.reportNoChange = false;
-			app.additionalReportColumns = "CharacteristicType, Attribute";
 			app.init(args);
 			app.loadProjectSnapshot(false);  //Load all descriptions
 			app.postInit();
@@ -50,6 +52,18 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		}
 	}
 
+	protected void init(String[] args) throws TermServerScriptException, IOException {
+		selfDetermining = true;
+		reportNoChange = false;
+		runStandAlone = true; 
+		additionalReportColumns = "CharacteristicType, MatchedTemplate, Template Diagnostic";
+		
+		subHierarchyStr = "125605004";  // |Fracture of bone (disorder)|
+		templateNames = new String[] {	"Fracture of Bone Structure.json",
+										"Fracture Dislocation of Bone Structure.json",
+										"Pathologic fracture of bone due to Disease.json"};
+		super.init(args);
+	}
 	@Override
 	protected int doFix(Task task, Concept concept, String info) throws TermServerScriptException, ValidationFailure {
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
@@ -120,7 +134,7 @@ public class PrepMisalignedConcepts extends TemplateFix {
 				debug (c + ".  " + msg);
 				diagnostics.add(msg);
 				diagnostics.add("Relationship Group mismatches:");
-				for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
+				for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP)) {
 					msg = "    " + g;
 					debug (msg);
 					diagnostics.add(msg);

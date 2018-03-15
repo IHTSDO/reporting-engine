@@ -16,6 +16,7 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.RelationshipGroup;
 import org.ihtsdo.termserver.scripting.domain.Task;
+import org.ihtsdo.termserver.scripting.domain.Template;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 
 import us.monoid.json.JSONObject;

@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.template;
+package org.ihtsdo.termserver.scripting.domain;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -7,6 +7,7 @@ import java.util.List;
 import org.ihtsdo.otf.authoringtemplate.domain.logical.Attribute;
 import org.ihtsdo.otf.authoringtemplate.domain.logical.AttributeGroup;
 import org.ihtsdo.otf.authoringtemplate.domain.logical.LogicalTemplate;
+import org.ihtsdo.termserver.scripting.template.TemplateUtils;
 
 public class Template {
 
@@ -40,6 +41,10 @@ public class Template {
 	public String toString () {
 		return id + ": " + TemplateUtils.toString(logicalTemplate);
 	}
+	
+	public String toIdString () {
+		return id + ": " + fileName;
+	}
 
 	public Collection<AttributeGroup> getAttributeGroups() {
 		//Does the logical template have any ungrouped attributes?  We can simplify the code by calling that 
@@ -50,7 +55,7 @@ public class Template {
 				List<AttributeGroup> combinedGroups = new ArrayList<>();
 				AttributeGroup group0 = new AttributeGroup();
 				group0.setAttributes(ungrouped);
-				group0.setCardinalityMin("1");
+				group0.setCardinalityMin("0");
 				group0.setCardinalityMax("1");
 				combinedGroups.add(group0);
 				combinedGroups.addAll(logicalTemplate.getAttributeGroups());

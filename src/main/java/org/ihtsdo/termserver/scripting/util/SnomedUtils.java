@@ -439,7 +439,7 @@ public class SnomedUtils implements RF2Constants{
 	public static String translateDefnStatus(DefinitionStatus defn) {
 		switch (defn) {
 			case PRIMITIVE: return "P";
-			case FULLY_DEFINED: return "FD";
+			case FULLY_DEFINED: return "SD";
 			default:
 		}
 		return null;

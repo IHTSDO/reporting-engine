@@ -19,6 +19,7 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.RelationshipGroup;
+import org.ihtsdo.termserver.scripting.domain.Template;
 
 public class TemplateUtils {
 	
@@ -78,6 +79,7 @@ public class TemplateUtils {
 		c.getRelationshipGroups(charType).stream().forEach(relGroup -> relGroupMatchesTemplateGroups.put(relGroup, new ArrayList<AttributeGroup>()));
 		
 		//Work through each group (including 0) and check which of the groups in the template it matches
+		nextRelGroup:
 		for (RelationshipGroup relGroup : c.getRelationshipGroups(charType)) {
 			//Work through each template group and confirm that one of them matches
 			for (AttributeGroup templateGroup : t.getAttributeGroups()) {
@@ -89,6 +91,7 @@ public class TemplateUtils {
 					//Update map of template attribute groups matching concept relationship groups  
 					List<RelationshipGroup> matchedRelGroups = templateGroupMatchesRelGroups.get(templateGroup);
 					matchedRelGroups.add(relGroup);
+					continue nextRelGroup;
 				}
 			}
 		}

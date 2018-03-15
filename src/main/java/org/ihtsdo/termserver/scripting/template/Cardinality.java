@@ -17,4 +17,8 @@ public class Cardinality {
 		this.max = max;
 	}
 	
+	public String toString() {
+		return "[" + min + ".." + (max==Integer.MAX_VALUE?"*":max) + "]";
+	}
+	
 }
