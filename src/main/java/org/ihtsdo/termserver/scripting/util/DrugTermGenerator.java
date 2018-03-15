@@ -193,6 +193,8 @@ public class DrugTermGenerator implements RF2Constants{
 										break;
 				case MEDICINAL_PRODUCT_FORM : suffix =  " in " + DrugUtils.getDosageForm(c);
 										break;
+				case CLINICAL_DRUG : 	suffix =  " " + DrugUtils.getDosageForm(c);
+										break;
 				default:
 			}
 		}

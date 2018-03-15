@@ -20,7 +20,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import us.monoid.json.JSONObject;
 
 /*
-DRUGS-? Remodelling of Clinical Drugs including Basis of Strength Substance (BoSS) based on an input spreadsheet
+DRUGS-474 Remodelling of Clinical Drugs including Basis of Strength Substance (BoSS) based on an input spreadsheet
  */
 public class CDRemodelling extends DrugBatchFix implements RF2Constants{
 	
