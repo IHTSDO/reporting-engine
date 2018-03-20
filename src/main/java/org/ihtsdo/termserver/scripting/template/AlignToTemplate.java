@@ -36,7 +36,7 @@ public class AlignToTemplate extends TemplateFix {
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		AlignToTemplate app = new AlignToTemplate(null);
 		try {
-			app.subHierarchyStr = "128294001"; // |Chronic inflammatory disorder (disorder)|"
+			app.subHierarchyStr = "128294001"; // |Chronic inflammatory disorder (disorder)|
 			app.selfDetermining = true;
 			app.runStandAlone = true;
 			app.init(args);

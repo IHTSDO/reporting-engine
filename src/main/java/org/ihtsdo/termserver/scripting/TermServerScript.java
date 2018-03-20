@@ -79,6 +79,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected boolean inputFileHasHeaderRow = false;
 	protected boolean runStandAlone = false; //Set to true to avoid loading concepts from Termserver.  Should be used with Dry Run only.
 	protected File inputFile;
+	protected File inputFile2;
 	protected File reportFile;
 	protected File outputDir;
 	protected GraphLoader gl = GraphLoader.getGraphLoader();
@@ -91,7 +92,7 @@ public abstract class TermServerScript implements RF2Constants {
 	public static String CONCEPTS_PROCESSED = "Concepts processed";
 	public static String REPORTED_NOT_PROCESSED = "Reported not processed";
 	public static String CRITICAL_ISSUE = "CRITICAL ISSUE";
-	protected String inputFileDelimiter = TSV_FIELD_DELIMITER;
+	public static String inputFileDelimiter = TSV_FIELD_DELIMITER;
 	protected String tsRoot = "MAIN/"; //"MAIN/2016-01-31/SNOMEDCT-DK/";
 	
 	protected Map<String, PrintWriter> printWriterMap = new HashMap<>();
@@ -184,6 +185,7 @@ public abstract class TermServerScript implements RF2Constants {
 		boolean isRestart = false;
 		boolean isOutputDir = false;
 		boolean isInputFile = false;
+		boolean isInputFile2 = false;
 		String projectName = "unknown";
 	
 		for (String thisArg : args) {
@@ -195,6 +197,8 @@ public abstract class TermServerScript implements RF2Constants {
 				isDryRun = true;
 			} else if (thisArg.equals("-f")) {
 				isInputFile = true;
+			} else if (thisArg.equals("-f2")) {
+				isInputFile2 = true;
 			} else if (thisArg.equals("-o")) {
 				isOutputDir = true;
 			} else if (thisArg.equals("-r")) {
@@ -214,7 +218,13 @@ public abstract class TermServerScript implements RF2Constants {
 					throw new TermServerScriptException ("Unable to read input file " + thisArg);
 				}
 				isInputFile = false;
-			} else if (isCookie) {
+			} else if (isInputFile2) {
+				inputFile2 = new File(thisArg);
+				if (!inputFile2.canRead()) {
+					throw new TermServerScriptException ("Unable to read input file 2 " + thisArg);
+				}
+				isInputFile2 = false;
+			}else if (isCookie) {
 				authenticatedCookie = thisArg;
 				isCookie = false;
 			} else if (isOutputDir) {
@@ -379,8 +389,9 @@ public abstract class TermServerScript implements RF2Constants {
 				return gl.getConcept(concept.getConceptId());
 			}
 		}
-		
-		return loadConcept (tsClient, concept, branchPath);
+		Concept loadedConcept = loadConcept (tsClient, concept, branchPath);
+		loadedConcept.setConceptType(concept.getConceptType());
+		return loadedConcept;
 	}
 	
 	protected Concept loadConcept(SnowOwlClient client, Concept concept, String branchPath) throws TermServerScriptException {

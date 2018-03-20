@@ -11,6 +11,7 @@ import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.DrugTermGenerator;
 import org.ihtsdo.termserver.scripting.util.DrugUtils;
@@ -263,7 +264,7 @@ public class ValidateDrugModeling extends TermServerReport{
 		Description currentFSN = c.getFSNDescription();
 		termGenerator.setQuiet(true);
 		Concept clone = c.clone();
-		termGenerator.ensureDrugTermsConform(null, clone);
+		termGenerator.ensureDrugTermsConform(null, clone, CharacteristicType.STATED_RELATIONSHIP);
 		Description proposedFSN = clone.getFSNDescription();
 		
 		if (!currentFSN.getTerm().equals(proposedFSN.getTerm())) {

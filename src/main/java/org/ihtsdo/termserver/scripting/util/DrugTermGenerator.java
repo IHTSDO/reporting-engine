@@ -1,5 +1,6 @@
 package org.ihtsdo.termserver.scripting.util;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -17,12 +18,6 @@ import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.Task;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.Acceptability;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.ActiveState;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.CaseSignificance;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.DescriptionType;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.InactivationIndicator;
 
 public class DrugTermGenerator implements RF2Constants{
 	
@@ -32,8 +27,11 @@ public class DrugTermGenerator implements RF2Constants{
 	private String [] forceCS = new String[] { "N-" };
 	private String[] vitamins = new String[] {" A ", " B ", " C ", " D ", " E ", " G "};
 	
+	private List<Concept> neverAbbrev = new ArrayList<>();
+	
 	public DrugTermGenerator (TermServerScript parent) {
 		this.parent = parent;
+		neverAbbrev.add(MICROGRAM);
 	}
 	
 	/*protected int normalizeDrugTerms(Task task, Concept concept, String newSemanticTag) throws TermServerScriptException {
@@ -104,7 +102,7 @@ public class DrugTermGenerator implements RF2Constants{
 		return changesMade;
 	}*/
 
-	public int ensureDrugTermsConform(Task t, Concept c) throws TermServerScriptException {
+	public int ensureDrugTermsConform(Task t, Concept c, CharacteristicType charType) throws TermServerScriptException {
 		int changesMade = 0;
 		
 		//This function will split out the US / GB terms if the ingredients show variance where the product does not
@@ -134,7 +132,7 @@ public class DrugTermGenerator implements RF2Constants{
 			
 			//Check the existing term has correct capitalization
 			ensureCaptialization(d);
-			String replacementTerm = calculateTermFromIngredients(c, isFSN, isPT, langRefset);
+			String replacementTerm = calculateTermFromIngredients(c, isFSN, isPT, langRefset, charType);
 			replacementTerm = checkForVitamins(replacementTerm, d.getTerm());
 			Description replacement = d.clone(null);
 			replacement.setTerm(replacementTerm);
@@ -168,10 +166,14 @@ public class DrugTermGenerator implements RF2Constants{
 		return changesMade;
 	}
 	
-	public String calculateTermFromIngredients(Concept c, boolean isFSN, boolean isPT, String langRefset) throws TermServerScriptException {
+	public String calculateTermFromIngredients(Concept c, boolean isFSN, boolean isPT, String langRefset, CharacteristicType charType) throws TermServerScriptException {
 		String proposedTerm = "";
+		String semTag = "";
+		if (isFSN) {
+			semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
+		}
 		//Get all the ingredients in order
-		Set<String> ingredients = getIngredientsWithStrengths(c, isFSN, langRefset);
+		Set<String> ingredients = getIngredientsWithStrengths(c, isFSN, langRefset, charType);
 		
 		//What prefixes and suffixes do we need?
 		String prefix = "";
@@ -181,9 +183,10 @@ public class DrugTermGenerator implements RF2Constants{
 			switch (c.getConceptType()) {
 				case MEDICINAL_PRODUCT_FORM : suffix =  " in " + DrugUtils.getDosageForm(c);
 										break;
-				case CLINICAL_DRUG : 	prefix = "Product containing only ";
+				case CLINICAL_DRUG : 	prefix = "Product containing precisely ";
 										//TODO Check that presentation is solid before adding 1 each
 										suffix =  "/1 each "  + DrugUtils.getDosageForm(c);
+										semTag = "(clinical drug)";
 										break;
 				default:
 			}
@@ -202,7 +205,7 @@ public class DrugTermGenerator implements RF2Constants{
 		//Form the term from the ingredients with prefixes and suffixes as required.
 		proposedTerm = prefix + StringUtils.join(ingredients, " and ") + suffix;
 		if (isFSN) {
-			proposedTerm += " " + SnomedUtils.deconstructFSN(c.getFsn())[1];
+			proposedTerm += " " + semTag;
 		}
 		proposedTerm = SnomedUtils.capitalize(proposedTerm);
 		return proposedTerm;
@@ -348,21 +351,22 @@ public class DrugTermGenerator implements RF2Constants{
 		return term;
 	}
 	
-	private static Set<String> getIngredientsWithStrengths(Concept c, boolean isFSN, String langRefset) throws TermServerScriptException {
-		List<Relationship> ingredientRels = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE);
+	private Set<String> getIngredientsWithStrengths(Concept c, boolean isFSN, String langRefset, CharacteristicType charType) throws TermServerScriptException {
+		List<Relationship> ingredientRels = c.getRelationships(charType, HAS_ACTIVE_INGRED, ActiveState.ACTIVE);
+		ingredientRels.addAll(c.getRelationships(charType, HAS_PRECISE_INGRED, ActiveState.ACTIVE));
 		Set<String> ingredients = new TreeSet<String>();  //Will naturally sort in alphabetical order
 		for (Relationship r : ingredientRels) {
 			//Need to recover the full concept to have all descriptions, not the partial one stored as the target.
 			Concept ingredient = GraphLoader.getGraphLoader().getConcept(r.getTarget().getConceptId());
 			
 			//Do we have a BoSS in the same group?
-			Concept boSS = getTarget(c, HAS_BOSS, r.getGroupId());
+			Concept boSS = getTarget(c, HAS_BOSS, r.getGroupId(), charType);
 			
 			//Are we adding the strength?
-			Concept strength = getTarget (c, HAS_STRENGTH_VALUE, r.getGroupId());
+			Concept strength = getTarget (c, HAS_STRENGTH_VALUE, r.getGroupId(), charType);
 			
 			//And the unit
-			Concept unit = getTarget(c, HAS_STRENGTH_UNIT, r.getGroupId());
+			Concept unit = getTarget(c, HAS_STRENGTH_UNIT, r.getGroupId(), charType);
 			
 			String ingredientWithStrengthTerm = formIngredientWithStrengthTerm (ingredient, boSS, strength, unit, isFSN, langRefset);
 			ingredients.add(ingredientWithStrengthTerm);
@@ -370,7 +374,7 @@ public class DrugTermGenerator implements RF2Constants{
 		return ingredients;
 	}
 
-	private static String formIngredientWithStrengthTerm(Concept ingredient, Concept boSS, Concept strength, Concept unit, boolean isFSN, String langRefset) throws TermServerScriptException {
+	private String formIngredientWithStrengthTerm(Concept ingredient, Concept boSS, Concept strength, Concept unit, boolean isFSN, String langRefset) throws TermServerScriptException {
 		boolean separateBoSS = (boSS!= null && !boSS.equals(ingredient));
 		String ingredientTerm="";
 		
@@ -393,13 +397,13 @@ public class DrugTermGenerator implements RF2Constants{
 		}
 		
 		if (unit != null) {
-			ingredientTerm += " " + getTermForConcat(ingredient, isFSN || unit.equals(MILLIGRAM), langRefset);
+			ingredientTerm += " " + getTermForConcat(unit, isFSN || neverAbbrev.contains(unit), langRefset);
 		}
 		
 		return ingredientTerm;
 	}
 
-	private static String getTermForConcat(Concept c, boolean useFSN, String langRefset) throws TermServerScriptException {
+	private String getTermForConcat(Concept c, boolean useFSN, String langRefset) throws TermServerScriptException {
 		Description desc;
 		String term;
 		if (useFSN) {
@@ -415,8 +419,8 @@ public class DrugTermGenerator implements RF2Constants{
 		return term;
 	}
 
-	private static Concept getTarget(Concept c, Concept type, int groupId) {
-		List<Relationship> rels = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, type, groupId);
+	private static Concept getTarget(Concept c, Concept type, int groupId, CharacteristicType charType) {
+		List<Relationship> rels = c.getRelationships(charType, type, groupId);
 		if (rels.size() > 1) {
 			TermServerScript.warn(c + " has multiple " + type + " in group " + groupId);
 		} else if (rels.size() == 1) {

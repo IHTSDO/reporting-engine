@@ -12,6 +12,7 @@ import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.delta.CaseSignificanceFixAll;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.DrugTermGenerator;
 import org.ihtsdo.termserver.scripting.util.DrugUtils;
@@ -83,7 +84,7 @@ public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants{
 		}
 		//We'll take a little diversion here to correct the case significance of the ingredients
 		validateIngredientCaseSignficance(task, loadedConcept);
-		int changesMade = termGenerator.ensureDrugTermsConform(task, loadedConcept);
+		int changesMade = termGenerator.ensureDrugTermsConform(task, loadedConcept, CharacteristicType.STATED_RELATIONSHIP);
 		if (changesMade > 0) {
 			saveConcept(task, loadedConcept, info);
 		}

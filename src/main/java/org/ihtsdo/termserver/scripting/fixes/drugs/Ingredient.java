@@ -6,7 +6,6 @@ public class Ingredient {
 
 	Concept doseForm;
 	Concept substance;
-	Concept presentation;
 	Concept boss;
 	Concept strength;
 	Concept numeratorUnit;

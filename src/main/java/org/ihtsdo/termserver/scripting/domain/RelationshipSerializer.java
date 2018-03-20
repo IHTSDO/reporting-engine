@@ -16,6 +16,7 @@ public class RelationshipSerializer implements JsonSerializer<Relationship> {
 		json.addProperty("effectiveTime", r.getEffectiveTime());
 		json.addProperty("moduleId",r.getModuleId());
 		json.addProperty("active", r.isActive());
+		json.addProperty("released", r.isReleased());
 		json.addProperty("relationshipId", r.getRelationshipId());
 		
 		JsonObject type = new JsonObject();
@@ -24,6 +25,9 @@ public class RelationshipSerializer implements JsonSerializer<Relationship> {
 		json.add("type", type);
 		
 		JsonObject target = new JsonObject();
+		if (r.getTarget() == null) {
+			throw new IllegalArgumentException("Null Target when serializing relationship: " + r);
+		}
 		target.addProperty("effectiveTime", r.getTarget().getEffectiveTime());
 		target.addProperty("moduleId", r.getTarget().getModuleId());
 		target.addProperty("active", r.getTarget().isActive());

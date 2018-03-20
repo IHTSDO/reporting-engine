@@ -531,23 +531,41 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		return changesMade;
 	}
 
-	protected void removeParent(Task t, Relationship rel, Concept c, String retained, Object[] additionalDetails) throws TermServerScriptException {
+	protected void removeParent(Task t, Relationship r, Concept c, String retained, Object[] additionalDetails) throws TermServerScriptException {
 		
 		//Are we inactivating or deleting this relationship?
 		String msg;
 		ReportActionType action = ReportActionType.UNKNOWN;
-		if (rel.getEffectiveTime() == null || rel.getEffectiveTime().isEmpty()) {
-			c.removeRelationship(rel);
-			msg = "Deleted parent relationship: " + rel.getTarget() + " in favour of " + retained;
+		if (!r.isReleased()) {
+			c.removeRelationship(r);
+			msg = "Deleted parent relationship: " + r.getTarget() + " in favour of " + retained;
 			action = ReportActionType.RELATIONSHIP_DELETED;
 		} else {
-			rel.setEffectiveTime(null);
-			rel.setActive(false);
-			msg = "Inactivated parent relationship: " + rel.getTarget() + " in favour of " + retained;
+			r.setEffectiveTime(null);
+			r.setActive(false);
+			msg = "Inactivated parent relationship: " + r.getTarget() + " in favour of " + retained;
 			action = ReportActionType.RELATIONSHIP_INACTIVATED;
 		}
 		
 		report (t, c, Severity.LOW, action, msg, c.getDefinitionStatus().toString(), additionalDetails);
+	}
+	
+	protected void removeRelationship(Task t, Relationship r, Concept c) throws TermServerScriptException {
+		
+		//Are we inactivating or deleting this relationship?
+		String msg;
+		ReportActionType action = ReportActionType.UNKNOWN;
+		if (!r.isReleased()) {
+			c.removeRelationship(r);
+			msg = "Deleted relationship: " + r;
+			action = ReportActionType.RELATIONSHIP_DELETED;
+		} else {
+			r.setEffectiveTime(null);
+			r.setActive(false);
+			msg = "Inactivated  relationship: " + r;
+			action = ReportActionType.RELATIONSHIP_INACTIVATED;
+		}
+		report (t, c, Severity.LOW, action, msg, c.getDefinitionStatus().toString());
 	}
 	
 	protected int replaceRelationship(Task t, Concept c, Concept type, Concept value, int groupId, boolean ensureTypeUnique) {
@@ -593,6 +611,9 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		
 		//Add the new relationship
 		Relationship newRel = new Relationship (c, type, value, groupId);
+		if (type == null || value == null) {
+			throw new IllegalArgumentException("Attempt to add null values when creating relationship " + newRel);
+		}
 		report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, newRel);
 		c.addRelationship(newRel);
 		changesMade++;

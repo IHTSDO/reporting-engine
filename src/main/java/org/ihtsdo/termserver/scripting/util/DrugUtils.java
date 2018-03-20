@@ -16,6 +16,7 @@ public class DrugUtils implements RF2Constants {
 	
 	static Map<String, Concept> numberConceptMap;
 	static Map<String, Concept> doseFormConceptMap;
+	static Map<String, Concept> unitOfPresentationConceptMap;
 	static Map<String, Concept> unitConceptMap;
 	
 	public static void setConceptType(Concept c) {
@@ -42,7 +43,7 @@ public class DrugUtils implements RF2Constants {
 
 	private static void populateNumberConceptMap() throws TermServerScriptException {
 		numberConceptMap = new HashMap<>();
-		Concept numberSubHierarchy = GraphLoader.getGraphLoader().getConcept("260299005"); // |Number (qualifier value)|
+		Concept numberSubHierarchy = GraphLoader.getGraphLoader().getConcept("260299005", false, true); // |Number (qualifier value)|
 		for (Concept number : numberSubHierarchy.getDescendents(NOT_SET)) {
 			String numStr = SnomedUtils.deconstructFSN(number.getFsn())[0].trim();
 			try {
@@ -56,14 +57,35 @@ public class DrugUtils implements RF2Constants {
 		if (doseFormConceptMap == null) {
 			populateDoseFormConceptMap();
 		}
+		if (!doseFormConceptMap.containsKey(fsn)) {
+			throw new TermServerScriptException("Unable to identify dose form : " + fsn);
+		}
 		return doseFormConceptMap.get(fsn);
 	}
 
 	private static void populateDoseFormConceptMap() throws TermServerScriptException {
 		doseFormConceptMap = new HashMap<>();
-		Concept doseFormSubHierarchy = GraphLoader.getGraphLoader().getConcept("736542009"); // |Pharmaceutical dose form (dose form)|
+		Concept doseFormSubHierarchy = GraphLoader.getGraphLoader().getConcept("736542009", false, true); // |Pharmaceutical dose form (dose form)|
 		for (Concept doseForm : doseFormSubHierarchy.getDescendents(NOT_SET)) {
 			doseFormConceptMap.put(doseForm.getFsn(), doseForm);
+		}
+	}
+	
+	public static Concept findUnitOfPresentation(String fsn) throws TermServerScriptException {
+		if (unitOfPresentationConceptMap == null) {
+			populateUnitOfPresentationConceptMap();
+		}
+		if (!unitOfPresentationConceptMap.containsKey(fsn)) {
+			throw new TermServerScriptException("Unable to identify unit of presentation : " + fsn);
+		}
+		return unitOfPresentationConceptMap.get(fsn);
+	}
+	
+	private static void populateUnitOfPresentationConceptMap() throws TermServerScriptException {
+		unitOfPresentationConceptMap = new HashMap<>();
+		Concept unitOfPresentationSubHierarchy = GraphLoader.getGraphLoader().getConcept("732935002", false, true); //|Unit of presentation (unit of presentation)|
+		for (Concept unitOfPresenation : unitOfPresentationSubHierarchy.getDescendents(NOT_SET)) {
+			unitOfPresentationConceptMap.put(unitOfPresenation.getFsn(), unitOfPresenation);
 		}
 	}
 	
@@ -71,12 +93,17 @@ public class DrugUtils implements RF2Constants {
 		if (unitConceptMap == null) {
 			populateUnitConceptMap();
 		}
+		if (!unitConceptMap.containsKey(unit)) {
+			throw new TermServerScriptException("Unable to identify unit: '" + unit + "'");
+		}
 		return unitConceptMap.get(unit);
 	}
 
 	private static void populateUnitConceptMap() throws TermServerScriptException {
 		unitConceptMap = new HashMap<>();
-		Concept unitSubHierarchy = GraphLoader.getGraphLoader().getConcept("258666001"); // |Unit (qualifier value)|
+		//UAT workaround
+		Concept unitSubHierarchy = GraphLoader.getGraphLoader().getConcept("258666001", false, true); //  |Unit(qualifier value)|
+		//Concept unitSubHierarchy = GraphLoader.getGraphLoader().getConcept("767524001", false, true); //  |Unit of measure (qualifier value)|
 		for (Concept unit : unitSubHierarchy.getDescendents(NOT_SET)) {
 			unitConceptMap.put(unit.getFsn(), unit);
 		}

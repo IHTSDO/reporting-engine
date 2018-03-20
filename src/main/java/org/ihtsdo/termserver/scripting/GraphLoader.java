@@ -130,10 +130,6 @@ public class GraphLoader implements RF2Constants {
 	}
 
 	public Concept getConcept(String identifier) throws TermServerScriptException {
-		//Have we been passed a full identifier for the concept eg SCTID |FSN| ?
-		if (identifier.contains(PIPE)) {
-			identifier = identifier.split(ESCAPED_PIPE)[0].trim();
-		}
 		return getConcept(identifier, true, true);
 	}
 	
@@ -145,7 +141,13 @@ public class GraphLoader implements RF2Constants {
 		return concepts.containsKey(sctId);
 	}
 	
-	public Concept getConcept(String sctId, boolean createIfRequired, boolean validateExists) throws TermServerScriptException {
+	public Concept getConcept(String identifier, boolean createIfRequired, boolean validateExists) throws TermServerScriptException {
+		//Have we been passed a full identifier for the concept eg SCTID |FSN| ?
+		String sctId = identifier;
+		if (identifier.contains(PIPE)) {
+			sctId = identifier.split(ESCAPED_PIPE)[0].trim();
+		}
+		
 		//Make sure we're actually being asked for a concept
 		if (sctId.length() < 6 || !isConcept(sctId)) {
 			throw new IllegalArgumentException("Request made for non concept sctid: " + sctId);
