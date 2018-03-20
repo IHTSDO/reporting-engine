@@ -10,6 +10,7 @@ import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.domain.HistoricalAssociation;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.Task;
@@ -50,9 +51,9 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 	}
 	
 	@Override
-	public void init(String[] args) {
+	public void init(String[] args) throws TermServerScriptException, IOException {
 		super.init(args);
-		termVerifier = new TermVerifier(this, inputFile2);
+		termVerifier = new TermVerifier(inputFile2,this);
 		termVerifier.init();
 	}
 
@@ -62,21 +63,29 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
 		int changesMade = 0;
 		if (loadedConcept.isActive() == false) {
-			report(task, concept, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Concept is inactive.  No changes attempted");
-		} else {
-			changesMade = remodelConcept(task, loadedConcept);
-			if (changesMade > 0) {
-				try {
-					String conceptSerialised = gson.toJson(loadedConcept);
-					debug ((dryRun?"Dry run updating":"Updating") + " state of " + loadedConcept + info);
-					if (!dryRun) {
-						tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
-					}
-					report(task, concept, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept successfully remodelled. " + changesMade + " changes made.");
-				} catch (Exception e) {
-					report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + e.getClass().getSimpleName()  + " - " + e.getMessage());
-					e.printStackTrace();
+			//Does this concept have an alternative/replacement that we should use instead?
+			Concept alternative = getAlternative(task, concept);
+			if (alternative == null) {
+				report(task, concept, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Concept is inactive and no alternative (via hist assoc) available");
+				return NO_CHANGES_MADE;
+			}
+			task.replace(concept, alternative);
+			loadedConcept = loadConcept(alternative, task.getBranchPath());
+		} 
+		
+		
+		changesMade = remodelConcept(task, loadedConcept);
+		if (changesMade > 0) {
+			try {
+				String conceptSerialised = gson.toJson(loadedConcept);
+				debug ((dryRun?"Dry run updating":"Updating") + " state of " + loadedConcept + info);
+				if (!dryRun) {
+					tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
 				}
+				report(task, concept, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept successfully remodelled. " + changesMade + " changes made.");
+			} catch (Exception e) {
+				report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + e.getClass().getSimpleName()  + " - " + e.getMessage());
+				e.printStackTrace();
 			}
 		}
 		return changesMade;
@@ -104,6 +113,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		}
 		//We're definitely going to have everyting we need in the stated form, and in fact the inferred will be wrong because we haven't changed it.
 		changesMade += termGenerator.ensureDrugTermsConform(t,c, CharacteristicType.STATED_RELATIONSHIP);
+		termVerifier.validateTerms(t, c);
 		return changesMade;
 	}
 
@@ -116,7 +126,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 
 		if (substanceRel == null) {
 			//We'll need to create one!
-			report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "No exisiting ingredient found.  Creating.");
+			report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "No existing ingredient found.  Creating.");
 			substanceRel = new Relationship (c, HAS_PRECISE_INGRED, modelIngredient.substance, targetGroupId);
 		} else {
 			//If we've found an active ingredient, inactivate it and replace with a PRECISE active ingredient
@@ -254,5 +264,22 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		}
 		return unitPres;
 	}
+	
+
+	private Concept getAlternative(Task t, Concept c) throws TermServerScriptException {
+		//Work through the active historical associations and find an active alternative
+		List<HistoricalAssociation> assocs = c.getHistorialAssociations(ActiveState.ACTIVE);
+		if (assocs.size() > 1 || assocs.size() == 0) {
+			String msg = c + " is inactive with " + assocs.size() + " historical assocations.  Cannot determine alternative concept.";
+			report(t, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, msg);
+			return null;
+		}
+		Concept refset =  gl.getConcept(assocs.get(0).getRefsetId());
+		Concept alternative = gl.getConcept(assocs.get(0).getReferencedComponentId());
+		String msg = "Working on " + alternative + " instead of inactive original " + c + " due to " + refset;
+		report (t, c, Severity.MEDIUM, ReportActionType.INFO, msg);
+		return alternative;
+	}
+
 
 }

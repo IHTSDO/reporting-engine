@@ -45,6 +45,10 @@ public class TermVerifier implements RF2Constants {
 	public void init() throws TermServerScriptException {
 		conceptTermsMap = new HashMap<>();
 		String[] lineItems;
+		
+		if (inputFile == null) {
+			throw new TermServerScriptException ("No file specified as input to verify terms");
+		}
 		TermServerScript.info ("Loading term file " + inputFile.getAbsolutePath());
 		try {
 			List<String> lines = Files.readLines(inputFile, Charsets.UTF_8);
@@ -75,6 +79,9 @@ public class TermVerifier implements RF2Constants {
 				String msg = "Unable to find suggested synonym: " + synonym;
 				script.report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, msg);
 			}
+		} else {
+			String msg = "No suggested term supplied for comparison";
+			script.report(t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, msg);
 		}
 	}
 

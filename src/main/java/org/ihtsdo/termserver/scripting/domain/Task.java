@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.domain;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import com.google.gson.annotations.Expose;
@@ -133,6 +134,10 @@ public class Task {
 
 	public void setTaskInfo(String taskInfo) {
 		this.taskInfo = taskInfo;
+	}
+
+	public void replace(Concept current, Concept replacement) {
+		Collections.replaceAll(components, current, replacement);
 	}
 
 }

@@ -381,7 +381,7 @@ public class DrugTermGenerator implements RF2Constants{
 		//First the ingredient, with the BoSS first if different
 		if (separateBoSS) {
 			ingredientTerm = getTermForConcat(boSS, isFSN, langRefset);
-			ingredientTerm += " as (";
+			ingredientTerm += " (as ";
 		}
 		
 		ingredientTerm += getTermForConcat(ingredient, isFSN, langRefset);

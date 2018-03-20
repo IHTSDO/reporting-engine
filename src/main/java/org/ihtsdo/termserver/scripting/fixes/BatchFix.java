@@ -165,7 +165,10 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 				
 				//Process each component
 				int conceptInTask = 0;
-				for (Component component : task.getComponents()) {
+				
+				//The components in the task might change during processing, so we'll drive this loop with a copy of the initial list
+				List<Component> components = new ArrayList<>(task.getComponents());
+				for (Component component : components) {
 					conceptInTask++;
 					processComponent(task, component, conceptInTask, xOfY);
 				}
@@ -203,7 +206,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 
 	private void createTask(Task task) throws SnowOwlClientException, TermServerScriptException, InterruptedException {
 		if (!dryRun) {
-			if (!firstTaskCreated) {
+			if (firstTaskCreated) {
 				debug ("Letting TS catch up - " + taskThrottle + "s nap.");
 				Thread.sleep(taskThrottle * 1000);
 			} else {
