@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
@@ -87,7 +88,10 @@ public class TermVerifier implements RF2Constants {
 
 	private void validateTerm(Task t, Concept c, Description d, String suggestedTerm, boolean isFSN) {
 		suggestedTerm = fixIssues(suggestedTerm, isFSN);
-		if (!d.getTerm().equals(suggestedTerm)) {
+		if (d == null) {
+			String msg = c + " does not contain a description to validate against suggestion: '" + suggestedTerm + "'";
+			script.report(t, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, msg);
+		} else if (!d.getTerm().equals(suggestedTerm)) {
 			String msg = "Description " + d + " does not match suggested value '" + suggestedTerm + "'";
 			script.report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, msg);
 		}
@@ -104,11 +108,17 @@ public class TermVerifier implements RF2Constants {
 		term = term.replaceAll(" only ", " precisely ");
 		
 		//Do we have milligram without a space?
-		if (term.contains("milligram") && !term.contains(" milligram ")) {
+		if (StringUtils.countMatches(term, "milligram") != StringUtils.countMatches(term, " milligram ")) {
 			term = term.replaceAll("milligram", "milligram ");
 			term = term.replace("  ", " ");
 		}
 		return term;
+	}
+
+	public void replace(Concept original, Concept alternative) {
+		String[] values = conceptTermsMap.get(original);
+		conceptTermsMap.remove(original);
+		conceptTermsMap.put(alternative, values);
 	}
 
 }

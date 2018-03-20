@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.ihtsdo.termserver.scripting.GraphLoader;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
 
@@ -37,6 +38,9 @@ public class DrugUtils implements RF2Constants {
 	public static Concept getNumberAsConcept(String number) throws TermServerScriptException {
 		if (numberConceptMap == null) {
 			populateNumberConceptMap();
+		}
+		if (!numberConceptMap.containsKey(number)) {
+			TermServerScript.warn("Check and possibly need to create concept to represent number: " + number);
 		}
 		return numberConceptMap.get(number);
 	}

@@ -70,6 +70,9 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 				return NO_CHANGES_MADE;
 			}
 			task.replace(concept, alternative);
+			//We also need a copy of the original's spreadsheet data to look up, and also for the term verifier
+			spreadsheet.put(alternative, spreadsheet.get(concept));
+			termVerifier.replace(concept, alternative);
 			loadedConcept = loadConcept(alternative, task.getBranchPath());
 		} 
 		
@@ -82,7 +85,6 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 				if (!dryRun) {
 					tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
 				}
-				report(task, concept, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept successfully remodelled. " + changesMade + " changes made.");
 			} catch (Exception e) {
 				report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + e.getClass().getSimpleName()  + " - " + e.getMessage());
 				e.printStackTrace();
@@ -264,7 +266,6 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		}
 		return unitPres;
 	}
-	
 
 	private Concept getAlternative(Task t, Concept c) throws TermServerScriptException {
 		//Work through the active historical associations and find an active alternative
@@ -275,11 +276,10 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 			return null;
 		}
 		Concept refset =  gl.getConcept(assocs.get(0).getRefsetId());
-		Concept alternative = gl.getConcept(assocs.get(0).getReferencedComponentId());
+		Concept alternative = gl.getConcept(assocs.get(0).getTargetComponentId());
+		alternative.setConceptType(c.getConceptType());
 		String msg = "Working on " + alternative + " instead of inactive original " + c + " due to " + refset;
 		report (t, c, Severity.MEDIUM, ReportActionType.INFO, msg);
 		return alternative;
 	}
-
-
 }

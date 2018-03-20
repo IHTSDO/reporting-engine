@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
@@ -109,56 +110,10 @@ public class DrugTermGenerator implements RF2Constants{
 		validateUsGbVarianceInIngredients(t,c);
 
 		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-			boolean isFSN = d.getType().equals(DescriptionType.FSN);
-			boolean isGbPT = d.isPreferred(GB_ENG_LANG_REFSET);
-			boolean isUsPT = d.isPreferred(US_ENG_LANG_REFSET);
-			boolean isPT = (isGbPT || isUsPT);
-			boolean hasUsGbVariance = !(isGbPT && isUsPT);
-			String langRefset = US_ENG_LANG_REFSET;
-			if (isGbPT && hasUsGbVariance) {
-				langRefset = GB_ENG_LANG_REFSET;
-			}
-			
-			//If it's not the PT or FSN, skip it.   We'll delete later if it's not the FSN counterpart
-			if (!isPT && !isFSN) {
-				continue;
-			}
-			
-			//Skip FSNs that contain the word vitamin
-			if (isFSN && d.getTerm().toLowerCase().contains("vitamin")) {
-				report(t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Skipped vitamin FSN");
-				continue;
-			}
-			
-			//Check the existing term has correct capitalization
-			ensureCaptialization(d);
-			String replacementTerm = calculateTermFromIngredients(c, isFSN, isPT, langRefset, charType);
-			replacementTerm = checkForVitamins(replacementTerm, d.getTerm());
-			Description replacement = d.clone(null);
-			replacement.setTerm(replacementTerm);
-			
-			//Does the case significance of the ingredients suggest a need to modify the term?
-			if (replacement.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE) && SnomedUtils.isCaseSensitive(replacementTerm)) {
-				replacement.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
-			}
-			
-			//Have we made any changes?  Create a new description if so
-			if (!replacementTerm.equals(d.getTerm())) {
-				changesMade += replaceTerm(t, c, d, replacement);
-			}
-			
-			//If this is the FSN, then we should have another description without the semantic tag as an acceptable term
-			if (isFSN) {
-				Description fsnCounterpart = replacement.clone(null);
-				String counterpartTerm = SnomedUtils.deconstructFSN(fsnCounterpart.getTerm())[0];
-				
-				if (!SnomedUtils.termAlreadyExists(c, counterpartTerm)) {
-					fsnCounterpart.setTerm(counterpartTerm);
-					report(t, c, Severity.LOW, ReportActionType.DESCRIPTION_ADDED, "FSN Counterpart added: " + counterpartTerm);
-					fsnCounterpart.setType(DescriptionType.SYNONYM);
-					fsnCounterpart.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(AcceptabilityMode.ACCEPTABLE_BOTH));
-					c.addDescription(fsnCounterpart);
-				}
+			try { 
+				changesMade += ensureDrugTermConforms(t, c, d, charType);
+			} catch (Exception e) {
+				report (t, c, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to conform description " + d, ExceptionUtils.getStackTrace(e));
 			}
 		}
 		//Now that the FSN is resolved, remove any redundant terms
@@ -166,6 +121,62 @@ public class DrugTermGenerator implements RF2Constants{
 		return changesMade;
 	}
 	
+	private int ensureDrugTermConforms(Task t, Concept c, Description d, CharacteristicType charType) throws TermServerScriptException {
+		int changesMade = 0;
+		boolean isFSN = d.getType().equals(DescriptionType.FSN);
+		boolean isGbPT = d.isPreferred(GB_ENG_LANG_REFSET);
+		boolean isUsPT = d.isPreferred(US_ENG_LANG_REFSET);
+		boolean isPT = (isGbPT || isUsPT);
+		boolean hasUsGbVariance = !(isGbPT && isUsPT);
+		String langRefset = US_ENG_LANG_REFSET;
+		if (isGbPT && hasUsGbVariance) {
+			langRefset = GB_ENG_LANG_REFSET;
+		}
+		
+		//If it's not the PT or FSN, skip it.   We'll delete later if it's not the FSN counterpart
+		if (!isPT && !isFSN) {
+			return NO_CHANGES_MADE;
+		}
+		
+		//Skip FSNs that contain the word vitamin
+		if (isFSN && d.getTerm().toLowerCase().contains("vitamin")) {
+			report(t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Skipped vitamin FSN");
+			return NO_CHANGES_MADE;
+		}
+		
+		//Check the existing term has correct capitalization
+		ensureCaptialization(d);
+		String replacementTerm = calculateTermFromIngredients(c, isFSN, isPT, langRefset, charType);
+		replacementTerm = checkForVitamins(replacementTerm, d.getTerm());
+		Description replacement = d.clone(null);
+		replacement.setTerm(replacementTerm);
+		
+		//Does the case significance of the ingredients suggest a need to modify the term?
+		if (replacement.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE) && SnomedUtils.isCaseSensitive(replacementTerm)) {
+			replacement.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
+		}
+		
+		//Have we made any changes?  Create a new description if so
+		if (!replacementTerm.equals(d.getTerm())) {
+			changesMade += replaceTerm(t, c, d, replacement);
+		}
+		
+		//If this is the FSN, then we should have another description without the semantic tag as an acceptable term
+		if (isFSN) {
+			Description fsnCounterpart = replacement.clone(null);
+			String counterpartTerm = SnomedUtils.deconstructFSN(fsnCounterpart.getTerm())[0];
+			
+			if (!SnomedUtils.termAlreadyExists(c, counterpartTerm)) {
+				fsnCounterpart.setTerm(counterpartTerm);
+				report(t, c, Severity.LOW, ReportActionType.DESCRIPTION_ADDED, "FSN Counterpart added: " + counterpartTerm);
+				fsnCounterpart.setType(DescriptionType.SYNONYM);
+				fsnCounterpart.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(AcceptabilityMode.ACCEPTABLE_BOTH));
+				c.addDescription(fsnCounterpart);
+			}
+		}
+		return changesMade;
+	}
+
 	public String calculateTermFromIngredients(Concept c, boolean isFSN, boolean isPT, String langRefset, CharacteristicType charType) throws TermServerScriptException {
 		String proposedTerm = "";
 		String semTag = "";

@@ -615,11 +615,18 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		//Add the new relationship
 		Relationship newRel = new Relationship (c, type, value, groupId);
 		if (type == null || value == null) {
-			throw new IllegalArgumentException("Attempt to add null values when creating relationship " + newRel);
+			if (value == null) {
+				String msg = "Unable to add relationship of type " + type + " due to lack of a value concept";
+				report (t, c, Severity.CRITICAL, ReportActionType.API_ERROR, msg);
+			} else if (type == null) {
+				String msg = "Unable to add relationship with value " + value + " due to lack of a type concept";
+				report (t, c, Severity.CRITICAL, ReportActionType.API_ERROR, msg);
+			}
+		} else {
+			report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, newRel);
+			c.addRelationship(newRel);
+			changesMade++;
 		}
-		report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, newRel);
-		c.addRelationship(newRel);
-		changesMade++;
 		
 		return changesMade;
 	}
