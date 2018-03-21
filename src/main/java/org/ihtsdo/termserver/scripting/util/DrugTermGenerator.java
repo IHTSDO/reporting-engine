@@ -194,11 +194,11 @@ public class DrugTermGenerator implements RF2Constants{
 		if (isFSN) {
 			prefix = "Product containing ";
 			switch (c.getConceptType()) {
-				case MEDICINAL_PRODUCT_FORM : suffix =  " in " + DrugUtils.getDosageForm(c);
+				case MEDICINAL_PRODUCT_FORM : suffix =  " in " + DrugUtils.getDosageForm(c, isFSN);
 										break;
 				case CLINICAL_DRUG : 	prefix = "Product containing precisely ";
 										//TODO Check that presentation is solid before adding 1 each
-										suffix =  "/1 each "  + DrugUtils.getDosageForm(c);
+										suffix =  "/1 each "  + DrugUtils.getDosageForm(c, isFSN);
 										semTag = "(clinical drug)";
 										break;
 				default:
@@ -207,9 +207,9 @@ public class DrugTermGenerator implements RF2Constants{
 			switch (c.getConceptType()) {
 				case MEDICINAL_PRODUCT : suffix = " product";
 										break;
-				case MEDICINAL_PRODUCT_FORM : suffix =  " in " + DrugUtils.getDosageForm(c);
+				case MEDICINAL_PRODUCT_FORM : suffix =  " in " + DrugUtils.getDosageForm(c, isFSN);
 										break;
-				case CLINICAL_DRUG : 	suffix =  " " + DrugUtils.getDosageForm(c);
+				case CLINICAL_DRUG : 	suffix =  " " + DrugUtils.getDosageForm(c, isFSN);
 										break;
 				default:
 			}

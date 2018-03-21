@@ -113,31 +113,39 @@ public class DrugUtils implements RF2Constants {
 		}
 	}
 
-	public static  String getDosageForm(Concept concept) {
+	public static  String getDosageForm(Concept concept, boolean isFSN) throws TermServerScriptException {
 		List<Relationship> doseForms = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_MANUFACTURED_DOSE_FORM, ActiveState.ACTIVE);
 		if (doseForms.size() == 0) {
 			return "NO STATED DOSE FORM DETECTED";
 		} else if (doseForms.size() > 1) {
 			return "MULTIPLE DOSE FORMS";
 		} else {
-			String doseForm = SnomedUtils.deconstructFSN(doseForms.get(0).getTarget().getFsn())[0];
-			doseForm = SnomedUtils.deCapitalize(doseForm);
+			//Load full locally cached object since we may be working with some minimally defined thing
+			Concept doseForm = GraphLoader.getGraphLoader().getConcept(doseForms.get(0).getTarget().getConceptId());
+			String doseFormStr;
+			if (isFSN) {
+				doseFormStr = SnomedUtils.deconstructFSN(doseForm.getFsn())[0];
+			} else {
+				doseFormStr = doseForm.getPreferredSynonym(US_ENG_LANG_REFSET).getTerm();
+			}
+			
+			doseFormStr = SnomedUtils.deCapitalize(doseFormStr);
 			//Translate known issues
-			switch (doseForm) {
-				case "ocular dose form": doseForm =  "ophthalmic dosage form";
+			switch (doseFormStr) {
+				case "ocular dose form": doseFormStr =  "ophthalmic dosage form";
 					break;
-				case "inhalation dose form": doseForm = "respiratory dosage form";
+				case "inhalation dose form": doseFormStr = "respiratory dosage form";
 					break;
-				case "cutaneous AND/OR transdermal dosage form" : doseForm = "topical dosage form";
+				case "cutaneous AND/OR transdermal dosage form" : doseFormStr = "topical dosage form";
 					break;
-				case "oromucosal AND/OR gingival dosage form" : doseForm = "oropharyngeal dosage form";
+				case "oromucosal AND/OR gingival dosage form" : doseFormStr = "oropharyngeal dosage form";
 					break;
 			}
 			
 			//In the product we say "doseage form", so make that switch
-			doseForm = doseForm.replace(" dose ", " dosage ");
+			//doseForm = doseForm.replace(" dose ", " dosage ");
 			
-			return doseForm;
+			return doseFormStr;
 		}
 	}
 

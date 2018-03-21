@@ -109,11 +109,22 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 			changesMade += remodel(t,c,ingredient, isMultiIngredient);
 		}
 		
+		//If we've made modeling changes, we can set this concept to be sufficiently defined if required
+		if (c.getDefinitionStatus().equals(DefinitionStatus.PRIMITIVE)) {
+			if (changesMade > 0) {
+				c.setDefinitionStatus(DefinitionStatus.FULLY_DEFINED);
+				changesMade++;
+				report(t, c, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept set to be sufficiently defined");
+			} else {
+				report(t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "No modelling changes made, skipping change to definition status.");
+			}
+		}
+		
 		//If we have any "active ingredients" left at this point, take them out now, before they confusing the terming
 		for (Relationship ai : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE)) {
 			removeRelationship(t,  ai, c);
 		}
-		//We're definitely going to have everyting we need in the stated form, and in fact the inferred will be wrong because we haven't changed it.
+		//We're definitely going to have everything we need in the stated form, and in fact the inferred will be wrong because we haven't changed it.
 		changesMade += termGenerator.ensureDrugTermsConform(t,c, CharacteristicType.STATED_RELATIONSHIP);
 		termVerifier.validateTerms(t, c);
 		return changesMade;
@@ -122,7 +133,8 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 
 	private int remodel(Task t, Concept c, Ingredient modelIngredient, boolean isMultiIngredient) throws TermServerScriptException {
 		int changesMade = 0;
-		int targetGroupId = isMultiIngredient? SnomedUtils.getFirstFreeGroup(c) : 0;
+		int targetGroupId = SnomedUtils.getFirstFreeGroup(c);
+		
 		//Find this ingredient.  If it's in group 0, we need to move it to a new group
 		Relationship substanceRel = getSubstanceRel(t, c, modelIngredient.substance, modelIngredient.boss);
 
@@ -141,9 +153,13 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 			}
 		}
 		
-		if (substanceRel.getGroupId() == 0L) {
+		changesMade += replaceParents(t, c, MEDICINAL_PRODUCT);
+		
+		//Group Id must be > 0.  Set to next available if currently zero, or use the existing one otherwise.
+		if (substanceRel.getGroupId() == 0) {
 			substanceRel.setGroupId(targetGroupId);
-		} else if (isMultiIngredient){
+			changesMade++;
+		} else{
 			targetGroupId = substanceRel.getGroupId();
 		}
 		
@@ -151,6 +167,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		if (!c.getRelationships().contains(substanceRel)) {
 			report (t,c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, substanceRel);
 			c.addRelationship(substanceRel);
+			changesMade++;
 		}
 		
 		changesMade += replaceRelationship(t, c, HAS_MANUFACTURED_DOSE_FORM, modelIngredient.doseForm, UNGROUPED, false);
@@ -160,7 +177,6 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		changesMade += replaceRelationship(t, c, HAS_STRENGTH_DENOM_VALUE, modelIngredient.denomQuantity, targetGroupId, false);
 		changesMade += replaceRelationship(t, c, HAS_STRENGTH_DENOM_UNIT, modelIngredient.denomUnit, targetGroupId, false);
 		changesMade += replaceRelationship(t, c, HAS_UNIT_OF_PRESENTATION, modelIngredient.unitOfPresentation, UNGROUPED, false);
-		
 		return changesMade;
 	}
 

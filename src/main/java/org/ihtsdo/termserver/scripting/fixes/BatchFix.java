@@ -253,6 +253,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			if (changesMade == 0 && reportNoChange) {
 				report(task, component, Severity.MEDIUM, ReportActionType.NO_CHANGE, "");
 			}
+			incrementSummaryInformation("Total changes made", changesMade);
 			flushFiles(false);
 		} catch (ValidationFailure f) {
 			report(task, component, f.getSeverity(),f.getReportActionType(), f.getMessage());
@@ -510,15 +511,20 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		return changesMade;
 	}
 	
-	protected int replaceParents(Task task, Concept loadedConcept, Relationship newParentRel, Object[] additionalDetails) throws TermServerScriptException {
+	protected int replaceParents(Task t, Concept c, Concept newParent) throws TermServerScriptException {
+		Relationship newParentRel = new Relationship (c, IS_A, newParent, UNGROUPED);
+		return replaceParents(t, c, newParentRel, null);
+	}
+	
+	protected int replaceParents(Task task, Concept c, Relationship newParentRel, Object[] additionalDetails) throws TermServerScriptException {
 		int changesMade = 0;
-		List<Relationship> parentRels = new ArrayList<Relationship> (loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
+		List<Relationship> parentRels = new ArrayList<Relationship> (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
 																	IS_A,
 																	ActiveState.ACTIVE));
 		boolean replacementRequired = true;
 		for (Relationship parentRel : parentRels) {
 			if (!parentRel.equals(newParentRel)) {
-				removeParent (task, parentRel, loadedConcept, newParentRel.getTarget().toString(), additionalDetails);
+				removeParent (task, parentRel, c, newParentRel.getTarget().toString(), additionalDetails);
 				changesMade++;
 			} else {
 				replacementRequired = false;
@@ -527,8 +533,8 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		
 		if (replacementRequired) {
 			Relationship thisNewParentRel = newParentRel.clone(null);
-			thisNewParentRel.setSource(loadedConcept);
-			loadedConcept.addRelationship(thisNewParentRel);
+			thisNewParentRel.setSource(c);
+			c.addRelationship(thisNewParentRel);
 			changesMade++;
 		}
 		return changesMade;
