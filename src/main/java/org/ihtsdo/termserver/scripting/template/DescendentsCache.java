@@ -30,4 +30,9 @@ public class DescendentsCache implements RF2Constants {
 		descendents.remove(c);  // Not self!
 		return descendents;
 	}
+	
+	public Set<Concept> getDescendentsOrSelf (String sctid) throws TermServerScriptException {
+		Concept c = GraphLoader.getGraphLoader().getConcept(sctid);
+		return getDescendentsOrSelf(c);
+	}
 }

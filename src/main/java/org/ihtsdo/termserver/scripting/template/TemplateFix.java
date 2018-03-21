@@ -25,7 +25,7 @@ abstract public class TemplateFix extends BatchFix {
 	String[] templateNames;
 	
 	List<Template> templates = new ArrayList<>();
-	String[] ignoreFSNsContaining = new String[] { "avulsion" };
+	String[] ignoreFSNsContaining = new String[] { "avulsion" , "without"};
 	TemplateServiceClient tsc = new TemplateServiceClient();
 	
 	Map<Concept, Template> conceptToTemplateMap = new HashMap<>();
