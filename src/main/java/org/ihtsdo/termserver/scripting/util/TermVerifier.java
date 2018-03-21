@@ -75,7 +75,7 @@ public class TermVerifier implements RF2Constants {
 			validateTerm (t, c, c.getPreferredSynonym(GB_ENG_LANG_REFSET), terms[idx_gb], false);
 			
 			//And try to find the synonym
-			String synonym = fixIssues(terms[idx_gb], false);
+			String synonym = fixIssues(terms[idx_syn], false);
 			if (c.findTerm(synonym) == null) {
 				String msg = "Unable to find suggested synonym: " + synonym;
 				script.report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, msg);
@@ -111,6 +111,8 @@ public class TermVerifier implements RF2Constants {
 		if (StringUtils.countMatches(term, "milligram") != StringUtils.countMatches(term, " milligram ")) {
 			term = term.replaceAll("milligram", "milligram ");
 			term = term.replace("  ", " ");
+			//Also fix the one case where we want no space after milligram
+			term = term.replaceAll("milligram /1 each", "milligram/1 each");
 		}
 		return term;
 	}

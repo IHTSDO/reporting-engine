@@ -614,6 +614,10 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 	}
 
 	public Description getFSNDescription() {
+		if (descriptions == null) {
+			String err = "Concept " + conceptId + " |" + getFsn() + "| has no descriptions";
+			throw new IllegalArgumentException(err);
+		}
 		for (Description d : descriptions) {
 			if (d.isActive() && d.getType().equals(DescriptionType.FSN)) {
 				return d;

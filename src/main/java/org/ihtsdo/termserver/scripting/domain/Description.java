@@ -259,7 +259,12 @@ public class Description implements RF2Constants, Component{
 			return false;
 		}
 		Description rhs = ((Description) other);
-		//If both sides have an SCTID, then compare that
+		
+		//If one side has an SCTID and the other doesn't, then don't compare - one is likely "new"
+		if ((this.getDescriptionId() == null && rhs.getDescriptionId() != null) || (this.getDescriptionId() != null && rhs.getDescriptionId() == null)) {
+			return false;
+		}
+		//Otherwise if both sides have an SCTID, then compare that
 		if (this.getDescriptionId() != null && rhs.getDescriptionId() != null) {
 			return this.getDescriptionId().equals(rhs.getDescriptionId());
 		}

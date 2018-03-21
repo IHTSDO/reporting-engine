@@ -24,6 +24,7 @@ public class DrugTermGenerator implements RF2Constants{
 	
 	private TermServerScript parent;
 	private boolean quiet = false;
+	private GraphLoader gl = GraphLoader.getGraphLoader();
 	
 	private String [] forceCS = new String[] { "N-" };
 	private String[] vitamins = new String[] {" A ", " B ", " C ", " D ", " E ", " G "};
@@ -113,7 +114,8 @@ public class DrugTermGenerator implements RF2Constants{
 			try { 
 				changesMade += ensureDrugTermConforms(t, c, d, charType);
 			} catch (Exception e) {
-				report (t, c, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to conform description " + d, ExceptionUtils.getStackTrace(e));
+				String stack = ExceptionUtils.getStackTrace(e);
+				report (t, c, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to conform description " + d, stack);
 			}
 		}
 		//Now that the FSN is resolved, remove any redundant terms
@@ -430,12 +432,14 @@ public class DrugTermGenerator implements RF2Constants{
 		return term;
 	}
 
-	private static Concept getTarget(Concept c, Concept type, int groupId, CharacteristicType charType) {
+	private Concept getTarget(Concept c, Concept type, int groupId, CharacteristicType charType) throws TermServerScriptException {
 		List<Relationship> rels = c.getRelationships(charType, type, groupId);
 		if (rels.size() > 1) {
 			TermServerScript.warn(c + " has multiple " + type + " in group " + groupId);
 		} else if (rels.size() == 1) {
-			return rels.get(0).getTarget();
+			Concept target = rels.get(0).getTarget();
+			//This might not be the full concept, so recover it fully from our loaded cache
+			return gl.getConcept(target.getConceptId());
 		}
 		return null;
 	}

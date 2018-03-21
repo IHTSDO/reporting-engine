@@ -196,7 +196,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		}
 		
 		if (matchingRels.size()!=1) {
-			report (t,c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Unable to find expected ingredient: " + targetSubstance + " found " + matchingRels.size());
+			report (t,c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Unable to find expected ingredient: " + targetSubstance + " found " + matchingRels.size());
 			return null;
 		}
 		return matchingRels.get(0);

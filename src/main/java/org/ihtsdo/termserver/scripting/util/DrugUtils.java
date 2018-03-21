@@ -106,8 +106,8 @@ public class DrugUtils implements RF2Constants {
 	private static void populateUnitConceptMap() throws TermServerScriptException {
 		unitConceptMap = new HashMap<>();
 		//UAT workaround
-		Concept unitSubHierarchy = GraphLoader.getGraphLoader().getConcept("258666001", false, true); //  |Unit(qualifier value)|
-		//Concept unitSubHierarchy = GraphLoader.getGraphLoader().getConcept("767524001", false, true); //  |Unit of measure (qualifier value)|
+		//Concept unitSubHierarchy = GraphLoader.getGraphLoader().getConcept("258666001", false, true); //  |Unit(qualifier value)|
+		Concept unitSubHierarchy = GraphLoader.getGraphLoader().getConcept("767524001", false, true); //  |Unit of measure (qualifier value)|
 		for (Concept unit : unitSubHierarchy.getDescendents(NOT_SET)) {
 			unitConceptMap.put(unit.getFsn(), unit);
 		}
