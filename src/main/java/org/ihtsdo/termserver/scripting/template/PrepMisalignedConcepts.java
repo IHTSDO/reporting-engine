@@ -135,7 +135,9 @@ public class PrepMisalignedConcepts extends TemplateFix {
 				diagnostics.add(msg);
 				diagnostics.add("Relationship Group mismatches:");
 				for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP)) {
-					msg = "    " + g;
+					//is this group purely inferred?  Add an indicator if so 
+					String purelyInferredIndicator = groupPurelyInferred(c,g)?"^":"";
+					msg = "    " + purelyInferredIndicator + g;
 					debug (msg);
 					diagnostics.add(msg);
 				}
@@ -146,6 +148,16 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		}
 		unalignedConcepts.removeAll(ignoredConcepts);
 		return asComponents(unalignedConcepts);
+	}
+
+	//return true if this inferred group does not have a stated counterpart
+	private boolean groupPurelyInferred(Concept c, RelationshipGroup ig) {
+		for (RelationshipGroup sg : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
+			if (ig.equals(sg)) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 }

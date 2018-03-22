@@ -45,8 +45,8 @@ public class IntermediatePrimitivesFromSubHierarchy extends TermServerReport{
 	
 	private void postInit() throws TermServerScriptException {
 		//setSubHierarchy(gl.getConcept("46866001")); // |Fracture of lower limb (disorder)|
-		//setSubHierarchy(gl.getConcept("125605004")); // QI-2 |Fracture of bone (disorder)|
-		setSubHierarchy(gl.getConcept("128294001")); // QI-7 |Chronic inflammatory disorder (disorder)|
+		setSubHierarchy(gl.getConcept("125605004")); // QI-2 |Fracture of bone (disorder)|
+		//setSubHierarchy(gl.getConcept("128294001")); // QI-7 |Chronic inflammatory disorder (disorder)|
 	}
 	
 	public void setSubHierarchy(Concept subHierarchy) {
