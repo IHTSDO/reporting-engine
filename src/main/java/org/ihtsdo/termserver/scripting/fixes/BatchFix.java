@@ -53,6 +53,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	protected int wiggleRoom = 5;
 	protected int failureCount = 0;
 	protected int taskThrottle = 30;
+	protected int restartFromTask = NOT_SET;
 	protected int conceptThrottle = 5;
 	protected String targetAuthor;
 	protected String targetReviewer;
@@ -139,18 +140,21 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	}
 	
 	protected void batchProcess(Batch batch) throws TermServerScriptException {
-		int tasksCreated = 0;
-		int tasksSkipped = 0;
+		int currentTaskNum = 0;
 		for (Task task : batch.getTasks()) {
 			try {
+				currentTaskNum++;
 				//If we don't have any concepts in this task eg this is 100% ME file, then skip
 				if (task.size() == 0) {
 					info ("Skipping Task " + task.getSummary() + " - no concepts to process");
 					continue;
-				} else if (selfDetermining && restartPosition > 1 && (tasksSkipped + 1) < restartPosition) {
+				} else if (selfDetermining && restartPosition > 1 && currentTaskNum < restartPosition) {
 					//For self determining projects we'll restart based on a task count, rather than the line number in the input file
-					tasksSkipped++;
 					info ("Skipping Task " + task.getSummary() + " - restarting from task " + restartPosition);
+					continue;
+				} else if (restartFromTask != NOT_SET && currentTaskNum < restartFromTask) {
+					//For file driven batches, we'll use the r2 restartFromTask setting
+					info ("Skipping Task " + task.getSummary() + " - restarting from task " + restartFromTask);
 					continue;
 				} else if (task.size() > (taskSize + wiggleRoom)) {
 					warn (task + " contains " + task.size() + " concepts");
@@ -158,8 +162,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 				
 				//Create a task for this batch of concepts
 				createTask(task);
-				tasksCreated++;
-				String xOfY =  (tasksCreated+tasksSkipped) + " of " + batch.getTasks().size();
+				String xOfY =  (currentTaskNum) + " of " + batch.getTasks().size();
 				info ( (dryRun?"Dry Run " : "Created ") + "task (" + xOfY + "): " + task.getBranchPath());
 				incrementSummaryInformation("Tasks created",1);
 				
@@ -197,7 +200,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 				throw new TermServerScriptException("Failed to process batch " + task.getSummary() + " on task " + task.getKey(), e);
 			}
 			
-			if (processingLimit > NOT_SET && tasksCreated >= processingLimit) {
+			if (processingLimit > NOT_SET && currentTaskNum >= processingLimit) {
 				info ("Processing limit of " + processingLimit + " tasks reached.  Stopping");
 				break;
 			}
@@ -317,7 +320,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 
 	protected void init (String[] args) throws TermServerScriptException, IOException {
 		if (args.length < 3) {
-			info("Usage: java <FixClass> [-a author][-a2 reviewer ][-n <taskSize>] [-r <restart position>] [-l <limit> ] [-t taskCreationDelay] -c <authenticatedCookie> [-d <Y/N>] [-p <projectName>] -f <batch file Location>");
+			info("Usage: java <FixClass> [-a author][-a2 reviewer ][-n <taskSize>] [-r <restart position in file>] [-r2 <restart from task #>] [-l <limit> ] [-t taskCreationDelay] -c <authenticatedCookie> [-d <Y/N>] [-p <projectName>] -f <batch file Location>");
 			info(" d - dry run");
 			System.exit(-1);
 		}
@@ -327,6 +330,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		boolean isLimit = false;
 		boolean isTaskThrottle = false;
 		boolean isConceptThrottle = false;
+		boolean isRestartFromTask = false;
 	
 		for (String thisArg : args) {
 			if (thisArg.equals("-a")) {
@@ -337,6 +341,8 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 				isTaskSize = true;
 			} else if (thisArg.equals("-l")) {
 				isLimit = true;
+			} else if (thisArg.equals("-r2")) {
+				isRestartFromTask = true;
 			} else if (thisArg.equals("-t") || thisArg.equals("-t1")) {
 				isTaskThrottle = true;
 			} else if (thisArg.equals("-t2")) {
@@ -347,7 +353,10 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			} else if (isConceptThrottle) {
 				conceptThrottle = Integer.parseInt(thisArg);
 				isConceptThrottle = false;
-			} else if (isAuthor) {
+			} else if (isRestartFromTask) {
+				restartFromTask = Integer.parseInt(thisArg);
+				isRestartFromTask = false;
+			}else if (isAuthor) {
 				targetAuthor = thisArg.toLowerCase();
 				isAuthor = false;
 			} else if (isReviewer) {
