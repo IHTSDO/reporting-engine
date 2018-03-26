@@ -97,7 +97,7 @@ public class OnExamination_or_ComplainingOf extends BatchFix implements RF2Const
 			//If we have a more specific parent, delete or inactivate this one
 			Concept moreSpecific = findMoreSpecificCoparent(parentRel.getTarget(), loadedConcept);
 			if (moreSpecific != null) {
-				remove(task, parentRel, loadedConcept, moreSpecific);
+				removeParentRelationship(task, parentRel, loadedConcept, moreSpecific.toString(), null);
 				changesMade++;
 			}
 		}
@@ -127,18 +127,6 @@ public class OnExamination_or_ComplainingOf extends BatchFix implements RF2Const
 			parents.add(gl.getConcept(r.getTarget().getConceptId()));
 		}
 		return parents;
-	}
-
-	private void remove(Task t, Relationship rel, Concept loadedConcept, Concept retained) {
-		//Are we inactivating or deleting this relationship?
-		if (rel.getEffectiveTime() == null || rel.getEffectiveTime().isEmpty()) {
-			loadedConcept.removeRelationship(rel);
-			report (t, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_DELETED, "Deleted parent: " + rel.getTarget() + " in favour of " + retained);
-		} else {
-			rel.setEffectiveTime(null);
-			rel.setActive(false);
-			report (t, loadedConcept, Severity.MEDIUM, ReportActionType.RELATIONSHIP_INACTIVATED, "Inactivated parent: " + rel.getTarget() + " in favour of " + retained);
-		}
 	}
 
 	@Override

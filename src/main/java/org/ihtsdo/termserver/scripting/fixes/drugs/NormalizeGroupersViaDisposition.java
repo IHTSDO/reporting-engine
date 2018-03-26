@@ -106,11 +106,11 @@ public class NormalizeGroupersViaDisposition extends DrugBatchFix implements RF2
 		boolean replacementRequired = true;
 		for (Relationship parentRel : parentRels) {
 			//Do we already have the new parent?
-			if (parentRel.getTarget().equals(newParent)) {
+			if (parentRel.getTarget().equals(newParentRel.getTarget())) {
 				replacementRequired = false;
 				report(task, loadedConcept, Severity.LOW, ReportActionType.INFO, "Proximal primitive parent already present");
 			} else {
-				remove (task, parentRel, loadedConcept, newParentRel.getTarget().toString(), true);
+				removeParentRelationship (task, parentRel, loadedConcept, newParentRel.getTarget().toString(), null);
 				changeCount++;
 			}
 		}
@@ -150,20 +150,6 @@ public class NormalizeGroupersViaDisposition extends DrugBatchFix implements RF2
 			report (task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, msg, attributeCount);
 		}
 		return 1;
-	}
-
-	private void remove(Task t, Relationship rel, Concept c, String retained, boolean isParent) throws TermServerScriptException {
-		//Are we inactivating or deleting this relationship?
-		if (rel.getEffectiveTime() == null || rel.getEffectiveTime().isEmpty()) {
-			c.removeRelationship(rel);
-			String msg = "Deleted parent relationship: " + rel.getTarget() + " in favour of " + retained;
-			report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_DELETED, msg);
-		} else {
-			rel.setEffectiveTime(null);
-			rel.setActive(false);
-			String msg = "Inactivated parent relationship: " + rel.getTarget() + " in favour of " + retained;
-			report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_INACTIVATED, msg);
-		}
 	}
 
 	private Concept getTarget(Concept loadedConcept) throws TermServerScriptException {

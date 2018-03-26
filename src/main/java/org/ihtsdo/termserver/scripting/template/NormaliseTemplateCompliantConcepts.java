@@ -123,7 +123,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 				if (r.getTarget().equals(newParent)) {
 					doAddition = false;
 				} else {
-					removeParentRelationship(t, r, c, newParent.toString());
+					removeParentRelationship(t, r, c, newParent.toString(), null);
 					changesMade++;
 				}
 			}

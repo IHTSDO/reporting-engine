@@ -533,7 +533,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		boolean replacementRequired = true;
 		for (Relationship parentRel : parentRels) {
 			if (!parentRel.equals(newParentRel)) {
-				removeParent (task, parentRel, c, newParentRel.getTarget().toString(), additionalDetails);
+				removeParentRelationship (task, parentRel, c, newParentRel.getTarget().toString(), additionalDetails);
 				changesMade++;
 			} else {
 				replacementRequired = false;
@@ -549,20 +549,24 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		return changesMade;
 	}
 
-	protected void removeParent(Task t, Relationship r, Concept c, String retained, Object[] additionalDetails) throws TermServerScriptException {
+	protected void removeParentRelationship(Task t, Relationship r, Concept c, String retained, Object[] additionalDetails) throws TermServerScriptException {
 		
 		//Are we inactivating or deleting this relationship?
 		String msg;
 		ReportActionType action = ReportActionType.UNKNOWN;
 		if (!r.isReleased()) {
 			c.removeRelationship(r);
-			msg = "Deleted parent relationship: " + r.getTarget() + " in favour of " + retained;
+			msg = "Deleted parent relationship: " + r.getTarget();
 			action = ReportActionType.RELATIONSHIP_DELETED;
 		} else {
 			r.setEffectiveTime(null);
 			r.setActive(false);
-			msg = "Inactivated parent relationship: " + r.getTarget() + " in favour of " + retained;
+			msg = "Inactivated parent relationship: " + r.getTarget();
 			action = ReportActionType.RELATIONSHIP_INACTIVATED;
+		}
+		
+		if (retained != null && !retained.isEmpty()) {
+			msg += " in favour of " + retained;
 		}
 		
 		report (t, c, Severity.LOW, action, msg, c.getDefinitionStatus().toString(), additionalDetails);
@@ -661,22 +665,6 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 					report (task, concept, Severity.HIGH, ReportActionType.VALIDATION_ERROR, msg);
 				}
 			}
-		}
-	}
-	
-
-	protected void removeParentRelationship (Task t, Relationship rel, Concept c, String retained) throws TermServerScriptException {
-		
-		//Are we inactivating or deleting this relationship?
-		if (!rel.isReleased()) {
-			c.removeRelationship(rel);
-			String msg = "Deleted parent relationship: " + rel.getTarget() + " in favour of " + retained;
-			report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_DELETED, msg);
-		} else {
-			rel.setEffectiveTime(null);
-			rel.setActive(false);
-			String msg = "Inactivated parent relationship: " + rel.getTarget() + " in favour of " + retained;
-			report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_INACTIVATED, msg);
 		}
 	}
 	

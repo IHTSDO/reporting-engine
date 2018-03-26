@@ -164,7 +164,7 @@ public class FlattenHierarchy extends BatchFix implements RF2Constants{
 		for (Relationship parentRel : parentRels) {
 			//Only removing the parent that we're replacing as a modification
 			if (parentRel.getTarget().equals(expectedTarget)) {
-				removeParentRelationship (task, parentRel, loadedConcept, grandParentsDesc);
+				removeParentRelationship (task, parentRel, loadedConcept, grandParentsDesc, null);
 			}
 		}
 		

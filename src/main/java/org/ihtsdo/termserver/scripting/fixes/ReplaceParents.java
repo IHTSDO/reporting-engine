@@ -107,7 +107,7 @@ public class ReplaceParents extends BatchFix implements RF2Constants{
 		boolean replacementNeeded = true;
 		for (Relationship parentRel : parentRels) {
 			if (!parentRel.equals(newParentRel)) {
-				remove (task, parentRel, loadedConcept, newParentRel.getTarget().toString(), true);
+				removeParentRelationship (task, parentRel, loadedConcept, newParentRel.getTarget().toString(), null);
 				changesMade++;
 			} else {
 				replacementNeeded = false;
@@ -123,20 +123,6 @@ public class ReplaceParents extends BatchFix implements RF2Constants{
 			report (task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_INACTIVATED, msg, loadedConcept.getDefinitionStatus().toString(), parentCount, attributeCount);
 		}
 		return changesMade;
-	}
-
-	private void remove(Task t, Relationship rel, Concept c, String retained, boolean isParent) throws TermServerScriptException {
-		//Are we inactivating or deleting this relationship?
-		if (rel.getEffectiveTime() == null || rel.getEffectiveTime().isEmpty()) {
-			c.removeRelationship(rel);
-			String msg = "Deleted parent relationship: " + rel.getTarget() + " in favour of " + retained;
-			report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_DELETED, msg);
-		} else {
-			rel.setEffectiveTime(null);
-			rel.setActive(false);
-			String msg = "Inactivated parent relationship: " + rel.getTarget() + " in favour of " + retained;
-			report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_INACTIVATED, msg);
-		}
 	}
 
 	private Integer countAttributes(Concept c) {

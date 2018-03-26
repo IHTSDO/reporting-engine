@@ -13,6 +13,11 @@ public class RelationshipGroup {
 	//Generic holder to record some property of this relationship which we need to deal with
 	List<Concept> issues;
 	
+	public RelationshipGroup (int groupId) {
+		this.groupId = groupId;
+		this.relationships = new ArrayList<>();
+	}
+	
 	RelationshipGroup (int groupId, List<Relationship> relationships) {
 		this.groupId = groupId;
 		this.relationships = relationships;
@@ -53,6 +58,10 @@ public class RelationshipGroup {
 			issues = new ArrayList<>();
 		}
 		issues.add(c);
+	}
+	
+	public void addRelationship (Relationship r) {
+		relationships.add(r);
 	}
 	
 	@Override
