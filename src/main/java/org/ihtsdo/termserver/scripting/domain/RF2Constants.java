@@ -14,7 +14,7 @@ public interface RF2Constants {
 	
 	//Drugs and Substances
 	static Concept PHARM_BIO_PRODUCT = new Concept ("373873005") ; //Pharmaceutical / biologic product (product)
-	static Concept MEDICINAL_PRODUCT = new Concept ("763158003"); // |Medicinal product (product)|
+	static Concept MEDICINAL_PRODUCT = new Concept ("763158003", "Medicinal product (product)"); 
 	static Concept HAS_ACTIVE_INGRED = new Concept ("127489000","Has active ingredient (attribute)");
 	static Concept HAS_PRECISE_INGRED = new Concept ("762949000", "Has precise active ingredient (attribute)");
 	static Concept SUBSTANCE = new Concept("105590001", "Substance (substance)");
