@@ -549,8 +549,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		return changesMade;
 	}
 
-	protected void removeParentRelationship(Task t, Relationship r, Concept c, String retained, Object[] additionalDetails) throws TermServerScriptException {
-		
+	protected int removeParentRelationship(Task t, Relationship r, Concept c, String retained, Object[] additionalDetails) throws TermServerScriptException {
 		//Are we inactivating or deleting this relationship?
 		String msg;
 		ReportActionType action = ReportActionType.UNKNOWN;
@@ -570,6 +569,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		}
 		
 		report (t, c, Severity.LOW, action, msg, c.getDefinitionStatus().toString(), additionalDetails);
+		return CHANGE_MADE;
 	}
 	
 	protected void removeRelationship(Task t, Relationship r, Concept c) throws TermServerScriptException {

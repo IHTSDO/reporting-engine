@@ -52,14 +52,17 @@ public class AddRemoveParents extends BatchFix implements RF2Constants{
 		
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
 		int changesMade = addRemoveParents(task, loadedConcept);
-		try {
-			String conceptSerialised = gson.toJson(loadedConcept);
-			debug ((dryRun ?"Dry run ":"Updating state of ") + loadedConcept + info);
-			if (!dryRun) {
-				tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
+		
+		if (changesMade > 0) {
+			try {
+				String conceptSerialised = gson.toJson(loadedConcept);
+				debug ((dryRun ?"Dry run ":"Updating state of ") + loadedConcept + info);
+				if (!dryRun) {
+					tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
+				}
+			} catch (Exception e) {
+				report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
 			}
-		} catch (Exception e) {
-			report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
 		}
 		return changesMade;
 	}
@@ -70,18 +73,17 @@ public class AddRemoveParents extends BatchFix implements RF2Constants{
 		List<Relationship> parentRels = new ArrayList<Relationship> (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, IS_A, ActiveState.ACTIVE));
 		//Work through the relationship changes we have for this concept and decide if we're adding or inactivating
 		for (Relationship r : changeMap.get(c).getRelationships()) {
-			changesMade++;
 			if (r.isActive()) {
-				c.addRelationship(r);
-				report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, r);
+				//changesMade++;
+				//c.addRelationship(r);
+				//report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, r);
 			} else {
 				//Find this relationship to inactivate / delete
-				report (t, c, Severity.NONE, ReportActionType.NO_CHANGE, "Skipping inactivation for now: " + r);
-				/*for (Relationship p : parentRels) {
+				for (Relationship p : parentRels) {
 					if (p.getTarget().equals(r.getTarget())) {
-						removeParentRelationship(t, r, c, null, null);
+						changesMade += removeParentRelationship(t, p, c, null, null);
 					}
-				}*/
+				}
 			}
 		}
 		return changesMade;
