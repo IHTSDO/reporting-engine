@@ -28,8 +28,11 @@ public interface RF2Constants {
 	static Concept IS_MODIFICATION_OF = new Concept ("738774007", "Is modification of (attribute)");
 	static Concept DRUG_PREPARATION = new Concept("105904009","Type of drug preparation (qualifier value)");
 	static Concept HAS_DISPOSITION = new Concept ("726542003"); // |Has disposition (attribute)|
+	
 	static Concept MILLIGRAM = new Concept ("258684004", "milligram (qualifier value)"); 
 	static Concept MICROGRAM = new Concept ("258685003", "microgram (qualifier value)"); 
+	static Concept INTERNATIONAL_UNIT = new Concept ("258997004", "international unit (qualifier value)"); 
+	static Concept NANOGRAM = new Concept ("258686002", "nanogram (qualifier value)"); 
 	
 	static Concept ROOT_CONCEPT = new Concept (SCTID_ROOT_CONCEPT.toString());
 	static Concept ASSOC_MORPH = new Concept ("116676008");  // |Associated morphology (attribute)|

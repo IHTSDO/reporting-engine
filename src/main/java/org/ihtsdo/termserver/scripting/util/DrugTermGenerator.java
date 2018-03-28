@@ -34,6 +34,8 @@ public class DrugTermGenerator implements RF2Constants{
 	public DrugTermGenerator (TermServerScript parent) {
 		this.parent = parent;
 		neverAbbrev.add(MICROGRAM);
+		neverAbbrev.add(INTERNATIONAL_UNIT);
+		neverAbbrev.add(NANOGRAM);
 	}
 	
 	/*protected int normalizeDrugTerms(Task task, Concept concept, String newSemanticTag) throws TermServerScriptException {
