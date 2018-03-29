@@ -74,9 +74,9 @@ public class AddRemoveParents extends BatchFix implements RF2Constants{
 		//Work through the relationship changes we have for this concept and decide if we're adding or inactivating
 		for (Relationship r : changeMap.get(c).getRelationships()) {
 			if (r.isActive()) {
-				//changesMade++;
-				//c.addRelationship(r);
-				//report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, r);
+				changesMade++;
+				c.addRelationship(r);
+				report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, r);
 			} else {
 				//Find this relationship to inactivate / delete
 				for (Relationship p : parentRels) {
@@ -92,15 +92,19 @@ public class AddRemoveParents extends BatchFix implements RF2Constants{
 	@Override
 	protected Concept loadLine(String[] lineItems) throws TermServerScriptException {
 		Concept c = gl.getConcept(lineItems[0]);
-		RelationshipGroup g = changeMap.get(c);
-		if (g == null) {
-			g = new RelationshipGroup(UNGROUPED);
-			changeMap.put(c,  g);
+		if (lineItems[2].equals(ACTIVE_FLAG)) {
+			RelationshipGroup g = changeMap.get(c);
+			if (g == null) {
+				g = new RelationshipGroup(UNGROUPED);
+				changeMap.put(c,  g);
+			}
+			Concept target = gl.getConcept(lineItems[1]);
+			Relationship r = new Relationship (c, IS_A, target, UNGROUPED);
+			r.setActive(lineItems[2].equals(ACTIVE_FLAG));
+			g.addRelationship(r);
+			return c;
+		} else {
+			return null;
 		}
-		Concept target = gl.getConcept(lineItems[1]);
-		Relationship r = new Relationship (c, IS_A, target, UNGROUPED);
-		r.setActive(lineItems[2].equals(ACTIVE_FLAG));
-		g.addRelationship(r);
-		return c;
 	}
 }
