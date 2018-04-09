@@ -84,7 +84,8 @@ public abstract class TermServerScript implements RF2Constants {
 	protected File outputDir;
 	protected GraphLoader gl = GraphLoader.getGraphLoader();
 	protected String additionalReportColumns = "ActionDetail";
-	protected String currentTimeStamp; 
+	protected String currentTimeStamp;
+	protected boolean expectNullConcepts = false; //Set to true to avoid warning about rows in input file that result in no concept to modify
 	
 	protected Scanner STDIN = new Scanner(System.in);
 	
@@ -489,7 +490,9 @@ public abstract class TermServerScript implements RF2Constants {
 					if (c != null) {
 						allConcepts.add(c);
 					} else {
-						debug ("Skipped line " + lineNum + ": " + lines.get(lineNum) + ", malformed or not required?");
+						if (!expectNullConcepts) {
+							debug ("Skipped line " + lineNum + ": " + lines.get(lineNum) + ", malformed or not required?");
+						}
 					}
 				} else {
 					debug ("Skipping blank line " + lineNum);
@@ -758,6 +761,10 @@ public abstract class TermServerScript implements RF2Constants {
 		d.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(acceptability, dialects));
 		d.setConceptId(concept.getConceptId());
 		concept.addDescription(d);
+	}
+	
+	public void report (Task t, Component c, ValidationFailure v) {
+		report (t, c, v.severity, v.reportActionType, v.getMessage());
 	}
 
 	public void report(Task task, Component component, Severity severity, ReportActionType actionType, Object... details) {

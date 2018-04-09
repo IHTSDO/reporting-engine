@@ -8,6 +8,7 @@ import java.util.Map;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
@@ -18,7 +19,8 @@ import org.ihtsdo.termserver.scripting.domain.Task;
 import us.monoid.json.JSONObject;
 
 /*
-INFRA-2302 Driven by a text file of concepts add or remove parent relationships as indicated
+* INFRA-2302, INFRA-2344
+* Driven by a text file of concepts add or remove parent relationships as indicated
 */
 public class AddRemoveParents extends BatchFix implements RF2Constants{
 	
@@ -37,6 +39,7 @@ public class AddRemoveParents extends BatchFix implements RF2Constants{
 			fix.populateEditPanel = false;
 			fix.populateTaskDescription = false;
 			fix.additionalReportColumns = "Action Detail";
+			fix.expectNullConcepts = true;
 			fix.init(args);
 			fix.loadProjectSnapshot(true); 
 			fix.startTimer();
@@ -49,20 +52,21 @@ public class AddRemoveParents extends BatchFix implements RF2Constants{
 
 	@Override
 	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
-		
-		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
-		int changesMade = addRemoveParents(task, loadedConcept);
-		
-		if (changesMade > 0) {
-			try {
-				String conceptSerialised = gson.toJson(loadedConcept);
+		int changesMade = 0;
+		try {
+			Concept loadedConcept = loadConcept(concept, task.getBranchPath());
+			changesMade = addRemoveParents(task, loadedConcept);
+			String conceptSerialised = gson.toJson(loadedConcept);
+			if (changesMade > 0) {
 				debug ((dryRun ?"Dry run ":"Updating state of ") + loadedConcept + info);
 				if (!dryRun) {
 					tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
 				}
-			} catch (Exception e) {
-				report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
 			}
+		} catch (ValidationFailure v) {
+			report(task, concept, v);
+		} catch (Exception e) {
+			report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
 		}
 		return changesMade;
 	}
@@ -86,13 +90,18 @@ public class AddRemoveParents extends BatchFix implements RF2Constants{
 				}
 			}
 		}
+		
+		//Check we haven't ended up an orphan
+		if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, IS_A, ActiveState.ACTIVE).size() == 0) {
+			throw new ValidationFailure(c, "Attempt to create orphan rejected");
+		}
 		return changesMade;
 	}
 
 	@Override
 	protected Concept loadLine(String[] lineItems) throws TermServerScriptException {
 		Concept c = gl.getConcept(lineItems[0]);
-		if (lineItems[2].equals(ACTIVE_FLAG)) {
+		if (!lineItems[2].equals(ACTIVE_FLAG)) {
 			RelationshipGroup g = changeMap.get(c);
 			if (g == null) {
 				g = new RelationshipGroup(UNGROUPED);
