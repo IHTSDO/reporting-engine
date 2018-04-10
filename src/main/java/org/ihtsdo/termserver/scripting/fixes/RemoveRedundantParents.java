@@ -3,6 +3,7 @@ package org.ihtsdo.termserver.scripting.fixes;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
@@ -17,7 +18,7 @@ import org.ihtsdo.termserver.scripting.domain.Task;
 import us.monoid.json.JSONObject;
 
 /*
-For SUBST-200, DRUGS-448, DRUGS-451, DRUGS-466
+For SUBST-200, DRUGS-448, DRUGS-451, DRUGS-466, DRUGS-484
 Optionally driven by a text file of concepts, check parents for redundancy and - assuming 
 the concept is primitive, retain the more specific parent.
 */
@@ -35,7 +36,7 @@ public class RemoveRedundantParents extends BatchFix implements RF2Constants{
 		try {
 			fix.reportNoChange = true;
 			fix.selfDetermining = true;
-			//fix.runStandAlone = true;
+			fix.runStandAlone = true;
 			fix.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			fix.loadProjectSnapshot(true); 
@@ -143,7 +144,7 @@ public class RemoveRedundantParents extends BatchFix implements RF2Constants{
 		if (exclude != null) {
 			checkMe.removeAll(gl.getConcept(exclude).getDescendents(NOT_SET));
 		}
-		List<Component> processMe = new ArrayList<>();
+		List<Concept> processMe = new ArrayList<>();
 		
 		nextConcept:
 		for (Concept c : checkMe) {
@@ -166,8 +167,9 @@ public class RemoveRedundantParents extends BatchFix implements RF2Constants{
 				}
 			}
 		}
+		processMe.sort(Comparator.comparing(Concept::getFsn));
 		info ("Identified " + processMe.size() + " concepts to process");
-		return processMe;
+		return asComponents(processMe);
 	}
 
 }
