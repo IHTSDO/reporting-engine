@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.fixes.drugs;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -230,7 +231,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 	 * [18]dmd_numerator_unit	[19]dmd_denominator_quantity	[20]dmd_denominator_unit	
 	 * [21]stated_dose_form	[22]Pattern	[23]Source	[24]status	[25]Comment	[26]Transfer
 	 */
-	protected Concept loadLine(String[] items) throws TermServerScriptException {
+	protected List<Concept> loadLine(String[] items) throws TermServerScriptException {
 		Concept c = gl.getConcept(items[0]);
 		c.setConceptType(ConceptType.CLINICAL_DRUG);
 		
@@ -256,7 +257,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 			return null;
 		}
 		
-		return c;
+		return Collections.singletonList(c);
 	}
 
 	private Concept getPharmDoseForm(String doseFormStr) throws TermServerScriptException {

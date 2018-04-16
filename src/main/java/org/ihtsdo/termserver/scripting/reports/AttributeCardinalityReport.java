@@ -118,7 +118,7 @@ public class AttributeCardinalityReport extends TermServerScript{
 	}
 
 	@Override
-	protected Concept loadLine(String[] lineItems)
+	protected List<Concept> loadLine(String[] lineItems)
 			throws TermServerScriptException {
 		return null;
 	}

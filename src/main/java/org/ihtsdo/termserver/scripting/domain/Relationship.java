@@ -11,7 +11,7 @@ import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
 @Generated("org.jsonschema2pojo")
-public class Relationship implements RF2Constants, Component, Comparable<Relationship> {
+public class Relationship extends Component implements RF2Constants, Comparable<Relationship> {
 
 	@SerializedName("effectiveTime")
 	@Expose

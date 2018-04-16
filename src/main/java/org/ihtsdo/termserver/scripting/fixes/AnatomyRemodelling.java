@@ -1,8 +1,10 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -37,7 +39,6 @@ public class AnatomyRemodelling extends BatchFix implements RF2Constants{
 		try {
 			IS_A.setFsn("Is a");
 			fix.init(args);
-			fix.inputFileDelimiter = TAB;
 			fix.inputFileHasHeaderRow = true;
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			fix.loadProjectSnapshot(false); //Load all descriptions
@@ -143,7 +144,7 @@ public class AnatomyRemodelling extends BatchFix implements RF2Constants{
 	Where the resource is RF2 will inactivate an expected existing relationship
 	 */
 	@Override
-	protected Concept loadLine(String[] items) throws TermServerScriptException {
+	protected List<Concept> loadLine(String[] items) throws TermServerScriptException {
 
 		String sctId = items[0];
 		ConceptChange concept;
@@ -194,7 +195,7 @@ public class AnatomyRemodelling extends BatchFix implements RF2Constants{
 				}
 			}
 		}
-		return concept;
+		return Collections.singletonList(concept);
 	}
 
 	private Relationship createNewStatedRelationship(ConceptChange source,

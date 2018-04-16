@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.fixes.drugs;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -259,7 +260,7 @@ public class CloneAndReplace extends BatchFix implements RF2Constants{
 	}*/
 	
 	@Override
-	protected Concept loadLine(String[] lineItems) throws TermServerScriptException {
+	protected List<Concept> loadLine(String[] lineItems) throws TermServerScriptException {
 			
 			Concept c = gl.getConcept(lineItems[0]);
 			//inactivationReasons.put(c, InactivationIndicator.valueOf(lineItems[0].trim().toUpperCase()));
@@ -276,7 +277,7 @@ public class CloneAndReplace extends BatchFix implements RF2Constants{
 			String newDoseFormSctid = newDoseForm.trim().replaceFirst("\\|", " ").split(" ")[0];
 			Concept newDoseFormConcept = gl.getConcept(newDoseFormSctid);
 			newDoseForms.put(c, newDoseFormConcept);
-			return c;
+			return Collections.singletonList(c);
 		}
 
 }

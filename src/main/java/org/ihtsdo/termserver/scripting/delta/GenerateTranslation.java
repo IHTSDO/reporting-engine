@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.delta;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -184,7 +185,7 @@ public class GenerateTranslation extends DeltaGenerator {
 
 	@Override
 
-	protected Concept loadLine(String[] lineItems) throws TermServerScriptException {
+	protected List<Concept> loadLine(String[] lineItems) throws TermServerScriptException {
 		switch (thisTranslation) {
 			case SWEDEN:  return LoadSELine(lineItems);
 			case BELGIUM: return LoadBELine(lineItems);
@@ -193,7 +194,7 @@ public class GenerateTranslation extends DeltaGenerator {
 	}
 
 	//SE File format: Concept_Id	Swedish_Term	Case_Significance
-	private Concept LoadSELine(String[] lineItems) throws TermServerScriptException {
+	private List<Concept> LoadSELine(String[] lineItems) throws TermServerScriptException {
 		if (lineItems.length == 5) {
 			Description d = createDescription (lineItems[0],  //conceptId
 					lineItems[3], //swedish term
@@ -203,13 +204,13 @@ public class GenerateTranslation extends DeltaGenerator {
 					);
 			Concept concept = gl.getConcept(lineItems[0]);
 			addTranslation(concept, lineItems[1].trim(), d); 
-			return concept;
+			return Collections.singletonList(concept);
 		}
 		return null;
 	}
 	
 	//BE File format: ConceptID	Source term	Target term	Language	Type	Comment
-	private Concept LoadBELine(String[] lineItems) throws TermServerScriptException {
+	private List<Concept> LoadBELine(String[] lineItems) throws TermServerScriptException {
 		if (lineItems.length >= 4) {
 			String acceptabilityId = SCTID_ACCEPTABLE_TERM;
 			if (lineItems[5].toLowerCase().contains("preferred")) {
@@ -225,7 +226,7 @@ public class GenerateTranslation extends DeltaGenerator {
 												);
 			Concept concept = gl.getConcept(lineItems[0]);
 			addTranslation(concept, lineItems[1].trim(), d);
-			return concept;
+			return Collections.singletonList(concept);
 		}
 		return null;
 	}

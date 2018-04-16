@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -130,7 +131,7 @@ public class CreateLoincConcepts extends DeltaGenerator {
 
 	@Override
 	//Component	PropertyType	TimeAspect	DirectSite	InheresIn	ScaleType	LOINC_FSN	LOINC_Unique_ID	Correlation_ID
-	protected Concept loadLine(String[] lineItems)
+	protected List<Concept> loadLine(String[] lineItems)
 			throws TermServerScriptException {
 		if (lineItems.length > 3) {
 			Concept concept = new Concept(conIdGenerator.getSCTID());
@@ -150,7 +151,7 @@ public class CreateLoincConcepts extends DeltaGenerator {
 			Relationship parent = isAObservable.clone(relIdGenerator.getSCTID());
 			parent.setSourceId(concept.getId());
 			concept.addRelationship(parent);
-			return concept;
+			return Collections.singletonList(concept);
 		}
 		return null;
 	}

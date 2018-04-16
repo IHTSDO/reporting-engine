@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting.refset;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Set;
 
 import org.ihtsdo.termserver.scripting.GraphLoader;
@@ -118,7 +119,7 @@ public class SEPRefsetGenerator extends RefsetGenerator{
 	}
 
 	@Override
-	protected Concept loadLine(String[] lineItems)
+	protected List<Concept> loadLine(String[] lineItems)
 			throws TermServerScriptException {
 		return null;
 	}

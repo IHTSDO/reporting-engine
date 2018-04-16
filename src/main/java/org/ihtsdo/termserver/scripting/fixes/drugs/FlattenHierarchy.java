@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.fixes.drugs;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -398,14 +399,14 @@ public class FlattenHierarchy extends BatchFix implements RF2Constants{
 	}
 
 	@Override
-	protected Concept loadLine(String[] lineItems) throws TermServerScriptException {
+	protected List<Concept> loadLine(String[] lineItems) throws TermServerScriptException {
 		Concept c = gl.getConcept(lineItems[0]);
 		if (!c.isActive()) {
 			report (null, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept is inactive - skipping");
 			return null;
 		}
 		expectedTargetMap.put(lineItems[0], lineItems[3]);
-		return c;
+		return Collections.singletonList(c);
 	}
 
 }

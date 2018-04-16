@@ -3,6 +3,7 @@ package org.ihtsdo.termserver.scripting.delta;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -238,8 +239,8 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	}
 
 	@Override
-	protected Concept loadLine(String[] lineItems)
+	protected List<Concept> loadLine(String[] lineItems)
 			throws TermServerScriptException {
-		return gl.getConcept(lineItems[0]);
+		return Collections.singletonList(gl.getConcept(lineItems[0]));
 	}
 }

@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.fixes;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
@@ -141,7 +142,7 @@ public class MoveConcepts extends BatchFix implements RF2Constants{
 			List<Concept> modifiedConcepts) throws TermServerScriptException {
 		
 		//Check to see if this child is also going to be processed separately and skip if so.
-		if (allConceptsToProcess.contains(child)) {
+		if (allComponentsToProcess.contains(child)) {
 			report (task, child, Severity.LOW, ReportActionType.VALIDATION_CHECK, "Child concept of " + parent + " already identified as a grouper.  Skipping..." );
 			return;
 		}
@@ -260,10 +261,10 @@ public class MoveConcepts extends BatchFix implements RF2Constants{
 	}
 
 	@Override
-	protected Concept loadLine(String[] lineItems) throws TermServerScriptException {
+	protected List<Concept> loadLine(String[] lineItems) throws TermServerScriptException {
 		Concept c = gl.getConcept(lineItems[0]);
 		c.setConceptType(ConceptType.THERAPEUTIC_ROLE);
-		return c;
+		return Collections.singletonList(c);
 	}
 
 }

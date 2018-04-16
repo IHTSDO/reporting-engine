@@ -1,6 +1,8 @@
 package org.ihtsdo.termserver.scripting.reports;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
@@ -23,7 +25,7 @@ public abstract class TermServerReport extends TermServerScript {
 	
 
 	@Override
-	protected Concept loadLine(String[] lineItems)
+	protected List<Concept> loadLine(String[] lineItems)
 			throws TermServerScriptException {
 		String field = lineItems[0];
 		//Do we have the FSN in here?
@@ -31,7 +33,7 @@ public abstract class TermServerReport extends TermServerScript {
 			String[] parts = field.split(ESCAPED_PIPE);
 			field = parts[0].trim();
 		}
-		return gl.getConcept(field);
+		return Collections.singletonList(gl.getConcept(field));
 	}
 	
 	protected void report (Concept c, Object... details) {

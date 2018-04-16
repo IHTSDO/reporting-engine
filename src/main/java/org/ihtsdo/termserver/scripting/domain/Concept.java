@@ -13,10 +13,11 @@ import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
+import com.amazonaws.services.route53.model.InvalidArgumentException;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
-public class Concept implements RF2Constants, Comparable<Concept>, Component {
+public class Concept extends Component implements RF2Constants, Comparable<Concept>  {
 
 	@SerializedName("effectiveTime")
 	@Expose
@@ -69,9 +70,6 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 	private boolean isDeleted = false;
 	private int depth = NOT_SET;
 	private boolean isDirty = false;
-	
-	//Generic debug string to say if concept should be highlighted for some reason, eg cause a template match to fail
-	String issues = "";
 	
 	//Note that these values are used when loading from RF2 where multiple entries can exist.
 	//When interacting with the TS, only one inactivation indicator is used (see above).
@@ -590,13 +588,37 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 	}
 
 	public List<Concept> getParents(CharacteristicType characteristicType) {
+		//Concepts loaded from TS would not get these arrays populated.  Populate.
+		List<Concept> parents = null;
 		switch (characteristicType) {
-			case STATED_RELATIONSHIP : return statedParents;
-			case INFERRED_RELATIONSHIP: return inferredParents;
-			default: return null;
+			case STATED_RELATIONSHIP : parents = statedParents;
+										break;
+			case INFERRED_RELATIONSHIP: parents = inferredParents;
+										break;
+			default: throw new InvalidArgumentException("Cannot have " + characteristicType + " parents.");
 		}
+		
+		if (parents == null || parents.size() == 0) {
+			if (parents == null) {
+				parents = new ArrayList<>();
+				if (characteristicType.equals(CharacteristicType.STATED_RELATIONSHIP)) {
+					statedParents = parents;
+				} else {
+					inferredParents = parents;
+				}
+			}
+			populateParents(parents, characteristicType);
+		}
+		return parents;
 	}
 	
+	private void populateParents(List<Concept> parents, CharacteristicType characteristicType) {
+		parents.clear();
+		for (Relationship parentRel : getRelationships(characteristicType, IS_A, ActiveState.ACTIVE)) {
+			parents.add(parentRel.getTarget());
+		}
+	}
+
 	public List<String>getAssertionFailures() {
 		return assertionFailures;
 	}
@@ -913,15 +935,5 @@ public class Concept implements RF2Constants, Comparable<Concept>, Component {
 		}
 		return relationshipGroups;
 	}
-	
-	public void addIssue(String issue) {
-		if (!this.issues.isEmpty()) {
-			this.issues += ", ";
-		}
-		this.issues += issue;
-	}
-	
-	public String getIssues() {
-		return issues;
-	}
+
 }

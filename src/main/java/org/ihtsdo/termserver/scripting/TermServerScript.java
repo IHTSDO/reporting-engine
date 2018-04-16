@@ -469,7 +469,7 @@ public abstract class TermServerScript implements RF2Constants {
 			
 			//Are we restarting the file from some line number
 			int startPos = (restartPosition == NOT_SET)?0:restartPosition - 1;
-			Concept c;
+			List<Concept> concepts;
 			for (int lineNum = startPos; lineNum < lines.size(); lineNum++) {
 				if (lineNum == 0  && inputFileHasHeaderRow) {
 					continue; //skip header row  
@@ -483,12 +483,12 @@ public abstract class TermServerScript implements RF2Constants {
 				}
 				if (lineItems.length >= 1) {
 					try{
-						c = loadLine(lineItems);
+						concepts = loadLine(lineItems);
 					} catch (Exception e) {
 						throw new TermServerScriptException("Failed to load line " + lineNum,e);
 					}
-					if (c != null) {
-						allConcepts.add(c);
+					if (concepts != null & concepts.size() > 0) {
+						allConcepts.addAll(concepts);
 					} else {
 						if (!expectNullConcepts) {
 							debug ("Skipped line " + lineNum + ": " + lines.get(lineNum) + ", malformed or not required?");
@@ -535,7 +535,7 @@ public abstract class TermServerScript implements RF2Constants {
 		return items;
 	}
 
-	protected abstract Concept loadLine(String[] lineItems) throws TermServerScriptException;
+	protected abstract List<Concept> loadLine(String[] lineItems) throws TermServerScriptException;
 
 	public Project getProject() {
 		return project;

@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -182,9 +183,9 @@ public class IdentifyProductsWithStrengthReport extends TermServerScript{
 	}
 
 	@Override
-	protected Concept loadLine(String[] lineItems)
+	protected List<Concept> loadLine(String[] lineItems)
 			throws TermServerScriptException {
-		return gl.getConcept(lineItems[0]);
+		return Collections.singletonList(gl.getConcept(lineItems[0]));
 	}
 	
 

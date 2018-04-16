@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.fixes;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
@@ -136,9 +137,9 @@ public class ReplaceParents extends BatchFix implements RF2Constants{
 	}
 
 	@Override
-	protected Concept loadLine(String[] lineItems) throws TermServerScriptException {
+	protected List<Concept> loadLine(String[] lineItems) throws TermServerScriptException {
 		Concept c = gl.getConcept(lineItems[0]);
-		return c;
+		return Collections.singletonList(c);
 	}
 
 }

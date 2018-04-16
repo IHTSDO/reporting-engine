@@ -3,16 +3,35 @@ package org.ihtsdo.termserver.scripting.domain;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants.ComponentType;
 
-public interface Component {
+public abstract class Component {
+	
+	//Generic debug string to say if concept should be highlighted for some reason, eg cause a template match to fail
+	String issues = "";
 
-	String getId();
+	public abstract String getId();
 	
-	String getReportedName();
+	public abstract String getReportedName();
 	
-	String getReportedType();
+	public abstract String getReportedType();
 	
-	ComponentType getComponentType();
+	public abstract ComponentType getComponentType();
 	
-	String[] toRF2() throws TermServerScriptException;
+	public abstract String[] toRF2() throws TermServerScriptException;
+	
+	public void addIssue(String issue) {
+		if (!this.issues.isEmpty()) {
+			this.issues += ", ";
+		}
+		this.issues += issue;
+	}
+	
+	public String getIssues() {
+		return issues;
+	}
+
+	public void setIssue(String issue) {
+		issues = issue;
+	}
+
 	
 }

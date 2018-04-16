@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -182,7 +183,7 @@ public class SetAttribute extends BatchFix implements RF2Constants{
 	}
 
 	@Override
-	protected Concept loadLine(String[] lineItems) throws TermServerScriptException {
+	protected List<Concept> loadLine(String[] lineItems) throws TermServerScriptException {
 		Concept c = gl.getConcept(lineItems[0]);
 		//Target Atribute value.   We might be missing a space, so replace pipes with spaces
 		String field3 = lineItems[2].replace("|"," ");
@@ -198,7 +199,7 @@ public class SetAttribute extends BatchFix implements RF2Constants{
 			report (null, c, Severity.LOW, ReportActionType.NO_CHANGE, msg, targetValue.toString());
 			c = null;
 		}
-		return c;
+		return Collections.singletonList(c);
 	}
 
 }

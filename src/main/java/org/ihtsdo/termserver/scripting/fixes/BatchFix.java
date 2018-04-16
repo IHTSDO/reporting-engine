@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.mail.Authenticator;
 import javax.mail.Message;
@@ -67,7 +68,9 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	protected boolean worksWithConcepts = true;
 	protected boolean classifyTasks = false;
 	protected boolean validateTasks = false;
-	protected List<Component> allConceptsToProcess = new ArrayList<>();
+	protected boolean groupByIssue = false;
+	protected List<Component> allComponentsToProcess = new ArrayList<>();
+	protected List<Component> priorityComponents = new ArrayList<>();
 	private boolean firstTaskCreated = false;
 	
 	protected BatchFix (BatchFix clone) {
@@ -82,11 +85,12 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	
 	protected List<Component> processFile() throws TermServerScriptException {
 		Batch batch;
+		startTimer();
 		if (selfDetermining) {
 			batch = formIntoBatch();
 		} else {
-			allConceptsToProcess = super.processFile();
-			batch = formIntoBatch(allConceptsToProcess);
+			allComponentsToProcess = super.processFile();
+			batch = formIntoBatch(allComponentsToProcess);
 		}
 		batchProcess(batch);
 		if (emailDetails != null) {
@@ -94,7 +98,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			sendEmail(msg, reportFile);
 		}
 		info ("Processing complete.  See results: " + reportFile.getAbsolutePath());
-		return allConceptsToProcess;
+		return allComponentsToProcess;
 	}
 	
 	
@@ -105,17 +109,27 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		return new ArrayList<Component>();
 	}
 	
-	protected Batch formIntoBatch (List<Component> allConcepts) throws TermServerScriptException {
+	protected Batch formIntoBatch (List<Component> allComponents) throws TermServerScriptException {
 		Batch batch = new Batch(getScriptName());
 		Task task = batch.addNewTask(author_reviewer);
-		for (Component thisComponent : allConcepts) {
-			if (task.size() >= taskSize) {
+		
+		//Do we need to prioritize some components?
+		List<Component> unprioritized = new ArrayList<> (allComponents);
+		unprioritized.removeAll(priorityComponents);
+		allComponents = priorityComponents;
+		allComponents.addAll(unprioritized);
+		
+		String lastIssue = allComponents.get(0).getIssues();
+		for (Component thisComponent : allComponents) {
+			if (task.size() >= taskSize ||
+					(groupByIssue && !lastIssue.equals(thisComponent.getIssues()))) {
 				task = batch.addNewTask(author_reviewer);
 			}
 			task.add(thisComponent);
+			lastIssue = thisComponent.getIssues();
 		}
 		addSummaryInformation("Tasks scheduled", batch.getTasks().size());
-		addSummaryInformation(CONCEPTS_PROCESSED, allConcepts);
+		addSummaryInformation(CONCEPTS_PROCESSED, allComponents);
 		return batch;
 	}
 
@@ -521,26 +535,36 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	}
 	
 	protected int replaceParents(Task t, Concept c, Concept newParent) throws TermServerScriptException {
+		Relationship oldParentRel = null;
 		Relationship newParentRel = new Relationship (c, IS_A, newParent, UNGROUPED);
-		return replaceParents(t, c, newParentRel, null);
+		return replaceParents(t, c, oldParentRel, newParentRel, null);
 	}
 	
-	protected int replaceParents(Task task, Concept c, Relationship newParentRel, Object[] additionalDetails) throws TermServerScriptException {
+	protected int replaceParent(Task t, Concept c, Concept oldParent, Concept newParent) throws TermServerScriptException {
+		Relationship oldParentRel = new Relationship (c, IS_A, oldParent, UNGROUPED);
+		Relationship newParentRel = new Relationship (c, IS_A, newParent, UNGROUPED);
+		return replaceParents(t, c, oldParentRel, newParentRel, null);
+	}
+	
+	protected int replaceParents(Task t, Concept c, Relationship newParentRel, Object[] additionalDetails) throws TermServerScriptException {
+		Relationship oldParentRel = null;
+		return replaceParents(t, c, oldParentRel, newParentRel, additionalDetails);
+	}
+	
+	protected int replaceParents(Task task, Concept c, Relationship oldParentRel, Relationship newParentRel, Object[] additionalDetails) throws TermServerScriptException {
 		int changesMade = 0;
 		List<Relationship> parentRels = new ArrayList<Relationship> (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
 																	IS_A,
 																	ActiveState.ACTIVE));
-		boolean replacementRequired = true;
 		for (Relationship parentRel : parentRels) {
-			if (!parentRel.equals(newParentRel)) {
+			if ((oldParentRel == null || parentRel.equals(oldParentRel)) && !parentRel.equals(newParentRel)) {
 				removeParentRelationship (task, parentRel, c, newParentRel.getTarget().toString(), additionalDetails);
 				changesMade++;
-			} else {
-				replacementRequired = false;
-			}
+			} 
 		}
 		
-		if (replacementRequired) {
+		//Do we need to add this new relationship?
+		if (!c.getParents(CharacteristicType.STATED_RELATIONSHIP).contains(newParentRel.getTarget())) {
 			Relationship thisNewParentRel = newParentRel.clone(null);
 			thisNewParentRel.setSource(c);
 			c.addRelationship(thisNewParentRel);
@@ -563,6 +587,10 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			msg = "Inactivated parent relationship: " + r.getTarget();
 			action = ReportActionType.RELATIONSHIP_INACTIVATED;
 		}
+		
+		//Also remove this parent from both stated and inferred hierarchies
+		c.removeParent(CharacteristicType.STATED_RELATIONSHIP, r.getTarget());
+		c.removeParent(CharacteristicType.INFERRED_RELATIONSHIP, r.getTarget());
 		
 		if (retained != null && !retained.isEmpty()) {
 			msg += " in favour of " + retained;
@@ -648,6 +676,29 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		}
 		
 		return changesMade;
+	}
+	
+	protected void removeRedundancy(Task t, Concept c, Concept type, int groupNum) throws TermServerScriptException {
+		//Remove any redundant attribute in the given group
+		List<Concept> allValues = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, type, groupNum)
+									.stream().map(rel -> rel.getTarget()).collect(Collectors.toList());
+		for (Concept redundantValue : detectRedundancy(allValues)) {
+			Relationship removeMe = new Relationship(c, type, redundantValue, groupNum);
+			removeRelationship(t, removeMe, c);
+		}
+	}
+	
+	protected List<Concept> detectRedundancy(List<Concept> concepts) throws TermServerScriptException {
+		List<Concept> redundant = new ArrayList<>();
+		for (Concept thisConcept : concepts) {
+			//Is this concept an ancestor of one of the other concepts?  It's redundant if so
+			for (Concept otherConcept : concepts) {
+				if (!thisConcept.equals(otherConcept) && ancestorsCache.getAncestors(otherConcept).contains(thisConcept)) {
+					redundant.add(thisConcept);
+				}
+			}
+		}
+		return redundant;
 	}
 
 	protected void validatePrefInFSN(Task task, Concept concept) throws TermServerScriptException {

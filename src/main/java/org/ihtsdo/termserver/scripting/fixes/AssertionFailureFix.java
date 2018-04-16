@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.fixes;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -160,12 +161,12 @@ public class AssertionFailureFix extends BatchFix implements RF2Constants{
 	}
 
 	@Override
-	protected Concept loadLine(String[] lineItems) throws TermServerScriptException {
+	protected List<Concept> loadLine(String[] lineItems) throws TermServerScriptException {
 		Concept c = gl.getConcept(lineItems[2]);
 		c.setAssignedAuthor(lineItems[0]);
 		c.setReviewer(lineItems[1]);
 		c.addAssertionFailure(lineItems[3]);
-		return c;
+		return Collections.singletonList(c);
 	}
 
 }

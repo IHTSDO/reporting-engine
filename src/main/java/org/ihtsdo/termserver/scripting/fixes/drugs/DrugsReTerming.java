@@ -2,9 +2,11 @@ package org.ihtsdo.termserver.scripting.fixes.drugs;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
@@ -38,7 +40,7 @@ public class DrugsReTerming extends DrugBatchFix implements RF2Constants{
 		DrugsReTerming fix = new DrugsReTerming(null);
 		try {
 			fix.init(args);
-			fix.inputFileDelimiter = COMMA;
+			TermServerScript.inputFileDelimiter = COMMA;
 			fix.inputFileHasHeaderRow = true;
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			fix.loadProjectSnapshot(false); //Load all descriptions
@@ -268,7 +270,7 @@ public class DrugsReTerming extends DrugBatchFix implements RF2Constants{
 
 	 */
 	@Override
-	protected Concept loadLine(String[] items) throws TermServerScriptException {
+	protected List<Concept> loadLine(String[] items) throws TermServerScriptException {
 
 		String sctid = items[1];
 		ConceptChange concept = new ConceptChange(sctid);
@@ -282,7 +284,7 @@ public class DrugsReTerming extends DrugBatchFix implements RF2Constants{
 			//If we have a columns 8 & 9, then split the preferred terms into US and GB separately
 			addSynonyms(concept, items);
 		}
-		return concept;
+		return Collections.singletonList(concept);
 	}
 
 	private void addSynonyms(ConceptChange concept, String[] items) {

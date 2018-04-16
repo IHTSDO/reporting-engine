@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.delta;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
@@ -65,7 +66,7 @@ public class InactivateDuplicateRelationships extends DeltaGenerator implements 
 	}
 
 	@Override
-	protected Concept loadLine(String[] lineItems)
+	protected List<Concept> loadLine(String[] lineItems)
 			throws TermServerScriptException {
 		return null;
 	}

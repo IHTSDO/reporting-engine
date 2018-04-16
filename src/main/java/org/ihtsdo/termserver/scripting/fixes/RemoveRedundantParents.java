@@ -3,6 +3,7 @@ package org.ihtsdo.termserver.scripting.fixes;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -117,8 +118,8 @@ public class RemoveRedundantParents extends BatchFix implements RF2Constants{
 	}
 
 	@Override
-	protected Concept loadLine(String[] lineItems) throws TermServerScriptException {
-		return new Concept(lineItems[0]);
+	protected List<Concept> loadLine(String[] lineItems) throws TermServerScriptException {
+		return Collections.singletonList(new Concept(lineItems[0]));
 	}
 	
 	/*protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {

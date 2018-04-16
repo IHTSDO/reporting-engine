@@ -188,7 +188,7 @@ public class CDUpdate extends DrugBatchFix implements RF2Constants {
 	}
 
 	@Override
-	protected Concept loadLine(String[] lineItems) throws TermServerScriptException {
+	protected List<Concept> loadLine(String[] lineItems) throws TermServerScriptException {
 		// TODO Auto-generated method stub
 		return null;
 	}

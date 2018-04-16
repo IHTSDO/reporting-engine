@@ -207,7 +207,7 @@ public class CaseSignificanceFixAll extends DeltaGenerator implements RF2Constan
 	}
 
 	@Override
-	protected Concept loadLine(String[] lineItems)
+	protected List<Concept> loadLine(String[] lineItems)
 			throws TermServerScriptException {
 		return null;
 	}

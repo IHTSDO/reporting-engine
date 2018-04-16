@@ -122,7 +122,7 @@ public class InactivateRedundantStatedRelationships extends BatchFix implements 
 	}
 
 	@Override
-	protected Concept loadLine(String[] lineItems) throws TermServerScriptException {
+	protected List<Concept> loadLine(String[] lineItems) throws TermServerScriptException {
 		return null; // We will identify descriptions to edit from the snapshot
 	}
 

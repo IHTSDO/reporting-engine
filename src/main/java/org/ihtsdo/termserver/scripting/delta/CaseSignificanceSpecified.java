@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.delta;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
@@ -47,7 +48,7 @@ public class CaseSignificanceSpecified extends DeltaGenerator implements RF2Cons
 	}
 
 	@Override
-	protected Concept loadLine(String[] lineItems)
+	protected List<Concept> loadLine(String[] lineItems)
 			throws TermServerScriptException {
 		//Format indicator , description id
 		String newIndicator = lineItems[0];
@@ -71,7 +72,7 @@ public class CaseSignificanceSpecified extends DeltaGenerator implements RF2Cons
 				incrementSummaryInformation("descriptionsModified");
 			}
 		}
-		return c;
+		return Collections.singletonList(c);
 	}
 }
 

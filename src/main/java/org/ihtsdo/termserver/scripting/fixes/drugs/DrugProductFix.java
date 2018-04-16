@@ -564,10 +564,10 @@ public class DrugProductFix extends DrugBatchFix implements RF2Constants{
 	}
 
 	@Override
-	protected Concept loadLine(String[] lineItems) throws TermServerScriptException {
+	protected List<Concept> loadLine(String[] lineItems) throws TermServerScriptException {
 		Concept c = gl.getConcept(lineItems[1]);
 		c.setConceptType(lineItems[0]);
-		return c;
+		return Collections.singletonList(c);
 	}
 
 }

@@ -8,7 +8,7 @@ import org.ihtsdo.termserver.scripting.domain.RF2Constants.ComponentType;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
-public class RefsetEntry implements Component {
+public class RefsetEntry extends Component {
 
     @SerializedName("id")
     @Expose

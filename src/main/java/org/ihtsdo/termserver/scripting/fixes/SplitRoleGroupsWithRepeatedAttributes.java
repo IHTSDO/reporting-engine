@@ -146,7 +146,7 @@ public class SplitRoleGroupsWithRepeatedAttributes extends BatchFix implements R
 	}
 
 	@Override
-	protected Concept loadLine(String[] lineItems) throws TermServerScriptException {
+	protected List<Concept> loadLine(String[] lineItems) throws TermServerScriptException {
 		// TODO Auto-generated method stub
 		return null;
 	}

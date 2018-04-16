@@ -3,7 +3,9 @@ package org.ihtsdo.termserver.scripting.reports;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.text.SimpleDateFormat;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.Set;
 
 import org.ihtsdo.termserver.scripting.GraphLoader;
@@ -55,8 +57,8 @@ public class ListSemanticTagsByHierarchy extends TermServerScript{
 	}
 
 	@Override
-	protected Concept loadLine(String[] lineItems)
+	protected List<Concept> loadLine(String[] lineItems)
 			throws TermServerScriptException {
-		return gl.getConcept(lineItems[0]);
+		return Collections.singletonList(gl.getConcept(lineItems[0]));
 	}
 }

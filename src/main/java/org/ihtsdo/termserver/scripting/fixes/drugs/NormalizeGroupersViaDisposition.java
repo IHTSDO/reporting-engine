@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.fixes.drugs;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -286,7 +287,7 @@ public class NormalizeGroupersViaDisposition extends DrugBatchFix implements RF2
 	}
 
 	@Override
-	protected Concept loadLine(String[] lineItems) throws TermServerScriptException {
+	protected List<Concept> loadLine(String[] lineItems) throws TermServerScriptException {
 		Concept c = gl.getConcept(lineItems[0]);
 		if (lineItems.length > 2) {
 			String targetStr = lineItems[2];
@@ -296,6 +297,6 @@ public class NormalizeGroupersViaDisposition extends DrugBatchFix implements RF2
 				substancesMap.put(lineItems[0], targetStr.substring(0, pipe).trim());
 			}
 		}
-		return c;
+		return Collections.singletonList(c);
 	}
 }

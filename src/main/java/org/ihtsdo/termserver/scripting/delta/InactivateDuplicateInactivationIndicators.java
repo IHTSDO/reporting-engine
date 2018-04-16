@@ -115,7 +115,7 @@ public class InactivateDuplicateInactivationIndicators extends DeltaGenerator im
 	}
 
 	@Override
-	protected Concept loadLine(String[] lineItems)
+	protected List<Concept> loadLine(String[] lineItems)
 			throws TermServerScriptException {
 		return null;
 	}

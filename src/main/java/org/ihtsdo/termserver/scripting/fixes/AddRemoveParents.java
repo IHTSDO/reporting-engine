@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.fixes;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -99,7 +100,7 @@ public class AddRemoveParents extends BatchFix implements RF2Constants{
 	}
 
 	@Override
-	protected Concept loadLine(String[] lineItems) throws TermServerScriptException {
+	protected List<Concept> loadLine(String[] lineItems) throws TermServerScriptException {
 		Concept c = gl.getConcept(lineItems[0]);
 		if (!lineItems[2].equals(ACTIVE_FLAG)) {
 			RelationshipGroup g = changeMap.get(c);
@@ -111,7 +112,7 @@ public class AddRemoveParents extends BatchFix implements RF2Constants{
 			Relationship r = new Relationship (c, IS_A, target, UNGROUPED);
 			r.setActive(lineItems[2].equals(ACTIVE_FLAG));
 			g.addRelationship(r);
-			return c;
+			return Collections.singletonList(c);
 		} else {
 			return null;
 		}

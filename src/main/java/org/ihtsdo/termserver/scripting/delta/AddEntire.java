@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.delta;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -223,9 +224,8 @@ public class AddEntire extends DeltaGenerator {
 	}
 
 	@Override
-	protected Concept loadLine(String[] lineItems)
+	protected List<Concept> loadLine(String[] lineItems)
 			throws TermServerScriptException {
-		Concept c = gl.getConcept(lineItems[0]);
-		return c;
+		return Collections.singletonList(gl.getConcept(lineItems[0]));
 	}
 }

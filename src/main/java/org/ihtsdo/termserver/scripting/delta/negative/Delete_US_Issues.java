@@ -146,7 +146,7 @@ public class Delete_US_Issues extends NegativeDeltaGenerator implements RF2Const
 	}
 
 	@Override
-	protected Concept loadLine(String[] lineItems)
+	protected List<Concept> loadLine(String[] lineItems)
 			throws TermServerScriptException {
 		return null;
 	}

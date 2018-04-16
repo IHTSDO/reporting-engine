@@ -7,6 +7,7 @@ import java.io.PrintStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.zip.ZipEntry;
@@ -82,8 +83,8 @@ public class ValidateLateralityReport extends TermServerScript{
 	}
 
 	@Override
-	protected Concept loadLine(String[] lineItems)
+	protected List<Concept> loadLine(String[] lineItems)
 			throws TermServerScriptException {
-		return gl.getConcept(lineItems[0]);
+		return Collections.singletonList(gl.getConcept(lineItems[0]));
 	}
 }

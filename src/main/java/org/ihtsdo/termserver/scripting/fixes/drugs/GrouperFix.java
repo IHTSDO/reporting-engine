@@ -35,7 +35,7 @@ public class GrouperFix extends BatchFix implements RF2Constants{
 	}
 
 	@Override
-	protected Concept loadLine(String[] lineItems) throws TermServerScriptException {
+	protected List<Concept> loadLine(String[] lineItems) throws TermServerScriptException {
 		throw new TermServerScriptException("Not Implemented");
 	}
 

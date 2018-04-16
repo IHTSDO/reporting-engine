@@ -122,7 +122,7 @@ public class FixMissingInactivationIndicators extends BatchFix implements RF2Con
 	}
 
 	@Override
-	protected Concept loadLine(String[] lineItems)
+	protected List<Concept> loadLine(String[] lineItems)
 			throws TermServerScriptException {
 		throw new NotImplementedException("This class self determines concepts to process");
 	}

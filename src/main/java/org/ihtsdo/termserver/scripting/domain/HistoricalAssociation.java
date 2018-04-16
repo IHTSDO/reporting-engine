@@ -2,10 +2,8 @@ package org.ihtsdo.termserver.scripting.domain;
 
 import java.util.UUID;
 
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.ComponentType;
-
 //id	effectiveTime	active	moduleId 	refsetId 	referencedComponentId	targetComponentId
-public class HistoricalAssociation implements Component {
+public class HistoricalAssociation extends Component implements RF2Constants {
 
 	private String id;
 	private String effectiveTime;

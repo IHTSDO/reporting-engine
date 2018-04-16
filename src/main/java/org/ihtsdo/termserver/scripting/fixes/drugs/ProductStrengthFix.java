@@ -1,5 +1,7 @@
 package org.ihtsdo.termserver.scripting.fixes.drugs;
 
+import java.util.List;
+
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
@@ -36,7 +38,7 @@ public class ProductStrengthFix extends BatchFix implements RF2Constants{
 	}
 
 	@Override
-	protected Concept loadLine(String[] lineItems) throws TermServerScriptException {
+	protected List<Concept> loadLine(String[] lineItems) throws TermServerScriptException {
 		throw new TermServerScriptException("Not Implemented");
 	}
 
