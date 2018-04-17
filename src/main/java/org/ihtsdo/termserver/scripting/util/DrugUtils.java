@@ -1,8 +1,10 @@
 package org.ihtsdo.termserver.scripting.util;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
@@ -182,4 +184,17 @@ public class DrugUtils implements RF2Constants {
 		}
 		return false;
 	}
+	
+
+	public static Set<Concept> getIngredients(Concept c) throws TermServerScriptException {
+		Set<Concept> ingredients = new HashSet<>();
+		for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE)) {
+			ingredients.add(r.getTarget());
+		}
+		for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HAS_PRECISE_INGRED, ActiveState.ACTIVE)) {
+			ingredients.add(r.getTarget());
+		}
+		return ingredients;
+	}
+	
 }
