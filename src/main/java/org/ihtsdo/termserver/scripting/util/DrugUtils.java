@@ -18,7 +18,7 @@ public class DrugUtils implements RF2Constants {
 	static Map<String, Concept> numberConceptMap;
 	static Map<String, Concept> doseFormConceptMap;
 	static Map<String, Concept> unitOfPresentationConceptMap;
-	static Map<String, Concept> unitConceptMap;
+	static Map<String, Concept> unitOfMeasureConceptMap;
 	
 	public static void setConceptType(Concept c) {
 		String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
@@ -93,24 +93,27 @@ public class DrugUtils implements RF2Constants {
 		}
 	}
 	
-	public static Concept findUnit(String unit) throws TermServerScriptException {
-		if (unitConceptMap == null) {
-			populateUnitConceptMap();
+	public static Concept findUnitOfMeasure(String unit) throws TermServerScriptException {
+		if (unitOfMeasureConceptMap == null) {
+			populateUnitOfMeasureConceptMap();
 		}
-		if (!unitConceptMap.containsKey(unit)) {
-			throw new TermServerScriptException("Unable to identify unit: '" + unit + "'");
+		if (!unitOfMeasureConceptMap.containsKey(unit)) {
+			throw new TermServerScriptException("Unable to identify unit of measure: '" + unit + "'");
 		}
-		return unitConceptMap.get(unit);
+		return unitOfMeasureConceptMap.get(unit);
 	}
 
-	private static void populateUnitConceptMap() throws TermServerScriptException {
-		unitConceptMap = new HashMap<>();
+	private static void populateUnitOfMeasureConceptMap() throws TermServerScriptException {
+		unitOfMeasureConceptMap = new HashMap<>();
 		//UAT workaround
 		//Concept unitSubHierarchy = GraphLoader.getGraphLoader().getConcept("258666001", false, true); //  |Unit(qualifier value)|
 		Concept unitSubHierarchy = GraphLoader.getGraphLoader().getConcept("767524001", false, true); //  |Unit of measure (qualifier value)|
 		for (Concept unit : unitSubHierarchy.getDescendents(NOT_SET)) {
-			unitConceptMap.put(unit.getFsn(), unit);
+			unitOfMeasureConceptMap.put(unit.getFsn(), unit);
 		}
+		
+		//We can also measure just 'unit' of a substance
+		unitOfMeasureConceptMap.put(UNIT.getFsn(), UNIT);
 	}
 
 	public static  String getDosageForm(Concept concept, boolean isFSN) throws TermServerScriptException {
@@ -146,6 +149,25 @@ public class DrugUtils implements RF2Constants {
 			//doseForm = doseForm.replace(" dose ", " dosage ");
 			
 			return doseFormStr;
+		}
+	}
+	
+	public static  String getUnitOfPresentation(Concept concept, boolean isFSN) throws TermServerScriptException {
+		List<Relationship> uopRels = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_UNIT_OF_PRESENTATION, ActiveState.ACTIVE);
+		if (uopRels.size() == 0) {
+			return "NO UNIT OF PRESENTATION DETECTED";
+		} else if (uopRels.size() > 1) {
+			return "MULTIPLE UNIT OF PRESENTATION";
+		} else {
+			//Load full locally cached object since we may be working with some minimally defined thing
+			Concept uop = GraphLoader.getGraphLoader().getConcept(uopRels.get(0).getTarget().getConceptId());
+			String uopStr;
+			if (isFSN) {
+				uopStr = SnomedUtils.deconstructFSN(uop.getFsn())[0];
+			} else {
+				uopStr = uop.getPreferredSynonym(US_ENG_LANG_REFSET).getTerm();
+			}
+			return uopStr;
 		}
 	}
 

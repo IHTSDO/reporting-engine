@@ -188,6 +188,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 				for (Component component : components) {
 					conceptInTask++;
 					processComponent(task, component, conceptInTask, xOfY);
+					flushFiles(false); //Update file after each component processed.
 				}
 				
 				if (!dryRun) {

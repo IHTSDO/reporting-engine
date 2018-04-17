@@ -487,7 +487,7 @@ public abstract class TermServerScript implements RF2Constants {
 					} catch (Exception e) {
 						throw new TermServerScriptException("Failed to load line " + lineNum,e);
 					}
-					if (concepts != null & concepts.size() > 0) {
+					if (concepts != null && concepts.size() > 0) {
 						allConcepts.addAll(concepts);
 					} else {
 						if (!expectNullConcepts) {

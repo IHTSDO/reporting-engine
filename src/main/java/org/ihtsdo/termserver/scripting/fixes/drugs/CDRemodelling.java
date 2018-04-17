@@ -24,8 +24,9 @@ import org.ihtsdo.termserver.scripting.util.TermVerifier;
 import us.monoid.json.JSONObject;
 
 /*
-DRUGS-474 Remodelling of Clinical Drugs including Basis of Strength Substance (BoSS) based on an input spreadsheet
- */
+DRUGS-474 (Pattern 1a) Remodelling of Clinical Drugs including Basis of Strength Substance (BoSS) based on an input spreadsheet
+DRUGS-493 (Pattern 1b) 
+*/
 public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 	
 	Map<Concept, List<Ingredient>> spreadsheet = new HashMap<>();
@@ -54,8 +55,12 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 	@Override
 	public void init(String[] args) throws TermServerScriptException, IOException {
 		super.init(args);
-		termVerifier = new TermVerifier(inputFile2,this);
-		termVerifier.init();
+		if (inputFile2 == null) {
+			warn ("No input file specified to verify terms");
+		} else {
+			termVerifier = new TermVerifier(inputFile2,this);
+			termVerifier.init();
+		}
 	}
 
 
@@ -73,7 +78,9 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 			task.replace(concept, alternative);
 			//We also need a copy of the original's spreadsheet data to look up, and also for the term verifier
 			spreadsheet.put(alternative, spreadsheet.get(concept));
-			termVerifier.replace(concept, alternative);
+			if (termVerifier != null) {
+				termVerifier.replace(concept, alternative);
+			}
 			loadedConcept = loadConcept(alternative, task.getBranchPath());
 		} 
 		
@@ -127,7 +134,9 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		}
 		//We're definitely going to have everything we need in the stated form, and in fact the inferred will be wrong because we haven't changed it.
 		changesMade += termGenerator.ensureDrugTermsConform(t,c, CharacteristicType.STATED_RELATIONSHIP);
-		termVerifier.validateTerms(t, c);
+		if (termVerifier != null) {
+			termVerifier.validateTerms(t, c);
+		}
 		return changesMade;
 	}
 
@@ -219,8 +228,8 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		return matchingRels.get(0);
 	}
 	
-	@Override
 	/**
+	 * PATTERN 1A
 	 * Spreadsheet columns:
 	 * [0]conceptId	[1]FSN	[2]Sequence	[3]dose_form_evaluation	[4]pharmaceutical_df	
 	 * [5]future_ingredient	[6]future_boss	[7]future_Presentation_num_qty	
@@ -230,7 +239,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 	 * [15]dmd_boss	[16]Unit_of_presentation	[17]dmd_numerator_quantity	
 	 * [18]dmd_numerator_unit	[19]dmd_denominator_quantity	[20]dmd_denominator_unit	
 	 * [21]stated_dose_form	[22]Pattern	[23]Source	[24]status	[25]Comment	[26]Transfer
-	 */
+	 
 	protected List<Concept> loadLine(String[] items) throws TermServerScriptException {
 		Concept c = gl.getConcept(items[0]);
 		c.setConceptType(ConceptType.CLINICAL_DRUG);
@@ -251,6 +260,44 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 			ingredient.denomQuantity = DrugUtils.getNumberAsConcept(items[9]);
 			ingredient.denomUnit = getUnitOfPresentation(items[10]);
 			ingredient.unitOfPresentation = getUnitOfPresentation(items[11]);
+			ingredients.add(ingredient);
+		} catch (Exception e) {
+			report (null, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, e.getMessage());
+			return null;
+		}
+		
+		return Collections.singletonList(c);
+	}*/
+	
+	@Override
+	/**
+	 * PATTERN 1B - https://docs.google.com/spreadsheets/d/1EqZg1-Ksjy5J-Iebnjry96PgL7MbL_Au85oBXPtHCgE/edit#gid=0
+	 * Spreadsheet columns: 	[0]conceptId [1]FSN	[2]dose_form_evaluation	
+	 * [3]dmd_name	[4]Precise_ingredient	[5]dmd_boss	[6]ConcNumUnit	
+	 * [7]ConcNumQty	 [8]ConcDenomUnit	 [9]PRESENTNumQty	[10]ConcDenomQty	
+	 * [11]PRESENTNumUnit [12]PRESENTDenomQty	[13]PRESENTDenomUnit	
+	 * [14]UoP	[15]DoseForm
+	 */
+	protected List<Concept> loadLine(String[] items) throws TermServerScriptException {
+		Concept c = gl.getConcept(items[0]);
+		c.setConceptType(ConceptType.CLINICAL_DRUG);
+		
+		//Is this the first time we've seen this concept?
+		if (!spreadsheet.containsKey(c)) {
+			spreadsheet.put(c, new ArrayList<Ingredient>());
+		}
+		List<Ingredient> ingredients = spreadsheet.get(c);
+		try {
+			// Booleans indicate: don't create and do validate that concept exists
+			Ingredient ingredient = new Ingredient();
+			ingredient.doseForm = getPharmDoseForm(items[15]);
+			ingredient.substance = gl.getConcept(items[4], false, true);
+			ingredient.boss = gl.getConcept(items[5], false, true);
+			ingredient.strength = DrugUtils.getNumberAsConcept(items[9]);
+			ingredient.numeratorUnit = DrugUtils.findUnitOfMeasure(items[11]);
+			ingredient.denomQuantity = DrugUtils.getNumberAsConcept(items[12]);
+			ingredient.denomUnit = getUnitOfPresentation(items[13]);
+			ingredient.unitOfPresentation = getUnitOfPresentation(items[14]);
 			ingredients.add(ingredient);
 		} catch (Exception e) {
 			report (null, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, e.getMessage());

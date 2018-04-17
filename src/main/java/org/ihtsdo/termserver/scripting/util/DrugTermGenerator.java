@@ -24,6 +24,7 @@ public class DrugTermGenerator implements RF2Constants{
 	
 	private TermServerScript parent;
 	private boolean quiet = false;
+	private boolean includeUnitOfPresentation = false;
 	private GraphLoader gl = GraphLoader.getGraphLoader();
 	
 	private String [] forceCS = new String[] { "N-" };
@@ -36,6 +37,11 @@ public class DrugTermGenerator implements RF2Constants{
 		neverAbbrev.add(MICROGRAM);
 		neverAbbrev.add(INTERNATIONAL_UNIT);
 		neverAbbrev.add(NANOGRAM);
+	}
+	
+	public DrugTermGenerator includeUnitOfPresentation() {
+		includeUnitOfPresentation = true;
+		return this;
 	}
 	
 	/*protected int normalizeDrugTerms(Task task, Concept concept, String newSemanticTag) throws TermServerScriptException {
@@ -200,7 +206,7 @@ public class DrugTermGenerator implements RF2Constants{
 										break;
 				case CLINICAL_DRUG : 	prefix = "Product containing precisely ";
 										//TODO Check that presentation is solid before adding 1 each
-										suffix =  "/1 each "  + DrugUtils.getDosageForm(c, isFSN);
+										suffix =  getCdSuffix(c, isFSN);
 										semTag = "(clinical drug)";
 										break;
 				default:
@@ -211,7 +217,7 @@ public class DrugTermGenerator implements RF2Constants{
 										break;
 				case MEDICINAL_PRODUCT_FORM : suffix =  " in " + DrugUtils.getDosageForm(c, isFSN);
 										break;
-				case CLINICAL_DRUG : 	suffix =  " " + DrugUtils.getDosageForm(c, isFSN);
+				case CLINICAL_DRUG : 	suffix = getCdSuffix(c, isFSN);
 										break;
 				default:
 			}
@@ -224,6 +230,26 @@ public class DrugTermGenerator implements RF2Constants{
 		}
 		proposedTerm = SnomedUtils.capitalize(proposedTerm);
 		return proposedTerm;
+	}
+
+	private String getCdSuffix(Concept c, boolean isFSN) throws TermServerScriptException {
+		String suffix;
+		String unitOfPresentation = DrugUtils.getUnitOfPresentation(c, isFSN);
+		
+		if (includeUnitOfPresentation) {
+			if (isFSN) {
+				suffix = "/1 " + unitOfPresentation + " "  + DrugUtils.getDosageForm(c, isFSN);
+			} else {
+				suffix = " " + DrugUtils.getDosageForm(c, isFSN) + " "  + unitOfPresentation;
+			}			
+		} else {
+			if (isFSN) {
+				suffix = "/1 each "  + DrugUtils.getDosageForm(c, isFSN);
+			} else {
+				suffix = " " + DrugUtils.getDosageForm(c, isFSN);
+			}
+		}
+		return suffix;
 	}
 
 	private int removeRedundantTerms(Task t, Concept c) {

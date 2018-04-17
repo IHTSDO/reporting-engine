@@ -36,6 +36,7 @@ public interface RF2Constants {
 	static Concept MICROGRAM = new Concept ("258685003", "microgram (qualifier value)"); 
 	static Concept INTERNATIONAL_UNIT = new Concept ("258997004", "international unit (qualifier value)"); 
 	static Concept NANOGRAM = new Concept ("258686002", "nanogram (qualifier value)"); 
+	static Concept UNIT = new Concept("767525000", "Unit (qualifier value)");
 	
 	static Concept ROOT_CONCEPT = new Concept (SCTID_ROOT_CONCEPT.toString());
 	static Concept ASSOC_MORPH = new Concept ("116676008");  // |Associated morphology (attribute)|
