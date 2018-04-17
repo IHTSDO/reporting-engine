@@ -71,7 +71,7 @@ public class IngredientCounts extends DrugBatchFix implements RF2Constants{
 			}
 			Set<Concept> bases = getBases(ingredients);
 			if (bases.size() != ingredients.size()) {
-				debug ("SpotCheck: " + c + " - " + ingredients.size() + "/" + bases.size());
+				report(t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Ingredients / Base Count: " + ingredients.size() + "/" + bases.size());
 			}
 			Concept baseCountConcept = DrugUtils.getNumberAsConcept(Integer.toString(bases.size()));
 			changes = replaceRelationship(t, c, COUNT_BASE_ACTIVE_INGREDIENT, baseCountConcept, UNGROUPED, true);
@@ -115,7 +115,12 @@ public class IngredientCounts extends DrugBatchFix implements RF2Constants{
 				case CLINICAL_DRUG: if (drug.getFsn().contains("precisely")) {
 										processMe.add(drug);
 				}
-						break;
+					break;
+				case MEDICINAL_PRODUCT:
+				case MEDICINAL_PRODUCT_FORM: if (drug.getFsn().contains("only")) {
+					processMe.add(drug);
+				}
+					break;
 				default:
 			}
 		}
