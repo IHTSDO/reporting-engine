@@ -5,17 +5,11 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
-import org.eclipse.xtext.scoping.impl.SingletonScope;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.ActiveState;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.ConceptType;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.DrugUtils;
-
-import com.google.inject.Singleton;
 
 import us.monoid.json.JSONObject;
 
@@ -118,7 +112,9 @@ public class IngredientCounts extends DrugBatchFix implements RF2Constants{
 		for (Concept drug : MEDICINAL_PRODUCT.getDescendents(NOT_SET)) {
 			DrugUtils.setConceptType(drug);
 			switch (drug.getConceptType()) {
-				case CLINICAL_DRUG: processMe.add(drug);
+				case CLINICAL_DRUG: if (drug.getFsn().contains("precisely")) {
+										processMe.add(drug);
+				}
 						break;
 				default:
 			}
