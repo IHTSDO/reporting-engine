@@ -8,7 +8,6 @@ import java.util.stream.Collectors;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 /*
  * DRUGS-244 Report where the number of stated attributes of a given type does not equal

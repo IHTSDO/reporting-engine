@@ -22,10 +22,9 @@ public class RecreateComponent extends DeltaGenerator {
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
 		RecreateComponent delta = new RecreateComponent();
 		try {
+			delta.runStandAlone=true;
 			delta.newIdsRequired=false;
 			delta.init(args);
-			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
-			delta.loadProjectSnapshot(false);  //Not just FSN, load all terms with lang refset also
 			delta.recreateComponent();
 			delta.flushFiles(true); //Need to flush files before zipping
 			SnomedUtils.createArchive(new File(delta.outputDirName));
