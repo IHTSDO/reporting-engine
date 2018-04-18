@@ -96,6 +96,11 @@ public class DrugUtils implements RF2Constants {
 	}
 	
 	public static Concept findUnitOfMeasure(String unit) throws TermServerScriptException {
+		//Try a straight lookup via the SCTID if we have one
+		try {
+			return GraphLoader.getGraphLoader().getConcept(unit);
+		} catch (Exception e) {}
+		
 		if (unitOfMeasureConceptMap == null) {
 			populateUnitOfMeasureConceptMap();
 		}
@@ -154,12 +159,12 @@ public class DrugUtils implements RF2Constants {
 		}
 	}
 	
-	public static  String getUnitOfPresentation(Concept concept, boolean isFSN) throws TermServerScriptException {
-		List<Relationship> uopRels = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_UNIT_OF_PRESENTATION, ActiveState.ACTIVE);
+	public static  String getAttributeType(Concept concept, Concept type, boolean isFSN) throws TermServerScriptException {
+		List<Relationship> uopRels = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, type, ActiveState.ACTIVE);
 		if (uopRels.size() == 0) {
-			return "NO UNIT OF PRESENTATION DETECTED";
+			return "NO " + SnomedUtils.getPT(type.getConceptId()) + "DETECTED";
 		} else if (uopRels.size() > 1) {
-			return "MULTIPLE UNIT OF PRESENTATION";
+			return "MULTIPLE " + SnomedUtils.getPT(type.getConceptId()) + "DETECTED";
 		} else {
 			//Load full locally cached object since we may be working with some minimally defined thing
 			Concept uop = GraphLoader.getGraphLoader().getConcept(uopRels.get(0).getTarget().getConceptId());
@@ -169,7 +174,7 @@ public class DrugUtils implements RF2Constants {
 			} else {
 				uopStr = uop.getPreferredSynonym(US_ENG_LANG_REFSET).getTerm();
 			}
-			return uopStr;
+			return SnomedUtils.deCapitalize(uopStr);
 		}
 	}
 

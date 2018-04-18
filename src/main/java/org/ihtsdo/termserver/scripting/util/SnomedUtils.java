@@ -19,6 +19,7 @@ import java.util.zip.ZipOutputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.validator.routines.checkdigit.VerhoeffCheckDigit;
+import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -783,6 +784,10 @@ public class SnomedUtils implements RF2Constants{
 				break;
 		}
 		return aMap;
+	}
+
+	public static String getPT(String sctId) throws TermServerScriptException {
+		return GraphLoader.getGraphLoader().getConcept(sctId).getPreferredSynonym(US_ENG_LANG_REFSET).getTerm();
 	}
 
 }
