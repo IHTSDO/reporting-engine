@@ -2,6 +2,10 @@ package org.ihtsdo.termserver.scripting.domain;
 
 import java.util.UUID;
 
+import org.ihtsdo.termserver.scripting.GraphLoader;
+import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+
 //id	effectiveTime	active	moduleId 	refsetId 	referencedComponentId	targetComponentId
 public class HistoricalAssociation extends Component implements RF2Constants {
 
@@ -31,6 +35,17 @@ public class HistoricalAssociation extends Component implements RF2Constants {
 	
 	public String toString() {
 		return "(" + id + ") - " + referencedComponentId + ":" + targetComponentId;
+	}
+	
+	public String toVerboseString(){
+		try {
+			String source = GraphLoader.getGraphLoader().getConcept(referencedComponentId).toString();
+			String refset = SnomedUtils.getPT(refsetId).replace("association reference set","");
+			String target = GraphLoader.getGraphLoader().getConcept(targetComponentId).toString();
+			return source + " " + refset + " " + target;
+		} catch (Exception e) {
+			throw new IllegalArgumentException("Unable to form association string",e);
+		}
 	}
 	
 	public String[] toRF2() {

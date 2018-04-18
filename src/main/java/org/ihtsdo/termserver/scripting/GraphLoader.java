@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.zip.ZipInputStream;
 
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
@@ -455,6 +456,12 @@ public class GraphLoader implements RF2Constants {
 			componentOwnerMap.put(i,  c);
 		}
 		
+	}
+
+	public String listAssociationParticipation(Concept c) {
+		return historicalAssociations.get(c).stream()
+				.map(assoc -> assoc.toVerboseString())
+				.collect (Collectors.joining(", "));
 	}
 
 
