@@ -59,7 +59,7 @@ public class IngredientCounts extends DrugBatchFix implements RF2Constants{
 		return NO_CHANGES_MADE;
 	}
 
-	private int assignIngredientCounts(Task t, Concept c) throws TermServerScriptException {
+	public int assignIngredientCounts(Task t, Concept c) throws TermServerScriptException {
 		int changes = 0;
 		Set<Concept> ingredients = DrugUtils.getIngredients(c);
 		if (ingredients.size() == 1) {
@@ -71,7 +71,7 @@ public class IngredientCounts extends DrugBatchFix implements RF2Constants{
 			}
 			Set<Concept> bases = getBases(ingredients);
 			if (bases.size() != ingredients.size()) {
-				report(t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Ingredients / Base Count: " + ingredients.size() + "/" + bases.size());
+				report(t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Ingredients / Base Count: " + ingredients.size() + " / " + bases.size());
 			}
 			Concept baseCountConcept = DrugUtils.getNumberAsConcept(Integer.toString(bases.size()));
 			changes = replaceRelationship(t, c, COUNT_BASE_ACTIVE_INGREDIENT, baseCountConcept, UNGROUPED, true);

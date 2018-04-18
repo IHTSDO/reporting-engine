@@ -841,5 +841,13 @@ public abstract class TermServerScript implements RF2Constants {
 		primitiveAncestors.removeAll(subsumers);
 		return primitiveAncestors;
 	}
+	
+	public Map<String, PrintWriter> getPrintWriterMap() {
+		return printWriterMap;
+	}
+
+	public void setPrintWriterMap(Map<String, PrintWriter> printWriterMap) {
+		this.printWriterMap = printWriterMap;
+	}
 
 }
