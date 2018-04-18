@@ -89,9 +89,8 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 			loadedConcept = loadConcept(alternative, task.getBranchPath());
 		} 
 		
-		
 		changesMade = remodelConcept(task, loadedConcept);
-		changesMade += ingredientCounter.assignIngredientCounts(task, loadedConcept);
+		changesMade += ingredientCounter.assignIngredientCounts(task, loadedConcept, CharacteristicType.STATED_RELATIONSHIP);
 		
 		if (changesMade > 0) {
 			try {
@@ -157,7 +156,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 
 		if (substanceRel == null) {
 			//We'll need to create one!
-			report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "No existing ingredient found.  Creating.");
+			report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "No existing ingredient found.  Adding new relationship.");
 			substanceRel = new Relationship (c, HAS_PRECISE_INGRED, modelIngredient.substance, targetGroupId);
 		} else {
 			//If we've found an active ingredient, inactivate it and replace with a PRECISE active ingredient
@@ -231,7 +230,9 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		}
 		
 		if (matchingRels.size()!=1) {
-			report (t,c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Unable to find expected ingredient: " + targetSubstance + " found " + matchingRels.size());
+			if (matchingRels.size() > 1) {
+				report (t,c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Unable to uniquely identify ingredient: " + targetSubstance + ". Found " + matchingRels.size());
+			}
 			return null;
 		}
 		return matchingRels.get(0);

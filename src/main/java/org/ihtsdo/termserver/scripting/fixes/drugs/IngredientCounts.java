@@ -44,7 +44,7 @@ public class IngredientCounts extends DrugBatchFix implements RF2Constants{
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
 		
 		try {
-			int changes = assignIngredientCounts(task, loadedConcept);
+			int changes = assignIngredientCounts(task, loadedConcept, CharacteristicType.INFERRED_RELATIONSHIP);
 			if (changes > 0) {
 				String conceptSerialised = gson.toJson(loadedConcept);
 				debug ((dryRun ?"Dry run ":"Updating state of ") + loadedConcept + info);
@@ -59,9 +59,9 @@ public class IngredientCounts extends DrugBatchFix implements RF2Constants{
 		return NO_CHANGES_MADE;
 	}
 
-	public int assignIngredientCounts(Task t, Concept c) throws TermServerScriptException {
+	public int assignIngredientCounts(Task t, Concept c, CharacteristicType charType) throws TermServerScriptException {
 		int changes = 0;
-		Set<Concept> ingredients = DrugUtils.getIngredients(c);
+		Set<Concept> ingredients = DrugUtils.getIngredients(c, charType);
 		if (ingredients.size() == 1) {
 			changes = replaceRelationship(t, c, COUNT_BASE_ACTIVE_INGREDIENT, DrugUtils.getNumberAsConcept("1"), UNGROUPED, true);
 		} else {

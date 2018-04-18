@@ -38,7 +38,7 @@ public class MultipleIngredients extends TermServerReport {
 		for (Concept c : MEDICINAL_PRODUCT.getDescendents(NOT_SET)) {
 			DrugUtils.setConceptType(c);
 			if (SnomedUtils.isConceptType(c, validTypes)) {
-				int ingredientCount = DrugUtils.getIngredients(c).size();
+				int ingredientCount = DrugUtils.getIngredients(c, CharacteristicType.INFERRED_RELATIONSHIP).size();
 				String fsn = c.getFsn().replaceAll("\\+", " and ");
 				int fsnCount = fsn.split(" and ").length;
 				if (fsnCount != ingredientCount) {
