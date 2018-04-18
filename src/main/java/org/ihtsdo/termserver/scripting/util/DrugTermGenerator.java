@@ -24,6 +24,8 @@ public class DrugTermGenerator implements RF2Constants{
 	
 	private TermServerScript parent;
 	private boolean quiet = false;
+	private boolean useEach = false;
+	private boolean specifyDenominator = false;
 	private boolean includeUnitOfPresentation = false;
 	private GraphLoader gl = GraphLoader.getGraphLoader();
 	
@@ -39,9 +41,31 @@ public class DrugTermGenerator implements RF2Constants{
 		neverAbbrev.add(NANOGRAM);
 	}
 	
-	public DrugTermGenerator includeUnitOfPresentation() {
-		includeUnitOfPresentation = true;
+	public DrugTermGenerator includeUnitOfPresentation(Boolean state) {
+		includeUnitOfPresentation = state;
 		return this;
+	}
+	
+	public boolean includeUnitOfPresentation() {
+		return includeUnitOfPresentation;
+	}
+	
+	public DrugTermGenerator useEach(Boolean state) {
+		useEach = state;
+		return this;
+	}
+	
+	public boolean specifyDenominator() {
+		return specifyDenominator;
+	}
+	
+	public DrugTermGenerator specifyDenominator(Boolean state) {
+		specifyDenominator = state;
+		return this;
+	}
+	
+	public boolean useEach() {
+		return useEach;
 	}
 	
 	/*protected int normalizeDrugTerms(Task task, Concept concept, String newSemanticTag) throws TermServerScriptException {
@@ -234,7 +258,7 @@ public class DrugTermGenerator implements RF2Constants{
 
 	private String getCdSuffix(Concept c, boolean isFSN) throws TermServerScriptException {
 		String suffix;
-		String unitOfPresentation = DrugUtils.getUnitOfPresentation(c, isFSN);
+		String unitOfPresentation = DrugUtils.getAttributeType(c, HAS_UNIT_OF_PRESENTATION, isFSN);
 		
 		if (includeUnitOfPresentation) {
 			if (isFSN) {
@@ -243,7 +267,7 @@ public class DrugTermGenerator implements RF2Constants{
 				suffix = " " + DrugUtils.getDosageForm(c, isFSN) + " "  + unitOfPresentation;
 			}			
 		} else {
-			if (isFSN) {
+			if (isFSN && !specifyDenominator) {
 				suffix = "/1 each "  + DrugUtils.getDosageForm(c, isFSN);
 			} else {
 				suffix = " " + DrugUtils.getDosageForm(c, isFSN);
@@ -347,13 +371,15 @@ public class DrugTermGenerator implements RF2Constants{
 		//Has our description been published?  Remove entirely if not
 		boolean isInactivated = removeDescription(c,removing);
 		String msg = (isInactivated?"Inactivated desc ":"Deleted desc ") +  removing;
-		if (doReplacement) {
-			msg += " in favour of " + replacement;
-			c.addDescription(replacement);
-		}
 		changesMade++;
 		Severity severity = removing.getType().equals(DescriptionType.FSN)?Severity.MEDIUM:Severity.LOW;
-		report(t, c, severity, ReportActionType.DESCRIPTION_CHANGE_MADE, msg);
+		report(t, c, severity, ReportActionType.DESCRIPTION_REMOVED, msg);
+		
+		if (doReplacement) {
+			report(t, c, Severity.LOW, ReportActionType.DESCRIPTION_ADDED, replacement);
+			c.addDescription(replacement);
+		}
+		
 		return changesMade;
 	}
 
@@ -408,16 +434,30 @@ public class DrugTermGenerator implements RF2Constants{
 			//Are we adding the strength?
 			Concept strength = getTarget (c, HAS_STRENGTH_VALUE, r.getGroupId(), charType);
 			
+			//Are we adding the denominator strength and units?
+			String denominatorStr = "";
+			if (specifyDenominator) {
+				denominatorStr = "/";
+				Concept denStren = getTarget (c, HAS_STRENGTH_DENOM_VALUE, r.getGroupId(), charType);
+				String denStrenStr = SnomedUtils.deconstructFSN(denStren.getFsn())[0];
+				if (!denStrenStr.equals("1") || isFSN) {
+					denominatorStr += denStrenStr + " ";
+				}
+				Concept denUnit = getTarget (c, HAS_STRENGTH_DENOM_UNIT, r.getGroupId(), charType);
+				String denUnitStr = getTermForConcat(denUnit, isFSN || neverAbbrev.contains(denUnit), langRefset);
+				denominatorStr += denUnitStr;
+			}
+			
 			//And the unit
 			Concept unit = getTarget(c, HAS_STRENGTH_UNIT, r.getGroupId(), charType);
 			
-			String ingredientWithStrengthTerm = formIngredientWithStrengthTerm (ingredient, boSS, strength, unit, isFSN, langRefset);
+			String ingredientWithStrengthTerm = formIngredientWithStrengthTerm (ingredient, boSS, strength, unit, denominatorStr, isFSN, langRefset);
 			ingredients.add(ingredientWithStrengthTerm);
 		}
 		return ingredients;
 	}
 
-	private String formIngredientWithStrengthTerm(Concept ingredient, Concept boSS, Concept strength, Concept unit, boolean isFSN, String langRefset) throws TermServerScriptException {
+	private String formIngredientWithStrengthTerm(Concept ingredient, Concept boSS, Concept strength, Concept unit, String denominatorStr, boolean isFSN, String langRefset) throws TermServerScriptException {
 		boolean separateBoSS = (boSS!= null && !boSS.equals(ingredient));
 		String ingredientTerm="";
 		
@@ -442,6 +482,8 @@ public class DrugTermGenerator implements RF2Constants{
 		if (unit != null) {
 			ingredientTerm += " " + getTermForConcat(unit, isFSN || neverAbbrev.contains(unit), langRefset);
 		}
+		
+		ingredientTerm += denominatorStr;
 		
 		return ingredientTerm;
 	}
