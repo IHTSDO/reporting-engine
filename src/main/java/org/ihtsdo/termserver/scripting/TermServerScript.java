@@ -77,7 +77,7 @@ public abstract class TermServerScript implements RF2Constants {
 	private Map<String, Object> summaryDetails = new TreeMap<String, Object>();
 	private String summaryText = "";
 	protected boolean inputFileHasHeaderRow = false;
-	protected boolean runStandAlone = false; //Set to true to avoid loading concepts from Termserver.  Should be used with Dry Run only.
+	protected boolean runStandAlone = true; //Set to true to avoid loading concepts from Termserver.  Should be used with Dry Run only.
 	protected File inputFile;
 	protected File inputFile2;
 	protected File reportFile;
