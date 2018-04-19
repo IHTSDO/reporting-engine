@@ -23,6 +23,7 @@ import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import us.monoid.json.JSONObject;
 
 /*
+Updated for SUBST-254
 For SUBST-215 From a given (now filtered) list of concepts, check that a current parent matches the 
 expected target. Replace that parent relationship with "Is Modification Of" and
 make the original grandparent(s) the new parent
@@ -33,6 +34,7 @@ And batch siblings together.
 Also, if the base has any disposition, this will be copied into the modified concepts
 
 Input file structure:  SourceId	SourceTerm	AttributeName	TargetId	TargetTerm
+UPDATE: CONCEPT	FSN	BASE
 */
 public class FlattenHierarchy extends BatchFix implements RF2Constants{
 	
@@ -54,7 +56,6 @@ public class FlattenHierarchy extends BatchFix implements RF2Constants{
 			fix.populateEditPanel = false;
 			fix.populateTaskDescription = true;
 			fix.additionalReportColumns = "ACTION_DETAIL, DEF_STATUS, PARENT_COUNT, ATTRIBUTE_COUNT";
-			//fix.runStandAlone = true;
 			fix.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			fix.loadProjectSnapshot(true); 
@@ -286,7 +287,9 @@ public class FlattenHierarchy extends BatchFix implements RF2Constants{
 				//Recursively work up and down and across hierarchy to group near concepts together
 				allocateConceptToTask(task, thisConcept, unallocated);
 				if (task.size() == 0) {
-					throw new TermServerScriptException("Failed to allocate " + thisConcept + " to a task ");
+					warn ("Failed to allocate " + thisConcept + " to a task, adding anyway.");
+					task.add(thisConcept);
+					unallocated.remove(thisConcept);
 				}
 				debug (task + " (" + task.size() + ")");
 				task = batch.addNewTask(author_reviewer);
@@ -405,7 +408,8 @@ public class FlattenHierarchy extends BatchFix implements RF2Constants{
 			report (null, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept is inactive - skipping");
 			return null;
 		}
-		expectedTargetMap.put(lineItems[0], lineItems[3]);
+		Concept base = gl.getConcept(lineItems[2], false, true);
+		expectedTargetMap.put(lineItems[0], base.getConceptId());
 		return Collections.singletonList(c);
 	}
 

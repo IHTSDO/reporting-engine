@@ -55,6 +55,7 @@ public class MissingModifications extends TermServerReport {
 	}
 
 	private void findModificationWords() throws TermServerScriptException {
+		debug ("Finding modification words");
 		for (Concept substance : descendantsCache.getDescendentsOrSelf(SUBSTANCE)) {
 			//What is my X?
 			String baseName = SnomedUtils.deconstructFSN(substance.getFsn())[0];
@@ -87,6 +88,9 @@ public class MissingModifications extends TermServerReport {
 
 	private void findMissingModifications() throws TermServerScriptException {
 		for (Concept substance : descendantsCache.getDescendentsOrSelf(SUBSTANCE)) {
+			if (substance.getConceptId().equals("396061008")) {
+				debug("Checkpoint");
+			}
 			String baseName = SnomedUtils.deconstructFSN(substance.getFsn())[0];
 			//Do I have any immediate stated or inferred children which start with my X which are not a modification of me?
 			for (Concept childSubstance : getChildren(substance)) {
