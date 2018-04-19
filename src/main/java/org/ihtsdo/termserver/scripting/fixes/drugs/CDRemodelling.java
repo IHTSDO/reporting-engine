@@ -46,8 +46,8 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 			fix.init(args);
 			fix.ingredientCounter = new IngredientCounts(fix);
 			fix.ingredientCounter.setPrintWriterMap(fix.printWriterMap);  //Share report file!
-			fix.termGenerator.includeUnitOfPresentation(true);  //True for Pattern 1b   False for 3a
-			//fix.termGenerator.specifyDenominator(true); //True for 3a
+			//fix.termGenerator.includeUnitOfPresentation(true);  //True for Pattern 1b   False for 3a
+			fix.termGenerator.specifyDenominator(true); //True for 3a
 			fix.loadProjectSnapshot(false); //Load all descriptions
 			//We won't include the project export in our timings
 			fix.startTimer();
@@ -287,7 +287,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 	 * [7]ConcNumQty	 [8]ConcDenomUnit	 [9]PRESENTNumQty	[10]ConcDenomQty	
 	 * [11]PRESENTNumUnit [12]PRESENTDenomQty	[13]PRESENTDenomUnit	
 	 * [14]UoP	[15]DoseForm
-	 */
+	 
 	protected List<Concept> loadLine(String[] items) throws TermServerScriptException {
 		Concept c = gl.getConcept(items[0]);
 		c.setConceptType(ConceptType.CLINICAL_DRUG);
@@ -315,7 +315,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		}
 		
 		return Collections.singletonList(c);
-	}
+	}*/
 	
 	/**
 	 * PATTERN 3A - https://docs.google.com/spreadsheets/d/1EqZg1-Ksjy5J-Iebnjry96PgL7MbL_Au85oBXPtHCgE/edit#gid=0
@@ -323,7 +323,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 	 * [4]Precise_ingredient	 [5]dmd_boss	[6]ConcNumQty	[7]ConcNumUnit	[8]ConcDenomQty	
 	 * [9]ConcDenomUnit	[10]PRESENTNumQty	[11]PRESENTNumUnit	[12]PRESENTDenomQty	
 	 * [13]PRESENTDenomUnit	[14]UoP	[15]DoseForm	Pattern	[16]Status
-	 
+	 */
 	protected List<Concept> loadLine(String[] items) throws TermServerScriptException {
 		Concept c = gl.getConcept(items[0]);
 		c.setConceptType(ConceptType.CLINICAL_DRUG);
@@ -342,9 +342,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 			ingredient.strength = DrugUtils.getNumberAsConcept(items[6]);
 			ingredient.numeratorUnit = DrugUtils.findUnitOfMeasure(items[7]);
 			ingredient.denomQuantity = DrugUtils.getNumberAsConcept(items[8]);
-			//ingredient.denomUnit = getUnitOfPresentation(items[9]);
 			ingredient.denomUnit =  DrugUtils.findUnitOfMeasure(items[9]);
-			//ingredient.unitOfPresentation = getUnitOfPresentation(items[14]);
 			ingredients.add(ingredient);
 		} catch (Exception e) {
 			report (null, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, e.getMessage());
@@ -352,7 +350,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		}
 		
 		return Collections.singletonList(c);
-	}*/
+	}
 
 	private Concept getPharmDoseForm(String doseFormStr) throws TermServerScriptException {
 		//Do we have an SCTID to work with?  
