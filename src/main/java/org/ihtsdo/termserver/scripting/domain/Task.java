@@ -95,10 +95,6 @@ public class Task {
 		quotedList.append("]");
 		return quotedList.toString();
 	}
-
-	/*public void addAll(Collection<Concept> concepts) {
-		this.components.addAll(concepts);
-	}*/
 	
 	public void addAll(Collection<Component> components) {
 		this.components.addAll(components);

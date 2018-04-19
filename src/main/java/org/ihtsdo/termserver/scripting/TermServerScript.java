@@ -381,24 +381,34 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 	}
 	
-	protected Concept loadConcept(Concept concept, String branchPath) throws TermServerScriptException {
+	protected Concept loadConcept(String sctid, String branchPath) throws TermServerScriptException {
 		if (dryRun) {
 			//In a dry run situation, the task branch is not created so use the Project instead
 			branchPath = branchPath.substring(0, branchPath.lastIndexOf("/"));
 			if (runStandAlone) {
-				debug ("Loading: " + gl.getConcept(concept.getConceptId()) + " from local store");
-				return gl.getConcept(concept.getConceptId());
+				debug ("Loading: " + gl.getConcept(sctid) + " from local store");
+				return gl.getConcept(sctid);
 			}
 		}
-		Concept loadedConcept = loadConcept (tsClient, concept, branchPath);
+		Concept loadedConcept = loadConcept (tsClient, sctid, branchPath);
+		return loadedConcept;
+	}
+	
+	protected Concept loadConcept(Concept concept, String branchPath) throws TermServerScriptException {
+		Concept loadedConcept = loadConcept(concept.getConceptId(), branchPath);
 		loadedConcept.setConceptType(concept.getConceptType());
 		return loadedConcept;
 	}
 	
 	protected Concept loadConcept(SnowOwlClient client, Concept concept, String branchPath) throws TermServerScriptException {
+			return loadConcept(client, concept.getConceptId(), branchPath);
+	}
+	
+	protected Concept loadConcept(SnowOwlClient client, String sctId, String branchPath) throws TermServerScriptException {
+		Concept concept =  gl.getConcept(sctId);
 		try {
-			debug ("Loading: " + gl.getConcept(concept.getConceptId()) + " from TS branch " + branchPath);
-			JSONResource response = client.getConcept(concept.getConceptId(), branchPath);
+			debug ("Loading: " + concept + " from TS branch " + branchPath);
+			JSONResource response = client.getConcept(sctId, branchPath);
 			String json = response.toObject().toString();
 			Concept loadedConcept = gson.fromJson(json, Concept.class);
 			loadedConcept.setLoaded(true);
