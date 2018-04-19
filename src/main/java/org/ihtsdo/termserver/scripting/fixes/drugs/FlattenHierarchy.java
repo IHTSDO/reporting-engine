@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
@@ -410,6 +411,15 @@ public class FlattenHierarchy extends BatchFix implements RF2Constants{
 		Concept c = gl.getConcept(lineItems[0]);
 		if (!c.isActive()) {
 			report (null, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept is inactive - skipping");
+			return null;
+		}
+		
+		//Does this concept already have a modification attribute?
+		String existing =  c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, IS_MODIFICATION_OF, ActiveState.ACTIVE).stream()
+				.map(rel -> rel.getTarget().toString())
+				.collect (Collectors.joining(", "));
+		if (existing != null && !existing.isEmpty()) {
+			report (null, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept has existing modification(s): " + existing);
 			return null;
 		}
 		Concept base = gl.getConcept(lineItems[2], false, true);
