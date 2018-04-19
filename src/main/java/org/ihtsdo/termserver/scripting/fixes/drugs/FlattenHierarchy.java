@@ -383,11 +383,15 @@ public class FlattenHierarchy extends BatchFix implements RF2Constants{
 			//What siblings do we not already know about?
 			siblings.removeAll(allConcepts);
 			for (Concept sibling : siblings) {
-				//Sibling will have 
-				expectedTargetMap.put(sibling.getConceptId(), newTargetSctid);
-				warn ("Including " + sibling + ", the sibling of " + c  + " as a modification of " + newTarget);
+				//Only include a sibling if the first word in the FSN matches that of the base
+				if (sibling.getFsn().split(" ")[0].equals(newTarget.getFsn().split(" ")[0])) {
+					allConcepts.add(sibling);
+					expectedTargetMap.put(sibling.getConceptId(), newTargetSctid);
+					warn ("Including " + sibling + ", the sibling of " + c  + " as a modification of " + newTarget);
+				} else {
+					warn ("Skipping " + sibling + ", the sibling of " + c  + " as a modification of " + newTarget + " due to name mismatch.");
+				}
 			}
-			allConcepts.addAll(siblings);
 		}
 	}
 
