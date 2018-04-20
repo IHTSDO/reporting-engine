@@ -38,14 +38,14 @@ public class TemplateUtils {
 		
 		//Now add the ungrouped attributes
 		sb.append(template.getUngroupedAttributes().stream()
-				.map( a -> a.getType() + "=" + a.getAllowableRangeECL())
+				.map( a -> a.getType() + "=" + (a.getAllowableRangeECL() == null? a.getValue(): a.getAllowableRangeECL()))
 				.collect (Collectors.joining(",")));
 		
 		//Now add the grouped attributes
 		for (AttributeGroup group : template.getAttributeGroups()) {
 			sb.append("{")
 				.append(group.getAttributes().stream()
-					.map( a -> a.getType() + "=" + a.getAllowableRangeECL())
+					.map( a -> a.getType() + "=" + (a.getAllowableRangeECL() == null? a.getValue(): a.getAllowableRangeECL()))
 					.collect (Collectors.joining(",")))
 				.append("}");
 		}
@@ -67,7 +67,6 @@ public class TemplateUtils {
 
 	public static boolean matchesTemplate(Concept c, Template t, DescendentsCache cache, CharacteristicType charType) throws TermServerScriptException {
 		//TODO Check the focus concept
-		//TODO Check the ungrouped attributes
 
 		//Map relGroups to template attribute groups, and visa versa
 		Map<RelationshipGroup, List<AttributeGroup>> relGroupMatchesTemplateGroups = new HashMap<>();
@@ -143,8 +142,14 @@ public class TemplateUtils {
 
 	private static boolean matchesAttribute(Relationship r, Attribute a, DescendentsCache cache) throws TermServerScriptException {
 		if (matchesAttributeType(r.getType(), a.getType())) {
-			//Is the value within the allowable ECL?
-			return matchesAttributeValue(r.getTarget(), a.getAllowableRangeECL().trim(), cache);
+			//Is the value within the allowable ECL, or do we have a fixed value?
+			if (a.getAllowableRangeECL() != null) {
+				return matchesAttributeValue(r.getTarget(), a.getAllowableRangeECL().trim(), cache);
+			} else if (a.getValue() != null) {
+				return r.getTarget().getConceptId().equals(a.getValue());
+			} else {
+				throw new IllegalArgumentException ("Template segment has neither ECL nor Value: " + a);
+			}
 		}
 		return false;
 	}

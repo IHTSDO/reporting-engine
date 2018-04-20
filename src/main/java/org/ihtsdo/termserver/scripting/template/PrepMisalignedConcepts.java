@@ -25,7 +25,7 @@ import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
 
 /**
- * QI-1, QI-5
+ * QI-1, QI-5, QI-9
  * See https://confluence.ihtsdotools.org/display/IAP/Quality+Improvements+2018
  */
 public class PrepMisalignedConcepts extends TemplateFix {
@@ -58,10 +58,12 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		runStandAlone = true; 
 		additionalReportColumns = "CharacteristicType, MatchedTemplate, Template Diagnostic";
 		
-		subHierarchyStr = "125605004";  // |Fracture of bone (disorder)|
+		/*subHierarchyStr = "125605004";  // |Fracture of bone (disorder)|
 		templateNames = new String[] {	"Fracture of Bone Structure.json",
 										"Fracture Dislocation of Bone Structure.json",
-										"Pathologic fracture of bone due to Disease.json"};
+										"Pathologic fracture of bone due to Disease.json"};*/
+		subHierarchyStr =  "128294001";  // QI-9 |Chronic inflammatory disorder (disorder)
+		templateNames = new String[] {	"Chronic Inflammatory Disorder.json"};
 		super.init(args);
 	}
 	@Override

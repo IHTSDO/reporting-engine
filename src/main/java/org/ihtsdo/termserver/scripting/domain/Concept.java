@@ -914,7 +914,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		if (relationshipGroups == null) {
 			Map<Integer, RelationshipGroup> groups = new HashMap<>();
 			for (Relationship r : getRelationships(characteristicType, activeState)) {
-				if (r.getType().equals(IS_A) || !includeGroup0 && r.getGroupId() == 0) {
+				if (r.getType().equals(IS_A) || (!includeGroup0 && r.getGroupId() == 0)) {
 					continue;
 				}
 				//Do we know about this Relationship Group yet?
