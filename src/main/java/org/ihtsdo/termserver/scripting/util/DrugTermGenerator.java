@@ -25,6 +25,7 @@ public class DrugTermGenerator implements RF2Constants{
 	private TermServerScript parent;
 	private boolean quiet = false;
 	private boolean useEach = false;
+	private boolean ptOnly = false;
 	private boolean specifyDenominator = false;
 	private boolean includeUnitOfPresentation = false;
 	private GraphLoader gl = GraphLoader.getGraphLoader();
@@ -151,7 +152,11 @@ public class DrugTermGenerator implements RF2Constants{
 			}
 		}
 		//Now that the FSN is resolved, remove any redundant terms
-		changesMade += removeRedundantTerms(t,c);
+		if (!ptOnly) {
+			changesMade += removeRedundantTerms(t,c);
+		} else {
+			changesMade += removeOldPTs(t,c);
+		}
 		return changesMade;
 	}
 	
@@ -168,7 +173,12 @@ public class DrugTermGenerator implements RF2Constants{
 		}
 		
 		//If it's not the PT or FSN, skip it.   We'll delete later if it's not the FSN counterpart
-		if (!isPT && !isFSN) {
+		if (!isPT && !isFSN ) {
+			return NO_CHANGES_MADE;
+		}
+		
+		//If we're only doing PTs, return if it's the FSN
+		if (ptOnly && isFSN) {
 			return NO_CHANGES_MADE;
 		}
 		
@@ -287,6 +297,34 @@ public class DrugTermGenerator implements RF2Constants{
 				if (!d.getTerm().equals(fsnCounterpart)) {
 					boolean isInactivated = removeDescription(c,d);
 					String msg = (isInactivated?"Inactivated redundant desc ":"Deleted redundant desc ") +  d;
+					report(t, c, Severity.LOW, ReportActionType.DESCRIPTION_REMOVED, msg);
+					changesMade++;
+				}
+			}
+		}
+		return changesMade;
+	}
+	
+	
+	/**
+	 * Designed for Medicinal Products, remove terms which are like the PT, but missing the suffix
+	 * @param t
+	 * @param c
+	 * @return
+	 * @throws TermServerScriptException 
+	 */
+	private int removeOldPTs(Task t, Concept c) throws TermServerScriptException {
+		int changesMade = 0;
+		List<Description> allTerms = c.getDescriptions(ActiveState.ACTIVE);
+		String PT = c.getPreferredSynonym(US_ENG_LANG_REFSET).getTerm();
+		String badTerm = PT.replaceAll(" product", "");
+		for (Description d : allTerms) {
+			boolean isFSN = d.getType().equals(DescriptionType.FSN);
+			if (!isFSN && !d.isPreferred()) {
+				//Is this term bad?  Remove if so.
+				if (d.getTerm().equals(badTerm)) {
+					boolean isInactivated = removeDescription(c,d);
+					String msg = (isInactivated?"Inactivated bad desc ":"Deleted bad desc ") +  d;
 					report(t, c, Severity.LOW, ReportActionType.DESCRIPTION_REMOVED, msg);
 					changesMade++;
 				}
@@ -546,6 +584,10 @@ public class DrugTermGenerator implements RF2Constants{
 	
 	public void setQuiet(boolean quiet) {
 		this.quiet = quiet;
+	}
+	
+	public void setPtOnly(boolean ptOnly) {
+		this.ptOnly = ptOnly;
 	}
 	
 }
