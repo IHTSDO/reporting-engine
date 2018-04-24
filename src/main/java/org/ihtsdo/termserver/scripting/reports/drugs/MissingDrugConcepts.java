@@ -9,17 +9,17 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 
 /**
- * DRUG-469 
+ * DRUGS-469 
  * Query to identify MPF-containing concepts that are sufficiently defined with 
  * stated parent |Medicinal product| and that have an inferred parent with 
  * semantic tag other than (medicinal product).
  * 
- * DRUG-470
+ * DRUGS-470
  * Query to identify CD concepts that are sufficiently defined with 
  * stated parent |Medicinal product| and that have an inferred parent with 
  * semantic tag other than (medicinal product form).
  */
-public class IdentifyMissingDrugConcepts extends TermServerReport {
+public class MissingDrugConcepts extends TermServerReport {
 	
 	private static final String CD = "(clinical drug)";
 	private static final String MPF = "(medicinal product form)";
@@ -28,7 +28,7 @@ public class IdentifyMissingDrugConcepts extends TermServerReport {
 	Concept subHierarchy;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
-		IdentifyMissingDrugConcepts report = new IdentifyMissingDrugConcepts();
+		MissingDrugConcepts report = new MissingDrugConcepts();
 		try {
 			report.additionalReportColumns = "InferredParent";
 			report.init(args);
@@ -37,7 +37,7 @@ public class IdentifyMissingDrugConcepts extends TermServerReport {
 			//report.runIdentifyMissingMPConceptsReport();
 			report.runIdentifyMissingMPFConceptsReport();
 		} catch (Exception e) {
-			info("Failed to produce ConceptsWithOrTargetsOfAttribute Report due to " + e.getMessage());
+			info("Failed to produce MissingDrugConcepts Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -70,19 +70,25 @@ public class IdentifyMissingDrugConcepts extends TermServerReport {
 	
 	private void runIdentifyMissingMPFConceptsReport() throws TermServerScriptException {
 		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
-			// CD concepts that are sufficiently defined
-			if (c.isActive() && c.getFsn().contains(CD) && c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
+			// MPF concepts that are sufficiently defined
+			if (c.isActive() && c.getFsn().contains(MPF) && c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
 				//...with stated parent |Medicinal product| 
 				if (hasStatedParent (c, MEDICINAL_PRODUCT)) {
-					//...and that have an inferred parent with semantic tag other than (medicinal product).
+					//that DO NOT have an inferred parent with semantic tag (medicinal product)
+					boolean hasMpParent = false;
 					for (Concept parent : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
-						if (!parent.getFsn().contains(MPF)) {
-							report (c, parent.toString());
-							incrementSummaryInformation("Non-MPF Parents reported");
+						if (parent.getFsn().contains(MP)) {
+							hasMpParent = true;
+							break;
 						}
 					}
+					
+					if (!hasMpParent) {
+						report (c);
+						incrementSummaryInformation("Issue - MPFs with no MP parent");
+					}
 				}
-				incrementSummaryInformation("FD CDs with |Medicinal Product| stated parent checked");
+				incrementSummaryInformation("FD MPFs checked");
 			}
 			incrementSummaryInformation("Concepts checked");
 		}
