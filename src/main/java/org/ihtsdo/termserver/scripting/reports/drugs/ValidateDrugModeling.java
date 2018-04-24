@@ -44,20 +44,20 @@ public class ValidateDrugModeling extends TermServerReport{
 	
 	private void validateDrugsModeling() throws TermServerScriptException {
 		Set<Concept> subHierarchy = gl.getConcept(drugsHierarchyStr).getDescendents(NOT_SET);
-		ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT, ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.CLINICAL_DRUG };
+		//ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT, ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.CLINICAL_DRUG };
 		//ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.CLINICAL_DRUG };
 		//ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT_FORM};
-		//ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT };
+		ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT };
 		long issueCount = 0;
 		for (Concept concept : subHierarchy) {
 			DrugUtils.setConceptType(concept);
 			
 			if (concept.getConceptId().equals("346644007")) {
-				debug ("Check here");
+				//debug ("Check here");
 			}
 			
 			// DRUGS-281, DRUGS-282
-			//issueCount += validateIngredientsInFSN(concept, drugTypes);  
+			issueCount += validateIngredientsInFSN(concept, drugTypes);  
 			
 			// DRUGS-267
 			//issueCount += validateIngredientsAgainstBoSS(concept);
@@ -70,7 +70,7 @@ public class ValidateDrugModeling extends TermServerReport{
 			}*/
 			
 			// DRUGS-288
-			issueCount += validateAttributeValueCardinality(concept, HAS_ACTIVE_INGRED);
+			//issueCount += validateAttributeValueCardinality(concept, HAS_ACTIVE_INGRED);
 			
 			//issueCount += checkForBadWords(concept);  //DRUGS-93
 		}
