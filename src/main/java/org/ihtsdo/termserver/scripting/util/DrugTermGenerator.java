@@ -467,27 +467,27 @@ public class DrugTermGenerator implements RF2Constants{
 			Concept ingredient = GraphLoader.getGraphLoader().getConcept(r.getTarget().getConceptId());
 			
 			//Do we have a BoSS in the same group?
-			Concept boSS = getTarget(c, HAS_BOSS, r.getGroupId(), charType);
+			Concept boSS = getTarget(c, new Concept[] {HAS_BOSS}, r.getGroupId(), charType);
 			
 			//Are we adding the strength?
-			Concept strength = getTarget (c, HAS_STRENGTH_VALUE, r.getGroupId(), charType);
+			Concept strength = getTarget (c, new Concept[] {HAS_PRES_STRENGTH_VALUE, HAS_CONC_STRENGTH_VALUE}, r.getGroupId(), charType);
 			
 			//Are we adding the denominator strength and units?
 			String denominatorStr = "";
 			if (specifyDenominator) {
 				denominatorStr = "/";
-				Concept denStren = getTarget (c, HAS_STRENGTH_DENOM_VALUE, r.getGroupId(), charType);
+				Concept denStren = getTarget (c, new Concept[] {HAS_PRES_STRENGTH_DENOM_VALUE, HAS_CONC_STRENGTH_DENOM_VALUE}, r.getGroupId(), charType);
 				String denStrenStr = SnomedUtils.deconstructFSN(denStren.getFsn())[0];
 				if (!denStrenStr.equals("1") || isFSN) {
 					denominatorStr += denStrenStr + " ";
 				}
-				Concept denUnit = getTarget (c, HAS_STRENGTH_DENOM_UNIT, r.getGroupId(), charType);
+				Concept denUnit = getTarget (c, new Concept[] {HAS_PRES_STRENGTH_DENOM_UNIT, HAS_CONC_STRENGTH_DENOM_UNIT}, r.getGroupId(), charType);
 				String denUnitStr = getTermForConcat(denUnit, isFSN || neverAbbrev.contains(denUnit), langRefset);
 				denominatorStr += denUnitStr;
 			}
 			
 			//And the unit
-			Concept unit = getTarget(c, HAS_STRENGTH_UNIT, r.getGroupId(), charType);
+			Concept unit = getTarget(c, new Concept[] {HAS_PRES_STRENGTH_UNIT, HAS_CONC_STRENGTH_UNIT}, r.getGroupId(), charType);
 			
 			String ingredientWithStrengthTerm = formIngredientWithStrengthTerm (ingredient, boSS, strength, unit, denominatorStr, isFSN, langRefset);
 			ingredients.add(ingredientWithStrengthTerm);
@@ -542,10 +542,15 @@ public class DrugTermGenerator implements RF2Constants{
 		return term;
 	}
 
-	private Concept getTarget(Concept c, Concept type, int groupId, CharacteristicType charType) throws TermServerScriptException {
-		List<Relationship> rels = c.getRelationships(charType, type, groupId);
+	private Concept getTarget(Concept c, Concept[] types, int groupId, CharacteristicType charType) throws TermServerScriptException {
+		List<Relationship> rels = new ArrayList<>();
+		String typeString = "";
+		for (Concept type : types) {
+			rels.addAll(c.getRelationships(charType, type, groupId));
+			typeString += type.getFsn() + " ";
+		}
 		if (rels.size() > 1) {
-			TermServerScript.warn(c + " has multiple " + type + " in group " + groupId);
+			TermServerScript.warn(c + " has multiple " + typeString + " in group " + groupId);
 		} else if (rels.size() == 1) {
 			Concept target = rels.get(0).getTarget();
 			//This might not be the full concept, so recover it fully from our loaded cache

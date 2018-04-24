@@ -25,7 +25,11 @@ import us.monoid.json.JSONObject;
 
 /*
 DRUGS-474 (Pattern 1a) Remodelling of Clinical Drugs including Basis of Strength Substance (BoSS) based on an input spreadsheet
-DRUGS-493 (Pattern 1b) 
+DRUGS-493 (Pattern 1b - ) 
+DRUGS-495 (Pattern 3a - Vials)
+DRUGS-496 (Pattern 3b - Creams and Drops)
+DRUGS-499 (Pattern 2b - Oral Solutions)
+
 */
 public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 	
@@ -33,6 +37,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 	DrugTermGenerator termGenerator = new DrugTermGenerator(this);
 	IngredientCounts ingredientCounter;
 	TermVerifier termVerifier;
+	boolean useConcentration = false;  //True for liquids eg Pattern 3b - creams
 	
 	protected CDRemodelling(BatchFix clone) {
 		super(clone);
@@ -46,8 +51,8 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 			fix.init(args);
 			fix.ingredientCounter = new IngredientCounts(fix);
 			fix.ingredientCounter.setPrintWriterMap(fix.printWriterMap);  //Share report file!
-			//fix.termGenerator.includeUnitOfPresentation(true);  //True for Pattern 1b   False for 3a
-			fix.termGenerator.specifyDenominator(true); //True for 3a
+			//fix.termGenerator.includeUnitOfPresentation(true);  //True for Pattern 1b   False for 2b, 3a
+			fix.termGenerator.specifyDenominator(true); //True for 3a, 3b
 			fix.loadProjectSnapshot(false); //Load all descriptions
 			//We won't include the project export in our timings
 			fix.startTimer();
@@ -87,11 +92,13 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 				termVerifier.replace(concept, alternative);
 			}
 			loadedConcept = loadConcept(alternative, task.getBranchPath());
-		} 
-		
+		}
 		changesMade = remodelConcept(task, loadedConcept);
-		changesMade += ingredientCounter.assignIngredientCounts(task, loadedConcept, CharacteristicType.STATED_RELATIONSHIP);
-		
+		try {
+			changesMade += ingredientCounter.assignIngredientCounts(task, loadedConcept, CharacteristicType.STATED_RELATIONSHIP);
+		} catch (Exception e) {
+			report (task, concept, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Unable to assign ingredient count due to: " + e.getMessage());
+		}
 		if (changesMade > 0) {
 			try {
 				String conceptSerialised = gson.toJson(loadedConcept);
@@ -188,10 +195,10 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		
 		changesMade += replaceRelationship(t, c, HAS_MANUFACTURED_DOSE_FORM, modelIngredient.doseForm, UNGROUPED, true);
 		changesMade += replaceRelationship(t, c, HAS_BOSS, modelIngredient.boss, targetGroupId, false);
-		changesMade += replaceRelationship(t, c, HAS_STRENGTH_VALUE, modelIngredient.strength, targetGroupId, false);
-		changesMade += replaceRelationship(t, c, HAS_STRENGTH_UNIT, modelIngredient.numeratorUnit, targetGroupId, false);
-		changesMade += replaceRelationship(t, c, HAS_STRENGTH_DENOM_VALUE, modelIngredient.denomQuantity, targetGroupId, false);
-		changesMade += replaceRelationship(t, c, HAS_STRENGTH_DENOM_UNIT, modelIngredient.denomUnit, targetGroupId, false);
+		changesMade += replaceRelationship(t, c, useConcentration?HAS_CONC_STRENGTH_VALUE:HAS_PRES_STRENGTH_VALUE, modelIngredient.strength, targetGroupId, false);
+		changesMade += replaceRelationship(t, c, useConcentration?HAS_CONC_STRENGTH_UNIT:HAS_PRES_STRENGTH_UNIT , modelIngredient.numeratorUnit, targetGroupId, false);
+		changesMade += replaceRelationship(t, c, useConcentration?HAS_CONC_STRENGTH_DENOM_VALUE:HAS_PRES_STRENGTH_DENOM_VALUE, modelIngredient.denomQuantity, targetGroupId, false);
+		changesMade += replaceRelationship(t, c, useConcentration?HAS_CONC_STRENGTH_DENOM_UNIT:HAS_PRES_STRENGTH_DENOM_UNIT, modelIngredient.denomUnit, targetGroupId, false);
 		if (modelIngredient.unitOfPresentation != null || termGenerator.includeUnitOfPresentation()) {
 			changesMade += replaceRelationship(t, c, HAS_UNIT_OF_PRESENTATION, modelIngredient.unitOfPresentation, UNGROUPED, true);
 		}
@@ -287,7 +294,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 	 * [7]ConcNumQty	 [8]ConcDenomUnit	 [9]PRESENTNumQty	[10]ConcDenomQty	
 	 * [11]PRESENTNumUnit [12]PRESENTDenomQty	[13]PRESENTDenomUnit	
 	 * [14]UoP	[15]DoseForm
-	 
+	 *
 	protected List<Concept> loadLine(String[] items) throws TermServerScriptException {
 		Concept c = gl.getConcept(items[0]);
 		c.setConceptType(ConceptType.CLINICAL_DRUG);
@@ -316,9 +323,10 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		
 		return Collections.singletonList(c);
 	}*/
-	
-	/**
+
+	/*
 	 * PATTERN 3A - https://docs.google.com/spreadsheets/d/1EqZg1-Ksjy5J-Iebnjry96PgL7MbL_Au85oBXPtHCgE/edit#gid=0
+	 * DRUGS-499 Pattern 2B Oral Solutions https://docs.google.com/spreadsheets/d/1EqZg1-Ksjy5J-Iebnjry96PgL7MbL_Au85oBXPtHCgE/edit#gid=625769023
 	 * Spreadsheet columns: [0]conceptId	[10]FSN	[2]dose_form_evaluation	[3]dmd_name	
 	 * [4]Precise_ingredient	 [5]dmd_boss	[6]ConcNumQty	[7]ConcNumUnit	[8]ConcDenomQty	
 	 * [9]ConcDenomUnit	[10]PRESENTNumQty	[11]PRESENTNumUnit	[12]PRESENTDenomQty	
@@ -350,7 +358,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		}
 		
 		return Collections.singletonList(c);
-	}
+	} 
 
 	private Concept getPharmDoseForm(String doseFormStr) throws TermServerScriptException {
 		//Do we have an SCTID to work with?  

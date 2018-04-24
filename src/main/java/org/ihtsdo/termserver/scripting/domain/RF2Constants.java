@@ -20,10 +20,17 @@ public interface RF2Constants {
 	static Concept SUBSTANCE = new Concept("105590001", "Substance (substance)");
 	static Concept HAS_MANUFACTURED_DOSE_FORM = new Concept ("411116001","Has manufactured dose form (attribute)");
 	static Concept HAS_BOSS = new Concept ("732943007","Has basis of strength substance (attribute)");
-	static Concept HAS_STRENGTH_VALUE = new Concept ("732944001","Has presentation strength numerator value (attribute)");
-	static Concept HAS_STRENGTH_UNIT = new Concept ("732945000","Has presentation strength numerator unit (attribute)");
-	static Concept HAS_STRENGTH_DENOM_VALUE = new Concept ("732946004","Has presentation strength denominator value (attribute)");
-	static Concept HAS_STRENGTH_DENOM_UNIT = new Concept ("732947008","Has presentation strength denominator unit (attribute)");
+	
+	static Concept HAS_PRES_STRENGTH_VALUE = new Concept ("732944001","Has presentation strength numerator value (attribute)");
+	static Concept HAS_PRES_STRENGTH_UNIT = new Concept ("732945000","Has presentation strength numerator unit (attribute)");
+	static Concept HAS_PRES_STRENGTH_DENOM_VALUE = new Concept ("732946004","Has presentation strength denominator value (attribute)");
+	static Concept HAS_PRES_STRENGTH_DENOM_UNIT = new Concept ("732947008","Has presentation strength denominator unit (attribute)");
+	
+	static Concept HAS_CONC_STRENGTH_VALUE = new Concept ("733724008","Has concentration strength numerator value (attribute)");
+	static Concept HAS_CONC_STRENGTH_UNIT = new Concept ("733725009","Has concentration strength numerator unit (attribute)");
+	static Concept HAS_CONC_STRENGTH_DENOM_VALUE = new Concept ("733723002","Has concentration strength denominator value (attribute)");
+	static Concept HAS_CONC_STRENGTH_DENOM_UNIT = new Concept ("733722007","Has concentration strength denominator unit (attribute)");
+
 	static Concept HAS_UNIT_OF_PRESENTATION = new Concept ("763032000","Has unit of presentation (attribute)");
 	static Concept IS_MODIFICATION_OF = new Concept ("738774007", "Is modification of (attribute)");
 	static Concept DRUG_PREPARATION = new Concept("105904009","Type of drug preparation (qualifier value)");

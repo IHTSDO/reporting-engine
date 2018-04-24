@@ -9,15 +9,7 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 
 /**
- * DRUGS-469 
- * Query to identify MPF-containing concepts that are sufficiently defined with 
- * stated parent |Medicinal product| and that have an inferred parent with 
- * semantic tag other than (medicinal product).
- * 
- * DRUGS-470
- * Query to identify CD concepts that are sufficiently defined with 
- * stated parent |Medicinal product| and that have an inferred parent with 
- * semantic tag other than (medicinal product form).
+ * DRUGS-289 Report to list any ingredients that use different units across products
  */
 public class MissingDrugConcepts extends TermServerReport {
 	
