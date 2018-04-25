@@ -198,6 +198,8 @@ public class DrugTermGenerator implements RF2Constants{
 		//Does the case significance of the ingredients suggest a need to modify the term?
 		if (replacement.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE) && SnomedUtils.isCaseSensitive(replacementTerm)) {
 			replacement.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
+		} else if (!SnomedUtils.isCaseSensitive(replacementTerm)) {
+			replacement.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
 		}
 		
 		//Have we made any changes?  Create a new description if so
