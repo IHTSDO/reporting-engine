@@ -28,6 +28,7 @@ DRUGS-474 (Pattern 1a) Remodelling of Clinical Drugs including Basis of Strength
 DRUGS-493 (Pattern 1b - ) 
 DRUGS-495 (Pattern 3a - Vials)
 DRUGS-496 (Pattern 3b - Creams and Drops)
+DRUGS-497 (Pattern 3a - Patches)
 DRUGS-499 (Pattern 2b - Oral Solutions)
 
 */
@@ -367,6 +368,42 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		
 		return Collections.singletonList(c);
 	} 
+	
+	/*
+	 * DRUGS-497 Pattern 3APatches - https://docs.google.com/spreadsheets/d/1EqZg1-Ksjy5J-Iebnjry96PgL7MbL_Au85oBXPtHCgE/edit#gid=493556537
+	 * Spreadsheet columns: [0]conceptId	[10]FSN	[2]dose_form_evaluation	[3]dmd_name	
+	 * [4]Precise_ingredient	 [5]dmd_boss	[6]ConcNumQty	[7]ConcNumUnit	[8]ConcDenomQty	
+	 * [9]ConcDenomUnit	[10]NonNormConcNumQty	[11]NonNormConcNumUnit	[12]NonNormConcDenomQty	
+	 * [13]NonNormConcDenomUnit	[14]PRESENTNumQty	[15]PRESENTNumUnit	[16]PRESENTDenomQty	
+	 * [17]PRESENTDenomUnit	[18]UoP	[19]DoseForm
+	
+	protected List<Concept> loadLine(String[] items) throws TermServerScriptException {
+		Concept c = gl.getConcept(items[0]);
+		c.setConceptType(ConceptType.CLINICAL_DRUG);
+		
+		//Is this the first time we've seen this concept?
+		if (!spreadsheet.containsKey(c)) {
+			spreadsheet.put(c, new ArrayList<Ingredient>());
+		}
+		List<Ingredient> ingredients = spreadsheet.get(c);
+		try {
+			// Booleans indicate: don't create and do validate that concept exists
+			Ingredient ingredient = new Ingredient();
+			ingredient.doseForm = getPharmDoseForm(items[19]);
+			ingredient.substance = gl.getConcept(items[4], false, true);
+			ingredient.boss = gl.getConcept(items[5], false, true);
+			ingredient.strength = DrugUtils.getNumberAsConcept(items[6]);
+			ingredient.numeratorUnit = DrugUtils.findUnitOfMeasure(items[7]);
+			ingredient.denomQuantity = DrugUtils.getNumberAsConcept(items[8]);
+			ingredient.denomUnit =  DrugUtils.findUnitOfMeasure(items[9]);
+			ingredients.add(ingredient);
+		} catch (Exception e) {
+			report (null, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, e.getMessage());
+			return null;
+		}
+		
+		return Collections.singletonList(c);
+	}  */
 
 	private Concept getPharmDoseForm(String doseFormStr) throws TermServerScriptException {
 		//Do we have an SCTID to work with?  
