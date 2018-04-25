@@ -37,14 +37,12 @@ public class ConceptsWithAttributesAsParents extends TermServerReport {
 		}
 	}
 
-
 	private void postInit() throws TermServerScriptException {
 		attributeType = gl.getConcept("738774007"); // |Is modification of (attribute)|)
 		ignoreTypes = new ArrayList<>();
 		ignoreTypes.add(DUE_TO);
 		ignoreTypes.add(PART_OF);
 	}
-
 
 	private void runConceptsWithAttributesAsParentsReport() throws TermServerScriptException {
 		for (Concept c : gl.getAllConcepts()) {
@@ -54,7 +52,6 @@ public class ConceptsWithAttributesAsParents extends TermServerReport {
 			incrementSummaryInformation("Concepts checked");
 		}
 	}
-
 
 	private boolean checkforAttributesAsParents(Concept c, CharacteristicType type) {
 		List<Concept> parents = c.getParents(type);
@@ -78,7 +75,6 @@ public class ConceptsWithAttributesAsParents extends TermServerReport {
 		return issueFound;
 	}
 
-
 	private boolean isOfInterest(Concept type) {
 		if (type.equals(attributeType)) {
 			return true;
@@ -87,7 +83,6 @@ public class ConceptsWithAttributesAsParents extends TermServerReport {
 		}
 		return true;
 	}
-
 
 	private String determineWhatWasInferred(Concept c, Concept value) {
 		String whatWasInferred = "Undetermined";
@@ -115,5 +110,3 @@ public class ConceptsWithAttributesAsParents extends TermServerReport {
 	}
 
 }
-
-
