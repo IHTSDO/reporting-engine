@@ -37,7 +37,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 	DrugTermGenerator termGenerator = new DrugTermGenerator(this);
 	IngredientCounts ingredientCounter;
 	TermVerifier termVerifier;
-	boolean useConcentration = false;  //True for liquids eg Pattern 3b - creams
+	boolean useConcentration = true;  //True for liquids eg Pattern 2b Oral solutions, 3a solutions, 3b - creams
 	
 	protected CDRemodelling(BatchFix clone) {
 		super(clone);
@@ -52,7 +52,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 			fix.ingredientCounter = new IngredientCounts(fix);
 			fix.ingredientCounter.setPrintWriterMap(fix.printWriterMap);  //Share report file!
 			//fix.termGenerator.includeUnitOfPresentation(true);  //True for Pattern 1b   False for 2b, 3a
-			fix.termGenerator.specifyDenominator(true); //True for 3a, 3b
+			fix.termGenerator.specifyDenominator(true); //True for 2b, 3a, 3b
 			fix.loadProjectSnapshot(false); //Load all descriptions
 			//We won't include the project export in our timings
 			fix.startTimer();
@@ -191,6 +191,14 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 			report (t,c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, substanceRel);
 			c.addRelationship(substanceRel);
 			changesMade++;
+		}
+		
+		//If we're using concentration then remove any relationships for presentation strength
+		if (useConcentration) {
+			removeRelationships (t, c, HAS_PRES_STRENGTH_VALUE, targetGroupId);
+			removeRelationships (t, c, HAS_PRES_STRENGTH_UNIT, targetGroupId);
+			removeRelationships (t, c, HAS_PRES_STRENGTH_DENOM_VALUE, targetGroupId);
+			removeRelationships (t, c, HAS_PRES_STRENGTH_DENOM_UNIT, targetGroupId);
 		}
 		
 		changesMade += replaceRelationship(t, c, HAS_MANUFACTURED_DOSE_FORM, modelIngredient.doseForm, UNGROUPED, true);

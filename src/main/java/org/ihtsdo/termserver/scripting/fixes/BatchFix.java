@@ -601,6 +601,12 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		return CHANGE_MADE;
 	}
 	
+	protected void removeRelationships (Task t, Concept c, Concept type, int groupId) throws TermServerScriptException {
+		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, type, groupId)) {
+			removeRelationship(t, r, c);
+		}
+	}
+	
 	protected void removeRelationship(Task t, Relationship r, Concept c) throws TermServerScriptException {
 		
 		//Are we inactivating or deleting this relationship?

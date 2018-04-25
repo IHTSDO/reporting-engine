@@ -67,6 +67,10 @@ public class GraphLoader implements RF2Constants {
 		while ((line = br.readLine()) != null) {
 			if (!isHeaderLine) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
+				
+				if (lineItems[REL_IDX_ID].equals("7062677028")) {
+					TermServerScript.debug("Checkpoint");
+				}
 				if (!isConcept(lineItems[REL_IDX_SOURCEID])) {
 					System.out.println (characteristicType + " relationship " + lineItems[REL_IDX_ID] + " referenced a non concept identifier: " + lineItems[REL_IDX_SOURCEID]);
 				}
