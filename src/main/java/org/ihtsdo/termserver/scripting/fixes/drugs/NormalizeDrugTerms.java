@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.fixes.drugs;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +21,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * Combination of DRUGS-363 to remove "/1 each" from preferred terms
  * DRUGS-461
  * DRUGS-486 - MP PTs must end in "product"
+ * DRUGS-492 - CDs missing "precisely"
  */
 public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants{
 	
@@ -71,6 +73,9 @@ public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants{
 		super.init(args);
 		exceptions.add("423967005");
 		exceptions.add("319925005");
+		exceptions.add("765078005");  //Not yet modelled 
+		exceptions.add("765974009");  //Confusion tablet / capsule
+		exceptions.add("765995004");  //Confusion tablet / capsule
 	}
 
 	@Override
@@ -108,13 +113,14 @@ public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants{
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		debug("Identifying concepts to process");
 		termGenerator.setQuiet(true);
-		termGenerator.setPtOnly(true);
-		Set<Concept> allAffected = new TreeSet<Concept>();  //We want to process in the same order each time, in case we restart and skip some.
+		//termGenerator.setPtOnly(true);
+		List<Concept> allAffected = new ArrayList<Concept>(); 
 		for (Concept c : gl.getConcept(subHierarchyStr).getDescendents(NOT_SET)) {
 			SnomedUtils.populateConceptType(c);
 			//Clone the concept so we're not modifying our local copy
 			c = c.clone(c.getConceptId());
-			if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT)) {
+			//if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT)) {
+			if (c.getConceptType().equals(ConceptType.CLINICAL_DRUG)) {
 				if (exceptions.contains(c.getId())) {
 					report (null, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Concept manually listed as an exception");
 				} else {
@@ -127,6 +133,7 @@ public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants{
 		}
 		info ("Identified " + allAffected.size() + " concepts to process");
 		termGenerator.setQuiet(false);
+		allAffected.sort(Comparator.comparing(Concept::getFsn));
 		return new ArrayList<Component>(allAffected);
 	}
 

@@ -68,74 +68,6 @@ public class DrugTermGenerator implements RF2Constants{
 	public boolean useEach() {
 		return useEach;
 	}
-	
-	/*protected int normalizeDrugTerms(Task task, Concept concept, String newSemanticTag) throws TermServerScriptException {
-		int changesMade = 0;
-		for (Description d : concept.getDescriptions(ActiveState.ACTIVE)) {
-
-			String replacementTerm = d.getTerm();
-			boolean isFSN = d.getType().equals(DescriptionType.FSN);
-			ensureCaptialization(d);
-
-			//If this is an FSN, make sure we start with the "Product containing" prefix
-			//and force the semantic tag
-			if (isFSN) {
-				if (!replacementTerm.startsWith(productPrefix)) {
-					//If we're not case sensitive, make the first letter lower case
-					if (!d.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE)) {
-						replacementTerm = SnomedUtils.deCapitalize(replacementTerm);
-					}
-					replacementTerm = productPrefix + replacementTerm;
-				}
-				String[] fsnParts = SnomedUtils.deconstructFSN(replacementTerm);
-				replacementTerm = fsnParts[0] + " " + newSemanticTag;
-			}
-			
-			//Have we made any changes?  Create a new description if so
-			Description replacement = d.clone(null);
-			replacement.setTerm(replacementTerm);
-			if (!replacementTerm.equals(d.getTerm())) {
-				boolean doReplacement = true;
-				if (termAlreadyExists(concept, replacementTerm)) {
-					report(task, concept, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Replacement term already exists: '" + replacementTerm + "' inactivating abnormal term only.");
-					doReplacement = false;
-				}
-				
-				String msg;
-				//Has our description been published?  Remove entirely if not
-				if (d.isReleased()) {
-					d.setActive(false);
-					d.setInactivationIndicator(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
-					msg = "Inactivated desc ";
-				} else {
-					concept.getDescriptions().remove(d);
-					msg = "Deleted desc ";
-				}
-				msg +=  d.getDescriptionId() + " - '" + d.getTerm().toString();
-				if (doReplacement) {
-					msg += "' in favour of '" + replacementTerm + "'";
-					concept.addDescription(replacement);
-				}
-				changesMade++;
-				report(task, concept, Severity.LOW, ReportActionType.DESCRIPTION_CHANGE_MADE, msg);
-			}
-			
-			//If this is the FSN, then we should have another description without the semantic tag as an acceptable term
-			if (d.getType().equals(DescriptionType.FSN)) {
-				Description fsnCounterpart = replacement.clone(null);
-				String counterpartTerm = SnomedUtils.deconstructFSN(fsnCounterpart.getTerm())[0];
-				
-				if (!termAlreadyExists(concept, counterpartTerm)) {
-					fsnCounterpart.setTerm(counterpartTerm);
-					report(task, concept, Severity.LOW, ReportActionType.DESCRIPTION_ADDED, "FSN Counterpart added: " + counterpartTerm);
-					fsnCounterpart.setType(DescriptionType.SYNONYM);
-					fsnCounterpart.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(AcceptabilityMode.ACCEPTABLE_BOTH));
-					concept.addDescription(fsnCounterpart);
-				}
-			}
-		}
-		return changesMade;
-	}*/
 
 	public int ensureDrugTermsConform(Task t, Concept c, CharacteristicType charType) throws TermServerScriptException {
 		int changesMade = 0;
@@ -271,18 +203,19 @@ public class DrugTermGenerator implements RF2Constants{
 	private String getCdSuffix(Concept c, boolean isFSN) throws TermServerScriptException {
 		String suffix;
 		String unitOfPresentation = DrugUtils.getAttributeType(c, HAS_UNIT_OF_PRESENTATION, isFSN);
+		String doseForm = DrugUtils.getDosageForm(c, isFSN);
 		
-		if (includeUnitOfPresentation) {
+		if (includeUnitOfPresentation || (hasAttribute(c, HAS_UNIT_OF_PRESENTATION) && !doseForm.endsWith(unitOfPresentation))) {
 			if (isFSN) {
-				suffix = "/1 " + unitOfPresentation + " "  + DrugUtils.getDosageForm(c, isFSN);
+				suffix = "/1 " + unitOfPresentation + " "  + doseForm;
 			} else {
 				suffix = " " + DrugUtils.getDosageForm(c, isFSN) + " "  + unitOfPresentation;
 			}			
 		} else {
-			if (isFSN && !specifyDenominator) {
-				suffix = "/1 each "  + DrugUtils.getDosageForm(c, isFSN);
+			if (isFSN && !specifyDenominator && !hasAttribute(c, HAS_CONC_STRENGTH_DENOM_VALUE)) {
+				suffix = "/1 each "  + doseForm;
 			} else {
-				suffix = " " + DrugUtils.getDosageForm(c, isFSN);
+				suffix = " " + doseForm;
 			}
 		}
 		return suffix;
@@ -476,7 +409,7 @@ public class DrugTermGenerator implements RF2Constants{
 			
 			//Are we adding the denominator strength and units?
 			String denominatorStr = "";
-			if (specifyDenominator) {
+			if (specifyDenominator || hasAttribute(c, HAS_CONC_STRENGTH_DENOM_VALUE)) {
 				denominatorStr = "/";
 				Concept denStren = getTarget (c, new Concept[] {HAS_PRES_STRENGTH_DENOM_VALUE, HAS_CONC_STRENGTH_DENOM_VALUE}, r.getGroupId(), charType);
 				String denStrenStr = SnomedUtils.deconstructFSN(denStren.getFsn())[0];
@@ -495,6 +428,11 @@ public class DrugTermGenerator implements RF2Constants{
 			ingredients.add(ingredientWithStrengthTerm);
 		}
 		return ingredients;
+	}
+
+	private boolean hasAttribute(Concept c, Concept attrib) {
+		//Dose this concept specify a concentration denominator?
+		return c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attrib, ActiveState.ACTIVE).size() > 0;
 	}
 
 	private String formIngredientWithStrengthTerm(Concept ingredient, Concept boSS, Concept strength, Concept unit, String denominatorStr, boolean isFSN, String langRefset) throws TermServerScriptException {
