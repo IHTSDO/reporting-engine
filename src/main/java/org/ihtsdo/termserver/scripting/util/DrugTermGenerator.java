@@ -115,10 +115,10 @@ public class DrugTermGenerator implements RF2Constants{
 		}
 		
 		//Skip FSNs that contain the word vitamin
-		if (isFSN && d.getTerm().toLowerCase().contains("vitamin")) {
+		/*if (isFSN && d.getTerm().toLowerCase().contains("vitamin")) {
 			report(t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Skipped vitamin FSN");
 			return NO_CHANGES_MADE;
-		}
+		}*/
 		
 		//Check the existing term has correct capitalization
 		ensureCaptialization(d);
