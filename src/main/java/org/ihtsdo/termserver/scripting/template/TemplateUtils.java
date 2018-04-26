@@ -25,6 +25,7 @@ public class TemplateUtils {
 	
 	public static String ECL_DESCENDANT_OR_SELF = "<<";
 	public static String ECL_OR = "OR";
+	public static String ECL_STAR = "*";
 	public static Pattern p = Pattern.compile("[0-9]+");
 	
 	public static String covertToECL (LogicalTemplate template, boolean restrictive) {
@@ -117,7 +118,7 @@ public class TemplateUtils {
 			int count = entry.getValue().size();
 			if (count < cardinality.getMin() || count > cardinality.getMax()) {
 				isValid = false;
-				c.addIssue(templateId + "(" + count + "!=" + getCardinalityStr(entry.getKey()) + ")");
+				c.addIssue(templateId + "(" + count + " found != required" + getCardinalityStr(entry.getKey()) + ")");
 				break;
 			}
 		}
@@ -128,7 +129,6 @@ public class TemplateUtils {
 		//For each attribute, check if there's a match in the template
 		nextRel:
 		for (Relationship r : relGroup.getRelationships()) {
-			//TODO Check attribute cardinality here
 			for (Attribute a : templateGroup.getAttributes()) {
 				if (matchesAttribute(r, a, cache)) {
 					//We can check the next relationship
@@ -136,6 +136,19 @@ public class TemplateUtils {
 				}
 			}
 			return false;
+		}
+	
+		//For each template element, check its cardinality is satisfied
+		for (Attribute a : templateGroup.getAttributes()) {
+			int count = 0;
+			for (Relationship r : relGroup.getRelationships()) {
+				if (matchesAttribute(r, a, cache)) {
+					count++;
+				}
+			}
+			if (!satisfiesCardinality(count, a)) {
+				return false;
+			}
 		}
 		return true;
 	}
@@ -166,6 +179,9 @@ public class TemplateUtils {
 				if (valueRange != null && cache.getDescendentsOrSelf(valueRange).contains(target)) {
 					return true;
 				}
+			} else if (thisEcl.equals(ECL_STAR)){
+				//Anything matches the wildcard
+				return true;
 			} else {
 				//TODO Call the server to resolve this, and cache result
 				throw new NotImplementedException("Unable to handle ecl: " + ecl);
@@ -192,6 +208,12 @@ public class TemplateUtils {
 		cardinality.setMin(getCardinality(group.getCardinalityMin()));
 		cardinality.setMax(getCardinality(group.getCardinalityMax()));
 		return cardinality;
+	}
+	
+	public static boolean satisfiesCardinality (int count, Attribute a) {
+		int min = a.getCardinalityMin()==null?1:getCardinality(a.getCardinalityMin());
+		int max = a.getCardinalityMax()==null?Integer.MAX_VALUE:getCardinality(a.getCardinalityMax());
+		return count >= min && count <= max;
 	}
 
 	private static int getCardinality(String cStr) {
