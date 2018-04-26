@@ -102,7 +102,7 @@ public class Task {
 	}
 	
 	public void addAfter(Component component, Component after) {
-		int insertPoint = this.components.indexOf(after);
+		int insertPoint = this.components.indexOf(after) + 1;
 		this.components.add(insertPoint, component);
 	}
 	

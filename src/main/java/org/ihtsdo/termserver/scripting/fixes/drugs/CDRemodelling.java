@@ -82,18 +82,22 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		int changesMade = 0;
 		if (loadedConcept.isActive() == false) {
 			//Does this concept have an alternative/replacement that we should use instead?
-			Concept alternative = getAlternative(task, concept);
+			Concept alternative = getAlternative(task, concept, !cloneAndReplace);
 			if (alternative == null) {
-				report(task, concept, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Concept is inactive and no alternative (via hist assoc) available");
-				return NO_CHANGES_MADE;
+				//If we're cloning and replacing, then we can replace the inactive concept
+				if (!cloneAndReplace) {
+					report(task, concept, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Concept is inactive and no alternative (via hist assoc) available");
+					return NO_CHANGES_MADE;
+				}
+			} else {
+				task.replace(concept, alternative);
+				//We also need a copy of the original's spreadsheet data to look up, and also for the term verifier
+				spreadsheet.put(alternative, spreadsheet.get(concept));
+				if (termVerifier != null) {
+					termVerifier.replace(concept, alternative);
+				}
+				loadedConcept = loadConcept(alternative, task.getBranchPath());
 			}
-			task.replace(concept, alternative);
-			//We also need a copy of the original's spreadsheet data to look up, and also for the term verifier
-			spreadsheet.put(alternative, spreadsheet.get(concept));
-			if (termVerifier != null) {
-				termVerifier.replace(concept, alternative);
-			}
-			loadedConcept = loadConcept(alternative, task.getBranchPath());
 		}
 		changesMade = remodelConcept(task, loadedConcept);
 		try {
@@ -434,12 +438,12 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		return unitPres;
 	}
 
-	private Concept getAlternative(Task t, Concept c) throws TermServerScriptException {
+	private Concept getAlternative(Task t, Concept c, boolean beCritical) throws TermServerScriptException {
 		//Work through the active historical associations and find an active alternative
 		List<HistoricalAssociation> assocs = c.getHistorialAssociations(ActiveState.ACTIVE);
 		if (assocs.size() > 1 || assocs.size() == 0) {
 			String msg = c + " is inactive with " + assocs.size() + " historical associations.  Cannot determine alternative concept.";
-			report(t, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, msg);
+			report(t, c, beCritical?Severity.CRITICAL:Severity.HIGH, ReportActionType.VALIDATION_ERROR, msg);
 			return null;
 		}
 		Concept refset =  gl.getConcept(assocs.get(0).getRefsetId());

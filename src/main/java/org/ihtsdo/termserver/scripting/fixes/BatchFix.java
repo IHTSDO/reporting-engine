@@ -802,7 +802,8 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		Concept original = loadConcept(originalId, t.getBranchPath());
 		//Clone the clone to wipe out all identifiers.  It might just 
 		Concept clone = concept.clone();
-		Concept savedConcept = createConcept(t, clone, "Clone of " + originalId);
+		clone.setActive(true); //Just incase we've cloned an inactive concept
+		Concept savedConcept = createConcept(t, clone, ", clone of " + originalId);
 		report (t, savedConcept, Severity.LOW, ReportActionType.CONCEPT_ADDED, "Cloned " + original);
 		
 		//Add our clone to the task, after the original
