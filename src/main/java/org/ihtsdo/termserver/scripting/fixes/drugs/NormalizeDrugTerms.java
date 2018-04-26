@@ -113,19 +113,23 @@ public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants{
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		debug("Identifying concepts to process");
 		termGenerator.setQuiet(true);
-		//termGenerator.setPtOnly(true);
+		termGenerator.setPtOnly(true);
+		
 		List<Concept> allAffected = new ArrayList<Concept>(); 
 		for (Concept c : gl.getConcept(subHierarchyStr).getDescendents(NOT_SET)) {
+			if (c.getConceptId().equals("714023005")) {
+		//		debug("Checkpoint");
+			}
 			SnomedUtils.populateConceptType(c);
 			//Clone the concept so we're not modifying our local copy
 			c = c.clone(c.getConceptId());
-			//if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT)) {
-			if (c.getConceptType().equals(ConceptType.CLINICAL_DRUG)) {
+			if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT)) {
+			//if (c.getConceptType().equals(ConceptType.CLINICAL_DRUG)) {
 				if (exceptions.contains(c.getId())) {
 					report (null, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Concept manually listed as an exception");
 				} else {
 					//See if the modifying the term makes any changes
-					if (termGenerator.ensureDrugTermsConform(null, c, CharacteristicType.STATED_RELATIONSHIP) > 1) {
+					if (termGenerator.ensureDrugTermsConform(null, c, CharacteristicType.STATED_RELATIONSHIP) > 0) {
 						allAffected.add(c);
 					}
 				}
