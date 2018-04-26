@@ -61,9 +61,6 @@ public class Task {
 	public void setComponents(List<Component> components) {
 		this.components = components;
 	}
-	public void addConcept(Concept c) {
-		components.add(c);
-	}
 	public String getBranchPath() {
 		return branchPath;
 	}
@@ -102,6 +99,11 @@ public class Task {
 
 	public void add(Component component) {
 		this.components.add(component);
+	}
+	
+	public void addAfter(Component component, Component after) {
+		int insertPoint = this.components.indexOf(after);
+		this.components.add(insertPoint, component);
 	}
 	
 	public int size() {

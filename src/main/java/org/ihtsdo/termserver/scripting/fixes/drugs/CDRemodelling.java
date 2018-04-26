@@ -39,6 +39,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 	IngredientCounts ingredientCounter;
 	TermVerifier termVerifier;
 	boolean useConcentration = true;  //True for liquids eg Pattern 2b Oral solutions, 3a solutions, 3b - creams
+	boolean cloneAndReplace = true;  //3A Patches being replaced
 	
 	protected CDRemodelling(BatchFix clone) {
 		super(clone);
@@ -104,8 +105,12 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 			try {
 				String conceptSerialised = gson.toJson(loadedConcept);
 				debug ((dryRun?"Dry run updating":"Updating") + " state of " + loadedConcept + info);
-				if (!dryRun) {
-					tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
+				if (cloneAndReplace) {
+					cloneAndReplace(loadedConcept, task);
+				} else {
+					if (!dryRun) {
+						tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
+					}
 				}
 			} catch (Exception e) {
 				report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + e.getClass().getSimpleName()  + " - " + e.getMessage());
@@ -340,7 +345,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 	 * [4]Precise_ingredient	 [5]dmd_boss	[6]ConcNumQty	[7]ConcNumUnit	[8]ConcDenomQty	
 	 * [9]ConcDenomUnit	[10]PRESENTNumQty	[11]PRESENTNumUnit	[12]PRESENTDenomQty	
 	 * [13]PRESENTDenomUnit	[14]UoP	[15]DoseForm	Pattern	[16]Status
-	 */
+	 
 	protected List<Concept> loadLine(String[] items) throws TermServerScriptException {
 		Concept c = gl.getConcept(items[0]);
 		c.setConceptType(ConceptType.CLINICAL_DRUG);
@@ -367,7 +372,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		}
 		
 		return Collections.singletonList(c);
-	} 
+	} */
 	
 	/*
 	 * DRUGS-497 Pattern 3APatches - https://docs.google.com/spreadsheets/d/1EqZg1-Ksjy5J-Iebnjry96PgL7MbL_Au85oBXPtHCgE/edit#gid=493556537
@@ -376,7 +381,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 	 * [9]ConcDenomUnit	[10]NonNormConcNumQty	[11]NonNormConcNumUnit	[12]NonNormConcDenomQty	
 	 * [13]NonNormConcDenomUnit	[14]PRESENTNumQty	[15]PRESENTNumUnit	[16]PRESENTDenomQty	
 	 * [17]PRESENTDenomUnit	[18]UoP	[19]DoseForm
-	
+	*/
 	protected List<Concept> loadLine(String[] items) throws TermServerScriptException {
 		Concept c = gl.getConcept(items[0]);
 		c.setConceptType(ConceptType.CLINICAL_DRUG);
@@ -403,7 +408,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		}
 		
 		return Collections.singletonList(c);
-	}  */
+	}  
 
 	private Concept getPharmDoseForm(String doseFormStr) throws TermServerScriptException {
 		//Do we have an SCTID to work with?  

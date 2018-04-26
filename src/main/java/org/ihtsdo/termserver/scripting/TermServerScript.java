@@ -384,10 +384,11 @@ public abstract class TermServerScript implements RF2Constants {
 	protected Concept loadConcept(String sctid, String branchPath) throws TermServerScriptException {
 		if (dryRun) {
 			//In a dry run situation, the task branch is not created so use the Project instead
+			//But we'll clone it, so the object isn't confused with any local changes
 			branchPath = branchPath.substring(0, branchPath.lastIndexOf("/"));
 			if (runStandAlone) {
 				debug ("Loading: " + gl.getConcept(sctid) + " from local store");
-				return gl.getConcept(sctid);
+				return gl.getConcept(sctid).clone(sctid);
 			}
 		}
 		Concept loadedConcept = loadConcept (tsClient, sctid, branchPath);
@@ -445,6 +446,8 @@ public abstract class TermServerScript implements RF2Constants {
 				JSONResource response = tsClient.createConcept(new JSONObject(conceptSerialised), t.getBranchPath());
 				String json = response.toObject().toString();
 				c = gson.fromJson(json, Concept.class);
+			} else {
+				c = c.clone("NEW_SCTID");
 			}
 			return c;
 		} catch (Exception e) {

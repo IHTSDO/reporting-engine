@@ -28,13 +28,17 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
+import org.ihtsdo.termserver.scripting.TermServerScript.ReportActionType;
+import org.ihtsdo.termserver.scripting.TermServerScript.Severity;
 import org.ihtsdo.termserver.scripting.client.Classification;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.client.Status;
+import org.ihtsdo.termserver.scripting.domain.AssociationTargets;
 import org.ihtsdo.termserver.scripting.domain.Batch;
 import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
+import org.ihtsdo.termserver.scripting.domain.HistoricalAssociation;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.Task;
@@ -290,6 +294,8 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 				scaClient.setEditPanelUIState(project.getKey(), task.getKey(), task.toQuotedList());
 			}
 			scaClient.setSavedListUIState(project.getKey(), task.getKey(), convertToSavedListJson(task));
+			String taskDescription = populateTaskDescription ? task.getDescriptionHTML() : "Batch Updates - see spreadsheet for details";
+			scaClient.updateTask(project.getKey(), task.getKey(), null, taskDescription, null);
 		} catch (Exception e) {
 			String msg = "Failed to preload edit-panel ui state: " + e.getMessage();
 			warn (msg);
@@ -782,5 +788,69 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		conceptObj.put("moduleId", concept.getModuleId());
 		conceptObj.put("defintionStatus", concept.getDefinitionStatus());
 		return jsonObj;
+	}
+	
+	/**
+	 * Takes a remodelled concept and saves it as a new concept, inactivates tbe original
+	 * and points to it as a replacement
+	 * @throws TermServerScriptException 
+	 * @throws JSONException 
+	 * @throws SnowOwlClientException 
+	 */
+	protected void cloneAndReplace(Concept concept, Task t) throws TermServerScriptException, SnowOwlClientException, JSONException {
+		String originalId = concept.getConceptId();
+		Concept original = loadConcept(originalId, t.getBranchPath());
+		//Clone the clone to wipe out all identifiers.  It might just 
+		Concept clone = concept.clone();
+		Concept savedConcept = createConcept(t, clone, "Clone of " + originalId);
+		report (t, savedConcept, Severity.LOW, ReportActionType.CONCEPT_ADDED, "Cloned " + original);
+		
+		//Add our clone to the task, after the original
+		t.addAfter(savedConcept, original);
+		
+		//Now inactivate the original
+		original.setActive(false);
+		original.setInactivationIndicator(InactivationIndicator.AMBIGUOUS);
+		original.setAssociationTargets(AssociationTargets.possEquivTo(savedConcept));
+		report (t, original, Severity.LOW, ReportActionType.ASSOCIATION_ADDED, "Possibly Equivalent to " + savedConcept);
+		
+		checkAndReplaceHistoricalAssociations(t, original, savedConcept, InactivationIndicator.AMBIGUOUS);
+		report(t, original, Severity.LOW, ReportActionType.CONCEPT_INACTIVATED);
+		
+		debug ((dryRun?"Dry run updating":"Updating") + " state of " + original);
+		if (!dryRun) {
+			String conceptSerialised = gson.toJson(original);
+			tsClient.updateConcept(new JSONObject(conceptSerialised), t.getBranchPath());
+		}
+	}
+	
+	protected void checkAndReplaceHistoricalAssociations(Task t, Concept inactivating, Concept replacing, InactivationIndicator inactivationIndicator) throws TermServerScriptException {
+		List<HistoricalAssociation> histAssocs = gl.usedAsHistoricalAssociationTarget(inactivating);
+		if (histAssocs != null && histAssocs.size() > 0) {
+			for (HistoricalAssociation histAssoc : histAssocs) {
+				Concept source = gl.getConcept(histAssoc.getReferencedComponentId());
+				String assocType = gl.getConcept(histAssoc.getRefsetId()).getPreferredSynonym(US_ENG_LANG_REFSET).getTerm().replace("association reference set", "");
+				String thisDetail = "Concept was as used as the " + assocType + "target of a historical association for " + source;
+				thisDetail += " (since " + (histAssoc.getEffectiveTime().isEmpty()?" prospective release":histAssoc.getEffectiveTime()) + ")";
+				report (t, inactivating, Severity.HIGH, ReportActionType.INFO, thisDetail);
+				replaceHistoricalAssociation(t, source, inactivating, replacing, inactivationIndicator);
+			}
+		}
+	}
+
+	protected void replaceHistoricalAssociation(Task t, Concept concept, Concept current, Concept replacement, InactivationIndicator inactivationIndicator) throws TermServerScriptException {
+		//We need a copy from the TS
+		Concept loadedConcept = loadConcept(concept, t.getBranchPath());
+		loadedConcept.setInactivationIndicator(inactivationIndicator);
+		//Make sure we only have one current association target
+		int targetCount = loadedConcept.getAssociationTargets().size();
+		if (targetCount > 1) {
+			report (t, concept, Severity.HIGH, ReportActionType.INFO, "Replacing 1 historical association out of " + targetCount);
+		}
+		AssociationTargets targets = loadedConcept.getAssociationTargets();
+		targets.remove(current.getConceptId());
+		targets.getPossEquivTo().add(replacement.getConceptId());
+		updateConcept(t, loadedConcept, " with re-jigged inactivation indicator and historical associations");
+		report (t, loadedConcept, Severity.MEDIUM, ReportActionType.ASSOCIATION_ADDED, "InactReason set to " + inactivationIndicator + " and PossiblyEquivalentTo: " + replacement);
 	}
 }

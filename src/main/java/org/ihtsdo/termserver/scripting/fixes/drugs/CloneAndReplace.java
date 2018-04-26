@@ -149,44 +149,13 @@ public class CloneAndReplace extends BatchFix implements RF2Constants{
 		
 		//Check if the concept we're about to inactivate is used as the target of a historical association
 		//and rewire that to point to our new clone
-		checkAndReplaceHistoricalAssociations(task, loadedConcept, clone);
+		checkAndReplaceHistoricalAssociations(task, loadedConcept, clone, inactivationReasons.get(loadedConcept));
 		
 		//If the save of the clone didn't throw an exception, we can inactivate the original
 		inactivateConcept(loadedConcept, clone);
 		report (task, loadedConcept, Severity.LOW, ReportActionType.CONCEPT_INACTIVATED, "");
 		
 		return 1;
-	}
-
-
-	private void checkAndReplaceHistoricalAssociations(Task t, Concept inactivating, Concept replacing) throws TermServerScriptException {
-		List<HistoricalAssociation> histAssocs = gl.usedAsHistoricalAssociationTarget(inactivating);
-		if (histAssocs != null && histAssocs.size() > 0) {
-			for (HistoricalAssociation histAssoc : histAssocs) {
-				Concept source = gl.getConcept(histAssoc.getReferencedComponentId());
-				String assocType = gl.getConcept(histAssoc.getRefsetId()).getPreferredSynonym(US_ENG_LANG_REFSET).getTerm().replace("association reference set", "");
-				String thisDetail = "Concept was as used as the " + assocType + "target of a historical association for " + source;
-				thisDetail += " (since " + (histAssoc.getEffectiveTime().isEmpty()?" prospective release":histAssoc.getEffectiveTime()) + ")";
-				report (t, inactivating, Severity.HIGH, ReportActionType.INFO, thisDetail);
-				replaceHistoricalAssociation(t, source, inactivating, replacing);
-			}
-		}
-	}
-
-	private void replaceHistoricalAssociation(Task t, Concept concept, Concept current, Concept replacement) throws TermServerScriptException {
-		//We need a copy from the TS
-		Concept loadedConcept = loadConcept(concept, t.getBranchPath());
-		loadedConcept.setInactivationIndicator(inactivationReasons.get(current));
-		//Make sure we only have one current association target
-		int targetCount = loadedConcept.getAssociationTargets().size();
-		if (targetCount > 1) {
-			report (t, concept, Severity.HIGH, ReportActionType.INFO, "Replacing 1 historical association out of " + targetCount);
-		}
-		AssociationTargets targets = loadedConcept.getAssociationTargets();
-		targets.remove(current.getConceptId());
-		targets.getPossEquivTo().add(replacement.getConceptId());
-		updateConcept(t, loadedConcept, " with re-jigged inactivation indicator and historical associations");
-		report (t, loadedConcept, Severity.MEDIUM, ReportActionType.ASSOCIATION_ADDED, "InactReason set to " + inactivationReasons.get(current) + " and PossiblyEquivalentTo: " + replacement);
 	}
 
 	private void inactivateConcept(Concept original, Concept clone) {
