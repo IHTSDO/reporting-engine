@@ -117,23 +117,27 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		Batch batch = new Batch(getScriptName());
 		Task task = batch.addNewTask(author_reviewer);
 		
+		
+		
 		//Do we need to prioritize some components?
 		List<Component> unprioritized = new ArrayList<> (allComponents);
 		unprioritized.removeAll(priorityComponents);
 		allComponents = priorityComponents;
 		allComponents.addAll(unprioritized);
 		
-		String lastIssue = allComponents.get(0).getIssues();
-		for (Component thisComponent : allComponents) {
-			if (task.size() >= taskSize ||
-					(groupByIssue && !lastIssue.equals(thisComponent.getIssues()))) {
-				task = batch.addNewTask(author_reviewer);
+		if (allComponents.size() > 0) {
+			String lastIssue = allComponents.get(0).getIssues();
+			for (Component thisComponent : allComponents) {
+				if (task.size() >= taskSize ||
+						(groupByIssue && !lastIssue.equals(thisComponent.getIssues()))) {
+					task = batch.addNewTask(author_reviewer);
+				}
+				task.add(thisComponent);
+				lastIssue = thisComponent.getIssues();
 			}
-			task.add(thisComponent);
-			lastIssue = thisComponent.getIssues();
 		}
 		addSummaryInformation("Tasks scheduled", batch.getTasks().size());
-		addSummaryInformation(CONCEPTS_PROCESSED, allComponents);
+		addSummaryInformation(CONCEPTS_PROCESSED, allComponents.size());
 		return batch;
 	}
 

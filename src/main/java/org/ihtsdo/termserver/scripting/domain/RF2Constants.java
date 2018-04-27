@@ -39,10 +39,12 @@ public interface RF2Constants {
 	static Concept COUNT_OF_BASE_AND_MODIFICATION = new Concept ("766954007", "Count of base and modification pair (attribute)");
 	
 	
-	static Concept MILLIGRAM = new Concept ("258684004", "milligram (qualifier value)"); 
+	static Concept PICOGRAM = new Concept ("258687006", "picogram (qualifier value)");
+	static Concept NANOGRAM = new Concept ("258686002", "nanogram (qualifier value)");
 	static Concept MICROGRAM = new Concept ("258685003", "microgram (qualifier value)"); 
+	static Concept MILLIGRAM = new Concept ("258684004", "milligram (qualifier value)"); 
+	static Concept GRAM = new Concept("258682000","gram (qualifier value)");
 	static Concept INTERNATIONAL_UNIT = new Concept ("258997004", "international unit (qualifier value)"); 
-	static Concept NANOGRAM = new Concept ("258686002", "nanogram (qualifier value)"); 
 	static Concept UNIT = new Concept("767525000", "Unit (qualifier value)");
 	
 	static Concept ROOT_CONCEPT = new Concept (SCTID_ROOT_CONCEPT.toString());

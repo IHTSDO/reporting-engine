@@ -60,6 +60,7 @@ public abstract class TermServerScript implements RF2Constants {
 	
 	protected static boolean debug = true;
 	protected static boolean dryRun = true;
+	protected boolean quiet = false; 
 	protected static int dryRunCounter = 0;
 	protected String env;
 	protected String url = environments[0];
@@ -861,6 +862,10 @@ public abstract class TermServerScript implements RF2Constants {
 
 	public void setPrintWriterMap(Map<String, PrintWriter> printWriterMap) {
 		this.printWriterMap = printWriterMap;
+	}
+	
+	public void setQuiet(boolean quiet) {
+		this.quiet = quiet;
 	}
 
 }

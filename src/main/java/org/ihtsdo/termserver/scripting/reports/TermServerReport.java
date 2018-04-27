@@ -12,7 +12,6 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 public abstract class TermServerReport extends TermServerScript {
 	
 	protected String headers = "Concept,FSN,";
-	protected boolean quiet = false; 
 	
 	protected void init(String[] args) throws TermServerScriptException, SnowOwlClientException {
 		try {
@@ -45,11 +44,7 @@ public abstract class TermServerReport extends TermServerScript {
 		}
 		writeToReportFile(line);
 	}
-	
-	public void setQuiet(boolean quiet) {
-		this.quiet = quiet;
-	}
-	
+
 	@Override
 	public void incrementSummaryInformation(String key) {
 		if (!quiet) {

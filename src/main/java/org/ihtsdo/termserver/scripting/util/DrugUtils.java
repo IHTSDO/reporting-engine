@@ -46,6 +46,11 @@ public class DrugUtils implements RF2Constants {
 		}
 		return numberConceptMap.get(number);
 	}
+	
+	public static double getConceptAsNumber(Concept number) throws TermServerScriptException {
+		String numStr = SnomedUtils.deconstructFSN(number.getFsn())[0];
+		return Double.parseDouble(numStr);
+	}
 
 	private static void populateNumberConceptMap() throws TermServerScriptException {
 		numberConceptMap = new HashMap<>();
