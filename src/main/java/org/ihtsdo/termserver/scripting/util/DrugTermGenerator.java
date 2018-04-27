@@ -73,7 +73,8 @@ public class DrugTermGenerator implements RF2Constants{
 		int changesMade = 0;
 		
 		//This function will split out the US / GB terms if the ingredients show variance where the product does not
-		validateUsGbVarianceInIngredients(t,c);
+		//The unit of presentation could also necessitate a variance
+		validateUsGbVariance(t,c, charType);
 
 		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 			try { 
@@ -127,6 +128,13 @@ public class DrugTermGenerator implements RF2Constants{
 		Description replacement = d.clone(null);
 		replacement.setTerm(replacementTerm);
 		
+		//Fix issues with existing acceptability
+		if (isGbPT && !isUsPT) {
+			replacement.setAcceptabilityMap(SnomedUtils.createPreferredAcceptableMap(GB_ENG_LANG_REFSET, US_ENG_LANG_REFSET));
+		} else if (!isGbPT && isUsPT) {
+			replacement.setAcceptabilityMap(SnomedUtils.createPreferredAcceptableMap(US_ENG_LANG_REFSET, GB_ENG_LANG_REFSET));
+		}
+		
 		//Does the case significance of the ingredients suggest a need to modify the term?
 		if (replacement.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE) && SnomedUtils.isCaseSensitive(replacementTerm)) {
 			replacement.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
@@ -170,11 +178,11 @@ public class DrugTermGenerator implements RF2Constants{
 		if (isFSN) {
 			prefix = "Product containing ";
 			switch (c.getConceptType()) {
-				case MEDICINAL_PRODUCT_FORM : suffix =  " in " + DrugUtils.getDosageForm(c, isFSN);
+				case MEDICINAL_PRODUCT_FORM : suffix =  " in " + DrugUtils.getDosageForm(c, isFSN, langRefset);
 										break;
 				case CLINICAL_DRUG : 	prefix = "Product containing precisely ";
 										//TODO Check that presentation is solid before adding 1 each
-										suffix =  getCdSuffix(c, isFSN);
+										suffix =  getCdSuffix(c, isFSN, langRefset);
 										semTag = "(clinical drug)";
 										break;
 				default:
@@ -183,9 +191,9 @@ public class DrugTermGenerator implements RF2Constants{
 			switch (c.getConceptType()) {
 				case MEDICINAL_PRODUCT : suffix = " product";
 										break;
-				case MEDICINAL_PRODUCT_FORM : suffix =  " in " + DrugUtils.getDosageForm(c, isFSN);
+				case MEDICINAL_PRODUCT_FORM : suffix =  " in " + DrugUtils.getDosageForm(c, isFSN, langRefset);
 										break;
-				case CLINICAL_DRUG : 	suffix = getCdSuffix(c, isFSN);
+				case CLINICAL_DRUG : 	suffix = getCdSuffix(c, isFSN, langRefset);
 										break;
 				default:
 			}
@@ -200,17 +208,19 @@ public class DrugTermGenerator implements RF2Constants{
 		return proposedTerm;
 	}
 
-	private String getCdSuffix(Concept c, boolean isFSN) throws TermServerScriptException {
+	private String getCdSuffix(Concept c, boolean isFSN, String langRefset) throws TermServerScriptException {
 		String suffix;
-		String unitOfPresentation = DrugUtils.getAttributeType(c, HAS_UNIT_OF_PRESENTATION, isFSN);
-		String doseForm = DrugUtils.getDosageForm(c, isFSN);
+		String unitOfPresentation = DrugUtils.getAttributeType(c, HAS_UNIT_OF_PRESENTATION, isFSN, langRefset);
+		String doseForm = DrugUtils.getDosageForm(c, isFSN, langRefset);
+		boolean isActuation = unitOfPresentation.equals("actuation");
 		
-		if (includeUnitOfPresentation || (hasAttribute(c, HAS_UNIT_OF_PRESENTATION) && !doseForm.endsWith(unitOfPresentation))) {
-			if (isFSN) {
-				suffix = "/1 " + unitOfPresentation + " "  + doseForm;
+		if (includeUnitOfPresentation ||
+				(hasAttribute(c, HAS_UNIT_OF_PRESENTATION) && !doseForm.endsWith(unitOfPresentation)) ) {
+			if ((isFSN  && !specifyDenominator) || isActuation) {
+				suffix = (isActuation?"/":"/1 ") + unitOfPresentation + " "  + doseForm;
 			} else {
-				suffix = " " + DrugUtils.getDosageForm(c, isFSN) + " "  + unitOfPresentation;
-			}			
+				suffix = " " + DrugUtils.getDosageForm(c, isFSN, langRefset) + " "  + unitOfPresentation;
+			}
 		} else {
 			if (isFSN && !specifyDenominator && !hasAttribute(c, HAS_CONC_STRENGTH_DENOM_VALUE)) {
 				suffix = "/1 each "  + doseForm;
@@ -279,14 +289,45 @@ public class DrugTermGenerator implements RF2Constants{
 		}
 	}
 	
-	private void validateUsGbVarianceInIngredients(Task t, Concept c) throws TermServerScriptException {
+	private void validateUsGbVariance(Task t, Concept c, CharacteristicType charType) throws TermServerScriptException {
 		//If the ingredient names have US/GB variance, the Drug should too.
+		//If the unit of presentation is present and has variance, the drug should too.
 		//Do we have two preferred terms?
 		boolean drugVariance = c.getDescriptions(Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE).size() > 1;
+		boolean ingredientVariance = checkIngredientVariance(c, charType);
+		Boolean presentationVariance = checkPresentationVariance(c, charType);  //May be null if no presentation is specified
+
+		if (drugVariance != ingredientVariance || (presentationVariance != null && !drugVariance && presentationVariance)) {
+			String msg = "Drug vs Ingredient vs Presentation US/GB term variance mismatch : Drug=" + drugVariance + " Ingredients=" + ingredientVariance + " Presentation=" + presentationVariance;
+			report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, msg);
+			if (!drugVariance && (ingredientVariance || presentationVariance)) {
+				splitPreferredTerm(t, c);
+			}
+		} 
+	}
+
+	private Boolean checkPresentationVariance(Concept c, CharacteristicType charType) throws TermServerScriptException {
+		Boolean presentationVariance = null;  
+		List<Relationship> presentationRels = c.getRelationships(charType, HAS_UNIT_OF_PRESENTATION, ActiveState.ACTIVE);
+		if (presentationRels.size() > 0) {
+			presentationVariance = false;
+		}
+		for (Relationship r : presentationRels) {
+			Concept presentation = GraphLoader.getGraphLoader().getConcept(r.getTarget().getConceptId());
+			//Does the ingredient have more than one PT?
+			if (presentation.getDescriptions(Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE).size() > 1 ) {
+				presentationVariance = true;
+				break;
+			}
+		}
+		return presentationVariance;
+	}
+
+	private boolean checkIngredientVariance(Concept c, CharacteristicType charType) throws TermServerScriptException {
 		boolean ingredientVariance = false;
 		//Now check the ingredients
-		List<Relationship> ingredients = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE);
-		ingredients.addAll( c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HAS_PRECISE_INGRED, ActiveState.ACTIVE));
+		List<Relationship> ingredients = c.getRelationships(charType, HAS_ACTIVE_INGRED, ActiveState.ACTIVE);
+		ingredients.addAll( c.getRelationships(charType, HAS_PRECISE_INGRED, ActiveState.ACTIVE));
 		for (Relationship r : ingredients) {
 			Concept ingredient = GraphLoader.getGraphLoader().getConcept(r.getTarget().getConceptId());
 			//Does the ingredient have more than one PT?
@@ -295,13 +336,7 @@ public class DrugTermGenerator implements RF2Constants{
 				break;
 			}
 		}
-		if (drugVariance != ingredientVariance) {
-			String msg = "Drug vs Ingredient US/GB term variance mismatch : Drug=" + drugVariance + " Ingredients=" + ingredientVariance;
-			report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, msg);
-			if (!drugVariance && ingredientVariance) {
-				splitPreferredTerm(t, c);
-			}
-		}
+		return ingredientVariance;
 	}
 
 	/**
@@ -482,19 +517,17 @@ public class DrugTermGenerator implements RF2Constants{
 		return term;
 	}
 
+	//Where we have multiple potential responses eg concentration or presentation strength, return the first one found given the 
+	//order specified by the array
 	private Concept getTarget(Concept c, Concept[] types, int groupId, CharacteristicType charType) throws TermServerScriptException {
-		List<Relationship> rels = new ArrayList<>();
-		String typeString = "";
 		for (Concept type : types) {
-			rels.addAll(c.getRelationships(charType, type, groupId));
-			typeString += type.getFsn() + " ";
-		}
-		if (rels.size() > 1) {
-			TermServerScript.warn(c + " has multiple " + typeString + " in group " + groupId);
-		} else if (rels.size() == 1) {
-			Concept target = rels.get(0).getTarget();
-			//This might not be the full concept, so recover it fully from our loaded cache
-			return gl.getConcept(target.getConceptId());
+			List<Relationship> rels = c.getRelationships(charType, type, groupId);
+			if (rels.size() > 1) {
+				TermServerScript.warn(c + " has multiple " + type + " in group " + groupId);
+			} else if (rels.size() == 1) {
+				//This might not be the full concept, so recover it fully from our loaded cache
+				return gl.getConcept(rels.get(0).getTarget().getConceptId());
+			}
 		}
 		return null;
 	}

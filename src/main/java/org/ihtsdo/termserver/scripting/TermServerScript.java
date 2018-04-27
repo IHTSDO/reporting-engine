@@ -388,7 +388,7 @@ public abstract class TermServerScript implements RF2Constants {
 			branchPath = branchPath.substring(0, branchPath.lastIndexOf("/"));
 			if (runStandAlone) {
 				debug ("Loading: " + gl.getConcept(sctid) + " from local store");
-				return gl.getConcept(sctid).clone(sctid);
+				return gl.getConcept(sctid).cloneWithIds();
 			}
 		}
 		Concept loadedConcept = loadConcept (tsClient, sctid, branchPath);

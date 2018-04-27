@@ -7,9 +7,16 @@ public class Ingredient {
 	Concept doseForm;
 	Concept substance;
 	Concept boss;
-	Concept strength;
-	Concept numeratorUnit;
-	Concept denomQuantity;
-	Concept denomUnit;
+	
+	Concept presStrength;
+	Concept presNumeratorUnit;
+	Concept presDenomQuantity;
+	Concept presDenomUnit;
+	
+	Concept concStrength;
+	Concept concNumeratorUnit;
+	Concept concDenomQuantity;
+	Concept concDenomUnit;
+	
 	Concept unitOfPresentation;
 }

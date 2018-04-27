@@ -123,7 +123,7 @@ public class DrugUtils implements RF2Constants {
 		unitOfMeasureConceptMap.put(UNIT.getFsn(), UNIT);
 	}
 
-	public static  String getDosageForm(Concept concept, boolean isFSN) throws TermServerScriptException {
+	public static  String getDosageForm(Concept concept, boolean isFSN, String langRefset) throws TermServerScriptException {
 		List<Relationship> doseForms = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_MANUFACTURED_DOSE_FORM, ActiveState.ACTIVE);
 		if (doseForms.size() == 0) {
 			return "NO STATED DOSE FORM DETECTED";
@@ -159,23 +159,32 @@ public class DrugUtils implements RF2Constants {
 		}
 	}
 	
-	public static  String getAttributeType(Concept concept, Concept type, boolean isFSN) throws TermServerScriptException {
-		List<Relationship> uopRels = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, type, ActiveState.ACTIVE);
-		if (uopRels.size() == 0) {
+	public static  String getAttributeType(Concept concept, Concept type, boolean isFSN, String langRefset) throws TermServerScriptException {
+		List<Relationship> rels = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, type, ActiveState.ACTIVE);
+		Concept value;
+		if (rels.size() == 0) {
 			return "NO " + SnomedUtils.getPT(type.getConceptId()) + "DETECTED";
-		} else if (uopRels.size() > 1) {
-			return "MULTIPLE " + SnomedUtils.getPT(type.getConceptId()) + "DETECTED";
-		} else {
-			//Load full locally cached object since we may be working with some minimally defined thing
-			Concept uop = GraphLoader.getGraphLoader().getConcept(uopRels.get(0).getTarget().getConceptId());
-			String uopStr;
-			if (isFSN) {
-				uopStr = SnomedUtils.deconstructFSN(uop.getFsn())[0];
-			} else {
-				uopStr = uop.getPreferredSynonym(US_ENG_LANG_REFSET).getTerm();
+		} else if (rels.size() > 1) {
+			//OK to return a value as long as they're all the same 
+			value = rels.get(0).getTarget();
+			for (Relationship rel : rels) {
+				if (!rel.getTarget().equals(value)) {
+					return "MULTIPLE DIFFERENT" + SnomedUtils.getPT(type.getConceptId()) + "DETECTED";
+				}
 			}
-			return SnomedUtils.deCapitalize(uopStr);
+		} else {
+			value = rels.get(0).getTarget();
 		}
+
+		//Load full locally cached object since we may be working with some minimally defined thing
+		value = GraphLoader.getGraphLoader().getConcept(value.getConceptId());
+		String valueStr;
+		if (isFSN) {
+			valueStr = SnomedUtils.deconstructFSN(value.getFsn())[0];
+		} else {
+			valueStr = value.getPreferredSynonym(langRefset).getTerm();
+		}
+		return SnomedUtils.deCapitalize(valueStr);
 	}
 
 	public static boolean isModificationOf(Concept specific, Concept general) {

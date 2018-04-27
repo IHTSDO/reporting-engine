@@ -30,6 +30,7 @@ DRUGS-495 (Pattern 3a - Vials)
 DRUGS-496 (Pattern 3b - Creams and Drops)
 DRUGS-497 (Pattern 3a - Patches)
 DRUGS-499 (Pattern 2b - Oral Solutions)
+DRUGS-5__ (Pattern 1c - Actuation)
 
 */
 public class CDRemodelling extends DrugBatchFix implements RF2Constants {
@@ -38,8 +39,11 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 	DrugTermGenerator termGenerator = new DrugTermGenerator(this);
 	IngredientCounts ingredientCounter;
 	TermVerifier termVerifier;
-	boolean useConcentration = true;  //True for liquids eg Pattern 2b Oral solutions, 3a solutions, 3b - creams
-	boolean cloneAndReplace = true;  //3A Patches being replaced
+	boolean specifyDenominator = true;  // True for 2a, 2b, 3a, 3b  False for 1c
+	boolean includeUnitOfPresentation = true;  // True for 2a. False for 1c, 3b
+	boolean usesPresentation = true;   //True for Pattern 1b, 1c.   False for 2b, 3a.  2a uses both!
+	boolean usesConcentration = true;  //True for liquids eg Pattern 2a, 2b Oral solutions, 3a solutions, 3b - creams.   False for 1c
+	boolean cloneAndReplace = true;  //3A Patches being replaced, also 2A Injection Infusions
 	
 	protected CDRemodelling(BatchFix clone) {
 		super(clone);
@@ -53,8 +57,8 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 			fix.init(args);
 			fix.ingredientCounter = new IngredientCounts(fix);
 			fix.ingredientCounter.setPrintWriterMap(fix.printWriterMap);  //Share report file!
-			//fix.termGenerator.includeUnitOfPresentation(true);  //True for Pattern 1b   False for 2b, 3a
-			fix.termGenerator.specifyDenominator(true); //True for 2b, 3a, 3b
+			fix.termGenerator.includeUnitOfPresentation(fix.includeUnitOfPresentation); 
+			fix.termGenerator.specifyDenominator(fix.specifyDenominator);
 			fix.loadProjectSnapshot(false); //Load all descriptions
 			//We won't include the project export in our timings
 			fix.startTimer();
@@ -79,16 +83,13 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 	@Override
 	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException, ValidationFailure {
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
+		boolean cloneThisConcept = cloneAndReplace;
 		int changesMade = 0;
 		if (loadedConcept.isActive() == false) {
 			//Does this concept have an alternative/replacement that we should use instead?
-			Concept alternative = getAlternative(task, concept, !cloneAndReplace);
+			Concept alternative = getAlternative(task, concept);
 			if (alternative == null) {
-				//If we're cloning and replacing, then we can replace the inactive concept
-				if (!cloneAndReplace) {
-					report(task, concept, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Concept is inactive and no alternative (via hist assoc) available");
-					return NO_CHANGES_MADE;
-				}
+				cloneThisConcept = true;
 			} else {
 				task.replace(concept, alternative);
 				//We also need a copy of the original's spreadsheet data to look up, and also for the term verifier
@@ -109,7 +110,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 			try {
 				String conceptSerialised = gson.toJson(loadedConcept);
 				debug ((dryRun?"Dry run updating":"Updating") + " state of " + loadedConcept + info);
-				if (cloneAndReplace) {
+				if (cloneThisConcept) {
 					cloneAndReplace(loadedConcept, task);
 				} else {
 					if (!dryRun) {
@@ -163,7 +164,6 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		return changesMade;
 	}
 
-
 	private int remodel(Task t, Concept c, Ingredient modelIngredient, boolean isMultiIngredient) throws TermServerScriptException {
 		int changesMade = 0;
 		int targetGroupId = SnomedUtils.getFirstFreeGroup(c);
@@ -204,7 +204,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		}
 		
 		//If we're using concentration then remove any relationships for presentation strength
-		if (useConcentration) {
+		if (usesConcentration && !usesPresentation) {
 			removeRelationships (t, c, HAS_PRES_STRENGTH_VALUE, targetGroupId);
 			removeRelationships (t, c, HAS_PRES_STRENGTH_UNIT, targetGroupId);
 			removeRelationships (t, c, HAS_PRES_STRENGTH_DENOM_VALUE, targetGroupId);
@@ -213,10 +213,20 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		
 		changesMade += replaceRelationship(t, c, HAS_MANUFACTURED_DOSE_FORM, modelIngredient.doseForm, UNGROUPED, true);
 		changesMade += replaceRelationship(t, c, HAS_BOSS, modelIngredient.boss, targetGroupId, false);
-		changesMade += replaceRelationship(t, c, useConcentration?HAS_CONC_STRENGTH_VALUE:HAS_PRES_STRENGTH_VALUE, modelIngredient.strength, targetGroupId, false);
-		changesMade += replaceRelationship(t, c, useConcentration?HAS_CONC_STRENGTH_UNIT:HAS_PRES_STRENGTH_UNIT , modelIngredient.numeratorUnit, targetGroupId, false);
-		changesMade += replaceRelationship(t, c, useConcentration?HAS_CONC_STRENGTH_DENOM_VALUE:HAS_PRES_STRENGTH_DENOM_VALUE, modelIngredient.denomQuantity, targetGroupId, false);
-		changesMade += replaceRelationship(t, c, useConcentration?HAS_CONC_STRENGTH_DENOM_UNIT:HAS_PRES_STRENGTH_DENOM_UNIT, modelIngredient.denomUnit, targetGroupId, false);
+		
+		if (usesPresentation) {
+			changesMade += replaceRelationship(t, c, HAS_PRES_STRENGTH_VALUE, modelIngredient.presStrength, targetGroupId, false);
+			changesMade += replaceRelationship(t, c, HAS_PRES_STRENGTH_UNIT , modelIngredient.presNumeratorUnit, targetGroupId, false);
+			changesMade += replaceRelationship(t, c, HAS_PRES_STRENGTH_DENOM_VALUE, modelIngredient.presDenomQuantity, targetGroupId, false);
+			changesMade += replaceRelationship(t, c, HAS_PRES_STRENGTH_DENOM_UNIT, modelIngredient.presDenomUnit, targetGroupId, false);
+		}
+		if (usesConcentration) {
+			changesMade += replaceRelationship(t, c, HAS_CONC_STRENGTH_VALUE, modelIngredient.concStrength, targetGroupId, false);
+			changesMade += replaceRelationship(t, c, HAS_CONC_STRENGTH_UNIT , modelIngredient.concNumeratorUnit, targetGroupId, false);
+			changesMade += replaceRelationship(t, c, HAS_CONC_STRENGTH_DENOM_VALUE, modelIngredient.concDenomQuantity, targetGroupId, false);
+			changesMade += replaceRelationship(t, c, HAS_CONC_STRENGTH_DENOM_UNIT, modelIngredient.concDenomUnit, targetGroupId, false);
+		}
+		
 		if (modelIngredient.unitOfPresentation != null || termGenerator.includeUnitOfPresentation()) {
 			changesMade += replaceRelationship(t, c, HAS_UNIT_OF_PRESENTATION, modelIngredient.unitOfPresentation, UNGROUPED, true);
 		}
@@ -304,52 +314,17 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		return Collections.singletonList(c);
 	}*/
 	
-	@Override
-	/**
-	 * PATTERN 1B - https://docs.google.com/spreadsheets/d/1EqZg1-Ksjy5J-Iebnjry96PgL7MbL_Au85oBXPtHCgE/edit#gid=0
-	 * Spreadsheet columns: 	[0]conceptId [1]FSN	[2]dose_form_evaluation	
-	 * [3]dmd_name	[4]Precise_ingredient	[5]dmd_boss	[6]ConcNumUnit	
-	 * [7]ConcNumQty	 [8]ConcDenomUnit	 [9]PRESENTNumQty	[10]ConcDenomQty	
-	 * [11]PRESENTNumUnit [12]PRESENTDenomQty	[13]PRESENTDenomUnit	
-	 * [14]UoP	[15]DoseForm
-	 *
-	protected List<Concept> loadLine(String[] items) throws TermServerScriptException {
-		Concept c = gl.getConcept(items[0]);
-		c.setConceptType(ConceptType.CLINICAL_DRUG);
-		
-		//Is this the first time we've seen this concept?
-		if (!spreadsheet.containsKey(c)) {
-			spreadsheet.put(c, new ArrayList<Ingredient>());
-		}
-		List<Ingredient> ingredients = spreadsheet.get(c);
-		try {
-			// Booleans indicate: don't create and do validate that concept exists
-			Ingredient ingredient = new Ingredient();
-			ingredient.doseForm = getPharmDoseForm(items[15]);
-			ingredient.substance = gl.getConcept(items[4], false, true);
-			ingredient.boss = gl.getConcept(items[5], false, true);
-			ingredient.strength = DrugUtils.getNumberAsConcept(items[9]);
-			ingredient.numeratorUnit = DrugUtils.findUnitOfMeasure(items[11]);
-			ingredient.denomQuantity = DrugUtils.getNumberAsConcept(items[12]);
-			ingredient.denomUnit = getUnitOfPresentation(items[13]);
-			ingredient.unitOfPresentation = getUnitOfPresentation(items[14]);
-			ingredients.add(ingredient);
-		} catch (Exception e) {
-			report (null, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, e.getMessage());
-			return null;
-		}
-		
-		return Collections.singletonList(c);
-	}*/
 
+	@Override
 	/*
+	 * PATTERN 1B, 1C - https://docs.google.com/spreadsheets/d/1EqZg1-Ksjy5J-Iebnjry96PgL7MbL_Au85oBXPtHCgE/edit#gid=0
 	 * PATTERN 3A - https://docs.google.com/spreadsheets/d/1EqZg1-Ksjy5J-Iebnjry96PgL7MbL_Au85oBXPtHCgE/edit#gid=0
 	 * DRUGS-499 Pattern 2B Oral Solutions https://docs.google.com/spreadsheets/d/1EqZg1-Ksjy5J-Iebnjry96PgL7MbL_Au85oBXPtHCgE/edit#gid=625769023
 	 * Spreadsheet columns: [0]conceptId	[10]FSN	[2]dose_form_evaluation	[3]dmd_name	
 	 * [4]Precise_ingredient	 [5]dmd_boss	[6]ConcNumQty	[7]ConcNumUnit	[8]ConcDenomQty	
 	 * [9]ConcDenomUnit	[10]PRESENTNumQty	[11]PRESENTNumUnit	[12]PRESENTDenomQty	
-	 * [13]PRESENTDenomUnit	[14]UoP	[15]DoseForm	Pattern	[16]Status
-	 
+	 * [13]PRESENTDenomUnit	[14]UoP	[15]DoseForm
+	 */
 	protected List<Concept> loadLine(String[] items) throws TermServerScriptException {
 		Concept c = gl.getConcept(items[0]);
 		c.setConceptType(ConceptType.CLINICAL_DRUG);
@@ -362,13 +337,25 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		try {
 			// Booleans indicate: don't create and do validate that concept exists
 			Ingredient ingredient = new Ingredient();
-			ingredient.doseForm = getPharmDoseForm(items[15]);
 			ingredient.substance = gl.getConcept(items[4], false, true);
 			ingredient.boss = gl.getConcept(items[5], false, true);
-			ingredient.strength = DrugUtils.getNumberAsConcept(items[6]);
-			ingredient.numeratorUnit = DrugUtils.findUnitOfMeasure(items[7]);
-			ingredient.denomQuantity = DrugUtils.getNumberAsConcept(items[8]);
-			ingredient.denomUnit =  DrugUtils.findUnitOfMeasure(items[9]);
+			if (usesConcentration) {
+				ingredient.concStrength = DrugUtils.getNumberAsConcept(items[6]);
+				ingredient.concNumeratorUnit = DrugUtils.findUnitOfMeasure(items[7]);
+				ingredient.concDenomQuantity = DrugUtils.getNumberAsConcept(items[8]);
+				ingredient.concDenomUnit =  DrugUtils.findUnitOfMeasure(items[9]);
+			}
+			if (usesPresentation) {
+				ingredient.presStrength = DrugUtils.getNumberAsConcept(items[10]);
+				ingredient.presNumeratorUnit = DrugUtils.findUnitOfMeasure(items[11]);
+				ingredient.presDenomQuantity = DrugUtils.getNumberAsConcept(items[12]);
+				ingredient.presDenomUnit =  DrugUtils.findUnitOfMeasure(items[13]);
+			}
+			if (includeUnitOfPresentation) {
+				ingredient.unitOfPresentation = getUnitOfPresentation(items[14]);
+			}
+			
+			ingredient.doseForm = getPharmDoseForm(items[15]);
 			ingredients.add(ingredient);
 		} catch (Exception e) {
 			report (null, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, e.getMessage());
@@ -376,7 +363,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		}
 		
 		return Collections.singletonList(c);
-	} */
+	} 
 	
 	/*
 	 * DRUGS-497 Pattern 3APatches - https://docs.google.com/spreadsheets/d/1EqZg1-Ksjy5J-Iebnjry96PgL7MbL_Au85oBXPtHCgE/edit#gid=493556537
@@ -385,7 +372,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 	 * [9]ConcDenomUnit	[10]NonNormConcNumQty	[11]NonNormConcNumUnit	[12]NonNormConcDenomQty	
 	 * [13]NonNormConcDenomUnit	[14]PRESENTNumQty	[15]PRESENTNumUnit	[16]PRESENTDenomQty	
 	 * [17]PRESENTDenomUnit	[18]UoP	[19]DoseForm
-	*/
+	*
 	protected List<Concept> loadLine(String[] items) throws TermServerScriptException {
 		Concept c = gl.getConcept(items[0]);
 		c.setConceptType(ConceptType.CLINICAL_DRUG);
@@ -412,7 +399,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		}
 		
 		return Collections.singletonList(c);
-	}  
+	}  */
 
 	private Concept getPharmDoseForm(String doseFormStr) throws TermServerScriptException {
 		//Do we have an SCTID to work with?  
@@ -438,12 +425,12 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		return unitPres;
 	}
 
-	private Concept getAlternative(Task t, Concept c, boolean beCritical) throws TermServerScriptException {
+	private Concept getAlternative(Task t, Concept c) throws TermServerScriptException {
 		//Work through the active historical associations and find an active alternative
 		List<HistoricalAssociation> assocs = c.getHistorialAssociations(ActiveState.ACTIVE);
 		if (assocs.size() > 1 || assocs.size() == 0) {
 			String msg = c + " is inactive with " + assocs.size() + " historical associations.  Cannot determine alternative concept.";
-			report(t, c, beCritical?Severity.CRITICAL:Severity.HIGH, ReportActionType.VALIDATION_ERROR, msg);
+			report(t, c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, msg);
 			return null;
 		}
 		Concept refset =  gl.getConcept(assocs.get(0).getRefsetId());

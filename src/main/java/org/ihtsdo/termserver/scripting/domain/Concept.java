@@ -863,11 +863,19 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	}
 	
 	public Concept clone() {
-		return clone(null);
+		return clone(null, false);
+	}
+	
+	public Concept cloneWithIds() {
+		return clone(null, true);
 	}
 	
 	public Concept clone(String sctid) {
-		Concept clone = new Concept(sctid, getFsn());
+		return clone(sctid, false);
+	}
+	
+	private Concept clone(String sctid, boolean keepIds) {
+		Concept clone = new Concept(keepIds?conceptId:sctid, getFsn());
 		clone.setActive(true);
 		clone.setDefinitionStatus(getDefinitionStatus());
 		clone.setModuleId(getModuleId());
@@ -876,15 +884,15 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		//Copy all descriptions
 		for (Description d : getDescriptions(ActiveState.ACTIVE)) {
 			//We need to null out the conceptId since the clone is a new concept
-			Description dClone = d.clone(null);
-			dClone.setConceptId(null);
+			Description dClone = d.clone(keepIds?d.getDescriptionId():null);
+			dClone.setConceptId(keepIds?conceptId:null);
 			clone.addDescription(dClone);
 		}
 		
 		//Copy all stated relationships
 		for (Relationship r : getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
 			//We need to null out the sourceId since the clone is a new concept
-			Relationship rClone = r.clone(null);
+			Relationship rClone = r.clone(keepIds?r.getRelationshipId():null);
 			rClone.setSourceId(null);
 			clone.addRelationship(rClone);
 		}
