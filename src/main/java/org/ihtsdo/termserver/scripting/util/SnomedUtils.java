@@ -790,4 +790,20 @@ public class SnomedUtils implements RF2Constants{
 		return GraphLoader.getGraphLoader().getConcept(sctId).getPreferredSynonym(US_ENG_LANG_REFSET).getTerm();
 	}
 
+	public static Concept createConcept(String term, String semTag, Concept parent) {
+		Concept newConcept = Concept.withDefaults(null);
+		
+		Description fsn = Description.withDefaults(term + " " + semTag, DescriptionType.FSN);
+		fsn.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(AcceptabilityMode.PREFERRED_BOTH));
+		newConcept.addDescription(fsn);
+		
+		Description pt = Description.withDefaults(term, DescriptionType.SYNONYM);
+		pt.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(AcceptabilityMode.PREFERRED_BOTH));
+		newConcept.addDescription(pt);
+		
+		Relationship parentRel = new Relationship (null, IS_A, parent, UNGROUPED);
+		newConcept.addRelationship(parentRel);
+		return newConcept;
+	}
+
 }

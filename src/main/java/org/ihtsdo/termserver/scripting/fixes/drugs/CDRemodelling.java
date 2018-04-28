@@ -26,12 +26,12 @@ import us.monoid.json.JSONObject;
 /*
 DRUGS-474 (Pattern 1a) Remodelling of Clinical Drugs including Basis of Strength Substance (BoSS) based on an input spreadsheet
 DRUGS-493 (Pattern 1b - ) 
-DRUGS-495 (Pattern 3a - Vials)
-DRUGS-496 (Pattern 3b - Creams and Drops)
-DRUGS-497 (Pattern 3a - Patches)
+DRUGS-505 (Pattern 1c - Actuation)
+DRUGS-504 (Pattern 2a - Infusions)
 DRUGS-499 (Pattern 2b - Oral Solutions)
-DRUGS-5__ (Pattern 1c - Actuation)
-
+DRUGS-495 (Pattern 3a - Vials)
+DRUGS-497 (Pattern 3a - Patches)
+DRUGS-496 (Pattern 3b - Creams and Drops)
 */
 public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 	
@@ -40,10 +40,10 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 	IngredientCounts ingredientCounter;
 	TermVerifier termVerifier;
 	boolean specifyDenominator = true;  // True for 2a, 2b, 3a, 3b  False for 1c
-	boolean includeUnitOfPresentation = true;  // True for 2a. False for 1c, 3b
-	boolean usesPresentation = true;   //True for Pattern 1b, 1c.   False for 2b, 3a.  2a uses both!
+	boolean includeUnitOfPresentation = false;  // True for 2a. False for 1c, 3a, 3b
+	boolean usesPresentation = false;   //True for Pattern 1b, 1c.   False for 2b, 3a.  2a uses both!
 	boolean usesConcentration = true;  //True for liquids eg Pattern 2a, 2b Oral solutions, 3a solutions, 3b - creams.   False for 1c
-	boolean cloneAndReplace = true;  //3A Patches being replaced, also 2A Injection Infusions
+	boolean cloneAndReplace = false;  //3A Patches being replaced, also 2A Injection Infusions
 	
 	protected CDRemodelling(BatchFix clone) {
 		super(clone);

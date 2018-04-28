@@ -637,6 +637,17 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	
 	protected int replaceRelationship(Task t, Concept c, Concept type, Concept value, int groupId, boolean ensureTypeUnique) {
 		int changesMade = 0;
+		
+		if (type == null || value == null) {
+			if (value == null) {
+				String msg = "Unable to add relationship of type " + type + " due to lack of a value concept";
+				report (t, c, Severity.CRITICAL, ReportActionType.API_ERROR, msg);
+			} else if (type == null) {
+				String msg = "Unable to add relationship with value " + value + " due to lack of a type concept";
+				report (t, c, Severity.CRITICAL, ReportActionType.API_ERROR, msg);
+			}
+			return NO_CHANGES_MADE;
+		}
 		//Do we already have this relationship active in the target group?
 		List<Relationship> rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
 													type,
@@ -665,32 +676,28 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		
 		//Or do we need to create and add?
 		//Is this type unique for the concept?  Inactivate any others if so
-		if (ensureTypeUnique) {
-			rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
-					type,
-					ActiveState.ACTIVE);
-			for (Relationship rel : rels) {
-				rel.setActive(false);
-				report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_INACTIVATED, rel);
+		//Otherwise just remove other relationships of this type in the target group
+		rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
+				type,
+				ActiveState.ACTIVE);
+		for (Relationship rel : rels) {
+			if (ensureTypeUnique || rel.getGroupId() == groupId) {
+				if (rel.isReleased()) {
+					rel.setActive(false);
+				} else {
+					c.removeRelationship(rel);
+				}
+				ReportActionType action = rel.isReleased()?ReportActionType.RELATIONSHIP_INACTIVATED:ReportActionType.RELATIONSHIP_DELETED;
+				report (t, c, Severity.LOW, action, rel);
 				changesMade++;
 			}
 		}
 		
 		//Add the new relationship
 		Relationship newRel = new Relationship (c, type, value, groupId);
-		if (type == null || value == null) {
-			if (value == null) {
-				String msg = "Unable to add relationship of type " + type + " due to lack of a value concept";
-				report (t, c, Severity.CRITICAL, ReportActionType.API_ERROR, msg);
-			} else if (type == null) {
-				String msg = "Unable to add relationship with value " + value + " due to lack of a type concept";
-				report (t, c, Severity.CRITICAL, ReportActionType.API_ERROR, msg);
-			}
-		} else {
-			report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, newRel);
-			c.addRelationship(newRel);
-			changesMade++;
-		}
+		report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, newRel);
+		c.addRelationship(newRel);
+		changesMade++;
 		
 		return changesMade;
 	}

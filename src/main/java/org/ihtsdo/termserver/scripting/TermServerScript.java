@@ -793,9 +793,10 @@ public abstract class TermServerScript implements RF2Constants {
 		String desc = (task == null? "" :  task.getSummary());
 		String name = (component == null ? "" : component.getReportedName());
 		String type = (component == null ? "" : component.getReportedType());
+		String id = (component == null ? "" : component.getId());
 		StringBuffer sb = new StringBuffer();
 		
-		sb.append(key + COMMA + desc + COMMA + component.getId() + COMMA_QUOTE)
+		sb.append(key + COMMA + desc + COMMA + id + COMMA_QUOTE)
 		.append( name + QUOTE_COMMA);
 		if (stateComponentType) {
 			sb.append(type + COMMA );

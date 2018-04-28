@@ -11,6 +11,8 @@ import java.util.Set;
 
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.CaseSignificance;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.DescriptionType;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import com.amazonaws.services.route53.model.InvalidArgumentException;
@@ -106,6 +108,14 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	public Concept(String conceptId, int originalFileLineNumber) {
 		this(conceptId);
 		this.originalFileLineNumber = originalFileLineNumber;
+	}
+	
+	public static Concept withDefaults (String conceptId) {
+		Concept c = new Concept(conceptId);
+		c.setModuleId(SCTID_CORE_MODULE);
+		c.setActive(true);
+		c.setDefinitionStatus(DefinitionStatus.PRIMITIVE);
+		return c;
 	}
 
 	public String getEffectiveTime() {

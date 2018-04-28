@@ -468,5 +468,9 @@ public class GraphLoader implements RF2Constants {
 				.collect (Collectors.joining(", "));
 	}
 
+	public void registerConcept(Concept concept) {
+		concepts.put(concept.getConceptId(), concept);
+	}
+
 
 }
