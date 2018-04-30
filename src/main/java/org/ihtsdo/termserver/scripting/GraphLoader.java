@@ -34,6 +34,7 @@ public class GraphLoader implements RF2Constants {
 	private Map<String, Description> descriptions = new HashMap<String, Description>();
 	private Map<String, Component> allComponents = null;
 	private Map<Component, Concept> componentOwnerMap = null;
+	private String excludeModule = "715515008";
 	
 	//Watch that this map is of the TARGET of the association, ie all concepts used in a historical association
 	private Map<Concept, List<HistoricalAssociation>> historicalAssociations =  new HashMap<Concept, List<HistoricalAssociation>>();
@@ -71,6 +72,12 @@ public class GraphLoader implements RF2Constants {
 				if (lineItems[REL_IDX_ID].equals("7062677028")) {
 					TermServerScript.debug("Checkpoint");
 				}
+				
+				//Exclude LOINC
+				if (lineItems[IDX_MODULEID].equals(excludeModule)) {
+					continue;
+				}
+				
 				if (!isConcept(lineItems[REL_IDX_SOURCEID])) {
 					System.out.println (characteristicType + " relationship " + lineItems[REL_IDX_ID] + " referenced a non concept identifier: " + lineItems[REL_IDX_SOURCEID]);
 				}
@@ -200,6 +207,10 @@ public class GraphLoader implements RF2Constants {
 		while ((line = br.readLine()) != null) {
 			if (!isHeaderLine) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
+				//Exclude LOINC
+				if (lineItems[IDX_MODULEID].equals(excludeModule)) {
+					continue;
+				}
 				//We might already have received some details about this concept
 				Concept c = getConcept(lineItems[IDX_ID]);
 				Concept.fillFromRf2(c, lineItems);
@@ -220,6 +231,10 @@ public class GraphLoader implements RF2Constants {
 		while ((line = br.readLine()) != null) {
 			if (!isHeader) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
+				//Exclude LOINC
+				if (lineItems[IDX_MODULEID].equals(excludeModule)) {
+					continue;
+				}
 				Concept c = getConcept(lineItems[DES_IDX_CONCEPTID]);
 				if (lineItems[DES_IDX_ACTIVE].equals(ACTIVE_FLAG) && lineItems[DES_IDX_TYPEID].equals(FULLY_SPECIFIED_NAME)) {
 					c.setFsn(lineItems[DES_IDX_TERM]);
@@ -253,6 +268,10 @@ public class GraphLoader implements RF2Constants {
 		while ((line = br.readLine()) != null) {
 			if (!isHeaderLine) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
+				//Exclude LOINC
+				if (lineItems[IDX_MODULEID].equals(excludeModule)) {
+					continue;
+				}
 				Description d = getDescription(lineItems[LANG_IDX_REFCOMPID]);
 				LangRefsetEntry langRefsetEntry = LangRefsetEntry.fromRf2(lineItems);
 				
@@ -319,6 +338,10 @@ public class GraphLoader implements RF2Constants {
 		while ((line = br.readLine()) != null) {
 			if (!isHeaderLine) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
+				//Exclude LOINC
+				if (lineItems[IDX_MODULEID].equals(excludeModule)) {
+					continue;
+				}
 				InactivationIndicatorEntry inactivation = InactivationIndicatorEntry.fromRf2(lineItems);
 				if (inactivation.getRefsetId().equals(SCTID_CON_INACT_IND_REFSET)) {
 					Concept c = getConcept(lineItems[INACT_IDX_REFCOMPID]);
@@ -340,6 +363,10 @@ public class GraphLoader implements RF2Constants {
 		while ((line = br.readLine()) != null) {
 			if (!isHeaderLine) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
+				//Exclude LOINC
+				if (lineItems[IDX_MODULEID].equals(excludeModule)) {
+					continue;
+				}
 				String referencedComponent = lineItems[INACT_IDX_REFCOMPID];
 				if (isConcept(referencedComponent)) {
 					Concept c = getConcept(referencedComponent);
