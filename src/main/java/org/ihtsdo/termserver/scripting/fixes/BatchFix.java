@@ -613,29 +613,25 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	
 	protected void removeRelationships (Task t, Concept c, Concept type, int groupId) throws TermServerScriptException {
 		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, type, groupId)) {
-			removeRelationship(t, r, c);
+			removeRelationship(t, c, r);
 		}
 	}
 	
-	protected void removeRelationship(Task t, Relationship r, Concept c) throws TermServerScriptException {
-		
+	protected void removeRelationship(Task t, Concept c, Relationship r) throws TermServerScriptException {
 		//Are we inactivating or deleting this relationship?
-		String msg;
 		ReportActionType action = ReportActionType.UNKNOWN;
 		if (!r.isReleased()) {
 			c.removeRelationship(r);
-			msg = "Deleted relationship: " + r;
 			action = ReportActionType.RELATIONSHIP_DELETED;
 		} else {
 			r.setEffectiveTime(null);
 			r.setActive(false);
-			msg = "Inactivated  relationship: " + r;
 			action = ReportActionType.RELATIONSHIP_INACTIVATED;
 		}
-		report (t, c, Severity.LOW, action, msg, c.getDefinitionStatus().toString());
+		report (t, c, Severity.LOW, action, r);
 	}
 	
-	protected int replaceRelationship(Task t, Concept c, Concept type, Concept value, int groupId, boolean ensureTypeUnique) {
+	protected int replaceRelationship(Task t, Concept c, Concept type, Concept value, int groupId, boolean ensureTypeUnique) throws TermServerScriptException {
 		int changesMade = 0;
 		
 		if (type == null || value == null) {
@@ -682,13 +678,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 				ActiveState.ACTIVE);
 		for (Relationship rel : rels) {
 			if (ensureTypeUnique || rel.getGroupId() == groupId) {
-				if (rel.isReleased()) {
-					rel.setActive(false);
-				} else {
-					c.removeRelationship(rel);
-				}
-				ReportActionType action = rel.isReleased()?ReportActionType.RELATIONSHIP_INACTIVATED:ReportActionType.RELATIONSHIP_DELETED;
-				report (t, c, Severity.LOW, action, rel);
+				removeRelationship(t,c,rel);
 				changesMade++;
 			}
 		}
@@ -708,7 +698,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 									.stream().map(rel -> rel.getTarget()).collect(Collectors.toList());
 		for (Concept redundantValue : detectRedundancy(allValues)) {
 			Relationship removeMe = new Relationship(c, type, redundantValue, groupNum);
-			removeRelationship(t, removeMe, c);
+			removeRelationship(t, c, removeMe);
 		}
 	}
 	

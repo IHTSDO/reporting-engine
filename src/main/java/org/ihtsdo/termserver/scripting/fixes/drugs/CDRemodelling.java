@@ -39,10 +39,10 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 	DrugTermGenerator termGenerator = new DrugTermGenerator(this);
 	IngredientCounts ingredientCounter;
 	TermVerifier termVerifier;
-	boolean specifyDenominator = true;  // True for 2a, 2b, 3a, 3b  False for 1c
-	boolean includeUnitOfPresentation = false;  // True for 2a. False for 1c, 3a, 3b
-	boolean usesPresentation = false;   //True for Pattern 1b, 1c.   False for 2b, 3a.  2a uses both!
-	boolean usesConcentration = true;  //True for liquids eg Pattern 2a, 2b Oral solutions, 3a solutions, 3b - creams.   False for 1c
+	boolean specifyDenominator = false;  // True for 2a, 2b, 3a, 3b  False for 1c
+	boolean includeUnitOfPresentation = true;  // True for 2a, 1c. False for 3a, 3b
+	boolean usesPresentation = true;   //True for Pattern 1b, 1c, 2a.   False for 2b, 3a.  NB 2a uses both!
+	boolean usesConcentration = false;  //True for liquids eg Pattern 2a, 2b Oral solutions, 3a solutions, 3b - creams.   False for 1c
 	boolean cloneAndReplace = false;  //3A Patches being replaced, also 2A Injection Infusions
 	
 	protected CDRemodelling(BatchFix clone) {
@@ -154,7 +154,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		
 		//If we have any "active ingredients" left at this point, take them out now, before they confusing the terming
 		for (Relationship ai : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE)) {
-			removeRelationship(t,  ai, c);
+			removeRelationship(t,  c, ai);
 		}
 		//We're definitely going to have everything we need in the stated form, and in fact the inferred will be wrong because we haven't changed it.
 		changesMade += termGenerator.ensureDrugTermsConform(t,c, CharacteristicType.STATED_RELATIONSHIP);
@@ -178,7 +178,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		} else {
 			//If we've found an active ingredient, inactivate it and replace with a PRECISE active ingredient
 			if (substanceRel.getType().equals(HAS_ACTIVE_INGRED)) {
-				removeRelationship(t, substanceRel, c);
+				removeRelationship(t, c, substanceRel);
 				substanceRel = substanceRel.clone(null);
 				substanceRel.setType(HAS_PRECISE_INGRED);
 				substanceRel.setTarget(modelIngredient.substance);
