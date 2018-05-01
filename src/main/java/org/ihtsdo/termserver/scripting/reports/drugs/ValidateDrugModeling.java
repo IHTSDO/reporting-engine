@@ -57,7 +57,7 @@ public class ValidateDrugModeling extends TermServerReport{
 			}
 			
 			// DRUGS-281, DRUGS-282
-			issueCount += validateIngredientsInFSN(concept, drugTypes);  
+			//issueCount += validateIngredientsInFSN(concept, drugTypes);  
 			
 			// DRUGS-267
 			//issueCount += validateIngredientsAgainstBoSS(concept);
@@ -72,7 +72,8 @@ public class ValidateDrugModeling extends TermServerReport{
 			// DRUGS-288
 			//issueCount += validateAttributeValueCardinality(concept, HAS_ACTIVE_INGRED);
 			
-			//issueCount += checkForBadWords(concept);  //DRUGS-93
+			//DRUGS-93
+			issueCount += checkForBadWords(concept);  
 		}
 		info ("Drugs validation complete.  Detected " + issueCount + " issues.");
 	}
@@ -81,6 +82,7 @@ public class ValidateDrugModeling extends TermServerReport{
 		Set<Concept> subHierarchy = gl.getConcept(substHierarchyStr).getDescendents(NOT_SET);
 		long issueCount = 0;
 		for (Concept concept : subHierarchy) {
+			DrugUtils.setConceptType(concept);
 			//issueCount += validateDisposition(concept);
 			issueCount += checkForBadWords(concept);  //DRUGS-93
 		}
@@ -150,7 +152,6 @@ public class ValidateDrugModeling extends TermServerReport{
 		return null;
 	}
 
-
 	/*
 	Need to identify and update:
 		FSN beginning with "Product containing" that includes any of the following in any active description:
@@ -162,17 +163,20 @@ public class ValidateDrugModeling extends TermServerReport{
 	private long checkForBadWords(Concept concept) {
 		long issueCount = 0;
 		//Check if we're product containing and then look for bad words
-		if (concept.getFsn().contains(remodelledDrugIndicator)) {
-			for (Description d : concept.getDescriptions(ActiveState.ACTIVE)) {
-				String term = d.getTerm();
-				if (d.getType().equals(DescriptionType.FSN)) {
-					term = SnomedUtils.deconstructFSN(term)[0];
-				}
-				for (String badWord : badWords ) {
-					if (term.contains(badWord)) {
+		for (Description d : concept.getDescriptions(ActiveState.ACTIVE)) {
+			String term = d.getTerm();
+			if (d.getType().equals(DescriptionType.FSN)) {
+				term = SnomedUtils.deconstructFSN(term)[0];
+			}
+			for (String badWord : badWords ) {
+				if (term.contains(badWord)) {
+					//Exception, MP PT will finish with word "product"
+					if (concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT) && d.isPreferred() && badWord.equals("product")) {
+						continue;
+					} else {
 						String msg = "Term contains bad word: " + badWord;
 						issueCount++;
-						report (concept, msg, d.toString());
+						report (concept, msg, concept.getFsn().contains(remodelledDrugIndicator), d.toString());
 					}
 				}
 			}
