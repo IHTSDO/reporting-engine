@@ -33,7 +33,7 @@ public class ValidateDrugModeling extends TermServerReport{
 			report.init(args);
 			report.loadProjectSnapshot(false); //Load all descriptions
 			report.validateDrugsModeling();
-			report.validateSubstancesModeling();
+			//report.validateSubstancesModeling();
 		} catch (Exception e) {
 			info("Failed to produce Druge Model Validation Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
@@ -44,10 +44,10 @@ public class ValidateDrugModeling extends TermServerReport{
 	
 	private void validateDrugsModeling() throws TermServerScriptException {
 		Set<Concept> subHierarchy = gl.getConcept(drugsHierarchyStr).getDescendents(NOT_SET);
-		//ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT, ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.CLINICAL_DRUG };
+		ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT, ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.CLINICAL_DRUG };
 		//ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.CLINICAL_DRUG };
 		//ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT_FORM};
-		ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT };
+		//ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT };
 		long issueCount = 0;
 		for (Concept concept : subHierarchy) {
 			DrugUtils.setConceptType(concept);
@@ -63,17 +63,18 @@ public class ValidateDrugModeling extends TermServerReport{
 			//issueCount += validateIngredientsAgainstBoSS(concept);
 			
 			// DRUGS-296
-			/*if (concept.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED) && 
+			if (concept.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED) && 
 				concept.getParents(CharacteristicType.STATED_RELATIONSHIP).get(0).equals(MEDICINAL_PRODUCT)) {
 				issueCount += validateStatedVsInferredAttributes(concept, HAS_ACTIVE_INGRED, drugTypes);
+				issueCount += validateStatedVsInferredAttributes(concept, HAS_PRECISE_INGRED, drugTypes);
 				issueCount += validateStatedVsInferredAttributes(concept, HAS_MANUFACTURED_DOSE_FORM, drugTypes);
-			}*/
+			}
 			
 			// DRUGS-288
 			//issueCount += validateAttributeValueCardinality(concept, HAS_ACTIVE_INGRED);
 			
 			//DRUGS-93
-			issueCount += checkForBadWords(concept);  
+			//issueCount += checkForBadWords(concept);  
 		}
 		info ("Drugs validation complete.  Detected " + issueCount + " issues.");
 	}
@@ -117,7 +118,6 @@ public class ValidateDrugModeling extends TermServerReport{
 		}
 		return issuesCount;
 	}
-	
 
 	/**
 	 * list of concepts that have an inferred parent with a stated attribute 
@@ -141,7 +141,6 @@ public class ValidateDrugModeling extends TermServerReport{
 		return issuesCount;
 	}
 
-	
 	private Relationship findRelationship(Concept concept, Relationship exampleRel, CharacteristicType charType) {
 		//Find the first relationship matching the type, target and activeState
 		for (Relationship r : concept.getRelationships(charType, exampleRel.getType(),  ActiveState.ACTIVE)) {
@@ -328,15 +327,4 @@ public class ValidateDrugModeling extends TermServerReport{
 	private void report (Concept c, String data, String detail) {
 		super.report(c, c.getConceptType(), data, detail);
 	}
-
-/*	protected void init(String[] args) throws TermServerScriptException, SnowOwlClientException {
-		super.init(args);
-		writeToReportFile ("Concept, FSN, SemTag, Issue, Data");
-		
-		//Recover static concepts that we'll need to search for in attribute types
-		activeIngredient = gl.getConcept(SCTID_ACTIVE_INGREDIENT);
-		hasManufacturedDoseForm = gl.getConcept(SCTID_MAN_DOSE_FORM);
-		boss = gl.getConcept(SCTID_HAS_BOSS);
-		hasDisposition = gl.getConcept(SCTID_HAS_DISPOSITION);
-	}*/
 }
