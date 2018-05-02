@@ -85,7 +85,6 @@ public class MissingModifications extends TermServerReport {
 				.collect(Collectors.toSet());
 	}
 
-
 	private void findMissingModifications() throws TermServerScriptException {
 		for (Concept substance : descendantsCache.getDescendentsOrSelf(SUBSTANCE)) {
 			if (substance.getConceptId().equals("396061008")) {
@@ -117,5 +116,4 @@ public class MissingModifications extends TermServerReport {
 		allChildren.addAll(substance.getChildren(CharacteristicType.STATED_RELATIONSHIP));
 		return allChildren;
 	}
-
 }
