@@ -116,7 +116,15 @@ public class SnowOwlClient {
 			throw new SnowOwlClientException(e);
 		}
 	}
-	
+
+	public void deleteConcept(String sctId, String branchPath) throws SnowOwlClientException {
+		try {
+			resty.json(getConceptsPath(sctId, branchPath), Resty.delete());
+			logger.info("Deleted concept " + sctId + " from " + branchPath);
+		} catch (Exception e) {
+			throw new SnowOwlClientException(e);
+		}
+	}
 
 	public JSONResource getConcepts(String ecl, String branchPath) throws SnowOwlClientException {
 		try {
@@ -124,6 +132,10 @@ public class SnowOwlClient {
 		} catch (IOException e) {
 			throw new SnowOwlClientException(e);
 		}
+	}
+	
+	private String getConceptsPath(String sctId, String branchPath) {
+		return url + "/" + branchPath + "/concepts/" + sctId;
 	}
 
 	private String getConceptsPath(String branchPath) {

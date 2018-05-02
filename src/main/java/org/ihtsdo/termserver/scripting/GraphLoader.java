@@ -419,7 +419,10 @@ public class GraphLoader implements RF2Constants {
 	}
 	
 	public List<HistoricalAssociation> usedAsHistoricalAssociationTarget (Concept c) {
-		return historicalAssociations.get(c);
+		if (historicalAssociations.containsKey(c)) {
+			return historicalAssociations.get(c);
+		}
+		return new ArrayList<HistoricalAssociation>();
 	}
 
 	private HistoricalAssociation loadHistoricalAssociationLine(String[] lineItems) {

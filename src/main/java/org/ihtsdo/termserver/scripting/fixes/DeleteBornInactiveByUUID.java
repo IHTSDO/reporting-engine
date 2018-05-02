@@ -3,7 +3,7 @@ package org.ihtsdo.termserver.scripting.fixes;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClient;
 
 
-public class DeleteBornInactiveFix {
+public class DeleteBornInactiveByUUID {
 
 	public static void main(String[] args) throws Exception {
 		String url = "http://localhost:8080/";

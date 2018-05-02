@@ -112,7 +112,7 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	public enum ReportActionType { API_ERROR, DEBUG_INFO, INFO, UNEXPECTED_CONDITION,
-									 CONCEPT_CHANGE_MADE, CONCEPT_ADDED, CONCEPT_INACTIVATED,
+									 CONCEPT_CHANGE_MADE, CONCEPT_ADDED, CONCEPT_INACTIVATED, CONCEPT_DELETED,
 									 DESCRIPTION_CHANGE_MADE, DESCRIPTION_ADDED, DESCRIPTION_REMOVED, CASE_SIGNIFICANCE_CHANGE_MADE,
 									 RELATIONSHIP_ADDED, RELATIONSHIP_REPLACED, RELATIONSHIP_INACTIVATED, RELATIONSHIP_DELETED, RELATIONSHIP_MODIFIED, 
 									 RELATIONSHIP_GROUP_ADDED,
@@ -453,6 +453,17 @@ public abstract class TermServerScript implements RF2Constants {
 			return c;
 		} catch (Exception e) {
 			throw new TermServerScriptException("Failed to create " + c + " in TS due to " + e.getMessage(),e);
+		}
+	}
+	
+	protected void deleteConcept(Task t, Concept c) throws TermServerScriptException {
+		try {
+			debug ((dryRun ?"Dry run deleting ":"Deleting ") + c );
+			if (!dryRun) {
+				tsClient.deleteConcept(c.getConceptId(), t.getBranchPath());
+			} 
+		} catch (Exception e) {
+			throw new TermServerScriptException("Failed to delete " + c + " in TS due to " + e.getMessage(),e);
 		}
 	}
 	

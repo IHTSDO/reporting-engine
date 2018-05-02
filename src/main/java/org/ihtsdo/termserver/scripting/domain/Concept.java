@@ -886,7 +886,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	
 	private Concept clone(String sctid, boolean keepIds) {
 		Concept clone = new Concept(keepIds?conceptId:sctid, getFsn());
-		clone.setActive(true);
+		clone.setActive(active);
 		clone.setDefinitionStatus(getDefinitionStatus());
 		clone.setModuleId(getModuleId());
 		clone.setConceptType(conceptType);

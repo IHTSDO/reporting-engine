@@ -810,7 +810,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		//Add our clone to the task, after the original
 		t.addAfter(savedConcept, original);
 		
-		//Now inactivate the original
+		//Now inactivate the original 
 		original.setActive(false);
 		original.setInactivationIndicator(InactivationIndicator.AMBIGUOUS);
 		original.setAssociationTargets(AssociationTargets.possEquivTo(savedConcept));
