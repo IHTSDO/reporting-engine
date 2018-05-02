@@ -12,13 +12,7 @@ import org.apache.commons.lang.NotImplementedException;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
-import org.ihtsdo.termserver.scripting.domain.Batch;
-import org.ihtsdo.termserver.scripting.domain.Component;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.ConceptChange;
-import org.ihtsdo.termserver.scripting.domain.Description;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants;
-import org.ihtsdo.termserver.scripting.domain.Task;
+import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 
 import us.monoid.json.JSONObject;
@@ -43,16 +37,9 @@ public class FixMissingInactivationIndicators extends BatchFix implements RF2Con
 		try {
 			fix.selfDetermining = true;
 			fix.init(args);
-			if (dryRun) {
-				fix.runStandAlone = true;
-			}
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			fix.loadProjectSnapshot(false); //Load all descriptions
-			fix.startTimer();
-			info ("Processing started.  See results: " + fix.reportFile.getAbsolutePath());
-			Batch batch = fix.formIntoBatch();
-			fix.batchProcess(batch);
-			info ("Processing complete.  See results: " + fix.reportFile.getAbsolutePath());
+			fix.processFile();
 		} finally {
 			fix.finish();
 		}
@@ -73,7 +60,6 @@ public class FixMissingInactivationIndicators extends BatchFix implements RF2Con
 					if (!dryRun) {
 						tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
 					}
-					//report(task, concept, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept successfully remodelled. " + changesMade + " changes made.");
 				} catch (Exception e) {
 					//See if we can get that 2nd level exception's reason which says what the problem actually was
 					String additionalInfo = "";
@@ -93,7 +79,7 @@ public class FixMissingInactivationIndicators extends BatchFix implements RF2Con
 		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 			if (d.getInactivationIndicator() == null) {
 				d.setInactivationIndicator(InactivationIndicator.CONCEPT_NON_CURRENT);
-				report(task, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "CNC Inactivation indicator added to " + d);
+				report(task, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "CNC Inactivation indicator added", d);
 				changesMade++;
 			}
 		}
