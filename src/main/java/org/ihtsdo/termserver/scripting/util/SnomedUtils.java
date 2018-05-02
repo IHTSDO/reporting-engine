@@ -805,5 +805,20 @@ public class SnomedUtils implements RF2Constants{
 		newConcept.addRelationship(parentRel);
 		return newConcept;
 	}
+	
+	//Where we have multiple potential responses eg concentration or presentation strength, return the first one found given the 
+	//order specified by the array
+	public static Concept getTarget(Concept c, Concept[] types, int groupId, CharacteristicType charType) throws TermServerScriptException {
+		for (Concept type : types) {
+			List<Relationship> rels = c.getRelationships(charType, type, groupId);
+			if (rels.size() > 1) {
+				TermServerScript.warn(c + " has multiple " + type + " in group " + groupId);
+			} else if (rels.size() == 1) {
+				//This might not be the full concept, so recover it fully from our loaded cache
+				return GraphLoader.getGraphLoader().getConcept(rels.get(0).getTarget().getConceptId());
+			}
+		}
+		return null;
+	}
 
 }

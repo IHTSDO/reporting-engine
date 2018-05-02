@@ -437,27 +437,27 @@ public class DrugTermGenerator implements RF2Constants{
 			Concept ingredient = GraphLoader.getGraphLoader().getConcept(r.getTarget().getConceptId());
 			
 			//Do we have a BoSS in the same group?
-			Concept boSS = getTarget(c, new Concept[] {HAS_BOSS}, r.getGroupId(), charType);
+			Concept boSS = SnomedUtils.getTarget(c, new Concept[] {HAS_BOSS}, r.getGroupId(), charType);
 			
 			//Are we adding the strength?
-			Concept strength = getTarget (c, new Concept[] {HAS_PRES_STRENGTH_VALUE, HAS_CONC_STRENGTH_VALUE}, r.getGroupId(), charType);
+			Concept strength = SnomedUtils.getTarget (c, new Concept[] {HAS_PRES_STRENGTH_VALUE, HAS_CONC_STRENGTH_VALUE}, r.getGroupId(), charType);
 			
 			//Are we adding the denominator strength and units?
 			String denominatorStr = "";
 			if (specifyDenominator || hasAttribute(c, HAS_CONC_STRENGTH_DENOM_VALUE)) {
 				denominatorStr = "/";
-				Concept denStren = getTarget (c, new Concept[] {HAS_PRES_STRENGTH_DENOM_VALUE, HAS_CONC_STRENGTH_DENOM_VALUE}, r.getGroupId(), charType);
+				Concept denStren = SnomedUtils.getTarget (c, new Concept[] {HAS_PRES_STRENGTH_DENOM_VALUE, HAS_CONC_STRENGTH_DENOM_VALUE}, r.getGroupId(), charType);
 				String denStrenStr = SnomedUtils.deconstructFSN(denStren.getFsn())[0];
 				if (!denStrenStr.equals("1") || isFSN) {
 					denominatorStr += denStrenStr + " ";
 				}
-				Concept denUnit = getTarget (c, new Concept[] {HAS_PRES_STRENGTH_DENOM_UNIT, HAS_CONC_STRENGTH_DENOM_UNIT}, r.getGroupId(), charType);
+				Concept denUnit = SnomedUtils.getTarget (c, new Concept[] {HAS_PRES_STRENGTH_DENOM_UNIT, HAS_CONC_STRENGTH_DENOM_UNIT}, r.getGroupId(), charType);
 				String denUnitStr = getTermForConcat(denUnit, isFSN || neverAbbrev.contains(denUnit), langRefset);
 				denominatorStr += denUnitStr;
 			}
 			
 			//And the unit
-			Concept unit = getTarget(c, new Concept[] {HAS_PRES_STRENGTH_UNIT, HAS_CONC_STRENGTH_UNIT}, r.getGroupId(), charType);
+			Concept unit = SnomedUtils.getTarget(c, new Concept[] {HAS_PRES_STRENGTH_UNIT, HAS_CONC_STRENGTH_UNIT}, r.getGroupId(), charType);
 			
 			String ingredientWithStrengthTerm = formIngredientWithStrengthTerm (ingredient, boSS, strength, unit, denominatorStr, isFSN, langRefset);
 			ingredients.add(ingredientWithStrengthTerm);
@@ -515,21 +515,6 @@ public class DrugTermGenerator implements RF2Constants{
 			term = SnomedUtils.deCapitalize(term);
 		}
 		return term;
-	}
-
-	//Where we have multiple potential responses eg concentration or presentation strength, return the first one found given the 
-	//order specified by the array
-	private Concept getTarget(Concept c, Concept[] types, int groupId, CharacteristicType charType) throws TermServerScriptException {
-		for (Concept type : types) {
-			List<Relationship> rels = c.getRelationships(charType, type, groupId);
-			if (rels.size() > 1) {
-				TermServerScript.warn(c + " has multiple " + type + " in group " + groupId);
-			} else if (rels.size() == 1) {
-				//This might not be the full concept, so recover it fully from our loaded cache
-				return gl.getConcept(rels.get(0).getTarget().getConceptId());
-			}
-		}
-		return null;
 	}
 
 	private void reactivateMatchingTerm(Task t, Concept c, Description replacement) {
