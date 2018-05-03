@@ -90,16 +90,16 @@ public class ConceptsWithOrTargetsOfAttribute extends TermServerReport {
 				//Now either include if we're a target of the specified attribute type
 				//or have that attribute type ourselves 
 				if (attributeTargetMap.get(c) != null) {
-					for (Concept source : attributeTargetMap.get(c)) {
-						report (c, "Is Source", source.toString());
-						incrementSummaryInformation("Sources reported");
+					for (Concept target : attributeTargetMap.get(c)) {
+						report (c, "Is Target", target.toString());
+						incrementSummaryInformation("Targets reported");
 					}
 				}
 				
 				if (attributeSourceMap.get(c) != null) {
-					for (Concept target : attributeSourceMap.get(c)) {
-						report (c, "Is Target", target.toString());
-						incrementSummaryInformation("Targets reported");
+					for (Concept source : attributeSourceMap.get(c)) {
+						report (c, "Is Source", source.toString());
+						incrementSummaryInformation("Sources reported");
 					}
 				}
 			}
