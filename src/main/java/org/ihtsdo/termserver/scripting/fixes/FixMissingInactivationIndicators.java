@@ -20,9 +20,12 @@ import us.monoid.json.JSONObject;
 /*
 	Where a concept is inactive, it's active descriptions should have the inactivation indicator 
 	900000000000495008 |Concept non-current (foundation metadata concept)| applied against them.
-	See INFRA-1407
-	Also ISRS-225
+	See INFRA-1407 and ISRS-225
+	
+	This class deprecated because SnowOwl is currently re-using UUIDs for this, which we'd have to 
+	do another fix to address.   Use the same class in the delta package.
 */
+@Deprecated
 public class FixMissingInactivationIndicators extends BatchFix implements RF2Constants{
 	
 	Map<String, ConceptChange> conceptsToProcess = new HashMap<String, ConceptChange>();

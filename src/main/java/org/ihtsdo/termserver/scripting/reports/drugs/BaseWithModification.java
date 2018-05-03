@@ -35,7 +35,7 @@ public class BaseWithModification extends TermServerReport {
 	private void findBaseWithModifications() throws TermServerScriptException {
 		for (Concept c : PHARM_BIO_PRODUCT.getDescendents(NOT_SET)) {
 			Set<Concept> ingredients = DrugUtils.getIngredients(c, CharacteristicType.STATED_RELATIONSHIP);
-			//We won't consider the transative case, just immediate modifications
+			//We won't consider the transitive case, just immediate modifications
 			for (Concept ingredient : ingredients) {
 				//Are we a modification of a base which is also an ingredient?
 				Concept base = SnomedUtils.getTarget(ingredient, type, UNGROUPED, CharacteristicType.STATED_RELATIONSHIP);

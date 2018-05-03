@@ -2,6 +2,8 @@ package org.ihtsdo.termserver.scripting.domain;
 
 import java.util.UUID;
 
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.DefinitionStatus;
+
 //id	effectiveTime	active	moduleId	refsetId	referencedComponentId	inactivationReasonId
 public class InactivationIndicatorEntry extends Component implements RF2Constants {
 
@@ -27,6 +29,28 @@ public class InactivationIndicatorEntry extends Component implements RF2Constant
 		clone.inactivationReasonId = this.inactivationReasonId;
 		clone.dirty = true; //New components need to be written to any delta
 		return clone;
+	}
+	private static InactivationIndicatorEntry withDefaults() {
+		InactivationIndicatorEntry i = new InactivationIndicatorEntry();
+		i.setId(UUID.randomUUID().toString());
+		i.setModuleId(SCTID_CORE_MODULE);
+		i.setActive(true);
+		i.setDirty();
+		return i;
+	}
+	
+	public static InactivationIndicatorEntry withDefaults (Concept c) {
+		InactivationIndicatorEntry i = withDefaults();
+		i.setRefsetId(SCTID_CON_INACT_IND_REFSET);
+		i.setReferencedComponentId(c.getId());
+		return i;
+	}
+	
+	public static InactivationIndicatorEntry withDefaults (Description d) {
+		InactivationIndicatorEntry i = withDefaults();
+		i.setRefsetId(SCTID_DESC_INACT_IND_REFSET);
+		i.setReferencedComponentId(d.getId());
+		return i;
 	}
 	
 	public String toString() {

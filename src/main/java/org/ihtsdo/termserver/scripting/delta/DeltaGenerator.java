@@ -194,6 +194,11 @@ public abstract class DeltaGenerator extends TermServerScript {
 				writeToRF2File(langDeltaFilename, lang.toRF2());
 			}
 		}
+		for (InactivationIndicatorEntry i : d.getInactivationIndicatorEntries()) {
+			if (i.isDirty()) {
+				writeToRF2File(attribValDeltaFilename, i.toRF2());
+			}
+		}
 	}
 
 	protected void outputRF2(Relationship r) throws TermServerScriptException {
