@@ -25,7 +25,7 @@ import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
 
 /**
- * QI-1, QI-5, QI-9
+ * QI-1, QI-5, QI-9, QI-14, 15, 16
  * See https://confluence.ihtsdotools.org/display/IAP/Quality+Improvements+2018
  */
 public class PrepMisalignedConcepts extends TemplateFix {
@@ -62,8 +62,19 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		templateNames = new String[] {	"Fracture of Bone Structure.json",
 										"Fracture Dislocation of Bone Structure.json",
 										"Pathologic fracture of bone due to Disease.json"};*/
-		subHierarchyStr =  "128294001";  // QI-9 |Chronic inflammatory disorder (disorder)
-		templateNames = new String[] {	"Chronic Inflammatory Disorder.json"};
+		//subHierarchyStr =  "128294001";  // QI-9 |Chronic inflammatory disorder (disorder)
+		//templateNames = new String[] {"Chronic Inflammatory Disorder.json"};
+		
+		//subHierarchyStr =  "126537000";  //QI-14 |Neoplasm of bone (disorder)|
+		//templateNames = new String[] {"Neoplasm of Bone.json"};
+		
+		subHierarchyStr =  "34014006"; //QI-15 |Viral disease (disorder)|
+		templateNames = new String[] {	"Infection caused by virus.json",
+										"Infection of bodysite caused by virus.json"};
+		
+		//subHierarchyStr =  "87628006";  //QI-16 |Bacterial infectious disease (disorder)|
+		//templateNames = new String[] {"Infection caused by Bacteria.json"};
+		
 		super.init(args);
 	}
 	@Override
