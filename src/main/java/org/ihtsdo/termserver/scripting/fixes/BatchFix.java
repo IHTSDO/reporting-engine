@@ -767,7 +767,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		}
 	}
 
-	private JSONObject convertToSavedListJson(Task task) throws JSONException {
+	private JSONObject convertToSavedListJson(Task task) throws JSONException, TermServerScriptException {
 		JSONObject savedList = new JSONObject();
 		JSONArray items = new JSONArray();
 		savedList.put("items", items);
@@ -777,7 +777,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		return savedList;
 	}
 
-	private JSONObject convertToSavedListJson(Concept concept) throws JSONException {
+	private JSONObject convertToSavedListJson(Concept concept) throws JSONException, TermServerScriptException {
 		JSONObject jsonObj = new JSONObject();
 		jsonObj.put("term", concept.getPreferredSynonym());
 		jsonObj.put("active", concept.isActive()?"true":"false");

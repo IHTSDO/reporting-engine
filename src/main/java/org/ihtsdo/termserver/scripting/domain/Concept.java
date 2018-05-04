@@ -174,8 +174,12 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	 * This doesn't make any sense without saying which dialect to work in.  It must
 	 * come from the json representation which is requested with a dialect setting
 	 * @return
+	 * @throws TermServerScriptException 
 	 */
-	public String getPreferredSynonym() {
+	public String getPreferredSynonym() throws TermServerScriptException {
+		if (preferredSynonym == null) {
+			return getPreferredSynonym(US_ENG_LANG_REFSET).getTerm();
+		}
 		return preferredSynonym;
 	}
 	

@@ -2,15 +2,20 @@ package org.ihtsdo.termserver.scripting.reports.drugs;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
+import org.ihtsdo.termserver.scripting.domain.RelationshipGroup;
+import org.ihtsdo.termserver.scripting.fixes.drugs.Ingredient;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.DrugTermGenerator;
@@ -18,6 +23,9 @@ import org.ihtsdo.termserver.scripting.util.DrugUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 public class ValidateDrugModeling extends TermServerReport{
+	
+	Concept [] solidUnits = new Concept [] { PICOGRAM, NANOGRAM, MICROGRAM, MILLIGRAM, GRAM };
+	Concept [] liquidUnits = new Concept [] { MILLILITER, LITER };
 	
 	String drugsHierarchyStr = "373873005"; // |Pharmaceutical / biologic product (product)|
 	String substHierarchyStr = "105590001"; // |Substance (substance)|
@@ -29,7 +37,8 @@ public class ValidateDrugModeling extends TermServerReport{
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		ValidateDrugModeling report = new ValidateDrugModeling();
 		try {
-			report.additionalReportColumns = "Issue, Data, Detail";
+			//report.additionalReportColumns = "Issue, Data, Detail";
+			report.additionalReportColumns = "Substance, Presentation, Concentration, Unit Change, Issue Detected, Ratio Calculated";
 			report.init(args);
 			report.loadProjectSnapshot(false); //Load all descriptions
 			report.validateDrugsModeling();
@@ -44,16 +53,18 @@ public class ValidateDrugModeling extends TermServerReport{
 	
 	private void validateDrugsModeling() throws TermServerScriptException {
 		Set<Concept> subHierarchy = gl.getConcept(drugsHierarchyStr).getDescendents(NOT_SET);
-		ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT, ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.CLINICAL_DRUG };
+		//ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT, ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.CLINICAL_DRUG };
 		//ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.CLINICAL_DRUG };
 		//ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT_FORM};
 		//ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT };
+		//ConceptType[] drugTypes = new ConceptType[] { ConceptType.CLINICAL_DRUG };
+		
 		long issueCount = 0;
 		for (Concept concept : subHierarchy) {
 			DrugUtils.setConceptType(concept);
 			
-			if (concept.getConceptId().equals("346644007")) {
-				//debug ("Check here");
+			if (concept.getConceptId().equals("769993004")) {
+				debug ("Check here");
 			}
 			
 			// DRUGS-281, DRUGS-282
@@ -63,11 +74,16 @@ public class ValidateDrugModeling extends TermServerReport{
 			//issueCount += validateIngredientsAgainstBoSS(concept);
 			
 			// DRUGS-296
-			if (concept.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED) && 
+			/*if (concept.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED) && 
 				concept.getParents(CharacteristicType.STATED_RELATIONSHIP).get(0).equals(MEDICINAL_PRODUCT)) {
 				issueCount += validateStatedVsInferredAttributes(concept, HAS_ACTIVE_INGRED, drugTypes);
 				issueCount += validateStatedVsInferredAttributes(concept, HAS_PRECISE_INGRED, drugTypes);
 				issueCount += validateStatedVsInferredAttributes(concept, HAS_MANUFACTURED_DOSE_FORM, drugTypes);
+			}*/
+			
+			//DRUGS-51?
+			if (concept.getConceptType().equals(ConceptType.CLINICAL_DRUG)) {
+				issueCount += validateConcentrationStrength(concept);
 			}
 			
 			// DRUGS-288
@@ -79,6 +95,83 @@ public class ValidateDrugModeling extends TermServerReport{
 		info ("Drugs validation complete.  Detected " + issueCount + " issues.");
 	}
 	
+	/**
+	 * For Pattern 2A Drugs (liquids) where we have both a presentation strength and a concentration
+	 * report these values and confirm if the units change between the two, and if the calculation is correct
+	 * @param concept
+	 * @return
+	 * @throws TermServerScriptException 
+	 */
+	private long validateConcentrationStrength(Concept c) throws TermServerScriptException {
+		//For each group, do we have both a concentration and a presentation?
+		int issueCount = 0;
+		for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
+			Ingredient i = DrugUtils.getIngredientDetails(c, g.getGroupId(), CharacteristicType.STATED_RELATIONSHIP);
+			if (i.presStrength != null && i.concStrength != null) {
+				boolean unitsChange = false;
+				boolean issueDetected = false;
+				//Does the unit change between presentation and strength?
+				if (!i.presNumeratorUnit.equals(i.concNumeratorUnit) || ! i.presDenomUnit.equals(i.concDenomUnit)) {
+					unitsChange = true;
+				}
+				
+				//Normalise the numbers
+				BigDecimal presStrength = new BigDecimal(DrugUtils.getConceptAsNumber(i.presStrength));
+				BigDecimal concStrength = new BigDecimal(DrugUtils.getConceptAsNumber(i.concStrength));
+				if (!i.presNumeratorUnit.equals(i.concNumeratorUnit)) {
+					concStrength = concStrength.multiply(calculateUnitFactor (i.presNumeratorUnit, i.concNumeratorUnit));
+				}
+				
+				BigDecimal presDenomQuantity = new BigDecimal (DrugUtils.getConceptAsNumber(i.presDenomQuantity));
+				BigDecimal concDenomQuantity = new BigDecimal (DrugUtils.getConceptAsNumber(i.concDenomQuantity));
+				if (!i.presDenomUnit.equals(i.concDenomUnit)) {
+					concDenomQuantity = concDenomQuantity.multiply(calculateUnitFactor (i.presDenomUnit, i.concDenomUnit));
+				}
+				
+				//Do they give the same ratio when we divide
+				BigDecimal presRatio = presStrength.divide(presDenomQuantity, 3, RoundingMode.HALF_UP);
+				BigDecimal concRatio = concStrength.divide(concDenomQuantity, 3, RoundingMode.HALF_UP);
+				
+				if (!presRatio.equals(concRatio)) {
+					issueDetected = true;
+					issueCount++;
+					incrementSummaryInformation("Issues Detected");
+				}
+				report (c, i.substance, i.presToString(), i.concToString(), unitsChange, issueDetected, issueDetected? presRatio + " vs " + concRatio : "");
+			}
+		}
+		return issueCount;
+	}
+
+	private BigDecimal calculateUnitFactor(Concept unit1, Concept unit2) {
+		BigDecimal factor = new BigDecimal(1);  //If we don't work out a different, multiple so strength unchanged
+		//Is it a solid or liquid?
+		
+		int unit1Idx = ArrayUtils.indexOf(solidUnits, unit1);
+		int unit2Idx = -1;
+		
+		if (unit1Idx != -1) {
+			unit2Idx = ArrayUtils.indexOf(solidUnits, unit2);
+		} else {
+			//Try liquid
+			unit1Idx = ArrayUtils.indexOf(liquidUnits, unit1);
+			if (unit1Idx != -1) {
+				unit2Idx = ArrayUtils.indexOf(liquidUnits, unit2);
+			}
+		}
+		
+		if (unit1Idx != -1) {
+			if (unit2Idx == -1) {
+				throw new IllegalArgumentException("Units lost between " + unit1 + " and " + unit2 );
+			} else if (unit1Idx == unit2Idx) {
+				throw new IllegalArgumentException("Units previously detected different between " + unit1 + " and " + unit2 );
+			}
+			
+			factor = unit1Idx > unit2Idx ? new BigDecimal(0.001D) : new BigDecimal(1000) ; 
+		}
+		return factor;
+	}
+
 	private void validateSubstancesModeling() throws TermServerScriptException {
 		Set<Concept> subHierarchy = gl.getConcept(substHierarchyStr).getDescendents(NOT_SET);
 		long issueCount = 0;

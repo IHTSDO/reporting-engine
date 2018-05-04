@@ -33,7 +33,8 @@ Or if value is < 1 switch to the next smaller unit and multiple the value by 100
 */
 public class NormalizeProductStrength extends DrugBatchFix implements RF2Constants {
 	
-	Concept [] units = new Concept [] { PICOGRAM, NANOGRAM, MICROGRAM, MILLIGRAM, GRAM };
+	Concept [] solidUnits = new Concept [] { PICOGRAM, NANOGRAM, MICROGRAM, MILLIGRAM, GRAM };
+	Concept [] liquidUnits = new Concept [] { MILLILITER, LITER };
 	DrugTermGenerator termGenerator = new DrugTermGenerator(this);
 	
 	protected NormalizeProductStrength(BatchFix clone) {
@@ -100,17 +101,17 @@ public class NormalizeProductStrength extends DrugBatchFix implements RF2Constan
 				double newStrengthNumber = NOT_SET;
 				Concept newUnit = null;
 				Relationship unitRel = getTargetRel(c, unitTypes, g.getGroupId(), CharacteristicType.STATED_RELATIONSHIP);
-				int currentIdx =  ArrayUtils.indexOf(units, unitRel.getTarget());
+				int currentIdx =  ArrayUtils.indexOf(solidUnits, unitRel.getTarget());
 				if (currentIdx != NOT_SET) {
 					if (strengthNumber >= 1000) {
-						newUnit = units[currentIdx + 1];
+						newUnit = solidUnits[currentIdx + 1];
 						newStrengthNumber = strengthNumber / 1000D;
 					} else if (strengthRel != null && strengthNumber <1) {
-						newUnit = units[currentIdx - 1];
+						newUnit = solidUnits[currentIdx - 1];
 						newStrengthNumber = strengthNumber * 1000D;
 					}
 					if (newUnit != null) {
-						String newStrengthStr = toString(newStrengthNumber);
+						String newStrengthStr = DrugUtils.toString(newStrengthNumber);
 						if (!quiet) {
 							remodelConcept (t, c, strengthRel, newStrengthStr, unitRel, newUnit);
 							report (t, c, Severity.LOW, ReportActionType.VALIDATION_CHECK, strengthNumber + " " + unitRel.getTarget() + " --> " + newStrengthStr + " " + newUnit, g);
@@ -180,15 +181,6 @@ public class NormalizeProductStrength extends DrugBatchFix implements RF2Constan
 		return asComponents(processMe);
 	}
 	
-	public static String toString(double d)
-	{
-		d = new BigDecimal(d).setScale(6, RoundingMode.HALF_UP).doubleValue();
-		if(d == (long) d)
-			return String.format("%d",(long)d);
-		else
-			return String.format("%s",d);
-	}
-
 	@Override
 	protected List<Concept> loadLine(String[] lineItems) throws TermServerScriptException {
 		// TODO Auto-generated method stub

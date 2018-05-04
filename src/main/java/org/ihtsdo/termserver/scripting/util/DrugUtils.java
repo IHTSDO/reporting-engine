@@ -1,5 +1,7 @@
 package org.ihtsdo.termserver.scripting.util;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -10,6 +12,7 @@ import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.fixes.drugs.Ingredient;
 
 public class DrugUtils implements RF2Constants {
 	
@@ -54,6 +57,12 @@ public class DrugUtils implements RF2Constants {
 	public static double getConceptAsNumber(Concept number) throws TermServerScriptException {
 		String numStr = SnomedUtils.deconstructFSN(number.getFsn())[0];
 		return Double.parseDouble(numStr);
+	}
+	
+	public static String getConceptAsNumberStr(Concept number) throws TermServerScriptException {
+		String numStr = SnomedUtils.deconstructFSN(number.getFsn())[0];
+		double d = Double.parseDouble(numStr);
+		return toString(d);
 	}
 
 	private static void populateNumberConceptMap() throws TermServerScriptException {
@@ -218,6 +227,33 @@ public class DrugUtils implements RF2Constants {
 			ingredients.add(r.getTarget());
 		}
 		return ingredients;
+	}
+
+	public static Ingredient getIngredientDetails(Concept c, int groupId, CharacteristicType charType) throws TermServerScriptException {
+		//Populate as much data as can be found in this group.
+		Ingredient i = new Ingredient();
+		i.substance = SnomedUtils.getTarget(c, new Concept[] { HAS_ACTIVE_INGRED,  HAS_PRECISE_INGRED}, groupId, charType);
+		
+		i.presStrength = SnomedUtils.getTarget(c, new Concept[] { HAS_PRES_STRENGTH_VALUE }, groupId, charType);
+		i.presNumeratorUnit = SnomedUtils.getTarget(c, new Concept[] { HAS_PRES_STRENGTH_UNIT }, groupId, charType);
+		i.presDenomQuantity = SnomedUtils.getTarget(c, new Concept[] {HAS_PRES_STRENGTH_DENOM_VALUE }, groupId, charType);
+		i.presDenomUnit = SnomedUtils.getTarget(c, new Concept[] {HAS_PRES_STRENGTH_DENOM_UNIT }, groupId, charType);
+		
+		i.concStrength = SnomedUtils.getTarget(c, new Concept[] { HAS_CONC_STRENGTH_VALUE }, groupId, charType);
+		i.concNumeratorUnit = SnomedUtils.getTarget(c, new Concept[] { HAS_CONC_STRENGTH_UNIT }, groupId, charType);
+		i.concDenomQuantity = SnomedUtils.getTarget(c, new Concept[] {HAS_CONC_STRENGTH_DENOM_VALUE }, groupId, charType);
+		i.concDenomUnit = SnomedUtils.getTarget(c, new Concept[] {HAS_CONC_STRENGTH_DENOM_UNIT }, groupId, charType);
+		
+		return i;
+	}
+	
+	public static String toString(double d)
+	{
+		d = new BigDecimal(d).setScale(6, RoundingMode.HALF_UP).doubleValue();
+		if(d == (long) d)
+			return String.format("%d",(long)d);
+		else
+			return String.format("%s",d);
 	}
 	
 }
