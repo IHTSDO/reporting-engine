@@ -3,12 +3,9 @@ package org.ihtsdo.termserver.scripting.reports;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
-import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
@@ -24,13 +21,13 @@ import com.google.common.io.Files;
  */
 public class PreferredTermsFromFile extends TermServerScript{
 	
-	GraphLoader gl = GraphLoader.getGraphLoader();
 	String matchText = "+";
 	List<Concept> conceptFilter;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		PreferredTermsFromFile report = new PreferredTermsFromFile();
 		try {
+			report.additionalReportColumns = "Desc_SCTID, Term, USPref, GBPref";
 			report.init(args);
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.reportPreferredTerms();
@@ -77,13 +74,6 @@ public class PreferredTermsFromFile extends TermServerScript{
 			info ("Failed to concept filter file to load.  Specify path with 'z' command line parameter");
 			System.exit(1);
 		}
-
-		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
-		String reportFilename = getScriptName() + /*filter +*/ "_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
-		reportFile = new File(outputDir, reportFilename);
-		reportFile.createNewFile();
-		info ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToReportFile ("Concept, FSN, Desc_SCTID, Term, USPref, GBPref");
 	}
 
 	private void loadConceptsSelected(String fileName) throws TermServerScriptException {

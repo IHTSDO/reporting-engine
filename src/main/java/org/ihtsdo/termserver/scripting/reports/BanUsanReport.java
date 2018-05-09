@@ -3,9 +3,7 @@ package org.ihtsdo.termserver.scripting.reports;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -33,6 +31,7 @@ public class BanUsanReport extends TermServerScript{
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		BanUsanReport report = new BanUsanReport();
 		try {
+			report.additionalReportColumns="Desc_SCTID, Term, Issue";
 			report.init(args);
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.reportUnMatchedNationalTerms();
@@ -139,13 +138,6 @@ public class BanUsanReport extends TermServerScript{
 			info ("Failed to find Ban/Usan file to load.  Specify path with 'z' command line parameter");
 			System.exit(1);
 		}
-
-		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
-		String reportFilename = getScriptName() + /*filter +*/ "_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
-		reportFile = new File(outputDir, reportFilename);
-		reportFile.createNewFile();
-		info ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToReportFile ("Concept, FSN, Desc_SCTID, Term, Issue");
 	}
 
 	private void loadNationalTerms(String fileName) throws TermServerScriptException {

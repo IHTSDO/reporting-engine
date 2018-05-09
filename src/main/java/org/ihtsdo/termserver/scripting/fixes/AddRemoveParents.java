@@ -43,9 +43,7 @@ public class AddRemoveParents extends BatchFix implements RF2Constants{
 			fix.expectNullConcepts = true;
 			fix.init(args);
 			fix.loadProjectSnapshot(true); 
-			fix.startTimer();
 			fix.processFile();
-			info ("Processing complete.  See results: " + fix.reportFile.getAbsolutePath());
 		} finally {
 			fix.finish();
 		}

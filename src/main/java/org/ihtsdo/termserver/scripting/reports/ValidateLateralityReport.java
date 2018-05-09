@@ -1,24 +1,13 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.text.SimpleDateFormat;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
-import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.*;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExportType;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExtractType;
 import org.ihtsdo.termserver.scripting.domain.*;
 
 /**
@@ -27,12 +16,10 @@ import org.ihtsdo.termserver.scripting.domain.*;
  */
 public class ValidateLateralityReport extends TermServerScript{
 	
-	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
-	GraphLoader gl = GraphLoader.getGraphLoader();
-	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		ValidateLateralityReport report = new ValidateLateralityReport();
 		try {
+			report.additionalReportColumns = "EffectiveTime, Definition_Status,SemanticTag";
 			report.init(args);
 			report.loadProjectSnapshot(true);  //Load FSNs only
 			List<Component> lateralizable = report.processFile();
@@ -68,18 +55,6 @@ public class ValidateLateralityReport extends TermServerScript{
 						c.getEffectiveTime() + COMMA_QUOTE +
 						c.getDefinitionStatus() + QUOTE;
 		writeToReportFile(line);
-	}
-	
-	protected void init(String[] args) throws IOException, TermServerScriptException, SnowOwlClientException {
-		super.init(args);
-		
-		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
-		//String reportFilename = "changed_relationships_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
-		String reportFilename = getScriptName() + "_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
-		reportFile = new File(outputDir, reportFilename);
-		reportFile.createNewFile();
-		info ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToReportFile ("Concept, FSN, EffectiveTime, Definition_Status,SemanticTag");
 	}
 
 	@Override

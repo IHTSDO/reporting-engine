@@ -1,14 +1,10 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.PrintStream;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -18,11 +14,7 @@ import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-
-import com.google.common.collect.HashMultiset;
-import com.google.common.collect.Multiset;
 
 /**
  * Attempts to find matching acids ("x acid") and bases ("--ate")
@@ -38,6 +30,7 @@ public class SubstanceAcidWithBase extends TermServerScript{
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		SubstanceAcidWithBase report = new SubstanceAcidWithBase();
 		try {
+			report.additionalReportColumns = " SemTag, Concept_Active, Concept_Modified, Stated_or_Inferred, Relationship_Active, GroupNum, TypeId, TypeFsn, TargetId, TargetFsn";
 			report.init(args);
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			info("Generating Report");
@@ -164,17 +157,6 @@ public class SubstanceAcidWithBase extends TermServerScript{
 		writeToReportFile(line);
 	}
 	
-	protected void init(String[] args) throws IOException, TermServerScriptException, SnowOwlClientException {
-		super.init(args);
-		
-		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
-		String reportFilename = getScriptName() + "_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
-		reportFile = new File(outputDir, reportFilename);
-		reportFile.createNewFile();
-		info ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToReportFile ("Acid_SCTID, Acid FSN, Base_SCTID, Base FSN, Notes");
-	}
-
 	@Override
 	protected List<Concept> loadLine(String[] lineItems)
 			throws TermServerScriptException {

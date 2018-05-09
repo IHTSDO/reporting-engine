@@ -27,7 +27,7 @@ public class CaseSignificanceFixAll extends DeltaGenerator implements RF2Constan
 	boolean padReport = false;
 	
 	public CaseSignificanceFixAll (File reportFile, Map<String, PrintWriter> printWriterMap, Mode mode) {
-		this.reportFile = reportFile;
+		this.reportFiles = new File[] { reportFile };
 		this.printWriterMap = printWriterMap;
 		padReport = true;  //Add two blank columns to make output compatible with a BatchFix
 		this.mode = mode;

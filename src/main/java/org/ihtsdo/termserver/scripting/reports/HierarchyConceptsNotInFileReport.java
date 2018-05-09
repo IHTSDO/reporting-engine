@@ -116,12 +116,6 @@ public class HierarchyConceptsNotInFileReport extends TermServerScript{
 			file2Purpose = response;
 		}
 		
-		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
-		String reportFilename = getScriptName() + "_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
-		reportFile = new File(outputDir, reportFilename);
-		reportFile.createNewFile();
-		info ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToReportFile ("Concept, FSN, EffectiveTime, DefinitionStatus," + file2Purpose);
 	}
 
 	@Override

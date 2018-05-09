@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.*;
@@ -93,12 +92,6 @@ public class SemanticTagsMatrix extends TermServerReport{
 	}
 	
 	private void initialiseAlternativeFile() throws IOException {
-		//We need a 2nd output file to put the results with the dimensions reversed
-		String reportFilename = getScriptName() + "_" + project.getKey().toLowerCase() + "_" + currentTimeStamp + "_reversed_" + env  + ".csv";
-		reportFile = new File(outputDir, reportFilename);
-		reportFile.createNewFile();
-		info ("Outputting Report to " + reportFile.getAbsolutePath());
-		
 		StringBuffer headerRow = new StringBuffer("Hierarchy");
 		for (String tag : tagToUsageMap.keySet()) {
 			headerRow.append(COMMA)

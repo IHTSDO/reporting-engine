@@ -1,11 +1,7 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -13,24 +9,18 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExportType;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExtractType;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 
 public class RelationshipReport extends TermServerScript{
 	
 	Set<Concept> modifiedConcepts = new HashSet<Concept>();
-	List<String> criticalErrors = new ArrayList<String>();
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
-	GraphLoader gl = GraphLoader.getGraphLoader();
 	Concept filterOnType = null; 
 	CharacteristicType filterOnCharacteristicType = null;
 	ActiveState filterOnActiveState = null;
@@ -38,6 +28,7 @@ public class RelationshipReport extends TermServerScript{
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		RelationshipReport report = new RelationshipReport();
 		try {
+			report.additionalReportColumns = "Concept_Active, Concept_Modified, Stated_or_Inferred, Relationship_Active, GroupNum, TypeId, TypeFsn, TargetId, TargetFsn";
 			report.init(args);
 			report.loadProjectSnapshot(true);  //Load FSNs only
 			report.reportActiveRelationships();
@@ -46,9 +37,6 @@ public class RelationshipReport extends TermServerScript{
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
-			for (String err : report.criticalErrors) {
-				info (err);
-			}
 		}
 	}
 	
@@ -59,8 +47,7 @@ public class RelationshipReport extends TermServerScript{
 		for (Concept thisConcept : conceptsToExamine) {
 			if (thisConcept.getFsn() == null) {
 				String msg = "Concept " + thisConcept.getConceptId() + " has no FSN";
-				criticalErrors.add(msg);
-				info(msg);
+				warn(msg);
 			}
 			List<Relationship> allConceptRelationships = thisConcept.getRelationships(filterOnCharacteristicType, filterOnActiveState);
 			
@@ -137,14 +124,6 @@ public class RelationshipReport extends TermServerScript{
 				}
 			} 
 		}
-		
-		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
-		//String reportFilename = "changed_relationships_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
-		String reportFilename = "relationships_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
-		reportFile = new File(outputDir, reportFilename);
-		reportFile.createNewFile();
-		info ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToReportFile ("Concept, FSN, Concept_Active, Concept_Modified, Stated_or_Inferred, Relationship_Active, GroupNum, TypeId, TypeFsn, TargetId, TargetFsn");
 	}
 
 	@Override

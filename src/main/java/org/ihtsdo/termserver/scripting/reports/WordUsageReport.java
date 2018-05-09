@@ -1,12 +1,9 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +32,7 @@ public class WordUsageReport extends TermServerScript{
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		WordUsageReport report = new WordUsageReport();
 		try {
+			report.additionalReportColumns = "Word, Total Instance, Distribution, Examples";
 			Description.padTerm = true; //Pad terms with spaces to assist whole word matching.
 			report.init(args);
 			report.loadProjectSnapshot(false);  //Load all descriptions
@@ -91,16 +89,6 @@ public class WordUsageReport extends TermServerScript{
 		writeToReportFile(line);
 	}
 	
-	protected void init(String[] args) throws IOException, TermServerScriptException, SnowOwlClientException {
-		super.init(args);
-		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
-		String reportFilename = getScriptName() + "_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
-		reportFile = new File(outputDir, reportFilename);
-		reportFile.createNewFile();
-		info ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToReportFile ("Word, Total Instance, Distribution, Examples");
-	}
-
 	@Override
 	protected List<Concept> loadLine(String[] lineItems)
 			throws TermServerScriptException {

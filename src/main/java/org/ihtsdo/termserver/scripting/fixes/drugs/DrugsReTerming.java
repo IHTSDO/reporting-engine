@@ -44,10 +44,7 @@ public class DrugsReTerming extends DrugBatchFix implements RF2Constants{
 			fix.inputFileHasHeaderRow = true;
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			fix.loadProjectSnapshot(false); //Load all descriptions
-			fix.startTimer();
-			info ("Processing started.  See results: " + fix.reportFile.getAbsolutePath());
 			fix.processFile();
-			info ("Processing complete.  See results: " + fix.reportFile.getAbsolutePath());
 		} finally {
 			fix.finish();
 		}

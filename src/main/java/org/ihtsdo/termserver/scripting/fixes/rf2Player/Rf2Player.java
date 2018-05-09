@@ -75,7 +75,6 @@ public class Rf2Player extends BatchFix {
 			Batch batch = formIntoBatch();
 			info ("Batch processing tasks...");
 			batchProcess(batch);
-			info ("Processing complete.  See results: " + reportFile.getAbsolutePath());
 		} catch (Exception e) {
 			throw new TermServerScriptException("Failed to play Rf2Archive", e);
 		} finally {

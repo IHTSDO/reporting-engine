@@ -44,10 +44,8 @@ public class InactivateDuplicateInactivationIndicators_fail extends BatchFix imp
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			fix.loadProjectSnapshot(false); //Load all descriptions
 			//We won't include the project export in our timings
-			fix.startTimer();
 			Batch batch = fix.formIntoBatch();
 			fix.batchProcess(batch);
-			info ("Processing complete. See results: " + fix.reportFile.getAbsolutePath());
 		} finally {
 			fix.finish();
 		}

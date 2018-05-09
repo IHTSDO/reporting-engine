@@ -1,26 +1,16 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
 import java.util.List;
 
-import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.HistoricalAssociation;
 import org.ihtsdo.termserver.scripting.domain.InactivationIndicatorEntry;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-
-import com.google.common.collect.HashMultiset;
-import com.google.common.collect.Multiset;
 
 /**
  * Reports all concepts inactivated with the target inactivation reason, 
@@ -35,6 +25,7 @@ public class InactivationAssocationReport extends TermServerScript{
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		InactivationAssocationReport report = new InactivationAssocationReport();
 		try {
+			report.additionalReportColumns = "inact_effective, inactivation_reason, assocation_effective, association";
 			report.init(args);
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.reportMatchingInactivations();
@@ -88,16 +79,6 @@ public class InactivationAssocationReport extends TermServerScript{
 	private String simpleName(String sctid) throws TermServerScriptException {
 		Concept c = gl.getConcept(sctid);
 		return SnomedUtils.deconstructFSN(c.getFsn())[0];
-	}
-	
-	protected void init(String[] args) throws IOException, TermServerScriptException, SnowOwlClientException {
-		super.init(args);
-		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
-		String reportFilename = getScriptName() + "_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
-		reportFile = new File(outputDir, reportFilename);
-		reportFile.createNewFile();
-		info ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToReportFile ("Concept, FSN, inact_effective, inactivation_reason, assocation_effective, association");
 	}
 
 	@Override

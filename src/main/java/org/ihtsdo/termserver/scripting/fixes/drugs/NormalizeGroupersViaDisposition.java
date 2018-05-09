@@ -48,9 +48,7 @@ public class NormalizeGroupersViaDisposition extends DrugBatchFix implements RF2
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			fix.loadProjectSnapshot(false); //Need full descriptions so we can get PT of target (not loaded from TS)
 			fix.postLoadInit();
-			fix.startTimer();
 			fix.processFile();
-			info ("Processing complete.  See results: " + fix.reportFile.getAbsolutePath());
 		} finally {
 			fix.finish();
 		}

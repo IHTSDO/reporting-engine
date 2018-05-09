@@ -1,12 +1,9 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -37,6 +34,7 @@ public class HierarchyConceptsUsedInDefinitionsReport extends TermServerScript{
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		HierarchyConceptsUsedInDefinitionsReport report = new HierarchyConceptsUsedInDefinitionsReport();
 		try {
+			report.additionalReportColumns="UsedToDefine, InAttribute, Defn_Status";
 			report.init(args);
 			report.loadProjectSnapshot(true);  //Load FSNs only
 			report.reportConceptsUsedInDefinition();
@@ -127,20 +125,6 @@ public class HierarchyConceptsUsedInDefinitionsReport extends TermServerScript{
 	
 	protected void init(String[] args) throws IOException, TermServerScriptException, SnowOwlClientException {
 		super.init(args);
-		
-		/*print ("Concepts in which Hierarchy? [" + hierarchy + "]: ");
-		String response = STDIN.nextLine().trim();
-		if (!response.isEmpty()) {
-			hierarchy = response;
-		}*/
-		
-		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
-		String reportFilename = getScriptName() + "_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
-		reportFile = new File(outputDir, reportFilename);
-		reportFile.createNewFile();
-		info ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToReportFile ("Concept, FSN, UsedToDefine, InAttribute, Defn_Status");
-		
 		ignoredHierarchies = new HashSet<>();
 		ignoredHierarchies.add (gl.getConcept("105590001")); // |Substance (substance)|
 		ignoredHierarchies.add (gl.getConcept("373873005")); // |Pharmaceutical / biologic product (product)|

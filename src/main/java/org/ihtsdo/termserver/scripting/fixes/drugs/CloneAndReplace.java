@@ -57,7 +57,6 @@ public class CloneAndReplace extends BatchFix implements RF2Constants{
 			fix.postLoadInit();
 			fix.startTimer();
 			fix.processFile();
-			info ("Processing complete.  See results: " + fix.reportFile.getAbsolutePath());
 		} finally {
 			fix.finish();
 		}

@@ -62,6 +62,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected static boolean dryRun = true;
 	protected boolean quiet = false; 
 	protected static int dryRunCounter = 0;
+	protected int numberOfDistinctReports = 1;
 	protected String env;
 	protected String url = environments[0];
 	protected boolean useAuthenticatedCookie = true;
@@ -81,7 +82,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected boolean runStandAlone = true; //Set to true to avoid loading concepts from Termserver.  Should be used with Dry Run only.
 	protected File inputFile;
 	protected File inputFile2;
-	protected File reportFile;
+	protected File[] reportFiles;
 	protected File outputDir;
 	protected GraphLoader gl = GraphLoader.getGraphLoader();
 	protected String additionalReportColumns = "ActionDetail";
@@ -685,9 +686,9 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 	}
 	
-	protected void writeToReportFile(String line) {
+	protected void writeToReportFile(int reportIdx, String line) {
 		try {
-			PrintWriter pw = getPrintWriter(reportFile.getAbsolutePath());
+			PrintWriter pw = getPrintWriter(reportFiles[reportIdx].getAbsolutePath());
 			pw.println(line);
 		} catch (Exception e) {
 			info ("Unable to output report line: " + line + " due to " + e.getMessage());
@@ -695,12 +696,18 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 	}
 	
-	protected void initialiseReportFile(String columnHeaders) throws IOException {
+	protected void writeToReportFile(String line) {
+		writeToReportFile(0, line);
+	}
+	
+	protected void initialiseReportFile(int reportIdx, String columnHeaders) throws IOException {
 		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
 		currentTimeStamp = df.format(new Date());
+		
+		
 		String reportFilename = "results_" + getReportName() + "_" + currentTimeStamp + "_" + env  + ".csv";
-		reportFile = new File(outputDir, reportFilename);
-		info ("Outputting Report to " + reportFile.getAbsolutePath());
+		reportFiles[reportIdx] = new File(outputDir, reportFilename);
+		info ("Outputting Report to " + reportFiles[reportIdx].getAbsolutePath());
 		writeToReportFile (columnHeaders);
 		flushFiles(false);
 	}

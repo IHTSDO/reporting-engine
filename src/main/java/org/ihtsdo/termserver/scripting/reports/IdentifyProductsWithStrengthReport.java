@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.text.SimpleDateFormat;
@@ -46,6 +45,7 @@ public class IdentifyProductsWithStrengthReport extends TermServerScript{
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		IdentifyProductsWithStrengthReport report = new IdentifyProductsWithStrengthReport();
 		try {
+			report.additionalReportColumns = "EffectiveTime, Definition_Status,lexicalMatch, authorIdentified";
 			report.init(args);
 			report.compileRegexes();
 			report.loadProjectSnapshot(true);  //Load FSNs only
@@ -170,18 +170,6 @@ public class IdentifyProductsWithStrengthReport extends TermServerScript{
 		writeToReportFile(line);
 	}
 	
-	protected void init(String[] args) throws IOException, TermServerScriptException, SnowOwlClientException {
-		super.init(args);
-		
-		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
-		//String reportFilename = "changed_relationships_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
-		String reportFilename = getScriptName() + "_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
-		reportFile = new File(outputDir, reportFilename);
-		reportFile.createNewFile();
-		info ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToReportFile ("Concept, FSN, EffectiveTime, Definition_Status,lexicalMatch, authorIdentified");
-	}
-
 	@Override
 	protected List<Concept> loadLine(String[] lineItems)
 			throws TermServerScriptException {

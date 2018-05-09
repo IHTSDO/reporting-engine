@@ -51,8 +51,7 @@ public abstract class RefsetGenerator extends TermServerScript {
 	
 	protected void init (String[] args) throws IOException, TermServerScriptException, SnowOwlClientException {
 		super.init(args);
-		
-		initialiseReportFile("Concept,DescSctId,Term,Severity,Action,Detail");
+		initialiseReportFile(0, "Concept,DescSctId,Term,Severity,Action,Detail");
 
 		int increment = 0;
 		String outputNameBase = "der2_" + refsetShape + "Refset_"+ refsetFileName + "Snapshot_" + edition +"_" + effectiveDate;

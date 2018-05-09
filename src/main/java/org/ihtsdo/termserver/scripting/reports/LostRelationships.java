@@ -25,15 +25,14 @@ import org.ihtsdo.termserver.scripting.domain.Relationship;
 
 public class LostRelationships extends TermServerScript{
 	
-	GraphLoader gl = GraphLoader.getGraphLoader();
 	Set<Concept> modifiedConcepts;
 	Set<Concept> descendentOfProductRole;
-	List<String> criticalErrors = new ArrayList<String>();
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		LostRelationships report = new LostRelationships();
 		try {
+			report.additionalReportColumns = "Active, Not Replaced Relationship, ValueIsProdRoleDesc";
 			report.init(args);
 			report.loadProjectSnapshotAndDelta();
 			report.populateProdRoleDesc();
@@ -43,9 +42,6 @@ public class LostRelationships extends TermServerScript{
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
-			for (String err : report.criticalErrors) {
-				info (err);
-			}
 		}
 	}
 	
@@ -64,8 +60,7 @@ public class LostRelationships extends TermServerScript{
 			//Only working with product concepts
 			if (thisConcept.getFsn() == null) {
 				String msg = "Concept " + thisConcept.getConceptId() + " has no FSN";
-				criticalErrors.add(msg);
-				info(msg);
+				warn(msg);
 			} else if (!thisConcept.getFsn().contains("(product)")) {
 				debug ("Skipping " + thisConcept);
 				continue;
@@ -94,16 +89,6 @@ public class LostRelationships extends TermServerScript{
 		boolean isProdRoleDesc = descendentOfProductRole.contains(r.getTarget());
 		String line = c.getConceptId() + COMMA_QUOTE + c.getFsn() + QUOTE_COMMA + c.isActive() + COMMA_QUOTE + r + QUOTE_COMMA + isProdRoleDesc;
 		writeToReportFile(line);
-	}
-	
-	protected void init(String[] args) throws IOException, TermServerScriptException, SnowOwlClientException {
-		super.init(args);
-		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
-		String reportFilename = "lost_relationships_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
-		reportFile = new File(outputDir, reportFilename);
-		reportFile.createNewFile();
-		info ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToReportFile ("Concept, FSN, Active, Not Replaced Relationship, ValueIsProdRoleDesc");
 	}
 
 	private void loadProjectSnapshotAndDelta() throws SnowOwlClientException, TermServerScriptException, InterruptedException {

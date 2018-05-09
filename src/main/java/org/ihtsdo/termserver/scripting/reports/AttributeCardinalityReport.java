@@ -105,17 +105,6 @@ public class AttributeCardinalityReport extends TermServerScript{
 						issue + QUOTE;
 		writeToReportFile(line);
 	}
-	
-	protected void init(String[] args) throws IOException, TermServerScriptException, SnowOwlClientException, SnowOwlClientException {
-		super.init(args);
-		
-		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
-		String reportFilename = getScriptName() + "_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
-		reportFile = new File(outputDir, reportFilename);
-		reportFile.createNewFile();
-		info ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToReportFile ("Concept, FSN, Issue");
-	}
 
 	@Override
 	protected List<Concept> loadLine(String[] lineItems)

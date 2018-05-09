@@ -16,12 +16,11 @@ public abstract class TermServerReport extends TermServerScript {
 	protected void init(String[] args) throws TermServerScriptException, SnowOwlClientException {
 		try {
 			super.init(args);
-			initialiseReportFile(headers + additionalReportColumns);
+			initialiseReportFile(0, headers + additionalReportColumns);
 		} catch (IOException e) {
 			throw new TermServerScriptException("Unable to initialise output report",e);
 		}
 	}
-	
 
 	@Override
 	protected List<Concept> loadLine(String[] lineItems)

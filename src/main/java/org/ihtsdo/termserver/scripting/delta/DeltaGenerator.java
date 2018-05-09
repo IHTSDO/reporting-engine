@@ -120,7 +120,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 		if (newIdsRequired && descIdGenerator == null && relIdGenerator == null && conIdGenerator == null) {
 			throw new TermServerScriptException("Command line arguments must supply a list of available sctid using the -iC/D/R option, or specify newIdsRequired=false");
 		}
-		initialiseReportFile("Concept,DescSctId,Term,Severity,Action," + additionalReportColumns );
+		initialiseReportFile(0, "Concept,DescSctId,Term,Severity,Action," + additionalReportColumns );
 		//Don't add to previously exported data
 		File outputDir = new File (outputDirName);
 		int increment = 0;

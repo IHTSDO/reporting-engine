@@ -1,11 +1,7 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Collections;
@@ -13,15 +9,11 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.*;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExportType;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExtractType;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
@@ -37,6 +29,7 @@ public class ProximatePrimitiveModellingPossibleReport extends TermServerScript{
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		ProximatePrimitiveModellingPossibleReport report = new ProximatePrimitiveModellingPossibleReport();
 		try {
+			report.additionalReportColumns = " Sem_Tag, alreadyModelledCorrectly, FDToTop, immedPrimParent, notImmediatePrimitive";
 			report.init(args);
 			report.loadProjectSnapshot(true);  //Load FSNs only
 			report.reportIntermediatePrimitives();
@@ -145,13 +138,6 @@ public class ProximatePrimitiveModellingPossibleReport extends TermServerScript{
 		if (!response.isEmpty()) {
 			hierarchies = response.split(",");
 		}
-		
-		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
-		String reportFilename = getScriptName() + "_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
-		reportFile = new File(outputDir, reportFilename);
-		reportFile.createNewFile();
-		info ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToReportFile ("Concept, FSN, Sem_Tag, alreadyModelledCorrectly, FDToTop, immedPrimParent, notImmediatePrimitive");
 	}
 
 	@Override

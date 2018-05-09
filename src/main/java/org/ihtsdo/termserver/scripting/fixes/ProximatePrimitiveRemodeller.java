@@ -46,11 +46,8 @@ public class ProximatePrimitiveRemodeller extends BatchFix implements RF2Constan
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			fix.loadProjectSnapshot(false); //Load all descriptions
 			fix.postLoad();
-			//We won't incude the project export in our timings
-			fix.startTimer();
 			Batch batch = fix.formIntoBatch();
 			fix.batchProcess(batch);
-			info ("Processing complete.  See results: " + fix.reportFile.getAbsolutePath());
 		} finally {
 			fix.finish();
 		}

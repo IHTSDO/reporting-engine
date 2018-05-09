@@ -7,13 +7,11 @@ import java.io.PrintStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
@@ -24,14 +22,13 @@ import org.ihtsdo.termserver.scripting.domain.Relationship;
 
 public class MismatchedRelationships extends TermServerScript{
 	
-	GraphLoader gl = GraphLoader.getGraphLoader();
-	List<String> criticalErrors = new ArrayList<String>();
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	String targetAttributeType = "246075003"; // | Causative agent (attribute) |;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		MismatchedRelationships report = new MismatchedRelationships();
 		try {
+			report.additionalReportColumns = "Concept_Active, Concept_Modified, Stated_or_Inferred, Relationship_Active, GroupNum, Type, Target";
 			report.init(args);
 			report.loadProjectSnapshot();
 			report.detectMismatchedRelationships();
@@ -40,9 +37,6 @@ public class MismatchedRelationships extends TermServerScript{
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
-			for (String err : report.criticalErrors) {
-				info (err);
-			}
 		}
 	}
 	
@@ -56,8 +50,7 @@ public class MismatchedRelationships extends TermServerScript{
 		for (Concept thisConcept : gl.getAllConcepts()) {
 			if (thisConcept.getFsn() == null) {
 				String msg = "Concept " + thisConcept.getConceptId() + " has no FSN";
-				criticalErrors.add(msg);
-				info(msg);
+				warn(msg);
 			}
 			List<Relationship> statedRelationships = thisConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, targetAttribute, ActiveState.ACTIVE);
 			List<Relationship> inferredRelationships = thisConcept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, targetAttribute, ActiveState.ACTIVE);
@@ -102,16 +95,6 @@ public class MismatchedRelationships extends TermServerScript{
 		writeToReportFile(line);
 	}
 	
-	protected void init(String[] args) throws IOException, TermServerScriptException, SnowOwlClientException {
-		super.init(args);
-		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
-		String reportFilename = "mismatched_relationships_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
-		reportFile = new File(outputDir, reportFilename);
-		reportFile.createNewFile();
-		info ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToReportFile ("Concept, FSN, Concept_Active, Concept_Modified, Stated_or_Inferred, Relationship_Active, GroupNum, Type, Target");
-	}
-
 	protected void loadProjectSnapshot() throws SnowOwlClientException, TermServerScriptException, InterruptedException {
 		int SNAPSHOT = 0;
 		File[] archives = new File[] { new File (project + "_snapshot_" + env + ".zip") };

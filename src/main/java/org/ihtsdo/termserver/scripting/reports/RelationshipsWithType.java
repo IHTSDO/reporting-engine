@@ -1,17 +1,14 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
@@ -22,9 +19,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 public class RelationshipsWithType extends TermServerScript{
 	
 	Set<Concept> modifiedConcepts = new HashSet<Concept>();
-	List<String> criticalErrors = new ArrayList<String>();
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
-	GraphLoader gl = GraphLoader.getGraphLoader();
 	Set<Concept> filterOnType = new HashSet<Concept>();
 	boolean reverse = false;
 	CharacteristicType filterOnCharacteristicType = null;
@@ -33,6 +28,7 @@ public class RelationshipsWithType extends TermServerScript{
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		RelationshipsWithType report = new RelationshipsWithType();
 		try {
+			report.additionalReportColumns = " SemTag, Concept_Active, Concept_Modified, Stated_or_Inferred, Relationship_Active, GroupNum, TypeId, TypeFsn, TargetId, TargetFsn";
 			report.init(args);
 			report.loadProjectSnapshot(true);  //Load FSNs only
 			report.init2(); //Setup needed after data loaded
@@ -42,9 +38,6 @@ public class RelationshipsWithType extends TermServerScript{
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
-			for (String err : report.criticalErrors) {
-				info (err);
-			}
 		}
 	}
 	
@@ -55,8 +48,7 @@ public class RelationshipsWithType extends TermServerScript{
 		for (Concept thisConcept : allConcepts) {
 			if (thisConcept.getFsn() == null) {
 				String msg = "Concept " + thisConcept.getConceptId() + " has no FSN";
-				criticalErrors.add(msg);
-				info(msg);
+				warn(msg);
 			}
 			
 			List<Relationship> allConceptRelationships = thisConcept.getRelationships(filterOnCharacteristicType, filterOnActiveState);
@@ -129,14 +121,6 @@ public class RelationshipsWithType extends TermServerScript{
 				}
 			} 
 		}
-		
-		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
-		//String reportFilename = "changed_relationships_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
-		String reportFilename = "relationships_" + project.getKey().toLowerCase() + "_" + df.format(new Date()) + "_" + env  + ".csv";
-		reportFile = new File(outputDir, reportFilename);
-		reportFile.createNewFile();
-		info ("Outputting Report to " + reportFile.getAbsolutePath());
-		writeToReportFile ("Concept, FSN, SemTag, Concept_Active, Concept_Modified, Stated_or_Inferred, Relationship_Active, GroupNum, TypeId, TypeFsn, TargetId, TargetFsn");
 	}
 	
 	public void init2() throws TermServerScriptException {

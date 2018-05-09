@@ -41,9 +41,7 @@ public class ReplaceParents extends BatchFix implements RF2Constants{
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			fix.loadProjectSnapshot(true); 
 			fix.postLoadInit();
-			fix.startTimer();
 			fix.processFile();
-			info ("Processing complete.  See results: " + fix.reportFile.getAbsolutePath());
 		} finally {
 			fix.finish();
 		}
