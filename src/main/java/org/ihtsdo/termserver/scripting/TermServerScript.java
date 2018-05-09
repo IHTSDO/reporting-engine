@@ -802,6 +802,9 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 
 	public void report(Task task, Component component, Severity severity, ReportActionType actionType, Object... details) {
+		if (quiet) {
+			return;
+		}
 		if (component != null) {
 			if (severity.equals(Severity.CRITICAL)) {
 				String key = CRITICAL_ISSUE + " encountered for " + component.toString();
