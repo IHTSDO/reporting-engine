@@ -11,12 +11,12 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 
 public abstract class TermServerReport extends TermServerScript {
 	
-	protected String headers = "Concept,FSN,";
+	protected String headers = "Concept,";
 	
 	protected void init(String[] args) throws TermServerScriptException, SnowOwlClientException {
 		try {
 			super.init(args);
-			initialiseReportFile(0, headers + additionalReportColumns);
+			initialiseReportFiles( new String[] {headers + additionalReportColumns});
 		} catch (IOException e) {
 			throw new TermServerScriptException("Unable to initialise output report",e);
 		}

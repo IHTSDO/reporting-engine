@@ -18,7 +18,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * QI-2
  * Reports concepts that are intermediate primitives from point of view of some subhierarchy
  * */
-public class IntermediatePrimitivesFromSubHierarchy extends TermServerReport{
+public class IntermediatePrimitivesFromSubHierarchy extends TermServerReport {
 	
 	Concept subHierarchy;
 	public Set<Concept> intermediatePrimitives = new HashSet<>();
@@ -27,6 +27,7 @@ public class IntermediatePrimitivesFromSubHierarchy extends TermServerReport{
 		IntermediatePrimitivesFromSubHierarchy report = new IntermediatePrimitivesFromSubHierarchy();
 		try {
 			report.additionalReportColumns = "ProximalPrimitiveParent, isIntermediate, StatedAttributes, StatedRoleGroups, InferredRoleGroups, StatedParents";
+			report.numberOfDistinctReports = 2;
 			report.init(args);
 			report.loadProjectSnapshot(true);  //just FSNs
 			report.postInit();

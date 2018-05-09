@@ -444,7 +444,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		}
 		
 		info ("\nBatching " + taskSize + " concepts per task");
-		initialiseReportFile(0,"TASK_KEY, TASK_DESC, SCTID, FSN, " + (stateComponentType?"CONCEPT_TYPE,":"") + "SEVERITY,ACTION_TYPE," + additionalReportColumns );
+		initialiseReportFiles( new String[] {"TASK_KEY, TASK_DESC, SCTID, FSN, " + (stateComponentType?"CONCEPT_TYPE,":"") + "SEVERITY,ACTION_TYPE," + additionalReportColumns });
 	}
 	
 	protected int ensureAcceptableParent(Task task, Concept c, Concept acceptableParent) {

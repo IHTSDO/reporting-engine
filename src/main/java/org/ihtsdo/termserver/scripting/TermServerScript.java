@@ -700,15 +700,17 @@ public abstract class TermServerScript implements RF2Constants {
 		writeToReportFile(0, line);
 	}
 	
-	protected void initialiseReportFile(int reportIdx, String columnHeaders) throws IOException {
+	protected void initialiseReportFiles(String[] columnHeaders) throws IOException {
 		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
 		currentTimeStamp = df.format(new Date());
-		
-		
-		String reportFilename = "results_" + getReportName() + "_" + currentTimeStamp + "_" + env  + ".csv";
-		reportFiles[reportIdx] = new File(outputDir, reportFilename);
-		info ("Outputting Report to " + reportFiles[reportIdx].getAbsolutePath());
-		writeToReportFile (columnHeaders);
+		reportFiles = new File[numberOfDistinctReports];
+		for (int reportIdx = 0; reportIdx < numberOfDistinctReports; reportIdx++) {
+			String idxStr = reportIdx == 0 ? "" : "_" + reportIdx;
+			String reportFilename = "results_" + getReportName() + "_" + currentTimeStamp + "_" + env  + idxStr + ".csv";
+			reportFiles[reportIdx] = new File(outputDir, reportFilename);
+			info ("Outputting Report to " + reportFiles[reportIdx].getAbsolutePath());
+			writeToReportFile (reportIdx, columnHeaders[reportIdx]);
+		}
 		flushFiles(false);
 	}
 

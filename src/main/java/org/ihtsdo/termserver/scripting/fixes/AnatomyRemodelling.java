@@ -37,7 +37,6 @@ public class AnatomyRemodelling extends BatchFix implements RF2Constants{
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
 		AnatomyRemodelling fix = new AnatomyRemodelling(null);
 		try {
-			IS_A.setFsn("Is a");
 			fix.init(args);
 			fix.inputFileHasHeaderRow = true;
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
