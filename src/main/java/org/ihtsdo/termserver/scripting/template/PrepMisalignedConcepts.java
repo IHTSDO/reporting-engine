@@ -72,11 +72,12 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		templateNames = new String[] {	"Infection caused by virus.json",
 										"Infection of bodysite caused by virus.json"};*/
 		
-		//subHierarchyStr =  "87628006";  //QI-16 |Bacterial infectious disease (disorder)|
-		//templateNames = new String[] {"Infection caused by Bacteria.json"};
+		subHierarchyStr =  "87628006";  //QI-16 |Bacterial infectious disease (disorder)|
+		templateNames = new String[] {	"Infection caused by Bacteria.json",
+										"Infection of bodysite caused by bacteria.json"};
 		
-		subHierarchyStr =  "95896000";  //QI-19  |Protozoan infection (disorder)|
-		templateNames = new String[] {"Infection caused by protozoa.json"};
+		//subHierarchyStr =  "95896000";  //QI-19  |Protozoan infection (disorder)|
+		//templateNames = new String[] {"Infection caused by protozoa.json"};
 		
 		super.init(args);
 	}
