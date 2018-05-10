@@ -16,7 +16,7 @@ public abstract class TermServerReport extends TermServerScript {
 	protected void init(String[] args) throws TermServerScriptException, SnowOwlClientException {
 		try {
 			super.init(args);
-			initialiseReportFiles( new String[] {headers + additionalReportColumns});
+			initialiseReportFiles( new String[] {headers + additionalReportColumns, headers + secondaryReportColumns});
 		} catch (IOException e) {
 			throw new TermServerScriptException("Unable to initialise output report",e);
 		}
@@ -34,14 +34,18 @@ public abstract class TermServerReport extends TermServerScript {
 		return Collections.singletonList(gl.getConcept(field));
 	}
 	
-	protected void report (Concept c, Object... details) {
+	protected void report (int reportIdx, Concept c, Object... details) {
 		String line = 	c.getConceptId() + COMMA_QUOTE + 
 						c.getFsn() + QUOTE;
 		
 		for (Object detail : details) {
 			 line += COMMA_QUOTE + detail.toString() + QUOTE;
 		}
-		writeToReportFile(line);
+		writeToReportFile(reportIdx, line);
+	}
+	
+	protected void report (Concept c, Object... details) {
+		report (0, c, details);
 	}
 
 	@Override

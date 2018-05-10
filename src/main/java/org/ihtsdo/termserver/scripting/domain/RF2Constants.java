@@ -10,6 +10,8 @@ public interface RF2Constants {
 	final Long SCTID_ROOT_CONCEPT = 138875005L;
 	final Long SCTID_IS_A_CONCEPT = 116680003L;
 	
+	final int SECONDARY_REPORT = 1;
+	
 	static Concept IS_A =  new Concept ("116680003");  // | Is a (attribute) |
 	
 	//Drugs and Substances

@@ -3,9 +3,9 @@ package org.ihtsdo.termserver.scripting.reports.qi;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
@@ -15,23 +15,26 @@ import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 /**
- * QI-2
+ * QI-2, QI-18
  * Reports concepts that are intermediate primitives from point of view of some subhierarchy
+ * Update: Adding a 2nd report to determine how many sufficiently defined concepts are affected by an IP
  * */
 public class IntermediatePrimitivesFromSubHierarchy extends TermServerReport {
 	
 	Concept subHierarchy;
-	public Set<Concept> intermediatePrimitives = new HashSet<>();
+	public Map<Concept, Integer> intermediatePrimitives;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		IntermediatePrimitivesFromSubHierarchy report = new IntermediatePrimitivesFromSubHierarchy();
 		try {
 			report.additionalReportColumns = "ProximalPrimitiveParent, isIntermediate, StatedAttributes, StatedRoleGroups, InferredRoleGroups, StatedParents";
+			report.secondaryReportColumns = "IP, Total SDs affected, Concepts in subhierarchy";
 			report.numberOfDistinctReports = 2;
 			report.init(args);
 			report.loadProjectSnapshot(true);  //just FSNs
 			report.postInit();
-			report.reportIntermediatePrimitives();
+			report.reportConceptsAffectedByIntermediatePrimitives();
+			report.reportTotalFDsUnderIPs();
 		} catch (Exception e) {
 			info("Failed to produce Description Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
@@ -50,15 +53,16 @@ public class IntermediatePrimitivesFromSubHierarchy extends TermServerReport {
 		//setSubHierarchy(gl.getConcept("128294001")); // QI-7  |Chronic inflammatory disorder (disorder)|
 		//setSubHierarchy(gl.getConcept("126537000"));   // QI-11 |Neoplasm of bone (disorder)|
 		//setSubHierarchy(gl.getConcept("34014006"));  // QI-12 |Viral disease
-		setSubHierarchy(gl.getConcept("87628006"));  // QI-13 |Bacterial infectious disease (disorder)|
+		//setSubHierarchy(gl.getConcept("87628006"));  // QI-13 |Bacterial infectious disease (disorder)|
+		setSubHierarchy(gl.getConcept("95896000"));  // QI-18 |Protozoan infection (disorder)|
 	}
 	
 	public void setSubHierarchy(Concept subHierarchy) {
 		this.subHierarchy = subHierarchy;
-		intermediatePrimitives = new HashSet<>();
+		intermediatePrimitives = new HashMap<>();
 	}
 
-	public void reportIntermediatePrimitives() throws TermServerScriptException {
+	public void reportConceptsAffectedByIntermediatePrimitives() throws TermServerScriptException {
 		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
 			//We're only interested in fully defined concepts
 			if (c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
@@ -70,7 +74,7 @@ public class IntermediatePrimitivesFromSubHierarchy extends TermServerReport {
 						isIntermediate = true;
 						incrementSummaryInformation("Intermediate Primitives reported");
 						incrementSummaryInformation(thisPPP.toString());
-						intermediatePrimitives.add(thisPPP);
+						intermediatePrimitives.merge(thisPPP, 1, Integer::sum);
 					} else {
 						incrementSummaryInformation("Safely modelled count");
 					}
@@ -127,4 +131,29 @@ public class IntermediatePrimitivesFromSubHierarchy extends TermServerReport {
 		return false;
 	}
 	
+	private void reportTotalFDsUnderIPs() throws TermServerScriptException {
+		intermediatePrimitives.entrySet().stream()
+			.sorted((k1, k2) -> k1.getValue().compareTo(k2.getValue()))
+			.forEach(k -> {
+				try {
+					reportTotalFDsUnderIP(k.getKey());
+				} catch (TermServerScriptException e) {
+					e.printStackTrace();
+				}
+			});
+	}
+	
+	private void reportTotalFDsUnderIP(Concept intermediatePrimitive) throws TermServerScriptException {
+		int totalFDsUnderIP = 0;
+		int fdsInSubHierarchy = 0;
+		for (Concept c : descendantsCache.getDescendentsOrSelf(intermediatePrimitive)) {
+			if (c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
+				totalFDsUnderIP++;
+				if (descendantsCache.getDescendentsOrSelf(subHierarchy).contains(c)) {
+					fdsInSubHierarchy++;
+				}
+			}
+		}
+		report (SECONDARY_REPORT, intermediatePrimitive, totalFDsUnderIP, fdsInSubHierarchy);
+	}
 }
