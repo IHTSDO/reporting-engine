@@ -383,21 +383,29 @@ public class Description extends Component implements RF2Constants {
 	}
 	
 	public boolean isPreferred(String langRefsetSctId) {
+		return hasAcceptability(Acceptability.PREFERRED, langRefsetSctId);
+	}
+	
+	public boolean isAcceptable(String langRefsetSctId) {
+		return hasAcceptability(Acceptability.ACCEPTABLE, langRefsetSctId);
+	}
+	
+	public boolean hasAcceptability(Acceptability acceptability, String langRefsetSctId) {
 		//Are we working with the JSON map, or RF2 Lang refset entries?
 		if (acceptabilityMap != null) {
 			for (Map.Entry<String, Acceptability> entry: acceptabilityMap.entrySet()) {
 				if ((langRefsetSctId == null || entry.getKey().equals(langRefsetSctId)) && 
-						entry.getValue().equals(Acceptability.PREFERRED)) {
+						entry.getValue().equals(acceptability)) {
 					return true;
 				}
 			}
 			return false;
 		}
-		
+		String acceptablitySCTID = acceptability == Acceptability.PREFERRED ? SCTID_PREFERRED_TERM : SCTID_ACCEPTABLE_TERM;
 		if (langRefsetEntries != null) {
 			for (LangRefsetEntry entry : langRefsetEntries) {
 				if ((langRefsetSctId == null || entry.getRefsetId().equals(langRefsetSctId)) &&
-					entry.getAcceptabilityId().equals(SCTID_PREFERRED_TERM)) {
+					entry.getAcceptabilityId().equals(acceptablitySCTID)) {
 					return true;
 				}
 			}

@@ -86,6 +86,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected File outputDir;
 	protected GraphLoader gl = GraphLoader.getGraphLoader();
 	protected String additionalReportColumns = "ActionDetail";
+	protected String secondaryReportColumns = "ActionDetail";
 	protected String currentTimeStamp;
 	protected boolean expectNullConcepts = false; //Set to true to avoid warning about rows in input file that result in no concept to modify
 	
@@ -114,7 +115,7 @@ public abstract class TermServerScript implements RF2Constants {
 	
 	public enum ReportActionType { API_ERROR, DEBUG_INFO, INFO, UNEXPECTED_CONDITION,
 									 CONCEPT_CHANGE_MADE, CONCEPT_ADDED, CONCEPT_INACTIVATED, CONCEPT_DELETED,
-									 DESCRIPTION_CHANGE_MADE, DESCRIPTION_ADDED, DESCRIPTION_REMOVED, CASE_SIGNIFICANCE_CHANGE_MADE,
+									 DESCRIPTION_CHANGE_MADE, DESCRIPTION_ACCEPTABILIY_CHANGED, DESCRIPTION_ADDED, DESCRIPTION_REMOVED, CASE_SIGNIFICANCE_CHANGE_MADE,
 									 RELATIONSHIP_ADDED, RELATIONSHIP_REPLACED, RELATIONSHIP_INACTIVATED, RELATIONSHIP_DELETED, RELATIONSHIP_MODIFIED, 
 									 RELATIONSHIP_GROUP_ADDED,
 									 NO_CHANGE, VALIDATION_ERROR, VALIDATION_CHECK, 

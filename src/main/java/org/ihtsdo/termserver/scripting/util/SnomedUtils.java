@@ -782,6 +782,9 @@ public class SnomedUtils implements RF2Constants{
 			case ACCEPTABLE_US :
 				aMap.put(US_ENG_LANG_REFSET, Acceptability.ACCEPTABLE);
 				break;
+			case ACCEPTABLE_GB :
+				aMap.put(GB_ENG_LANG_REFSET, Acceptability.ACCEPTABLE);
+				break;
 		}
 		return aMap;
 	}
