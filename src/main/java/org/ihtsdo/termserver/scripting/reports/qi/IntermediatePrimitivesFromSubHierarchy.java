@@ -27,7 +27,7 @@ public class IntermediatePrimitivesFromSubHierarchy extends TermServerReport {
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		IntermediatePrimitivesFromSubHierarchy report = new IntermediatePrimitivesFromSubHierarchy();
 		try {
-			report.additionalReportColumns = "ProximalPrimitiveParent, isIntermediate, StatedAttributes, StatedRoleGroups, InferredRoleGroups, StatedParents";
+			report.additionalReportColumns = "FSN, ProximalPrimitiveParent, isIntermediate, StatedAttributes, StatedRoleGroups, InferredRoleGroups, StatedParents";
 			report.secondaryReportColumns = "IP, Total SDs affected, Concepts in subhierarchy";
 			report.numberOfDistinctReports = 2;
 			report.init(args);
@@ -133,7 +133,7 @@ public class IntermediatePrimitivesFromSubHierarchy extends TermServerReport {
 	
 	private void reportTotalFDsUnderIPs() throws TermServerScriptException {
 		intermediatePrimitives.entrySet().stream()
-			.sorted((k1, k2) -> k1.getValue().compareTo(k2.getValue()))
+			.sorted((k1, k2) -> k2.getValue().compareTo(k1.getValue()))
 			.forEach(k -> {
 				try {
 					reportTotalFDsUnderIP(k.getKey());

@@ -65,8 +65,8 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		//subHierarchyStr =  "128294001";  // QI-9 |Chronic inflammatory disorder (disorder)
 		//templateNames = new String[] {"Chronic Inflammatory Disorder.json"};
 		
-		subHierarchyStr =  "126537000";  //QI-14 |Neoplasm of bone (disorder)|
-		templateNames = new String[] {"Neoplasm of Bone.json"};
+		//subHierarchyStr =  "126537000";  //QI-14 |Neoplasm of bone (disorder)|
+		//templateNames = new String[] {"Neoplasm of Bone.json"};
 		
 		/*subHierarchyStr =  "34014006"; //QI-15 |Viral disease (disorder)|
 		templateNames = new String[] {	"Infection caused by virus.json",
@@ -74,6 +74,9 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		
 		//subHierarchyStr =  "87628006";  //QI-16 |Bacterial infectious disease (disorder)|
 		//templateNames = new String[] {"Infection caused by Bacteria.json"};
+		
+		subHierarchyStr =  "95896000";  //QI-19  |Protozoan infection (disorder)|
+		templateNames = new String[] {"Infection caused by protozoa.json"};
 		
 		super.init(args);
 	}

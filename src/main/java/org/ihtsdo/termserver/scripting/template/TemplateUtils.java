@@ -24,6 +24,7 @@ import org.ihtsdo.termserver.scripting.domain.Template;
 public class TemplateUtils {
 	
 	public static String ECL_DESCENDANT_OR_SELF = "<<";
+	public static String ECL_DESCENDANT = "<";
 	public static String ECL_OR = "OR";
 	public static String ECL_STAR = "*";
 	public static Pattern p = Pattern.compile("[0-9]+");
@@ -177,6 +178,12 @@ public class TemplateUtils {
 				String valueRangeSctId = recoverSctId(thisEcl);
 				Concept valueRange = GraphLoader.getGraphLoader().getConcept(valueRangeSctId);
 				if (valueRange != null && cache.getDescendentsOrSelf(valueRange).contains(target)) {
+					return true;
+				}
+			} else if (thisEcl.startsWith(ECL_DESCENDANT)) {
+				String valueRangeSctId = recoverSctId(thisEcl);
+				Concept valueRange = GraphLoader.getGraphLoader().getConcept(valueRangeSctId);
+				if (valueRange != null && cache.getDescendents(valueRange).contains(target)) {
 					return true;
 				}
 			} else if (thisEcl.equals(ECL_STAR)){
