@@ -2,7 +2,6 @@ package org.ihtsdo.termserver.scripting.reports.qi;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.List;
 import java.util.Set;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
