@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting.reports;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -39,7 +40,13 @@ public abstract class TermServerReport extends TermServerScript {
 						c.getFsn() + QUOTE;
 		
 		for (Object detail : details) {
-			 line += COMMA_QUOTE + detail.toString() + QUOTE;
+			if (detail instanceof Collection) {
+				for (Object subDetail : (Collection<?>)detail) {
+					line += COMMA_QUOTE + subDetail.toString() + QUOTE;
+				}
+			} else {
+				line += COMMA_QUOTE + detail.toString() + QUOTE;
+			}
 		}
 		writeToReportFile(reportIdx, line);
 	}
