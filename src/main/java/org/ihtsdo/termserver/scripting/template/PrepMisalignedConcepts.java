@@ -81,6 +81,7 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		
 		super.init(args);
 	}
+	
 	@Override
 	protected int doFix(Task task, Concept concept, String info) throws TermServerScriptException, ValidationFailure {
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());

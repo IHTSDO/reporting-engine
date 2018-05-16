@@ -903,8 +903,9 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 			clone.addDescription(dClone);
 		}
 		
-		//Copy all stated relationships
-		for (Relationship r : getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
+		//Copy all stated relationships, or in the case of an exact clone (keepIds = true) also inferred
+		List<Relationship> selectedRelationships = keepIds ? relationships : getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
+		for (Relationship r : selectedRelationships) {
 			//We need to null out the sourceId since the clone is a new concept
 			Relationship rClone = r.clone(keepIds?r.getRelationshipId():null);
 			rClone.setSourceId(null);
@@ -960,6 +961,15 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 			}
 		}
 		return relationshipGroups;
+	}
+
+	public void addRelationshipGroup(RelationshipGroup group) {
+		for (Relationship r : group.getRelationships()) {
+			addRelationship(r);
+		}
+		//Force recalculation
+		statedRelationshipGroups = null;
+		inferredRelationshipGroups = null;
 	}
 
 }

@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -822,6 +824,29 @@ public class SnomedUtils implements RF2Constants{
 			}
 		}
 		return null;
+	}
+	
+	public static Set<Concept> getTargets(Concept c, Concept[] types, CharacteristicType charType) throws TermServerScriptException {
+		Set<Concept> targets = new HashSet<>();
+		for (Concept type : types) {
+			List<Relationship> rels = c.getRelationships(charType, type, ActiveState.ACTIVE);
+			targets.addAll(rels.stream().map(r -> r.getTarget()).collect(Collectors.toSet()));
+		}
+		return targets;
+	}
+
+	public static String getModel(Concept c, CharacteristicType charType) {
+		String model = "";
+		boolean isFirst = true;
+		for (RelationshipGroup g : c.getRelationshipGroups(charType)) {
+			if (!isFirst) {
+				model += ", \n";
+			} else isFirst = false;
+			model += g;
+		}
+		//Split into separate lines so we can see better
+		model = model.replaceAll ("\\{", "\\{  ").replaceAll("\\,", "\\,\n   ");
+		return model;
 	}
 
 }
