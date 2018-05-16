@@ -27,6 +27,8 @@ import us.monoid.json.JSONObject;
  * the same subhierarchy.
  */
 public class RemodelGroupOne extends TemplateFix {
+	
+	String[] whitelist = new String[] { "co-occurrent" };
 
 	protected RemodelGroupOne(BatchFix clone) {
 		super(clone);
@@ -52,6 +54,8 @@ public class RemodelGroupOne extends TemplateFix {
 		selfDetermining = true;
 		runStandAlone = true; 
 		classifyTasks = true;
+		populateEditPanel = false;
+		populateTaskDescription = false;
 		additionalReportColumns = "CharacteristicType, Template, AFTER Stated, BEFORE Stated, Inferred";
 		
 		/*subHierarchyStr = "125605004";  // |Fracture of bone (disorder)|
@@ -64,12 +68,11 @@ public class RemodelGroupOne extends TemplateFix {
 		//subHierarchyStr =  "126537000";  //QI-14 |Neoplasm of bone (disorder)|
 		//templateNames = new String[] {"Neoplasm of Bone.json"};
 		
-		/*subHierarchyStr =  "34014006"; //QI-15 |Viral disease (disorder)|
-		templateNames = new String[] {	"Infection caused by virus.json",
-										"Infection of bodysite caused by virus.json"};*/
-		
+		subHierarchyStr =  "34014006"; //QI-15 |Viral disease (disorder)|
+		templateNames = new String[] {	"Infection caused by virus with optional bodysite.json"};
+		/*
 		subHierarchyStr =  "87628006";  //QI-16 |Bacterial infectious disease (disorder)|
-		templateNames = new String[] {	"Infection caused by bacteria with optional bodysite.json"};
+		templateNames = new String[] {	"Infection caused by bacteria with optional bodysite.json"}; */
 		
 		//subHierarchyStr =  "95896000";  //QI-19  |Protozoan infection (disorder)|
 		//templateNames = new String[] {"Infection caused by protozoa.json"};
@@ -128,7 +131,11 @@ public class RemodelGroupOne extends TemplateFix {
 			//Inactivate the existing rel and move it into group 1
 			Relationship existingRel = existingRels.get(0);
 			Relationship moved = existingRel.clone(null);
-			existingRel.setActive(false);
+			if (existingRel.isReleased()) {
+				existingRel.setActive(false);
+			} else {
+				c.removeRelationship(existingRel);
+			}
 			moved.setGroupId(1);
 			c.addRelationship(moved);
 			return CHANGE_MADE;
@@ -141,7 +148,15 @@ public class RemodelGroupOne extends TemplateFix {
 			
 			//Do we have a single value?  Can't model otherwise
 			if (values.size() == 0) {
-				return NO_CHANGES_MADE;
+				//Is this value hard coded in the template?
+				if (a.getValue() != null) {
+					Relationship constantRel = new Relationship(c, type, gl.getConcept(a.getValue()), group.getGroupId());
+					c.addRelationship(constantRel);
+					report (t, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_ADDED, "Template specified constant: " + constantRel);
+					return CHANGE_MADE;
+				} else {
+					return NO_CHANGES_MADE;
+				}
 			} else if (values.size() == 1) {
 				Relationship r = new Relationship (c, type, values.iterator().next(), group.getGroupId());
 				group.addRelationship(r);
@@ -170,14 +185,28 @@ public class RemodelGroupOne extends TemplateFix {
 		List<Component> processMe = new ArrayList<>();
 		nextConcept:
 		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
-			for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
-				if (r.getGroupId() != UNGROUPED) {
-					continue nextConcept;
+			if (isWhiteListed(c)) {
+				warn ("Whitelisted: " + c);
+			} else {
+				for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
+					if (r.getGroupId() != UNGROUPED) {
+						continue nextConcept;
+					}
 				}
+				processMe.add(c);
 			}
-			processMe.add(c);
 		}
 		return processMe;
+	}
+
+	private boolean isWhiteListed(Concept c) {
+		//Does the FSN contain one of our white listed words?
+		for (String word : whitelist) {
+			if (c.getFsn().contains(word)) {
+				return true;
+			}
+		}
+		return false;
 	}
 	
 }

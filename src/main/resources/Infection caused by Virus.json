@@ -1,0 +1,6 @@
+{
+  "name": "Infection caused by virus",
+  "documentation": "https://confluence.ihtsdotools.org/pages/viewpage.action?pageId=61152846",
+  "version": 1,
+  "logicalTemplate": "64572001 |Disease (disorder)|: [[~0..1]]263502005 |Clinical course (attribute)| = [[ +id( <  288524001 |Courses (qualifier value)|) @course]], [[~0..1]] 246454002 |Occurrence (attribute)| = [[ +id ( <  282032007 |Periods of life (qualifier value)|) @period]], {\n\t\t [[~1..1]] 370135005 |Pathological process (attribute)| = 441862004 |Infectious process (qualifier value)|, [[~1..1]] 246075003 |Causative agent (attribute)| = [[+id( << 49872002 |Virus (organism)| ) @virus ]], [[~0..1]] 116676008 |Associated morphology (attribute)| = [[ +id ( <<  409774005 |Inflammatory morphology (morphologic abnormality)| ) @morphology]] }\n"
+}
