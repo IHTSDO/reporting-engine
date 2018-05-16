@@ -24,7 +24,7 @@ public class ListSubstancesWithModificationsAndDispositions extends TermServerRe
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		ListSubstancesWithModificationsAndDispositions report = new ListSubstancesWithModificationsAndDispositions();
 		try {
-			report.additionalReportColumns = "FSN, Used in Product, Some Direct Children Flattened, All Direct Children Flattened, Parents, Modifications, Dispositions";
+			report.additionalReportColumns = "FSN, Used in Product, Some Direct Stated Children Flattened, All Direct Stated Children Flattened, Some Direct Inferred Children Flattened, All Direct Inferred Children Flattened, Parents, Modifications, Dispositions";
 			report.init(args);
 			report.loadProjectSnapshot(true);  
 			report.postLoadInit();
@@ -74,23 +74,38 @@ public class ListSubstancesWithModificationsAndDispositions extends TermServerRe
 				maxDispositions = dispositions.size();
 			}
 			
-			String someDirectChildrenFlattened, allDirectChildrenFlattened;
-			int childrenCount = c.getChildren(CharacteristicType.INFERRED_RELATIONSHIP).size();
+			String someDirectStatedChildrenFlattened, allDirectStatedChildrenFlattened;
+			int childrenCount = c.getChildren(CharacteristicType.STATED_RELATIONSHIP).size();
 			if (childrenCount == 0) {
-				someDirectChildrenFlattened = "-";
-				allDirectChildrenFlattened = "-";
+				someDirectStatedChildrenFlattened = "-";
+				allDirectStatedChildrenFlattened = "-";
+			} else {
+				int flattenedChildCount = c.getChildren(CharacteristicType.STATED_RELATIONSHIP)
+										.stream()
+										.filter(child -> child.getRelationships(CharacteristicType.STATED_RELATIONSHIP, IS_MODIFICATION_OF, ActiveState.ACTIVE).size() > 0)
+										.collect(Collectors.toSet()).size();
+				someDirectStatedChildrenFlattened = flattenedChildCount > 0 ? "Y":"N";
+				allDirectStatedChildrenFlattened = flattenedChildCount ==  childrenCount ? "Y":"N";
+			}
+			
+			String someDirectInferredChildrenFlattened, allDirectInferredChildrenFlattened;
+			childrenCount = c.getChildren(CharacteristicType.INFERRED_RELATIONSHIP).size();
+			if (childrenCount == 0) {
+				someDirectInferredChildrenFlattened = "-";
+				allDirectInferredChildrenFlattened = "-";
 			} else {
 				int flattenedChildCount = c.getChildren(CharacteristicType.INFERRED_RELATIONSHIP)
 										.stream()
 										.filter(child -> child.getRelationships(CharacteristicType.STATED_RELATIONSHIP, IS_MODIFICATION_OF, ActiveState.ACTIVE).size() > 0)
 										.collect(Collectors.toSet()).size();
-				someDirectChildrenFlattened = flattenedChildCount > 0 ? "Y":"N";
-				allDirectChildrenFlattened = flattenedChildCount ==  childrenCount ? "Y":"N";
+				someDirectInferredChildrenFlattened = flattenedChildCount > 0 ? "Y":"N";
+				allDirectInferredChildrenFlattened = flattenedChildCount ==  childrenCount ? "Y":"N";
 			}
 			
 			//Is this substance used in a product?
 			String usedInProduct = substancesUsedInProducts.contains(c) ? "Y":"N";
-			report (c, usedInProduct, someDirectChildrenFlattened, allDirectChildrenFlattened, 
+			report (c, usedInProduct, someDirectStatedChildrenFlattened, allDirectStatedChildrenFlattened, 
+					someDirectInferredChildrenFlattened, allDirectInferredChildrenFlattened, 
 					statedParents.stream().map(p->p.toString()).collect(Collectors.joining(",\n")),
 					modifications.stream().map(m->m.toString()).collect(Collectors.joining(",\n")),
 					dispositions.stream().map(d->d.toString()).collect(Collectors.joining(",\n")));
