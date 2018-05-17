@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.reports.qi;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.HashSet;
 import java.util.Set;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
@@ -23,7 +24,7 @@ public class JointsInFractures extends TermServerReport {
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		JointsInFractures report = new JointsInFractures();
 		try {
-			report.additionalReportColumns = "Joint Structures, Bone Structures, Other things";
+			report.additionalReportColumns = "FSN, Joint Structures, Joint Also Bone Structure, Bone Structures, Other things";
 			report.init(args);
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.postLoadInit();
@@ -46,15 +47,12 @@ public class JointsInFractures extends TermServerReport {
 		for (Concept c : descendantsCache.getDescendents(subHierarchy)) {
 			//For each active concept, list all the things that a types of joint, 
 			//types of bone, and other things separately
-			String joints = "", bones = "", other ="";
+			Set<Concept> joints = new HashSet<>();
+			String bones = "", other ="";
 			if (c.isActive()) {
 				for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, FINDING_SITE, ActiveState.ACTIVE)) {
 					if (jointStructures.contains(r.getTarget())) {
-						joints += joints.isEmpty()? r.getTarget() : "\n" + r.getTarget();
-						//If the joint is also a bone structure, add an indicator
-						if (boneStructures.contains(r.getTarget())) {
-							joints += " *";
-						}
+						joints.add(r.getTarget());
 						incrementSummaryInformation("Joints Found");
 					} else if (boneStructures.contains(r.getTarget())) {
 						bones += bones.isEmpty()? r.getTarget() : "\n" + r.getTarget();
@@ -64,11 +62,13 @@ public class JointsInFractures extends TermServerReport {
 						incrementSummaryInformation("Other things Found");
 					}
 				}
-				if (!joints.isEmpty()) {
-					report (c, joints, bones, other);
+				
+				for (Concept joint : joints) {
+					//If the joint is also a bone structure, add an indicator
+					report (c, joint, boneStructures.contains(joint)? "Y":"N", bones, other);
 					//Most interesting case would be a joint without any sort of bone
-					if (bones.isEmpty() && !joints.contains("*")) {
-						warn("Interesting case: " + c);
+					if (bones.isEmpty() && !boneStructures.contains(joint)) {
+						warn("Interesting case: " + c + " with joint: " + joint);
 					}
 				}
 			}
