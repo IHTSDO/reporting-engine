@@ -20,7 +20,7 @@ import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 public class GenerateWorkDoneStats extends TermServerReport {
 	
 	List<Concept> subHierarchies;
-	IntermediatePrimitivesFromSubHierarchy ipReport = new IntermediatePrimitivesFromSubHierarchy();
+	GenerateInitialAnalysis ipReport = new GenerateInitialAnalysis();
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		GenerateWorkDoneStats report = new GenerateWorkDoneStats();

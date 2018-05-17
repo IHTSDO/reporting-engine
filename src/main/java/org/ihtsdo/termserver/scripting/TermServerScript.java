@@ -87,6 +87,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected GraphLoader gl = GraphLoader.getGraphLoader();
 	protected String additionalReportColumns = "ActionDetail";
 	protected String secondaryReportColumns = "ActionDetail";
+	protected String tertiaryReportColumns = "ActionDetail";
 	protected String currentTimeStamp;
 	protected boolean expectNullConcepts = false; //Set to true to avoid warning about rows in input file that result in no concept to modify
 	

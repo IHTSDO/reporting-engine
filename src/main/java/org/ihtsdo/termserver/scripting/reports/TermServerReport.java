@@ -17,7 +17,7 @@ public abstract class TermServerReport extends TermServerScript {
 	protected void init(String[] args) throws TermServerScriptException, SnowOwlClientException {
 		try {
 			super.init(args);
-			initialiseReportFiles( new String[] {headers + additionalReportColumns, headers + secondaryReportColumns});
+			initialiseReportFiles( new String[] {headers + additionalReportColumns, headers + secondaryReportColumns, headers + tertiaryReportColumns});
 		} catch (IOException e) {
 			throw new TermServerScriptException("Unable to initialise output report",e);
 		}

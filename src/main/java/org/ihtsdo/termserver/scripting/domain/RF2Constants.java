@@ -11,6 +11,7 @@ public interface RF2Constants {
 	final Long SCTID_IS_A_CONCEPT = 116680003L;
 	
 	final int SECONDARY_REPORT = 1;
+	final int TERTIARY_REPORT = 2;
 	
 	static Concept IS_A =  new Concept ("116680003");  // | Is a (attribute) |
 	
