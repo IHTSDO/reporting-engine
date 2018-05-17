@@ -147,6 +147,14 @@ public class GraphLoader implements RF2Constants {
 		return getConcept(identifier, true, true);
 	}
 	
+	public Concept getConceptSafely (String identifier) {
+		try {
+			return getConcept(identifier, true, true);
+		} catch (TermServerScriptException e) {
+			return null;
+		}
+	}
+	
 	public Concept getConcept(Long sctId) throws TermServerScriptException {
 		return getConcept(sctId.toString(), true, true);
 	}

@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -29,6 +30,8 @@ import us.monoid.json.JSONObject;
 public class RemodelGroupOne extends TemplateFix {
 	
 	String[] whitelist = new String[] { "co-occurrent" };
+	Set<Concept> groupedAttributeTypes = new HashSet<>();
+	Set<Concept> ungroupedAttributeTypes = new HashSet<>();
 
 	protected RemodelGroupOne(BatchFix clone) {
 		super(clone);
@@ -79,6 +82,21 @@ public class RemodelGroupOne extends TemplateFix {
 		
 		super.init(args);
 	}
+	
+	protected void postInit() throws TermServerScriptException {
+		super.postInit();
+		
+		//Populate grouped and ungrouped attributes
+		Iterator<AttributeGroup> groupIterator = templates.get(0).getAttributeGroups().iterator();
+
+		ungroupedAttributeTypes = groupIterator.next().getAttributes().stream()
+							.map(a -> gl.getConceptSafely(a.getType()))
+							.collect(Collectors.toSet());
+		
+		groupedAttributeTypes = groupIterator.next().getAttributes().stream()
+				.map(a -> gl.getConceptSafely(a.getType()))
+				.collect(Collectors.toSet());
+	}
 
 	@Override
 	protected int doFix(Task task, Concept concept, String info) throws TermServerScriptException, ValidationFailure {
@@ -105,7 +123,10 @@ public class RemodelGroupOne extends TemplateFix {
 		String statedForm = SnomedUtils.getModel(c, CharacteristicType.STATED_RELATIONSHIP);
 		String inferredForm = SnomedUtils.getModel(c, CharacteristicType.INFERRED_RELATIONSHIP);
 		
-		RelationshipGroup groupOne = new RelationshipGroup(1);
+		RelationshipGroup groupOne = c.getRelationshipGroup(CharacteristicType.STATED_RELATIONSHIP, 1);
+		if (groupOne == null) {
+			groupOne = new RelationshipGroup(1);
+		}
 		
 		//Work through the attributes in the template and see if we can satisfy those from the inferred
 		//relationships on the concept
@@ -113,10 +134,26 @@ public class RemodelGroupOne extends TemplateFix {
 		for (Attribute a : firstGroup.getAttributes()) {
 			changesMade += findAttributeToState(t, c, a, groupOne);
 		}
+		
 		if (changesMade > 0) {
 			c.addRelationshipGroup(groupOne);
 			String modifiedForm = SnomedUtils.getModel(c, CharacteristicType.STATED_RELATIONSHIP);
 			report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_GROUP_ADDED, modifiedForm, statedForm, inferredForm);
+		}
+		
+		//Now work through all relationship and move any ungrouped attributes out of groups
+		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
+			if (r.getGroupId() != UNGROUPED && ungroupedAttributeTypes.contains(r.getType())) {
+				Relationship moved = r.clone(null);
+				moved.setGroupId(UNGROUPED);
+				c.addRelationship(moved);
+				if (r.isReleased()) {
+					r.setActive(false);
+				} else {
+					c.removeRelationship(r);
+				}
+				report (t, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_MODIFIED, "Ungrouped relationship moved out of group: " + r);
+			}
 		}
 		return changesMade;
 	}
@@ -188,12 +225,29 @@ public class RemodelGroupOne extends TemplateFix {
 			if (isWhiteListed(c)) {
 				warn ("Whitelisted: " + c);
 			} else {
+				boolean hasGroupedAttributes = false;
 				for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
-					if (r.getGroupId() != UNGROUPED) {
+					//If the concept has no grouped attributes we want it, and also 
+					//if there are any ungrouped attributes in group 1, or grouped attributes
+					//in group 0 (even if group 1 also exists!)
+					if (r.getGroupId() == UNGROUPED) {
+						if (groupedAttributeTypes.contains(r.getType())) {
+							processMe.add(c);
+							continue nextConcept;
+						}
+					} else if (ungroupedAttributeTypes.contains(r.getType())) {
+						processMe.add(c);
 						continue nextConcept;
 					}
+					
+					if (r.getGroupId() != UNGROUPED) {
+						hasGroupedAttributes = true;
+					}
 				}
-				processMe.add(c);
+				
+				if (!hasGroupedAttributes) {
+					processMe.add(c);
+				}
 			}
 		}
 		return processMe;
