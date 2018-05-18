@@ -1,0 +1,6 @@
+{
+  "name": "Pathologic fracture morphology of bone structure co-occurrent and due to Neoplasm of bone",
+  "documentation": "https://confluence.ihtsdotools.org/pages/viewpage.action?pageId=57816205",
+  "version": 1,
+  "logicalTemplate": "116223007 |Complication (disorder)| : 42752001 |Due to (attribute)| = [[+id(<< 126537000 |Neoplasm of bone (disorder)|)]],\n\t [[~1..*]]{\n\t\t116676008 |Associated morphology (attribute)| = [[+id(<< 22640007 |Pathologic fracture (morphologic abnormality)|) @fracture]],\n\t\t363698007 |Finding site (attribute)|  =  [[+id(<< 272673000 |Bone structure (body structure)|) @bone]]\n\t}, {\n\t\t116676008 |Associated morphology (attribute)| = [[+id(<< 108369006 |Neoplasm (morphologic abnormality)|) ]],\n\t\t363698007 |Finding site (attribute)|  =  [[+id(<< 272673000 |Bone structure (body structure)|)]]\n\t}\n"
+}

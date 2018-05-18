@@ -1,0 +1,6 @@
+{
+  "name": "Traumatic abnormality of spinal cord structure co-occurrent and due to fracture morphology of vertebral bone structure",
+  "documentation": "https://confluence.ihtsdotools.org/pages/viewpage.action?pageId=57816205",
+  "version": 1,
+  "logicalTemplate": "116223007 |Complication (disorder)| : 42752001 |Due to (attribute)| = [[+id(<< 50448004 |Fracture of vertebral column (disorder)|)]],\n\t [[~1..*]]{\n\t\t116676008 |Associated morphology (attribute)| = [[+id(<< 72704001 |Fracture (morphologic abnormality)|) @fracture]],\n\t\t363698007 |Finding site (attribute)|  =  [[+id( << 51282000 |Bone structure of spine (body structure)|) @bone]]\n\t},\n\t [[~1..*]]{\n\t\t116676008 |Associated morphology (attribute)| = [[+id(<< 19130008 |Traumatic abnormality (morphologic abnormality)|) ]],\n\t\t363698007 |Finding site (attribute)|  =  [[+id( << 2748008 |Spinal cord structure (body structure)|) ]]\n\t}\n"
+}
