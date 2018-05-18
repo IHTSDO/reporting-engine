@@ -806,6 +806,18 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		Concept savedConcept = createConcept(t, clone, ", clone of " + originalId);
 		report (t, savedConcept, Severity.LOW, ReportActionType.CONCEPT_ADDED, "Cloned " + original);
 		
+		//If the original has stated children, they'll all need to be re-pointed to the clone
+		for (Concept child : gl.getConcept(originalId).getChildren(CharacteristicType.STATED_RELATIONSHIP)) {
+			Concept loadedChild = loadConcept(child.getConceptId(), t.getBranchPath());
+			replaceParent(t, loadedChild, original, savedConcept);
+			String conceptSerialised = gson.toJson(loadedChild);
+			tsClient.updateConcept(new JSONObject(conceptSerialised), t.getBranchPath());
+			report (t, savedConcept, Severity.MEDIUM, ReportActionType.RELATIONSHIP_REPLACED, "New Parent: " + savedConcept);
+			//Add the child to the task, after the original
+			t.addAfter(child, original);
+			incrementSummaryInformation("Total children repointed to cloned concepts");
+		}
+		
 		//Add our clone to the task, after the original
 		t.addAfter(savedConcept, original);
 		

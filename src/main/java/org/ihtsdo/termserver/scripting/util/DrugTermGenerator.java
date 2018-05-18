@@ -28,7 +28,6 @@ public class DrugTermGenerator implements RF2Constants{
 	private boolean ptOnly = false;
 	private boolean specifyDenominator = false;
 	private boolean includeUnitOfPresentation = false;
-	private GraphLoader gl = GraphLoader.getGraphLoader();
 	
 	private String [] forceCS = new String[] { "N-" };
 	private String[] vitamins = new String[] {" A ", " B ", " C ", " D ", " E ", " G "};
