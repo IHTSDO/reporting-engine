@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -23,6 +24,7 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -48,6 +50,7 @@ import org.ihtsdo.termserver.scripting.template.DescendentsCache;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Joiner;
 import com.google.common.io.Files;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -810,8 +813,19 @@ public abstract class TermServerScript implements RF2Constants {
 		if (component != null) {
 			if (severity.equals(Severity.CRITICAL)) {
 				String key = CRITICAL_ISSUE + " encountered for " + component.toString();
-				addSummaryInformation(key, details[0]);
-				info ( key + " : " + details[0]);
+				String value = "";
+				for (Object detail : details) {
+					if (detail instanceof Object[]) {
+						Object[] arr = (Object[]) detail;
+						for (Object obj : arr) {
+							value += obj + ", ";
+						}
+					} else {
+						value += detail + ", ";
+					}
+				}
+				addSummaryInformation(key, value);
+				info ( key + " : " + value);
 			}
 		}
 		String key = (task == null? "" :  task.getKey());

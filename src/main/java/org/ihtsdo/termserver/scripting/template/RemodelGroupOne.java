@@ -22,7 +22,7 @@ import org.ihtsdo.otf.authoringtemplate.domain.logical.AttributeGroup;
 import us.monoid.json.JSONObject;
 
 /**
- * QI
+ * QI-21, QI-23,
  * Where a concept has limited modeling, pull the most specific attributes available 
  * into group 1.  Skip any cases of multiple attributes types with values that are not in 
  * the same subhierarchy.
@@ -71,11 +71,11 @@ public class RemodelGroupOne extends TemplateFix {
 		//subHierarchyStr =  "126537000";  //QI-14 |Neoplasm of bone (disorder)|
 		//templateNames = new String[] {"Neoplasm of Bone.json"};
 		
-		subHierarchyStr =  "34014006"; //QI-15 |Viral disease (disorder)|
-		templateNames = new String[] {	"Infection caused by virus with optional bodysite.json"};
-		/*
+		/*subHierarchyStr =  "34014006"; //QI-15 |Viral disease (disorder)|
+		templateNames = new String[] {	"Infection caused by virus with optional bodysite.json"};*/
+		
 		subHierarchyStr =  "87628006";  //QI-16 |Bacterial infectious disease (disorder)|
-		templateNames = new String[] {	"Infection caused by bacteria with optional bodysite.json"}; */
+		templateNames = new String[] {	"Infection caused by bacteria with optional bodysite.json"}; 
 		
 		//subHierarchyStr =  "95896000";  //QI-19  |Protozoan infection (disorder)|
 		//templateNames = new String[] {"Infection caused by protozoa.json"};
@@ -101,6 +101,9 @@ public class RemodelGroupOne extends TemplateFix {
 	@Override
 	protected int doFix(Task task, Concept concept, String info) throws TermServerScriptException, ValidationFailure {
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
+		if (loadedConcept.getConceptId().equals("72294005")) {
+			debug("Check me");
+		}
 		int changesMade = remodelGroupOne(task, loadedConcept, templates.get(0));
 		if (changesMade > 0) {
 			try {
@@ -128,11 +131,16 @@ public class RemodelGroupOne extends TemplateFix {
 			groupOne = new RelationshipGroup(1);
 		}
 		
-		//Work through the attributes in the template and see if we can satisfy those from the inferred
-		//relationships on the concept
-		AttributeGroup firstGroup = template.getAttributeGroups().toArray(new AttributeGroup[0])[1];
-		for (Attribute a : firstGroup.getAttributes()) {
-			changesMade += findAttributeToState(t, c, a, groupOne);
+		//Work through the attributes in the template and see if we can satisfy those from the ungrouped stated
+		//or inferred relationships on the concept
+		AttributeGroup firstTemplateGroup = template.getAttributeGroups().toArray(new AttributeGroup[0])[1];
+		for (Attribute a : firstTemplateGroup.getAttributes()) {
+			int statedChangeMade = findAttributeToState(t, c, a, groupOne, CharacteristicType.STATED_RELATIONSHIP);
+			if (statedChangeMade == NO_CHANGES_MADE) {
+				changesMade += findAttributeToState(t, c, a, groupOne, CharacteristicType.INFERRED_RELATIONSHIP);
+			} else {
+				changesMade += CHANGE_MADE;
+			}
 		}
 		
 		if (changesMade > 0) {
@@ -153,54 +161,57 @@ public class RemodelGroupOne extends TemplateFix {
 					c.removeRelationship(r);
 				}
 				report (t, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_MODIFIED, "Ungrouped relationship moved out of group: " + r);
+				changesMade++;
 			}
 		}
 		return changesMade;
 	}
 
-	private int findAttributeToState(Task t, Concept c, Attribute a, RelationshipGroup group) throws TermServerScriptException {
+	private int findAttributeToState(Task t, Concept c, Attribute a, RelationshipGroup group, CharacteristicType charType) throws TermServerScriptException {
 		//Do we have this attribute type in the inferred form?
 		Concept type = gl.getConcept(a.getType());
 		
-		//First see if we can find this value in the stated form and move it!
-		List<Relationship> existingRels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, type, ActiveState.ACTIVE);
-		if (existingRels.size() == 1) {
-			//Inactivate the existing rel and move it into group 1
-			Relationship existingRel = existingRels.get(0);
-			Relationship moved = existingRel.clone(null);
-			if (existingRel.isReleased()) {
-				existingRel.setActive(false);
+		//Otherwise attempt to satisfy from existing relationships
+		Set<Concept> values = SnomedUtils.getTargets(c, new Concept[] {type}, charType);
+		
+		//Remove the less specific values from this list
+		removeRedundancies(values);
+		
+		//Do we have a single value?  Can't model otherwise
+		if (values.size() == 0) {
+			//Is this value hard coded in the template?  Only do this for stated characteristic type, so we don't duplicate
+			if (a.getValue() != null && charType.equals(CharacteristicType.STATED_RELATIONSHIP)) {
+				Relationship constantRel = new Relationship(c, type, gl.getConcept(a.getValue()), group.getGroupId());
+				c.addRelationship(constantRel);
+				report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, "Template specified constant: " + constantRel);
+				return CHANGE_MADE;
 			} else {
-				c.removeRelationship(existingRel);
+				return NO_CHANGES_MADE;
 			}
-			moved.setGroupId(1);
-			c.addRelationship(moved);
-			return CHANGE_MADE;
-		} else {
-			//Otherwise attempt to satisfy from inferred rels.
-			Set<Concept> values = SnomedUtils.getTargets(c, new Concept[] {type}, CharacteristicType.INFERRED_RELATIONSHIP);
-			
-			//Remove the less specific values from this list
-			removeRedundancies(values);
-			
-			//Do we have a single value?  Can't model otherwise
-			if (values.size() == 0) {
-				//Is this value hard coded in the template?
-				if (a.getValue() != null) {
-					Relationship constantRel = new Relationship(c, type, gl.getConcept(a.getValue()), group.getGroupId());
-					c.addRelationship(constantRel);
-					report (t, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_ADDED, "Template specified constant: " + constantRel);
-					return CHANGE_MADE;
-				} else {
-					return NO_CHANGES_MADE;
+		} else if (values.size() == 1) {
+			//If we're pulling from stated rels, remove any group 0 instances
+			if (charType.equals(CharacteristicType.STATED_RELATIONSHIP)) {
+				List<Relationship> ungroupedRels = c.getRelationships(charType, type, UNGROUPED);
+				if (ungroupedRels.size() == 1) {
+					Relationship ungroupedRel = ungroupedRels.get(0);
+					if (ungroupedRel.isReleased()) {
+						ungroupedRel.setActive(false);
+					} else {
+						c.removeRelationship(ungroupedRel);
+					}
 				}
-			} else if (values.size() == 1) {
+			}
+			
+			//If this relationship type doesn't already exist in this group, stated, add it
+			if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, type, group.getGroupId()).size() == 0) {
 				Relationship r = new Relationship (c, type, values.iterator().next(), group.getGroupId());
 				group.addRelationship(r);
 				return CHANGE_MADE;
 			} else {
-				throw new ValidationFailure (c , "Multiple " + type + " : " + values.stream().map(v -> v.toString()).collect(Collectors.joining(", ")));
+				return NO_CHANGES_MADE;
 			}
+		} else {
+			throw new ValidationFailure (c , "Multiple non-subsuming " + type + " values : " + values.stream().map(v -> v.toString()).collect(Collectors.joining(" and ")));
 		}
 	}
 
@@ -222,6 +233,9 @@ public class RemodelGroupOne extends TemplateFix {
 		List<Component> processMe = new ArrayList<>();
 		nextConcept:
 		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
+			/*if (!c.getConceptId().equals("48113006")) {
+				continue;
+			}*/
 			if (isWhiteListed(c)) {
 				warn ("Whitelisted: " + c);
 			} else {

@@ -859,4 +859,16 @@ public class SnomedUtils implements RF2Constants{
 		return attributeCount;
 	}
 
+	/**
+	 * @return true if the concept has the specified type as an attribute
+	 */
+	public static boolean hasType(CharacteristicType charType, Concept c, Concept type) {
+		for (Relationship r : c.getRelationships(charType, ActiveState.ACTIVE)) {
+			if (r.getType().equals(type)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 }

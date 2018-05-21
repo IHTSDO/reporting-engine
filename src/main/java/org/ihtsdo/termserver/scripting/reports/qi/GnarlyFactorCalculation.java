@@ -111,14 +111,15 @@ public class GnarlyFactorCalculation extends TermServerReport {
 			}
 			//Work our way up the stated parents via some attribute that we have;
 			int descCount = descendantsCache.getDescendentsOrSelf(c).size();
+			Concept optimal =  null;
 			if ( descCount > lowerLimit) {
 				warn (c + " already has " + descCount + " descendants.  Adding.");
 			} else {
 				Concept bestOrganisingPrinciple = getBestOrganisingPrinciple(c);
 				if (bestOrganisingPrinciple != null) {
-					Concept optimal = findOptimalGrouper(c, 0, bestOrganisingPrinciple);
+					optimal = findOptimalGrouper(c, 0, bestOrganisingPrinciple);
 				} else {
-					Concept optimal = findOptimalGrouper(c, 0);
+					optimal = findOptimalGrouper(c, 0);
 				}
 				if (optimal == null) {
 					warn ("Failed to find optimal grouper for " + c);
