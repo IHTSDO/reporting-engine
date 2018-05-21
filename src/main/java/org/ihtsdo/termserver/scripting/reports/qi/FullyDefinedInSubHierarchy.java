@@ -2,17 +2,15 @@ package org.ihtsdo.termserver.scripting.reports.qi;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 
 /**
- * QI
+ * QI-25
  * Find Sufficiently Defined concepts in a subhierarchy and list all ancestors
  */
 public class FullyDefinedInSubHierarchy extends TermServerReport {

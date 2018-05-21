@@ -45,7 +45,7 @@ public abstract class TermServerReport extends TermServerScript {
 					line += COMMA_QUOTE + subDetail.toString() + QUOTE;
 				}
 			} else {
-				line += COMMA_QUOTE + detail.toString() + QUOTE;
+				line += COMMA_QUOTE + (detail == null ? "" : detail.toString()) + QUOTE;
 			}
 		}
 		writeToReportFile(reportIdx, line);
