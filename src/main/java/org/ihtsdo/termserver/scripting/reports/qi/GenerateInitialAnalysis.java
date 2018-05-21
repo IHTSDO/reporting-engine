@@ -32,7 +32,7 @@ public class GenerateInitialAnalysis extends TermServerReport {
 		GenerateInitialAnalysis report = new GenerateInitialAnalysis();
 		try {
 			report.additionalReportColumns = "FSN, ProximalPrimitiveParent, isIntermediate, StatedAttributes, StatedRoleGroups, InferredRoleGroups, StatedParents";
-			report.secondaryReportColumns = "IP, Total SDs affected, Concepts in subhierarchy";
+			report.secondaryReportColumns = "IP, Total SDs affected, SD Concepts in subhierarchy, Total Primitive Concepts affected, Primitive Concept in SubHierarchy";
 			report.tertiaryReportColumns = "FSN, Concepts Using Type, Example";
 			report.numberOfDistinctReports = 3;
 			report.init(args);
@@ -156,15 +156,22 @@ public class GenerateInitialAnalysis extends TermServerReport {
 	private void reportTotalFDsUnderIP(Concept intermediatePrimitive) throws TermServerScriptException {
 		int totalFDsUnderIP = 0;
 		int fdsInSubHierarchy = 0;
+		int totalPrimitiveConceptsUnderIP = 0;
+		int totalPrimitiveConceptsUnderIPInSubHierarchy = 0;
 		for (Concept c : descendantsCache.getDescendentsOrSelf(intermediatePrimitive)) {
 			if (c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
 				totalFDsUnderIP++;
 				if (descendantsCache.getDescendentsOrSelf(subHierarchy).contains(c)) {
 					fdsInSubHierarchy++;
 				}
+			} else {
+				totalPrimitiveConceptsUnderIP++;
+				if (descendantsCache.getDescendentsOrSelf(subHierarchy).contains(c)) {
+					totalPrimitiveConceptsUnderIPInSubHierarchy++;
+				}
 			}
 		}
-		report (SECONDARY_REPORT, intermediatePrimitive, totalFDsUnderIP, fdsInSubHierarchy);
+		report (SECONDARY_REPORT, intermediatePrimitive, totalFDsUnderIP, fdsInSubHierarchy, totalPrimitiveConceptsUnderIP, totalPrimitiveConceptsUnderIPInSubHierarchy);
 	}
 	
 	
