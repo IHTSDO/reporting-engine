@@ -65,7 +65,7 @@ public class NormalizeDoseForms extends DrugBatchFix implements RF2Constants{
 				IS_A,
 				ActiveState.ACTIVE));
 		String parentCount = Integer.toString(parentRels.size());
-		String attributeCount = Integer.toString(countAttributes(loadedConcept));
+		String attributeCount = Integer.toString(SnomedUtils.countAttributes(loadedConcept));
 		Relationship newParentRel = new Relationship (loadedConcept, IS_A, MEDICINAL_PRODUCT, UNGROUPED);
 		
 		int changes = replaceParents (task, loadedConcept, newParentRel, new String[] { parentCount, attributeCount });
@@ -112,16 +112,6 @@ public class NormalizeDoseForms extends DrugBatchFix implements RF2Constants{
 			}
 		}
 		return NO_CHANGES_MADE;
-	}
-
-	private Integer countAttributes(Concept c) {
-		int attributeCount = 0;
-		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
-			if (!r.getType().equals(IS_A)) {
-				attributeCount++;
-			}
-		}
-		return attributeCount;
 	}
 
 	@Override

@@ -848,5 +848,15 @@ public class SnomedUtils implements RF2Constants{
 		model = model.replaceAll ("\\{", "\\{  ").replaceAll("\\,", "\\,\n   ");
 		return model;
 	}
+	
+	public static Integer countAttributes(Concept c) {
+		int attributeCount = 0;
+		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
+			if (!r.getType().equals(IS_A)) {
+				attributeCount++;
+			}
+		}
+		return attributeCount;
+	}
 
 }
