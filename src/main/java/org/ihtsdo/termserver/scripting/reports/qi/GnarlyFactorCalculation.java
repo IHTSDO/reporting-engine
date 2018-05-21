@@ -5,13 +5,16 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+import org.ihtsdo.otf.authoringtemplate.domain.Relationship;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.fixes.SplitRoleGroupsWithRepeatedAttributes;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 /**
  * QI-4 Reports a number of quality measures across the 870 sub-hierarchies listed.
@@ -24,6 +27,7 @@ public class GnarlyFactorCalculation extends TermServerReport {
 	SplitRoleGroupsWithRepeatedAttributes splitRoleGroupsWithRepeatedAttributes;
 	int lowerLimit = 250;
 	int upperLimit = 1000;
+	List<Concept> organisingPrinciples;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		GnarlyFactorCalculation report = new GnarlyFactorCalculation();
@@ -31,7 +35,8 @@ public class GnarlyFactorCalculation extends TermServerReport {
 			report.additionalReportColumns = "FSN, Depth, Descendants Stated/Inferred, IntermediatePrimitives, FDs under IPs, Mismatched Groups, RepeatedAttributes";
 			report.init(args);
 			report.loadProjectSnapshot(false);  //just FSNs
-			report.subHierarchies = report.identifyGroupers(report.processFile());
+			report.postLoadInit();
+			report.subHierarchies = report.identifyGroupersByAttribute(report.processFile());
 			report.run();
 		} catch (Exception e) {
 			info("Failed to produce Description Report due to " + e.getMessage());
@@ -41,9 +46,16 @@ public class GnarlyFactorCalculation extends TermServerReport {
 		}
 	}
 	
+	private void postLoadInit() throws TermServerScriptException {
+		organisingPrinciples = new ArrayList<>();
+		organisingPrinciples.add(gl.getConcept("116676008")); // |Associated morphology (attribute)|)
+		organisingPrinciples.add(gl.getConcept("246075003")); // |Causative agent (attribute)|
+		organisingPrinciples.add(gl.getConcept("42752001"));  // |Due to (attribute)|
+	}
+
 	//Work up the hierarchy until we have a group of concepts about 250 in size
 	//but no bigger than 1000.   Consolidate the list around these groupers
-	private List<Concept> identifyGroupers(List<Component> components) throws TermServerScriptException {
+	/*private List<Concept> identifyGroupers(List<Component> components) throws TermServerScriptException {
 		List<Concept> groupers = new ArrayList<>();
 		for (Concept c : asConcepts(components)) {
 			//Only interested in findings and disorders
@@ -76,6 +88,72 @@ public class GnarlyFactorCalculation extends TermServerReport {
 			}
 		}
 		return groupers;
+	}*/
+	
+	/**
+	 * Rather than working up the list randomly, try to find the first parent which has some 
+	 * attribute we can use as an organising principle - eg morphology or causative agent.
+	 * @param components
+	 * @return
+	 * @throws TermServerScriptException
+	 */
+	private List<Concept> identifyGroupersByAttribute(List<Component> components) throws TermServerScriptException {
+		List<Concept> groupers = new ArrayList<>();
+		for (Concept c : asConcepts(components)) {
+			//Only interested in findings and disorders
+			if (c.getFsn() == null) {
+				warn (c + " appears to be no longer active");
+				continue;
+			} else if (!c.getFsn().contains("(finding)") && !c.getFsn().contains("(disorder)")) {
+				debug ("Skipping: " + c);
+				incrementSummaryInformation("Skipped non Clinicial Finding / disorder");
+				continue;
+			}
+			//Work our way up the stated parents via some attribute that we have;
+			int descCount = descendantsCache.getDescendentsOrSelf(c).size();
+			if ( descCount > lowerLimit) {
+				warn (c + " already has " + descCount + " descendants.  Adding.");
+			} else {
+				Concept bestOrganisingPrinciple = getBestOrganisingPrinciple(c);
+				if (bestOrganisingPrinciple != null) {
+					Concept optimal = findOptimalGrouper(c, 0, bestOrganisingPrinciple);
+				} else {
+					Concept optimal = findOptimalGrouper(c, 0);
+				}
+				if (optimal == null) {
+					warn ("Failed to find optimal grouper for " + c);
+				} else {
+					//Is the concept already included in our list of groupers?
+					if (groupers.contains(optimal) || isDescendantOf(optimal, groupers)) {
+						debug (c + " suggested " + optimal + " but this is already captured");
+					} else {
+						debug (c + " -> " + optimal);
+						groupers.add(optimal);
+					}
+				}
+			}
+		}
+		return groupers;
+	}
+
+	private Concept getBestOrganisingPrinciple(Concept c) {
+		//Do we even have any attributes?
+		if (SnomedUtils.countAttributes(c) == 0) {
+			return null;
+		}
+		//Otherwise, work through all relationships checking for good organising principles
+		for (Concept organisingPrinciple : organisingPrinciples) {
+			for (org.ihtsdo.termserver.scripting.domain.Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
+				if (r.getType().equals(organisingPrinciple)) {
+					return organisingPrinciple;
+				}
+			}
+		}
+		warn (c + " failed to delivery organising principle from: " + c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)
+							.stream()
+							.map(r->r.getType().toString())
+							.collect(Collectors.joining(", ")));
+		return null;
 	}
 
 	private boolean isDescendantOf(Concept optimal, List<Concept> groupers) throws TermServerScriptException {
@@ -110,6 +188,38 @@ public class GnarlyFactorCalculation extends TermServerReport {
 				Concept thisAncestor = findOptimalGrouper(parent, hopCount + 1);
 				int descCount = descendantsCache.getDescendentsOrSelf(thisAncestor).size();
 				if ( descCount > lowerLimit && (bestAncestor == null || descCount < bestAncestorCount)) {
+					bestAncestor = thisAncestor;
+					bestAncestorCount = descCount;
+				}
+			}
+		}
+		return bestAncestor;
+	}
+	
+	private Concept findOptimalGrouper(Concept c, int hopCount, Concept organisingPrinciple) throws TermServerScriptException {
+		//Which ancestor - that has our organising principle -
+		// gives us the best descendant count with the fewest hops?
+		Concept bestParent = null;
+		int bestParentCount = lowerLimit;
+		for (Concept parent : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
+			int descCount = descendantsCache.getDescendentsOrSelf(parent).size();
+			if (SnomedUtils.hasType(CharacteristicType.INFERRED_RELATIONSHIP, parent, organisingPrinciple) && descCount > lowerLimit && (bestParent == null || descCount < bestParentCount)) {
+				bestParent = parent;
+				bestParentCount = descCount;
+			}
+		}
+		
+		//Did we find a solution at this level?
+		//TODO include hop count calculation
+		Concept bestAncestor = null;
+		if (bestParent != null) {
+			return bestParent;
+		} else {
+			int bestAncestorCount = lowerLimit;
+			for (Concept parent : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
+				Concept thisAncestor = findOptimalGrouper(parent, hopCount + 1, organisingPrinciple);
+				int descCount = descendantsCache.getDescendentsOrSelf(thisAncestor).size();
+				if (SnomedUtils.hasType(CharacteristicType.INFERRED_RELATIONSHIP, parent, organisingPrinciple) && descCount > lowerLimit && (bestAncestor == null || descCount < bestAncestorCount)) {
 					bestAncestor = thisAncestor;
 					bestAncestorCount = descCount;
 				}
