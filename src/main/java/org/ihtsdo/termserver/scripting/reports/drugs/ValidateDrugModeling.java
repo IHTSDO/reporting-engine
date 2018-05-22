@@ -32,6 +32,8 @@ public class ValidateDrugModeling extends TermServerReport{
 	
 	private static final String[] badWords = new String[] { "preparation", "agent", "+", "product"};
 	private static final String remodelledDrugIndicator = "Product containing";
+	private static final String BOSS_FAIL = "BoSS failed to relate to ingredient";
+	
 	DrugTermGenerator termGenerator = new DrugTermGenerator(this);
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
@@ -71,7 +73,7 @@ public class ValidateDrugModeling extends TermServerReport{
 			//issueCount += validateIngredientsInFSN(concept, drugTypes);  
 			
 			// DRUGS-267
-			//issueCount += validateIngredientsAgainstBoSS(concept);
+			issueCount += validateIngredientsAgainstBoSS(concept);
 			
 			// DRUGS-296
 			/*if (concept.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED) && 
@@ -82,9 +84,9 @@ public class ValidateDrugModeling extends TermServerReport{
 			}*/
 			
 			//DRUGS-51?
-			if (concept.getConceptType().equals(ConceptType.CLINICAL_DRUG)) {
+			/*if (concept.getConceptType().equals(ConceptType.CLINICAL_DRUG)) {
 				issueCount += validateConcentrationStrength(concept);
-			}
+			}*/
 			
 			// DRUGS-288
 			//issueCount += validateAttributeValueCardinality(concept, HAS_ACTIVE_INGRED);
@@ -311,9 +313,9 @@ public class ValidateDrugModeling extends TermServerReport{
 	private int validateIngredientsAgainstBoSS(Concept concept) throws TermServerScriptException {
 		int issueCount = 0;
 		List<Relationship> bossAttributes = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_BOSS, ActiveState.ACTIVE);
-
+		initialiseSummaryInformation(BOSS_FAIL);
 		//Check BOSS attributes against active ingredients - must be in the same relationship group
-		List<Relationship> ingredientRels = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE);
+		List<Relationship> ingredientRels = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_PRECISE_INGRED, ActiveState.ACTIVE);
 		for (Relationship bRel : bossAttributes) {
 			incrementSummaryInformation("BoSS attributes checked");
 			boolean matchFound = false;
@@ -342,6 +344,7 @@ public class ValidateDrugModeling extends TermServerReport{
 			if (!matchFound) {
 				String issue = "Basis of Strength not equal or subtype of active ingredient, neither is active ingredient a modification of the BoSS";
 				report (concept, issue, null, boSS);
+				incrementSummaryInformation(BOSS_FAIL);
 				issueCount++;
 			}
 		}
