@@ -11,6 +11,9 @@ import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 /**
  * Reports to identify missing drug concepts.
  * 
+ * DRUGS-511 : query to identify missing MP-containing concepts on regular 
+ * basis (e.g. QPF-containing concept without inferred MP-containing parent) 
+ * 
  * DRUGS-534 : Query to identify CD concepts that are sufficiently defined 
  * with stated parent |Medicinal product| and that do have an inferred MPF-only parent
  * 
@@ -30,14 +33,15 @@ public class MissingDrugConcepts extends TermServerReport {
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		MissingDrugConcepts report = new MissingDrugConcepts();
 		try {
-			report.additionalReportColumns = "InferredParent";
+			report.additionalReportColumns = "MPF Concept with no MP Inferred";
 			report.init(args);
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.postInit();
 			//report.runIdentifyMissingMPConceptsReport();
-			//report.runIdentifyMissingMPFConceptsReport();
-			report.runIdentifyMissingMPFOnlyConceptsReport(); //DRUGS-534
+			report.runIdentifyMissingMPFConceptsReport(); //DRUGS-511
+			//report.runIdentifyMissingMPFOnlyConceptsReport(); //DRUGS-534
 			//report.runIdentifyMissingMPOnlyConceptsReport(); //DRUGS-535
+			//report.runIdentifyMissingDescendantReport(); //DRUGS-536
 		} catch (Exception e) {
 			info("Failed to produce MissingDrugConcepts Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
@@ -50,21 +54,22 @@ public class MissingDrugConcepts extends TermServerReport {
 		subHierarchy = gl.getConcept(PHARM_BIO_PRODUCT.getConceptId());
 	}
 
-	/*private void runIdentifyMissingMPConceptsReport() throws TermServerScriptException {
+	private void runIdentifyMissingMPConceptsReport() throws TermServerScriptException {
 		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
-			// MPF-containing concepts that are sufficiently defined
-			if (c.isActive() && c.getFsn().contains(MPF) && c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
-				//...with stated parent |Medicinal product| 
-				if (hasStatedParent (c, MEDICINAL_PRODUCT)) {
-					//...and that have an inferred parent with semantic tag other than (medicinal product).
-					for (Concept parent : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
-						if (!parent.getFsn().contains(MP)) {
-							report (c, parent.toString());
-							incrementSummaryInformation("Parents reported");
-						}
+			// MPF-containing concepts 
+			if (c.getFsn().contains(MPF)) {
+					//..that do not have an inferred MP parent.
+				boolean mpParentFound = false;
+				for (Concept parent : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
+					if (parent.getFsn().contains(MP)) {
+						mpParentFound = true;
 					}
 				}
-				incrementSummaryInformation("FD MPFs with |Medicinal Product| stated parent checked");
+				if (!mpParentFound) {
+					incrementSummaryInformation("Issues Found");
+					report (c);
+				}
+				incrementSummaryInformation("MPFs checked");
 			}
 			incrementSummaryInformation("Concepts checked");
 		}
@@ -114,7 +119,7 @@ public class MissingDrugConcepts extends TermServerReport {
 			}
 			incrementSummaryInformation("Concepts checked");
 		}
-	} */
+	}
 	
 	private void runIdentifyMissingMPFOnlyConceptsReport() throws TermServerScriptException {
 		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
@@ -135,6 +140,24 @@ public class MissingDrugConcepts extends TermServerReport {
 			incrementSummaryInformation("Concepts checked");
 		}
 	} 
+	
+	/*
+	 * MP and MPF concepts that have no descendants
+	 */
+	private void runIdentifyMissingDescendantReport() throws TermServerScriptException {
+		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
+			// MP, MPF concepts...
+			if (c.getFsn().contains(MP) || c.getFsn().contains(MPF)) {
+				//with no inferred children
+				if (c.getChildren(CharacteristicType.INFERRED_RELATIONSHIP).size() == 0) {
+					report (c);
+					incrementSummaryInformation("MP/MPF Concepts reported having no inferred descendants");
+				}
+				incrementSummaryInformation("MP/MPF Concepts checked");
+			}
+			incrementSummaryInformation("Concepts checked");
+		}
+	}
 
 	private boolean hasStatedParent(Concept c, Concept targetParent) {
 		for (Concept parent : c.getParents(CharacteristicType.STATED_RELATIONSHIP)) {
