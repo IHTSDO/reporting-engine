@@ -834,7 +834,7 @@ public class SnomedUtils implements RF2Constants{
 		}
 		return targets;
 	}
-
+	
 	public static String getModel(Concept c, CharacteristicType charType) {
 		String model = "";
 		boolean isFirst = true;

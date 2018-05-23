@@ -2,16 +2,21 @@ package org.ihtsdo.termserver.scripting.reports.drugs;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 /**
  * Reports to identify missing drug concepts.
  * 
- * DRUGS-511 : query to identify missing MP-containing concepts on regular 
+ * DRUGS-511 : Query to identify missing MP-containing concepts on regular 
  * basis (e.g. QPF-containing concept without inferred MP-containing parent) 
  * 
  * DRUGS-534 : Query to identify CD concepts that are sufficiently defined 
@@ -20,6 +25,8 @@ import org.ihtsdo.termserver.scripting.reports.TermServerReport;
  * DRUGS-535 : Query to identify MP concepts that are sufficiently defined 
  * with stated parent |Medicinal product| and that do have an inferred MP-only parent
  * 
+ * DRUGS-558 : MP / MPF Concepts should be modelled using base substances.  Query
+ * to report any that have ingredients which are "Modification Of"
  */
 public class MissingDrugConcepts extends TermServerReport {
 	
@@ -29,19 +36,21 @@ public class MissingDrugConcepts extends TermServerReport {
 	private static final String ONLY = " only ";
 	
 	Concept subHierarchy;
+	Concept[] ingredientTypes = new Concept[] { HAS_ACTIVE_INGRED, HAS_PRECISE_INGRED };
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		MissingDrugConcepts report = new MissingDrugConcepts();
 		try {
-			report.additionalReportColumns = "MPF Concept with no MP Inferred";
+			report.additionalReportColumns = "MP/MPF Concept using modified ingredient, Ingredient";
 			report.init(args);
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.postInit();
 			//report.runIdentifyMissingMPConceptsReport();
-			report.runIdentifyMissingMPFConceptsReport(); //DRUGS-511
+			//report.runIdentifyMissingMPFConceptsReport(); //DRUGS-511
 			//report.runIdentifyMissingMPFOnlyConceptsReport(); //DRUGS-534
 			//report.runIdentifyMissingMPOnlyConceptsReport(); //DRUGS-535
 			//report.runIdentifyMissingDescendantReport(); //DRUGS-536
+			report.runIdentifyModified_MP_MPF_Report(); //DRUGS-558
 		} catch (Exception e) {
 			info("Failed to produce MissingDrugConcepts Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
@@ -152,6 +161,27 @@ public class MissingDrugConcepts extends TermServerReport {
 				if (c.getChildren(CharacteristicType.INFERRED_RELATIONSHIP).size() == 0) {
 					report (c);
 					incrementSummaryInformation("MP/MPF Concepts reported having no inferred descendants");
+				}
+				incrementSummaryInformation("MP/MPF Concepts checked");
+			}
+			incrementSummaryInformation("Concepts checked");
+		}
+	}
+	
+	/*
+	 * MP and MPF concepts that use "Modified" ingredients
+	 */
+	private void runIdentifyModified_MP_MPF_Report() throws TermServerScriptException {
+		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
+			// MP, MPF concepts...
+			if (c.getFsn().contains(MP) || c.getFsn().contains(MPF)) {
+				//with an ingredient 
+				for (Relationship ingredientRel : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ingredientTypes, ActiveState.ACTIVE)) {
+					Set<Concept> bases = SnomedUtils.getTargets(ingredientRel.getTarget(), new Concept[] { IS_MODIFICATION_OF }, CharacteristicType.INFERRED_RELATIONSHIP);
+					if (bases.size() > 0) {
+						incrementSummaryInformation("Issues reported");
+						report (c, ingredientRel.getTarget(), bases.stream().map(b -> b.toString()).collect(Collectors.joining(" + ")));
+					}
 				}
 				incrementSummaryInformation("MP/MPF Concepts checked");
 			}
