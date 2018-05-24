@@ -35,6 +35,7 @@ public class GraphLoader implements RF2Constants {
 	private Map<String, Component> allComponents = null;
 	private Map<Component, Concept> componentOwnerMap = null;
 	private String excludeModule = "715515008";
+	public static int MAX_DEPTH = 1000;
 	
 	//Watch that this map is of the TARGET of the association, ie all concepts used in a historical association
 	private Map<Concept, List<HistoricalAssociation>> historicalAssociations =  new HashMap<Concept, List<HistoricalAssociation>>();
@@ -112,10 +113,6 @@ public class GraphLoader implements RF2Constants {
 		Concept destination = getConcept(lineItems[REL_IDX_DESTINATIONID]);
 		int groupNum = Integer.parseInt(lineItems[REL_IDX_RELATIONSHIPGROUP]);
 		
-		/*if (destination.getConceptId().equals("372876009") && type.equals(IS_A)) {
-			System.out.println ("Checkpoint for child of 372876009 |Mafenide (substance)|");
-		}*/
-		
 		Relationship r = new Relationship(source, type, destination, groupNum);
 		r.setRelationshipId(lineItems[REL_IDX_ID]);
 		r.setCharacteristicType(characteristicType);
@@ -125,6 +122,10 @@ public class GraphLoader implements RF2Constants {
 		r.setModuleId(lineItems[REL_IDX_MODULEID]);
 		//Changing those values after the defaults were set in the constructor will incorrectly mark dirty
 		r.setClean();
+		
+		/*if (source.getConceptId().equals("87310001") && type.equals(IS_A)) {
+			System.out.println ("Checkpoint for testies");
+		}*/
 		
 		//Consider adding or removing parents if the relationship is ISA
 		//But only remove items if we're processing a delta
@@ -334,8 +335,20 @@ public class GraphLoader implements RF2Constants {
 	 */
 	public void populateHierarchyDepth(Concept startingPoint, int currentDepth) throws TermServerScriptException {
 		startingPoint.setDepth(currentDepth);
+		if (startingPoint.getConceptId().equals("210431006")) {
+			//TermServerScript.debug ("Checkpoint");
+		}
+		
 		for (Concept child : startingPoint.getDescendents(IMMEDIATE_CHILD, CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
-			populateHierarchyDepth(child, currentDepth + 1);
+			if (currentDepth >= MAX_DEPTH) {
+				throw new TermServerScriptException("Maximum depth exceeded from " + startingPoint + " and inferred child " + child);
+			}
+			try {
+				populateHierarchyDepth(child, currentDepth + 1);
+			} catch (TermServerScriptException e) {
+				TermServerScript.debug ("Exception path: " + startingPoint + " -> " + child);
+				throw (e);
+			}
 		}
 	}
 
