@@ -58,7 +58,7 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		runStandAlone = true; 
 		additionalReportColumns = "CharacteristicType, MatchedTemplate, Template Diagnostic";
 		
-		subHierarchyStr = "125605004";  // QI-5 |Fracture of bone (disorder)|
+		/*subHierarchyStr = "125605004";  // QI-5 |Fracture of bone (disorder)|
 		templateNames = new String[] {	"Fracture of Bone Structure.json",
 										"Fracture Dislocation of Bone Structure.json",
 										"Pathologic fracture of bone due to Disease.json",
@@ -66,12 +66,13 @@ public class PrepMisalignedConcepts extends TemplateFix {
 										"Traumatic abnormality of spinal cord structure co-occurrent and due to fracture morphology of vertebral bone structure.json" };
 		/*
 		//subHierarchyStr =  "128294001";  // QI-9 |Chronic inflammatory disorder (disorder)
-		//templateNames = new String[] {"Chronic Inflammatory Disorder.json"};
+		//templateNames = new String[] {"Chronic Inflammatory Disorder.json"}; */
 		
-		//subHierarchyStr =  "126537000";  //QI-14 |Neoplasm of bone (disorder)|
-		//templateNames = new String[] {"Neoplasm of Bone.json"};
+		subHierarchyStr =  "126537000";  //QI-14 |Neoplasm of bone (disorder)|
+		templateNames = new String[] {	"Neoplasm of Bone.json",
+										"Pathologic fracture morphology of bone structure co-occurrent and due to Neoplasm of bone.json"};
 		
-		subHierarchyStr =  "34014006"; //QI-15 |Viral disease (disorder)|
+		/*subHierarchyStr =  "34014006"; //QI-15 |Viral disease (disorder)|
 		templateNames = new String[] {	"Infection caused by Virus.json",
 										"Infection of bodysite caused by virus.json"};
 		
@@ -139,7 +140,7 @@ public class PrepMisalignedConcepts extends TemplateFix {
 	
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		//Start with the whole subHierarchy and remove concepts that match each of our templates
-		Set<Concept> unalignedConcepts = descendantsCache.getDescendentsOrSelf(subHierarchy);
+		Set<Concept> unalignedConcepts = new HashSet<>(descendantsCache.getDescendentsOrSelf(subHierarchy));
 		Set<Concept> ignoredConcepts = new HashSet<>();
 		
 		for (Template template : templates) {

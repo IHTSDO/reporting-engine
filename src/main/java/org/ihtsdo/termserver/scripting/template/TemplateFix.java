@@ -56,8 +56,8 @@ abstract public class TemplateFix extends BatchFix {
 	protected Set<Concept> findTemplateMatches(Template t) throws TermServerScriptException {
 		Set<Concept> matches = new HashSet<Concept>();
 		for (Concept c : descendantsCache.getDescendentsOrSelf(subHierarchy)) {
-			if (c.getConceptId().equals("15680481000119100")) {
-				debug ("here");
+			if (c.getConceptId().equals("11311561000119109")) {
+				debug ("Check template match here");
 			}
 			if (TemplateUtils.matchesTemplate(c, t, descendantsCache, CharacteristicType.INFERRED_RELATIONSHIP)) {
 				//Do we already have a template for this concept?  
