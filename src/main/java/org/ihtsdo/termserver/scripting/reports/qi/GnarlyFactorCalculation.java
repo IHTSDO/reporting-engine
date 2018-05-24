@@ -3,15 +3,16 @@ package org.ihtsdo.termserver.scripting.reports.qi;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.ihtsdo.otf.authoringtemplate.domain.Relationship;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.domain.HistoricalAssociation;
 import org.ihtsdo.termserver.scripting.fixes.SplitRoleGroupsWithRepeatedAttributes;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -28,6 +29,7 @@ public class GnarlyFactorCalculation extends TermServerReport {
 	int lowerLimit = 250;
 	int upperLimit = 1000;
 	List<Concept> organisingPrinciples;
+	Set<String> crossCutting = new HashSet<>();
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		GnarlyFactorCalculation report = new GnarlyFactorCalculation();
@@ -43,6 +45,9 @@ public class GnarlyFactorCalculation extends TermServerReport {
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
+			for (String crossCutting : report.crossCutting) {
+				info ("Possible cross cutting: " + crossCutting);
+			}
 		}
 	}
 	
@@ -101,8 +106,11 @@ public class GnarlyFactorCalculation extends TermServerReport {
 		List<Concept> groupers = new ArrayList<>();
 		for (Concept c : asConcepts(components)) {
 			//Only interested in findings and disorders
-			if (c.getFsn() == null) {
-				warn (c + " appears to be no longer active");
+			if (!c.isActive() || c.getFsn() == null) {
+				c = getAlternative(c);
+			}
+				
+			if (c == null) {
 				continue;
 			} else if (!c.getFsn().contains("(finding)") && !c.getFsn().contains("(disorder)")) {
 				debug ("Skipping: " + c);
@@ -121,8 +129,14 @@ public class GnarlyFactorCalculation extends TermServerReport {
 				} else {
 					optimal = findOptimalGrouper(c, 0);
 				}
+				if (bestOrganisingPrinciple != null && optimal == null) {
+					debug ("Failed to find optimal grouper for " + c + " using organising principle " + bestOrganisingPrinciple);
+					crossCutting.add(bestOrganisingPrinciple + " -> " + SnomedUtils.getTargets(c, new Concept[] {bestOrganisingPrinciple}, CharacteristicType.INFERRED_RELATIONSHIP));
+					optimal = findOptimalGrouper(c, 0);
+				} 
+				
 				if (optimal == null) {
-					warn ("Failed to find optimal grouper for " + c);
+					debug ("Failed to find optimal grouper for " + c);
 				} else {
 					//Is the concept already included in our list of groupers?
 					if (groupers.contains(optimal) || isDescendantOf(optimal, groupers)) {
@@ -150,7 +164,7 @@ public class GnarlyFactorCalculation extends TermServerReport {
 				}
 			}
 		}
-		warn (c + " failed to delivery organising principle from: " + c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)
+		warn (c + " failed to deliver organising principle from: " + c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)
 							.stream()
 							.map(r->r.getType().toString())
 							.collect(Collectors.joining(", ")));
@@ -219,6 +233,11 @@ public class GnarlyFactorCalculation extends TermServerReport {
 			int bestAncestorCount = lowerLimit;
 			for (Concept parent : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
 				Concept thisAncestor = findOptimalGrouper(parent, hopCount + 1, organisingPrinciple);
+				if (thisAncestor == null) {
+					//Failed to find an optimal grouper.
+					//TODO - We could fall back to a straight up the line ancestor here
+					return null;
+				}
 				int descCount = descendantsCache.getDescendentsOrSelf(thisAncestor).size();
 				if (SnomedUtils.hasType(CharacteristicType.INFERRED_RELATIONSHIP, parent, organisingPrinciple) && descCount > lowerLimit && (bestAncestor == null || descCount < bestAncestorCount)) {
 					bestAncestor = thisAncestor;
@@ -292,6 +311,20 @@ public class GnarlyFactorCalculation extends TermServerReport {
 			}
 		}
 		return fdsInSubHierarchy + " (" + totalFDsUnderIPs + ")";
+	}
+	
+	private Concept getAlternative(Concept c) throws TermServerScriptException {
+		//Work through the active historical associations and find an active alternative
+		List<HistoricalAssociation> assocs = c.getHistorialAssociations(ActiveState.ACTIVE);
+		if (assocs.size() > 1 || assocs.size() == 0) {
+			warn ( c + " is inactive with " + assocs.size() + " historical associations.  Cannot determine alternative concept." );
+			return null;
+		}
+		Concept refset =  gl.getConcept(assocs.get(0).getRefsetId());
+		Concept alternative = gl.getConcept(assocs.get(0).getTargetComponentId());
+		alternative.setConceptType(c.getConceptType());
+		warn("Working on " + alternative + " instead of inactive original " + c + " due to " + refset);
+		return alternative;
 	}
 
 }
