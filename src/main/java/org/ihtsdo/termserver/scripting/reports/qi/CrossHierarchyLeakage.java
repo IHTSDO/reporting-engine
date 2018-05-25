@@ -2,6 +2,10 @@ package org.ihtsdo.termserver.scripting.reports.qi;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
@@ -20,11 +24,14 @@ public class CrossHierarchyLeakage extends TermServerReport {
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		CrossHierarchyLeakage report = new CrossHierarchyLeakage();
 		try {
-			report.additionalReportColumns = "FSN in Target Hierarchy, Parent in other hierarchy, Parent in Target Hierarchy";
+			//report.additionalReportColumns = "FSN in Target Hierarchy, Parent in other hierarchy, Parent in Target Hierarchy";
+			report.additionalReportColumns = "FSN, Parents";
+			
 			report.init(args);
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.postLoadInit();
-			report.runCrossHierarchyLeakageReport();
+			//report.runCrossHierarchyLeakageReport();
+			report.runMultipleParentsReport();
 		} catch (Exception e) {
 			info("Failed to produce MissingAttributeReport due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
@@ -34,7 +41,8 @@ public class CrossHierarchyLeakage extends TermServerReport {
 	}
 
 	private void postLoadInit() throws TermServerScriptException {
-		subHierarchy = gl.getConcept("307824009"); // |Administrative statuses (finding)|
+		//subHierarchy = gl.getConcept("307824009"); // |Administrative statuses (finding)|
+		subHierarchy = gl.getConcept("419891008"); // |Record artifact (record artifact)|
 	}
 
 	private void runCrossHierarchyLeakageReport() throws TermServerScriptException {
@@ -61,4 +69,15 @@ public class CrossHierarchyLeakage extends TermServerReport {
 		}
 	}
 	
+	private void runMultipleParentsReport() throws TermServerScriptException {
+		for (Concept c : descendantsCache.getDescendentsOrSelf(subHierarchy)) {
+			Set<Concept> parents = new HashSet<>(c.getParents(CharacteristicType.STATED_RELATIONSHIP));
+			parents.addAll(c.getParents(CharacteristicType.INFERRED_RELATIONSHIP));
+			if (parents.size() > 1) {
+				String parentsStr = parents.stream().map(p -> p.toString()).collect(Collectors.joining(", \n"));
+				report (c, parentsStr);
+				incrementSummaryInformation("Concept with multiple parents identified");
+			}
+		}
+	}
 }
