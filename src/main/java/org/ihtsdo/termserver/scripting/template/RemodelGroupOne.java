@@ -12,12 +12,8 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
-import org.ihtsdo.termserver.scripting.TermServerScript.ReportActionType;
-import org.ihtsdo.termserver.scripting.TermServerScript.Severity;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.ActiveState;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.ihtsdo.otf.authoringtemplate.domain.logical.Attribute;
@@ -26,7 +22,7 @@ import org.ihtsdo.otf.authoringtemplate.domain.logical.AttributeGroup;
 import us.monoid.json.JSONObject;
 
 /**
- * QI-21, QI-23,
+ * QI-21 (Bacterial), QI-23 (Viral),
  * Where a concept has limited modeling, pull the most specific attributes available 
  * into group 1.  Skip any cases of multiple attributes types with values that are not in 
  * the same subhierarchy.
@@ -75,15 +71,15 @@ public class RemodelGroupOne extends TemplateFix {
 		//subHierarchyStr =  "126537000";  //QI-14 |Neoplasm of bone (disorder)|
 		//templateNames = new String[] {"Neoplasm of Bone.json"};
 		
-		/*subHierarchyStr =  "34014006"; //QI-15 |Viral disease (disorder)|
-		templateNames = new String[] {	"Infection caused by virus with optional bodysite.json"};*/
-		
-		subHierarchyStr =  "87628006";  //QI-16 |Bacterial infectious disease (disorder)|
+		/*subHierarchyStr =  "34014006"; //QI-15 + QI-23 |Viral disease (disorder)|
+		templateNames = new String[] {	"Infection caused by virus with optional bodysite.json"};
+		*/
+		subHierarchyStr =  "87628006";  //QI-16 + QI-21 |Bacterial infectious disease (disorder)|
 		templateNames = new String[] {	"Infection caused by bacteria with optional bodysite.json"}; 
 		
-		//subHierarchyStr =  "95896000";  //QI-19  |Protozoan infection (disorder)|
-		//templateNames = new String[] {"Infection caused by protozoa.json"};
-		
+		/*subHierarchyStr =  "95896000";  //QI-19  |Protozoan infection (disorder)|
+		templateNames = new String[] {"Infection caused by protozoa.json"};
+		*/
 		super.init(args);
 	}
 	
