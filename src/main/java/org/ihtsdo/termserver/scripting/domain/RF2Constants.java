@@ -41,6 +41,9 @@ public interface RF2Constants {
 	static Concept COUNT_BASE_ACTIVE_INGREDIENT = new Concept ("766952006", "Count of base of active ingredient (attribute)");
 	static Concept COUNT_OF_BASE_AND_MODIFICATION = new Concept ("766954007", "Count of base and modification pair (attribute)");
 	
+	static Concept PATHOLOGICAL_PROCESS = new Concept ("370135005", "Pathological process (attribute)");
+	
+	
 	static Concept NUMBER = new Concept("260299005", "Number (qualifier value)");
 	static Concept PICOGRAM = new Concept ("258687006", "picogram (qualifier value)");
 	static Concept NANOGRAM = new Concept ("258686002", "nanogram (qualifier value)");
