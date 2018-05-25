@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
@@ -12,24 +14,30 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.Task;
+import org.ihtsdo.termserver.scripting.util.DrugUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import us.monoid.json.JSONObject;
 
 /*
-For DRUGS-413, DRUGS-432
+For DRUGS-413, DRUGS-432, DRUGS-522
 Driven by a text file of concepts, move specified concepts to exist under
-a parent concept.  Reassign orphaned children to their grandparents.
+a parent concept.  
+
+Optionally Reassign orphaned children to their grandparents.
+
 */
 public class MoveConcepts extends BatchFix implements RF2Constants{
 	
-	String parentNewLocation = "763087004"; //|TEMPORARY parent for concepts representing roles (product)
+	String parentNewLocation = "770654000"; // |TEMPORARY parent for CDs that are not updated (product)|
+	//String parentNewLocation = "763087004"; //|TEMPORARY parent for concepts representing roles (product)
 	//String parentNewLocation = "763019005"; // ** UAT **  |TEMPORARY parent for concepts representing roles (product)
 	Relationship newParentRel;
 	
 	//String childNewLocation = "373873005"; // |Pharmaceutical / biologic product (product)|
 	String childNewLocation = "763158003"; // |Medicinal product (product)| 
 	Relationship newChildRel;
+	boolean reassignOrphans = false;
 	
 	protected MoveConcepts(BatchFix clone) {
 		super(clone);
@@ -38,10 +46,12 @@ public class MoveConcepts extends BatchFix implements RF2Constants{
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
 		MoveConcepts fix = new MoveConcepts(null);
 		try {
+			fix.inputFileHasHeaderRow = true;
+			fix.expectNullConcepts = true;
 			fix.reportNoChange = true;
 			fix.populateEditPanel = false;
 			fix.populateTaskDescription = true;
-			fix.additionalReportColumns = "ACTION_DETAIL, DEF_STATUS, ATTRIBUTES";
+			fix.additionalReportColumns = "ACTION_DETAIL, DEF_STATUS, ATTRIBUTES, STATED CHILDREN, INFERRED_CHILDREN";
 			fix.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			fix.loadProjectSnapshot(true); 
@@ -54,9 +64,10 @@ public class MoveConcepts extends BatchFix implements RF2Constants{
 
 	private void postLoadInit() throws TermServerScriptException {
 		Concept parentConcept =  gl.getConcept(parentNewLocation);
-		parentConcept.setFsn("TEMPORARY parent for concepts representing roles (product)");
 		newParentRel = new Relationship(null, IS_A, parentConcept, 0);
-		newChildRel =  new Relationship(null, IS_A, gl.getConcept(childNewLocation), 0);
+		if (reassignOrphans) {
+			newChildRel =  new Relationship(null, IS_A, gl.getConcept(childNewLocation), 0);
+		}
 	}
 
 	@Override
@@ -80,31 +91,75 @@ public class MoveConcepts extends BatchFix implements RF2Constants{
 		return modifiedConcepts.size();
 	}
 
-	private void moveLocation(Task task, Concept loadedConcept, List<Concept> modifiedConcepts) throws TermServerScriptException {
-		
+	private void moveLocation(Task t, Concept c, List<Concept> modifiedConcepts) throws TermServerScriptException {
 		//Make sure we're working with a Primitive Concept
 		/*if (loadedConcept.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
 			report (task, loadedConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Concept is fully defined" );
 		}*/
-		loadedConcept.setConceptType(ConceptType.THERAPEUTIC_ROLE);
-		List<Relationship> parentRels = new ArrayList<Relationship> (loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
+		//if we're not reassigning orphans, then no need to move a concept it it's parent is already being moved
+		if (!reassignOrphans) {
+			Set<Concept> ancestors = c.getAncestors(NOT_SET);
+			if (!Collections.disjoint(allComponentsToProcess, ancestors)) {
+				report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept has a parent already being moved. Skipping");
+				//If we have multiple parents, it won't be a clean move!
+				if (c.getParents(CharacteristicType.STATED_RELATIONSHIP).size() > 1) {
+					String parents = c.getParents(CharacteristicType.STATED_RELATIONSHIP).stream().map(p -> p.toString()).collect(Collectors.joining(" + "));
+					report (t, c, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, "Skipped child concept not a clean move due to multiple stated parents: " + parents);
+				}
+				return;
+			}
+		}
+		
+		//loadedConcept.setConceptType(ConceptType.THERAPEUTIC_ROLE);
+		List<Relationship> parentRels = new ArrayList<Relationship> (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
 																		IS_A,
 																		ActiveState.ACTIVE));
 		//List <Relationship> removedParentRels = new ArrayList<Relationship>();
+		if (parentRels.size() > 1) {
+			//If we have multiple ingredients, this would make sense.  Change severity based on this.
+			Severity severity = Severity.HIGH;
+			String extraDetail = "";
+			int ingredientCount = DrugUtils.getIngredients(c, CharacteristicType.INFERRED_RELATIONSHIP).size();
+			if (ingredientCount == parentRels.size()) {
+				severity = Severity.MEDIUM;
+			} else {
+				extraDetail = ingredientCount + " ingredients but ";
+			}
+			String parents = parentRels.stream().map(r -> r.getTarget().getFsn()).collect(Collectors.joining(" + "));
+			report (t, c, severity, ReportActionType.VALIDATION_CHECK, "Concept has " + extraDetail + parentRels.size() + " stated parents to remove: " + parents);
+		}
 		for (Relationship parentRel : parentRels) {
-			remove (task, parentRel, loadedConcept, newParentRel.getTarget().toString(), true);
+			remove (t, parentRel, c, newParentRel.getTarget().toString(), true);
 		}
 		
 		Relationship thisNewParentRel = newParentRel.clone(null);
-		thisNewParentRel.setSource(loadedConcept);
-		loadedConcept.addRelationship(thisNewParentRel);
-		modifiedConcepts.add(loadedConcept);
+		thisNewParentRel.setSource(c);
+		c.addRelationship(thisNewParentRel);
+		modifiedConcepts.add(c);
 		
-		//Now we need to work through all the stated children and reassign them to the grandparents.
-		List<Concept> statedChildren = gl.getConcept(loadedConcept.getConceptId()).getChildren(CharacteristicType.STATED_RELATIONSHIP);
-		for (Concept child : statedChildren) {
-			//replaceParentWithGrandparents(task, child, loadedConcept, removedParentRels, modifiedConcepts);
-			replaceParents(task, child, loadedConcept, newChildRel, modifiedConcepts);
+		Severity severity = Severity.LOW;
+		//Need the local concept to know about children
+		Concept localConcept = gl.getConcept(c.getConceptId());
+		int statedChildCount = localConcept.getChildren(CharacteristicType.STATED_RELATIONSHIP).size();
+		int inferredChildCount = localConcept.getChildren(CharacteristicType.INFERRED_RELATIONSHIP).size();
+		if (statedChildCount > 0 || inferredChildCount > 0) {
+			severity = Severity.HIGH;
+		}
+		report (t, c, severity, 
+				ReportActionType.INFO, 
+				"",
+				c.getDefinitionStatus().toString(), 
+				countAttributes(c),
+				statedChildCount,
+				inferredChildCount);
+		
+		if (reassignOrphans) {
+			//Now we need to work through all the stated children and reassign them to the grandparents.
+			List<Concept> statedChildren = gl.getConcept(c.getConceptId()).getChildren(CharacteristicType.STATED_RELATIONSHIP);
+			for (Concept child : statedChildren) {
+				//replaceParentWithGrandparents(task, child, loadedConcept, removedParentRels, modifiedConcepts);
+				replaceParents(t, child, c, newChildRel, modifiedConcepts);
+			}
 		}
 	}
 
@@ -228,23 +283,20 @@ public class MoveConcepts extends BatchFix implements RF2Constants{
 		return buff.toString();
 	}*/
 
-	private void remove(Task t, Relationship rel, Concept loadedConcept, String retained, boolean isParent) throws TermServerScriptException {
-		String msgQualifier = isParent ? "parent's" : "child's";
-		
-		//Get our local copy of the concept since it knows the ConceptType
-		Concept concept = gl.getConcept(loadedConcept.getConceptId());
-		Integer attributeCount = countAttributes(loadedConcept);
+	private void remove(Task t, Relationship rel, Concept c, String retained, boolean isParent) throws TermServerScriptException {
+		String msgQualifier = isParent ? "parent's" : "child's parent";
+		Integer attributeCount = countAttributes(c);
 		
 		//Are we inactivating or deleting this relationship?
 		if (rel.getEffectiveTime() == null || rel.getEffectiveTime().isEmpty()) {
-			loadedConcept.removeRelationship(rel);
-			String msg = "Deleted " + msgQualifier + " parent relationship: " + rel.getTarget() + " in favour of " + retained;
-			report (t, concept, Severity.LOW, ReportActionType.RELATIONSHIP_DELETED, msg, concept.getDefinitionStatus().toString(), attributeCount.toString());
+			c.removeRelationship(rel);
+			String msg = "Deleted " + msgQualifier + " relationship: " + rel.getTarget() + " in favour of " + retained;
+			report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_DELETED, msg, c.getDefinitionStatus().toString(), attributeCount.toString());
 		} else {
 			rel.setEffectiveTime(null);
 			rel.setActive(false);
-			String msg = "Inactivated " + msgQualifier + " parent relationship: " + rel.getTarget() + " in favour of " + retained;
-			report (t, concept, Severity.LOW, ReportActionType.RELATIONSHIP_INACTIVATED, msg, concept.getDefinitionStatus().toString(), attributeCount.toString());
+			String msg = "Inactivated " + msgQualifier + " relationship: " + rel.getTarget() + " in favour of " + retained;
+			report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_INACTIVATED, msg, c.getDefinitionStatus().toString(), attributeCount.toString());
 		}
 	}
 
@@ -261,7 +313,12 @@ public class MoveConcepts extends BatchFix implements RF2Constants{
 	@Override
 	protected List<Concept> loadLine(String[] lineItems) throws TermServerScriptException {
 		Concept c = gl.getConcept(lineItems[0]);
-		c.setConceptType(ConceptType.THERAPEUTIC_ROLE);
+		if (!c.isActive()) {
+			warn (c + " is not active, skipping");
+			return null;
+		}
+		//c.setConceptType(ConceptType.THERAPEUTIC_ROLE);
+		SnomedUtils.populateConceptType(c);
 		return Collections.singletonList(c);
 	}
 

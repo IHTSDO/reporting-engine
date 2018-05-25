@@ -19,6 +19,7 @@ public class DrugUtils implements RF2Constants {
 	public static final String CD = "(clinical drug)";
 	public static final String MP = "(medicinal product)";
 	public static final String MPF = "(medicinal product form)";
+	public static final String PRODUCT = "(product)";
 	
 	static Map<String, Concept> numberConceptMap;
 	static Map<String, Concept> doseFormConceptMap;

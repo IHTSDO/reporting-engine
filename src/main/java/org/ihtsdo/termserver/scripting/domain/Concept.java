@@ -919,6 +919,13 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 			rClone.setSourceId(null);
 			clone.addRelationship(rClone);
 		}
+		
+		//Copy Parent/Child arrays
+		clone.inferredChildren = new ArrayList<>(inferredChildren);
+		clone.statedChildren = new ArrayList<>(statedChildren);
+		clone.inferredParents = new ArrayList<>(inferredParents);
+		clone.statedParents = new ArrayList<>(statedParents);
+		
 		return clone;
 	}
 

@@ -15,7 +15,11 @@ public class DescendentsCache implements RF2Constants {
 
 	Map<Concept, Set<Concept>> descendentOrSelfCache = new HashMap<>();
 	
-	public Set<Concept> getDescendentsOrSelf (Concept c) throws TermServerScriptException {
+	public Set<Concept> getDescendentsOrSelf(Concept c) throws TermServerScriptException {
+		return getDescendentsOrSelf(c, false);  //Default implementation is immutable
+	}
+	
+	private Set<Concept> getDescendentsOrSelf (Concept c, boolean mutable) throws TermServerScriptException {
 		if (c == null) {
 			throw new IllegalArgumentException("Null concept requested");
 		}
@@ -31,15 +35,15 @@ public class DescendentsCache implements RF2Constants {
 			descendentOrSelfCache.put(localConcept, descendents);
 		}
 		descendents.add(localConcept); //Or Self
-		return Collections.unmodifiableSet(descendents);
+		return mutable ? descendents : Collections.unmodifiableSet(descendents);
 	}
 
 	public Set<Concept>  getDescendents(Concept c) throws TermServerScriptException {
-		Set<Concept> descendents = getDescendentsOrSelf(c);
+		Set<Concept> descendents = getDescendentsOrSelf(c, true);
 		descendents.remove(c);  // Not self!
 		return Collections.unmodifiableSet(descendents);
 	}
-	
+
 	public Set<Concept> getDescendentsOrSelf (String sctid) throws TermServerScriptException {
 		Concept c = GraphLoader.getGraphLoader().getConcept(sctid);
 		return getDescendentsOrSelf(c);

@@ -12,7 +12,7 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 /**
- * DRUGS-269
+ * DRUGS-269, SUBST-130
  * Lists all case sensitive terms that do not have capital letters after the first letter
  */
 public class CaseSensitivity extends TermServerReport{
@@ -26,17 +26,19 @@ public class CaseSensitivity extends TermServerReport{
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
 		CaseSensitivity report = new CaseSensitivity();
 		try {
-			report.additionalReportColumns = "description, isPreferred, caseSignificance, issue";
+			//report.additionalReportColumns = "description, isPreferred, caseSignificance, issue";
+			report.additionalReportColumns = "description, isPreferred, caseSignificance, usedInProduct, logicRuleOK, issue";
 			report.init(args);
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			info ("Producing case sensitivity report...");
-			report.checkCaseSignificance();
+			//report.checkCaseSignificance();
+			report.checkCaseSignificanceSubstances();
 		} finally {
 			report.finish();
 		}
 	}
 
-	private void checkCaseSignificance() throws TermServerScriptException {
+/*	private void checkCaseSignificance() throws TermServerScriptException {
 		//Work through all active descriptions of all hierarchies
 		for (Concept targetHierarchy : targetHierarchies) {
 			for (Concept c : targetHierarchy.getDescendents(NOT_SET)) {
@@ -69,6 +71,49 @@ public class CaseSensitivity extends TermServerReport{
 				}
 			}
 		}
+	}*/
+	
+	private void checkCaseSignificanceSubstances() throws TermServerScriptException {
+		Set<Concept> substancesUsedInProducts = getSubstancesUsedInProducts();
+		for (Concept c : SUBSTANCE.getDescendents(NOT_SET)) {
+			boolean usedInProduct = substancesUsedInProducts.contains(c);
+			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+				String caseSig = SnomedUtils.translateCaseSignificanceFromEnum(d.getCaseSignificance());
+				String firstLetter = d.getTerm().substring(0,1);
+				String chopped = d.getTerm().substring(1);
+				String preferred = d.isPreferred()?"Y":"N";
+				//Lower case first letters must be entire term case sensitive
+				if (Character.isLetter(firstLetter.charAt(0)) && firstLetter.equals(firstLetter.toLowerCase()) && !caseSig.equals(CS)) {
+					report (c, d, preferred, caseSig, (usedInProduct?"Y":"N"), "N", "Terms starting with lower case letter must be CS");
+					incrementSummaryInformation("issues");
+				} else if (caseSig.equals(CS) || caseSig.equals(cI)) {
+					if (chopped.equals(chopped.toLowerCase())) {
+						boolean logicRuleOK = letterFollowsNumber(d.getTerm()) || startsWithProperNoun(d.getTerm());
+						report (c, d, preferred, caseSig, (usedInProduct?"Y":"N"), (logicRuleOK?"Y":"N"), "Case sensitive term does not have capital after first letter");
+						incrementSummaryInformation("issues");
+					}
+				} else {
+					//For case insensitive terms, we're on the look out for capitial letters after the first letter
+					if (!chopped.equals(chopped.toLowerCase())) {
+						report (c, d, preferred, caseSig, (usedInProduct?"Y":"N"), "N", "Case insensitive term has a capital after first letter");
+						incrementSummaryInformation("issues");
+					}
+				}
+			}
+		}
+	}
+
+	private Set<Concept> getSubstancesUsedInProducts() throws TermServerScriptException {
+		Set<Concept> substancesUsedInProducts = new HashSet<>();
+		for (Concept product : PHARM_BIO_PRODUCT.getDescendents(NOT_SET)) {
+			for (Relationship r : product.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE)) {
+				substancesUsedInProducts.add(r.getTarget());
+			}
+			for (Relationship r : product.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HAS_PRECISE_INGRED, ActiveState.ACTIVE)) {
+				substancesUsedInProducts.add(r.getTarget());
+			}
+		}
+		return substancesUsedInProducts;
 	}
 
 	private boolean startsWithProperNoun(String term) {
@@ -85,9 +130,9 @@ public class CaseSensitivity extends TermServerReport{
 
 	protected void init(String[] args) throws TermServerScriptException, SnowOwlClientException {
 		super.init(args);
-		//targetHierarchies.add(gl.getConcept("373873005")); // |Pharmaceutical / biologic product (product)|
-		//targetHierarchies.add(gl.getConcept("105590001")); // |Substance (substance)|
-		targetHierarchies.add(gl.getConcept("138875005")); // |SNOMED CT Concept (SNOMED RT+CTV3)|
+		//targetHierarchies.add(PHARM_BIO_PRODUCT);
+		targetHierarchies.add(SUBSTANCE);
+		//targetHierarchies.add(ROOT_CONCEPT);
 	}
 
 }

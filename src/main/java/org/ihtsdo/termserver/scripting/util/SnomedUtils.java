@@ -723,6 +723,8 @@ public class SnomedUtils implements RF2Constants{
 										break;
 			case DrugUtils.CD : c.setConceptType(ConceptType.CLINICAL_DRUG);
 										break;
+			case DrugUtils.PRODUCT : c.setConceptType(ConceptType.PRODUCT);
+										break;
 			default : c.setConceptType(ConceptType.UNKNOWN);
 		}
 	}
