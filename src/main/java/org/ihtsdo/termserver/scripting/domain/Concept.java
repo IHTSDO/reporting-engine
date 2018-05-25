@@ -898,6 +898,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	
 	private Concept clone(String sctid, boolean keepIds) {
 		Concept clone = new Concept(keepIds?conceptId:sctid, getFsn());
+		clone.setEffectiveTime(keepIds?effectiveTime:null);
 		clone.setActive(active);
 		clone.setDefinitionStatus(getDefinitionStatus());
 		clone.setModuleId(getModuleId());
@@ -908,6 +909,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 			//We need to null out the conceptId since the clone is a new concept
 			Description dClone = d.clone(keepIds?d.getDescriptionId():null);
 			dClone.setConceptId(keepIds?conceptId:null);
+			dClone.setEffectiveTime(keepIds?d.getEffectiveTime():null);
 			clone.addDescription(dClone);
 		}
 		
@@ -916,6 +918,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		for (Relationship r : selectedRelationships) {
 			//We need to null out the sourceId since the clone is a new concept
 			Relationship rClone = r.clone(keepIds?r.getRelationshipId():null);
+			rClone.setEffectiveTime(keepIds?r.getEffectiveTime():null);
 			rClone.setSourceId(null);
 			clone.addRelationship(rClone);
 		}

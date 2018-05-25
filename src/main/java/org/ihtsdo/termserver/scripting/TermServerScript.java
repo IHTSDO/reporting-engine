@@ -405,8 +405,10 @@ public abstract class TermServerScript implements RF2Constants {
 	protected Concept loadConcept(Concept concept, String branchPath) throws TermServerScriptException {
 		Concept loadedConcept = loadConcept(concept.getConceptId(), branchPath);
 		loadedConcept.setConceptType(concept.getConceptType());
-		//The loaded concept has some idea of the preferred term.  We'll have that now
-		concept.setPreferredSynonym(loadedConcept.getPreferredSynonym());
+		if (!dryRun) {
+			//The loaded concept has some idea of the preferred term.  We'll have that now
+			concept.setPreferredSynonym(loadedConcept.getPreferredSynonym());
+		}
 		return loadedConcept;
 	}
 	

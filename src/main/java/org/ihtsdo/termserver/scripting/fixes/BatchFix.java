@@ -589,6 +589,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		//Are we inactivating or deleting this relationship?
 		ReportActionType action = ReportActionType.UNKNOWN;
 		if (!r.isReleased()) {
+			r.setActive(false);
 			c.removeRelationship(r);
 			action = ReportActionType.RELATIONSHIP_DELETED;
 		} else {
