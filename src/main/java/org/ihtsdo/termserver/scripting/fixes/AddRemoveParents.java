@@ -20,7 +20,7 @@ import org.ihtsdo.termserver.scripting.domain.Task;
 import us.monoid.json.JSONObject;
 
 /*
-* INFRA-2302, INFRA-2344
+* INFRA-2302, INFRA-2344, INFRA-2456
 * Driven by a text file of concepts add or remove parent relationships as indicated
 */
 public class AddRemoveParents extends BatchFix implements RF2Constants{
@@ -38,11 +38,11 @@ public class AddRemoveParents extends BatchFix implements RF2Constants{
 			fix.runStandAlone = true;
 			fix.reportNoChange = true;
 			fix.populateEditPanel = false;
-			fix.populateTaskDescription = false;
+			fix.populateTaskDescription = true;
 			fix.additionalReportColumns = "Action Detail";
 			fix.expectNullConcepts = true;
 			fix.init(args);
-			fix.loadProjectSnapshot(true); 
+			fix.loadProjectSnapshot(true);
 			fix.processFile();
 		} finally {
 			fix.finish();
@@ -77,9 +77,13 @@ public class AddRemoveParents extends BatchFix implements RF2Constants{
 		//Work through the relationship changes we have for this concept and decide if we're adding or inactivating
 		for (Relationship r : changeMap.get(c).getRelationships()) {
 			if (r.isActive()) {
-				changesMade++;
-				c.addRelationship(r);
-				report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, r);
+				if (c.getRelationships(r).size() > 0 ) {
+					report (t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Relationship already present: " + r);
+				} else {
+					changesMade++;
+					c.addRelationship(r);
+					report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, r);
+				}
 			} else {
 				//Find this relationship to inactivate / delete
 				for (Relationship p : parentRels) {
