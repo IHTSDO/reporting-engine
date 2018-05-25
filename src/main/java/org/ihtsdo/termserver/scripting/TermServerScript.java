@@ -405,6 +405,8 @@ public abstract class TermServerScript implements RF2Constants {
 	protected Concept loadConcept(Concept concept, String branchPath) throws TermServerScriptException {
 		Concept loadedConcept = loadConcept(concept.getConceptId(), branchPath);
 		loadedConcept.setConceptType(concept.getConceptType());
+		//The loaded concept has some idea of the preferred term.  We'll have that now
+		concept.setPreferredSynonym(loadedConcept.getPreferredSynonym());
 		return loadedConcept;
 	}
 	
@@ -814,6 +816,7 @@ public abstract class TermServerScript implements RF2Constants {
 			if (severity.equals(Severity.CRITICAL)) {
 				String key = CRITICAL_ISSUE + " encountered for " + component.toString();
 				String value = "";
+				boolean firstDetail = true;
 				for (Object detail : details) {
 					if (detail instanceof Object[]) {
 						Object[] arr = (Object[]) detail;
@@ -821,7 +824,12 @@ public abstract class TermServerScript implements RF2Constants {
 							value += obj + ", ";
 						}
 					} else {
-						value += detail + ", ";
+						if (firstDetail)
+							value += detail;
+						else {
+							firstDetail = false;
+							value += ", " + detail;
+						}
 					}
 				}
 				addSummaryInformation(key, value);
