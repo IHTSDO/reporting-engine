@@ -153,15 +153,9 @@ public class RemodelGroupOne extends TemplateFix {
 		//Now work through all relationship and move any ungrouped attributes out of groups
 		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
 			if (r.getGroupId() != UNGROUPED && ungroupedAttributeTypes.contains(r.getType())) {
-				Relationship moved = r.clone(null);
-				moved.setGroupId(UNGROUPED);
-				c.addRelationship(moved);
-				if (r.isReleased()) {
-					r.setActive(false);
-				} else {
-					c.removeRelationship(r);
-				}
-				report (t, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_MODIFIED, "Ungrouped relationship moved out of group: " + r);
+				int originalGroup = r.getGroupId();
+				r.setGroupId(UNGROUPED);
+				report (t, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_MODIFIED, "Ungrouped relationship moved out of group " + originalGroup +": " + r);
 				changesMade++;
 			}
 		}
@@ -179,6 +173,7 @@ public class RemodelGroupOne extends TemplateFix {
 		removeRedundancies(values);
 		
 		//Do we have a single value?  Can't model otherwise
+		boolean additionNeeded = true;
 		if (values.size() == 0) {
 			//Is this value hard coded in the template?  Only do this for stated characteristic type, so we don't duplicate
 			if (a.getValue() != null && charType.equals(CharacteristicType.STATED_RELATIONSHIP)) {
@@ -190,21 +185,19 @@ public class RemodelGroupOne extends TemplateFix {
 				return NO_CHANGES_MADE;
 			}
 		} else if (values.size() == 1) {
-			//If we're pulling from stated rels, remove any group 0 instances
+			//If we're pulling from stated rels, move any group 0 instances to the new group id
 			if (charType.equals(CharacteristicType.STATED_RELATIONSHIP)) {
 				List<Relationship> ungroupedRels = c.getRelationships(charType, type, UNGROUPED);
 				if (ungroupedRels.size() == 1) {
 					Relationship ungroupedRel = ungroupedRels.get(0);
-					if (ungroupedRel.isReleased()) {
-						ungroupedRel.setActive(false);
-					} else {
-						c.removeRelationship(ungroupedRel);
-					}
+					ungroupedRel.setGroupId(group.getGroupId());
+					report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_MODIFIED, "Ungrouped relationship moved to group " + group.getGroupId() + ": " + ungroupedRel);
+					return CHANGE_MADE;
 				}
 			}
 			
 			//If this relationship type doesn't already exist in this group, stated, add it
-			if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, type, group.getGroupId()).size() == 0) {
+			if (additionNeeded && c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, type, group.getGroupId()).size() == 0) {
 				Relationship r = new Relationship (c, type, values.iterator().next(), group.getGroupId());
 				group.addRelationship(r);
 				return CHANGE_MADE;
@@ -281,13 +274,14 @@ public class RemodelGroupOne extends TemplateFix {
 	private int checkAndSetProximalPrimitiveParent(Task t, Concept c, Template template) throws TermServerScriptException {
 		int changesMade = 0;
 		List<Concept> ppps = determineProximalPrimitiveParents(c);
+		Concept templatePPP = gl.getConcept(template.getLogicalTemplate().getFocusConcepts().get(0));
+		
 		if (template.getLogicalTemplate().getFocusConcepts().size() != 1) {
 			report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Template " + template.getId() + " does not have 1 focus concept.  Cannot remodel.");
 		} else if (ppps.size() != 1) {
-			report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept found to have " + ppps.size() + " proximal primitive parents.  Cannot remodel.");
+			report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept found to have " + ppps.size() + " proximal primitive parents.  Cannot state parent as: " + templatePPP);
 		} else {
 			Concept ppp = ppps.get(0);
-			Concept templatePPP = gl.getConcept(template.getLogicalTemplate().getFocusConcepts().get(0));
 			if (ppp.equals(templatePPP)) {
 				changesMade += setProximalPrimitiveParent(t, c, ppp);
 			} else {
