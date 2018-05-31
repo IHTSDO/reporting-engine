@@ -23,7 +23,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * */
 public class GenerateInitialAnalysis extends TermServerReport {
 	
-	Concept subHierarchy;
+	Set<Concept> subHierarchy;
 	public Map<Concept, Integer> intermediatePrimitives;
 	public Map<Concept, Integer> attributeUsage;
 	public Map<Concept, Concept> attributeExamples;
@@ -65,15 +65,23 @@ public class GenerateInitialAnalysis extends TermServerReport {
 		//setSubHierarchy(gl.getConcept("125666000"));   // QI-22 |Burn (disorder)|
 	}
 	
-	public void setSubHierarchy(Concept subHierarchy) {
-		this.subHierarchy = subHierarchy;
+	public void setSubHierarchy(Concept subHierarchy) throws TermServerScriptException {
+		this.subHierarchy = subHierarchy.getDescendents(NOT_SET);
+		intermediatePrimitives = new HashMap<>();
+		attributeUsage = new HashMap<>();
+		attributeExamples = new HashMap<>();
+	}
+	
+
+	public void setSubHierarchy(Set<Concept> concepts) {
+		this.subHierarchy = concepts;
 		intermediatePrimitives = new HashMap<>();
 		attributeUsage = new HashMap<>();
 		attributeExamples = new HashMap<>();
 	}
 
 	public void reportConceptsAffectedByIntermediatePrimitives() throws TermServerScriptException {
-		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
+		for (Concept c : this.subHierarchy) {
 			//We're only interested in fully defined concepts
 			if (c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
 				List<Concept> proxPrimParents = determineProximalPrimitiveParents(c);
@@ -161,12 +169,12 @@ public class GenerateInitialAnalysis extends TermServerReport {
 		for (Concept c : descendantsCache.getDescendentsOrSelf(intermediatePrimitive)) {
 			if (c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
 				totalFDsUnderIP++;
-				if (descendantsCache.getDescendentsOrSelf(subHierarchy).contains(c)) {
+				if (this.subHierarchy.contains(c)) {
 					fdsInSubHierarchy++;
 				}
 			} else {
 				totalPrimitiveConceptsUnderIP++;
-				if (descendantsCache.getDescendentsOrSelf(subHierarchy).contains(c)) {
+				if (this.subHierarchy.contains(c)) {
 					totalPrimitiveConceptsUnderIPInSubHierarchy++;
 				}
 			}
@@ -177,7 +185,7 @@ public class GenerateInitialAnalysis extends TermServerReport {
 	
 	private void reportAttributeUsageCounts() throws TermServerScriptException {
 		//For every concept in the subhierarchy, get the attribute types used, and an example
-		for (Concept c : descendantsCache.getDescendentsOrSelf(subHierarchy)) {
+		for (Concept c : this.subHierarchy) {
 			for (Concept type : getAttributeTypes(c, CharacteristicType.INFERRED_RELATIONSHIP)) {
 				attributeExamples.put(type, c);
 				attributeUsage.merge(type, 1, Integer::sum);
@@ -195,4 +203,5 @@ public class GenerateInitialAnalysis extends TermServerReport {
 				.map(r -> r.getType())
 				.collect(Collectors.toSet());
 	}
+
 }

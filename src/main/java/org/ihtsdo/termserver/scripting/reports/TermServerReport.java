@@ -8,7 +8,9 @@ import java.util.List;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.domain.Relationship;
 
 public abstract class TermServerReport extends TermServerScript {
 	
@@ -35,9 +37,17 @@ public abstract class TermServerReport extends TermServerScript {
 		return Collections.singletonList(gl.getConcept(field));
 	}
 	
-	protected void report (int reportIdx, Concept c, Object... details) {
-		String line = 	c.getConceptId() + COMMA_QUOTE + 
-						c.getFsn() + QUOTE;
+	protected void report (int reportIdx, Component c, Object... details) {
+		String line = "";
+		if (c instanceof Concept) {
+			Concept concept = (Concept) c;
+			line = concept.getConceptId() + COMMA_QUOTE + 
+					 concept.getFsn() + QUOTE;
+		} else if (c instanceof Relationship) {
+			Relationship r = (Relationship) c;
+			line = r.getSourceId() + COMMA_QUOTE + 
+					r.toString() + QUOTE;
+		}
 		
 		for (Object detail : details) {
 			if (detail instanceof Collection) {
@@ -51,7 +61,7 @@ public abstract class TermServerReport extends TermServerScript {
 		writeToReportFile(reportIdx, line);
 	}
 	
-	protected void report (Concept c, Object... details) {
+	protected void report (Component c, Object... details) {
 		report (0, c, details);
 	}
 

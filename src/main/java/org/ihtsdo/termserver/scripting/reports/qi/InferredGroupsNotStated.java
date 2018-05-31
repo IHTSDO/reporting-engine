@@ -25,7 +25,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  */
 public class InferredGroupsNotStated extends TermServerReport {
 	
-	Concept subHierarchy;
+	Set<Concept> subHierarchy;
 	List<Concept> largeHierarchies = new ArrayList<>();
 	static int LARGE = 6000;
 	static int consolidationGrouping = 100;
@@ -51,7 +51,7 @@ public class InferredGroupsNotStated extends TermServerReport {
 
 	private void postInit() throws TermServerScriptException {
 		//subHierarchy = gl.getConcept("138875005"); // |SNOMED CT Concept (SNOMED RT+CTV3)|
-		subHierarchy = gl.getConcept("46866001"); // |Fracture of lower limb (disorder)|
+		subHierarchy = gl.getConcept("46866001").getDescendents(NOT_SET); // |Fracture of lower limb (disorder)|
 		
 		//Identify large hierarchies from depth 2 to 6
 		for (Concept hierarchy : ROOT_CONCEPT.getDescendents(4)) {
@@ -62,11 +62,16 @@ public class InferredGroupsNotStated extends TermServerReport {
 			}
 		}
 	}
+	
+
+	public void setSubHierarchy(Set<Concept> concepts) {
+		this.subHierarchy = concepts;
+	}
 
 
 	public int runCheckForInferredGroupsNotStated() throws TermServerScriptException {
 		int inferredNotStated = 0;
-		for (Concept c : descendantsCache.getDescendentsOrSelf(subHierarchy)) {
+		for (Concept c : this.subHierarchy) {
 			inferredNotStated += checkForInferredGroupsNotStated(c);
 			incrementSummaryInformation("Concepts checked");
 		}
@@ -236,5 +241,6 @@ public class InferredGroupsNotStated extends TermServerReport {
 		}
 		return attributeCount;
 	}
+
 
 }
