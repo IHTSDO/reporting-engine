@@ -98,11 +98,13 @@ public class MoveConcepts extends BatchFix implements RF2Constants{
 		}*/
 		//if we're not reassigning orphans, then no need to move a concept it it's parent is already being moved
 		if (!reassignOrphans) {
-			Set<Concept> ancestors = c.getAncestors(NOT_SET);
+			//Need to get ancestors on our locally loaded concept since it knows its full hierarchy
+			Concept localConcept = gl.getConcept(c.getConceptId());
+			Set<Concept> ancestors = localConcept.getAncestors(NOT_SET);
 			if (!Collections.disjoint(allComponentsToProcess, ancestors)) {
 				report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept has a parent already being moved. Skipping");
 				//If we have multiple parents, it won't be a clean move!
-				if (c.getParents(CharacteristicType.STATED_RELATIONSHIP).size() > 1) {
+				if (localConcept.getParents(CharacteristicType.STATED_RELATIONSHIP).size() > 1) {
 					String parents = c.getParents(CharacteristicType.STATED_RELATIONSHIP).stream().map(p -> p.toString()).collect(Collectors.joining(" + "));
 					report (t, c, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, "Skipped child concept not a clean move due to multiple stated parents: " + parents);
 				}
@@ -110,11 +112,9 @@ public class MoveConcepts extends BatchFix implements RF2Constants{
 			}
 		}
 		
-		//loadedConcept.setConceptType(ConceptType.THERAPEUTIC_ROLE);
 		List<Relationship> parentRels = new ArrayList<Relationship> (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
 																		IS_A,
 																		ActiveState.ACTIVE));
-		//List <Relationship> removedParentRels = new ArrayList<Relationship>();
 		if (parentRels.size() > 1) {
 			//If we have multiple ingredients, this would make sense.  Change severity based on this.
 			Severity severity = Severity.HIGH;
