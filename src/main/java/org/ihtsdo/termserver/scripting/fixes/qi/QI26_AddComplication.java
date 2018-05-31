@@ -84,6 +84,13 @@ public class QI26_AddComplication extends BatchFix {
 				Relationship newParentRel = new Relationship (c, IS_A, newProximalPrimitiveParent, UNGROUPED);
 				c.addRelationship(newParentRel);
 				report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, newParentRel);
+				
+				//And if we're currently modelled to Disease, then remove that
+				for (Relationship parentRel : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, IS_A, ActiveState.ACTIVE)) {
+					if (parentRel.getTarget().equals(DISEASE)) {
+						removeRelationship(t, c, parentRel);
+					}
+				}
 				changesMade++;
 			} else {
 				report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Calculated PPP: " + ppp + " does not match requirements.");
@@ -97,8 +104,8 @@ public class QI26_AddComplication extends BatchFix {
 		List<Component> processMe = new ArrayList<>();
 		//Find all descendants of 404684003 |Clinical finding (finding)| 
 		for (Concept c : CLINICAL_FINDING.getDescendents(NOT_SET)) {
-			//which have Due To
-			if (c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, DUE_TO, ActiveState.ACTIVE).size() > 0) {
+			//which have Due To = Clinical Finding
+			if (c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, DUE_TO, CLINICAL_FINDING, ActiveState.ACTIVE).size() > 0) {
 				//and do not have Complication as an existing parent
 				if (!c.getParents(CharacteristicType.STATED_RELATIONSHIP).contains(COMPLICATION)) {
 					//And exisiting PPP can be calculated as acceptable
