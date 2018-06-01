@@ -15,7 +15,7 @@ import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 
 /**
- * DRUGS-453 A report to identify the following:
+DRUGS-453 A report to identify the following:
 	Substance concept that has both:
 	1 - stated descendants
 	2 - is target of Is modification of attribute
@@ -23,6 +23,10 @@ import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 	Substance concept that has both:
 	1 - stated descendants
 	2 - has Is modification of attribute
+	
+SUBST-265
+	1) All concepts that have "is modification" and are not leaf concepts. 
+	2) All concepts that are target of is modification and have stated children. (Replacing DRUGS-453)
  */
 public class ConceptsWithOrTargetsOfAttribute extends TermServerReport {
 	
@@ -35,12 +39,15 @@ public class ConceptsWithOrTargetsOfAttribute extends TermServerReport {
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		ConceptsWithOrTargetsOfAttribute report = new ConceptsWithOrTargetsOfAttribute();
 		try {
-			report.additionalReportColumns = "Reason, References";
+			report.numberOfDistinctReports = 2;
+			report.additionalReportColumns = "FSN, Reason";
+			report.secondaryReportColumns = "FSN, Reason, Example source";
 			report.init(args);
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.postLoadInit();
 			report.populateSourceTargetMaps();
-			report.runRepeatedAttributeValueReport();
+			report.runModifiedNotLeaf();
+			report.runModifcationTargetWithChildren();
 		} catch (Exception e) {
 			info("Failed to produce ConceptsWithOrTargetsOfAttribute Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
@@ -56,7 +63,6 @@ public class ConceptsWithOrTargetsOfAttribute extends TermServerReport {
 
 	//Find all concepts that are a target of the attribute type we're interested in
 	private void populateSourceTargetMaps() {
-		
 		for (Concept c : gl.getAllConcepts()) {
 			if (c.isActive()) {
 				for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
@@ -73,7 +79,6 @@ public class ConceptsWithOrTargetsOfAttribute extends TermServerReport {
 							sources = new ArrayList<Concept>();
 							attributeSourceMap.put(r.getSource(), sources);
 						}
-						
 						targets.add(r.getSource());
 						sources.add(r.getTarget());
 					}
@@ -82,29 +87,32 @@ public class ConceptsWithOrTargetsOfAttribute extends TermServerReport {
 		}
 	}
 
-	private void runRepeatedAttributeValueReport() throws TermServerScriptException {
+	private void runModifiedNotLeaf() throws TermServerScriptException {
 		Collection<Concept> subHierarchyConcepts = subHierarchy.getDescendents(NOT_SET);
 		for (Concept c : subHierarchyConcepts) {
-			//We're only interested in active concepts with descendants
-			if (c.isActive() && c.getChildren(CharacteristicType.STATED_RELATIONSHIP).size() > 0) {
-				//Now either include if we're a target of the specified attribute type
-				//or have that attribute type ourselves 
-				if (attributeTargetMap.get(c) != null) {
-					for (Concept target : attributeTargetMap.get(c)) {
-						report (c, "Is Target", target.toString());
-						incrementSummaryInformation("Targets reported");
-					}
-				}
-				
-				if (attributeSourceMap.get(c) != null) {
-					for (Concept source : attributeSourceMap.get(c)) {
-						report (c, "Is Source", source.toString());
-						incrementSummaryInformation("Sources reported");
-					}
+			//We're only interested in active concepts with descendants - ie not leaf concepts
+			if (c.getChildren(CharacteristicType.INFERRED_RELATIONSHIP).size() > 0) {
+				//That have a modification of attribute
+				if (c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, IS_MODIFICATION_OF, ActiveState.ACTIVE).size() > 0) {
+					incrementSummaryInformation("Non-Leaf modifications reported");
+					report (c, "Modified non-leaf concept");
 				}
 			}
 		}
-		addSummaryInformation("Concepts checked", subHierarchyConcepts.size());
+	}
+	
+	private void runModifcationTargetWithChildren() throws TermServerScriptException {
+		Collection<Concept> subHierarchyConcepts = subHierarchy.getDescendents(NOT_SET);
+		for (Concept c : subHierarchyConcepts) {
+			//We're only interested in active concepts with stated descendants - ie not leaf concepts
+			if (c.getChildren(CharacteristicType.STATED_RELATIONSHIP).size() > 0) {
+				//That are the target of a modification of attribute
+				if (attributeTargetMap.containsKey(c)) {
+					incrementSummaryInformation("Non-Leaf modification targets reported");
+					report (SECONDARY_REPORT, c, "Target of Modification, with children", attributeTargetMap.get(c).get(0));
+				}
+			}
+		}
 	}
 
 }
