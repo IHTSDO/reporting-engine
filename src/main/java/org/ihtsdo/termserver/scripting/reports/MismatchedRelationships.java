@@ -17,6 +17,7 @@ import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExportType;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExtractType;
+import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 
@@ -160,7 +161,7 @@ public class MismatchedRelationships extends TermServerScript{
 	}
 
 	@Override
-	protected List<Concept> loadLine(String[] lineItems)
+	protected List<Component> loadLine(String[] lineItems)
 			throws TermServerScriptException {
 		return null;
 	}

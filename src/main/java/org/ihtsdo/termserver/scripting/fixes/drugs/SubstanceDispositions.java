@@ -12,6 +12,7 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Task;
@@ -140,7 +141,7 @@ public class SubstanceDispositions extends DrugBatchFix implements RF2Constants{
 	}
 
 	@Override
-	protected List<Concept> loadLine(String[] lineItems) throws TermServerScriptException {
+	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
 		Concept topLevelSubstance = gl.getConcept(lineItems[0]);
 		Concept disposition = gl.getConcept(lineItems[1]);
 		topLevelSubstances.put(topLevelSubstance, disposition);

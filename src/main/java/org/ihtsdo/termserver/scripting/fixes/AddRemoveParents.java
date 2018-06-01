@@ -11,6 +11,7 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
@@ -102,7 +103,7 @@ public class AddRemoveParents extends BatchFix implements RF2Constants{
 	}
 
 	@Override
-	protected List<Concept> loadLine(String[] lineItems) throws TermServerScriptException {
+	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
 		Concept c = gl.getConcept(lineItems[0]);
 		if (!lineItems[2].equals(ACTIVE_FLAG)) {
 			RelationshipGroup g = changeMap.get(c);

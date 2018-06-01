@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
@@ -311,7 +312,7 @@ public class MoveConcepts extends BatchFix implements RF2Constants{
 	}
 
 	@Override
-	protected List<Concept> loadLine(String[] lineItems) throws TermServerScriptException {
+	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
 		Concept c = gl.getConcept(lineItems[0]);
 		if (!c.isActive()) {
 			warn (c + " is not active, skipping");

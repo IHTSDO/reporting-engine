@@ -131,7 +131,7 @@ public class CreateLoincConcepts extends DeltaGenerator {
 
 	@Override
 	//Component	PropertyType	TimeAspect	DirectSite	InheresIn	ScaleType	LOINC_FSN	LOINC_Unique_ID	Correlation_ID
-	protected List<Concept> loadLine(String[] lineItems)
+	protected List<Component> loadLine(String[] lineItems)
 			throws TermServerScriptException {
 		if (lineItems.length > 3) {
 			Concept concept = new Concept(conIdGenerator.getSCTID());

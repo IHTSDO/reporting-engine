@@ -13,7 +13,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -24,7 +23,6 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -50,7 +48,6 @@ import org.ihtsdo.termserver.scripting.template.DescendentsCache;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import com.google.common.base.Charsets;
-import com.google.common.base.Joiner;
 import com.google.common.io.Files;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -478,17 +475,8 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	protected List<Concept> findConcepts(String branch, String ecl) throws TermServerScriptException {
-		try {
-				JSONResource response = tsClient.getConcepts(ecl, branch);
-				if (response.getHTTPStatus() != 200) {
-					throw new TermServerScriptException ("HTTP " + response.getHTTPStatus());
-				}
-				String json = response.toObject().toString();
-				ConceptCollection collection = gson.fromJson(json, ConceptCollection.class);
-				return collection.getItems();
-		} catch (Exception e) {
-			throw new TermServerScriptException("Failed to recover concepts using ECL '" + ecl + "' due to " + e.getMessage(),e);
-		}
+		EclCache cache = EclCache.getCache(branch, tsClient, gson);
+		return cache.findConcepts(branch, ecl); 
 	}
 
 	protected List<Component> processFile() throws TermServerScriptException {
@@ -496,7 +484,7 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	protected List<Component> processFile(File file) throws TermServerScriptException {
-		Set<Concept> allConcepts = new LinkedHashSet<Concept>();
+		Set<Component> allComponents= new LinkedHashSet<>();
 		debug ("Loading input file " + file.getAbsolutePath());
 		try {
 			List<String> lines = Files.readLines(file, Charsets.UTF_8);
@@ -504,7 +492,7 @@ public abstract class TermServerScript implements RF2Constants {
 			
 			//Are we restarting the file from some line number
 			int startPos = (restartPosition == NOT_SET)?0:restartPosition - 1;
-			List<Concept> concepts;
+			List<Component> components;
 			for (int lineNum = startPos; lineNum < lines.size(); lineNum++) {
 				if (lineNum == 0  && inputFileHasHeaderRow) {
 					continue; //skip header row  
@@ -518,12 +506,12 @@ public abstract class TermServerScript implements RF2Constants {
 				}
 				if (lineItems.length >= 1) {
 					try{
-						concepts = loadLine(lineItems);
+						components = loadLine(lineItems);
 					} catch (Exception e) {
 						throw new TermServerScriptException("Failed to load line " + lineNum,e);
 					}
-					if (concepts != null && concepts.size() > 0) {
-						allConcepts.addAll(concepts);
+					if (components != null && components.size() > 0) {
+						allComponents.addAll(components);
 					} else {
 						if (!expectNullConcepts) {
 							debug ("Skipped line " + lineNum + ": " + lines.get(lineNum) + ", malformed or not required?");
@@ -533,14 +521,14 @@ public abstract class TermServerScript implements RF2Constants {
 					debug ("Skipping blank line " + lineNum);
 				}
 			}
-			addSummaryInformation(CONCEPTS_IN_FILE, allConcepts);
+			addSummaryInformation(CONCEPTS_IN_FILE, allComponents);
 
 		} catch (FileNotFoundException e) {
 			throw new TermServerScriptException("Unable to open input file " + file.getAbsolutePath(), e);
 		} catch (IOException e) {
 			throw new TermServerScriptException("Error while reading input file " + file.getAbsolutePath(), e);
 		}
-		return new ArrayList<Component>(allConcepts);
+		return new ArrayList<Component>(allComponents);
 	}
 	
 	/*
@@ -570,7 +558,7 @@ public abstract class TermServerScript implements RF2Constants {
 		return items;
 	}
 
-	protected abstract List<Concept> loadLine(String[] lineItems) throws TermServerScriptException;
+	protected abstract List<Component> loadLine(String[] lineItems) throws TermServerScriptException;
 
 	public Project getProject() {
 		return project;

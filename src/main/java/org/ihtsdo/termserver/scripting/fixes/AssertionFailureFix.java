@@ -161,7 +161,7 @@ public class AssertionFailureFix extends BatchFix implements RF2Constants{
 	}
 
 	@Override
-	protected List<Concept> loadLine(String[] lineItems) throws TermServerScriptException {
+	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
 		Concept c = gl.getConcept(lineItems[2]);
 		c.setAssignedAuthor(lineItems[0]);
 		c.setReviewer(lineItems[1]);

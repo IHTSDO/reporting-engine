@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.fixes;
 
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 
@@ -92,7 +93,7 @@ public class LangRefsetInactivationFix extends TermServerScript implements RF2Co
 	}
 
 	@Override
-	protected List<Concept> loadLine(String[] lineItems)
+	protected List<Component> loadLine(String[] lineItems)
 			throws TermServerScriptException {
 		return null;
 	}

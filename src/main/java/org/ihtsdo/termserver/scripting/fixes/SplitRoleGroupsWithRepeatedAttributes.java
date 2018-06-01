@@ -60,12 +60,14 @@ public class SplitRoleGroupsWithRepeatedAttributes extends BatchFix implements R
 		attributesToIgnore.add(IS_A);
 	}
 	
+	public void setSubHierarchy(Concept concept) throws TermServerScriptException {
+		this.subHierarchy = concept.getDescendents(NOT_SET);
+	}
 
 	public void setSubHierarchy(Set<Concept> concepts) {
 		this.subHierarchy = concepts;
 	}
 
-	
 	public List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		List<Component> componentsToProcess = new ArrayList<>();
 		for (Concept c : this.subHierarchy) {
@@ -149,7 +151,7 @@ public class SplitRoleGroupsWithRepeatedAttributes extends BatchFix implements R
 	}
 
 	@Override
-	protected List<Concept> loadLine(String[] lineItems) throws TermServerScriptException {
+	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
 		// TODO Auto-generated method stub
 		return null;
 	}

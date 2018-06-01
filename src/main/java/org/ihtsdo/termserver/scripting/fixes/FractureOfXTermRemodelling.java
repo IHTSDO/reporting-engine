@@ -99,7 +99,7 @@ public class FractureOfXTermRemodelling extends BatchFix implements RF2Constants
 	}
 
 	@Override
-	protected List<Concept> loadLine(String[] lineItems) throws TermServerScriptException {
+	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
 		return null; // We will identify descriptions to edit from the snapshot
 	}
 	

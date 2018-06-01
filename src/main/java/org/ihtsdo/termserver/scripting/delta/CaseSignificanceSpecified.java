@@ -48,7 +48,7 @@ public class CaseSignificanceSpecified extends DeltaGenerator implements RF2Cons
 	}
 
 	@Override
-	protected List<Concept> loadLine(String[] lineItems)
+	protected List<Component> loadLine(String[] lineItems)
 			throws TermServerScriptException {
 		//Format indicator , description id
 		String newIndicator = lineItems[0];

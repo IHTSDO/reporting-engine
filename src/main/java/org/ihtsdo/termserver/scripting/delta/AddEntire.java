@@ -224,7 +224,7 @@ public class AddEntire extends DeltaGenerator {
 	}
 
 	@Override
-	protected List<Concept> loadLine(String[] lineItems)
+	protected List<Component> loadLine(String[] lineItems)
 			throws TermServerScriptException {
 		return Collections.singletonList(gl.getConcept(lineItems[0]));
 	}

@@ -214,7 +214,7 @@ public class DispositionsArchive extends Rf2Player implements RF2Constants{
 	}
 
 	@Override
-	protected List<Concept> loadLine(String[] lineItems)
+	protected List<Component> loadLine(String[] lineItems)
 			throws TermServerScriptException {
 		// TODO Auto-generated method stub
 		return null;

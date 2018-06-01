@@ -268,8 +268,8 @@ public class GnarlyFactorCalculation extends TermServerReport {
 		for (Concept subHierarchy : subHierarchies) {
 			String size = getSize(subHierarchy);
 			intermediatePrimitivesReport.setSubHierarchy(subHierarchy);
-			inferredGroupsNotStatedReport.subHierarchy = subHierarchy;
-			splitRoleGroupsWithRepeatedAttributes.subHierarchy = subHierarchy;
+			inferredGroupsNotStatedReport.setSubHierarchy(subHierarchy);
+			splitRoleGroupsWithRepeatedAttributes.setSubHierarchy(subHierarchy);
 			
 			intermediatePrimitivesReport.reportConceptsAffectedByIntermediatePrimitives();
 			String fDsUnderIPs = calculateTotalFDsUnderIPs(subHierarchy, intermediatePrimitivesReport.intermediatePrimitives.keySet());

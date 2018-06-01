@@ -11,6 +11,7 @@ import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Batch;
+import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.ConceptChange;
 import org.ihtsdo.termserver.scripting.domain.Description;
@@ -267,7 +268,7 @@ public class DrugsReTerming extends DrugBatchFix implements RF2Constants{
 
 	 */
 	@Override
-	protected List<Concept> loadLine(String[] items) throws TermServerScriptException {
+	protected List<Component> loadLine(String[] items) throws TermServerScriptException {
 
 		String sctid = items[1];
 		ConceptChange concept = new ConceptChange(sctid);

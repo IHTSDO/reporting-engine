@@ -30,7 +30,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	@SerializedName("active")
 	@Expose
 	private boolean active = true;
-	@SerializedName("conceptId")
+	@SerializedName(value="conceptId", alternate={"id"})
 	@Expose
 	private String conceptId;
 	@SerializedName("fsn")
@@ -846,6 +846,10 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	@Override
 	public String getId() {
 		return conceptId;
+	}
+	
+	public void setId(String id) {
+		conceptId = id;
 	}
 
 	@Override

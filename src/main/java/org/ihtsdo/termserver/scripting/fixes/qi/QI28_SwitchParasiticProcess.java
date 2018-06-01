@@ -115,7 +115,7 @@ public class QI28_SwitchParasiticProcess extends BatchFix {
 	}
 
 	@Override
-	protected List<Concept> loadLine(String[] lineItems) throws TermServerScriptException {
+	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
 		throw new NotImplementedException();
 	}
 

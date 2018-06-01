@@ -182,7 +182,7 @@ public class NormalizeProductStrength extends DrugBatchFix implements RF2Constan
 	}
 	
 	@Override
-	protected List<Concept> loadLine(String[] lineItems) throws TermServerScriptException {
+	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
 		// TODO Auto-generated method stub
 		return null;
 	}

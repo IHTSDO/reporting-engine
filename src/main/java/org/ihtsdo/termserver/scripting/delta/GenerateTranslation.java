@@ -185,7 +185,7 @@ public class GenerateTranslation extends DeltaGenerator {
 
 	@Override
 
-	protected List<Concept> loadLine(String[] lineItems) throws TermServerScriptException {
+	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
 		switch (thisTranslation) {
 			case SWEDEN:  return LoadSELine(lineItems);
 			case BELGIUM: return LoadBELine(lineItems);
@@ -194,7 +194,7 @@ public class GenerateTranslation extends DeltaGenerator {
 	}
 
 	//SE File format: Concept_Id	Swedish_Term	Case_Significance
-	private List<Concept> LoadSELine(String[] lineItems) throws TermServerScriptException {
+	private List<Component> LoadSELine(String[] lineItems) throws TermServerScriptException {
 		if (lineItems.length == 5) {
 			Description d = createDescription (lineItems[0],  //conceptId
 					lineItems[3], //swedish term
@@ -210,7 +210,7 @@ public class GenerateTranslation extends DeltaGenerator {
 	}
 	
 	//BE File format: ConceptID	Source term	Target term	Language	Type	Comment
-	private List<Concept> LoadBELine(String[] lineItems) throws TermServerScriptException {
+	private List<Component> LoadBELine(String[] lineItems) throws TermServerScriptException {
 		if (lineItems.length >= 4) {
 			String acceptabilityId = SCTID_ACCEPTABLE_TERM;
 			if (lineItems[5].toLowerCase().contains("preferred")) {

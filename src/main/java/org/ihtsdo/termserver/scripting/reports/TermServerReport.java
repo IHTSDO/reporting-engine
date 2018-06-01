@@ -26,7 +26,7 @@ public abstract class TermServerReport extends TermServerScript {
 	}
 
 	@Override
-	protected List<Concept> loadLine(String[] lineItems)
+	protected List<Component> loadLine(String[] lineItems)
 			throws TermServerScriptException {
 		String field = lineItems[0];
 		//Do we have the FSN in here?

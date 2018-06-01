@@ -63,6 +63,9 @@ public class InferredGroupsNotStated extends TermServerReport {
 		}
 	}
 	
+	public void setSubHierarchy(Concept concept) throws TermServerScriptException {
+		this.subHierarchy = concept.getDescendents(NOT_SET);
+	}
 
 	public void setSubHierarchy(Set<Concept> concepts) {
 		this.subHierarchy = concepts;

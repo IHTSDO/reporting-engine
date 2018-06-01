@@ -61,12 +61,14 @@ public class ValidateDrugModeling extends TermServerReport{
 		//ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT };
 		//ConceptType[] drugTypes = new ConceptType[] { ConceptType.CLINICAL_DRUG };
 		
+		initialiseSummaryInformation(BOSS_FAIL);
+		
 		long issueCount = 0;
 		for (Concept concept : subHierarchy) {
 			DrugUtils.setConceptType(concept);
 			
 			if (concept.getConceptId().equals("769993004")) {
-				debug ("Check here");
+				//debug ("Check here");
 			}
 			
 			// DRUGS-281, DRUGS-282
@@ -313,7 +315,6 @@ public class ValidateDrugModeling extends TermServerReport{
 	private int validateIngredientsAgainstBoSS(Concept concept) throws TermServerScriptException {
 		int issueCount = 0;
 		List<Relationship> bossAttributes = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_BOSS, ActiveState.ACTIVE);
-		initialiseSummaryInformation(BOSS_FAIL);
 		//Check BOSS attributes against active ingredients - must be in the same relationship group
 		List<Relationship> ingredientRels = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_PRECISE_INGRED, ActiveState.ACTIVE);
 		for (Relationship bRel : bossAttributes) {

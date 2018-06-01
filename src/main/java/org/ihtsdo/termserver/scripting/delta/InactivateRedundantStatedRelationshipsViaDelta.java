@@ -71,7 +71,7 @@ public class InactivateRedundantStatedRelationshipsViaDelta extends DeltaGenerat
 	}
 
 	@Override
-	protected List<Concept> loadLine(String[] lineItems)
+	protected List<Component> loadLine(String[] lineItems)
 			throws TermServerScriptException {
 		return null;
 	}

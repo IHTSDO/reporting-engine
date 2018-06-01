@@ -126,9 +126,9 @@ public class SnowOwlClient {
 		}
 	}
 
-	public JSONResource getConcepts(String ecl, String branchPath) throws SnowOwlClientException {
+	public JSONResource getConcepts(String ecl, String branchPath, int offset, int limit) throws SnowOwlClientException {
 		try {
-			return resty.json(getConceptsPath(branchPath) + "?ecl=" + URLEncoder.encode(ecl, "UTF-8"));
+			return resty.json(getConceptsPath(branchPath) + "?limit=" + limit + "&offset=" + offset + "&ecl=" + URLEncoder.encode(ecl, "UTF-8"));
 		} catch (IOException e) {
 			throw new SnowOwlClientException(e);
 		}

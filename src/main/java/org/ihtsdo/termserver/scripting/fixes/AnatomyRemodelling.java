@@ -140,7 +140,7 @@ public class AnatomyRemodelling extends BatchFix implements RF2Constants{
 	Where the resource is RF2 will inactivate an expected existing relationship
 	 */
 	@Override
-	protected List<Concept> loadLine(String[] items) throws TermServerScriptException {
+	protected List<Component> loadLine(String[] items) throws TermServerScriptException {
 
 		String sctId = items[0];
 		ConceptChange concept;

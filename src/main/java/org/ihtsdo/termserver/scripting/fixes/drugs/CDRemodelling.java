@@ -10,6 +10,7 @@ import java.util.Map;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.HistoricalAssociation;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
@@ -325,7 +326,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 	 * [9]ConcDenomUnit	[10]PRESENTNumQty	[11]PRESENTNumUnit	[12]PRESENTDenomQty	
 	 * [13]PRESENTDenomUnit	[14]UoP	[15]DoseForm
 	 */
-	protected List<Concept> loadLine(String[] items) throws TermServerScriptException {
+	protected List<Component> loadLine(String[] items) throws TermServerScriptException {
 		Concept c = gl.getConcept(items[0]);
 		c.setConceptType(ConceptType.CLINICAL_DRUG);
 		

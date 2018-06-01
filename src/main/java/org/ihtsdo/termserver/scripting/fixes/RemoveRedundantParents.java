@@ -116,7 +116,7 @@ public class RemoveRedundantParents extends BatchFix implements RF2Constants{
 	}
 
 	@Override
-	protected List<Concept> loadLine(String[] lineItems) throws TermServerScriptException {
+	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
 		return Collections.singletonList(new Concept(lineItems[0]));
 	}
 	

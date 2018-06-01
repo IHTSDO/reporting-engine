@@ -308,7 +308,7 @@ public class ProximatePrimitiveRemodeller extends BatchFix implements RF2Constan
 	}
 
 	@Override
-	protected List<Concept> loadLine(String[] lineItems) throws TermServerScriptException {
+	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
 		return null; // We will identify descriptions to edit from the snapshot
 	}
 	
