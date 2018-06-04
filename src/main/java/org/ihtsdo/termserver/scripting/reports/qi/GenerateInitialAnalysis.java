@@ -31,7 +31,7 @@ public class GenerateInitialAnalysis extends TermServerReport {
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		GenerateInitialAnalysis report = new GenerateInitialAnalysis();
 		try {
-			report.additionalReportColumns = "FSN, ProximalPrimitiveParent, isIntermediate, StatedAttributes, StatedRoleGroups, InferredRoleGroups, StatedParents";
+			report.additionalReportColumns = "FSN, ProximalPrimitiveParent, isIntermediate, Defn Status, StatedAttributes, StatedRoleGroups, InferredRoleGroups, StatedParents";
 			report.secondaryReportColumns = "IP, Total SDs affected, SD Concepts in subhierarchy, Total Primitive Concepts affected, Primitive Concept in SubHierarchy";
 			report.tertiaryReportColumns = "FSN, Concepts Using Type, Example";
 			report.numberOfDistinctReports = 3;
@@ -83,14 +83,21 @@ public class GenerateInitialAnalysis extends TermServerReport {
 	public void reportConceptsAffectedByIntermediatePrimitives() throws TermServerScriptException {
 		for (Concept c : this.subHierarchy) {
 			//We're only interested in fully defined concepts
-			if (c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
+			//Update:  OR leaf concepts 
+			if (c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED) || 
+				(c.getDefinitionStatus().equals(DefinitionStatus.PRIMITIVE) && 
+					c.getChildren(CharacteristicType.INFERRED_RELATIONSHIP).size() == 0)) {
 				List<Concept> proxPrimParents = determineProximalPrimitiveParents(c);
 				//Do those parents themselves have sufficiently defined ancestors ie making them intermediate primitives
 				for (Concept thisPPP : proxPrimParents) {
 					boolean isIntermediate = false;
 					if (containsFdConcept(ancestorsCache.getAncestors(thisPPP))) {
 						isIntermediate = true;
-						incrementSummaryInformation("Intermediate Primitives reported");
+						if (c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
+							incrementSummaryInformation("Intermediate Primitives reported on SD concepts");
+						} else {
+							incrementSummaryInformation("Intermediate Primitives reported on Primitive leaf concepts");
+						}
 						incrementSummaryInformation(thisPPP.toString());
 						intermediatePrimitives.merge(thisPPP, 1, Integer::sum);
 					} else {
@@ -99,7 +106,8 @@ public class GenerateInitialAnalysis extends TermServerReport {
 					
 					if (!quiet) {
 						report (c, thisPPP.toString(), 
-								isIntermediate?"Yes":"No", 
+								isIntermediate?"Yes":"No",
+								c.getDefinitionStatus(),
 								Integer.toString(countAttributes(c, CharacteristicType.STATED_RELATIONSHIP)),
 								Integer.toString(c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE, false).size()),
 								Integer.toString(c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE, false).size()),
