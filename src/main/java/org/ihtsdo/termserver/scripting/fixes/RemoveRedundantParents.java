@@ -19,7 +19,7 @@ import org.ihtsdo.termserver.scripting.domain.Task;
 import us.monoid.json.JSONObject;
 
 /*
-For SUBST-200, DRUGS-448, DRUGS-451, DRUGS-466, DRUGS-484
+For SUBST-200, DRUGS-448, DRUGS-451, DRUGS-466, DRUGS-484, SUBST-269
 Optionally driven by a text file of concepts, check parents for redundancy and - assuming 
 the concept is primitive, retain the more specific parent.
 */
@@ -36,7 +36,7 @@ public class RemoveRedundantParents extends BatchFix implements RF2Constants{
 		RemoveRedundantParents fix = new RemoveRedundantParents(null);
 		try {
 			fix.reportNoChange = true;
-			fix.selfDetermining = true;
+			//fix.selfDetermining = true;
 			fix.runStandAlone = true;
 			fix.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
@@ -128,7 +128,7 @@ public class RemoveRedundantParents extends BatchFix implements RF2Constants{
 		return processMe;
 	}*/
 	
-	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
+	/*protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		//Find primitive concepts with redundant stated parents
 		info ("Identifying concepts to process");
 		Collection<Concept> checkMe = new ArrayList<>();
@@ -169,6 +169,6 @@ public class RemoveRedundantParents extends BatchFix implements RF2Constants{
 		processMe.sort(Comparator.comparing(Concept::getFsn));
 		info ("Identified " + processMe.size() + " concepts to process");
 		return asComponents(processMe);
-	}
+	}*/
 
 }
