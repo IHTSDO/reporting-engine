@@ -845,11 +845,8 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	protected int checkAndSetProximalPrimitiveParent(Task t, Concept c, Concept newPPP) throws TermServerScriptException {
 		int changesMade = 0;
 		List<Concept> ppps = determineProximalPrimitiveParents(c);
-		//Concept templatePPP = GraphLoader.getGraphLoader().getConcept(template.getLogicalTemplate().getFocusConcepts().get(0));
-		
-		/*if (template.getLogicalTemplate().getFocusConcepts().size() != 1) {
-			report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Template " + template.getId() + " does not have 1 focus concept.  Cannot remodel.");
-		} else */if (ppps.size() != 1) {
+
+		if (ppps.size() != 1) {
 			report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept found to have " + ppps.size() + " proximal primitive parents.  Cannot state parent as: " + newPPP);
 		} else {
 			Concept ppp = ppps.get(0);
@@ -875,12 +872,13 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 					doAddition = false;
 				} else {
 					//We can only remove relationships which are subsumed by the new Proximal Primitive Parent
-					Concept thisParent = r.getTarget();
-					if (thisParent.getAncestors(NOT_SET).contains(newParent)) {
+					//Need a local copy of concept for transative closure questions
+					Concept thisParentLocal = gl.getConcept(r.getTarget().getConceptId());
+					if (thisParentLocal.getAncestors(NOT_SET).contains(newParent)) {
 						removeParentRelationship(t, r, c, newParent.toString(), null);
 						changesMade++;
 					} else {
-						report (t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Unable to remove parent " + thisParent + " because it it not subsumed by " + newParent );
+						report (t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Unable to remove parent " + thisParentLocal + " because it it not subsumed by " + newParent );
 					}
 				}
 			}
