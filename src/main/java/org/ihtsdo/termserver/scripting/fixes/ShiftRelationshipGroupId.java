@@ -79,16 +79,15 @@ public class ShiftRelationshipGroupId extends BatchFix implements RF2Constants{
 					//TODO If we have a few of these, we could select the brand new one
 				} else if (inactiveMatches.size() == 1) {
 					Relationship inactiveMatch = inactiveMatches.get(0);
-					if (!inactiveMatch.isReleased()) {
-						//Delete the new relationship, and move/re-activate the inactive one
-						report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_REACTIVATED, "Moved + Reactivated from " + inactiveMatch.getGroupId() + " to " + r.getGroupId() + ": " + r);
-						c.removeRelationship(r);
-						inactiveMatch.setActive(true);
-						inactiveMatch.setGroupId(r.getGroupId());
-						changesMade += 3;
-					} else {
-						report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Inactive duplicate relationship has already been published: " + inactiveMatch);
+					//Delete the new relationship, and move/re-activate the inactive one
+					report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_REACTIVATED, "Moved + Reactivated from " + inactiveMatch.getGroupId() + " to " + r.getGroupId() + ": " + r);
+					if (inactiveMatch.getEffectiveTime() != null  && !inactiveMatch.getEffectiveTime().isEmpty()) {
+						report (t, c, Severity.HIGH, ReportActionType.INFO, "Relationship was historically inactive: " + inactiveMatch);
 					}
+					c.removeRelationship(r);
+					inactiveMatch.setActive(true);
+					inactiveMatch.setGroupId(r.getGroupId());
+					changesMade += 3;
 				}
 			}
 		}
