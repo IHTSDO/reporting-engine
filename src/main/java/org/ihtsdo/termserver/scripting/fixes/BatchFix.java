@@ -8,11 +8,16 @@ import javax.mail.*;
 import javax.mail.internet.*;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
+import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
+import org.ihtsdo.termserver.scripting.TermServerScript.ReportActionType;
+import org.ihtsdo.termserver.scripting.TermServerScript.Severity;
 import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.ActiveState;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import us.monoid.json.*;
@@ -836,4 +841,57 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		updateConcept(t, loadedConcept, " with re-jigged inactivation indicator and historical associations");
 		report (t, loadedConcept, Severity.MEDIUM, ReportActionType.ASSOCIATION_ADDED, "InactReason set to " + inactivationIndicator + " and PossiblyEquivalentTo: " + replacement);
 	}
+	
+	protected int checkAndSetProximalPrimitiveParent(Task t, Concept c, Concept newPPP) throws TermServerScriptException {
+		int changesMade = 0;
+		List<Concept> ppps = determineProximalPrimitiveParents(c);
+		//Concept templatePPP = GraphLoader.getGraphLoader().getConcept(template.getLogicalTemplate().getFocusConcepts().get(0));
+		
+		/*if (template.getLogicalTemplate().getFocusConcepts().size() != 1) {
+			report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Template " + template.getId() + " does not have 1 focus concept.  Cannot remodel.");
+		} else */if (ppps.size() != 1) {
+			report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept found to have " + ppps.size() + " proximal primitive parents.  Cannot state parent as: " + newPPP);
+		} else {
+			Concept ppp = ppps.get(0);
+			if (ppp.equals(newPPP)) {
+				changesMade += setProximalPrimitiveParent(t, c, ppp);
+			} else {
+				report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Calculated PPP " + ppp + " does not match that suggested by template: " + newPPP + ", cannot remodel.");
+			}
+		}
+		return changesMade;
+	}
+
+	private int setProximalPrimitiveParent(Task t, Concept c, Concept newParent) throws TermServerScriptException {
+		int changesMade = 0;
+		List<Relationship> parentRels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, IS_A, ActiveState.ACTIVE);
+		//Do we in fact need to do anything?
+		if (parentRels.size() == 1 && parentRels.get(0).getTarget().equals(newParent)) {
+			report (t, c, Severity.NONE, ReportActionType.NO_CHANGE, "Concept already has template PPP: " + newParent);
+		} else {
+			boolean doAddition = true;
+			for (Relationship r : parentRels) {
+				if (r.getTarget().equals(newParent)) {
+					doAddition = false;
+				} else {
+					//We can only remove relationships which are subsumed by the new Proximal Primitive Parent
+					Concept thisParent = r.getTarget();
+					if (thisParent.getAncestors(NOT_SET).contains(newParent)) {
+						removeParentRelationship(t, r, c, newParent.toString(), null);
+						changesMade++;
+					} else {
+						report (t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Unable to remove parent " + thisParent + " because it it not subsumed by " + newParent );
+					}
+				}
+			}
+
+			if (doAddition) {
+				Relationship newParentRel = new Relationship(c, IS_A, newParent, 0);
+				c.addRelationship(newParentRel);
+				changesMade++;
+			}
+		}
+		return changesMade;
+	}
+
 }

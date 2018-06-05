@@ -11,6 +11,8 @@ import java.util.Set;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
+import org.ihtsdo.termserver.scripting.TermServerScript.ReportActionType;
+import org.ihtsdo.termserver.scripting.TermServerScript.Severity;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Batch;
 import org.ihtsdo.termserver.scripting.domain.Component;
@@ -84,56 +86,16 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		}
 		
 		//If the proximal primitive parent matches the template, we can set that
-		changesMade += checkAndSetProximalPrimitiveParent(t, c, template);
+		List<String> focusConceptIds = templates.get(0).getLogicalTemplate().getFocusConcepts();
+		if (focusConceptIds.size() == 1) {
+			changesMade += checkAndSetProximalPrimitiveParent(t, c, gl.getConcept(focusConceptIds.get(0)));
+		} else {
+			report (t, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Cannot remodel PPP - template specifies multiple focus concepts");
+		}
 		
 		//Restate inferred relationships as stated where required
 		changesMade += restateInferredRelationships(t,c);
 		
-		return changesMade;
-	}
-
-	private int checkAndSetProximalPrimitiveParent(Task t, Concept c, Template template) throws TermServerScriptException {
-		int changesMade = 0;
-		List<Concept> ppps = determineProximalPrimitiveParents(c);
-		if (template.getLogicalTemplate().getFocusConcepts().size() != 1) {
-			report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Template " + template.getId() + " does not have 1 focus concept.  Cannot remodel.");
-		} else if (ppps.size() != 1) {
-			report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept found to have " + ppps + " proximal primitive parents.  Cannot remodel.");
-		} else {
-			Concept ppp = ppps.get(0);
-			Concept templatePPP = gl.getConcept(template.getLogicalTemplate().getFocusConcepts().get(0));
-			if (ppp.equals(templatePPP)) {
-				changesMade += setProximalPrimitiveParent(t, c, ppp);
-			} else {
-				report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Calculated PPP " + ppp + " does not match that suggested by template: " + templatePPP + ", cannot remodel.");
-			}
-		}
-		return changesMade;
-	}
-
-	private int setProximalPrimitiveParent(Task t, Concept c, Concept newParent) throws TermServerScriptException {
-		int changesMade = 0;
-		List<Relationship> parentRels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, IS_A, ActiveState.ACTIVE);
-		//Do we in fact need to do anything?
-		if (parentRels.size() == 1 && parentRels.get(0).getTarget().equals(newParent)) {
-			report (t, c, Severity.NONE, ReportActionType.NO_CHANGE, "Concept already has template PPP: " + newParent);
-		} else {
-			boolean doAddition = true;
-			for (Relationship r : parentRels) {
-				if (r.getTarget().equals(newParent)) {
-					doAddition = false;
-				} else {
-					removeParentRelationship(t, r, c, newParent.toString(), null);
-					changesMade++;
-				}
-			}
-
-			if (doAddition) {
-				Relationship newParentRel = new Relationship(c, IS_A, newParent, 0);
-				c.addRelationship(newParentRel);
-				changesMade++;
-			}
-		}
 		return changesMade;
 	}
 

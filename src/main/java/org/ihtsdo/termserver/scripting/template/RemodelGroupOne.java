@@ -106,7 +106,14 @@ public class RemodelGroupOne extends TemplateFix {
 		}
 		int changesMade = remodelGroupOne(task, loadedConcept, templates.get(0));
 		if (changesMade > 0) {
-			checkAndSetProximalPrimitiveParent(task, loadedConcept, templates.get(0));
+			
+			List<String> focusConceptIds = templates.get(0).getLogicalTemplate().getFocusConcepts();
+			if (focusConceptIds.size() == 1) {
+				checkAndSetProximalPrimitiveParent(task, loadedConcept, gl.getConcept(focusConceptIds.get(0)));
+			} else {
+				report (task, concept, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Cannot remodel PPP - template specifies multiple focus concepts");
+			}
+			
 			try {
 				String conceptSerialised = gson.toJson(loadedConcept);
 				debug ((dryRun ?"Dry run ":"Updating state of ") + loadedConcept + info);
@@ -271,50 +278,4 @@ public class RemodelGroupOne extends TemplateFix {
 		return false;
 	}
 	
-	private int checkAndSetProximalPrimitiveParent(Task t, Concept c, Template template) throws TermServerScriptException {
-		int changesMade = 0;
-		List<Concept> ppps = determineProximalPrimitiveParents(c);
-		Concept templatePPP = gl.getConcept(template.getLogicalTemplate().getFocusConcepts().get(0));
-		
-		if (template.getLogicalTemplate().getFocusConcepts().size() != 1) {
-			report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Template " + template.getId() + " does not have 1 focus concept.  Cannot remodel.");
-		} else if (ppps.size() != 1) {
-			report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept found to have " + ppps.size() + " proximal primitive parents.  Cannot state parent as: " + templatePPP);
-		} else {
-			Concept ppp = ppps.get(0);
-			if (ppp.equals(templatePPP)) {
-				changesMade += setProximalPrimitiveParent(t, c, ppp);
-			} else {
-				report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Calculated PPP " + ppp + " does not match that suggested by template: " + templatePPP + ", cannot remodel.");
-			}
-		}
-		return changesMade;
-	}
-
-	private int setProximalPrimitiveParent(Task t, Concept c, Concept newParent) throws TermServerScriptException {
-		int changesMade = 0;
-		List<Relationship> parentRels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, IS_A, ActiveState.ACTIVE);
-		//Do we in fact need to do anything?
-		if (parentRels.size() == 1 && parentRels.get(0).getTarget().equals(newParent)) {
-			report (t, c, Severity.NONE, ReportActionType.NO_CHANGE, "Concept already has template PPP: " + newParent);
-		} else {
-			boolean doAddition = true;
-			for (Relationship r : parentRels) {
-				if (r.getTarget().equals(newParent)) {
-					doAddition = false;
-				} else {
-					removeParentRelationship(t, r, c, newParent.toString(), null);
-					changesMade++;
-				}
-			}
-
-			if (doAddition) {
-				Relationship newParentRel = new Relationship(c, IS_A, newParent, 0);
-				c.addRelationship(newParentRel);
-				changesMade++;
-			}
-		}
-		return changesMade;
-	}
-
 }
