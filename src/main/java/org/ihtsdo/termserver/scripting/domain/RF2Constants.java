@@ -23,6 +23,7 @@ public interface RF2Constants {
 	static Concept SUBSTANCE = new Concept("105590001", "Substance (substance)");
 	static Concept HAS_MANUFACTURED_DOSE_FORM = new Concept ("411116001","Has manufactured dose form (attribute)");
 	static Concept HAS_BOSS = new Concept ("732943007","Has basis of strength substance (attribute)");
+	static Concept PHARM_DOSE_FORM = new Concept ("736542009", "Pharmaceutical dose form (dose form)");
 	
 	static Concept HAS_PRES_STRENGTH_VALUE = new Concept ("732944001","Has presentation strength numerator value (attribute)");
 	static Concept HAS_PRES_STRENGTH_UNIT = new Concept ("732945000","Has presentation strength numerator unit (attribute)");

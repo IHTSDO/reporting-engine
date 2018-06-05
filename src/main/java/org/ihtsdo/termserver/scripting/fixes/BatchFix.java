@@ -872,7 +872,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 					doAddition = false;
 				} else {
 					//We can only remove relationships which are subsumed by the new Proximal Primitive Parent
-					//Need a local copy of concept for transative closure questions
+					//Need a local copy of concept for transitive closure questions
 					Concept thisParentLocal = gl.getConcept(r.getTarget().getConceptId());
 					if (thisParentLocal.getAncestors(NOT_SET).contains(newParent)) {
 						removeParentRelationship(t, r, c, newParent.toString(), null);

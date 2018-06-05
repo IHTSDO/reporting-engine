@@ -119,7 +119,7 @@ public abstract class TermServerScript implements RF2Constants {
 									 DESCRIPTION_CHANGE_MADE, DESCRIPTION_ACCEPTABILIY_CHANGED, DESCRIPTION_ADDED, DESCRIPTION_REMOVED, CASE_SIGNIFICANCE_CHANGE_MADE,
 									 RELATIONSHIP_ADDED, RELATIONSHIP_REPLACED, RELATIONSHIP_INACTIVATED, RELATIONSHIP_DELETED, RELATIONSHIP_MODIFIED, 
 									 RELATIONSHIP_GROUP_ADDED,
-									 NO_CHANGE, VALIDATION_ERROR, VALIDATION_CHECK, 
+									 NO_CHANGE, VALIDATION_ERROR, VALIDATION_CHECK, SKIPPING,
 									 REFSET_MEMBER_REMOVED, UNKNOWN, RELATIONSHIP_REACTIVATED, ASSOCIATION_ADDED};
 									 
 	public enum Severity { NONE, LOW, MEDIUM, HIGH, CRITICAL }; 
@@ -457,6 +457,7 @@ public abstract class TermServerScript implements RF2Constants {
 			} else {
 				c = c.clone("NEW_SCTID");
 			}
+			incrementSummaryInformation("Concepts created");
 			return c;
 		} catch (Exception e) {
 			throw new TermServerScriptException("Failed to create " + c + " in TS due to " + e.getMessage(),e);

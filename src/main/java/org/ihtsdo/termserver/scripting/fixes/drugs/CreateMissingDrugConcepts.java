@@ -6,13 +6,13 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
+import org.ihtsdo.termserver.scripting.template.AncestorsCache;
 import org.ihtsdo.termserver.scripting.util.DrugTermGenerator;
 import org.ihtsdo.termserver.scripting.util.DrugUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -26,6 +26,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 	DrugTermGenerator termGenerator = new DrugTermGenerator(this);
 	Set<Concept> createMPFs = new HashSet<>();
 	Set<Concept> knownMPFs = new HashSet<>();
+	AncestorsCache cache = new AncestorsCache();
 	
 	protected CreateMissingDrugConcepts(BatchFix clone) {
 		super(clone);
@@ -64,6 +65,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
 		Concept mpf = calculateMPFRequired(loadedConcept);
+		termGenerator.ensureDrugTermsConform(task, concept, CharacteristicType.STATED_RELATIONSHIP);
 		String currentMPFs = concept.getParents(CharacteristicType.INFERRED_RELATIONSHIP)
 							.stream()
 							.filter(parent -> parent.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM))
@@ -71,7 +73,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 							.collect(Collectors.joining(",\n"));
 		if (mpf != null) {
 			mpf = createConcept(task, mpf, info);
-			report (task, concept, Severity.LOW, ReportActionType.INFO, "Existing MPF(s) considered insufficient: " + currentMPFs);
+			report (task, concept, Severity.LOW, ReportActionType.INFO, "Existing MPF(s) considered insufficient: " + (currentMPFs.isEmpty() ? "None detected" : currentMPFs));
 			task.addAfter(mpf, concept);
 			report (task, mpf, Severity.LOW, ReportActionType.CONCEPT_ADDED, mpf);
 			report (task, mpf, Severity.LOW, ReportActionType.INFO, mpf.toExpression(CharacteristicType.STATED_RELATIONSHIP));
@@ -83,10 +85,22 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		debug("Identifying concepts to process");
 		List<Concept> allAffected = new ArrayList<Concept>(); 
+		nextConcept:
 		for (Concept c : MEDICINAL_PRODUCT.getDescendents(NOT_SET)) {
 			try {
 				if (c.getConceptType().equals(ConceptType.CLINICAL_DRUG)) {
 					Concept mpf = calculateMPFRequired(c);
+					//If the concept has a more specific mpf than the one we've calculated, warn 
+					List<Concept> currentMPFs = c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)
+							.stream()
+							.filter(parent -> parent.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM))
+							.collect(Collectors.toList());
+					for (Concept currentMPF : currentMPFs) {
+						if (SnomedUtils.hasMoreSpecificModel(currentMPF, mpf, cache)) {
+							report (null, c, Severity.HIGH, ReportActionType.SKIPPING, "Existing parent : " + currentMPF + " is more specific that proposed: " + mpf.toExpression(CharacteristicType.STATED_RELATIONSHIP));
+							continue nextConcept;
+						}
+					}
 					//Do we already know about this concept or plan to create it?
 					if (!isContained(mpf, knownMPFs) && !isContained(mpf, createMPFs)) {
 						createMPFs.add(mpf);
@@ -135,6 +149,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 		//an MPF using the dose form
 		Concept mpf = SnomedUtils.createConcept(null,null,MEDICINAL_PRODUCT);
 		Concept doseForm = SnomedUtils.getTarget(c, new Concept[] {HAS_MANUFACTURED_DOSE_FORM}, UNGROUPED, CharacteristicType.STATED_RELATIONSHIP);
+		doseForm = SnomedUtils.getHighestAncestorBefore(doseForm, PHARM_DOSE_FORM);
 		Relationship formRel = new Relationship (mpf, HAS_MANUFACTURED_DOSE_FORM, doseForm, UNGROUPED);
 		mpf.addRelationship(formRel);
 		

@@ -28,6 +28,7 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants.Acceptability;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants.ActiveState;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
+import org.ihtsdo.termserver.scripting.template.AncestorsCache;
 
 public class SnomedUtils implements RF2Constants{
 	
@@ -871,6 +872,63 @@ public class SnomedUtils implements RF2Constants{
 			}
 		}
 		return false;
+	}
+
+	/**
+	 * @return the highest concept reached before hitting "end"
+	 */
+	public static Concept getHighestAncestorBefore(Concept start, Concept end) {
+		Concept here = start;
+		boolean goHigher = true;
+		while (goHigher) {
+			List<Concept> parents = here.getParents(CharacteristicType.INFERRED_RELATIONSHIP);
+			if (parents.size() > 1) {
+				throw new IllegalArgumentException(here + " has multiple parents.  Cannot find ancestor path.");
+			}
+			Concept parent = parents.get(0);
+			if (parent.equals(end)) {
+				goHigher = false;
+			} else if (parent.equals(ROOT_CONCEPT)) {
+				throw new IllegalArgumentException(start + " reached ROOT before finding " + end);
+			} else {
+				//Keep working our way up.
+				here = parent;
+			}
+		}
+		return here;
+	}
+
+	/**
+	 * @return true if the attribute types/values (including IS A) of concept a are more specific than b
+	 */
+	public static boolean hasMoreSpecificModel(Concept a, Concept b, AncestorsCache cache) {
+		boolean moreSpecificAttributeDetected = false;
+		//Work through all the attributes of a and see if the ancestors match an attribute in b
+		nextRel:
+		for (Relationship r : a.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
+			//Filter for matching types (same or less specific) and values (same or less specific)
+			//If the relationship is not identical, then it's more specific
+			//TODO Strictly we should consider the RELS in equivalent groups
+			List<Relationship> matchingRels = b.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)
+												.stream()
+												.filter(br -> cache.getAncestorsOrSelfSafely(r.getType()).contains(br.getType()))
+												.filter(br -> cache.getAncestorsOrSelfSafely(r.getTarget()).contains(br.getTarget()))
+												.collect(Collectors.toList());
+			//If there are no matching rels, then these concept models are disjoint
+			if (matchingRels.size() == 0) {
+				return false;
+			}
+			//If we have an exact match, move on to the next relationship.  Otherwise, we've
+			//found a more specific attribute
+			for (Relationship thisMatch : matchingRels) {
+				if (thisMatch.getType().equals(r.getType()) &&
+						thisMatch.getTarget().equals(r.getTarget())) {
+					continue nextRel;
+				}
+			}
+			moreSpecificAttributeDetected = true;
+		}
+		return moreSpecificAttributeDetected;
 	}
 
 }
