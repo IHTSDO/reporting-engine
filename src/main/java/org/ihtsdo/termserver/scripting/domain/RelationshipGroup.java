@@ -101,4 +101,8 @@ public class RelationshipGroup {
 		}
 		return true;
 	}
+
+	public boolean isGrouped() {
+		return groupId > 0;
+	}
 }

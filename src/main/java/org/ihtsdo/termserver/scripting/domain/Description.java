@@ -247,7 +247,7 @@ public class Description extends Component implements RF2Constants {
 
 	@Override
 	public int hashCode() {
-		return term.hashCode();
+		return term == null? NOT_SET : term.hashCode();
 	}
 
 	@Override

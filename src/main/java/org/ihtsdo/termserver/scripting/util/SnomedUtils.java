@@ -800,7 +800,7 @@ public class SnomedUtils implements RF2Constants{
 	public static Concept createConcept(String term, String semTag, Concept parent) {
 		Concept newConcept = Concept.withDefaults(null);
 		
-		Description fsn = Description.withDefaults(term + " " + semTag, DescriptionType.FSN);
+		Description fsn = Description.withDefaults(term == null? null : term + " " + semTag, DescriptionType.FSN);
 		fsn.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(AcceptabilityMode.PREFERRED_BOTH));
 		newConcept.addDescription(fsn);
 		

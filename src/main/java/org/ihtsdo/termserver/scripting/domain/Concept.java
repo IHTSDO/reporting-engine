@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
@@ -328,10 +329,38 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	public String toString() {
 		return conceptId + " |" + this.fsn + "|";
 	}
+	
+	public String toExpression(CharacteristicType charType) {
+		String expression = getParents(charType).stream().map(p -> p.toString())
+							.collect(Collectors.joining (" + "));
+		//Add any ungrouped attributes
+		boolean isFirstGroup = true;
+		for (RelationshipGroup group : getRelationshipGroups (charType)) {
+			if (isFirstGroup) {
+				isFirstGroup = false;
+			} else {
+				expression += ", ";
+			}
+			expression += group.isGrouped() ? "{" : "";
+			expression += group.getRelationships().stream().map(p -> p.toString())
+					.collect(Collectors.joining (", "));
+			expression += group.isGrouped() ? "}" : "";
+		}
+		return expression;
+	}
 
 	@Override
 	public int hashCode() {
-		return conceptId.hashCode();
+		if (conceptId != null)
+			return conceptId.hashCode();
+		
+		//Where a conceptId does not exist, hash the FSN
+		if (fsn !=null && !fsn.trim().isEmpty()) {
+			return fsn.hashCode();
+		}
+		
+		//Where we don't have either, hash the expression
+		return toExpression(CharacteristicType.STATED_RELATIONSHIP).hashCode();
 	}
 
 	@Override
@@ -340,7 +369,18 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 			return false;
 		}
 		Concept rhs = ((Concept) other);
-		return (this.conceptId.compareTo(rhs.conceptId) == 0);
+		//If both concepts have Ids, compare those
+		if (this.conceptId != null && rhs.conceptId != null) {
+			return (this.conceptId.compareTo(rhs.conceptId) == 0);
+		}
+		
+		//Otherwise, compare FSNs or expressions
+		if (this.fsn != null && !this.fsn.isEmpty() && rhs.fsn != null && !rhs.fsn.isEmpty()) {
+			return (this.fsn.equals(rhs.fsn));
+		}
+		String thisExpression = this.toExpression(CharacteristicType.STATED_RELATIONSHIP);
+		String rhsExpression = rhs.toExpression(CharacteristicType.STATED_RELATIONSHIP);
+		return thisExpression.equals(rhsExpression);
 	}
 
 	public void addRelationship(Concept type, Concept target) {

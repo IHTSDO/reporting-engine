@@ -84,28 +84,11 @@ public class IngredientCounts extends DrugBatchFix implements RF2Constants{
 		for (Concept ingredient : ingredients) {
 			//We need a local copy of the ingredient to get it's full set of relationship concepts
 			ingredient = gl.getConcept(ingredient.getConceptId());
-			bases.add(getBase(ingredient));
+			bases.add(DrugUtils.getBase(ingredient));
 		}
 		return bases;
 	}
 
-	private Concept getBase(Concept c) {
-		List<Concept> bases = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, IS_MODIFICATION_OF, ActiveState.ACTIVE)
-				.stream()
-				.map(rel -> rel.getTarget())
-				.collect(Collectors.toList());
-		if (bases.size() == 0) {
-			return c;
-		} else if (bases.size() > 1) {
-			throw new IllegalArgumentException("Concept " + c + " has multiple modification attributes");
-		} else if (bases.get(0).equals(c)) {
-			throw new IllegalArgumentException("Concept " + c + " is a modification of itself.");
-		} else  {
-			//Call recursively to follow the transitive nature of modification
-			return getBase(bases.get(0));
-		}
-	}
-	
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		//List<Concept> processMe = new ArrayList<>(Collections.singletonList(gl.getConcept("377209001")));
 		List<Concept> processMe = new ArrayList<>();

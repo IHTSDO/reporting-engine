@@ -7,11 +7,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.ActiveState;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
 import org.ihtsdo.termserver.scripting.fixes.drugs.Ingredient;
 
 public class DrugUtils implements RF2Constants {
@@ -255,6 +258,23 @@ public class DrugUtils implements RF2Constants {
 			return String.format("%d",(long)d);
 		else
 			return String.format("%s",d);
+	}
+
+	public static Concept getBase(Concept c) {
+		List<Concept> bases = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, IS_MODIFICATION_OF, ActiveState.ACTIVE)
+				.stream()
+				.map(rel -> rel.getTarget())
+				.collect(Collectors.toList());
+		if (bases.size() == 0) {
+			return c;
+		} else if (bases.size() > 1) {
+			throw new IllegalArgumentException("Concept " + c + " has multiple modification attributes");
+		} else if (bases.get(0).equals(c)) {
+			throw new IllegalArgumentException("Concept " + c + " is a modification of itself.");
+		} else  {
+			//Call recursively to follow the transitive nature of modification
+			return getBase(bases.get(0));
+		}
 	}
 	
 }
