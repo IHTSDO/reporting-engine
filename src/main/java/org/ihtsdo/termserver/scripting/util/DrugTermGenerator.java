@@ -147,7 +147,8 @@ public class DrugTermGenerator implements RF2Constants{
 		}
 		
 		//If this is the FSN, then we should have another description without the semantic tag as an acceptable term
-		if (isFSN) {
+		//Update: We're not doing FSN Counterparts now, because of issues with US / GB Variants
+		/*if (isFSN) {
 			Description fsnCounterpart = replacement.clone(null);
 			String counterpartTerm = SnomedUtils.deconstructFSN(fsnCounterpart.getTerm())[0];
 			
@@ -158,7 +159,7 @@ public class DrugTermGenerator implements RF2Constants{
 				fsnCounterpart.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(AcceptabilityMode.ACCEPTABLE_BOTH));
 				c.addDescription(fsnCounterpart);
 			}
-		}
+		}*/
 		return changesMade;
 	}
 
@@ -237,13 +238,14 @@ public class DrugTermGenerator implements RF2Constants{
 			boolean isFSN = d.getType().equals(DescriptionType.FSN);
 			if (!isFSN && !d.isPreferred()) {
 				//Is this term the FSN counterpart?  Remove if not
-				String fsnCounterpart = SnomedUtils.deconstructFSN(c.getFsn())[0];
-				if (!d.getTerm().equals(fsnCounterpart)) {
+				//Update: We don't do fsnCounterparts due to us / gb issues
+				//String fsnCounterpart = SnomedUtils.deconstructFSN(c.getFsn())[0];
+				//if (!d.getTerm().equals(fsnCounterpart)) {
 					boolean isInactivated = removeDescription(c,d);
 					String msg = (isInactivated?"Inactivated redundant desc ":"Deleted redundant desc ") +  d;
 					report(t, c, Severity.LOW, ReportActionType.DESCRIPTION_REMOVED, msg);
 					changesMade++;
-				}
+				//}
 			}
 		}
 		return changesMade;

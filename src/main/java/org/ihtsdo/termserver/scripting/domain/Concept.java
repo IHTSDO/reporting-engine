@@ -968,10 +968,10 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		}
 		
 		//Copy Parent/Child arrays
-		clone.inferredChildren = new ArrayList<>(inferredChildren);
-		clone.statedChildren = new ArrayList<>(statedChildren);
-		clone.inferredParents = new ArrayList<>(inferredParents);
-		clone.statedParents = new ArrayList<>(statedParents);
+		clone.inferredChildren = inferredChildren == null? new ArrayList<>() : new ArrayList<>(inferredChildren);
+		clone.statedChildren = statedChildren == null? new ArrayList<>() : new ArrayList<>(statedChildren);
+		clone.inferredParents = inferredParents == null? new ArrayList<>() : new ArrayList<>(inferredParents);
+		clone.statedParents = statedParents == null? new ArrayList<>() : new ArrayList<>(statedParents);
 		
 		return clone;
 	}

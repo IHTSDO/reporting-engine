@@ -8,16 +8,11 @@ import javax.mail.*;
 import javax.mail.internet.*;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
-import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
-import org.ihtsdo.termserver.scripting.TermServerScript.ReportActionType;
-import org.ihtsdo.termserver.scripting.TermServerScript.Severity;
 import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.ActiveState;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import us.monoid.json.*;
@@ -784,13 +779,17 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		//If the original has stated children, they'll all need to be re-pointed to the clone
 		for (Concept child : gl.getConcept(originalId).getChildren(CharacteristicType.STATED_RELATIONSHIP)) {
 			Concept loadedChild = loadConcept(child.getConceptId(), t.getBranchPath());
-			replaceParent(t, loadedChild, original, savedConcept);
-			String conceptSerialised = gson.toJson(loadedChild);
-			tsClient.updateConcept(new JSONObject(conceptSerialised), t.getBranchPath());
-			report (t, savedConcept, Severity.MEDIUM, ReportActionType.RELATIONSHIP_REPLACED, "New Parent: " + savedConcept);
-			//Add the child to the task, after the original
-			t.addAfter(child, original);
-			incrementSummaryInformation("Total children repointed to cloned concepts");
+			int changesMade = replaceParent(t, loadedChild, original, savedConcept);
+			if (changesMade > 0) {
+				String conceptSerialised = gson.toJson(loadedChild);
+				tsClient.updateConcept(new JSONObject(conceptSerialised), t.getBranchPath());
+				report (t, child, Severity.MEDIUM, ReportActionType.RELATIONSHIP_REPLACED, "New Parent: " + savedConcept);
+				//Add the child to the task, after the original
+				t.addAfter(child, original);
+				incrementSummaryInformation("Total children repointed to cloned concepts");
+			} else {
+				warn ("Locally loaded ontology thought " + concept + " had stated child " + child + " but TS disagreed.");
+			}
 		}
 		
 		//Add our clone to the task, after the original

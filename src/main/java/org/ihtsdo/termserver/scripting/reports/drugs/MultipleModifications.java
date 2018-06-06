@@ -18,7 +18,7 @@ public class MultipleModifications extends TermServerReport {
 			report.additionalReportColumns = "Modifications";
 			report.init(args);
 			report.loadProjectSnapshot(true);  
-			report.finMultipleModifications();
+			report.findMultipleModifications();
 		} catch (Exception e) {
 			info("Failed to produce MultipleModifications due to " + e.getClass().getSimpleName() + ": " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
@@ -27,7 +27,7 @@ public class MultipleModifications extends TermServerReport {
 		}
 	}
 
-	private void finMultipleModifications() throws TermServerScriptException {
+	private void findMultipleModifications() throws TermServerScriptException {
 		for (Concept c : SUBSTANCE.getDescendents(NOT_SET)) {
 			List<Concept> bases = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, IS_MODIFICATION_OF, ActiveState.ACTIVE)
 					.stream()
