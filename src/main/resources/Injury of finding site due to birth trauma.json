@@ -1,0 +1,6 @@
+{
+  "name": "Injury of finding site due to birth trauma",
+  "documentation": "https://confluence.ihtsdotools.org/display/AUTHS/Injury+of+%5Bfinding+site%5D+due+to+birth+trauma",
+  "version": 1,
+  "logicalTemplate": "116223007 |Complication (disorder)|:\n\t 42752001 |Due to (attribute)| = [[+id(<< 236973005 |Delivery procedure (procedure)|)]] , [[~1..*]]{\n\t\t116676008 |Associated morphology (attribute)| = [[+id(<< 19130008 |Traumatic abnormality (morphologic abnormality)|) ]]\n\t, 363698007 |Finding site (attribute)| = [[+id(<< 442083009 |Anatomical or acquired body structure (body structure)|) @site ]], 246454002 |Occurrence (attribute)| = 371578004 |Perinatal period (qualifier value)| }\n"
+}
