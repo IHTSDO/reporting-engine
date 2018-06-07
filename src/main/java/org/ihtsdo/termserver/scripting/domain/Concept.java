@@ -634,8 +634,12 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	}
 	
 	public void addDescription(Description d) {
+		addDescription(d, false); //Don't allow duplicates by default
+	}
+	
+	public void addDescription(Description d, boolean allowDuplicateTerms) {
 		//Do we already have a description with this SCTID?
-		if (descriptions.contains(d)) {
+		if (!allowDuplicateTerms && descriptions.contains(d)) {
 			descriptions.remove(d);
 		}
 		

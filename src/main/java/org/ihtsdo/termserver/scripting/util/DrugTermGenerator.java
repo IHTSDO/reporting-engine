@@ -67,13 +67,17 @@ public class DrugTermGenerator implements RF2Constants{
 	public boolean useEach() {
 		return useEach;
 	}
-
+	
 	public int ensureDrugTermsConform(Task t, Concept c, CharacteristicType charType) throws TermServerScriptException {
+		return ensureDrugTermsConform(t, c, charType, false);  //Do not allow duplicate descriptions by default
+	}
+
+	public int ensureDrugTermsConform(Task t, Concept c, CharacteristicType charType, boolean allowDuplicates) throws TermServerScriptException {
 		int changesMade = 0;
 		
 		//This function will split out the US / GB terms if the ingredients show variance where the product does not
 		//The unit of presentation could also necessitate a variance
-		validateUsGbVariance(t,c, charType);
+		validateUsGbVariance(t,c, charType, allowDuplicates);
 
 		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 			try { 
@@ -121,9 +125,13 @@ public class DrugTermGenerator implements RF2Constants{
 		}*/
 		
 		//Check the existing term has correct capitalization
-		ensureCaptialization(d);
+		if (d.getTerm() != null) {
+			ensureCaptialization(d);
+		}
 		String replacementTerm = calculateTermFromIngredients(c, isFSN, isPT, langRefset, charType);
-		replacementTerm = checkForVitamins(replacementTerm, d.getTerm());
+		if (d.getTerm() != null) {
+			replacementTerm = checkForVitamins(replacementTerm, d.getTerm());
+		}
 		Description replacement = d.clone(null);
 		replacement.setTerm(replacementTerm);
 		
@@ -166,7 +174,7 @@ public class DrugTermGenerator implements RF2Constants{
 	public String calculateTermFromIngredients(Concept c, boolean isFSN, boolean isPT, String langRefset, CharacteristicType charType) throws TermServerScriptException {
 		String proposedTerm = "";
 		String semTag = "";
-		if (isFSN) {
+		if (isFSN && c.getFsn() != null) {
 			semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
 		}
 		//Get all the ingredients in order
@@ -175,10 +183,16 @@ public class DrugTermGenerator implements RF2Constants{
 		//What prefixes and suffixes do we need?
 		String prefix = "";
 		String suffix = "";
+		
+		if (c.getConceptType() == null) {
+			SnomedUtils.populateConceptType(c);
+		}
+		
 		if (isFSN) {
 			prefix = "Product containing ";
 			switch (c.getConceptType()) {
 				case MEDICINAL_PRODUCT_FORM : suffix =  " in " + DrugUtils.getDosageForm(c, isFSN, langRefset);
+										semTag = "(medicinal product form)";
 										break;
 				case CLINICAL_DRUG : 	prefix = "Product containing precisely ";
 										//TODO Check that presentation is solid before adding 1 each
@@ -290,7 +304,7 @@ public class DrugTermGenerator implements RF2Constants{
 		}
 	}
 	
-	private void validateUsGbVariance(Task t, Concept c, CharacteristicType charType) throws TermServerScriptException {
+	private void validateUsGbVariance(Task t, Concept c, CharacteristicType charType, boolean allowDuplicates) throws TermServerScriptException {
 		//If the ingredient names have US/GB variance, the Drug should too.
 		//If the unit of presentation is present and has variance, the drug should too.
 		//Do we have two preferred terms?
@@ -302,7 +316,7 @@ public class DrugTermGenerator implements RF2Constants{
 			String msg = "Drug vs Ingredient vs Presentation US/GB term variance mismatch : Drug=" + drugVariance + " Ingredients=" + ingredientVariance + " Presentation=" + presentationVariance;
 			report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, msg);
 			if (!drugVariance && (ingredientVariance || presentationVariance)) {
-				splitPreferredTerm(t, c);
+				splitPreferredTerm(t, c, allowDuplicates);
 			}
 		} 
 	}
@@ -344,9 +358,10 @@ public class DrugTermGenerator implements RF2Constants{
 	 * Take the preferred term and create US and GB specific copies
 	 * @param t
 	 * @param c
+	 * @param allowDuplicates 
 	 * @throws TermServerScriptException 
 	 */
-	private void splitPreferredTerm(Task t, Concept c) throws TermServerScriptException {
+	private void splitPreferredTerm(Task t, Concept c, boolean allowDuplicates) throws TermServerScriptException {
 		List<Description> preferredTerms = c.getDescriptions(Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE);
 		if (preferredTerms.size() != 1) {
 			report (t, c, Severity.CRITICAL, ReportActionType.API_ERROR, "Unexpected number of preferred terms: " + preferredTerms.size());
@@ -356,7 +371,7 @@ public class DrugTermGenerator implements RF2Constants{
 			Description gbPT = usPT.clone(null);
 			gbPT.setAcceptabilityMap(SnomedUtils.createPreferredAcceptableMap(GB_ENG_LANG_REFSET, US_ENG_LANG_REFSET));
 			report (t, c, Severity.HIGH, ReportActionType.DESCRIPTION_ADDED, "Split PT into US/GB variants: " + usPT + "/" + gbPT);
-			c.addDescription(gbPT);
+			c.addDescription(gbPT, allowDuplicates);
 		}
 	}
 

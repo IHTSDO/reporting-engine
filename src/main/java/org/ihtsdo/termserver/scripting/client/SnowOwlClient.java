@@ -75,7 +75,7 @@ public class SnowOwlClient {
 		final JSONResource newConcept;
 		try {
 			newConcept = resty.json(getConceptBrowserPath(branchPath), RestyHelper.content(json, SNOWOWL_CONTENT_TYPE));
-			logger.info("Created concept " + newConcept.get("conceptId"));
+			logger.info("Created concept " + newConcept.get("conceptId") + " |" + newConcept.get("fsn") + "|");
 			return newConcept;
 		} catch (Exception e) {
 			throw new SnowOwlClientException(e);

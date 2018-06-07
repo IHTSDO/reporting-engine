@@ -716,20 +716,43 @@ public class SnomedUtils implements RF2Constants{
 	}
 
 	public static void populateConceptType(Concept c) {
-		String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
-		switch (semTag) {
-			case DrugUtils.MP : c.setConceptType(ConceptType.MEDICINAL_PRODUCT);
-										break;
-			case DrugUtils.MPF : c.setConceptType(ConceptType.MEDICINAL_PRODUCT_FORM);
-										break;
-			case DrugUtils.CD : c.setConceptType(ConceptType.CLINICAL_DRUG);
-										break;
-			case DrugUtils.PRODUCT : c.setConceptType(ConceptType.PRODUCT);
-										break;
-			default : c.setConceptType(ConceptType.UNKNOWN);
+		if (c.getFsn() == null) {
+			determineConceptTypeFromAttributes(c, CharacteristicType.STATED_RELATIONSHIP);
+		} else {
+			String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
+			switch (semTag) {
+				case DrugUtils.MP : c.setConceptType(ConceptType.MEDICINAL_PRODUCT);
+											break;
+				case DrugUtils.MPF : c.setConceptType(ConceptType.MEDICINAL_PRODUCT_FORM);
+											break;
+				case DrugUtils.CD : c.setConceptType(ConceptType.CLINICAL_DRUG);
+											break;
+				case DrugUtils.PRODUCT : c.setConceptType(ConceptType.PRODUCT);
+											break;
+				default : c.setConceptType(ConceptType.UNKNOWN);
+			}
 		}
 	}
 	
+	private static void determineConceptTypeFromAttributes(Concept c, CharacteristicType charType) {
+		try {
+			//Do we have ingredients?  We're at least an MP
+			if (getTargets(c, new Concept[] { HAS_ACTIVE_INGRED, HAS_PRECISE_INGRED }, charType).size() > 0) {
+				c.setConceptType(ConceptType.MEDICINAL_PRODUCT);
+				//Do we also have dose form?  If so, MPF
+				if (getTargets(c, new Concept[] { HAS_MANUFACTURED_DOSE_FORM }, charType).size() > 0) {
+					c.setConceptType(ConceptType.MEDICINAL_PRODUCT_FORM);
+					//And if we have strength, CD
+					if (getTargets(c, new Concept[] { HAS_CONC_STRENGTH_DENOM_UNIT, HAS_PRES_STRENGTH_UNIT }, charType).size() > 0) {
+						c.setConceptType(ConceptType.CLINICAL_DRUG);
+					}
+				}
+			}
+		} catch (Exception e) {
+			TermServerScript.warn("Unable to determine concept type of " + c + " due to " + e);
+		}
+	}
+
 	//Return a set of groups where there is an active non-isa relationship
 	public static Set<Integer> getActiveGroups(Concept c) {
 		Set<Integer> activeGroups = new HashSet<>();
@@ -757,7 +780,7 @@ public class SnomedUtils implements RF2Constants{
 	public static boolean termAlreadyExists(Concept concept, String newTerm, ActiveState activeState) {
 		boolean termAlreadyExists = false;
 		for (Description description : concept.getDescriptions(activeState)) {
-			if (description.getTerm().equals(newTerm)) {
+			if (description.getTerm() != null && description.getTerm().equals(newTerm)) {
 				termAlreadyExists = true;
 			}
 		}
@@ -807,7 +830,7 @@ public class SnomedUtils implements RF2Constants{
 		
 		Description pt = Description.withDefaults(term, DescriptionType.SYNONYM);
 		pt.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(AcceptabilityMode.PREFERRED_BOTH));
-		newConcept.addDescription(pt);
+		newConcept.addDescription(pt, true);  //Allow duplication - we might have a null term if we don't know enough to create one yet.
 		
 		Relationship parentRel = new Relationship (null, IS_A, parent, UNGROUPED);
 		newConcept.addRelationship(parentRel);

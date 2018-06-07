@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
@@ -65,13 +66,14 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
 		Concept mpf = calculateMPFRequired(loadedConcept);
-		termGenerator.ensureDrugTermsConform(task, concept, CharacteristicType.STATED_RELATIONSHIP);
 		String currentMPFs = concept.getParents(CharacteristicType.INFERRED_RELATIONSHIP)
 							.stream()
 							.filter(parent -> parent.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM))
 							.map(parent -> parent.toString())
 							.collect(Collectors.joining(",\n"));
 		if (mpf != null) {
+			termGenerator.ensureDrugTermsConform(task, mpf, CharacteristicType.STATED_RELATIONSHIP, true);
+			mpf.setDefinitionStatus(DefinitionStatus.FULLY_DEFINED);
 			mpf = createConcept(task, mpf, info);
 			report (task, concept, Severity.LOW, ReportActionType.INFO, "Existing MPF(s) considered insufficient: " + (currentMPFs.isEmpty() ? "None detected" : currentMPFs));
 			task.addAfter(mpf, concept);
@@ -155,9 +157,11 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 		
 		Set<Concept> baseIngredients = DrugUtils.getIngredients(c, CharacteristicType.INFERRED_RELATIONSHIP)
 									.stream()
-									.map(i -> DrugUtils.getBase(i))
+									.map(i -> DrugUtils.getBase(gl.getConceptSafely(i.getConceptId())))
 									.collect(Collectors.toSet());
-		
+		if (baseIngredients.size() == 0) {
+			throw new ValidationFailure(c,"Zero ingredients found.");
+		}
 		for (Concept base : baseIngredients) {
 			Relationship ingredRel = new Relationship (mpf, HAS_ACTIVE_INGRED, base, UNGROUPED);
 			mpf.addRelationship(ingredRel);

@@ -47,6 +47,7 @@ import org.ihtsdo.termserver.scripting.template.AncestorsCache;
 import org.ihtsdo.termserver.scripting.template.DescendentsCache;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
+import com.amazonaws.services.datapipeline.model.ValidationError;
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 import com.google.gson.Gson;
@@ -447,6 +448,9 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	protected Concept createConcept(Task t, Concept c, String info) throws TermServerScriptException {
+		if (c.getFsn() == null || c.getFsn().isEmpty()) {
+			throw new ValidationFailure(c, "Cannot create concept with no FSN");
+		}
 		try {
 			String conceptSerialised = gson.toJson(c);
 			debug ((dryRun ?"Dry run ":"Creating ") + c + info);
