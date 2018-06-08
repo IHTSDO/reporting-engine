@@ -849,8 +849,9 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept found to have " + ppps.size() + " proximal primitive parents.  Cannot state parent as: " + newPPP);
 		} else {
 			Concept ppp = ppps.get(0);
-			if (ppp.equals(newPPP)) {
-				changesMade += setProximalPrimitiveParent(t, c, ppp);
+			//We need to either calculate the ppp as the intended one, or higher than it eg calculated PPP of Disease is OK if we're setting the more specific "Complication"
+			if (ppp.equals(newPPP) || ancestorsCache.getAncestors(newPPP).contains(ppp)) {
+				changesMade += setProximalPrimitiveParent(t, c, newPPP);
 			} else {
 				report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Calculated PPP " + ppp + " does not match that suggested by template: " + newPPP + ", cannot remodel.");
 			}
@@ -871,9 +872,11 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 					doAddition = false;
 				} else {
 					//We can only remove relationships which are subsumed by the new Proximal Primitive Parent
+					//OR if the current parent is a supertype of the PPP, such as when we're moving from Disease to Complication.
 					//Need a local copy of concept for transitive closure questions
 					Concept thisParentLocal = gl.getConcept(r.getTarget().getConceptId());
-					if (thisParentLocal.getAncestors(NOT_SET).contains(newParent)) {
+					if (thisParentLocal.getAncestors(NOT_SET).contains(newParent) || 
+						newParent.getAncestors(NOT_SET).contains(thisParentLocal)) {
 						removeParentRelationship(t, r, c, newParent.toString(), null);
 						changesMade++;
 					} else {
