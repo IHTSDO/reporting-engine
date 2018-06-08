@@ -21,6 +21,9 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 abstract public class TemplateFix extends BatchFix {
 	
 	String subHierarchyStr;
+	String [] excludeHierarchies = new String[] {};
+	List<Concept> exclusions;
+	
 	Concept subHierarchy;
 	String[] templateNames;
 	
@@ -42,6 +45,11 @@ abstract public class TemplateFix extends BatchFix {
 			info ("Loaded template: " + templates.get(x).toIdString());
 		}
 		info(templates.size() + " Templates loaded successfully");
+		
+		exclusions = new ArrayList<>();
+		for (String thisExclude : excludeHierarchies) {
+			exclusions.addAll(gl.getConcept(thisExclude).getDescendents(NOT_SET));
+		}
 	}
 	
 	protected Template loadTemplate (char id, String fileName) throws TermServerScriptException {

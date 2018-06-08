@@ -86,6 +86,7 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		templateNames = new String[] {"Infection caused by protozoa.json"};
 		*/
 		subHierarchyStr =  "125666000";  //QI-33  |Burn (disorder)|
+		excludeHierarchies = new String[] { "426284001" } ; // |Chemical burn (disorder)| 
 		templateNames = new String[] {
 				"burn/Burn of body structure.json",
 				"burn/Epidermal burn of body structure.json",
@@ -158,6 +159,7 @@ public class PrepMisalignedConcepts extends TemplateFix {
 			Set<Concept> matches = findTemplateMatches(template);
 			incrementSummaryInformation("Matched templates",matches.size());
 			unalignedConcepts.removeAll(matches);
+			unalignedConcepts.removeAll(exclusions);
 		}
 		
 		for (Concept c : unalignedConcepts) {
