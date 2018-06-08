@@ -1,0 +1,6 @@
+{
+  "name": "Superficial Partial thickness burn of body structure",
+  "documentation": "https://confluence.ihtsdotools.org/pages/viewpage.action?pageId=63275284",
+  "version": 1,
+  "logicalTemplate": "64572001 |Disease (disorder)|: {\n\t\t116676008 |Associated morphology (attribute)| = 262587005 |Superficial partial thickness burn (morphologic abnormality)|, 363698007 |Finding site (attribute)|  = [[+id(<< 39937001 |Skin structure (body structure)|) @skin]]\n\t}"
+}

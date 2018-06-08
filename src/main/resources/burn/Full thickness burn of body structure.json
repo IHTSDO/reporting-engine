@@ -1,0 +1,6 @@
+{
+  "name": "Full thickness burn of body structure",
+  "documentation": "https://confluence.ihtsdotools.org/pages/viewpage.action?pageId=64260217",
+  "version": 1,
+  "logicalTemplate": "64572001 |Disease (disorder)|: {\n\t\t116676008 |Associated morphology (attribute)| = 80247002 |Third degree burn injury (morphologic abnormality)|, 363698007 |Finding site (attribute)|  = [[+id(<< 39937001 |Skin structure (body structure)|) @skin]]\n\t}"
+}
