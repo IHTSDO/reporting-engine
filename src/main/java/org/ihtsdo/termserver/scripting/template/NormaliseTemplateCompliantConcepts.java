@@ -2,32 +2,20 @@ package org.ihtsdo.termserver.scripting.template;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
-import org.ihtsdo.termserver.scripting.TermServerScript.ReportActionType;
-import org.ihtsdo.termserver.scripting.TermServerScript.Severity;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
-import org.ihtsdo.termserver.scripting.domain.Batch;
-import org.ihtsdo.termserver.scripting.domain.Component;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Relationship;
-import org.ihtsdo.termserver.scripting.domain.RelationshipGroup;
-import org.ihtsdo.termserver.scripting.domain.Task;
-import org.ihtsdo.termserver.scripting.domain.Template;
+import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import us.monoid.json.JSONObject;
 
 /**
- * QI-3
+ * QI-3, QI-31
  * For concepts that align to a given template, we can normalise them.
  * That is to say, copy all the inferred relationships into the stated form
  * and set the proximal primitive parent - if it matches the template expectation
@@ -41,12 +29,6 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		NormaliseTemplateCompliantConcepts app = new NormaliseTemplateCompliantConcepts(null);
 		try {
-			app.reportNoChange = false;
-			app.selfDetermining = true;
-			app.runStandAlone = true;
-			app.classifyTasks = true;
-			app.validateTasks = true;
-			app.additionalReportColumns = "CharacteristicType, Template, ActionDetail";
 			app.init(args);
 			app.loadProjectSnapshot(false);  //Load all descriptions
 			app.postInit();
@@ -58,6 +40,38 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		} finally {
 			app.finish();
 		}
+	}
+	
+	protected void init(String[] args) throws TermServerScriptException, IOException {
+		reportNoChange = false;
+		selfDetermining = true;
+		runStandAlone = true;
+		classifyTasks = true;
+		validateTasks = true;
+		additionalReportColumns = "CharacteristicType, Template, ActionDetail";
+		
+		/*subHierarchyStr = "125605004";  // QI-30 |Fracture of bone (disorder)|
+		templateNames = new String[] {	"Fracture of Bone Structure.json" }; /*,
+										"Fracture Dislocation of Bone Structure.json",
+										"Pathologic fracture of bone due to Disease.json"};
+		
+		subHierarchyStr =  "128294001";  // QI-9 |Chronic inflammatory disorder (disorder)
+		templateNames = new String[] {"Chronic Inflammatory Disorder.json"};
+		*/
+		subHierarchyStr =  "126537000";  //QI-31 |Neoplasm of bone (disorder)|
+		templateNames = new String[] {	"Neoplasm of Bone.json",
+										"Pathologic fracture morphology of bone structure co-occurrent and due to Neoplasm of bone.json"};
+		/*
+		subHierarchyStr =  "34014006"; //QI-15 + QI-23 |Viral disease (disorder)|
+		templateNames = new String[] {	"Infection caused by virus with optional bodysite.json"};
+		
+		subHierarchyStr =  "87628006";  //QI-16 + QI-21 |Bacterial infectious disease (disorder)|
+		templateNames = new String[] {	"Infection caused by bacteria with optional bodysite.json"}; 
+		
+		subHierarchyStr =  "95896000";  //QI-19 + QI-27  |Protozoan infection (disorder)|
+		templateNames = new String[] {"Infection caused by Protozoa with optional bodysite.json"};
+		*/
+		super.init(args);
 	}
 
 	@Override
@@ -80,13 +94,13 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 
 	private int normaliseConceptToTemplate(Task t, Concept c, Template template) throws TermServerScriptException {
 		int changesMade = 0;
-		if (t == null) {
+		if (template == null) {
 			report (t, c, Severity.HIGH, ReportActionType.API_ERROR, "No template found for use with concept");
 			return changesMade;
 		}
 		
-		//If the proximal primitive parent matches the template, we can set that
-		List<String> focusConceptIds = templates.get(0).getLogicalTemplate().getFocusConcepts();
+		//If the proximal primitive parent matches that of the matching template, we can set that
+		List<String> focusConceptIds = conceptToTemplateMap.get(c).getLogicalTemplate().getFocusConcepts();
 		if (focusConceptIds.size() == 1) {
 			changesMade += checkAndSetProximalPrimitiveParent(t, c, gl.getConcept(focusConceptIds.get(0)));
 		} else {
@@ -156,7 +170,27 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 			alignedConcepts.addAll(findTemplateMatches(template));
 		}
 		alignedConcepts.removeAll(ignoredConcepts);
-		return asComponents(alignedConcepts);
+		
+		//Now first pass attempt to remodel because we don't want to batch anything that results 
+		//in no changes being made.
+		Set<Concept> changesRequired = new HashSet<>();
+		Set<Concept> noChangesRequired = new HashSet<>();
+		setQuiet(true);
+		for (Concept alignedConcept : alignedConcepts) {
+			//Make changes to a clone of the concept so we don't affect our local copy
+			Concept alignedClone = alignedConcept.cloneWithIds();
+			int changesMade = normaliseConceptToTemplate(null, alignedClone, conceptToTemplateMap.get(alignedConcept));
+			if (changesMade > 0) {
+				changesRequired.add(alignedConcept);
+			} else {
+				noChangesRequired.add(alignedConcept);
+			}
+		}
+		setQuiet(false);
+		for (Concept unchanged : noChangesRequired) {
+			report (null, unchanged, Severity.NONE, ReportActionType.NO_CHANGE);
+		}
+		return asComponents(changesRequired);
 	}
 	
 }

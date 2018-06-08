@@ -65,6 +65,7 @@ public class RemodelGroupOne extends TemplateFix {
 		templateNames = new String[] {	"Fracture of Bone Structure.json" }; /*,
 										"Fracture Dislocation of Bone Structure.json",
 										"Pathologic fracture of bone due to Disease.json"};
+		
 		//subHierarchyStr =  "128294001";  // QI-9 |Chronic inflammatory disorder (disorder)
 		//templateNames = new String[] {"Chronic Inflammatory Disorder.json"};
 		
