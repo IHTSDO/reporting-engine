@@ -954,4 +954,23 @@ public class SnomedUtils implements RF2Constants{
 		return moreSpecificAttributeDetected;
 	}
 
+	/*
+	 * Get active relationships which are the same as, or descendants of the stated types and values
+	 */
+	public static List<Relationship> getSubsumedRelationships(Concept c, Concept type, Concept target,
+			CharacteristicType charType, AncestorsCache cache) throws TermServerScriptException {
+		List<Relationship> matchedRelationships = new ArrayList<>();
+		for (Relationship r : c.getRelationships(charType, ActiveState.ACTIVE)) {
+			//Does this type have the desired type as self or ancestor?  Need local copies to do subsumption testing
+			Concept rType = GraphLoader.getGraphLoader().getConcept(r.getType().getConceptId());
+			Concept rTarget = GraphLoader.getGraphLoader().getConcept(r.getTarget().getConceptId());
+			if (cache.getAncestorsOrSelf(rType).contains(type)) {
+				if (cache.getAncestorsOrSelf(rTarget).contains(target)) {
+					matchedRelationships.add(r);
+				}
+			}
+		}
+		return matchedRelationships;
+	}
+
 }

@@ -11,6 +11,8 @@ import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
+import org.ihtsdo.termserver.scripting.template.AncestorsCache;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import us.monoid.json.JSONObject;
 /**
@@ -57,7 +59,7 @@ public class QI26_AddComplication extends BatchFix {
 		int changesMade = 0;
 		try {
 			Concept loadedConcept = loadConcept(concept, task.getBranchPath());
-			changesMade = addProximalPrimitiveParent(task, loadedConcept);
+			changesMade = checkAndSetProximalPrimitiveParent(task, loadedConcept, COMPLICATION);
 			String conceptSerialised = gson.toJson(loadedConcept);
 			if (changesMade > 0) {
 				debug ((dryRun ?"Dry run ":"Updating state of ") + loadedConcept + info);
@@ -72,40 +74,20 @@ public class QI26_AddComplication extends BatchFix {
 		}
 		return changesMade;
 	}
-	
-	private int addProximalPrimitiveParent(Task t, Concept c) throws TermServerScriptException {
-		int changesMade = 0;
-		List<Concept> ppps = determineProximalPrimitiveParents(c);
-		if (ppps.size() != 1) {
-			report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept found to have " + ppps.size() + " proximal primitive parents.  Cannot remodel.");
-		} else {
-			Concept ppp = ppps.get(0);
-			if (acceptablePPPs.contains(ppp)) {
-				Relationship newParentRel = new Relationship (c, IS_A, newProximalPrimitiveParent, UNGROUPED);
-				c.addRelationship(newParentRel);
-				report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, newParentRel);
-				
-				//And if we're currently modelled to Disease, then remove that
-				for (Relationship parentRel : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, IS_A, ActiveState.ACTIVE)) {
-					if (parentRel.getTarget().equals(DISEASE)) {
-						removeRelationship(t, c, parentRel);
-					}
-				}
-				changesMade++;
-			} else {
-				report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Calculated PPP: " + ppp + " does not match requirements.");
-			}
-		}
-		return changesMade;
-	}
 
 	@Override
+	/* ECL to find candidates:
+	 *  << 404684003 : 42752001 = << 404684003
+	 */
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		List<Component> processMe = new ArrayList<>();
 		//Find all descendants of 404684003 |Clinical finding (finding)| 
 		for (Concept c : CLINICAL_FINDING.getDescendents(NOT_SET)) {
+			/*if (c.getConceptId().equals("238794007")) {
+				debug ("Check 238794007 |Ischemic foot ulcer (disorder)|");
+			}*/
 			//which have Due To = Clinical Finding
-			if (c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, DUE_TO, CLINICAL_FINDING, ActiveState.ACTIVE).size() > 0) {
+			if (SnomedUtils.getSubsumedRelationships(c, DUE_TO, CLINICAL_FINDING, CharacteristicType.INFERRED_RELATIONSHIP, ancestorsCache).size() > 0) {
 				//and do not have Complication as an existing parent
 				if (!c.getParents(CharacteristicType.STATED_RELATIONSHIP).contains(COMPLICATION)) {
 					//And exisiting PPP can be calculated as acceptable
