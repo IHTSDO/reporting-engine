@@ -107,7 +107,6 @@ public class RemodelGroupOne extends TemplateFix {
 		}*/
 		int changesMade = remodelGroupOne(task, loadedConcept, templates.get(0));
 		if (changesMade > 0) {
-			
 			List<String> focusConceptIds = templates.get(0).getLogicalTemplate().getFocusConcepts();
 			if (focusConceptIds.size() == 1) {
 				checkAndSetProximalPrimitiveParent(task, loadedConcept, gl.getConcept(focusConceptIds.get(0)));
@@ -232,7 +231,7 @@ public class RemodelGroupOne extends TemplateFix {
 
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		//Find concepts that only have ungrouped attributes, or none at all.
-		List<Component> processMe = new ArrayList<>();
+		List<Concept> processMe = new ArrayList<>();
 		nextConcept:
 		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
 			/*if (!c.getConceptId().equals("59121004")) {
@@ -266,7 +265,36 @@ public class RemodelGroupOne extends TemplateFix {
 				}
 			}
 		}
-		return processMe;
+		List<Component> firstPassComplete = firstPassRemodel(processMe);
+		return firstPassComplete;
+	}
+
+	private List<Component> firstPassRemodel(List<Concept> processMe) throws TermServerScriptException {
+		setQuiet(true);
+		List<Component> firstPassComplete = new ArrayList<>();
+		List<ValidationFailure> failures = new ArrayList<>();
+		Set<Concept> noChangesMade = new HashSet<>();
+		for (Concept c : processMe) {
+			try {
+				Concept cClone = c.cloneWithIds();
+				int changesMade = remodelGroupOne(null, cClone, templates.get(0));
+				if (changesMade > 0) {
+					firstPassComplete.add(c);
+				} else {
+					noChangesMade.add(c);
+				}
+			} catch (ValidationFailure vf) {
+				failures.add(vf);
+			}
+		}
+		setQuiet(false);
+		for (ValidationFailure failure : failures) {
+			report (failure);
+		}
+		for (Concept unchanged : noChangesMade) {
+			report (null, unchanged, Severity.NONE, ReportActionType.NO_CHANGE, "");
+		}
+		return firstPassComplete;
 	}
 
 	private boolean isWhiteListed(Concept c) {

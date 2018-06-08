@@ -250,13 +250,17 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			incrementSummaryInformation("Total changes made", changesMade);
 			flushFiles(false);
 		} catch (ValidationFailure f) {
-			report(task, component, f.getSeverity(), f.getReportActionType(), f.getMessage());
+			report (f);
 		} catch (InterruptedException | TermServerScriptException e) {
 			report(task, component, Severity.CRITICAL, ReportActionType.API_ERROR, getMessage(e));
 			if (++failureCount > maxFailures) {
 				throw new TermServerScriptException ("Failure count exceeded " + maxFailures);
 			}
 		}
+	}
+
+	protected void report(ValidationFailure f) {
+		report(f.getTask(), f.getConcept(), f.getSeverity(), f.getReportActionType(), f.getMessage());
 	}
 
 	private void populateEditAndDescription(Task task) {
