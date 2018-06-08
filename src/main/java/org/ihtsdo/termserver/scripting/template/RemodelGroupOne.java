@@ -22,7 +22,7 @@ import org.ihtsdo.otf.authoringtemplate.domain.logical.AttributeGroup;
 import us.monoid.json.JSONObject;
 
 /**
- * QI-21 (Bacterial), QI-23 (Viral),
+ * QI-21 (Bacterial), QI-23 (Viral), QI-31 (Bone)
  * Where a concept has limited modeling, pull the most specific attributes available 
  * into group 1.  Skip any cases of multiple attributes types with values that are not in 
  * the same subhierarchy.
@@ -61,25 +61,25 @@ public class RemodelGroupOne extends TemplateFix {
 		populateTaskDescription = false;
 		additionalReportColumns = "CharacteristicType, Template, AFTER Stated, BEFORE Stated, Inferred";
 		
-		/*subHierarchyStr = "125605004";  // |Fracture of bone (disorder)|
-		templateNames = new String[] {	"Fracture of Bone Structure.json",
+		/*subHierarchyStr = "125605004";  // QI-30 |Fracture of bone (disorder)|
+		templateNames = new String[] {	"Fracture of Bone Structure.json" }; /*,
 										"Fracture Dislocation of Bone Structure.json",
-										"Pathologic fracture of bone due to Disease.json"};*/
+										"Pathologic fracture of bone due to Disease.json"};
 		//subHierarchyStr =  "128294001";  // QI-9 |Chronic inflammatory disorder (disorder)
 		//templateNames = new String[] {"Chronic Inflammatory Disorder.json"};
 		
 		//subHierarchyStr =  "126537000";  //QI-14 |Neoplasm of bone (disorder)|
 		//templateNames = new String[] {"Neoplasm of Bone.json"};
 		
-		/*subHierarchyStr =  "34014006"; //QI-15 + QI-23 |Viral disease (disorder)|
+		subHierarchyStr =  "34014006"; //QI-15 + QI-23 |Viral disease (disorder)|
 		templateNames = new String[] {	"Infection caused by virus with optional bodysite.json"};
-		*/
+		
 		subHierarchyStr =  "87628006";  //QI-16 + QI-21 |Bacterial infectious disease (disorder)|
 		templateNames = new String[] {	"Infection caused by bacteria with optional bodysite.json"}; 
-		
-		/*subHierarchyStr =  "95896000";  //QI-19  |Protozoan infection (disorder)|
-		templateNames = new String[] {"Infection caused by protozoa.json"};
 		*/
+		subHierarchyStr =  "95896000";  //QI-19 + QI-27  |Protozoan infection (disorder)|
+		templateNames = new String[] {"Infection caused by Protozoa with optional bodysite.json"};
+		
 		super.init(args);
 	}
 	
@@ -101,9 +101,9 @@ public class RemodelGroupOne extends TemplateFix {
 	@Override
 	protected int doFix(Task task, Concept concept, String info) throws TermServerScriptException, ValidationFailure {
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
-		if (loadedConcept.getConceptId().equals("72294005")) {
+		/*if (loadedConcept.getConceptId().equals("72294005")) {
 			debug("Check me");
-		}
+		}*/
 		int changesMade = remodelGroupOne(task, loadedConcept, templates.get(0));
 		if (changesMade > 0) {
 			
@@ -234,7 +234,7 @@ public class RemodelGroupOne extends TemplateFix {
 		List<Component> processMe = new ArrayList<>();
 		nextConcept:
 		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
-			/*if (!c.getConceptId().equals("48113006")) {
+			/*if (!c.getConceptId().equals("59121004")) {
 				continue;
 			}*/
 			if (isWhiteListed(c)) {
