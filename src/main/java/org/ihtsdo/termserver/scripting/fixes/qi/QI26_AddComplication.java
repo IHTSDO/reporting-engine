@@ -1,8 +1,7 @@
 package org.ihtsdo.termserver.scripting.fixes.qi;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.exception.ExceptionUtils;
@@ -11,7 +10,6 @@ import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
-import org.ihtsdo.termserver.scripting.template.AncestorsCache;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import us.monoid.json.JSONObject;
@@ -38,6 +36,7 @@ public class QI26_AddComplication extends BatchFix {
 			fix.populateEditPanel = false;
 			fix.selfDetermining = true;
 			fix.reportNoChange = true;
+			fix.classifyTasks = true;
 			fix.additionalReportColumns = "Action Detail";
 			fix.init(args);
 			fix.loadProjectSnapshot(true);
