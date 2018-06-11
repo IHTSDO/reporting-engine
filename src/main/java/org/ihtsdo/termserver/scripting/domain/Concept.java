@@ -959,6 +959,10 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 			dClone.setConceptId(keepIds?conceptId:null);
 			dClone.setEffectiveTime(keepIds?d.getEffectiveTime():null);
 			clone.addDescription(dClone);
+			//If we're keeping IDs, copy any inactivation indicators also.
+			if (keepIds) {
+				dClone.inactivationIndicatorEntries = new ArrayList<>(d.getInactivationIndicatorEntries());
+			}
 		}
 		
 		//Copy all stated relationships, or in the case of an exact clone (keepIds = true) also inferred
@@ -976,6 +980,11 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		clone.statedChildren = statedChildren == null? new ArrayList<>() : new ArrayList<>(statedChildren);
 		clone.inferredParents = inferredParents == null? new ArrayList<>() : new ArrayList<>(inferredParents);
 		clone.statedParents = statedParents == null? new ArrayList<>() : new ArrayList<>(statedParents);
+		
+		//If we're keeping IDs, copy any inactivation indicators also.
+		if (keepIds) {
+			clone.inactivationIndicatorEntries = new ArrayList<>(getInactivationIndicatorEntries());
+		}
 		
 		return clone;
 	}
