@@ -66,21 +66,21 @@ public class RemodelGroupOne extends TemplateFix {
 										"Fracture Dislocation of Bone Structure.json",
 										"Pathologic fracture of bone due to Disease.json"};
 		
-		//subHierarchyStr =  "128294001";  // QI-9 |Chronic inflammatory disorder (disorder)
-		//templateNames = new String[] {"Chronic Inflammatory Disorder.json"};
+		subHierarchyStr =  "128294001";  // QI-9 |Chronic inflammatory disorder (disorder)
+		templateNames = new String[] {"Chronic Inflammatory Disorder.json"};
 		
-		//subHierarchyStr =  "126537000";  //QI-14 |Neoplasm of bone (disorder)|
-		//templateNames = new String[] {"Neoplasm of Bone.json"};
+		subHierarchyStr =  "126537000";  //QI-14 |Neoplasm of bone (disorder)|
+		templateNames = new String[] {"Neoplasm of Bone.json"};
 		
 		subHierarchyStr =  "34014006"; //QI-15 + QI-23 |Viral disease (disorder)|
 		templateNames = new String[] {	"Infection caused by virus with optional bodysite.json"};
-		
+		*/
 		subHierarchyStr =  "87628006";  //QI-16 + QI-21 |Bacterial infectious disease (disorder)|
 		templateNames = new String[] {	"Infection caused by bacteria with optional bodysite.json"}; 
-		*/
+		/*
 		subHierarchyStr =  "95896000";  //QI-19 + QI-27  |Protozoan infection (disorder)|
 		templateNames = new String[] {"Infection caused by Protozoa with optional bodysite.json"};
-		
+		*/
 		super.init(args);
 	}
 	

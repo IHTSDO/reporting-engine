@@ -877,20 +877,20 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 				} else {
 					//We can only remove relationships which are subsumed by the new Proximal Primitive Parent
 					//OR if the current parent is a supertype of the PPP, such as when we're moving from Disease to Complication.
-					//Need a local copy of concept for transitive closure questions
-					Concept thisParentLocal = gl.getConcept(r.getTarget().getConceptId());
-					if (thisParentLocal.getAncestors(NOT_SET).contains(newParent) || 
-						newParent.getAncestors(NOT_SET).contains(thisParentLocal)) {
+					Concept thisParent = gl.getConcept(r.getTarget().getConceptId());
+					if (ancestorsCache.getAncestors(thisParent).contains(newParent) || 
+						ancestorsCache.getAncestors(newParent).contains(thisParent)) {
 						removeParentRelationship(t, r, c, newParent.toString(), null);
 						changesMade++;
 					} else {
-						report (t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Unable to remove parent " + thisParentLocal + " because it it not subsumed by " + newParent );
+						report (t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Unable to remove parent " + thisParent + " because it it not subsumed by " + newParent );
 					}
 				}
 			}
 
 			if (doAddition) {
 				Relationship newParentRel = new Relationship(c, IS_A, newParent, 0);
+				report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, newParentRel);
 				c.addRelationship(newParentRel);
 				changesMade++;
 			}
