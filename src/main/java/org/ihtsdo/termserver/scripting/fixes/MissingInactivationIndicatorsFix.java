@@ -26,17 +26,17 @@ import us.monoid.json.JSONObject;
 	do another fix to address.   Use the same class in the delta package.
 */
 @Deprecated
-public class FixMissingInactivationIndicators extends BatchFix implements RF2Constants{
+public class MissingInactivationIndicatorsFix extends BatchFix implements RF2Constants{
 	
 	Map<String, ConceptChange> conceptsToProcess = new HashMap<String, ConceptChange>();
 	Set<Integer> reportedItems = new HashSet<Integer>();
 	
-	protected FixMissingInactivationIndicators(BatchFix clone) {
+	protected MissingInactivationIndicatorsFix(BatchFix clone) {
 		super(clone);
 	}
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
-		FixMissingInactivationIndicators fix = new FixMissingInactivationIndicators(null);
+		MissingInactivationIndicatorsFix fix = new MissingInactivationIndicatorsFix(null);
 		try {
 			fix.selfDetermining = true;
 			fix.init(args);
