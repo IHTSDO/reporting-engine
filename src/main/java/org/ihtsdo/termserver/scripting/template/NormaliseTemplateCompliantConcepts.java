@@ -15,7 +15,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import us.monoid.json.JSONObject;
 
 /**
- * QI-3, QI-31
+ * QI-3, QI-31, QI-34
  * For concepts that align to a given template, we can normalise them.
  * That is to say, copy all the inferred relationships into the stated form
  * and set the proximal primitive parent - if it matches the template expectation
@@ -35,7 +35,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 			Batch batch = app.formIntoBatch();
 			app.batchProcess(batch);
 		} catch (Exception e) {
-			info("Failed to produce ConceptsWithOrTargetsOfAttribute Report due to " + e.getMessage());
+			info("Failed to NormaliseTemplateCompliantConcepts due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			app.finish();
@@ -57,11 +57,11 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		
 		subHierarchyStr =  "128294001";  // QI-9 |Chronic inflammatory disorder (disorder)
 		templateNames = new String[] {"Chronic Inflammatory Disorder.json"};
-		*/
+		
 		subHierarchyStr =  "126537000";  //QI-31 |Neoplasm of bone (disorder)|
 		templateNames = new String[] {	"Neoplasm of Bone.json",
 										"Pathologic fracture morphology of bone structure co-occurrent and due to Neoplasm of bone.json"};
-		/*
+
 		subHierarchyStr =  "34014006"; //QI-15 + QI-23 |Viral disease (disorder)|
 		templateNames = new String[] {	"Infection caused by virus with optional bodysite.json"};
 		
@@ -71,6 +71,14 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		subHierarchyStr =  "95896000";  //QI-19 + QI-27  |Protozoan infection (disorder)|
 		templateNames = new String[] {"Infection caused by Protozoa with optional bodysite.json"};
 		*/
+		subHierarchyStr =  "125666000";  //QI-37  |Burn (disorder)|
+		templateNames = new String[] {
+				"burn/Burn of body structure.json",
+				"burn/Epidermal burn of body structure.json",
+				"burn/Partial thickness burn of body structure.json",
+				"burn/Full thickness burn of body structure.json",
+				"burn/Deep partial thickness burn of body structure.json",
+				"burn/Superficial partial thickness burn of body structure.json"};
 		super.init(args);
 	}
 
