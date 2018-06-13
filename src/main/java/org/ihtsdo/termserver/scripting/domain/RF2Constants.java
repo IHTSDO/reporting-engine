@@ -14,6 +14,7 @@ public interface RF2Constants {
 	final int TERTIARY_REPORT = 2;
 	
 	static Concept IS_A =  new Concept ("116680003");  // | Is a (attribute) |
+	static Concept NULL_CONCEPT = new Concept ("-1");  
 	
 	//Drugs and Substances
 	static Concept PHARM_BIO_PRODUCT = new Concept ("373873005") ; //Pharmaceutical / biologic product (product)

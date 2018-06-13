@@ -11,6 +11,8 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
+import org.ihtsdo.termserver.scripting.TermServerScript.ReportActionType;
+import org.ihtsdo.termserver.scripting.TermServerScript.Severity;
 import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -586,6 +588,18 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	protected void removeRelationships (Task t, Concept c, Concept type, int groupId) throws TermServerScriptException {
 		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, type, groupId)) {
 			removeRelationship(t, c, r);
+		}
+	}
+	
+	protected void save (Task task, Concept loadedConcept, String info) {
+		try {
+			String conceptSerialised = gson.toJson(loadedConcept);
+			debug ((dryRun?"Dry run updating":"Updating") + " state of " + loadedConcept + info);
+			if (!dryRun) {
+				tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
+			}
+		} catch (Exception e) {
+			report(task, loadedConcept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
 		}
 	}
 	

@@ -34,6 +34,7 @@ public class GraphLoader implements RF2Constants {
 	private Map<String, Description> descriptions = new HashMap<String, Description>();
 	private Map<String, Component> allComponents = null;
 	private Map<Component, Concept> componentOwnerMap = null;
+	private Map<String, Concept> fsnMap = null;
 	private String excludeModule = "715515008";
 	public static int MAX_DEPTH = 1000;
 	
@@ -100,6 +101,17 @@ public class GraphLoader implements RF2Constants {
 	
 	private boolean isConcept(String sctId) {
 		return sctId.charAt(sctId.length()-2) == '0';
+	}
+	
+	public Concept findConcept (String fsn) {
+		//Populate the fsn map if required
+		if (fsnMap == null) {
+			fsnMap = new HashMap<>();
+			for (Concept c : concepts.values()) {
+				fsnMap.put(c.getFsn(), c);
+			}
+		}
+		return fsnMap.get(fsn);
 	}
 
 	public void addRelationshipToConcept(Concept source, CharacteristicType characteristicType, String[] lineItems, boolean isDelta) throws TermServerScriptException {

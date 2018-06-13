@@ -56,6 +56,14 @@ public class AssociationTargets {
 		return targets;
 	}
 	
+	public static AssociationTargets sameAs(Concept c) {
+		AssociationTargets targets = new AssociationTargets();
+		List<String> targetList = new ArrayList<>();
+		targetList.add(c.getId());
+		targets.setSameAs(targetList);
+		return targets;
+	}
+	
 	public int size() {
 		int total = 0;
 		
