@@ -41,7 +41,7 @@ public class MissingDrugConcepts extends TermServerReport {
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		MissingDrugConcepts report = new MissingDrugConcepts();
 		try {
-			report.additionalReportColumns = "MP/MPF Concept using modified ingredient, Ingredient";
+			report.additionalReportColumns = "FSN, MP/MPF Concept using modified ingredient, Base Ingredient";
 			report.init(args);
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.postInit();
