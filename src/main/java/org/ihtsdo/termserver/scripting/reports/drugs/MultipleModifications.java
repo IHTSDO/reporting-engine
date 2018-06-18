@@ -10,12 +10,15 @@ import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 
+/**
+ * DRUGS-506 List Substances that have more than one modification attribute
+ */
 public class MultipleModifications extends TermServerReport {
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		MultipleModifications report = new MultipleModifications();
 		try {
-			report.additionalReportColumns = "Modifications";
+			report.additionalReportColumns = "FSN, Modifications";
 			report.init(args);
 			report.loadProjectSnapshot(true);  
 			report.findMultipleModifications();
