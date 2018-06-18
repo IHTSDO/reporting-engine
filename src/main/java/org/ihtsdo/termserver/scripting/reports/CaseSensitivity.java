@@ -2,14 +2,15 @@ package org.ihtsdo.termserver.scripting.reports;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.regex.*;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+
+import com.google.common.base.Charsets;
+import com.google.common.io.Files;
 
 /**
  * DRUGS-269, SUBST-130
@@ -19,8 +20,10 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 public class CaseSensitivity extends TermServerReport{
 	
 	List<Concept> targetHierarchies = new ArrayList<Concept>();
-	boolean unpublishedContentOnly = true;
-	String[] properNouns = new String[] { "Doppler", "Lactobacillus", "Salmonella", "Staphylococcus", "Streptococcus", "X-linked" };
+	boolean unpublishedContentOnly = false;
+	List<String> properNouns = new ArrayList<>();
+	List<String> knownLowerCase = new ArrayList<>();
+	//String[] properNouns = new String[] { "Doppler", "Lactobacillus", "Salmonella", "Staphylococcus", "Streptococcus", "X-linked" };
 	//String[] knownLowerCase = new String[] { "milliliter" };
 	Pattern numberLetter = Pattern.compile("\\d[a-z]");
 	
@@ -30,16 +33,50 @@ public class CaseSensitivity extends TermServerReport{
 			//report.additionalReportColumns = "description, isPreferred, caseSignificance, issue";
 			report.additionalReportColumns = "description, isPreferred, caseSignificance, usedInProduct, logicRuleOK, issue";
 			report.init(args);
+			report.loadCSWords();
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			info ("Producing case sensitivity report...");
-			//report.checkCaseSignificance();
-			report.checkCaseSignificanceSubstances();
+			report.checkCaseSignificance();
+			//report.checkCaseSignificanceSubstances();
 		} finally {
 			report.finish();
 		}
 	}
 
-/*	private void checkCaseSignificance() throws TermServerScriptException {
+private void loadCSWords() throws IOException, TermServerScriptException {
+	info ("Loading " + inputFile);
+	if (!inputFile.canRead()) {
+		throw new TermServerScriptException ("Cannot read: " + inputFile);
+	}
+	List<String> lines = Files.readLines(inputFile, Charsets.UTF_8);
+	int lineNum = 0;
+	for (String line : lines) {
+		lineNum++;
+		//Split the line up on spaces.  Expect two entries
+		String[] items = line.split(" ");
+		if (lineNum == 1) {
+			//Skip headers
+			continue;
+		} else if (items.length > 2) {
+			warn ("Extra item at line " + lineNum + ": " + line);
+		} else if (items.length < 2) {
+			warn ("Short line " + lineNum + ": " + line);
+			continue;
+		} else if (items[1].equals("2")) {
+			//Status 2 items are not good, not sure what they're for.
+			continue;
+		}
+		String word = items[0];
+		//Does the word contain a capital letter (ie not the same as it's all lower case variant)
+		if (!word.equals(word.toLowerCase())) {
+			properNouns.add(word);
+		} else {
+			knownLowerCase.add(word);
+		}
+	}
+}
+
+	private void checkCaseSignificance() throws TermServerScriptException {
 		//Work through all active descriptions of all hierarchies
 		for (Concept targetHierarchy : targetHierarchies) {
 			for (Concept c : targetHierarchy.getDescendents(NOT_SET)) {
@@ -57,6 +94,7 @@ public class CaseSensitivity extends TermServerReport{
 							if (chopped.equals(chopped.toLowerCase()) && 
 									!letterFollowsNumber(d.getTerm()) && 
 									!startsWithProperNoun(d.getTerm()) &&
+									!containsKnownLowerCaseWord(d.getTerm()) &&
 									!c.getFsn().contains("(organism)")) {
 								report (c, d, preferred, caseSig, "Case sensitive term does not have capital after first letter");
 								incrementSummaryInformation("issues");
@@ -72,8 +110,17 @@ public class CaseSensitivity extends TermServerReport{
 				}
 			}
 		}
-	}*/
+	}
 	
+	private boolean containsKnownLowerCaseWord(String term) {
+		for (String lowerCaseWord : knownLowerCase) {
+			if (term.contains(" "  + lowerCaseWord + " ") || term.contains(" " + lowerCaseWord + "/") || term.contains("/" + lowerCaseWord + " ")) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	private void checkCaseSignificanceSubstances() throws TermServerScriptException {
 		Set<Concept> substancesUsedInProducts = getSubstancesUsedInProducts();
 		for (Concept c : SUBSTANCE.getDescendents(NOT_SET)) {
@@ -119,7 +166,7 @@ public class CaseSensitivity extends TermServerReport{
 
 	private boolean startsWithProperNoun(String term) {
 		String firstWord = term.split(" ")[0];
-		return ArrayUtils.contains(properNouns, firstWord);
+		return properNouns.contains(firstWord);
 	}
 
 	private boolean letterFollowsNumber(String term) {
@@ -132,8 +179,9 @@ public class CaseSensitivity extends TermServerReport{
 	protected void init(String[] args) throws TermServerScriptException, SnowOwlClientException {
 		super.init(args);
 		//targetHierarchies.add(PHARM_BIO_PRODUCT);
-		targetHierarchies.add(SUBSTANCE);
+		//targetHierarchies.add(SUBSTANCE);
 		//targetHierarchies.add(ROOT_CONCEPT);
+		targetHierarchies.add(MEDICINAL_PRODUCT);
 	}
 
 }
