@@ -21,7 +21,7 @@ import org.ihtsdo.termserver.scripting.domain.Task;
 import us.monoid.json.JSONObject;
 
 /*
-* INFRA-2302, INFRA-2344, INFRA-2456
+* INFRA-2302, INFRA-2344, INFRA-2456, INFRA-2529
 * Driven by a text file of concepts add or remove parent relationships as indicated
 */
 public class AddRemoveParents extends BatchFix implements RF2Constants{
@@ -39,7 +39,7 @@ public class AddRemoveParents extends BatchFix implements RF2Constants{
 			fix.runStandAlone = true;
 			fix.reportNoChange = true;
 			fix.populateEditPanel = false;
-			fix.populateTaskDescription = true;
+			fix.populateTaskDescription = false;  //With Bones, we're hitting the limit of 32K
 			fix.additionalReportColumns = "Action Detail";
 			fix.expectNullConcepts = true;
 			fix.init(args);
@@ -105,7 +105,8 @@ public class AddRemoveParents extends BatchFix implements RF2Constants{
 	@Override
 	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
 		Concept c = gl.getConcept(lineItems[0]);
-		if (!lineItems[2].equals(ACTIVE_FLAG)) {
+		if (lineItems[2].equals(ACTIVE_FLAG)) {
+		//if (!lineItems[2].equals(ACTIVE_FLAG)) {
 			RelationshipGroup g = changeMap.get(c);
 			if (g == null) {
 				g = new RelationshipGroup(UNGROUPED);
