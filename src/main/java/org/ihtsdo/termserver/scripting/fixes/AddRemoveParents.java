@@ -105,14 +105,22 @@ public class AddRemoveParents extends BatchFix implements RF2Constants{
 	@Override
 	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
 		Concept c = gl.getConcept(lineItems[0]);
-		if (lineItems[2].equals(ACTIVE_FLAG)) {
-		//if (!lineItems[2].equals(ACTIVE_FLAG)) {
+		if (!c.isActive()) {
+			report (null, c, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, "Cannot modify concept - is inactive");
+			return null;
+		}
+		//if (lineItems[2].equals(ACTIVE_FLAG)) {
+		if (!lineItems[2].equals(ACTIVE_FLAG)) {
 			RelationshipGroup g = changeMap.get(c);
 			if (g == null) {
 				g = new RelationshipGroup(UNGROUPED);
 				changeMap.put(c,  g);
 			}
 			Concept target = gl.getConcept(lineItems[1]);
+			if (!target.isActive()) {
+				report (null, c, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, "Cannot modify parent, concept is inactive: " + target);
+				return null;
+			}
 			Relationship r = new Relationship (c, IS_A, target, UNGROUPED);
 			r.setActive(lineItems[2].equals(ACTIVE_FLAG));
 			g.addRelationship(r);
