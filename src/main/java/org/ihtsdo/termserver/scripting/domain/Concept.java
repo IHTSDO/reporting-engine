@@ -332,18 +332,19 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	
 	public String toExpression(CharacteristicType charType) {
 		String expression = getParents(charType).stream().map(p -> p.toString())
-							.collect(Collectors.joining (" + "));
+							.collect(Collectors.joining (" + \n"));
+		expression += " : \n";
 		//Add any ungrouped attributes
 		boolean isFirstGroup = true;
 		for (RelationshipGroup group : getRelationshipGroups (charType)) {
 			if (isFirstGroup) {
 				isFirstGroup = false;
 			} else {
-				expression += ", ";
+				expression += ",\n  ";
 			}
 			expression += group.isGrouped() ? "{" : "";
 			expression += group.getRelationships().stream().map(p -> p.toString())
-					.collect(Collectors.joining (", "));
+					.collect(Collectors.joining (",\n  "));
 			expression += group.isGrouped() ? "}" : "";
 		}
 		return expression;

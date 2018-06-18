@@ -4,9 +4,11 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
@@ -16,6 +18,7 @@ import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.RelationshipGroup;
 import org.ihtsdo.termserver.scripting.fixes.drugs.Ingredient;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.ActiveState;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.DrugTermGenerator;
@@ -39,8 +42,9 @@ public class ValidateDrugModeling extends TermServerReport{
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		ValidateDrugModeling report = new ValidateDrugModeling();
 		try {
+			report.additionalReportColumns = "FSN, SemTag, Definition, Stated, Inferred";
 			//report.additionalReportColumns = "Issue, Data, Detail";
-			report.additionalReportColumns = "Substance, Presentation, Concentration, Unit Change, Issue Detected, Ratio Calculated";
+			//report.additionalReportColumns = "Substance, Presentation, Concentration, Unit Change, Issue Detected, Ratio Calculated";
 			report.init(args);
 			report.loadProjectSnapshot(false); //Load all descriptions
 			report.validateDrugsModeling();
@@ -55,13 +59,12 @@ public class ValidateDrugModeling extends TermServerReport{
 	
 	private void validateDrugsModeling() throws TermServerScriptException {
 		Set<Concept> subHierarchy = gl.getConcept(drugsHierarchyStr).getDescendents(NOT_SET);
-		//ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT, ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.CLINICAL_DRUG };
+		ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT, ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.CLINICAL_DRUG };
 		//ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.CLINICAL_DRUG };
 		//ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT_FORM};
 		//ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT };
 		//ConceptType[] drugTypes = new ConceptType[] { ConceptType.CLINICAL_DRUG };
-		
-		initialiseSummaryInformation(BOSS_FAIL);
+		//initialiseSummaryInformation(BOSS_FAIL);
 		
 		long issueCount = 0;
 		for (Concept concept : subHierarchy) {
@@ -75,15 +78,20 @@ public class ValidateDrugModeling extends TermServerReport{
 			//issueCount += validateIngredientsInFSN(concept, drugTypes);  
 			
 			// DRUGS-267
-			issueCount += validateIngredientsAgainstBoSS(concept);
+			//issueCount += validateIngredientsAgainstBoSS(concept);
 			
-			// DRUGS-296
+			// DRUGS-296 
 			/*if (concept.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED) && 
 				concept.getParents(CharacteristicType.STATED_RELATIONSHIP).get(0).equals(MEDICINAL_PRODUCT)) {
 				issueCount += validateStatedVsInferredAttributes(concept, HAS_ACTIVE_INGRED, drugTypes);
 				issueCount += validateStatedVsInferredAttributes(concept, HAS_PRECISE_INGRED, drugTypes);
 				issueCount += validateStatedVsInferredAttributes(concept, HAS_MANUFACTURED_DOSE_FORM, drugTypes);
 			}*/
+			
+			//DRUGS-518
+			if (SnomedUtils.isConceptType(concept, drugTypes)) {
+				issueCount += checkForInferredGroupsNotStated(concept);
+			}
 			
 			//DRUGS-51?
 			/*if (concept.getConceptType().equals(ConceptType.CLINICAL_DRUG)) {
@@ -423,5 +431,61 @@ public class ValidateDrugModeling extends TermServerReport{
 	
 	private void report (Concept c, String data, String detail) {
 		super.report(c, c.getConceptType(), data, detail);
+	}
+	
+	private int checkForInferredGroupsNotStated(Concept c) throws TermServerScriptException {
+		boolean unmatchedGroupDetected = false;
+		//Work through all inferred groups and see if they're subsumed by a stated group
+		Collection<RelationshipGroup> inferredGroups = c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP);
+		Collection<RelationshipGroup> statedGroups = c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP);
+		
+		nextGroup:
+		for (RelationshipGroup inferredGroup : inferredGroups) {
+			//Can we find a matching (or less specific but otherwise matching) stated group?
+			for (RelationshipGroup statedGroup : statedGroups) {
+				if (groupMatches(inferredGroup, statedGroup)) {
+					continue nextGroup;
+				}
+			}
+			//If we get to here, then an inferred group has not been matched by a stated one
+			unmatchedGroupDetected = true;
+		}
+		
+		if (unmatchedGroupDetected) {
+			String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
+			report (c, semTag, c.getDefinitionStatus(),
+					c.toExpression(CharacteristicType.STATED_RELATIONSHIP),
+					c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+		}
+		return unmatchedGroupDetected ? 1 : 0;
+	}
+	
+	private boolean groupMatches(RelationshipGroup a, RelationshipGroup b) {
+		if (a.getRelationships().size() != b.getRelationships().size()) {
+			return false;
+		}
+		//Can we find a match for every relationship? Ignore groupId
+		nextRelationship:
+		for (Relationship relA : a.getRelationships()) {
+			for (Relationship relB : b.getRelationships()) {
+				if (relA.getType().equals(relB.getType()) && 
+					relA.getTarget().equals(relB.getTarget())) {
+					continue nextRelationship;
+				}
+			}
+			//If we get here then we've failed to find a match for relA
+			return false;
+		}
+		return true;
+	}
+
+	private Integer countAttributes(Concept c, CharacteristicType charType) {
+		int attributeCount = 0;
+		for (Relationship r : c.getRelationships(charType, ActiveState.ACTIVE)) {
+			if (!r.getType().equals(IS_A)) {
+				attributeCount++;
+			}
+		}
+		return attributeCount;
 	}
 }
