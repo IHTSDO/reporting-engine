@@ -14,6 +14,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 /**
  * DRUGS-269, SUBST-130
  * Lists all case sensitive terms that do not have capital letters after the first letter
+ * UPDATE: We'll also load in the existing cs_words.txt file instead of hardcoding a list of proper nouns.
  */
 public class CaseSensitivity extends TermServerReport{
 	

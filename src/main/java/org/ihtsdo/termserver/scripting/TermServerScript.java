@@ -223,6 +223,7 @@ public abstract class TermServerScript implements RF2Constants {
 				if (!inputFile.canRead()) {
 					throw new TermServerScriptException ("Unable to read input file " + thisArg);
 				}
+				info ("Reading data from " + inputFile.getAbsolutePath());
 				isInputFile = false;
 			} else if (isInputFile2) {
 				inputFile2 = new File(thisArg);
@@ -864,7 +865,7 @@ public abstract class TermServerScript implements RF2Constants {
 		sb.append (QUOTE)
 		.append(c==null?"":c.getConceptId())
 		.append(QUOTE_COMMA_QUOTE)
-		.append(d==null?"":d)
+		.append(d==null?c.getFsn():d)
 		.append(QUOTE);
 		
 		for (Object detail : details) {
