@@ -19,6 +19,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 public class ModelCongenitalAbnormality extends DeltaGenerator {
 	
 	String subHierarchyStr = "276654001"; // | Congenital malformation (disorder) |
+	//String subHierarchyStr = "66091009"; //  |Congenital disease (disorder)|
 	Concept findingSite;
 	Concept occurrence;
 	Concept pathologicalProcess;
