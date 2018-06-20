@@ -90,10 +90,10 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 				}
 			}
 			
-			report (subHierarchyStart, templateTypeTotal[0] + "/" + templateTypeModified[0],
-					templateTypeTotal[1] + "/" + templateTypeModified[1],
-					templateTypeTotal[2] + "/" + templateTypeModified[2],
-					templateTypeTotal[3] + "/" + templateTypeModified[3],
+			report (subHierarchyStart, templateTypeTotal[0] , templateTypeModified[0],
+					templateTypeTotal[1] , templateTypeModified[1],
+					templateTypeTotal[2] ,templateTypeModified[2],
+					templateTypeTotal[3] , templateTypeModified[3],
 					total);
 		}
 	}
@@ -127,6 +127,11 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 
 	private boolean isModified(Concept c, CharacteristicType charType) throws TermServerScriptException {
 		for (Relationship r : c.getRelationships(charType, ActiveState.BOTH)) {
+			//Exclude IS_A relationships
+			if (r.getType().equals(IS_A)) {
+				continue;
+			}
+			
 			if (r.getEffectiveTime() == null || Integer.parseInt(r.getEffectiveTime()) > modifiedSince) {
 				return true;
 			}
