@@ -77,14 +77,14 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		subHierarchyStr =  "34014006"; //QI-15 |Viral disease (disorder)|
 		templateNames = new String[] {	"Infection caused by Virus.json",
 										"Infection of bodysite caused by virus.json"};
-		
+		*/
 		subHierarchyStr =  "87628006";  //QI-16 |Bacterial infectious disease (disorder)|
 		templateNames = new String[] {	"Infection caused by Bacteria.json",
 										"Infection of bodysite caused by bacteria.json"};
-		*/
+		/*
 		subHierarchyStr =  "95896000";  //QI-19  |Protozoan infection (disorder)|
 		templateNames = new String[] {"Infection caused by Protozoa with optional bodysite.json"};
-		/*
+		
 		subHierarchyStr =  "125666000";  //QI-33  |Burn (disorder)|
 		excludeHierarchies = new String[] { "426284001" } ; // |Chemical burn (disorder)| 
 		templateNames = new String[] {

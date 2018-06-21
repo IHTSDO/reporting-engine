@@ -20,7 +20,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * Reports concepts that are intermediate primitives from point of view of some subhierarchy
  * Update: Adding a 2nd report to determine how many sufficiently defined concepts are affected by an IP
  * */
-public class GenerateInitialAnalysis extends TermServerReport {
+public class InitialAnalysis extends TermServerReport {
 	
 	Concept subHierarchyStart;
 	Set<Concept> subHierarchy;
@@ -30,10 +30,10 @@ public class GenerateInitialAnalysis extends TermServerReport {
 	String[] blankColumns = new String[] {"","","",""};
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
-		GenerateInitialAnalysis report = new GenerateInitialAnalysis();
+		InitialAnalysis report = new InitialAnalysis();
 		try {
-			report.additionalReportColumns = "FSN, ProximalPrimitiveParent, isIntermediate, Defn Status, StatedAttributes, StatedRoleGroups, InferredRoleGroups, StatedParents";
-			report.secondaryReportColumns = "FSN, CanBeSufficientlyDefined(1=yes 0=no), JIRA, Comments, AuthoringTask, IsPrimitiveOutsideSubHierarcy,Total SDs affected, SD Concepts in subhierarchy, Total Primitive Concepts affected, Primitive Concept in SubHierarchy";
+			report.additionalReportColumns = "FSN, Proximal Primitive Parent, is Intermediate, Defn Status, Stated Attributes, Stated Role Groups, Inferred Role Groups, Stated Parents";
+			report.secondaryReportColumns = "FSN, Can Be Sufficiently Defined (1=yes 0=no), JIRA, Comments, Authoring Task, In Subhierarchy,Total SDs affected, SD Concepts in subhierarchy, Total Primitive Concepts affected, Primitive Concept in SubHierarchy";
 			report.tertiaryReportColumns = "FSN, Concepts Using Type, Example";
 			report.numberOfDistinctReports = 3;
 			report.init(args);
@@ -67,7 +67,9 @@ public class GenerateInitialAnalysis extends TermServerReport {
 		//setSubHierarchy("74627003");	// QI-38 |Diabetic complication (disorder)|
 		//setSubHierarchy("283682007");	// QI-35 |Bite - wound (disorder)|
 		//setSubHierarchy("8098009");	// QI-40 |Sexually transmitted infectious disease (disorder)|
-		setSubHierarchy("3723001");		// QI-42 |Arthritis|
+		//setSubHierarchy("3723001");		// QI-42 |Arthritis|
+		//setSubHierarchy("276654001");	// QI-43 |Congenital malformation (disorder)| );
+		setSubHierarchy("3218000");	//QI-46 |Mycosis (disorder)|
 	}
 	
 	public void setSubHierarchy(String subHierarchyStr) throws TermServerScriptException {
@@ -105,6 +107,9 @@ public class GenerateInitialAnalysis extends TermServerReport {
 							incrementSummaryInformation("Intermediate Primitives reported on Primitive leaf concepts");
 						}
 						incrementSummaryInformation(thisPPP.toString());
+						if (!intermediatePrimitives.containsKey(thisPPP)) {
+							incrementSummaryInformation("Unique Intermediate Primitives Reported");
+						}
 						intermediatePrimitives.merge(thisPPP, 1, Integer::sum);
 					} else {
 						incrementSummaryInformation("Safely modelled count");

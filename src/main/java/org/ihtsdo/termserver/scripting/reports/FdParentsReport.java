@@ -14,6 +14,9 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * Reports all concepts that have been defined (stated) using one or more 
  * Fully Defined Parents
  */
+@Deprecated
+// Improved version is org.ihtsdo.termserver.scripting.reports.qi.FullyDefinedParentsInSubHierarchy
+// Which lists all the parents along with the calculated Proximal Primitive Parents
 public class FdParentsReport extends TermServerReport {
 	
 	String subHierarchy = "105590001"; // |Substance (substance)|

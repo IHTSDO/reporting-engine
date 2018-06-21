@@ -23,7 +23,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 public class GnarlyFactorCalculation extends TermServerReport {
 	
 	List<Concept> subHierarchies;
-	GenerateInitialAnalysis intermediatePrimitivesReport;
+	InitialAnalysis intermediatePrimitivesReport;
 	InferredGroupsNotStated inferredGroupsNotStatedReport;
 	SplitRoleGroupsWithRepeatedAttributes splitRoleGroupsWithRepeatedAttributes;
 	int lowerLimit = 250;
@@ -251,7 +251,7 @@ public class GnarlyFactorCalculation extends TermServerReport {
 	protected void init(String[] args) throws TermServerScriptException, SnowOwlClientException {
 		super.init(args);
 		
-		intermediatePrimitivesReport = new GenerateInitialAnalysis();
+		intermediatePrimitivesReport = new InitialAnalysis();
 		intermediatePrimitivesReport.setQuiet(true);
 		
 		inferredGroupsNotStatedReport = new InferredGroupsNotStated();

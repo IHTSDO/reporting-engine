@@ -20,7 +20,7 @@ import com.google.common.io.Files;
 public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 	
 	List<Concept> subHierarchies;
-	GenerateInitialAnalysis ipReport = new GenerateInitialAnalysis();
+	InitialAnalysis ipReport = new InitialAnalysis();
 	int modifiedSince = 20180131;
 	
 	String [] co_occurrantWords = new String[] { " and ", " with ", " in " };
