@@ -62,7 +62,7 @@ public class GenerateWorkDoneStats extends TermServerReport {
 			purelyInferred.removeAll(modifiedStated);
 			
 			//How many Intermediate Primitives affect this subHierarchy?
-			ipReport.setSubHierarchy(subHierarchy);
+			ipReport.setSubHierarchy(subHierarchy.getConceptId());
 			ipReport.reportConceptsAffectedByIntermediatePrimitives();
 			int ipCount = ipReport.intermediatePrimitives.keySet().size();
 			

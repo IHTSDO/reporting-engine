@@ -14,7 +14,7 @@ import org.ihtsdo.termserver.scripting.domain.Relationship;
 
 public abstract class TermServerReport extends TermServerScript {
 	
-	protected String headers = "Concept,";
+	protected String headers = "Concept SCTID,";
 	
 	protected void init(String[] args) throws TermServerScriptException, SnowOwlClientException {
 		try {
@@ -50,7 +50,11 @@ public abstract class TermServerReport extends TermServerScript {
 		}
 		
 		for (Object detail : details) {
-			if (detail instanceof Collection) {
+			if (detail instanceof String[]) {
+				for (Object subDetail : (String[])detail) {
+					line += COMMA_QUOTE + subDetail.toString() + QUOTE;
+				}
+			} else if (detail instanceof Collection) {
 				for (Object subDetail : (Collection<?>)detail) {
 					line += COMMA_QUOTE + subDetail.toString() + QUOTE;
 				}

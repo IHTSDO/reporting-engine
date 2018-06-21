@@ -17,22 +17,23 @@ import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 /**
- * QI-2, QI-18, QI-38
  * Reports concepts that are intermediate primitives from point of view of some subhierarchy
  * Update: Adding a 2nd report to determine how many sufficiently defined concepts are affected by an IP
  * */
 public class GenerateInitialAnalysis extends TermServerReport {
 	
+	Concept subHierarchyStart;
 	Set<Concept> subHierarchy;
 	public Map<Concept, Integer> intermediatePrimitives;
 	public Map<Concept, Integer> attributeUsage;
 	public Map<Concept, Concept> attributeExamples;
+	String[] blankColumns = new String[] {"","","",""};
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		GenerateInitialAnalysis report = new GenerateInitialAnalysis();
 		try {
 			report.additionalReportColumns = "FSN, ProximalPrimitiveParent, isIntermediate, Defn Status, StatedAttributes, StatedRoleGroups, InferredRoleGroups, StatedParents";
-			report.secondaryReportColumns = "IP, Total SDs affected, SD Concepts in subhierarchy, Total Primitive Concepts affected, Primitive Concept in SubHierarchy";
+			report.secondaryReportColumns = "FSN, CanBeSufficientlyDefined(1=yes 0=no), JIRA, Comments, AuthoringTask, IsPrimitiveOutsideSubHierarcy,Total SDs affected, SD Concepts in subhierarchy, Total Primitive Concepts affected, Primitive Concept in SubHierarchy";
 			report.tertiaryReportColumns = "FSN, Concepts Using Type, Example";
 			report.numberOfDistinctReports = 3;
 			report.init(args);
@@ -54,22 +55,24 @@ public class GenerateInitialAnalysis extends TermServerReport {
 	}
 	
 	private void postInit() throws TermServerScriptException {
-		//setSubHierarchy(gl.getConcept("46866001"));	//       |Fracture of lower limb (disorder)|
-		//setSubHierarchy(gl.getConcept("125605004"));	// QI-2  |Fracture of bone (disorder)|
-		//setSubHierarchy(gl.getConcept("128294001"));	// QI-8  |Chronic inflammatory disorder (disorder)|
-		//setSubHierarchy(gl.getConcept("126537000"));	// QI-11 |Neoplasm of bone (disorder)|
-		//setSubHierarchy(gl.getConcept("34014006"));	// QI-12 |Viral disease
-		//setSubHierarchy(gl.getConcept("87628006"));	// QI-13 |Bacterial infectious disease (disorder)|
-		//setSubHierarchy(gl.getConcept("95896000"));	// QI-18 |Protozoan infection (disorder)|
-		//setSubHierarchy(gl.getConcept("52515009"));	// QI-22 |Hernia of abdominal cavity|
-		//setSubHierarchy(gl.getConcept("125666000"));	// QI-22 |Burn (disorder)|
-		//setSubHierarchy(gl.getConcept("74627003"));	// QI-38 |Diabetic complication (disorder)|
-		//setSubHierarchy(gl.getConcept("283682007"));	// QI-35 |Bite - wound (disorder)|
-		setSubHierarchy(gl.getConcept("8098009"));		// QI-40 |Sexually transmitted infectious disease (disorder)|
+		//setSubHierarchy("46866001");	//       |Fracture of lower limb (disorder)|
+		//setSubHierarchy("125605004");	// QI-2  |Fracture of bone (disorder)|
+		//setSubHierarchy("128294001");	// QI-8  |Chronic inflammatory disorder (disorder)|
+		//setSubHierarchy("126537000");	// QI-11 |Neoplasm of bone (disorder)|
+		//setSubHierarchy("34014006");	// QI-12 |Viral disease
+		//setSubHierarchy("87628006");	// QI-13 |Bacterial infectious disease (disorder)|
+		//setSubHierarchy("95896000");	// QI-18 |Protozoan infection (disorder)|
+		//setSubHierarchy("52515009");	// QI-22 |Hernia of abdominal cavity|
+		//setSubHierarchy("125666000");	// QI-22 |Burn (disorder)|
+		//setSubHierarchy("74627003");	// QI-38 |Diabetic complication (disorder)|
+		//setSubHierarchy("283682007");	// QI-35 |Bite - wound (disorder)|
+		//setSubHierarchy("8098009");	// QI-40 |Sexually transmitted infectious disease (disorder)|
+		setSubHierarchy("3723001");		// QI-42 |Arthritis|
 	}
 	
-	public void setSubHierarchy(Concept subHierarchy) throws TermServerScriptException {
-		this.subHierarchy = subHierarchy.getDescendents(NOT_SET);
+	public void setSubHierarchy(String subHierarchyStr) throws TermServerScriptException {
+		subHierarchyStart = gl.getConcept(subHierarchyStr);
+		this.subHierarchy = subHierarchyStart.getDescendents(NOT_SET);
 		intermediatePrimitives = new HashMap<>();
 		attributeUsage = new HashMap<>();
 		attributeExamples = new HashMap<>();
@@ -177,6 +180,7 @@ public class GenerateInitialAnalysis extends TermServerReport {
 		int fdsInSubHierarchy = 0;
 		int totalPrimitiveConceptsUnderIP = 0;
 		int totalPrimitiveConceptsUnderIPInSubHierarchy = 0;
+		int IPinSubHierarchy = descendantsCache.getDescendentsOrSelf(this.subHierarchyStart).contains(intermediatePrimitive) ? 1 : 0;
 		for (Concept c : descendantsCache.getDescendentsOrSelf(intermediatePrimitive)) {
 			if (c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
 				totalFDsUnderIP++;
@@ -190,7 +194,7 @@ public class GenerateInitialAnalysis extends TermServerReport {
 				}
 			}
 		}
-		report (SECONDARY_REPORT, intermediatePrimitive, totalFDsUnderIP, fdsInSubHierarchy, totalPrimitiveConceptsUnderIP, totalPrimitiveConceptsUnderIPInSubHierarchy);
+		report (SECONDARY_REPORT, intermediatePrimitive, blankColumns, IPinSubHierarchy, totalFDsUnderIP, fdsInSubHierarchy, totalPrimitiveConceptsUnderIP, totalPrimitiveConceptsUnderIPInSubHierarchy);
 	}
 	
 	
