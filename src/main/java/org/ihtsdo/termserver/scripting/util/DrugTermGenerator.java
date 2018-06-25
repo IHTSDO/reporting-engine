@@ -1,10 +1,6 @@
 package org.ihtsdo.termserver.scripting.util;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -13,13 +9,7 @@ import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.TermServerScript.ReportActionType;
 import org.ihtsdo.termserver.scripting.TermServerScript.Severity;
-import org.ihtsdo.termserver.scripting.domain.Component;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Description;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants;
-import org.ihtsdo.termserver.scripting.domain.Relationship;
-import org.ihtsdo.termserver.scripting.domain.Task;
-
+import org.ihtsdo.termserver.scripting.domain.*;
 public class DrugTermGenerator implements RF2Constants{
 	
 	private TermServerScript parent;
@@ -174,6 +164,7 @@ public class DrugTermGenerator implements RF2Constants{
 	public String calculateTermFromIngredients(Concept c, boolean isFSN, boolean isPT, String langRefset, CharacteristicType charType) throws TermServerScriptException {
 		String proposedTerm = "";
 		String semTag = "";
+		boolean ptContaining = false;
 		if (isFSN && c.getFsn() != null) {
 			semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
 		}
@@ -205,12 +196,23 @@ public class DrugTermGenerator implements RF2Constants{
 			switch (c.getConceptType()) {
 				case MEDICINAL_PRODUCT : suffix = " product";
 										break;
-				case MEDICINAL_PRODUCT_FORM : suffix =  " in " + DrugUtils.getDosageForm(c, isFSN, langRefset);
+				case MEDICINAL_PRODUCT_FORM : suffix =  "containing product in " + DrugUtils.getDosageForm(c, isFSN, langRefset);
+										ptContaining = true;
 										break;
 				case CLINICAL_DRUG : 	suffix = getCdSuffix(c, isFSN, langRefset);
 										break;
 				default:
 			}
+		}
+		
+		//Are we adding "-" to every ingredient to indicate they're all containing?
+		if (ptContaining) {
+			Set<String> tempSet = new HashSet<>();
+			for (String ingredient : ingredients) {
+				tempSet.add(ingredient + "-");
+			}
+			ingredients.clear();
+			ingredients.addAll(tempSet);
 		}
 		
 		//Form the term from the ingredients with prefixes and suffixes as required.
