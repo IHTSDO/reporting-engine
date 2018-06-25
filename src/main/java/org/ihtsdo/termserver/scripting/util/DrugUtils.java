@@ -160,24 +160,7 @@ public class DrugUtils implements RF2Constants {
 			} else {
 				doseFormStr = doseForm.getPreferredSynonym(US_ENG_LANG_REFSET).getTerm();
 			}
-			
-			doseFormStr = SnomedUtils.deCapitalize(doseFormStr);
-			//Translate known issues
-			switch (doseFormStr) {
-				case "ocular dose form": doseFormStr =  "ophthalmic dosage form";
-					break;
-				case "inhalation dose form": doseFormStr = "respiratory dosage form";
-					break;
-				case "cutaneous AND/OR transdermal dosage form" : doseFormStr = "topical dosage form";
-					break;
-				case "oromucosal AND/OR gingival dosage form" : doseFormStr = "oropharyngeal dosage form";
-					break;
-			}
-			
-			//In the product we say "doseage form", so make that switch
-			//doseForm = doseForm.replace(" dose ", " dosage ");
-			
-			return doseFormStr;
+			return SnomedUtils.deCapitalize(doseFormStr);
 		}
 	}
 	
