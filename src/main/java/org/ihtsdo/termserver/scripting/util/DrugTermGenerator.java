@@ -139,6 +139,9 @@ public class DrugTermGenerator implements RF2Constants{
 			replacement.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
 		}
 		
+		//We might have a CS ingredient that starts the term.  Check for this, set and warn
+		checkCaseSensitiveOfIngredients(t, c, replacement, isFSN, charType);
+		
 		//Have we made any changes?  Create a new description if so
 		if (!replacementTerm.equals(d.getTerm())) {
 			changesMade += replaceTerm(t, c, d, replacement);
@@ -159,6 +162,20 @@ public class DrugTermGenerator implements RF2Constants{
 			}
 		}*/
 		return changesMade;
+	}
+
+	private void checkCaseSensitiveOfIngredients(Task t, Concept c, Description d, boolean isFSN,
+			CharacteristicType charType) throws TermServerScriptException {
+		if (d.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE)) {
+			for (Concept ingred : DrugUtils.getIngredients(c, charType)) {
+				ingred = GraphLoader.getGraphLoader().getConcept(ingred.getConceptId());
+				Description ingredDesc = isFSN ? ingred.getFSNDescription() : ingred.getPreferredSynonym(US_ENG_LANG_REFSET);
+				if (ingredDesc.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE)) {
+					report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Set term to CS due to CS present in ingredient term : " + ingredDesc);
+					d.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
+				}
+			}
+		}
 	}
 
 	public String calculateTermFromIngredients(Concept c, boolean isFSN, boolean isPT, String langRefset, CharacteristicType charType) throws TermServerScriptException {
