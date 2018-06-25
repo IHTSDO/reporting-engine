@@ -436,7 +436,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected Concept updateConcept(Task t, Concept c, String info) throws TermServerScriptException {
 		try {
 			String conceptSerialised = gson.toJson(c);
-			debug ((dryRun ?"Dry run ":"Updating state of ") + c + info);
+			debug ((dryRun ?"Dry run updating ":"Updating ") + "state of " + c + info);
 			if (!dryRun) {
 				JSONResource response = tsClient.updateConcept(new JSONObject(conceptSerialised), t.getBranchPath());
 				String json = response.toObject().toString();
@@ -454,7 +454,7 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 		try {
 			String conceptSerialised = gson.toJson(c);
-			debug ((dryRun ?"Dry run ":"Creating ") + c + info);
+			debug ((dryRun ?"Dry run creating ":"Creating ") + c + info);
 			if (!dryRun) {
 				JSONResource response = tsClient.createConcept(new JSONObject(conceptSerialised), t.getBranchPath());
 				String json = response.toObject().toString();

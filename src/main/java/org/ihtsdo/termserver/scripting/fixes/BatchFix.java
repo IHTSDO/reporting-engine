@@ -799,8 +799,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			Concept loadedChild = loadConcept(child.getConceptId(), t.getBranchPath());
 			int changesMade = replaceParent(t, loadedChild, original, savedConcept);
 			if (changesMade > 0) {
-				String conceptSerialised = gson.toJson(loadedChild);
-				tsClient.updateConcept(new JSONObject(conceptSerialised), t.getBranchPath());
+				updateConcept(t, loadedChild, "");
 				report (t, child, Severity.MEDIUM, ReportActionType.RELATIONSHIP_REPLACED, "New Parent: " + savedConcept);
 				//Add the child to the task, after the original
 				t.addAfter(child, original);
@@ -813,20 +812,16 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		//Add our clone to the task, after the original
 		t.addAfter(savedConcept, original);
 		
-		//Now inactivate the original 
+		//Now inactivate the original.  Must be made primitive at this time
 		original.setActive(false);
+		original.setDefinitionStatus(DefinitionStatus.PRIMITIVE);
 		original.setInactivationIndicator(InactivationIndicator.AMBIGUOUS);
 		original.setAssociationTargets(AssociationTargets.possEquivTo(savedConcept));
 		report (t, original, Severity.LOW, ReportActionType.ASSOCIATION_ADDED, "Possibly Equivalent to " + savedConcept);
 		
 		checkAndReplaceHistoricalAssociations(t, original, savedConcept, InactivationIndicator.AMBIGUOUS);
 		report(t, original, Severity.LOW, ReportActionType.CONCEPT_INACTIVATED);
-		
-		debug ((dryRun?"Dry run updating":"Updating") + " state of " + original);
-		if (!dryRun) {
-			String conceptSerialised = gson.toJson(original);
-			tsClient.updateConcept(new JSONObject(conceptSerialised), t.getBranchPath());
-		}
+		updateConcept(t, original, "");
 	}
 	
 	protected void checkAndReplaceHistoricalAssociations(Task t, Concept inactivating, Concept replacing, InactivationIndicator inactivationIndicator) throws TermServerScriptException {
