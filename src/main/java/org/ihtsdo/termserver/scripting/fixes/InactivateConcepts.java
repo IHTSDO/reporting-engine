@@ -8,6 +8,8 @@ import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.*;
 
+import com.amazonaws.services.kinesis.model.InvalidArgumentException;
+
 /*
  * INFRA-2496
  * Inactivate concepts where a replacement exists - driven by list.
@@ -59,7 +61,7 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 		}
 		
 		//Check for this concept being the target of any historical associations and rewire them to the replacement
-		checkAndInactivatateIncomingAssociations(task, concept, InactivationIndicator.DUPLICATE, replacement);
+		checkAndInactivatateIncomingAssociations(task, concept, InactivationIndicator.AMBIGUOUS, replacement);
 		
 		//Check for any stated children and remove this concept as a parent
 		for (Concept child :  gl.getConcept(concept.getConceptId()).getDescendents(IMMEDIATE_CHILD, CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
@@ -128,7 +130,13 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 		//inactivation reason must also change to NonConformance.
 		Concept incomingConcept = loadConcept(assoc.getReferencedComponentId(), task.getBranchPath());
 		incomingConcept.setInactivationIndicator(reason);
-		incomingConcept.setAssociationTargets(AssociationTargets.sameAs(replacement));
+		if (reason.equals(InactivationIndicator.DUPLICATE)) {
+			incomingConcept.setAssociationTargets(AssociationTargets.sameAs(replacement));
+		} else if  (reason.equals(InactivationIndicator.AMBIGUOUS)) {
+			incomingConcept.setAssociationTargets(AssociationTargets.possEquivTo(replacement));
+		} else {
+			throw new InvalidArgumentException("Don't know what historical association to use with " + reason);
+		}
 		report(task, incomingConcept, Severity.MEDIUM, ReportActionType.CONCEPT_CHANGE_MADE, "Incoming historical association rewired to " + replacement);
 		save(task, incomingConcept, "");
 	}
