@@ -6,10 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
-import org.ihtsdo.termserver.scripting.domain.Task;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.DrugTermGenerator;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -41,7 +38,8 @@ public abstract class DrugBatchFix extends BatchFix implements RF2Constants{
 		super(clone);
 	}
 
-	protected String normalizeMultiIngredientTerm(String term, DescriptionType descriptionType, ConceptType conceptType) {
+	//This code has been replaced by DrugTermGenerator
+/*	protected String normalizeMultiIngredientTerm(String term, DescriptionType descriptionType, ConceptType conceptType) {
 		
 		String semanticTag = "";
 		if (descriptionType.equals(DescriptionType.FSN)) {
@@ -59,7 +57,7 @@ public abstract class DrugBatchFix extends BatchFix implements RF2Constants{
 				prefix += ONLY;
 				term = term.substring(ONLY.length());
 			}*/
-		}
+	/*	}
 		String oneEach ="";
 		String suffix = "";
 		if (conceptType.equals(ConceptType.MEDICINAL_PRODUCT_FORM)) {
@@ -77,9 +75,9 @@ public abstract class DrugBatchFix extends BatchFix implements RF2Constants{
 		term = termGenerator.checkForVitamins(term, origTerm);
 		
 		return (doProductPrefix?productPrefix:"") + term + oneEach + suffix + semanticTag;
-	}
+	}*/
 
-	private String sortIngredients(String term) {
+	/*private String sortIngredients(String term) {
 		String[] ingredients = term.split(AND);
 		//ingredients should be in alphabetical order, also trim spaces
 		for (int i = 0; i < ingredients.length; i++) {
@@ -98,9 +96,9 @@ public abstract class DrugBatchFix extends BatchFix implements RF2Constants{
 			isFirstIngredient = false;
 		}
 		return term;
-	}
+	}*/
 
-	private String[] deconstructDoseForm(String term) {
+/*	private String[] deconstructDoseForm(String term) {
 		String[] parts = new String[]{term,"", ""};
 		for (String doseForm : doseForms ) {
 			if (term.endsWith(doseForm)) {
@@ -114,7 +112,7 @@ public abstract class DrugBatchFix extends BatchFix implements RF2Constants{
 			}
 		}
 		return parts;
-	}
+	}*/
 	
 	
 	protected String removeUnwantedWords(String str, boolean isFSN) {
