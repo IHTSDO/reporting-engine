@@ -27,12 +27,12 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 	Concept[] co_occurrantTypeAttrb;
 	Concept[] complexTypeAttrbs;
 	
-	enum TemplateType {SIMPLE, PURE_CO, COMPLEX, NONE};
+	enum TemplateType {SIMPLE, PURE_CO, COMPLEX, COMPLEX_NO_MORPH, NONE};
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		GenerateWorkDoneStatsWithTempateTypes report = new GenerateWorkDoneStatsWithTempateTypes();
 		try {
-			report.additionalReportColumns = "FSN, Simple, Pure, Complex, Total";
+			report.additionalReportColumns = "FSN, Simple, Pure, Complex, ComplexNoMorph, None, Total";
 			report.init(args);
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.postLoadInit();
@@ -76,8 +76,8 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 	private void generateWorkDoneStats() throws TermServerScriptException {
 		ipReport.setQuiet(true);
 		for (Concept subHierarchyStart : subHierarchies) {
-			int[] templateTypeTotal = new int[4];
-			int[] templateTypeModified = new int[4];
+			int[] templateTypeTotal = new int[TemplateType.values().length];
+			int[] templateTypeModified = new int[TemplateType.values().length];
 			debug ("Analysing subHierarchy: " + subHierarchyStart);
 			Set<Concept> subHierarchy = descendantsCache.getDescendentsOrSelf(subHierarchyStart);
 			int total = subHierarchy.size();
@@ -94,6 +94,7 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 					templateTypeTotal[1] , templateTypeModified[1],
 					templateTypeTotal[2] ,templateTypeModified[2],
 					templateTypeTotal[3] , templateTypeModified[3],
+					templateTypeTotal[4] , templateTypeModified[4],
 					total);
 		}
 	}
@@ -106,7 +107,12 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 		
 		//Firstly, if we have any of the complex attribute types 
 		if (SnomedUtils.getTargets(c, complexTypeAttrbs, CharacteristicType.INFERRED_RELATIONSHIP).size() > 0) {
-			return TemplateType.COMPLEX;
+			//Do we have an associated morphology
+			if (SnomedUtils.getTargets(c, new Concept[] {ASSOC_MORPH}, CharacteristicType.INFERRED_RELATIONSHIP).size() > 0 ) {
+				return TemplateType.COMPLEX;
+			} else {
+				return TemplateType.COMPLEX_NO_MORPH;
+			}
 		}
 		
 		//Do we have a pure co-occurrent type
