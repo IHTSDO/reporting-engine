@@ -1,17 +1,11 @@
 package org.ihtsdo.termserver.scripting.fixes.drugs;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
-import org.ihtsdo.termserver.scripting.delta.CaseSignificanceFixAll;
+//import org.ihtsdo.termserver.scripting.delta.CaseSignificanceFixAll;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.DrugTermGenerator;
@@ -22,6 +16,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * DRUGS-461
  * DRUGS-486 - MP PTs must end in "product"
  * DRUGS-492 - CDs missing "precisely"
+ * DRUGS-514 - Editorial Guide updated for MPFS eg "-containing"
  */
 public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants{
 	
@@ -58,22 +53,23 @@ public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants{
 		//otherwise things get horribly confused!
 		//This code modified to only report possible issues, not fix them.
 		//csFixer = new CaseSignificanceFixAll(reportFile, printWriterMap, CaseSignificanceFixAll.Mode.REPORT_ONLY);
-		Concept doseFormRoot = gl.getConcept(421967003L);  // |Drug dose form (qualifier value)|);
+		
+		/*	Concept doseFormRoot = gl.getConcept(421967003L);  // |Drug dose form (qualifier value)|);
 		doseForms.add(" oral tablet");
 		doseForms.add(" in oral dosage form");
 		for (Concept doseForm : doseFormRoot.getDescendents(NOT_SET)) {
 			Description pt = doseForm.getDescriptions(Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE).get(0);
 			doseForms.add(" " + pt.getTerm());
-		}
+		}*/
 	}
 
 	protected void init(String[] args) throws TermServerScriptException, IOException {
 		super.init(args);
-		exceptions.add("423967005");
+		/*exceptions.add("423967005");
 		exceptions.add("319925005");
 		exceptions.add("765078005");  //Not yet modelled 
 		exceptions.add("765974009");  //Confusion tablet / capsule
-		exceptions.add("765995004");  //Confusion tablet / capsule
+		exceptions.add("765995004");  //Confusion tablet / capsule*/
 	}
 
 	@Override
@@ -111,17 +107,18 @@ public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants{
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		debug("Identifying concepts to process");
 		termGenerator.setQuiet(true);
-		termGenerator.setPtOnly(true);
+		termGenerator.setPtOnly(false);
 		
 		List<Concept> allAffected = new ArrayList<Concept>(); 
 		for (Concept c : gl.getConcept(subHierarchyStr).getDescendents(NOT_SET)) {
-			if (c.getConceptId().equals("714023005")) {
-		//		debug("Checkpoint");
-			}
+		/*	if (c.getConceptId().equals("714023005")) {
+				debug("Checkpoint");
+			} */
 			SnomedUtils.populateConceptType(c);
 			//Clone the concept so we're not modifying our local copy
 			c = c.clone(c.getConceptId());
-			if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT)) {
+			if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM)) {
+			//if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT)) {
 			//if (c.getConceptType().equals(ConceptType.CLINICAL_DRUG)) {
 				if (exceptions.contains(c.getId())) {
 					report (null, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Concept manually listed as an exception");
