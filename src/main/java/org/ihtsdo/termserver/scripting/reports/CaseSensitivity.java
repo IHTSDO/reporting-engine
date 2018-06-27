@@ -180,8 +180,8 @@ private void loadCSWords() throws IOException, TermServerScriptException {
 		super.init(args);
 		//targetHierarchies.add(PHARM_BIO_PRODUCT);
 		//targetHierarchies.add(SUBSTANCE);
-		//targetHierarchies.add(ROOT_CONCEPT);
-		targetHierarchies.add(MEDICINAL_PRODUCT);
+		targetHierarchies.add(ROOT_CONCEPT);
+		//targetHierarchies.add(MEDICINAL_PRODUCT);
 	}
 
 }
