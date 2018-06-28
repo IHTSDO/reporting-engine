@@ -25,7 +25,7 @@ import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
 
 /**
- * QI-1, QI-5, QI-9, QI-14, QI-15, QI-16, QI-19, QI-33
+ * QI-1, QI-5, QI-9, QI-14, QI-15, QI-16, QI-19, QI-33, QI-48
  * See https://confluence.ihtsdotools.org/display/IAP/Quality+Improvements+2018
  */
 public class PrepMisalignedConcepts extends TemplateFix {
@@ -77,11 +77,11 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		subHierarchyStr =  "34014006"; //QI-15 |Viral disease (disorder)|
 		templateNames = new String[] {	"Infection caused by Virus.json",
 										"Infection of bodysite caused by virus.json"};
-		*/
+		
 		subHierarchyStr =  "87628006";  //QI-16 |Bacterial infectious disease (disorder)|
 		templateNames = new String[] {	"Infection caused by Bacteria.json",
 										"Infection of bodysite caused by bacteria.json"};
-		/*
+		
 		subHierarchyStr =  "95896000";  //QI-19  |Protozoan infection (disorder)|
 		templateNames = new String[] {"Infection caused by Protozoa with optional bodysite.json"};
 		
@@ -95,6 +95,8 @@ public class PrepMisalignedConcepts extends TemplateFix {
 				"burn/Deep partial thickness burn of body structure.json",
 				"burn/Superficial partial thickness burn of body structure.json"};
 		*/
+		subHierarchyStr =  "74627003";  //QI-48 |Diabetic Complication|
+		templateNames = new String[] {	"Complication co-occurrent and due to Diabetes Melitus.json"};
 		super.init(args);
 	}
 	
