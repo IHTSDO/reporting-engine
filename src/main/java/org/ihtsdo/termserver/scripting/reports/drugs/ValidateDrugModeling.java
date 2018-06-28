@@ -42,8 +42,8 @@ public class ValidateDrugModeling extends TermServerReport{
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		ValidateDrugModeling report = new ValidateDrugModeling();
 		try {
-			report.additionalReportColumns = "FSN, SemTag, Definition, Stated, Inferred";
-			//report.additionalReportColumns = "Issue, Data, Detail";
+			//report.additionalReportColumns = "FSN, SemTag, Definition, Stated, Inferred";
+			report.additionalReportColumns = "FSN, Issue, Data, Detail";   //DRUGS-267
 			//report.additionalReportColumns = "Substance, Presentation, Concentration, Unit Change, Issue Detected, Ratio Calculated";
 			report.init(args);
 			report.loadProjectSnapshot(false); //Load all descriptions
@@ -59,12 +59,12 @@ public class ValidateDrugModeling extends TermServerReport{
 	
 	private void validateDrugsModeling() throws TermServerScriptException {
 		Set<Concept> subHierarchy = gl.getConcept(drugsHierarchyStr).getDescendents(NOT_SET);
-		ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT, ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.CLINICAL_DRUG };
+		//ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT, ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.CLINICAL_DRUG };
 		//ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.CLINICAL_DRUG };
 		//ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT_FORM};
 		//ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT };
-		//ConceptType[] drugTypes = new ConceptType[] { ConceptType.CLINICAL_DRUG };
-		//initialiseSummaryInformation(BOSS_FAIL);
+		ConceptType[] drugTypes = new ConceptType[] { ConceptType.CLINICAL_DRUG };  //DRUGS-267
+		initialiseSummaryInformation(BOSS_FAIL);
 		
 		long issueCount = 0;
 		for (Concept concept : subHierarchy) {
@@ -78,7 +78,7 @@ public class ValidateDrugModeling extends TermServerReport{
 			//issueCount += validateIngredientsInFSN(concept, drugTypes);  
 			
 			// DRUGS-267
-			//issueCount += validateIngredientsAgainstBoSS(concept);
+			issueCount += validateIngredientsAgainstBoSS(concept);
 			
 			// DRUGS-296 
 			/*if (concept.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED) && 
@@ -86,7 +86,7 @@ public class ValidateDrugModeling extends TermServerReport{
 				issueCount += validateStatedVsInferredAttributes(concept, HAS_ACTIVE_INGRED, drugTypes);
 				issueCount += validateStatedVsInferredAttributes(concept, HAS_PRECISE_INGRED, drugTypes);
 				issueCount += validateStatedVsInferredAttributes(concept, HAS_MANUFACTURED_DOSE_FORM, drugTypes);
-			}*/
+			}
 			
 			//DRUGS-518
 			if (SnomedUtils.isConceptType(concept, drugTypes)) {
