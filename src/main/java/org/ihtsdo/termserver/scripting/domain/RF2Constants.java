@@ -16,6 +16,9 @@ public interface RF2Constants {
 	static Concept IS_A =  new Concept ("116680003");  // | Is a (attribute) |
 	static Concept NULL_CONCEPT = new Concept ("-1");  
 	
+	//Top Level hierarchies
+	static Concept ORGANISM = new Concept ("410607006", "Organism (organism)");
+	
 	//Drugs and Substances
 	static Concept PHARM_BIO_PRODUCT = new Concept ("373873005") ; //Pharmaceutical / biologic product (product)
 	static Concept MEDICINAL_PRODUCT = new Concept ("763158003", "Medicinal product (product)"); 
