@@ -211,7 +211,8 @@ public class DrugTermGenerator implements RF2Constants{
 			}
 		} else if (isPT) {
 			switch (c.getConceptType()) {
-				case MEDICINAL_PRODUCT : suffix = " product";
+				case MEDICINAL_PRODUCT : suffix = "containing product";
+										ptContaining = true;
 										break;
 				case MEDICINAL_PRODUCT_FORM : suffix =  "containing product in " + DrugUtils.getDosageForm(c, isFSN, langRefset);
 										ptContaining = true;

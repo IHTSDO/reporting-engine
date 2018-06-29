@@ -16,7 +16,8 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * DRUGS-461
  * DRUGS-486 - MP PTs must end in "product"
  * DRUGS-492 - CDs missing "precisely"
- * DRUGS-514 - Editorial Guide updated for MPFS eg "-containing"
+ * DRUGS-514 - Editorial Guide updated for MPFs eg "-containing"
+ * DRUGS-560 - Editorial Guide updated for MPs eg "-containing"
  */
 public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants{
 	
@@ -117,8 +118,8 @@ public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants{
 			SnomedUtils.populateConceptType(c);
 			//Clone the concept so we're not modifying our local copy
 			c = c.clone(c.getConceptId());
-			if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM)) {
-			//if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT)) {
+			//if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM)) {
+			if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT)) {
 			//if (c.getConceptType().equals(ConceptType.CLINICAL_DRUG)) {
 				if (exceptions.contains(c.getId())) {
 					report (null, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Concept manually listed as an exception");
