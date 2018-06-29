@@ -59,7 +59,7 @@ public class InitialAnalysis extends TermServerReport {
 		//setSubHierarchy("125605004");	// QI-2  |Fracture of bone (disorder)|
 		//setSubHierarchy("128294001");	// QI-8  |Chronic inflammatory disorder (disorder)|
 		//setSubHierarchy("126537000");	// QI-11 |Neoplasm of bone (disorder)|
-		//setSubHierarchy("34014006");	// QI-12 |Viral disease
+		setSubHierarchy("34014006");	// QI-12 |Viral disease
 		//setSubHierarchy("87628006");	// QI-13 |Bacterial infectious disease (disorder)|
 		//setSubHierarchy("95896000");	// QI-18 |Protozoan infection (disorder)|
 		//setSubHierarchy("52515009");	// QI-22 |Hernia of abdominal cavity|
@@ -69,7 +69,7 @@ public class InitialAnalysis extends TermServerReport {
 		//setSubHierarchy("8098009");	// QI-40 |Sexually transmitted infectious disease (disorder)|
 		//setSubHierarchy("3723001");		// QI-42 |Arthritis|
 		//setSubHierarchy("276654001");	// QI-43 |Congenital malformation (disorder)| );
-		setSubHierarchy("3218000");	//QI-46 |Mycosis (disorder)|
+		//setSubHierarchy("3218000");	//QI-46 |Mycosis (disorder)|
 	}
 	
 	public void setSubHierarchy(String subHierarchyStr) throws TermServerScriptException {
