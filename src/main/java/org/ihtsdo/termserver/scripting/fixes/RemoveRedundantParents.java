@@ -1,11 +1,7 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
@@ -19,7 +15,7 @@ import org.ihtsdo.termserver.scripting.domain.Task;
 import us.monoid.json.JSONObject;
 
 /*
-For SUBST-200, DRUGS-448, DRUGS-451, DRUGS-466, DRUGS-484, SUBST-269
+For SUBST-200, DRUGS-448, DRUGS-451, DRUGS-466, DRUGS-484, SUBST-269, SUBST-271
 Optionally driven by a text file of concepts, check parents for redundancy and - assuming 
 the concept is primitive, retain the more specific parent.
 */
