@@ -52,9 +52,9 @@ public class EclCache {
 		while (!allRecovered) {
 			try {
 					JSONResource response = tsClient.getConcepts(ecl, branch, offset, PAGING_LIMIT);
-					if (response.getHTTPStatus() != 200) {
+					/*if (response.getHTTPStatus() != 200) {
 						throw new TermServerScriptException ("HTTP " + response.getHTTPStatus());
-					}
+					}*/
 					String json = response.toObject().toString();
 					ConceptCollection collection = gson.fromJson(json, ConceptCollection.class);
 					if (offset == 0) {

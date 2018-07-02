@@ -16,7 +16,6 @@ import org.ihtsdo.termserver.scripting.domain.RF2Constants.CaseSignificance;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants.DescriptionType;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
-import com.amazonaws.services.route53.model.InvalidArgumentException;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
@@ -662,7 +661,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 										break;
 			case INFERRED_RELATIONSHIP: parents = inferredParents;
 										break;
-			default: throw new InvalidArgumentException("Cannot have " + characteristicType + " parents.");
+			default: throw new IllegalArgumentException("Cannot have " + characteristicType + " parents.");
 		}
 		
 		if (parents == null || parents.size() == 0) {

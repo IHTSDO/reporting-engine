@@ -8,8 +8,6 @@ import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.*;
 
-import com.amazonaws.services.kinesis.model.InvalidArgumentException;
-
 /*
  * INFRA-2496
  * Inactivate concepts where a replacement exists - driven by list.
@@ -135,7 +133,7 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 		} else if  (reason.equals(InactivationIndicator.AMBIGUOUS)) {
 			incomingConcept.setAssociationTargets(AssociationTargets.possEquivTo(replacement));
 		} else {
-			throw new InvalidArgumentException("Don't know what historical association to use with " + reason);
+			throw new IllegalArgumentException("Don't know what historical association to use with " + reason);
 		}
 		report(task, incomingConcept, Severity.MEDIUM, ReportActionType.CONCEPT_CHANGE_MADE, "Incoming historical association rewired to " + replacement);
 		save(task, incomingConcept, "");
