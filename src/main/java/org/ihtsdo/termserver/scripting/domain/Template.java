@@ -4,9 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.ihtsdo.otf.authoringtemplate.domain.logical.Attribute;
-import org.ihtsdo.otf.authoringtemplate.domain.logical.AttributeGroup;
-import org.ihtsdo.otf.authoringtemplate.domain.logical.LogicalTemplate;
+import org.snomed.authoringtemplate.domain.logical.*;
 import org.ihtsdo.termserver.scripting.template.TemplateUtils;
 
 public class Template {

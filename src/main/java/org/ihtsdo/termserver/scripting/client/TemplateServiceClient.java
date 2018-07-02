@@ -2,9 +2,9 @@ package org.ihtsdo.termserver.scripting.client;
 
 import java.io.IOException;
 
-import org.ihtsdo.otf.authoringtemplate.domain.ConceptTemplate;
-import org.ihtsdo.otf.authoringtemplate.domain.logical.LogicalTemplate;
-import org.ihtsdo.otf.authoringtemplate.service.LogicalTemplateParserService;
+import org.snomed.authoringtemplate.domain.*;
+import org.snomed.authoringtemplate.domain.logical.*;
+import org.snomed.authoringtemplate.service.LogicalTemplateParserService;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.DeserializationFeature;

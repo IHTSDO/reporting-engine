@@ -117,7 +117,7 @@ public class AuthoringServicesClient {
 			Project projectObj = gson.fromJson(json, Project.class);
 			return projectObj;
 		} catch (Exception e) {
-			throw new SnowOwlClientException("Unable to recover project " + projectStr +". Received: " + (json==null?response.getHTTPStatus() : json), e);
+			throw new SnowOwlClientException("Unable to recover project " + projectStr +". Received: " + (json==null?"NULL" : json), e);
 		}
 	}
 	
