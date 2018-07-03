@@ -21,7 +21,7 @@ import org.ihtsdo.termserver.scripting.domain.Task;
 import us.monoid.json.JSONObject;
 
 /*
-* INFRA-2302, INFRA-2344, INFRA-2456, INFRA-2529
+* INFRA-2302, INFRA-2344, INFRA-2456, INFRA-2529, INFRA-2571
 * Driven by a text file of concepts add or remove parent relationships as indicated
 */
 public class AddRemoveParents extends BatchFix implements RF2Constants{
@@ -78,8 +78,14 @@ public class AddRemoveParents extends BatchFix implements RF2Constants{
 		//Work through the relationship changes we have for this concept and decide if we're adding or inactivating
 		for (Relationship r : changeMap.get(c).getRelationships()) {
 			if (r.isActive()) {
-				if (c.getRelationships(r).size() > 0 ) {
+				if (c.getRelationships(r, ActiveState.ACTIVE).size() > 0 ) {
 					report (t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Relationship already present: " + r);
+				} else if (c.getRelationships(r, ActiveState.INACTIVE).size() > 0 ) {
+					Relationship inactive = c.getRelationships(r, ActiveState.INACTIVE).get(0);
+					report (t, c, Severity.MEDIUM, ReportActionType.INFO, "Relationship already present, but inactive: " + inactive);
+					inactive.setActive(true);
+					report (t, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_REACTIVATED, inactive);
+					changesMade++;
 				} else {
 					changesMade++;
 					c.addRelationship(r);
@@ -109,8 +115,8 @@ public class AddRemoveParents extends BatchFix implements RF2Constants{
 			report (null, c, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, "Cannot modify concept - is inactive");
 			return null;
 		}
-		//if (lineItems[2].equals(ACTIVE_FLAG)) {
-		if (!lineItems[2].equals(ACTIVE_FLAG)) {
+		if (lineItems[2].equals(ACTIVE_FLAG)) {
+		//if (!lineItems[2].equals(ACTIVE_FLAG)) {
 			RelationshipGroup g = changeMap.get(c);
 			if (g == null) {
 				g = new RelationshipGroup(UNGROUPED);
