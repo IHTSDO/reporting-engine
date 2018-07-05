@@ -64,7 +64,8 @@ public interface RF2Constants {
 	static Concept CLINICAL_FINDING = new Concept ("404684003", "Clinical finding (finding)");
 	static Concept COMPLICATION = new Concept ("116223007", "Complication (disorder)");
 	static Concept DISEASE = new Concept ("64572001", "Disease (disorder)");
-	static Concept ASSOC_MORPH = new Concept ("116676008");  // |Associated morphology (attribute)|
+	static Concept CAUSE_AGENT = new Concept ("246075003","Causative agent (attribute)");
+	static Concept ASSOC_MORPH = new Concept ("116676008", "Associated morphology (attribute)");
 	static Concept OBSERVABLE_ENTITY = new Concept("363787002"); // |Observable entity (observable entity)|
 	static Concept DUE_TO = new Concept("42752001"); // |Due to (attribute)|
 	static Concept PART_OF = new Concept("123005000"); // |Part of (attribute)|

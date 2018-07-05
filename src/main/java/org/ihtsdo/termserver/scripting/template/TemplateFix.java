@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.snomed.authoringtemplate.domain.logical.Attribute;
+import org.snomed.authoringtemplate.domain.logical.AttributeGroup;
 import org.snomed.authoringtemplate.domain.logical.LogicalTemplate;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.TemplateServiceClient;
@@ -35,6 +37,17 @@ abstract public class TemplateFix extends BatchFix {
 
 	protected TemplateFix(BatchFix clone) {
 		super(clone);
+	}
+	
+	protected void init(String[] args) throws TermServerScriptException, IOException {
+		AttributeGroup.useDefaultValues = true;
+		//We'll check these now so we know if there's some parsing error
+		char id = 'A';
+		for (int x = 0; x < templateNames.length; x++, id++) {
+			loadTemplate(id, templateNames[x]);
+			info ("Validated template: " + templateNames[x]);
+		}
+		super.init(args);
 	}
 
 	protected void postInit() throws TermServerScriptException {

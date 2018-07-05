@@ -3,6 +3,7 @@ package org.ihtsdo.termserver.scripting.template;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -28,9 +29,10 @@ import us.monoid.json.JSONObject;
  */
 public class RemodelGroupOne extends TemplateFix {
 	
-	String[] whitelist = new String[] { "co-occurrent" };
+	String[] whitelist = new String[] { /*"co-occurrent"*/ };
 	Set<Concept> groupedAttributeTypes = new HashSet<>();
 	Set<Concept> ungroupedAttributeTypes = new HashSet<>();
+	Set<Concept> formNewGroupAround = new HashSet<>();
 
 	protected RemodelGroupOne(BatchFix clone) {
 		super(clone);
@@ -71,6 +73,9 @@ public class RemodelGroupOne extends TemplateFix {
 		subHierarchyStr =  "126537000";  //QI-14 |Neoplasm of bone (disorder)|
 		templateNames = new String[] {"Neoplasm of Bone.json"};
 		*/
+		formNewGroupAround.add(FINDING_SITE);
+		formNewGroupAround.add(CAUSE_AGENT);
+		formNewGroupAround.add(ASSOC_MORPH);
 		subHierarchyStr =  "34014006"; //QI-15 + QI-23 |Viral disease (disorder)|
 		templateNames = new String[] {	"Infection caused by virus with optional bodysite.json"};
 		/*
@@ -114,11 +119,7 @@ public class RemodelGroupOne extends TemplateFix {
 			}
 			
 			try {
-				String conceptSerialised = gson.toJson(loadedConcept);
-				debug ((dryRun ?"Dry run ":"Updating state of ") + loadedConcept + info);
-				if (!dryRun) {
-					tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
-				}
+				updateConcept(task,loadedConcept,"");
 			} catch (Exception e) {
 				report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
 			}
@@ -150,8 +151,24 @@ public class RemodelGroupOne extends TemplateFix {
 			}
 		}
 		
+		//Have we formed a second group?  Find different attributes if so
+		RelationshipGroup groupTwo = c.getRelationshipGroup(CharacteristicType.STATED_RELATIONSHIP, 2);
+		if (groupTwo != null) {
+			for (Attribute a : firstTemplateGroup.getAttributes()) {
+				int statedChangeMade = findAttributeToState(t, c, a, groupTwo, CharacteristicType.STATED_RELATIONSHIP);
+				if (statedChangeMade == NO_CHANGES_MADE) {
+					changesMade += findAttributeToState(t, c, a, groupTwo, CharacteristicType.INFERRED_RELATIONSHIP);
+				} else {
+					changesMade += CHANGE_MADE;
+				}
+			}
+		}
+		
 		if (changesMade > 0) {
 			c.addRelationshipGroup(groupOne);
+			if (groupTwo != null) {
+				c.addRelationshipGroup(groupTwo);
+			}
 			String modifiedForm = SnomedUtils.getModel(c, CharacteristicType.STATED_RELATIONSHIP);
 			report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_GROUP_ADDED, modifiedForm, statedForm, inferredForm);
 		}
@@ -184,7 +201,7 @@ public class RemodelGroupOne extends TemplateFix {
 			//Is this value hard coded in the template?  Only do this for stated characteristic type, so we don't duplicate
 			if (a.getValue() != null && charType.equals(CharacteristicType.STATED_RELATIONSHIP)) {
 				Relationship constantRel = new Relationship(c, type, gl.getConcept(a.getValue()), group.getGroupId());
-				c.addRelationship(constantRel);
+				group.addRelationship(constantRel);
 				report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, "Template specified constant: " + constantRel);
 				return CHANGE_MADE;
 			} else {
@@ -210,9 +227,47 @@ public class RemodelGroupOne extends TemplateFix {
 			} else {
 				return NO_CHANGES_MADE;
 			}
-		} else {
+		} else if (values.size() > 2) {
+			//We can only deal with 2
 			throw new ValidationFailure (c , "Multiple non-subsuming " + type + " values : " + values.stream().map(v -> v.toString()).collect(Collectors.joining(" and ")));
+		} else {
+			return considerSecondGrouping(t, c, type, group, charType, values);
 		}
+	}
+
+	private int considerSecondGrouping(Task t, Concept c, Concept type, RelationshipGroup group,
+			CharacteristicType charType, Set<Concept> values) throws TermServerScriptException {
+		//Sort the values alphabetically to ensure the right one goes into the right group
+		List<Concept> disjointAttributeValues = new ArrayList<>(values);
+		disjointAttributeValues.sort(Comparator.comparing(Concept::getFsn));
+		
+		//If it's a finding site and either attribute is in group 0, we'll leave it there
+		if (type.equals(FINDING_SITE) && ( c.getRelationships(charType, type, disjointAttributeValues.get(0), UNGROUPED, ActiveState.ACTIVE).size() > 0) ||
+				c.getRelationships(charType, type, disjointAttributeValues.get(1), UNGROUPED, ActiveState.ACTIVE).size() > 0 ) {
+			debug ("Finding site in group 0, skipping: " + c );
+			return NO_CHANGES_MADE;
+		}
+		
+		//Is this an attribute that we might want to form a new group around?
+		if (formNewGroupAround.contains(type)) {
+			//Add the attributes to the appropriate group.  We only need to do this for the first
+			//pass, since that will assign both values
+			int groupId = 1;
+			int changesMade = 0;
+			for (Concept value : disjointAttributeValues) {
+				changesMade += replaceRelationship(t, c, type, value, groupId, false);
+				groupId++;
+			}
+			return changesMade;
+		} else { 
+			//If we've *already* formed a new group, then we could use it
+			if (group.getGroupId() == 2 && c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, type, group.getGroupId()).size() == 0) {
+				Relationship r = new Relationship (c, type, disjointAttributeValues.get(1), group.getGroupId());
+				group.addRelationship(r);
+				return CHANGE_MADE;
+			}
+		}
+		return NO_CHANGES_MADE;
 	}
 
 	private void removeRedundancies(Set<Concept> concepts) throws TermServerScriptException {
@@ -233,9 +288,9 @@ public class RemodelGroupOne extends TemplateFix {
 		List<Concept> processMe = new ArrayList<>();
 		nextConcept:
 		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
-			/*if (!c.getConceptId().equals("59121004")) {
+			if (!c.getConceptId().equals("195911009")) {
 				continue;
-			}*/
+			}
 			if (isWhiteListed(c)) {
 				warn ("Whitelisted: " + c);
 			} else {
@@ -264,6 +319,7 @@ public class RemodelGroupOne extends TemplateFix {
 				}
 			}
 		}
+		processMe.sort(Comparator.comparing(Concept::getFsn));
 		List<Component> firstPassComplete = firstPassRemodel(processMe);
 		return firstPassComplete;
 	}
