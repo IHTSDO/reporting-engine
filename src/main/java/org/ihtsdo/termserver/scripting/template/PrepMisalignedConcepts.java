@@ -80,10 +80,10 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		subHierarchyStr =  "87628006";  //QI-16 |Bacterial infectious disease (disorder)|
 		templateNames = new String[] {	"Infection caused by Bacteria.json",
 										"Infection of bodysite caused by bacteria.json"};
-		*/
+		 
 		subHierarchyStr =  "95896000";  //QI-19  |Protozoan infection (disorder)|
 		templateNames = new String[] {"Infection caused by Protozoa with optional bodysite.json"};
-		/*
+			
 		subHierarchyStr =  "125666000";  //QI-33  |Burn (disorder)|
 		excludeHierarchies = new String[] { "426284001" } ; // |Chemical burn (disorder)| 
 		templateNames = new String[] {
@@ -97,10 +97,13 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		subHierarchyStr =  "74627003";  //QI-48 |Diabetic Complication|
 		templateNames = new String[] {	"Complication co-occurrent and due to Diabetes Melitus.json"};
 		
-		
 		subHierarchyStr =  "8098009";	// QI-45 |Sexually transmitted infectious disease (disorder)| 
 		templateNames = new String[] {	"Sexually transmitted Infection with optional bodysite.json"};
 		*/
+		subHierarchyStr =  "283682007"; // QI-39 |Bite - wound (disorder)|
+		templateNames = new String[] {	"bite/bite of bodysite caused by bite event.json", 
+										"bite/bite of bodysite caused by bite event with infection.json"};
+		
 		super.init(args);
 	}
 	
