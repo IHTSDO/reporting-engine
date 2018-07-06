@@ -19,8 +19,6 @@ import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.authoringtemplate.domain.logical.*;
 
-import us.monoid.json.JSONObject;
-
 /**
  * QI-21 (Bacterial), QI-23 (Viral), QI-30 (Bone)
  * Where a concept has limited modeling, pull the most specific attributes available 
@@ -61,12 +59,12 @@ public class RemodelGroupOne extends TemplateFix {
 		populateEditPanel = false;
 		populateTaskDescription = false;
 		additionalReportColumns = "CharacteristicType, Template, AFTER Stated, BEFORE Stated, Inferred";
-		/*
+		
 		subHierarchyStr = "125605004";  // QI-30 |Fracture of bone (disorder)|
 		templateNames = new String[] {	"Fracture of Bone Structure.json" }; /*,
 										"Fracture Dislocation of Bone Structure.json",
 										"Pathologic fracture of bone due to Disease.json"};
-
+		/*
 		subHierarchyStr =  "128294001";  // QI-9 |Chronic inflammatory disorder (disorder)
 		templateNames = new String[] {"Chronic Inflammatory Disorder.json"};
 		
@@ -76,9 +74,10 @@ public class RemodelGroupOne extends TemplateFix {
 		formNewGroupAround.add(FINDING_SITE);
 		formNewGroupAround.add(CAUSE_AGENT);
 		formNewGroupAround.add(ASSOC_MORPH);
+		/*
 		subHierarchyStr =  "34014006"; //QI-15 + QI-23 |Viral disease (disorder)|
 		templateNames = new String[] {	"Infection caused by virus with optional bodysite.json"};
-		/*
+
 		subHierarchyStr =  "87628006";  //QI-16 + QI-21 |Bacterial infectious disease (disorder)|
 		templateNames = new String[] {	"Infection caused by bacteria with optional bodysite.json"}; 
 		
@@ -288,9 +287,9 @@ public class RemodelGroupOne extends TemplateFix {
 		List<Concept> processMe = new ArrayList<>();
 		nextConcept:
 		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
-			if (!c.getConceptId().equals("195911009")) {
+			/*if (!c.getConceptId().equals("195911009")) {
 				continue;
-			}
+			}*/
 			if (isWhiteListed(c)) {
 				warn ("Whitelisted: " + c);
 			} else {

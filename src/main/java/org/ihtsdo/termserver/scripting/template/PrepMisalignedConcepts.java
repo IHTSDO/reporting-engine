@@ -57,7 +57,7 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		runStandAlone = true; 
 		additionalReportColumns = "CharacteristicType, MatchedTemplate, Template Diagnostic";
 		
-		/*
+		
 		subHierarchyStr = "125605004";  // QI-5 |Fracture of bone (disorder)|
 		templateNames = new String[] {	"Fracture of Bone Structure.json",
 										"Fracture Dislocation of Bone Structure.json",
@@ -65,7 +65,7 @@ public class PrepMisalignedConcepts extends TemplateFix {
 										"Pathologic fracture morphology of bone structure co-occurrent and due to Neoplasm of bone.json",
 										"Traumatic abnormality of spinal cord structure co-occurrent and due to fracture morphology of vertebral bone structure.json",
 										"Injury of finding site due to birth trauma.json"};
-		
+		/*
 		subHierarchyStr =  "128294001";  // QI-9 |Chronic inflammatory disorder (disorder)
 		templateNames = new String[] {"Chronic Inflammatory Disorder.json"}; 
 		
@@ -99,11 +99,11 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		
 		subHierarchyStr =  "8098009";	// QI-45 |Sexually transmitted infectious disease (disorder)| 
 		templateNames = new String[] {	"Sexually transmitted Infection with optional bodysite.json"};
-		*/
+		
 		subHierarchyStr =  "283682007"; // QI-39 |Bite - wound (disorder)|
 		templateNames = new String[] {	"bite/bite of bodysite caused by bite event.json", 
 										"bite/bite of bodysite caused by bite event with infection.json"};
-		
+		*/
 		super.init(args);
 	}
 	
