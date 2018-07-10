@@ -76,6 +76,8 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 			mpf = createConcept(task, mpf, info);
 			report (task, concept, Severity.LOW, ReportActionType.INFO, "Existing MPF(s) considered insufficient: " + (currentMPFs.isEmpty() ? "None detected" : currentMPFs));
 			task.addAfter(mpf, concept);
+			//With the CD reported, we don't actually need to load it in the edit panel
+			task.remove(concept);
 			report (task, mpf, Severity.LOW, ReportActionType.CONCEPT_ADDED, mpf);
 			report (task, mpf, Severity.LOW, ReportActionType.INFO, mpf.toExpression(CharacteristicType.STATED_RELATIONSHIP));
 			return CHANGE_MADE; 

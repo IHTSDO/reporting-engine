@@ -138,4 +138,8 @@ public class Task {
 		Collections.replaceAll(components, current, replacement);
 	}
 
+	public void remove(Component removeMe) {
+		components.remove(removeMe);
+	}
+
 }
