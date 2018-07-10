@@ -227,6 +227,9 @@ public class Description extends Component implements RF2Constants {
 	@Override
 	public String toString() {
 		StringBuffer sb = new StringBuffer();
+		if (descriptionId == null && (term == null || term.isEmpty())) {
+			return "";
+		}
 		String caseSig = caseSignificance.toString();
 		try {
 			caseSig = SnomedUtils.translateCaseSignificanceFromEnum(caseSignificance); 

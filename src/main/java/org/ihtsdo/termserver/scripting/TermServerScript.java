@@ -839,6 +839,7 @@ public abstract class TermServerScript implements RF2Constants {
 
 	
 	protected void report (Concept c, Description d, Object...details) {
+		incrementSummaryInformation("Report lines written");
 		StringBuffer sb = new StringBuffer();
 		sb.append (QUOTE)
 		.append(c==null?"":c.getConceptId())
