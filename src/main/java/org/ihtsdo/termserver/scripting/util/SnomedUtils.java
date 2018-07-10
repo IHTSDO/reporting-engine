@@ -832,8 +832,10 @@ public class SnomedUtils implements RF2Constants{
 		pt.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(AcceptabilityMode.PREFERRED_BOTH));
 		newConcept.addDescription(pt, true);  //Allow duplication - we might have a null term if we don't know enough to create one yet.
 		
-		Relationship parentRel = new Relationship (null, IS_A, parent, UNGROUPED);
-		newConcept.addRelationship(parentRel);
+		if (parent != null) {
+			Relationship parentRel = new Relationship (null, IS_A, parent, UNGROUPED);
+			newConcept.addRelationship(parentRel);
+		}
 		return newConcept;
 	}
 	

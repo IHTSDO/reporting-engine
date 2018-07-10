@@ -27,7 +27,6 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 	DrugTermGenerator termGenerator = new DrugTermGenerator(this);
 	Set<Concept> createMPFs = new HashSet<>();
 	Set<Concept> knownMPFs = new HashSet<>();
-	AncestorsCache cache = new AncestorsCache();
 	
 	protected CreateMissingDrugConcepts(BatchFix clone) {
 		super(clone);
@@ -98,7 +97,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 							.filter(parent -> parent.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM))
 							.collect(Collectors.toList());
 					for (Concept currentMPF : currentMPFs) {
-						if (SnomedUtils.hasMoreSpecificModel(currentMPF, mpf, cache)) {
+						if (SnomedUtils.hasMoreSpecificModel(currentMPF, mpf, AncestorsCache.getAncestorsCache())) {
 							report (null, c, Severity.HIGH, ReportActionType.SKIPPING, "Existing parent : " + currentMPF + " is more specific that proposed: " + mpf.toExpression(CharacteristicType.STATED_RELATIONSHIP));
 							continue nextConcept;
 						}

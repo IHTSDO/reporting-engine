@@ -80,8 +80,8 @@ public abstract class TermServerScript implements RF2Constants {
 	protected String tsRoot = "MAIN/"; //"MAIN/2016-01-31/SNOMEDCT-DK/";
 	
 	protected Map<String, PrintWriter> printWriterMap = new HashMap<>();
-	protected static DescendentsCache descendantsCache = new DescendentsCache();
-	protected static AncestorsCache ancestorsCache = new AncestorsCache();
+	protected static DescendentsCache descendantsCache = DescendentsCache.getDescendentsCache();
+	protected static AncestorsCache ancestorsCache = AncestorsCache.getAncestorsCache();
 	
 	protected static Gson gson;
 	static {

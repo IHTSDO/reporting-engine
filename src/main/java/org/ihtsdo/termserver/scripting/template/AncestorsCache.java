@@ -11,8 +11,21 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 
 public class AncestorsCache implements RF2Constants {
+	
+	private static AncestorsCache singleton = null;
 
 	Map<Concept, Set<Concept>> ancestorsCache = new HashMap<>();
+	
+	public static AncestorsCache getAncestorsCache() {
+		if (singleton == null) {
+			singleton = new AncestorsCache();
+		}
+		return singleton;
+	}
+	
+	private AncestorsCache() {
+		//Force use of singleton;
+	}
 	
 	public Set<Concept> getAncestors (Concept c) throws TermServerScriptException {
 		return getAncestors(c, false);
