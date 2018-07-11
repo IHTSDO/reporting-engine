@@ -3,15 +3,18 @@ package org.ihtsdo.termserver.scripting.creation;
 import java.util.*;
 
 import org.ihtsdo.termserver.scripting.GraphLoader;
+import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.template.DescendentsCache;
 	
-public class ConceptCreator {
+public abstract class ConceptCreator implements RF2Constants {
 	
 	ConceptCreationPattern conceptPattern;
 	List<String> inspirations = new ArrayList<>();
 	GraphLoader gl = GraphLoader.getGraphLoader();
 	DescendentsCache cache = DescendentsCache.getDescendentsCache();
+	private Map<String, Concept> anatomyMap = null;
 	
 	static final String SEMTAG_BODY = "(body structure)";
 	
@@ -39,11 +42,29 @@ public class ConceptCreator {
 	protected void addInspiration(String inspiration) {
 		inspirations.add(inspiration);
 	}
+	
+	abstract public Concept createConcept(Set<Concept> inspiration) throws TermServerScriptException ;
 
-
-	public Set<Concept> createConceptSet(Set<Concept> inspiration) {
-		// TODO Auto-generated method stub
-		return null;
+	public ConceptCreationPattern getConceptPattern() {
+		return conceptPattern;
 	}
 
+	public void setConceptPattern(ConceptCreationPattern conceptPattern) {
+		this.conceptPattern = conceptPattern;
+	}
+	
+
+	protected Concept findAnatomy(String pt) throws TermServerScriptException {
+		if (anatomyMap == null) {
+			populateAnatomyMap();
+		}
+		return anatomyMap.get(pt);
+	}
+
+	private void populateAnatomyMap() throws TermServerScriptException {
+		anatomyMap = new HashMap<>();
+		for (Concept c : BODY_STRUCTURE.getDescendents(NOT_SET)) {
+			anatomyMap.put(c.getPreferredSynonym(), c);
+		}
+	}
 }

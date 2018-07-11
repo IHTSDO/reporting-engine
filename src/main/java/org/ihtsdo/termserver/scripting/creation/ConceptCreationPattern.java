@@ -15,6 +15,7 @@ public class ConceptCreationPattern {
 	Concept existingConcept;
 	List<ConceptCreationPattern> childPatterns = new ArrayList<>();
 	List<ConceptCreationPattern> parentPatterns= new ArrayList<>();
+	List<ConceptCreationPattern> siblingPatterns= new ArrayList<>();
 	
 	private ConceptCreationPattern() {
 		//Force use of builder pattern starting with defineConceptPattern;
@@ -53,11 +54,22 @@ public class ConceptCreationPattern {
 		return this;
 	}
 	
+	public ConceptCreationPattern addSiblingPattern (ConceptCreationPattern sibling) {
+		siblingPatterns.add(sibling);
+		return this;
+	}
+	
 	Concept createPrototype (Concept X) throws TermServerScriptException {
 		Concept concept = SnomedUtils.createConcept(generateTerm(X), semTag, null);
+		List<Concept> siblings = createSiblings(X);
 		for (ConceptCreationPattern parentPattern : parentPatterns) {
 			Concept parent = parentPattern.createPrototype(X);
+			parent.addChild(CharacteristicType.STATED_RELATIONSHIP, concept);
 			concept.addParent(CharacteristicType.STATED_RELATIONSHIP, parent);
+			for (Concept sibling : siblings) {
+				sibling.addParent(CharacteristicType.STATED_RELATIONSHIP, parent);
+				parent.addChild(CharacteristicType.STATED_RELATIONSHIP, sibling);
+			}
 		}
 		
 		for (ConceptCreationPattern childPattern : childPatterns) {
@@ -65,6 +77,14 @@ public class ConceptCreationPattern {
 			concept.addChild(CharacteristicType.STATED_RELATIONSHIP, child);
 		}
 		return concept;
+	}
+	
+	private List<Concept> createSiblings(Concept x) throws TermServerScriptException {
+		List<Concept> siblings = new ArrayList<>();
+		for (ConceptCreationPattern siblingPattern : siblingPatterns) {
+			siblings.add(siblingPattern.createPrototype(x));
+		}
+		return siblings;
 	}
 	private String generateTerm(Concept x) throws TermServerScriptException {
 		//Are we replacing X or Y?

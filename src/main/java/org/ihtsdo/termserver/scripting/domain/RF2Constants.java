@@ -61,6 +61,7 @@ public interface RF2Constants {
 	static Concept UNIT = new Concept("767525000", "Unit (qualifier value)");
 	
 	static Concept ROOT_CONCEPT = new Concept (SCTID_ROOT_CONCEPT.toString());
+	static Concept BODY_STRUCTURE = new Concept ("123037004","Body structure (body structure)|");
 	static Concept CLINICAL_FINDING = new Concept ("404684003", "Clinical finding (finding)");
 	static Concept COMPLICATION = new Concept ("116223007", "Complication (disorder)");
 	static Concept DISEASE = new Concept ("64572001", "Disease (disorder)");

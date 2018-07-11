@@ -452,20 +452,20 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		}
 	}
 	
-	public void addChild(CharacteristicType characteristicType, Concept c) {
-		getChildren(characteristicType).add(c);
+	public void addChild(CharacteristicType charType, Concept c) {
+		getChildren(charType).add(c);
 	}
 	
-	public void removeChild(CharacteristicType characteristicType, Concept c) {
-		getChildren(characteristicType).remove(c);
+	public void removeChild(CharacteristicType charType, Concept c) {
+		getChildren(charType).remove(c);
 	}
 	
-	public void addParent(CharacteristicType characteristicType, Concept p) {
-		getParents(characteristicType).add(p);
+	public void addParent(CharacteristicType charType, Concept p) {
+		getParents(charType).add(p);
 	}
 	
-	public void removeParent(CharacteristicType characteristicType, Concept p) {
-		getParents(characteristicType).remove(p);
+	public void removeParent(CharacteristicType charType, Concept p) {
+		getParents(charType).remove(p);
 	}
 
 	public ConceptType getConceptType() {

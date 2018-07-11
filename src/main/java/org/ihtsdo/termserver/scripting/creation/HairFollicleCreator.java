@@ -1,7 +1,9 @@
 package org.ihtsdo.termserver.scripting.creation;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+
+import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.domain.Concept;
 
 /**
  * We will need about 50 new Structure concepts for hair follicle. 
@@ -50,6 +52,12 @@ public class HairFollicleCreator extends ConceptCreator {
 				.withTerm("Skin structure of [X]")
 				.withSemTag(SEMTAG_BODY);
 		
+		ConceptCreationPattern sibling = ConceptCreationPattern
+				.define()
+				.withTerm("Entire hair follicle of [Y]")
+				.withSemTag(SEMTAG_BODY)
+				.withStrategy(Strategy.ImmediateParentOfX);
+		
 		ConceptCreationPattern child = ConceptCreationPattern
 				.define()
 				.withTerm("Entire hair follicle of [X]")
@@ -57,7 +65,9 @@ public class HairFollicleCreator extends ConceptCreator {
 		
 		pattern.addParentPattern(parent1)
 			.addParentPattern(parent2)
+			.addSiblingPattern(sibling)
 			.addChildPattern(child);
+		creator.setConceptPattern(pattern);
 	}
 	
 	
@@ -68,6 +78,23 @@ public class HairFollicleCreator extends ConceptCreator {
 			singleton.addInspiration("127856007 |Skin and/or subcutaneous tissue structure (body structure)|");
 		}
 		return singleton;
+	}
+
+
+	@Override
+	public Concept createConcept(Set<Concept> inspiration) throws TermServerScriptException {
+		Concept hfs = gl.getConcept("67290009 |Hair follicle structure (body structure)");
+		//Now our real driver is coming from whatever structure is part of the remaining concept
+		inspiration.remove(hfs);
+		Concept conceptOfInterest = inspiration.iterator().next();
+		String structure = conceptOfInterest.getPreferredSynonym().split(" of ")[1];
+		
+		//Now that's our X, if we can find it
+		Concept X = findAnatomy(structure);
+		if (X == null) {
+			throw new TermServerScriptException("Unable to find structure concept for " + conceptOfInterest);
+		} 
+		return conceptPattern.createPrototype(X);
 	}
 
 }

@@ -29,7 +29,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 public class GraphLoader implements RF2Constants {
 
-	private static GraphLoader singletonGraphLoader = null;
+	private static GraphLoader singleton = null;
 	private Map<String, Concept> concepts = new HashMap<String, Concept>();
 	private Map<String, Description> descriptions = new HashMap<String, Description>();
 	private Map<String, Component> allComponents = null;
@@ -44,18 +44,19 @@ public class GraphLoader implements RF2Constants {
 	public StringBuffer log = new StringBuffer();
 	
 	public static GraphLoader getGraphLoader() {
-		if (singletonGraphLoader == null) {
-			singletonGraphLoader = new GraphLoader();
+		if (singleton == null) {
+			singleton = new GraphLoader();
 			//Pre populate known concepts to ensure we only ever refer to one object
-			singletonGraphLoader.concepts.put(SCTID_ROOT_CONCEPT.toString(), ROOT_CONCEPT);
-			singletonGraphLoader.concepts.put(SCTID_IS_A_CONCEPT.toString(), IS_A);
-			singletonGraphLoader.concepts.put(PHARM_BIO_PRODUCT.getConceptId(), PHARM_BIO_PRODUCT);
-			singletonGraphLoader.concepts.put(MEDICINAL_PRODUCT.getConceptId(), MEDICINAL_PRODUCT);
-			singletonGraphLoader.concepts.put(SUBSTANCE.getConceptId(), SUBSTANCE);
-			singletonGraphLoader.concepts.put(CLINICAL_FINDING.getConceptId(), CLINICAL_FINDING);
+			singleton.concepts.put(SCTID_ROOT_CONCEPT.toString(), ROOT_CONCEPT);
+			singleton.concepts.put(SCTID_IS_A_CONCEPT.toString(), IS_A);
+			singleton.concepts.put(PHARM_BIO_PRODUCT.getConceptId(), PHARM_BIO_PRODUCT);
+			singleton.concepts.put(MEDICINAL_PRODUCT.getConceptId(), MEDICINAL_PRODUCT);
+			singleton.concepts.put(SUBSTANCE.getConceptId(), SUBSTANCE);
+			singleton.concepts.put(CLINICAL_FINDING.getConceptId(), CLINICAL_FINDING);
+			singleton.concepts.put(BODY_STRUCTURE.getConceptId(), BODY_STRUCTURE);
 		}
 		
-		return singletonGraphLoader;
+		return singleton;
 	}
 	
 	public Collection <Concept> getAllConcepts() {
