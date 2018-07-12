@@ -23,7 +23,7 @@ public class TemplateUtils {
 	
 	public static String ECL_DESCENDANT_OR_SELF = "<<";
 	public static String ECL_DESCENDANT = "<";
-	public static String ECL_OR = "OR";
+	public static String ECL_OR = " OR ";
 	public static String ECL_STAR = "*";
 	public static Pattern p = Pattern.compile("[0-9]+");
 	
