@@ -296,8 +296,10 @@ public class RemodelGroupOne extends TemplateFix {
 			Relationship proposedRel = new Relationship (type, value);
 			for (int groupId = 1; groupId <= 2; groupId++) {
 				int idx = groupId -1;  //Group 1 -> idx 0, Group 2 -> idx 1
+				//Loop through other attributes already set in this stated group, and see if we can find them
+				//grouped in the inferred form with our proposed new relationship
 				for (Relationship r : c.getRelationshipGroup(CharacteristicType.STATED_RELATIONSHIP, groupId).getRelationships()) {
-					if (SnomedUtils.isGroupedWith(r, proposedRel, c, CharacteristicType.INFERRED_RELATIONSHIP)) {
+					if (!r.equalsTypeValue(proposedRel) && SnomedUtils.isGroupedWith(r, proposedRel, c, CharacteristicType.INFERRED_RELATIONSHIP)) {
 						if (sortedValues[idx] == null) {
 							sortedValues[idx] = value;
 							continue nextValue;

@@ -343,5 +343,7 @@ public class Relationship extends Component implements RF2Constants, Comparable<
 		this.released = released;
 	}
 
-
+	public boolean equalsTypeValue(Relationship rhs) {
+		return this.type.equals(rhs.type) && this.target.equals(rhs.target);
+	}
 }

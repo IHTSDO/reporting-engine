@@ -979,10 +979,14 @@ public class SnomedUtils implements RF2Constants{
 	 * @return true if r1 and r2 can be found grouped together in the specified characteristic type
 	 */
 	public static boolean isGroupedWith(Relationship r1, Relationship r2, Concept c, CharacteristicType charType) {
+		if (r1.equalsTypeValue(r2)) {
+			throw new IllegalArgumentException("Cannot answer if " + r1 + " is grouped with itself");
+		}
+		
 		for (RelationshipGroup group : c.getRelationshipGroups(charType)) {
 			boolean foundFirst = false;
 			for (Relationship r : group.getRelationships()) {
-				if (r.equals(r1) || r.equals(r2)) {
+				if (r.equalsTypeValue(r1) || r.equalsTypeValue(r2)) {
 					if (foundFirst) { //already seen one
 						return true;
 					} else {
