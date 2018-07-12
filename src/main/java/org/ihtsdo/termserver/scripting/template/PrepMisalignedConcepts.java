@@ -103,10 +103,12 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		subHierarchyStr = "283682007"; // QI-39 |Bite - wound (disorder)|
 		templateNames = new String[] {	"bite/bite of bodysite caused by bite event.json", 
 										"bite/bite of bodysite caused by bite event with infection.json"};
-		*/
 		
 		subHierarchyStr = "3218000"; //QI-67 |Mycosis (disorder)|
-		templateNames = new String[] {	"Infection caused by fungus.json"};
+		templateNames = new String[] {	"Infection caused by Fungus.json"};
+		*/
+		subHierarchyStr = "17322007"; //QI-68 |Parasite (disorder)|
+		templateNames = new String[] {	"Infection caused by Parasite.json"};
 		
 		super.init(args);
 	}
