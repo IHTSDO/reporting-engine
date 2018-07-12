@@ -3,6 +3,7 @@ package org.ihtsdo.termserver.scripting.template;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -142,9 +143,9 @@ public class RemodelGroupOne extends TemplateFix {
 		//or inferred relationships on the concept
 		AttributeGroup firstTemplateGroup = template.getAttributeGroups().toArray(new AttributeGroup[0])[1];
 		for (Attribute a : firstTemplateGroup.getAttributes()) {
-			int statedChangeMade = findAttributeToState(t, c, a, groupOne, CharacteristicType.STATED_RELATIONSHIP);
+			int statedChangeMade = findAttributeToState(t, template, c, a, groupOne, CharacteristicType.STATED_RELATIONSHIP);
 			if (statedChangeMade == NO_CHANGES_MADE) {
-				changesMade += findAttributeToState(t, c, a, groupOne, CharacteristicType.INFERRED_RELATIONSHIP);
+				changesMade += findAttributeToState(t, template, c, a, groupOne, CharacteristicType.INFERRED_RELATIONSHIP);
 			} else {
 				changesMade += CHANGE_MADE;
 			}
@@ -154,9 +155,9 @@ public class RemodelGroupOne extends TemplateFix {
 		RelationshipGroup groupTwo = c.getRelationshipGroup(CharacteristicType.STATED_RELATIONSHIP, 2);
 		if (groupTwo != null) {
 			for (Attribute a : firstTemplateGroup.getAttributes()) {
-				int statedChangeMade = findAttributeToState(t, c, a, groupTwo, CharacteristicType.STATED_RELATIONSHIP);
+				int statedChangeMade = findAttributeToState(t, template, c, a, groupTwo, CharacteristicType.STATED_RELATIONSHIP);
 				if (statedChangeMade == NO_CHANGES_MADE) {
-					changesMade += findAttributeToState(t, c, a, groupTwo, CharacteristicType.INFERRED_RELATIONSHIP);
+					changesMade += findAttributeToState(t, template, c, a, groupTwo, CharacteristicType.INFERRED_RELATIONSHIP);
 				} else {
 					changesMade += CHANGE_MADE;
 				}
@@ -184,7 +185,7 @@ public class RemodelGroupOne extends TemplateFix {
 		return changesMade;
 	}
 
-	private int findAttributeToState(Task t, Concept c, Attribute a, RelationshipGroup group, CharacteristicType charType) throws TermServerScriptException {
+	private int findAttributeToState(Task t, Template template, Concept c, Attribute a, RelationshipGroup group, CharacteristicType charType) throws TermServerScriptException {
 		//Do we have this attribute type in the inferred form?
 		Concept type = gl.getConcept(a.getType());
 		
@@ -230,11 +231,11 @@ public class RemodelGroupOne extends TemplateFix {
 			//We can only deal with 2
 			throw new ValidationFailure (c , "Multiple non-subsuming " + type + " values : " + values.stream().map(v -> v.toString()).collect(Collectors.joining(" and ")));
 		} else {
-			return considerSecondGrouping(t, c, type, group, charType, values);
+			return considerSecondGrouping(t, template, c, type, group, charType, values);
 		}
 	}
 
-	private int considerSecondGrouping(Task t, Concept c, Concept type, RelationshipGroup group,
+	private int considerSecondGrouping(Task t, Template template, Concept c, Concept type, RelationshipGroup group,
 			CharacteristicType charType, Set<Concept> values) throws TermServerScriptException {
 		//Sort the values alphabetically to ensure the right one goes into the right group
 		List<Concept> disjointAttributeValues = new ArrayList<>(values);
@@ -247,26 +248,79 @@ public class RemodelGroupOne extends TemplateFix {
 			return NO_CHANGES_MADE;
 		}
 		
+		//Does the template specify one of the values specifically in group 0?  No need to move
+		//to group 2 in that case.
+		for ( Attribute a : template.getLogicalTemplate().getUngroupedAttributes()) {
+			if (a.getValue() != null && a.getType().equals(type.getConceptId())) {
+				for (Concept value : values) {
+					if (a.getValue().equals(value.getConceptId())) {
+						debug ( type + "= " + value + " specified in template, no 2nd group required." );
+						return NO_CHANGES_MADE;
+					}
+				}
+			}
+		}
+		
 		//Is this an attribute that we might want to form a new group around?
 		if (formNewGroupAround.contains(type)) {
+			Concept[] affinitySorted = sortByAffinity(disjointAttributeValues, type, c);
 			//Add the attributes to the appropriate group.  We only need to do this for the first
 			//pass, since that will assign both values
 			int groupId = 1;
 			int changesMade = 0;
-			for (Concept value : disjointAttributeValues) {
+			for (Concept value : affinitySorted) {
 				changesMade += replaceRelationship(t, c, type, value, groupId, false);
 				groupId++;
 			}
 			return changesMade;
 		} else { 
-			//If we've *already* formed a new group, then we could use it
+			//If we've *already* formed a new group, then we could use it.
 			if (group.getGroupId() == 2 && c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, type, group.getGroupId()).size() == 0) {
-				Relationship r = new Relationship (c, type, disjointAttributeValues.get(1), group.getGroupId());
+				Concept[] affinitySorted = sortByAffinity(disjointAttributeValues, type, c);
+				Relationship r = new Relationship (c, type, affinitySorted[1], group.getGroupId());
 				group.addRelationship(r);
 				return CHANGE_MADE;
 			}
 		}
 		return NO_CHANGES_MADE;
+	}
+
+	/* Sort the two attribute values so that they'll "chum up" with other attributes that they're
+	 * already grouped with in the inferred form.
+	 */
+	private Concept[] sortByAffinity(List<Concept> values, Concept type, Concept c) {
+		Concept[] sortedValues = new Concept[2];
+		//Do we already have attributes in group 1 or 2 which should be grouped with one of our values?
+		nextValue:
+		for (Concept value : values) {
+			Relationship proposedRel = new Relationship (type, value);
+			for (int groupId = 1; groupId <= 2; groupId++) {
+				int idx = groupId -1;  //Group 1 -> idx 0, Group 2 -> idx 1
+				for (Relationship r : c.getRelationshipGroup(CharacteristicType.STATED_RELATIONSHIP, groupId).getRelationships()) {
+					if (SnomedUtils.isGroupedWith(r, proposedRel, c, CharacteristicType.INFERRED_RELATIONSHIP)) {
+						if (sortedValues[idx] == null) {
+							sortedValues[idx] = value;
+							continue nextValue;
+						} else {
+							throw new IllegalStateException("In " + c + "inferred, " + r + " is grouped with " + proposedRel + " but also " + new Relationship (type, sortedValues[idx]));
+						}
+					}
+				}
+			}
+		}
+		
+		//Remove any we've assigned from the list
+		values.removeAll(Arrays.asList(sortedValues));
+		
+		//If we've assigned one, we can auto assign the other.
+		//Or if neither, keep the original order ie alphabetical
+		Iterator<Concept> iter = values.iterator();
+		for (int i=0; i <= 1; i++) {
+			if (sortedValues[i] == null) {
+				sortedValues[i] = iter.next();
+			}
+		}
+		return sortedValues;
 	}
 
 	private void removeRedundancies(Set<Concept> concepts) throws TermServerScriptException {
