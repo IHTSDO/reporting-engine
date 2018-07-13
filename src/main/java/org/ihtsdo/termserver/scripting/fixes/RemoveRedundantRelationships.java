@@ -50,11 +50,7 @@ public class RemoveRedundantRelationships extends BatchFix implements RF2Constan
 		int changesMade = removeRedundantRelationships(task, loadedConcept);
 		if (changesMade > 0) {
 			try {
-				String conceptSerialised = gson.toJson(loadedConcept);
-				debug ((dryRun ?"Dry run ":"Updating state of ") + loadedConcept + info);
-				if (!dryRun) {
-					tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
-				}
+				saveConcept(task, loadedConcept, "");
 			} catch (Exception e) {
 				report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
 			}

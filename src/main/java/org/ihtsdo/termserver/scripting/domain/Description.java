@@ -396,21 +396,37 @@ public class Description extends Component implements RF2Constants {
 	public boolean hasAcceptability(Acceptability acceptability, String langRefsetSctId) {
 		//Are we working with the JSON map, or RF2 Lang refset entries?
 		if (acceptabilityMap != null) {
+			//First, are we looking for not-acceptable?
+			if (acceptability.equals(Acceptability.NONE) && !acceptabilityMap.containsKey(langRefsetSctId)) {
+				return true;
+			}
+			
+			//Otherwise, find that acceptability in the map
 			for (Map.Entry<String, Acceptability> entry: acceptabilityMap.entrySet()) {
 				if ((langRefsetSctId == null || entry.getKey().equals(langRefsetSctId)) && 
-						entry.getValue().equals(acceptability)) {
+						(acceptability.equals(Acceptability.BOTH) || entry.getValue().equals(acceptability))) {
 					return true;
 				}
 			}
 			return false;
 		}
 		String acceptablitySCTID = acceptability == Acceptability.PREFERRED ? SCTID_PREFERRED_TERM : SCTID_ACCEPTABLE_TERM;
+		boolean langFound = false;
 		if (langRefsetEntries != null) {
 			for (LangRefsetEntry entry : langRefsetEntries) {
-				if ((langRefsetSctId == null || entry.getRefsetId().equals(langRefsetSctId)) &&
-					entry.getAcceptabilityId().equals(acceptablitySCTID)) {
-					return true;
+				if (entry.isActive()) {
+					if ((langRefsetSctId == null || entry.getRefsetId().equals(langRefsetSctId))) {
+						langFound = true;
+						if (acceptability.equals(Acceptability.BOTH) || 
+								entry.getAcceptabilityId().equals(acceptablitySCTID)) {
+							return true;
+						}
+					}
 				}
+			}
+			//Were we in fact looking for there to be no entry here?
+			if (acceptability.equals(Acceptability.NONE) && !langFound) {
+				return true;
 			}
 			return false;
 		}

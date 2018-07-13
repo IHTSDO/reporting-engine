@@ -154,7 +154,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 		//an MPF using the dose form
 		Concept drug = SnomedUtils.createConcept(null,null,MEDICINAL_PRODUCT);
 		
-		//If we're creating an MPF, include the dose form
+		//Only if we're creating an MPF, include the dose form
 		if (mode == Mode.CREATE_MPF) {
 			Concept doseForm = SnomedUtils.getTarget(c, new Concept[] {HAS_MANUFACTURED_DOSE_FORM}, UNGROUPED, CharacteristicType.STATED_RELATIONSHIP);
 			doseForm = SnomedUtils.getHighestAncestorBefore(doseForm, PHARM_DOSE_FORM);
@@ -217,7 +217,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 							continue nextConcept;
 						}
 					}
-					//Do we already know about this concept or plan to create it?
+					//Do we already know about this concept or already have a plan to create it?
 					if (!isContained(mp, knownMPs) && !isContained(mp, createMPs)) {
 						createMPs.add(mp);
 						allAffected.add(c);

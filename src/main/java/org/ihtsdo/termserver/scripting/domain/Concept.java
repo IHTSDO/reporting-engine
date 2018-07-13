@@ -1,19 +1,9 @@
 package org.ihtsdo.termserver.scripting.domain;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
-import org.ihtsdo.termserver.scripting.TermServerScript;
-import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.CaseSignificance;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.DescriptionType;
+import org.ihtsdo.termserver.scripting.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import com.google.gson.annotations.Expose;
