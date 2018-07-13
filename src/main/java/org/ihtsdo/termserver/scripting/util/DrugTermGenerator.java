@@ -199,6 +199,9 @@ public class DrugTermGenerator implements RF2Constants{
 		if (isFSN) {
 			prefix = "Product containing ";
 			switch (c.getConceptType()) {
+				case MEDICINAL_PRODUCT: 
+										semTag = "(medicinal product)";
+										break;
 				case MEDICINAL_PRODUCT_FORM : suffix =  " in " + DrugUtils.getDosageForm(c, isFSN, langRefset);
 										semTag = "(medicinal product form)";
 										break;
