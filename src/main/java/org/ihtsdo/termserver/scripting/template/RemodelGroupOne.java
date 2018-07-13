@@ -61,11 +61,12 @@ public class RemodelGroupOne extends TemplateFix {
 		populateTaskDescription = false;
 		additionalReportColumns = "CharacteristicType, Template, AFTER Stated, BEFORE Stated, Inferred";
 		
+		/*
 		subHierarchyStr = "125605004";  // QI-30 |Fracture of bone (disorder)|
 		templateNames = new String[] {	"Fracture of Bone Structure.json" }; /*,
 										"Fracture Dislocation of Bone Structure.json",
 										"Pathologic fracture of bone due to Disease.json"};
-		/*
+		
 		subHierarchyStr =  "128294001";  // QI-9 |Chronic inflammatory disorder (disorder)
 		templateNames = new String[] {"Chronic Inflammatory Disorder.json"};
 		
@@ -85,6 +86,11 @@ public class RemodelGroupOne extends TemplateFix {
 		subHierarchyStr =  "95896000";  //QI-27  |Protozoan infection (disorder)|
 		templateNames = new String[] {"Infection caused by Protozoa with optional bodysite.json"};
 		 */
+		
+		subHierarchyStr = "74627003";  //QI-48 |Diabetic Complication|
+		templateNames = new String[] {	"Complication co-occurrent and due to Diabetes Melitus.json",
+				"Complication co-occurrent and due to Diabetes Melitus - Minimal.json"};
+		
 		super.init(args);
 	}
 	
@@ -346,6 +352,7 @@ public class RemodelGroupOne extends TemplateFix {
 			/*if (!c.getConceptId().equals("195911009")) {
 				continue;
 			}*/
+			Concept potentialCandidate = null;
 			if (isWhiteListed(c)) {
 				warn ("Whitelisted: " + c);
 			} else {
@@ -356,11 +363,11 @@ public class RemodelGroupOne extends TemplateFix {
 					//in group 0 (even if group 1 also exists!)
 					if (r.getGroupId() == UNGROUPED) {
 						if (groupedAttributeTypes.contains(r.getType())) {
-							processMe.add(c);
+							potentialCandidate = c;
 							continue nextConcept;
 						}
 					} else if (ungroupedAttributeTypes.contains(r.getType())) {
-						processMe.add(c);
+						potentialCandidate = c;
 						continue nextConcept;
 					}
 					
@@ -370,7 +377,31 @@ public class RemodelGroupOne extends TemplateFix {
 				}
 				
 				if (!hasGroupedAttributes) {
-					processMe.add(c);
+					potentialCandidate = c;
+				}
+			}
+			
+			if (potentialCandidate != null) {
+				//just check we don't match any of the other templates in the stated form
+				//Eg having two ungrouped finding sites for complications of diabetes
+				boolean isFirst = true;
+				boolean matchesSubsequentTemplate = false;
+				for (Template template : templates) {
+					if (isFirst) {
+						isFirst = false;
+					} else {
+						if (TemplateUtils.matchesTemplate(potentialCandidate, template, 
+								descendantsCache, 
+								CharacteristicType.STATED_RELATIONSHIP, 
+								true //Do allow additional unspecified ungrouped attributes
+								)) {
+							matchesSubsequentTemplate = true;
+							break;
+						}
+					}
+				}
+				if (!matchesSubsequentTemplate) {
+					processMe.add(potentialCandidate);
 				}
 			}
 		}
