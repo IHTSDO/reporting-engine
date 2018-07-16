@@ -85,12 +85,14 @@ public class RemodelGroupOne extends TemplateFix {
 		
 		subHierarchyStr =  "95896000";  //QI-27  |Protozoan infection (disorder)|
 		templateNames = new String[] {"Infection caused by Protozoa with optional bodysite.json"};
-		 */
+		
 		
 		subHierarchyStr = "74627003";  //QI-48 |Diabetic Complication|
 		templateNames = new String[] {	"Complication co-occurrent and due to Diabetes Melitus.json",
 				"Complication co-occurrent and due to Diabetes Melitus - Minimal.json"};
-		
+		*/
+		subHierarchyStr = "3218000"; //QI-70 |Mycosis (disorder)|
+		templateNames = new String[] {	"Infection caused by Fungus.json"};
 		super.init(args);
 	}
 	
@@ -304,13 +306,16 @@ public class RemodelGroupOne extends TemplateFix {
 				int idx = groupId -1;  //Group 1 -> idx 0, Group 2 -> idx 1
 				//Loop through other attributes already set in this stated group, and see if we can find them
 				//grouped in the inferred form with our proposed new relationship
-				for (Relationship r : c.getRelationshipGroup(CharacteristicType.STATED_RELATIONSHIP, groupId).getRelationships()) {
-					if (!r.equalsTypeValue(proposedRel) && SnomedUtils.isGroupedWith(r, proposedRel, c, CharacteristicType.INFERRED_RELATIONSHIP)) {
-						if (sortedValues[idx] == null) {
-							sortedValues[idx] = value;
-							continue nextValue;
-						} else {
-							throw new IllegalStateException("In " + c + "inferred, " + r + " is grouped with " + proposedRel + " but also " + new Relationship (type, sortedValues[idx]));
+				RelationshipGroup group = c.getRelationshipGroup(CharacteristicType.STATED_RELATIONSHIP, groupId);
+				if (group != null) {
+					for (Relationship r : group.getRelationships()) {
+						if (!r.equalsTypeValue(proposedRel) && SnomedUtils.isGroupedWith(r, proposedRel, c, CharacteristicType.INFERRED_RELATIONSHIP)) {
+							if (sortedValues[idx] == null) {
+								sortedValues[idx] = value;
+								continue nextValue;
+							} else {
+								throw new IllegalStateException("In " + c + "inferred, " + r + " is grouped with " + proposedRel + " but also " + new Relationship (type, sortedValues[idx]));
+							}
 						}
 					}
 				}
