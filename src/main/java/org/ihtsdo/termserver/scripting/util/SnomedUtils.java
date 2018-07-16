@@ -282,7 +282,8 @@ public class SnomedUtils implements RF2Constants{
 		return sw.toString(); // stack trace as a string
 	}
 	
-	public static void createArchive(File dirToZip) throws TermServerScriptException {
+	public static File createArchive(File dirToZip) throws TermServerScriptException {
+		File outputFile;
 		try {
 			// The zip filename will be the name of the first thing in the zip location
 			// ie in this case the directory SnomedCT_RF1Release_INT_20150731
@@ -291,7 +292,8 @@ public class SnomedUtils implements RF2Constants{
 			while (new File(zipFileName).exists()) {
 				zipFileName = dirToZip.listFiles()[0].getName() + "_" + fileNameModifier++ + ".zip";
 			}
-			ZipOutputStream out = new ZipOutputStream(new FileOutputStream(zipFileName));
+			outputFile = new File(zipFileName);
+			ZipOutputStream out = new ZipOutputStream(new FileOutputStream(outputFile));
 			String rootLocation = dirToZip.getAbsolutePath() + File.separator;
 			TermServerScript.info("Creating archive : " + zipFileName + " from files found in " + rootLocation);
 			addDir(rootLocation, dirToZip, out);
@@ -303,6 +305,7 @@ public class SnomedUtils implements RF2Constants{
 				FileUtils.deleteDirectory(dirToZip);
 			} catch (IOException e) {}
 		}
+		return outputFile;
 	}
 	
 	public static void addDir(String rootLocation, File dirObj, ZipOutputStream out) throws IOException {

@@ -367,8 +367,8 @@ public class GraphLoader implements RF2Constants {
 		}
 	}
 
-	public void loadInactivationIndicatorFile(ZipInputStream zis) throws IOException, TermServerScriptException, SnowOwlClientException {
-		BufferedReader br = new BufferedReader(new InputStreamReader(zis, StandardCharsets.UTF_8));
+	public void loadInactivationIndicatorFile(InputStream is) throws IOException, TermServerScriptException, SnowOwlClientException {
+		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 		boolean isHeaderLine = true;
 		String line;
 		while ((line = br.readLine()) != null) {
@@ -392,8 +392,8 @@ public class GraphLoader implements RF2Constants {
 		}
 	}
 	
-	public void loadHistoricalAssociationFile(ZipInputStream zis) throws IOException, TermServerScriptException, SnowOwlClientException {
-		BufferedReader br = new BufferedReader(new InputStreamReader(zis, StandardCharsets.UTF_8));
+	public void loadHistoricalAssociationFile(InputStream is) throws IOException, TermServerScriptException, SnowOwlClientException {
+		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 		boolean isHeaderLine = true;
 		String line;
 		while ((line = br.readLine()) != null) {

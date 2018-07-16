@@ -423,7 +423,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 			if (replaceTripleMatch && r.getEffectiveTime() == null && !r.isActive()) {
 				for (Relationship match : getRelationships(r)) {
 					if (match.isActive() && match.getEffectiveTime() == null) {
-						System.out.println ("Ignoring inactivation between " + match + " and " + r);
+						System.out.println ("Ignoring inactivation in " + this + " between already received active " + match + " and incoming inactive " + r);
 						return;
 					}
 				}

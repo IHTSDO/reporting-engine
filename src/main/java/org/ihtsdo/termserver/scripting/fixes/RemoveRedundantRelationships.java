@@ -6,15 +6,7 @@ import java.util.*;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
-import org.ihtsdo.termserver.scripting.domain.Component;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants;
-import org.ihtsdo.termserver.scripting.domain.Relationship;
-import org.ihtsdo.termserver.scripting.domain.Task;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.ActiveState;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
-
-import us.monoid.json.JSONObject;
+import org.ihtsdo.termserver.scripting.domain.*;
 
 /*
 SUBST-267 Remove stated relationships of a given attribute type where the classifier is 
@@ -50,7 +42,7 @@ public class RemoveRedundantRelationships extends BatchFix implements RF2Constan
 		int changesMade = removeRedundantRelationships(task, loadedConcept);
 		if (changesMade > 0) {
 			try {
-				saveConcept(task, loadedConcept, "");
+				saveConcept(task, loadedConcept, info);
 			} catch (Exception e) {
 				report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
 			}

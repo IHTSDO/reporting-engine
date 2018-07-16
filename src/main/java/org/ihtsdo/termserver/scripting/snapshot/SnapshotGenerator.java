@@ -7,6 +7,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
+import org.ihtsdo.termserver.scripting.ArchiveManager;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
@@ -16,6 +17,7 @@ import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.HistoricalAssociation;
 import org.ihtsdo.termserver.scripting.domain.InactivationIndicatorEntry;
 import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
+import org.ihtsdo.termserver.scripting.domain.Project;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
@@ -33,6 +35,7 @@ public class SnapshotGenerator extends TermServerScript {
 	protected String descSnapshotFilename;
 	protected String langSnapshotFilename;
 	protected String edition = "INT";
+	protected boolean leaveArchiveUncompressed = false;
 	
 	protected String languageCode = "en";
 	protected boolean isExtension = false;
@@ -49,8 +52,14 @@ public class SnapshotGenerator extends TermServerScript {
 	protected String[] attribValHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","valueId"};
 	protected String[] assocHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","targetComponentId"};
 
+	public SnapshotGenerator (ArchiveManager archiveManager) {
+		if (archiveManager != null) {
+			this.setArchiveManager(archiveManager);
+		}
+	}
+	
 	public static void main (String[] args) throws IOException, TermServerScriptException, SnowOwlClientException, InterruptedException {
-		SnapshotGenerator snapGen = new SnapshotGenerator();
+		SnapshotGenerator snapGen = new SnapshotGenerator(null);
 		try {
 			snapGen.runStandAlone = true;
 			snapGen.init(args);
@@ -60,23 +69,48 @@ public class SnapshotGenerator extends TermServerScript {
 			snapGen.startTimer();
 			snapGen.outputRF2();
 			snapGen.flushFiles(false);
-			SnomedUtils.createArchive(new File(snapGen.outputDirName));
+			if (!snapGen.leaveArchiveUncompressed) {	
+				SnomedUtils.createArchive(new File(snapGen.outputDirName));
+			}
 		} finally {
 			snapGen.finish();
 		}
 	}
 	
+	public File generateSnapshot (File previousReleaseSnapshot, File delta, File newLocation) throws TermServerScriptException, SnowOwlClientException {
+		File archive = null;
+		setQuiet(true);
+		init(newLocation, false);
+		loadArchive(previousReleaseSnapshot, false, "Snapshot");
+		loadArchive(delta, false, "Delta");
+		if (!leaveArchiveUncompressed) {	
+			archive = SnomedUtils.createArchive(new File(outputDirName));
+		}
+		setQuiet(false);
+		return archive;
+	}
+	
 	protected void init (String[] args) throws IOException, TermServerScriptException, SnowOwlClientException, SnowOwlClientException {
 		super.init(args);
+		File newLocation = new File("SnomedCT_RF2Release_" + edition);
+		init(newLocation, true);
+	}
+	
+	protected void init (File newLocation, boolean addTodaysDate) throws TermServerScriptException {
 		File outputDir = new File (outputDirName);
 		int increment = 0;
 		while (outputDir.exists()) {
 			String proposedOutputDirName = outputDirName + "_" + (++increment) ;
 			outputDir = new File(proposedOutputDirName);
 		}
-		outputDirName = outputDir.getName();
-		packageRoot = outputDirName + File.separator + "SnomedCT_RF2Release_" + edition +"_";
-		packageDir = packageRoot + today + File.separator;
+		
+		if (leaveArchiveUncompressed) {
+			packageDir = outputDir.getPath() + File.separator;
+		} else {
+			outputDirName = outputDir.getName();
+			packageRoot = outputDirName + File.separator + newLocation;
+			packageDir = packageRoot + (addTodaysDate?today:"") + File.separator;
+		}
 		info ("Outputting data to " + packageDir);
 		initialiseFileHeaders();
 	}
@@ -166,6 +200,18 @@ public class SnapshotGenerator extends TermServerScript {
 			throws TermServerScriptException {
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+	public void leaveArchiveUncompressed() {
+		leaveArchiveUncompressed = true;
+	}
+
+	public String getOutputDirName() {
+		return outputDirName;
+	}
+
+	public void setOutputDirName(String outputDirName) {
+		this.outputDirName = outputDirName;
 	}
 
 }
