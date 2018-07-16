@@ -18,6 +18,9 @@ import org.ihtsdo.termserver.scripting.util.*;
 public class PreferredAcceptableDialectCombo extends BatchFix implements RF2Constants{
 	
 	String subHierarchy = "105590001 |Substance (substance)|"; 
+	String[] exclusions = new String[] { "312435005 |Industrial and household substance (substance)|",
+										"762766007 |Edible substance (substance)|"};
+	Set<Concept> allExclusions; 
 	
 	protected PreferredAcceptableDialectCombo(BatchFix clone) {
 		super(clone);
@@ -26,13 +29,23 @@ public class PreferredAcceptableDialectCombo extends BatchFix implements RF2Cons
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
 		PreferredAcceptableDialectCombo fix = new PreferredAcceptableDialectCombo(null);
 		try {
+			fix.populateEditPanel = false;
 			fix.additionalReportColumns = "New Value, Old Value";
 			fix.selfDetermining = true;
 			fix.init(args);
 			fix.loadProjectSnapshot(false); 
+			fix.postInit();
 			fix.processFile();
 		} finally {
 			fix.finish();
+		}
+	}
+
+	private void postInit() throws TermServerScriptException {
+		allExclusions = new HashSet<>();
+		for (String exclusion : exclusions) {
+			Concept subHierarchy = gl.getConcept(exclusion);
+			allExclusions.addAll(subHierarchy.getDescendents(NOT_SET));
 		}
 	}
 
@@ -42,7 +55,7 @@ public class PreferredAcceptableDialectCombo extends BatchFix implements RF2Cons
 		int changesMade = normalizeAcceptability(t,loadedConcept);
 		if (changesMade > 0) {
 			try {
-				saveConcept(t, loadedConcept, "");
+				saveConcept(t, loadedConcept, info);
 			} catch (Exception e) {
 				report(t, c, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
 			}
@@ -76,6 +89,9 @@ public class PreferredAcceptableDialectCombo extends BatchFix implements RF2Cons
 		List<Component> processMe = new ArrayList<Component>();
 		nextConcept:
 		for (Concept c : gl.getConcept(subHierarchy).getDescendents(NOT_SET)) {
+			if (allExclusions.contains(c)) {
+				continue;
+			}
 			if (c.getConceptId().equals("126071000")) {
 				//debug("Debug here");
 			}
