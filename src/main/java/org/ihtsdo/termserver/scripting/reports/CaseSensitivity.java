@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.regex.*;
 
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -30,8 +31,12 @@ public class CaseSensitivity extends TermServerReport{
 	//String[] knownLowerCase = new String[] { "milliliter" };
 	Pattern numberLetter = Pattern.compile("\\d[a-z]");
 	
+	public CaseSensitivity (TermServerScript clone) {
+		this.inputFile = clone.getInputFile();
+	}
+	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
-		CaseSensitivity report = new CaseSensitivity();
+		CaseSensitivity report = new CaseSensitivity(null);
 		try {
 			report.additionalReportColumns = "Semtag, description, isPreferred, caseSignificance, issue";
 			//report.additionalReportColumns = "description, isPreferred, caseSignificance, usedInProduct, logicRuleOK, issue";
@@ -54,38 +59,38 @@ public class CaseSensitivity extends TermServerReport{
 		}
 	}
 
-private void loadCSWords() throws IOException, TermServerScriptException {
-	info ("Loading " + inputFile);
-	if (!inputFile.canRead()) {
-		throw new TermServerScriptException ("Cannot read: " + inputFile);
-	}
-	List<String> lines = Files.readLines(inputFile, Charsets.UTF_8);
-	for (String line : lines) {
-		if (line.startsWith("milliunit/")) {
-			debug ("Check here");
+	public void loadCSWords() throws IOException, TermServerScriptException {
+		info ("Loading " + inputFile);
+		if (!inputFile.canRead()) {
+			throw new TermServerScriptException ("Cannot read: " + inputFile);
 		}
-		//Split the line up on tabs
-		String[] items = line.split(TAB);
-		String phrase = items[0];
-		//Does the word contain a capital letter (ie not the same as it's all lower case variant)
-		if (!phrase.equals(phrase.toLowerCase())) {
-			//Is this a phrase?
-			String[] words = phrase.split(" ");
-			if (words.length == 1) {
-				properNouns.add(phrase);
-			} else {
-				List<String> phrases = properNounPhrases.get(words[0]);
-				if (phrases == null) {
-					phrases = new ArrayList<>();
-					properNounPhrases.put(words[0], phrases);
-				}
-				phrases.add(phrase);
+		List<String> lines = Files.readLines(inputFile, Charsets.UTF_8);
+		for (String line : lines) {
+			if (line.startsWith("milliunit/")) {
+				debug ("Check here");
 			}
-		} else {
-			knownLowerCase.add(phrase);
+			//Split the line up on tabs
+			String[] items = line.split(TAB);
+			String phrase = items[0];
+			//Does the word contain a capital letter (ie not the same as it's all lower case variant)
+			if (!phrase.equals(phrase.toLowerCase())) {
+				//Is this a phrase?
+				String[] words = phrase.split(" ");
+				if (words.length == 1) {
+					properNouns.add(phrase);
+				} else {
+					List<String> phrases = properNounPhrases.get(words[0]);
+					if (phrases == null) {
+						phrases = new ArrayList<>();
+						properNounPhrases.put(words[0], phrases);
+					}
+					phrases.add(phrase);
+				}
+			} else {
+				knownLowerCase.add(phrase);
+			}
 		}
 	}
-}
 
 	private void checkCaseSignificance() throws TermServerScriptException {
 		//Work through all active descriptions of all hierarchies
@@ -147,7 +152,7 @@ private void loadCSWords() throws IOException, TermServerScriptException {
 		return false;
 	}
 
-	private boolean containsKnownLowerCaseWord(String term) {
+	public boolean containsKnownLowerCaseWord(String term) {
 		for (String lowerCaseWord : knownLowerCase) {
 			if (term.equals(lowerCaseWord) || term.contains(" "  + lowerCaseWord + " ") || term.contains(" " + lowerCaseWord + "/") || term.contains("/" + lowerCaseWord + " ")) {
 				return true;
@@ -199,7 +204,7 @@ private void loadCSWords() throws IOException, TermServerScriptException {
 		return substancesUsedInProducts;
 	}*/
 
-	private boolean startsWithProperNounPhrase(String term) {
+	public boolean startsWithProperNounPhrase(String term) {
 		String firstWord = term.split(" ")[0];
 		
 		if (properNouns.contains(firstWord)) {
@@ -238,6 +243,17 @@ private void loadCSWords() throws IOException, TermServerScriptException {
 		
 		excludeHierarchies.add(SUBSTANCE);
 		excludeHierarchies.add(ORGANISM);
+	}
+
+	public boolean singleCapital(String term) {
+		if (Character.isUpperCase(term.charAt(0))) {
+			if (term.length() == 1) {
+				return true;
+			} else if (!Character.isLetter(term.charAt(1))) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 }

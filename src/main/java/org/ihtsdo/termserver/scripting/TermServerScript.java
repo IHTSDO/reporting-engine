@@ -485,7 +485,9 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	public void incrementSummaryInformation(String key) {
-		incrementSummaryInformation(key, 1);
+		if (!quiet) {
+			incrementSummaryInformation(key, 1);
+		}
 	}
 	
 	public void initialiseSummaryInformation(String key) {
@@ -841,6 +843,10 @@ public abstract class TermServerScript implements RF2Constants {
 
 	public void setArchiveManager(ArchiveManager archiveManager) {
 		this.archiveManager = archiveManager;
+	}
+
+	public File getInputFile() {
+		return inputFile;
 	}
 
 }
