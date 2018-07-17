@@ -1,22 +1,13 @@
 package org.ihtsdo.termserver.scripting;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.nio.charset.StandardCharsets;
-import java.text.SimpleDateFormat;
+import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang.time.DurationFormatUtils;
 import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.template.AncestorsCache;
-import org.ihtsdo.termserver.scripting.template.DescendentsCache;
+import org.ihtsdo.termserver.scripting.template.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import com.google.common.base.Charsets;
@@ -34,7 +25,6 @@ public abstract class TermServerScript implements RF2Constants {
 	protected static boolean dryRun = true;
 	protected boolean quiet = false; 
 	protected static int dryRunCounter = 0;
-	protected int numberOfDistinctReports = 1;
 	protected String env;
 	protected String url = environments[0];
 	protected boolean useAuthenticatedCookie = true;
@@ -55,13 +45,11 @@ public abstract class TermServerScript implements RF2Constants {
 	protected boolean runStandAlone = true; //Set to true to avoid loading concepts from Termserver.  Should be used with Dry Run only.
 	protected File inputFile;
 	protected File inputFile2;
-	protected File[] reportFiles;
-	protected File outputDir;
+
 	protected GraphLoader gl = GraphLoader.getGraphLoader();
 	protected String additionalReportColumns = "ActionDetail";
 	protected String secondaryReportColumns = "ActionDetail";
 	protected String tertiaryReportColumns = "ActionDetail";
-	protected String currentTimeStamp;
 	protected boolean expectNullConcepts = false; //Set to true to avoid warning about rows in input file that result in no concept to modify
 	public Scanner STDIN = new Scanner(System.in);
 	
@@ -71,8 +59,9 @@ public abstract class TermServerScript implements RF2Constants {
 	public static String CRITICAL_ISSUE = "CRITICAL ISSUE";
 	public static String inputFileDelimiter = TSV_FIELD_DELIMITER;
 	protected String tsRoot = "MAIN/"; //"MAIN/2016-01-31/SNOMEDCT-DK/";
+	private ReportManager reportManager;
 	
-	protected Map<String, PrintWriter> printWriterMap = new HashMap<>();
+
 	protected static DescendentsCache descendantsCache = DescendentsCache.getDescendentsCache();
 	protected static AncestorsCache ancestorsCache = AncestorsCache.getAncestorsCache();
 	
@@ -160,7 +149,6 @@ public abstract class TermServerScript implements RF2Constants {
 		boolean isCookie = false;
 		boolean isDryRun = false;
 		boolean isRestart = false;
-		boolean isOutputDir = false;
 		boolean isInputFile = false;
 		boolean isInputFile2 = false;
 		String projectName = "unknown";
@@ -176,8 +164,6 @@ public abstract class TermServerScript implements RF2Constants {
 				isInputFile = true;
 			} else if (thisArg.equals("-f2")) {
 				isInputFile2 = true;
-			} else if (thisArg.equals("-o")) {
-				isOutputDir = true;
 			} else if (thisArg.equals("-r")) {
 				isRestart = true;
 			} else if (isProjectName) {
@@ -205,15 +191,7 @@ public abstract class TermServerScript implements RF2Constants {
 			}else if (isCookie) {
 				authenticatedCookie = thisArg;
 				isCookie = false;
-			} else if (isOutputDir) {
-				File possibleDir = new File(thisArg);
-				if (possibleDir.exists() && possibleDir.isDirectory() && possibleDir.canRead()) {
-					outputDir = possibleDir;
-				} else {
-					info ("Unable to use directory " + possibleDir.getAbsolutePath() + " for output.");
-				}
-				isOutputDir = false;
-			}
+			} 
 		}
 		
 		info ("Select an environment ");
@@ -275,6 +253,8 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 		info("Full path for projected determined to be: " + project.getBranchPath());
 		setArchiveManager(new ArchiveManager(this));
+		reportManager = new ReportManager();
+		reportManager.init(env, getReportName());
 	}
 	
 	protected void initialiseSnowOwlClient() {
@@ -514,17 +494,7 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	public void flushFiles(boolean andClose) {
-		for (PrintWriter pw : printWriterMap.values()) {
-			try {
-				pw.flush();
-				if (andClose) {
-					pw.close();
-				}
-			} catch (Exception e) {}
-		}
-		if (andClose) {
-			printWriterMap = new HashMap<>();
-		}
+		getReportManager().flushFiles(andClose);
 	}
 	
 	public void finish() throws FileNotFoundException {
@@ -582,48 +552,17 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	protected void writeToRF2File(String fileName, Object[] columns) throws TermServerScriptException {
-		PrintWriter out = getPrintWriter(fileName);
-		try {
-			StringBuffer line = new StringBuffer();
-			for (int x=0; x<columns.length; x++) {
-				if (x > 0) {
-					line.append(TSV_FIELD_DELIMITER);
-				}
-				line.append(columns[x]==null?"":columns[x]);
-			}
-			out.print(line.toString() + LINE_DELIMITER);
-		} catch (Exception e) {
-			info ("Unable to output report rf2 line due to " + e.getMessage());
-		}
+		getReportManager().writeToRF2File(fileName, columns);
 	}
 	
 	protected void writeToReportFile(int reportIdx, String line) {
-		try {
-			PrintWriter pw = getPrintWriter(reportFiles[reportIdx].getAbsolutePath());
-			pw.println(line);
-		} catch (Exception e) {
-			info ("Unable to output report line: " + line + " due to " + e.getMessage());
-			info (org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(e));
-		}
+		getReportManager().writeToReportFile(reportIdx, line);
 	}
 	
 	protected void writeToReportFile(String line) {
 		writeToReportFile(0, line);
 	}
 	
-	protected void initialiseReportFiles(String[] columnHeaders) throws IOException {
-		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
-		currentTimeStamp = df.format(new Date());
-		reportFiles = new File[numberOfDistinctReports];
-		for (int reportIdx = 0; reportIdx < numberOfDistinctReports; reportIdx++) {
-			String idxStr = reportIdx == 0 ? "" : "_" + reportIdx;
-			String reportFilename = "results_" + getReportName() + "_" + currentTimeStamp + "_" + env  + idxStr + ".csv";
-			reportFiles[reportIdx] = new File(outputDir, reportFilename);
-			info ("Outputting Report to " + reportFiles[reportIdx].getAbsolutePath());
-			writeToReportFile (reportIdx, columnHeaders[reportIdx]);
-		}
-		flushFiles(false);
-	}
 
 	protected String getReportName() {
 		String reportName = SnomedUtils.deconstructFilename(inputFile)[1];
@@ -633,37 +572,6 @@ public abstract class TermServerScript implements RF2Constants {
 		return reportName;
 	}
 
-	protected File ensureFileExists(String fileName) throws TermServerScriptException {
-		File file = new File(fileName);
-		try {
-			if (!file.exists()) {
-				if (file.getParentFile() != null) {
-					file.getParentFile().mkdirs();
-				}
-				file.createNewFile();
-			}
-		} catch (IOException e) {
-			throw new TermServerScriptException("Failed to create file " + fileName,e);
-		}
-		return file;
-	}
-	
-	PrintWriter getPrintWriter(String fileName) throws TermServerScriptException {
-		try {
-			PrintWriter pw = printWriterMap.get(fileName);
-			if (pw == null) {
-				File file = ensureFileExists(fileName);
-				OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(file, true), StandardCharsets.UTF_8);
-				BufferedWriter bw = new BufferedWriter(osw);
-				pw = new PrintWriter(bw);
-				printWriterMap.put(fileName, pw);
-			}
-			return pw;
-		} catch (Exception e) {
-			throw new TermServerScriptException("Unable to initialise " + fileName + " due to " + e.getMessage(), e);
-		}
-	}
-	
 	protected String getPrettyHistoricalAssociation (Concept c) throws TermServerScriptException {
 		String prettyString = "No association specified.";
 		if (c.getHistorialAssociations(ActiveState.ACTIVE).size() > 0) {
@@ -813,14 +721,6 @@ public abstract class TermServerScript implements RF2Constants {
 		return primitiveAncestors;
 	}
 	
-	public Map<String, PrintWriter> getPrintWriterMap() {
-		return printWriterMap;
-	}
-
-	public void setPrintWriterMap(Map<String, PrintWriter> printWriterMap) {
-		this.printWriterMap = printWriterMap;
-	}
-	
 	public void setQuiet(boolean quiet) {
 		this.quiet = quiet;
 	}
@@ -847,6 +747,14 @@ public abstract class TermServerScript implements RF2Constants {
 
 	public File getInputFile() {
 		return inputFile;
+	}
+
+	public ReportManager getReportManager() {
+		return reportManager;
+	}
+
+	public void setReportManager(ReportManager reportManager) {
+		this.reportManager = reportManager;
 	}
 
 }

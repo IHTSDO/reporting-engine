@@ -35,7 +35,7 @@ public class InitialAnalysis extends TermServerReport {
 			report.additionalReportColumns = "FSN, Proximal Primitive Parent, is Intermediate, Defn Status, Stated Attributes, Stated Role Groups, Inferred Role Groups, Stated Parents";
 			report.secondaryReportColumns = "FSN, Can Be Sufficiently Defined (1=yes 0=no), JIRA, Comments, Authoring Task, In Subhierarchy,Total SDs affected, SD Concepts in subhierarchy, Total Primitive Concepts affected, Primitive Concept in SubHierarchy";
 			report.tertiaryReportColumns = "FSN, Concepts Using Type, Example";
-			report.numberOfDistinctReports = 3;
+			report.getReportManager().setNumberOfDistinctReports(3);
 			report.init(args);
 			report.loadProjectSnapshot(true);  //just FSNs
 			report.postInit();

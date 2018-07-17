@@ -236,7 +236,7 @@ public class SnomedUtils implements RF2Constants{
 		}
 		return unixLines;
 	}
-
+	
 	/**
 	 * @return an array of 3 elements containing:  The path, the filename, the file extension (if it exists) or empty strings
 	 */

@@ -57,7 +57,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 			fix.runStandAlone = true;
 			fix.init(args);
 			fix.ingredientCounter = new IngredientCounts(fix);
-			fix.ingredientCounter.setPrintWriterMap(fix.printWriterMap);  //Share report file!
+			fix.ingredientCounter.getReportManager().setPrintWriterMap(fix.getReportManager().getPrintWriterMap());  //Share report file!
 			fix.termGenerator.includeUnitOfPresentation(fix.includeUnitOfPresentation); 
 			fix.termGenerator.specifyDenominator(fix.specifyDenominator);
 			fix.loadProjectSnapshot(false); //Load all descriptions

@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.ihtsdo.termserver.scripting.GraphLoader;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -26,15 +27,16 @@ public class CaseSignificanceFixAll extends DeltaGenerator implements RF2Constan
 	private List<String> exceptions = new ArrayList<>();
 	boolean padReport = false;
 	
-	public CaseSignificanceFixAll (File reportFile, Map<String, PrintWriter> printWriterMap, Mode mode) {
-		this.reportFiles = new File[] { reportFile };
-		this.printWriterMap = printWriterMap;
+	public CaseSignificanceFixAll (TermServerScript client, Mode mode) {
+		if (client != null) {
+			setReportManager(client.getReportManager());
+		}
 		padReport = true;  //Add two blank columns to make output compatible with a BatchFix
 		this.mode = mode;
 	}
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
-		CaseSignificanceFixAll delta = new CaseSignificanceFixAll(null, null, Mode.REPORT_CHANGE);
+		CaseSignificanceFixAll delta = new CaseSignificanceFixAll(null, Mode.REPORT_CHANGE);
 		try {
 			delta.newIdsRequired = false; // We'll only be modifying existing descriptions\
 			delta.additionalReportColumns = "Old, New, EffectiveTime, Notes";

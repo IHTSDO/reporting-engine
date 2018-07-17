@@ -51,7 +51,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	protected BatchFix (BatchFix clone) {
 		if (clone != null) {
 			this.inputFile = clone.inputFile;
-			this.reportFiles = clone.reportFiles;
+			setReportManager(clone.getReportManager());
 			this.project = clone.project;
 			this.tsClient = clone.tsClient;
 			this.scaClient = clone.scaClient;
@@ -68,10 +68,10 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			batch = formIntoBatch(allComponentsToProcess);
 		}
 		batchProcess(batch);
-		if (emailDetails != null) {
+		/*if (emailDetails != null) {
 			String msg = "Batch Scripting has completed successfully." + getSummaryText();
 			sendEmail(msg, reportFiles[0]);
-		}
+		}*/
 		return allComponentsToProcess;
 	}
 	
@@ -419,7 +419,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		}
 		
 		info ("\nBatching " + taskSize + " concepts per task");
-		initialiseReportFiles( new String[] {"TASK_KEY, TASK_DESC, SCTID, FSN, " + (stateComponentType?"CONCEPT_TYPE,":"") + "SEVERITY,ACTION_TYPE," + additionalReportColumns });
+		getReportManager().initialiseReportFiles( new String[] {"TASK_KEY, TASK_DESC, SCTID, FSN, " + (stateComponentType?"CONCEPT_TYPE,":"") + "SEVERITY,ACTION_TYPE," + additionalReportColumns });
 	}
 	
 	protected int ensureAcceptableParent(Task task, Concept c, Concept acceptableParent) {

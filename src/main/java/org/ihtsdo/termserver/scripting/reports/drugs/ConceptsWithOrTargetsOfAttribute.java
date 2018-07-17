@@ -39,7 +39,7 @@ public class ConceptsWithOrTargetsOfAttribute extends TermServerReport {
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		ConceptsWithOrTargetsOfAttribute report = new ConceptsWithOrTargetsOfAttribute();
 		try {
-			report.numberOfDistinctReports = 2;
+			report.getReportManager().setNumberOfDistinctReports(2);
 			report.additionalReportColumns = "FSN, Reason";
 			report.secondaryReportColumns = "FSN, Reason, Example source";
 			report.init(args);
