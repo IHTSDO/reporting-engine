@@ -53,6 +53,24 @@
 			<version>2.5.0</version>
 		</dependency>
 		
+		<!-- Google Sheet API -->
+		<dependency>
+			<groupId>com.google.api-client</groupId>
+			<artifactId>google-api-client</artifactId>
+			<version>1.23.0</version>
+		</dependency>
+		<dependency>
+			<groupId>com.google.oauth-client</groupId>
+			<artifactId>google-oauth-client-jetty</artifactId>
+			<version>1.23.0</version>
+		</dependency>
+		<dependency>
+			<groupId>com.google.apis</groupId>
+			<artifactId>google-api-services-sheets</artifactId>
+			<version>v4-rev531-1.18.0-rc</version>
+		</dependency>
+		
+
 		<!-- Test -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

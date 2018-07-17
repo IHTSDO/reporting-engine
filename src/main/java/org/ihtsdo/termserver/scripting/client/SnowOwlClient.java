@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -70,6 +69,15 @@ public class SnowOwlClient {
 		resty.withHeader("Cookie", cookie);
 		resty.authenticate(this.url, null,null);
 	}
+	
+	public JSONResource getBranch(String branchPath) throws SnowOwlClientException {
+		try {
+			logger.debug("Recovering branch information from " + getBranchesPath(branchPath));
+			return resty.json(getBranchesPath(branchPath));
+		} catch (IOException e) {
+			throw new SnowOwlClientException(e);
+		}
+	}
 
 	public JSONResource createConcept(JSONObject json, String branchPath) throws SnowOwlClientException {
 		final JSONResource newConcept;
@@ -132,6 +140,10 @@ public class SnowOwlClient {
 		} catch (IOException e) {
 			throw new SnowOwlClientException(e);
 		}
+	}
+	
+	private String getBranchesPath(String branchPath) {
+		return  url + "/branches/" + branchPath;
 	}
 	
 	private String getConceptsPath(String sctId, String branchPath) {
@@ -306,8 +318,11 @@ public class SnowOwlClient {
 						jsonObj.put("includeUnpublished", true);
 					}
 				case UNPUBLISHED:
-					String tet = (effectiveDate == null) ?YYYYMMDD.format(new Date()) : effectiveDate;
-					jsonObj.put("transientEffectiveTime", tet);
+					//Now leaving effective date blank if not specified
+					if (effectiveDate != null) {
+						//String tet = (effectiveDate == null) ?YYYYMMDD.format(new Date()) : effectiveDate;
+						jsonObj.put("transientEffectiveTime", effectiveDate);
+					}
 					break;
 				case PUBLISHED:
 					if (effectiveDate == null) {

@@ -2,25 +2,18 @@ package org.ihtsdo.termserver.scripting;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 import org.apache.commons.lang.time.DurationFormatUtils;
 import org.ihtsdo.termserver.scripting.client.*;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExportType;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExtractType;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.template.AncestorsCache;
 import org.ihtsdo.termserver.scripting.template.DescendentsCache;
@@ -48,6 +41,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected boolean stateComponentType = true;
 	protected SnowOwlClient tsClient;
 	protected AuthoringServicesClient scaClient;
+	private ArchiveManager archiveManager; 
 	protected String authenticatedCookie;
 	protected Resty resty = new Resty();
 	protected Project project;
@@ -69,8 +63,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected String tertiaryReportColumns = "ActionDetail";
 	protected String currentTimeStamp;
 	protected boolean expectNullConcepts = false; //Set to true to avoid warning about rows in input file that result in no concept to modify
-	
-	protected Scanner STDIN = new Scanner(System.in);
+	public Scanner STDIN = new Scanner(System.in);
 	
 	public static String CONCEPTS_IN_FILE = "Concepts in file";
 	public static String CONCEPTS_PROCESSED = "Concepts processed";
@@ -80,10 +73,10 @@ public abstract class TermServerScript implements RF2Constants {
 	protected String tsRoot = "MAIN/"; //"MAIN/2016-01-31/SNOMEDCT-DK/";
 	
 	protected Map<String, PrintWriter> printWriterMap = new HashMap<>();
-	protected static DescendentsCache descendantsCache = new DescendentsCache();
-	protected static AncestorsCache ancestorsCache = new AncestorsCache();
+	protected static DescendentsCache descendantsCache = DescendentsCache.getDescendentsCache();
+	protected static AncestorsCache ancestorsCache = AncestorsCache.getAncestorsCache();
 	
-	protected static Gson gson;
+	public static Gson gson;
 	static {
 		GsonBuilder gsonBuilder = new GsonBuilder();
 		//gsonBuilder.registerTypeAdapter(Concept.class, new ConceptDeserializer());
@@ -281,6 +274,7 @@ public abstract class TermServerScript implements RF2Constants {
 			project.setKey(projectName);
 		}
 		info("Full path for projected determined to be: " + project.getBranchPath());
+		setArchiveManager(new ArchiveManager(this));
 	}
 	
 	protected void initialiseSnowOwlClient() {
@@ -291,78 +285,12 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 	}
 	
-	protected void loadProjectSnapshot(boolean fsnOnly) throws SnowOwlClientException, TermServerScriptException, InterruptedException {
-		File snapShotArchive = new File (project + "_" + env + ".zip");
-		//Do we already have a copy of the project locally?  If not, recover it.
-		if (!snapShotArchive.exists()) {
-			//Add in a double check if we're working in prod - else we could scupper validation and classification for 90 minutes!
-			if (env.equals("prod")) {
-				print ("About to request snapshot export from production - are you sure? Y/N");
-				if (!STDIN.nextLine().trim().toUpperCase().equals("Y")) {
-					throw new TermServerScriptException("Snapshot export aborted.");
-				}
-			}
-			info ("Recovering current state of " + project + " from TS (" + env + ")");
-			tsClient.export(project.getBranchPath(), null, ExportType.MIXED, ExtractType.SNAPSHOT, snapShotArchive);
-		}
-		info ("Loading snapshot archive contents into memory...");
-		loadArchive(snapShotArchive, fsnOnly, "Snapshot");
+	protected void loadProjectSnapshot(boolean fsnOnly) throws SnowOwlClientException, TermServerScriptException, InterruptedException, IOException {
+		getArchiveManager().loadProjectSnapshot(fsnOnly);
 	}
 	
 	protected void loadArchive(File archive, boolean fsnOnly, String fileType) throws TermServerScriptException, SnowOwlClientException {
-		try {
-			boolean isDelta = (fileType.equals(DELTA));
-			ZipInputStream zis = new ZipInputStream(new FileInputStream(archive));
-			ZipEntry ze = zis.getNextEntry();
-			try {
-				while (ze != null) {
-					if (!ze.isDirectory()) {
-						Path p = Paths.get(ze.getName());
-						String fileName = p.getFileName().toString();
-						if (fileName.contains("sct2_Concept_" + fileType )) {
-							info("Loading Concept " + fileType + " file.");
-							gl.loadConceptFile(zis);
-						} else if (fileName.contains("sct2_Relationship_" + fileType )) {
-							info("Loading Relationship " + fileType + " file.");
-							gl.loadRelationships(CharacteristicType.INFERRED_RELATIONSHIP, zis, true, isDelta);
-							info("Calculating concept depth...");
-							gl.populateHierarchyDepth(ROOT_CONCEPT, 0);
-						} else if (fileName.contains("sct2_StatedRelationship_" + fileType )) {
-							info("Loading StatedRelationship " + fileType + " file.");
-							gl.loadRelationships(CharacteristicType.STATED_RELATIONSHIP, zis, true, isDelta);
-						} else if (fileName.contains("sct2_Description_" + fileType )) {
-							info("Loading Description " + fileType + " file.");
-							gl.loadDescriptionFile(zis, fsnOnly);
-						} else if (fileName.contains("der2_cRefset_ConceptInactivationIndicatorReferenceSet" + fileType )) {
-							info("Loading Concept Inactivation Indicator " + fileType + " file.");
-							gl.loadInactivationIndicatorFile(zis);
-						}  else if (fileName.contains("der2_cRefset_DescriptionInactivationIndicatorReferenceSet" + fileType )) {
-							info("Loading Description Inactivation Indicator " + fileType + " file.");
-							gl.loadInactivationIndicatorFile(zis);
-						} else if (fileName.contains("der2_cRefset_AttributeValue" + fileType )) {
-							info("Loading Concept/Description Inactivation Indicators " + fileType + " file.");
-							gl.loadInactivationIndicatorFile(zis);
-						}  else if (fileName.contains("Association" + fileType ) || fileName.contains("AssociationReferenceSet" + fileType )) {
-							info("Loading Historical Association File: " + fileName);
-							gl.loadHistoricalAssociationFile(zis);
-						}
-						//If we're loading all terms, load the language refset as well
-						if (!fsnOnly && (fileName.contains("English" + fileType ) || fileName.contains("Language" + fileType))) {
-							info("Loading Language Reference Set File - " + fileName);
-							gl.loadLanguageFile(zis);
-						}
-					}
-					ze = zis.getNextEntry();
-				}
-			} finally {
-				try{
-					zis.closeEntry();
-					zis.close();
-				} catch (Exception e){} //Well, we tried.
-			}
-		} catch (IOException e) {
-			throw new TermServerScriptException("Failed to extract project state from archive " + archive.getName(), e);
-		}
+		getArchiveManager().loadArchive(archive, fsnOnly, fileType);
 	}
 	
 	protected Concept loadConcept(String sctid, String branchPath) throws TermServerScriptException {
@@ -557,7 +485,9 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	public void incrementSummaryInformation(String key) {
-		incrementSummaryInformation(key, 1);
+		if (!quiet) {
+			incrementSummaryInformation(key, 1);
+		}
 	}
 	
 	public void initialiseSummaryInformation(String key) {
@@ -839,6 +769,7 @@ public abstract class TermServerScript implements RF2Constants {
 
 	
 	protected void report (Concept c, Description d, Object...details) {
+		incrementSummaryInformation("Report lines written");
 		StringBuffer sb = new StringBuffer();
 		sb.append (QUOTE)
 		.append(c==null?"":c.getConceptId())
@@ -892,6 +823,30 @@ public abstract class TermServerScript implements RF2Constants {
 	
 	public void setQuiet(boolean quiet) {
 		this.quiet = quiet;
+	}
+
+	public String getEnv() {
+		return env;
+	}
+
+	public GraphLoader getGraphLoader() {
+		return gl;
+	}
+
+	public SnowOwlClient getTSClient() {
+		return tsClient;
+	}
+
+	public ArchiveManager getArchiveManager() {
+		return archiveManager;
+	}
+
+	public void setArchiveManager(ArchiveManager archiveManager) {
+		this.archiveManager = archiveManager;
+	}
+
+	public File getInputFile() {
+		return inputFile;
 	}
 
 }

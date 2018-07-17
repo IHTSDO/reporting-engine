@@ -1,9 +1,6 @@
 package org.ihtsdo.termserver.scripting.template;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
@@ -12,7 +9,20 @@ import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 
 public class DescendentsCache implements RF2Constants {
 
+	private static DescendentsCache singleton = null;
+	
 	Map<Concept, Set<Concept>> descendentOrSelfCache = new HashMap<>();
+	
+	public static DescendentsCache getDescendentsCache() {
+		if (singleton == null) {
+			singleton = new DescendentsCache();
+		}
+		return singleton;
+	}
+	
+	private DescendentsCache() {
+		//Force use of singleton;
+	}
 	
 	public Set<Concept> getDescendentsOrSelf(Concept c) throws TermServerScriptException {
 		return getDescendentsOrSelf(c, false);  //Default implementation is immutable

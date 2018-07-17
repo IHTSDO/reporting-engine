@@ -61,10 +61,12 @@ public interface RF2Constants {
 	static Concept UNIT = new Concept("767525000", "Unit (qualifier value)");
 	
 	static Concept ROOT_CONCEPT = new Concept (SCTID_ROOT_CONCEPT.toString());
+	static Concept BODY_STRUCTURE = new Concept ("123037004","Body structure (body structure)|");
 	static Concept CLINICAL_FINDING = new Concept ("404684003", "Clinical finding (finding)");
 	static Concept COMPLICATION = new Concept ("116223007", "Complication (disorder)");
 	static Concept DISEASE = new Concept ("64572001", "Disease (disorder)");
-	static Concept ASSOC_MORPH = new Concept ("116676008");  // |Associated morphology (attribute)|
+	static Concept CAUSE_AGENT = new Concept ("246075003","Causative agent (attribute)");
+	static Concept ASSOC_MORPH = new Concept ("116676008", "Associated morphology (attribute)");
 	static Concept OBSERVABLE_ENTITY = new Concept("363787002"); // |Observable entity (observable entity)|
 	static Concept DUE_TO = new Concept("42752001"); // |Due to (attribute)|
 	static Concept PART_OF = new Concept("123005000"); // |Part of (attribute)|
@@ -175,7 +177,7 @@ public interface RF2Constants {
 	
 	public enum ActiveState { ACTIVE, INACTIVE, BOTH };
 	
-	public enum Acceptability { ACCEPTABLE, PREFERRED, BOTH };
+	public enum Acceptability { ACCEPTABLE, PREFERRED, BOTH, NONE };
 	
 	public enum CaseSignificance { ENTIRE_TERM_CASE_SENSITIVE, CASE_INSENSITIVE ,INITIAL_CHARACTER_CASE_INSENSITIVE };
 	public static String CS = "CS";

@@ -172,4 +172,9 @@ public class Project {
 		return key;
 	}
 
+	public Project withBranchPath(String branchPath) {
+		this.branchPath = branchPath;
+		return this;
+	}
+
 }

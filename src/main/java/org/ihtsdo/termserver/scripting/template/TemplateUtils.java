@@ -23,7 +23,7 @@ public class TemplateUtils {
 	
 	public static String ECL_DESCENDANT_OR_SELF = "<<";
 	public static String ECL_DESCENDANT = "<";
-	public static String ECL_OR = "OR";
+	public static String ECL_OR = " OR ";
 	public static String ECL_STAR = "*";
 	public static Pattern p = Pattern.compile("[0-9]+");
 	
@@ -64,8 +64,14 @@ public class TemplateUtils {
 		
 		return sb.toString();
 	}
-
+	
 	public static boolean matchesTemplate(Concept c, Template t, DescendentsCache cache, CharacteristicType charType) throws TermServerScriptException {
+		//Default to not allowing additional attributes
+		return matchesTemplate(c, t, cache, charType, false);
+	}
+		
+
+	public static boolean matchesTemplate(Concept c, Template t, DescendentsCache cache, CharacteristicType charType, boolean allowAdditional) throws TermServerScriptException {
 		//TODO Check the focus concept
 
 		//Map relGroups to template attribute groups, and visa versa

@@ -1,8 +1,6 @@
 
 package org.ihtsdo.termserver.scripting.domain;
 
-import javax.annotation.Generated;
-
 import org.apache.commons.lang.NotImplementedException;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -10,7 +8,6 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
-@Generated("org.jsonschema2pojo")
 public class Relationship extends Component implements RF2Constants, Comparable<Relationship> {
 
 	@SerializedName("effectiveTime")
@@ -74,6 +71,11 @@ public class Relationship extends Component implements RF2Constants, Comparable<
 		this.characteristicType = CharacteristicType.STATED_RELATIONSHIP;
 		this.modifier = Modifier.EXISTENTIAL;
 		this.moduleId = SCTID_CORE_MODULE;
+	}
+
+	public Relationship(Concept type, Concept value) {
+		this.type = type;
+		this.target = value;
 	}
 
 	public String getEffectiveTime() {
@@ -205,7 +207,7 @@ public class Relationship extends Component implements RF2Constants, Comparable<
 		if (this.getRelationshipId() != null && rhs.getRelationshipId() != null) {
 			return this.getRelationshipId().equals(rhs.getRelationshipId());
 		}
-		//Otherwise compare triple + group
+		//Otherwise compare type / target / group 
 		return (this.type.equals(rhs.type) && this.target.equals(rhs.target) && this.groupId == rhs.groupId);
 	}
 	
@@ -341,5 +343,7 @@ public class Relationship extends Component implements RF2Constants, Comparable<
 		this.released = released;
 	}
 
-
+	public boolean equalsTypeValue(Relationship rhs) {
+		return this.type.equals(rhs.type) && this.target.equals(rhs.target);
+	}
 }

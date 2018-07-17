@@ -1,19 +1,9 @@
 package org.ihtsdo.termserver.scripting.domain;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
-import org.ihtsdo.termserver.scripting.TermServerScript;
-import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.CaseSignificance;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.DescriptionType;
+import org.ihtsdo.termserver.scripting.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import com.google.gson.annotations.Expose;
@@ -433,7 +423,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 			if (replaceTripleMatch && r.getEffectiveTime() == null && !r.isActive()) {
 				for (Relationship match : getRelationships(r)) {
 					if (match.isActive() && match.getEffectiveTime() == null) {
-						System.out.println ("Ignoring inactivation between " + match + " and " + r);
+						System.out.println ("Ignoring inactivation in " + this + " between already received active " + match + " and incoming inactive " + r);
 						return;
 					}
 				}
@@ -452,20 +442,20 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		}
 	}
 	
-	public void addChild(CharacteristicType characteristicType, Concept c) {
-		getChildren(characteristicType).add(c);
+	public void addChild(CharacteristicType charType, Concept c) {
+		getChildren(charType).add(c);
 	}
 	
-	public void removeChild(CharacteristicType characteristicType, Concept c) {
-		getChildren(characteristicType).remove(c);
+	public void removeChild(CharacteristicType charType, Concept c) {
+		getChildren(charType).remove(c);
 	}
 	
-	public void addParent(CharacteristicType characteristicType, Concept p) {
-		getParents(characteristicType).add(p);
+	public void addParent(CharacteristicType charType, Concept p) {
+		getParents(charType).add(p);
 	}
 	
-	public void removeParent(CharacteristicType characteristicType, Concept p) {
-		getParents(characteristicType).remove(p);
+	public void removeParent(CharacteristicType charType, Concept p) {
+		getParents(charType).remove(p);
 	}
 
 	public ConceptType getConceptType() {
@@ -740,22 +730,35 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	}
 	
 	public Description findTerm(String term) {
-		return findTerm (term, null);
+		return findTerm (term, null, false, true);
+	}
+	
+	public Description findTerm(String term , String lang) {
+		return findTerm (term, lang, false, true);
 	}
 
-	public Description findTerm(String term , String lang) {
+	public Description findTerm(String term , String lang, boolean caseInsensitive, boolean includeInactive) {
 		//First look for a match in the active terms, then try inactive
 		for (Description d : getDescriptions(ActiveState.ACTIVE)) {
-			if (d.getTerm().equals(term) && 
-					(lang == null || lang.equals(d.getLang()))) {
-				return d;
+			if ((lang == null || lang.equals(d.getLang()))) {
+				if (caseInsensitive) {
+					term = term.toLowerCase();
+					String desc = d.getTerm().toLowerCase();
+					if (term.equals(desc)) {
+						return d;
+					}
+				} else if (d.getTerm().equals(term)) {
+						return d;
+				}
 			}
 		}
 		
-		for (Description d : getDescriptions(ActiveState.INACTIVE)) {
-			if (d.getTerm().equals(term) && 
-					(lang == null || lang.equals(d.getLang()))) {
-				return d;
+		if (includeInactive) {
+			for (Description d : getDescriptions(ActiveState.INACTIVE)) {
+				if (d.getTerm().equals(term) && 
+						(lang == null || lang.equals(d.getLang()))) {
+					return d;
+				}
 			}
 		}
 		return null;

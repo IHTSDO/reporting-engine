@@ -282,7 +282,8 @@ public class SnomedUtils implements RF2Constants{
 		return sw.toString(); // stack trace as a string
 	}
 	
-	public static void createArchive(File dirToZip) throws TermServerScriptException {
+	public static File createArchive(File dirToZip) throws TermServerScriptException {
+		File outputFile;
 		try {
 			// The zip filename will be the name of the first thing in the zip location
 			// ie in this case the directory SnomedCT_RF1Release_INT_20150731
@@ -291,7 +292,8 @@ public class SnomedUtils implements RF2Constants{
 			while (new File(zipFileName).exists()) {
 				zipFileName = dirToZip.listFiles()[0].getName() + "_" + fileNameModifier++ + ".zip";
 			}
-			ZipOutputStream out = new ZipOutputStream(new FileOutputStream(zipFileName));
+			outputFile = new File(zipFileName);
+			ZipOutputStream out = new ZipOutputStream(new FileOutputStream(outputFile));
 			String rootLocation = dirToZip.getAbsolutePath() + File.separator;
 			TermServerScript.info("Creating archive : " + zipFileName + " from files found in " + rootLocation);
 			addDir(rootLocation, dirToZip, out);
@@ -303,6 +305,7 @@ public class SnomedUtils implements RF2Constants{
 				FileUtils.deleteDirectory(dirToZip);
 			} catch (IOException e) {}
 		}
+		return outputFile;
 	}
 	
 	public static void addDir(String rootLocation, File dirObj, ZipOutputStream out) throws IOException {
@@ -832,8 +835,10 @@ public class SnomedUtils implements RF2Constants{
 		pt.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(AcceptabilityMode.PREFERRED_BOTH));
 		newConcept.addDescription(pt, true);  //Allow duplication - we might have a null term if we don't know enough to create one yet.
 		
-		Relationship parentRel = new Relationship (null, IS_A, parent, UNGROUPED);
-		newConcept.addRelationship(parentRel);
+		if (parent != null) {
+			Relationship parentRel = new Relationship (null, IS_A, parent, UNGROUPED);
+			newConcept.addRelationship(parentRel);
+		}
 		return newConcept;
 	}
 	
@@ -901,24 +906,24 @@ public class SnomedUtils implements RF2Constants{
 	 * @return the highest concept reached before hitting "end"
 	 */
 	public static Concept getHighestAncestorBefore(Concept start, Concept end) {
-		Concept here = start;
-		boolean goHigher = true;
-		while (goHigher) {
-			List<Concept> parents = here.getParents(CharacteristicType.INFERRED_RELATIONSHIP);
-			if (parents.size() > 1) {
-				throw new IllegalArgumentException(here + " has multiple parents.  Cannot find ancestor path.");
-			}
-			Concept parent = parents.get(0);
+		Set<Concept> topLevelAncestors = new HashSet<>();
+		for (Concept parent : start.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
 			if (parent.equals(end)) {
-				goHigher = false;
+				return start;
 			} else if (parent.equals(ROOT_CONCEPT)) {
-				throw new IllegalArgumentException(start + " reached ROOT before finding " + end);
+				throw new IllegalStateException(start + " reached ROOT before finding " + end);
 			} else {
-				//Keep working our way up.
-				here = parent;
+				topLevelAncestors.add(getHighestAncestorBefore(parent, end));
 			}
 		}
-		return here;
+		
+		if (topLevelAncestors.size() > 1) {
+			throw new IllegalArgumentException(start + " has multiple ancestors immediately before " + end);
+		} else if (topLevelAncestors.isEmpty()) {
+			throw new IllegalArgumentException("Failed to find ancestors of " + start + " before " + end);
+		}
+		
+		return topLevelAncestors.iterator().next();
 	}
 
 	/**
@@ -971,6 +976,29 @@ public class SnomedUtils implements RF2Constants{
 			}
 		}
 		return matchedRelationships;
+	}
+
+	/*
+	 * @return true if r1 and r2 can be found grouped together in the specified characteristic type
+	 */
+	public static boolean isGroupedWith(Relationship r1, Relationship r2, Concept c, CharacteristicType charType) {
+		if (r1.equalsTypeValue(r2)) {
+			throw new IllegalArgumentException("Cannot answer if " + r1 + " is grouped with itself");
+		}
+		
+		for (RelationshipGroup group : c.getRelationshipGroups(charType)) {
+			boolean foundFirst = false;
+			for (Relationship r : group.getRelationships()) {
+				if (r.equalsTypeValue(r1) || r.equalsTypeValue(r2)) {
+					if (foundFirst) { //already seen one
+						return true;
+					} else {
+						foundFirst = true;
+					}
+				}
+			}
+		}
+		return false;
 	}
 
 }
