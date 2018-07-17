@@ -102,15 +102,15 @@ public class NumberLetterLowerCase extends DrugBatchFix implements RF2Constants{
 					//first in the term.  Is it a known case sensitive word?
 					String subString = term.substring(i);
 					if (csReport.singleCapital(subString)) {
-						report (t, c, Severity.MEDIUM, ReportActionType.INFO, d, "Skipping term - single captial letter");
+						report(t, c, Severity.MEDIUM, ReportActionType.INFO, d, "Skipping term - single captial letter");
 						return NO_CHANGES_MADE;
 					} else if (csReport.startsWithProperNounPhrase(subString)) {
-						report (t, c, Severity.MEDIUM, ReportActionType.INFO, d, "Skipping term - known cs word");
+						report(t, c, Severity.MEDIUM, ReportActionType.INFO, d, "Skipping term - known cs word");
 						return NO_CHANGES_MADE;
 					} else {
 						//If the NEXT character is not a letter, or is also capital, then skip
 						if (!Character.isLetter(term.charAt(i+1)) || Character.isUpperCase(term.charAt(i+1))) {
-							report (t, c, Severity.MEDIUM, ReportActionType.INFO, d, "Skipping term - capital is not part of word");
+							report(t, c, Severity.MEDIUM, ReportActionType.INFO, d, "Skipping term - capital is not part of word");
 							return NO_CHANGES_MADE;
 						}
 						StringBuilder modifiedTerm = new StringBuilder(term);

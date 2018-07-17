@@ -31,7 +31,7 @@ public class CaseSensitivity extends TermServerReport{
 	//String[] knownLowerCase = new String[] { "milliliter" };
 	Pattern numberLetter = Pattern.compile("\\d[a-z]");
 	
-	public CaseSensitivity (TermServerScript clone) {
+	public CaseSensitivity(TermServerScript clone) {
 		this.inputFile = clone.getInputFile();
 	}
 	
@@ -60,14 +60,14 @@ public class CaseSensitivity extends TermServerReport{
 	}
 
 	public void loadCSWords() throws IOException, TermServerScriptException {
-		info ("Loading " + inputFile);
+		info("Loading " + inputFile);
 		if (!inputFile.canRead()) {
-			throw new TermServerScriptException ("Cannot read: " + inputFile);
+			throw new TermServerScriptException("Cannot read: " + inputFile);
 		}
 		List<String> lines = Files.readLines(inputFile, Charsets.UTF_8);
 		for (String line : lines) {
 			if (line.startsWith("milliunit/")) {
-				debug ("Check here");
+				debug("Check here");
 			}
 			//Split the line up on tabs
 			String[] items = line.split(TAB);
@@ -102,7 +102,7 @@ public class CaseSensitivity extends TermServerReport{
 				}
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 					if (d.getTerm().startsWith("Mirgorod")) {
-						debug ("Check here");
+						debug("Check here");
 					}
 					if (!newlyModifiedContentOnly || !d.isReleased()) {
 						String caseSig = SnomedUtils.translateCaseSignificanceFromEnum(d.getCaseSignificance());
@@ -111,7 +111,7 @@ public class CaseSensitivity extends TermServerReport{
 						String preferred = d.isPreferred()?"Y":"N";
 						//Lower case first letters must be entire term case sensitive
 						if (Character.isLetter(firstLetter.charAt(0)) && firstLetter.equals(firstLetter.toLowerCase()) && !caseSig.equals(CS)) {
-							report (c, d, preferred, caseSig, "Terms starting with lower case letter must be CS");
+							report(c, d, preferred, caseSig, "Terms starting with lower case letter must be CS");
 							incrementSummaryInformation("issues");
 							continue nextConcept;
 						} else if (caseSig.equals(CS) || caseSig.equals(cI)) {
@@ -122,7 +122,7 @@ public class CaseSensitivity extends TermServerReport{
 								if (caseSig.equals(CS) && startsWithSingleLetter(d.getTerm())){
 									//Probably OK
 								} else {
-									report (c, d, preferred, caseSig, "Case sensitive term does not have capital after first letter");
+									report(c, d, preferred, caseSig, "Case sensitive term does not have capital after first letter");
 									incrementSummaryInformation("issues");
 									continue nextConcept;
 								}
