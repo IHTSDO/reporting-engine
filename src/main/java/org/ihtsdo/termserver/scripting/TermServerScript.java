@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang.time.DurationFormatUtils;
 import org.ihtsdo.termserver.scripting.client.*;
+import org.ihtsdo.termserver.scripting.dao.ReportManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.template.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -556,7 +557,11 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	protected void writeToReportFile(int reportIdx, String line) {
-		getReportManager().writeToReportFile(reportIdx, line);
+		try {
+			getReportManager().writeToReportFile(reportIdx, line);
+		} catch (IOException e) {
+			throw new IllegalStateException("Unable to write to report", e);
+		}
 	}
 	
 	protected void writeToReportFile(String line) {

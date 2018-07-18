@@ -1,36 +1,28 @@
-package org.ihtsdo.termserver.scripting;
+package org.ihtsdo.termserver.scripting.dao;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
+import org.ihtsdo.termserver.scripting.TermServerScript;
+import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
-public class ReportManager implements RF2Constants {
-	enum Mode { FILE, GOOGLE, BOTH }
-	Mode mode = Mode.BOTH;
-	
+public class ReportFileManager implements RF2Constants {
+
 	protected File[] reportFiles;
 	protected Map<String, PrintWriter> printWriterMap = new HashMap<>();
 	protected String currentTimeStamp;
-	protected int numberOfDistinctReports = 1;
-	protected String reportName;
-	protected String env;
+	private String env;
+	ReportManager owner;
+	SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
 	
-	public void init(String environment, String reportName) {
-		this.env = environment;
-		this.reportName = reportName;
+	public ReportFileManager(ReportManager owner) {
+		this.owner = owner;
 	}
-	
+
 	protected void writeToReportFile(int reportIdx, String line) {
 		try {
 			PrintWriter pw = getPrintWriter(reportFiles[reportIdx].getAbsolutePath());
@@ -87,15 +79,14 @@ public class ReportManager implements RF2Constants {
 		}
 	}
 	
-	public void initialiseReportFiles(String[] columnHeaders) throws IOException {
-		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
+	public void initialiseReportFiles(String[] columnHeaders) {
 		currentTimeStamp = df.format(new Date());
-		reportFiles = new File[numberOfDistinctReports];
-		for (int reportIdx = 0; reportIdx < numberOfDistinctReports; reportIdx++) {
+		reportFiles = new File[owner.getNumberOfDistinctReports()];
+		for (int reportIdx = 0; reportIdx < owner.getNumberOfDistinctReports(); reportIdx++) {
 			String idxStr = reportIdx == 0 ? "" : "_" + reportIdx;
-			String reportFilename = "results_" + reportName + "_" + currentTimeStamp + "_" + env  + idxStr + ".csv";
+			String reportFilename = "results_" + owner.getReportName() + "_" + currentTimeStamp + "_" + env  + idxStr + ".csv";
 			reportFiles[reportIdx] = new File(reportFilename);
-			TermServerScript.info ("Outputting Report to " + reportFiles[reportIdx].getAbsolutePath());
+			TermServerScript.info("Outputting Report to " + reportFiles[reportIdx].getAbsolutePath());
 			writeToReportFile (reportIdx, columnHeaders[reportIdx]);
 		}
 		flushFiles(false);
@@ -108,9 +99,4 @@ public class ReportManager implements RF2Constants {
 	public void setPrintWriterMap(Map<String, PrintWriter> printWriterMap) {
 		this.printWriterMap = printWriterMap;
 	}
-
-	public void setNumberOfDistinctReports(int x) {
-		numberOfDistinctReports = x;
-	}
-	
 }
