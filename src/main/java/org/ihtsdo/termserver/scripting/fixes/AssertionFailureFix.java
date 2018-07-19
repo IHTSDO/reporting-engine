@@ -65,13 +65,13 @@ public class AssertionFailureFix extends BatchFix implements RF2Constants{
 		return changesMade;
 	}
 
-	private int fixAssertionIssues(Task task, Concept loadedConcept) {
+	private int fixAssertionIssues(Task task, Concept loadedConcept) throws TermServerScriptException {
 		int changesMade = 0;
 		changesMade += ensureTerms(task, loadedConcept);
 		return changesMade;
 	}
 
-	private int ensureTerms(Task task, Concept concept) {
+	private int ensureTerms(Task task, Concept concept) throws TermServerScriptException {
 		int changesMade = 0;
 		//TODO Need to add check that all components have been published before
 		//inactivating.  If NOT published, should delete and recreate.
@@ -141,7 +141,7 @@ public class AssertionFailureFix extends BatchFix implements RF2Constants{
 	}
 
 	private List<Component> validateAllInputConceptsBatched(List<Component> concepts,
-			List<Component> allConceptsToBeProcessed) {
+			List<Component> allConceptsToBeProcessed) throws TermServerScriptException {
 		List<Component> reportedNotProcessed = new ArrayList<Component>();
 		//Ensure that all concepts we got given to process were captured in one batch or another
 		for (Component thisConcept : concepts) {

@@ -254,8 +254,7 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 		info("Full path for projected determined to be: " + project.getBranchPath());
 		setArchiveManager(new ArchiveManager(this));
-		reportManager = new ReportManager();
-		reportManager.init(env, getReportName());
+		reportManager = ReportManager.create(env, getReportName());
 	}
 	
 	protected void initialiseSnowOwlClient() {
@@ -494,11 +493,11 @@ public abstract class TermServerScript implements RF2Constants {
 		summaryDetails.put(storeAs, differences.toString());
 	}
 	
-	public void flushFiles(boolean andClose) {
+	public void flushFiles(boolean andClose) throws TermServerScriptException {
 		getReportManager().flushFiles(andClose);
 	}
 	
-	public void finish() throws FileNotFoundException {
+	public void finish() throws FileNotFoundException, TermServerScriptException {
 		info (BREAK);
 		flushFiles(true);
 		Date endTime = new Date();
@@ -556,15 +555,11 @@ public abstract class TermServerScript implements RF2Constants {
 		getReportManager().writeToRF2File(fileName, columns);
 	}
 	
-	protected void writeToReportFile(int reportIdx, String line) {
-		try {
-			getReportManager().writeToReportFile(reportIdx, line);
-		} catch (IOException e) {
-			throw new IllegalStateException("Unable to write to report", e);
-		}
+	protected void writeToReportFile(int reportIdx, String line) throws TermServerScriptException {
+		getReportManager().writeToReportFile(reportIdx, line);
 	}
 	
-	protected void writeToReportFile(String line) {
+	protected void writeToReportFile(String line) throws TermServerScriptException {
 		writeToReportFile(0, line);
 	}
 	
@@ -621,11 +616,11 @@ public abstract class TermServerScript implements RF2Constants {
 		concept.addDescription(d);
 	}
 	
-	public void report (Task t, Component c, ValidationFailure v) {
+	public void report (Task t, Component c, ValidationFailure v) throws TermServerScriptException {
 		report (t, c, v.severity, v.reportActionType, v.getMessage());
 	}
 
-	public void report(Task task, Component component, Severity severity, ReportActionType actionType, Object... details) {
+	public void report(Task task, Component component, Severity severity, ReportActionType actionType, Object... details) throws TermServerScriptException {
 		if (quiet) {
 			return;
 		}
@@ -681,7 +676,7 @@ public abstract class TermServerScript implements RF2Constants {
 	
 
 	
-	protected void report (Concept c, Description d, Object...details) {
+	protected void report (Concept c, Description d, Object...details) throws TermServerScriptException {
 		incrementSummaryInformation("Report lines written");
 		StringBuffer sb = new StringBuffer();
 		sb.append (QUOTE)

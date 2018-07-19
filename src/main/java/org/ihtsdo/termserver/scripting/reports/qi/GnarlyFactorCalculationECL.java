@@ -2,14 +2,7 @@ package org.ihtsdo.termserver.scripting.reports.qi;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
@@ -144,7 +137,7 @@ public class GnarlyFactorCalculationECL extends TermServerReport {
 	protected void init(String[] args) throws TermServerScriptException, SnowOwlClientException {
 		super.init(args);
 		
-		intermediatePrimitivesReport = new InitialAnalysis();
+		intermediatePrimitivesReport = new InitialAnalysis(this);
 		intermediatePrimitivesReport.setQuiet(true);
 		
 		inferredGroupsNotStatedReport = new InferredGroupsNotStated();

@@ -20,7 +20,7 @@ import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 public class GenerateWorkDoneStats extends TermServerReport {
 	
 	List<Concept> subHierarchies;
-	InitialAnalysis ipReport = new InitialAnalysis();
+	InitialAnalysis ipReport;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		GenerateWorkDoneStats report = new GenerateWorkDoneStats();
@@ -43,6 +43,7 @@ public class GenerateWorkDoneStats extends TermServerReport {
 		subHierarchies.add(gl.getConcept("46866001")); // |Fracture of lower limb (disorder)|
 		subHierarchies.add(gl.getConcept("125605004")); // |Fracture of bone (disorder)|
 		subHierarchies.add(gl.getConcept("34014006")); // |Viral disease (disorder)|
+		ipReport = new InitialAnalysis(this);
 	}
 
 	private void generateWorkDoneStats() throws TermServerScriptException {

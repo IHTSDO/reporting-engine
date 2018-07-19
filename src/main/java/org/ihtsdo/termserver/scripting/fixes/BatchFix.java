@@ -8,11 +8,7 @@ import javax.mail.*;
 import javax.mail.internet.*;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
-import org.ihtsdo.termserver.scripting.TermServerScript;
-import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.ValidationFailure;
-import org.ihtsdo.termserver.scripting.TermServerScript.ReportActionType;
-import org.ihtsdo.termserver.scripting.TermServerScript.Severity;
+import org.ihtsdo.termserver.scripting.*;
 import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -119,7 +115,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		return formIntoBatch(allComponentsBeingProcessed);
 	}
 
-	protected void saveConcept(Task t, Concept c, String info) {
+	protected void saveConcept(Task t, Concept c, String info) throws TermServerScriptException {
 		try {
 			String conceptSerialised = gson.toJson(c);
 			debug ((dryRun?"Skipping update":"Updating state") + " of " + c + info);
@@ -261,11 +257,11 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		}
 	}
 
-	protected void report(ValidationFailure f) {
+	protected void report(ValidationFailure f) throws TermServerScriptException {
 		report(f.getTask(), f.getConcept(), f.getSeverity(), f.getReportActionType(), f.getMessage());
 	}
 
-	private void populateEditAndDescription(Task task) {
+	private void populateEditAndDescription(Task task) throws TermServerScriptException {
 		//Prefill the Edit Panel
 		try {
 			if (populateEditPanel) {
@@ -307,7 +303,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		return 0;
 	}
 
-	protected int ensureDefinitionStatus(Task t, Concept c, DefinitionStatus targetDefStat) {
+	protected int ensureDefinitionStatus(Task t, Concept c, DefinitionStatus targetDefStat) throws TermServerScriptException {
 		int changesMade = 0;
 		if (!c.getDefinitionStatus().equals(targetDefStat)) {
 			report (t, c, Severity.MEDIUM, ReportActionType.CONCEPT_CHANGE_MADE, "Definition status changed to " + targetDefStat);
@@ -422,7 +418,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		getReportManager().initialiseReportFiles( new String[] {"TASK_KEY, TASK_DESC, SCTID, FSN, " + (stateComponentType?"CONCEPT_TYPE,":"") + "SEVERITY,ACTION_TYPE," + additionalReportColumns });
 	}
 	
-	protected int ensureAcceptableParent(Task task, Concept c, Concept acceptableParent) {
+	protected int ensureAcceptableParent(Task task, Concept c, Concept acceptableParent) throws TermServerScriptException {
 		List<Relationship> statedParents = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, IS_A, ActiveState.ACTIVE);
 		boolean hasAcceptableParent = false;
 		int changesMade = 0;
@@ -496,7 +492,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	
 
 	private int transferInferredRelationshipsToStated(Task task,
-			Concept concept, Concept attributeType, Cardinality cardinality) {
+			Concept concept, Concept attributeType, Cardinality cardinality) throws TermServerScriptException {
 		List<Relationship> replacements = concept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
 		int changesMade = 0;
 		if (replacements.size() == 0) {
@@ -591,7 +587,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		}
 	}
 	
-	protected void save (Task task, Concept loadedConcept, String info) {
+	protected void save (Task task, Concept loadedConcept, String info) throws TermServerScriptException {
 		try {
 			String conceptSerialised = gson.toJson(loadedConcept);
 			debug ((dryRun?"Dry run updating":"Updating") + " state of " + loadedConcept + info);

@@ -41,7 +41,7 @@ public class RelationshipsWithTarget extends TermServerScript{
 		}
 	}
 	
-	private void reportRelationshipsWithTarget() {
+	private void reportRelationshipsWithTarget() throws TermServerScriptException {
 		Collection<Concept> allConcepts =  gl.getAllConcepts();
 		info("Examining " + allConcepts.size() + " concepts");
 		int reportedRelationships = 0;
@@ -63,7 +63,7 @@ public class RelationshipsWithTarget extends TermServerScript{
 		info("Graph loader log: \n" + gl.log);
 	}
 	
-	protected void report (Concept c, Relationship r) {
+	protected void report (Concept c, Relationship r) throws TermServerScriptException {
 		String line = 	c.getConceptId() + COMMA_QUOTE + 
 						c.getFsn() + QUOTE_COMMA_QUOTE +
 						SnomedUtils.deconstructFSN(c.getFsn())[1] + QUOTE_COMMA +

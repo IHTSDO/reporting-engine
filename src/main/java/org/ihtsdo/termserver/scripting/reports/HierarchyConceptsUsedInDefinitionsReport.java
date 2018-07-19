@@ -113,7 +113,7 @@ public class HierarchyConceptsUsedInDefinitionsReport extends TermServerScript{
 		return activeConcepts;
 	}
 
-	protected void report (Concept c, Concept usedIn, Concept via) {
+	protected void report (Concept c, Concept usedIn, Concept via) throws TermServerScriptException {
 		String line = 	c.getConceptId() + COMMA_QUOTE + 
 						c.getFsn().replace(",", "") + QUOTE_COMMA_QUOTE +
 						usedIn + QUOTE_COMMA_QUOTE +

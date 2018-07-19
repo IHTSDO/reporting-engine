@@ -3,14 +3,8 @@ package org.ihtsdo.termserver.scripting.reports;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
-import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
@@ -41,7 +35,7 @@ public class RelationshipReport extends TermServerScript{
 		}
 	}
 	
-	private void reportActiveRelationships() {
+	private void reportActiveRelationships() throws TermServerScriptException {
 		Collection<Concept> conceptsToExamine =  gl.getAllConcepts();  //modifiedConcepts
 		info("Examining " + conceptsToExamine.size() + " concepts");
 		int reportedRelationships = 0;
@@ -63,7 +57,7 @@ public class RelationshipReport extends TermServerScript{
 		info("Graph loader log: \n" + gl.log);
 	}
 	
-	protected void report (Concept c, Relationship r) {
+	protected void report (Concept c, Relationship r) throws TermServerScriptException {
 		String line = 	c.getConceptId() + COMMA_QUOTE + 
 						c.getFsn() + QUOTE_COMMA + 
 						c.isActive() + COMMA + 

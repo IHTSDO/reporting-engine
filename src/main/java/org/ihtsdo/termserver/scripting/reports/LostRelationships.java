@@ -1,28 +1,13 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.io.*;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Set;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
+import java.util.*;
 
-import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExportType;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExtractType;
-import org.ihtsdo.termserver.scripting.domain.Component;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Relationship;
+import org.ihtsdo.termserver.scripting.domain.*;
 
 public class LostRelationships extends TermServerScript{
 	
@@ -35,7 +20,7 @@ public class LostRelationships extends TermServerScript{
 		try {
 			report.additionalReportColumns = "Active, Not Replaced Relationship, ValueIsProdRoleDesc";
 			report.init(args);
-			report.loadProjectSnapshotAndDelta();
+			report.loadProjectSnapshot(true);
 			report.populateProdRoleDesc();
 			report.detectLostRelationships();
 		} catch (Exception e) {
@@ -51,7 +36,7 @@ public class LostRelationships extends TermServerScript{
 		descendentOfProductRole = productRole.getDescendents(NOT_SET);
 	}
 
-	private void detectLostRelationships() {
+	private void detectLostRelationships() throws TermServerScriptException {
 		//Work through our set of modified concepts and if a relationship of a type has 
 		//been inactivated, ensure that we have another relationship of the same time 
 		//that replaces it.
@@ -85,72 +70,11 @@ public class LostRelationships extends TermServerScript{
 		
 	}
 	
-	protected void report (Concept c, Relationship r) {
+	protected void report (Concept c, Relationship r) throws TermServerScriptException {
 		//Adding a column to indicate if the relationship value is a descendant of Product Role
 		boolean isProdRoleDesc = descendentOfProductRole.contains(r.getTarget());
 		String line = c.getConceptId() + COMMA_QUOTE + c.getFsn() + QUOTE_COMMA + c.isActive() + COMMA_QUOTE + r + QUOTE_COMMA + isProdRoleDesc;
 		writeToReportFile(line);
-	}
-
-	private void loadProjectSnapshotAndDelta() throws SnowOwlClientException, TermServerScriptException, InterruptedException {
-		int SNAPSHOT = 0;
-		int DELTA = 1;
-		File[] archives = new File[] { new File (project + "_snapshot_" + env + ".zip"), new File (project + "_delta_" + env + ".zip") };
-
-		//Do we already have a copy of the project locally?  If not, recover it.
-		if (!archives[SNAPSHOT].exists()) {
-			info ("Recovering snapshot state of " + project + " from TS (" + env + ")");
-			tsClient.export("MAIN/" + project, null, ExportType.MIXED, ExtractType.SNAPSHOT, archives[SNAPSHOT]);
-			initialiseSnowOwlClient();  //re-initialise client to avoid HttpMediaTypeNotAcceptableException.  Cause unknown.
-		}
-		
-		if (!archives[DELTA].exists()) {
-			info ("Recovering delta state of " + project + " from TS (" + env + ")");
-			tsClient.export("MAIN/" + project, transientEffectiveDate, ExportType.UNPUBLISHED, ExtractType.DELTA, archives[DELTA]);
-		}
-		
-		info ("Loading snapshot terms and delta relationships into memory...");
-		for (File archive : archives) {
-			try {
-				ZipInputStream zis = new ZipInputStream(new FileInputStream(archive));
-				ZipEntry ze = zis.getNextEntry();
-				try {
-					while (ze != null) {
-						if (!ze.isDirectory()) {
-							Path p = Paths.get(ze.getName());
-							String fileName = p.getFileName().toString();
-							if (fileName.contains("sct2_Description_Snapshot")) {
-								info("Loading Description File.");
-								gl.loadDescriptionFile(zis, true);  //Load FSNs only
-							}
-							
-							if (fileName.contains("sct2_Concept_Snapshot")) {
-								info("Loading Concept File.");
-								gl.loadConceptFile(zis);
-							}
-							
-							if (fileName.contains("sct2_Relationship_Snapshot")) {
-								info("Loading Relationship Snapshot File.");
-								gl.loadRelationships(CharacteristicType.INFERRED_RELATIONSHIP, zis, true, false);
-							}
-							
-							if (fileName.contains("sct2_Relationship_Delta")) {
-								info("Loading Relationship Delta File.");
-								modifiedConcepts = gl.getModifiedConcepts(CharacteristicType.INFERRED_RELATIONSHIP, zis);
-							}
-						}
-						ze = zis.getNextEntry();
-					}
-				} finally {
-					try{
-						zis.closeEntry();
-						zis.close();
-					} catch (Exception e){} //Well, we tried.
-				}
-			} catch (IOException e) {
-				throw new TermServerScriptException("Failed to extract project state from archive " + archive.getName(), e);
-			}
-		}
 	}
 
 	@Override

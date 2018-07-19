@@ -94,7 +94,7 @@ public class RestateInferredAsStated extends BatchFix implements RF2Constants{
 	}
 
 
-	private int restateInferredRelationships(Task task, Concept loadedConcept) {
+	private int restateInferredRelationships(Task task, Concept loadedConcept) throws TermServerScriptException {
 		List<Relationship> missingFromStated = determineInferredMissingFromStated(loadedConcept);
 		int changesMade = 0;
 		for (Relationship inferred : missingFromStated) {

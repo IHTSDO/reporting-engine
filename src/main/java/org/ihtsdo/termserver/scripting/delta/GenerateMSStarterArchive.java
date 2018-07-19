@@ -78,7 +78,7 @@ public class GenerateMSStarterArchive extends DeltaGenerator {
 		return newConcepts;
 	}
 	
-	private void outputRF2(List<Concept> newConcepts) {
+	private void outputRF2(List<Concept> newConcepts) throws TermServerScriptException {
 		for (Concept thisConcept : newConcepts) {
 			try {
 				outputRF2(thisConcept);

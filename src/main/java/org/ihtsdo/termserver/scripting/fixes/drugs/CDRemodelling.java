@@ -234,7 +234,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		return changesMade;
 	}
 
-	private Relationship getSubstanceRel(Task t, Concept c, Concept targetSubstance, Concept secondarySubstance) {
+	private Relationship getSubstanceRel(Task t, Concept c, Concept targetSubstance, Concept secondarySubstance) throws TermServerScriptException {
 		List<Relationship> matchingRels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_ACTIVE_INGRED, targetSubstance, ActiveState.ACTIVE);
 		matchingRels.addAll( c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_PRECISE_INGRED, targetSubstance, ActiveState.ACTIVE));
 

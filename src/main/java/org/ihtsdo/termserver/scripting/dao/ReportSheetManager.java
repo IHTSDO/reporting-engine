@@ -18,9 +18,11 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 public class ReportSheetManager implements RF2Constants {
 
+	private static final String DOMAIN = "ihtsdo.org";
 	private static final String ANY_RANGE = "A:Z";
 	private static final String RAW = "RAW";
 	private static final String APPLICATION_NAME = "SI Reporting Engine";
@@ -37,6 +39,7 @@ public class ReportSheetManager implements RF2Constants {
 	Date lastWriteTime;
 	List<ValueRange> dataToBeWritten = new ArrayList<>();
 	SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
+	Map<Integer, Integer> tabLineCount;
 	
 	public ReportSheetManager(ReportManager owner) {
 		this.owner = owner;	}
@@ -59,7 +62,7 @@ public class ReportSheetManager implements RF2Constants {
 	}
 
 	public static void main(String... args) throws Exception {
-		ReportManager rm = new ReportManager();
+		ReportManager rm = ReportManager.create("local", "test report");
 		rm.setTabNames(new String[] {"first tab", "second tab", "third tab"});
 		ReportSheetManager rsm = new ReportSheetManager(rm);
 		rsm.initialiseReportFiles(new String[] { "foo, bar" , "bar, boo", "tim ,tum"});
@@ -88,12 +91,12 @@ public class ReportSheetManager implements RF2Constants {
 				.setKind("drive#permission")
 				.setRole("writer")
 				.setType("domain")
-				.setDomain("ihtsdo.org");
+				.setDomain(DOMAIN);
 			driveService.permissions()
 				.create(sheet.getSpreadsheetId(), perm)
 				.setSupportsTeamDrives(true)
 				.execute();
-			System.out.println("Spreadsheet shared with the domain");
+			System.out.println("Spreadsheet shared with domain - " + DOMAIN);
 		} catch (IOException | GeneralSecurityException e) {
 			throw new IllegalStateException("Unable to initialise Google Sheets connection",e);
 		}
@@ -104,18 +107,18 @@ public class ReportSheetManager implements RF2Constants {
 		if (sheet == null) {
 			init();
 		}
-		
+		tabLineCount = new HashMap<>();
 		try {
 			List<Request> requests = new ArrayList<>();
 			requests.add(new Request()
 					.setUpdateSpreadsheetProperties(new UpdateSpreadsheetPropertiesRequest()
 							.setProperties(new SpreadsheetProperties()
-									.setTitle("PGW Test Title " + df.format(new Date())))
+									.setTitle(owner.getReportName() + " " + df.format(new Date()) + "_" + owner.getEnv()))
 									.setFields("title")));
 			int tabIdx = 0;
 			for (String header : columnHeaders) {
-				Request request;
-				//Sheet 0 already exists, just update
+				Request request = null;
+				//Sheet 0 already exists, just update - it it's been specified
 				if (tabIdx == 0) {
 					SheetProperties properties = new SheetProperties().setTitle(owner.getTabNames().get(tabIdx));
 					request = new Request().setUpdateSheetProperties(new UpdateSheetPropertiesRequest().setProperties(properties).setFields("title"));
@@ -124,7 +127,7 @@ public class ReportSheetManager implements RF2Constants {
 					request = new Request().setAddSheet(new AddSheetRequest().setProperties(properties));
 				}
 				requests.add(request);
-				writeToReportFile(tabIdx, header.replace(COMMA, TAB), true);
+				writeToReportFile(tabIdx, header, true);
 				tabIdx++;
 			}
 			
@@ -132,9 +135,6 @@ public class ReportSheetManager implements RF2Constants {
 			BatchUpdateSpreadsheetRequest batch = new BatchUpdateSpreadsheetRequest();
 			batch.setRequests(requests);
 			BatchUpdateSpreadsheetResponse responses = sheetsService.spreadsheets().batchUpdate(sheet.getSpreadsheetId(), batch).execute();
-			for (Response response : responses.getReplies()) {
-				System.out.println(response);
-			}
 			flush();
 			moveFile(sheet.getSpreadsheetId());
 		} catch (Exception e) {
@@ -142,13 +142,17 @@ public class ReportSheetManager implements RF2Constants {
 		}
 	}
 
-	public void writeToReportFile(int tabIdx, String line, boolean delayWrite) throws IOException {
+	public void writeToReportFile(int tabIdx, String line, boolean delayWrite) throws TermServerScriptException {
 		if (lastWriteTime == null) {
 			lastWriteTime = new Date();
 		}
-		List<List<Object>> cells = Arrays.asList(Arrays.asList(line.split(TAB)));
+		List<Object> data = SnomedUtils.csvSplitAsObject(line);
+		List<List<Object>> cells = Arrays.asList(data);
+		//Increment the current row position so we create the correct range
+		tabLineCount.merge(tabIdx, 1, Integer::sum);
+		String range = "'" + owner.getTabNames().get(tabIdx) + "'!A" + tabLineCount.get(tabIdx) + ":ZZ" +  tabLineCount.get(tabIdx); 
 		dataToBeWritten.add(new ValueRange()
-					.setRange( "'" + owner.getTabNames().get(tabIdx) + "'!" + ANY_RANGE)
+					.setRange(range)
 					.setValues(cells));
 		
 		if (!delayWrite) {
@@ -160,13 +164,17 @@ public class ReportSheetManager implements RF2Constants {
 		}
 	}
 	
-	public void flush() throws IOException {
+	public void flush() throws TermServerScriptException {
 		//Execute update of data values
 		BatchUpdateValuesRequest body = new BatchUpdateValuesRequest()
 			.setValueInputOption(RAW)
 			.setData(dataToBeWritten);
-		sheetsService.spreadsheets().values().batchUpdate(sheet.getSpreadsheetId(),body)
-		.execute();
+		try {
+			sheetsService.spreadsheets().values().batchUpdate(sheet.getSpreadsheetId(),body)
+			.execute();
+		} catch (IOException e) {
+			throw new TermServerScriptException("Unable to update spreadsheet " + sheet.getSpreadsheetUrl(), e);
+		}
 		lastWriteTime = new Date();
 		dataToBeWritten.clear();
 	}

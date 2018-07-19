@@ -97,7 +97,7 @@ public class CaseSignificanceFixAll extends DeltaGenerator implements RF2Constan
 		return changesMade;
 	}
 
-	private int normalizeCaseSignificance_cI(Concept c, Description d) {
+	private int normalizeCaseSignificance_cI(Concept c, Description d) throws TermServerScriptException {
 		int changesMade = 0;
 		String term = d.getTerm();
 		if (d.getType().equals(DescriptionType.FSN)) {
@@ -158,8 +158,9 @@ public class CaseSignificanceFixAll extends DeltaGenerator implements RF2Constan
 	 * @param c
 	 * @param d
 	 * @param silent 
+	 * @throws TermServerScriptException 
 	 */
-	private int normalizeCaseSignificance_CS(Concept c, Description d) {
+	private int normalizeCaseSignificance_CS(Concept c, Description d) throws TermServerScriptException {
 		int changesMade = 0;
 		String term = d.getTerm();
 		if (d.getType().equals(DescriptionType.FSN)) {
@@ -214,7 +215,7 @@ public class CaseSignificanceFixAll extends DeltaGenerator implements RF2Constan
 		return null;
 	}
 	
-	protected void report (Concept c, Severity severity,  ReportActionType actionType, Object...details) {
+	protected void report (Concept c, Severity severity,  ReportActionType actionType, Object...details) throws TermServerScriptException {
 		if (padReport) {
 			super.report (null, c, severity, actionType, details);
 		} else {

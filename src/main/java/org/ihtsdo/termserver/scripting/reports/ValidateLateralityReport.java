@@ -49,7 +49,7 @@ public class ValidateLateralityReport extends TermServerScript{
 		}
 	}
 
-	protected void report (Concept c) {
+	protected void report (Concept c) throws TermServerScriptException {
 		String line = 	c.getConceptId() + COMMA_QUOTE + 
 						c.getFsn() + QUOTE_COMMA + 
 						c.getEffectiveTime() + COMMA_QUOTE +

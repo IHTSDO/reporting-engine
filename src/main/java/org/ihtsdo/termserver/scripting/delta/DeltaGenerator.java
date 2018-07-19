@@ -135,7 +135,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 		initialiseFileHeaders();
 	}
 	
-	public void finish() throws FileNotFoundException {
+	public void finish() throws FileNotFoundException, TermServerScriptException {
 		super.finish();
 		if (conIdGenerator != null) {
 			info(conIdGenerator.finish());

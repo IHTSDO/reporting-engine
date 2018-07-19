@@ -76,7 +76,7 @@ public class SemanticTagsMatrix extends TermServerReport{
 	}
 
 	//Set up arrays for each top level hierarchy to capture semantic tag counts 
-	private void outputResultsXY() {
+	private void outputResultsXY() throws TermServerScriptException {
 		StringBuffer headerRow = new StringBuffer("SemanticTag");
 		for (Concept c : topLevelHierarchies) {
 			headerRow.append(COMMA)
@@ -91,7 +91,7 @@ public class SemanticTagsMatrix extends TermServerReport{
 		}
 	}
 	
-	private void initialiseAlternativeFile() throws IOException {
+	private void initialiseAlternativeFile() throws IOException, TermServerScriptException {
 		StringBuffer headerRow = new StringBuffer("Hierarchy");
 		for (String tag : tagToUsageMap.keySet()) {
 			headerRow.append(COMMA)
@@ -100,7 +100,7 @@ public class SemanticTagsMatrix extends TermServerReport{
 		writeToReportFile (headerRow.toString());
 	}
 	
-	private void outputResultsYX() throws IOException {
+	private void outputResultsYX() throws IOException, TermServerScriptException {
 		//Each row in the file is going to be a hierarchy
 		for (int h=0; h < topLevelHierarchies.size(); h++) {
 			String hierarchy = SnomedUtils.deconstructFSN(topLevelHierarchies.get(h).getFsn())[0];

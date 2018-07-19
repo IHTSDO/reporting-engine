@@ -66,7 +66,7 @@ public class LowerCaseTermInactivation extends BatchFix implements RF2Constants{
 		return changesMade;
 	}
 
-	private int inactivateLowerCaseTerm(Task task, Concept concept) {
+	private int inactivateLowerCaseTerm(Task task, Concept concept) throws TermServerScriptException {
 		int changesMade = 0;
 		MatchedSet m = findMatchingDescriptionSet(concept);
 		

@@ -114,7 +114,7 @@ abstract public class TemplateFix extends BatchFix {
 	}
 	
 	@Override
-	public void report (Task task, Component component, Severity severity, ReportActionType actionType, Object... details) {
+	public void report (Task task, Component component, Severity severity, ReportActionType actionType, Object... details) throws TermServerScriptException {
 		Concept c = (Concept)component;
 		char relevantTemplate = ' ';
 		if (conceptToTemplateMap != null && conceptToTemplateMap.containsKey(c)) {

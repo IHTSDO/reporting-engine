@@ -121,7 +121,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		return changesMade;
 	}
 
-	private int restateInferredRelationships(Task t, Concept c) {
+	private int restateInferredRelationships(Task t, Concept c) throws TermServerScriptException {
 		//Work through all inferred groups and collect any that aren't also stated, to state
 		int changesMade = 0;
 		List<RelationshipGroup> toBeStated = new ArrayList<>();
@@ -148,7 +148,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		return changesMade;
 	}
 
-	private int stateRelationshipGroups(Task t, Concept c, List<RelationshipGroup> toBeStated) {
+	private int stateRelationshipGroups(Task t, Concept c, List<RelationshipGroup> toBeStated) throws TermServerScriptException {
 		int changesMade = 0;
 		for (RelationshipGroup g : toBeStated) {
 			//Group 0 must remain group 0.  Otherwise find an available group number

@@ -222,7 +222,7 @@ public class FlattenHierarchy extends BatchFix implements RF2Constants{
 		return c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE).contains(r);
 	}
 	
-	private void addOrReactivateRelationship(Task t, Concept c , Relationship newRel) {
+	private void addOrReactivateRelationship(Task t, Concept c , Relationship newRel) throws TermServerScriptException {
 		//If it already exists active, skip it
 		if (relationshipExists(c, newRel)) {
 			report (t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Relationship already exists active: " + newRel);

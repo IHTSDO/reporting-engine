@@ -56,7 +56,7 @@ public class FixIncorrectModuleId extends BatchFix implements RF2Constants{
 		info ("Identified correct module to be " + intendedModuleId);
 	}
 	
-	protected void process() {
+	protected void process() throws TermServerScriptException {
 		for (TaskConcept tc : processMe) {
 			Task task = tc.t;
 			Concept loadedConcept = tc.c;
@@ -86,7 +86,7 @@ public class FixIncorrectModuleId extends BatchFix implements RF2Constants{
 		return changesMade;
 	}
 
-	private int checkModuleId(Task task, Concept loadedConcept) {
+	private int checkModuleId(Task task, Concept loadedConcept) throws TermServerScriptException {
 		int changesMade = 0;
 		if (!loadedConcept.getModuleId().equals(intendedModuleId)) {
 			changesMade++;

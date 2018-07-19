@@ -78,7 +78,7 @@ public class MismatchedRelationships extends TermServerScript{
 		info("Detected " + mismatchedRelationships + " mismatched Relationships");
 	}
 	
-	protected void report (Concept c, Relationship r, String msg) {
+	protected void report (Concept c, Relationship r, String msg) throws TermServerScriptException {
 		String line = 	c.getConceptId() + COMMA_QUOTE + 
 						c.getFsn() + QUOTE_COMMA + 
 						c.isActive() + COMMA + 

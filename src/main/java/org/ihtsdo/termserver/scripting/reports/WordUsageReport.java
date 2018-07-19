@@ -82,7 +82,7 @@ public class WordUsageReport extends TermServerScript{
 		addSummaryInformation("Concepts checked", concepts.size());
 	}
 
-	protected void report (String word, Usage usage) {
+	protected void report (String word, Usage usage) throws TermServerScriptException {
 		String line = 	QUOTE + word + QUOTE_COMMA + 
 						usage.instances + COMMA_QUOTE + 
 						usage.reportTags() + QUOTE_COMMA_QUOTE +

@@ -17,9 +17,14 @@ public abstract class TermServerReport extends TermServerScript {
 	protected String headers = "Concept SCTID,";
 	
 	protected void init(String[] args) throws TermServerScriptException, SnowOwlClientException {
+		init(args, false); //Don't delay initialisation of report files by default
+	}
+	protected void init(String[] args, boolean delayReportInitialisation) throws TermServerScriptException, SnowOwlClientException {
 		try {
 			super.init(args);
-			getReportManager().initialiseReportFiles( new String[] {headers + additionalReportColumns, headers + secondaryReportColumns, headers + tertiaryReportColumns});
+			if (!delayReportInitialisation) {
+				getReportManager().initialiseReportFiles( new String[] {headers + additionalReportColumns, headers + secondaryReportColumns, headers + tertiaryReportColumns});
+			}
 		} catch (IOException e) {
 			throw new TermServerScriptException("Unable to initialise output report",e);
 		}
@@ -37,7 +42,7 @@ public abstract class TermServerReport extends TermServerScript {
 		return Collections.singletonList(gl.getConcept(field));
 	}
 	
-	protected void report (int reportIdx, Component c, Object... details) {
+	protected void report (int reportIdx, Component c, Object... details) throws TermServerScriptException {
 		String line = "";
 		if (c instanceof Concept) {
 			Concept concept = (Concept) c;
@@ -65,7 +70,16 @@ public abstract class TermServerReport extends TermServerScript {
 		writeToReportFile(reportIdx, line);
 	}
 	
-	protected void report (Component c, Object... details) {
+	protected void reportSafely (int reportIdx, Component c, Object... details) {
+		try {
+			report (reportIdx, c, details);
+		} catch (TermServerScriptException e) {
+			throw new IllegalStateException("Failed to write to report", e);
+	}
+	}
+		
+	
+	protected void report (Component c, Object... details) throws TermServerScriptException {
 		report (0, c, details);
 	}
 

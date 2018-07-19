@@ -6,14 +6,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collector;
+import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -25,14 +19,14 @@ import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.Acceptability;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.ActiveState;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
 import org.ihtsdo.termserver.scripting.template.AncestorsCache;
+
+import com.google.common.base.Splitter;
 
 public class SnomedUtils implements RF2Constants{
 	
 	private static VerhoeffCheckDigit verhoeffCheck = new VerhoeffCheckDigit();
+	private static Pattern csvPattern = Pattern.compile(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)");
 
 	public static String isValid(String sctId, PartitionIdentifier partitionIdentifier) {
 		String errorMsg=null;
@@ -999,6 +993,30 @@ public class SnomedUtils implements RF2Constants{
 			}
 		}
 		return false;
+	}
+
+	public static List<String> csvSplit(String line) {
+		List<String> list = new ArrayList<>();
+		for(String item : Splitter.on(csvPattern).split(line)) {
+			//Trim leading and trailing double quotes - not needed as already split
+			if (line.charAt(0)=='"') {
+				item = line.substring(1,item.length()-1);
+			}
+			list.add(item);
+		}
+		return list;
+	}
+
+	public static List<Object> csvSplitAsObject(String line) {
+		List<Object> list = new ArrayList<>();
+		for(String item : Splitter.on(csvPattern).split(line)) {
+			//Trim leading and trailing double quotes - not needed as already split
+			if (item.charAt(0)=='"') {
+				item = item.substring(1,item.length()-1);
+			}
+			list.add(item);
+		}
+		return list;
 	}
 
 }

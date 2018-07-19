@@ -113,7 +113,7 @@ public class ProximatePrimitiveModellingPossibleReport extends TermServerScript{
 		return activeConcepts;
 	}
 
-	protected void report (Concept c, String semtag, boolean one, boolean two, boolean three, boolean four) {
+	protected void report (Concept c, String semtag, boolean one, boolean two, boolean three, boolean four) throws TermServerScriptException {
 		String line = 	c.getConceptId() + COMMA_QUOTE + 
 						c.getFsn().replace(",", "") + QUOTE_COMMA_QUOTE +
 						semtag + QUOTE_COMMA +

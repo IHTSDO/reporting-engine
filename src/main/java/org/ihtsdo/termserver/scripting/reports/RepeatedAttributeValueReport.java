@@ -65,7 +65,7 @@ public class RepeatedAttributeValueReport extends TermServerReport {
 		return issues;
 	}
 
-	protected void report (Concept c, String issue) {
+	protected void report (Concept c, String issue) throws TermServerScriptException {
 		String line = 	c.getConceptId() + COMMA_QUOTE + 
 						c.getFsn() + QUOTE_COMMA_QUOTE + 
 						issue + QUOTE;

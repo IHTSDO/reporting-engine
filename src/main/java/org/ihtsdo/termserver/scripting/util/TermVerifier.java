@@ -86,7 +86,7 @@ public class TermVerifier implements RF2Constants {
 		}
 	}
 
-	private void validateTerm(Task t, Concept c, Description d, String suggestedTerm, boolean isFSN) {
+	private void validateTerm(Task t, Concept c, Description d, String suggestedTerm, boolean isFSN) throws TermServerScriptException {
 		suggestedTerm = fixIssues(suggestedTerm, isFSN);
 		if (d == null) {
 			String msg = c + " does not contain a description to validate against suggestion: '" + suggestedTerm + "'";

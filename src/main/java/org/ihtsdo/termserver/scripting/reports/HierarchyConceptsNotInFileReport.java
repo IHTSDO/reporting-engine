@@ -1,27 +1,15 @@
 package org.ihtsdo.termserver.scripting.reports;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
+import java.util.*;
 
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.*;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExportType;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClient.ExtractType;
 import org.ihtsdo.termserver.scripting.domain.*;
 
 /**
@@ -82,7 +70,7 @@ public class HierarchyConceptsNotInFileReport extends TermServerScript{
 	}
 
 
-	protected void report (Concept c, boolean inFile2) {
+	protected void report (Concept c, boolean inFile2) throws TermServerScriptException {
 		String line = 	c.getConceptId() + COMMA_QUOTE + 
 						c.getFsn() + QUOTE_COMMA + 
 						c.getEffectiveTime() + COMMA_QUOTE +

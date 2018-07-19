@@ -107,7 +107,7 @@ public class ValidateTaxonomyIntegrity extends TermServerScript{
 		return issues;
 	}
 
-	private long validateRelationships(Concept c, CharacteristicType charType) {
+	private long validateRelationships(Concept c, CharacteristicType charType) throws TermServerScriptException {
 		long issues = 0;
 		for (Relationship r : c.getRelationships(charType, ActiveState.ACTIVE)) {
 			//Check for a Definition Status since it's the only thing that's only provided 
@@ -167,7 +167,7 @@ public class ValidateTaxonomyIntegrity extends TermServerScript{
 		return issues;
 	}
 
-	protected void report (Concept c, String issue) {
+	protected void report (Concept c, String issue) throws TermServerScriptException {
 		String line = 	c.getConceptId() + COMMA_QUOTE + 
 						c.getFsn() + QUOTE_COMMA_QUOTE + 
 						issue + QUOTE;

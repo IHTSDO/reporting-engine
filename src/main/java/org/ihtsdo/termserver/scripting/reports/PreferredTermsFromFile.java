@@ -51,7 +51,7 @@ public class PreferredTermsFromFile extends TermServerScript{
 		}
 	}
 
-	protected void report (Concept c, Description pt, String usPref, String gbPref) {
+	protected void report (Concept c, Description pt, String usPref, String gbPref) throws TermServerScriptException {
 		String line = 	c.getConceptId() + COMMA_QUOTE + 
 						c.getFsn() + QUOTE_COMMA_QUOTE + 
 						pt.getDescriptionId() + QUOTE_COMMA_QUOTE +

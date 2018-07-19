@@ -20,7 +20,7 @@ import com.google.common.io.Files;
 public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 	
 	List<Concept> subHierarchies;
-	InitialAnalysis ipReport = new InitialAnalysis();
+	InitialAnalysis ipReport;
 	int modifiedSince = 20180131;
 	
 	String [] co_occurrantWords = new String[] { " and ", " with ", " in " };
@@ -71,6 +71,8 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 			gl.getConcept("363713009"), //|Has interpretation (attribute)|
 			gl.getConcept("363714003") //|Interprets (attribute)|
 		};
+		
+		ipReport = new InitialAnalysis(this);
 	}
 
 	private void generateWorkDoneStats() throws TermServerScriptException {

@@ -126,7 +126,7 @@ public class ProximatePrimitiveRemodeller extends BatchFix implements RF2Constan
 		concept.addRelationship(ppParent);
 	}
 
-	private int restateUngroupedRelationship(Task task, Relationship inferred, Concept loadedConcept) {
+	private int restateUngroupedRelationship(Task task, Relationship inferred, Concept loadedConcept) throws TermServerScriptException {
 		int changesMade = 0;
 		//Does this relationship already exist stated?
 		boolean alreadyExists = false;

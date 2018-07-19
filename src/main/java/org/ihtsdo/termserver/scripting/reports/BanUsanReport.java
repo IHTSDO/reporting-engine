@@ -116,7 +116,7 @@ public class BanUsanReport extends TermServerScript{
 		}
 	}
 
-	protected void report (Concept c, Description d, String issue) {
+	protected void report (Concept c, Description d, String issue) throws TermServerScriptException {
 		String line = 	c.getConceptId() + COMMA_QUOTE + 
 						c.getFsn() + QUOTE_COMMA_QUOTE + 
 						d.getDescriptionId() + QUOTE_COMMA_QUOTE +

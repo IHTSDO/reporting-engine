@@ -75,7 +75,7 @@ public class ReplaceRelationship extends BatchFix implements RF2Constants{
 		return changesMade;
 	}
 
-	private int replaceTargetRelationship(Task task, Concept loadedConcept) {
+	private int replaceTargetRelationship(Task task, Concept loadedConcept) throws TermServerScriptException {
 		int changesMade = 0;
 		for (Relationship r : loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
 			if (r.getType().equals(findAttribute)) {

@@ -160,7 +160,7 @@ public class IdentifyProductsWithStrengthReport extends TermServerScript{
 		return correctlyParsed;
 	}
 
-	protected void report (Concept c, boolean lexicalMatch, boolean authorIdentified) {
+	protected void report (Concept c, boolean lexicalMatch, boolean authorIdentified) throws TermServerScriptException {
 		String line = 	c.getConceptId() + COMMA_QUOTE + 
 						c.getFsn() + QUOTE_COMMA + 
 						c.getEffectiveTime() + COMMA_QUOTE +

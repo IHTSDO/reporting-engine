@@ -129,7 +129,7 @@ public class SplitRoleGroupsWithRepeatedAttributes extends BatchFix implements R
 		return 1;
 	}
 
-	private void fixRepeatedAttributesInGroup(Task t, Concept loadedConcept) {
+	private void fixRepeatedAttributesInGroup(Task t, Concept loadedConcept) throws TermServerScriptException {
 		int issuesReported = 0;
 		for (RelationshipGroup g : hasRepeatedAttributeType(loadedConcept, CharacteristicType.STATED_RELATIONSHIP)) {
 			//What types have we noted as an issue here?

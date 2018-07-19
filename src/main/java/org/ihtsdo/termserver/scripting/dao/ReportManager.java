@@ -8,6 +8,7 @@ import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 
 public class ReportManager implements RF2Constants {
 	
+	public static final String STANDARD_HEADERS = "Concept SCTID, Detail";
 	boolean writeToFile = true;
 	ReportFileManager reportFileManager;
 	
@@ -19,14 +20,23 @@ public class ReportManager implements RF2Constants {
 	protected String env;
 	List<String> tabNames;
 	
+	private ReportManager() {};
+	
+	public static ReportManager create(String environment, String reportName) {
+		ReportManager rm = new ReportManager();
+		rm.init(environment, reportName);
+		return rm;
+	}
+	
 	public void init(String environment, String reportName) {
 		this.env = environment;
 		this.reportName = reportName;
 		reportFileManager = new ReportFileManager(this);
 		reportSheetManager = new ReportSheetManager(this);
+		tabNames = Arrays.asList(new String[] {"Sheet1"});
 	}
 	
-	public void writeToReportFile(int reportIdx, String line) throws IOException {
+	public void writeToReportFile(int reportIdx, String line) throws TermServerScriptException {
 		if (writeToFile) {
 			reportFileManager.writeToReportFile(reportIdx, line);
 		}
@@ -40,22 +50,28 @@ public class ReportManager implements RF2Constants {
 		return reportFileManager.getPrintWriter(fileName);
 	}
 
-	public void flushFiles(boolean andClose) {
-		reportFileManager.flushFiles(andClose);
+	public void flushFiles(boolean andClose) throws TermServerScriptException {
+		if (writeToFile) {
+			reportFileManager.flushFiles(andClose);
+		}
+		
+		if (writeToSheet) {
+			reportSheetManager.flush();
+		}
 	}
 
 	public void writeToRF2File(String fileName, Object[] columns) throws TermServerScriptException {
 		reportFileManager.writeToRF2File(fileName, columns);
 	}
 	
-	public void initialiseReportFiles(String[] columnHeaders) throws IOException, TermServerScriptException {
-		if (writeToFile) {
-			reportFileManager.initialiseReportFiles(columnHeaders);
-		}
-		
-		if (writeToSheet) {
-			reportSheetManager.initialiseReportFiles(columnHeaders);
-		}
+	public void initialiseReportFiles(String[] columnHeaders) throws TermServerScriptException {
+			if (writeToFile) {
+				reportFileManager.initialiseReportFiles(columnHeaders);
+			}
+			
+			if (writeToSheet) {
+				reportSheetManager.initialiseReportFiles(columnHeaders);
+			}
 	}
 	
 	public Map<String, PrintWriter> getPrintWriterMap() {
@@ -78,12 +94,25 @@ public class ReportManager implements RF2Constants {
 		return reportName;
 	}
 	
+	public void setReportName(String reportName) {
+		this.reportName = reportName;
+	}
+	
 	public List<String> getTabNames() {
 		return tabNames;
 	}
 	
 	public void setTabNames(String[] tabNames) {
 		this.tabNames = Arrays.asList(tabNames);
+	}
+
+	public void setFileOnly() {
+		writeToFile = true;
+		writeToSheet = false;
+	}
+
+	public String getEnv() {
+		return env;
 	}
 	
 }

@@ -15,12 +15,12 @@ public class ReportFileManager implements RF2Constants {
 	protected File[] reportFiles;
 	protected Map<String, PrintWriter> printWriterMap = new HashMap<>();
 	protected String currentTimeStamp;
-	private String env;
 	ReportManager owner;
 	SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
 	
 	public ReportFileManager(ReportManager owner) {
 		this.owner = owner;
+		
 	}
 
 	protected void writeToReportFile(int reportIdx, String line) {
@@ -84,7 +84,7 @@ public class ReportFileManager implements RF2Constants {
 		reportFiles = new File[owner.getNumberOfDistinctReports()];
 		for (int reportIdx = 0; reportIdx < owner.getNumberOfDistinctReports(); reportIdx++) {
 			String idxStr = reportIdx == 0 ? "" : "_" + reportIdx;
-			String reportFilename = "results_" + owner.getReportName() + "_" + currentTimeStamp + "_" + env  + idxStr + ".csv";
+			String reportFilename = "results_" + owner.getReportName() + "_" + currentTimeStamp + "_" + owner.getEnv()  + idxStr + ".csv";
 			reportFiles[reportIdx] = new File(reportFilename);
 			TermServerScript.info("Outputting Report to " + reportFiles[reportIdx].getAbsolutePath());
 			writeToReportFile (reportIdx, columnHeaders[reportIdx]);

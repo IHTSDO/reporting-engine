@@ -104,7 +104,7 @@ public class UnitConsistency extends TermServerReport {
 		return null;
 	}
 
-	private void reportInconsistentUnits() {
+	private void reportInconsistentUnits() throws TermServerScriptException {
 		//For every ingredient, if there are multiple units reports, report the minority
 		for (Concept ingredient : ingredientUnitExamples.keySet()) {
 			Map<Concept, List<Concept>> unitExamples = ingredientUnitExamples.get(ingredient);

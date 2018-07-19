@@ -4,22 +4,13 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.*;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Description;
-import org.ihtsdo.termserver.scripting.domain.Relationship;
-import org.ihtsdo.termserver.scripting.domain.RelationshipGroup;
+import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.drugs.Ingredient;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.ActiveState;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.DrugTermGenerator;
 import org.ihtsdo.termserver.scripting.util.DrugUtils;
@@ -196,7 +187,7 @@ public class ValidateDrugModeling extends TermServerReport{
 	}
 	
 	//Ensure that all stated dispositions exist as inferred, and visa-versa
-	private long validateDisposition(Concept concept) {
+	private long validateDisposition(Concept concept) throws TermServerScriptException {
 		long issuesCount = 0;
 		issuesCount += validateAttributeViewsMatch (concept, HAS_DISPOSITION, CharacteristicType.STATED_RELATIONSHIP);
 
@@ -210,7 +201,7 @@ public class ValidateDrugModeling extends TermServerReport{
 
 	private long validateAttributeViewsMatch(Concept concept,
 			Concept attributeType,
-			CharacteristicType fromCharType) {
+			CharacteristicType fromCharType) throws TermServerScriptException {
 		//Check that all relationships of the given type "From" match "To"
 		long issuesCount = 0;
 		CharacteristicType toCharType = fromCharType.equals(CharacteristicType.STATED_RELATIONSHIP)? CharacteristicType.INFERRED_RELATIONSHIP : CharacteristicType.STATED_RELATIONSHIP;
@@ -228,8 +219,9 @@ public class ValidateDrugModeling extends TermServerReport{
 	 * list of concepts that have an inferred parent with a stated attribute 
 	 * that is not the same as the that of the concept.
 	 * @return
+	 * @throws TermServerScriptException 
 	 */
-	private long checkForOddlyInferredParent(Concept concept, Concept attributeType) {
+	private long checkForOddlyInferredParent(Concept concept, Concept attributeType) throws TermServerScriptException {
 		//Work through inferred parents
 		long issuesCount = 0;
 		for (Concept parent : concept.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
@@ -264,7 +256,7 @@ public class ValidateDrugModeling extends TermServerReport{
 		preparation
 		product (except in the semantic tag)
 	 */
-	private long checkForBadWords(Concept concept) {
+	private long checkForBadWords(Concept concept) throws TermServerScriptException {
 		long issueCount = 0;
 		//Check if we're product containing and then look for bad words
 		for (Description d : concept.getDescriptions(ActiveState.ACTIVE)) {
@@ -289,7 +281,7 @@ public class ValidateDrugModeling extends TermServerReport{
 	}
 
 	private int validateStatedVsInferredAttributes(Concept concept,
-			Concept attributeType, ConceptType[] drugTypes) {
+			Concept attributeType, ConceptType[] drugTypes) throws TermServerScriptException {
 		int issueCount = 0;
 		if (drugTypes==null || SnomedUtils.isConceptType(concept, drugTypes)) {
 			List<Relationship> statedAttributes = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
@@ -429,7 +421,7 @@ public class ValidateDrugModeling extends TermServerReport{
 		return issues;
 	}
 	
-	private void report (Concept c, String data, String detail) {
+	private void report (Concept c, String data, String detail) throws TermServerScriptException {
 		super.report(c, c.getConceptType(), data, detail);
 	}
 	

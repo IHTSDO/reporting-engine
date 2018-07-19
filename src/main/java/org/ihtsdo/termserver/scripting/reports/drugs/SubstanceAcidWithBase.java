@@ -97,7 +97,7 @@ public class SubstanceAcidWithBase extends TermServerScript{
 		}
 	}
 
-	private boolean findPartner(Concept matchMe, Set<Concept> matchSet, final boolean isDownstream, boolean findAcid) {
+	private boolean findPartner(Concept matchMe, Set<Concept> matchSet, final boolean isDownstream, boolean findAcid) throws TermServerScriptException {
 		boolean found = false;
 		
 		finished:
@@ -124,7 +124,7 @@ public class SubstanceAcidWithBase extends TermServerScript{
 		return found;
 	}
 
-	private void markReported(Concept c) {
+	private void markReported(Concept c) throws TermServerScriptException {
 		reported.add(c);
 		if (c.getFsn().contains(acid) && c.getFsn().contains(ate)) {
 			report (c, c, "Confusion");
@@ -149,7 +149,7 @@ public class SubstanceAcidWithBase extends TermServerScript{
 		return matchList;
 	}
 
-	protected void report (Concept acid, Concept base, String notes) {
+	protected void report (Concept acid, Concept base, String notes) throws TermServerScriptException {
 		String line =	(acid==null?"":acid.getConceptId()) + COMMA_QUOTE + 
 						(acid==null?"":acid.getFsn()) + QUOTE_COMMA + 
 						(base==null?"":base.getConceptId()) + COMMA_QUOTE + 

@@ -148,7 +148,7 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		tsClient.updateConcept(new JSONObject(conceptSerialised), t.getBranchPath());
 	}
 
-	private void report(Task t, Concept c) {
+	private void report(Task t, Concept c) throws TermServerScriptException {
 		//Collect the diagnostic information about why this concept didn't match any templates as a string
 		String diagnosticStr = String.join("\n", conceptDiagnostics.get(c));
 		report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, diagnosticStr);

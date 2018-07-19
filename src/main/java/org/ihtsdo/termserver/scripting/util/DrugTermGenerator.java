@@ -268,7 +268,7 @@ public class DrugTermGenerator implements RF2Constants{
 		return suffix;
 	}
 
-	private int removeRedundantTerms(Task t, Concept c) {
+	private int removeRedundantTerms(Task t, Concept c) throws TermServerScriptException {
 		int changesMade = 0;
 		List<Description> allTerms = c.getDescriptions(ActiveState.ACTIVE);
 		for (Description d : allTerms) {
@@ -398,7 +398,7 @@ public class DrugTermGenerator implements RF2Constants{
 		}
 	}
 
-	private int replaceTerm(Task t, Concept c, Description removing, Description replacement) {
+	private int replaceTerm(Task t, Concept c, Description removing, Description replacement) throws TermServerScriptException {
 		int changesMade = 0;
 		boolean doReplacement = true;
 		if (SnomedUtils.termAlreadyExists(c, replacement.getTerm())) {
@@ -430,7 +430,7 @@ public class DrugTermGenerator implements RF2Constants{
 		return changesMade;
 	}
 
-	private void mergeAcceptability(Task t, Concept c, Description removing, Description replacement) {
+	private void mergeAcceptability(Task t, Concept c, Description removing, Description replacement) throws TermServerScriptException {
 		//Find the matching term that is not removing and merge that with the acceptability of removing
 		boolean merged = false;
 		for (Description match : c.getDescriptions(ActiveState.ACTIVE)) {
@@ -556,7 +556,7 @@ public class DrugTermGenerator implements RF2Constants{
 		return term;
 	}
 
-	private void reactivateMatchingTerm(Task t, Concept c, Description replacement) {
+	private void reactivateMatchingTerm(Task t, Concept c, Description replacement) throws TermServerScriptException {
 		//Loop through the inactive terms and reactivate the one that matches the replacement
 		for (Description d : c.getDescriptions(ActiveState.INACTIVE)) {
 			if (d.getTerm().equals(replacement.getTerm())) {
@@ -569,7 +569,7 @@ public class DrugTermGenerator implements RF2Constants{
 		}
 	}
 	
-	protected void report(Task task, Component component, Severity severity, ReportActionType actionType, Object... details) {
+	protected void report(Task task, Component component, Severity severity, ReportActionType actionType, Object... details) throws TermServerScriptException {
 		if (!quiet) {
 			parent.report(task, component, severity, actionType, details);
 		}

@@ -89,7 +89,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		return allIdentifiedConcepts;
 	}
 	
-	private void outputModifiedComponents() {
+	private void outputModifiedComponents() throws TermServerScriptException {
 		for (Component thisConcept : gl.getAllConcepts()) {
 			try {
 				outputRF2((Concept)thisConcept, false);  //Don't check desc/rels if concept not modified.

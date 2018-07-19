@@ -306,7 +306,7 @@ public class ModelCongenitalAbnormality extends DeltaGenerator {
 	}
 
 	private boolean checkForExistingRelationship(Concept c,
-			RelationshipTemplate rt, long group) {
+			RelationshipTemplate rt, long group) throws TermServerScriptException {
 		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH)) {
 			if (r.getGroupId() == group && rt.matches(r)) {
 				report (c, c.getFSNDescription(), Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Replacement relationship already exists as " + r);

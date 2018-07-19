@@ -251,7 +251,7 @@ public class GnarlyFactorCalculation extends TermServerReport {
 	protected void init(String[] args) throws TermServerScriptException, SnowOwlClientException {
 		super.init(args);
 		
-		intermediatePrimitivesReport = new InitialAnalysis();
+		intermediatePrimitivesReport = new InitialAnalysis(this);
 		intermediatePrimitivesReport.setQuiet(true);
 		
 		inferredGroupsNotStatedReport = new InferredGroupsNotStated();

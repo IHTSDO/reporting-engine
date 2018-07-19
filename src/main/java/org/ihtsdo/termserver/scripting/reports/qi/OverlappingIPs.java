@@ -2,24 +2,17 @@ package org.ihtsdo.termserver.scripting.reports.qi;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
-import org.ihtsdo.termserver.scripting.domain.Component;
+import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.HistoricalAssociation;
-import org.ihtsdo.termserver.scripting.fixes.SplitRoleGroupsWithRepeatedAttributes;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
-import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 /**
+ * QI-61
  * Obtain a number of intermediate primitive reports, and work out what the overlap is
  * */
 public class OverlappingIPs extends TermServerReport {
@@ -33,7 +26,7 @@ public class OverlappingIPs extends TermServerReport {
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		OverlappingIPs report = new OverlappingIPs();
 		try {
-			report.additionalReportColumns = "FSN, Overlap";
+			ReportSheetManager.targetFolderId = "1m7MVhMePldYrNjOvsE_WTAYcowZ4ps50"; //Team Drive: Content Reporting Artefacts / QI / Initial Analysis
 			report.init(args);
 			report.loadProjectSnapshot(false);  //just FSNs
 			report.postLoadInit();
@@ -47,15 +40,15 @@ public class OverlappingIPs extends TermServerReport {
 	}
 	
 	protected void init(String[] args) throws TermServerScriptException, SnowOwlClientException {
-		super.init(args);
-		intermediatePrimitivesReport = new InitialAnalysis();
+		super.init(args, true);
+		intermediatePrimitivesReport = new InitialAnalysis(this);
 		intermediatePrimitivesReport.setQuiet(true);
 	}
 	
 	private void postLoadInit() throws TermServerScriptException {
 		subHierarchies = new ArrayList<>();
 		
-		shortNames.put("virus", gl.getConcept("34014006"));
+		/*shortNames.put("virus", gl.getConcept("34014006"));
 		subHierarchies.add(shortNames.get("virus")); // |Viral disease (disorder)|
 		
 		shortNames.put("bacteria", gl.getConcept("87628006"));
@@ -65,7 +58,20 @@ public class OverlappingIPs extends TermServerReport {
 		subHierarchies.add(shortNames.get("protozoa")); // |Protozoan infection (disorder)| 
 		
 		shortNames.put("fungus", gl.getConcept("3218000"));
-		subHierarchies.add(shortNames.get("fungus"));  // |Mycosis (disorder)|
+		subHierarchies.add(shortNames.get("fungus"));  // |Mycosis (disorder)|*/
+		
+		shortNames.put("wound", gl.getConcept("416462003"));
+		subHierarchies.add(shortNames.get("wound")); //  |Wound (disorder)|
+		
+		shortNames.put("fracture", gl.getConcept("125605004"));
+		subHierarchies.add(shortNames.get("fracture")); //  |Fracture of bone (disorder)|
+		
+		
+		String reportName = shortNames.keySet().stream().collect(Collectors.joining(" + "));
+		reportName += " IP overlap";
+		getReportManager().setReportName(reportName);
+		additionalReportColumns = "FSN, Overlap";
+		getReportManager().initialiseReportFiles(new String[] {"SCTID, FSN, Overlap"});
 	}
 
 
@@ -97,6 +103,4 @@ public class OverlappingIPs extends TermServerReport {
 			}
 		}
 	}
-
-
 }

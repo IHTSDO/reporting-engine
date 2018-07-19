@@ -87,7 +87,7 @@ public class NumberLetterLowerCase extends DrugBatchFix implements RF2Constants{
 		return changes;
 	}
 
-	private int normaliseCase(Task t, Concept c, Description d) {
+	private int normaliseCase(Task t, Concept c, Description d) throws TermServerScriptException {
 		String term = d.getTerm();
 		//Work through the letters of the term
 		for (int i=0; i < term.length(); i++) {

@@ -72,7 +72,7 @@ public class ReplaceLowerCaseTerms extends BatchFix implements RF2Constants{
 		return changesMade;
 	}
 
-	private int replaceLowerCaseTerm(Task task, Concept concept) {
+	private int replaceLowerCaseTerm(Task task, Concept concept) throws TermServerScriptException {
 		int changesMade = 0;
 		List<Description> lowerCaseTerms = findUnmatchedLowerCaseTerms(concept);
 		

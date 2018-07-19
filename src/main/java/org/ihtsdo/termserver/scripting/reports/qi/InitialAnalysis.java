@@ -9,8 +9,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.ihtsdo.termserver.job.schedule.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
@@ -20,7 +22,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * Reports concepts that are intermediate primitives from point of view of some subhierarchy
  * Update: Adding a 2nd report to determine how many sufficiently defined concepts are affected by an IP
  * */
-public class InitialAnalysis extends TermServerReport {
+public class InitialAnalysis extends TermServerReport implements ReportClass {
 	
 	Concept subHierarchyStart;
 	Set<Concept> subHierarchy;
@@ -29,8 +31,14 @@ public class InitialAnalysis extends TermServerReport {
 	public Map<Concept, Concept> attributeExamples;
 	String[] blankColumns = new String[] {"","","",""};
 	
+	public InitialAnalysis(TermServerReport owner) {
+		if (owner!=null) {
+			setReportManager(owner.getReportManager());
+		}
+	}
+	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
-		InitialAnalysis report = new InitialAnalysis();
+		InitialAnalysis report = new InitialAnalysis(null);
 		try {
 			report.additionalReportColumns = "FSN, Proximal Primitive Parent, is Intermediate, Defn Status, Stated Attributes, Stated Role Groups, Inferred Role Groups, Stated Parents";
 			report.secondaryReportColumns = "FSN, Can Be Sufficiently Defined (1=yes 0=no), JIRA, Comments, Authoring Task, In Subhierarchy,Total SDs affected, SD Concepts in subhierarchy, Total Primitive Concepts affected, Primitive Concept in SubHierarchy";
@@ -38,10 +46,8 @@ public class InitialAnalysis extends TermServerReport {
 			report.getReportManager().setNumberOfDistinctReports(3);
 			report.init(args);
 			report.loadProjectSnapshot(true);  //just FSNs
-			report.postInit();
-			report.reportConceptsAffectedByIntermediatePrimitives();
-			report.reportTotalFDsUnderIPs();
-			report.reportAttributeUsageCounts();
+			report.postInit(null);
+			report.runReport();
 		} catch (Exception e) {
 			info("Failed to produce Description Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
@@ -49,31 +55,55 @@ public class InitialAnalysis extends TermServerReport {
 			report.finish();
 		}
 	}
-
-	public void setQuiet(boolean quiet) {
-		this.quiet = quiet;
+	
+	public void runReport() throws TermServerScriptException {
+		reportConceptsAffectedByIntermediatePrimitives();
+		reportTotalFDsUnderIPs();
+		reportAttributeUsageCounts();
 	}
 	
-	private void postInit() throws TermServerScriptException {
-		//setSubHierarchy("46866001");	//       |Fracture of lower limb (disorder)|
-		//setSubHierarchy("125605004");	// QI-2  |Fracture of bone (disorder)|
-		//setSubHierarchy("128294001");	// QI-8  |Chronic inflammatory disorder (disorder)|
-		//setSubHierarchy("126537000");	// QI-11 |Neoplasm of bone (disorder)|
-		//setSubHierarchy("34014006");	// QI-12 |Viral disease
-		//setSubHierarchy("87628006");	// QI-13 |Bacterial infectious disease (disorder)|
-		//setSubHierarchy("95896000");	// QI-18 |Protozoan infection (disorder)|
-		//setSubHierarchy("52515009");	// QI-22 |Hernia of abdominal cavity|
-		//setSubHierarchy("125666000");	// QI-22 |Burn (disorder)|
-		//setSubHierarchy("74627003");	// QI-38 |Diabetic complication (disorder)|
-		//setSubHierarchy("283682007");	// QI-35 |Bite - wound (disorder)|
-		//setSubHierarchy("8098009");	// QI-40 |Sexually transmitted infectious disease (disorder)|
-		//setSubHierarchy("3723001");	// QI-42 |Arthritis|
-		//setSubHierarchy("276654001");	// QI-43 |Congenital malformation (disorder)| );
-		//setSubHierarchy("3218000");	//QI-46 |Mycosis (disorder)|
-		//setSubHierarchy("17322007");	//QI-49 |Disease caused by parasite|
-		//setSubHierarchy("416462003");  //QI-50 |Wound (disorder)
-		//setSubHierarchy("125643001");  //QI-51 |Open wound|
-		setSubHierarchy("416886008");  //QI-52 |Closed wound|
+	public void postInit(String subHierarchyStr) throws TermServerScriptException {
+		try {
+			if (subHierarchy == null) {
+				//setSubHierarchy("46866001");	//       |Fracture of lower limb (disorder)|
+				//setSubHierarchy("125605004");	// QI-2  |Fracture of bone (disorder)|
+				//setSubHierarchy("128294001");	// QI-8  |Chronic inflammatory disorder (disorder)|
+				//setSubHierarchy("126537000");	// QI-11 |Neoplasm of bone (disorder)|
+				//setSubHierarchy("34014006");	// QI-12 |Viral disease
+				//setSubHierarchy("87628006");	// QI-13 |Bacterial infectious disease (disorder)|
+				//setSubHierarchy("95896000");	// QI-18 |Protozoan infection (disorder)|
+				//setSubHierarchy("52515009");	// QI-22 |Hernia of abdominal cavity|
+				//setSubHierarchy("125666000");	// QI-22 |Burn (disorder)|
+				//setSubHierarchy("74627003");	// QI-38 |Diabetic complication (disorder)|
+				//setSubHierarchy("283682007");	// QI-35 |Bite - wound (disorder)|
+				//setSubHierarchy("8098009");	// QI-40 |Sexually transmitted infectious disease (disorder)|
+				//setSubHierarchy("3723001");	// QI-42 |Arthritis|
+				//setSubHierarchy("276654001");	// QI-43 |Congenital malformation (disorder)| );
+				//setSubHierarchy("3218000");	//QI-46 |Mycosis (disorder)|
+				//setSubHierarchy("17322007");	//QI-49 |Disease caused by parasite|
+				//setSubHierarchy("416462003");  //QI-50 |Wound (disorder)
+				//setSubHierarchy("125643001");  //QI-51 |Open wound|
+				setSubHierarchy("416886008");  //QI-52 |Closed wound|
+			} else {
+				setSubHierarchy(subHierarchyStr);
+			}
+			ReportSheetManager.targetFolderId = "1m7MVhMePldYrNjOvsE_WTAYcowZ4ps50"; //Team Drive: Content Reporting Artefacts / QI / Initial Analysis
+			getReportManager().setReportName(getReportName());
+			getReportManager().setTabNames(new String[] {	"Attribute Usage",
+															"IPs with Counts",
+															"Cncepts in Subhierarchy with PPPs" });
+			getReportManager().initialiseReportFiles( new String[] {headers + additionalReportColumns, headers + secondaryReportColumns, headers + tertiaryReportColumns});
+		} catch (Exception e) {
+			throw new TermServerScriptException ("Unable to initialise " + this.getClass().getSimpleName(), e);
+		}
+	}
+	
+	public String getReportName() {
+		try {
+			return subHierarchyStart.getPreferredSynonym() + " - Intermediate Primitives";
+		} catch (TermServerScriptException e) {
+			return subHierarchyStart.getConceptId() +  " - Intermediate Primitives";
+		}
 	}
 	
 	public void setSubHierarchy(String subHierarchyStr) throws TermServerScriptException {
@@ -218,7 +248,7 @@ public class InitialAnalysis extends TermServerReport {
 		
 		attributeUsage.entrySet().stream()
 			.sorted((k1, k2) -> k2.getValue().compareTo(k1.getValue()))
-			.forEach(k -> report (TERTIARY_REPORT, k.getKey(), k.getValue(), attributeExamples.get(k.getKey())));
+			.forEach(k -> reportSafely (TERTIARY_REPORT, k.getKey(), k.getValue(), attributeExamples.get(k.getKey())));
 	}
 
 	private Set<Concept> getAttributeTypes(Concept c, CharacteristicType charType) {

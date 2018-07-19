@@ -100,7 +100,7 @@ public class RequiringProxPrimModellingReport extends TermServerReport{
 		return activeConcepts;
 	}
 
-	protected void report (Concept c, String semtag, boolean hasFDParent, boolean noDifferentia, boolean multipleParents) {
+	protected void report (Concept c, String semtag, boolean hasFDParent, boolean noDifferentia, boolean multipleParents) throws TermServerScriptException {
 		String line = 	c.getConceptId() + COMMA_QUOTE + 
 						c.getFsn().replace(",", "") + QUOTE_COMMA_QUOTE +
 						semtag + QUOTE_COMMA +

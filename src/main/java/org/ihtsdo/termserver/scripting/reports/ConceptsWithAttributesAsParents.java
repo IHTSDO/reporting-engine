@@ -53,7 +53,7 @@ public class ConceptsWithAttributesAsParents extends TermServerReport {
 		}
 	}
 
-	private boolean checkforAttributesAsParents(Concept c, CharacteristicType type) {
+	private boolean checkforAttributesAsParents(Concept c, CharacteristicType type) throws TermServerScriptException {
 		List<Concept> parents = c.getParents(type);
 		boolean issueFound = false;
 		//Now work through the attribute values checking for parents

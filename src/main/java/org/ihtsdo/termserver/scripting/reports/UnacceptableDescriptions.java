@@ -46,7 +46,7 @@ public class UnacceptableDescriptions extends TermServerReport{
 		info (count + " unacceptable descriptions reported in " + conceptsChecked + " concepts.");
 	}
 	
-	private void report(Concept c, Description d, String effectiveTime, String issue) {
+	private void report(Concept c, Description d, String effectiveTime, String issue) throws TermServerScriptException {
 		StringBuffer sb = new StringBuffer();
 		sb.append(c.getConceptId()).append(COMMA_QUOTE)
 			.append(c.getFsn()).append(QUOTE_COMMA)

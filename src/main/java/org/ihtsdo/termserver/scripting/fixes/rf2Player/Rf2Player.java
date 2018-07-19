@@ -303,7 +303,7 @@ public class Rf2Player extends BatchFix {
 		return false;
 	}
 
-	private void fixDescriptions(Task task, Concept loadedConcept, List<Description> descriptions) {
+	private void fixDescriptions(Task task, Concept loadedConcept, List<Description> descriptions) throws TermServerScriptException {
 		for (Description d : descriptions) {
 			//Are we adding or deleting a description?
 			if (d.isActive()) {
@@ -328,7 +328,7 @@ public class Rf2Player extends BatchFix {
 	}
 	
 
-	private void fixRelationships(Task task, Concept loadedConcept, List<Relationship> relationships) {
+	private void fixRelationships(Task task, Concept loadedConcept, List<Relationship> relationships) throws TermServerScriptException {
 		for (Relationship r : relationships) {
 			//Are we adding or deleting a Relationship?
 			if (r.isActive()) {
