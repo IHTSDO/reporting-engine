@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang.time.DurationFormatUtils;
 import org.ihtsdo.termserver.scripting.client.*;
+import org.ihtsdo.termserver.scripting.creation.Concept;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.template.AncestorsCache;
 import org.ihtsdo.termserver.scripting.template.DescendentsCache;
@@ -373,6 +374,17 @@ public abstract class TermServerScript implements RF2Constants {
 		} catch (Exception e) {
 			throw new TermServerScriptException("Failed to create " + c + " in TS due to " + e.getMessage(),e);
 		}
+	}
+	
+	/**
+	 * Creates a set of concepts based on a structure around the initial concept 
+	 * ie parents as high as is required, siblings and children.
+	 * @param initialConcept
+	 * @return a list of the new concepts created.
+	 */
+	protected List<Concept> createConceptStructure(Concept initialConcept) {
+		List<Concept> created = new ArrayList<>();
+		return created;
 	}
 	
 	protected void deleteConcept(Task t, Concept c) throws TermServerScriptException {

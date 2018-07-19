@@ -88,10 +88,10 @@ public class ConceptCreationPattern {
 	}
 	private String generateTerm(Concept x) throws TermServerScriptException {
 		//Are we replacing X or Y?
-		String xTerm = x.getPreferredSynonym();
+		String xTerm = SnomedUtils.deCapitalize(x.getPreferredSynonym());  //TODO Check case significance before making lower case!
 		String term = termPattern.replace("[X]", xTerm);
 		if (strategyForY != null) {
-			String yTerm = getY(x).getPreferredSynonym();
+			String yTerm = SnomedUtils.deCapitalize(getY(x).getPreferredSynonym()); //TODO Check case significance before making lower case!
 			term = termPattern.replace("[Y]", yTerm);
 		}
 		return term;
@@ -99,7 +99,9 @@ public class ConceptCreationPattern {
 	private Concept getY(Concept x) throws TermServerScriptException {
 		if (strategyForY.equals(Strategy.ImmediateParentOfX)) {
 			List<Concept> parents = x.getParents(CharacteristicType.INFERRED_RELATIONSHIP);
-			if (parents.size() == 1) {
+			if (parents.size() == 0) {
+				throw new TermServerScriptException(x + " has no inferred parents (?!).  Can't determine Y");
+			} else if (parents.size() == 1) {
 				return parents.get(0);
 			} else {
 				throw new TermServerScriptException(x + " has multiple parents.  Can't determine Y");

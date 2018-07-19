@@ -826,20 +826,30 @@ public class SnomedUtils implements RF2Constants{
 
 	public static Concept createConcept(String term, String semTag, Concept parent) {
 		Concept newConcept = Concept.withDefaults(null);
-		
-		Description fsn = Description.withDefaults(term == null? null : term + " " + semTag, DescriptionType.FSN);
-		fsn.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(AcceptabilityMode.PREFERRED_BOTH));
-		newConcept.addDescription(fsn);
-		
-		Description pt = Description.withDefaults(term, DescriptionType.SYNONYM);
-		pt.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(AcceptabilityMode.PREFERRED_BOTH));
-		newConcept.addDescription(pt, true);  //Allow duplication - we might have a null term if we don't know enough to create one yet.
-		
+		addDefaultTerms(newConcept, term, semTag);
 		if (parent != null) {
 			Relationship parentRel = new Relationship (null, IS_A, parent, UNGROUPED);
 			newConcept.addRelationship(parentRel);
 		}
 		return newConcept;
+	}
+
+	public static Concept createConcept(String sctId, String fsn) {
+		Concept newConcept = Concept.withDefaults(sctId);
+		String[] parts = deconstructFSN(fsn);
+		addDefaultTerms(newConcept, parts[0], parts[1]);
+		return newConcept;
+	}
+	
+	
+	private static void addDefaultTerms(Concept c, String term, String semTag) {
+		Description fsn = Description.withDefaults(term == null? null : term + " " + semTag, DescriptionType.FSN);
+		fsn.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(AcceptabilityMode.PREFERRED_BOTH));
+		c.addDescription(fsn);
+		
+		Description pt = Description.withDefaults(term, DescriptionType.SYNONYM);
+		pt.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(AcceptabilityMode.PREFERRED_BOTH));
+		c.addDescription(pt, true);  //Allow duplication - we might have a null term if we don't know enough to create one yet.
 	}
 	
 	//Where we have multiple potential responses eg concentration or presentation strength, return the first one found given the 

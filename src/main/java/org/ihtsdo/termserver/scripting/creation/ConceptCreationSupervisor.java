@@ -15,12 +15,13 @@ public class ConceptCreationSupervisor implements RF2Constants {
 	public static ConceptCreationSupervisor getSupervisor() {
 		if (singleton == null) {
 			singleton = new ConceptCreationSupervisor();
+			singleton.registerCreators();
 		}
 		return singleton;
 	}
 	
-	public void registerCreator (ConceptCreator creator) {
-		creators.add(creator);
+	public void registerCreators () {
+		creators.add(HairFollicleCreator.getHairFollicleCreator());
 	}
 	
 	Concept createConcept (Set<Concept> inspiration) throws TermServerScriptException {
