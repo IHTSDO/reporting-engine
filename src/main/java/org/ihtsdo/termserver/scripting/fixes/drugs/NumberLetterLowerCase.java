@@ -63,26 +63,7 @@ public class NumberLetterLowerCase extends DrugBatchFix implements RF2Constants{
 	public int normaliseCase(Task t, Concept c) throws TermServerScriptException {
 		int changes = 0;
 		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-			int thisChange = normaliseCase(t, c, d);
-			changes += thisChange;
-			//Now, if we made changes, can we also change the case significance field?
-			if (thisChange >= CHANGE_MADE) {
-				if (d.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE) ||
-					d.getCaseSignificance().equals(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE)) {
-					if (SnomedUtils.isCaseSensitive(d.getTerm())) {
-						report(t,c, Severity.LOW, ReportActionType.INFO, d, "term contains capital - retaining case sensitivity");
-						incrementSummaryInformation("CS retained due to capital");
-					} else if (csReport.containsKnownLowerCaseWord(d.getTerm())) {
-						report(t,c, Severity.LOW, ReportActionType.INFO, d, "term contains known lower case word - retaining case sensitivity");
-						incrementSummaryInformation("CS retained due to forced lower case word");
-					} else {
-						d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
-						report(t,c, Severity.LOW, ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, d);
-						incrementSummaryInformation("CS/cI changed to ci");
-						changes++;
-					}
-				}
-			}
+			changes += normaliseCase(t, c, d);
 		}
 		return changes;
 	}
@@ -115,7 +96,8 @@ public class NumberLetterLowerCase extends DrugBatchFix implements RF2Constants{
 						}
 						StringBuilder modifiedTerm = new StringBuilder(term);
 						modifiedTerm.setCharAt(i, Character.toLowerCase(term.charAt(i)));
-						d.setTerm(modifiedTerm.toString());
+						Description newDesc = replaceDescription(t, c, d, modifiedTerm.toString(), InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
+						setCaseSignificance(t, c, newDesc);
 						incrementSummaryInformation("Captial switched with lower case letter");
 						return CHANGE_MADE;
 					}
@@ -123,6 +105,23 @@ public class NumberLetterLowerCase extends DrugBatchFix implements RF2Constants{
 			}
 		}
 		return NO_CHANGES_MADE;
+	}
+
+	private void setCaseSignificance(Task t, Concept c, Description d) {
+		if (d.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE) ||
+			d.getCaseSignificance().equals(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE)) {
+			if (SnomedUtils.isCaseSensitive(d.getTerm())) {
+				report(t,c, Severity.LOW, ReportActionType.INFO, d, "term contains capital - retaining case sensitivity");
+				incrementSummaryInformation("CS retained due to capital");
+			} else if (csReport.containsKnownLowerCaseWord(d.getTerm())) {
+				report(t,c, Severity.LOW, ReportActionType.INFO, d, "term contains known lower case word - retaining case sensitivity");
+				incrementSummaryInformation("CS retained due to forced lower case word");
+			} else {
+				d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
+				report(t,c, Severity.LOW, ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, d);
+				incrementSummaryInformation("CS/cI changed to ci");
+			}
+		}
 	}
 
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {

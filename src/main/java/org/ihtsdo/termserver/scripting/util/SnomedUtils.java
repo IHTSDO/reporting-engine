@@ -191,6 +191,11 @@ public class SnomedUtils implements RF2Constants{
 		return merged;
 	}
 	
+	public static Map<String, Acceptability> mergeAcceptabilityMap (Description left,Description right) {
+		return mergeAcceptabilityMap(left.getAcceptabilityMap(), right.getAcceptabilityMap());
+	}
+		
+	
 	/**
 	 * 2 points for preferred, 1 point for acceptable
 	 */
