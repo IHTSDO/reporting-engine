@@ -49,6 +49,8 @@ public class TestHairFollicleCreator implements RF2Constants {
 		ConceptCreationSupervisor supervisor = ConceptCreationSupervisor.getSupervisor();
 		Concept[] inspiration = new Concept[] { hairFollicle, skinOfUpperArm };
 		Concept newFollicle = supervisor.createConcept(new HashSet<Concept>(Arrays.asList(inspiration)));
-		assertEquals(newFollicle.getChildren(CharacteristicType.STATED_RELATIONSHIP).size(), 2);
+		assertEquals(newFollicle.getChildren(CharacteristicType.STATED_RELATIONSHIP).size(), 1);
+		assertEquals(newFollicle.getParents(CharacteristicType.STATED_RELATIONSHIP).size(), 2);
+
 	}
 }

@@ -14,7 +14,6 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang.time.DurationFormatUtils;
 import org.ihtsdo.termserver.scripting.client.*;
-import org.ihtsdo.termserver.scripting.creation.Concept;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.template.AncestorsCache;
 import org.ihtsdo.termserver.scripting.template.DescendentsCache;

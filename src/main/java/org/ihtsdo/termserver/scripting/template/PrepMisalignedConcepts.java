@@ -93,10 +93,11 @@ public class PrepMisalignedConcepts extends TemplateFix {
 				"burn/Full thickness burn of body structure.json",
 				"burn/Deep partial thickness burn of body structure.json",
 				"burn/Superficial partial thickness burn of body structure.json"};
-		
+		*/
 		subHierarchyStr = "74627003";  //QI-48 |Diabetic Complication|
-		templateNames = new String[] {	"Complication co-occurrent and due to Diabetes Melitus.json"};
-		
+		templateNames = new String[] {	"Complication co-occurrent and due to Diabetes Melitus.json",
+										"Complication co-occurrent and due to Diabetes Melitus - Minimal.json"};
+		/*
 		subHierarchyStr = "8098009";	// QI-45 |Sexually transmitted infectious disease (disorder)| 
 		templateNames = new String[] {	"Sexually transmitted Infection with optional bodysite.json"};
 		
@@ -106,10 +107,10 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		
 		subHierarchyStr = "3218000"; //QI-67 |Mycosis (disorder)|
 		templateNames = new String[] {	"Infection caused by Fungus.json"};
-		*/
+		
 		subHierarchyStr = "17322007"; //QI-68 |Parasite (disorder)|
 		templateNames = new String[] {	"Infection caused by Parasite.json"};
-		
+		*/
 		super.init(args);
 	}
 	

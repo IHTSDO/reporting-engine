@@ -1,24 +1,14 @@
 package org.ihtsdo.termserver.scripting.snapshot;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.io.*;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 import org.ihtsdo.termserver.scripting.ArchiveManager;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
-import org.ihtsdo.termserver.scripting.domain.Component;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Description;
-import org.ihtsdo.termserver.scripting.domain.HistoricalAssociation;
-import org.ihtsdo.termserver.scripting.domain.InactivationIndicatorEntry;
-import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
-import org.ihtsdo.termserver.scripting.domain.Project;
-import org.ihtsdo.termserver.scripting.domain.Relationship;
+import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 public class SnapshotGenerator extends TermServerScript {
@@ -83,6 +73,8 @@ public class SnapshotGenerator extends TermServerScript {
 		init(newLocation, false);
 		loadArchive(previousReleaseSnapshot, false, "Snapshot");
 		loadArchive(delta, false, "Delta");
+		outputRF2();
+		flushFiles(false);
 		if (!leaveArchiveUncompressed) {	
 			archive = SnomedUtils.createArchive(new File(outputDirName));
 		}
@@ -115,7 +107,7 @@ public class SnapshotGenerator extends TermServerScript {
 		initialiseFileHeaders();
 	}
 	
-	public void finish() throws FileNotFoundException {
+	public void finish() throws FileNotFoundException  {
 		super.finish();
 	}
 	

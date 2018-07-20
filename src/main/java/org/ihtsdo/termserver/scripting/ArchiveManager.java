@@ -88,6 +88,9 @@ public class ArchiveManager implements RF2Constants {
 			BasicFileAttributes attr = java.nio.file.Files.readAttributes(snapshot.toPath(), BasicFileAttributes.class);
 			Date snapshotCreation = new Date(attr.creationTime().toMillis());
 			isStale = branchHeadTime.after(snapshotCreation);
+			if (isStale) {
+				TermServerScript.warn(project + " snapshot held locally is stale.  Requesting delta to rebuild...");
+			}
 		} /*else if (runStandAlone && !snapshot.exists()) {
 			throw new TermServerScriptException("Cannot run stand alone without snapshot archive provide");
 		}*/
