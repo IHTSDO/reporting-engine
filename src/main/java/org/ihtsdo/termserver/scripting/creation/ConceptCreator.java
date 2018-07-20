@@ -17,6 +17,7 @@ public abstract class ConceptCreator implements RF2Constants {
 	private Map<String, Concept> anatomyMap = null;
 	
 	static final String SEMTAG_BODY = "(body structure)";
+	static final String STRUCTURE = "structure";
 	
 	public boolean takesInspiration(Set<Concept> proposedInspirations) {
 		//Is the proposed inspriration a descendant or self of the inspiriation this creator needs?
@@ -58,13 +59,13 @@ public abstract class ConceptCreator implements RF2Constants {
 		if (anatomyMap == null) {
 			populateAnatomyMap();
 		}
-		return anatomyMap.get(pt);
+		return anatomyMap.get(pt.toLowerCase());
 	}
 
 	private void populateAnatomyMap() throws TermServerScriptException {
 		anatomyMap = new HashMap<>();
 		for (Concept c : BODY_STRUCTURE.getDescendents(NOT_SET)) {
-			anatomyMap.put(c.getPreferredSynonym(), c);
+			anatomyMap.put(c.getPreferredSynonym().toLowerCase(), c);
 		}
 	}
 }

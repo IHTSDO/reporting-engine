@@ -614,6 +614,39 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		report (t, c, Severity.LOW, action, r);
 	}
 	
+	protected Description replaceDescription(Task t, Concept c, Description d, String newTerm, InactivationIndicator indicator) throws TermServerScriptException {
+		Description replacement = c.findTerm(newTerm);
+		if (replacement != null) {
+			if (replacement.isActive()) {
+				report(t, c, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, "Replacement term already exists active: " + replacement);
+			} else {
+				report(t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Replacement term already exists inactive.  Reactivating: " + replacement);
+				replacement.setActive(true);
+				replacement.setInactivationIndicator(null);
+			}
+			//And copy the acceptability from the one we're replacing
+			replacement.setAcceptabilityMap(SnomedUtils.mergeAcceptabilityMap(d, replacement));
+		} else {
+			replacement = d.clone(null); //Includes acceptability
+			replacement.setTerm(newTerm);
+			c.addDescription(replacement);
+		}
+		
+		//Are we deleting or inactivating this term?
+		String change = "";
+		if (d.isReleased()) {
+			d.setActive(false);
+			d.setInactivationIndicator(indicator);
+			change = "Inactivated";
+		} else {
+			c.removeDescription(d);
+			change = "Deleted";
+		}
+		String msg = change + " " + d + " replaced with: " + newTerm;
+		report(t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, msg);
+		return replacement;
+	}
+	
 	protected int replaceRelationship(Task t, Concept c, Concept type, Concept value, int groupId, boolean ensureTypeUnique) throws TermServerScriptException {
 		int changesMade = 0;
 		

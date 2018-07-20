@@ -73,36 +73,15 @@ public class ReplaceExistingTerms extends BatchFix implements RF2Constants{
 		return changesMade;
 	}
 
-	private int replaceTerms(Task task, Concept concept) throws TermServerScriptException {
+	private int replaceTerms(Task t, Concept c) throws TermServerScriptException {
 		int changesMade = 0;
-		for (Description d : concept.getDescriptions(ActiveState.ACTIVE)) {
+		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 			if (d.getTerm().startsWith(match)) {
 				String newTerm = d.getTerm().replace(match, replace);
-				if (termAlreadyExists(concept, newTerm)) {
-					report(task, concept, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, "Replacement term already exists: " + newTerm);
-				} else {
-					Description replacement = d.clone(null);
-					replacement.setTerm(newTerm);
-					d.setActive(false);
-					d.setInactivationIndicator(InactivationIndicator.ERRONEOUS);
-					concept.addDescription(replacement);
-					changesMade++;
-					String msg = "Inactivated term " + d.getDescriptionId() + " replaced with " + newTerm;
-					report(task, concept, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, msg);
-				}
+				replaceDescription(t, c, d, newTerm, InactivationIndicator.ERRONEOUS);
 			}
 		}
 		return changesMade;
-	}
-
-	private boolean termAlreadyExists(Concept concept, String newTerm) {
-		boolean termAlreadyExists = false;
-		for (Description description : concept.getDescriptions()) {
-			if (description.getTerm().equals(newTerm)) {
-				termAlreadyExists = true;
-			}
-		}
-		return termAlreadyExists;
 	}
 
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {

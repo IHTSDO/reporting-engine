@@ -355,6 +355,17 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 	}
 	
+	/**
+	 * Creates a set of concepts based on a structure around the initial concept 
+	 * ie parents as high as is required, siblings and children.
+	 * @param initialConcept
+	 * @return a list of the new concepts created.
+	 */
+	protected List<Concept> createConceptStructure(Concept initialConcept) {
+		List<Concept> created = new ArrayList<>();
+		return created;
+	}
+	
 	protected void deleteConcept(Task t, Concept c) throws TermServerScriptException {
 		try {
 			debug ((dryRun ?"Dry run deleting ":"Deleting ") + c );

@@ -25,57 +25,51 @@ For your example |Structure of hair follicle of upper arm (body structure)|:
 371309009 |Skin structure of upper arm (body structure)|
 xxxxxx |Structure of hair follicle of upper limb (body structure)|
   xxxxxx |Entire hair follicle of upper limb (body structure)|
-  xxxxxxx |Structure of hair follicle of upper arm (body structure)|
+  xxxxxxx |Structure of hair follicle of upper arm (body structure)|   <-- Target Concept
     xxxxxx |Entire hair follicle of upper arm (body structure)|
  */
 public class HairFollicleCreator extends ConceptCreator {
 	
 	private static HairFollicleCreator singleton = null;
-	
-	static {
-		ConceptCreator creator = getHairFollicleCreator();
-		ConceptCreationSupervisor.getSupervisor().registerCreator(creator);
-		
-		ConceptCreationPattern pattern = ConceptCreationPattern
-				.define()
-				.withTerm("Structure of hair follicle of [X]")
-				.withSemTag(SEMTAG_BODY);
-		
-		ConceptCreationPattern parent1 = ConceptCreationPattern
-				.define()
-				.withTerm("Structure of hair follicle of [Y]")
-				.withSemTag(SEMTAG_BODY)
-				.withStrategy(Strategy.ImmediateParentOfX);
-		
-		ConceptCreationPattern parent2 = ConceptCreationPattern
-				.define()
-				.withTerm("Skin structure of [X]")
-				.withSemTag(SEMTAG_BODY);
-		
-		ConceptCreationPattern sibling = ConceptCreationPattern
-				.define()
-				.withTerm("Entire hair follicle of [Y]")
-				.withSemTag(SEMTAG_BODY)
-				.withStrategy(Strategy.ImmediateParentOfX);
-		
-		ConceptCreationPattern child = ConceptCreationPattern
-				.define()
-				.withTerm("Entire hair follicle of [X]")
-				.withSemTag(SEMTAG_BODY);
-		
-		pattern.addParentPattern(parent1)
-			.addParentPattern(parent2)
-			.addSiblingPattern(sibling)
-			.addChildPattern(child);
-		creator.setConceptPattern(pattern);
-	}
-	
-	
 	public static HairFollicleCreator getHairFollicleCreator() {
 		if (singleton == null) {
 			singleton = new HairFollicleCreator();
 			singleton.addInspiration("67290009 |Hair follicle structure (body structure)|");
 			singleton.addInspiration("127856007 |Skin and/or subcutaneous tissue structure (body structure)|");
+			
+			ConceptCreationPattern pattern = ConceptCreationPattern
+					.define()
+					.withTerm("Structure of hair follicle of [X]")
+					.withSemTag(SEMTAG_BODY);
+			
+			ConceptCreationPattern parent1 = ConceptCreationPattern
+					.define()
+					.withTerm("Structure of hair follicle of [Y]")
+					.withSemTag(SEMTAG_BODY)
+					.withStrategy(Strategy.ImmediateParentOfX);
+			
+			ConceptCreationPattern parent2 = ConceptCreationPattern
+					.define()
+					.withTerm("Skin structure of [X]")
+					.withSemTag(SEMTAG_BODY);
+			
+			ConceptCreationPattern sibling = ConceptCreationPattern
+					.define()
+					.withTerm("Entire hair follicle of [Y]")
+					.withSemTag(SEMTAG_BODY)
+					.withStrategy(Strategy.ImmediateParentOfX);
+			
+			ConceptCreationPattern child = ConceptCreationPattern
+					.define()
+					.withTerm("Entire hair follicle of [X]")
+					.withSemTag(SEMTAG_BODY);
+			
+			pattern.addParentPattern(parent1)
+				.addParentPattern(parent2)
+				.addSiblingPattern(sibling)
+				.addChildPattern(child);
+			
+			singleton.setConceptPattern(pattern);
 		}
 		return singleton;
 	}
@@ -87,7 +81,12 @@ public class HairFollicleCreator extends ConceptCreator {
 		//Now our real driver is coming from whatever structure is part of the remaining concept
 		inspiration.remove(hfs);
 		Concept conceptOfInterest = inspiration.iterator().next();
-		String structure = conceptOfInterest.getPreferredSynonym().split(" of ")[1];
+		String structure = conceptOfInterest.getPreferredSynonym().split(" of ")[1].toLowerCase();
+		
+		//We're looking for some sort of structure
+		if (!structure.contains(STRUCTURE)) {
+			structure += " " + STRUCTURE;
+		}
 		
 		//Now that's our X, if we can find it
 		Concept X = findAnatomy(structure);

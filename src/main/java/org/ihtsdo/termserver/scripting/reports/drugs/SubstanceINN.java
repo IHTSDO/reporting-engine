@@ -52,6 +52,8 @@ public class SubstanceINN extends TermServerReport {
 					debug ("Debug Here");
 				}
 				validateAgainstInnSet(subst, innSet);
+			} else {
+				checkforSulphur(subst);
 			}
 		}
 	}
@@ -151,6 +153,25 @@ public class SubstanceINN extends TermServerReport {
 				}
 			}
 		}
+	}
+	
+
+	private void checkforSulphur(Concept c) throws TermServerScriptException {
+		//It is acceptable to have Sulphur form in GB, but never in US
+		for (Description d : c.getDescriptions(Acceptability.PREFERRED, null, ActiveState.ACTIVE)) {
+			if (d.getTerm().contains("ulph")) {
+				report (c, d, "PREF", "Not allowed as preferred term");
+				return;
+			}
+		}
+		
+		for (Description d : c.getDescriptions(Acceptability.ACCEPTABLE, null, ActiveState.ACTIVE)) {
+			if (d.getTerm().contains("ulph") && d.isAcceptable(US_ENG_LANG_REFSET)) {
+				report (c, d, "US_A", "Not allowed at all - 'ulph'");
+				return;
+			}
+		}
+		
 	}
 
 	protected List<Component> loadLine(String[] items) {
