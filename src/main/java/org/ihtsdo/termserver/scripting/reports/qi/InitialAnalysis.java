@@ -33,12 +33,13 @@ public class InitialAnalysis extends TermServerReport {
 		InitialAnalysis report = new InitialAnalysis();
 		try {
 			report.additionalReportColumns = "FSN, Proximal Primitive Parent, is Intermediate, Defn Status, Stated Attributes, Stated Role Groups, Inferred Role Groups, Stated Parents";
-			report.secondaryReportColumns = "FSN, Can Be Sufficiently Defined (1=yes 0=no), JIRA, Comments, Authoring Task, In Subhierarchy,Total SDs affected, SD Concepts in subhierarchy, Total Primitive Concepts affected, Primitive Concept in SubHierarchy";
+			report.secondaryReportColumns = "FSN, Can Be Sufficiently Defined (1=yes 0=no), JIRA, Comments, Authoring Task, In Subhierarchy,Prim Above Here (NOS),Total SDs affected, SD Concepts in subhierarchy, Total Primitive Concepts affected, Primitive Concept in SubHierarchy";
 			report.tertiaryReportColumns = "FSN, Concepts Using Type, Example";
 			report.numberOfDistinctReports = 3;
 			report.init(args);
 			report.loadProjectSnapshot(true);  //just FSNs
 			report.postInit();
+			info("Generating Intermediate Primitive Report for " + report.subHierarchyStart);
 			report.reportConceptsAffectedByIntermediatePrimitives();
 			report.reportTotalFDsUnderIPs();
 			report.reportAttributeUsageCounts();
@@ -203,10 +204,25 @@ public class InitialAnalysis extends TermServerReport {
 				}
 			}
 		}
-		report (SECONDARY_REPORT, intermediatePrimitive, blankColumns, IPinSubHierarchy, totalFDsUnderIP, fdsInSubHierarchy, totalPrimitiveConceptsUnderIP, totalPrimitiveConceptsUnderIPInSubHierarchy);
+		int aboveMe = primitivesAboveHere(intermediatePrimitive);
+		report (SECONDARY_REPORT, intermediatePrimitive, blankColumns, IPinSubHierarchy, aboveMe, totalFDsUnderIP, fdsInSubHierarchy, totalPrimitiveConceptsUnderIP, totalPrimitiveConceptsUnderIPInSubHierarchy);
 	}
 	
 	
+	private int primitivesAboveHere(Concept intermediatePrimitive) throws TermServerScriptException {
+		//We're assuming that Clinical Finding is our top level.
+		Set<Concept> aboveHere = ancestorsCache.getAncestors(intermediatePrimitive)
+				.stream().filter(c -> c.getDefinitionStatus().equals(DefinitionStatus.PRIMITIVE))
+				.collect(Collectors.toSet());
+		aboveHere.remove(ROOT_CONCEPT);
+		aboveHere.remove(CLINICAL_FINDING);
+		aboveHere.remove(DISEASE);
+		aboveHere.remove(COMPLICATION);
+		//And remove all the other intermediate primitives that we know about
+		aboveHere.removeAll(intermediatePrimitives.keySet());
+		return aboveHere.size();
+	}
+
 	private void reportAttributeUsageCounts() throws TermServerScriptException {
 		//For every concept in the subhierarchy, get the attribute types used, and an example
 		for (Concept c : this.subHierarchy) {
