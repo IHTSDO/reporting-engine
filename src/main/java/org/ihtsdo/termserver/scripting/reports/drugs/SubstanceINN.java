@@ -179,12 +179,18 @@ public class SubstanceINN extends TermServerReport {
 		set.fsn = items[0].toLowerCase().trim();
 		set.gbPt = items[1].toLowerCase().trim();
 		set.usPt = items[2].toLowerCase().trim();
-		if (!items[3].isEmpty()) {
+		if (items.length > 3 && !items[3].isEmpty()) {
 			set.bothSyn = Arrays.asList(items[3].split(TAB)).stream().map(s -> s.toLowerCase().trim()).collect(Collectors.toList());
 		}
-		set.gbSyn = items[4].toLowerCase().trim();
-		set.usSyn = items[5].toLowerCase().trim();
-		if (!items[6].isEmpty()) {
+		
+		if (items.length > 4) {
+			set.gbSyn = items[4].toLowerCase().trim();
+		}
+		
+		if (items.length > 5) {
+			set.usSyn = items[5].toLowerCase().trim();
+		}
+		if (items.length > 6 && !items[6].isEmpty()) {
 			set.notAllowed = Arrays.asList(items[6].split(TAB)).stream().map(s -> s.toLowerCase().trim()).collect(Collectors.toList());
 		}
 		allINN.add(set);
@@ -206,8 +212,8 @@ public class SubstanceINN extends TermServerReport {
 					gbPt.equals(term) ||
 					usPt.equals(term) ||
 					bothSyn.contains(term) ||
-					gbSyn.equals(term) ||
-					usSyn.equals(term);
+					(gbSyn!= null && gbSyn.equals(term)) ||
+					(usSyn!= null && usSyn.equals(term));
 		}
 		
 		public String toString() {
