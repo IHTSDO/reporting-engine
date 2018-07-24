@@ -115,6 +115,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 			//With the CD reported, we don't actually need to load it in the edit panel
 			task.remove(concept);
 			report (task, required, Severity.LOW, ReportActionType.CONCEPT_ADDED, required);
+			addSummaryInformation("Concept created: " +required, "");
 			report (task, required, Severity.LOW, ReportActionType.INFO, required.toExpression(CharacteristicType.STATED_RELATIONSHIP));
 			return CHANGE_MADE; 
 		}
