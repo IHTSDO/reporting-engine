@@ -82,10 +82,15 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 			concept.setInactivationIndicator(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
 			concept.setAssociationTargets(new AssociationTargets());
 			report(task, concept, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept inactivated as 'NonConformance to Editorial Policy'");
-		} else {
+		} /*else {
 			concept.setInactivationIndicator(InactivationIndicator.DUPLICATE);
 			concept.setAssociationTargets(AssociationTargets.sameAs(replacement));
 			report(task, concept, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept inactivated as duplicate, same as: " + replacement);
+		}*/
+		else {
+			concept.setInactivationIndicator(InactivationIndicator.AMBIGUOUS);
+			concept.setAssociationTargets(AssociationTargets.possEquivTo(replacement));
+			report(task, concept, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept inactivated as ambiguous, possibly equivalent to: " + replacement);
 		}
 		inactivations.put(concept, task);
 		return CHANGE_MADE;
