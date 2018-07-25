@@ -28,8 +28,7 @@ public class ReportFileManager implements RF2Constants {
 			PrintWriter pw = getPrintWriter(reportFiles[reportIdx].getAbsolutePath());
 			pw.println(line);
 		} catch (Exception e) {
-			TermServerScript.info ("Unable to output report line: " + line + " due to " + e.getMessage());
-			TermServerScript.info (org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(e));
+			throw new IllegalStateException("Unable to output report line: " + line, e);
 		}
 	}
 	

@@ -104,6 +104,7 @@ public class ReportManager implements RF2Constants {
 	
 	public void setTabNames(String[] tabNames) {
 		this.tabNames = Arrays.asList(tabNames);
+		this.numberOfDistinctReports = tabNames.length;
 	}
 
 	public void setFileOnly() {
@@ -113,6 +114,10 @@ public class ReportManager implements RF2Constants {
 
 	public String getEnv() {
 		return env;
+	}
+	
+	public String getUrl() {
+		return reportSheetManager.getUrl();
 	}
 	
 }

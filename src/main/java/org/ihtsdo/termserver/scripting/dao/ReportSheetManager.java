@@ -198,4 +198,8 @@ public class ReportSheetManager implements RF2Constants {
 			.setFields("id, parents")
 			.execute();
 	}
+
+	public String getUrl() {
+		return sheet.getSpreadsheetUrl();
+	}
 }

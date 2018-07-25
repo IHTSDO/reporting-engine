@@ -71,7 +71,6 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		return allComponentsToProcess;
 	}
 	
-	
 	abstract protected int doFix(Task task, Concept concept, String info) throws TermServerScriptException, ValidationFailure;
 
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
@@ -82,8 +81,6 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	protected Batch formIntoBatch (List<Component> allComponents) throws TermServerScriptException {
 		Batch batch = new Batch(getScriptName());
 		Task task = batch.addNewTask(author_reviewer);
-		
-		
 		
 		//Do we need to prioritize some components?
 		List<Component> unprioritized = new ArrayList<> (allComponents);

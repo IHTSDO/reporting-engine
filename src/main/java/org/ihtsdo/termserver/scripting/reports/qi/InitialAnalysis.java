@@ -22,6 +22,7 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 	
 	Concept subHierarchyStart;
 	Set<Concept> subHierarchy;
+	Set<Concept> exclusions;
 	public Map<Concept, Integer> intermediatePrimitives;
 	public Map<Concept, Integer> attributeUsage;
 	public Map<Concept, Concept> attributeExamples;
@@ -36,11 +37,8 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		InitialAnalysis report = new InitialAnalysis(null);
 		try {
-			report.additionalReportColumns = "FSN, Proximal Primitive Parent, is Intermediate, Defn Status, Stated Attributes, Stated Role Groups, Inferred Role Groups, Stated Parents";
-			report.secondaryReportColumns = "FSN, Can Be Sufficiently Defined (1=yes 0=no), JIRA, Comments, Authoring Task, In Subhierarchy,Prim Above Here (NOS),Total SDs affected, SD Concepts in subhierarchy, Total Primitive Concepts affected, Primitive Concept in SubHierarchy";
-			report.tertiaryReportColumns = "FSN, Concepts Using Type, Example";
-			report.getReportManager().setNumberOfDistinctReports(3);
 			report.init(args);
+			report.getReportManager().setNumberOfDistinctReports(3);
 			report.loadProjectSnapshot(true);  //just FSNs
 			report.postInit(null);
 			info("Generating Intermediate Primitive Report for " + report.subHierarchyStart);
@@ -53,10 +51,17 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 		}
 	}
 	
-	public void runReport() throws TermServerScriptException {
+	public String runReport() throws TermServerScriptException {
+		
+		info("Reviewing concepts affected by intermediate primitives");
 		reportConceptsAffectedByIntermediatePrimitives();
-		reportTotalFDsUnderIPs();
+		
+		info("Reporting IPs with analysis");
+		reportTotalSDsUnderIPs();
+		
+		info("Reporting attribute usage counts");
 		reportAttributeUsageCounts();
+		return getReportManager().getUrl();
 	}
 	
 	public void postInit(String subHierarchyStr) throws TermServerScriptException {
@@ -86,18 +91,33 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 			}
 			ReportSheetManager.targetFolderId = "1m7MVhMePldYrNjOvsE_WTAYcowZ4ps50"; //Team Drive: Content Reporting Artefacts / QI / Initial Analysis
 			getReportManager().setReportName(getReportName());
+			additionalReportColumns = "FSN, Proximal Primitive Parent, is Intermediate, Defn Status, Stated Attributes, Stated Role Groups, Inferred Role Groups, Stated Parents";
+			secondaryReportColumns = "FSN, Can Be Sufficiently Defined (1=yes 0=no), JIRA, Comments, Authoring Task, In Subhierarchy,Prim Above Here (NOS),Descendants,Total SDs affected, SD Concepts in subhierarchy, Total Primitive Concepts affected, Primitive Concepts in SubHierarchy";
+			tertiaryReportColumns = "FSN, Concepts Using Type, Example";
 			getReportManager().setTabNames(new String[] {	"Attribute Usage",
 															"IPs with Counts",
-															"Cncepts in Subhierarchy with PPPs" });
+															"Concepts in Subhierarchy with PPPs" });
 			getReportManager().initialiseReportFiles( new String[] {headers + additionalReportColumns, headers + secondaryReportColumns, headers + tertiaryReportColumns});
 		} catch (Exception e) {
 			throw new TermServerScriptException ("Unable to initialise " + this.getClass().getSimpleName(), e);
 		}
 	}
 	
+	public void setExclusions (String[] exclusionArr) throws TermServerScriptException {
+		exclusions = new HashSet<>();
+		for (String exclusionStr : exclusionArr) {
+			Concept exclusionStart = gl.getConcept(exclusionStr);
+			exclusions.addAll(exclusionStart.getDescendents(NOT_SET));
+		}
+	}
+	
 	public String getReportName() {
 		try {
-			return subHierarchyStart.getPreferredSynonym() + " - Intermediate Primitives";
+			if (subHierarchyStart == null) {
+				return "Report name not yet known";
+			} else {
+				return subHierarchyStart.getPreferredSynonym() + " - Intermediate Primitives";
+			}
 		} catch (TermServerScriptException e) {
 			return subHierarchyStart.getConceptId() +  " - Intermediate Primitives";
 		}
@@ -121,6 +141,10 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 
 	public void reportConceptsAffectedByIntermediatePrimitives() throws TermServerScriptException {
 		for (Concept c : this.subHierarchy) {
+			//Skip exclusions
+			if (exclusions.contains(c)) {
+				continue;
+			}
 			//We're only interested in fully defined concepts
 			//Update:  OR leaf concepts 
 			if (c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED) || 
@@ -199,7 +223,7 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 		return false;
 	}
 	
-	private void reportTotalFDsUnderIPs() throws TermServerScriptException {
+	private void reportTotalSDsUnderIPs() throws TermServerScriptException {
 		intermediatePrimitives.entrySet().stream()
 			.sorted((k1, k2) -> k2.getValue().compareTo(k1.getValue()))
 			.forEach(k -> {
@@ -231,7 +255,8 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 			}
 		}
 		int aboveMe = primitivesAboveHere(intermediatePrimitive);
-		report (SECONDARY_REPORT, intermediatePrimitive, blankColumns, IPinSubHierarchy, aboveMe, totalFDsUnderIP, fdsInSubHierarchy, totalPrimitiveConceptsUnderIP, totalPrimitiveConceptsUnderIPInSubHierarchy);
+		int descendants = descendantsCache.getDescendents(intermediatePrimitive).size();
+		report (SECONDARY_REPORT, intermediatePrimitive, blankColumns, IPinSubHierarchy, aboveMe, descendants, totalFDsUnderIP, fdsInSubHierarchy, totalPrimitiveConceptsUnderIP, totalPrimitiveConceptsUnderIPInSubHierarchy);
 	}
 	
 	
