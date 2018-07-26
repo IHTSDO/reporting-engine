@@ -15,18 +15,21 @@ import org.ihtsdo.termserver.scripting.reports.qi.InitialAnalysis;
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 
+import net.rcarz.jiraclient.Issue;
+
 /**
  * QI-76 Add support for running a report multiple times for different subhierarchies
  * Generating Jira tickets to receive each one.
  * */
-public class MutliReportRunner extends TermServerReport {
+public class MultiReportRunner extends TermServerReport {
 	
 	ReportClass report; 
 	JiraHelper jira;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
-		MutliReportRunner report = new MutliReportRunner();
+		MultiReportRunner report = new MultiReportRunner();
 		try {
+			report.testJira();
 			report.init(args);
 			report.loadProjectSnapshot(false); 
 			report.runMultipleReports();
@@ -38,6 +41,12 @@ public class MutliReportRunner extends TermServerReport {
 		}
 	}
 	
+	private void testJira() throws TermServerScriptException {
+		jira = new JiraHelper();
+		Issue issue = jira.createJiraTicket("QI", "foo", "bar");
+		info ("Created issue: " + issue.getKey());
+	}
+
 	public String getReportName() {
 		//We'll delegate that to the report we're actually running
 		return report.getReportName();

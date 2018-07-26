@@ -1,9 +1,6 @@
 package org.ihtsdo.termserver.scripting.client;
 
-import com.google.gdata.client.authn.oauth.OAuthException;
-import com.google.gdata.client.authn.oauth.OAuthParameters;
-import com.google.gdata.client.authn.oauth.OAuthRsaSha1Signer;
-import com.google.gdata.client.authn.oauth.OAuthUtil;
+import com.google.gdata.client.authn.oauth.*;
 import net.rcarz.jiraclient.ICredentials;
 import net.rcarz.jiraclient.JiraException;
 import net.rcarz.jiraclient.RestClient;
@@ -24,10 +21,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class OAuthCredentials implements ICredentials {
 
@@ -156,12 +150,14 @@ public class OAuthCredentials implements ICredentials {
 			dataInputStream.readFully(privKeyBytes);
 			privateKeyString = new String(privKeyBytes, UTF_8);
 		}
+		
+		System.out.println("Private key is " + privateKeyString.length() + " bytes long");
 
 		// Trim header and footer
 		int startIndex = privateKeyString.indexOf(BEGIN_PRIVATE_KEY);
 		if (startIndex != -1) {
 			int endIndex = privateKeyString.indexOf(END_PRIVATE_KEY);
-			privateKeyString = privateKeyString.substring(startIndex + BEGIN_PRIVATE_KEY.length(), endIndex);
+			privateKeyString = privateKeyString.substring(startIndex + BEGIN_PRIVATE_KEY.length(), endIndex).trim();
 			// decode private key
 			PKCS8EncodedKeySpec privSpec = new PKCS8EncodedKeySpec((new BASE64Decoder()).decodeBuffer(privateKeyString));
 			return KeyFactory.getInstance(RSA).generatePrivate(privSpec);
