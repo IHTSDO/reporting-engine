@@ -5,7 +5,7 @@ import java.io.PrintStream;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import org.ihtsdo.termserver.job.schedule.ReportClass;
+import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
@@ -94,9 +94,9 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 			additionalReportColumns = "FSN, Proximal Primitive Parent, is Intermediate, Defn Status, Stated Attributes, Stated Role Groups, Inferred Role Groups, Stated Parents";
 			secondaryReportColumns = "FSN, Can Be Sufficiently Defined (1=yes 0=no), JIRA, Comments, Authoring Task, In Subhierarchy,Prim Above Here (NOS),Descendants,Total SDs affected, SD Concepts in subhierarchy, Total Primitive Concepts affected, Primitive Concepts in SubHierarchy";
 			tertiaryReportColumns = "FSN, Concepts Using Type, Example";
-			getReportManager().setTabNames(new String[] {	"Attribute Usage",
+			getReportManager().setTabNames(new String[] {	"Concepts in Subhierarchy with PPPs",
 															"IPs with Counts",
-															"Concepts in Subhierarchy with PPPs" });
+															"Attribute Usage",});
 			getReportManager().initialiseReportFiles( new String[] {headers + additionalReportColumns, headers + secondaryReportColumns, headers + tertiaryReportColumns});
 		} catch (Exception e) {
 			throw new TermServerScriptException ("Unable to initialise " + this.getClass().getSimpleName(), e);

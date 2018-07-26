@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.job.schedule;
+package org.ihtsdo.termserver.job;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 

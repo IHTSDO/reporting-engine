@@ -160,7 +160,7 @@ public class GraphLoader implements RF2Constants {
 	}
 
 	public Concept getConcept(String identifier) throws TermServerScriptException {
-		return getConcept(identifier, true, true);
+		return getConcept(identifier.trim(), true, true);
 	}
 	
 	public Concept getConceptSafely (String identifier) {

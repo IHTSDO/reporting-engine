@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.job.schedule;
+package org.ihtsdo.termserver.job;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -29,7 +29,7 @@ public class MultiReportRunner extends TermServerReport {
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		MultiReportRunner report = new MultiReportRunner();
 		try {
-			report.testJira();
+			//report.testJira();
 			report.init(args);
 			report.loadProjectSnapshot(false); 
 			report.runMultipleReports();
@@ -77,7 +77,7 @@ public class MultiReportRunner extends TermServerReport {
 			String url = report.runReport();
 			String summary = subHierarchy + " - Main Ticket";
 			String description = "Initial Analysis: " + url;
-			jira.createJiraTicket("QI", summary, description);
+			//jira.createJiraTicket("QI", summary, description);
 		}
 	}
 	

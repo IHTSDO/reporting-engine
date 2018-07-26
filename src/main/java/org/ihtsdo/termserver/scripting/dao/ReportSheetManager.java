@@ -23,11 +23,13 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 public class ReportSheetManager implements RF2Constants {
 
 	private static final String DOMAIN = "ihtsdo.org";
-	private static final String ANY_RANGE = "A:Z";
 	private static final String RAW = "RAW";
 	private static final String APPLICATION_NAME = "SI Reporting Engine";
 	private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
 	private static final String CLIENT_SECRET_DIR = "secure/google-api-secret.json";
+	private static final int MAX_ROWS = 42000;
+	private static final int MAX_COLUMNS = 12;
+	private static final int MIN_REQUEST_RATE = 10;
 
 	Credential credential;
 	ReportManager owner;
@@ -68,8 +70,12 @@ public class ReportSheetManager implements RF2Constants {
 		rsm.initialiseReportFiles(new String[] { "foo, bar" , "bar, boo", "tim ,tum"});
 	}
 	
-	private void init() {
+	private void init() throws TermServerScriptException {
 		try {
+			//Are we re-intialising?  Flush last data if so
+			if (sheet != null) {
+				flush();
+			}
 			final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
 			if (sheetsService == null) {
 				sheetsService = new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
@@ -104,10 +110,8 @@ public class ReportSheetManager implements RF2Constants {
 	}
 
 	public void initialiseReportFiles(String[] columnHeaders) throws TermServerScriptException {
-		if (sheet == null) {
-			init();
-		}
 		tabLineCount = new HashMap<>();
+		init();
 		try {
 			List<Request> requests = new ArrayList<>();
 			requests.add(new Request()
@@ -120,10 +124,15 @@ public class ReportSheetManager implements RF2Constants {
 				Request request = null;
 				//Sheet 0 already exists, just update - it it's been specified
 				if (tabIdx == 0) {
-					SheetProperties properties = new SheetProperties().setTitle(owner.getTabNames().get(tabIdx));
-					request = new Request().setUpdateSheetProperties(new UpdateSheetPropertiesRequest().setProperties(properties).setFields("title"));
+					SheetProperties properties = new SheetProperties()
+							.setTitle(owner.getTabNames().get(tabIdx))
+							.setGridProperties(new GridProperties().setRowCount(MAX_ROWS).setColumnCount(MAX_COLUMNS));
+					request = new Request().setUpdateSheetProperties(new UpdateSheetPropertiesRequest().setProperties(properties).setFields("title, gridProperties"));
 				} else {
-					SheetProperties properties = new SheetProperties().setTitle(owner.getTabNames().get(tabIdx)).setSheetId(new Integer(tabIdx));
+					SheetProperties properties = new SheetProperties()
+							.setTitle(owner.getTabNames().get(tabIdx))
+							.setSheetId(new Integer(tabIdx))
+							.setGridProperties(new GridProperties().setRowCount(MAX_ROWS).setColumnCount(MAX_COLUMNS));
 					request = new Request().setAddSheet(new AddSheetRequest().setProperties(properties));
 				}
 				requests.add(request);
@@ -158,7 +167,7 @@ public class ReportSheetManager implements RF2Constants {
 		if (!delayWrite) {
 			//How long is it since we last wrote to the file?  Write every 5 seconds
 			long secondsSinceLastWrite = (new Date().getTime()-lastWriteTime.getTime())/1000;
-			if (secondsSinceLastWrite > 5) {
+			if (secondsSinceLastWrite > MIN_REQUEST_RATE) {
 				flush();
 			}
 		}
@@ -174,9 +183,10 @@ public class ReportSheetManager implements RF2Constants {
 			.execute();
 		} catch (IOException e) {
 			throw new TermServerScriptException("Unable to update spreadsheet " + sheet.getSpreadsheetUrl(), e);
+		} finally {
+			lastWriteTime = new Date();
+			dataToBeWritten.clear();
 		}
-		lastWriteTime = new Date();
-		dataToBeWritten.clear();
 	}
 	
 	public void moveFile(String fileId) throws IOException {
