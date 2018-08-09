@@ -25,7 +25,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * DRUGS-535 : Query to identify MP concepts that are sufficiently defined 
  * with stated parent |Medicinal product| and that do have an inferred MP-only parent
  * 
- * DRUGS-558 : MP / MPF Concepts should be modelled using base substances.  Query
+ * DRUGS-558, DRUGS-585 : MP / MPF Concepts should be modelled using base substances.  Query
  * to report any that have ingredients which are "Modification Of"
  */
 public class MissingDrugConcepts extends TermServerReport {
@@ -50,7 +50,7 @@ public class MissingDrugConcepts extends TermServerReport {
 			//report.runIdentifyMissingMPFOnlyConceptsReport(); //DRUGS-534
 			//report.runIdentifyMissingMPOnlyConceptsReport(); //DRUGS-535
 			//report.runIdentifyMissingDescendantReport(); //DRUGS-536
-			report.runIdentifyModified_MP_MPF_Report(); //DRUGS-558
+			report.runIdentifyModified_MP_MPF_Report(); //DRUGS-558 DRUGS-585
 		} catch (Exception e) {
 			info("Failed to produce MissingDrugConcepts Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));

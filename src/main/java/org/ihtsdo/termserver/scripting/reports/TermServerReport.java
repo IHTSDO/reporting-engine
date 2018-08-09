@@ -23,7 +23,9 @@ public abstract class TermServerReport extends TermServerScript {
 		try {
 			super.init(args);
 			if (!delayReportInitialisation) {
-				getReportManager().initialiseReportFiles( new String[] {headers + additionalReportColumns, headers + secondaryReportColumns, headers + tertiaryReportColumns});
+				//if (this.)
+				//getReportManager().initialiseReportFiles( new String[] {headers + additionalReportColumns, headers + secondaryReportColumns, headers + tertiaryReportColumns});
+				getReportManager().initialiseReportFiles( new String[] {headers + additionalReportColumns});
 			}
 		} catch (IOException e) {
 			throw new TermServerScriptException("Unable to initialise output report",e);
