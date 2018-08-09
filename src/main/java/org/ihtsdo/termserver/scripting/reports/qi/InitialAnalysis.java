@@ -66,7 +66,7 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 	
 	public void postInit(String subHierarchyStr) throws TermServerScriptException {
 		try {
-			if (subHierarchy == null) {
+			if (subHierarchyStr == null) {
 				//setSubHierarchy("46866001");	//       |Fracture of lower limb (disorder)|
 				//setSubHierarchy("125605004");	// QI-2  |Fracture of bone (disorder)|
 				//setSubHierarchy("128294001");	// QI-8  |Chronic inflammatory disorder (disorder)|
