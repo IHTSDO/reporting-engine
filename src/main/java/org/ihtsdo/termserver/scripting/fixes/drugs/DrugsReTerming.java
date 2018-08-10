@@ -237,7 +237,7 @@ public class DrugsReTerming extends DrugBatchFix implements RF2Constants{
 			}
 		}
 		addSummaryInformation("Tasks scheduled", batch.getTasks().size());
-		addSummaryInformation(CONCEPTS_PROCESSED, allConcepts);
+		addSummaryInformation(CONCEPTS_TO_PROCESS, allConcepts);
 		return batch;
 	}
 

@@ -296,7 +296,7 @@ public class FlattenHierarchy extends BatchFix implements RF2Constants{
 		}
 		batch.consolidateIntoLargeTasks(taskSize, 0); //Tasks are large enough already, no wiggle room!
 		addSummaryInformation("Tasks scheduled", batch.getTasks().size());
-		addSummaryInformation(CONCEPTS_PROCESSED, allConcepts);
+		addSummaryInformation(CONCEPTS_TO_PROCESS, allConcepts);
 		for (Task t : batch.getTasks()) {
 			debug (t + " (" + t.size() + ")");
 		}

@@ -80,7 +80,7 @@ public class DispositionsArchive extends Rf2Player implements RF2Constants{
 		batch.consolidateIntoLargeTasks(taskSize, wiggleRoom);
 		
 		addSummaryInformation("Tasks scheduled", batch.getTasks().size());
-		addSummaryInformation(CONCEPTS_PROCESSED, conceptsModified);
+		addSummaryInformation(CONCEPTS_TO_PROCESS, conceptsModified);
 		addSummaryInformation("CONCEPTS_INACTIVATED", inactivations.size());
 		addSummaryInformation("CONCEPTS_NO_DISPOSITION", hasNoDisposition.size());
 		

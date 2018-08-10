@@ -55,7 +55,7 @@ public abstract class TermServerScript implements RF2Constants {
 	public Scanner STDIN = new Scanner(System.in);
 	
 	public static String CONCEPTS_IN_FILE = "Concepts in file";
-	public static String CONCEPTS_PROCESSED = "Concepts processed";
+	public static String CONCEPTS_TO_PROCESS = "Concepts to process";
 	public static String REPORTED_NOT_PROCESSED = "Reported not processed";
 	public static String CRITICAL_ISSUE = "CRITICAL ISSUE";
 	public static String inputFileDelimiter = TSV_FIELD_DELIMITER;
@@ -504,6 +504,10 @@ public abstract class TermServerScript implements RF2Constants {
 		summaryDetails.put(storeAs, differences.toString());
 	}
 	
+	public void flushFilesSoft() throws TermServerScriptException {
+		getReportManager().flushFilesSoft();
+	}
+	
 	public void flushFiles(boolean andClose) throws TermServerScriptException {
 		getReportManager().flushFiles(andClose);
 	}
@@ -534,9 +538,9 @@ public abstract class TermServerScript implements RF2Constants {
 			}
 			recordSummaryText (key + ": " + display);
 		}
-		if (summaryDetails.containsKey("Tasks created") && summaryDetails.containsKey(CONCEPTS_PROCESSED) ) {
-			if (summaryDetails.get(CONCEPTS_PROCESSED) != null &&  summaryDetails.get(CONCEPTS_PROCESSED) instanceof Collection) {
-				double c = (double)((Collection<?>)summaryDetails.get(CONCEPTS_PROCESSED)).size();
+		if (summaryDetails.containsKey("Tasks created") && summaryDetails.containsKey(CONCEPTS_TO_PROCESS) ) {
+			if (summaryDetails.get(CONCEPTS_TO_PROCESS) != null &&  summaryDetails.get(CONCEPTS_TO_PROCESS) instanceof Collection) {
+				double c = (double)((Collection<?>)summaryDetails.get(CONCEPTS_TO_PROCESS)).size();
 				double t = (double)((Integer)summaryDetails.get("Tasks created")).intValue();
 				double avg = Math.round((c/t) * 10) / 10.0;
 				recordSummaryText ("Concepts per task: " + avg);

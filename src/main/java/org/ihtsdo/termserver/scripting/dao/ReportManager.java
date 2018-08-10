@@ -59,6 +59,16 @@ public class ReportManager implements RF2Constants {
 			reportSheetManager.flush();
 		}
 	}
+	
+	public void flushFilesSoft() throws TermServerScriptException {
+		if (writeToFile) {
+			reportFileManager.flushFiles(false);
+		}
+		
+		if (writeToSheet) {
+			reportSheetManager.flushSoft();
+		}
+	}
 
 	public void writeToRF2File(String fileName, Object[] columns) throws TermServerScriptException {
 		reportFileManager.writeToRF2File(fileName, columns);

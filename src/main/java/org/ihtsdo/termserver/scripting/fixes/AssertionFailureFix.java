@@ -117,10 +117,10 @@ public class AssertionFailureFix extends BatchFix implements RF2Constants{
 			}
 		}
 		addSummaryInformation("Tasks scheduled", batch.getTasks().size());
-		addSummaryInformation(CONCEPTS_PROCESSED, allConceptsBeingProcessed);
+		addSummaryInformation(CONCEPTS_TO_PROCESS, allConceptsBeingProcessed);
 		List <Component> reportedNotProcessed = validateAllInputConceptsBatched (conceptsInFile, allConceptsBeingProcessed);
 		addSummaryInformation(REPORTED_NOT_PROCESSED, reportedNotProcessed);
-		storeRemainder(CONCEPTS_IN_FILE, CONCEPTS_PROCESSED, REPORTED_NOT_PROCESSED, "Gone Missing");
+		storeRemainder(CONCEPTS_IN_FILE, CONCEPTS_TO_PROCESS, REPORTED_NOT_PROCESSED, "Gone Missing");
 		return batch;
 	}
 

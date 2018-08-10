@@ -165,20 +165,30 @@ public class ReportSheetManager implements RF2Constants {
 					.setValues(cells));
 		
 		if (!delayWrite) {
-			//How long is it since we last wrote to the file?  Write every 5 seconds
-			long secondsSinceLastWrite = (new Date().getTime()-lastWriteTime.getTime())/1000;
-			if (secondsSinceLastWrite > MIN_REQUEST_RATE) {
-				flush();
-			}
+			flushSoft();
 		}
 	}
-	
 	public void flush() throws TermServerScriptException {
+		flush(false);  //Not optional
+	}
+
+	public void flushSoft() throws TermServerScriptException {
+		flush(true); //optional
+	}
+	
+	private void flush(boolean optional) throws TermServerScriptException {
+		//Are we ready to flush?
+		//How long is it since we last wrote to the file?  Write every 5 seconds
+		long secondsSinceLastWrite = (new Date().getTime()-lastWriteTime.getTime())/1000;
+		if (optional && secondsSinceLastWrite < MIN_REQUEST_RATE) {
+			return;
+		}
 		//Execute update of data values
 		BatchUpdateValuesRequest body = new BatchUpdateValuesRequest()
 			.setValueInputOption(RAW)
 			.setData(dataToBeWritten);
 		try {
+			System.out.println(new Date() + " flushing to sheets");
 			sheetsService.spreadsheets().values().batchUpdate(sheet.getSpreadsheetId(),body)
 			.execute();
 		} catch (IOException e) {
@@ -212,4 +222,5 @@ public class ReportSheetManager implements RF2Constants {
 	public String getUrl() {
 		return sheet.getSpreadsheetUrl();
 	}
+
 }

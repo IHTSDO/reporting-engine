@@ -100,7 +100,30 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			}
 		}
 		addSummaryInformation("Tasks scheduled", batch.getTasks().size());
-		addSummaryInformation(CONCEPTS_PROCESSED, allComponents.size());
+		addSummaryInformation(CONCEPTS_TO_PROCESS, allComponents.size());
+		return batch;
+	}
+	
+	protected Batch formIntoGroupedBatch (List<List<Component>> allComponentList) throws TermServerScriptException {
+		Batch batch = new Batch(getScriptName());
+		int componentsToProcess = 0;
+		for (List<Component> thisSet : allComponentList) {
+			Task task = batch.addNewTask(author_reviewer);
+			if (thisSet.size() > 0) {
+				String lastIssue = thisSet.get(0).getIssues();
+				for (Component thisComponent : thisSet) {
+					if (task.size() >= taskSize ||
+							(groupByIssue && !lastIssue.equals(thisComponent.getIssues()))) {
+						task = batch.addNewTask(author_reviewer);
+					}
+					task.add(thisComponent);
+					componentsToProcess++;
+					lastIssue = thisComponent.getIssues();
+				}
+			}
+		}
+		addSummaryInformation("Tasks scheduled", batch.getTasks().size());
+		addSummaryInformation(CONCEPTS_TO_PROCESS, componentsToProcess);
 		return batch;
 	}
 
@@ -159,7 +182,8 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 				for (Component component : components) {
 					conceptInTask++;
 					processComponent(task, component, conceptInTask, xOfY);
-					flushFiles(false); //Update file after each component processed.
+					//Update file after each component processed - if data limits allow
+					flushFilesSoft();  //Soft flush is optional
 				}
 				
 				if (!dryRun) {
@@ -243,7 +267,6 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 				report(task, component, Severity.MEDIUM, ReportActionType.NO_CHANGE, "");
 			}
 			incrementSummaryInformation("Total changes made", changesMade);
-			flushFiles(false);
 		} catch (ValidationFailure f) {
 			report (f);
 		} catch (InterruptedException | TermServerScriptException e) {
@@ -519,7 +542,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	}
 	
 	protected int replaceParent(Task t, Concept c, Concept oldParent, Concept newParent) throws TermServerScriptException {
-		Relationship oldParentRel = new Relationship (c, IS_A, oldParent, UNGROUPED);
+		Relationship oldParentRel = oldParent == null? null : new Relationship (c, IS_A, oldParent, UNGROUPED);
 		Relationship newParentRel = new Relationship (c, IS_A, newParent, UNGROUPED);
 		return replaceParents(t, c, oldParentRel, newParentRel, null);
 	}
@@ -529,29 +552,43 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		return replaceParents(t, c, oldParentRel, newParentRel, additionalDetails);
 	}
 	
-	protected int replaceParents(Task task, Concept c, Relationship oldParentRel, Relationship newParentRel, Object[] additionalDetails) throws TermServerScriptException {
+	protected int replaceParents(Task t, Concept c, Relationship oldParentRel, Relationship newParentRel, Object[] additionalDetails) throws TermServerScriptException {
 		int changesMade = 0;
 		List<Relationship> parentRels = new ArrayList<Relationship> (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
 																	IS_A,
 																	ActiveState.ACTIVE));
 		for (Relationship parentRel : parentRels) {
 			if ((oldParentRel == null || parentRel.equals(oldParentRel)) && !parentRel.equals(newParentRel)) {
-				removeParentRelationship (task, parentRel, c, newParentRel.getTarget().toString(), additionalDetails);
-				changesMade++;
+				changesMade += removeParentRelationship (t, parentRel, c, newParentRel.getTarget().toString(), additionalDetails);
 			} 
 		}
 		
+		changesMade += addParent(t, c, newParentRel);
+		return changesMade;
+	}
+
+	protected int addParent(Task t, Concept c, Relationship newParentRel) throws TermServerScriptException {
 		//Do we need to add this new relationship?
 		if (!c.getParents(CharacteristicType.STATED_RELATIONSHIP).contains(newParentRel.getTarget())) {
 			Relationship thisNewParentRel = newParentRel.clone(null);
 			thisNewParentRel.setSource(c);
 			c.addRelationship(thisNewParentRel);
-			changesMade++;
+			report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, newParentRel.getTarget());
+			return CHANGE_MADE;
 		}
-		return changesMade;
+		return NO_CHANGES_MADE;
 	}
 
-	protected int removeParentRelationship(Task t, Relationship r, Concept c, String retained, Object[] additionalDetails) throws TermServerScriptException {
+	protected int removeParentRelationship(Task t, Relationship removeMe, Concept c, String retained, Object[] additionalDetails) throws TermServerScriptException {
+		//Does this concept in fact have this relationship to remove?
+		List<Relationship> matchingRels = c.getRelationships(removeMe, ActiveState.ACTIVE);
+		if (matchingRels.size() > 1) {
+			throw new IllegalStateException(c + " has multiple parent relationships to " + removeMe.getTarget());
+		} else if (matchingRels.size() == 0) {
+			return NO_CHANGES_MADE;
+		}
+		Relationship r = matchingRels.get(0);
+		
 		//Are we inactivating or deleting this relationship?
 		String msg;
 		ReportActionType action = ReportActionType.UNKNOWN;

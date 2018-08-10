@@ -76,6 +76,13 @@ public class Relationship extends Component implements RF2Constants, Comparable<
 	public Relationship(Concept type, Concept value) {
 		this.type = type;
 		this.target = value;
+		
+		//Default values
+		this.groupId = UNGROUPED;
+		this.active = true;
+		this.characteristicType = CharacteristicType.STATED_RELATIONSHIP;
+		this.modifier = Modifier.EXISTENTIAL;
+		this.moduleId = SCTID_CORE_MODULE;
 	}
 
 	public String getEffectiveTime() {
