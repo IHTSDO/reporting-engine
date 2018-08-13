@@ -1,0 +1,6 @@
+{
+  "name": "Wound of [ site ] (disorder)",
+  "documentation": "https://confluence.ihtsdotools.org/display/AUTHS/Wound+of+%5Bbody+structure%5D+%28disorder%29+-+In+progress",
+  "version": 1,
+  "logicalTemplate": "64572001 |Disease (disorder)|: {\n\t\t  [[~1..1]] 116676008 |Associated morphology (attribute)| = [[ +id ( << 13924000 |Wound (morphologic abnormality)|  ) @morphology]], [[~1..1]] 363698007 |Finding site (attribute)| = [[ +id( < 123037004 |Body structure (body structure)| ) @site]] }\n"
+}
