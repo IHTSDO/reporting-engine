@@ -134,18 +134,6 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		List<Component> allComponentsBeingProcessed = identifyComponentsToProcess();
 		return formIntoBatch(allComponentsBeingProcessed);
 	}
-
-	protected void saveConcept(Task t, Concept c, String info) throws TermServerScriptException {
-		try {
-			String conceptSerialised = gson.toJson(c);
-			debug ((dryRun?"Skipping update":"Updating state") + " of " + c + info);
-			if (!dryRun) {
-				tsClient.updateConcept(new JSONObject(conceptSerialised), t.getBranchPath());
-			}
-		} catch (Exception e) {
-			report(t, c, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
-		}
-	}
 	
 	protected void batchProcess(Batch batch) throws TermServerScriptException {
 		int currentTaskNum = 0;

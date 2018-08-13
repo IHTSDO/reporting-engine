@@ -280,7 +280,7 @@ public class DrugTermGenerator implements RF2Constants{
 				//if (!d.getTerm().equals(fsnCounterpart)) {
 					boolean isInactivated = removeDescription(c,d);
 					String msg = (isInactivated?"Inactivated redundant desc ":"Deleted redundant desc ") +  d;
-					report(t, c, Severity.LOW, ReportActionType.DESCRIPTION_REMOVED, msg);
+					report(t, c, Severity.LOW, ReportActionType.DESCRIPTION_INACTIVATED, msg);
 					changesMade++;
 				//}
 			}
@@ -308,7 +308,7 @@ public class DrugTermGenerator implements RF2Constants{
 				if (d.getTerm().equals(badTerm)) {
 					boolean isInactivated = removeDescription(c,d);
 					String msg = (isInactivated?"Inactivated bad desc ":"Deleted bad desc ") +  d;
-					report(t, c, Severity.LOW, ReportActionType.DESCRIPTION_REMOVED, msg);
+					report(t, c, Severity.LOW, ReportActionType.DESCRIPTION_INACTIVATED, msg);
 					changesMade++;
 				}
 			}
@@ -420,7 +420,7 @@ public class DrugTermGenerator implements RF2Constants{
 		String msg = (isInactivated?"Inactivated desc ":"Deleted desc ") +  removing;
 		changesMade++;
 		Severity severity = removing.getType().equals(DescriptionType.FSN)?Severity.MEDIUM:Severity.LOW;
-		report(t, c, severity, ReportActionType.DESCRIPTION_REMOVED, msg);
+		report(t, c, severity, ReportActionType.DESCRIPTION_INACTIVATED, msg);
 		
 		if (doReplacement) {
 			report(t, c, Severity.LOW, ReportActionType.DESCRIPTION_ADDED, replacement);

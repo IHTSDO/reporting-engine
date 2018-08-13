@@ -42,7 +42,7 @@ public class RemoveRedundantRelationships extends BatchFix implements RF2Constan
 		int changesMade = removeRedundantRelationships(task, loadedConcept);
 		if (changesMade > 0) {
 			try {
-				saveConcept(task, loadedConcept, info);
+				updateConcept(task, loadedConcept, info);
 			} catch (Exception e) {
 				report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
 			}

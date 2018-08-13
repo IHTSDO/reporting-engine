@@ -322,7 +322,7 @@ public class Rf2Player extends BatchFix {
 				}
 				loadedDescription.setInactivationIndicator(i);
 				loadedDescription.setActive(false);
-				report (task, loadedConcept, Severity.LOW, ReportActionType.DESCRIPTION_REMOVED, loadedDescription.toString());
+				report (task, loadedConcept, Severity.LOW, ReportActionType.DESCRIPTION_INACTIVATED, loadedDescription.toString());
 			}
 		}
 	}
