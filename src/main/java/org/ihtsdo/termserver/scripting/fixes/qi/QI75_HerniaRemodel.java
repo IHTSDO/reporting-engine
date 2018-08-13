@@ -109,9 +109,7 @@ public class QI75_HerniaRemodel extends BatchFix {
 				msg = "Did not find heria called '" + searchTerm + "'";
 			} else {
 				Relationship r = new Relationship(c, DUE_TO, target, UNGROUPED);
-				c.addRelationship(r);
-				report(t,c,Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, r);
-				return CHANGE_MADE;
+				return addRelationship(t, c, r);
 			}
 		}
 		report(t,c,Severity.HIGH, ReportActionType.VALIDATION_CHECK, msg);

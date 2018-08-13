@@ -681,7 +681,15 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		return replacement;
 	}
 	
+	protected int addRelationship(Task t, Concept c, Relationship r) throws TermServerScriptException {
+		return replaceRelationship(t, c, r.getType(), r.getTarget(), r.getGroupId(), false, true); //Allow other relationships of the same type
+	}
+	
 	protected int replaceRelationship(Task t, Concept c, Concept type, Concept value, int groupId, boolean ensureTypeUnique) throws TermServerScriptException {
+		return replaceRelationship(t, c, type, value, groupId, false, false); //don't allow other relationships of the same type
+	}
+	
+	protected int replaceRelationship(Task t, Concept c, Concept type, Concept value, int groupId, boolean ensureTypeUnique, boolean allowSameType) throws TermServerScriptException {
 		int changesMade = 0;
 		
 		if (type == null || value == null) {
@@ -704,6 +712,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			report (t, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Found two active relationships for " + type + " -> " + value);
 			return NO_CHANGES_MADE;
 		} else if (rels.size() == 1) {
+			report (t, c, Severity.LOW, ReportActionType.NO_CHANGE, "Active relationship already exists: " + type + " -> " + value);
 			return NO_CHANGES_MADE;
 		}
 		
@@ -722,14 +731,17 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		
 		//Or do we need to create and add?
 		//Is this type unique for the concept?  Inactivate any others if so
+		//Unless we're allowing multiple rels of the same type
 		//Otherwise just remove other relationships of this type in the target group
-		rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
-				type,
-				ActiveState.ACTIVE);
-		for (Relationship rel : rels) {
-			if (ensureTypeUnique || rel.getGroupId() == groupId) {
-				removeRelationship(t,c,rel);
-				changesMade++;
+		if (!allowSameType) {
+			rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
+					type,
+					ActiveState.ACTIVE);
+			for (Relationship rel : rels) {
+				if (ensureTypeUnique || rel.getGroupId() == groupId) {
+					removeRelationship(t,c,rel);
+					changesMade++;
+				}
 			}
 		}
 		
