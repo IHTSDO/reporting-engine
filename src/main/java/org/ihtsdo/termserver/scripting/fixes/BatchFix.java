@@ -11,11 +11,8 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
-import org.ihtsdo.termserver.scripting.TermServerScript.ReportActionType;
-import org.ihtsdo.termserver.scripting.TermServerScript.Severity;
 import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.InactivationIndicator;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import us.monoid.json.*;
@@ -118,18 +115,6 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	protected Batch formIntoBatch() throws TermServerScriptException {
 		List<Component> allComponentsBeingProcessed = identifyComponentsToProcess();
 		return formIntoBatch(allComponentsBeingProcessed);
-	}
-
-	protected void saveConcept(Task t, Concept c, String info) {
-		try {
-			String conceptSerialised = gson.toJson(c);
-			debug ((dryRun?"Skipping update":"Updating state") + " of " + c + info);
-			if (!dryRun) {
-				tsClient.updateConcept(new JSONObject(conceptSerialised), t.getBranchPath());
-			}
-		} catch (Exception e) {
-			report(t, c, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
-		}
 	}
 	
 	protected void batchProcess(Batch batch) throws TermServerScriptException {

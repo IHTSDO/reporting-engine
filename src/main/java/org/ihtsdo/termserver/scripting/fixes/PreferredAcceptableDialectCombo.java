@@ -55,7 +55,7 @@ public class PreferredAcceptableDialectCombo extends BatchFix implements RF2Cons
 		int changesMade = normalizeAcceptability(t,loadedConcept);
 		if (changesMade > 0) {
 			try {
-				saveConcept(t, loadedConcept, info);
+				updateConcept(t, loadedConcept, info);
 			} catch (Exception e) {
 				report(t, c, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
 			}

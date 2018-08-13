@@ -74,7 +74,7 @@ public class CTR19_CaseSensitivity extends BatchFix implements RF2Constants{
 		int changesMade = 0;
 		
 		if (c.getConceptId().equals("106783002")) {
-			debug ("Debug Me!");
+			//debug ("Debug Me!");
 		}
 		//First given that FSN is <Taxon> X, what is X?
 		String X = findX(c.getFsn());
