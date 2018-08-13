@@ -150,7 +150,9 @@ public class QI75_HerniaRemodel extends BatchFix {
 				if (isGangrene) {
 					groupThree.add(c);
 				} else {
-					groupOne.add(c);
+					//Update - exclude 'just' Gangrene from this work
+					report(null, c, Severity.NONE, ReportActionType.NO_CHANGE, "Skipping hernia with gangrene");
+					//groupOne.add(c);
 				}
 			} else if (isGangrene) {
 				groupTwo.add(c);
