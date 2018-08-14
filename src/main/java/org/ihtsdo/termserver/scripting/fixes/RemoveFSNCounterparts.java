@@ -73,7 +73,7 @@ public class RemoveFSNCounterparts extends BatchFix implements RF2Constants{
 		List<Concept> processMe = new ArrayList<>();
 		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
 			if (c.getConceptId().equals("317265007")) {
-				debug("debug here!");
+				//debug("debug here!");
 			}
 			if (c.getFsn().contains("(clinical drug)") && findCounterpart(c) != null) {
 				processMe.add(c);

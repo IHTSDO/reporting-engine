@@ -15,6 +15,7 @@ import us.monoid.web.Resty;
 public class AuthoringServicesClient {
 	private final Resty resty;
 	private final String serverUrl;
+	private final String cookie;
 	private static final String apiRoot = "authoring-services/";
 	private static final String ALL_CONTENT_TYPE = "*/*";
 	private static final String JSON_CONTENT_TYPE = "application/json";
@@ -29,9 +30,15 @@ public class AuthoringServicesClient {
 
 	public AuthoringServicesClient(String serverUrl, String cookie) {
 		this.serverUrl = serverUrl;
+		this.cookie = cookie;
 		resty = new Resty(new RestyOverrideAccept(ALL_CONTENT_TYPE));
-		resty.withHeader("Cookie", cookie);
+		resty.withHeader("Cookie", this.cookie);
+		resty.withHeader("Connection", "close");
 		resty.authenticate(this.serverUrl, null,null);
+	}
+	
+	public AuthoringServicesClient clone () {
+		return new AuthoringServicesClient (this.serverUrl, this.cookie);
 	}
 
 	public String createTask(String projectKey, String summary, String description) throws Exception {

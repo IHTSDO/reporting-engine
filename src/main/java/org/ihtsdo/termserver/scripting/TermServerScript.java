@@ -103,12 +103,11 @@ public abstract class TermServerScript implements RF2Constants {
 		this.authenticatedCookie = authenticatedCookie;
 	}
 	
-	protected static String[] envKeys = new String[] {"local","dev","uat","flat-uat","prod","dev","uat","prod"};
+	protected static String[] envKeys = new String[] {"local","dev","uat","prod","dev","uat","prod"};
 
 	protected static String[] environments = new String[] {	"http://localhost:8080/",
 															"https://dev-authoring.ihtsdotools.org/",
 															"https://uat-authoring.ihtsdotools.org/",
-															"https://uat-flat-termserver.ihtsdotools.org/",
 															"https://prod-authoring.ihtsdotools.org/",
 															"https://dev-ms-authoring.ihtsdotools.org/",
 															"https://uat-ms-authoring.ihtsdotools.org/",
