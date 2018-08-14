@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.client.AuthoringServicesClient;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
@@ -40,18 +41,36 @@ public class CTR19_CaseSensitivity extends BatchFix implements RF2Constants{
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
+	public static void main(String[] args) throws Exception {
 		CTR19_CaseSensitivity fix = new CTR19_CaseSensitivity(null);
 		try {
 			fix.selfDetermining = true;
 			fix.init(args);
-			fix.loadProjectSnapshot(false); //Load all descriptions
-			fix.batchProcess(fix.formIntoBatch());
+			fix.testAS();
+			//fix.loadProjectSnapshot(false); //Load all descriptions
+			//fix.batchProcess(fix.formIntoBatch());
 		} finally {
 			fix.finish();
 		}
 	}
 	
+	private void testAS() throws Exception {
+		//AuthoringServicesClient testClient = new AuthoringServicesClient ("https://webhook.site/006a59c3-c39a-430b-8239-95141732190a","yummy");
+		//AuthoringServicesClient testClient = new AuthoringServicesClient ("http://localhost:8081/","p3BlUbLEq2Q0snA0pY5mDQ00");
+		AuthoringServicesClient testClient = new AuthoringServicesClient ("https://dev-authoring.ihtsdotools.org/","dev-ims-ihtsdo=p3BlUbLEq2Q0snA0pY5mDQ00");
+		try {
+			testClient.updateTask("DRUG2017", "DRUG2017-259", null, "foo desc", null);
+		} catch (Exception e) {
+			debug ("Exception " + e);
+		}
+		
+		try {
+			testClient.updateTask("DRUG2017", "DRUG2017-259", null, "bar desc", null);
+		} catch (Exception e) {
+			debug ("Exception " + e);
+		}
+	}
+
 	protected void init(String[] args) throws TermServerScriptException, IOException {
 		super.init(args);
 	}
