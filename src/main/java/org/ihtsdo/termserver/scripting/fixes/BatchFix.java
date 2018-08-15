@@ -175,8 +175,8 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 				}
 				
 				if (!dryRun) {
-					populateEditAndDescription(task);
-					assignTaskToAuthor(task);
+					populateEditPanel(task);
+					updateTask(task);
 					
 					Classification classification = null;
 					if (classifyTasks) {
@@ -225,11 +225,14 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 					taskCreated = true;
 				} catch (Exception e) {
 					taskCreationAttempts++;
-					scaClient.deleteTask(project.getKey(), task.getKey(), true);  //Don't worry if deletion fails
+					try {
+						scaClient.deleteTask(project.getKey(), task.getKey(), true);  //Don't worry if deletion fails
+					} catch (Exception e2) {}
+					
 					if (taskCreationAttempts >= 3) {
 						throw new TermServerScriptException("Maxed out failure attempts", e);
 					}
-					warn ("Branch creation failed (" + e.getMessage() + "), retrying...");
+					warn ("Task creation failed (" + e.getMessage() + "), retrying...");
 				}
 			}
 		} else {
@@ -269,15 +272,13 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		report(f.getTask(), f.getConcept(), f.getSeverity(), f.getReportActionType(), f.getMessage());
 	}
 
-	private void populateEditAndDescription(Task task) throws TermServerScriptException {
+	private void populateEditPanel(Task task) throws TermServerScriptException {
 		//Prefill the Edit Panel
 		try {
 			if (populateEditPanel) {
 				scaClient.setEditPanelUIState(project.getKey(), task.getKey(), task.toQuotedList());
 			}
 			scaClient.setSavedListUIState(project.getKey(), task.getKey(), convertToSavedListJson(task));
-			String taskDescription = populateTaskDescription ? task.getDescriptionHTML() : "Batch Updates - see spreadsheet for details";
-			scaClient.updateTask(project.getKey(), task.getKey(), null, taskDescription, null);
 		} catch (Exception e) {
 			String msg = "Failed to preload edit-panel ui state: " + e.getMessage();
 			warn (msg);
@@ -285,25 +286,22 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		}
 	}
 	
-	private void assignTaskToAuthor(Task task) throws Exception {
+	private void updateTask(Task task) throws Exception {
+		
+		String taskDescription = populateTaskDescription ? task.getDescriptionHTML() : "Batch Updates - see spreadsheet for details";
+		
 		//Reassign the task to the intended author.  Set at task or processing level
 		String taskAuthor = task.getAssignedAuthor();
 		if (taskAuthor == null) {
 			taskAuthor = targetAuthor;
 		}
+		
 		if (taskAuthor != null && !taskAuthor.isEmpty()) {
-			debug("Assigning " + task + " to " + taskAuthor);
-			scaClient.updateTask(project.getKey(), task.getKey(), null, null, taskAuthor);
+			String reviewMsg = task.getReviewer() == null? "" : " into review for " + task.getReviewer(); 
+			debug("Assigning " + task + " to " + taskAuthor + reviewMsg);
 		}
 		
-		String taskReviewer = task.getReviewer();
-		if (taskReviewer != null && !taskReviewer.isEmpty()) {
-			debug("Assigning " + task + " to reviewer " + taskReviewer);
-			scaClient.putTaskIntoReview(project.getKey(), task.getKey(), taskReviewer);
-		} else if (putTaskIntoReview) {
-			debug("Putting " + task + " into review");
-			scaClient.putTaskIntoReview(project.getKey(), task.getKey(), null);
-		}
+		scaClient.updateTask(project.getKey(), task.getKey(), null, taskDescription, taskAuthor, task.getReviewer());
 	}
 
 	//Override if working with Refsets or Descriptions directly
