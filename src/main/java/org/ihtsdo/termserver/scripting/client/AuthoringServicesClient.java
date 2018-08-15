@@ -4,15 +4,23 @@ import java.io.IOException;
 
 import org.ihtsdo.termserver.scripting.domain.Project;
 import org.ihtsdo.termserver.scripting.domain.Task;
+import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.http.*;
+import org.springframework.http.converter.json.GsonHttpMessageConverter;
+import org.springframework.web.client.RestTemplate;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
 
+import sun.util.logging.PlatformLogger;
 import us.monoid.json.JSONObject;
 import us.monoid.web.JSONResource;
 import us.monoid.web.Resty;
 
 public class AuthoringServicesClient {
+	RestTemplate restTemplate;
+	HttpHeaders headers;
 	private final Resty resty;
 	private final String serverUrl;
 	private final String cookie;
@@ -24,6 +32,7 @@ public class AuthoringServicesClient {
 	static {
 		GsonBuilder gsonBuilder = new GsonBuilder();
 		gsonBuilder.setPrettyPrinting();
+		gsonBuilder.disableHtmlEscaping();
 		gsonBuilder.excludeFieldsWithoutExposeAnnotation();
 		gson = gsonBuilder.create();
 	}
@@ -35,6 +44,20 @@ public class AuthoringServicesClient {
 		resty.withHeader("Cookie", this.cookie);
 		resty.withHeader("Connection", "close");
 		resty.authenticate(this.serverUrl, null,null);
+		
+		//sun.util.logging.PlatformLogger.getLogger("sun.net.www.protocol.http.HttpURLConnection").setLevel(PlatformLogger.Level.ALL);
+		//sun.util.logging.PlatformLogger.getLogger("sun.net.www.protocol.https.DelegateHttpsURLConnection").setLevel(PlatformLogger.Level.ALL);
+	
+		
+		headers = new HttpHeaders();
+		headers.add("Cookie", this.cookie );
+		headers.setContentType(MediaType.APPLICATION_JSON);
+		
+		restTemplate = new RestTemplateBuilder()
+				.rootUri(this.serverUrl)
+				.additionalMessageConverters(new GsonHttpMessageConverter())
+				.errorHandler(new ExpressiveErrorHandler())
+				.build();
 	}
 	
 	public AuthoringServicesClient clone () {
@@ -43,11 +66,18 @@ public class AuthoringServicesClient {
 
 	public String createTask(String projectKey, String summary, String description) throws Exception {
 		String endPoint = serverUrl + apiRoot + "projects/" + projectKey + "/tasks";
-		JSONObject requestJson = new JSONObject();
+		/*JSONObject requestJson = new JSONObject();
 		requestJson.put("summary", summary);
 		requestJson.put("description", description);
 		JSONResource response = resty.json(endPoint, RestyHelper.content(requestJson, JSON_CONTENT_TYPE));
-		return response.get("key").toString();
+		*/
+		JsonObject requestJson = new JsonObject();
+		requestJson.addProperty("summary", summary);
+		requestJson.addProperty("description", description);
+		HttpEntity<Object> requestEntity = new HttpEntity<Object>(requestJson, headers);
+		Task task = restTemplate.postForObject(endPoint, requestEntity, Task.class);
+		return task.getKey();
+		//return response.get("key").toString();
 	}
 
 	public void setEditPanelUIState(String project, String taskKey, String quotedList) throws IOException {
@@ -66,30 +96,47 @@ public class AuthoringServicesClient {
 	public String updateTask(String project, String taskKey, String summary, String description, String author, String reviewer) throws Exception {
 		String endPoint = serverUrl + apiRoot + "projects/" + project + "/tasks/" + taskKey;
 		
-		JSONObject requestJson = new JSONObject();
+		//JSONObject requestJson = new JSONObject();
+		JsonObject requestJson = new JsonObject();
 		if (summary != null) {
-			requestJson.put("summary", summary);
+			//requestJson.put("summary", summary);
+			requestJson.addProperty("summary", summary);
 		}
 		
 		if (description != null) {
-			requestJson.put("description", description);
+			//requestJson.put("description", description);
+			requestJson.addProperty("description", description);
 		}
 		
 		if (author != null) {
-			JSONObject assigneeJson = new JSONObject();
-			assigneeJson.put("username", author);
-			requestJson.put("assignee", assigneeJson);
+			//JSONObject assigneeJson = new JSONObject();
+			JsonObject assigneeJson = new JsonObject();
+			//assigneeJson.put("username", author);
+			//requestJson.put("assignee", assigneeJson);
+			assigneeJson.addProperty("username", author);
+			requestJson.add("assignee", assigneeJson);
 		}
 		
 		if (reviewer != null) {
-			requestJson.put("status", "IN_REVIEW");
-			JSONObject assigneeJson = new JSONObject();
-			assigneeJson.put("username", reviewer);
-			requestJson.put("reviewer", assigneeJson);
+			//requestJson.put("status", "IN_REVIEW");
+			requestJson.addProperty("status", "IN_REVIEW");
+			//JSONObject reviewerJson = new JSONObject();
+			JsonObject reviewerJson = new JsonObject();
+			//reviewerJson.put("username", reviewer);
+			//requestJson.put("reviewer", reviewerJson);
+			reviewerJson.addProperty("username", reviewer);
+			requestJson.add("reviewer", reviewerJson);
 		}
 		
-		JSONResource response = resty.json(endPoint, Resty.put(RestyHelper.content(requestJson, JSON_CONTENT_TYPE)));
-		return response.get("key").toString();
+		HttpEntity<Object> requestEntity = new HttpEntity<Object>(requestJson, headers);
+		restTemplate.put(endPoint, requestEntity);
+		//   HttpEntity<Shop[]> response = restTemplate.exchange(url, HttpMethod.PUT, requestEntity, Shop[].class, param);
+
+		return taskKey;
+		//ResponseEntity<String> response = restTemplate.put(endPoint, entity);
+		//return reponse.
+		//JSONResource response = resty.json(endPoint, Resty.put(RestyHelper.content(requestJson, JSON_CONTENT_TYPE)));
+		//return response.get("key").toString();
 	}
 	
 	public void deleteTask(String project, String taskKey, boolean optional) throws SnowOwlClientException {

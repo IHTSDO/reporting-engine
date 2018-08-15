@@ -206,11 +206,14 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 					taskCreated = true;
 				} catch (Exception e) {
 					taskCreationAttempts++;
-					scaClient.deleteTask(project.getKey(), task.getKey(), true);  //Don't worry if deletion fails
+					try {
+						scaClient.deleteTask(project.getKey(), task.getKey(), true);  //Don't worry if deletion fails
+					} catch (Exception e2) {}
+					
 					if (taskCreationAttempts >= 3) {
 						throw new TermServerScriptException("Maxed out failure attempts", e);
 					}
-					warn ("Branch creation failed (" + e.getMessage() + "), retrying...");
+					warn ("Task creation failed (" + e.getMessage() + "), retrying...");
 				}
 			}
 		} else {
