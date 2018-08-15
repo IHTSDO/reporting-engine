@@ -63,7 +63,7 @@ public class AuthoringServicesClient {
 		resty.json(endPoint, RestyHelper.content(items, JSON_CONTENT_TYPE));
 	}
 	
-	public String updateTask(String project, String taskKey, String summary, String description, String username) throws Exception {
+	public String updateTask(String project, String taskKey, String summary, String description, String author, String reviewer) throws Exception {
 		String endPoint = serverUrl + apiRoot + "projects/" + project + "/tasks/" + taskKey;
 		
 		JSONObject requestJson = new JSONObject();
@@ -75,29 +75,23 @@ public class AuthoringServicesClient {
 			requestJson.put("description", description);
 		}
 		
-		if (username != null) {
+		if (author != null) {
 			JSONObject assigneeJson = new JSONObject();
-			assigneeJson.put("username", username);
+			assigneeJson.put("username", author);
 			requestJson.put("assignee", assigneeJson);
 		}
-		JSONResource response = resty.json(endPoint, Resty.put(RestyHelper.content(requestJson, JSON_CONTENT_TYPE)));
-		return response.get("key").toString();
-	}
-	
-	public String putTaskIntoReview(String project, String taskKey, String reviewer) throws Exception {
-		String endPoint = serverUrl + apiRoot + "projects/" + project + "/tasks/" + taskKey;
-		JSONObject requestJson = new JSONObject();
-		requestJson.put("status", "IN_REVIEW");
-
+		
 		if (reviewer != null) {
+			requestJson.put("status", "IN_REVIEW");
 			JSONObject assigneeJson = new JSONObject();
 			assigneeJson.put("username", reviewer);
 			requestJson.put("reviewer", assigneeJson);
 		}
+		
 		JSONResource response = resty.json(endPoint, Resty.put(RestyHelper.content(requestJson, JSON_CONTENT_TYPE)));
 		return response.get("key").toString();
 	}
-
+	
 	public void deleteTask(String project, String taskKey, boolean optional) throws SnowOwlClientException {
 		String endPoint = serverUrl + apiRoot + "projects/" + project + "/tasks/" + taskKey;
 		try {
