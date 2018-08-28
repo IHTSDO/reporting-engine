@@ -23,6 +23,7 @@ public class RemoveFSNCounterparts extends BatchFix implements RF2Constants{
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
 		RemoveFSNCounterparts fix = new RemoveFSNCounterparts(null);
 		try {
+			fix.populateEditPanel = false;
 			fix.selfDetermining = true;
 			fix.init(args);
 			fix.loadProjectSnapshot(false); 

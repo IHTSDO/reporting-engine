@@ -54,7 +54,6 @@ public class CTR19_CaseSensitivity extends BatchFix implements RF2Constants{
 	}
 	
 	private void testAS() throws Exception {
-		
 		//AuthoringServicesClient testClient = new AuthoringServicesClient ("https://webhook.site/006a59c3-c39a-430b-8239-95141732190a","yummy");
 		//AuthoringServicesClient testClient = new AuthoringServicesClient ("http://localhost/","p3BlUbLEq2Q0snA0pY5mDQ00");
 		//AuthoringServicesClient testClient = new AuthoringServicesClient ("https://dev-authoring.ihtsdotools.org/","dev-ims-ihtsdo=p3BlUbLEq2Q0snA0pY5mDQ00");
@@ -67,7 +66,7 @@ public class CTR19_CaseSensitivity extends BatchFix implements RF2Constants{
 		
 		try {
 			//testClient = new AuthoringServicesClient ("https://dev-authoring.ihtsdotools.org/","dev-ims-ihtsdo=p3BlUbLEq2Q0snA0pY5mDQ00");
-			testClient = testClient.clone();
+			//testClient = testClient.clone();
 			testClient.updateTask("DRUG2017", "DRUG2017-259", null, "bar desc", null, null);
 		} catch (Exception e) {
 			debug ("Exception " + e);

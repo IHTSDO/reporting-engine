@@ -13,7 +13,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 
-import sun.util.logging.PlatformLogger;
 import us.monoid.json.JSONObject;
 import us.monoid.web.JSONResource;
 import us.monoid.web.Resty;
@@ -47,7 +46,6 @@ public class AuthoringServicesClient {
 		
 		//sun.util.logging.PlatformLogger.getLogger("sun.net.www.protocol.http.HttpURLConnection").setLevel(PlatformLogger.Level.ALL);
 		//sun.util.logging.PlatformLogger.getLogger("sun.net.www.protocol.https.DelegateHttpsURLConnection").setLevel(PlatformLogger.Level.ALL);
-	
 		
 		headers = new HttpHeaders();
 		headers.add("Cookie", this.cookie );
@@ -58,14 +56,6 @@ public class AuthoringServicesClient {
 				.additionalMessageConverters(new GsonHttpMessageConverter())
 				.errorHandler(new ExpressiveErrorHandler())
 				.build();
-	}
-	
-	public AuthoringServicesClient clone () {
-		return new AuthoringServicesClient (this.serverUrl, this.cookie);
-	}
-	
-	public AuthoringServicesClient clone () {
-		return new AuthoringServicesClient (this.serverUrl, this.cookie);
 	}
 
 	public String createTask(String projectKey, String summary, String description) throws Exception {
