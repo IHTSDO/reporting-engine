@@ -7,6 +7,7 @@ import java.util.Set;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 /**
@@ -15,11 +16,13 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * Optionally only report the first description matched for each concept
  * 
  * CTR-19 Match organism taxon
+ * 
+ * MAINT-224 Check for full stop in descriptions other than text definitions
  */
 public class TermContainsXReport extends TermServerReport {
 	
 	//String[] textsToMatch = new String[] {"remission", "diabet" };
-	String[] textsToMatch = new String[] { "Clade","Class","Division",
+	/*String[] textsToMatch = new String[] { "Clade","Class","Division",
 								"Domain","Family","Genus","Infraclass",
 								"Infraclass","Infrakingdom","Infraorder",
 								"Infraorder","Kingdom","Order","Phylum",
@@ -27,15 +30,17 @@ public class TermContainsXReport extends TermServerReport {
 								"Subfamily","Subgenus","Subkingdom",
 								"Suborder","Subphylum","Subspecies",
 								"Superclass","Superdivision","Superfamily",
-								"Superkingdom","Superorder"};
+								"Superkingdom","Superorder"};*/
+	String[] textsToMatch = new String[] {"." };
 	boolean reportConceptOnceOnly = true;
-	Concept subHierarchy = ORGANISM;
+	//Concept subHierarchy = ORGANISM;
+	Concept subHierarchy = ROOT_CONCEPT;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		TermContainsXReport report = new TermContainsXReport();
 		try {
 			//report.headers="Concept, FSN, TermMatched, TopLevelHierarchy, SubHierarchy, SpecificHierarchy";
-			report.additionalReportColumns = "FSN, TermMatched, Case, SubHierarchy, SubSubHierarchy";
+			report.additionalReportColumns = "FSN, TermMatched, MatchedIn, Case, SubHierarchy, SubSubHierarchy";
 			report.init(args);
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.reportDescriptionContainsX();
@@ -52,7 +57,7 @@ public class TermContainsXReport extends TermServerReport {
 		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
 			if (c.isActive()) {
 				//for (Description d : c.getDescriptions(Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE)) {
-				//for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 					boolean reported = false;
 					for (String matchText : textsToMatch) {
 						//Wrap fsn with a space to ensure we can do whole word matches, even with 
@@ -60,13 +65,13 @@ public class TermContainsXReport extends TermServerReport {
 						//String fsn = " " + c.getFsn().toLowerCase();
 						//String match = " " + matchText.toLowerCase() + " ";
 						
-						if (c.getFsn().toLowerCase().startsWith(matchText.toLowerCase())) {
+						//if (c.getFsn().toLowerCase().startsWith(matchText.toLowerCase())) {
 						//if (fsn.contains(match)) {
-						//if (d.getTerm().toLowerCase().contains(matchText.toLowerCase())) {
+						if (d.getTerm().toLowerCase().contains(matchText.toLowerCase())) {
 							//String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
 							String[] hiearchies = getHierarchies(c);
 							String cs = SnomedUtils.translateCaseSignificanceFromEnum(c.getFSNDescription().getCaseSignificance());
-							report(c, matchText, cs/*hiearchies[0]*/, hiearchies[1], hiearchies[2]);
+							report(c, matchText, d.getTerm(), cs/*hiearchies[0]*/, hiearchies[1], hiearchies[2]);
 							reported = true;
 							incrementSummaryInformation("Matched " + matchText);
 							//incrementSummaryInformation( "Tag: " + semTag);
@@ -75,7 +80,7 @@ public class TermContainsXReport extends TermServerReport {
 					if (reported && reportConceptOnceOnly) {
 						continue nextConcept;
 					}
-				//}
+				}
 			}
 		}
 		
