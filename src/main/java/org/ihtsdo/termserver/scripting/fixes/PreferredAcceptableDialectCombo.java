@@ -14,6 +14,7 @@ import org.ihtsdo.termserver.scripting.util.*;
 /*
  * SUBST-226 PTs that are preferred in one dialect should be acceptable in the other
  * So P/N will become P/A
+ * UPDATE:  Only run against substances that are used as ingredients in products
 */
 public class PreferredAcceptableDialectCombo extends BatchFix implements RF2Constants{
 	
@@ -21,6 +22,7 @@ public class PreferredAcceptableDialectCombo extends BatchFix implements RF2Cons
 	String[] exclusions = new String[] { "312435005 |Industrial and household substance (substance)|",
 										"762766007 |Edible substance (substance)|"};
 	Set<Concept> allExclusions; 
+	Set<Concept> substancesUsedInProducts;
 	
 	protected PreferredAcceptableDialectCombo(BatchFix clone) {
 		super(clone);
@@ -46,6 +48,19 @@ public class PreferredAcceptableDialectCombo extends BatchFix implements RF2Cons
 		for (String exclusion : exclusions) {
 			Concept subHierarchy = gl.getConcept(exclusion);
 			allExclusions.addAll(subHierarchy.getDescendents(NOT_SET));
+		}
+		getSubstancesUsedInProducts();
+	}
+	
+	private void getSubstancesUsedInProducts() throws TermServerScriptException {
+		substancesUsedInProducts = new HashSet<>();
+		for (Concept product : PHARM_BIO_PRODUCT.getDescendents(NOT_SET)) {
+			for (Relationship r : product.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE)) {
+				substancesUsedInProducts.add(r.getTarget());
+			}
+			for (Relationship r : product.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HAS_PRECISE_INGRED, ActiveState.ACTIVE)) {
+				substancesUsedInProducts.add(r.getTarget());
+			}
 		}
 	}
 
@@ -89,7 +104,7 @@ public class PreferredAcceptableDialectCombo extends BatchFix implements RF2Cons
 		List<Component> processMe = new ArrayList<Component>();
 		nextConcept:
 		for (Concept c : gl.getConcept(subHierarchy).getDescendents(NOT_SET)) {
-			if (allExclusions.contains(c)) {
+			if (allExclusions.contains(c) || !substancesUsedInProducts.contains(c)) {
 				continue;
 			}
 			if (c.getConceptId().equals("126071000")) {
