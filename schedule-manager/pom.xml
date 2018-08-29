@@ -11,58 +11,71 @@
 	</parent>
 
 	<dependencies>
-	
-		<!-- Spring boot -->
+		<dependency>
+			<groupId>org.ihtsdo.otf.common</groupId>
+			<artifactId>otf-common</artifactId>
+			<version>1.8.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>org.ihtsdo.otf</groupId>
+			<artifactId>ihtsdo-spring-sso</artifactId>
+			<version>2.0.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.ihtsdo.otf</groupId>
+			<artifactId>spellcheck-core</artifactId>
+			<version>1.1.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.snomed.otf</groupId>
+			<artifactId>snomed-boot</artifactId>
+			<version>1.2.0</version>
+		</dependency>
+		<dependency>
+			<groupId>io.kaicode</groupId>
+			<artifactId>branch-path-uri-rewrite-filter</artifactId>
+			<version>1.0.1</version>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-activemq</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-websocket</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.activemq</groupId>
+			<artifactId>activemq-broker</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
-
-		<!-- Swagger API Docs -->
 		<dependency>
-			<groupId>io.springfox</groupId>
-			<artifactId>springfox-swagger2</artifactId>
-			<version>2.5.0</version>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>io.springfox</groupId>
-			<artifactId>springfox-swagger-ui</artifactId>
-			<version>2.5.0</version>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
 		</dependency>
-		
-		<!-- Google Sheet API -->
-		<dependency>
-			<groupId>com.google.api-client</groupId>
-			<artifactId>google-api-client</artifactId>
-			<version>1.23.0</version>
-		</dependency>
-		<dependency>
-			<groupId>com.google.oauth-client</groupId>
-			<artifactId>google-oauth-client-jetty</artifactId>
-			<version>1.23.0</version>
-		</dependency>
-		<dependency>
-			<groupId>com.google.apis</groupId>
-			<artifactId>google-api-services-sheets</artifactId>
-			<version>v4-rev531-1.18.0-rc</version>
-		</dependency>
-		<dependency>
-			<groupId>com.google.apis</groupId>
-			<artifactId>google-api-services-drive</artifactId>
-			<version>v3-rev124-1.23.0</version>
-		</dependency>
-		
-		<!-- JIRA -->
 		<dependency>
 			<groupId>net.rcarz</groupId>
 			<artifactId>jira-client</artifactId>
 			<version>0.6.1-IHTSDO</version>
 		</dependency>
 		<dependency>
+			<!-- For Jira OAuth -->
 			<groupId>com.google.gdata</groupId>
 			<artifactId>core</artifactId>
 			<version>1.47.1</version>
@@ -74,85 +87,30 @@
 			</exclusions>
 		</dependency>
 		<dependency>
-			<groupId>net.oauth.core</groupId>
-			<artifactId>oauth</artifactId>
-			<version>20100527</version>
+			<groupId>io.springfox</groupId>
+			<artifactId>springfox-swagger2</artifactId>
+			<version>${springfox-swagger.version}</version>
 		</dependency>
-		<!-- Test -->
 		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
+			<groupId>io.springfox</groupId>
+			<artifactId>springfox-swagger-ui</artifactId>
+			<version>${springfox-swagger.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.12</version>
 			<scope>test</scope>
 		</dependency>
-
 		<dependency>
-			<groupId>org.snomed.languages</groupId>
-			<artifactId>snomed-template-parser</artifactId>
-			<version>0.1.0-SNAPSHOT</version>
-			<exclusions>
-				<exclusion>
-					<groupId>org.slf4j</groupId>
-					<artifactId>slf4j-log4j12</artifactId>
-				</exclusion>
-			</exclusions> 
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-csv</artifactId>
+			<version>1.2</version>
 		</dependency>
 		<dependency>
-			<groupId>commons-io</groupId>
-			<artifactId>commons-io</artifactId>
-			<version>2.5</version>
-		</dependency>
-		<dependency>
-			<groupId>commons-validator</groupId>
-			<artifactId>commons-validator</artifactId>
-			<version>1.5.1</version>
-		</dependency>
-		<dependency>
-			<groupId>commons-lang</groupId>
-			<artifactId>commons-lang</artifactId>
-			<version>2.6</version>
-		</dependency>
-		<dependency>
-			<groupId>com.b2international.snowowl</groupId>
-			<artifactId>com.b2international.snowowl.snomed.scg</artifactId>
-			<version>${snowowl.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.b2international.snowowl</groupId>
-			<artifactId>com.b2international.snowowl.core</artifactId>
-			<version>${snowowl.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.b2international.snowowl</groupId>
-			<artifactId>com.b2international.commons.base</artifactId>
-			<version>${snowowl.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>us.monoid.web</groupId>
-			<artifactId>resty</artifactId>
-			<version>0.3.2</version>
-		</dependency>
-		<dependency>
-			<groupId>com.google.guava</groupId>
-			<artifactId>guava</artifactId>
-			<version>14.0.1</version>
-		</dependency>
-		<dependency>
-			<groupId>com.google.code.gson</groupId>
-			<artifactId>gson</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>javax.mail</groupId>
-			<artifactId>javax.mail-api</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.eclipse.equinox</groupId>
-			<artifactId>common</artifactId>
-			<version>3.6.200-v20130402-1505</version>
-		</dependency>
-		<dependency>
-			<groupId>org.snomed.otf</groupId>
-			<artifactId>snomed-template-service</artifactId>
-			<version>1.5.1-SNAPSHOT</version>
+			<groupId>com.amazonaws</groupId>
+			<artifactId>aws-java-sdk</artifactId>
+			<version>1.10.0</version>
 		</dependency>
 	</dependencies>
 
@@ -161,26 +119,31 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<mainClass>org.ihtsdo.snowowl.authoring.scheduler.api.Application</mainClass>
+					<additionalProperties>
+						<encoding.source>UTF-8</encoding.source>
+						<encoding.reporting>UTF-8</encoding.reporting>
+						<java.source>${maven.compiler.source}</java.source>
+						<java.target>${maven.compiler.target}</java.target>
+					</additionalProperties>
+				</configuration>
 				<executions>
 					<execution>
-					<goals>
-						<goal>repackage</goal>
-					</goals>
-					<configuration>
-						<mainClass>org.ihtsdo.snowowl.authoring.job.engine.App</mainClass>
-					</configuration>
+						<goals>
+							<goal>build-info</goal>
+						</goals>
 					</execution>
 				</executions>
 			</plugin>
 		</plugins>
 	</build>
-	
+
 	<profiles>
 		<profile>
 			<id>deb</id>
 			<build>
 				<plugins>
-					<!-- Debian packaging -->
 					<plugin>
 						<groupId>org.vafer</groupId>
 						<artifactId>jdeb</artifactId>
