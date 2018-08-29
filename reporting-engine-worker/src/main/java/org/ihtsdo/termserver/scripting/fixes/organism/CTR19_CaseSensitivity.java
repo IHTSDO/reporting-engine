@@ -43,6 +43,7 @@ public class CTR19_CaseSensitivity extends BatchFix implements RF2Constants{
 	public static void main(String[] args) throws Exception {
 		CTR19_CaseSensitivity fix = new CTR19_CaseSensitivity(null);
 		try {
+			fix.populateEditPanel = false;
 			fix.selfDetermining = true;
 			fix.init(args);
 			//fix.testAS();
