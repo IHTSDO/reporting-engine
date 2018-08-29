@@ -32,7 +32,9 @@ public class CaseSensitivity extends TermServerReport{
 	Pattern numberLetter = Pattern.compile("\\d[a-z]");
 	
 	public CaseSensitivity(TermServerScript clone) {
-		this.inputFile = clone.getInputFile();
+		if (clone != null) {
+			this.inputFile = clone.getInputFile();
+		}
 	}
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {

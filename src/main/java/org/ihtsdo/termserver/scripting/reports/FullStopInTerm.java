@@ -40,6 +40,10 @@ public class FullStopInTerm extends TermServerReport {
 		nextConcept:
 		for (Concept c : ROOT_CONCEPT.getDescendents(NOT_SET)) {
 			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+				//We're only working on descriptions modified in the current release
+				if (d.getEffectiveTime() != null) {
+					continue;
+				}
 				boolean reported = false;
 				if (d.getTerm().contains(FULL_STOP) && !allowableFullStop(d.getTerm())) {
 					String[] hiearchies = getHierarchies(c);
