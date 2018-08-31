@@ -57,6 +57,9 @@ public class ReportManager implements RF2Constants {
 		
 		if (writeToSheet) {
 			reportSheetManager.flush();
+			if (andClose) {
+				System.out.println("See Google Sheet: " + reportSheetManager.getUrl());
+			}
 		}
 	}
 	
