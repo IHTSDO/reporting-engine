@@ -7,6 +7,7 @@ import java.util.List;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -15,6 +16,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * SUBST-235 A report to identify any concepts which have the same concept as both
  * a parent and the target value of some other attribute 
  * Update: Added column to say what was inferred - the parent, attribute or both
+ * SUBST-260
  */
 public class ConceptsWithAttributesAsParents extends TermServerReport {
 	
@@ -24,7 +26,9 @@ public class ConceptsWithAttributesAsParents extends TermServerReport {
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		ConceptsWithAttributesAsParents report = new ConceptsWithAttributesAsParents();
 		try {
-			report.additionalReportColumns = "Semtag, CharacteristicType, Attribute, WhatWasInferred?";
+			ReportSheetManager.targetFolderId = "1bwgl8BkUSdNDfXHoL__ENMPQy_EdEP7d";
+			//TODO Set this via setter, and move report only once successfully complete
+			report.additionalReportColumns = "FSN, Semtag, CharacteristicType, Attribute, WhatWasInferred?";
 			report.init(args);
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.postInit();
@@ -81,7 +85,8 @@ public class ConceptsWithAttributesAsParents extends TermServerReport {
 		} else if (ignoreTypes.contains(type)) {
 			return false;
 		}
-		return true;
+		//return true;
+		return false;
 	}
 
 	private String determineWhatWasInferred(Concept c, Concept value) {
