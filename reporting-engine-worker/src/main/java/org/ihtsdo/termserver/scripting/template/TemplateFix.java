@@ -75,7 +75,7 @@ abstract public class TemplateFix extends BatchFix {
 	protected Set<Concept> findTemplateMatches(Template t) throws TermServerScriptException {
 		Set<Concept> matches = new HashSet<Concept>();
 		for (Concept c : descendantsCache.getDescendentsOrSelf(subHierarchy)) {
-			if (c.getConceptId().equals("713251003")) {
+			if (c.getConceptId().equals("19378003")) {
 				debug ("Check template match here");
 			}
 			if (TemplateUtils.matchesTemplate(c, t, descendantsCache, CharacteristicType.INFERRED_RELATIONSHIP)) {

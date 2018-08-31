@@ -2,5 +2,5 @@
   "name": "Pathologic fracture morphology of bone structure co-occurrent and due to Neoplasm of bone",
   "documentation": "https://confluence.ihtsdotools.org/pages/viewpage.action?pageId=57816205",
   "version": 1,
-  "logicalTemplate": "116223007 |Complication (disorder)| : 42752001 |Due to (attribute)| = [[+id(<< 73211009 |Diabetes mellitus(disorder)|)]], [[~1..1]] 363698007 |Finding site (attribute)|  =  113331007 |Structure of endocrine system (body structure)|, [[~1..1]] 363698007 |Finding site (attribute)| = [[ +id(<< 123037004 |Body Structure (body structure)|) @site]] }\n"
+  "logicalTemplate": "116223007 |Complication (disorder)| : 42752001 |Due to (attribute)| = [[+id(<< 73211009 |Diabetes mellitus(disorder)|)]], [[~1..1]] 363698007 |Finding site (attribute)|  =  113331007 |Structure of endocrine system (body structure)|, [[~2..2]] 363698007 |Finding site (attribute)| = [[ +id(<< 123037004 |Body Structure (body structure)|) @site]] }\n"
 }
