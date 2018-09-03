@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.fixes;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,7 +34,8 @@ public class CaseSignificanceFix extends BatchFix implements RF2Constants{
 	String[] greekLettersUpper = new String[] { "Alpha", "Beta", "Delta", "Gamma", "Epsilon", "Tau" };
 	String[] greekLettersLower = new String[] { "alpha", "beta", "delta", "gamma", "epsilon", "tau" };
 	
-	String[] exceptions = new String[] {"86622001"};
+	String[] exceptions = new String[] {"86622001", "710898000", "116559002"};
+	String[] exceptionStr = new String[] {"Alphavirus", "Taur"};
 	
 	protected CaseSignificanceFix(BatchFix clone) {
 		super(clone);
@@ -136,12 +138,19 @@ public class CaseSignificanceFix extends BatchFix implements RF2Constants{
 	
 	private int fixGreekLetterIssues(Task t, Concept c) throws TermServerScriptException {
 		int changesMade = 0;
+		
+		if (c.getConceptId().equals("102777002")) {
+			debug("Check Here");
+		}
+		boolean greekLetterFound = false;
+		
 		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 			String matchedGreekUpper = StringUtils.containsAny(d.getTerm(), greekLettersUpper);
 			String matchedGreekLower = StringUtils.containsAny(d.getTerm(), greekLettersLower);
 			if ( (matchedGreekUpper != null || matchedGreekLower != null) && 
 				//d.getTerm().contains("Product containing") && d.getTerm().contains("milliliter")) {
 				(!unpublishedContentOnly || !d.isReleased())) {
+				greekLetterFound = true;
 				Description checkTerm = d;
 				
 				//If we start with the greek letter captitalised, that's OK to be capital
@@ -181,12 +190,12 @@ public class CaseSignificanceFix extends BatchFix implements RF2Constants{
 				String firstWord = checkTerm.getTerm().split(" ")[0];
 				String chopped = checkTerm.getTerm().substring(1);
 				//Lower case first letters must be entire term case sensitive
-				if (!checkTerm.getTerm().startsWith("Hb ") && !checkTerm.getTerm().startsWith("T-")) {
+				if (!checkTerm.getTerm().startsWith("Hb ") && !checkTerm.getTerm().startsWith("T-") && checkTerm.getTerm().charAt(1) != '-') {
 					if (Character.isLetter(firstLetter.charAt(0)) && firstLetter.equals(firstLetter.toLowerCase()) && !caseSig.equals(CS)) {
 						//Not dealing with this situation right now
 						//report (c, d, preferred, caseSig, "Terms starting with lower case letter must be CS");
 					} else if (caseSig.equals(CS) || caseSig.equals(cI)) {
-						if (chopped.equals(chopped.toLowerCase())) {
+						if (chopped.equals(chopped.toLowerCase()) && !properNouns.contains(firstWord)) {
 							report (t, c, Severity.LOW, ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, checkTerm, caseSig + "-> ci" );
 							d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
 							changesMade++;
@@ -207,28 +216,41 @@ public class CaseSignificanceFix extends BatchFix implements RF2Constants{
 						}
 					}
 				}
+			}
 		}
+		if (greekLetterFound && changesMade == 0) {
+			incrementSummaryInformationQuiet("Greek letter concept with no changes required");
 		}
 		return changesMade;
 	}
 
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		List<Component> processMe = new ArrayList<Component>();
+		List<Concept> processMe = new ArrayList<>();
 		info ("Identifying incorrect case signficance settings");
 		this.setQuiet(true);
 		for (Concept concept : subHierarchy.getDescendents(NOT_SET)) {
-			if (concept.isActive() && !isException(concept.getId())) {
+			if (concept.isActive() && !isException(concept.getId()) && !isExceptionStr(concept.getFsn())) {
 				/*if (fixCaseSignifianceIssues(null, concept.cloneWithIds()) > 0) {
 					processMe.add(concept);
 				}*/
 				if (fixGreekLetterIssues(null, concept.cloneWithIds()) > 0) {
 					processMe.add(concept);
-				}
+				} 
 			}
 		}
 		debug ("Identified " + processMe.size() + " concepts to process");
 		this.setQuiet(false);
-		return processMe;
+		processMe.sort(Comparator.comparing(Concept::getFsn));
+		return new ArrayList<Component>(processMe);
+	}
+
+	private boolean isExceptionStr(String fsn) {
+		for (String str : exceptionStr) {
+			if (fsn.contains(str)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private boolean isException(String id) {
