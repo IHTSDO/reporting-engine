@@ -2,8 +2,6 @@ package org.ihtsdo.termserver.scripting.domain;
 
 import java.util.UUID;
 
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.DefinitionStatus;
-
 //id	effectiveTime	active	moduleId	refsetId	referencedComponentId	inactivationReasonId
 public class InactivationIndicatorEntry extends Component implements RF2Constants {
 
@@ -175,5 +173,13 @@ public class InactivationIndicatorEntry extends Component implements RF2Constant
 	@Override
 	public String getReportedType() {
 		return getComponentType().toString();
+	}
+	
+	@Override 
+	public boolean equals(Object o) {
+		if (o instanceof InactivationIndicatorEntry) {
+			return this.getId().equals(((InactivationIndicatorEntry)o).getId());
+		}
+		return false;
 	}
 }

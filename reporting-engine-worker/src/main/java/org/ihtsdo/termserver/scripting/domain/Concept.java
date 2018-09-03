@@ -922,6 +922,8 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	}
 
 	public void addInactivationIndicator(InactivationIndicatorEntry i) {
+		//Remove inactivation indicator first incase we're replacing it
+		getInactivationIndicatorEntries().remove(i);
 		getInactivationIndicatorEntries().add(i);
 		if (i.isActive()) {
 			setInactivationIndicator(SnomedUtils.translateInactivationIndicator(i.getInactivationReasonId()));

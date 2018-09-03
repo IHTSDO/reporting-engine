@@ -3,11 +3,11 @@ package org.ihtsdo.termserver.scripting.reports;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
@@ -21,6 +21,7 @@ public class DuplicateInactivationAssocationReport extends TermServerReport {
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		DuplicateInactivationAssocationReport report = new DuplicateInactivationAssocationReport();
 		try {
+			ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ";  //Release QA
 			report.additionalReportColumns = "fsn, effectiveTime, data";
 			report.init(args);
 			report.loadProjectSnapshot(true);  
@@ -49,7 +50,7 @@ public class DuplicateInactivationAssocationReport extends TermServerReport {
 			for (HistoricalAssociation h : c.getHistorialAssociations(ActiveState.ACTIVE)) {
 				report (c, h.getEffectiveTime(), h);
 			}
-			incrementSummaryInformation("Rows reported");
+			incrementSummaryInformation("Concepts reported");
 		}
 	}
 	

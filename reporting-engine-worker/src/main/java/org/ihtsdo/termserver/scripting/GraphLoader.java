@@ -408,6 +408,8 @@ public class GraphLoader implements RF2Constants {
 				if (isConcept(referencedComponent)) {
 					Concept c = getConcept(referencedComponent);
 					HistoricalAssociation historicalAssociation = loadHistoricalAssociationLine(lineItems);
+					//Remove first in case we're replacing
+					c.getHistorialAssociations().remove(historicalAssociation);
 					c.getHistorialAssociations().add(historicalAssociation);
 					if (historicalAssociation.isActive()) {
 						addHistoricalAssociationInTsForm(c, historicalAssociation);

@@ -155,4 +155,12 @@ public class HistoricalAssociation extends Component implements RF2Constants {
 	public ComponentType getComponentType() {
 		return ComponentType.HISTORICAL_ASSOCIATION;
 	}
+	
+	@Override 
+	public boolean equals(Object o) {
+		if (o instanceof HistoricalAssociation) {
+			return this.getId().equals(((HistoricalAssociation)o).getId());
+		}
+		return false;
+	}
 }

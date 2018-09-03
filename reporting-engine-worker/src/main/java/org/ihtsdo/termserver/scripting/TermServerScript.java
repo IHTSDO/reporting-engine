@@ -351,7 +351,7 @@ public abstract class TermServerScript implements RF2Constants {
 					incrementSummaryInformation("Concepts creation exceptions");
 					warn (msg + " retrying...");
 					try {
-						Thread.sleep(10 * 1000);
+						Thread.sleep(30 * 1000);
 					} catch(InterruptedException ie) {
 						throw new TermServerScriptException("Interruption during recovery of :" + msg ,e);
 					}
@@ -499,6 +499,14 @@ public abstract class TermServerScript implements RF2Constants {
 	
 	public void incrementSummaryInformation(String key) {
 		if (!quiet) {
+			incrementSummaryInformation(key, 1);
+		}
+	}
+	
+	public void incrementSummaryInformationQuiet(String key) {
+		//There are occasions where we can only capture all information when doing the first pass
+		//When we're looking at ALL information eg which concepts do not require changes.
+		if (quiet) {
 			incrementSummaryInformation(key, 1);
 		}
 	}
