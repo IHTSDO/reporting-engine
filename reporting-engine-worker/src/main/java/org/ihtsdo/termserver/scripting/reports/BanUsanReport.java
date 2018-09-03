@@ -16,6 +16,7 @@ import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.ihtsdo.termserver.scripting.util.StringUtils;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
@@ -53,7 +54,7 @@ public class BanUsanReport extends TermServerScript{
 
 	private Set<Concept> evaluateExpression(String humanReadableExpression) throws TermServerScriptException {
 		StringBuffer expression = new StringBuffer(humanReadableExpression);
-		SnomedUtils.makeMachineReadable(expression);
+		StringUtils.makeMachineReadable(expression);
 		String[] parts = expression.toString().split(UNION);
 		Set<Concept> expansion = new HashSet<Concept>();
 		for (String part : parts) {

@@ -6,6 +6,7 @@ import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.ihtsdo.termserver.scripting.util.StringUtils;
 
 public class ConceptCreationPattern {
 	
@@ -88,10 +89,10 @@ public class ConceptCreationPattern {
 	}
 	private String generateTerm(Concept x) throws TermServerScriptException {
 		//Are we replacing X or Y?
-		String xTerm = SnomedUtils.deCapitalize(x.getPreferredSynonym());  //TODO Check case significance before making lower case!
+		String xTerm = StringUtils.deCapitalize(x.getPreferredSynonym());  //TODO Check case significance before making lower case!
 		String term = termPattern.replace("[X]", xTerm);
 		if (strategyForY != null) {
-			String yTerm = SnomedUtils.deCapitalize(getY(x).getPreferredSynonym()); //TODO Check case significance before making lower case!
+			String yTerm = StringUtils.deCapitalize(getY(x).getPreferredSynonym()); //TODO Check case significance before making lower case!
 			term = termPattern.replace("[Y]", yTerm);
 		}
 		return term;

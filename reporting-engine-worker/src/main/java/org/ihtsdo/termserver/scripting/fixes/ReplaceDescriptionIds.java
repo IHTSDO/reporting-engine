@@ -18,6 +18,7 @@ import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Task;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.ihtsdo.termserver.scripting.util.StringUtils;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
@@ -94,7 +95,7 @@ public class ReplaceDescriptionIds extends BatchFix implements RF2Constants{
 						d.setDescriptionId(null);
 						changesMade++;
 						report(task, concept, Severity.LOW, ReportActionType.DESCRIPTION_CHANGE_MADE, "Replaced description id for SCTID: " + oldDescId + " - " + d.getTerm());
-						if (!d.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE.toString()) && !SnomedUtils.isCaseSensitive(d.getTerm())) {
+						if (!d.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE) && !StringUtils.isCaseSensitive(d.getTerm())) {
 							report(task, concept, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Check why term marked case sensitive");
 						}
 					}

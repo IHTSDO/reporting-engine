@@ -161,7 +161,7 @@ public class DrugUtils implements RF2Constants {
 			} else {
 				doseFormStr = doseForm.getPreferredSynonym(US_ENG_LANG_REFSET).getTerm();
 			}
-			return SnomedUtils.deCapitalize(doseFormStr);
+			return StringUtils.deCapitalize(doseFormStr);
 		}
 	}
 	
@@ -190,7 +190,7 @@ public class DrugUtils implements RF2Constants {
 		} else {
 			valueStr = value.getPreferredSynonym(langRefset).getTerm();
 		}
-		return SnomedUtils.deCapitalize(valueStr);
+		return StringUtils.deCapitalize(valueStr);
 	}
 
 	public static boolean isModificationOf(Concept specific, Concept general) {

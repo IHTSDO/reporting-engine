@@ -19,6 +19,7 @@ import org.ihtsdo.termserver.scripting.domain.Task;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.AcceptabilityMode;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.ihtsdo.termserver.scripting.util.StringUtils;
 
 import us.monoid.json.JSONObject;
 
@@ -179,7 +180,7 @@ public class NormalizeGroupersViaDisposition extends DrugBatchFix implements RF2
 		
 		CaseSignificance csOfX = xDesc.getCaseSignificance();
 		
-		String xInSentence = csOfX.equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE) ? X : SnomedUtils.deCapitalize(X);
+		String xInSentence = csOfX.equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE) ? X : StringUtils.deCapitalize(X);
 		String fsnPartner = "Product containing " + xInSentence;
 		String fsn = fsnPartner + " (product)";
 		String pt = X + " product";

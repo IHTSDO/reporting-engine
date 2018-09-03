@@ -15,6 +15,7 @@ import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.ihtsdo.termserver.scripting.util.StringUtils;
 
 /**
  * Class to read in a spreadsheet of terms and generate new FSN and PTs 
@@ -138,8 +139,8 @@ public class AddEntire extends DeltaGenerator {
 		}
 		
 		//If the entire term is case sensitive, then we don't want to decapitalize the first letter
-		boolean caseSensitive = d.getCaseSignificance().equals(SCTID_ENTIRE_TERM_CASE_SENSITIVE);
-		String newTerm = ENTIRE + " " + (caseSensitive? newTermParts[0]:SnomedUtils.deCapitalize(newTermParts[0]));
+		boolean caseSensitive = d.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
+		String newTerm = ENTIRE + " " + (caseSensitive? newTermParts[0]:StringUtils.deCapitalize(newTermParts[0]));
 		if (isFSN) {
 			newTerm += " " + newTermParts[1];
 		}

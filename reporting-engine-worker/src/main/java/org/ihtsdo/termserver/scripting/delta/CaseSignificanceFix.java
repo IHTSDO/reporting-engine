@@ -10,6 +10,7 @@ import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.ihtsdo.termserver.scripting.util.StringUtils;
 
 /**
  * Class to fix Case Significance issues.
@@ -100,7 +101,7 @@ public class CaseSignificanceFix extends DeltaGenerator implements RF2Constants 
 				} else {
 					for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 						if (d.getCaseSignificance().equals(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE) &&
-								!SnomedUtils.isCaseSensitive(d.getTerm())) {
+								!StringUtils.isCaseSensitive(d.getTerm())) {
 							d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
 							String msg = "Set to entire term case insensitive.  Last modified " + d.getEffectiveTime();
 							report(c,d,Severity.LOW,ReportActionType.DESCRIPTION_CHANGE_MADE, msg);

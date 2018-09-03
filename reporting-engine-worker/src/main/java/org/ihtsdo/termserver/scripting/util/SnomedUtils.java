@@ -7,13 +7,11 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.*;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
 import org.apache.commons.validator.routines.checkdigit.VerhoeffCheckDigit;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
@@ -21,13 +19,9 @@ import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.template.AncestorsCache;
 
-import com.google.common.base.Splitter;
-
-public class SnomedUtils implements RF2Constants{
+public class SnomedUtils implements RF2Constants {
 	
 	private static VerhoeffCheckDigit verhoeffCheck = new VerhoeffCheckDigit();
-	private static Pattern csvPattern = Pattern.compile(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)");
-
 	public static String isValid(String sctId, PartitionIdentifier partitionIdentifier) {
 		String errorMsg=null;
 		int partitionNumber = Integer.valueOf("" + sctId.charAt(sctId.length() -2));
@@ -123,25 +117,6 @@ public class SnomedUtils implements RF2Constants{
 		return acceptabilities;
 	}
 
-	public static String substitute(String str, Map<String, String> wordSubstitution) {
-		//Replace any instances of the map key with the corresponding value
-		for (Map.Entry<String, String> substitution : wordSubstitution.entrySet()) {
-			//Check for the word existing in lower case, and then replace with same setting
-			if (str.toLowerCase().contains(substitution.getKey().toLowerCase())) {
-				//Did we match as is, do direct replacement if so
-				if (str.contains(substitution.getKey())) {
-					str = str.replace(substitution.getKey(), substitution.getValue());
-				} else {
-					//Otherwise, we should capitalize
-					String find = SnomedUtils.capitalize(substitution.getKey());
-					String subst = SnomedUtils.capitalize(substitution.getValue());
-					str = str.replace(find, subst);
-				}
-			}
-		}
-		return str;
-	}
-	
 	public static Map<String, Acceptability> createAcceptabilityMap(Acceptability acceptability, String[] dialects) {
 		Map<String, Acceptability> aMap = new HashMap<String, Acceptability>();
 		for (String dialect : dialects) {
@@ -205,35 +180,11 @@ public class SnomedUtils implements RF2Constants{
 		return score;
 	}
 	
-	public static String capitalize (String str) {
-		if (str == null || str.isEmpty() || str.length() < 2) {
-			return str;
-		}
-		return str.substring(0, 1).toUpperCase() + str.substring(1);
-	}
-	
 	public static String initialCapitalOnly (String str) {
 		if (str == null || str.isEmpty() || str.length() < 2) {
 			return str;
 		}
 		return str.substring(0, 1).toUpperCase() + str.substring(1).toLowerCase();
-	}
-	
-	public static String deCapitalize (String str) {
-		if (str == null || str.isEmpty() || str.length() < 2) {
-			return str;
-		}
-		return str.substring(0, 1).toLowerCase() + str.substring(1);
-	}	
-
-	public static List<String> removeBlankLines(List<String> lines) {
-		List<String> unixLines = new ArrayList<String>();
-		for (String thisLine : lines) {
-			if (!thisLine.isEmpty()) {
-				unixLines.add(thisLine);
-			}
-		}
-		return unixLines;
 	}
 	
 	/**
@@ -596,56 +547,6 @@ public class SnomedUtils implements RF2Constants{
 		throw new TermServerScriptException("Do not recognise case significance indicator : " + caseSignificanceSctId);
 	}
 
-	public static void makeMachineReadable (StringBuffer hrExp) {
-		int pipeIdx =  hrExp.indexOf(PIPE);
-		while (pipeIdx != -1) {
-			int endIdx = findEndOfTerm(hrExp, pipeIdx);
-			hrExp.delete(pipeIdx, endIdx);
-			pipeIdx =  hrExp.indexOf(PIPE);
-		}
-		remove(hrExp, SPACE_CHAR);
-	}
-	
-	private static int findEndOfTerm(StringBuffer hrExp, int searchStart) {
-		int endIdx = indexOf(hrExp, termTerminators, searchStart+1);
-		//If we didn't find a terminator, cut to the end.
-		if (endIdx == -1) {
-			endIdx = hrExp.length();
-		} else {
-			//If the character found as a terminator is a pipe, then cut that too
-			if (hrExp.charAt(endIdx) == PIPE_CHAR) {
-				endIdx++;
-			} else if (hrExp.charAt(endIdx) == ATTRIBUTE_SEPARATOR.charAt(0)) {
-				//If the character is a comma, then it might be a comma inside a term so find out if the next token is a number
-				if (!StringUtils.isNumericSpace(hrExp.substring(endIdx+1, endIdx+5))) {
-					//OK it's a term, so find the new actual end. 
-					endIdx = findEndOfTerm(hrExp, endIdx);
-				}
-			}
-		}
-		return endIdx;
-	}
-
-	static void remove (StringBuffer haystack, char needle) {
-		for (int idx = 0; idx < haystack.length(); idx++) {
-			if (haystack.charAt(idx) == needle) {
-				haystack.deleteCharAt(idx);
-				idx --;
-			}
-		}
-	}
-	
-	static int indexOf (StringBuffer haystack, char[] needles, int startFrom) {
-		for (int idx = startFrom; idx < haystack.length(); idx++) {
-			for (char thisNeedle : needles) {
-				if (haystack.charAt(idx) == thisNeedle) {
-					return idx;
-				}
-			}
-		}
-		return -1;
-	}
-
 	public static InactivationIndicator translateInactivationIndicator(String indicatorSctId) {
 		switch (indicatorSctId) {
 			case SCTID_INACT_AMBIGUOUS: return InactivationIndicator.AMBIGUOUS;
@@ -676,24 +577,6 @@ public class SnomedUtils implements RF2Constants{
 			throw new TermServerScriptException("Failed to create file " + fileName,e);
 		}
 		return file;
-	}
-	
-	public static boolean isCaseSensitive(String term) {
-		String afterFirst = term.substring(1);
-		boolean allLowerCase = afterFirst.equals(afterFirst.toLowerCase());
-		return !allLowerCase;
-	}
-	
-	public static CaseSignificance calculateCaseSignificance(String term) {
-		//Any term that starts with a lower case letter
-		//can be considered CS.   Otherwise if it is case sensitive then cI
-		String firstLetter = term.substring(0, 1);
-		if (firstLetter.equals(firstLetter.toLowerCase())) {
-			return CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE;
-		} else if (isCaseSensitive(term)) {
-			return CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE;
-		}
-		return CaseSignificance.CASE_INSENSITIVE;
 	}
 	
 	public static boolean isConceptType(Concept c, ConceptType conceptType) {
@@ -1014,34 +897,6 @@ public class SnomedUtils implements RF2Constants{
 			}
 		}
 		return false;
-	}
-
-	public static List<String> csvSplit(String line) {
-		List<String> list = new ArrayList<>();
-		for(String item : Splitter.on(csvPattern).split(line)) {
-			//Trim leading and trailing double quotes - not needed as already split
-			if (line.charAt(0)=='"') {
-				item = line.substring(1,item.length()-1);
-			}
-			list.add(item);
-		}
-		return list;
-	}
-
-	public static List<Object> csvSplitAsObject(String line) {
-		List<Object> list = new ArrayList<>();
-		for(String item : Splitter.on(csvPattern).split(line)) {
-			//Trim leading and trailing double quotes - not needed as already split
-			if (item.length() > 0) {
-				if (item.charAt(0)=='"') {
-					item = item.substring(1,item.length()-1);
-				}
-			} else {
-				item = "";
-			}
-			list.add(item);
-		}
-		return list;
 	}
 
 }

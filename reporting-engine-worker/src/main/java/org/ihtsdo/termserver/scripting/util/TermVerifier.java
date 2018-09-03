@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
@@ -53,7 +52,7 @@ public class TermVerifier implements RF2Constants {
 		TermServerScript.info ("Loading term file " + inputFile.getAbsolutePath());
 		try {
 			List<String> lines = Files.readLines(inputFile, Charsets.UTF_8);
-			lines = SnomedUtils.removeBlankLines(lines);
+			lines = StringUtils.removeBlankLines(lines);
 			for (int lineNum = 0; lineNum < lines.size(); lineNum++) {
 				if (lineNum == 0) {
 					continue; //skip header row  
@@ -108,7 +107,8 @@ public class TermVerifier implements RF2Constants {
 		term = term.replaceAll(" only ", " precisely ");
 		
 		//Do we have milligram without a space?
-		if (StringUtils.countMatches(term, "milligram") != StringUtils.countMatches(term, " milligram ")) {
+		if (org.apache.commons.lang.StringUtils.countMatches(term, "milligram") != 
+				org.apache.commons.lang.StringUtils.countMatches(term, " milligram ")) {
 			term = term.replaceAll("milligram", "milligram ");
 			term = term.replace("  ", " ");
 			//Also fix the one case where we want no space after milligram

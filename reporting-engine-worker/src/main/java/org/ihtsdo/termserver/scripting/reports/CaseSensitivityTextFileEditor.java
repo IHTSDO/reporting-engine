@@ -15,6 +15,8 @@ import com.google.common.io.Files;
 /**
  * SUBST-130
  * Class to work with the cs_words.txt file
+ * 
+ * TODO: remove any greek letter derived words (SUBST-288)
  */
 public class CaseSensitivityTextFileEditor extends TermServerReport{
 	

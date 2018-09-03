@@ -10,6 +10,7 @@ import org.ihtsdo.termserver.scripting.dao.ReportManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.template.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.ihtsdo.termserver.scripting.util.StringUtils;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
@@ -412,7 +413,7 @@ public abstract class TermServerScript implements RF2Constants {
 		debug ("Loading input file " + file.getAbsolutePath());
 		try {
 			List<String> lines = Files.readLines(file, Charsets.UTF_8);
-			lines = SnomedUtils.removeBlankLines(lines);
+			lines = StringUtils.removeBlankLines(lines);
 			
 			//Are we restarting the file from some line number
 			int startPos = (restartPosition == NOT_SET)?0:restartPosition - 1;
@@ -646,7 +647,7 @@ public abstract class TermServerScript implements RF2Constants {
 		d.setActive(true);
 		d.setType(DescriptionType.SYNONYM);
 		d.setLang(LANG_EN);
-		d.setCaseSignificance(SnomedUtils.calculateCaseSignificance(term));
+		d.setCaseSignificance(StringUtils.calculateCaseSignificance(term));
 		d.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(acceptability, dialects));
 		d.setConceptId(concept.getConceptId());
 		concept.addDescription(d);

@@ -18,7 +18,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
-import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.ihtsdo.termserver.scripting.util.StringUtils;
 
 public class ReportSheetManager implements RF2Constants {
 
@@ -155,7 +155,7 @@ public class ReportSheetManager implements RF2Constants {
 		if (lastWriteTime == null) {
 			lastWriteTime = new Date();
 		}
-		List<Object> data = SnomedUtils.csvSplitAsObject(line);
+		List<Object> data = StringUtils.csvSplitAsObject(line);
 		List<List<Object>> cells = Arrays.asList(data);
 		//Increment the current row position so we create the correct range
 		tabLineCount.merge(tabIdx, 1, Integer::sum);

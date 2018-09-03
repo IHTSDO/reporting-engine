@@ -2,10 +2,7 @@ package org.ihtsdo.termserver.scripting.delta;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
@@ -13,6 +10,7 @@ import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.ihtsdo.termserver.scripting.util.StringUtils;
 
 /**
  * Class to fix ALL Case Significance issues.
@@ -116,7 +114,7 @@ public class CaseSignificanceFixAll extends DeltaGenerator implements RF2Constan
 				report(c, Severity.LOW,ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, d, "cI", "CS", d.getEffectiveTimeSafely());
 				incrementSummaryInformation("Descriptions modified", 1);
 			}
-		} else if (!SnomedUtils.isCaseSensitive(term)) {
+		} else if (!StringUtils.isCaseSensitive(term)) {
 			report(c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, d, "", "", d.getEffectiveTimeSafely(), "Confirm that term contains lower case, case significant letters");
 		}
 		return changesMade;
@@ -133,7 +131,7 @@ public class CaseSignificanceFixAll extends DeltaGenerator implements RF2Constan
 			if (startsLower(term)) {
 				d.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
 				changeMade = true;
-			} else if (SnomedUtils.isCaseSensitive(term)) {
+			} else if (StringUtils.isCaseSensitive(term)) {
 				d.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
 				changeMade = true;	
 			}
@@ -169,7 +167,7 @@ public class CaseSignificanceFixAll extends DeltaGenerator implements RF2Constan
 		//First letter lower case should always be CS, so no change.  
 		//Otherwise if we've no further upper case letters, we *could* be ok to say this
 		//is "ci", but only if we're being aggressive about it.
-		if (!startsLower(term) && !SnomedUtils.isCaseSensitive(term)) {
+		if (!startsLower(term) && !StringUtils.isCaseSensitive(term)) {
 			if (!mode.equals(Mode.REPORT_ONLY)) {
 				d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
 				d.setEffectiveTime(null);

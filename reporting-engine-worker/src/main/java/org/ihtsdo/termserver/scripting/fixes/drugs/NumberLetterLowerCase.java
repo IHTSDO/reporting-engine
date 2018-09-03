@@ -9,7 +9,7 @@ import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.reports.CaseSensitivity;
-import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.ihtsdo.termserver.scripting.util.StringUtils;
 
 /*
 SUBST-279 Where a term starts with a number and then a capital letter follows, 
@@ -110,7 +110,7 @@ public class NumberLetterLowerCase extends DrugBatchFix implements RF2Constants{
 	private void setCaseSignificance(Task t, Concept c, Description d) throws TermServerScriptException {
 		if (d.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE) ||
 			d.getCaseSignificance().equals(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE)) {
-			if (SnomedUtils.isCaseSensitive(d.getTerm())) {
+			if (StringUtils.isCaseSensitive(d.getTerm())) {
 				report(t,c, Severity.LOW, ReportActionType.INFO, d, "term contains capital - retaining case sensitivity");
 				incrementSummaryInformation("CS retained due to capital");
 			} else if (csReport.containsKnownLowerCaseWord(d.getTerm())) {

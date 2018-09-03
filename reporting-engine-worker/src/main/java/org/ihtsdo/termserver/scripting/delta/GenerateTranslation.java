@@ -17,6 +17,7 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.ihtsdo.termserver.scripting.util.StringUtils;
 /**
  *Used from SE Translation.  Namespace 1000052
  *Updated for Belgium.  Namespace 1000172
@@ -238,7 +239,7 @@ public class GenerateTranslation extends DeltaGenerator {
 		String firstLetter = term.substring(0, 1);
 		if (!firstLetter.equals(firstLetter.toLowerCase())) {
 			return CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE;
-		} else if (SnomedUtils.isCaseSensitive(term)) {
+		} else if (StringUtils.isCaseSensitive(term)) {
 			return CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE;
 		}
 		return CaseSignificance.CASE_INSENSITIVE;

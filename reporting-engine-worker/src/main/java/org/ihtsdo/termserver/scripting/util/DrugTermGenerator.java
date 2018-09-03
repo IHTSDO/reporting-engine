@@ -2,7 +2,6 @@ package org.ihtsdo.termserver.scripting.util;
 
 import java.util.*;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
@@ -133,9 +132,9 @@ public class DrugTermGenerator implements RF2Constants{
 		}
 		
 		//Does the case significance of the ingredients suggest a need to modify the term?
-		if (replacement.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE) && SnomedUtils.isCaseSensitive(replacementTerm)) {
+		if (replacement.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE) && StringUtils.isCaseSensitive(replacementTerm)) {
 			replacement.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
-		} else if (!SnomedUtils.isCaseSensitive(replacementTerm)) {
+		} else if (!StringUtils.isCaseSensitive(replacementTerm)) {
 			replacement.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
 		}
 		
@@ -245,11 +244,11 @@ public class DrugTermGenerator implements RF2Constants{
 		}
 		
 		//Form the term from the ingredients with prefixes and suffixes as required.
-		proposedTerm = prefix + StringUtils.join(ingredients, " and ") + suffix;
+		proposedTerm = prefix +  org.apache.commons.lang.StringUtils.join(ingredients, " and ") + suffix;
 		if (isFSN) {
 			proposedTerm += " " + semTag;
 		}
-		proposedTerm = SnomedUtils.capitalize(proposedTerm);
+		proposedTerm = StringUtils.capitalize(proposedTerm);
 		return proposedTerm;
 	}
 
@@ -563,7 +562,7 @@ public class DrugTermGenerator implements RF2Constants{
 			term = desc.getTerm();
 		}
 		if (!desc.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE)) {
-			term = SnomedUtils.deCapitalize(term);
+			term = StringUtils.deCapitalize(term);
 		}
 		return term;
 	}

@@ -638,7 +638,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		Description replacement = c.findTerm(newTerm);
 		if (replacement != null) {
 			if (replacement.isActive()) {
-				report(t, c, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, "Replacement term already exists active: " + replacement);
+				report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Replacement term already exists active: " + replacement);
 			} else {
 				report(t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Replacement term already exists inactive.  Reactivating: " + replacement);
 				replacement.setActive(true);
@@ -647,7 +647,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			//And copy the acceptability from the one we're replacing
 			replacement.setAcceptabilityMap(SnomedUtils.mergeAcceptabilityMap(d, replacement));
 		} else {
-			replacement = d.clone(null); //Includes acceptability
+			replacement = d.clone(null); //Includes acceptability and case significance
 			replacement.setTerm(newTerm);
 			c.addDescription(replacement);
 		}
@@ -664,7 +664,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		}
 		String msg = change + " " + d + " replaced with: " + newTerm;
 		report(t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, msg);
-		return replacement;
+		return replacement;  //WATCH THAT THE CALLING CODE IS RESPONSIBLE FOR CHECKING THE CASE SIGNIFICANCE - copied from original
 	}
 	
 	protected int addRelationship(Task t, Concept c, Relationship r) throws TermServerScriptException {

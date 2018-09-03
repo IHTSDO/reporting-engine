@@ -82,9 +82,9 @@ public class ReplaceLowerCaseTerms extends BatchFix implements RF2Constants{
 			//Skip over Roman Numerals.
 			//Also remove any dashes in the 2nd word.
 			if (words.length > 2 && isRomanNumeral(words[1])) {
-				words[2] = SnomedUtils.capitalize(words[2]).replace("-", "");
+				words[2] = StringUtils.capitalize(words[2]).replace("-", "");
 			} else {
-				words[1] = SnomedUtils.capitalize(words[1]).replace("-", "");
+				words[1] = StringUtils.capitalize(words[1]).replace("-", "");
 			}
 			String newTerm = StringUtils.join(words, " ");
 			String msg;
