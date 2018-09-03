@@ -178,6 +178,7 @@ public class CaseSignificanceFix extends BatchFix implements RF2Constants{
 				
 				String caseSig = SnomedUtils.translateCaseSignificanceFromEnum(checkTerm.getCaseSignificance());
 				String firstLetter = checkTerm.getTerm().substring(0,1);
+				String firstWord = checkTerm.getTerm().split(" ")[0];
 				String chopped = checkTerm.getTerm().substring(1);
 				//Lower case first letters must be entire term case sensitive
 				if (!checkTerm.getTerm().startsWith("Hb ") && !checkTerm.getTerm().startsWith("T-")) {
@@ -189,6 +190,13 @@ public class CaseSignificanceFix extends BatchFix implements RF2Constants{
 							report (t, c, Severity.LOW, ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, checkTerm, caseSig + "-> ci" );
 							d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
 							changesMade++;
+						} else if (caseSig.equals(CS)){
+							//Might be CS when doesn't need to be
+							if (!properNouns.contains(firstWord)) {
+								report (t, c, Severity.LOW, ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, checkTerm, caseSig + "-> cI" );
+								d.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
+								changesMade++;
+							}
 						}
 					} else {
 						//For case insensitive terms, we're on the look out for capitial letters after the first letter
@@ -199,7 +207,7 @@ public class CaseSignificanceFix extends BatchFix implements RF2Constants{
 						}
 					}
 				}
-			}
+		}
 		}
 		return changesMade;
 	}

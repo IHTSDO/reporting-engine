@@ -34,7 +34,7 @@ public class HistoricalAssociation extends Component implements RF2Constants {
 	}
 	
 	public String toString() {
-		return "(" + id + ") - " + referencedComponentId + ":" + targetComponentId;
+		return "[HA]:" + id + " - " + refsetId + " : " + referencedComponentId + "->" + targetComponentId;
 	}
 	
 	public String toVerboseString(){

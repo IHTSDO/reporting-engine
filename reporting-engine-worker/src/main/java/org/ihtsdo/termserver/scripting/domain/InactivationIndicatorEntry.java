@@ -54,7 +54,7 @@ public class InactivationIndicatorEntry extends Component implements RF2Constant
 	}
 	
 	public String toString() {
-		return "(" + id + ") - " + referencedComponentId + ":" + inactivationReasonId;
+		return "[IA]:" + id + " - " + refsetId + " : " + referencedComponentId + "->" + inactivationReasonId;
 	}
 	
 	public String[] toRF2() {
