@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.template.AncestorsCache;
@@ -18,12 +19,15 @@ import org.ihtsdo.termserver.scripting.util.DrugTermGenerator;
 import org.ihtsdo.termserver.scripting.util.DrugUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
-/*
+/**
  * DRUGS-515 - Create MPF-containing concepts where required.  Identify missing MPFs
  * by looking at all CDs which do not have an MPF as an inferred parent
  * 
  * DRUGS-511 - Create MP-containing concepts where required.  Identify missing MPs
  * by looking at MPFs without an inferred parent containing the same ingredients
+ *
+ * DRUGS-403 - Create MP-Only concepts where required.  Identify one-to-one mapping
+ * between "MP-containing" and "P containing only".  Skip excepted substances
  */
 public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Constants{
 	
@@ -35,9 +39,15 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 	Set<Concept> createMPs = new HashSet<>();
 	Set<Concept> knownMPs = new HashSet<>();
 	
+	Set<Concept> createMPOs = new HashSet<>();
+	Set<Concept> knownMPOs = new HashSet<>();
+	
+	String[] substanceExceptions = new String[] {"liposome"};
+	String[] complexExceptions = new String[] { "lipid", "phospholipid", "cholesteryl" };
+	
 	Set<Concept> allowMoreSpecificDoseForms = new HashSet<>();
 	
-	enum Mode { CREATE_MP, CREATE_MPF }
+	enum Mode { CREATE_MP, CREATE_MPF, CREATE_MPO }
 	
 	protected CreateMissingDrugConcepts(BatchFix clone) {
 		super(clone);
@@ -46,9 +56,11 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
 		CreateMissingDrugConcepts fix = new CreateMissingDrugConcepts(null);
 		try {
+			ReportSheetManager.targetFolderId="1hYd96nzfB35ggffWR_SdPbybpmzynlI6";  //Content Reporting Artefacts/DRUGS
 			fix.populateEditPanel = true;
 			fix.populateTaskDescription = true;
 			fix.selfDetermining = true;
+			fix.classifyTasks = false;
 			fix.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			fix.loadProjectSnapshot(false); //Load all descriptions
@@ -67,6 +79,9 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 			}
 			if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT)) {
 				knownMPs.add(c);
+			}
+			if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_ONLY)) {
+				knownMPOs.add(c);
 			}
 		}
 		
@@ -91,26 +106,36 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 		
 		//Do we require an MP or MPF?
 		switch (concept.getConceptType()) {
-			case CLINICAL_DRUG : mode = Mode.CREATE_MPF;
+			case CLINICAL_DRUG : 
+				mode = Mode.CREATE_MPF;
 				targetType = ConceptType.MEDICINAL_PRODUCT_FORM;
 				break;
-			case MEDICINAL_PRODUCT_FORM : mode = Mode.CREATE_MP;
+			case MEDICINAL_PRODUCT_FORM : 
+				mode = Mode.CREATE_MP;
 				targetType = ConceptType.MEDICINAL_PRODUCT;
+				break;
+			case MEDICINAL_PRODUCT : 
+				mode = Mode.CREATE_MPO;
+				targetType = ConceptType.MEDICINAL_PRODUCT_ONLY;
 				break;
 			default : throw new IllegalStateException("Unexpected driver concept type: " + concept.getConceptType());
 		}
 		required = calculateDrugRequired(loadedConcept, mode);
+		required.setConceptType(targetType);
 		
-		String currentParents = concept.getParents(CharacteristicType.INFERRED_RELATIONSHIP)
-							.stream()
-							.filter(parent -> parent.getConceptType().equals(targetType))
-							.map(parent -> parent.toString())
-							.collect(Collectors.joining(",\n"));
 		if (required != null) {
 			termGenerator.ensureDrugTermsConform(task, required, CharacteristicType.STATED_RELATIONSHIP, true);
 			required.setDefinitionStatus(DefinitionStatus.FULLY_DEFINED);
 			required = createConcept(task, required, info);
-			report (task, concept, Severity.LOW, ReportActionType.INFO, "Existing parents considered insufficient: " + (currentParents.isEmpty() ? "None detected" : currentParents));
+			
+			if (!mode.equals(Mode.CREATE_MPO)) {
+				String currentParents = concept.getParents(CharacteristicType.INFERRED_RELATIONSHIP)
+						.stream()
+						.filter(parent -> parent.getConceptType().equals(targetType))
+						.map(parent -> parent.toString())
+						.collect(Collectors.joining(",\n"));
+				report (task, concept, Severity.LOW, ReportActionType.INFO, "Existing parents considered insufficient: " + (currentParents.isEmpty() ? "None detected" : currentParents));
+			}
 			task.addAfter(required, concept);
 			//With the CD reported, we don't actually need to load it in the edit panel
 			task.remove(concept);
@@ -167,9 +192,17 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 									.stream()
 									.map(i -> DrugUtils.getBase(gl.getConceptSafely(i.getConceptId())))
 									.collect(Collectors.toSet());
+		
 		if (baseIngredients.size() == 0) {
 			throw new ValidationFailure(c,"Zero ingredients found.");
 		}
+		
+		//Only if we're creating an MPO, include the ingredient count
+		if (mode.equals(Mode.CREATE_MPO)) {
+			Relationship countRel = new Relationship (drug, COUNT_BASE_ACTIVE_INGREDIENT, DrugUtils.getNumberAsConcept(baseIngredients.size()), UNGROUPED);
+			drug.addRelationship(countRel);
+		}
+		
 		for (Concept base : baseIngredients) {
 			Relationship ingredRel = new Relationship (drug, HAS_ACTIVE_INGRED, base, UNGROUPED);
 			drug.addRelationship(ingredRel);
@@ -223,6 +256,16 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 						createMPs.add(mp);
 						allAffected.add(c);
 					}
+				} else if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT)) {
+					if (containsExceptionSubstance(c)) {
+						continue nextConcept;
+					}
+					Concept mp = calculateDrugRequired(c, Mode.CREATE_MPO);
+					//Do we already know about this concept or already have a plan to create it?
+					if (!isContained(mp, knownMPOs) && !isContained(mp, createMPOs)) {
+						createMPOs.add(mp);
+						allAffected.add(c);
+					}
 				} 
 			} catch (Exception e) {
 				warn ("Unable to process " + c + " because " + e.getMessage());
@@ -231,6 +274,27 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 		info ("Identified " + allAffected.size() + " concepts to process");
 		allAffected.sort(Comparator.comparing(Concept::getFsn));
 		return new ArrayList<Component>(allAffected);
+	}
+
+	private boolean containsExceptionSubstance(Concept c) throws TermServerScriptException {
+		for (Concept ingred : DrugUtils.getIngredients(c, CharacteristicType.INFERRED_RELATIONSHIP)) {
+			for (String exceptionStr: substanceExceptions) {
+				if (ingred.getFsn().toLowerCase().contains(exceptionStr)) {
+					report (null, c, Severity.LOW, ReportActionType.SKIPPING, "MP contains exception substance: " + ingred);
+					return true;
+				}
+			}
+			
+			if (ingred.getFsn().toLowerCase().contains("complex")) {
+				for (String exceptionStr: complexExceptions) {
+					if (ingred.getFsn().toLowerCase().contains(exceptionStr)) {
+						report (null, c, Severity.LOW, ReportActionType.SKIPPING, "MP contains exception substance complex: " + ingred);
+						return true;
+					}
+				}
+			}
+		}
+		return false;
 	}
 
 	@Override

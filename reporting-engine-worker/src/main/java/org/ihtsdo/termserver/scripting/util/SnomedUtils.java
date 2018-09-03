@@ -722,8 +722,9 @@ public class SnomedUtils implements RF2Constants{
 			determineConceptTypeFromAttributes(c, CharacteristicType.STATED_RELATIONSHIP);
 		} else {
 			String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
+			boolean isOnly = isOnly(c);
 			switch (semTag) {
-				case DrugUtils.MP : c.setConceptType(ConceptType.MEDICINAL_PRODUCT);
+				case DrugUtils.MP : c.setConceptType(isOnly ? ConceptType.MEDICINAL_PRODUCT_ONLY : ConceptType.MEDICINAL_PRODUCT);
 											break;
 				case DrugUtils.MPF : c.setConceptType(ConceptType.MEDICINAL_PRODUCT_FORM);
 											break;
@@ -736,6 +737,11 @@ public class SnomedUtils implements RF2Constants{
 		}
 	}
 	
+	//Concepts with a base active ingredient count are "Only"
+	private static boolean isOnly(Concept c) {
+		return c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, COUNT_BASE_ACTIVE_INGREDIENT, ActiveState.ACTIVE).size() > 0;
+	}
+
 	private static void determineConceptTypeFromAttributes(Concept c, CharacteristicType charType) {
 		try {
 			//Do we have ingredients?  We're at least an MP

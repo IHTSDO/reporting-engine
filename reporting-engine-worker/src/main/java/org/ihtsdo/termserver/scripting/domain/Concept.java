@@ -333,11 +333,11 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 			if (isFirstGroup) {
 				isFirstGroup = false;
 			} else {
-				expression += ",\n  ";
+				expression += ",\n";
 			}
 			expression += group.isGrouped() ? "{" : "";
-			expression += group.getRelationships().stream().map(p -> p.toString())
-					.collect(Collectors.joining (",\n  "));
+			expression += group.getRelationships().stream().map(p -> "  " + p.toString())
+					.collect(Collectors.joining (",\n"));
 			expression += group.isGrouped() ? "}" : "";
 		}
 		return expression;

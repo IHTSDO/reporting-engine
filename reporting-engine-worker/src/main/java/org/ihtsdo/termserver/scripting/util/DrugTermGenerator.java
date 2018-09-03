@@ -199,6 +199,8 @@ public class DrugTermGenerator implements RF2Constants{
 		if (isFSN) {
 			prefix = "Product containing ";
 			switch (c.getConceptType()) {
+				case MEDICINAL_PRODUCT_ONLY: 
+										prefix += "only ";
 				case MEDICINAL_PRODUCT: 
 										semTag = "(medicinal product)";
 										break;
@@ -214,10 +216,16 @@ public class DrugTermGenerator implements RF2Constants{
 			}
 		} else if (isPT) {
 			switch (c.getConceptType()) {
-				case MEDICINAL_PRODUCT : suffix = "containing product";
+				case MEDICINAL_PRODUCT_ONLY : 
+										suffix = " only product";
+										ptContaining = false;
+										break;
+				case MEDICINAL_PRODUCT : 
+										suffix = "containing product";
 										ptContaining = true;
 										break;
-				case MEDICINAL_PRODUCT_FORM : suffix =  "containing product in " + DrugUtils.getDosageForm(c, isFSN, langRefset);
+				case MEDICINAL_PRODUCT_FORM : 
+										suffix =  "containing product in " + DrugUtils.getDosageForm(c, isFSN, langRefset);
 										ptContaining = true;
 										break;
 				case CLINICAL_DRUG : 	suffix = getCdSuffix(c, isFSN, langRefset);
@@ -419,8 +427,12 @@ public class DrugTermGenerator implements RF2Constants{
 		boolean isInactivated = removeDescription(c,removing);
 		String msg = (isInactivated?"Inactivated desc ":"Deleted desc ") +  removing;
 		changesMade++;
-		Severity severity = removing.getType().equals(DescriptionType.FSN)?Severity.MEDIUM:Severity.LOW;
-		report(t, c, severity, ReportActionType.DESCRIPTION_INACTIVATED, msg);
+		
+		//We're only going to report this if the term really existed, silently delete null terms
+		if (removing.getTerm() != null) {
+			Severity severity = removing.getType().equals(DescriptionType.FSN)?Severity.MEDIUM:Severity.LOW;
+			report(t, c, severity, ReportActionType.DESCRIPTION_INACTIVATED, msg);
+		}
 		
 		if (doReplacement) {
 			report(t, c, Severity.LOW, ReportActionType.DESCRIPTION_ADDED, replacement);

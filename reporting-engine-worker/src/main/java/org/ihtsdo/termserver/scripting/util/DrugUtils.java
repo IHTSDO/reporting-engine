@@ -44,14 +44,15 @@ public class DrugUtils implements RF2Constants {
 		}
 	}
 
-	public static Concept getNumberAsConcept(String number) throws TermServerScriptException {
+	public static Concept getNumberAsConcept(Object number) throws TermServerScriptException {
+		String numberStr = number.toString();
 		if (numberConceptMap == null) {
 			populateNumberConceptMap();
 		}
-		if (!numberConceptMap.containsKey(number)) {
-			TermServerScript.warn("Check and possibly need to create concept to represent number: " + number);
+		if (!numberConceptMap.containsKey(numberStr)) {
+			TermServerScript.warn("Check and possibly need to create concept to represent number: " + numberStr);
 		}
-		return numberConceptMap.get(number);
+		return numberConceptMap.get(numberStr);
 	}
 	
 	public static void registerNewNumber(String numberStr, Concept number) {

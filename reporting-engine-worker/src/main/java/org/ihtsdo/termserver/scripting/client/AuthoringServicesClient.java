@@ -60,18 +60,12 @@ public class AuthoringServicesClient {
 
 	public String createTask(String projectKey, String summary, String description) throws Exception {
 		String endPoint = serverUrl + apiRoot + "projects/" + projectKey + "/tasks";
-		/*JSONObject requestJson = new JSONObject();
-		requestJson.put("summary", summary);
-		requestJson.put("description", description);
-		JSONResource response = resty.json(endPoint, RestyHelper.content(requestJson, JSON_CONTENT_TYPE));
-		*/
 		JsonObject requestJson = new JsonObject();
 		requestJson.addProperty("summary", summary);
 		requestJson.addProperty("description", description);
 		HttpEntity<Object> requestEntity = new HttpEntity<Object>(requestJson, headers);
 		Task task = restTemplate.postForObject(endPoint, requestEntity, Task.class);
 		return task.getKey();
-		//return response.get("key").toString();
 	}
 
 	public void setEditPanelUIState(String project, String taskKey, String quotedList) throws IOException {
@@ -90,47 +84,31 @@ public class AuthoringServicesClient {
 	public String updateTask(String project, String taskKey, String summary, String description, String author, String reviewer) throws Exception {
 		String endPoint = serverUrl + apiRoot + "projects/" + project + "/tasks/" + taskKey;
 		
-		//JSONObject requestJson = new JSONObject();
 		JsonObject requestJson = new JsonObject();
 		if (summary != null) {
-			//requestJson.put("summary", summary);
 			requestJson.addProperty("summary", summary);
 		}
 		
 		if (description != null) {
-			//requestJson.put("description", description);
 			requestJson.addProperty("description", description);
 		}
 		
 		if (author != null) {
-			//JSONObject assigneeJson = new JSONObject();
 			JsonObject assigneeJson = new JsonObject();
-			//assigneeJson.put("username", author);
-			//requestJson.put("assignee", assigneeJson);
 			assigneeJson.addProperty("username", author);
 			requestJson.add("assignee", assigneeJson);
 		}
 		
 		if (reviewer != null) {
-			//requestJson.put("status", "IN_REVIEW");
 			requestJson.addProperty("status", "IN_REVIEW");
-			//JSONObject reviewerJson = new JSONObject();
 			JsonObject reviewerJson = new JsonObject();
-			//reviewerJson.put("username", reviewer);
-			//requestJson.put("reviewer", reviewerJson);
 			reviewerJson.addProperty("username", reviewer);
 			requestJson.add("reviewer", reviewerJson);
 		}
 		
 		HttpEntity<Object> requestEntity = new HttpEntity<Object>(requestJson, headers);
 		restTemplate.put(endPoint, requestEntity);
-		//   HttpEntity<Shop[]> response = restTemplate.exchange(url, HttpMethod.PUT, requestEntity, Shop[].class, param);
-
 		return taskKey;
-		//ResponseEntity<String> response = restTemplate.put(endPoint, entity);
-		//return reponse.
-		//JSONResource response = resty.json(endPoint, Resty.put(RestyHelper.content(requestJson, JSON_CONTENT_TYPE)));
-		//return response.get("key").toString();
 	}
 	
 	public void deleteTask(String project, String taskKey, boolean optional) throws SnowOwlClientException {
@@ -180,10 +158,8 @@ public class AuthoringServicesClient {
 		try {
 			String projectStr = taskKey.substring(0, taskKey.indexOf("-"));
 			String endPoint = serverUrl + apiRoot + "projects/" + projectStr + "/tasks/" + taskKey + "/classifications";
-			JSONResource response = resty.json(endPoint, Resty.content(""));
-			String json = response.toObject().toString();
-			Classification classification = gson.fromJson(json, Classification.class);
-			return classification;
+			HttpEntity<Object> requestEntity = new HttpEntity<Object>("", headers);
+			return restTemplate.postForObject(endPoint, requestEntity, Classification.class);
 		} catch (Exception e) {
 			throw new SnowOwlClientException("Unable to classify " + taskKey, e);
 		}

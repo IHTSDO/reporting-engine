@@ -16,6 +16,7 @@ import com.google.common.io.Files;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
 import us.monoid.web.JSONResource;
 import us.monoid.web.Resty;
@@ -338,23 +339,43 @@ public abstract class TermServerScript implements RF2Constants {
 		if (c.getFsn() == null || c.getFsn().isEmpty()) {
 			throw new ValidationFailure(c, "Cannot create concept with no FSN");
 		}
-		try {
-			String conceptSerialised = gson.toJson(c);
-			debug ((dryRun ?"Dry run creating ":"Creating ") + c + info);
-			if (!dryRun) {
-				JSONResource response = tsClient.createConcept(new JSONObject(conceptSerialised), t.getBranchPath());
-				String json = response.toObject().toString();
-				c = gson.fromJson(json, Concept.class);
-			} else {
-				c = c.clone("NEW_SCTID");
+		int attempt = 0;
+		while (true) {
+			try {
+				return attemptConceptCreation(t,c,info);
+			} catch (Exception e) {
+				attempt++;
+				String msg = "Failed to create " + c + " in TS due to " + e.getMessage();
+				if (attempt < 2) {
+					incrementSummaryInformation("Concepts creation exceptions");
+					warn (msg + " retrying...");
+					try {
+						Thread.sleep(10 * 1000);
+					} catch(InterruptedException ie) {
+						throw new TermServerScriptException("Interruption during recovery of :" + msg ,e);
+					}
+				} else {
+					throw new TermServerScriptException(msg ,e);
+				}
 			}
-			incrementSummaryInformation("Concepts created");
-			return c;
-		} catch (Exception e) {
-			throw new TermServerScriptException("Failed to create " + c + " in TS due to " + e.getMessage(),e);
 		}
 	}
 	
+	private Concept attemptConceptCreation(Task t, Concept c, String info) throws SnowOwlClientException, JSONException, IOException {
+		
+		String conceptSerialised = gson.toJson(c);
+		debug ((dryRun ?"Dry run creating ":"Creating ") + c + info);
+		if (!dryRun) {
+			JSONResource response = tsClient.createConcept(new JSONObject(conceptSerialised), t.getBranchPath());
+			String json = response.toObject().toString();
+			c = gson.fromJson(json, Concept.class);
+		} else {
+			c = c.clone("NEW_SCTID");
+		}
+		incrementSummaryInformation("Concepts created");
+		return c;
+	}
+
 	/**
 	 * Creates a set of concepts based on a structure around the initial concept 
 	 * ie parents as high as is required, siblings and children.
@@ -536,7 +557,7 @@ public abstract class TermServerScript implements RF2Constants {
 			} else {
 				display = value.toString();
 			}
-			recordSummaryText (key + ": " + display);
+			recordSummaryText (key + (display.isEmpty()?"":": ") + display);
 		}
 		if (summaryDetails.containsKey("Tasks created") && summaryDetails.containsKey(CONCEPTS_TO_PROCESS) ) {
 			if (summaryDetails.get(CONCEPTS_TO_PROCESS) != null &&  summaryDetails.get(CONCEPTS_TO_PROCESS) instanceof Collection) {
