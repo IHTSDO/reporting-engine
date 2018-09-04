@@ -197,13 +197,13 @@ public class CaseSignificanceFix extends BatchFix implements RF2Constants{
 					} else if (caseSig.equals(CS) || caseSig.equals(cI)) {
 						if (chopped.equals(chopped.toLowerCase()) && !properNouns.contains(firstWord)) {
 							report (t, c, Severity.LOW, ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, checkTerm, caseSig + "-> ci" );
-							d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
+							checkTerm.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
 							changesMade++;
 						} else if (caseSig.equals(CS)){
 							//Might be CS when doesn't need to be
 							if (!properNouns.contains(firstWord)) {
 								report (t, c, Severity.LOW, ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, checkTerm, caseSig + "-> cI" );
-								d.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
+								checkTerm.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
 								changesMade++;
 							}
 						}
@@ -211,7 +211,7 @@ public class CaseSignificanceFix extends BatchFix implements RF2Constants{
 						//For case insensitive terms, we're on the look out for capitial letters after the first letter
 						if (!chopped.equals(chopped.toLowerCase())) {
 							report (t, c, Severity.LOW, ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, checkTerm, caseSig + "-> cI" );
-							d.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
+							checkTerm.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
 							changesMade++;
 						}
 					}
