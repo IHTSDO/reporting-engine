@@ -20,6 +20,7 @@ import com.google.common.io.Files;
 public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 	
 	List<Concept> subHierarchies;
+	Map<Concept, List<Concept>> exclusionMap = new HashMap<>();
 	InitialAnalysis ipReport;
 	int modifiedSince = 20180131;
 	
@@ -32,7 +33,7 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		GenerateWorkDoneStatsWithTempateTypes report = new GenerateWorkDoneStatsWithTempateTypes();
 		try {
-			report.additionalReportColumns = "FSN, Simple, Pure, Complex, ComplexNoMorph, None, Total";
+			report.additionalReportColumns = "FSN, Simple, modified, Pure, modified, Complex, modified, ComplexNoMorph, modified, None, modified, Total";
 			report.init(args);
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.postLoadInit();
@@ -54,7 +55,17 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 		List<String> lines = Files.readLines(inputFile, Charsets.UTF_8);
 		for (String line : lines) {
 			if (!line.trim().isEmpty()) {
-				subHierarchies.add(gl.getConcept(line));
+				String[] concepts = line.split(COMMA);
+				Concept concept = gl.getConcept(concepts[0]);
+				subHierarchies.add(concept);
+				
+				if (concepts.length > 1) {
+					List<Concept> exclusions = new ArrayList<Concept>();
+					for (int idx = 1; idx < concepts.length; idx++) {
+						exclusions.add(gl.getConcept(concepts[idx]));
+					}
+					exclusionMap.put(concept, exclusions);
+				}
 			}
 		}
 		
@@ -81,7 +92,8 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 			int[] templateTypeTotal = new int[TemplateType.values().length];
 			int[] templateTypeModified = new int[TemplateType.values().length];
 			debug ("Analysing subHierarchy: " + subHierarchyStart);
-			Set<Concept> subHierarchy = descendantsCache.getDescendentsOrSelf(subHierarchyStart);
+			Set<Concept> subHierarchy = new HashSet<>(descendantsCache.getDescendentsOrSelf(subHierarchyStart)); //
+			removeExclusions(subHierarchyStart, subHierarchy);
 			int total = subHierarchy.size();
 			for (Concept c : subHierarchy) {
 				TemplateType type = getTemplateType(c);
@@ -98,6 +110,16 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 					templateTypeTotal[3] , templateTypeModified[3],
 					templateTypeTotal[4] , templateTypeModified[4],
 					total);
+		}
+	}
+
+	private void removeExclusions(Concept subHierarchyStart, Set<Concept> subHierarchy) throws TermServerScriptException {
+		//Do we have exclusions for this subHierarchy?
+		List<Concept> theseExclusions = exclusionMap.get(subHierarchyStart);
+		if (theseExclusions != null) {
+			for (Concept thisExclusion : theseExclusions) {
+				subHierarchy.removeAll(descendantsCache.getDescendentsOrSelf(thisExclusion));
+			}
 		}
 	}
 

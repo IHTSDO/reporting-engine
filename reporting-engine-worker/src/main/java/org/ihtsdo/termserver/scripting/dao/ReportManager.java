@@ -9,7 +9,7 @@ import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 public class ReportManager implements RF2Constants {
 	
 	public static final String STANDARD_HEADERS = "Concept SCTID, Detail";
-	boolean writeToFile = true;
+	boolean writeToFile = false;
 	ReportFileManager reportFileManager;
 	
 	boolean writeToSheet = true;

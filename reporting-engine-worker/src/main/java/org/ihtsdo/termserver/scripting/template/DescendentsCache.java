@@ -44,7 +44,7 @@ public class DescendentsCache implements RF2Constants {
 			descendentOrSelfCache.put(localConcept, descendents);
 		}
 		descendents.add(localConcept); //Or Self
-		return mutable ? descendents : Collections.unmodifiableSet(descendents);
+		return mutable ? new HashSet<>(descendents) : Collections.unmodifiableSet(descendents);
 	}
 
 	public Set<Concept>  getDescendents(Concept c) throws TermServerScriptException {
