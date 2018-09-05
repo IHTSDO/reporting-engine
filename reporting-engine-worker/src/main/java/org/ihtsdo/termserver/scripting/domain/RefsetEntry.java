@@ -85,6 +85,10 @@ public class RefsetEntry extends Component {
     public Boolean getActive() {
         return active;
     }
+    
+    public boolean isActive() {
+        return active;
+    }
 
     public void setActive(Boolean active) {
         this.active = active;

@@ -235,7 +235,8 @@ public class Description extends Component implements RF2Constants {
 			caseSig = SnomedUtils.translateCaseSignificanceFromEnum(caseSignificance); 
 		} catch (Exception e) {}
 		
-		sb.append(descriptionId==null?"NEW":descriptionId)
+		sb.append(isActive()?"":"*")
+		.append(descriptionId==null?"NEW":descriptionId)
 		.append(" [")
 		.append(conceptId)
 		.append( "] ")

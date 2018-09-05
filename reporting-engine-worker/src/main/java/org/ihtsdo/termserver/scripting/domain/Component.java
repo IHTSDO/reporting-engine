@@ -10,6 +10,10 @@ public abstract class Component {
 
 	public abstract String getId();
 	
+	public abstract String getEffectiveTime();
+	
+	public abstract boolean isActive();
+	
 	public abstract String getReportedName();
 	
 	public abstract String getReportedType();
