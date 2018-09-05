@@ -8,6 +8,7 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -29,6 +30,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		NormaliseTemplateCompliantConcepts app = new NormaliseTemplateCompliantConcepts(null);
 		try {
+			ReportSheetManager.targetFolderId = "1Ay_IwhPD1EkeIYWuU6q7xgWBIzfEf6dl";  // QI/Normalization
 			app.init(args);
 			app.loadProjectSnapshot(false);  //Load all descriptions
 			app.postInit();
@@ -50,11 +52,15 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		validateTasks = true;
 		additionalReportColumns = "CharacteristicType, Template, ActionDetail";
 		
-		/*subHierarchyStr = "125605004";  // QI-30 |Fracture of bone (disorder)|
-		templateNames = new String[] {	"Fracture of Bone Structure.json" }; /*,
-										"Fracture Dislocation of Bone Structure.json",
-										"Pathologic fracture of bone due to Disease.json"};
-		
+		subHierarchyStr = "125605004";  // QI-17 |Fracture of bone (disorder)|
+		templateNames = new String[] {	"fracture/Fracture of Bone Structure.json",
+										"fracture/Fracture Dislocation of Bone Structure.json",
+										"fracture/Pathologic fracture of bone due to Disease.json",
+										"fracture/Pathologic fracture morphology of bone structure co-occurrent and due to Neoplasm of bone.json",
+										"fracture/Traumatic abnormality of spinal cord structure co-occurrent and due to fracture morphology of vertebral bone structure.json",
+										//"Injury of finding site due to birth trauma.json"
+										 };
+		/*
 		subHierarchyStr =  "128294001";  // QI-9 |Chronic inflammatory disorder (disorder)
 		templateNames = new String[] {"Chronic Inflammatory Disorder.json"};
 		
@@ -70,7 +76,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		
 		subHierarchyStr =  "95896000";  //QI-19 + QI-27  |Protozoan infection (disorder)|
 		templateNames = new String[] {"Infection caused by Protozoa with optional bodysite.json"};
-		*/
+		
 		subHierarchyStr =  "125666000";  //QI-37  |Burn (disorder)|
 		templateNames = new String[] {
 				"burn/Burn of body structure.json",
@@ -79,6 +85,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 				"burn/Full thickness burn of body structure.json",
 				"burn/Deep partial thickness burn of body structure.json",
 				"burn/Superficial partial thickness burn of body structure.json"};
+		*/
 		super.init(args);
 	}
 
@@ -87,15 +94,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
 		int changesMade = normaliseConceptToTemplate(task, loadedConcept, conceptToTemplateMap.get(concept));
 		if (changesMade > 0) {
-			try {
-				String conceptSerialised = gson.toJson(loadedConcept);
-				debug ((dryRun ?"Dry run ":"Updating state of ") + loadedConcept + info);
-				if (!dryRun) {
-					tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
-				}
-			} catch (Exception e) {
-				report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
-			}
+			updateConcept(task, loadedConcept, info);
 		}
 		return changesMade;
 	}
@@ -195,9 +194,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 			}
 		}
 		setQuiet(false);
-		for (Concept unchanged : noChangesRequired) {
-			report (null, unchanged, Severity.NONE, ReportActionType.NO_CHANGE);
-		}
+		addSummaryInformation("Concepts matching templates, no change required", noChangesRequired.size());
 		return asComponents(changesRequired);
 	}
 	

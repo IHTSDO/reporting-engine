@@ -13,6 +13,7 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.Batch;
 import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
@@ -60,12 +61,13 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		
 		/*
 		subHierarchyStr = "125605004";  // QI-5 |Fracture of bone (disorder)|
-		templateNames = new String[] {	"Fracture of Bone Structure.json",
-										"Fracture Dislocation of Bone Structure.json",
-										"Pathologic fracture of bone due to Disease.json",
-										"Pathologic fracture morphology of bone structure co-occurrent and due to Neoplasm of bone.json",
-										"Traumatic abnormality of spinal cord structure co-occurrent and due to fracture morphology of vertebral bone structure.json",
-										"Injury of finding site due to birth trauma.json"};
+		templateNames = new String[] {	"fracture/Fracture of Bone Structure.json",
+										"fracture/Fracture Dislocation of Bone Structure.json",
+										"fracture/Pathologic fracture of bone due to Disease.json",
+										"fracture/Pathologic fracture morphology of bone structure co-occurrent and due to Neoplasm of bone.json",
+										"fracture/Traumatic abnormality of spinal cord structure co-occurrent and due to fracture morphology of vertebral bone structure.json",
+										//"Injury of finding site due to birth trauma.json"
+										 };
 		
 		subHierarchyStr =  "128294001";  // QI-9 |Chronic inflammatory disorder (disorder)
 		templateNames = new String[] {"Chronic Inflammatory Disorder.json"}; 
@@ -95,11 +97,11 @@ public class PrepMisalignedConcepts extends TemplateFix {
 				"burn/Full thickness burn of body structure.json",
 				"burn/Deep partial thickness burn of body structure.json",
 				"burn/Superficial partial thickness burn of body structure.json"};
-		*/
+		
 		subHierarchyStr = "74627003";  //QI-48 |Diabetic Complication|
 		templateNames = new String[] {	"Complication co-occurrent and due to Diabetes Melitus.json",
 										"Complication co-occurrent and due to Diabetes Melitus - Minimal.json"};
-		/*
+		
 		subHierarchyStr = "8098009";	// QI-45 |Sexually transmitted infectious disease (disorder)| 
 		templateNames = new String[] {	"Sexually transmitted Infection with optional bodysite.json"};
 		

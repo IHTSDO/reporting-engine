@@ -1,0 +1,6 @@
+{
+  "name": "Fracture of Bone Structure",
+  "documentation": "https://confluence.ihtsdotools.org/pages/viewpage.action?pageId=57813204",
+  "version": 1,
+  "logicalTemplate": "64572001 |Disease (disorder)|:\n\t [[~1..*]]{\n\t\t 116676008 |Associated morphology (attribute)| = [[+id(<< 72704001 |Fracture (morphologic abnormality)|) @fracture]],\n\t\t363698007 |Finding site (attribute)|  =  [[+id(<< 272673000 |Bone structure (body structure)|) @bone]], [[~0..1]]246454002 |Occurrence (attribute)| = [[+id(<< 282032007 |Periods of life (qualifier value)|) @occurrence]]\n\t}\n"
+}
