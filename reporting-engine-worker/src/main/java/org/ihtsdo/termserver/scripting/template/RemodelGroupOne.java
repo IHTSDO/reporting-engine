@@ -41,7 +41,8 @@ public class RemodelGroupOne extends TemplateFix {
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		RemodelGroupOne app = new RemodelGroupOne(null);
 		try {
-			ReportSheetManager.targetFolderId = "15FSegsDC4Tz7vP5NPayGeG2Q4SB1wvnr"; //QI  / Group One Remodel
+			//ReportSheetManager.targetFolderId = "15FSegsDC4Tz7vP5NPayGeG2Q4SB1wvnr"; //QI  / Group One Remodel
+			ReportSheetManager.targetFolderId = "18xZylGhgL7ML782pu6-6u_VUw3p5Hfr7"; //QI / Development
 			app.init(args);
 			app.loadProjectSnapshot(false);  //Load all descriptions
 			app.postInit();
@@ -68,10 +69,10 @@ public class RemodelGroupOne extends TemplateFix {
 		templateNames = new String[] {	"Fracture of Bone Structure.json" }; /*,
 										"Fracture Dislocation of Bone Structure.json",
 										"Pathologic fracture of bone due to Disease.json"};
-		
-		subHierarchyStr =  "128294001";  // QI-9 |Chronic inflammatory disorder (disorder)
+		*/
+		subHierarchyStr =  "128294001";  // QI-36 |Chronic inflammatory disorder (disorder)
 		templateNames = new String[] {"Chronic Inflammatory Disorder.json"};
-		
+		/*
 		subHierarchyStr =  "126537000";  //QI-14 |Neoplasm of bone (disorder)|
 		templateNames = new String[] {"Neoplasm of Bone.json"};
 		*/
@@ -92,10 +93,10 @@ public class RemodelGroupOne extends TemplateFix {
 		subHierarchyStr = "74627003";  //QI-48 |Diabetic Complication|
 		templateNames = new String[] {	"Complication co-occurrent and due to Diabetes Melitus.json",
 				"Complication co-occurrent and due to Diabetes Melitus - Minimal.json"};
-		*/
+		
 		subHierarchyStr = "3218000"; //QI-70 |Mycosis (disorder)|
 		templateNames = new String[] {	"Infection caused by Fungus.json"};
-		/*
+		
 		subHierarchyStr = "17322007"; //QI-116 |Parasite (disorder)|
 		templateNames = new String[] {	"Infection caused by Parasite.json"};
 		*/
@@ -121,7 +122,7 @@ public class RemodelGroupOne extends TemplateFix {
 	protected int doFix(Task task, Concept concept, String info) throws TermServerScriptException, ValidationFailure {
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
 
-		int changesMade = remodelGroupOne(task, loadedConcept, templates.get(0));
+		int changesMade = remodelConcept(task, loadedConcept, templates.get(0));
 		if (changesMade > 0) {
 			List<String> focusConceptIds = templates.get(0).getLogicalTemplate().getFocusConcepts();
 			if (focusConceptIds.size() == 1) {
@@ -139,57 +140,59 @@ public class RemodelGroupOne extends TemplateFix {
 		return changesMade;
 	}
 
-	private int remodelGroupOne(Task t, Concept c, Template template) throws TermServerScriptException {
+	private int remodelConcept(Task t, Concept c, Template template) throws TermServerScriptException {
 		int changesMade = 0;
 		
-		if (c.getConceptId().equals("240113005")) {
+		if (c.getConceptId().equals("43925005")) {
 			debug("Check me");
 		}
 		
-		RelationshipGroup[] groups = new RelationshipGroup[3];
+		//Create as many groups as required, but minimum 3
+		int maxGroups = c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP).size();
+		maxGroups = maxGroups < 3 ? 3 : maxGroups;
+		RelationshipGroup[] groups = new RelationshipGroup[maxGroups];
 		
 		//Get a copy of the stated and inferred modelling "before"
 		String statedForm = SnomedUtils.getModel(c, CharacteristicType.STATED_RELATIONSHIP);
 		String inferredForm = SnomedUtils.getModel(c, CharacteristicType.INFERRED_RELATIONSHIP);
 		
-		groups[1] = c.getRelationshipGroup(CharacteristicType.STATED_RELATIONSHIP, 1);
-		if (groups[1] == null) {
-			groups[1] = new RelationshipGroup(1);
-		}
-		
-		//Work through the attributes in the template and see if we can satisfy those from the ungrouped stated
-		//or inferred relationships on the concept
-		AttributeGroup firstTemplateGroup = template.getAttributeGroups().toArray(new AttributeGroup[0])[1];
-		for (Attribute a : firstTemplateGroup.getAttributes()) {
-			int statedChangeMade = findAttributeToState(t, template, c, a, groups, 1, CharacteristicType.STATED_RELATIONSHIP);
-			if (statedChangeMade == NO_CHANGES_MADE) {
-				changesMade += findAttributeToState(t, template, c, a, groups, 1, CharacteristicType.INFERRED_RELATIONSHIP);
-			} else {
-				changesMade += statedChangeMade;
+		for (int groupId = 0; groupId < maxGroups; groupId++) {
+			//Prepare for groups 0 and 1 anyway
+			groups[groupId] = c.getRelationshipGroup(CharacteristicType.STATED_RELATIONSHIP, groupId);
+			if (groupId <= 1 && groups[groupId] == null) {
+				groups[groupId] = new RelationshipGroup(groupId);
 			}
 		}
 		
-		//Have we formed a second group?  Find different attributes if so
-		RelationshipGroup groupTwo = groups[2];
-		if (groupTwo != null) {
-			for (Attribute a : firstTemplateGroup.getAttributes()) {
-				int statedChangeMade = findAttributeToState(t, template, c, a, groups, 2, CharacteristicType.STATED_RELATIONSHIP);
-				if (statedChangeMade == NO_CHANGES_MADE) {
-					changesMade += findAttributeToState(t, template, c, a, groups, 2, CharacteristicType.INFERRED_RELATIONSHIP);
-				} else {
-					changesMade += statedChangeMade;
+		//Work through the attribute groups in the template and see if we can satisfy those from the ungrouped stated
+		//or inferred relationships on the concept
+		for (int templateGroupId = 0; templateGroupId <  template.getAttributeGroups().size(); templateGroupId++) {
+			AttributeGroup templateGroup = template.getAttributeGroups().toArray(new AttributeGroup[0])[templateGroupId];
+			for (Attribute a : templateGroup.getAttributes()) {
+				changesMade += findAttributeToState(t, template, c, a, groups, templateGroupId, CharacteristicType.STATED_RELATIONSHIP);
+				
+				//Also attempt to satisfy from the inferred form - needed or not - so we don't miss out potential values
+				changesMade += findAttributeToState(t, template, c, a, groups, templateGroupId, CharacteristicType.INFERRED_RELATIONSHIP);
+			}
+			
+			if (templateGroupId == 1) {
+				//Have we formed a second group?  Find different attributes if so
+				//TODO Check group 1 has 1 to many cardinality before assuming we can replicate it
+				RelationshipGroup groupTwo = groups[2];
+				if (groupTwo != null) {
+					for (Attribute a : templateGroup.getAttributes()) {
+						int statedChangeMade = findAttributeToState(t, template, c, a, groups, 2, CharacteristicType.STATED_RELATIONSHIP);
+						if (statedChangeMade == NO_CHANGES_MADE) {
+							changesMade += findAttributeToState(t, template, c, a, groups, 2, CharacteristicType.INFERRED_RELATIONSHIP);
+						} else {
+							changesMade += statedChangeMade;
+						}
+					}
 				}
 			}
 		}
 		
-		if (changesMade > 0) {
-			c.addRelationshipGroup(groups[1]);
-			if (groupTwo != null) {
-				c.addRelationshipGroup(groupTwo);
-			}
-			String modifiedForm = SnomedUtils.getModel(c, CharacteristicType.STATED_RELATIONSHIP);
-			report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_GROUP_ADDED, modifiedForm, statedForm, inferredForm);
-		}
+		int ignoreUngroupedMoves = changesMade;
 		
 		//Now work through all relationship and move any ungrouped attributes out of groups
 		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
@@ -200,7 +203,27 @@ public class RemodelGroupOne extends TemplateFix {
 				changesMade++;
 			}
 		}
+		
+		if (ignoreUngroupedMoves > 0) {
+			applyRemodelledGroups(t,c,groups);
+			String modifiedForm = SnomedUtils.getModel(c, CharacteristicType.STATED_RELATIONSHIP);
+			report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_GROUP_ADDED, modifiedForm, statedForm, inferredForm);
+		}
 		return changesMade;
+	}
+
+	private void applyRemodelledGroups(Task t, Concept c, RelationshipGroup[] groups) throws TermServerScriptException {
+		for (RelationshipGroup group : groups) {
+			if (group != null) {
+				//Do we need to retire any existing relationships?
+				for (Relationship potentialRemoval : c.getRelationshipGroupSafely(CharacteristicType.STATED_RELATIONSHIP, group.getGroupId()).getRelationships()) {
+					if (!group.getRelationships().contains(potentialRemoval)) {
+						removeRelationship(t, c, potentialRemoval);
+					}
+				}
+				c.addRelationshipGroup(group);
+			}
+		}
 	}
 
 	private int findAttributeToState(Task t, Template template, Concept c, Attribute a, RelationshipGroup[] groups, int groupOfInterest, CharacteristicType charType) throws TermServerScriptException {
@@ -239,10 +262,12 @@ public class RemodelGroupOne extends TemplateFix {
 				}
 			}
 			
-			//If this relationship type doesn't already exist in this group, stated, add it
+			//If this relationship type/value doesn't already exist in this group, stated, add it
 			Relationship r = new Relationship (c, type, values.iterator().next(), group.getGroupId());
 			if (additionNeeded && !group.containsTypeValue(r)) {
 				group.addRelationship(r);
+				//Remove any attributes already present that are less specific than this one
+				removeRedundancies(r, group);
 				return CHANGE_MADE;
 			} else {
 				return NO_CHANGES_MADE;
@@ -253,11 +278,11 @@ public class RemodelGroupOne extends TemplateFix {
 		} else {
 			//Has our group been populated with attributes that we could use to work out which (inferred) group we should pull from?
 			
-			return considerSecondGrouping(t, template, c, type, groups, charType, values);
+			return considerAdditionalGrouping(t, template, c, type, groups, charType, values);
 		}
 	}
 
-	private int considerSecondGrouping(Task t, Template template, Concept c, Concept type, RelationshipGroup[] groups,
+	private int considerAdditionalGrouping(Task t, Template template, Concept c, Concept type, RelationshipGroup[] groups,
 			CharacteristicType charType, Set<Concept> values) throws TermServerScriptException {
 		//Sort the values alphabetically to ensure the right one goes into the right group
 		List<Concept> disjointAttributeValues = new ArrayList<>(values);
@@ -266,7 +291,7 @@ public class RemodelGroupOne extends TemplateFix {
 		//If it's a finding site and either attribute is in group 0, we'll leave it there
 		if (type.equals(FINDING_SITE) && ( c.getRelationships(charType, type, disjointAttributeValues.get(0), UNGROUPED, ActiveState.ACTIVE).size() > 0) ||
 				c.getRelationships(charType, type, disjointAttributeValues.get(1), UNGROUPED, ActiveState.ACTIVE).size() > 0 ) {
-			debug ("Finding site in group 0, skipping: " + c );
+			debug ("Finding site in group 0, not forming 2nd group: " + c );
 			return NO_CHANGES_MADE;
 		}
 		
@@ -276,7 +301,7 @@ public class RemodelGroupOne extends TemplateFix {
 			if (a.getValue() != null && a.getType().equals(type.getConceptId())) {
 				for (Concept value : values) {
 					if (a.getValue().equals(value.getConceptId())) {
-						debug ( type + "= " + value + " specified in template, no 2nd group required." );
+						debug ( type + "= " + value + " specified in template, no additional group required." );
 						return NO_CHANGES_MADE;
 					}
 				}
@@ -329,23 +354,36 @@ public class RemodelGroupOne extends TemplateFix {
 		nextValue:
 		for (Concept value : values) {
 			Relationship proposedRel = new Relationship (type, value);
-			for (int groupId = 1; groupId <= 2; groupId++) {
-				//Loop through other attributes already set in this stated group, and see if we can find them
-				//grouped in the inferred form with our proposed new relationship
-				RelationshipGroup group = groups[groupId];
-				if (group != null) {
-					for (Relationship r : group.getRelationships()) {
-						//If this rel's type and value exist in multiple groups, it's not a good candiate for determining affinity.  Skip
-						if (SnomedUtils.appearsInGroups(c, r, CharacteristicType.INFERRED_RELATIONSHIP).size() > 0) {
-							continue;
-						}
-						
-						if (!r.equalsTypeValue(proposedRel) && SnomedUtils.isGroupedWith(r, proposedRel, c, CharacteristicType.INFERRED_RELATIONSHIP)) {
-							if (sortedValues[groupId - 1] == null) {
-								sortedValues[groupId - 1] = value;
-								continue nextValue;
-							} else {
-								throw new IllegalStateException("In " + c + "inferred, " + r + " is grouped with: \n" + proposedRel + "\n but also \n" + new Relationship (type, sortedValues[groupId - 1]));
+			
+			boolean affinitySet = false;
+			//In fact, we might already have one of these values stated in a group, in which case the affinity is already set
+			for (RelationshipGroup group : groups) {
+				if (group.containsTypeValue(proposedRel)) {
+					sortedValues[group.getGroupId()] = value;
+					affinitySet = true;
+				}
+			}
+			
+			if (!affinitySet) {
+				for (int groupId = 1; groupId <= 2; groupId++) {
+					
+					//Loop through other attributes already set in this stated group, and see if we can find them
+					//grouped in the inferred form with our proposed new relationship
+					RelationshipGroup group = groups[groupId];
+					if (group != null) {
+						for (Relationship r : group.getRelationships()) {
+							//If this rel's type and value exist in multiple groups, it's not a good candiate for determining affinity.  Skip
+							if (SnomedUtils.appearsInGroups(c, r, CharacteristicType.INFERRED_RELATIONSHIP).size() > 0) {
+								continue;
+							}
+							
+							if (!r.equalsTypeValue(proposedRel) && SnomedUtils.isGroupedWith(r, proposedRel, c, CharacteristicType.INFERRED_RELATIONSHIP)) {
+								if (sortedValues[groupId - 1] == null) {
+									sortedValues[groupId - 1] = value;
+									continue nextValue;
+								} else {
+									throw new IllegalStateException("In " + c + "inferred, " + r + " is grouped with: \n" + proposedRel + "\n but also \n" + new Relationship (type, sortedValues[groupId - 1]));
+								}
 							}
 						}
 					}
@@ -379,15 +417,24 @@ public class RemodelGroupOne extends TemplateFix {
 		}
 		concepts.removeAll(redundant);
 	}
+	
+
+	private void removeRedundancies(Relationship r, RelationshipGroup group) throws TermServerScriptException {
+		//Do we have other attributes of this type that are less specific than r?
+		for (Relationship potentialRedundancy : group.getRelationships()) {
+			if (SnomedUtils.isMoreSpecific(r, potentialRedundancy, ancestorsCache)) {
+				group.getRelationships().remove(potentialRedundancy);
+			}
+		}
+	}
 
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		//Find concepts that only have ungrouped attributes, or none at all.
 		List<Concept> processMe = new ArrayList<>();
-		nextConcept:
 		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
-			/*if (!c.getConceptId().equals("195911009")) {
+			if (!c.getConceptId().equals("16024431000119108")) {
 				continue;
-			}*/
+			}
 			Concept potentialCandidate = null;
 			if (isWhiteListed(c)) {
 				warn ("Whitelisted: " + c);
@@ -400,11 +447,11 @@ public class RemodelGroupOne extends TemplateFix {
 					if (r.getGroupId() == UNGROUPED) {
 						if (groupedAttributeTypes.contains(r.getType())) {
 							potentialCandidate = c;
-							continue nextConcept;
+							break;
 						}
 					} else if (ungroupedAttributeTypes.contains(r.getType())) {
 						potentialCandidate = c;
-						continue nextConcept;
+						break;
 					}
 					
 					if (r.getGroupId() != UNGROUPED) {
@@ -454,7 +501,7 @@ public class RemodelGroupOne extends TemplateFix {
 		for (Concept c : processMe) {
 			try {
 				Concept cClone = c.cloneWithIds();
-				int changesMade = remodelGroupOne(null, cClone, templates.get(0));
+				int changesMade = remodelConcept(null, cClone, templates.get(0));
 				if (changesMade > 0) {
 					firstPassComplete.add(c);
 				} else {

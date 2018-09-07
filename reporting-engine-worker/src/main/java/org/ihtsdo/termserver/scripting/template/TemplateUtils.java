@@ -171,6 +171,15 @@ public class TemplateUtils {
 		}
 		return false;
 	}
+	
+	public static boolean containsMatchingRelationship (RelationshipGroup group , Attribute a , DescendentsCache cache) throws TermServerScriptException {
+		for (Relationship r : group.getRelationships()) {
+			if (matchesAttribute(r, a, cache)) {
+				return true;
+			}
+		}
+		return false;
+	}
 
 	private static boolean matchesAttributeValue(Concept target, String ecl, DescendentsCache cache) throws TermServerScriptException {
 		//We'll only handle the simplest of ECL here

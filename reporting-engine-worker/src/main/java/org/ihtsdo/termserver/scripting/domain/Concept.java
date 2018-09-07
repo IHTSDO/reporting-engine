@@ -1016,13 +1016,21 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		return ComponentType.CONCEPT;
 	}
 	
-	public RelationshipGroup getRelationshipGroup(CharacteristicType characteristicType, long groupId ) {
-		for (RelationshipGroup g : getRelationshipGroups(characteristicType)) {
+	public RelationshipGroup getRelationshipGroup(CharacteristicType charType, int groupId ) {
+		for (RelationshipGroup g : getRelationshipGroups(charType)) {
 			if (g.getGroupId() == groupId) {
 				return g;
 			}
 		}
 		return null;
+	}
+	
+	public RelationshipGroup getRelationshipGroupSafely(CharacteristicType charType, int groupId ) {
+		RelationshipGroup group = getRelationshipGroup(charType, groupId);
+		if (group == null) {
+			group = new RelationshipGroup(groupId);
+		}
+		return group;
 	}
 	
 	public Collection<RelationshipGroup> getRelationshipGroups(CharacteristicType characteristicType) {

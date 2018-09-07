@@ -20,13 +20,10 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 abstract public class TemplateFix extends BatchFix {
 	
-	String subHierarchyStr;
 	String [] excludeHierarchies = new String[] {};
 	List<Concept> exclusions;
 	
-	Concept subHierarchy;
 	String[] templateNames;
-	
 	List<Template> templates = new ArrayList<>();
 	String[] ignoreFSNsContaining = new String[] { "avulsion" , "without"};
 	TemplateServiceClient tsc = new TemplateServiceClient();

@@ -856,6 +856,39 @@ public class SnomedUtils implements RF2Constants {
 		}
 		return moreSpecificAttributeDetected;
 	}
+	
+	//Return true if a is more specific than b.   False if they're the same
+	public static boolean isMoreSpecific(Relationship a, Relationship b, AncestorsCache cache) throws TermServerScriptException {
+		boolean sameType = false;
+		boolean moreSpecificType = false;
+		//Compare Types
+		if (a.getType().equals(b.getType())) {
+			sameType = true;
+		} else if (cache.getAncestors(a.getType()).contains(b.getType())) {
+			moreSpecificType = true;
+		} else {
+			return false;
+		}
+		
+		//If type is same or more specific, how does value compare?
+		boolean sameValue = false;
+		boolean moreSpecificValue = false;
+		if (!a.getTarget().equals(b.getTarget())) {
+			sameValue = true;
+		} else if (cache.getAncestors(a.getType()).contains(b.getType())) {
+			moreSpecificValue = true;
+		} else {
+			return false;
+		}
+		
+		//If they're exactly the same, then it's not MORE specific
+		if (sameType && sameValue) {
+			return false;
+		} else if (moreSpecificType || moreSpecificValue) {
+			return true;
+		}
+		return false;
+	}
 
 	/*
 	 * Get active relationships which are the same as, or descendants of the stated types and values

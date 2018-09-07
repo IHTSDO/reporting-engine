@@ -59,10 +59,10 @@ public class PrepMisalignedConcepts extends TemplateFix {
 										"fracture/Traumatic abnormality of spinal cord structure co-occurrent and due to fracture morphology of vertebral bone structure.json",
 										//"Injury of finding site due to birth trauma.json"
 										 };
-		*/
+		
 		subHierarchyStr =  "128294001";  // QI-9 |Chronic inflammatory disorder (disorder)
 		templateNames = new String[] {"Chronic Inflammatory Disorder.json"}; 
-		/*
+		
 		subHierarchyStr =  "126537000";  //QI-14 |Neoplasm of bone (disorder)|
 		templateNames = new String[] {	"Neoplasm of Bone.json",
 										"Pathologic fracture morphology of bone structure co-occurrent and due to Neoplasm of bone.json"};
@@ -99,10 +99,10 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		subHierarchyStr = "283682007"; // QI-39 |Bite - wound (disorder)|
 		templateNames = new String[] {	"bite/bite of bodysite caused by bite event.json", 
 										"bite/bite of bodysite caused by bite event with infection.json"};
-		
+		*/
 		subHierarchyStr = "3218000"; //QI-67 |Mycosis (disorder)|
 		templateNames = new String[] {	"Infection caused by Fungus.json"};
-		
+		/*
 		subHierarchyStr = "17322007"; //QI-68 |Parasite (disorder)|
 		templateNames = new String[] {	"Infection caused by Parasite.json"};
 		

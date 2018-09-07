@@ -48,6 +48,9 @@ public abstract class TermServerScript implements RF2Constants {
 	protected boolean runStandAlone = true; //Set to true to avoid loading concepts from Termserver.  Should be used with Dry Run only.
 	protected File inputFile;
 	protected File inputFile2;
+	
+	protected String subHierarchyStr;
+	protected Concept subHierarchy;
 
 	protected GraphLoader gl = GraphLoader.getGraphLoader();
 	protected String additionalReportColumns = "ActionDetail";
@@ -613,6 +616,12 @@ public abstract class TermServerScript implements RF2Constants {
 		String reportName = SnomedUtils.deconstructFilename(inputFile)[1];
 		if (reportName.isEmpty()) {
 			reportName = getScriptName();
+		}
+		
+		if (subHierarchy != null) {
+			reportName += " " + subHierarchy;
+		} else if (subHierarchyStr != null) {
+			reportName += " SCT" + subHierarchyStr;
 		}
 		return reportName;
 	}
