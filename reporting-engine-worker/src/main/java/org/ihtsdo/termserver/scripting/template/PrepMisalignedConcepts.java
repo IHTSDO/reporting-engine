@@ -2,24 +2,14 @@ package org.ihtsdo.termserver.scripting.template;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
-import org.ihtsdo.termserver.scripting.domain.Batch;
-import org.ihtsdo.termserver.scripting.domain.Component;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.RelationshipGroup;
-import org.ihtsdo.termserver.scripting.domain.Task;
-import org.ihtsdo.termserver.scripting.domain.Template;
+import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 
 import us.monoid.json.JSONException;
@@ -40,6 +30,7 @@ public class PrepMisalignedConcepts extends TemplateFix {
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		PrepMisalignedConcepts app = new PrepMisalignedConcepts(null);
 		try {
+			ReportSheetManager.targetFolderId = "1uywo1VGAIh7MMY7wCn2yEj312OQCjt9J";
 			app.init(args);
 			app.loadProjectSnapshot(false);  //Load all descriptions
 			app.postInit();
@@ -68,10 +59,10 @@ public class PrepMisalignedConcepts extends TemplateFix {
 										"fracture/Traumatic abnormality of spinal cord structure co-occurrent and due to fracture morphology of vertebral bone structure.json",
 										//"Injury of finding site due to birth trauma.json"
 										 };
-		
+		*/
 		subHierarchyStr =  "128294001";  // QI-9 |Chronic inflammatory disorder (disorder)
 		templateNames = new String[] {"Chronic Inflammatory Disorder.json"}; 
-		
+		/*
 		subHierarchyStr =  "126537000";  //QI-14 |Neoplasm of bone (disorder)|
 		templateNames = new String[] {	"Neoplasm of Bone.json",
 										"Pathologic fracture morphology of bone structure co-occurrent and due to Neoplasm of bone.json"};
@@ -116,10 +107,14 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		templateNames = new String[] {	"Infection caused by Parasite.json"};
 		
 		subHierarchyStr = "416886008"; //QI-106 |Closed wound| 
-		templateNames = new String[] {	"wound/closed wound of bodysite.json"};
+		templateNames = new String[] {	"wound/wound of bodysite.json"
+				//"wound/closed wound of bodysite.json"
+				};
 		
 		subHierarchyStr = "125643001"; //QI-107 |Open wound| 
-		templateNames = new String[] {	"wound/open wound of bodysite.json"};
+		templateNames = new String[] {	"wound/wound of bodysite.json"
+				//"wound/open wound of bodysite.json"
+				};
 		*/
 		super.init(args);
 	}

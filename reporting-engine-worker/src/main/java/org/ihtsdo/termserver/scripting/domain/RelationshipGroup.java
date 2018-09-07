@@ -105,4 +105,13 @@ public class RelationshipGroup {
 	public boolean isGrouped() {
 		return groupId > 0;
 	}
+
+	public boolean containsTypeValue(Relationship r1) {
+		for (Relationship r2 : relationships) {
+			if (r2.equalsTypeValue(r1)) {
+				return true;
+			}
+		}
+		return false;
+	}
 }

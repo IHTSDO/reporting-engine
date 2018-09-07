@@ -407,6 +407,19 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		addRelationship(r, false);
 	}
 	
+	public void addOrReactivateRelationship(Relationship r) {
+		//Do we already have an inactive version of this relationship to reactivate?
+		//Only relevant if this relationship is new
+		if (r.getId() == null) {
+			for (Relationship match : getRelationships(r, ActiveState.INACTIVE)) {
+				System.out.println ("Reactivating " + match);
+				match.setActive(true);
+				return;
+			}
+		}
+		addRelationship(r);
+	}
+	
 	public void addRelationship(Relationship r, boolean replaceTripleMatch) {
 		//Do we already had a relationship with this id?  Replace if so.
 		//Actually since delta files from the TS could have different SCTIDs
@@ -1049,7 +1062,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 
 	public void addRelationshipGroup(RelationshipGroup group) {
 		for (Relationship r : group.getRelationships()) {
-			addRelationship(r);
+			addOrReactivateRelationship(r);
 		}
 		//Force recalculation
 		statedRelationshipGroups = null;

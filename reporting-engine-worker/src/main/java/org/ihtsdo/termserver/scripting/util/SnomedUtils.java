@@ -899,4 +899,20 @@ public class SnomedUtils implements RF2Constants {
 		return false;
 	}
 
+	public static Set<RelationshipGroup> appearsInGroups(Concept c, Relationship findMe, CharacteristicType charType) {
+		//Return all groups containing r's type and value
+		Set<RelationshipGroup> groups = new HashSet<>();
+		
+		nextGroup:
+		for (RelationshipGroup group : c.getRelationshipGroups(charType)) {
+			for (Relationship r : group.getRelationships()) {
+				if (r.equalsTypeValue(findMe)) {
+					groups.add(group);
+					continue nextGroup;
+				}
+			}
+		}
+		return groups;
+	}
+
 }
