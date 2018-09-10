@@ -22,6 +22,9 @@ import com.google.common.io.Files;
  * 
  * SUBST-288 Remove capital letter from greek letters (unless initial letter)
  * and adjust CS as required. 
+ * 
+ * SUBST-289 Many substance terms have a single letter - either a single lower 
+ * case letter or a single upper case letter - case sensitivity needs to reflect these.
  **/
 public class CaseSignificanceFix extends BatchFix implements RF2Constants{
 	
@@ -65,7 +68,8 @@ public class CaseSignificanceFix extends BatchFix implements RF2Constants{
 	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
 		//int changesMade = fixCaseSignifianceIssues(task, loadedConcept);
-		int changesMade = fixGreekLetterIssues(task, loadedConcept);
+		//int changesMade = fixGreekLetterIssues(task, loadedConcept);
+		int changesMade = fixSingleLetterIssues(task, loadedConcept);
 		if (changesMade > 0) {
 			updateConcept(task, loadedConcept, info);
 		}
@@ -136,6 +140,53 @@ public class CaseSignificanceFix extends BatchFix implements RF2Constants{
 		return changesMade;
 	}
 	
+	private int fixSingleLetterIssues(Task task, Concept c) throws TermServerScriptException {
+		int changesMade = 0;
+		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+			String caseSig = SnomedUtils.translateCaseSignificanceFromEnum(d.getCaseSignificance());
+			String firstLetter = d.getTerm().substring(0,1);
+			String firstWord = d.getTerm().split(" ")[0];
+			
+			if (!caseSig.equals(CS) && firstLetterSingle(d.getTerm())) {
+				report (task, c, Severity.LOW, ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, d, caseSig + "-> CS" );
+				d.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
+				changesMade++;
+			} else if (!caseSig.equals(cI) && containsSingleLetter(d.getTerm())) {
+				if (caseSig.equals(CS)) {
+					//If we start with a small letter, single letter or a proper noun, that's fine
+					if (!firstLetter.equals(firstLetter.toLowerCase()) 
+							&& !properNouns.contains(firstWord)
+							&& !firstLetterSingle(d.getTerm())) {
+						report (task, c, Severity.LOW, ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, d, caseSig + "-> cI" );
+						d.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
+						changesMade++;
+					} 
+				} else {
+					report (task, c, Severity.LOW, ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, d, caseSig + "-> cI" );
+					d.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
+					changesMade++;
+				}
+			}
+		}
+		return changesMade;
+	}
+	
+	private boolean firstLetterSingle(String term) {
+		return Character.isLetter(term.charAt(0)) && (term.length() == 1 || !Character.isLetter(term.charAt(1)));
+	}
+	
+	private boolean containsSingleLetter(String term) {
+		for (int i=1; i<term.length(); i++) {
+			//Note that we're not going to could X's as a single letter
+			if (Character.isLetter(term.charAt(i)) 
+					&& (!Character.isLetter(term.charAt(i-1)) && term.charAt(i-1) != '\'' )
+					&& (i == term.length() -1 || !Character.isLetter(term.charAt(i+1)))) {
+						return true;
+					}
+		}
+		return false;
+	}
+
 	private int fixGreekLetterIssues(Task t, Concept c) throws TermServerScriptException {
 		int changesMade = 0;
 		
@@ -229,13 +280,19 @@ public class CaseSignificanceFix extends BatchFix implements RF2Constants{
 		info ("Identifying incorrect case signficance settings");
 		this.setQuiet(true);
 		for (Concept concept : subHierarchy.getDescendents(NOT_SET)) {
+			/*if (!concept.getConceptId().equals("130867000")) {
+				continue;
+			}*/
 			if (concept.isActive() && !isException(concept.getId()) && !isExceptionStr(concept.getFsn())) {
 				/*if (fixCaseSignifianceIssues(null, concept.cloneWithIds()) > 0) {
 					processMe.add(concept);
 				}*/
-				if (fixGreekLetterIssues(null, concept.cloneWithIds()) > 0) {
+				/*if (fixGreekLetterIssues(null, concept.cloneWithIds()) > 0) {
 					processMe.add(concept);
-				} 
+				} */
+				if (fixSingleLetterIssues(null, concept.cloneWithIds()) > 0) {
+					processMe.add(concept);
+				}
 			}
 		}
 		debug ("Identified " + processMe.size() + " concepts to process");
