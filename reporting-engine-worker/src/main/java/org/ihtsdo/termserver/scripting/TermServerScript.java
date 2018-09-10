@@ -346,7 +346,11 @@ public abstract class TermServerScript implements RF2Constants {
 		int attempt = 0;
 		while (true) {
 			try {
-				return attemptConceptCreation(t,c,info);
+				//Copy in the concept type which isn't known to the TS
+				ConceptType conceptType = c.getConceptType();
+				Concept createdConcept = attemptConceptCreation(t,c,info);
+				createdConcept.setConceptType(conceptType);
+				return createdConcept;
 			} catch (Exception e) {
 				attempt++;
 				String msg = "Failed to create " + c + " in TS due to " + e.getMessage();

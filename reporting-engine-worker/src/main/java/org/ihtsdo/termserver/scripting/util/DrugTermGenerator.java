@@ -203,6 +203,8 @@ public class DrugTermGenerator implements RF2Constants{
 				case MEDICINAL_PRODUCT: 
 										semTag = "(medicinal product)";
 										break;
+				case MEDICINAL_PRODUCT_FORM_ONLY : 
+										prefix += "only ";
 				case MEDICINAL_PRODUCT_FORM : suffix =  " in " + DrugUtils.getDosageForm(c, isFSN, langRefset);
 										semTag = "(medicinal product form)";
 										break;
@@ -222,6 +224,9 @@ public class DrugTermGenerator implements RF2Constants{
 				case MEDICINAL_PRODUCT : 
 										suffix = "containing product";
 										ptContaining = true;
+										break;
+				case MEDICINAL_PRODUCT_FORM_ONLY : 
+										suffix =  " only product in " + DrugUtils.getDosageForm(c, isFSN, langRefset);
 										break;
 				case MEDICINAL_PRODUCT_FORM : 
 										suffix =  "containing product in " + DrugUtils.getDosageForm(c, isFSN, langRefset);

@@ -609,7 +609,7 @@ public class SnomedUtils implements RF2Constants {
 			switch (semTag) {
 				case DrugUtils.MP : c.setConceptType(isOnly ? ConceptType.MEDICINAL_PRODUCT_ONLY : ConceptType.MEDICINAL_PRODUCT);
 											break;
-				case DrugUtils.MPF : c.setConceptType(ConceptType.MEDICINAL_PRODUCT_FORM);
+				case DrugUtils.MPF : c.setConceptType(isOnly ? ConceptType.MEDICINAL_PRODUCT_FORM_ONLY : ConceptType.MEDICINAL_PRODUCT_FORM);
 											break;
 				case DrugUtils.CD : c.setConceptType(ConceptType.CLINICAL_DRUG);
 											break;

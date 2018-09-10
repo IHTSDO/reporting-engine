@@ -42,12 +42,13 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 	Set<Concept> createMPOs = new HashSet<>();
 	Set<Concept> knownMPOs = new HashSet<>();
 	
+	Set<Concept> createMPFOs = new HashSet<>();
+	Set<Concept> knownMPFOs = new HashSet<>();
+	
 	String[] substanceExceptions = new String[] {"liposome"};
 	String[] complexExceptions = new String[] { "lipid", "phospholipid", "cholesteryl" };
 	
 	Set<Concept> allowMoreSpecificDoseForms = new HashSet<>();
-	
-	enum Mode { CREATE_MP, CREATE_MPF, CREATE_MPO }
 	
 	protected CreateMissingDrugConcepts(BatchFix clone) {
 		super(clone);
@@ -83,6 +84,9 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 			if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_ONLY)) {
 				knownMPOs.add(c);
 			}
+			if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM_ONLY)) {
+				knownMPFOs.add(c);
+			}
 		}
 		
 		allowMoreSpecificDoseForms.add(gl.getConcept("764671009 | Sublingual dose form (dose form)|"));
@@ -100,38 +104,44 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 	@Override
 	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
-		Concept required;
-		Mode mode;
-		ConceptType targetType;
+		List<Concept> conceptsRequired = new ArrayList<>();
+		ConceptType[] targetTypes;
 		
-		//Do we require an MP or MPF?
+		//What do we expect to create based on they type of this input concept?
 		switch (concept.getConceptType()) {
 			case CLINICAL_DRUG : 
-				mode = Mode.CREATE_MPF;
-				targetType = ConceptType.MEDICINAL_PRODUCT_FORM;
+				targetTypes = new ConceptType[] {ConceptType.MEDICINAL_PRODUCT_FORM};
 				break;
 			case MEDICINAL_PRODUCT_FORM : 
-				mode = Mode.CREATE_MP;
-				targetType = ConceptType.MEDICINAL_PRODUCT;
+				targetTypes = new ConceptType[] {	ConceptType.MEDICINAL_PRODUCT,
+													ConceptType.MEDICINAL_PRODUCT_FORM_ONLY };
 				break;
 			case MEDICINAL_PRODUCT : 
-				mode = Mode.CREATE_MPO;
-				targetType = ConceptType.MEDICINAL_PRODUCT_ONLY;
+				targetTypes = new ConceptType[] {ConceptType.MEDICINAL_PRODUCT_ONLY};
 				break;
 			default : throw new IllegalStateException("Unexpected driver concept type: " + concept.getConceptType());
 		}
-		required = calculateDrugRequired(loadedConcept, mode);
-		required.setConceptType(targetType);
+	
+		for (ConceptType targetType : targetTypes) {
+			Concept required = calculateDrugRequired(loadedConcept, targetType);
+			//Need to check again if we need this concept, because an MPF could cause MP and MPFO to come into being
+			if (targetType.equals(ConceptType.MEDICINAL_PRODUCT) && isContained(required, knownMPs)) {
+				continue;
+			}
+			conceptsRequired.add(required);
+		}
 		
-		if (required != null) {
+		for (Concept required : conceptsRequired) {
 			termGenerator.ensureDrugTermsConform(task, required, CharacteristicType.STATED_RELATIONSHIP, true);
 			required.setDefinitionStatus(DefinitionStatus.FULLY_DEFINED);
 			required = createConcept(task, required, info);
 			
-			if (!mode.equals(Mode.CREATE_MPO)) {
+			if (required.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT) || 
+				required.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM)) {
+				ConceptType invalidParentType = required.getConceptType();  //Up a level should have different type
 				String currentParents = concept.getParents(CharacteristicType.INFERRED_RELATIONSHIP)
 						.stream()
-						.filter(parent -> parent.getConceptType().equals(targetType))
+						.filter(parent -> parent.getConceptType().equals(invalidParentType))
 						.map(parent -> parent.toString())
 						.collect(Collectors.joining(",\n"));
 				report (task, concept, Severity.LOW, ReportActionType.INFO, "Existing parents considered insufficient: " + (currentParents.isEmpty() ? "None detected" : currentParents));
@@ -175,13 +185,14 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 		return false;
 	}
 	
-	private Concept calculateDrugRequired(Concept c, Mode mode) throws TermServerScriptException {
+	private Concept calculateDrugRequired(Concept c, ConceptType targetType) throws TermServerScriptException {
 		//For each ingredient, find the base substance (if relevant) and create 
 		//an MPF using the dose form
 		Concept drug = SnomedUtils.createConcept(null,null,MEDICINAL_PRODUCT);
+		drug.setConceptType(targetType);
 		
 		//Only if we're creating an MPF, include the dose form
-		if (mode == Mode.CREATE_MPF) {
+		if (targetType.equals(ConceptType.MEDICINAL_PRODUCT_FORM) || targetType.equals(ConceptType.MEDICINAL_PRODUCT_FORM_ONLY) ) {
 			Concept doseForm = SnomedUtils.getTarget(c, new Concept[] {HAS_MANUFACTURED_DOSE_FORM}, UNGROUPED, CharacteristicType.STATED_RELATIONSHIP);
 			doseForm = SnomedUtils.getHighestAncestorBefore(doseForm, PHARM_DOSE_FORM);
 			Relationship formRel = new Relationship (drug, HAS_MANUFACTURED_DOSE_FORM, doseForm, UNGROUPED);
@@ -197,8 +208,8 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 			throw new ValidationFailure(c,"Zero ingredients found.");
 		}
 		
-		//Only if we're creating an MPO, include the ingredient count
-		if (mode.equals(Mode.CREATE_MPO)) {
+		//Only if we're creating an "Only", include the ingredient count
+		if (targetType.equals(ConceptType.MEDICINAL_PRODUCT_ONLY) || targetType.equals(ConceptType.MEDICINAL_PRODUCT_FORM_ONLY)) {
 			Relationship countRel = new Relationship (drug, COUNT_BASE_ACTIVE_INGREDIENT, DrugUtils.getNumberAsConcept(baseIngredients.size()), UNGROUPED);
 			drug.addRelationship(countRel);
 		}
@@ -215,9 +226,12 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 		List<Concept> allAffected = new ArrayList<Concept>(); 
 		nextConcept:
 		for (Concept c : MEDICINAL_PRODUCT.getDescendents(NOT_SET)) {
+			/*if (!c.getConceptId().equals("767585002")) {
+				continue;
+			}*/
 			try {
 				if (c.getConceptType().equals(ConceptType.CLINICAL_DRUG)) {
-					Concept mpf = calculateDrugRequired(c, Mode.CREATE_MPF);
+					Concept mpf = calculateDrugRequired(c, ConceptType.MEDICINAL_PRODUCT_FORM);
 					//If the concept has a more specific mpf than the one we've calculated, warn 
 					List<Concept> currentMPFs = c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)
 							.stream()
@@ -239,7 +253,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 						allAffected.add(c);
 					}
 				} else if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM)) {
-					Concept mp = calculateDrugRequired(c, Mode.CREATE_MP);
+					Concept mp = calculateDrugRequired(c, ConceptType.MEDICINAL_PRODUCT);
 					//If the concept has a more specific mp than the one we've calculated, warn 
 					List<Concept> currentMPs = c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)
 							.stream()
@@ -256,14 +270,27 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 						createMPs.add(mp);
 						allAffected.add(c);
 					}
+					
+					//For a given MPF, as well as looking for an MP, we may also need a sibling MPFO
+					if (containsExceptionSubstance(c)) {
+						continue nextConcept;
+					}
+					Concept mpfo = calculateDrugRequired(c, ConceptType.MEDICINAL_PRODUCT_FORM_ONLY);
+					//Do we already know about this concept or already have a plan to create it?
+					if (!isContained(mpfo, knownMPFOs) && !isContained(mpfo, createMPFOs)) {
+						createMPFOs.add(mpfo);
+						if (!allAffected.contains(c)) {
+							allAffected.add(c);
+						}
+					}
 				} else if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT)) {
 					if (containsExceptionSubstance(c)) {
 						continue nextConcept;
 					}
-					Concept mp = calculateDrugRequired(c, Mode.CREATE_MPO);
+					Concept mpo = calculateDrugRequired(c, ConceptType.MEDICINAL_PRODUCT_ONLY);
 					//Do we already know about this concept or already have a plan to create it?
-					if (!isContained(mp, knownMPOs) && !isContained(mp, createMPOs)) {
-						createMPOs.add(mp);
+					if (!isContained(mpo, knownMPOs) && !isContained(mpo, createMPOs)) {
+						createMPOs.add(mpo);
 						allAffected.add(c);
 					}
 				} 
