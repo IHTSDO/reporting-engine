@@ -156,6 +156,7 @@ public class CaseSignificanceFix extends BatchFix implements RF2Constants{
 					//If we start with a small letter, single letter or a proper noun, that's fine
 					if (!firstLetter.equals(firstLetter.toLowerCase()) 
 							&& !properNouns.contains(firstWord)
+							&& !startsWithProperNounPhrase(firstWord, d.getTerm())
 							&& !firstLetterSingle(d.getTerm())) {
 						report (task, c, Severity.LOW, ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, d, caseSig + "-> cI" );
 						d.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
@@ -171,6 +172,18 @@ public class CaseSignificanceFix extends BatchFix implements RF2Constants{
 		return changesMade;
 	}
 	
+	private boolean startsWithProperNounPhrase(String firstWord, String term) {
+		//Do we have any phrases that start with this word
+		if (properNounPhrases.containsKey(firstWord)) {
+			for (String phrase : properNounPhrases.get(firstWord)) {
+				if (term.startsWith(phrase)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
 	private boolean firstLetterSingle(String term) {
 		return Character.isLetter(term.charAt(0)) && (term.length() == 1 || !Character.isLetter(term.charAt(1)));
 	}
