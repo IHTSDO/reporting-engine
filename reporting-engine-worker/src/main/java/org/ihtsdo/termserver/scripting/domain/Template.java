@@ -49,18 +49,15 @@ public class Template {
 		//a group.  Must store it though so that the object is recognised for comparison
 		if (attributeGroups == null) {
 			List<Attribute> ungrouped = logicalTemplate.getUngroupedAttributes();
-			if (ungrouped != null && ungrouped.size() > 0) {
-				List<AttributeGroup> combinedGroups = new ArrayList<>();
-				AttributeGroup group0 = new AttributeGroup();
-				group0.setAttributes(ungrouped);
-				group0.setCardinalityMin("0");
-				group0.setCardinalityMax("1");
-				combinedGroups.add(group0);
-				combinedGroups.addAll(logicalTemplate.getAttributeGroups());
-				attributeGroups = combinedGroups;
-			} else {
-				attributeGroups = logicalTemplate.getAttributeGroups();
-			}
+			//Always add group 0 for consistency, even if it's empty
+			List<AttributeGroup> combinedGroups = new ArrayList<>();
+			AttributeGroup group0 = new AttributeGroup();
+			group0.setAttributes(ungrouped);
+			group0.setCardinalityMin("0");
+			group0.setCardinalityMax("1");
+			combinedGroups.add(group0);
+			combinedGroups.addAll(logicalTemplate.getAttributeGroups());
+			attributeGroups = combinedGroups;
 		}
 		return attributeGroups;
 	}

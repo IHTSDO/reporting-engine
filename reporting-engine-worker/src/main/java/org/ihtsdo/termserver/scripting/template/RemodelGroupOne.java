@@ -41,8 +41,8 @@ public class RemodelGroupOne extends TemplateFix {
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		RemodelGroupOne app = new RemodelGroupOne(null);
 		try {
-			//ReportSheetManager.targetFolderId = "15FSegsDC4Tz7vP5NPayGeG2Q4SB1wvnr"; //QI  / Group One Remodel
-			ReportSheetManager.targetFolderId = "18xZylGhgL7ML782pu6-6u_VUw3p5Hfr7"; //QI / Development
+			ReportSheetManager.targetFolderId = "15FSegsDC4Tz7vP5NPayGeG2Q4SB1wvnr"; //QI  / Group One Remodel
+			//ReportSheetManager.targetFolderId = "18xZylGhgL7ML782pu6-6u_VUw3p5Hfr7"; //QI / Development
 			app.init(args);
 			app.loadProjectSnapshot(false);  //Load all descriptions
 			app.postInit();
@@ -63,7 +63,6 @@ public class RemodelGroupOne extends TemplateFix {
 		populateEditPanel = false;
 		populateTaskDescription = false;
 		additionalReportColumns = "CharacteristicType, Template, AFTER Stated, BEFORE Stated, Inferred";
-		
 		/*
 		subHierarchyStr = "125605004";  // QI-30 |Fracture of bone (disorder)|
 		templateNames = new String[] {	"Fracture of Bone Structure.json" }; /*,
@@ -93,13 +92,17 @@ public class RemodelGroupOne extends TemplateFix {
 		subHierarchyStr = "74627003";  //QI-48 |Diabetic Complication|
 		templateNames = new String[] {	"Complication co-occurrent and due to Diabetes Melitus.json",
 				"Complication co-occurrent and due to Diabetes Melitus - Minimal.json"};
-		*/
+		
 		subHierarchyStr = "3218000"; //QI-70 |Mycosis (disorder)|
 		templateNames = new String[] {	"Infection caused by Fungus.json"};
-		/*
+		
 		subHierarchyStr = "17322007"; //QI-116 |Parasite (disorder)|
 		templateNames = new String[] {	"Infection caused by Parasite.json"};
 		*/
+		subHierarchyStr = "125643001"; //QI-117 |Open wound| 
+		templateNames = new String[] {	"wound/wound of bodysite.json"
+				//"wound/open wound of bodysite.json"
+				};
 		super.init(args);
 	}
 	
@@ -374,11 +377,14 @@ public class RemodelGroupOne extends TemplateFix {
 		disjointAttributeValues.sort(Comparator.comparing(Concept::getFsn));
 		
 		//If it's a finding site and either attribute is in group 0, we'll leave it there
-		if (type.equals(FINDING_SITE) && (( c.getRelationships(charType, type, disjointAttributeValues.get(0), UNGROUPED, ActiveState.ACTIVE).size() > 0) ||
+		//This is specific to diabetes.  When putting in back in, we need to find a way to 
+		//retain these relationships in group 0, because if they're not modelled, they'll be removed.
+		//Actually, we could just skip them in the first place.
+		/*if (type.equals(FINDING_SITE) && (( c.getRelationships(charType, type, disjointAttributeValues.get(0), UNGROUPED, ActiveState.ACTIVE).size() > 0) ||
 				c.getRelationships(charType, type, disjointAttributeValues.get(1), UNGROUPED, ActiveState.ACTIVE).size() > 0 )) {
 			debug ("Finding site in group 0, not forming 2nd group: " + c );
 			return NO_CHANGES_MADE;
-		}
+		}*/
 		
 		//Does the template specify one of the values specifically in group 0?  No need to move
 		//to group 2 in that case.
