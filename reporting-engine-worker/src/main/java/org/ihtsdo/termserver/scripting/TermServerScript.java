@@ -617,10 +617,8 @@ public abstract class TermServerScript implements RF2Constants {
 	
 
 	protected String getReportName() {
-		String reportName = SnomedUtils.deconstructFilename(inputFile)[1];
-		if (reportName.isEmpty()) {
-			reportName = getScriptName();
-		}
+		String fileName = SnomedUtils.deconstructFilename(inputFile)[1];
+		String reportName = getScriptName() + (fileName.isEmpty()?"" : " " + fileName);
 		
 		if (subHierarchy != null) {
 			reportName += " " + subHierarchy;

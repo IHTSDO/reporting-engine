@@ -873,9 +873,9 @@ public class SnomedUtils implements RF2Constants {
 		//If type is same or more specific, how does value compare?
 		boolean sameValue = false;
 		boolean moreSpecificValue = false;
-		if (!a.getTarget().equals(b.getTarget())) {
+		if (a.getTarget().equals(b.getTarget())) {
 			sameValue = true;
-		} else if (cache.getAncestors(a.getType()).contains(b.getType())) {
+		} else if (cache.getAncestors(a.getTarget()).contains(b.getTarget())) {
 			moreSpecificValue = true;
 		} else {
 			return false;

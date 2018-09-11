@@ -1068,11 +1068,22 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		return relationshipGroups;
 	}
 
-	public void addRelationshipGroup(RelationshipGroup group) {
+	public void addRelationshipGroup(RelationshipGroup group, List<Relationship> availableForReuse) {
 		for (Relationship r : group.getRelationships()) {
+			//Do we have one of these relationships available to be reused?
+			for (Relationship reuseMe : new ArrayList<>(availableForReuse)) {
+				if (reuseMe.getType().equals(r.getType()) && reuseMe.getTarget().equals(r.getTarget())) {
+					System.out.println("** Reusing: " + reuseMe + " in group " + r.getGroupId());
+					reuseMe.setGroupId(r.getGroupId());
+					reuseMe.setActive(true);
+					r = reuseMe;
+					availableForReuse.remove(reuseMe);
+					break;
+				}
+			}
 			addOrReactivateRelationship(r);
 		}
-		//Force recalculation
+		//Force recalculation of groups
 		statedRelationshipGroups = null;
 		inferredRelationshipGroups = null;
 	}

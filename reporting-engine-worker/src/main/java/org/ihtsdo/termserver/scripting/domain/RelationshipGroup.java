@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting.domain;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -12,6 +13,14 @@ public class RelationshipGroup {
 	String indicators = "";
 	//Generic holder to record some property of this relationship which we need to deal with
 	List<Concept> issues;
+	
+	public RelationshipGroup clone() {
+		RelationshipGroup clone = new RelationshipGroup(groupId);
+		for (Relationship r : relationships) {
+			clone.addRelationship(r.clone());
+		}
+		return clone;
+	}
 	
 	public RelationshipGroup (int groupId) {
 		this.groupId = groupId;
@@ -113,5 +122,35 @@ public class RelationshipGroup {
 			}
 		}
 		return false;
+	}
+	
+	public Relationship getTypeValue(Relationship r1) {
+		List<Relationship> matches = new ArrayList<>();
+		for (Relationship r2 : relationships) {
+			if (r2.equalsTypeValue(r1)) {
+				matches.add(r2);
+			}
+		}
+		if (matches.size() == 0) {
+			return null;
+		} else if (matches.size() == 1) {
+			return matches.get(0);
+		} else {
+			throw new IllegalArgumentException("More than one matching relationship found");
+		}
+	}
+	
+	public boolean containsTypeValue(Concept type, Collection<Concept> values) {
+		for (Concept value : values) {
+			Relationship r1 = new Relationship(type, value);
+			if (containsTypeValue(r1)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public void removeRelationship(Relationship r) {
+		relationships.remove(r);
 	}
 }

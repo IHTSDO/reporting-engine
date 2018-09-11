@@ -234,6 +234,10 @@ public class Relationship extends Component implements RF2Constants, Comparable<
 		clone.dirty = true;
 		return clone;
 	}
+	
+	public Relationship clone() {
+		return clone(this.getId());
+	}
 
 	@Override
 	//Sort on source id, type id, target id, group id
