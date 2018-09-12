@@ -1,26 +1,25 @@
 package org.ihtsdo.snowowl.authoring.scheduler.api.service;
 
 import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.snomed.otf.scheduler.domain.*;
 
-public class ScheduleServiceStub implements ScheduleService {
+public class ScheduleServiceStub extends ScheduleServiceImpl {
 	
 	private static final String TYPE_REPORT = "Report";
 	private static final String JOB_CS = "Case Sensitivity";
 	private static final String JOB_IA = "Initial Analysis";
 	private static final String JOB_AAP = "Attributes as Parents";
-	private URL resultURL;
+	private String resultURL;
 	
 	Map<String, JobType> jobTypes = new HashMap<>();
 	Map<Job, List<JobRun>> jobRuns = new HashMap<>();
 	
 	public ScheduleServiceStub() throws MalformedURLException {
-		resultURL = new URL ("https://docs.google.com/spreadsheets/d/1OkNqnFmjNhe5IOcoCmK4P3-1uEHqWO0Xf1mq0mya-PE/edit");
+		resultURL = "https://docs.google.com/spreadsheets/d/1OkNqnFmjNhe5IOcoCmK4P3-1uEHqWO0Xf1mq0mya-PE/edit";
 		createDummyData();
 	}
 
@@ -36,10 +35,18 @@ public class ScheduleServiceStub implements ScheduleService {
 		}
 		return null;
 	}
+	
+	public List<JobCategory> listJobTypeCategories() {
+		List<JobCategory> allCategories = new ArrayList<>();
+		for (JobType type : jobTypes.values()) {
+			allCategories.addAll(type.getCategories());
+		}
+		return allCategories;
+	}
 
 	@Override
-	public Job getJob(String typeName, String jobName) {
-		for (JobCategory category : listJobTypeCategories(typeName)) {
+	public Job getJob(String jobName) {
+		for (JobCategory category : listJobTypeCategories()) {
 			for (Job job : category.getJobs()) {
 				if (job.getName().equals(jobName)) {
 					return job;
@@ -51,7 +58,7 @@ public class ScheduleServiceStub implements ScheduleService {
 
 	@Override
 	public List<JobRun> listJobsRun(String typeName, String jobName, String user) {
-		Job job = getJob(typeName, jobName);
+		Job job = getJob(jobName);
 		//Are we filtering?
 		if (user == null) {
 			return jobRuns.get(job);
@@ -69,13 +76,18 @@ public class ScheduleServiceStub implements ScheduleService {
 	@Override
 	public JobRun runJob(String jobType, String jobName, JobRun jobRun) throws BusinessServiceException {
 		//Make sure we know what this job is before we run it!
-		Job job = getJob(jobType, jobName);
+		Job job = getJob(jobName);
 		if (job == null) {
 			throw new BusinessServiceException("Unknown job : " + jobType + "/" + jobName);
 		}
-		jobRun.setId(UUID.randomUUID());
-		jobRun.setRequestTime(new Date());
-		jobRun.setStatus(JobStatus.Scheduled);
+		return runJob(jobRun);
+	}
+	
+
+	@Override
+	public JobRun runJob(JobRun jobRun) throws BusinessServiceException {
+		Job job = getJob(jobRun.getJobName());
+		jobRun = super.runJob(jobRun);
 		List<JobRun> runs = jobRuns.get(job);
 		if (runs == null) {
 			runs = new ArrayList<>();
@@ -92,26 +104,25 @@ public class ScheduleServiceStub implements ScheduleService {
 	}
 
 	@Override
-	public void deleteSchedule(String jobType, String jobName, String scheduleId) {
+	public void deleteSchedule(String jobType, String jobName, UUID scheduleId) {
 		return;
 	}
 
 	@Override
-	public JobRun getJobRun(String typeName, String jobName, UUID runId) {
+	public Optional<JobRun> getJobRun(String typeName, String jobName, UUID runId) {
 		for (JobRun run : listJobsRun(typeName, jobName, null)) {
 			if (run.getId().equals(runId)) {
 				//Complete all running jobs
-				run.setResult(resultURL);
+				run.setResultUrl(resultURL);
 				run.setStatus(JobStatus.Complete);
 				if (run.getResultTime()==null) {
 					run.setResultTime(new Date());
 				}
-				return run;
+				return Optional.of(run);
 			}
 		}
-		return null;
+		return Optional.empty();
 	}
-
 	
 	/***********************  DUMMY DATA *************************/
 
@@ -154,46 +165,43 @@ public class ScheduleServiceStub implements ScheduleService {
 		
 		JobRun completeJob = JobRun.create(JOB_CS, "system");
 		completeJob.setStatus(JobStatus.Complete);
-		completeJob.setResult(new URL("https://docs.google.com/spreadsheets/d/1OkNqnFmjNhe5IOcoCmK4P3-1uEHqWO0Xf1mq0mya-PE/edit"));
+		completeJob.setResultUrl("https://docs.google.com/spreadsheets/d/1OkNqnFmjNhe5IOcoCmK4P3-1uEHqWO0Xf1mq0mya-PE/edit");
 		populateParameter(completeJob, "SubHierarchy", "105590001 |Substance (substance)|");
 		populateParameter(completeJob, "Project", "SUBST2019");
 		
 		List <JobRun> csRuns = new ArrayList<>();
 		csRuns.add(scheduledJob);
 		csRuns.add(completeJob);
-		Job csJob = getJob(TYPE_REPORT, JOB_CS);
+		Job csJob = getJob(JOB_CS);
 		jobRuns.put(csJob, csRuns);
 		
 		JobRun completeQIJob = JobRun.create(JOB_IA, "jcase");
 		completeQIJob.setStatus(JobStatus.Complete);
-		completeQIJob.setResult(new URL("https://docs.google.com/spreadsheets/d/1HMtHqUaIP-DTKbt-7Jae8lrCf9SzP7QlK8DDwu00nZ8/edit#gid=0"));
+		completeQIJob.setResultUrl("https://docs.google.com/spreadsheets/d/1HMtHqUaIP-DTKbt-7Jae8lrCf9SzP7QlK8DDwu00nZ8/edit#gid=0");
 		populateParameter(completeQIJob, "Project", "QI2018");
 		
 		List <JobRun> iaRuns = new ArrayList<>();
 		iaRuns.add(completeQIJob);
-		Job iaJob = getJob(TYPE_REPORT, JOB_IA);
+		Job iaJob = getJob(JOB_IA);
 		jobRuns.put(iaJob, iaRuns);
 		
 		JobRun completeAAPJob = JobRun.create(JOB_AAP, "tmorrison");
 		completeAAPJob.setStatus(JobStatus.Complete);
-		completeAAPJob.setResult(new URL("https://docs.google.com/spreadsheets/d/1pXOQNEnSnSra2nISCG9eGcfsHuLewfjEWqUiSLz-6b4/edit"));
+		completeAAPJob.setResultUrl("https://docs.google.com/spreadsheets/d/1pXOQNEnSnSra2nISCG9eGcfsHuLewfjEWqUiSLz-6b4/edit");
 		populateParameter(completeAAPJob, "AttributeType", "738774007 |Is modification of (attribute)|");
 		
 		List <JobRun> aapRuns = new ArrayList<>();
 		aapRuns.add(completeAAPJob);
-		Job aapJob = getJob(TYPE_REPORT, JOB_AAP);
+		Job aapJob = getJob(JOB_AAP);
 		jobRuns.put(aapJob, aapRuns);
 	}
 
 	private void populateParameter(JobRun jobRun, String key, String value) {
-		List<JobParameter> params = jobRun.getParameters();
+		Map<String, String> params = jobRun.getParameters();
 		if (params == null) {
-			params = new ArrayList<>();
+			params = new HashMap<>();
 			jobRun.setParameters(params);
 		}
-		JobParameter param = new JobParameter();
-		param.setKey(key);
-		param.setValue(value);
-		params.add(param);
+		params.put(key, value);
 	}
 }
