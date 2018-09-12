@@ -975,7 +975,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		clone.setConceptType(conceptType);
 		
 		//Copy all descriptions
-		for (Description d : getDescriptions(ActiveState.ACTIVE)) {
+		for (Description d : getDescriptions()) {
 			//We need to null out the conceptId since the clone is a new concept
 			Description dClone = d.clone(keepIds?d.getDescriptionId():null);
 			dClone.setConceptId(keepIds?conceptId:null);
@@ -988,7 +988,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		}
 		
 		//Copy all stated relationships, or in the case of an exact clone (keepIds = true) also inferred
-		List<Relationship> selectedRelationships = keepIds ? relationships : getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
+		List<Relationship> selectedRelationships = keepIds ? relationships : getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH);
 		for (Relationship r : selectedRelationships) {
 			//We need to null out the sourceId since the clone is a new concept
 			Relationship rClone = r.clone(keepIds?r.getRelationshipId():null);
