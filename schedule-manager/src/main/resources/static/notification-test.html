@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>
+        Notification Test
+    </title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.1.4/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+</head>
+
+<body>
+<script>
+var stompClient = null;
+
+function connect(username) {
+    var socket = new SockJS('authoring-services-websocket');
+    stompClient = Stomp.over(socket);
+    stompClient.connect({}, function (frame) {
+        console.log('Connected: ' + frame);
+        stompClient.subscribe('/topic/user/' + username + '/notifications', function (message) {
+            console.log('Notification ' + JSON.parse(message.body).content);
+        });
+    });
+}
+connect("kkewley");
+</script>
+</body>
