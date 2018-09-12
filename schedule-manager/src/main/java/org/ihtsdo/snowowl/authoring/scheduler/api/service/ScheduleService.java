@@ -1,7 +1,6 @@
 package org.ihtsdo.snowowl.authoring.scheduler.api.service;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
@@ -27,7 +26,7 @@ public interface ScheduleService {
 
 	public void deleteSchedule(String jobType, String jobName, UUID scheduleId);
 
-	public Optional<JobRun> getJobRun(String typeName, String jobName, UUID runId);
+	public JobRun getJobRun(String typeName, String jobName, UUID runId);
 
 	public void initialise();
 

@@ -109,7 +109,7 @@ public class ScheduleServiceStub extends ScheduleServiceImpl {
 	}
 
 	@Override
-	public Optional<JobRun> getJobRun(String typeName, String jobName, UUID runId) {
+	public JobRun getJobRun(String typeName, String jobName, UUID runId) {
 		for (JobRun run : listJobsRun(typeName, jobName, null)) {
 			if (run.getId().equals(runId)) {
 				//Complete all running jobs
@@ -118,10 +118,10 @@ public class ScheduleServiceStub extends ScheduleServiceImpl {
 				if (run.getResultTime()==null) {
 					run.setResultTime(new Date());
 				}
-				return Optional.of(run);
+				return run;
 			}
 		}
-		return Optional.empty();
+		return null;
 	}
 	
 	/***********************  DUMMY DATA *************************/

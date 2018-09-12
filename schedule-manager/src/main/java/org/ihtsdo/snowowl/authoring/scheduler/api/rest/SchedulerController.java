@@ -97,7 +97,7 @@ public class SchedulerController {
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/jobs/{typeName}/{jobName}/runs/{runId}", method= RequestMethod.GET)
-	public Optional<JobRun> getJobStatus(@PathVariable final String typeName,
+	public JobRun getJobStatus(@PathVariable final String typeName,
 			@PathVariable final String jobName,
 			@PathVariable final UUID runId) throws BusinessServiceException {
 		return scheduleService.getJobRun(typeName, jobName, runId);

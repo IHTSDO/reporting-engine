@@ -112,8 +112,9 @@ public class ScheduleServiceImpl implements ScheduleService {
 	}
 
 	@Override
-	public Optional<JobRun> getJobRun(String typeName, String jobName, UUID runId) {
-		return jobRunRepository.findById(runId);
+	public JobRun getJobRun(String typeName, String jobName, UUID runId) {
+		Optional<JobRun> result = jobRunRepository.findById(runId);
+		return result.orElse(null);
 	}
 
 	@Override
