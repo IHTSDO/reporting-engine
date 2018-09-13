@@ -29,10 +29,11 @@ import org.snomed.authoringtemplate.domain.logical.*;
  */
 public class RemodelGroupOne extends TemplateFix {
 	
-	String[] whitelist = new String[] { /*"co-occurrent"*/ };
 	Set<Concept> groupedAttributeTypes = new HashSet<>();
 	Set<Concept> ungroupedAttributeTypes = new HashSet<>();
 	Set<Concept> formNewGroupAround = new HashSet<>();
+	
+	boolean skipMultipleUngroupedFindingSites = true;
 
 	protected RemodelGroupOne(BatchFix clone) {
 		super(clone);
@@ -41,8 +42,8 @@ public class RemodelGroupOne extends TemplateFix {
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		RemodelGroupOne app = new RemodelGroupOne(null);
 		try {
-			ReportSheetManager.targetFolderId = "15FSegsDC4Tz7vP5NPayGeG2Q4SB1wvnr"; //QI  / Group One Remodel
-			//ReportSheetManager.targetFolderId = "18xZylGhgL7ML782pu6-6u_VUw3p5Hfr7"; //QI / Development
+			//ReportSheetManager.targetFolderId = "15FSegsDC4Tz7vP5NPayGeG2Q4SB1wvnr"; //QI  / Group One Remodel
+			ReportSheetManager.targetFolderId = "18xZylGhgL7ML782pu6-6u_VUw3p5Hfr7"; //QI / Development
 			app.init(args);
 			app.loadProjectSnapshot(false);  //Load all descriptions
 			app.postInit();
@@ -88,21 +89,23 @@ public class RemodelGroupOne extends TemplateFix {
 		subHierarchyStr =  "95896000";  //QI-27  |Protozoan infection (disorder)|
 		templateNames = new String[] {"Infection caused by Protozoa with optional bodysite.json"};
 		
-		
+		*/
 		subHierarchyStr = "74627003";  //QI-48 |Diabetic Complication|
 		templateNames = new String[] {	"Complication co-occurrent and due to Diabetes Melitus.json",
-				"Complication co-occurrent and due to Diabetes Melitus - Minimal.json"};
-		
+				//"Complication co-occurrent and due to Diabetes Melitus - Minimal.json"
+				};
+		/*
 		subHierarchyStr = "3218000"; //QI-70 |Mycosis (disorder)|
 		templateNames = new String[] {	"Infection caused by Fungus.json"};
 		
 		subHierarchyStr = "17322007"; //QI-116 |Parasite (disorder)|
 		templateNames = new String[] {	"Infection caused by Parasite.json"};
-		*/
+		
 		subHierarchyStr = "125643001"; //QI-117 |Open wound| 
 		templateNames = new String[] {	"wound/wound of bodysite.json"
 				//"wound/open wound of bodysite.json"
 				};
+		*/
 		super.init(args);
 	}
 	
@@ -151,8 +154,9 @@ public class RemodelGroupOne extends TemplateFix {
 		}
 		
 		//Create as many groups as required, but minimum 3
-		int maxGroups = c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP).size();
-		maxGroups = maxGroups < 3 ? 3 : maxGroups;
+		int numConceptGroups = c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP).size();
+		int numTemplateGroups = template.getAttributeGroups().size();
+		int maxGroups = Math.max(Math.max(numConceptGroups, numTemplateGroups),3);
 		RelationshipGroup[] groups = new RelationshipGroup[maxGroups];
 		
 		//Get a copy of the stated and inferred modelling "before"
@@ -166,7 +170,7 @@ public class RemodelGroupOne extends TemplateFix {
 			if (groups[groupId]  != null) {
 				groups[groupId] = groups[groupId].clone();
 			}
-			if (groupId <= 1 && groups[groupId] == null) {
+			if (groups[groupId] == null) {
 				groups[groupId] = new RelationshipGroup(groupId);
 			}
 			//If we have more than one relationship of a given type, we should probably remove one.  If it exists as
@@ -185,11 +189,12 @@ public class RemodelGroupOne extends TemplateFix {
 		//or inferred relationships on the concept
 		for (int templateGroupId = 0; templateGroupId <  template.getAttributeGroups().size(); templateGroupId++) {
 			AttributeGroup templateGroup = template.getAttributeGroups().toArray(new AttributeGroup[0])[templateGroupId];
+			boolean templateGroupOptional = templateGroup.getCardinalityMin().equals("0");
 			for (Attribute a : templateGroup.getAttributes()) {
-				changesMade += findAttributeToState(t, template, c, a, groups, templateGroupId, CharacteristicType.STATED_RELATIONSHIP);
+				changesMade += findAttributeToState(t, template, c, a, groups, templateGroupId, CharacteristicType.STATED_RELATIONSHIP, templateGroupOptional);
 				
 				//Also attempt to satisfy from the inferred form - needed or not - so we don't miss out potential values
-				changesMade += findAttributeToState(t, template, c, a, groups, templateGroupId, CharacteristicType.INFERRED_RELATIONSHIP);
+				changesMade += findAttributeToState(t, template, c, a, groups, templateGroupId, CharacteristicType.INFERRED_RELATIONSHIP, templateGroupOptional);
 			}
 			
 			if (templateGroupId == 1) {
@@ -202,9 +207,9 @@ public class RemodelGroupOne extends TemplateFix {
 						if (TemplateUtils.containsMatchingRelationship(additionalGroup, a, descendantsCache)) {
 							continue;
 						}
-						int statedChangeMade = findAttributeToState(t, template, c, a, groups, 2, CharacteristicType.STATED_RELATIONSHIP);
+						int statedChangeMade = findAttributeToState(t, template, c, a, groups, 2, CharacteristicType.STATED_RELATIONSHIP, templateGroupOptional);
 						if (statedChangeMade == NO_CHANGES_MADE) {
-							changesMade += findAttributeToState(t, template, c, a, groups, 2, CharacteristicType.INFERRED_RELATIONSHIP);
+							changesMade += findAttributeToState(t, template, c, a, groups, 2, CharacteristicType.INFERRED_RELATIONSHIP, templateGroupOptional);
 						} else {
 							changesMade += statedChangeMade;
 						}
@@ -292,14 +297,14 @@ public class RemodelGroupOne extends TemplateFix {
 		}
 	}
 
-	private int findAttributeToState(Task t, Template template, Concept c, Attribute a, RelationshipGroup[] groups, int groupOfInterest, CharacteristicType charType) throws TermServerScriptException {
+	private int findAttributeToState(Task t, Template template, Concept c, Attribute a, RelationshipGroup[] groups, int groupOfInterest, CharacteristicType charType, boolean templateGroupOptional) throws TermServerScriptException {
 		RelationshipGroup group = groups[groupOfInterest];
 		
 		//Do we have this attribute type in the inferred form?
 		Concept type = gl.getConcept(a.getType());
 		
-		//Is this value hard coded in the template? 
-		if (a.getValue() != null) {
+		//Is this value hard coded in the template?  Only want to do this where the template group is required.
+		if (a.getValue() != null && !templateGroupOptional) {
 			Relationship constantRel = new Relationship(c, type, gl.getConcept(a.getValue()), group.getGroupId());
 			//Don't add if our group already contains this, or something more specific
 			if (!group.containsTypeValue(type, descendantsCache.getDescendentsOrSelf(a.getValue()))) {
@@ -519,7 +524,6 @@ public class RemodelGroupOne extends TemplateFix {
 		}
 		concepts.removeAll(redundant);
 	}
-	
 
 	private void removeRedundancies(Relationship r, RelationshipGroup group) throws TermServerScriptException {
 		//Do we have other attributes of this type that are less specific than r?
@@ -538,9 +542,7 @@ public class RemodelGroupOne extends TemplateFix {
 				//continue;
 			}
 			Concept potentialCandidate = null;
-			if (isWhiteListed(c)) {
-				warn ("Whitelisted: " + c);
-			} else {
+			if (!isExcluded(c)) {
 				boolean hasGroupedAttributes = false;
 				for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
 					//If the concept has no grouped attributes we want it, and also 
@@ -594,6 +596,16 @@ public class RemodelGroupOne extends TemplateFix {
 		List<Component> firstPassComplete = firstPassRemodel(processMe);
 		return firstPassComplete;
 	}
+	
+	protected boolean isExcluded(Concept c) {
+		if (skipMultipleUngroupedFindingSites) {
+			if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, FINDING_SITE, UNGROUPED).size() > 1) {
+				warn("Excluding due to multiple ungrouped finding sites: " + c);
+				return true;
+			}
+		}
+		return super.isExcluded(c);
+	}
 
 	private List<Component> firstPassRemodel(List<Concept> processMe) throws TermServerScriptException {
 		setQuiet(true);
@@ -623,14 +635,4 @@ public class RemodelGroupOne extends TemplateFix {
 		return firstPassComplete;
 	}
 
-	private boolean isWhiteListed(Concept c) {
-		//Does the FSN contain one of our white listed words?
-		for (String word : whitelist) {
-			if (c.getFsn().contains(word)) {
-				return true;
-			}
-		}
-		return false;
-	}
-	
 }

@@ -22,7 +22,6 @@ import us.monoid.json.JSONObject;
 public class PrepMisalignedConcepts extends TemplateFix {
 	
 	Map<Concept, List<String>> conceptDiagnostics = new HashMap<>();
-
 	protected PrepMisalignedConcepts(BatchFix clone) {
 		super(clone);
 	}
@@ -99,18 +98,18 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		subHierarchyStr = "283682007"; // QI-39 |Bite - wound (disorder)|
 		templateNames = new String[] {	"bite/bite of bodysite caused by bite event.json", 
 										"bite/bite of bodysite caused by bite event with infection.json"};
-		*/
+		
 		subHierarchyStr = "3218000"; //QI-67 |Mycosis (disorder)|
 		templateNames = new String[] {	"Infection caused by Fungus.json"};
-		/*
+		
 		subHierarchyStr = "17322007"; //QI-68 |Parasite (disorder)|
 		templateNames = new String[] {	"Infection caused by Parasite.json"};
-		
+		*/
 		subHierarchyStr = "416886008"; //QI-106 |Closed wound| 
 		templateNames = new String[] {	"wound/wound of bodysite.json"
 				//"wound/closed wound of bodysite.json"
 				};
-		
+		/*
 		subHierarchyStr = "125643001"; //QI-107 |Open wound| 
 		templateNames = new String[] {	"wound/wound of bodysite.json"
 				//"wound/open wound of bodysite.json"
@@ -184,7 +183,7 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		}
 		
 		for (Concept c : unalignedConcepts) {
-			if (!isIngnored(c)) {
+			if (!isExcluded(c)) {
 				List<String> diagnostics = new ArrayList<String>();
 				conceptDiagnostics.put(c, diagnostics);
 				String msg = "Cardinality mismatch on " +  (c.getIssues().isEmpty()?" N/A" : c.getIssues());

@@ -22,10 +22,11 @@ abstract public class TemplateFix extends BatchFix {
 	
 	String [] excludeHierarchies = new String[] {};
 	List<Concept> exclusions;
+	List<String> exclusionWords;
+	boolean includeComplexTemplates = true;
 	
 	String[] templateNames;
 	List<Template> templates = new ArrayList<>();
-	String[] ignoreFSNsContaining = new String[] { "avulsion" , "without"};
 	TemplateServiceClient tsc = new TemplateServiceClient();
 	
 	Map<Concept, Template> conceptToTemplateMap = new HashMap<>();
@@ -57,6 +58,16 @@ abstract public class TemplateFix extends BatchFix {
 		exclusions = new ArrayList<>();
 		for (String thisExclude : excludeHierarchies) {
 			exclusions.addAll(gl.getConcept(thisExclude).getDescendents(NOT_SET));
+		}
+		
+		exclusionWords = new ArrayList<>();
+		exclusionWords.add("subluxation");
+		exclusionWords.add("avulsion");
+		
+		if (!includeComplexTemplates) {
+			exclusionWords.add("due to");
+			exclusionWords.add("with");
+			exclusionWords.add("without");
 		}
 	}
 	
@@ -98,12 +109,13 @@ abstract public class TemplateFix extends BatchFix {
 		return null;
 	}
 	
-	protected boolean isIngnored(Concept c) {
+	protected boolean isExcluded(Concept c) {
 		//We could ignore on the basis of a word, or SCTID
-		for (String word : ignoreFSNsContaining) {
+		for (String word : exclusionWords) {
+			word = " " + word + " ";
 			if (c.getFsn().toLowerCase().contains(word)) {
 				debug (c + "ignored due to fsn containing: " + word);
-				incrementSummaryInformation("Ignored concepts");
+				incrementSummaryInformation("Excluded concepts");
 				return true;
 			}
 		}
