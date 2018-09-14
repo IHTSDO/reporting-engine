@@ -32,6 +32,8 @@ public class ScheduleServiceImpl implements ScheduleService {
 	@Autowired
 	Transmitter transmitter;
 	
+	static final JobRun metadataRequest = JobRun.create("METADATA", null);
+	
 	protected Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	@PostConstruct
@@ -119,8 +121,33 @@ public class ScheduleServiceImpl implements ScheduleService {
 
 	@Override
 	public void initialise() {
-		// TODO Auto-generated method stub
-		
+		logger.info("Sending request for metadata");
+		transmitter.send(metadataRequest);
+	}
+
+	@Override
+	public void processResponse(JobRun jobRun) {
+		try {
+			jobRunRepository.save(jobRun);
+		} catch (Exception e) {
+			logger.error("Unable to process response for jobRun '{}'", jobRun, e);
+		}
+	}
+
+	@Override
+	public void processMetadata(JobMetadata metadata) {
+		for (Job job : metadata.getJobs()) {
+			try {
+				//Do we know about this job already
+				Job knownJob = jobRepository.findByName(job.getName());
+				//TODO update job if required
+				if (knownJob == null) {
+					jobRepository.save(job);
+				}
+			} catch (Exception e) {
+				logger.error("Unable to process metadata for job '{}'", job, e);
+			}
+		}
 	}
 	
 }

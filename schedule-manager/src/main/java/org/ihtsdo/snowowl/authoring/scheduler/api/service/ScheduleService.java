@@ -30,4 +30,8 @@ public interface ScheduleService {
 
 	public void initialise();
 
+	public void processResponse(JobRun jobRun);
+
+	public void processMetadata(JobMetadata metadata);
+
 }

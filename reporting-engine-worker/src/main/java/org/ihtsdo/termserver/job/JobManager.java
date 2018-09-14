@@ -13,6 +13,7 @@ import org.reflections.Reflections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.Job;
+import org.snomed.otf.scheduler.domain.JobMetadata;
 import org.snomed.otf.scheduler.domain.JobRun;
 import org.snomed.otf.scheduler.domain.JobStatus;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,7 +31,7 @@ public class JobManager {
 	
 	@Autowired(required = false)
 	private BuildProperties buildProperties;
-	String buildVersion = "Version unknown";
+	String buildVersion = "<Version Unknown>";
 	
 	@Autowired
 	Transmitter transmitter;
@@ -78,7 +79,7 @@ public class JobManager {
 				Class<? extends JobClass> jobClass = knownJobs.get(jobRun.getJobName());
 				if (jobClass == null) {
 					jobRun.setStatus(JobStatus.Failed);
-					jobRun.setDebugInfo("Job '" + jobRun.getJobName() + "' not known to Reporting Engine Worker " + buildVersion);
+					jobRun.setDebugInfo("Job '" + jobRun.getJobName() + "' not known to Reporting Engine Worker - " + buildVersion);
 				} else {
 					try {
 						JobClass thisJob = jobClass.newInstance();
@@ -104,6 +105,8 @@ public class JobManager {
 				logger.error("Unable to return metadata on {}",knownJobClass.getKey(), e);
 			} 
 		}
-		transmitter.send(jobs);
+		JobMetadata metadata = new JobMetadata();
+		metadata.setJobs(jobs);
+		transmitter.send(metadata);
 	}
 }

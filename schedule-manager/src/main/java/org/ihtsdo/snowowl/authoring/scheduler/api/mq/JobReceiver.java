@@ -1,6 +1,6 @@
-package org.ihtsdo.termserver.job.mq;
+package org.ihtsdo.snowowl.authoring.scheduler.api.mq;
 
-import org.ihtsdo.termserver.job.JobManager;
+import org.ihtsdo.snowowl.authoring.scheduler.api.service.ScheduleService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.JobRun;
@@ -9,17 +9,17 @@ import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
 
 @Component
-public class Receiver {
-	
-	@Autowired
-	JobManager jobManager;
+public class JobReceiver {
 	
 	protected Logger logger = LoggerFactory.getLogger(this.getClass());
 	
-	@JmsListener(destination = "${schedule.manager.queue.request}")
+	@Autowired
+	ScheduleService service;
+
+	@JmsListener(destination = "${schedule.manager.queue.response}")
 	public void receiveMessage(JobRun jobRun) {
-		logger.info("Received request to run {}", jobRun);
-		jobManager.run(jobRun);
+		logger.info("Received job: {}", jobRun);
+		service.processResponse(jobRun);
 	}
 
 }

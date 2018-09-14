@@ -5,6 +5,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.Job;
+import org.snomed.otf.scheduler.domain.JobMetadata;
 import org.snomed.otf.scheduler.domain.JobRun;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,9 +31,9 @@ public class Transmitter {
 		jmsTemplate.convertAndSend(responseQueueName, jobRun);
 	}
 	
-	public void send (List<Job> knownJobs) {
-		logger.info("Transmitting metadata for " + knownJobs.size() + " jobs");
-		jmsTemplate.convertAndSend(metadataQueueName, knownJobs);
+	public void send (JobMetadata metadata) {
+		logger.info("Transmitting metadata for " + metadata.getJobs().size() + " jobs");
+		jmsTemplate.convertAndSend(metadataQueueName, metadata);
 	}
 
 }
