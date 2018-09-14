@@ -5,6 +5,7 @@ import java.io.PrintStream;
 import java.util.*;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
+import org.ihtsdo.termserver.scripting.ArchiveManager;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
@@ -29,8 +30,10 @@ public class PrepMisalignedConcepts extends TemplateFix {
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		PrepMisalignedConcepts app = new PrepMisalignedConcepts(null);
 		try {
-			ReportSheetManager.targetFolderId = "1uywo1VGAIh7MMY7wCn2yEj312OQCjt9J";
+			ReportSheetManager.targetFolderId = "18xZylGhgL7ML782pu6-6u_VUw3p5Hfr7"; //Development
+			//ReportSheetManager.targetFolderId = "1uywo1VGAIh7MMY7wCn2yEj312OQCjt9J";
 			app.init(args);
+			app.getArchiveManager().allowStaleData = true;
 			app.loadProjectSnapshot(false);  //Load all descriptions
 			app.postInit();
 			Batch batch = app.formIntoBatch();
@@ -48,7 +51,6 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		reportNoChange = false;
 		runStandAlone = true; 
 		additionalReportColumns = "CharacteristicType, MatchedTemplate, Template Diagnostic";
-		
 		/*
 		subHierarchyStr = "125605004";  // QI-5 |Fracture of bone (disorder)|
 		templateNames = new String[] {	"fracture/Fracture of Bone Structure.json",
@@ -94,22 +96,22 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		
 		subHierarchyStr = "8098009";	// QI-45 |Sexually transmitted infectious disease (disorder)| 
 		templateNames = new String[] {	"Sexually transmitted Infection with optional bodysite.json"};
-		
+		*/
 		subHierarchyStr = "283682007"; // QI-39 |Bite - wound (disorder)|
 		templateNames = new String[] {	"bite/bite of bodysite caused by bite event.json", 
 										"bite/bite of bodysite caused by bite event with infection.json"};
-		
+		/*
 		subHierarchyStr = "3218000"; //QI-67 |Mycosis (disorder)|
 		templateNames = new String[] {	"Infection caused by Fungus.json"};
 		
 		subHierarchyStr = "17322007"; //QI-68 |Parasite (disorder)|
 		templateNames = new String[] {	"Infection caused by Parasite.json"};
-		*/
+		
 		subHierarchyStr = "416886008"; //QI-106 |Closed wound| 
 		templateNames = new String[] {	"wound/wound of bodysite.json"
 				//"wound/closed wound of bodysite.json"
 				};
-		/*
+		
 		subHierarchyStr = "125643001"; //QI-107 |Open wound| 
 		templateNames = new String[] {	"wound/wound of bodysite.json"
 				//"wound/open wound of bodysite.json"
@@ -183,6 +185,9 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		}
 		
 		for (Concept c : unalignedConcepts) {
+			if (c.getConceptId().equals("5120006")) {
+				debug("Check Me");
+			}
 			if (!isExcluded(c)) {
 				List<String> diagnostics = new ArrayList<String>();
 				conceptDiagnostics.put(c, diagnostics);

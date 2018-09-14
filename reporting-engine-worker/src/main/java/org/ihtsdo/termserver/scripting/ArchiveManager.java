@@ -27,7 +27,7 @@ public class ArchiveManager implements RF2Constants {
 	protected GraphLoader gl;
 	private SnowOwlClient tsClient;
 	private Gson gson;
-	private boolean allowStaleData = false;
+	public boolean allowStaleData = false;
 	
 	ArchiveManager (TermServerScript ts) {
 		//this.ts = ts;

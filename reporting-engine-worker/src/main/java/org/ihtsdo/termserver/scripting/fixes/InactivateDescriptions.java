@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.ValidationFailure;
-import org.ihtsdo.termserver.scripting.TermServerScript.Severity;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.*;
 
@@ -24,6 +22,7 @@ public class InactivateDescriptions extends BatchFix implements RF2Constants {
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
 		InactivateDescriptions fix = new InactivateDescriptions(null);
 		try {
+			fix.expectNullConcepts = true;
 			fix.inputFileHasHeaderRow = false;
 			fix.init(args);
 			fix.loadProjectSnapshot(false);
@@ -70,7 +69,6 @@ public class InactivateDescriptions extends BatchFix implements RF2Constants {
 	@Override
 	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
 		String descriptionStr = lineItems[0];
-		List<Concept>processMe = new ArrayList<>();
 		
 		//We're expecting a description.toString() to be passed in, split it back out
 		String[] elements = descriptionStr.split(" ");
@@ -79,20 +77,23 @@ public class InactivateDescriptions extends BatchFix implements RF2Constants {
 		//Find that description
 		for (Description d : c.getDescriptions()) {
 			if (d.getId().equals(elements[0])) {
-				//Have we seen this concept before?
-				if (processMe.contains(c)) {
-					inactivations.get(c).add(d);
+				if (d.isActive()) {
+					//Have we seen this concept before?
+					if (inactivations.containsKey(c)) {
+						inactivations.get(c).add(d);
+					} else {
+						List<Description> inactivationList = new ArrayList<>();
+						inactivationList.add(d);
+						inactivations.put(c, inactivationList);
+					}
 				} else {
-					processMe.add(c);
-					List<Description> inactivationList = new ArrayList<>();
-					inactivationList.add(d);
-					inactivations.put(c, inactivationList);
+					warn ("Already inactive: " + d);
+					return null;
 				}
 				break;
 			}
 		}
 		
-		processMe.sort(Comparator.comparing(Concept::getFsn));
-		return new ArrayList<Component>(processMe);
+		return Collections.singletonList(c);
 	}
 }

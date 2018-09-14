@@ -88,7 +88,7 @@ public class QI75_HerniaRemodel extends BatchFix {
 	private int remodelHernia(Task t, Concept c) throws TermServerScriptException {
 		Relationship complicationParentRel = complicationParent.clone(null);
 		complicationParentRel.setSource(c);
-		int changesMade = addParent(t, c, complicationParentRel);
+		int changesMade = addRelationship(t, c, complicationParentRel);
 		changesMade += removeParentRelationship(t, hWithOParent, c, "Complication", null);
 		changesMade += removeParentRelationship(t, hWithGParent, c, "Complication", null);
 		changesMade += addDueToTarget(t, c);

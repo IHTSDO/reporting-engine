@@ -549,20 +549,8 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			} 
 		}
 		
-		changesMade += addParent(t, c, newParentRel);
+		changesMade += addRelationship(t, c, newParentRel);
 		return changesMade;
-	}
-
-	protected int addParent(Task t, Concept c, Relationship newParentRel) throws TermServerScriptException {
-		//Do we need to add this new relationship?
-		if (!c.getParents(CharacteristicType.STATED_RELATIONSHIP).contains(newParentRel.getTarget())) {
-			Relationship thisNewParentRel = newParentRel.clone(null);
-			thisNewParentRel.setSource(c);
-			c.addRelationship(thisNewParentRel);
-			report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, newParentRel.getTarget());
-			return CHANGE_MADE;
-		}
-		return NO_CHANGES_MADE;
 	}
 
 	protected int removeParentRelationship(Task t, Relationship removeMe, Concept c, String retained, Object[] additionalDetails) throws TermServerScriptException {
@@ -976,9 +964,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 
 			if (doAddition) {
 				Relationship newParentRel = new Relationship(c, IS_A, newParent, 0);
-				report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, newParentRel);
-				c.addRelationship(newParentRel);
-				changesMade++;
+				changesMade += addRelationship(t, c, newParentRel);
 			}
 		}
 		return changesMade;

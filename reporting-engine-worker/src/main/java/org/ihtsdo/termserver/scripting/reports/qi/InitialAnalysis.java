@@ -6,6 +6,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.job.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
@@ -22,7 +23,7 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 	
 	Concept subHierarchyStart;
 	Set<Concept> subHierarchy;
-	Set<Concept> exclusions;
+	Set<Concept> exclusions = new HashSet<>();
 	public Map<Concept, Integer> intermediatePrimitives;
 	public Map<Concept, Integer> attributeUsage;
 	public Map<Concept, Concept> attributeExamples;
@@ -37,7 +38,8 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		InitialAnalysis report = new InitialAnalysis(null);
 		try {
-			report.init(args);
+			ReportSheetManager.targetFolderId = "1m7MVhMePldYrNjOvsE_WTAYcowZ4ps50";
+			report.init(args, true); //delay report initialisation
 			report.getReportManager().setNumberOfDistinctReports(3);
 			report.loadProjectSnapshot(true);  //just FSNs
 			report.postInit(null);
@@ -77,7 +79,7 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 				//setSubHierarchy("52515009");	// QI-22 |Hernia of abdominal cavity|
 				//setSubHierarchy("125666000");	// QI-22 |Burn (disorder)|
 				//setSubHierarchy("74627003");	// QI-38 |Diabetic complication (disorder)|
-				//setSubHierarchy("283682007");	// QI-35 |Bite - wound (disorder)|
+				setSubHierarchy("283682007");	// QI-35 |Bite - wound (disorder)|
 				//setSubHierarchy("8098009");	// QI-40 |Sexually transmitted infectious disease (disorder)|
 				//setSubHierarchy("3723001");	// QI-42 |Arthritis|
 				//setSubHierarchy("276654001");	// QI-43 |Congenital malformation (disorder)| );
@@ -85,11 +87,10 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 				//setSubHierarchy("17322007");	//QI-49 |Disease caused by parasite|
 				//setSubHierarchy("416462003");  //QI-50 |Wound (disorder)
 				//setSubHierarchy("125643001");  //QI-51 |Open wound|
-				setSubHierarchy("416886008");  //QI-52 |Closed wound|
+				//setSubHierarchy("416886008");  //QI-52 |Closed wound|
 			} else {
 				setSubHierarchy(subHierarchyStr);
 			}
-			ReportSheetManager.targetFolderId = "1m7MVhMePldYrNjOvsE_WTAYcowZ4ps50"; //Team Drive: Content Reporting Artefacts / QI / Initial Analysis
 			getReportManager().setReportName(getReportName());
 			additionalReportColumns = "FSN, Proximal Primitive Parent, is Intermediate, Defn Status, Stated Attributes, Stated Role Groups, Inferred Role Groups, Stated Parents";
 			secondaryReportColumns = "FSN, Can Be Sufficiently Defined (1=yes 0=no), JIRA, Comments, Authoring Task, In Subhierarchy,Prim Above Here (NOS),Descendants,Total SDs affected, SD Concepts in subhierarchy, Total Primitive Concepts affected, Primitive Concepts in SubHierarchy";
@@ -112,14 +113,10 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 	}
 	
 	public String getReportName() {
-		try {
-			if (subHierarchyStart == null) {
-				return "Report name not yet known";
-			} else {
-				return subHierarchyStart.getPreferredSynonym() + " - Intermediate Primitives";
-			}
-		} catch (TermServerScriptException e) {
-			return subHierarchyStart.getConceptId() +  " - Intermediate Primitives";
+		if (subHierarchyStart == null) {
+			return "Report name not yet known";
+		} else {
+			return SnomedUtils.deconstructFSN(subHierarchyStart.getFsn())[0] + " - Intermediate Primitives";
 		}
 	}
 	

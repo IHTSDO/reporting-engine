@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.*;
 
-import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
@@ -13,10 +12,9 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
-import us.monoid.json.JSONObject;
 
 /**
- * QI-3, QI-31, QI-34
+ * QI-3, QI-31, QI-34, QI
  * For concepts that align to a given template, we can normalise them.
  * That is to say, copy all the inferred relationships into the stated form
  * and set the proximal primitive parent - if it matches the template expectation
@@ -49,9 +47,10 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		selfDetermining = true;
 		runStandAlone = true;
 		classifyTasks = true;
-		validateTasks = true;
+		//validateTasks = true; Currently failing with 500 error.  Take out Resty?
 		additionalReportColumns = "CharacteristicType, Template, ActionDetail";
 		
+		/*
 		subHierarchyStr = "125605004";  // QI-17 |Fracture of bone (disorder)|
 		templateNames = new String[] {	"fracture/Fracture of Bone Structure.json",
 										"fracture/Fracture Dislocation of Bone Structure.json",
@@ -60,7 +59,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 										"fracture/Traumatic abnormality of spinal cord structure co-occurrent and due to fracture morphology of vertebral bone structure.json",
 										//"Injury of finding site due to birth trauma.json"
 										 };
-		/*
+		
 		subHierarchyStr =  "128294001";  // QI-9 |Chronic inflammatory disorder (disorder)
 		templateNames = new String[] {"Chronic Inflammatory Disorder.json"};
 		
@@ -86,6 +85,10 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 				"burn/Deep partial thickness burn of body structure.json",
 				"burn/Superficial partial thickness burn of body structure.json"};
 		*/
+		
+		subHierarchyStr = "8098009";	// QI-120 |Sexually transmitted infectious disease (disorder)| 
+		templateNames = new String[] {	"Sexually transmitted Infection with optional bodysite.json"};
+
 		super.init(args);
 	}
 
@@ -152,20 +155,20 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		for (RelationshipGroup g : toBeStated) {
 			//Group 0 must remain group 0.  Otherwise find an available group number
 			int freeGroup = g.getGroupId()==0?0:SnomedUtils.getFirstFreeGroup(c);
-			stateRelationshipGroup(t, c, g, freeGroup);
-			changesMade++;
-			report (t, c, Severity.HIGH, ReportActionType.RELATIONSHIP_GROUP_ADDED, c.getRelationshipGroup(CharacteristicType.STATED_RELATIONSHIP, freeGroup));
+			changesMade += stateRelationshipGroup(t, c, g, freeGroup);
 		}
 		return changesMade;
 	}
 
-	private void stateRelationshipGroup(Task t, Concept c, RelationshipGroup g, int freeGroup) {
+	private int stateRelationshipGroup(Task t, Concept c, RelationshipGroup g, int freeGroup) throws TermServerScriptException {
+		int changesMade = 0;
 		for (Relationship r : g.getRelationships()) {
 			Relationship newRel = r.clone(null);
 			newRel.setCharacteristicType(CharacteristicType.STATED_RELATIONSHIP);
 			newRel.setGroupId(freeGroup);
-			c.addRelationship(newRel);
+			changesMade += addRelationship(t, c, newRel);
 		}
+		return changesMade;
 	}
 
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {

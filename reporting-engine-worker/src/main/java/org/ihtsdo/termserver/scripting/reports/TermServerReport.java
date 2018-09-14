@@ -23,8 +23,6 @@ public abstract class TermServerReport extends TermServerScript {
 		try {
 			super.init(args);
 			if (!delayReportInitialisation) {
-				//if (this.)
-				//getReportManager().initialiseReportFiles( new String[] {headers + additionalReportColumns, headers + secondaryReportColumns, headers + tertiaryReportColumns});
 				getReportManager().initialiseReportFiles( new String[] {headers + additionalReportColumns});
 			}
 		} catch (IOException e) {

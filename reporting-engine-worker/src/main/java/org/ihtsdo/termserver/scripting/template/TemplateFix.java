@@ -13,6 +13,7 @@ import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.TemplateServiceClient;
 import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.Task;
 import org.ihtsdo.termserver.scripting.domain.Template;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
@@ -23,7 +24,8 @@ abstract public class TemplateFix extends BatchFix {
 	String [] excludeHierarchies = new String[] {};
 	List<Concept> exclusions;
 	List<String> exclusionWords;
-	boolean includeComplexTemplates = true;
+	boolean includeComplexTemplates = false;
+	List<Concept> complexTemplateAttributes;
 	
 	String[] templateNames;
 	List<Template> templates = new ArrayList<>();
@@ -66,9 +68,12 @@ abstract public class TemplateFix extends BatchFix {
 		
 		if (!includeComplexTemplates) {
 			exclusionWords.add("due to");
-			exclusionWords.add("with");
+			//exclusionWords.add("with");
 			exclusionWords.add("without");
 		}
+		
+		complexTemplateAttributes = new ArrayList<>();
+		complexTemplateAttributes.add(DUE_TO);
 	}
 	
 	protected Template loadTemplate (char id, String fileName) throws TermServerScriptException {
@@ -117,6 +122,18 @@ abstract public class TemplateFix extends BatchFix {
 				debug (c + "ignored due to fsn containing: " + word);
 				incrementSummaryInformation("Excluded concepts");
 				return true;
+			}
+		}
+		
+		//We're excluding complex templates that have a due to, or "after" attribute
+		if (!includeComplexTemplates) {
+			for (Concept excludedType : complexTemplateAttributes) {
+				for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
+					if (r.getType().equals(excludedType)) {
+						incrementSummaryInformation("Excluded concepts");
+						return true;
+					}
+				}
 			}
 		}
 		return false;

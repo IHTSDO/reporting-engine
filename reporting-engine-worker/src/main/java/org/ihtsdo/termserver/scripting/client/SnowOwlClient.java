@@ -105,10 +105,10 @@ public class SnowOwlClient {
 				} catch (Exception e) {
 					tries++;
 					if (tries >= MAX_TRIES) {
-						throw new SnowOwlClientException("Failed to update concept " + id + " with JSON representation: " + concept.toString(), e);
+						throw new SnowOwlClientException("Failed to update concept " + id + " after " + tries + " attempts due to " + e.getMessage() + "\nJSON representation: " + concept.toString(), e);
 					}
 					logger.debug("Update of concept failed, trying again....",e);
-					Thread.sleep(10*1000); //Give the server 10 seconds to recover
+					Thread.sleep(30*1000); //Give the server 30 seconds to recover
 				}
 			}
 			return response;

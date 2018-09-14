@@ -168,7 +168,8 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	 */
 	public String getPreferredSynonym() throws TermServerScriptException {
 		if (preferredSynonym == null) {
-			return getPreferredSynonym(US_ENG_LANG_REFSET).getTerm();
+			Description pt = getPreferredSynonym(US_ENG_LANG_REFSET);
+			return pt == null ? null : pt.getTerm();
 		}
 		return preferredSynonym;
 	}
