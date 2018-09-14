@@ -305,7 +305,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	}
 
 	//Override if working with Refsets or Descriptions directly
-	protected int doFix(Task task, Component component, String info) {
+	protected int doFix(Task task, Component component, String info) throws TermServerScriptException, ValidationFailure {
 		return 0;
 	}
 

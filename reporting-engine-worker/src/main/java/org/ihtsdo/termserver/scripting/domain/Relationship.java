@@ -36,7 +36,7 @@ public class Relationship extends Component implements RF2Constants, Comparable<
 	private int groupId;
 	@SerializedName("characteristicType")
 	@Expose
-	private CharacteristicType characteristicType;
+	private CharacteristicType characteristicType = CharacteristicType.STATED_RELATIONSHIP;
 	@SerializedName("modifier")
 	@Expose
 	private Modifier modifier;
@@ -185,6 +185,10 @@ public class Relationship extends Component implements RF2Constants, Comparable<
 	
 	@Override
 	public String toString() {
+		//Is this just a reference to a relationship?  Just use ID if so
+		if (type==null && target==null) {
+			return relationshipId;
+		}
 		String charType = characteristicType.equals(CharacteristicType.STATED_RELATIONSHIP)?"S":"I";
 		String activeIndicator = this.isActive()?"":"*";
 		return "[" + activeIndicator +  charType + groupId + "] " + type + " -> " + target;
