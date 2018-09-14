@@ -6,7 +6,6 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.CaseSignificance;
 
 import com.google.common.base.Splitter;
 
@@ -21,11 +20,43 @@ public class StringUtils implements RF2Constants {
 		}
 		return unixLines;
 	}
+	
+	public static boolean isEmpty(final String string) {
+		if (string == null || string.length() == 0) {
+			return true;
+		}
+		
+		for (int i = 0; i < string.length(); i++) {
+			if (!Character.isWhitespace(string.charAt(i))) {
+				return false;
+			}
+		}
+		
+		return true;
+	}
 
 	public static boolean isCaseSensitive(String term) {
 		String afterFirst = term.substring(1);
 		boolean allLowerCase = afterFirst.equals(afterFirst.toLowerCase());
 		return !allLowerCase;
+	}
+	
+	/**
+	 * Capitalizes the first letter of the passed in string. If the passed word
+	 * is an empty word or contains only whitespace characters, then this passed
+	 * word is returned. If the first letter is already capitalized returns the
+	 * passed word. Otherwise capitalizes the first letter of the this word.
+	 * 
+	 * @param word
+	 * @return
+	 */
+	public static String capitalizeFirstLetter(final String word) {
+		if (isEmpty(word)) return word;
+		if (Character.isUpperCase(word.charAt(0)))
+			return word;
+		if (word.length() == 1)
+			return word.toUpperCase();
+		return Character.toUpperCase(word.charAt(0)) + word.substring(1);
 	}
 
 	public static String deCapitalize (String str) {

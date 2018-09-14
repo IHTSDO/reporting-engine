@@ -369,7 +369,7 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 	}
 	
-	private Concept attemptConceptCreation(Task t, Concept c, String info) throws SnowOwlClientException, JSONException, IOException {
+	private Concept attemptConceptCreation(Task t, Concept c, String info) throws Exception {
 		
 		String conceptSerialised = gson.toJson(c);
 		debug ((dryRun ?"Dry run creating ":"Creating ") + c + info);

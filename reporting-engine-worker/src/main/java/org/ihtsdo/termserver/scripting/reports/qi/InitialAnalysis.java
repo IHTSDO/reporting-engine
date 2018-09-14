@@ -6,14 +6,13 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.job.ReportClass;
-import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Relationship;
+import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.snomed.otf.scheduler.domain.*;
 
 /**
  * Reports concepts that are intermediate primitives from point of view of some subhierarchy
@@ -28,6 +27,9 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 	public Map<Concept, Integer> attributeUsage;
 	public Map<Concept, Concept> attributeExamples;
 	String[] blankColumns = new String[] {"","","",""};
+	
+	public InitialAnalysis() {
+	}
 	
 	public InitialAnalysis(TermServerReport owner) {
 		if (owner!=null) {
@@ -290,6 +292,20 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 				.stream()
 				.map(r -> r.getType())
 				.collect(Collectors.toSet());
+	}
+
+	@Override
+	public Job getJob() {
+		String[] parameterNames = new String[] { "SubHierarchy" };
+		return new Job("Initial Analysis",
+						"Lists Intermediate Primitives and attribute usage for a given subHierarchy",
+						parameterNames);
+	}
+
+	@Override
+	public void runJob(JobRun jobRun) {
+		// TODO Auto-generated method stub
+		info("Running!");
 	}
 
 }

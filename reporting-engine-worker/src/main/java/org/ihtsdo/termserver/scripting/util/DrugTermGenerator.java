@@ -2,7 +2,7 @@ package org.ihtsdo.termserver.scripting.util;
 
 import java.util.*;
 
-import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;

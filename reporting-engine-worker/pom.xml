@@ -15,35 +15,29 @@
 		<!-- Spring boot -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-web</artifactId>
+			<artifactId>spring-boot-starter-activemq</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-security</artifactId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
 		</dependency>
+		<!-- We don't want the spring boot web, but we do need a web client -->
+			<dependency>
+				<groupId>org.springframework</groupId>
+				<artifactId>spring-web</artifactId>
+			</dependency>
 
-		<!-- Swagger API Docs -->
-		<dependency>
-			<groupId>io.springfox</groupId>
-			<artifactId>springfox-swagger2</artifactId>
-			<version>2.5.0</version>
-		</dependency>
-		<dependency>
-			<groupId>io.springfox</groupId>
-			<artifactId>springfox-swagger-ui</artifactId>
-			<version>2.5.0</version>
-		</dependency>
-		
 		<!-- Google Sheet API -->
 		<dependency>
 			<groupId>com.google.api-client</groupId>
 			<artifactId>google-api-client</artifactId>
-			<version>1.23.0</version>
+			<version>1.25.0</version>
 		</dependency>
 		<dependency>
 			<groupId>com.google.oauth-client</groupId>
 			<artifactId>google-oauth-client-jetty</artifactId>
-			<version>1.23.0</version>
+			<version>1.25.0</version>
 		</dependency>
 		<dependency>
 			<groupId>com.google.apis</groupId>
@@ -62,6 +56,7 @@
 			<artifactId>jira-client</artifactId>
 			<version>0.6.1-IHTSDO</version>
 		</dependency>
+		
 		<dependency>
 			<groupId>com.google.gdata</groupId>
 			<artifactId>core</artifactId>
@@ -71,20 +66,24 @@
 					<groupId>org.mortbay.jetty</groupId>
 					<artifactId>jetty</artifactId>
 				</exclusion>
+				<exclusion>
+					<groupId>com.google.guava</groupId>
+					<artifactId>guava</artifactId>
+				</exclusion>
 			</exclusions>
 		</dependency>
-		<dependency>
-			<groupId>net.oauth.core</groupId>
-			<artifactId>oauth</artifactId>
-			<version>20100527</version>
-		</dependency>
-		<!-- Test -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
-			<scope>test</scope>
-		</dependency>
 
+		<dependency>
+			<groupId>org.ihtsdo.otf.common</groupId>
+			<artifactId>otf-common</artifactId>
+			<version>${otf.common.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.ihtsdo.otf</groupId>
+					<artifactId>ihtsdo-spring-sso</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
 		<dependency>
 			<groupId>org.snomed.languages</groupId>
 			<artifactId>snomed-template-parser</artifactId>
@@ -96,11 +95,11 @@
 				</exclusion>
 			</exclusions> 
 		</dependency>
-		<dependency>
+<!-- <dependency>
 			<groupId>commons-io</groupId>
 			<artifactId>commons-io</artifactId>
 			<version>2.5</version>
-		</dependency>
+		</dependency> -->		
 		<dependency>
 			<groupId>commons-validator</groupId>
 			<artifactId>commons-validator</artifactId>
@@ -112,47 +111,23 @@
 			<version>2.6</version>
 		</dependency>
 		<dependency>
-			<groupId>com.b2international.snowowl</groupId>
-			<artifactId>com.b2international.snowowl.snomed.scg</artifactId>
-			<version>${snowowl.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.b2international.snowowl</groupId>
-			<artifactId>com.b2international.snowowl.core</artifactId>
-			<version>${snowowl.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.b2international.snowowl</groupId>
-			<artifactId>com.b2international.commons.base</artifactId>
-			<version>${snowowl.version}</version>
-		</dependency>
-		<dependency>
 			<groupId>us.monoid.web</groupId>
 			<artifactId>resty</artifactId>
 			<version>0.3.2</version>
 		</dependency>
-		<dependency>
+	<!--  	<dependency>
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
 			<version>14.0.1</version>
-		</dependency>
+		</dependency>-->
 		<dependency>
 			<groupId>com.google.code.gson</groupId>
 			<artifactId>gson</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>javax.mail</groupId>
-			<artifactId>javax.mail-api</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.eclipse.equinox</groupId>
-			<artifactId>common</artifactId>
-			<version>3.6.200-v20130402-1505</version>
-		</dependency>
-		<dependency>
-			<groupId>org.snomed.otf</groupId>
-			<artifactId>snomed-template-service</artifactId>
-			<version>1.5.1-SNAPSHOT</version>
+			<groupId>org.reflections</groupId>
+			<artifactId>reflections</artifactId>
+			<version>0.9.11</version>
 		</dependency>
 	</dependencies>
 
@@ -167,7 +142,7 @@
 						<goal>repackage</goal>
 					</goals>
 					<configuration>
-						<mainClass>org.ihtsdo.snowowl.authoring.job.engine.App</mainClass>
+						<mainClass>org.ihtsdo.termserver.job.Application</mainClass>
 					</configuration>
 					</execution>
 				</executions>

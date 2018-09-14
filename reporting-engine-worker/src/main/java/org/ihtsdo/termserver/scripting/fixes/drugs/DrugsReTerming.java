@@ -20,8 +20,7 @@ import org.ihtsdo.termserver.scripting.domain.Task;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.AcceptabilityMode;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-
-import com.b2international.commons.StringUtils;
+import org.ihtsdo.termserver.scripting.util.StringUtils;
 
 import us.monoid.json.JSONObject;
 
