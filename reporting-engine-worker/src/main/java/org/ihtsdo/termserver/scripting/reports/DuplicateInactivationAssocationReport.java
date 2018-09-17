@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.reports;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -9,10 +10,11 @@ import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+
+import com.google.gdata.data.introspection.Collection;
 
 /**
- * INFRA-2704
+ * INFRA-2704, INFRA-2793
  * Where a concept has duplicate inactivation indicators, list those along with the
  * historical associations (so we know which ones to delete!)
  */
@@ -39,24 +41,37 @@ public class DuplicateInactivationAssocationReport extends TermServerReport {
 		addSummaryInformation("Concepts checked", gl.getAllConcepts().size());
 		
 		//For a change we're interested in inactive concepts!
-		List<Concept> conceptsOfInterest = gl.getAllConcepts().stream()
+		/*List<Concept> conceptsOfInterest = gl.getAllConcepts().stream()
 				.filter(c -> c.isActive() == false)
-				.filter(c -> c.getInactivationIndicatorEntries(ActiveState.ACTIVE).size() > 1)
-				.collect(Collectors.toList());
+				.filter(c -> c.getInactivationIndicatorEntries(ActiveState.BOTH).size() > 1)
+				.collect(Collectors.toList());*/
+		List<Concept> conceptsOfInterest = Collections.singletonList(gl.getConcept("198308002"));
 		for (Concept c : conceptsOfInterest) {
-			for (InactivationIndicatorEntry i : c.getInactivationIndicatorEntries(ActiveState.ACTIVE)) {
+			for (InactivationIndicatorEntry i : c.getInactivationIndicatorEntries(ActiveState.BOTH)) {
 				report (c, i.getEffectiveTime(), i);
 			}
-			for (HistoricalAssociation h : c.getHistorialAssociations(ActiveState.ACTIVE)) {
+			for (HistoricalAssociation h : c.getHistorialAssociations(ActiveState.BOTH)) {
 				report (c, h.getEffectiveTime(), h);
 			}
 			incrementSummaryInformation("Concepts reported");
 		}
-	}
-	
-	private String simpleName(String sctid) throws TermServerScriptException {
-		Concept c = gl.getConcept(sctid);
-		return SnomedUtils.deconstructFSN(c.getFsn())[0];
+		info ("Now checking descriptions..");
+		//Or possibly there's an issue with descriptions?
+		//For a change we're interested in inactive concepts!
+		for (Concept c : gl.getAllConcepts()) {
+			if (c.getConceptId().equals("262553000")) {  
+				debug("CheckHere - Desc 2528910015");
+			}
+			List<Description> descriptionsOfInterest = c.getDescriptions().stream()
+					.filter(d -> d.getInactivationIndicatorEntries(ActiveState.ACTIVE).size() > 1)
+					.collect(Collectors.toList());
+			for (Description d : descriptionsOfInterest) {
+				for (InactivationIndicatorEntry i : d.getInactivationIndicatorEntries(ActiveState.ACTIVE)) {
+					report (c, i.getEffectiveTime(), d, i);
+				}
+				incrementSummaryInformation("Descriptions reported");
+			}
+		}
 	}
 
 	@Override
