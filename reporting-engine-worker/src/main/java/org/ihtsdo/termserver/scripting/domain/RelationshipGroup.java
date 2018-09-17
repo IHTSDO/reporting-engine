@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class RelationshipGroup {
-	List<Relationship> relationships;
+	List<Relationship> relationships = new ArrayList<>();
 	int groupId;
 	
 	//Generic flag to say if group should be highlighted for some reason, eg cause a template match to fail
@@ -152,5 +152,9 @@ public class RelationshipGroup {
 
 	public void removeRelationship(Relationship r) {
 		relationships.remove(r);
+	}
+
+	public boolean isEmpty() {
+		return relationships.isEmpty();
 	}
 }

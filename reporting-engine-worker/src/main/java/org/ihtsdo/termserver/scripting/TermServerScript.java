@@ -546,7 +546,9 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	public void flushFiles(boolean andClose) throws TermServerScriptException {
-		getReportManager().flushFiles(andClose);
+		if (getReportManager() != null) {
+			getReportManager().flushFiles(andClose);
+		}
 	}
 	
 	public void finish() throws FileNotFoundException, TermServerScriptException {

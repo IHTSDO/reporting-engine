@@ -5,7 +5,6 @@ import java.io.PrintStream;
 import java.util.*;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
-import org.ihtsdo.termserver.scripting.ArchiveManager;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
@@ -30,10 +29,10 @@ public class PrepMisalignedConcepts extends TemplateFix {
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		PrepMisalignedConcepts app = new PrepMisalignedConcepts(null);
 		try {
-			ReportSheetManager.targetFolderId = "18xZylGhgL7ML782pu6-6u_VUw3p5Hfr7"; //Development
+			ReportSheetManager.targetFolderId = "18xZylGhgL7ML782pu6-6u_VUw3p5Hfr7"; //QI/Development
 			//ReportSheetManager.targetFolderId = "1uywo1VGAIh7MMY7wCn2yEj312OQCjt9J";
 			app.init(args);
-			app.getArchiveManager().allowStaleData = true;
+			//app.getArchiveManager().allowStaleData = true;
 			app.loadProjectSnapshot(false);  //Load all descriptions
 			app.postInit();
 			Batch batch = app.formIntoBatch();
@@ -69,52 +68,52 @@ public class PrepMisalignedConcepts extends TemplateFix {
 										"Pathologic fracture morphology of bone structure co-occurrent and due to Neoplasm of bone.json"};
 		
 		subHierarchyStr =  "34014006"; //QI-15 |Viral disease (disorder)|
-		templateNames = new String[] {	"Infection caused by Virus.json",
-										"Infection of bodysite caused by virus.json"};
+		templateNames = new String[] {	"templates/Infection caused by Virus.json",
+										"templates/Infection of bodysite caused by virus.json"};
 		
 		subHierarchyStr = "87628006";  //QI-16 |Bacterial infectious disease (disorder)|
-		templateNames = new String[] {	"Infection caused by Bacteria.json",
-										"Infection of bodysite caused by bacteria.json"};
+		templateNames = new String[] {	"templates/Infection caused by Bacteria.json",
+										"templates/Infection of bodysite caused by bacteria.json"};
 		 
 		subHierarchyStr = "95896000";  //QI-19  |Protozoan infection (disorder)|
-		templateNames = new String[] {"Infection caused by Protozoa with optional bodysite.json"};
+		templateNames = new String[] {"templates/Infection caused by Protozoa with optional bodysite.json"};
 			
 		subHierarchyStr = "125666000";  //QI-33  |Burn (disorder)|
 
 		excludeHierarchies = new String[] { "426284001" } ; // |Chemical burn (disorder)| 
 		templateNames = new String[] {
-				"burn/Burn of body structure.json",
-				"burn/Epidermal burn of body structure.json",
-				"burn/Partial thickness burn of body structure.json",
-				"burn/Full thickness burn of body structure.json",
-				"burn/Deep partial thickness burn of body structure.json",
-				"burn/Superficial partial thickness burn of body structure.json"};
+				"templates/burn/Burn of body structure.json",
+				"templates/burn/Epidermal burn of body structure.json",
+				"templates/burn/Partial thickness burn of body structure.json",
+				"templates/burn/Full thickness burn of body structure.json",
+				"templates/burn/Deep partial thickness burn of body structure.json",
+				"templates/burn/Superficial partial thickness burn of body structure.json"};
 		
 		subHierarchyStr = "74627003";  //QI-48 |Diabetic Complication|
-		templateNames = new String[] {	"Complication co-occurrent and due to Diabetes Melitus.json",
-										"Complication co-occurrent and due to Diabetes Melitus - Minimal.json"};
+		templateNames = new String[] {	"templates/Complication co-occurrent and due to Diabetes Melitus.json",
+										"templates/Complication co-occurrent and due to Diabetes Melitus - Minimal.json"};
 		
 		subHierarchyStr = "8098009";	// QI-45 |Sexually transmitted infectious disease (disorder)| 
-		templateNames = new String[] {	"Sexually transmitted Infection with optional bodysite.json"};
-		*/
+		templateNames = new String[] {	"templates/Sexually transmitted Infection with optional bodysite.json"};
+		
 		subHierarchyStr = "283682007"; // QI-39 |Bite - wound (disorder)|
-		templateNames = new String[] {	"bite/bite of bodysite caused by bite event.json", 
-										"bite/bite of bodysite caused by bite event with infection.json"};
-		/*
+		templateNames = new String[] {	"templates/bite/bite of bodysite caused by bite event.json", 
+										"templates/bite/bite of bodysite caused by bite event with infection.json"};
+		
 		subHierarchyStr = "3218000"; //QI-67 |Mycosis (disorder)|
-		templateNames = new String[] {	"Infection caused by Fungus.json"};
-		
+		templateNames = new String[] {	"templates/Infection caused by Fungus.json"};
+		*/
 		subHierarchyStr = "17322007"; //QI-68 |Parasite (disorder)|
-		templateNames = new String[] {	"Infection caused by Parasite.json"};
-		
+		templateNames = new String[] {	"templates/Infection caused by Parasite.json"};
+		/*
 		subHierarchyStr = "416886008"; //QI-106 |Closed wound| 
-		templateNames = new String[] {	"wound/wound of bodysite.json"
-				//"wound/closed wound of bodysite.json"
+		templateNames = new String[] {	"templates/wound/wound of bodysite.json"
+				//"templates/wound/closed wound of bodysite.json"
 				};
 		
 		subHierarchyStr = "125643001"; //QI-107 |Open wound| 
-		templateNames = new String[] {	"wound/wound of bodysite.json"
-				//"wound/open wound of bodysite.json"
+		templateNames = new String[] {	"templates/wound/wound of bodysite.json"
+				//"templates/wound/open wound of bodysite.json"
 				};
 		*/
 		super.init(args);
@@ -186,7 +185,7 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		
 		for (Concept c : unalignedConcepts) {
 			if (c.getConceptId().equals("5120006")) {
-				debug("Check Me");
+			//	debug("Check Me");
 			}
 			if (!isExcluded(c)) {
 				List<String> diagnostics = new ArrayList<String>();

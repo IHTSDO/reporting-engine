@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.template;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -43,9 +44,9 @@ public class AncestorsCache implements RF2Constants {
 	}
 	
 	public Set<Concept> getAncestorsOrSelf (Concept c) throws TermServerScriptException {
-		Set<Concept> ancestors = getAncestors(c, true);
+		Set<Concept> ancestors = new HashSet<>(getAncestors(c, true));
 		ancestors.add(c);
-		return Collections.unmodifiableSet(ancestors);
+		return ancestors;
 	}
 	
 	/**

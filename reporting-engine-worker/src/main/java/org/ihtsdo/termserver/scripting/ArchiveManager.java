@@ -4,6 +4,8 @@ import java.io.*;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.*;
 
@@ -20,7 +22,6 @@ import us.monoid.web.JSONResource;
 
 public class ArchiveManager implements RF2Constants {
 	
-	//private TermServerScript ts;
 	protected String dataStoreRoot = "";
 	private Project project;
 	private String env;
@@ -28,6 +29,7 @@ public class ArchiveManager implements RF2Constants {
 	private SnowOwlClient tsClient;
 	private Gson gson;
 	public boolean allowStaleData = false;
+	public boolean populateHierarchyDepth = false;
 	
 	ArchiveManager (TermServerScript ts) {
 		//this.ts = ts;
@@ -172,6 +174,18 @@ public class ArchiveManager implements RF2Constants {
 			} else {
 				throw new TermServerScriptException("Unrecognised archive : " + archive);
 			}
+			
+			//Check that we've got some descriptions to be sure we've not been given
+			//a classification style archive.
+			List<Description> first50Descriptions = gl.getAllConcepts()
+					.stream()
+					.limit(50)
+					.flatMap(c -> c.getDescriptions().stream())
+					.collect(Collectors.toList());
+			if (first50Descriptions.size() < 20) {
+				throw new TermServerScriptException("Failed to find sufficient number of descriptions - classification archive used?");
+			}
+				
 		} catch (IOException e) {
 			throw new TermServerScriptException("Failed to extract project state from archive " + archive.getName(), e);
 		}
@@ -223,7 +237,9 @@ public class ArchiveManager implements RF2Constants {
 				info("Loading Relationship " + fileType + " file.");
 				gl.loadRelationships(CharacteristicType.INFERRED_RELATIONSHIP, is, true, isDelta);
 				info("Calculating concept depth...");
-				gl.populateHierarchyDepth(ROOT_CONCEPT, 0);
+				if (populateHierarchyDepth) {
+					gl.populateHierarchyDepth(ROOT_CONCEPT, 0);
+				}
 			} else if (fileName.contains("sct2_StatedRelationship_" + fileType )) {
 				info("Loading StatedRelationship " + fileType + " file.");
 				gl.loadRelationships(CharacteristicType.STATED_RELATIONSHIP, is, true, isDelta);

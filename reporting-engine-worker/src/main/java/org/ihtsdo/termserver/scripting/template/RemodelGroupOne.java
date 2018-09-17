@@ -66,44 +66,44 @@ public class RemodelGroupOne extends TemplateFix {
 		additionalReportColumns = "CharacteristicType, Template, AFTER Stated, BEFORE Stated, Inferred";
 		/*
 		subHierarchyStr = "125605004";  // QI-30 |Fracture of bone (disorder)|
-		templateNames = new String[] {	"Fracture of Bone Structure.json" }; /*,
-										"Fracture Dislocation of Bone Structure.json",
-										"Pathologic fracture of bone due to Disease.json"};
+		templateNames = new String[] {	"templates/Fracture of Bone Structure.json" }; /*,
+										"templates/Fracture Dislocation of Bone Structure.json",
+										"templates/Pathologic fracture of bone due to Disease.json"};
 		
 		subHierarchyStr =  "128294001";  // QI-36 |Chronic inflammatory disorder (disorder)
-		templateNames = new String[] {"Chronic Inflammatory Disorder.json"};
+		templateNames = new String[] {"templates/Chronic Inflammatory Disorder.json"};
 		
 		subHierarchyStr =  "126537000";  //QI-14 |Neoplasm of bone (disorder)|
-		templateNames = new String[] {"Neoplasm of Bone.json"};
+		templateNames = new String[] {"templates/Neoplasm of Bone.json"};
 		*/
 		formNewGroupAround.add(FINDING_SITE);
 		formNewGroupAround.add(CAUSE_AGENT);
 		formNewGroupAround.add(ASSOC_MORPH);
 		/*
 		subHierarchyStr =  "34014006"; //QI-15 + QI-23 |Viral disease (disorder)|
-		templateNames = new String[] {	"Infection caused by virus with optional bodysite.json"};
+		templateNames = new String[] {	"templates/Infection caused by virus with optional bodysite.json"};
 
 		subHierarchyStr =  "87628006";  //QI-16 + QI-21 |Bacterial infectious disease (disorder)|
-		templateNames = new String[] {	"Infection caused by bacteria with optional bodysite.json"}; 
+		templateNames = new String[] {	"templates/Infection caused by bacteria with optional bodysite.json"}; 
 		
 		subHierarchyStr =  "95896000";  //QI-27  |Protozoan infection (disorder)|
-		templateNames = new String[] {"Infection caused by Protozoa with optional bodysite.json"};
+		templateNames = new String[] {"templates/Infection caused by Protozoa with optional bodysite.json"};
 		
-		*/
+		
 		subHierarchyStr = "74627003";  //QI-48 |Diabetic Complication|
-		templateNames = new String[] {	"Complication co-occurrent and due to Diabetes Melitus.json",
-				//"Complication co-occurrent and due to Diabetes Melitus - Minimal.json"
+		templateNames = new String[] {	"templates/Complication co-occurrent and due to Diabetes Melitus.json",
+				//"templates/Complication co-occurrent and due to Diabetes Melitus - Minimal.json"
 				};
-		/*
+		
 		subHierarchyStr = "3218000"; //QI-70 |Mycosis (disorder)|
-		templateNames = new String[] {	"Infection caused by Fungus.json"};
-		
+		templateNames = new String[] {	"templates/Infection caused by Fungus.json"};
+		*/
 		subHierarchyStr = "17322007"; //QI-116 |Parasite (disorder)|
-		templateNames = new String[] {	"Infection caused by Parasite.json"};
-		
+		templateNames = new String[] {	"templates/Infection caused by Parasite.json"};
+		/*
 		subHierarchyStr = "125643001"; //QI-117 |Open wound| 
-		templateNames = new String[] {	"wound/wound of bodysite.json"
-				//"wound/open wound of bodysite.json"
+		templateNames = new String[] {	"templates/wound/wound of bodysite.json"
+				//"templates/wound/open wound of bodysite.json"
 				};
 		*/
 		super.init(args);
@@ -150,7 +150,7 @@ public class RemodelGroupOne extends TemplateFix {
 		int changesMade = 0;
 		
 		if (c.getConceptId().equals("43925005")) {
-			debug("Check me");
+		//	debug("Check me");
 		}
 		
 		//Create as many groups as required, but minimum 3
@@ -173,20 +173,13 @@ public class RemodelGroupOne extends TemplateFix {
 			if (groups[groupId] == null) {
 				groups[groupId] = new RelationshipGroup(groupId);
 			}
-			//If we have more than one relationship of a given type, we should probably remove one.  If it exists as
-			//an inferred relationship, it should get added back in elsewhere
-			//Don't do this because we need to reuse relationships
-			//if (groups[groupId] != null) {
-			//	removeDuplicateTypes(c, groups[groupId]);
-			//}
 		}
 		
 		//Remove any ungrouped relationship types that exist in the template as grouped.  They'll get picked up from 
 		//inferred if they're still needed.  Note that this just empties out the clone, not the original rel
 		removeGroupedTypes(c, groups[UNGROUPED], template);
 		
-		//Work through the attribute groups in the template and see if we can satisfy those from the ungrouped stated
-		//or inferred relationships on the concept
+		//Work through the attribute groups in the template and see if we can satisfy them
 		for (int templateGroupId = 0; templateGroupId <  template.getAttributeGroups().size(); templateGroupId++) {
 			AttributeGroup templateGroup = template.getAttributeGroups().toArray(new AttributeGroup[0])[templateGroupId];
 			boolean templateGroupOptional = templateGroup.getCardinalityMin().equals("0");
@@ -201,7 +194,7 @@ public class RemodelGroupOne extends TemplateFix {
 				//Have we formed an additional group? Find different attributes if so
 				//TODO Check group 1 has 1 to many cardinality before assuming we can replicate it
 				RelationshipGroup additionalGroup = groups[2];
-				if (additionalGroup != null) {
+				if (additionalGroup != null && !additionalGroup.isEmpty()) {
 					for (Attribute a : templateGroup.getAttributes()) {
 						//Does this group ALREADY satisfy the template attribute?
 						if (TemplateUtils.containsMatchingRelationship(additionalGroup, a, descendantsCache)) {
@@ -230,11 +223,32 @@ public class RemodelGroupOne extends TemplateFix {
 			}
 		}
 		
+		//Do we end up with any single relationships grouped?  Make ungrouped if so
+		for (RelationshipGroup group : groups) {
+			if (group.getGroupId() != UNGROUPED) {
+				if (group.getRelationships().size() == 1) {
+					Relationship lonelyRelationship = group.getRelationships().get(0);
+					groups[group.getGroupId()] = new RelationshipGroup(group.getGroupId());
+					lonelyRelationship.setGroupId(UNGROUPED);
+					if (!groups[UNGROUPED].containsTypeValue(lonelyRelationship)) {
+						groups[UNGROUPED].addRelationship(lonelyRelationship);
+					}
+				}
+			}
+		}
+		
 		if (ignoreUngroupedMoves > 0) {
 			applyRemodelledGroups(t,c,groups);
 			String modifiedForm = SnomedUtils.getModel(c, CharacteristicType.STATED_RELATIONSHIP);
+			
+			//Now check that we've actually ended up making actual changes
+			if (modifiedForm.equals(statedForm)) {
+				throw new ValidationFailure(c, "Stated modelling unchanged");
+			}
 			report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_GROUP_ADDED, modifiedForm, statedForm, inferredForm);
 		}
+		
+
 		return changesMade;
 	}
 
@@ -344,6 +358,8 @@ public class RemodelGroupOne extends TemplateFix {
 				if (ungroupedRels.size() == 1) {
 					Relationship ungroupedRel = ungroupedRels.get(0);
 					groups[UNGROUPED].removeRelationship(ungroupedRel);
+					//Make a clone so we're not immediately affecting the underlying concept
+					ungroupedRel = ungroupedRel.clone(ungroupedRel.getId());
 					ungroupedRel.setGroupId(group.getGroupId());  //We want to retain the SCTID
 					group.addRelationship(ungroupedRel); 
 					report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_MODIFIED, "Ungrouped relationship moved to group " + group.getGroupId() + ": " + ungroupedRel);
@@ -425,6 +441,12 @@ public class RemodelGroupOne extends TemplateFix {
 					Relationship r = new Relationship(c,type,value, groupId);
 					if (!groups[groupId].containsTypeValue(r)) {
 						groups[groupId].addRelationship(r);
+						//Can we remove a less specific relationship?
+						for (Relationship possibleAncestor : new ArrayList<>(groups[groupId].getRelationships())) {
+							if (possibleAncestor.getType().equals(r.getType()) && ancestorsCache.getAncestors(r.getTarget()).contains(possibleAncestor.getTarget())) {
+								groups[groupId].removeRelationship(possibleAncestor);
+							}
+						}
 						changesMade++;
 					}
 				}
@@ -453,7 +475,7 @@ public class RemodelGroupOne extends TemplateFix {
 	/* Sort the two attribute values so that they'll "chum up" with other attributes that they're
 	 * already grouped with in the inferred form.
 	 */
-	private Concept[] sortByAffinity(List<Concept> values, Concept type, Concept c, RelationshipGroup[] groups, boolean ungrouped) {
+	private Concept[] sortByAffinity(List<Concept> values, Concept type, Concept c, RelationshipGroup[] groups, boolean ungrouped) throws TermServerScriptException {
 		Concept[] sortedValues = new Concept[groups.length];
 		//Do we already have attributes in group 1 or 2 which should be grouped with one of our values?
 		nextValue:
@@ -461,8 +483,9 @@ public class RemodelGroupOne extends TemplateFix {
 			Relationship proposedRel = new Relationship (type, value);
 			
 			//In fact, we might already have one of these values stated in a group, in which case the affinity is already set
+			//Or a less specific one that we could replace
 			for (RelationshipGroup group : groups) {
-				if (group!= null && group.containsTypeValue(proposedRel)) {
+				if (group!= null && (group.containsTypeValue(proposedRel) || group.containsTypeValue(type, ancestorsCache.getAncestorsOrSelf(value)))) {
 					//If we're considering grouped attributes, and we find one ungrouped, move it up
 					if (group.getGroupId() == UNGROUPED && !ungrouped) {
 						sortedValues[1] = value;
@@ -538,7 +561,7 @@ public class RemodelGroupOne extends TemplateFix {
 		//Find concepts that only have ungrouped attributes, or none at all.
 		List<Concept> processMe = new ArrayList<>();
 		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
-			if (!c.getConceptId().equals("235869004")) {
+			if (!c.getConceptId().equals("249414000")) {
 				//continue;
 			}
 			Concept potentialCandidate = null;
