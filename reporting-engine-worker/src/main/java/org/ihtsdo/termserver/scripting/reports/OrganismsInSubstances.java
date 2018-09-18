@@ -1,0 +1,90 @@
+package org.ihtsdo.termserver.scripting.reports;
+
+import java.io.IOException;
+import java.io.PrintStream;
+import java.util.*;
+
+import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
+import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.util.DrugUtils;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+
+/**
+ * SUBST-287 Ensure case sensitivity correct: organism in term - antibody and antigen (et al.)
+ */
+public class OrganismsInSubstances extends TermServerReport {
+	
+	Concept subHierarchy = ROOT_CONCEPT;
+	Map<String, Description> organismNames;
+	Set<Concept> substancesUsedInProducts;
+	List<String> skipOrganisms;
+	
+	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
+		OrganismsInSubstances report = new OrganismsInSubstances();
+		try {
+			ReportSheetManager.targetFolderId = "1bwgl8BkUSdNDfXHoL__ENMPQy_EdEP7d";
+			report.additionalReportColumns = "FSN, SemanticTag, Substance Description, Organism Description";
+			report.init(args);
+			report.loadProjectSnapshot(false);  //Load all descriptions
+			report.postInit();
+			report.reportOrganismsInSubstances();
+		} catch (Exception e) {
+			info("Failed to produce Description Report due to " + e.getMessage());
+			e.printStackTrace(new PrintStream(System.out));
+		} finally {
+			report.finish();
+		}
+	}
+
+	private void postInit() throws TermServerScriptException {
+		substancesUsedInProducts = DrugUtils.getSubstancesUsedInProducts();
+		skipOrganisms = new ArrayList<>();
+		skipOrganisms.add("nit");
+		skipOrganisms.add("beta");
+		skipOrganisms.add("ox");
+		skipOrganisms.add("bee");
+		skipOrganisms.add("virus");
+		
+		info("Mapping organism names");
+		organismNames = new HashMap<>();
+		for (Concept organism : ORGANISM.getDescendents(NOT_SET)) {
+			Description fsn = organism.getFSNDescription();
+			String fsnStripped = SnomedUtils.deconstructFSN(fsn.getTerm())[0].toLowerCase();
+			if (!skipOrganisms.contains(fsnStripped)) {
+				organismNames.put(fsnStripped, fsn);
+			}
+			for (Description d : organism.getDescriptions(Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE)) {
+				String storeTerm = d.getTerm().toLowerCase();
+				if (!organismNames.containsKey(storeTerm) && !skipOrganisms.contains(storeTerm)) {
+					organismNames.put(storeTerm, d);
+				}
+			}
+		}
+	}
+
+	private void reportOrganismsInSubstances() throws TermServerScriptException {
+		info ("Looking for organisms used in substances used in products");
+		
+		for (Concept substance : substancesUsedInProducts) {
+			//Check all preferred terms
+			for (Description d : substance.getDescriptions(Acceptability.PREFERRED, null, ActiveState.ACTIVE)) {
+				//Add a space to beginning and end so we match the start of words, but allow for variants
+				String term = " " + d.getTerm().toLowerCase();
+				boolean reported = false;
+				for (Map.Entry<String, Description> organismEntry : organismNames.entrySet()) {
+					if (term.contains(" " + organismEntry.getKey())) {
+						report (substance, d, organismEntry.getValue());
+						reported = true;
+					}
+				}
+				//Only report once per substance
+				if (reported) {
+					break;
+				}
+			}
+		}
+	}
+
+}

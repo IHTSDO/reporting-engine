@@ -260,5 +260,18 @@ public class DrugUtils implements RF2Constants {
 			return getBase(bases.get(0));
 		}
 	}
+
+	public static Set<Concept> getSubstancesUsedInProducts() throws TermServerScriptException {
+		Set<Concept> substancesUsedInProducts = new HashSet<>();
+		for (Concept product : PHARM_BIO_PRODUCT.getDescendents(NOT_SET)) {
+			for (Relationship r : product.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE)) {
+				substancesUsedInProducts.add(r.getTarget());
+			}
+			for (Relationship r : product.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HAS_PRECISE_INGRED, ActiveState.ACTIVE)) {
+				substancesUsedInProducts.add(r.getTarget());
+			}
+		}
+		return substancesUsedInProducts;
+	}
 	
 }
