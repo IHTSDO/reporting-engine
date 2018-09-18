@@ -107,10 +107,6 @@ public class SnapshotGenerator extends TermServerScript {
 		initialiseFileHeaders();
 	}
 	
-	public void finish() throws FileNotFoundException, TermServerScriptException {
-		super.finish();
-	}
-	
 	protected void initialiseFileHeaders() throws TermServerScriptException {
 		String termDir = packageDir +"Snapshot/Terminology/";
 		String refDir =  packageDir +"Snapshot/Refset/";

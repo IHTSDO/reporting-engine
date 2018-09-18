@@ -135,16 +135,20 @@ public abstract class DeltaGenerator extends TermServerScript {
 		initialiseFileHeaders();
 	}
 	
-	public void finish() throws FileNotFoundException, TermServerScriptException {
+	public void finish() {
 		super.finish();
-		if (conIdGenerator != null) {
-			info(conIdGenerator.finish());
-		}
-		if (descIdGenerator != null) {
-			info(descIdGenerator.finish());
-		}
-		if (relIdGenerator != null) {
-			info(relIdGenerator.finish());
+		try {
+			if (conIdGenerator != null) {
+				info(conIdGenerator.finish());
+			}
+			if (descIdGenerator != null) {
+				info(descIdGenerator.finish());
+			}
+			if (relIdGenerator != null) {
+				info(relIdGenerator.finish());
+			}
+		} catch (FileNotFoundException e) {
+			error ("Failed to close id generators",e);
 		}
 	}
 	

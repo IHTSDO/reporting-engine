@@ -46,7 +46,7 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 			report.loadProjectSnapshot(true);  //just FSNs
 			report.postInit(null);
 			info("Generating Intermediate Primitive Report for " + report.subHierarchyStart);
-			report.runReport();
+			report.runJob();
 		} catch (Exception e) {
 			info("Failed to produce Description Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
@@ -55,7 +55,7 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 		}
 	}
 	
-	public String runReport() throws TermServerScriptException {
+	public void runJob() throws TermServerScriptException {
 		
 		info("Reviewing concepts affected by intermediate primitives");
 		reportConceptsAffectedByIntermediatePrimitives();
@@ -65,10 +65,10 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 		
 		info("Reporting attribute usage counts");
 		reportAttributeUsageCounts();
-		return getReportManager().getUrl();
 	}
 	
-	public void postInit(String subHierarchyStr) throws TermServerScriptException {
+	public void postInit(JobRun run) throws TermServerScriptException {
+		subHierarchyStr = run.getParameter(SUB_HIERARCHY);
 		try {
 			if (subHierarchyStr == null) {
 				//setSubHierarchy("46866001");	//       |Fracture of lower limb (disorder)|
@@ -300,12 +300,6 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 		return new Job("Initial Analysis",
 						"Lists Intermediate Primitives and attribute usage for a given subHierarchy",
 						parameterNames);
-	}
-
-	@Override
-	public void runJob(JobRun jobRun) {
-		// TODO Auto-generated method stub
-		info("Running!");
 	}
 
 }

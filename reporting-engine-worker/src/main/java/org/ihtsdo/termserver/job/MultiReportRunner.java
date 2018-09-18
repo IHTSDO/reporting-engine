@@ -72,9 +72,11 @@ public class MultiReportRunner extends TermServerReport {
 			String subHiearchyStr = items[0];
 			String[] exclusions = (String[]) ArrayUtils.removeElement(items, subHiearchyStr);
 			Concept subHierarchy = gl.getConcept(line);
-			report.postInit(line);
+			//TODO
+			//report.postInit(line);
 			report.setExclusions(exclusions);
-			String url = report.runReport();
+			//TODO
+			//String url = report.runReport();
 			String summary = subHierarchy + " - Main Ticket";
 			String description = "Initial Analysis: " + url;
 			//jira.createJiraTicket("QI", summary, description);

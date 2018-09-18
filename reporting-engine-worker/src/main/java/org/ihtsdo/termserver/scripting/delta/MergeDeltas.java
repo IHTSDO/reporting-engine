@@ -53,7 +53,7 @@ public class MergeDeltas extends DeltaGenerator {
 	}
 	
 	@Override
-	protected String getReportName() {
+	public String getReportName() {
 		return "MergedDeltaFixes";
 	}
 	

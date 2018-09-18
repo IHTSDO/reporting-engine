@@ -18,7 +18,7 @@ import com.google.common.io.Files;
  * Lists all case sensitive terms that do not have capital letters after the first letter
  * UPDATE: We'll also load in the existing cs_words.txt file instead of hardcoding a list of proper nouns.
  */
-public class CaseSensitivity extends TermServerReport{
+public class CaseSensitivity extends TermServerReport {
 	
 	List<Concept> targetHierarchies = new ArrayList<>();
 	List<Concept> excludeHierarchies = new ArrayList<>();

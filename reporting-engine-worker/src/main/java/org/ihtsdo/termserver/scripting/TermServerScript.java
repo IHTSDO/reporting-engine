@@ -4,6 +4,7 @@ import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.lang.time.DurationFormatUtils;
 import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.dao.ReportManager;
@@ -11,13 +12,14 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.template.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.ihtsdo.termserver.scripting.util.StringUtils;
+import org.snomed.otf.scheduler.domain.JobRun;
+import org.snomed.otf.scheduler.domain.JobStatus;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
 import us.monoid.web.JSONResource;
 import us.monoid.web.Resty;
@@ -48,11 +50,14 @@ public abstract class TermServerScript implements RF2Constants {
 	protected boolean runStandAlone = true; //Set to true to avoid loading concepts from Termserver.  Should be used with Dry Run only.
 	protected File inputFile;
 	protected File inputFile2;
+	protected String projectName;
 	
 	protected String subHierarchyStr;
 	protected Concept subHierarchy;
+	protected String[] exclusions;
 
 	protected GraphLoader gl = GraphLoader.getGraphLoader();
+	protected String headers = "Concept SCTID,";
 	protected String additionalReportColumns = "ActionDetail";
 	protected String secondaryReportColumns = "ActionDetail";
 	protected String tertiaryReportColumns = "ActionDetail";
@@ -67,6 +72,9 @@ public abstract class TermServerScript implements RF2Constants {
 	protected String tsRoot = "MAIN/"; //"MAIN/2016-01-31/SNOMEDCT-DK/";
 	private ReportManager reportManager;
 	
+	protected static final String PROJECT = "Project";
+	protected static final String DRY_RUN = "DryRun";
+	protected static final String SUB_HIERARCHY = "SubHierarchy";
 
 	protected static DescendentsCache descendantsCache = DescendentsCache.getDescendentsCache();
 	protected static AncestorsCache ancestorsCache = AncestorsCache.getAncestorsCache();
@@ -131,6 +139,11 @@ public abstract class TermServerScript implements RF2Constants {
 		System.out.println ("*** " + (obj==null?"NULL":obj.toString()));
 	}
 	
+	public static void error (Object obj, Exception e) {
+		System.err.println ("*** " + (obj==null?"NULL":obj.toString()));
+		System.err.println (ExceptionUtils.getStackTrace(e));
+	}
+	
 	public static void print (Object msg) {
 		System.out.print (msg.toString());
 	}
@@ -157,7 +170,6 @@ public abstract class TermServerScript implements RF2Constants {
 		boolean isRestart = false;
 		boolean isInputFile = false;
 		boolean isInputFile2 = false;
-		String projectName = "unknown";
 	
 		for (String thisArg : args) {
 			if (thisArg.equals("-p")) {
@@ -199,45 +211,20 @@ public abstract class TermServerScript implements RF2Constants {
 				isCookie = false;
 			} 
 		}
-		
-		info ("Select an environment ");
-		for (int i=0; i < environments.length; i++) {
-			info ("  " + i + ": " + environments[i]);
-		}
-		
-		print ("Choice: ");
-		String choice = STDIN.nextLine().trim();
-		int envChoice = Integer.parseInt(choice);
-		url = environments[envChoice];
-		env = envKeys[envChoice];
+		checkSettingsWithUser(null);
+		init();
+	}
 	
-		if (authenticatedCookie == null || authenticatedCookie.trim().isEmpty()) {
-			print ("Please enter your authenticated cookie for connection to " + url + " : ");
-			authenticatedCookie = STDIN.nextLine().trim();
-		}
-		//TODO Make calls through client objects rather than resty direct and remove this member 
-		resty.withHeader("Cookie", authenticatedCookie);  
-		scaClient = new AuthoringServicesClient(url, authenticatedCookie);
-		initialiseSnowOwlClient();
-		
-		print ("Specify Project " + (projectName==null?": ":"[" + projectName + "]: "));
-		String response = STDIN.nextLine().trim();
-		if (!response.isEmpty()) {
-			projectName = response;
-		}
-		
-		if (restartPosition != NOT_SET) {
-			print ("Restarting from position [" +restartPosition + "]: ");
-			response = STDIN.nextLine().trim();
-			if (!response.isEmpty()) {
-				restartPosition = Integer.parseInt(response);
-			}
-		}
-
+	private void init() throws TermServerScriptException {
 		if (restartPosition == 0) {
 			info ("Restart position given as 0 but line numbering starts from 1.  Starting at line 1.");
 			restartPosition = 1;
 		}
+		
+		//TODO Make calls through client objects rather than resty direct and remove this member 
+		resty.withHeader("Cookie", authenticatedCookie);  
+		scaClient = new AuthoringServicesClient(url, authenticatedCookie);
+		initialiseSnowOwlClient();
 		
 		//Recover the full project path from authoring services, if not already fully specified
 		project = new Project();
@@ -253,13 +240,124 @@ public abstract class TermServerScript implements RF2Constants {
 				info ("Running stand alone. Guessing project path to be MAIN/" + projectName);
 				project.setBranchPath("MAIN/" + projectName);
 			} else {
-				project = scaClient.getProject(projectName);
+				try {
+					project = scaClient.getProject(projectName);
+				} catch (SnowOwlClientException e) {
+					throw new TermServerScriptException("Unable to recover project: " + projectName,e);
+				}
 			}
 			project.setKey(projectName);
 		}
 		info("Full path for projected determined to be: " + project.getBranchPath());
 		setArchiveManager(new ArchiveManager(this));
 		reportManager = ReportManager.create(env, getReportName());
+		
+	}
+
+	protected void checkSettingsWithUser(JobRun jobRun) {
+		info ("Select an environment ");
+		for (int i=0; i < environments.length; i++) {
+			info ("  " + i + ": " + environments[i]);
+		}
+		
+		print ("Choice: ");
+		String choice = STDIN.nextLine().trim();
+		int envChoice = Integer.parseInt(choice);
+		url = environments[envChoice];
+		env = envKeys[envChoice];
+		
+		if (jobRun != null) {
+			jobRun.setTerminologyServerUrl(url);
+		}
+	
+		if (jobRun != null && !jobRun.getAuthToken().isEmpty()) {
+			authenticatedCookie = jobRun.getAuthToken();
+		} else if (authenticatedCookie == null || authenticatedCookie.trim().isEmpty()) {
+			print ("Please enter your authenticated cookie for connection to " + url + " : ");
+			authenticatedCookie = STDIN.nextLine().trim();
+		}
+		
+		if (jobRun != null && !jobRun.getParameter(PROJECT).isEmpty()) {
+			projectName = jobRun.getParameter(PROJECT);
+		}
+		
+		print ("Specify Project " + (projectName==null?": ":"[" + projectName + "]: "));
+		String response = STDIN.nextLine().trim();
+		if (!response.isEmpty()) {
+			projectName = response;
+		}
+		
+		if (restartPosition != NOT_SET) {
+			print ("Restarting from position [" +restartPosition + "]: ");
+			response = STDIN.nextLine().trim();
+			if (!response.isEmpty()) {
+				restartPosition = Integer.parseInt(response);
+			}
+		}
+		
+	}
+
+	protected void init (JobRun jobRun) throws TermServerScriptException {
+		url = jobRun.getTerminologyServerUrl();
+		authenticatedCookie = jobRun.getAuthToken();
+		projectName = jobRun.getParameter(PROJECT);
+		if (StringUtils.isEmpty(jobRun.getParameter(SUB_HIERARCHY))) {
+			jobRun.setParameter(SUB_HIERARCHY, ROOT_CONCEPT.toString());
+		}
+		subHierarchy = gl.getConcept(jobRun.getParameter(SUB_HIERARCHY));
+		if (authenticatedCookie == null || authenticatedCookie.trim().isEmpty()) {
+			throw new TermServerScriptException("Unable to proceed without an authenticated token/cookie");
+		}
+		init();
+	}
+	
+	public void postInit(JobRun jobRun) throws TermServerScriptException {
+		subHierarchy = gl.getConcept(jobRun.getParameter(SUB_HIERARCHY));
+		getReportManager().initialiseReportFiles( new String[] {headers + additionalReportColumns});
+	}
+	
+	public void runJob(JobRun jobRun) {
+		try {
+			init(jobRun);
+			loadProjectSnapshot(false);  //Load all descriptions
+			postInit(jobRun);
+			jobRun.setResultUrl(getReportManager().getUrl());
+			runJob();
+			jobRun.setStatus(JobStatus.Complete);
+		} catch (Exception e) {
+			String msg = "Failed to complete " + jobRun.getJobName() + " due to " + e.getMessage();
+			jobRun.setStatus(JobStatus.Failed);
+			jobRun.setDebugInfo(msg);
+			error(msg, e);
+		} finally {
+			finish();
+		}
+	}
+	
+	protected void runJob () throws TermServerScriptException {
+		//TODO Make this abstract so that all classes pick it up
+		throw new TermServerScriptException("Override this method in concrete class");
+	}
+	
+	protected static JobRun createJobRunFromArgs(String jobName, String[] args) {
+		JobRun jobRun = JobRun.create(jobName, null);
+		if (args.length < 3) {
+			info("Usage: java <TSScriptClass> [-a author] [-n <taskSize>] [-r <restart position>] [-c <authenticatedCookie>] [-d <Y/N>] [-p <projectName>] -f <batch file Location>");
+			info(" d - dry run");
+			System.exit(-1);
+		}
+		
+		for (int i=0; i<args.length; i++) {
+			if (args[i].equals("-p")) {
+				jobRun.setParameter(PROJECT, args[i+1]);
+			} else if (args[i].equals("-c")) {
+				jobRun.setAuthToken(args[i+1]);
+			} else if (args[i].equals("-d")) {
+				jobRun.setParameter(DRY_RUN, args[i+1]);
+			} 
+		}
+		
+		return jobRun;
 	}
 	
 	protected void initialiseSnowOwlClient() {
@@ -551,9 +649,17 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 	}
 	
-	public void finish() throws FileNotFoundException, TermServerScriptException {
+	public void flushFilesSafely(boolean andClose) {
+		try {
+			flushFiles(andClose);
+		} catch (TermServerScriptException e) {
+			error("Failed to flush files.", e);
+		}
+	}
+	
+	public void finish() {
 		info (BREAK);
-		flushFiles(true);
+		flushFilesSafely(true);
 		Date endTime = new Date();
 		if (startTime != null) {
 			long diff = endTime.getTime() - startTime.getTime();
@@ -618,7 +724,7 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 
-	protected String getReportName() {
+	public String getReportName() {
 		String fileName = SnomedUtils.deconstructFilename(inputFile)[1];
 		String reportName = getScriptName() + (fileName.isEmpty()?"" : " " + fileName);
 		
@@ -739,6 +845,8 @@ public abstract class TermServerScript implements RF2Constants {
 		StringBuffer sb = new StringBuffer();
 		sb.append (QUOTE)
 		.append(c==null?"":c.getConceptId())
+		.append(QUOTE_COMMA_QUOTE)
+		.append(c.getFsn())
 		.append(QUOTE_COMMA_QUOTE);
 		if (d != null) {
 			sb.append(SnomedUtils.deconstructFSN(c.getFsn())[1])
@@ -813,6 +921,10 @@ public abstract class TermServerScript implements RF2Constants {
 
 	public void setReportManager(ReportManager reportManager) {
 		this.reportManager = reportManager;
+	}
+	
+	public void setExclusions(String[] exclusions) throws TermServerScriptException {
+		this.exclusions = exclusions;
 	}
 
 }

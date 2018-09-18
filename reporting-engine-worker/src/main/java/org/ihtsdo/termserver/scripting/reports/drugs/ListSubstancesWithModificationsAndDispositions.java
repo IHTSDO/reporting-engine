@@ -9,6 +9,7 @@ import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
+import org.ihtsdo.termserver.scripting.util.DrugUtils;
 
 /**
  * SUBST-246 list all substances with parents, modifications, dispositions and say if it's used 
@@ -16,7 +17,7 @@ import org.ihtsdo.termserver.scripting.reports.TermServerReport;
  */
 public class ListSubstancesWithModificationsAndDispositions extends TermServerReport {
 	
-	Set<Concept> substancesUsedInProducts = new HashSet<>();
+	Set<Concept> substancesUsedInProducts;
 	int maxParents = 0;
 	int maxModifications = 0;
 	int maxDispositions = 0;
@@ -27,7 +28,6 @@ public class ListSubstancesWithModificationsAndDispositions extends TermServerRe
 			report.additionalReportColumns = "FSN, Used in Product, Some Direct Stated Children Flattened, All Direct Stated Children Flattened, Some Direct Inferred Children Flattened, All Direct Inferred Children Flattened, Parents, Modifications, Dispositions";
 			report.init(args);
 			report.loadProjectSnapshot(true);  
-			report.postLoadInit();
 			report.findBaseWithModifications();
 		} catch (Exception e) {
 			info("Failed to produce MissingAttributeReport due to " + e.getClass().getSimpleName() + ": " + e.getMessage());
@@ -37,18 +37,8 @@ public class ListSubstancesWithModificationsAndDispositions extends TermServerRe
 		}
 	}
 
-	private void postLoadInit() throws TermServerScriptException {
-		for (Concept product : PHARM_BIO_PRODUCT.getDescendents(NOT_SET)) {
-			for (Relationship r : product.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE)) {
-				substancesUsedInProducts.add(r.getTarget());
-			}
-			for (Relationship r : product.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HAS_PRECISE_INGRED, ActiveState.ACTIVE)) {
-				substancesUsedInProducts.add(r.getTarget());
-			}
-		}
-	}
-
 	private void findBaseWithModifications() throws TermServerScriptException {
+		substancesUsedInProducts = DrugUtils.getSubstancesUsedInProducts();
 		for (Concept c : SUBSTANCE.getDescendents(NOT_SET)) {
 			//Get a list of parents
 			List<Concept> statedParents = c.getParents(CharacteristicType.STATED_RELATIONSHIP);

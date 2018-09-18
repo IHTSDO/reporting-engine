@@ -5,16 +5,16 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
+import org.snomed.otf.scheduler.domain.JobRun;
 
 public abstract class TermServerReport extends TermServerScript {
-	
-	protected String headers = "Concept SCTID,";
 	
 	protected void init(String[] args) throws TermServerScriptException, SnowOwlClientException {
 		init(args, false); //Don't delay initialisation of report files by default
@@ -89,5 +89,15 @@ public abstract class TermServerReport extends TermServerScript {
 			super.incrementSummaryInformation(key);
 		}
 	}
-
+	public static void run(Class<? extends ReportClass> reportClass, String[] args) throws TermServerScriptException {
+		JobRun jobRun = createJobRunFromArgs(reportClass.getSimpleName(), args);
+		ReportClass report = null;
+		try {
+			report = reportClass.newInstance();
+			((TermServerReport)report).checkSettingsWithUser(jobRun);
+		} catch ( InstantiationException | IllegalAccessException e) {
+			throw new TermServerScriptException("Unable to instantiate " + reportClass.getSimpleName(), e);
+		}
+		report.runJob(jobRun);
+	}
 }

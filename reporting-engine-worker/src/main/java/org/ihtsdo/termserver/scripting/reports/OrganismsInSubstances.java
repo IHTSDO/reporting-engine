@@ -25,7 +25,7 @@ public class OrganismsInSubstances extends TermServerReport {
 		OrganismsInSubstances report = new OrganismsInSubstances();
 		try {
 			ReportSheetManager.targetFolderId = "1bwgl8BkUSdNDfXHoL__ENMPQy_EdEP7d";
-			report.additionalReportColumns = "FSN, SemanticTag, Substance Description, Organism Description";
+			report.additionalReportColumns = "FSN, SemanticTag, Substance Description, Organism Description, Case Significance Mismatch";
 			report.init(args);
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.postInit();
@@ -46,19 +46,29 @@ public class OrganismsInSubstances extends TermServerReport {
 		skipOrganisms.add("ox");
 		skipOrganisms.add("bee");
 		skipOrganisms.add("virus");
+		skipOrganisms.add("guan");
+		skipOrganisms.add("mus");
+		skipOrganisms.add("sus");
+		skipOrganisms.add("pan");
+		skipOrganisms.add("olm");
+		skipOrganisms.add("asp");
+		skipOrganisms.add("ani");
 		
 		info("Mapping organism names");
 		organismNames = new HashMap<>();
 		for (Concept organism : ORGANISM.getDescendents(NOT_SET)) {
-			Description fsn = organism.getFSNDescription();
-			String fsnStripped = SnomedUtils.deconstructFSN(fsn.getTerm())[0].toLowerCase();
-			if (!skipOrganisms.contains(fsnStripped)) {
-				organismNames.put(fsnStripped, fsn);
-			}
-			for (Description d : organism.getDescriptions(Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE)) {
+			for (Description d : organism.getDescriptions(ActiveState.ACTIVE)) {
 				String storeTerm = d.getTerm().toLowerCase();
+				if (d.getType().equals(DescriptionType.FSN)) {
+					storeTerm = SnomedUtils.deconstructFSN(storeTerm)[0];
+				}
 				if (!organismNames.containsKey(storeTerm) && !skipOrganisms.contains(storeTerm)) {
 					organismNames.put(storeTerm, d);
+					//We're seeing substances using Xvirus with no space, so store them
+					if (storeTerm.contains(" virus")) {
+						storeTerm = storeTerm.replaceAll(" virus", "virus");
+						organismNames.put(storeTerm, d);
+					}
 				}
 			}
 		}
@@ -75,7 +85,11 @@ public class OrganismsInSubstances extends TermServerReport {
 				boolean reported = false;
 				for (Map.Entry<String, Description> organismEntry : organismNames.entrySet()) {
 					if (term.contains(" " + organismEntry.getKey())) {
-						report (substance, d, organismEntry.getValue());
+						String csMismatch = "Y";
+						if (d.getCaseSignificance().equals(organismEntry.getValue().getCaseSignificance())) {
+							csMismatch = "N";
+						}
+						report (substance, d, organismEntry.getValue(), csMismatch);
 						reported = true;
 					}
 				}

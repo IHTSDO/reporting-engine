@@ -11,8 +11,6 @@ import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 
-import com.google.gdata.data.introspection.Collection;
-
 /**
  * INFRA-2704, INFRA-2793
  * Where a concept has duplicate inactivation indicators, list those along with the

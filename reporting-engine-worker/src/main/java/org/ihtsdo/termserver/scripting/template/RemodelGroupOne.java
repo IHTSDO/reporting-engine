@@ -61,8 +61,8 @@ public class RemodelGroupOne extends TemplateFix {
 		selfDetermining = true;
 		runStandAlone = true; 
 		classifyTasks = true;
-		populateEditPanel = false;
-		populateTaskDescription = false;
+		populateEditPanel = true;
+		populateTaskDescription = true;
 		additionalReportColumns = "CharacteristicType, Template, AFTER Stated, BEFORE Stated, Inferred";
 		/*
 		subHierarchyStr = "125605004";  // QI-30 |Fracture of bone (disorder)|
