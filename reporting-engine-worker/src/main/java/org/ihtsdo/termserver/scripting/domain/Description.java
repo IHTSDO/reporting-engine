@@ -522,6 +522,8 @@ public class Description extends Component implements RF2Constants {
 	}
 	
 	public void addInactivationIndicator(InactivationIndicatorEntry i) {
+		//Replace any indicators with the same UUID
+		getInactivationIndicatorEntries().remove(i);
 		getInactivationIndicatorEntries().add(i);
 		if (i.isActive()) {
 			setInactivationIndicator(SnomedUtils.translateInactivationIndicator(i.getInactivationReasonId()));

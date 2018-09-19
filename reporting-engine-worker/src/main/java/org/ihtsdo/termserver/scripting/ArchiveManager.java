@@ -175,15 +175,17 @@ public class ArchiveManager implements RF2Constants {
 				throw new TermServerScriptException("Unrecognised archive : " + archive);
 			}
 			
-			//Check that we've got some descriptions to be sure we've not been given
-			//a classification style archive.
-			List<Description> first50Descriptions = gl.getAllConcepts()
-					.stream()
-					.limit(50)
-					.flatMap(c -> c.getDescriptions().stream())
-					.collect(Collectors.toList());
-			if (first50Descriptions.size() < 20) {
-				throw new TermServerScriptException("Failed to find sufficient number of descriptions - classification archive used?");
+			if (!fsnOnly) {  
+				//Check that we've got some descriptions to be sure we've not been given
+				//a classification style archive.
+				List<Description> first50Descriptions = gl.getAllConcepts()
+						.stream()
+						.limit(50)
+						.flatMap(c -> c.getDescriptions().stream())
+						.collect(Collectors.toList());
+				if (first50Descriptions.size() < 20) {
+					throw new TermServerScriptException("Failed to find sufficient number of descriptions - classification archive used?");
+				}
 			}
 				
 		} catch (IOException e) {

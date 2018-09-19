@@ -382,9 +382,15 @@ public class GraphLoader implements RF2Constants {
 				InactivationIndicatorEntry inactivation = InactivationIndicatorEntry.fromRf2(lineItems);
 				if (inactivation.getRefsetId().equals(SCTID_CON_INACT_IND_REFSET)) {
 					Concept c = getConcept(lineItems[INACT_IDX_REFCOMPID]);
+					/*if (c.getConceptId().equals("198308002")) {
+						System.out.println("Check Here");
+					}*/
 					c.addInactivationIndicator(inactivation);
 				} else if (inactivation.getRefsetId().equals(SCTID_DESC_INACT_IND_REFSET)) {
 					Description d = getDescription(lineItems[INACT_IDX_REFCOMPID]);
+					/*if (d.getDescriptionId().equals("1221136011")) {
+						System.out.println("Check here");
+					}*/
 					d.addInactivationIndicator(inactivation);
 				}
 			} else {

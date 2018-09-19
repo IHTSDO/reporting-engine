@@ -10,6 +10,7 @@ import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.springframework.util.StringUtils;
 
 /**
  * INFRA-2704, INFRA-2793
@@ -24,7 +25,7 @@ public class DuplicateInactivationAssocationReport extends TermServerReport {
 			ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ";  //Release QA
 			report.additionalReportColumns = "fsn, effectiveTime, data";
 			report.init(args);
-			report.loadProjectSnapshot(true);  
+			report.loadProjectSnapshot(false);  
 			report.reportMatchingInactivations();
 		} catch (Exception e) {
 			info("Failed to produce Description Report due to " + e.getMessage());
@@ -38,12 +39,18 @@ public class DuplicateInactivationAssocationReport extends TermServerReport {
 		info ("Scanning all concepts...");
 		addSummaryInformation("Concepts checked", gl.getAllConcepts().size());
 		
+		/*
+		 * For the assertion /importer/src/main/resources/scripts/file-centric/file-centric-snapshot-attribute-value-unique-pair.sql
+		 * One of the historical assertions must be new, so we'll check that one of them has a blank effective time
+		 */
+		
 		//For a change we're interested in inactive concepts!
-		/*List<Concept> conceptsOfInterest = gl.getAllConcepts().stream()
+		List<Concept> conceptsOfInterest = gl.getAllConcepts().stream()
 				.filter(c -> c.isActive() == false)
 				.filter(c -> c.getInactivationIndicatorEntries(ActiveState.BOTH).size() > 1)
-				.collect(Collectors.toList());*/
-		List<Concept> conceptsOfInterest = Collections.singletonList(gl.getConcept("198308002"));
+				.filter(c -> hasNewInactivationIndicator(c))
+				.collect(Collectors.toList());
+		//List<Concept> conceptsOfInterest = Collections.singletonList(gl.getConcept("198308002"));
 		for (Concept c : conceptsOfInterest) {
 			for (InactivationIndicatorEntry i : c.getInactivationIndicatorEntries(ActiveState.BOTH)) {
 				report (c, i.getEffectiveTime(), i);
@@ -57,19 +64,38 @@ public class DuplicateInactivationAssocationReport extends TermServerReport {
 		//Or possibly there's an issue with descriptions?
 		//For a change we're interested in inactive concepts!
 		for (Concept c : gl.getAllConcepts()) {
-			if (c.getConceptId().equals("262553000")) {  
-				debug("CheckHere - Desc 2528910015");
+			if (c.getConceptId().equals("14816004")) {  
+			//	debug("CheckHere - Desc 1221136011");
 			}
 			List<Description> descriptionsOfInterest = c.getDescriptions().stream()
-					.filter(d -> d.getInactivationIndicatorEntries(ActiveState.ACTIVE).size() > 1)
+					.filter(d -> d.getInactivationIndicatorEntries(ActiveState.BOTH).size() > 1)
+					.filter(d -> hasNewInactivationIndicator(d))
 					.collect(Collectors.toList());
 			for (Description d : descriptionsOfInterest) {
 				for (InactivationIndicatorEntry i : d.getInactivationIndicatorEntries(ActiveState.ACTIVE)) {
 					report (c, i.getEffectiveTime(), d, i);
 				}
-				incrementSummaryInformation("Descriptions reported");
+				incrementSummaryInformation("Descriptions reported.");
 			}
 		}
+	}
+
+	private boolean hasNewInactivationIndicator(Concept c) {
+		for (InactivationIndicatorEntry i : c.getInactivationIndicatorEntries(ActiveState.BOTH)) {
+			if (StringUtils.isEmpty(i.getEffectiveTime())) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	private boolean hasNewInactivationIndicator(Description d) {
+		for (InactivationIndicatorEntry i : d.getInactivationIndicatorEntries(ActiveState.BOTH)) {
+			if (StringUtils.isEmpty(i.getEffectiveTime())) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	@Override
