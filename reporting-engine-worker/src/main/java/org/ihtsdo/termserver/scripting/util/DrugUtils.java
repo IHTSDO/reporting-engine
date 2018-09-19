@@ -205,16 +205,23 @@ public class DrugUtils implements RF2Constants {
 		return false;
 	}
 	
-
-	public static Set<Concept> getIngredients(Concept c, CharacteristicType charType) throws TermServerScriptException {
-		Set<Concept> ingredients = new HashSet<>();
+	public static Set<Relationship> getIngredientRelationships (Concept c, CharacteristicType charType) throws TermServerScriptException {
+		Set<Relationship> ingredientRels = new HashSet<>();
 		for (Relationship r : c.getRelationships(charType, HAS_ACTIVE_INGRED, ActiveState.ACTIVE)) {
-			ingredients.add(r.getTarget());
+			ingredientRels.add(r);
 		}
 		for (Relationship r : c.getRelationships(charType, HAS_PRECISE_INGRED, ActiveState.ACTIVE)) {
-			ingredients.add(r.getTarget());
+			ingredientRels.add(r);
 		}
-		return ingredients;
+		return ingredientRels;
+	}
+	
+
+	public static Set<Concept> getIngredients(Concept c, CharacteristicType charType) throws TermServerScriptException {
+		return getIngredientRelationships(c, charType)
+				.stream()
+				.map(r -> r.getTarget())
+				.collect(Collectors.toSet());
 	}
 
 	public static Ingredient getIngredientDetails(Concept c, int groupId, CharacteristicType charType) throws TermServerScriptException {
