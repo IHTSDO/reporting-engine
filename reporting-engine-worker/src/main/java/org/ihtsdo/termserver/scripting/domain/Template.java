@@ -53,7 +53,7 @@ public class Template {
 			List<AttributeGroup> combinedGroups = new ArrayList<>();
 			AttributeGroup group0 = new AttributeGroup();
 			group0.setAttributes(ungrouped);
-			group0.setCardinalityMin("0");
+			group0.setCardinalityMin("1");  //We'll always have a group 0 - a focus concept at least!
 			group0.setCardinalityMax("1");
 			combinedGroups.add(group0);
 			combinedGroups.addAll(logicalTemplate.getAttributeGroups());

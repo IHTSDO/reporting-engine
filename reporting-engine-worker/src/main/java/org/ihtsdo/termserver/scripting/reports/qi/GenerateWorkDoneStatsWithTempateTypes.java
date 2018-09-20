@@ -6,6 +6,7 @@ import java.util.*;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -33,6 +34,7 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		GenerateWorkDoneStatsWithTempateTypes report = new GenerateWorkDoneStatsWithTempateTypes();
 		try {
+			ReportSheetManager.targetFolderId = "1YoJa68WLAMPKG6h4_gZ5-QT974EU9ui6";
 			report.additionalReportColumns = "FSN, Simple, modified, Pure, modified, Complex, modified, ComplexNoMorph, modified, None, modified, Total";
 			report.init(args);
 			report.loadProjectSnapshot(false);  //Load all descriptions
@@ -48,6 +50,7 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 
 	private void postLoadInit() throws TermServerScriptException, IOException {
 		subHierarchies = new ArrayList<>();
+		/*
 		info ("Loading " + inputFile);
 		if (!inputFile.canRead()) {
 			throw new TermServerScriptException ("Cannot read: " + inputFile);
@@ -67,7 +70,8 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 					exclusionMap.put(concept, exclusions);
 				}
 			}
-		}
+		} */
+		subHierarchies.addAll(ROOT_CONCEPT.getDescendents(IMMEDIATE_CHILD));
 		
 		co_occurrantTypeAttrb =  new Concept[] {
 				gl.getConcept("47429007") //|Associated with (attribute)|

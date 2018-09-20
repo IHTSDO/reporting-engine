@@ -65,6 +65,7 @@ abstract public class TemplateFix extends BatchFix {
 		exclusionWords = new ArrayList<>();
 		exclusionWords.add("subluxation");
 		exclusionWords.add("avulsion");
+		exclusionWords.add("associated");
 		
 		if (!includeComplexTemplates) {
 			exclusionWords.add("due to");
