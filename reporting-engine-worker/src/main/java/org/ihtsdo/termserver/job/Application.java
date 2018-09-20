@@ -43,10 +43,10 @@ public class Application  {
 		return converter;
 	}
 	
-	@Bean
+	/*@Bean
 	public JobManager getJobManager() {
 		return new JobManager();
-	}
+	}*/
 
 	public static void main(String[] args) {
 		new SpringApplicationBuilder(Application.class)

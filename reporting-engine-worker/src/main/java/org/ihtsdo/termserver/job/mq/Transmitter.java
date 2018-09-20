@@ -1,10 +1,8 @@
 package org.ihtsdo.termserver.job.mq;
 
-import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.snomed.otf.scheduler.domain.Job;
 import org.snomed.otf.scheduler.domain.JobMetadata;
 import org.snomed.otf.scheduler.domain.JobRun;
 import org.springframework.beans.factory.annotation.Autowired;

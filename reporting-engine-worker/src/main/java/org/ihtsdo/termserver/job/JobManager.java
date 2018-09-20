@@ -8,16 +8,15 @@ import java.util.Set;
 
 import javax.annotation.PostConstruct;
 
+import org.ihtsdo.otf.dao.resources.ResourceManager;
 import org.ihtsdo.termserver.job.mq.Transmitter;
 import org.reflections.Reflections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.snomed.otf.scheduler.domain.Job;
-import org.snomed.otf.scheduler.domain.JobMetadata;
-import org.snomed.otf.scheduler.domain.JobRun;
-import org.snomed.otf.scheduler.domain.JobStatus;
+import org.snomed.otf.scheduler.domain.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.info.BuildProperties;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -27,6 +26,8 @@ public class JobManager {
 	
 	protected Logger logger = LoggerFactory.getLogger(this.getClass());
 	
+	private final ResourceManager snomedReleaseResourceManager;
+	
 	Map<String, Class<? extends JobClass>> knownJobs = new HashMap<>();
 	
 	@Autowired(required = false)
@@ -35,6 +36,13 @@ public class JobManager {
 	
 	@Autowired
 	Transmitter transmitter;
+	
+	JobManager (
+			@Autowired SnomedReleaseResourceConfiguration snomedReleaseResourceConfiguration,
+			@Autowired ResourceLoader cloudResourceLoader) {
+		logger.info("Configuring Release Resource Manager");
+		snomedReleaseResourceManager = new ResourceManager(snomedReleaseResourceConfiguration, cloudResourceLoader);
+	}
 
 	@PostConstruct
 	public void init(){
