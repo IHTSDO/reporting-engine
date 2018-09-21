@@ -647,7 +647,7 @@ public abstract class TermServerScript implements RF2Constants {
 	public void flushFilesSafely(boolean andClose) {
 		try {
 			flushFiles(andClose);
-		} catch (TermServerScriptException e) {
+		} catch (Exception e) {
 			error("Failed to flush files.", e);
 		}
 	}

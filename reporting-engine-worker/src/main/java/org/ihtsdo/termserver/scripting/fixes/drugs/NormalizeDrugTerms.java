@@ -39,12 +39,10 @@ public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants{
 			ReportSheetManager.targetFolderId="1E6kDgFExNA9CRd25yZk_Y7l-KWRf8k6B"; //Drugs/Normalize Terming
 			fix.populateEditPanel = false;
 			fix.populateTaskDescription = false;
-			fix.selfDetermining = true;
+			//fix.selfDetermining = true;
 			fix.init(args);
 			fix.loadProjectSnapshot(false); //Load all descriptions
-			fix.postInit();
-			Batch batch = fix.formIntoBatch();
-			fix.batchProcess(batch);
+			fix.processFile();
 		} finally {
 			fix.finish();
 		}
@@ -106,16 +104,16 @@ public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants{
 		}
 	}*/
 
-	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
+	/*protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		debug("Identifying concepts to process");
 		termGenerator.setQuiet(true);
 		termGenerator.setPtOnly(false);
 		
 		List<Concept> allAffected = new ArrayList<Concept>(); 
 		for (Concept c : gl.getConcept(subHierarchyStr).getDescendents(NOT_SET)) {
-			/*if (!c.getConceptId().equals("346751008")) {
-				continue;
-			} */
+		//	if (!c.getConceptId().equals("346751008")) {
+		//		continue;
+		//	} 
 			SnomedUtils.populateConceptType(c);
 			//Clone the concept so we're not modifying our local copy
 			c = c.cloneWithIds();  //Exact copy - keep Ids
@@ -140,10 +138,10 @@ public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants{
 		termGenerator.setQuiet(false);
 		allAffected.sort(Comparator.comparing(Concept::getFsn));
 		return new ArrayList<Component>(allAffected);
-	}
+	} */
 
 	@Override
 	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
-		return null; // We will identify descriptions to edit from the snapshot
+		return Collections.singletonList(gl.getConcept(lineItems[0]));
 	}
 }

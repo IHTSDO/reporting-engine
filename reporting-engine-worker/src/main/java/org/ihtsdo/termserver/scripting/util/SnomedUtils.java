@@ -626,7 +626,7 @@ public class SnomedUtils implements RF2Constants {
 				case DrugUtils.CD : c.setConceptType(ConceptType.CLINICAL_DRUG);
 											break;
 				case DrugUtils.PRODUCT : c.setConceptType(ConceptType.PRODUCT);
-											checkForGroupers(c);
+											checkForGroupers(c);  //May further refine the concept type
 											break;
 				default : c.setConceptType(ConceptType.UNKNOWN);
 			}
@@ -641,16 +641,19 @@ public class SnomedUtils implements RF2Constants {
 			return;
 		}
 		
+		//Get the local cached copy of the concept so that we have the fully hierarchy tree populated
+		Concept cCached = gl.getConcept(c.getConceptId());
+		
 		Concept dispositions = gl.getConcept("766779001 |Medicinal product categorized by disposition (product)|");
 		Concept structures = gl.getConcept("763760008 |Medicinal product categorized by structure (product)|");
 		boolean isStructure = false;
 		boolean isDisposition = false;
 		
-		if (c.getAncestors(NOT_SET).contains(structures)) {
+		if (cCached.getAncestors(NOT_SET).contains(structures)) {
 			isStructure = true;
 		}
 		
-		if (c.getAncestors(NOT_SET).contains(dispositions)) {
+		if (cCached.getAncestors(NOT_SET).contains(dispositions)) {
 			isDisposition = true;
 		}
 		
