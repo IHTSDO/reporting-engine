@@ -564,6 +564,18 @@ public class SnomedUtils implements RF2Constants {
 		}
 	}
 	
+	public static HistoricalAssociation translateHistoricalAssociation(String assocSctId) {
+		switch (assocSctId) {
+			case SCTID_HIST_WAS_A_REFSETID: return HistoricalAssociation.WAS_A;
+			case SCTID_HIST_REPLACED_BY_REFSETID : return HistoricalAssociation.REPLACED_BY;
+			case SCTID_HIST_SAME_AS_REFSETID : return HistoricalAssociation.SAME_AS;
+			case SCTID_HIST_MOVED_TO_REFSETID : return HistoricalAssociation.MOVED_TO;
+			case SCTID_HIST_POSS_EQUIV_REFSETID : return HistoricalAssociation.POSS_EQUIV_TO;
+			case SCTID_HIST_ALTERNATIVE_ASSOC_REFSETID : return HistoricalAssociation.ALTERNATIVE;
+			default: throw new IllegalArgumentException("Unrecognised historical association indicator value " + assocSctId);
+		}
+	}
+	
 	public static File ensureFileExists(String fileName) throws TermServerScriptException {
 		File file = new File(fileName);
 		try {

@@ -890,9 +890,9 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	}
 	
 	protected void checkAndReplaceHistoricalAssociations(Task t, Concept inactivating, Concept replacing, InactivationIndicator inactivationIndicator) throws TermServerScriptException {
-		List<HistoricalAssociation> histAssocs = gl.usedAsHistoricalAssociationTarget(inactivating);
+		List<HistoricalAssociationEntry> histAssocs = gl.usedAsHistoricalAssociationTarget(inactivating);
 		if (histAssocs != null && histAssocs.size() > 0) {
-			for (HistoricalAssociation histAssoc : histAssocs) {
+			for (HistoricalAssociationEntry histAssoc : histAssocs) {
 				Concept source = gl.getConcept(histAssoc.getReferencedComponentId());
 				String assocType = gl.getConcept(histAssoc.getRefsetId()).getPreferredSynonym(US_ENG_LANG_REFSET).getTerm().replace("association reference set", "");
 				String thisDetail = "Concept was as used as the " + assocType + "target of a historical association for " + source;

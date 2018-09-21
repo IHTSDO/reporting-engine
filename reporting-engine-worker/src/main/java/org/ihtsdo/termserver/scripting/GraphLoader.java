@@ -20,7 +20,7 @@ import org.ihtsdo.termserver.scripting.domain.AssociationTargets;
 import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
-import org.ihtsdo.termserver.scripting.domain.HistoricalAssociation;
+import org.ihtsdo.termserver.scripting.domain.HistoricalAssociationEntry;
 import org.ihtsdo.termserver.scripting.domain.InactivationIndicatorEntry;
 import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
@@ -44,7 +44,7 @@ public class GraphLoader implements RF2Constants {
 	private AncestorsCache ancestorsCache = AncestorsCache.getAncestorsCache();
 	
 	//Watch that this map is of the TARGET of the association, ie all concepts used in a historical association
-	private Map<Concept, List<HistoricalAssociation>> historicalAssociations =  new HashMap<Concept, List<HistoricalAssociation>>();
+	private Map<Concept, List<HistoricalAssociationEntry>> historicalAssociations =  new HashMap<Concept, List<HistoricalAssociationEntry>>();
 	
 	public StringBuffer log = new StringBuffer();
 	
@@ -418,7 +418,7 @@ public class GraphLoader implements RF2Constants {
 				String referencedComponent = lineItems[INACT_IDX_REFCOMPID];
 				if (isConcept(referencedComponent)) {
 					Concept c = getConcept(referencedComponent);
-					HistoricalAssociation historicalAssociation = loadHistoricalAssociationLine(lineItems);
+					HistoricalAssociationEntry historicalAssociation = loadHistoricalAssociationLine(lineItems);
 					//Remove first in case we're replacing
 					c.getHistorialAssociations().remove(historicalAssociation);
 					c.getHistorialAssociations().add(historicalAssociation);
@@ -436,7 +436,7 @@ public class GraphLoader implements RF2Constants {
 	/*
 	 * Adds a historical association using the string based map format as per the Terminology Server's API
 	 */
-	private void addHistoricalAssociationInTsForm(Concept c, HistoricalAssociation historicalAssociation) {
+	private void addHistoricalAssociationInTsForm(Concept c, HistoricalAssociationEntry historicalAssociation) {
 		AssociationTargets targets = c.getAssociationTargets();
 		if (targets == null) {
 			targets = new AssociationTargets();
@@ -454,29 +454,29 @@ public class GraphLoader implements RF2Constants {
 		
 	}
 
-	private void recordHistoricalAssociation(HistoricalAssociation h) throws TermServerScriptException {
+	private void recordHistoricalAssociation(HistoricalAssociationEntry h) throws TermServerScriptException {
 		//Remember we're using the target of the association as the map key here
 		Concept target = getConcept(h.getTargetComponentId());
 		//Have we seen this concept before?
-		List<HistoricalAssociation> associations;
+		List<HistoricalAssociationEntry> associations;
 		if (historicalAssociations.containsKey(target)) {
 			associations = historicalAssociations.get(target);
 		} else {
-			associations = new ArrayList<HistoricalAssociation>();
+			associations = new ArrayList<HistoricalAssociationEntry>();
 			historicalAssociations.put(target, associations);
 		}
 		associations.add(h);
 	}
 	
-	public List<HistoricalAssociation> usedAsHistoricalAssociationTarget (Concept c) {
+	public List<HistoricalAssociationEntry> usedAsHistoricalAssociationTarget (Concept c) {
 		if (historicalAssociations.containsKey(c)) {
 			return historicalAssociations.get(c);
 		}
-		return new ArrayList<HistoricalAssociation>();
+		return new ArrayList<HistoricalAssociationEntry>();
 	}
 
-	private HistoricalAssociation loadHistoricalAssociationLine(String[] lineItems) {
-		HistoricalAssociation h = new HistoricalAssociation();
+	private HistoricalAssociationEntry loadHistoricalAssociationLine(String[] lineItems) {
+		HistoricalAssociationEntry h = new HistoricalAssociationEntry();
 		h.setId(lineItems[ASSOC_IDX_ID]);
 		h.setEffectiveTime(lineItems[ASSOC_IDX_EFFECTIVETIME]);
 		h.setActive(lineItems[ASSOC_IDX_ACTIVE].equals("1"));
@@ -523,7 +523,7 @@ public class GraphLoader implements RF2Constants {
 				componentOwnerMap.put(i,  c);
 			}
 			
-			for (HistoricalAssociation h : c.getHistorialAssociations()) {
+			for (HistoricalAssociationEntry h : c.getHistorialAssociations()) {
 				allComponents.put(h.getId(), h);
 				componentOwnerMap.put(h,  c);
 			}

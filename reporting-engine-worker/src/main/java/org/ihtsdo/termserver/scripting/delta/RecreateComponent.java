@@ -8,7 +8,7 @@ import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.HistoricalAssociation;
+import org.ihtsdo.termserver.scripting.domain.HistoricalAssociationEntry;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 /**
@@ -35,7 +35,7 @@ public class RecreateComponent extends DeltaGenerator {
 	}
 	
 	private void recreateComponent() throws TermServerScriptException {
-		HistoricalAssociation h = new HistoricalAssociation();
+		HistoricalAssociationEntry h = new HistoricalAssociationEntry();
 		h.setId("475d74f4-587e-5c33-987b-72f993436c38");
 		h.setRefsetId("900000000000523009");
 		h.setActive(false);

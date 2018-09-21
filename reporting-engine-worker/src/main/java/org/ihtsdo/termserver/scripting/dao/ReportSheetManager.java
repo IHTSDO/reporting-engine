@@ -164,6 +164,12 @@ public class ReportSheetManager implements RF2Constants {
 					.setRange(range)
 					.setValues(cells));
 		
+		//Are we getting close to the limit of what can be written?
+		if (dataToBeWritten.size() > 2000) {
+			System.err.println("Attempting to write > 2000 rows to sheets, pausing...");
+			try { Thread.sleep(10*1000); } catch (Exception e) {}
+		}
+		
 		if (!delayWrite) {
 			flushSoft();
 		}

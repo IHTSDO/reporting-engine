@@ -66,7 +66,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	//Note that these values are used when loading from RF2 where multiple entries can exist.
 	//When interacting with the TS, only one inactivation indicator is used (see above).
 	List<InactivationIndicatorEntry> inactivationIndicatorEntries;
-	List<HistoricalAssociation> historicalAssociations;
+	List<HistoricalAssociationEntry> historicalAssociations;
 	Collection<RelationshipGroup> statedRelationshipGroups;
 	Collection<RelationshipGroup> inferredRelationshipGroups;
 	
@@ -824,20 +824,20 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		}
 	}
 	
-	public List<HistoricalAssociation> getHistorialAssociations() {
+	public List<HistoricalAssociationEntry> getHistorialAssociations() {
 		if (historicalAssociations == null) {
-			historicalAssociations = new ArrayList<HistoricalAssociation>();
+			historicalAssociations = new ArrayList<HistoricalAssociationEntry>();
 		}
 		return historicalAssociations;
 	}
 	
-	public List<HistoricalAssociation> getHistorialAssociations(ActiveState activeState) {
+	public List<HistoricalAssociationEntry> getHistorialAssociations(ActiveState activeState) {
 		if (activeState.equals(ActiveState.BOTH)) {
 			return getHistorialAssociations();
 		} else {
 			boolean isActive = activeState.equals(ActiveState.ACTIVE);
-			List<HistoricalAssociation> selectedHistorialAssociations = new ArrayList<HistoricalAssociation>();
-			for (HistoricalAssociation h : getHistorialAssociations()) {
+			List<HistoricalAssociationEntry> selectedHistorialAssociations = new ArrayList<HistoricalAssociationEntry>();
+			for (HistoricalAssociationEntry h : getHistorialAssociations()) {
 				if (h.isActive() == isActive) {
 					selectedHistorialAssociations.add(h);
 				}

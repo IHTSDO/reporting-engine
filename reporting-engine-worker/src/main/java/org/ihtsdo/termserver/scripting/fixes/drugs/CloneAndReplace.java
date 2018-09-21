@@ -16,7 +16,7 @@ import org.ihtsdo.termserver.scripting.domain.AssociationTargets;
 import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
-import org.ihtsdo.termserver.scripting.domain.HistoricalAssociation;
+import org.ihtsdo.termserver.scripting.domain.HistoricalAssociationEntry;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.Task;

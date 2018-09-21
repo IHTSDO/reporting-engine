@@ -3,11 +3,10 @@ package org.ihtsdo.termserver.scripting.domain;
 import java.util.UUID;
 
 import org.ihtsdo.termserver.scripting.GraphLoader;
-import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 //id	effectiveTime	active	moduleId 	refsetId 	referencedComponentId	targetComponentId
-public class HistoricalAssociation extends Component implements RF2Constants {
+public class HistoricalAssociationEntry extends Component implements RF2Constants {
 
 	private String id;
 	private String effectiveTime;
@@ -20,8 +19,8 @@ public class HistoricalAssociation extends Component implements RF2Constants {
 	private boolean isDeleted = false;
 	private String deletionEffectiveTime;
 	
-	public HistoricalAssociation clone(String newComponentSctId) {
-		HistoricalAssociation clone = new HistoricalAssociation();
+	public HistoricalAssociationEntry clone(String newComponentSctId) {
+		HistoricalAssociationEntry clone = new HistoricalAssociationEntry();
 		clone.id = UUID.randomUUID().toString();
 		clone.effectiveTime = null;
 		clone.moduleId = this.moduleId;
@@ -159,8 +158,8 @@ public class HistoricalAssociation extends Component implements RF2Constants {
 	
 	@Override 
 	public boolean equals(Object o) {
-		if (o instanceof HistoricalAssociation) {
-			return this.getId().equals(((HistoricalAssociation)o).getId());
+		if (o instanceof HistoricalAssociationEntry) {
+			return this.getId().equals(((HistoricalAssociationEntry)o).getId());
 		}
 		return false;
 	}

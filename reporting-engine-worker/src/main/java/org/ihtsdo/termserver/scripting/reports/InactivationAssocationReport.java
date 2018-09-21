@@ -9,7 +9,7 @@ import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.HistoricalAssociation;
+import org.ihtsdo.termserver.scripting.domain.HistoricalAssociationEntry;
 import org.ihtsdo.termserver.scripting.domain.InactivationIndicatorEntry;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
@@ -49,7 +49,7 @@ public class InactivationAssocationReport extends TermServerScript{
 					for (InactivationIndicatorEntry inactivationIndicator : c.getInactivationIndicatorEntries(ActiveState.ACTIVE)) {
 						if (inactivationIndicator.getInactivationReasonId().equals(inactivationReasonSctId)) {
 							//Now does the concept have one of our target historical associations?
-							for (HistoricalAssociation histAssoc : c.getHistorialAssociations(ActiveState.ACTIVE)) {
+							for (HistoricalAssociationEntry histAssoc : c.getHistorialAssociations(ActiveState.ACTIVE)) {
 								for (String targetAssocationRefsetId : targetAssocationRefsetIds) {
 									if (histAssoc.getRefsetId().equals(targetAssocationRefsetId)) {
 										report(c,inactivationIndicator, histAssoc);
@@ -66,7 +66,7 @@ public class InactivationAssocationReport extends TermServerScript{
 		addSummaryInformation("Rows reported", rowsReported);
 	}
 
-	protected void report (Concept c, InactivationIndicatorEntry inact, HistoricalAssociation assoc) throws TermServerScriptException {
+	protected void report (Concept c, InactivationIndicatorEntry inact, HistoricalAssociationEntry assoc) throws TermServerScriptException {
 		
 		String line = 	c.getConceptId() + COMMA_QUOTE + 
 						c.getFsn() + QUOTE_COMMA_QUOTE + 

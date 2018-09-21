@@ -15,7 +15,7 @@ import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
-import org.ihtsdo.termserver.scripting.domain.HistoricalAssociation;
+import org.ihtsdo.termserver.scripting.domain.HistoricalAssociationEntry;
 import org.ihtsdo.termserver.scripting.domain.InactivationIndicatorEntry;
 import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
@@ -222,7 +222,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 		}
 	}
 	
-	protected void outputRF2(HistoricalAssociation h) throws TermServerScriptException {
+	protected void outputRF2(HistoricalAssociationEntry h) throws TermServerScriptException {
 		if (h.isDirty()) {
 			writeToRF2File(assocDeltaFilename, h.toRF2());
 		}
@@ -247,7 +247,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 			outputRF2(i);
 		}
 		
-		for (HistoricalAssociation h: c.getHistorialAssociations()) {
+		for (HistoricalAssociationEntry h: c.getHistorialAssociations()) {
 			outputRF2(h);
 		}
 	}

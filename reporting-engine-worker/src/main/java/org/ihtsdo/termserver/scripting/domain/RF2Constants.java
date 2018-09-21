@@ -142,6 +142,7 @@ public interface RF2Constants {
 	public static String SCTID_ADDITIONAL_RELATIONSHIP = "900000000000227009";
 	
 	
+	//Inactivation Indicator Reasons
 	enum InactivationIndicator {AMBIGUOUS, DUPLICATE, OUTDATED, ERRONEOUS, LIMITED, MOVED_ELSEWHERE, 
 		PENDING_MOVE, INAPPROPRIATE, CONCEPT_NON_CURRENT, RETIRED, NONCONFORMANCE_TO_EDITORIAL_POLICY, NOT_EQUIVALENT};
 	public static final String SCTID_INACT_AMBIGUOUS ="900000000000484002";  // |Ambiguous component (foundation metadata concept)|
@@ -157,11 +158,13 @@ public interface RF2Constants {
 	public static final String SCTID_INACT_NOT_EQUIVALENT  = "723278000";  //|Not semantically equivalent component (foundation metadata concept)|
 	
 	//Historical Associations
+	enum HistoricalAssociation { WAS_A, REPLACED_BY, SAME_AS, POSS_EQUIV_TO, MOVED_TO, ALTERNATIVE }
 	public static final String SCTID_HIST_WAS_A_REFSETID = "900000000000528000"; // |WAS A association reference set (foundation metadata concept)|
 	public static final String SCTID_HIST_REPLACED_BY_REFSETID = "900000000000526001"; // |REPLACED BY association reference set (foundation metadata concept)|
 	public static final String SCTID_HIST_SAME_AS_REFSETID = "900000000000527005"; // |SAME AS association reference set (foundation metadata concept)|"
 	public static final String SCTID_HIST_POSS_EQUIV_REFSETID = "900000000000523009" ;// |POSSIBLY EQUIVALENT TO association reference set (foundation metadata concept)|"
-			
+	public static final String SCTID_HIST_MOVED_TO_REFSETID = "900000000000524003" ;// |MOVED TO association reference set (foundation metadata concept)|"
+	public static final String SCTID_HIST_ALTERNATIVE_ASSOC_REFSETID = "900000000000530003";  //ALTERNATIVE association reference set (foundation metadata concept)
 	//Inactivation Indicators
 	public static final String SCTID_CON_INACT_IND_REFSET = "900000000000489007";
 	public static final String SCTID_DESC_INACT_IND_REFSET = "900000000000490003";

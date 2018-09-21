@@ -157,7 +157,7 @@ public class SnapshotGenerator extends TermServerScript {
 			writeToRF2File(attribValSnapshotFilename, i.toRF2());
 		}
 		
-		for (HistoricalAssociation h: c.getHistorialAssociations()) {
+		for (HistoricalAssociationEntry h: c.getHistorialAssociations()) {
 			writeToRF2File(assocSnapshotFilename, h.toRF2());
 		}
 	}

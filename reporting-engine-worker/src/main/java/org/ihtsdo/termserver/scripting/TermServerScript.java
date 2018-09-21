@@ -723,9 +723,9 @@ public abstract class TermServerScript implements RF2Constants {
 		String fileName = SnomedUtils.deconstructFilename(inputFile)[1];
 		String reportName = getScriptName() + (fileName.isEmpty()?"" : " " + fileName);
 		
-		if (subHierarchy != null) {
+		if (subHierarchy != null && !subHierarchy.equals(ROOT_CONCEPT)) {
 			reportName += " " + subHierarchy;
-		} else if (subHierarchyStr != null) {
+		} else if (subHierarchyStr != null && !subHierarchyStr.contains(ROOT_CONCEPT.getConceptId())) {
 			reportName += " SCT" + subHierarchyStr;
 		}
 		return reportName;
@@ -735,7 +735,7 @@ public abstract class TermServerScript implements RF2Constants {
 		String prettyString = "No association specified.";
 		if (c.getHistorialAssociations(ActiveState.ACTIVE).size() > 0) {
 			prettyString = " ";
-			for (HistoricalAssociation assoc : c.getHistorialAssociations(ActiveState.ACTIVE)) {
+			for (HistoricalAssociationEntry assoc : c.getHistorialAssociations(ActiveState.ACTIVE)) {
 				prettyString += SnomedUtils.deconstructFSN(gl.getConcept(assoc.getRefsetId()).getFsn())[0].replace(" association reference set", "");
 				prettyString += " -> ";
 				prettyString += gl.getConcept(assoc.getTargetComponentId());
