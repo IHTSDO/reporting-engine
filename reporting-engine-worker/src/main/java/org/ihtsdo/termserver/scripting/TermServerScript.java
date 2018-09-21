@@ -9,11 +9,9 @@ import org.apache.commons.lang.time.DurationFormatUtils;
 import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.dao.ReportManager;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.template.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.ihtsdo.termserver.scripting.util.StringUtils;
-import org.snomed.otf.scheduler.domain.JobRun;
-import org.snomed.otf.scheduler.domain.JobStatus;
+import org.snomed.otf.scheduler.domain.*;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
@@ -76,9 +74,6 @@ public abstract class TermServerScript implements RF2Constants {
 	protected static final String DRY_RUN = "DryRun";
 	protected static final String SUB_HIERARCHY = "SubHierarchy";
 
-	protected static DescendentsCache descendantsCache = DescendentsCache.getDescendentsCache();
-	protected static AncestorsCache ancestorsCache = AncestorsCache.getAncestorsCache();
-	
 	public static Gson gson;
 	static {
 		GsonBuilder gsonBuilder = new GsonBuilder();
@@ -866,7 +861,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected List<Concept> determineProximalPrimitiveParents(Concept c) throws TermServerScriptException {
 		//Filter for only the primitive ancestors
 		//Sort to work with the lowest level concepts first for efficiency
-		List<Concept> primitiveAncestors = ancestorsCache.getAncestors(c).stream()
+		List<Concept> primitiveAncestors = gl.getAncestorsCache().getAncestors(c).stream()
 											.filter(ancestor -> ancestor.getDefinitionStatus().equals(DefinitionStatus.PRIMITIVE))
 											.sorted((c1, c2) -> Integer.compare(c2.getDepth(), c1.getDepth()))
 											.collect(Collectors.toList());

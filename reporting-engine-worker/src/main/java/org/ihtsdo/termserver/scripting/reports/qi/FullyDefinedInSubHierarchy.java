@@ -38,7 +38,7 @@ public class FullyDefinedInSubHierarchy extends TermServerReport {
 	}
 
 	private void runFullyDefinedInSubHierarchyReport() throws TermServerScriptException {
-		for (Concept c : descendantsCache.getDescendents(subHierarchy)) {
+		for (Concept c : gl.getDescendantsCache().getDescendents(subHierarchy)) {
 			if (c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
 				incrementSummaryInformation("FDs reported");
 				report (c, c.getParents(CharacteristicType.INFERRED_RELATIONSHIP).stream().map(p -> p.toString()).collect(Collectors.joining(", \n")));

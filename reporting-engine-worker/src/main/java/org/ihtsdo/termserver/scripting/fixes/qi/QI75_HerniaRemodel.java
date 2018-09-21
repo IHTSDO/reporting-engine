@@ -122,8 +122,8 @@ public class QI75_HerniaRemodel extends BatchFix {
 	 */
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		Set<Component> processMe = new HashSet<>();
-		processMe.addAll(descendantsCache.getDescendentsOrSelf(hWithO));
-		processMe.addAll(descendantsCache.getDescendentsOrSelf(hWithG));
+		processMe.addAll(gl.getDescendantsCache().getDescendentsOrSelf(hWithO));
+		processMe.addAll(gl.getDescendantsCache().getDescendentsOrSelf(hWithG));
 		return new ArrayList<Component>(processMe);
 	}
 	
@@ -141,8 +141,8 @@ public class QI75_HerniaRemodel extends BatchFix {
 		//Sort into one of three buckets
 		for (Component comp : allComponents) {
 			Concept c = (Concept)comp;
-			boolean isObstruction = descendantsCache.getDescendentsOrSelf(hWithO).contains(c);
-			boolean isGangrene = descendantsCache.getDescendentsOrSelf(hWithG).contains(c);
+			boolean isObstruction = gl.getDescendantsCache().getDescendentsOrSelf(hWithO).contains(c);
+			boolean isGangrene = gl.getDescendantsCache().getDescendentsOrSelf(hWithG).contains(c);
 			if (isObstruction) {
 				//Is it both?
 				if (isGangrene) {

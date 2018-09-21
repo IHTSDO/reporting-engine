@@ -96,7 +96,7 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 			int[] templateTypeTotal = new int[TemplateType.values().length];
 			int[] templateTypeModified = new int[TemplateType.values().length];
 			debug ("Analysing subHierarchy: " + subHierarchyStart);
-			Set<Concept> subHierarchy = new HashSet<>(descendantsCache.getDescendentsOrSelf(subHierarchyStart)); //
+			Set<Concept> subHierarchy = new HashSet<>(gl.getDescendantsCache().getDescendentsOrSelf(subHierarchyStart)); //
 			removeExclusions(subHierarchyStart, subHierarchy);
 			int total = subHierarchy.size();
 			for (Concept c : subHierarchy) {
@@ -122,7 +122,7 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 		List<Concept> theseExclusions = exclusionMap.get(subHierarchyStart);
 		if (theseExclusions != null) {
 			for (Concept thisExclusion : theseExclusions) {
-				subHierarchy.removeAll(descendantsCache.getDescendentsOrSelf(thisExclusion));
+				subHierarchy.removeAll(gl.getDescendantsCache().getDescendentsOrSelf(thisExclusion));
 			}
 		}
 	}

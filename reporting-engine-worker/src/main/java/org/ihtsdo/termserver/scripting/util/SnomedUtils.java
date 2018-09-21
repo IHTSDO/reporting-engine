@@ -579,7 +579,7 @@ public class SnomedUtils implements RF2Constants {
 		return file;
 	}
 	
-	public static boolean isConceptType(Concept c, ConceptType conceptType) {
+	public static boolean isConceptType(Concept c, ConceptType conceptType) throws TermServerScriptException {
 		//Does this concept know it's type?  Assign if not
 		if (c.getConceptType() == null) {
 			populateConceptType(c);
@@ -587,7 +587,7 @@ public class SnomedUtils implements RF2Constants {
 		return c.getConceptType().equals(conceptType);
 	}
 	
-	public static boolean isConceptType(Concept c, ConceptType[] conceptTypes) {
+	public static boolean isConceptType(Concept c, ConceptType[] conceptTypes) throws TermServerScriptException {
 		//Does this concept know it's type?  Assign if not
 		if (c.getConceptType() == null) {
 			populateConceptType(c);
@@ -600,7 +600,7 @@ public class SnomedUtils implements RF2Constants {
 		return false;
 	}
 
-	public static void populateConceptType(Concept c) {
+	public static void populateConceptType(Concept c) throws TermServerScriptException {
 		if (c.getFsn() == null) {
 			determineConceptTypeFromAttributes(c, CharacteristicType.STATED_RELATIONSHIP);
 		} else {
@@ -614,12 +614,43 @@ public class SnomedUtils implements RF2Constants {
 				case DrugUtils.CD : c.setConceptType(ConceptType.CLINICAL_DRUG);
 											break;
 				case DrugUtils.PRODUCT : c.setConceptType(ConceptType.PRODUCT);
+											checkForGroupers(c);
 											break;
 				default : c.setConceptType(ConceptType.UNKNOWN);
 			}
 		}
 	}
 	
+	private static void checkForGroupers(Concept c) throws TermServerScriptException {
+		GraphLoader gl = GraphLoader.getGraphLoader();
+		
+		//We're only going to consider sufficiently defined concepts here.
+		if (!c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
+			return;
+		}
+		
+		Concept dispositions = gl.getConcept("766779001 |Medicinal product categorized by disposition (product)|");
+		Concept structures = gl.getConcept("763760008 |Medicinal product categorized by structure (product)|");
+		boolean isStructure = false;
+		boolean isDisposition = false;
+		
+		if (c.getAncestors(NOT_SET).contains(structures)) {
+			isStructure = true;
+		}
+		
+		if (c.getAncestors(NOT_SET).contains(dispositions)) {
+			isDisposition = true;
+		}
+		
+		if (isStructure && isDisposition) {
+			c.setConceptType(ConceptType.STRUCTURE_AND_DISPOSITION_GROUPER);
+		} else if (isStructure) {
+			c.setConceptType(ConceptType.STRUCTURAL_GROUPER);
+		} else if (isDisposition) {
+			c.setConceptType(ConceptType.DISPOSITION_GROUPER);
+		}
+	}
+
 	//Concepts with a base active ingredient count are "Only"
 	private static boolean isOnly(Concept c) {
 		return c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, COUNT_BASE_ACTIVE_INGREDIENT, ActiveState.ACTIVE).size() > 0;

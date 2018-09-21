@@ -198,7 +198,7 @@ public class RemodelGroupOne extends TemplateFix {
 				if (additionalGroup != null && !additionalGroup.isEmpty()) {
 					for (Attribute a : templateGroup.getAttributes()) {
 						//Does this group ALREADY satisfy the template attribute?
-						if (TemplateUtils.containsMatchingRelationship(additionalGroup, a, descendantsCache)) {
+						if (TemplateUtils.containsMatchingRelationship(additionalGroup, a, gl.getDescendantsCache())) {
 							continue;
 						}
 						int statedChangeMade = findAttributeToState(t, template, c, a, groups, 2, CharacteristicType.STATED_RELATIONSHIP, templateGroupOptional);
@@ -322,7 +322,7 @@ public class RemodelGroupOne extends TemplateFix {
 		if (a.getValue() != null && !templateGroupOptional) {
 			Relationship constantRel = new Relationship(c, type, gl.getConcept(a.getValue()), group.getGroupId());
 			//Don't add if our group already contains this, or something more specific
-			if (!group.containsTypeValue(type, descendantsCache.getDescendentsOrSelf(a.getValue()))) {
+			if (!group.containsTypeValue(type, gl.getDescendantsCache().getDescendentsOrSelf(a.getValue()))) {
 				//Does this constant already exist ungrouped?
 				if (groups[UNGROUPED].containsTypeValue(constantRel)) {
 					Relationship ungroupedConstant = groups[UNGROUPED].getTypeValue(constantRel);
@@ -444,7 +444,7 @@ public class RemodelGroupOne extends TemplateFix {
 						groups[groupId].addRelationship(r);
 						//Can we remove a less specific relationship?
 						for (Relationship possibleAncestor : new ArrayList<>(groups[groupId].getRelationships())) {
-							if (possibleAncestor.getType().equals(r.getType()) && ancestorsCache.getAncestors(r.getTarget()).contains(possibleAncestor.getTarget())) {
+							if (possibleAncestor.getType().equals(r.getType()) && gl.getAncestorsCache().getAncestors(r.getTarget()).contains(possibleAncestor.getTarget())) {
 								groups[groupId].removeRelationship(possibleAncestor);
 							}
 						}
@@ -486,7 +486,7 @@ public class RemodelGroupOne extends TemplateFix {
 			//In fact, we might already have one of these values stated in a group, in which case the affinity is already set
 			//Or a less specific one that we could replace
 			for (RelationshipGroup group : groups) {
-				if (group!= null && (group.containsTypeValue(proposedRel) || group.containsTypeValue(type, ancestorsCache.getAncestorsOrSelf(value)))) {
+				if (group!= null && (group.containsTypeValue(proposedRel) || group.containsTypeValue(type, gl.getAncestorsCache().getAncestorsOrSelf(value)))) {
 					//If we're considering grouped attributes, and we find one ungrouped, move it up
 					if (group.getGroupId() == UNGROUPED && !ungrouped) {
 						sortedValues[1] = value;
@@ -540,7 +540,7 @@ public class RemodelGroupOne extends TemplateFix {
 		Set<Concept> redundant = new HashSet<>();
 		//For each concept, it is redundant if any of it's descendants are also present
 		for (Concept concept : concepts) {
-			Set<Concept> descendants = new HashSet<>(descendantsCache.getDescendents(concept));
+			Set<Concept> descendants = new HashSet<>(gl.getDescendantsCache().getDescendents(concept));
 			descendants.retainAll(concepts);
 			if (descendants.size() > 0) {
 				redundant.add(concept);
@@ -552,7 +552,7 @@ public class RemodelGroupOne extends TemplateFix {
 	private void removeRedundancies(Relationship r, RelationshipGroup group) throws TermServerScriptException {
 		//Do we have other attributes of this type that are less specific than r?
 		for (Relationship potentialRedundancy : new ArrayList<>(group.getRelationships())) {
-			if (SnomedUtils.isMoreSpecific(r, potentialRedundancy, ancestorsCache)) {
+			if (SnomedUtils.isMoreSpecific(r, potentialRedundancy, gl.getAncestorsCache())) {
 				group.getRelationships().remove(potentialRedundancy);
 			}
 		}
@@ -602,7 +602,7 @@ public class RemodelGroupOne extends TemplateFix {
 						isFirst = false;
 					} else {
 						if (TemplateUtils.matchesTemplate(potentialCandidate, template, 
-								descendantsCache, 
+								gl.getDescendantsCache(), 
 								CharacteristicType.STATED_RELATIONSHIP, 
 								true //Do allow additional unspecified ungrouped attributes
 								)) {

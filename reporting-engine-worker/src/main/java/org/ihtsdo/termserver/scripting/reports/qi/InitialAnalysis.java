@@ -153,7 +153,7 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 				//Do those parents themselves have sufficiently defined ancestors ie making them intermediate primitives
 				for (Concept thisPPP : proxPrimParents) {
 					boolean isIntermediate = false;
-					if (containsFdConcept(ancestorsCache.getAncestors(thisPPP))) {
+					if (containsFdConcept(gl.getAncestorsCache().getAncestors(thisPPP))) {
 						isIntermediate = true;
 						if (c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
 							incrementSummaryInformation("Intermediate Primitives reported on SD concepts");
@@ -239,8 +239,8 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 		int fdsInSubHierarchy = 0;
 		int totalPrimitiveConceptsUnderIP = 0;
 		int totalPrimitiveConceptsUnderIPInSubHierarchy = 0;
-		int IPinSubHierarchy = descendantsCache.getDescendentsOrSelf(this.subHierarchyStart).contains(intermediatePrimitive) ? 1 : 0;
-		for (Concept c : descendantsCache.getDescendentsOrSelf(intermediatePrimitive)) {
+		int IPinSubHierarchy = gl.getDescendantsCache().getDescendentsOrSelf(this.subHierarchyStart).contains(intermediatePrimitive) ? 1 : 0;
+		for (Concept c : gl.getDescendantsCache().getDescendentsOrSelf(intermediatePrimitive)) {
 			if (c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
 				totalFDsUnderIP++;
 				if (this.subHierarchy.contains(c)) {
@@ -254,14 +254,14 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 			}
 		}
 		int aboveMe = primitivesAboveHere(intermediatePrimitive);
-		int descendants = descendantsCache.getDescendents(intermediatePrimitive).size();
+		int descendants = gl.getDescendantsCache().getDescendents(intermediatePrimitive).size();
 		report (SECONDARY_REPORT, intermediatePrimitive, blankColumns, IPinSubHierarchy, aboveMe, descendants, totalFDsUnderIP, fdsInSubHierarchy, totalPrimitiveConceptsUnderIP, totalPrimitiveConceptsUnderIPInSubHierarchy);
 	}
 	
 	
 	private int primitivesAboveHere(Concept intermediatePrimitive) throws TermServerScriptException {
 		//We're assuming that Clinical Finding is our top level.
-		Set<Concept> aboveHere = ancestorsCache.getAncestors(intermediatePrimitive)
+		Set<Concept> aboveHere = gl.getAncestorsCache().getAncestors(intermediatePrimitive)
 				.stream().filter(c -> c.getDefinitionStatus().equals(DefinitionStatus.PRIMITIVE))
 				.collect(Collectors.toSet());
 		aboveHere.remove(ROOT_CONCEPT);

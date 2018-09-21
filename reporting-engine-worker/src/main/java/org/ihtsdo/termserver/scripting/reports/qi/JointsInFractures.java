@@ -39,12 +39,12 @@ public class JointsInFractures extends TermServerReport {
 
 	private void postLoadInit() throws TermServerScriptException {
 		subHierarchy = gl.getConcept("125605004"); //|Fracture of bone (disorder)|
-		boneStructures = descendantsCache.getDescendentsOrSelf("272673000"); // |Bone structure (body structure)|
-		jointStructures = descendantsCache.getDescendentsOrSelf("39352004"); // |Joint structure (body structure)|
+		boneStructures = gl.getDescendantsCache().getDescendentsOrSelf("272673000"); // |Bone structure (body structure)|
+		jointStructures = gl.getDescendantsCache().getDescendentsOrSelf("39352004"); // |Joint structure (body structure)|
 	}
 
 	private void runJointsInFracturesReport() throws TermServerScriptException {
-		for (Concept c : descendantsCache.getDescendents(subHierarchy)) {
+		for (Concept c : gl.getDescendantsCache().getDescendents(subHierarchy)) {
 			//For each active concept, list all the things that a types of joint, 
 			//types of bone, and other things separately
 			Set<Concept> joints = new HashSet<>();

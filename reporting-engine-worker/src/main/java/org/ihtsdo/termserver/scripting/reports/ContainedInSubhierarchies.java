@@ -58,7 +58,7 @@ public class ContainedInSubhierarchies extends TermServerReport {
 	private void runContainedInSubhierarchyReport() throws TermServerScriptException {
 		for (Concept c : conceptsOfInterest) {
 			//Is this even part of clinical findings?
-			if (!descendantsCache.getDescendents(CLINICAL_FINDING).contains(c)) {
+			if (!gl.getDescendantsCache().getDescendents(CLINICAL_FINDING).contains(c)) {
 				notClinicalFinding++;
 				continue;
 			}
@@ -66,7 +66,7 @@ public class ContainedInSubhierarchies extends TermServerReport {
 			//Is this concept contained by one of identified subHierarchies?
 			Concept isContainedIn = null;
 			for (Concept subHierarchy : subHierarchies) {
-				if (descendantsCache.getDescendentsOrSelf(subHierarchy).contains(c)) {
+				if (gl.getDescendantsCache().getDescendentsOrSelf(subHierarchy).contains(c)) {
 					isContainedIn = subHierarchy;
 					break;
 				}

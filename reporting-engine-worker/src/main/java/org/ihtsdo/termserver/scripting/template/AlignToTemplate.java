@@ -120,7 +120,7 @@ public class AlignToTemplate extends TemplateFix {
 																ASSOC_MORPH,
 																ActiveState.ACTIVE);
 			for (Relationship r : specialRels) {
-				if (descendantsCache.getDescendents(chronicInflammation).contains(r.getTarget())) {
+				if (gl.getDescendantsCache().getDescendents(chronicInflammation).contains(r.getTarget())) {
 					report (t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Existing morphology a descendant of " + chronicInflammation + " : " + r.getTarget());
 					return true;
 				}

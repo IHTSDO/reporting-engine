@@ -25,6 +25,8 @@ import org.ihtsdo.termserver.scripting.domain.InactivationIndicatorEntry;
 import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
+import org.ihtsdo.termserver.scripting.template.AncestorsCache;
+import org.ihtsdo.termserver.scripting.template.DescendentsCache;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 public class GraphLoader implements RF2Constants {
@@ -37,6 +39,9 @@ public class GraphLoader implements RF2Constants {
 	private Map<String, Concept> fsnMap = null;
 	private String excludeModule = "715515008";
 	public static int MAX_DEPTH = 1000;
+	
+	private DescendentsCache descendantsCache = DescendentsCache.getDescendentsCache();
+	private AncestorsCache ancestorsCache = AncestorsCache.getAncestorsCache();
 	
 	//Watch that this map is of the TARGET of the association, ie all concepts used in a historical association
 	private Map<Concept, List<HistoricalAssociation>> historicalAssociations =  new HashMap<Concept, List<HistoricalAssociation>>();
@@ -75,9 +80,9 @@ public class GraphLoader implements RF2Constants {
 			if (!isHeaderLine) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
 				
-				if (lineItems[REL_IDX_ID].equals("7062677028")) {
+				/*if (lineItems[REL_IDX_ID].equals("7062677028")) {
 					TermServerScript.debug("Checkpoint");
-				}
+				}*/
 				
 				//Exclude LOINC
 				if (lineItems[IDX_MODULEID].equals(excludeModule)) {
@@ -351,9 +356,9 @@ public class GraphLoader implements RF2Constants {
 	 */
 	public void populateHierarchyDepth(Concept startingPoint, int currentDepth) throws TermServerScriptException {
 		startingPoint.setDepth(currentDepth);
-		if (startingPoint.getConceptId().equals("210431006")) {
+		/*if (startingPoint.getConceptId().equals("210431006")) {
 			//TermServerScript.debug ("Checkpoint");
-		}
+		}*/
 		
 		for (Concept child : startingPoint.getDescendents(IMMEDIATE_CHILD, CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
 			if (currentDepth >= MAX_DEPTH) {
@@ -545,6 +550,14 @@ public class GraphLoader implements RF2Constants {
 
 	public void registerConcept(Concept concept) {
 		concepts.put(concept.getConceptId(), concept);
+	}
+
+	public DescendentsCache getDescendantsCache() {
+		return descendantsCache;
+	}
+
+	public AncestorsCache getAncestorsCache() {
+		return ancestorsCache;
 	}
 
 

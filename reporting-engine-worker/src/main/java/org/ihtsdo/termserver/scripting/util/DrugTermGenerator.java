@@ -213,6 +213,9 @@ public class DrugTermGenerator implements RF2Constants{
 										suffix =  getCdSuffix(c, isFSN, langRefset);
 										semTag = "(clinical drug)";
 										break;
+				case STRUCTURE_AND_DISPOSITION_GROUPER :
+				case STRUCTURAL_GROUPER :
+				case DISPOSITION_GROUPER : 
 				default:
 			}
 		} else if (isPT) {
@@ -234,6 +237,12 @@ public class DrugTermGenerator implements RF2Constants{
 										break;
 				case CLINICAL_DRUG : 	suffix = getCdSuffix(c, isFSN, langRefset);
 										break;
+				case STRUCTURE_AND_DISPOSITION_GROUPER :
+				case STRUCTURAL_GROUPER :
+				case DISPOSITION_GROUPER : 
+											suffix = "containing product";
+											ptContaining = true;
+											semTag = "(product)";
 				default:
 			}
 		}
@@ -487,6 +496,7 @@ public class DrugTermGenerator implements RF2Constants{
 		List<Relationship> ingredientRels = c.getRelationships(charType, HAS_ACTIVE_INGRED, ActiveState.ACTIVE);
 		ingredientRels.addAll(c.getRelationships(charType, HAS_PRECISE_INGRED, ActiveState.ACTIVE));
 		Set<String> ingredients = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);  //Will naturally sort in alphabetical order
+		boolean ok = false;
 		for (Relationship r : ingredientRels) {
 			//Need to recover the full concept to have all descriptions, not the partial one stored as the target.
 			Concept ingredient = GraphLoader.getGraphLoader().getConcept(r.getTarget().getConceptId());

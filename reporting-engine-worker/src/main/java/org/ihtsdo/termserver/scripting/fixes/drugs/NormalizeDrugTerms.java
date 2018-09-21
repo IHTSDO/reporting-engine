@@ -5,6 +5,7 @@ import java.util.*;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 //import org.ihtsdo.termserver.scripting.delta.CaseSignificanceFixAll;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
@@ -18,6 +19,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * DRUGS-492 - CDs missing "precisely"
  * DRUGS-514 - Editorial Guide updated for MPFs eg "-containing"
  * DRUGS-560 - Editorial Guide updated for MPs eg "-containing"
+ * DRUGS-562 - Editorial Guide updated for Structure and Disposition Groupers
  */
 public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants{
 	
@@ -34,12 +36,11 @@ public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants{
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
 		NormalizeDrugTerms fix = new NormalizeDrugTerms(null);
 		try {
+			ReportSheetManager.targetFolderId="1E6kDgFExNA9CRd25yZk_Y7l-KWRf8k6B"; //Drugs/Normalize Terming
 			fix.populateEditPanel = false;
 			fix.populateTaskDescription = false;
 			fix.selfDetermining = true;
-			fix.runStandAlone = true;
 			fix.init(args);
-			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			fix.loadProjectSnapshot(false); //Load all descriptions
 			fix.postInit();
 			Batch batch = fix.formIntoBatch();
@@ -83,7 +84,7 @@ public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants{
 		}*/
 		//We'll take a little diversion here to correct the case significance of the ingredients
 		//validateIngredientCaseSignficance(task, loadedConcept);
-		int changesMade = termGenerator.ensureDrugTermsConform(task, loadedConcept, CharacteristicType.STATED_RELATIONSHIP);
+		int changesMade = termGenerator.ensureDrugTermsConform(task, loadedConcept, CharacteristicType.INFERRED_RELATIONSHIP);
 		if (changesMade > 0) {
 			updateConcept(task, loadedConcept, info);
 		}
@@ -112,20 +113,24 @@ public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants{
 		
 		List<Concept> allAffected = new ArrayList<Concept>(); 
 		for (Concept c : gl.getConcept(subHierarchyStr).getDescendents(NOT_SET)) {
-		/*	if (c.getConceptId().equals("714023005")) {
-				debug("Checkpoint");
+			/*if (!c.getConceptId().equals("346751008")) {
+				continue;
 			} */
 			SnomedUtils.populateConceptType(c);
 			//Clone the concept so we're not modifying our local copy
-			c = c.clone(c.getConceptId());
+			c = c.cloneWithIds();  //Exact copy - keep Ids
 			//if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM)) {
-			if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT)) {
+			//if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT)) {
 			//if (c.getConceptType().equals(ConceptType.CLINICAL_DRUG)) {
+			if (c.getConceptType().equals(ConceptType.STRUCTURAL_GROUPER) 
+				|| c.getConceptType().equals(ConceptType.DISPOSITION_GROUPER)
+				|| c.getConceptType().equals(ConceptType.STRUCTURE_AND_DISPOSITION_GROUPER)) {
 				if (exceptions.contains(c.getId())) {
 					report (null, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Concept manually listed as an exception");
 				} else {
 					//See if the modifying the term makes any changes
-					if (termGenerator.ensureDrugTermsConform(null, c, CharacteristicType.STATED_RELATIONSHIP) > 0) {
+					//if (termGenerator.ensureDrugTermsConform(null, c, CharacteristicType.STATED_RELATIONSHIP) > 0) {
+					if (termGenerator.ensureDrugTermsConform(null, c, CharacteristicType.INFERRED_RELATIONSHIP) > 0) {
 						allAffected.add(c);
 					}
 				}

@@ -759,7 +759,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		for (Concept thisConcept : concepts) {
 			//Is this concept an ancestor of one of the other concepts?  It's redundant if so
 			for (Concept otherConcept : concepts) {
-				if (!thisConcept.equals(otherConcept) && ancestorsCache.getAncestors(otherConcept).contains(thisConcept)) {
+				if (!thisConcept.equals(otherConcept) && gl.getAncestorsCache().getAncestors(otherConcept).contains(thisConcept)) {
 					redundant.add(thisConcept);
 				}
 			}
@@ -928,7 +928,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		} else {
 			Concept ppp = ppps.get(0);
 			//We need to either calculate the ppp as the intended one, or higher than it eg calculated PPP of Disease is OK if we're setting the more specific "Complication"
-			if (ppp.equals(newPPP) || ancestorsCache.getAncestors(newPPP).contains(ppp)) {
+			if (ppp.equals(newPPP) || gl.getAncestorsCache().getAncestors(newPPP).contains(ppp)) {
 				changesMade += setProximalPrimitiveParent(t, c, newPPP);
 			} else {
 				report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Calculated PPP " + ppp + " does not match that suggested by template: " + newPPP + ", cannot remodel.");
@@ -952,8 +952,8 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 					//We can only remove relationships which are subsumed by the new Proximal Primitive Parent
 					//OR if the current parent is a supertype of the PPP, such as when we're moving from Disease to Complication.
 					Concept thisParent = gl.getConcept(r.getTarget().getConceptId());
-					if (ancestorsCache.getAncestors(thisParent).contains(newParent) || 
-						ancestorsCache.getAncestors(newParent).contains(thisParent)) {
+					if (gl.getAncestorsCache().getAncestors(thisParent).contains(newParent) || 
+						gl.getAncestorsCache().getAncestors(newParent).contains(thisParent)) {
 						removeParentRelationship(t, r, c, newParent.toString(), null);
 						changesMade++;
 					} else {

@@ -88,11 +88,11 @@ abstract public class TemplateFix extends BatchFix {
 	
 	protected Set<Concept> findTemplateMatches(Template t) throws TermServerScriptException {
 		Set<Concept> matches = new HashSet<Concept>();
-		for (Concept c : descendantsCache.getDescendentsOrSelf(subHierarchy)) {
+		for (Concept c : gl.getDescendantsCache().getDescendentsOrSelf(subHierarchy)) {
 			if (c.getConceptId().equals("19378003")) {
 				debug ("Check template match here");
 			}
-			if (TemplateUtils.matchesTemplate(c, t, descendantsCache, CharacteristicType.INFERRED_RELATIONSHIP)) {
+			if (TemplateUtils.matchesTemplate(c, t, gl.getDescendantsCache(), CharacteristicType.INFERRED_RELATIONSHIP)) {
 				//Do we already have a template for this concept?  
 				//TODO Assign the most specific template if so
 				if (conceptToTemplateMap.containsKey(c)) {

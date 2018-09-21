@@ -182,7 +182,7 @@ public class GnarlyFactorCalculationECL extends TermServerReport {
 		int totalFDsUnderIPs = 0;
 		int fdsInSubHierarchy = 0;
 		for (Concept ip : intermediatePrimitives) {
-			for (Concept c : descendantsCache.getDescendentsOrSelf(ip)) {
+			for (Concept c : gl.getDescendantsCache().getDescendentsOrSelf(ip)) {
 				if (c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
 					totalFDsUnderIPs++;
 					if (subHierarchy.contains(c)) {

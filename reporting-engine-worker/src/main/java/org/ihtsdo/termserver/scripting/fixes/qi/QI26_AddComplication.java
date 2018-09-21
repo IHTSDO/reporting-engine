@@ -86,7 +86,7 @@ public class QI26_AddComplication extends BatchFix {
 				debug ("Check 238794007 |Ischemic foot ulcer (disorder)|");
 			}*/
 			//which have Due To = Clinical Finding
-			if (SnomedUtils.getSubsumedRelationships(c, DUE_TO, CLINICAL_FINDING, CharacteristicType.INFERRED_RELATIONSHIP, ancestorsCache).size() > 0) {
+			if (SnomedUtils.getSubsumedRelationships(c, DUE_TO, CLINICAL_FINDING, CharacteristicType.INFERRED_RELATIONSHIP, gl.getAncestorsCache()).size() > 0) {
 				//and do not have Complication as an existing parent
 				if (!c.getParents(CharacteristicType.STATED_RELATIONSHIP).contains(COMPLICATION)) {
 					//And exisiting PPP can be calculated as acceptable

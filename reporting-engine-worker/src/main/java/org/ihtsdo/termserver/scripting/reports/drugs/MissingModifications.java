@@ -56,7 +56,7 @@ public class MissingModifications extends TermServerReport {
 
 	private void findModificationWords() throws TermServerScriptException {
 		debug ("Finding modification words");
-		for (Concept substance : descendantsCache.getDescendentsOrSelf(SUBSTANCE)) {
+		for (Concept substance : gl.getDescendantsCache().getDescendentsOrSelf(SUBSTANCE)) {
 			//What is my X?
 			String baseName = SnomedUtils.deconstructFSN(substance.getFsn())[0];
 			for (Concept modification : getModifications(substance)) {
@@ -79,14 +79,14 @@ public class MissingModifications extends TermServerReport {
 	}
 
 	private Set<Concept> getModifications(Concept substance) throws TermServerScriptException {
-		return descendantsCache
+		return gl.getDescendantsCache()
 				.getDescendentsOrSelf(SUBSTANCE).stream()
 				.filter(child -> child.getRelationships(CharacteristicType.STATED_RELATIONSHIP, IS_MODIFICATION_OF, substance, ActiveState.ACTIVE).size() > 0)
 				.collect(Collectors.toSet());
 	}
 
 	private void findMissingModifications() throws TermServerScriptException {
-		for (Concept substance : descendantsCache.getDescendentsOrSelf(SUBSTANCE)) {
+		for (Concept substance : gl.getDescendantsCache().getDescendentsOrSelf(SUBSTANCE)) {
 			if (substance.getConceptId().equals("396061008")) {
 				debug("Checkpoint");
 			}

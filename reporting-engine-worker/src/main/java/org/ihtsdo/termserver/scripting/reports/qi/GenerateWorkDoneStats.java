@@ -50,7 +50,7 @@ public class GenerateWorkDoneStats extends TermServerReport {
 		ipReport.setQuiet(true);
 		for (Concept subHierarchy : subHierarchies) {
 			debug ("Analysing subHierarchy: " + subHierarchy);
-			int total = descendantsCache.getDescendentsOrSelf(subHierarchy).size();
+			int total = gl.getDescendantsCache().getDescendentsOrSelf(subHierarchy).size();
 			
 			//How many of these concepts have been modified?
 			Set<Concept> modifiedStated = getModified(subHierarchy, CharacteristicType.STATED_RELATIONSHIP);
@@ -75,7 +75,7 @@ public class GenerateWorkDoneStats extends TermServerReport {
 		//find any concepts in this hierarchy which have unreleased relationships
 		//TODO Add check for specific effectiveTime so we can also check post release.
 		Set<Concept> modified = new HashSet<>();
-		for (Concept c : descendantsCache.getDescendentsOrSelf(subHierarchy.getConceptId())) {
+		for (Concept c : gl.getDescendantsCache().getDescendentsOrSelf(subHierarchy.getConceptId())) {
 			if (c.getEffectiveTime() == null) {
 				modified.add(c);
 			} else {

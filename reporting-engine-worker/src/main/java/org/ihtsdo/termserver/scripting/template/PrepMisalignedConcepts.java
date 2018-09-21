@@ -173,7 +173,7 @@ public class PrepMisalignedConcepts extends TemplateFix {
 	
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		//Start with the whole subHierarchy and remove concepts that match each of our templates
-		Set<Concept> unalignedConcepts = new HashSet<>(descendantsCache.getDescendentsOrSelf(subHierarchy));
+		Set<Concept> unalignedConcepts = new HashSet<>(gl.getDescendantsCache().getDescendentsOrSelf(subHierarchy));
 		Set<Concept> ignoredConcepts = new HashSet<>();
 		
 		for (Template template : templates) {

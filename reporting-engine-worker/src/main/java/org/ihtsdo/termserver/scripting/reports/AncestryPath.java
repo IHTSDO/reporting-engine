@@ -34,7 +34,7 @@ public class AncestryPath extends TermServerReport {
 	private void runReport() throws TermServerScriptException {
 		subHierarchy = gl.getConcept("416462003 |Wound (disorder)|");
 		conceptOfInterest = gl.getConcept("283755007 |Dog bite of dorsum of hand (disorder)|");
-		if (!descendantsCache.getDescendentsOrSelf(subHierarchy).contains(conceptOfInterest)) {
+		if (!gl.getDescendantsCache().getDescendentsOrSelf(subHierarchy).contains(conceptOfInterest)) {
 			warn(conceptOfInterest + " is not subsumed by " + subHierarchy);
 		} else {
 			pathWalk(conceptOfInterest);

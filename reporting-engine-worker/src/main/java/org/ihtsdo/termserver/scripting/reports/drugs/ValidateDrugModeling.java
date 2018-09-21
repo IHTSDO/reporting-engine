@@ -325,7 +325,7 @@ public class ValidateDrugModeling extends TermServerReport{
 				Concept ingred = iRel.getTarget();
 				if (bRel.getGroupId() == iRel.getGroupId()) {
 					boolean isSelf = boSS.equals(ingred);
-					boolean isSubType = descendantsCache.getDescendents(boSS).contains(ingred);
+					boolean isSubType = gl.getDescendantsCache().getDescendents(boSS).contains(ingred);
 					boolean isModificationOf = DrugUtils.isModificationOf(ingred, boSS);
 					
 					if (isSelf || isSubType || isModificationOf) {
