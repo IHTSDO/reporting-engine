@@ -132,7 +132,7 @@ public class RelationshipsWithTarget extends TermServerScript{
 			response = STDIN.nextLine().trim();
 			if (!response.isEmpty()) {
 				Concept hierarchy = gl.getConcept(response);
-				Set<Concept> filteringTargets = hierarchy.getDescendents(NOT_SET,CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE);
+				Set<Concept> filteringTargets = hierarchy.getDescendents(NOT_SET,CharacteristicType.INFERRED_RELATIONSHIP);
 				filterOnTarget.addAll(filteringTargets); //descendant
 				filterOnTarget.add(hierarchy);  //and self
 				info ("\nFiltering for target descendents of " + hierarchy + " - " + filteringTargets.size());

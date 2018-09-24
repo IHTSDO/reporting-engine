@@ -38,7 +38,7 @@ public class AttributeValueOutsideRange extends TermServerReport {
 
 	private void postInit() throws TermServerScriptException {
 		attributeType = gl.getConcept("732947008"); // |Has presentation strength denominator unit (attribute)|
-		acceptableRange = gl.getConcept("732935002").getDescendents(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE, true); // | Unit of presentation (unit of presentation).")
+		acceptableRange = gl.getConcept("732935002").getDescendents(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, true); // | Unit of presentation (unit of presentation).")
 		subHierarchy = gl.getConcept("373873005"); // |Pharmaceutical / biologic product (product)|"
 		initialiseSummaryInformation("Issues reported");
 	}

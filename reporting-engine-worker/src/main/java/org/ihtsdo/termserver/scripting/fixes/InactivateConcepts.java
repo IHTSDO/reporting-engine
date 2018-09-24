@@ -62,7 +62,7 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 		checkAndInactivatateIncomingAssociations(task, concept, InactivationIndicator.AMBIGUOUS, replacement);
 		
 		//Check for any stated children and remove this concept as a parent
-		for (Concept child :  gl.getConcept(concept.getConceptId()).getDescendents(IMMEDIATE_CHILD, CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
+		for (Concept child :  gl.getConcept(concept.getConceptId()).getDescendents(IMMEDIATE_CHILD, CharacteristicType.STATED_RELATIONSHIP)) {
 			//Have we already inactivated this child
 			if (!inactivations.containsKey(child)) {
 				task.addAfter(child, concept);

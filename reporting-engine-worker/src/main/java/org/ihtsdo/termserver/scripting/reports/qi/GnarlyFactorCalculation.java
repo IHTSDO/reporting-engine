@@ -292,7 +292,7 @@ public class GnarlyFactorCalculation extends TermServerReport {
 	}
 
 	private String getSize(Concept c) throws TermServerScriptException {
-		int statedDescendants = c.getDescendents(NOT_SET, CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE).size();
+		int statedDescendants = c.getDescendents(NOT_SET, CharacteristicType.STATED_RELATIONSHIP).size();
 		int inferredDescendants = gl.getDescendantsCache().getDescendentsOrSelf(c).size();
 		return statedDescendants + " / " + inferredDescendants;
 	}

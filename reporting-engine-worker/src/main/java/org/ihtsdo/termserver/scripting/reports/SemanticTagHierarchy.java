@@ -47,7 +47,7 @@ public class SemanticTagHierarchy extends TermServerReport implements ReportClas
 			}
 			
 			//Has this semtag know about all the child semtags?
-			for (Concept child : c.getDescendents(IMMEDIATE_CHILD, CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
+			for (Concept child : c.getDescendents(IMMEDIATE_CHILD, CharacteristicType.INFERRED_RELATIONSHIP)) {
 				String childSemTag = SnomedUtils.deconstructFSN(child.getFsn())[1];
 				if (!childSemTag.equals(semTag) && !childTags.containsKey(childSemTag)) {
 					childTags.put(childSemTag, child);

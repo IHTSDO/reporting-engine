@@ -324,7 +324,7 @@ public class FlattenHierarchy extends BatchFix implements RF2Constants{
 		if (task.size() < taskSize) {
 			for (Concept sibling : siblings) {
 				//Are any of it's descendents unallocated?
-				descendants = sibling.getDescendents(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE);
+				descendants = sibling.getDescendents(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP);
 				descendants.retainAll(unallocated);
 				if (descendants.size() > 0) {
 					if (task.size() + descendants.size() <= taskSize * wiggleRoom) {
@@ -349,7 +349,7 @@ public class FlattenHierarchy extends BatchFix implements RF2Constants{
 		if (task.size() < taskSize) {
 			for (Concept sibling : siblings) {
 				//Are any of it's descendents unallocated?
-				ancestors = sibling.getAncestors(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE, false);
+				ancestors = sibling.getAncestors(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, false);
 				ancestors.retainAll(unallocated);
 				if (ancestors.size() > 0) {
 					if (task.size() + ancestors.size() <= taskSize * wiggleRoom) {

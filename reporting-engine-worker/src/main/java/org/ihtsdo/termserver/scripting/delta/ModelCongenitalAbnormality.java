@@ -81,7 +81,7 @@ public class ModelCongenitalAbnormality extends DeltaGenerator {
 		
 		info("Finding relationships to add...");
 		Concept valueSubHierarchy = gl.getConcept("21390004"); //|Developmental anomaly (morphologic abnormality)
-		Set<Concept> valuesToMatch = valueSubHierarchy.getDescendents(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE);
+		Set<Concept> valuesToMatch = valueSubHierarchy.getDescendents(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP);
 		for (Concept thisValue : valuesToMatch) {
 			findRelationshipsForAdd.add(createTemplate("116676008", thisValue.getConceptId()));  //Associated Morphology -> subtype of developmental anomaly
 		}
@@ -90,7 +90,7 @@ public class ModelCongenitalAbnormality extends DeltaGenerator {
 	private void process() throws TermServerScriptException {
 		info("Processing...");
 		Concept subHierarchy = gl.getConcept(subHierarchyStr);
-		Set<Concept> concepts = subHierarchy.getDescendents(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE);
+		Set<Concept> concepts = subHierarchy.getDescendents(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP);
 		concepts.add(subHierarchy);  //Descendants and Self
 		addSummaryInformation("Concepts considered", concepts.size());
 		for (Concept concept : concepts) {

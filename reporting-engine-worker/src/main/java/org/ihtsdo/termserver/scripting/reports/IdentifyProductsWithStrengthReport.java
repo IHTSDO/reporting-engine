@@ -63,7 +63,7 @@ public class IdentifyProductsWithStrengthReport extends TermServerScript{
 	private void identifyProductsWithStrength(List<Component> authorIdentifiedList) throws TermServerScriptException {
 		//For all descendants of 373873005 |Pharmaceutical / biologic product (product)|, 
 		//use a number of criteria to determine if concept is a product with strength.
-		Set<Concept> products = gl.getConcept("373873005").getDescendents(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE);  //|Pharmaceutical / biologic product (product)|
+		Set<Concept> products = gl.getConcept("373873005").getDescendents(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP);  //|Pharmaceutical / biologic product (product)|
 		Set<Component> remainingFromList = new HashSet<Component> (authorIdentifiedList);
 		info ("Original List: " + authorIdentifiedList.size() + " deduplicated: " + remainingFromList.size());
 		int bothIdentified = 0;

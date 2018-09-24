@@ -57,7 +57,7 @@ public class IntermediatePrimitivesReport extends TermServerReport{
 		//Work through all top level hierarchies and list semantic tags along with their counts
 		for (Concept thisHierarchy : topLevelHierarchies) {
 			int hierarchyIpCount = 0;
-			Set<Concept> descendents = thisHierarchy.getDescendents(NOT_SET, targetCharType, ActiveState.ACTIVE);
+			Set<Concept> descendents = thisHierarchy.getDescendents(NOT_SET, targetCharType);
 			for (Concept c : descendents) {
 				if (c.getDefinitionStatus().equals(DefinitionStatus.PRIMITIVE)) {
 					hierarchyIpCount += checkConceptForIntermediatePrimitive(c);
@@ -72,9 +72,9 @@ public class IntermediatePrimitivesReport extends TermServerReport{
 
 	private int checkConceptForIntermediatePrimitive(Concept c) throws TermServerScriptException {
 		//Do we have both ancestor and descendant fully defined concepts?
-		Set<Concept> descendants = c.getDescendents(NOT_SET, targetCharType, ActiveState.ACTIVE);
+		Set<Concept> descendants = c.getDescendents(NOT_SET, targetCharType);
 		boolean hasFdDescendants = containsFdConcept(descendants);
-		if (hasFdDescendants && containsFdConcept(c.getAncestors(NOT_SET, targetCharType, ActiveState.ACTIVE, false))) {
+		if (hasFdDescendants && containsFdConcept(c.getAncestors(NOT_SET, targetCharType, false))) {
 			//This is an intermediate primitive, but does it have immediately close SD concepts?
 			boolean hasImmediateSDParent = containsFdConcept(c.getParents(targetCharType));
 			boolean hasImmediateSDChild = containsFdConcept(c.getChildren(targetCharType));

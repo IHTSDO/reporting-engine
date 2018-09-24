@@ -50,8 +50,8 @@ public class ProximatePrimitiveModellingPossibleReport extends TermServerScript{
 			int notImmediatePrimitiveCount = 0;
 			
 			Concept hierarchy = gl.getConcept(hiearchySCTID);
-			Set<Concept> outsideSubHierarchy = hierarchy.getAncestors(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE, true);
-			Set<Concept> allHierarchy = hierarchy.getDescendents(NOT_SET, CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
+			Set<Concept> outsideSubHierarchy = hierarchy.getAncestors(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, true);
+			Set<Concept> allHierarchy = hierarchy.getDescendents(NOT_SET, CharacteristicType.STATED_RELATIONSHIP);
 			Set<Concept> allActiveFD = filterActiveFD(allHierarchy);
 			info (hierarchy + " - " + allActiveFD.size() + "(FD) / " + allHierarchy.size() + "(Active)");
 			
@@ -67,7 +67,7 @@ public class ProximatePrimitiveModellingPossibleReport extends TermServerScript{
 					alreadyModelledCorrectly = true;
 				} else {
 					//See if ancestors up to subhierarchy start (remove outside of that) are all fully defined
-					Set<Concept> ancestors = thisConcept.getAncestors(NOT_SET, CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE, false);
+					Set<Concept> ancestors = thisConcept.getAncestors(NOT_SET, CharacteristicType.STATED_RELATIONSHIP, false);
 					ancestors.removeAll(outsideSubHierarchy);
 					if (allFD(ancestors)) {
 						fdToTopCount++;

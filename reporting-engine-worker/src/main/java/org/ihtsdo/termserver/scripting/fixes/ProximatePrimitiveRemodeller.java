@@ -220,7 +220,7 @@ public class ProximatePrimitiveRemodeller extends BatchFix implements RF2Constan
 			if (inferred.getTarget().equals(stated.getTarget())) {
 				return true;  //exact match
 			} else {
-				Set<Concept> targetAncestors = inferred.getTarget().getAncestors(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE, false);
+				Set<Concept> targetAncestors = inferred.getTarget().getAncestors(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, false);
 				return targetAncestors.contains(stated.getTarget());
 			}
 		}
@@ -275,7 +275,7 @@ public class ProximatePrimitiveRemodeller extends BatchFix implements RF2Constan
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		List<Component> processMe = new ArrayList<Component>();
 		Concept subHierarchy = gl.getConcept(subHierarchyStr);
-		Set<Concept> outsideSubHierarchy = subHierarchy.getAncestors(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE, true);
+		Set<Concept> outsideSubHierarchy = subHierarchy.getAncestors(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, true);
 		Set<Concept> allDescendants = subHierarchy.getDescendents(NOT_SET);
 		Set<Concept> allActiveFD = filterActiveFD(allDescendants);
 		info (subHierarchy + " - " + allActiveFD.size() + "(FD) / " + allDescendants.size() + "(Active)");
@@ -288,7 +288,7 @@ public class ProximatePrimitiveRemodeller extends BatchFix implements RF2Constan
 					info (thisConcept + " says it has no parents!");
 				} else if (!parents.get(0).getConceptId().equals(subHierarchyStr)) {
 					//See if ancestors up to subHierarchy start (remove outside of that) are all fully defined
-					Set<Concept> ancestors = thisConcept.getAncestors(NOT_SET, CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE, false);
+					Set<Concept> ancestors = thisConcept.getAncestors(NOT_SET, CharacteristicType.STATED_RELATIONSHIP, false);
 					ancestors.removeAll(outsideSubHierarchy);  //Remove everything above our subHierarchy
 					if (allFD(ancestors)) {
 						processMe.add(thisConcept);

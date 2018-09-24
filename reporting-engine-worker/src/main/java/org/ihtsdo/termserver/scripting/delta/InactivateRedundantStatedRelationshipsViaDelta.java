@@ -45,7 +45,7 @@ public class InactivateRedundantStatedRelationshipsViaDelta extends DeltaGenerat
 							if (moreSpecificISA.equals(lessSpecificISA) || !lessSpecificISA.isActive()) {
 								continue; //Skip self or already processed
 							}
-							Set<Concept> ancestors = moreSpecificISA.getTarget().getAncestors(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE, false);
+							Set<Concept> ancestors = moreSpecificISA.getTarget().getAncestors(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, false);
 							if (ancestors.contains(lessSpecificISA.getTarget())) {
 								//Are we inactivating an unpublished relationship?   Must warn user to delete if so.
 								if (lessSpecificISA.getEffectiveTime() == null || lessSpecificISA.getEffectiveTime().isEmpty() ||  Long.parseLong(lessSpecificISA.getEffectiveTime()) > 20170131L) {

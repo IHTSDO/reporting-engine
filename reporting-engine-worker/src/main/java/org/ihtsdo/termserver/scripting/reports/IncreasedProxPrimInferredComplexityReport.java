@@ -45,7 +45,7 @@ public class IncreasedProxPrimInferredComplexityReport extends TermServerScript{
 	private void reportIncreasedComplexity() throws TermServerScriptException {
 		for (String hiearchySCTID : hierarchies) {
 			Concept hierarchy = gl.getConcept(hiearchySCTID);
-			Set<Concept> allHierarchy = hierarchy.getDescendents(NOT_SET, CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
+			Set<Concept> allHierarchy = hierarchy.getDescendents(NOT_SET, CharacteristicType.STATED_RELATIONSHIP);
 			Set<Concept> allActiveFD = filterActiveFD(allHierarchy);
 			info (hierarchy + " - " + allActiveFD.size() + "(FD) / " + allHierarchy.size() + "(Active)");
 			

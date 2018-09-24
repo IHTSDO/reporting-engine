@@ -495,59 +495,53 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	}
 	
 	public Set<Concept> getDescendents(int depth) throws TermServerScriptException {
-		return getDescendents(depth, CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE);
+		return getDescendents(depth, CharacteristicType.INFERRED_RELATIONSHIP);
 	}
 	
-	public Set<Concept> getDescendents(int depth, CharacteristicType characteristicType, ActiveState activeState) throws TermServerScriptException {
-		return getDescendents(depth, characteristicType, activeState, false);
+	public Set<Concept> getDescendents(int depth, CharacteristicType characteristicType) throws TermServerScriptException {
+		return getDescendents(depth, characteristicType, false);
 	}
 	
-	public Set<Concept> getDescendents(int depth, CharacteristicType characteristicType, ActiveState activeState, boolean includeSelf) throws TermServerScriptException {
-		//Inactive children actually make no sense.  They wouldn't have relationships to be in the 
-		//hierarchy in the first place?!
+	public Set<Concept> getDescendents(int depth, CharacteristicType characteristicType, boolean includeSelf) throws TermServerScriptException {
 		Set<Concept> allDescendents = new HashSet<Concept>();
-		this.populateAllDescendents(allDescendents, depth, characteristicType, activeState);
+		this.populateAllDescendents(allDescendents, depth, characteristicType);
 		if (includeSelf) {
 			allDescendents.add(this);
 		}
 		return allDescendents;
 	}
 	
-	private void populateAllDescendents(Set<Concept> descendents, int depth, CharacteristicType characteristicType, ActiveState activeState) throws TermServerScriptException {
+	private void populateAllDescendents(Set<Concept> descendents, int depth, CharacteristicType characteristicType) throws TermServerScriptException {
 		for (Concept thisChild : getChildren(characteristicType)) {
-			if (activeState.equals(ActiveState.BOTH) || thisChild.active == SnomedUtils.translateActive(activeState)) {
-				descendents.add(thisChild);
-				if (depth == NOT_SET || depth > 1) {
-					int newDepth = depth == NOT_SET ? NOT_SET : depth - 1;
-					thisChild.populateAllDescendents(descendents, newDepth, characteristicType, activeState);
-				}
+			descendents.add(thisChild);
+			if (depth == NOT_SET || depth > 1) {
+				int newDepth = depth == NOT_SET ? NOT_SET : depth - 1;
+				thisChild.populateAllDescendents(descendents, newDepth, characteristicType);
 			}
 		}
 	}
 	
 	public Set<Concept> getAncestors(int depth) throws TermServerScriptException {
-		return getAncestors(depth, CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE, false);
+		return getAncestors(depth, CharacteristicType.INFERRED_RELATIONSHIP, false);
 	}
 	
-	public Set<Concept> getAncestors(int depth, CharacteristicType characteristicType, ActiveState activeState, boolean includeSelf) throws TermServerScriptException {
+	public Set<Concept> getAncestors(int depth, CharacteristicType characteristicType, boolean includeSelf) throws TermServerScriptException {
 		Set<Concept> allAncestors = new HashSet<Concept>();
-		this.populateAllAncestors(allAncestors, depth, characteristicType, activeState);
+		this.populateAllAncestors(allAncestors, depth, characteristicType);
 		if (includeSelf) {
 			allAncestors.add(this);
 		}
 		return allAncestors;
 	}
 	
-	private void populateAllAncestors(Set<Concept> ancestors, int depth, CharacteristicType characteristicType, ActiveState activeState) throws TermServerScriptException {
+	private void populateAllAncestors(Set<Concept> ancestors, int depth, CharacteristicType characteristicType) throws TermServerScriptException {
 		for (Concept thisParent : getParents(characteristicType)) {
-			if (activeState.equals(ActiveState.BOTH) || thisParent.active == SnomedUtils.translateActive(activeState)) {
-				ancestors.add(thisParent);
-				if (depth == NOT_SET || depth > 1) {
-					int newDepth = depth == NOT_SET ? NOT_SET : depth - 1;
-					thisParent.populateAllAncestors(ancestors, newDepth, characteristicType, activeState);
-				}
+			ancestors.add(thisParent);
+			if (depth == NOT_SET || depth > 1) {
+				int newDepth = depth == NOT_SET ? NOT_SET : depth - 1;
+				thisParent.populateAllAncestors(ancestors, newDepth, characteristicType);
 			}
-		}
+	}
 	}
 	
 	public List<Concept> getChildren(CharacteristicType characteristicType) {

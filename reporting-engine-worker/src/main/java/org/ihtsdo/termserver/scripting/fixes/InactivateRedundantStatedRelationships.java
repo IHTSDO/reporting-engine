@@ -74,7 +74,7 @@ public class InactivateRedundantStatedRelationships extends BatchFix implements 
 				}
 				//Need the locally loaded concept to work out ancestors
 				Concept target = gl.getConcept( moreSpecificISA.getTarget().getConceptId());
-				Set<Concept> ancestors = target.getAncestors(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE, false);
+				Set<Concept> ancestors = target.getAncestors(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, false);
 				if (ancestors.contains(lessSpecificISA.getTarget())) {
 					//Are we inactivating an unpublished relationship?   Must warn user to delete if so.
 					if (lessSpecificISA.getEffectiveTime() == null || lessSpecificISA.getEffectiveTime().isEmpty()) {
@@ -105,7 +105,7 @@ public class InactivateRedundantStatedRelationships extends BatchFix implements 
 							if (moreSpecificISA.equals(lessSpecificISA) || !lessSpecificISA.isActive()) {
 								continue; //Skip self or already processed
 							}
-							Set<Concept> ancestors = moreSpecificISA.getTarget().getAncestors(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE, false);
+							Set<Concept> ancestors = moreSpecificISA.getTarget().getAncestors(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, false);
 							if (ancestors.contains(lessSpecificISA.getTarget())) {
 								processMe.add(concept);
 							}

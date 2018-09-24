@@ -38,7 +38,7 @@ public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants{
 		try {
 			ReportSheetManager.targetFolderId="1E6kDgFExNA9CRd25yZk_Y7l-KWRf8k6B"; //Drugs/Normalize Terming
 			fix.populateEditPanel = false;
-			fix.populateTaskDescription = false;
+			fix.populateTaskDescription = true;
 			//fix.selfDetermining = true;
 			fix.init(args);
 			fix.loadProjectSnapshot(false); //Load all descriptions

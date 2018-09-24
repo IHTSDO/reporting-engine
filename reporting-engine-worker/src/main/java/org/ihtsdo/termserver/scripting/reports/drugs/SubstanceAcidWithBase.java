@@ -83,7 +83,7 @@ public class SubstanceAcidWithBase extends TermServerScript{
 	//Given a base or acid, searches up and down parents and descendants
 	//to find the alternative form and indicates direction.
 	private void findPartner(Concept c, boolean findAcid) throws TermServerScriptException {
-		Set<Concept> parents = c.getAncestors(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE, false);
+		Set<Concept> parents = c.getAncestors(NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP, false);
 		boolean downstream = findAcid;
 		boolean foundPartnerInParents = false;
 		foundPartnerInParents = findPartner( c, parents, downstream, findAcid);

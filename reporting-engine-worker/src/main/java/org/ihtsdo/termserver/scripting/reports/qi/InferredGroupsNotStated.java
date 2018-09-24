@@ -169,7 +169,6 @@ public class InferredGroupsNotStated extends TermServerReport {
 		List<Relationship> subsumingTypes = new ArrayList<>();
 		Set<Concept> typeAncestorsOrSelf = type.getAncestors(NOT_SET, 
 				CharacteristicType.INFERRED_RELATIONSHIP, 
-				ActiveState.ACTIVE, 
 				true);
 		for (Relationship r : group.getRelationships()) {
 			if (typeAncestorsOrSelf.contains(r.getType())) {
@@ -183,7 +182,6 @@ public class InferredGroupsNotStated extends TermServerReport {
 		List<Relationship> subsumingValues = new ArrayList<>();
 		Set<Concept> typeAncestorsOrSelf = value.getAncestors(NOT_SET, 
 				CharacteristicType.INFERRED_RELATIONSHIP, 
-				ActiveState.ACTIVE, 
 				true);
 		for (Relationship r : relationships) {
 			if (typeAncestorsOrSelf.contains(r.getTarget())) {
