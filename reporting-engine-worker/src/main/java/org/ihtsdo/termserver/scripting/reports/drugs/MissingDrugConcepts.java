@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
@@ -41,6 +42,7 @@ public class MissingDrugConcepts extends TermServerReport {
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		MissingDrugConcepts report = new MissingDrugConcepts();
 		try {
+			ReportSheetManager.targetFolderId = "1wtB15Soo-qdvb0GHZke9o_SjFSL_fxL3"; //Drugs/Validation
 			report.additionalReportColumns = "FSN, MP/MPF Concept using modified ingredient, Base Ingredient";
 			report.init(args);
 			report.loadProjectSnapshot(false);  //Load all descriptions
