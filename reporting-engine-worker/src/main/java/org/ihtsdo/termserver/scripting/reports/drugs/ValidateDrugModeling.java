@@ -9,6 +9,7 @@ import java.util.*;
 import org.apache.commons.lang.ArrayUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.drugs.Ingredient;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
@@ -33,8 +34,10 @@ public class ValidateDrugModeling extends TermServerReport{
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		ValidateDrugModeling report = new ValidateDrugModeling();
 		try {
-			//report.additionalReportColumns = "FSN, SemTag, Definition, Stated, Inferred";
-			report.additionalReportColumns = "FSN, Issue, Data, Detail";   //DRUGS-267
+			//report.getArchiveManager().allowStaleData = true;
+			ReportSheetManager.targetFolderId = "1wtB15Soo-qdvb0GHZke9o_SjFSL_fxL3";  //DRUGS/Validation
+			report.additionalReportColumns = "FSN, SemTag, Definition, Stated, Inferred";  //DRUGS-518
+			//report.additionalReportColumns = "FSN, Issue, Data, Detail";   //DRUGS-267
 			//report.additionalReportColumns = "Substance, Presentation, Concentration, Unit Change, Issue Detected, Ratio Calculated";
 			report.init(args);
 			report.loadProjectSnapshot(false); //Load all descriptions
@@ -69,7 +72,7 @@ public class ValidateDrugModeling extends TermServerReport{
 			//issueCount += validateIngredientsInFSN(concept, drugTypes);  
 			
 			// DRUGS-267
-			issueCount += validateIngredientsAgainstBoSS(concept);
+			//issueCount += validateIngredientsAgainstBoSS(concept);
 			
 			// DRUGS-296 
 			/*if (concept.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED) && 
@@ -78,7 +81,7 @@ public class ValidateDrugModeling extends TermServerReport{
 				issueCount += validateStatedVsInferredAttributes(concept, HAS_PRECISE_INGRED, drugTypes);
 				issueCount += validateStatedVsInferredAttributes(concept, HAS_MANUFACTURED_DOSE_FORM, drugTypes);
 			}
-			
+			*/
 			//DRUGS-518
 			if (SnomedUtils.isConceptType(concept, drugTypes)) {
 				issueCount += checkForInferredGroupsNotStated(concept);
