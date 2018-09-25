@@ -1,44 +1,49 @@
 package org.ihtsdo.termserver.scripting.reports;
 
+import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.regex.*;
 
+import org.apache.commons.io.FileUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 
 /**
- * SUBST-130
+ * SUBST-130, SUBST-299
  * Class to work with the cs_words.txt file
  * 
- * TODO: remove any greek letter derived words (SUBST-288)
+ * We're going to follow the following:
+ * 1. We don't need any Substance or Organism terms as those hierarchies will be taken as the source of truth
+ * 2. Where a word is case sensitive, any phrase that starts with that word can be removed, since the first word will cover them all
+ * 3. Where a word exists as variants, we can take the first word and add a wildcard to indicate all words that start this way are covered
+ * 4. Where a word or phrase has a capital letter after the first letter, we can remove it since processing rules
+ *    would already identify such as term as being case sensitive.
  */
 public class CaseSensitivityTextFileEditor extends TermServerReport{
 	
-	List<Concept> targetHierarchies = new ArrayList<>();
-	List<Concept> excludeHierarchies = new ArrayList<>();
-	Set<Concept> allExclusions = new HashSet<>();
-	boolean newlyModifiedContentOnly = false;
-	List<String> properNouns = new ArrayList<>();
-	Map<String, List<String>> properNounPhrases = new HashMap<>();
-	List<String> knownLowerCase = new ArrayList<>();
-	Pattern numberLetter = Pattern.compile("\\d[a-z]");
+	Set<String> organismTerms = new HashSet<>();
+	Set<String> substanceTerms = new HashSet<>();
+	SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
+	String lastWildcardWritten = "";
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
 		CaseSensitivityTextFileEditor report = new CaseSensitivityTextFileEditor();
 		try {
-			report.additionalReportColumns = "SemTag, Desc, Term, CS, LogicRuleOK, In CS_Words.txt, CS Issue";
+			report.additionalReportColumns = ", Phrase, Action, Reason";
 			report.init(args);
-			report.loadCSWords();
+			report.getReportManager().setWriteToFile(true);
+			report.getReportManager().setWriteToSheet(false);
+			report.getArchiveManager().allowStaleData = true;
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.postInit();
-			info ("Producing cs words report...");
-			report.checkCaseSignificance();
+			info ("Modifying CS Words file...");
+			report.processCSWordsFile();
 		} finally {
 			report.finish();
 		}
@@ -46,173 +51,100 @@ public class CaseSensitivityTextFileEditor extends TermServerReport{
 
 	protected void init(String[] args) throws TermServerScriptException, SnowOwlClientException {
 		super.init(args);
-		//targetHierarchies.add(PHARM_BIO_PRODUCT);
-		targetHierarchies.add(SUBSTANCE);
-		//targetHierarchies.add(ROOT_CONCEPT);
-		//targetHierarchies.add(MEDICINAL_PRODUCT);
-		
-		//excludeHierarchies.add(SUBSTANCE);
-		//excludeHierarchies.add(ORGANISM);
 	}
 	
 	private void postInit() throws TermServerScriptException {
-		for (Concept excludeThis : excludeHierarchies) {
-			excludeThis = gl.getConcept(excludeThis.getConceptId());
-			allExclusions.addAll(excludeThis.getDescendents(NOT_SET));
+		info("Collecting organism terms...");
+		for (Concept c : ORGANISM.getDescendents(NOT_SET)) {
+			for (Description d : c.getDescriptions(Acceptability.PREFERRED, null, ActiveState.ACTIVE)) {
+				organismTerms.add(d.getTerm());
+			}
+		}
+		
+		info("Collecting substance terms...");
+		for (Concept c : SUBSTANCE.getDescendents(NOT_SET)) {
+			for (Description d : c.getDescriptions(Acceptability.PREFERRED, null, ActiveState.ACTIVE)) {
+				substanceTerms.add(d.getTerm());
+			}
 		}
 	}
 
-	private void loadCSWords() throws IOException, TermServerScriptException {
-		info ("Loading " + inputFile);
+	private void processCSWordsFile() throws IOException, TermServerScriptException {
+		info ("Processing " + inputFile);
+		String timeStamp = df.format(new Date());
+		String outputFileName = inputFile.getAbsolutePath().replace(".txt", "_" + timeStamp + ".txt");
+		File outputFile = new File(outputFileName);
 		if (!inputFile.canRead()) {
 			throw new TermServerScriptException ("Cannot read: " + inputFile);
 		}
 		List<String> lines = Files.readLines(inputFile, Charsets.UTF_8);
-		for (String line : lines) {
-			if (line.startsWith("milliunit/")) {
-				debug ("Check here");
-			}
-			//Split the line up on tabs
-			String[] items = line.split(TAB);
-			String phrase = items[0];
-			//Does the word contain a capital letter (ie not the same as it's all lower case variant)
-			if (!phrase.equals(phrase.toLowerCase())) {
-				//Is this a phrase?
-				String[] words = phrase.split(" ");
-				if (words.length == 1) {
-					properNouns.add(phrase);
-				} else {
-					List<String> phrases = properNounPhrases.get(words[0]);
-					if (phrases == null) {
-						phrases = new ArrayList<>();
-						properNounPhrases.put(words[0], phrases);
-					}
-					phrases.add(phrase);
-				}
-			} else {
-				knownLowerCase.add(phrase);
+		int linesWritten = 0;
+		for (int i=1; i<lines.size() - 1; i++) {
+			if (processLine(lines.get(i), lines.get(i-1), lines.get(i+1), outputFile)) {
+				linesWritten++;
 			}
 		}
+		info ("Lines read: " + lines.size());
+		info ("Lines written: " + linesWritten);
+		info ("Output file: " + outputFileName);
 	}
 
-	private void checkCaseSignificance() throws TermServerScriptException {
-		//Work through all active descriptions of all hierarchies
-		for (Concept targetHierarchy : targetHierarchies) {
-			List<Concept> descendants = new ArrayList<>(targetHierarchy.getDescendents(NOT_SET));
-			descendants.sort(Comparator.comparing(Concept::getFsn, String.CASE_INSENSITIVE_ORDER));
-			for (Concept c : descendants) {
-				if (allExclusions.contains(c)) {
-					continue;
-				}
-				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-					boolean reported = false;
-					String term = d.getTerm();
-					String caseSig = SnomedUtils.translateCaseSignificanceFromEnum(d.getCaseSignificance());
-					
-					if (d.getTerm().startsWith("1,1,-Dichloropropane")) {
-						//debug ("Check here");
-					}
-					
-					if (d.getType().equals(DescriptionType.FSN)) {
-						term = SnomedUtils.deconstructFSN(term)[0];
-					}
-					//Nicki is just interested in single word substances just now
-					String[] words = term.split(" ");
-					if (words.length > 1) {
-						continue;
-					}
-					String inFile = properNouns.contains(term) ? "Y":"N";
-					
-					if (!newlyModifiedContentOnly || !d.isReleased()) {
-						String firstLetter = d.getTerm().substring(0,1);
-						String chopped = d.getTerm().substring(1);
-						//Lower case first letters must be entire term case sensitive
-						//But if they are case sensititive, there can be nothing else wrong with them
-						if (Character.isLetter(firstLetter.charAt(0)) && firstLetter.equals(firstLetter.toLowerCase())) {
-							if (caseSig.equals(CS)) {
-								//All Good!
-							} else {
-								report (c, d, term, caseSig, "-", inFile, "Terms starting with lower case letter must be CS");
-								reported = true;
-								incrementSummaryInformation("issues");
-							}
-						} else if (caseSig.equals(CS) || caseSig.equals(cI)) {
-							if (chopped.equals(chopped.toLowerCase()) && !logicRuleOK(caseSig, term)) {
-								report (c, d, term, caseSig, "N", inFile,"Case sensitive term does not have capital after first letter");
-								reported = true;
-								incrementSummaryInformation("issues");
-							}
-						} else {
-							//For case insensitive terms, we're on the look out for capital letters after the first letter
-							if (!chopped.equals(chopped.toLowerCase())) {
-								report (c, d, term, caseSig, "-", inFile,"Case insensitive term has a capital after first letter");
-								reported = true;
-								incrementSummaryInformation("issues");
-							}
-						}
-					}
-					if (!reported) {
-						report (c, d, term, caseSig, logicRuleOK(caseSig, term)?"Y":"N", inFile, "No issue reported");
-					}
-				}
-			}
-		}
-	}
-	
-	private boolean logicRuleOK(String indicator, String term) {
-		return  letterFollowsNumber(term) ||
-				startsWithProperNounPhrase(term) ||
-				containsKnownLowerCaseWord(term) ||
-				(indicator.equals(CS) && startsWithSingleLetter(term));
-	}
-
-	private boolean startsWithSingleLetter(String term) {
-		if (Character.isLetter(term.charAt(0))) {
-			//If it's only 1 character long, then yes!
-			if (term.length() == 1 || !Character.isLetter(term.charAt(1))) {
-				return true;
-			} 
+	private boolean processLine(String line, String preivousLine, String nextLine, File outputFile) throws TermServerScriptException, IOException {
+		//Split the line up on tabs
+		String[] lineItems = line.split(TAB);
+		String[] previousLineItems = preivousLine.split(TAB);
+		String[] nextLineItems = nextLine.split(TAB);
+		
+		String phrase = lineItems[0];
+		String phraseToWrite = phrase;
+		String previousPhrase = previousLineItems[0];
+		String nextPhrase = nextLineItems[0];
+		String chopped = phrase.substring(1);
+		
+		//Does the word contain a capital letter (ie not the same as it's all lower case variant)
+		if (!chopped.equals(chopped.toLowerCase())) {
+			report (null, phrase , "Removed", "Has captial after initial letter, algorithm can spot this");
 			return false;
 		}
-		return false;
-	}
-
-	private boolean containsKnownLowerCaseWord(String term) {
-		for (String lowerCaseWord : knownLowerCase) {
-			if (term.equals(lowerCaseWord) || term.contains(" "  + lowerCaseWord + " ") || term.contains(" " + lowerCaseWord + "/") || term.contains("/" + lowerCaseWord + " ")) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	private boolean startsWithProperNounPhrase(String term) {
-		String firstWord = term.split(" ")[0];
 		
-		if (properNouns.contains(firstWord)) {
-			return true;
+		if (organismTerms.contains(phrase)) {
+			report (null, phrase , "Removed", "Is Organism - not required as source of truth");
+			return false;
 		}
-		//Also split on a slash
-		firstWord = firstWord.split("/")[0];
-		if (properNouns.contains(firstWord)) {
-			return true;
+		
+		if (substanceTerms.contains(phrase)) {
+			report (null, phrase , "Removed", "Is Substance - not required as source of truth");
+			return false;
 		}
-
-		//Could we match a noun phrase?
-		if (properNounPhrases.containsKey(firstWord)) {
-			for (String phrase : properNounPhrases.get(firstWord)) {
-				if (term.startsWith(phrase)) {
-					return true;
-				}
-			}
+		
+		//Is this a phrase?
+		String[] previousWords = previousPhrase.split(" ");
+		String[] words = phrase.split(" ");
+		String[] nextWords = nextPhrase.split(" ");
+		
+		//Can this word be removed by the previous wildcard?
+		if (!lastWildcardWritten.isEmpty() && words[0].startsWith(lastWildcardWritten.substring(0, lastWildcardWritten.length() - 1))) {
+			report (null, phrase , "Removed", "'" + phrase + "' is covered by " + lastWildcardWritten);
+			return false;
 		}
-		return false;
+		
+		//Now is this phrase more than one word and the first word is contained in the previous line?
+		if (words[0].equals(previousWords[0])) {
+			report (null, phrase , "Removed", "Is contained in previous line - '" + previousPhrase + "'");
+			return false;
+		}
+		
+		//If the next first word is contained in this word, then we can save a wildcard variant.  But only if it's 4 letters long
+		//And not if it's an exact match
+		if (!words[0].equals(nextWords[0]) && words[0].length() > 4 && nextWords[0].startsWith(words[0])) {
+			phraseToWrite = words[0] + "*";
+			lastWildcardWritten = phraseToWrite;
+			report (null, phrase , "Wildcard", words[0] + " in '" + nextPhrase + "' can covered by " + phraseToWrite);
+		} 
+		
+		report (null, phraseToWrite , "Kept", "");
+		FileUtils.writeStringToFile( outputFile, phraseToWrite + (lineItems.length > 1 ? TAB + lineItems[1] : "") + "\n" , StandardCharsets.UTF_8, true);
+		return true;
 	}
 
-	private boolean letterFollowsNumber(String term) {
-		//Do we have a letter following a number - optionally with a dash?
-		term = term.replaceAll("-", "");
-		Matcher matcher = numberLetter.matcher(term);
-		return matcher.find();
-	}
 }

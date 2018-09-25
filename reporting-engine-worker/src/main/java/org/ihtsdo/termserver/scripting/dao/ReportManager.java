@@ -9,10 +9,10 @@ import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 public class ReportManager implements RF2Constants {
 	
 	public static final String STANDARD_HEADERS = "Concept SCTID, Detail";
-	boolean writeToFile = false;
+	boolean writeToFile = true;
 	ReportFileManager reportFileManager;
 	
-	boolean writeToSheet = true;
+	boolean writeToSheet = false;
 	ReportSheetManager reportSheetManager;
 	
 	protected int numberOfDistinctReports = 1;
@@ -131,6 +131,14 @@ public class ReportManager implements RF2Constants {
 	
 	public String getUrl() {
 		return reportSheetManager.getUrl();
+	}
+	
+	public void setWriteToFile(boolean flag) {
+		writeToFile = flag;
+	}
+	
+	public void setWriteToSheet(boolean flag) {
+		writeToSheet = flag;
 	}
 	
 }

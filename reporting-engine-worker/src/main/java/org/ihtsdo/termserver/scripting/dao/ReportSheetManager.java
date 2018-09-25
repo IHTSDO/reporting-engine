@@ -159,7 +159,7 @@ public class ReportSheetManager implements RF2Constants {
 		List<List<Object>> cells = Arrays.asList(data);
 		//Increment the current row position so we create the correct range
 		tabLineCount.merge(tabIdx, 1, Integer::sum);
-		String range = "'" + owner.getTabNames().get(tabIdx) + "'!A" + tabLineCount.get(tabIdx) + ":ZZ" +  tabLineCount.get(tabIdx); 
+		String range = "'" + owner.getTabNames().get(tabIdx) + "'!A" + tabLineCount.get(tabIdx) + ":F" +  tabLineCount.get(tabIdx); 
 		dataToBeWritten.add(new ValueRange()
 					.setRange(range)
 					.setValues(cells));
@@ -167,7 +167,7 @@ public class ReportSheetManager implements RF2Constants {
 		//Are we getting close to the limit of what can be written?
 		if (dataToBeWritten.size() > 2000) {
 			System.err.println("Attempting to write > 2000 rows to sheets, pausing...");
-			try { Thread.sleep(10*1000); } catch (Exception e) {}
+			try { Thread.sleep(5*1000); } catch (Exception e) {}
 		}
 		
 		if (!delayWrite) {
