@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 @Component
 public class JobManager {
@@ -78,9 +79,11 @@ public class JobManager {
 	}
 
 	public void run(JobRun jobRun) {
+		boolean metadataRequest = false;
 		try {
 			//Is this a special metadata request?
 			if (jobRun.getJobName().equals(METADATA)) {
+				metadataRequest = true;
 				transmitMetadata();
 			} else {
 				//Do I know about this job?
@@ -90,8 +93,10 @@ public class JobManager {
 					jobRun.setDebugInfo("Job '" + jobRun.getJobName() + "' not known to Reporting Engine Worker - " + buildVersion);
 				} else {
 					try {
-						JobClass thisJob = jobClass.newInstance();
-						thisJob.runJob(jobRun);
+						if (ensureJobValid(jobRun)) {
+							JobClass thisJob = jobClass.newInstance();
+							thisJob.instantiate(jobRun);
+						}
 					} catch (IllegalAccessException | InstantiationException e) {
 						jobRun.setStatus(JobStatus.Failed);
 						jobRun.setDebugInfo("Job '" + jobRun.getJobName() + "' failed due to " + e);
@@ -99,8 +104,24 @@ public class JobManager {
 				}
 			}
 		} finally {
-			transmitter.send(jobRun);
+			if (!metadataRequest)
+				transmitter.send(jobRun);
 		}
+	}
+
+	private boolean ensureJobValid(JobRun jobRun) {
+		if (StringUtils.isEmpty(jobRun.getAuthToken())) {
+			jobRun.setStatus(JobStatus.Failed);
+			jobRun.setDebugInfo("No valid authenticatin token included in request");
+			return false;
+		}
+		
+		if (StringUtils.isEmpty(jobRun.getTerminologyServerUrl())) {
+			jobRun.setStatus(JobStatus.Failed);
+			jobRun.setDebugInfo("No terminology server url included in request");
+			return false;
+		}
+		return true;
 	}
 
 	private void transmitMetadata() {

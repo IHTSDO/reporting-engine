@@ -10,6 +10,7 @@ import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.Job;
+import org.snomed.otf.scheduler.domain.JobCategory;
 import org.snomed.otf.scheduler.domain.JobRun;
 
 /**
@@ -31,7 +32,8 @@ public class DuplicateTermsInSubhierarchy extends TermServerReport implements Re
 	@Override
 	public Job getJob() {
 		String[] parameterNames = new String[] { "SubHierarchy" };
-		return new Job("Duplicate Terms",
+		return new Job( new JobCategory(JobCategory.RELEASE_VALIDATION),
+						"Duplicate Terms",
 						"Lists concepts that have the same PT or Synonyms within the same sub-hierarchy",
 						parameterNames);
 	}

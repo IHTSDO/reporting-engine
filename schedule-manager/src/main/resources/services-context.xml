@@ -8,8 +8,9 @@
 
 	<bean class="org.ihtsdo.snowowl.authoring.scheduler.api.service.dao.ArbitraryFileService"/>
 
-	<bean class="org.ihtsdo.snowowl.authoring.scheduler.api.service.ScheduleServiceStub"/>
-	
+	<!-- <bean class="org.ihtsdo.snowowl.authoring.scheduler.api.service.ScheduleServiceStub"/> -->
+	<bean class="org.ihtsdo.snowowl.authoring.scheduler.api.service.ScheduleServiceImpl"/>
+		
 	<bean id="engineScheduler" class="org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler">
 		<property name="poolSize" value="4" />
 	</bean>

@@ -345,7 +345,7 @@ public class RemodelGroupOne extends TemplateFix {
 		
 		//Remove the less specific values from this list
 		if (values.size() > 1) {
-			removeRedundancies(values);
+			SnomedUtils.removeRedundancies(values);
 		}
 		
 		//Do we have a single value?  Can't model otherwise
@@ -534,19 +534,6 @@ public class RemodelGroupOne extends TemplateFix {
 			}
 		}
 		return sortedValues;
-	}
-
-	private void removeRedundancies(Set<Concept> concepts) throws TermServerScriptException {
-		Set<Concept> redundant = new HashSet<>();
-		//For each concept, it is redundant if any of it's descendants are also present
-		for (Concept concept : concepts) {
-			Set<Concept> descendants = new HashSet<>(gl.getDescendantsCache().getDescendents(concept));
-			descendants.retainAll(concepts);
-			if (descendants.size() > 0) {
-				redundant.add(concept);
-			}
-		}
-		concepts.removeAll(redundant);
 	}
 
 	private void removeRedundancies(Relationship r, RelationshipGroup group) throws TermServerScriptException {

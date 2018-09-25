@@ -19,7 +19,7 @@ public class DuplicateLangRefsetsFix {
 		//CONREQEXT-1715
 		String branch = "MAIN/CONREQEXT/CONREQEXT-1740";
 //		String branch = "MAIN/CONREQEXT/FIXTEST";
-		SnowOwlClient client = new SnowOwlClient(url + "snowowl/snomed-ct/v2", "snowowl", "snowowl");
+		SnowOwlClient client = new SnowOwlClient(url + "snowowl/snomed-ct/v2", null);
 		String [] toDelete = {"2549528011","40528016","40525018","2773447011","2838341018","3289886013"};
 		
 		List<String> descriptionIds = new ArrayList<>();

@@ -37,7 +37,8 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 	@Override
 	public Job getJob() {
 		String[] parameterNames = new String[] { "SubHierarchy" };
-		return new Job("Validate Inactivations with Associations",
+		return new Job( new JobCategory(JobCategory.RELEASE_VALIDATION),
+						"Validate Inactivations with Associations",
 						"Ensures that inactivation indicators are appropriate to historical associations",
 						parameterNames);
 	}

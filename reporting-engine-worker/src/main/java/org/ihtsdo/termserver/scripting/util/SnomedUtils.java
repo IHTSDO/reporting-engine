@@ -18,6 +18,7 @@ import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.template.AncestorsCache;
+import org.ihtsdo.termserver.scripting.template.DescendentsCache;
 
 public class SnomedUtils implements RF2Constants {
 	
@@ -992,6 +993,20 @@ public class SnomedUtils implements RF2Constants {
 			}
 		}
 		return groups;
+	}
+	
+	public static void removeRedundancies(Set<Concept> concepts) throws TermServerScriptException {
+		Set<Concept> redundant = new HashSet<>();
+		DescendentsCache cache = GraphLoader.getGraphLoader().getDescendantsCache();
+		//For each concept, it is redundant if any of it's descendants are also present
+		for (Concept concept : concepts) {
+			Set<Concept> descendants = new HashSet<>(cache.getDescendents(concept));
+			descendants.retainAll(concepts);
+			if (descendants.size() > 0) {
+				redundant.add(concept);
+			}
+		}
+		concepts.removeAll(redundant);
 	}
 
 }

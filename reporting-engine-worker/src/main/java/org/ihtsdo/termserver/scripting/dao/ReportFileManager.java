@@ -83,7 +83,8 @@ public class ReportFileManager implements RF2Constants {
 		reportFiles = new File[owner.getNumberOfDistinctReports()];
 		for (int reportIdx = 0; reportIdx < owner.getNumberOfDistinctReports(); reportIdx++) {
 			String idxStr = reportIdx == 0 ? "" : "_" + reportIdx;
-			String reportFilename = "results_" + owner.getReportName() + "_" + currentTimeStamp + "_" + owner.getEnv()  + idxStr + ".csv";
+			String reportName = owner.getReportName().replaceAll(" ", "_");
+			String reportFilename = "results_" + reportName + "_" + currentTimeStamp + "_" + owner.getEnv()  + idxStr + ".csv";
 			reportFiles[reportIdx] = new File(reportFilename);
 			TermServerScript.info("Outputting Report to " + reportFiles[reportIdx].getAbsolutePath());
 			writeToReportFile (reportIdx, columnHeaders[reportIdx]);
@@ -97,5 +98,9 @@ public class ReportFileManager implements RF2Constants {
 
 	public void setPrintWriterMap(Map<String, PrintWriter> printWriterMap) {
 		this.printWriterMap = printWriterMap;
+	}
+
+	public String getFileName() {
+		return reportFiles[0].getAbsolutePath();
 	}
 }

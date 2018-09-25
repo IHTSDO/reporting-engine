@@ -97,6 +97,6 @@ public abstract class TermServerReport extends TermServerScript {
 		} catch ( InstantiationException | IllegalAccessException e) {
 			throw new TermServerScriptException("Unable to instantiate " + reportClass.getSimpleName(), e);
 		}
-		report.runJob(jobRun);
+		report.instantiate(jobRun);
 	}
 }

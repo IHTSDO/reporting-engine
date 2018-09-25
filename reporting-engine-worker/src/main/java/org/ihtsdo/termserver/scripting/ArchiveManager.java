@@ -56,9 +56,7 @@ public class ArchiveManager implements RF2Constants {
 		String branchPath = project.getBranchPath();
 		try {
 			debug ("Loading TS branch " + branchPath);
-			JSONResource response = tsClient.getBranch(branchPath);
-			String json = response.toObject().toString();
-			Branch branch = gson.fromJson(json, Branch.class);
+			Branch branch = tsClient.getBranch(branchPath);
 			//TODO Merge metadata from parent branches recursively, but for now, if empty, recover parent
 			if (branch.getMetadata().getPreviousRelease() == null) {
 				Branch parent = loadBranch(new Project().withBranchPath("MAIN"));

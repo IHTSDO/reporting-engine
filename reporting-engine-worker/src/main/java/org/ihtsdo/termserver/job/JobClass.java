@@ -13,7 +13,7 @@ public interface JobClass {
 	//TODO Come up with distinct names here.  The first version is more 
 	//like a setup, it calls init.  The 2nd is the actual report or job itself
 	//running as a fully configured object
-	public void runJob(JobRun jobRun);
+	public void instantiate(JobRun jobRun);
 	
 	public void runJob() throws TermServerScriptException;
 }

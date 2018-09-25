@@ -40,18 +40,20 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 					.antMatchers(
 							"/",
 							"/version",
-							"/ui-configuration",
 
 							// Swagger API Docs:
 							"/swagger-ui.html",
 							"/v2/api-docs",
-							"/authoring-services-websocket/**/*",
 							"/swagger-resources",
 							"/swagger-resources/**/*",
 							"/webjars/springfox-swagger-ui/**/*").permitAll()
 
 					.anyRequest().hasRole(requiredRole);// automatically adds "ROLE_" prefix
 		}
+	}
+
+	public String getOverrideToken() {
+		return overrideToken;
 	}
 
 }

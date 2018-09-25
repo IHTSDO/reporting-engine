@@ -55,6 +55,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected String[] exclusions;
 
 	protected GraphLoader gl = GraphLoader.getGraphLoader();
+	private ReportManager reportManager;
 	protected String headers = "Concept SCTID,";
 	protected String additionalReportColumns = "ActionDetail";
 	protected String secondaryReportColumns = "ActionDetail";
@@ -68,10 +69,11 @@ public abstract class TermServerScript implements RF2Constants {
 	public static String CRITICAL_ISSUE = "CRITICAL ISSUE";
 	public static String inputFileDelimiter = TSV_FIELD_DELIMITER;
 	protected String tsRoot = "MAIN/"; //"MAIN/2016-01-31/SNOMEDCT-DK/";
-	private ReportManager reportManager;
+	
 	
 	protected static final String PROJECT = "Project";
 	protected static final String DRY_RUN = "DryRun";
+	protected static final String INPUT_FILE = "InputFile";
 	protected static final String SUB_HIERARCHY = "SubHierarchy";
 
 	public static Gson gson;
@@ -295,10 +297,20 @@ public abstract class TermServerScript implements RF2Constants {
 	protected void init (JobRun jobRun) throws TermServerScriptException {
 		url = jobRun.getTerminologyServerUrl();
 		authenticatedCookie = jobRun.getAuthToken();
-		projectName = jobRun.getParameter(PROJECT);
+		if (StringUtils.isEmpty(jobRun.getParameter(PROJECT))) {
+			warn("No project specified, running against MAIN");
+			projectName = "MAIN";
+		} else {
+			projectName = jobRun.getParameter(PROJECT);
+		}
 		if (StringUtils.isEmpty(jobRun.getParameter(SUB_HIERARCHY))) {
 			jobRun.setParameter(SUB_HIERARCHY, ROOT_CONCEPT.toString());
 		}
+		String inputFileName = jobRun.getParameter(INPUT_FILE);
+		if (!StringUtils.isEmpty(inputFileName)) {
+			inputFile = new File(inputFileName);
+		}
+		
 		subHierarchy = gl.getConcept(jobRun.getParameter(SUB_HIERARCHY));
 		if (authenticatedCookie == null || authenticatedCookie.trim().isEmpty()) {
 			throw new TermServerScriptException("Unable to proceed without an authenticated token/cookie");
@@ -311,7 +323,7 @@ public abstract class TermServerScript implements RF2Constants {
 		getReportManager().initialiseReportFiles( new String[] {headers + additionalReportColumns});
 	}
 	
-	public void runJob(JobRun jobRun) {
+	public void instantiate(JobRun jobRun) {
 		try {
 			init(jobRun);
 			loadProjectSnapshot(false);  //Load all descriptions
@@ -349,6 +361,8 @@ public abstract class TermServerScript implements RF2Constants {
 				jobRun.setAuthToken(args[i+1]);
 			} else if (args[i].equals("-d")) {
 				jobRun.setParameter(DRY_RUN, args[i+1]);
+			} else if (args[i].equals("-f")) {
+				jobRun.setParameter(INPUT_FILE, args[i+1]);
 			} 
 		}
 		
@@ -357,9 +371,13 @@ public abstract class TermServerScript implements RF2Constants {
 	
 	protected void initialiseSnowOwlClient() {
 		if (useAuthenticatedCookie) {
+			if (!authenticatedCookie.contains("ihtsdo=")) {
+				throw new IllegalArgumentException("Malformed cookie detected.  Expected <env>-ihtsdo=<token> instead received: " + authenticatedCookie);
+			}
 			tsClient = new SnowOwlClient(url + "snowowl/snomed-ct/v2", authenticatedCookie);
 		} else {
-			tsClient = new SnowOwlClient(url + "snowowl/snomed-ct/v2", "snowowl", "snowowl");
+			throw new IllegalArgumentException("Support for username/password access to SnowOwl has been removed");
+			//tsClient = new SnowOwlClient(url + "snowowl/snomed-ct/v2", "snowowl", "snowowl");
 		}
 	}
 	
@@ -721,10 +739,11 @@ public abstract class TermServerScript implements RF2Constants {
 
 	public String getReportName() {
 		String fileName = SnomedUtils.deconstructFilename(inputFile)[1];
-		String reportName = getScriptName() + (fileName.isEmpty()?"" : " " + fileName);
+		String spacer = " ";
+		String reportName = getScriptName() + (fileName.isEmpty()?"" : spacer + fileName);
 		
 		if (subHierarchy != null && !subHierarchy.equals(ROOT_CONCEPT)) {
-			reportName += " " + subHierarchy;
+			reportName += spacer + subHierarchy;
 		} else if (subHierarchyStr != null && !subHierarchyStr.contains(ROOT_CONCEPT.getConceptId())) {
 			reportName += " SCT" + subHierarchyStr;
 		}

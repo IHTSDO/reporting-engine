@@ -11,6 +11,7 @@ import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.Job;
+import org.snomed.otf.scheduler.domain.JobCategory;
 import org.snomed.otf.scheduler.domain.JobRun;
 
 public class SemanticTagHierarchy extends TermServerReport implements ReportClass {
@@ -30,7 +31,8 @@ public class SemanticTagHierarchy extends TermServerReport implements ReportClas
 	@Override
 	public Job getJob() {
 		String[] parameterNames = new String[] { "SubHierarchy" };
-		return new Job("Semantic Tag Hierarchy",
+		return new Job( new JobCategory(JobCategory.ADHOC_QUERIES),
+						"Semantic Tag Hierarchy",
 						"Lists semantic tags used in a subhierchy",
 						parameterNames);
 	}

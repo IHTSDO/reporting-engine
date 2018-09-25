@@ -138,15 +138,15 @@ public class ScheduleServiceStub extends ScheduleServiceImpl {
 	private void createJobs() {
 		String[] params = new String[] { "subHierarchy", "project" };
 		
-		Job qiReport = new Job (JOB_IA, "Produces tabs to show intermediate primitives and counts for attribute type occurrance.", params);
 		JobCategory qiReports = new JobCategory("Quality Improvement");
+		Job qiReport = new Job (qiReports, JOB_IA, "Produces tabs to show intermediate primitives and counts for attribute type occurrance.", params);
 		qiReports.addJob(qiReport);
 		
 		JobCategory qaReports = new JobCategory("General QA");
-		Job csReport = new Job (JOB_CS, "Produces a list of terms which appear to have an incorrect case sensitivity setting.", params);
+		Job csReport = new Job (qaReports, JOB_CS, "Produces a list of terms which appear to have an incorrect case sensitivity setting.", params);
 		
 		params = new String[] { "AttributeType", "project" };
-		Job aapReport = new Job (JOB_AAP, "For a given attribute type, produces a list of concepts which have the same concept as an attribute value and parent. For example, 'Is Modification Of'.", params);
+		Job aapReport = new Job (qaReports, JOB_AAP, "For a given attribute type, produces a list of concepts which have the same concept as an attribute value and parent. For example, 'Is Modification Of'.", params);
 		qaReports.addJob(csReport);
 		qaReports.addJob(aapReport);
 		

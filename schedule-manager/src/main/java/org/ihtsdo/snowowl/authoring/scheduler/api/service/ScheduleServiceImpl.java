@@ -5,12 +5,15 @@ import java.util.*;
 import javax.annotation.PostConstruct;
 
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
+import org.ihtsdo.snowowl.authoring.scheduler.api.AuthenticationService;
 import org.ihtsdo.snowowl.authoring.scheduler.api.mq.Transmitter;
 import org.ihtsdo.snowowl.authoring.scheduler.api.repository.*;
+import org.ihtsdo.sso.integration.SecurityUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.CronTrigger;
@@ -24,6 +27,12 @@ public class ScheduleServiceImpl implements ScheduleService {
 	JobRepository jobRepository;
 	
 	@Autowired
+	JobTypeRepository jobTypeRepository;
+	
+	@Autowired
+	JobCategoryRepository jobCategoryRepository;
+	
+	@Autowired
 	JobScheduleRepository jobScheduleRepository;
 	
 	@Autowired
@@ -31,6 +40,12 @@ public class ScheduleServiceImpl implements ScheduleService {
 	
 	@Autowired
 	Transmitter transmitter;
+	
+	@Autowired
+	AuthenticationService authenticationService;
+	
+	@Value("${schedule.manager.terminoloy.server.uri}")
+	String terminologyServerUrl;
 	
 	static final JobRun metadataRequest = JobRun.create("METADATA", null);
 	
@@ -83,15 +98,27 @@ public class ScheduleServiceImpl implements ScheduleService {
 		//Do we know about this job?
 		Job job = getJob(jobRun.getJobName());
 		if (job == null) {
-			throw new BusinessServiceException("Unknown job: '" + jobRun.getJobName() +"'");
+			throw new BusinessServiceException("Job unknown to Schedule Service: '" + jobRun.getJobName() +"' If job exists and is active, re-run initialise.");
 		}
-		jobRun.setId(UUID.randomUUID());
+		
 		jobRun.setRequestTime(new Date());
 		jobRun.setStatus(JobStatus.Scheduled);
-		logger.info("Running {} for {} - {} ", jobRun.getJobName(), jobRun.getUser(), jobRun.getId());
+		jobRun.setTerminologyServerUrl(terminologyServerUrl);
+		populateAuthenticationToken(jobRun);
+		
 		jobRunRepository.save(jobRun);
+		logger.info("Running {} for {} - {} ", jobRun.getJobName(), jobRun.getUser(), jobRun.getId());
 		transmitter.send(jobRun);
 		return jobRun;
+	}
+
+	private void populateAuthenticationToken(JobRun jobRun) {
+		//Can we get a token from our security context?
+		String token = SecurityUtil.getAuthenticationToken();
+		if (token == null) {
+			token = authenticationService.getSystemAuthorisation();
+		}
+		jobRun.setAuthToken(token);
 	}
 
 	@Override
@@ -128,6 +155,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 	@Override
 	public void processResponse(JobRun jobRun) {
 		try {
+			logger.info("Received job response: {}", jobRun);
 			jobRunRepository.save(jobRun);
 		} catch (Exception e) {
 			logger.error("Unable to process response for jobRun '{}'", jobRun, e);
@@ -136,12 +164,31 @@ public class ScheduleServiceImpl implements ScheduleService {
 
 	@Override
 	public void processMetadata(JobMetadata metadata) {
+		logger.info("Processing metadata for {} jobs",metadata.getJobs().size());
 		for (Job job : metadata.getJobs()) {
 			try {
+				//Do we know about this job category?
+				JobCategory jobCategory = job.getCategory();
+				JobCategory knownCategory = jobCategoryRepository.findByName(jobCategory.getName());
+				if (knownCategory == null) {
+					//Default all jobs to be types of reports for the moment
+					if (jobCategory.getType() == null) {
+						JobType type = new JobType(JobType.REPORT);
+						type = jobTypeRepository.save(type);
+						jobCategory.setType (type);
+					}
+					knownCategory = jobCategoryRepository.save(jobCategory);
+				}
+				job.setCategory(knownCategory);
+				
 				//Do we know about this job already
 				Job knownJob = jobRepository.findByName(job.getName());
-				//TODO update job if required
 				if (knownJob == null) {
+					logger.info("Saving job: " + job);
+					jobRepository.save(job);
+				} else {
+					job.setId(knownJob.getId());
+					logger.info("Updating job: " + job);
 					jobRepository.save(job);
 				}
 			} catch (Exception e) {

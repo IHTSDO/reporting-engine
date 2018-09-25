@@ -29,7 +29,8 @@ public abstract class AbstractIntegrationTest implements SnowOwlClientEventListe
 	@Before
 	public void setup() throws SnowOwlClientException {
 		branchesToTearDown = new HashSet<>();
-		client = new SnowOwlClient(url, "snowowl", "snowowl");
+		//TODO Wire in security which can use token override
+		client = new SnowOwlClient(url, null);
 		client.addEventListener(this);
 		branchName = generateTestBranchName();
 		branchPath = client.createBranch("MAIN", branchName);

@@ -7,11 +7,16 @@ import java.text.SimpleDateFormat;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.ihtsdo.termserver.scripting.domain.ConceptHelper;
-import org.ihtsdo.termserver.scripting.domain.Refset;
-import org.ihtsdo.termserver.scripting.domain.RefsetEntry;
+import org.ihtsdo.termserver.scripting.domain.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpRequest;
+import org.springframework.http.client.*;
+import org.springframework.http.converter.json.GsonHttpMessageConverter;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestTemplate;
 
 import us.monoid.json.JSONArray;
 import us.monoid.json.JSONException;
@@ -48,6 +53,8 @@ public class SnowOwlClient {
 	}
 	
 	private final Resty resty;
+	private final RestTemplate restTemplate;
+	private final HttpHeaders headers;
 	private final String url;
 	private static final String ALL_CONTENT_TYPE = "*/*";
 	private static final String SNOWOWL_CONTENT_TYPE = "application/json";
@@ -55,26 +62,39 @@ public class SnowOwlClient {
 	private Logger logger = LoggerFactory.getLogger(getClass());
 	public static boolean supportsIncludeUnpublished = true;
 
-	public SnowOwlClient(String url, String username, String password) {
-		this.url = url;
-		eventListeners = new HashSet<>();
-		resty = new Resty(new RestyOverrideAccept(ALL_CONTENT_TYPE));
-		resty.authenticate(url, username, password.toCharArray());
-	}
-	
 	public SnowOwlClient(String serverUrl, String cookie) {
 		this.url = serverUrl;
 		eventListeners = new HashSet<>();
 		resty = new Resty(new RestyOverrideAccept(ALL_CONTENT_TYPE));
 		resty.withHeader("Cookie", cookie);
 		resty.authenticate(this.url, null,null);
+		
+		headers = new HttpHeaders();
+		headers.add("Cookie", cookie);
+		headers.add("Accept", SNOWOWL_CONTENT_TYPE);
+		
+		restTemplate = new RestTemplateBuilder()
+				.rootUri(this.url)
+				.additionalMessageConverters(new GsonHttpMessageConverter())
+				.errorHandler(new ExpressiveErrorHandler())
+				.build();
+		
+		//Add a ClientHttpRequestInterceptor to the RestTemplate
+		restTemplate.getInterceptors().add(new ClientHttpRequestInterceptor(){
+			@Override
+			public ClientHttpResponse intercept(HttpRequest request, byte[] body, ClientHttpRequestExecution execution) throws IOException {
+				request.getHeaders().addAll(headers);
+				return execution.execute(request, body);
+			}
+		}); 
 	}
 	
-	public JSONResource getBranch(String branchPath) throws SnowOwlClientException {
+	public Branch getBranch(String branchPath) throws SnowOwlClientException {
 		try {
-			logger.debug("Recovering branch information from " + getBranchesPath(branchPath));
-			return resty.json(getBranchesPath(branchPath));
-		} catch (IOException e) {
+			String url = getBranchesPath(branchPath);
+			logger.debug("Recovering branch information from " + url);
+			return restTemplate.getForObject(url, Branch.class);
+		} catch (RestClientException e) {
 			throw new SnowOwlClientException(e);
 		}
 	}

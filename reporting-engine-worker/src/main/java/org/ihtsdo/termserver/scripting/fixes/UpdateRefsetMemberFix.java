@@ -10,7 +10,7 @@ public class UpdateRefsetMemberFix {
 	public static void main(String[] args) throws Exception {
 
 		String url = "http://localhost:8080/";
-		SnowOwlClient client = new SnowOwlClient(url + "snowowl/snomed-ct/v2", "snowowl", "snowowl");
+		SnowOwlClient client = new SnowOwlClient(url + "snowowl/snomed-ct/v2", null);
 		String branch = "MAIN/CONREQEXT/CONREQEXT-1740";
 		
 //		CONREQEXT-1715

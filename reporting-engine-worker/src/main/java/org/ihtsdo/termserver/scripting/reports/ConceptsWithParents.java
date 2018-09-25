@@ -29,7 +29,8 @@ public class ConceptsWithParents extends TermServerReport implements ReportClass
 	@Override
 	public Job getJob() {
 		String[] parameterNames = new String[] { "SubHierarchy" };
-		return new Job("Concepts with Parents",
+		return new Job( new JobCategory(JobCategory.ADHOC_QUERIES),
+						"Concepts with Parents",
 						"Lists concepts along with their parents, and their parent's parents",
 						parameterNames);
 	}

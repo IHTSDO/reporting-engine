@@ -84,7 +84,7 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 			gl.getConcept("288556008"), //|Before (attribute)|
 			gl.getConcept("371881003"), //|During (attribute)|
 			gl.getConcept("363713009"), //|Has interpretation (attribute)|
-			gl.getConcept("363714003") //|Interprets (attribute)|
+			gl.getConcept("363714003")  //|Interprets (attribute)|
 		};
 		
 		ipReport = new InitialAnalysis(this);
