@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.reports;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
@@ -20,8 +21,15 @@ import com.google.common.io.Files;
 public class ConceptsNotAccountedFor extends TermServerReport implements ReportClass {
 	
 	Set<Concept> accountedForHierarchies = new HashSet<>();
+	Set<Concept> accountedForHierarchiesExpanded = new HashSet<>();
 	Set<Concept> notAccountedForHierarchies = new HashSet<>();
-	Set<Concept> tooHigh = new HashSet<>();   //Concepts too high up the hierarchy to be considered for grouping.
+	Set<Concept> tooHigh = new HashSet<>(); //Concepts too high up the hierarchy to be considered for grouping.
+	
+	String [] co_occurrantWords = new String[] { " and ", " with ", " in " };
+	Concept[] co_occurrantTypeAttrb;
+	Concept[] complexTypeAttrbs;
+	
+	enum TemplateType {SIMPLE, PURE_CO, COMPLEX, COMPLEX_NO_MORPH, NONE};
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		TermServerReport.run(ConceptsNotAccountedFor.class, args);
@@ -29,7 +37,7 @@ public class ConceptsNotAccountedFor extends TermServerReport implements ReportC
 	
 	public void init (JobRun run) throws TermServerScriptException {
 		//ReportSheetManager.targetFolderId = "1YoJa68WLAMPKG6h4_gZ5-QT974EU9ui6"; //QI / Stats
-		additionalReportColumns="FSN, Inferred Count, Already accounted";
+		additionalReportColumns="FSN, Descendants NOC, Already accounted, No Model, ComplexNoMorph";
 		run.setParameter(SUB_HIERARCHY, CLINICAL_FINDING);
 		super.init(run);
 		getArchiveManager().allowStaleData = true;
@@ -45,7 +53,9 @@ public class ConceptsNotAccountedFor extends TermServerReport implements ReportC
 		
 		for (String line : lines) {
 			String[] items = line.split(COMMA);
-			accountedForHierarchies.add(gl.getConcept(items[0]));
+			Concept accountedForSubHierarchy = gl.getConcept(items[0]);
+			accountedForHierarchies.add(accountedForSubHierarchy);
+			accountedForHierarchiesExpanded.addAll(accountedForSubHierarchy.getDescendents(NOT_SET));
 		}
 		super.postInit(run);
 		
@@ -54,6 +64,20 @@ public class ConceptsNotAccountedFor extends TermServerReport implements ReportC
 		tooHigh.add(gl.getConcept("417163006"));
 		tooHigh.add(gl.getConcept("118234003"));
 		tooHigh.add(gl.getConcept("250171008"));
+		
+		co_occurrantTypeAttrb =  new Concept[] {
+				gl.getConcept("47429007") //|Associated with (attribute)|
+		};
+		
+		complexTypeAttrbs = new Concept[] {
+				gl.getConcept("42752001"), //|Due to (attribute)|
+				gl.getConcept("726633004"), //|Temporally related to (attribute)|
+				gl.getConcept("255234002"), //|After (attribute)|
+				gl.getConcept("288556008"), //|Before (attribute)|
+				gl.getConcept("371881003"), //|During (attribute)|
+				gl.getConcept("363713009"), //|Has interpretation (attribute)|
+				gl.getConcept("363714003")  //|Interprets (attribute)|
+			};
 	}
 	@Override
 	public Job getJob() {
@@ -85,11 +109,42 @@ public class ConceptsNotAccountedFor extends TermServerReport implements ReportC
 			Set<Concept> descendants = new HashSet<>(gl.getDescendantsCache().getDescendentsOrSelf(c));
 			int originalSize = descendants.size();
 			descendants.removeAll(alreadyReported);
+			descendants.removeAll(accountedForHierarchiesExpanded);
+			int alreadyCounted = originalSize - descendants.size();
+			
+			Set<Concept> noModel = findNoModel(descendants);
+			descendants.removeAll(noModel);
+			
+			Set<Concept> complexNoMorph = findTemplateType(descendants, TemplateType.COMPLEX_NO_MORPH);
+			descendants.removeAll(complexNoMorph);
+			
 			if (descendants.size() > 0) {
-				report (c, descendants.size(), originalSize - descendants.size());
+				report (c, descendants.size(), alreadyCounted, noModel.size(), complexNoMorph.size());
 			}
 			alreadyReported.addAll(descendants);
 		}
+	}
+
+	private Set<Concept> findTemplateType(Set<Concept> concepts, TemplateType type) {
+		return concepts.stream()
+		.filter(c -> getTemplateType(c).equals(type))
+		.collect(Collectors.toSet());
+	}
+
+	private Set<Concept> findNoModel(Set<Concept> concepts) {
+		return concepts.stream()
+		.filter(c -> countAttributes(c, CharacteristicType.INFERRED_RELATIONSHIP) == 0)
+		.collect(Collectors.toSet());
+	}
+	
+	private Integer countAttributes(Concept c, CharacteristicType charType) {
+		int attributeCount = 0;
+		for (Relationship r : c.getRelationships(charType, ActiveState.ACTIVE)) {
+			if (!r.getType().equals(IS_A)) {
+				attributeCount++;
+			}
+		}
+		return attributeCount;
 	}
 
 	private Set<Concept> findHighestNotAccountedFor(Concept c) throws TermServerScriptException {
@@ -124,6 +179,42 @@ public class ConceptsNotAccountedFor extends TermServerReport implements ReportC
 			return highestAncestors;
 		} else {
 			return new HashSet<>(Collections.singletonList(c));
+		}
+	}
+	
+	private TemplateType getTemplateType(Concept c) {
+		try {
+			//Zero case, do we in fact have no attributes?
+			if (countAttributes(c, CharacteristicType.INFERRED_RELATIONSHIP) == 0) {
+				return TemplateType.NONE;
+			}
+			
+			//Firstly, if we have any of the complex attribute types 
+			if (SnomedUtils.getTargets(c, complexTypeAttrbs, CharacteristicType.INFERRED_RELATIONSHIP).size() > 0) {
+				//Do we have an associated morphology
+				if (SnomedUtils.getTargets(c, new Concept[] {ASSOC_MORPH}, CharacteristicType.INFERRED_RELATIONSHIP).size() > 0 ) {
+					return TemplateType.COMPLEX;
+				} else {
+					return TemplateType.COMPLEX_NO_MORPH;
+				}
+			}
+			
+			//Do we have a pure co-occurrent type
+			if (SnomedUtils.getTargets(c, co_occurrantTypeAttrb, CharacteristicType.INFERRED_RELATIONSHIP).size() > 0) {
+				return TemplateType.PURE_CO;
+			}
+			
+			//Do we have a simple co-occurrent word?
+			for (String word : co_occurrantWords) {
+				if (c.getFsn().contains(word)) {
+					return TemplateType.PURE_CO;
+				}
+			}
+			
+			//Otherwise we'll assume it's simple
+			return TemplateType.SIMPLE;
+		} catch (Exception e) {
+			throw new IllegalArgumentException ("Trouble at mill",e);
 		}
 	}
 

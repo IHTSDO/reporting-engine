@@ -50,11 +50,12 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 
 	private void postLoadInit() throws TermServerScriptException, IOException {
 		subHierarchies = new ArrayList<>();
-		/*
+		
 		info ("Loading " + inputFile);
 		if (!inputFile.canRead()) {
 			throw new TermServerScriptException ("Cannot read: " + inputFile);
 		}
+		/*
 		List<String> lines = Files.readLines(inputFile, Charsets.UTF_8);
 		for (String line : lines) {
 			if (!line.trim().isEmpty()) {
@@ -71,8 +72,8 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 				}
 			}
 		} */
-		subHierarchies.addAll(ROOT_CONCEPT.getDescendents(IMMEDIATE_CHILD));
-		
+		//subHierarchies.addAll(ROOT_CONCEPT.getDescendents(IMMEDIATE_CHILD));
+		subHierarchies.add(CLINICAL_FINDING);
 		co_occurrantTypeAttrb =  new Concept[] {
 				gl.getConcept("47429007") //|Associated with (attribute)|
 		};

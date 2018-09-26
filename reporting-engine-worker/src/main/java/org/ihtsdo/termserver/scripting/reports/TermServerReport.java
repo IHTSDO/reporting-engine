@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
@@ -57,14 +58,24 @@ public abstract class TermServerReport extends TermServerScript {
 		for (Object detail : details) {
 			if (detail instanceof String[]) {
 				for (Object subDetail : (String[])detail) {
-					line += COMMA_QUOTE + subDetail.toString() + QUOTE;
+					String item = subDetail.toString();
+					if (StringUtils.isNumeric(item)) {
+						line += COMMA + item;
+					} else {
+						line += COMMA_QUOTE + item + QUOTE;
+					}
 				}
 			} else if (detail instanceof Collection) {
 				for (Object subDetail : (Collection<?>)detail) {
 					line += COMMA_QUOTE + subDetail.toString() + QUOTE;
 				}
 			} else {
-				line += COMMA_QUOTE + (detail == null ? "" : detail.toString()) + QUOTE;
+				String item = detail.toString();
+				if (StringUtils.isNumeric(item)) {
+					line += COMMA + (detail == null ? "" : detail.toString());
+				} else {
+					line += COMMA_QUOTE + (detail == null ? "" : detail.toString()) + QUOTE;
+				}
 			}
 		}
 		writeToReportFile(reportIdx, line);
