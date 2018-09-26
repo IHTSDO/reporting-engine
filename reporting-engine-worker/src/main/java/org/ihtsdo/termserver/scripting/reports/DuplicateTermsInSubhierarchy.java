@@ -54,11 +54,7 @@ public class DuplicateTermsInSubhierarchy extends TermServerReport implements Re
 		//Create a map of all not-fsn terms and check for one already known
 		Map<String, Description> knownTerms = new HashMap<>();
 		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
-			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-				//Skip FSNs
-				if (d.getType().equals(DescriptionType.FSN)) {
-					continue;
-				}
+			for (Description d : c.getDescriptions(Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE)) {
 				//Do we already know about this term?
 				Description alreadyKnown = knownTerms.get(d.getTerm());
 				//We will flag this even if it's for the same concept

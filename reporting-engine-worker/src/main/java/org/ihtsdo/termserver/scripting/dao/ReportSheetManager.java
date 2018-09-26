@@ -29,6 +29,7 @@ public class ReportSheetManager implements RF2Constants {
 	private static final String CLIENT_SECRET_DIR = "secure/google-api-secret.json";
 	private static final int MAX_ROWS = 42000;
 	private static final int MAX_COLUMNS = 12;
+	private static final String MAX_COLUMN_STR = "L";
 	private static final int MIN_REQUEST_RATE = 10;
 
 	Credential credential;
@@ -159,7 +160,7 @@ public class ReportSheetManager implements RF2Constants {
 		List<List<Object>> cells = Arrays.asList(data);
 		//Increment the current row position so we create the correct range
 		tabLineCount.merge(tabIdx, 1, Integer::sum);
-		String range = "'" + owner.getTabNames().get(tabIdx) + "'!A" + tabLineCount.get(tabIdx) + ":F" +  tabLineCount.get(tabIdx); 
+		String range = "'" + owner.getTabNames().get(tabIdx) + "'!A" + tabLineCount.get(tabIdx) + ":" + MAX_COLUMN_STR +  tabLineCount.get(tabIdx); 
 		dataToBeWritten.add(new ValueRange()
 					.setRange(range)
 					.setValues(cells));
