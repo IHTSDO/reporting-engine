@@ -1,44 +1,47 @@
 package org.ihtsdo.termserver.scripting.reports;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.List;
 
+import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
-import org.ihtsdo.termserver.scripting.domain.Component;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.HistoricalAssociationEntry;
-import org.ihtsdo.termserver.scripting.domain.InactivationIndicatorEntry;
+import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
+import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.snomed.otf.scheduler.domain.*;
 
 /**
  * Reports all concepts inactivated with the target inactivation reason, 
  * which also has an active association
  * Run a query to find inactive concepts using WAS A as the Association type for LIMITED, OUTDATED or ERRONEOUS inactivation reasons.
  */
-public class InactivationAssocationReport extends TermServerScript{
+public class InactivationAssocationReport extends TermServerScript implements ReportClass {
 	
 	String[] targetInactivationReasons = new String[] {SCTID_INACT_LIMITED, SCTID_INACT_OUTDATED, SCTID_INACT_ERRONEOUS};
 	String[] targetAssocationRefsetIds = new String[] {SCTID_HIST_WAS_A_REFSETID};
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
-		InactivationAssocationReport report = new InactivationAssocationReport();
-		try {
-			report.additionalReportColumns = "inact_effective, inactivation_reason, assocation_effective, association";
-			report.init(args);
-			report.loadProjectSnapshot(false);  //Load all descriptions
-			report.reportMatchingInactivations();
-		} catch (Exception e) {
-			info("Failed to produce Description Report due to " + e.getMessage());
-			e.printStackTrace(new PrintStream(System.out));
-		} finally {
-			report.finish();
-		}
+		TermServerReport.run(InactivationAssocationReport.class, args);
+	}
+	
+	public void init (JobRun run) throws TermServerScriptException {
+		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA
+		super.init(run);
+		additionalReportColumns = "inact_effective, inactivation_reason, assocation_effective, association";
 	}
 
-	private void reportMatchingInactivations() throws TermServerScriptException {
+	@Override
+	public Job getJob() {
+		String[] parameterNames = new String[] { "SubHierarchy" };
+		return new Job( new JobCategory(JobCategory.RELEASE_VALIDATION),
+						"List Inactivated Concepts",
+						"Lists all concepts for the specified inactivation reasons (TODO) along with the historical associations used.",
+						parameterNames);
+	}
+
+	public void runJob() throws TermServerScriptException {
 		int rowsReported = 0;
 		info ("Scanning all concepts...");
 		for (Concept c : gl.getAllConcepts()) {
@@ -67,7 +70,6 @@ public class InactivationAssocationReport extends TermServerScript{
 	}
 
 	protected void report (Concept c, InactivationIndicatorEntry inact, HistoricalAssociationEntry assoc) throws TermServerScriptException {
-		
 		String line = 	c.getConceptId() + COMMA_QUOTE + 
 						c.getFsn() + QUOTE_COMMA_QUOTE + 
 						inact.getEffectiveTime() + QUOTE_COMMA_QUOTE + 

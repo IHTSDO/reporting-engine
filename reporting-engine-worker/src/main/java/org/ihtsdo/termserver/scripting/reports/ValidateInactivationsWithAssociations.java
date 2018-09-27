@@ -13,6 +13,7 @@ import org.snomed.otf.scheduler.domain.*;
 import org.springframework.util.StringUtils;
 
 /**
+ * INFRA-2454
  * MAINT-489 Ensure that inactivation indicators are appropriate to historical associations
  * No active historical associations if the concept does not have an inactivation indicator
  * Inactivated as "Non conformance to Ed Policy" should have no historical associations

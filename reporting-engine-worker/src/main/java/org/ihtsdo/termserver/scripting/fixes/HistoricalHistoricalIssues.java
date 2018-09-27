@@ -14,7 +14,6 @@ fix them
 */
 public class HistoricalHistoricalIssues extends BatchFix implements RF2Constants{
 	
-	
 	protected HistoricalHistoricalIssues(BatchFix clone) {
 		super(clone);
 	}
