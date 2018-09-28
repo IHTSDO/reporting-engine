@@ -66,6 +66,7 @@ abstract public class TemplateFix extends BatchFix {
 		exclusionWords.add("subluxation");
 		exclusionWords.add("avulsion");
 		exclusionWords.add("associated");
+		exclusionWords.add("co-occurrent");
 		
 		if (!includeComplexTemplates) {
 			exclusionWords.add("due to");

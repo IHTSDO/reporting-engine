@@ -1069,10 +1069,10 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 			for (Relationship reuseMe : new ArrayList<>(availableForReuse)) {
 				if (reuseMe.getType().equals(r.getType()) && reuseMe.getTarget().equals(r.getTarget())) {
 					System.out.println("** Reusing: " + reuseMe + " in group " + r.getGroupId());
+					availableForReuse.remove(reuseMe);
 					reuseMe.setGroupId(r.getGroupId());
 					reuseMe.setActive(true);
 					r = reuseMe;
-					availableForReuse.remove(reuseMe);
 					break;
 				}
 			}

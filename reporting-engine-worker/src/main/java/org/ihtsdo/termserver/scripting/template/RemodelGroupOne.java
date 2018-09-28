@@ -2,13 +2,7 @@ package org.ihtsdo.termserver.scripting.template;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
@@ -90,15 +84,15 @@ public class RemodelGroupOne extends TemplateFix {
 		subHierarchyStr =  "95896000";  //QI-27  |Protozoan infection (disorder)|
 		templateNames = new String[] {"templates/Infection caused by Protozoa with optional bodysite.json"};
 		
-		*/
+		
 		subHierarchyStr = "74627003";  //QI-48 |Diabetic Complication|
 		templateNames = new String[] {	"templates/Complication co-occurrent and due to Diabetes Melitus.json",
 				//"templates/Complication co-occurrent and due to Diabetes Melitus - Minimal.json"
 				};
-		/*
+		*/
 		subHierarchyStr = "3218000"; //QI-70 |Mycosis (disorder)|
 		templateNames = new String[] {	"templates/Infection caused by Fungus.json"};
-		
+		/*
 		subHierarchyStr = "17322007"; //QI-116 |Parasite (disorder)|
 		templateNames = new String[] {	"templates/Infection caused by Parasite.json"};
 		
@@ -180,6 +174,9 @@ public class RemodelGroupOne extends TemplateFix {
 		//inferred if they're still needed.  Note that this just empties out the clone, not the original rel
 		removeGroupedTypes(c, groups[UNGROUPED], template);
 		
+		//Similarly, remove any multiple attribute types
+		removeMultiples(groups);
+		
 		//Work through the attribute groups in the template and see if we can satisfy them
 		for (int templateGroupId = 0; templateGroupId <  template.getAttributeGroups().size(); templateGroupId++) {
 			AttributeGroup templateGroup = template.getAttributeGroups().toArray(new AttributeGroup[0])[templateGroupId];
@@ -253,6 +250,20 @@ public class RemodelGroupOne extends TemplateFix {
 		return changesMade;
 	}
 
+	private void removeMultiples(RelationshipGroup[] groups) {
+		for (RelationshipGroup group : groups) {
+			Set<Concept> typesSeen = new HashSet<>();
+			for (Relationship r : new ArrayList<>(group.getRelationships())) {
+				if (typesSeen.contains(r.getType())) {
+					group.removeRelationship(r);
+				} else {
+					typesSeen.add(r.getType());
+				}
+			}
+		}
+		
+	}
+
 	private void removeGroupedTypes(Concept c, RelationshipGroup group0, Template t) {
 		//Work out all attribute types grouped in the template
 		List<Concept> allowTypes = new ArrayList<>();
@@ -297,8 +308,10 @@ public class RemodelGroupOne extends TemplateFix {
 
 	private void applyRemodelledGroups(Task t, Concept c, RelationshipGroup[] groups) throws TermServerScriptException {
 		List<Relationship> availableForReuse = new ArrayList<>();
+		Set<String> idsUsed = new HashSet<>();
 		for (RelationshipGroup group : groups) {
 			if (group != null) {
+				
 				//Do we need to retire any existing relationships?
 				for (Relationship potentialRemoval : c.getRelationshipGroupSafely(CharacteristicType.STATED_RELATIONSHIP, group.getGroupId()).getRelationships()) {
 					if (!group.getRelationships().contains(potentialRemoval)) {
@@ -307,6 +320,17 @@ public class RemodelGroupOne extends TemplateFix {
 						removeRelationship(t, c, potentialRemoval);
 					}
 				}
+				
+				//If we've used the same relationship twice, the 2nd instance should have a new SCTID
+				for (Relationship r : group.getRelationships()) {
+					if (idsUsed.contains(r.getId())) {
+						warn ("Mutliple use of: " + r);
+						r.setRelationshipId(null);
+					} else if (r.getId() != null && !r.getId().isEmpty()) {
+						idsUsed.add(r.getId());
+					}
+				}
+				
 				c.addRelationshipGroup(group, availableForReuse);
 			}
 		}
@@ -549,9 +573,9 @@ public class RemodelGroupOne extends TemplateFix {
 		//Find concepts that only have ungrouped attributes, or none at all.
 		List<Concept> processMe = new ArrayList<>();
 		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
-			/*if (!c.getConceptId().equals("735200002")) {
-				continue;
-			}*/
+			if (!c.getConceptId().equals("75822003")) {
+				//continue;
+			}
 			Concept potentialCandidate = null;
 			if (!isExcluded(c)) {
 				boolean hasGroupedAttributes = false;
