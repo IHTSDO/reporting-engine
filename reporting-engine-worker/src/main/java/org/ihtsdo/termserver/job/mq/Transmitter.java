@@ -26,11 +26,15 @@ public class Transmitter {
 	
 	public void send (JobRun jobRun) {
 		logger.info("Transmitting response:" + jobRun);
-		jmsTemplate.convertAndSend(responseQueueName, jobRun);
+		//We'll take out the authentication since it's not required by the client
+		//Modify a clone as the original is still needed elsewhere!
+		JobRun clone = jobRun.clone();
+		clone.setAuthToken(null);
+		jmsTemplate.convertAndSend(responseQueueName, clone);
 	}
 	
 	public void send (JobMetadata metadata) {
-		logger.info("Transmitting metadata for " + metadata.getJobs().size() + " jobs");
+		logger.info("Transmitting metadata for " + metadata.getJobTypes().size() + " job types");
 		jmsTemplate.convertAndSend(metadataQueueName, metadata);
 	}
 

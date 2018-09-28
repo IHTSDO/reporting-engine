@@ -12,7 +12,7 @@ public interface ScheduleService {
 
 	public List<JobType> listJobTypes();
 
-	public List<JobCategory> listJobTypeCategories(String typeName);
+	public List<JobCategory> listJobTypeCategories(String typeName) throws BusinessServiceException;
 
 	public Job getJob(String jobName);
 	

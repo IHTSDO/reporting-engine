@@ -62,12 +62,19 @@ public class ScheduleServiceImpl implements ScheduleService {
 
 	@Override
 	public List<JobType> listJobTypes() {
-		return new ArrayList<>();
+		return jobTypeRepository.findAll();
 	}
 
 	@Override
-	public List<JobCategory> listJobTypeCategories(String typeName) {
-		return new ArrayList<>();
+	public List<JobCategory> listJobTypeCategories(String typeName) throws BusinessServiceException {
+		//Do we know about this job type?
+		JobType jobType = jobTypeRepository.findByName(typeName);
+		
+		if (jobType != null) {
+			return jobCategoryRepository.findByType(jobType);
+		} else {
+			throw new BusinessServiceException("Unknown jobType : '" + typeName + "'");
+		}
 	}
 
 	@Override
@@ -89,7 +96,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 		//Make sure we know what this job is before we run it!
 		Job job = getJob(jobName);
 		if (job == null) {
-			throw new BusinessServiceException("Unknown job : '" + jobType + "/" + jobName);
+			throw new BusinessServiceException("Unknown job : '" + jobType + "/" + jobName + "'");
 		}
 		return runJob(jobRun);
 	}
@@ -155,7 +162,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 	@Override
 	public void processResponse(JobRun jobRun) {
 		try {
-			logger.info("Received job response: {}", jobRun);
+			logger.info("Saving job response: {}", jobRun);
 			jobRunRepository.save(jobRun);
 		} catch (Exception e) {
 			logger.error("Unable to process response for jobRun '{}'", jobRun, e);
@@ -164,35 +171,45 @@ public class ScheduleServiceImpl implements ScheduleService {
 
 	@Override
 	public void processMetadata(JobMetadata metadata) {
-		logger.info("Processing metadata for {} jobs",metadata.getJobs().size());
-		for (Job job : metadata.getJobs()) {
+		logger.info("Processing metadata for {} job types",metadata.getJobTypes().size());
+		for (JobType jobType : metadata.getJobTypes()) {
 			try {
-				//Do we know about this job category?
-				JobCategory jobCategory = job.getCategory();
-				JobCategory knownCategory = jobCategoryRepository.findByName(jobCategory.getName());
-				if (knownCategory == null) {
-					//Default all jobs to be types of reports for the moment
-					if (jobCategory.getType() == null) {
-						JobType type = new JobType(JobType.REPORT);
-						type = jobTypeRepository.save(type);
-						jobCategory.setType (type);
-					}
-					knownCategory = jobCategoryRepository.save(jobCategory);
+				//Do we know about this jobType?
+				JobType knownType = jobTypeRepository.findByName(jobType.getName());
+				if (knownType == null) {
+					jobTypeRepository.save(jobType);
 				}
-				job.setCategory(knownCategory);
 				
-				//Do we know about this job already
-				Job knownJob = jobRepository.findByName(job.getName());
-				if (knownJob == null) {
-					logger.info("Saving job: " + job);
-					jobRepository.save(job);
-				} else {
-					job.setId(knownJob.getId());
-					logger.info("Updating job: " + job);
-					jobRepository.save(job);
+				//What categories are contained?
+				logger.info("Processing metadata for {} categories in type '{}'",jobType.getCategories().size(), jobType.getName());
+				for (JobCategory jobCategory : jobType.getCategories()) {
+					//Do we know about this job category?
+					String categoryName = jobCategory.getName();
+					JobCategory knownCategory = jobCategoryRepository.findByName(categoryName);
+					if (knownCategory == null) {
+						//Default all jobs to be types of reports for the moment
+						jobCategory = new JobCategory(categoryName);
+						jobCategory.setType (jobType);
+						knownCategory = jobCategoryRepository.save(jobCategory);
+					}
+					
+					logger.info("Processing metadata for {} jobs in category '{}'",jobCategory.getJobs().size(), jobCategory.getName());
+					for (Job job : jobCategory.getJobs()) {
+						//Do we know about this job already
+						Job knownJob = jobRepository.findByName(job.getName());
+						if (knownJob == null) {
+							logger.info("Saving job: " + job);
+							job.setCategory(knownCategory);
+							jobRepository.save(job);
+						} else {
+							job.setId(knownJob.getId());
+							logger.info("Updating job: " + job);
+							jobRepository.save(job);
+						}
+					}
 				}
 			} catch (Exception e) {
-				logger.error("Unable to process metadata for job '{}'", job, e);
+				logger.error("Unable to process metadata", e);
 			}
 		}
 	}

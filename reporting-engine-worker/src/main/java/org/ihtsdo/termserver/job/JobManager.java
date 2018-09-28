@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.job;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +31,7 @@ public class JobManager {
 	private final ResourceManager snomedReleaseResourceManager;
 	
 	Map<String, Class<? extends JobClass>> knownJobs = new HashMap<>();
+	Map<String, JobType> knownJobTypes = new HashMap<>();
 	
 	@Autowired(required = false)
 	private BuildProperties buildProperties;
@@ -95,16 +97,19 @@ public class JobManager {
 					try {
 						if (ensureJobValid(jobRun)) {
 							JobClass thisJob = jobClass.newInstance();
+							jobRun.setStatus(JobStatus.Running);
+							transmitter.send(jobRun);
 							thisJob.instantiate(jobRun);
 						}
 					} catch (IllegalAccessException | InstantiationException e) {
 						jobRun.setStatus(JobStatus.Failed);
-						jobRun.setDebugInfo("Job '" + jobRun.getJobName() + "' failed due to " + e);
+						jobRun.setDebugInfo("Job '" + jobRun.getJobName() + "' failed due to: '" + e + "'");
 					} 
 				}
 			}
 		} finally {
 			if (!metadataRequest)
+				jobRun.setResultTime(new Date());
 				transmitter.send(jobRun);
 		}
 	}
@@ -125,17 +130,36 @@ public class JobManager {
 	}
 
 	private void transmitMetadata() {
-		List<Job> jobs = new ArrayList<>();
 		for (Map.Entry<String, Class<? extends JobClass>> knownJobClass : knownJobs.entrySet()) {
 			try {
 				Job thisJob = knownJobClass.getValue().newInstance().getJob();
-				jobs.add(thisJob);
+				JobType indicatedType = thisJob.getCategory().getType();
+				if (indicatedType == null) {
+					indicatedType = new JobType(JobType.REPORT);
+				}
+				//The indicated type was created fresh in passing.  We need to construct
+				//this as a single object hierarchy using the same common objects.
+				JobType jobType = knownJobTypes.get(indicatedType.getName());
+				if (jobType == null) {
+					jobType = indicatedType;
+					knownJobTypes.put(indicatedType.getName(), indicatedType);
+				}
+				if (thisJob.getCategory() == null) {
+					logger.error("Job '{}' does not indicate its category.  Unable to transmit.",thisJob.getName());
+				} else {
+					JobCategory jobCategory = jobType.getCategory(thisJob.getCategory().getName());
+					if (jobCategory == null) {
+						jobCategory = new JobCategory(thisJob.getCategory().getName());
+						jobType.addCategory(jobCategory);
+					}
+					jobCategory.addJob(thisJob);
+				}
 			} catch (IllegalAccessException | InstantiationException e) {
 				logger.error("Unable to return metadata on {}",knownJobClass.getKey(), e);
 			} 
 		}
 		JobMetadata metadata = new JobMetadata();
-		metadata.setJobs(jobs);
+		metadata.setJobTypes(new ArrayList<>(knownJobTypes.values()));
 		transmitter.send(metadata);
 	}
 }

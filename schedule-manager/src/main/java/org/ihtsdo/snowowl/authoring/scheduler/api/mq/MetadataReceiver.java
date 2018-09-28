@@ -19,7 +19,7 @@ public class MetadataReceiver {
 	
 	@JmsListener(destination = "${schedule.manager.queue.metadata}")
 	public void receiveMessage(JobMetadata metadata) {
-		logger.info("Received metadata for {} jobs", metadata.getJobs().size());
+		logger.info("Received metadata for {} jobs", metadata.getJobTypes().size());
 		service.processMetadata(metadata);
 	}
 

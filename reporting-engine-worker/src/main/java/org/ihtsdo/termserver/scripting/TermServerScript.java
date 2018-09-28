@@ -69,6 +69,7 @@ public abstract class TermServerScript implements RF2Constants {
 	public static String CRITICAL_ISSUE = "CRITICAL ISSUE";
 	public static String inputFileDelimiter = TSV_FIELD_DELIMITER;
 	protected String tsRoot = "MAIN/"; //"MAIN/2016-01-31/SNOMEDCT-DK/";
+	public static final String EXPECTED_PROTOCOL = "https://";
 	
 	
 	protected static final String PROJECT = "Project";
@@ -296,6 +297,7 @@ public abstract class TermServerScript implements RF2Constants {
 
 	protected void init (JobRun jobRun) throws TermServerScriptException {
 		url = jobRun.getTerminologyServerUrl();
+		env = getEnv(url);
 		authenticatedCookie = jobRun.getAuthToken();
 		if (StringUtils.isEmpty(jobRun.getParameter(PROJECT))) {
 			warn("No project specified, running against MAIN");
@@ -318,6 +320,21 @@ public abstract class TermServerScript implements RF2Constants {
 		init();
 	}
 	
+	private String getEnv(String terminologyServerUrl) throws TermServerScriptException {
+		if (!terminologyServerUrl.startsWith(EXPECTED_PROTOCOL)) {
+			throw new TermServerScriptException("Termserver URL should start with " + EXPECTED_PROTOCOL);
+		}
+		String url = terminologyServerUrl.substring(EXPECTED_PROTOCOL.length());
+		//What's the first part of the address?
+		String machineName = url.split("\\.")[0];
+		//Find the last dash, to pick out the environment
+		int lastDash = machineName.lastIndexOf("-");
+		if (lastDash == NOT_SET) {
+			return "prod";
+		}
+		return machineName.substring(0, lastDash);
+	}
+
 	public void postInit(JobRun jobRun) throws TermServerScriptException {
 		subHierarchy = gl.getConcept(jobRun.getParameter(SUB_HIERARCHY));
 		getReportManager().initialiseReportFiles( new String[] {headers + additionalReportColumns});
