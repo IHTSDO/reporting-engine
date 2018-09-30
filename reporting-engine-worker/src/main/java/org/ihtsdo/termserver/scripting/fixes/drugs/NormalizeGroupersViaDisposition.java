@@ -194,8 +194,7 @@ public class NormalizeGroupersViaDisposition extends DrugBatchFix implements RF2
 		
 		//And add the fsnPartner if it doesn't already exist
 		if (!SnomedUtils.termAlreadyExists(loadedConcept, fsnPartner)) {
-			Description d = Description.withDefaults(fsnPartner, DescriptionType.SYNONYM);
-			d.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(AcceptabilityMode.ACCEPTABLE_BOTH));
+			Description d = Description.withDefaults(fsnPartner, DescriptionType.SYNONYM, Acceptability.ACCEPTABLE);
 			d.setCaseSignificance(csOfX);
 			loadedConcept.addDescription(d);
 			report (task, loadedConcept, Severity.LOW, ReportActionType.DESCRIPTION_ADDED, fsnPartner);

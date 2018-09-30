@@ -638,18 +638,37 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		report (t, c, Severity.LOW, action, d, i.toString());
 	}
 	
-	protected Description replaceDescription(Task t, Concept c, Description d, String newTerm, InactivationIndicator indicator) throws TermServerScriptException {
-		Description replacement = c.findTerm(newTerm);
-		if (replacement != null) {
-			if (replacement.isActive()) {
-				report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Replacement term already exists active: " + replacement);
+	protected Description addDescription(Task t, Concept c, Description d) throws TermServerScriptException {
+		Description reuseMe = c.findTerm(d.getTerm());
+		if (reuseMe != null) {
+			if (reuseMe.isActive()) {
+				report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Replacement term already exists active: " + reuseMe);
 			} else {
-				report(t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Replacement term already exists inactive.  Reactivating: " + replacement);
-				replacement.setActive(true);
-				replacement.setInactivationIndicator(null);
+				report(t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Replacement term already exists inactive.  Reactivating: " + reuseMe);
+				reuseMe.setActive(true);
+				reuseMe.setInactivationIndicator(null);
 			}
 			//And copy the acceptability from the one we're replacing
-			replacement.setAcceptabilityMap(SnomedUtils.mergeAcceptabilityMap(d, replacement));
+			reuseMe.setAcceptabilityMap(SnomedUtils.mergeAcceptabilityMap(d, reuseMe));
+		} else {
+			c.addDescription(d);
+		}
+		return reuseMe == null ? d : reuseMe;
+	}
+	
+	protected Description replaceDescription(Task t, Concept c, Description d, String newTerm, InactivationIndicator indicator) throws TermServerScriptException {
+		Description replacement = null;
+		Description reuseMe = c.findTerm(newTerm);
+		if (reuseMe != null) {
+			if (reuseMe.isActive()) {
+				report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Replacement term already exists active: " + reuseMe);
+			} else {
+				report(t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Replacement term already exists inactive.  Reactivating: " + reuseMe);
+				reuseMe.setActive(true);
+				reuseMe.setInactivationIndicator(null);
+			}
+			//And copy the acceptability from the one we're replacing
+			reuseMe.setAcceptabilityMap(SnomedUtils.mergeAcceptabilityMap(d, reuseMe));
 		} else {
 			replacement = d.clone(null); //Includes acceptability and case significance
 			replacement.setTerm(newTerm);
@@ -657,6 +676,13 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		}
 		
 		//Are we deleting or inactivating this term?
+		if (reuseMe == null && d != null) {
+			removeDescription(t, c, d, newTerm, indicator);
+		}
+		return replacement == null ? reuseMe : replacement;  //WATCH THAT THE CALLING CODE IS RESPONSIBLE FOR CHECKING THE CASE SIGNIFICANCE - copied from original
+	}
+	
+	protected void removeDescription(Task t, Concept c, Description d, String newTerm, InactivationIndicator indicator) throws TermServerScriptException {
 		String change = "";
 		if (d.isReleased()) {
 			d.setActive(false);
@@ -666,11 +692,10 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			c.removeDescription(d);
 			change = "Deleted";
 		}
-		String msg = change + " " + d + " replaced with: " + newTerm;
+		String msg = change + " " + d + (newTerm == null? "" : " replaced with: " + newTerm);
 		report(t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, msg);
-		return replacement;  //WATCH THAT THE CALLING CODE IS RESPONSIBLE FOR CHECKING THE CASE SIGNIFICANCE - copied from original
 	}
-	
+
 	protected int addRelationship(Task t, Concept c, Relationship r) throws TermServerScriptException {
 		return replaceRelationship(t, c, r.getType(), r.getTarget(), r.getGroupId(), false, true); //Allow other relationships of the same type
 	}

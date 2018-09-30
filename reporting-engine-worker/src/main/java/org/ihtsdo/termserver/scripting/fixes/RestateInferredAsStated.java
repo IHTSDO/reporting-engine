@@ -34,7 +34,6 @@ public class RestateInferredAsStated extends BatchFix implements RF2Constants{
 	String targetSemanticTag = "(medicinal product form)";
 	List<Concept> attributesOfInterest = new ArrayList<Concept>();
 	List<Concept> conceptsAgreedToChange = new ArrayList<Concept>();
-	GraphLoader gl = GraphLoader.getGraphLoader();
 	
 	protected RestateInferredAsStated(BatchFix clone) {
 		super(clone);

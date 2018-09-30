@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.util.AcceptabilityMode;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import com.google.gson.annotations.Expose;
@@ -102,7 +103,7 @@ public class Description extends Component implements RF2Constants {
 		this.descriptionId = descriptionId;
 	}
 	
-	public static Description withDefaults (String term, DescriptionType type) {
+	public static Description withDefaults (String term, DescriptionType type, Acceptability acceptability) {
 		Description d = new Description();
 		d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
 		d.setLang(LANG_EN);
@@ -110,6 +111,11 @@ public class Description extends Component implements RF2Constants {
 		d.setActive(true);
 		d.setTerm(term);
 		d.setType(type);
+		if (acceptability.equals(Acceptability.PREFERRED)) {
+			d.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(AcceptabilityMode.PREFERRED_BOTH));
+		} else {
+			d.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(AcceptabilityMode.ACCEPTABLE_BOTH));
+		}
 		return d;
 	}
 

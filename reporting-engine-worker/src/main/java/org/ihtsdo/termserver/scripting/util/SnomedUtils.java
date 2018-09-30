@@ -778,12 +778,10 @@ public class SnomedUtils implements RF2Constants {
 	
 	
 	private static void addDefaultTerms(Concept c, String term, String semTag) {
-		Description fsn = Description.withDefaults(term == null? null : term + " " + semTag, DescriptionType.FSN);
-		fsn.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(AcceptabilityMode.PREFERRED_BOTH));
+		Description fsn = Description.withDefaults(term == null? null : term + " " + semTag, DescriptionType.FSN, Acceptability.PREFERRED);
 		c.addDescription(fsn);
 		
-		Description pt = Description.withDefaults(term, DescriptionType.SYNONYM);
-		pt.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(AcceptabilityMode.PREFERRED_BOTH));
+		Description pt = Description.withDefaults(term, DescriptionType.SYNONYM, Acceptability.PREFERRED);
 		c.addDescription(pt, true);  //Allow duplication - we might have a null term if we don't know enough to create one yet.
 	}
 	
