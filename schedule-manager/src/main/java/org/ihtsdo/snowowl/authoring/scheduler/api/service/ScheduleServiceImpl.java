@@ -187,8 +187,6 @@ public class ScheduleServiceImpl implements ScheduleService {
 					String categoryName = jobCategory.getName();
 					JobCategory knownCategory = jobCategoryRepository.findByName(categoryName);
 					if (knownCategory == null) {
-						//Default all jobs to be types of reports for the moment
-						jobCategory = new JobCategory(categoryName);
 						jobCategory.setType (jobType);
 						knownCategory = jobCategoryRepository.save(jobCategory);
 					}

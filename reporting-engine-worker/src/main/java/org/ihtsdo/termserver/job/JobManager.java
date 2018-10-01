@@ -103,9 +103,10 @@ public class JobManager {
 				}
 			}
 		} finally {
-			if (!metadataRequest)
+			if (!metadataRequest) {
 				jobRun.setResultTime(new Date());
 				transmitter.send(jobRun);
+			}
 		}
 	}
 
