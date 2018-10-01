@@ -14,7 +14,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 
 /**
- * QI-3, QI-31, QI-34, QI
+ * QI-3, QI-31, QI-34, QI-127
  * For concepts that align to a given template, we can normalise them.
  * That is to say, copy all the inferred relationships into the stated form
  * and set the proximal primitive parent - if it matches the template expectation
@@ -84,10 +84,12 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 				"burn/Full thickness burn of body structure.json",
 				"burn/Deep partial thickness burn of body structure.json",
 				"burn/Superficial partial thickness burn of body structure.json"};
-		*/
 		
 		subHierarchyStr = "8098009";	// QI-120 |Sexually transmitted infectious disease (disorder)| 
 		templateNames = new String[] {	"Sexually transmitted Infection with optional bodysite.json"};
+		*/
+		subHierarchyStr = "95896000";  //QI-19  |Protozoan infection (disorder)|
+		templateNames = new String[] {"templates/Infection caused by Protozoa with optional bodysite.json"};
 
 		super.init(args);
 	}
