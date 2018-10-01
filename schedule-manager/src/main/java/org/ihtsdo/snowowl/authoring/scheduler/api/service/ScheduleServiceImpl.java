@@ -197,13 +197,12 @@ public class ScheduleServiceImpl implements ScheduleService {
 						Job knownJob = jobRepository.findByName(job.getName());
 						if (knownJob == null) {
 							logger.info("Saving job: " + job);
-							job.setCategory(knownCategory);
-							jobRepository.save(job);
 						} else {
 							job.setId(knownJob.getId());
 							logger.info("Updating job: " + job);
-							jobRepository.save(job);
 						}
+						job.setCategory(knownCategory);
+						jobRepository.save(job);
 					}
 				}
 			} catch (Exception e) {
