@@ -29,8 +29,8 @@ public class PrepMisalignedConcepts extends TemplateFix {
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		PrepMisalignedConcepts app = new PrepMisalignedConcepts(null);
 		try {
-			ReportSheetManager.targetFolderId = "18xZylGhgL7ML782pu6-6u_VUw3p5Hfr7"; //QI/Development
-			//ReportSheetManager.targetFolderId = "1uywo1VGAIh7MMY7wCn2yEj312OQCjt9J";
+			//ReportSheetManager.targetFolderId = "18xZylGhgL7ML782pu6-6u_VUw3p5Hfr7"; //QI/Development
+			ReportSheetManager.targetFolderId = "1uywo1VGAIh7MMY7wCn2yEj312OQCjt9J"; // QI / Misaligned Concepts
 			app.init(args);
 			//app.getArchiveManager().allowStaleData = true;
 			app.loadProjectSnapshot(false);  //Load all descriptions
@@ -95,17 +95,17 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		
 		subHierarchyStr = "8098009";	// QI-45 |Sexually transmitted infectious disease (disorder)| 
 		templateNames = new String[] {	"templates/Sexually transmitted Infection with optional bodysite.json"};
-		
+		*/
 		subHierarchyStr = "283682007"; // QI-39 |Bite - wound (disorder)|
 		templateNames = new String[] {	"templates/bite/bite of bodysite caused by bite event.json", 
 										"templates/bite/bite of bodysite caused by bite event with infection.json"};
-		
+		/*
 		subHierarchyStr = "3218000"; //QI-67 |Mycosis (disorder)|
 		templateNames = new String[] {	"templates/Infection caused by Fungus.json"};
-		*/
+		
 		subHierarchyStr = "17322007"; //QI-68 |Parasite (disorder)|
 		templateNames = new String[] {	"templates/Infection caused by Parasite.json"};
-		/*
+		
 		subHierarchyStr = "416886008"; //QI-106 |Closed wound| 
 		templateNames = new String[] {	"templates/wound/wound of bodysite.json"
 				//"templates/wound/closed wound of bodysite.json"
@@ -115,6 +115,16 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		templateNames = new String[] {	"templates/wound/wound of bodysite.json"
 				//"templates/wound/open wound of bodysite.json"
 				};
+		
+		subHierarchyStr = "128545000"; //QI-75 |Hernia of abdominal wall (disorder)|
+		//subHierarchyStr = "773623000";
+		templateNames = new String[] {	"templates/Hernia of abdominal wall.json"};
+		excludeHierarchies = new String[] { "236037000 |Incisional hernia (disorder)|" };
+		exclusionWords = new ArrayList<String>();
+		exclusionWords.add("gangrene");
+		exclusionWords.add("obstruction");
+		
+		
 		*/
 		super.init(args);
 	}
@@ -174,6 +184,7 @@ public class PrepMisalignedConcepts extends TemplateFix {
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		//Start with the whole subHierarchy and remove concepts that match each of our templates
 		Set<Concept> unalignedConcepts = new HashSet<>(gl.getDescendantsCache().getDescendentsOrSelf(subHierarchy));
+		//Set<Concept> unalignedConcepts = Collections.singleton(gl.getConcept("773623000"));
 		Set<Concept> ignoredConcepts = new HashSet<>();
 		
 		for (Template template : templates) {
@@ -184,13 +195,15 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		}
 		
 		for (Concept c : unalignedConcepts) {
-			if (c.getConceptId().equals("5120006")) {
-			//	debug("Check Me");
+			if (!c.getConceptId().equals("67508005")) {
+				//continue;
 			}
-			if (!isExcluded(c)) {
+			if (isExcluded(c)) {
+				ignoredConcepts.add(c);
+			} else {
 				List<String> diagnostics = new ArrayList<String>();
 				conceptDiagnostics.put(c, diagnostics);
-				String msg = "Cardinality mismatch on " +  (c.getIssues().isEmpty()?" N/A" : c.getIssues());
+				String msg = "Cardinality mismatch: " +  (c.getIssues().isEmpty()?" N/A" : c.getIssues());
 				debug (c + ".  " + msg);
 				diagnostics.add(msg);
 				diagnostics.add("Relationship Group mismatches:");
@@ -202,9 +215,7 @@ public class PrepMisalignedConcepts extends TemplateFix {
 					diagnostics.add(msg);
 				}
 				incrementSummaryInformation("Concepts identified as not matching any template");
-			} else {
-				ignoredConcepts.add(c);
-			}
+			} 
 		}
 		unalignedConcepts.removeAll(ignoredConcepts);
 		return asComponents(unalignedConcepts);

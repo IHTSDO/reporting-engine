@@ -122,12 +122,24 @@ public class TemplateUtils {
 			Cardinality cardinality = getCardinality(entry.getKey());
 			int count = entry.getValue().size();
 			if (count < cardinality.getMin() || count > cardinality.getMax()) {
-				isValid = false;
-				c.addIssue(templateId + "(" + count + " found != required" + getCardinalityStr(entry.getKey()) + ")");
-				break;
+				//Buf if all elements within the group are optional, the cardinality on the group overall is irrelevant
+				if (!containsAllOptional(entry.getKey())) {
+					isValid = false;
+					c.addIssue(templateId + " " + count + " found != " + getCardinalityStr(entry.getKey()) + " required. " + entry.getKey().toString());
+					break;
+				}
 			}
 		}
 		return isValid;
+	}
+
+	private static boolean containsAllOptional(AttributeGroup group) {
+		for (Attribute a : group.getAttributes()) {
+			if (!a.getCardinalityMin().equals("0")) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	private static boolean matchesTemplateGroup(RelationshipGroup relGroup, AttributeGroup templateGroup, DescendentsCache cache) throws TermServerScriptException {

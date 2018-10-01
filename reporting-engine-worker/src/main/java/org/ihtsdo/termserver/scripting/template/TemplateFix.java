@@ -57,12 +57,16 @@ abstract public class TemplateFix extends BatchFix {
 		}
 		info(templates.size() + " Templates loaded successfully");
 		
-		exclusions = new ArrayList<>();
+		if (exclusions == null) {
+			exclusions = new ArrayList<>();
+		}
 		for (String thisExclude : excludeHierarchies) {
 			exclusions.addAll(gl.getConcept(thisExclude).getDescendents(NOT_SET));
 		}
 		
-		exclusionWords = new ArrayList<>();
+		if (exclusionWords == null) {
+			exclusionWords = new ArrayList<>();
+		}
 		exclusionWords.add("subluxation");
 		exclusionWords.add("avulsion");
 		exclusionWords.add("associated");
@@ -118,11 +122,12 @@ abstract public class TemplateFix extends BatchFix {
 	
 	protected boolean isExcluded(Concept c) {
 		//We could ignore on the basis of a word, or SCTID
+		String fsn = " " + c.getFsn().toLowerCase();
 		for (String word : exclusionWords) {
 			word = " " + word + " ";
-			if (c.getFsn().toLowerCase().contains(word)) {
-				debug (c + "ignored due to fsn containing: " + word);
-				incrementSummaryInformation("Excluded concepts");
+			if (fsn.contains(word)) {
+				debug (c + "ignored due to fsn containing:" + word);
+				incrementSummaryInformation("Concepts excluded due to lexical match");
 				return true;
 			}
 		}
@@ -132,7 +137,7 @@ abstract public class TemplateFix extends BatchFix {
 			for (Concept excludedType : complexTemplateAttributes) {
 				for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
 					if (r.getType().equals(excludedType)) {
-						incrementSummaryInformation("Excluded concepts");
+						incrementSummaryInformation("Concepts excluded due to complexity");
 						return true;
 					}
 				}
