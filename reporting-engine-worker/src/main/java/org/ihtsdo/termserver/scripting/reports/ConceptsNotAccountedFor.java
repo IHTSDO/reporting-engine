@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
@@ -36,8 +37,8 @@ public class ConceptsNotAccountedFor extends TermServerReport implements ReportC
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
-		//ReportSheetManager.targetFolderId = "1YoJa68WLAMPKG6h4_gZ5-QT974EU9ui6"; //QI / Stats
-		additionalReportColumns="FSN, Descendants NOC, Already accounted, No Model, ComplexNoMorph";
+		ReportSheetManager.targetFolderId = "1YoJa68WLAMPKG6h4_gZ5-QT974EU9ui6"; //QI / Stats
+		additionalReportColumns="FSN, Descendants NOC, Already accounted, SIMPLE, PURE_CO, COMPLEX, COMPLEX_NO_MORPH, NONE";
 		run.setParameter(SUB_HIERARCHY, CLINICAL_FINDING);
 		super.init(run);
 		getArchiveManager().allowStaleData = true;
@@ -112,20 +113,25 @@ public class ConceptsNotAccountedFor extends TermServerReport implements ReportC
 			descendants.removeAll(accountedForHierarchiesExpanded);
 			int alreadyCounted = originalSize - descendants.size();
 			
-			Set<Concept> noModel = findNoModel(descendants);
-			descendants.removeAll(noModel);
-			
-			Set<Concept> complexNoMorph = findTemplateType(descendants, TemplateType.COMPLEX_NO_MORPH);
-			descendants.removeAll(complexNoMorph);
+			int[] buckets = countTypes(descendants);
 			
 			if (descendants.size() > 0) {
-				report (c, descendants.size(), alreadyCounted, noModel.size(), complexNoMorph.size());
+				report (c, descendants.size(), alreadyCounted, buckets);
 			}
 			alreadyReported.addAll(descendants);
 		}
 	}
 
-	private Set<Concept> findTemplateType(Set<Concept> concepts, TemplateType type) {
+	private int[] countTypes(Set<Concept> concepts) {
+		int[] counts = new int[TemplateType.values().length];
+		for (Concept c : concepts) {
+			int idx = getTemplateType(c).ordinal();
+			counts[idx]++;
+		}
+		return counts;
+	}
+
+/*	private Set<Concept> findTemplateType(Set<Concept> concepts, TemplateType type) {
 		return concepts.stream()
 		.filter(c -> getTemplateType(c).equals(type))
 		.collect(Collectors.toSet());
@@ -135,7 +141,7 @@ public class ConceptsNotAccountedFor extends TermServerReport implements ReportC
 		return concepts.stream()
 		.filter(c -> countAttributes(c, CharacteristicType.INFERRED_RELATIONSHIP) == 0)
 		.collect(Collectors.toSet());
-	}
+	}*/
 	
 	private Integer countAttributes(Concept c, CharacteristicType charType) {
 		int attributeCount = 0;

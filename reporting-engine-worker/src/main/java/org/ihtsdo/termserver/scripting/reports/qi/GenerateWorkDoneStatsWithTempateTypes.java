@@ -1,7 +1,6 @@
 package org.ihtsdo.termserver.scripting.reports.qi;
 
-import java.io.IOException;
-import java.io.PrintStream;
+import java.io.*;
 import java.util.*;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
@@ -10,9 +9,6 @@ import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-
-import com.google.common.base.Charsets;
-import com.google.common.io.Files;
 
 /**
  * QI
@@ -34,8 +30,8 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		GenerateWorkDoneStatsWithTempateTypes report = new GenerateWorkDoneStatsWithTempateTypes();
 		try {
-			ReportSheetManager.targetFolderId = "1YoJa68WLAMPKG6h4_gZ5-QT974EU9ui6";
-			report.additionalReportColumns = "FSN, Simple, modified, Pure, modified, Complex, modified, ComplexNoMorph, modified, None, modified, Total";
+			ReportSheetManager.targetFolderId = "1YoJa68WLAMPKG6h4_gZ5-QT974EU9ui6"; //QI / Stats
+			report.additionalReportColumns = "FSN, Counted elsewhere, Simple, modified, Pure, modified, Complex, modified, ComplexNoMorph, modified, None, modified, Total";
 			report.init(args);
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.postLoadInit();
@@ -72,8 +68,8 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 				}
 			}
 		} */
-		//subHierarchies.addAll(ROOT_CONCEPT.getDescendents(IMMEDIATE_CHILD));
-		subHierarchies.add(CLINICAL_FINDING);
+		subHierarchies.addAll(ROOT_CONCEPT.getDescendents(IMMEDIATE_CHILD));
+		//subHierarchies.add(CLINICAL_FINDING);
 		co_occurrantTypeAttrb =  new Concept[] {
 				gl.getConcept("47429007") //|Associated with (attribute)|
 		};
@@ -93,6 +89,7 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 
 	private void generateWorkDoneStats() throws TermServerScriptException {
 		ipReport.setQuiet(true);
+		Set<Concept> alreadyAccountedFor = new HashSet<>();
 		for (Concept subHierarchyStart : subHierarchies) {
 			int[] templateTypeTotal = new int[TemplateType.values().length];
 			int[] templateTypeModified = new int[TemplateType.values().length];
@@ -100,6 +97,9 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 			Set<Concept> subHierarchy = new HashSet<>(gl.getDescendantsCache().getDescendentsOrSelf(subHierarchyStart)); //
 			removeExclusions(subHierarchyStart, subHierarchy);
 			int total = subHierarchy.size();
+			subHierarchy.removeAll(alreadyAccountedFor);
+			int withRemovals = subHierarchy.size();
+			int countedElsewhere = total - withRemovals;
 			for (Concept c : subHierarchy) {
 				TemplateType type = getTemplateType(c);
 				templateTypeTotal[type.ordinal()]++;
@@ -109,12 +109,14 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 				}
 			}
 			
-			report (subHierarchyStart, templateTypeTotal[0] , templateTypeModified[0],
+			report (subHierarchyStart, countedElsewhere, 
+					templateTypeTotal[0] , templateTypeModified[0],
 					templateTypeTotal[1] , templateTypeModified[1],
 					templateTypeTotal[2] ,templateTypeModified[2],
 					templateTypeTotal[3] , templateTypeModified[3],
 					templateTypeTotal[4] , templateTypeModified[4],
 					total);
+			alreadyAccountedFor.addAll(subHierarchy);
 		}
 	}
 

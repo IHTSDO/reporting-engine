@@ -65,6 +65,10 @@ public abstract class TermServerReport extends TermServerScript {
 						line += COMMA_QUOTE + item + QUOTE;
 					}
 				}
+			} else if (detail instanceof int[]) {
+				for (int subDetail : (int[])detail) {
+						line += COMMA + subDetail;
+				}
 			} else if (detail instanceof Collection) {
 				for (Object subDetail : (Collection<?>)detail) {
 					line += COMMA_QUOTE + subDetail.toString() + QUOTE;
@@ -76,7 +80,7 @@ public abstract class TermServerReport extends TermServerScript {
 				} else {
 					line += COMMA_QUOTE + (detail == null ? "" : detail.toString()) + QUOTE;
 				}
-			}
+			} 
 		}
 		writeToReportFile(reportIdx, line);
 	}
