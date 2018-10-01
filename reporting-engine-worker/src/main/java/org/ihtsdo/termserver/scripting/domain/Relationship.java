@@ -185,13 +185,18 @@ public class Relationship extends Component implements RF2Constants, Comparable<
 	
 	@Override
 	public String toString() {
+		return toString(false);
+	}
+	
+	public String toString(boolean includeRelIds) {
 		//Is this just a reference to a relationship?  Just use ID if so
 		if (type==null && target==null) {
 			return relationshipId;
 		}
 		String charType = characteristicType.equals(CharacteristicType.STATED_RELATIONSHIP)?"S":"I";
 		String activeIndicator = this.isActive()?"":"*";
-		return "[" + activeIndicator +  charType + groupId + "] " + type + " -> " + target;
+		String relId = includeRelIds ? ":" + relationshipId : "";
+		return "[" + activeIndicator +  charType + groupId + relId + "] " + type + " -> " + target;
 	}
 
 	@Override

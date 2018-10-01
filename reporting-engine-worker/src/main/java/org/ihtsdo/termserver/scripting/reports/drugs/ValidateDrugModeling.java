@@ -5,6 +5,7 @@ import java.io.PrintStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
@@ -21,9 +22,6 @@ public class ValidateDrugModeling extends TermServerReport{
 	
 	Concept [] solidUnits = new Concept [] { PICOGRAM, NANOGRAM, MICROGRAM, MILLIGRAM, GRAM };
 	Concept [] liquidUnits = new Concept [] { MILLILITER, LITER };
-	
-	String drugsHierarchyStr = "373873005"; // |Pharmaceutical / biologic product (product)|
-	String substHierarchyStr = "105590001"; // |Substance (substance)|
 	
 	private static final String[] badWords = new String[] { "preparation", "agent", "+", "product"};
 	private static final String remodelledDrugIndicator = "Product containing";
@@ -52,7 +50,7 @@ public class ValidateDrugModeling extends TermServerReport{
 	}
 	
 	private void validateDrugsModeling() throws TermServerScriptException {
-		Set<Concept> subHierarchy = gl.getConcept(drugsHierarchyStr).getDescendents(NOT_SET);
+		Set<Concept> subHierarchy = MEDICINAL_PRODUCT.getDescendents(NOT_SET);
 		//ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT, ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.CLINICAL_DRUG };
 		//ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.CLINICAL_DRUG };
 		//ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT_FORM};
@@ -179,7 +177,7 @@ public class ValidateDrugModeling extends TermServerReport{
 	}
 
 	private void validateSubstancesModeling() throws TermServerScriptException {
-		Set<Concept> subHierarchy = gl.getConcept(substHierarchyStr).getDescendents(NOT_SET);
+		Set<Concept> subHierarchy = SUBSTANCE.getDescendents(NOT_SET);
 		long issueCount = 0;
 		for (Concept concept : subHierarchy) {
 			DrugUtils.setConceptType(concept);
@@ -429,32 +427,54 @@ public class ValidateDrugModeling extends TermServerReport{
 	}
 	
 	private int checkForInferredGroupsNotStated(Concept c) throws TermServerScriptException {
-		boolean unmatchedGroupDetected = false;
+		RelationshipGroup unmatchedGroup = null;
+		Concept playsRole = gl.getConcept("766939001 |Plays role (attribute)|");
 		//Work through all inferred groups and see if they're subsumed by a stated group
 		Collection<RelationshipGroup> inferredGroups = c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP);
 		Collection<RelationshipGroup> statedGroups = c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP);
 		
 		nextGroup:
 		for (RelationshipGroup inferredGroup : inferredGroups) {
+			//We expect "Plays Role" to be inherited, so filter those out 
+			inferredGroup = filter(playsRole, inferredGroup);
 			//Can we find a matching (or less specific but otherwise matching) stated group?
 			for (RelationshipGroup statedGroup : statedGroups) {
+				statedGroup = filter(playsRole, statedGroup);
 				if (groupMatches(inferredGroup, statedGroup)) {
 					continue nextGroup;
 				}
 			}
 			//If we get to here, then an inferred group has not been matched by a stated one
-			unmatchedGroupDetected = true;
+			unmatchedGroup = inferredGroup;
 		}
 		
-		if (unmatchedGroupDetected) {
+		if (unmatchedGroup != null) {
 			String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
-			report (c, semTag, c.getDefinitionStatus(),
-					c.toExpression(CharacteristicType.STATED_RELATIONSHIP),
-					c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+			//Which inferred relationship is not also stated?
+			List<Relationship> unmatched = new ArrayList<>();
+			for (Relationship r : unmatchedGroup.getRelationships()) {
+				if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, r.getType(), r.getTarget(), ActiveState.ACTIVE).size() == 0) {
+					unmatched.add(r);
+				}
+			}
+				String unmatchedStr = unmatched.stream().map(r -> r.toString(true)).collect(Collectors.joining(",\n"));
+				report (c, semTag, c.getDefinitionStatus(),
+						c.toExpression(CharacteristicType.STATED_RELATIONSHIP),
+						c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP), unmatchedStr);
 		}
-		return unmatchedGroupDetected ? 1 : 0;
+		return unmatchedGroup == null ? 0 : 1;
 	}
 	
+	private RelationshipGroup filter(Concept filterType, RelationshipGroup group) {
+		RelationshipGroup filteredGroup = new RelationshipGroup(group.getGroupId());
+		for (Relationship r : group.getRelationships()) {
+			if (!r.getType().equals(filterType)) {
+				filteredGroup.addRelationship(r);
+			}
+		}
+		return filteredGroup;
+	}
+
 	private boolean groupMatches(RelationshipGroup a, RelationshipGroup b) {
 		if (a.getRelationships().size() != b.getRelationships().size()) {
 			return false;
