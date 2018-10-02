@@ -2,7 +2,6 @@ package org.ihtsdo.termserver.scripting.reports;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 

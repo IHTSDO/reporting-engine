@@ -408,7 +408,7 @@ public class FlattenHierarchy extends BatchFix implements RF2Constants{
 	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
 		Concept c = gl.getConcept(lineItems[0]);
 		if (!c.isActive()) {
-			report (null, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept is inactive - skipping");
+			report ((Task)null, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept is inactive - skipping");
 			return null;
 		}
 		
@@ -417,7 +417,7 @@ public class FlattenHierarchy extends BatchFix implements RF2Constants{
 				.map(rel -> rel.getTarget().toString())
 				.collect (Collectors.joining(", "));
 		if (existing != null && !existing.isEmpty()) {
-			report (null, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept has existing modification(s): " + existing);
+			report ((Task)null, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept has existing modification(s): " + existing);
 			return null;
 		}
 		Concept base = gl.getConcept(lineItems[2], false, true);

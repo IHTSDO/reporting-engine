@@ -195,7 +195,7 @@ public class SetAttribute extends BatchFix implements RF2Constants{
 		List<Relationship> existingTypes = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
 		if (existingTypes.size() == 1 && existingTypes.get(0).getTarget().equals(targetValue)) {
 			String msg = "Concept appears to be in desired state already";
-			report (null, c, Severity.LOW, ReportActionType.NO_CHANGE, msg, targetValue.toString());
+			report ((Concept)null, c, Severity.LOW, ReportActionType.NO_CHANGE, msg, targetValue.toString());
 			c = null;
 		}
 		return Collections.singletonList(c);

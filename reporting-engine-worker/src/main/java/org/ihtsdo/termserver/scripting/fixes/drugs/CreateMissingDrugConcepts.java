@@ -242,7 +242,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 						Concept doseForm = SnomedUtils.getTarget(currentMPF, new Concept[] { HAS_MANUFACTURED_DOSE_FORM }, UNGROUPED, CharacteristicType.INFERRED_RELATIONSHIP);
 						if (!allowMoreSpecificDoseForms.contains(doseForm)) {
 							if (SnomedUtils.hasMoreSpecificModel(currentMPF, mpf, AncestorsCache.getAncestorsCache())) {
-								report (null, c, Severity.HIGH, ReportActionType.SKIPPING, "Existing parent : " + currentMPF + " is more specific that proposed: " + mpf.toExpression(CharacteristicType.STATED_RELATIONSHIP));
+								report ((Task)null, c, Severity.HIGH, ReportActionType.SKIPPING, "Existing parent : " + currentMPF + " is more specific that proposed: " + mpf.toExpression(CharacteristicType.STATED_RELATIONSHIP));
 								continue nextConcept;
 							}
 						}
@@ -261,7 +261,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 							.collect(Collectors.toList());
 					for (Concept currentMP : currentMPs) {
 						if (SnomedUtils.hasMoreSpecificModel(currentMP, mp, AncestorsCache.getAncestorsCache())) {
-							report (null, c, Severity.HIGH, ReportActionType.SKIPPING, "Existing parent : " + currentMP + " is more specific that proposed: " + mp.toExpression(CharacteristicType.STATED_RELATIONSHIP));
+							report ((Task)null, c, Severity.HIGH, ReportActionType.SKIPPING, "Existing parent : " + currentMP + " is more specific that proposed: " + mp.toExpression(CharacteristicType.STATED_RELATIONSHIP));
 							continue nextConcept;
 						}
 					}
@@ -307,7 +307,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 		for (Concept ingred : DrugUtils.getIngredients(c, CharacteristicType.INFERRED_RELATIONSHIP)) {
 			for (String exceptionStr: substanceExceptions) {
 				if (ingred.getFsn().toLowerCase().contains(exceptionStr)) {
-					report (null, c, Severity.LOW, ReportActionType.SKIPPING, "MP contains exception substance: " + ingred);
+					report ((Task)null, c, Severity.LOW, ReportActionType.SKIPPING, "MP contains exception substance: " + ingred);
 					return true;
 				}
 			}
@@ -315,7 +315,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 			if (ingred.getFsn().toLowerCase().contains("complex")) {
 				for (String exceptionStr: complexExceptions) {
 					if (ingred.getFsn().toLowerCase().contains(exceptionStr)) {
-						report (null, c, Severity.LOW, ReportActionType.SKIPPING, "MP contains exception substance complex: " + ingred);
+						report ((Task)null, c, Severity.LOW, ReportActionType.SKIPPING, "MP contains exception substance complex: " + ingred);
 						return true;
 					}
 				}

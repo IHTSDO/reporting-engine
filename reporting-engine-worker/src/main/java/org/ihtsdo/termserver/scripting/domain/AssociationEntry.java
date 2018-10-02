@@ -32,6 +32,10 @@ public class AssociationEntry extends Component implements RF2Constants {
 		return clone;
 	}
 	
+	public AssociationEntry clone() {
+		return clone(this.referencedComponentId);
+	}
+	
 	public String toString() {
 		String activeIndicator = isActive()?"":"*";
 		return "[" + activeIndicator + "HA]:" + id + " - " + refsetId + " : " + referencedComponentId + "->" + targetComponentId;

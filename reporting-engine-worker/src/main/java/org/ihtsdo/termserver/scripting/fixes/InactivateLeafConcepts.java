@@ -106,9 +106,9 @@ public class InactivateLeafConcepts extends BatchFix implements RF2Constants{
 	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
 		Concept c = gl.getConcept(lineItems[0]);
 		if (!c.getFsn().equals(lineItems[1])) {
-			report(null, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "FSN failed to match expected value " + lineItems[1]);
+			report((Concept)null, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "FSN failed to match expected value " + lineItems[1]);
 		} else if (!c.isActive()) {
-			report(null, c, Severity.HIGH, ReportActionType.NO_CHANGE, "Concept is already inactive");
+			report((Concept)null, c, Severity.HIGH, ReportActionType.NO_CHANGE, "Concept is already inactive");
 		} else {
 			return Collections.singletonList(c);
 		}

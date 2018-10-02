@@ -872,25 +872,24 @@ public abstract class TermServerScript implements RF2Constants {
 	
 
 	
-	protected void report (Concept c, Description d, Object...details) throws TermServerScriptException {
+	protected void report (Concept c, Object...details) throws TermServerScriptException {
 		incrementSummaryInformation("Report lines written");
 		StringBuffer sb = new StringBuffer();
 		sb.append (QUOTE)
 		.append(c==null?"":c.getConceptId())
 		.append(QUOTE_COMMA_QUOTE)
 		.append(c.getFsn())
-		.append(QUOTE_COMMA_QUOTE);
-		if (d != null) {
-			sb.append(SnomedUtils.deconstructFSN(c.getFsn())[1])
-			.append(QUOTE_COMMA_QUOTE);
-		}
-		sb.append(d==null?c.getFsn():d)
 		.append(QUOTE);
 		
 		for (Object detail : details) {
-			 sb.append(COMMA_QUOTE)
-			 .append(detail)
-			 .append(QUOTE);
+			if (detail instanceof String[]) {
+				String[] arr = (String[]) detail;
+				for (String str : arr) {
+					sb.append(COMMA_QUOTE + str + QUOTE);
+				}
+			} else {
+				sb.append(COMMA_QUOTE + detail + QUOTE);
+			}
 		}
 		writeToReportFile (sb.toString());
 	}

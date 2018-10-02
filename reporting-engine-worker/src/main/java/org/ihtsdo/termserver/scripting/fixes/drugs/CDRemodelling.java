@@ -359,7 +359,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 			ingredient.doseForm = getPharmDoseForm(items[15]);
 			ingredients.add(ingredient);
 		} catch (Exception e) {
-			report (null, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, e.getMessage());
+			report ((Task)null, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, e.getMessage());
 			return null;
 		}
 		

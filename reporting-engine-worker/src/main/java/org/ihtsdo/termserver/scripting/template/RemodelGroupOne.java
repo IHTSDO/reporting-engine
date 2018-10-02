@@ -665,7 +665,7 @@ public class RemodelGroupOne extends TemplateFix {
 			report (failure);
 		}
 		for (Concept unchanged : noChangesMade) {
-			report (null, unchanged, Severity.NONE, ReportActionType.NO_CHANGE, "");
+			report ((Task)null, unchanged, Severity.NONE, ReportActionType.NO_CHANGE, "");
 		}
 		return firstPassComplete;
 	}

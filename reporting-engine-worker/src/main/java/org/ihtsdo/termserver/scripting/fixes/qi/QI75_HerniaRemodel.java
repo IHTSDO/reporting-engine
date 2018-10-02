@@ -152,7 +152,7 @@ public class QI75_HerniaRemodel extends BatchFix {
 				}
 			} else if (isGangrene) {
 				//Update - exclude 'just' Gangrene from this work
-				report(null, c, Severity.NONE, ReportActionType.NO_CHANGE, "Skipping hernia with 'just' gangrene");
+				report((Task)null, c, Severity.NONE, ReportActionType.NO_CHANGE, "Skipping hernia with 'just' gangrene");
 			} else {
 				throw new TermServerScriptException("Concept outside of expected categories: " + c);
 			}

@@ -148,7 +148,7 @@ public class AssertionFailureFix extends BatchFix implements RF2Constants{
 			if (!allConceptsToBeProcessed.contains(thisConcept)) {
 				reportedNotProcessed.add(thisConcept);
 				String msg = thisConcept + " was given in input file but did not get included in a batch.";
-				report(null, thisConcept, Severity.CRITICAL, ReportActionType.UNEXPECTED_CONDITION, msg);
+				report((Task)null, thisConcept, Severity.CRITICAL, ReportActionType.UNEXPECTED_CONDITION, msg);
 			}
 		}
 		info("Processing " + allConceptsToBeProcessed.size() + " concepts.");

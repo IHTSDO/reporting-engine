@@ -296,7 +296,7 @@ public class ProximatePrimitiveRemodeller extends BatchFix implements RF2Constan
 				}
 			} catch (TermServerScriptException e) {
 				String msg = "Failed to determine status of " + thisConcept + " due to " + e;
-				report(null,thisConcept, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, msg);
+				report((Concept)null,thisConcept, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, msg);
 			}
 		}
 		return processMe;
