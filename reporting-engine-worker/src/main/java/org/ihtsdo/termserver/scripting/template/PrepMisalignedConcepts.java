@@ -49,6 +49,8 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		selfDetermining = true;
 		reportNoChange = false;
 		runStandAlone = true; 
+		populateEditPanel = true;
+		populateTaskDescription = true;
 		additionalReportColumns = "CharacteristicType, MatchedTemplate, Template Diagnostic";
 		/*
 		subHierarchyStr = "125605004";  // QI-5 |Fracture of bone (disorder)|
@@ -95,11 +97,11 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		
 		subHierarchyStr = "8098009";	// QI-45 |Sexually transmitted infectious disease (disorder)| 
 		templateNames = new String[] {	"templates/Sexually transmitted Infection with optional bodysite.json"};
-		*/
+		
 		subHierarchyStr = "283682007"; // QI-39 |Bite - wound (disorder)|
 		templateNames = new String[] {	"templates/bite/bite of bodysite caused by bite event.json", 
 										"templates/bite/bite of bodysite caused by bite event with infection.json"};
-		/*
+		
 		subHierarchyStr = "3218000"; //QI-67 |Mycosis (disorder)|
 		templateNames = new String[] {	"templates/Infection caused by Fungus.json"};
 		
@@ -115,7 +117,7 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		templateNames = new String[] {	"templates/wound/wound of bodysite.json"
 				//"templates/wound/open wound of bodysite.json"
 				};
-		
+		*/
 		subHierarchyStr = "128545000"; //QI-75 |Hernia of abdominal wall (disorder)|
 		//subHierarchyStr = "773623000";
 		templateNames = new String[] {	"templates/Hernia of abdominal wall.json"};
@@ -125,13 +127,12 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		exclusionWords.add("obstruction");
 		
 		
-		*/
 		super.init(args);
 	}
 	
 	@Override
 	protected int doFix(Task task, Concept concept, String info) throws TermServerScriptException, ValidationFailure {
-		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
+		/*Concept loadedConcept = loadConcept(concept, task.getBranchPath());
 		//We're not currently able to programmatically fix template infractions, so we'll save
 		//the concept unaltered so it appears in the task description and for review.
 		report(task, loadedConcept);
@@ -144,7 +145,9 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		} catch (Exception e) {
 			report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
 		}
-		return 0;
+		return 0;*/
+		report(task, concept);
+		return CHANGE_MADE;
 	}
 
 	private void touchConcept(Task t, Concept c, String info) throws SnowOwlClientException, JSONException {
@@ -191,7 +194,10 @@ public class PrepMisalignedConcepts extends TemplateFix {
 			Set<Concept> matches = findTemplateMatches(template);
 			incrementSummaryInformation("Matched templates",matches.size());
 			unalignedConcepts.removeAll(matches);
+			int beforeCount = unalignedConcepts.size();
 			unalignedConcepts.removeAll(exclusions);
+			int afterCount = unalignedConcepts.size();
+			addSummaryInformation("Excluded due to subHierarchy rules", (beforeCount - afterCount));
 		}
 		
 		for (Concept c : unalignedConcepts) {

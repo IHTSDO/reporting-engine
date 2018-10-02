@@ -89,13 +89,13 @@ public class RemodelGroupOne extends TemplateFix {
 		templateNames = new String[] {	"templates/Complication co-occurrent and due to Diabetes Melitus.json",
 				//"templates/Complication co-occurrent and due to Diabetes Melitus - Minimal.json"
 				};
-		*/
+		
 		subHierarchyStr = "3218000"; //QI-70 |Mycosis (disorder)|
 		templateNames = new String[] {	"templates/Infection caused by Fungus.json"};
-		/*
+		*/
 		subHierarchyStr = "17322007"; //QI-116 |Parasite (disorder)|
 		templateNames = new String[] {	"templates/Infection caused by Parasite.json"};
-		
+		/*
 		subHierarchyStr = "125643001"; //QI-117 |Open wound| 
 		templateNames = new String[] {	"templates/wound/wound of bodysite.json"
 				//"templates/wound/open wound of bodysite.json"
@@ -133,7 +133,7 @@ public class RemodelGroupOne extends TemplateFix {
 			}
 			
 			try {
-				updateConcept(task,loadedConcept,"");
+				updateConcept(task,loadedConcept,info);
 			} catch (Exception e) {
 				report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
 			}

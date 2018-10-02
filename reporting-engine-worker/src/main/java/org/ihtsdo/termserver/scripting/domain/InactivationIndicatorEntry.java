@@ -48,6 +48,7 @@ public class InactivationIndicatorEntry extends Component implements RF2Constant
 		InactivationIndicatorEntry i = withDefaults();
 		i.setRefsetId(SCTID_DESC_INACT_IND_REFSET);
 		i.setReferencedComponentId(d.getId());
+		i.setDirty();
 		return i;
 	}
 	

@@ -72,7 +72,7 @@ public class HistoricalHistoricalIssues extends BatchFix implements RF2Constants
 					allAffected.add(c);
 				} else {
 					String refsetId = "";
-					for ( HistoricalAssociationEntry h : c.getHistorialAssociations(ActiveState.ACTIVE)) {
+					for ( AssociationEntry h : c.getAssociations(ActiveState.ACTIVE)) {
 						if (refsetId.isEmpty()) {
 							refsetId = h.getRefsetId();
 						} else {

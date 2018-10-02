@@ -20,7 +20,7 @@ import org.snomed.otf.scheduler.domain.*;
 public class InactivationAssocationReport extends TermServerScript implements ReportClass {
 	
 	String[] targetInactivationReasons = new String[] {SCTID_INACT_LIMITED, SCTID_INACT_OUTDATED, SCTID_INACT_ERRONEOUS};
-	String[] targetAssocationRefsetIds = new String[] {SCTID_HIST_WAS_A_REFSETID};
+	String[] targetAssocationRefsetIds = new String[] {SCTID_ASSOC_WAS_A_REFSETID};
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		TermServerReport.run(InactivationAssocationReport.class, args);
@@ -52,7 +52,7 @@ public class InactivationAssocationReport extends TermServerScript implements Re
 					for (InactivationIndicatorEntry inactivationIndicator : c.getInactivationIndicatorEntries(ActiveState.ACTIVE)) {
 						if (inactivationIndicator.getInactivationReasonId().equals(inactivationReasonSctId)) {
 							//Now does the concept have one of our target historical associations?
-							for (HistoricalAssociationEntry histAssoc : c.getHistorialAssociations(ActiveState.ACTIVE)) {
+							for (AssociationEntry histAssoc : c.getAssociations(ActiveState.ACTIVE)) {
 								for (String targetAssocationRefsetId : targetAssocationRefsetIds) {
 									if (histAssoc.getRefsetId().equals(targetAssocationRefsetId)) {
 										report(c,inactivationIndicator, histAssoc);
@@ -69,7 +69,7 @@ public class InactivationAssocationReport extends TermServerScript implements Re
 		addSummaryInformation("Rows reported", rowsReported);
 	}
 
-	protected void report (Concept c, InactivationIndicatorEntry inact, HistoricalAssociationEntry assoc) throws TermServerScriptException {
+	protected void report (Concept c, InactivationIndicatorEntry inact, AssociationEntry assoc) throws TermServerScriptException {
 		String line = 	c.getConceptId() + COMMA_QUOTE + 
 						c.getFsn() + QUOTE_COMMA_QUOTE + 
 						inact.getEffectiveTime() + QUOTE_COMMA_QUOTE + 

@@ -61,23 +61,23 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 					InactivationIndicatorEntry i = c.getInactivationIndicatorEntries(ActiveState.ACTIVE).get(0); 
 					switch (i.getInactivationReasonId()) {
 						case SCTID_INACT_AMBIGUOUS : 
-							validate(c, i, "1..*", SCTID_HIST_POSS_EQUIV_REFSETID, isLegacy);
+							validate(c, i, "1..*", SCTID_ASSOC_POSS_EQUIV_REFSETID, isLegacy);
 							break;
 						case SCTID_INACT_NON_CONFORMANCE :
 							validate(c, i, "0..0", null, isLegacy);
 							break;
 						case SCTID_INACT_MOVED_ELSEWHERE :
-							validate(c, i, "1..1", SCTID_HIST_MOVED_TO_REFSETID, isLegacy);
+							validate(c, i, "1..1", SCTID_ASSOC_MOVED_TO_REFSETID, isLegacy);
 							break;
 						case SCTID_INACT_DUPLICATE :
-							validate(c, i, "1..1", SCTID_HIST_SAME_AS_REFSETID, isLegacy);
+							validate(c, i, "1..1", SCTID_ASSOC_SAME_AS_REFSETID, isLegacy);
 							break;
 						case SCTID_INACT_LIMITED : 
-							validate(c, i, "1..1", SCTID_HIST_WAS_A_REFSETID, isLegacy);
+							validate(c, i, "1..1", SCTID_ASSOC_WAS_A_REFSETID, isLegacy);
 							break;
 						case SCTID_INACT_ERRONEOUS :
 						case SCTID_INACT_OUTDATED :
-							validate(c, i, "1..1", SCTID_HIST_REPLACED_BY_REFSETID, isLegacy);
+							validate(c, i, "1..1", SCTID_ASSOC_REPLACED_BY_REFSETID, isLegacy);
 							break;
 						default :
 							report (c, c.getEffectiveTime(), "Unrecognised concept inactivation indicator", isLegacy, i);
@@ -145,16 +145,16 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 		char maxStr = cardinality.charAt(cardinality.length() - 1);
 		int maxAssocs = maxStr == '*' ? Integer.MAX_VALUE : Character.getNumericValue(maxStr);
 		
-		String data = c.getHistorialAssociations(ActiveState.ACTIVE).stream()
+		String data = c.getAssociations(ActiveState.ACTIVE).stream()
 				.map(h->h.toString())
 				.collect(Collectors.joining(",\n"));
 		String inactStr = SnomedUtils.translateInactivationIndicator(i.getInactivationReasonId()).toString();
-		String reqAssocStr = requiredAssociation == null? "None" : SnomedUtils.translateHistoricalAssociation(requiredAssociation).toString();
+		String reqAssocStr = requiredAssociation == null? "None" : SnomedUtils.translateAssociation(requiredAssociation).toString();
 		
 		//Special case, we're getting limited inactivations with both SameAs and Was A attributes.  Record stats, but skip
 		if (i.getInactivationReasonId().equals(SCTID_INACT_LIMITED) || i.getInactivationReasonId().equals(SCTID_INACT_MOVED_ELSEWHERE)) {
-			String typesOfAssoc = c.getHistorialAssociations(ActiveState.ACTIVE).stream()
-					.map(h->SnomedUtils.translateHistoricalAssociation(h.getRefsetId()).toString())
+			String typesOfAssoc = c.getAssociations(ActiveState.ACTIVE).stream()
+					.map(h->SnomedUtils.translateAssociation(h.getRefsetId()).toString())
 					.collect(Collectors.joining(", "));
 			typesOfAssoc = typesOfAssoc.isEmpty()? "No associations" : typesOfAssoc;
 			incrementSummaryInformation(inactStr +" inactivation with " + typesOfAssoc);
@@ -162,19 +162,19 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 		}
 		
 		//First check cardinality
-		int assocCount = c.getHistorialAssociations(ActiveState.ACTIVE).size();
+		int assocCount = c.getAssociations(ActiveState.ACTIVE, true).size();
 		if (assocCount > maxAssocs) {
 			report (c, c.getEffectiveTime(), inactStr + " inactivation must have no more than " + maxStr + " historical associations.", legacy,  data);
 		} else if  (assocCount < minAssocs) {
 			report (c, c.getEffectiveTime(), inactStr + " inactivation must have at least " + minAssocs + " historical associations.", legacy, data);
 		} else {
 			//Now check association is appropriate for the inactivation indicator used
-			for (HistoricalAssociationEntry h : c.getHistorialAssociations(ActiveState.ACTIVE)) {
+			for (AssociationEntry h : c.getAssociations(ActiveState.ACTIVE, true)) {
 				if (!h.getRefsetId().equals(requiredAssociation)) {
-					String assocStr = SnomedUtils.translateHistoricalAssociation(h.getRefsetId()).toString();
+					String assocStr = SnomedUtils.translateAssociation(h.getRefsetId()).toString();
 					//If we found a "WAS_A" then just record the stat for that
 					String msg = inactStr + " inactivation requires " + reqAssocStr + " historical association.  Found: " + assocStr;
-					if (assocStr.equals(HistoricalAssociation.WAS_A.toString())) {
+					if (assocStr.equals(Association.WAS_A.toString()) && !inactStr.equals(InactivationIndicator.AMBIGUOUS.toString())) {
 						incrementSummaryInformation(msg);
 					} else {
 						report (c, c.getEffectiveTime(), msg, legacy, data);

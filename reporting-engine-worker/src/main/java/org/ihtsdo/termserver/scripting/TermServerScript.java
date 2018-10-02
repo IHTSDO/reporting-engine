@@ -87,15 +87,16 @@ public abstract class TermServerScript implements RF2Constants {
 		gson = gsonBuilder.create();
 	}
 	
-	public enum ReportActionType { API_ERROR, DEBUG_INFO, INFO, UNEXPECTED_CONDITION,
-									 CONCEPT_CHANGE_MADE, CONCEPT_ADDED, CONCEPT_INACTIVATED, CONCEPT_DELETED,
-									 DESCRIPTION_CHANGE_MADE, DESCRIPTION_ACCEPTABILIY_CHANGED, DESCRIPTION_ADDED, DESCRIPTION_INACTIVATED, DESCRIPTION_DELETED,
-									 CASE_SIGNIFICANCE_CHANGE_MADE, MODULE_CHANGE_MADE, 
-									 RELATIONSHIP_ADDED, RELATIONSHIP_REPLACED, RELATIONSHIP_INACTIVATED, RELATIONSHIP_DELETED, RELATIONSHIP_MODIFIED, 
-									 RELATIONSHIP_GROUP_ADDED,
-									 NO_CHANGE, VALIDATION_ERROR, VALIDATION_CHECK, SKIPPING,
-									 REFSET_MEMBER_REMOVED, UNKNOWN, RELATIONSHIP_REACTIVATED, ASSOCIATION_ADDED};
-									 
+	public enum ReportActionType {	API_ERROR, DEBUG_INFO, INFO, UNEXPECTED_CONDITION,
+									CONCEPT_CHANGE_MADE, CONCEPT_ADDED, CONCEPT_INACTIVATED, CONCEPT_DELETED,
+									DESCRIPTION_CHANGE_MADE, DESCRIPTION_ACCEPTABILIY_CHANGED, DESCRIPTION_ADDED, DESCRIPTION_INACTIVATED, DESCRIPTION_DELETED,
+									CASE_SIGNIFICANCE_CHANGE_MADE, MODULE_CHANGE_MADE, 
+									RELATIONSHIP_ADDED, RELATIONSHIP_REPLACED, RELATIONSHIP_INACTIVATED, RELATIONSHIP_DELETED, RELATIONSHIP_MODIFIED, 
+									RELATIONSHIP_GROUP_ADDED,
+									NO_CHANGE, VALIDATION_ERROR, VALIDATION_CHECK, SKIPPING,
+									REFSET_MEMBER_REMOVED, UNKNOWN, RELATIONSHIP_REACTIVATED, ASSOCIATION_ADDED,
+									INACT_IND_ADDED, INACT_IND_MODIFIED};
+									
 	public enum Severity { NONE, LOW, MEDIUM, HIGH, CRITICAL }; 
 
 	public String getScriptName() {
@@ -769,9 +770,9 @@ public abstract class TermServerScript implements RF2Constants {
 
 	protected String getPrettyHistoricalAssociation (Concept c) throws TermServerScriptException {
 		String prettyString = "No association specified.";
-		if (c.getHistorialAssociations(ActiveState.ACTIVE).size() > 0) {
+		if (c.getAssociations(ActiveState.ACTIVE).size() > 0) {
 			prettyString = " ";
-			for (HistoricalAssociationEntry assoc : c.getHistorialAssociations(ActiveState.ACTIVE)) {
+			for (AssociationEntry assoc : c.getAssociations(ActiveState.ACTIVE)) {
 				prettyString += SnomedUtils.deconstructFSN(gl.getConcept(assoc.getRefsetId()).getFsn())[0].replace(" association reference set", "");
 				prettyString += " -> ";
 				prettyString += gl.getConcept(assoc.getTargetComponentId());

@@ -32,21 +32,27 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	@SerializedName("preferredSynonym")
 	@Expose
 	private String preferredSynonym;
+	
 	@SerializedName("descriptions")
 	@Expose
 	private List<Description> descriptions = new ArrayList<Description>();
+	
 	@SerializedName("relationships")
 	@Expose
 	private List<Relationship> relationships = new ArrayList<Relationship>();
+	
 	@SerializedName("isLeafStated")
 	@Expose
 	private boolean isLeafStated;
+	
 	@SerializedName("isLeafInferred")
 	@Expose
 	private boolean isLeafInferred;
+	
 	@SerializedName("inactivationIndicator")
 	@Expose
 	private InactivationIndicator inactivationIndicator;
+	
 	@SerializedName("associationTargets")
 	@Expose
 	private AssociationTargets associationTargets;
@@ -66,7 +72,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	//Note that these values are used when loading from RF2 where multiple entries can exist.
 	//When interacting with the TS, only one inactivation indicator is used (see above).
 	List<InactivationIndicatorEntry> inactivationIndicatorEntries;
-	List<HistoricalAssociationEntry> historicalAssociations;
+	List<AssociationEntry> associations;
 	Collection<RelationshipGroup> statedRelationshipGroups;
 	Collection<RelationshipGroup> inferredRelationshipGroups;
 	
@@ -818,25 +824,32 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		}
 	}
 	
-	public List<HistoricalAssociationEntry> getHistorialAssociations() {
-		if (historicalAssociations == null) {
-			historicalAssociations = new ArrayList<HistoricalAssociationEntry>();
+	public List<AssociationEntry> getAssociations() {
+		if (associations == null) {
+			associations = new ArrayList<AssociationEntry>();
 		}
-		return historicalAssociations;
+		return associations;
 	}
 	
-	public List<HistoricalAssociationEntry> getHistorialAssociations(ActiveState activeState) {
+	public List<AssociationEntry> getAssociations(ActiveState activeState) {
+		return getAssociations(activeState, false); //All associations by default
+	}
+	
+
+	public List<AssociationEntry> getAssociations(ActiveState activeState, boolean historicalAssociationsOnly) {
 		if (activeState.equals(ActiveState.BOTH)) {
-			return getHistorialAssociations();
+			return getAssociations();
 		} else {
 			boolean isActive = activeState.equals(ActiveState.ACTIVE);
-			List<HistoricalAssociationEntry> selectedHistorialAssociations = new ArrayList<HistoricalAssociationEntry>();
-			for (HistoricalAssociationEntry h : getHistorialAssociations()) {
-				if (h.isActive() == isActive) {
-					selectedHistorialAssociations.add(h);
+			List<AssociationEntry> selectedAssociations = new ArrayList<AssociationEntry>();
+			for (AssociationEntry h : getAssociations()) {
+				//TODO Find a better way of working out if an association is a historical association
+				if (h.isActive() == isActive && (!historicalAssociationsOnly ||
+					(h.getRefsetId().startsWith("9000000")))) {
+					selectedAssociations.add(h);
 				}
 			}
-			return selectedHistorialAssociations;
+			return selectedAssociations;
 		}
 	}
 	
@@ -968,6 +981,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		clone.setDefinitionStatus(getDefinitionStatus());
 		clone.setModuleId(getModuleId());
 		clone.setConceptType(conceptType);
+		clone.setInactivationIndicator(inactivationIndicator);
 		
 		//Copy all descriptions
 		for (Description d : getDescriptions()) {
@@ -998,9 +1012,10 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		clone.inferredParents = inferredParents == null? new ArrayList<>() : new ArrayList<>(inferredParents);
 		clone.statedParents = statedParents == null? new ArrayList<>() : new ArrayList<>(statedParents);
 		
-		//If we're keeping IDs, copy any inactivation indicators also.
+		//If we're keeping IDs, copy any inactivation indicators and historical associations also.
 		if (keepIds) {
 			clone.inactivationIndicatorEntries = new ArrayList<>(getInactivationIndicatorEntries());
+			clone.associations = new ArrayList<>(getAssociations());
 		}
 		
 		return clone;

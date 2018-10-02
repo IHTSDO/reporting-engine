@@ -12,7 +12,7 @@ import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.HistoricalAssociationEntry;
+import org.ihtsdo.termserver.scripting.domain.AssociationEntry;
 import org.ihtsdo.termserver.scripting.fixes.SplitRoleGroupsWithRepeatedAttributes;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -315,7 +315,7 @@ public class GnarlyFactorCalculation extends TermServerReport {
 	
 	private Concept getAlternative(Concept c) throws TermServerScriptException {
 		//Work through the active historical associations and find an active alternative
-		List<HistoricalAssociationEntry> assocs = c.getHistorialAssociations(ActiveState.ACTIVE);
+		List<AssociationEntry> assocs = c.getAssociations(ActiveState.ACTIVE);
 		if (assocs.size() > 1 || assocs.size() == 0) {
 			warn ( c + " is inactive with " + assocs.size() + " historical associations.  Cannot determine alternative concept." );
 			return null;

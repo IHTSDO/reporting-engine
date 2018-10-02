@@ -12,7 +12,7 @@ import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.HistoricalAssociationEntry;
+import org.ihtsdo.termserver.scripting.domain.AssociationEntry;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.Task;
@@ -428,7 +428,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 
 	private Concept getAlternative(Task t, Concept c) throws TermServerScriptException {
 		//Work through the active historical associations and find an active alternative
-		List<HistoricalAssociationEntry> assocs = c.getHistorialAssociations(ActiveState.ACTIVE);
+		List<AssociationEntry> assocs = c.getAssociations(ActiveState.ACTIVE);
 		if (assocs.size() > 1 || assocs.size() == 0) {
 			String msg = c + " is inactive with " + assocs.size() + " historical associations.  Cannot determine alternative concept.";
 			report(t, c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, msg);

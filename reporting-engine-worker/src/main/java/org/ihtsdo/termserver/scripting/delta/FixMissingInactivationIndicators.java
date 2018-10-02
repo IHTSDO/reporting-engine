@@ -7,6 +7,7 @@ import java.util.*;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
@@ -17,12 +18,15 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 	
 	This class replaces the "fix" version so that we are sure of having new UUIDs for these new
 	indicators
+	
+	MAINT-489
 */
 public class FixMissingInactivationIndicators extends DeltaGenerator implements RF2Constants{
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
 		FixMissingInactivationIndicators delta = new FixMissingInactivationIndicators();
 		try {
+			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"; //Ad-Hoc Batch Updates
 			delta.newIdsRequired = false; // We'll only be modifying existing descriptions
 			delta.init(args);
 			delta.loadProjectSnapshot(false); //Need all descriptions loaded.

@@ -123,12 +123,12 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 		if (gl.usedAsHistoricalAssociationTarget(c) == null) {
 			return;
 		}
-		for (HistoricalAssociationEntry assoc : gl.usedAsHistoricalAssociationTarget(c)) {
+		for (AssociationEntry assoc : gl.usedAsHistoricalAssociationTarget(c)) {
 			inactivateHistoricalAssociation (task, assoc, reason, replacement);
 		}
 	}
 
-	private void inactivateHistoricalAssociation(Task task, HistoricalAssociationEntry assoc, InactivationIndicator reason, Concept replacement) throws TermServerScriptException {
+	private void inactivateHistoricalAssociation(Task task, AssociationEntry assoc, InactivationIndicator reason, Concept replacement) throws TermServerScriptException {
 		//The source concept can no longer have this historical association, and its
 		//inactivation reason must also change to NonConformance.
 		Concept incomingConcept = loadConcept(assoc.getReferencedComponentId(), task.getBranchPath());

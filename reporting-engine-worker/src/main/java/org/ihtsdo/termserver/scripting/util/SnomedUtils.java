@@ -565,14 +565,15 @@ public class SnomedUtils implements RF2Constants {
 		}
 	}
 	
-	public static HistoricalAssociation translateHistoricalAssociation(String assocSctId) {
+	public static Association translateAssociation(String assocSctId) {
 		switch (assocSctId) {
-			case SCTID_HIST_WAS_A_REFSETID: return HistoricalAssociation.WAS_A;
-			case SCTID_HIST_REPLACED_BY_REFSETID : return HistoricalAssociation.REPLACED_BY;
-			case SCTID_HIST_SAME_AS_REFSETID : return HistoricalAssociation.SAME_AS;
-			case SCTID_HIST_MOVED_TO_REFSETID : return HistoricalAssociation.MOVED_TO;
-			case SCTID_HIST_POSS_EQUIV_REFSETID : return HistoricalAssociation.POSS_EQUIV_TO;
-			case SCTID_HIST_ALTERNATIVE_ASSOC_REFSETID : return HistoricalAssociation.ALTERNATIVE;
+			case SCTID_ASSOC_WAS_A_REFSETID: return Association.WAS_A;
+			case SCTID_ASSOC_REPLACED_BY_REFSETID : return Association.REPLACED_BY;
+			case SCTID_ASSOC_SAME_AS_REFSETID : return Association.SAME_AS;
+			case SCTID_ASSOC_MOVED_TO_REFSETID : return Association.MOVED_TO;
+			case SCTID_ASSOC_POSS_EQUIV_REFSETID : return Association.POSS_EQUIV_TO;
+			case SCTID_ASSOC_ALTERNATIVE_REFSETID : return Association.ALTERNATIVE;
+			case SCTID_ASSOC_ANATOMY_STRUC_ENTIRE_REFSETID : return Association.ANATOMY_STRUC_ENTIRE;
 			default: throw new IllegalArgumentException("Unrecognised historical association indicator value " + assocSctId);
 		}
 	}

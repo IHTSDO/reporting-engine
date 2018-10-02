@@ -1,5 +1,9 @@
 package org.ihtsdo.termserver.scripting.domain;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
+
 public interface RF2Constants {
 	
 	static int NOT_SET = -1;
@@ -157,14 +161,16 @@ public interface RF2Constants {
 	public static final String SCTID_INACT_NON_CONFORMANCE  = "723277005"; // |Nonconformance to editorial policy component (foundation metadata concept)|
 	public static final String SCTID_INACT_NOT_EQUIVALENT  = "723278000";  //|Not semantically equivalent component (foundation metadata concept)|
 	
-	//Historical Associations
-	enum HistoricalAssociation { WAS_A, REPLACED_BY, SAME_AS, POSS_EQUIV_TO, MOVED_TO, ALTERNATIVE }
-	public static final String SCTID_HIST_WAS_A_REFSETID = "900000000000528000"; // |WAS A association reference set (foundation metadata concept)|
-	public static final String SCTID_HIST_REPLACED_BY_REFSETID = "900000000000526001"; // |REPLACED BY association reference set (foundation metadata concept)|
-	public static final String SCTID_HIST_SAME_AS_REFSETID = "900000000000527005"; // |SAME AS association reference set (foundation metadata concept)|"
-	public static final String SCTID_HIST_POSS_EQUIV_REFSETID = "900000000000523009" ;// |POSSIBLY EQUIVALENT TO association reference set (foundation metadata concept)|"
-	public static final String SCTID_HIST_MOVED_TO_REFSETID = "900000000000524003" ;// |MOVED TO association reference set (foundation metadata concept)|"
-	public static final String SCTID_HIST_ALTERNATIVE_ASSOC_REFSETID = "900000000000530003";  //ALTERNATIVE association reference set (foundation metadata concept)
+	// Associations
+	enum Association { WAS_A, REPLACED_BY, SAME_AS, POSS_EQUIV_TO, MOVED_TO, ALTERNATIVE, ANATOMY_STRUC_ENTIRE }
+	public static final String SCTID_ASSOC_WAS_A_REFSETID = "900000000000528000"; // |WAS A association reference set (foundation metadata concept)|
+	public static final String SCTID_ASSOC_REPLACED_BY_REFSETID = "900000000000526001"; // |REPLACED BY association reference set (foundation metadata concept)|
+	public static final String SCTID_ASSOC_SAME_AS_REFSETID = "900000000000527005"; // |SAME AS association reference set (foundation metadata concept)|"
+	public static final String SCTID_ASSOC_POSS_EQUIV_REFSETID = "900000000000523009" ;// |POSSIBLY EQUIVALENT TO association reference set (foundation metadata concept)|"
+	public static final String SCTID_ASSOC_MOVED_TO_REFSETID = "900000000000524003" ;// |MOVED TO association reference set (foundation metadata concept)|"
+	public static final String SCTID_ASSOC_ALTERNATIVE_REFSETID = "900000000000530003";  //ALTERNATIVE association reference set (foundation metadata concept)
+	public static final String SCTID_ASSOC_ANATOMY_STRUC_ENTIRE_REFSETID = "734138000";  //Anatomy structure and entire association reference set (foundation metadata concept)
+	
 	//Inactivation Indicators
 	public static final String SCTID_CON_INACT_IND_REFSET = "900000000000489007";
 	public static final String SCTID_DESC_INACT_IND_REFSET = "900000000000490003";

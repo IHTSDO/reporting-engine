@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 import javax.mail.*;
 import javax.mail.internet.*;
 
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.*;
 import org.ihtsdo.termserver.scripting.client.*;
@@ -915,9 +916,9 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	}
 	
 	protected void checkAndReplaceHistoricalAssociations(Task t, Concept inactivating, Concept replacing, InactivationIndicator inactivationIndicator) throws TermServerScriptException {
-		List<HistoricalAssociationEntry> histAssocs = gl.usedAsHistoricalAssociationTarget(inactivating);
+		List<AssociationEntry> histAssocs = gl.usedAsHistoricalAssociationTarget(inactivating);
 		if (histAssocs != null && histAssocs.size() > 0) {
-			for (HistoricalAssociationEntry histAssoc : histAssocs) {
+			for (AssociationEntry histAssoc : histAssocs) {
 				Concept source = gl.getConcept(histAssoc.getReferencedComponentId());
 				String assocType = gl.getConcept(histAssoc.getRefsetId()).getPreferredSynonym(US_ENG_LANG_REFSET).getTerm().replace("association reference set", "");
 				String thisDetail = "Concept was as used as the " + assocType + "target of a historical association for " + source;
@@ -993,6 +994,11 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			}
 		}
 		return changesMade;
+	}
+	
+	protected List<Component> loadLine(String[] lineItems)
+			throws TermServerScriptException {
+		throw new NotImplementedException("This class self determines concepts to process");
 	}
 
 }

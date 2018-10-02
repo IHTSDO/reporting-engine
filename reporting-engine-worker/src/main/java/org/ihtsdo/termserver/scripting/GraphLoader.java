@@ -20,7 +20,7 @@ import org.ihtsdo.termserver.scripting.domain.AssociationTargets;
 import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
-import org.ihtsdo.termserver.scripting.domain.HistoricalAssociationEntry;
+import org.ihtsdo.termserver.scripting.domain.AssociationEntry;
 import org.ihtsdo.termserver.scripting.domain.InactivationIndicatorEntry;
 import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
@@ -44,7 +44,7 @@ public class GraphLoader implements RF2Constants {
 	private AncestorsCache ancestorsCache = AncestorsCache.getAncestorsCache();
 	
 	//Watch that this map is of the TARGET of the association, ie all concepts used in a historical association
-	private Map<Concept, List<HistoricalAssociationEntry>> historicalAssociations =  new HashMap<Concept, List<HistoricalAssociationEntry>>();
+	private Map<Concept, List<AssociationEntry>> historicalAssociations =  new HashMap<Concept, List<AssociationEntry>>();
 	
 	public StringBuffer log = new StringBuffer();
 	
@@ -418,10 +418,10 @@ public class GraphLoader implements RF2Constants {
 				String referencedComponent = lineItems[INACT_IDX_REFCOMPID];
 				if (isConcept(referencedComponent)) {
 					Concept c = getConcept(referencedComponent);
-					HistoricalAssociationEntry historicalAssociation = loadHistoricalAssociationLine(lineItems);
+					AssociationEntry historicalAssociation = loadHistoricalAssociationLine(lineItems);
 					//Remove first in case we're replacing
-					c.getHistorialAssociations().remove(historicalAssociation);
-					c.getHistorialAssociations().add(historicalAssociation);
+					c.getAssociations().remove(historicalAssociation);
+					c.getAssociations().add(historicalAssociation);
 					if (historicalAssociation.isActive()) {
 						addHistoricalAssociationInTsForm(c, historicalAssociation);
 						recordHistoricalAssociation(historicalAssociation);
@@ -436,7 +436,7 @@ public class GraphLoader implements RF2Constants {
 	/*
 	 * Adds a historical association using the string based map format as per the Terminology Server's API
 	 */
-	private void addHistoricalAssociationInTsForm(Concept c, HistoricalAssociationEntry historicalAssociation) {
+	private void addHistoricalAssociationInTsForm(Concept c, AssociationEntry historicalAssociation) {
 		AssociationTargets targets = c.getAssociationTargets();
 		if (targets == null) {
 			targets = new AssociationTargets();
@@ -444,39 +444,39 @@ public class GraphLoader implements RF2Constants {
 		}
 		String target = historicalAssociation.getTargetComponentId();
 		switch (historicalAssociation.getRefsetId()) {
-			case (SCTID_HIST_REPLACED_BY_REFSETID) : targets.getReplacedBy().add(target);
+			case (SCTID_ASSOC_REPLACED_BY_REFSETID) : targets.getReplacedBy().add(target);
 													break;
-			case (SCTID_HIST_SAME_AS_REFSETID) : targets.getSameAs().add(target);
+			case (SCTID_ASSOC_SAME_AS_REFSETID) : targets.getSameAs().add(target);
 													break;	
-			case (SCTID_HIST_POSS_EQUIV_REFSETID) : targets.getPossEquivTo().add(target);
+			case (SCTID_ASSOC_POSS_EQUIV_REFSETID) : targets.getPossEquivTo().add(target);
 													break;	
 		}
 		
 	}
 
-	private void recordHistoricalAssociation(HistoricalAssociationEntry h) throws TermServerScriptException {
+	private void recordHistoricalAssociation(AssociationEntry h) throws TermServerScriptException {
 		//Remember we're using the target of the association as the map key here
 		Concept target = getConcept(h.getTargetComponentId());
 		//Have we seen this concept before?
-		List<HistoricalAssociationEntry> associations;
+		List<AssociationEntry> associations;
 		if (historicalAssociations.containsKey(target)) {
 			associations = historicalAssociations.get(target);
 		} else {
-			associations = new ArrayList<HistoricalAssociationEntry>();
+			associations = new ArrayList<AssociationEntry>();
 			historicalAssociations.put(target, associations);
 		}
 		associations.add(h);
 	}
 	
-	public List<HistoricalAssociationEntry> usedAsHistoricalAssociationTarget (Concept c) {
+	public List<AssociationEntry> usedAsHistoricalAssociationTarget (Concept c) {
 		if (historicalAssociations.containsKey(c)) {
 			return historicalAssociations.get(c);
 		}
-		return new ArrayList<HistoricalAssociationEntry>();
+		return new ArrayList<AssociationEntry>();
 	}
 
-	private HistoricalAssociationEntry loadHistoricalAssociationLine(String[] lineItems) {
-		HistoricalAssociationEntry h = new HistoricalAssociationEntry();
+	private AssociationEntry loadHistoricalAssociationLine(String[] lineItems) {
+		AssociationEntry h = new AssociationEntry();
 		h.setId(lineItems[ASSOC_IDX_ID]);
 		h.setEffectiveTime(lineItems[ASSOC_IDX_EFFECTIVETIME]);
 		h.setActive(lineItems[ASSOC_IDX_ACTIVE].equals("1"));
@@ -523,7 +523,7 @@ public class GraphLoader implements RF2Constants {
 				componentOwnerMap.put(i,  c);
 			}
 			
-			for (HistoricalAssociationEntry h : c.getHistorialAssociations()) {
+			for (AssociationEntry h : c.getAssociations()) {
 				allComponents.put(h.getId(), h);
 				componentOwnerMap.put(h,  c);
 			}

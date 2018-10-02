@@ -51,9 +51,8 @@ public class ReportManager implements RF2Constants {
 	}
 
 	public void flushFiles(boolean andClose) throws TermServerScriptException {
-		if (writeToFile) {
-			reportFileManager.flushFiles(andClose);
-		}
+		//Watch that we might have written to RF2 files, even if writeToFile is set to false
+		reportFileManager.flushFiles(andClose);
 		
 		if (writeToSheet) {
 			reportSheetManager.flush();
