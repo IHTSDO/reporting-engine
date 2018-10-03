@@ -170,6 +170,10 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		//Second pass to see if we have any of these remaining once
 		//the real semantic tag (last set of brackets) has been removed
 		for (Concept c : gl.getAllConcepts()) {
+			if (c.getFSNDescription() == null) {
+				warn("No FSN Description found (2nd pass) for concept " + c.getConceptId());
+				continue;
+			}
 			String legacy = isLegacy(c.getFSNDescription());
 			String termWithoutTag = SnomedUtils.deconstructFSN(c.getFsn())[0];
 			for (Map.Entry<String, Concept> entry : knownSemanticTags.entrySet()) {
