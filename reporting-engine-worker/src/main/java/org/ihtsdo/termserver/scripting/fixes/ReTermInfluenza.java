@@ -25,6 +25,7 @@ public class ReTermInfluenza extends BatchFix implements RF2Constants{
 	Map<String, String> greekMap = new HashMap<>();
 	String[] influenzas = new String[] {"A", "B", "C", "D" };
 	String[] immunoglobulinClasses = new String[] {"A", "D", "E", "G", "M" };
+	Set<String> exceptions;
 	
 	protected ReTermInfluenza(BatchFix clone) {
 		super(clone);
@@ -51,6 +52,10 @@ public class ReTermInfluenza extends BatchFix implements RF2Constants{
 		greekMap.put("B", "Beta");
 		greekMap.put("C", "Gamma");
 		greekMap.put("D", "Delta");
+		
+		exceptions = new HashSet<>();
+		exceptions.add("312869001");
+		exceptions.add("312870000");
 	}
 
 	@Override
@@ -146,11 +151,13 @@ public class ReTermInfluenza extends BatchFix implements RF2Constants{
 		keepAll.add(keepMe);
 		//Now for the two synonyms
 		Description syn1 = Description.withDefaults(newFSNPart, DescriptionType.SYNONYM, Acceptability.ACCEPTABLE);
+		syn1.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
 		addDescription(t, c, syn1);
 		keepAll.add(syn1);
 		
 		String syn2Str = "Anti-" + INFLUENZA + " " + fluLetter + " " + VIRUS + " Ig" + immunoLetter;
 		Description syn2 = Description.withDefaults(syn2Str, DescriptionType.SYNONYM, Acceptability.ACCEPTABLE);
+		syn2.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
 		addDescription(t, c, syn2);
 		keepAll.add(syn2);
 		
@@ -164,6 +171,7 @@ public class ReTermInfluenza extends BatchFix implements RF2Constants{
 				changesMade++;
 			}
 		}
+		
 		return changesMade;
 	}
 
@@ -172,9 +180,11 @@ public class ReTermInfluenza extends BatchFix implements RF2Constants{
 		Set<Concept> organisms = gl.getDescendantsCache().getDescendents(ORGANISM);
 		setQuiet(true);
 		for (Concept c : gl.getAllConcepts()) {
-			if (!organisms.contains(c) && containsTerm(c, INFLUENZA) && !containsTerm(c, PARAINFLUENZA) && !c.getFsn().contains(INFLUENZAE)) {
-				if (reterm(null, c.cloneWithIds()) > 0) {
-					allAffected.add(c);
+			if (c.isActive() && !exceptions.contains(c.getConceptId())) {
+				if (!organisms.contains(c) && containsTerm(c, INFLUENZA) && !containsTerm(c, PARAINFLUENZA) && !c.getFsn().contains(INFLUENZAE)) {
+					if (reterm(null, c.cloneWithIds()) > 0) {
+						allAffected.add(c);
+					}
 				}
 			}
 		}
