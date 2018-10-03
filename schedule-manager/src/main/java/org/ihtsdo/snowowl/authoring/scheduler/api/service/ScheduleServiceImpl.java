@@ -4,6 +4,7 @@ import java.util.*;
 
 import javax.annotation.PostConstruct;
 
+import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.authoring.scheduler.api.AuthenticationService;
 import org.ihtsdo.snowowl.authoring.scheduler.api.mq.Transmitter;
@@ -87,7 +88,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 		if (user != null && !user.isEmpty()) {
 			return jobRunRepository.findByJobNameAndUser(jobName, user);
 		} else {
-			return jobRunRepository.findByJobName(jobName);
+			return jobRunRepository.findByJobNameOrderByRequestTimeDesc(jobName);
 		}
 	}
 
@@ -111,7 +112,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 		jobRun.setRequestTime(new Date());
 		jobRun.setStatus(JobStatus.Scheduled);
 		jobRun.setTerminologyServerUrl(terminologyServerUrl);
-		populateAuthenticationToken(jobRun);
+		populateAuthenticationDetails(jobRun);
 		
 		jobRun = jobRunRepository.save(jobRun);
 		logger.info("Running job {}", jobRun);
@@ -119,13 +120,19 @@ public class ScheduleServiceImpl implements ScheduleService {
 		return jobRun;
 	}
 
-	private void populateAuthenticationToken(JobRun jobRun) {
+	private void populateAuthenticationDetails(JobRun jobRun) {
 		//Can we get a token from our security context?
 		String token = SecurityUtil.getAuthenticationToken();
 		if (token == null) {
 			token = authenticationService.getSystemAuthorisation();
 		}
 		jobRun.setAuthToken(token);
+		
+		String user = SecurityUtil.getUsername();
+		if (StringUtils.isEmpty(user)) {
+			user = "System";
+		}
+		jobRun.setUser(user);
 	}
 
 	@Override

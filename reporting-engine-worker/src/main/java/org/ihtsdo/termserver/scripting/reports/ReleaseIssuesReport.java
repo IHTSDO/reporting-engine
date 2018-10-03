@@ -152,6 +152,10 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		
 		//First pass through all concepts to find semantic tags
 		for (Concept c : gl.getAllConcepts()) {
+			if (c.getFSNDescription() == null) {
+				warn("No FSN Description found for concept " + c.getConceptId());
+				continue;
+			}
 			if (c.isActive()) {
 				String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
 				if (StringUtils.isEmpty(semTag)) {

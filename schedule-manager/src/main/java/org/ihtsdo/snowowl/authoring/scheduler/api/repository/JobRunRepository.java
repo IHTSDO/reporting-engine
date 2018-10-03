@@ -11,7 +11,7 @@ public interface JobRunRepository extends CrudRepository<JobRun, UUID> {
 
 	Optional<JobRun> findById(UUID id);
 	
-	List<JobRun> findByJobName(String jobName);
+	List<JobRun> findByJobNameOrderByRequestTimeDesc(String jobName);
 	
 	List<JobRun> findByJobNameAndUser(String jobName, String user);
 
