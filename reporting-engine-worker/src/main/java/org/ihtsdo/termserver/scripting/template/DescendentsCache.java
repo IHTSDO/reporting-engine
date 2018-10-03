@@ -24,6 +24,10 @@ public class DescendentsCache implements RF2Constants {
 		//Force use of singleton;
 	}
 	
+	public void reset() {
+		descendentOrSelfCache = new HashMap<>();
+	}
+	
 	public Set<Concept> getDescendentsOrSelf(Concept c) throws TermServerScriptException {
 		return getDescendentsOrSelf(c, false);  //Default implementation is immutable
 	}

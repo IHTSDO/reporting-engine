@@ -652,6 +652,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			//And copy the acceptability from the one we're replacing
 			reuseMe.setAcceptabilityMap(SnomedUtils.mergeAcceptabilityMap(d, reuseMe));
 		} else {
+			report(t, c, Severity.LOW, ReportActionType.DESCRIPTION_ADDED, d);
 			c.addDescription(d);
 		}
 		return reuseMe == null ? d : reuseMe;

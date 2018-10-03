@@ -25,12 +25,20 @@ public class Transmitter {
 	String metadataQueueName;
 	
 	public void send (JobRun jobRun) {
-		logger.info("Transmitting response:" + jobRun);
-		//We'll take out the authentication since it's not required by the client
-		//Modify a clone as the original is still needed elsewhere!
-		JobRun clone = jobRun.clone();
-		clone.setAuthToken(null);
-		jmsTemplate.convertAndSend(responseQueueName, clone);
+		//Transmit in a new thread so that we receive a separate transaction.   Otherwise the 'running' status
+		//won't be sent until the job is complete
+		Thread thread = new Thread(new Runnable() {
+			@Override
+			public void run(){
+				logger.info("Transmitting response:" + jobRun);
+				//We'll take out the authentication since it's not required by the client
+				//Modify a clone as the original is still needed elsewhere!
+				JobRun clone = jobRun.clone();
+				clone.setAuthToken(null);
+				jmsTemplate.convertAndSend(responseQueueName, clone);
+			}
+		});
+		thread.start();
 	}
 	
 	public void send (JobMetadata metadata) {

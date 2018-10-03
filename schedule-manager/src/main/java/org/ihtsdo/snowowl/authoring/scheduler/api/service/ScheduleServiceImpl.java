@@ -113,8 +113,8 @@ public class ScheduleServiceImpl implements ScheduleService {
 		jobRun.setTerminologyServerUrl(terminologyServerUrl);
 		populateAuthenticationToken(jobRun);
 		
-		jobRunRepository.save(jobRun);
-		logger.info("Running {} for {} - {} ", jobRun.getJobName(), jobRun.getUser(), jobRun.getId());
+		jobRun = jobRunRepository.save(jobRun);
+		logger.info("Running job {}", jobRun);
 		transmitter.send(jobRun);
 		return jobRun;
 	}

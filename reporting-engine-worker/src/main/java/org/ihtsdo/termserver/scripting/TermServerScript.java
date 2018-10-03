@@ -355,6 +355,9 @@ public abstract class TermServerScript implements RF2Constants {
 			jobRun.setDebugInfo(msg);
 			error(msg, e);
 		} finally {
+			//TODO Remove this, make ArchiveManager a singleton and let it 
+			//keep data in memory until it knows what the next job requires.
+			gl.reset();  //Free up memory
 			finish();
 		}
 	}

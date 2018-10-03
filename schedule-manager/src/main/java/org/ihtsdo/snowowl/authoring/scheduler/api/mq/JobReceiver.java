@@ -18,7 +18,6 @@ public class JobReceiver {
 
 	@JmsListener(destination = "${schedule.manager.queue.response}")
 	public void receiveMessage(JobRun jobRun) {
-		logger.info("Received job: {}", jobRun);
 		service.processResponse(jobRun);
 	}
 

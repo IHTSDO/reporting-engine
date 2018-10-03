@@ -3,8 +3,7 @@ package org.ihtsdo.termserver.scripting;
 import java.io.*;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.*;
@@ -16,9 +15,6 @@ import org.ihtsdo.termserver.scripting.dao.ReportManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.snapshot.SnapshotGenerator;
 
-import com.google.gson.Gson;
-
-import us.monoid.web.JSONResource;
 
 public class ArchiveManager implements RF2Constants {
 	
@@ -27,7 +23,6 @@ public class ArchiveManager implements RF2Constants {
 	private String env;
 	protected GraphLoader gl;
 	private SnowOwlClient tsClient;
-	private Gson gson;
 	public boolean allowStaleData = false;
 	public boolean populateHierarchyDepth = false;
 	
@@ -37,7 +32,6 @@ public class ArchiveManager implements RF2Constants {
 		this.env = ts.getEnv();
 		this.gl = ts.getGraphLoader();
 		this.tsClient = ts.getTSClient();
-		this.gson = TermServerScript.gson;
 	}
 	
 	protected void info(String msg) {

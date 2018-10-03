@@ -69,6 +69,16 @@ public class GraphLoader implements RF2Constants {
 		return concepts.values();
 	}
 	
+	public void reset() {
+		concepts = new HashMap<String, Concept>();
+		descriptions = new HashMap<String, Description>();
+		allComponents = null;
+		componentOwnerMap = null;
+		fsnMap = null;
+		descendantsCache.reset();
+		ancestorsCache.reset();
+	}
+	
 	public Set<Concept> loadRelationships(CharacteristicType characteristicType, InputStream relStream, boolean addRelationshipsToConcepts, boolean isDelta) 
 			throws IOException, TermServerScriptException, SnowOwlClientException {
 		Set<Concept> concepts = new HashSet<Concept>();

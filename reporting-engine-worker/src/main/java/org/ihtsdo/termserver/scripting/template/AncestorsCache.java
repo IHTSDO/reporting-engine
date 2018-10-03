@@ -64,4 +64,8 @@ public class AncestorsCache implements RF2Constants {
 			throw new IllegalArgumentException("Failed to calculate ancestors of " + c, e);
 		}
 	}
+
+	public void reset() {
+		ancestorsCache = new HashMap<>();
+	}
 }

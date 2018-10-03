@@ -7,6 +7,8 @@ import java.text.SimpleDateFormat;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.commons.lang.StringUtils;
+import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,8 +97,20 @@ public class SnowOwlClient {
 			logger.debug("Recovering branch information from " + url);
 			return restTemplate.getForObject(url, Branch.class);
 		} catch (RestClientException e) {
-			throw new SnowOwlClientException(e);
+			
+			throw new SnowOwlClientException(translateRestClientException(e));
 		}
+	}
+
+	private Throwable translateRestClientException(RestClientException e) {
+		//Can we find some known error in the text returned so that we don't have
+		//to return the whole thing?
+		String message = e.getMessage();
+		String mainContent = StringUtils.substringBetween(message, "<section class=\"mainContent contain\">", "</section>");
+		if (mainContent != null) {
+			return new TermServerScriptException("Returned from TS: " + mainContent);
+		}
+		return e;
 	}
 
 	public JSONResource createConcept(JSONObject json, String branchPath) throws SnowOwlClientException {
