@@ -358,6 +358,7 @@ public abstract class TermServerScript implements RF2Constants {
 			//TODO Remove this, make ArchiveManager a singleton and let it 
 			//keep data in memory until it knows what the next job requires.
 			gl.reset();  //Free up memory
+			System.gc();
 			finish();
 		}
 	}
@@ -882,6 +883,8 @@ public abstract class TermServerScript implements RF2Constants {
 		.append(c==null?"":c.getConceptId())
 		.append(QUOTE_COMMA_QUOTE)
 		.append(c.getFsn())
+		.append(QUOTE_COMMA_QUOTE)
+		.append(SnomedUtils.deconstructFSN(c.getFsn())[1])
 		.append(QUOTE);
 		
 		for (Object detail : details) {

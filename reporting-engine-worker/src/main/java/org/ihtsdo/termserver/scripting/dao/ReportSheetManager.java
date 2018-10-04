@@ -227,7 +227,7 @@ public class ReportSheetManager implements RF2Constants {
 	}
 
 	public String getUrl() {
-		return sheet.getSpreadsheetUrl();
+		return sheet == null ? null : sheet.getSpreadsheetUrl();
 	}
 
 }

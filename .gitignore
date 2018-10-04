@@ -1,6 +1,7 @@
 temp/
 output/
 releases/
+resources/
 snapshots/
 secure/*.*
 target
