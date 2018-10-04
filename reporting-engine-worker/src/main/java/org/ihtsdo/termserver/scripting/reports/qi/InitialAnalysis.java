@@ -40,7 +40,7 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		InitialAnalysis report = new InitialAnalysis(null);
 		try {
-			ReportSheetManager.targetFolderId = "1m7MVhMePldYrNjOvsE_WTAYcowZ4ps50";
+			ReportSheetManager.targetFolderId = "1m7MVhMePldYrNjOvsE_WTAYcowZ4ps50";  //
 			report.init(args, true); //delay report initialisation
 			report.getReportManager().setNumberOfDistinctReports(3);
 			report.loadProjectSnapshot(true);  //just FSNs
@@ -68,7 +68,7 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 	}
 	
 	public void postInit(JobRun run) throws TermServerScriptException {
-		subHierarchyStr = run.getParameter(SUB_HIERARCHY);
+		subHierarchyStr = run == null ? null : run.getParameter(SUB_HIERARCHY);
 		try {
 			if (subHierarchyStr == null) {
 				//setSubHierarchy("46866001");	//       |Fracture of lower limb (disorder)|
@@ -78,10 +78,10 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 				//setSubHierarchy("34014006");	// QI-12 |Viral disease
 				//setSubHierarchy("87628006");	// QI-13 |Bacterial infectious disease (disorder)|
 				//setSubHierarchy("95896000");	// QI-18 |Protozoan infection (disorder)|
-				//setSubHierarchy("52515009");	// QI-22 |Hernia of abdominal cavity|
+				setSubHierarchy("52515009");	// QI-22 |Hernia of abdominal cavity|
 				//setSubHierarchy("125666000");	// QI-22 |Burn (disorder)|
 				//setSubHierarchy("74627003");	// QI-38 |Diabetic complication (disorder)|
-				setSubHierarchy("283682007");	// QI-35 |Bite - wound (disorder)|
+				//setSubHierarchy("283682007");	// QI-35 |Bite - wound (disorder)|
 				//setSubHierarchy("8098009");	// QI-40 |Sexually transmitted infectious disease (disorder)|
 				//setSubHierarchy("3723001");	// QI-42 |Arthritis|
 				//setSubHierarchy("276654001");	// QI-43 |Congenital malformation (disorder)| );
@@ -94,7 +94,7 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 				setSubHierarchy(subHierarchyStr);
 			}
 			getReportManager().setReportName(getReportName());
-			additionalReportColumns = "FSN, Proximal Primitive Parent, is Intermediate, Defn Status, Stated Attributes, Stated Role Groups, Inferred Role Groups, Stated Parents";
+			additionalReportColumns = "FSN, SemTag, Proximal Primitive Parent, is Intermediate, Defn Status, Stated Attributes, Stated Role Groups, Inferred Role Groups, Stated Parents";
 			secondaryReportColumns = "FSN, Can Be Sufficiently Defined (1=yes 0=no), JIRA, Comments, Authoring Task, In Subhierarchy,Prim Above Here (NOS),Descendants,Total SDs affected, SD Concepts in subhierarchy, Total Primitive Concepts affected, Primitive Concepts in SubHierarchy";
 			tertiaryReportColumns = "FSN, Concepts Using Type, Example";
 			getReportManager().setTabNames(new String[] {	"Concepts in Subhierarchy with PPPs",
@@ -240,6 +240,11 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 		int totalPrimitiveConceptsUnderIP = 0;
 		int totalPrimitiveConceptsUnderIPInSubHierarchy = 0;
 		int IPinSubHierarchy = gl.getDescendantsCache().getDescendentsOrSelf(this.subHierarchyStart).contains(intermediatePrimitive) ? 1 : 0;
+		if (IPinSubHierarchy == 0) {
+			//It was decided to only look at IPs within our current subhierarchy
+			return;
+		}
+		
 		for (Concept c : gl.getDescendantsCache().getDescendentsOrSelf(intermediatePrimitive)) {
 			if (c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
 				totalFDsUnderIP++;
