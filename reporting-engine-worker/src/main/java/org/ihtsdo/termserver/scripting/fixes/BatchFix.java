@@ -25,6 +25,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	protected int taskSize = 10;
 	protected int wiggleRoom = 5;
 	protected int failureCount = 0;
+	protected int validationCount = 0;
 	protected int taskThrottle = 30;
 	protected int restartFromTask = NOT_SET;
 	protected int conceptThrottle = 5;
@@ -43,6 +44,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	protected boolean groupByIssue = false;
 	protected List<Component> allComponentsToProcess = new ArrayList<>();
 	protected List<Component> priorityComponents = new ArrayList<>();
+	protected int priorityBatchSize = 10;
 	private boolean firstTaskCreated = false;
 	
 	protected BatchFix (BatchFix clone) {
@@ -92,7 +94,9 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		if (allComponents.size() > 0) {
 			String lastIssue = allComponents.get(0).getIssues();
 			for (Component thisComponent : allComponents) {
-				if (task.size() >= taskSize ||
+				//DRUGS-522 Priority concepts might need a smaller batch size
+				int thisTaskSize = priorityComponents.contains(thisComponent) ? priorityBatchSize : taskSize;
+				if (task.size() >= thisTaskSize ||
 						(groupByIssue && !lastIssue.equals(thisComponent.getIssues()))) {
 					task = batch.addNewTask(author_reviewer);
 				}
@@ -260,6 +264,9 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			}
 			incrementSummaryInformation("Total changes made", changesMade);
 		} catch (ValidationFailure f) {
+			if (++validationCount > maxFailures) { 
+				warn ("Validation failrues now " + validationCount);
+			}
 			report (f);
 		} catch (InterruptedException | TermServerScriptException e) {
 			report(task, component, Severity.CRITICAL, ReportActionType.API_ERROR, getMessage(e));
@@ -516,6 +523,34 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 				concept.addRelationship(statedClone);
 				String msg = "Restated inferred relationship: " + replacement;
 				report(task, concept, Severity.MEDIUM, ReportActionType.RELATIONSHIP_ADDED, msg);
+				changesMade++;
+			}
+		}
+		return changesMade;
+	}
+	
+	protected int replaceParents(Task t, Concept c, Set<Concept> newParents) throws TermServerScriptException {
+		int changesMade = 0;
+		Set<Relationship> newParentRels = newParents.stream()
+				.map(p -> new Relationship (c, IS_A, p, UNGROUPED))
+				.collect(Collectors.toSet());
+		
+		Set<Relationship> currentParentRels = c.getParents(CharacteristicType.STATED_RELATIONSHIP).stream()
+				.map(p -> new Relationship (c, IS_A, p, UNGROUPED))
+				.collect(Collectors.toSet());
+		
+		for (Relationship currentParentRel : currentParentRels) {
+			//Is this a relationship we want to keep?
+			if (!newParentRels.contains(currentParentRel)) {
+				removeRelationship(t, c, currentParentRel);
+				changesMade++;
+			}
+		}
+		
+		for (Relationship newParentRel : newParentRels) {
+			//Is this a relationship we already have?
+			if (!currentParentRels.contains(newParentRel)) {
+				addRelationship(t, c, newParentRel);
 				changesMade++;
 			}
 		}
@@ -916,18 +951,65 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		updateConcept(t, original, "");
 	}
 	
-	protected void checkAndReplaceHistoricalAssociations(Task t, Concept inactivating, Concept replacing, InactivationIndicator inactivationIndicator) throws TermServerScriptException {
-		List<AssociationEntry> histAssocs = gl.usedAsHistoricalAssociationTarget(inactivating);
+	protected void checkAndReplaceHistoricalAssociations(Task t, Concept inactivateMe, Concept replacing, InactivationIndicator inactivationIndicator) throws TermServerScriptException {
+		List<AssociationEntry> histAssocs = gl.usedAsHistoricalAssociationTarget(inactivateMe);
 		if (histAssocs != null && histAssocs.size() > 0) {
 			for (AssociationEntry histAssoc : histAssocs) {
 				Concept source = gl.getConcept(histAssoc.getReferencedComponentId());
 				String assocType = gl.getConcept(histAssoc.getRefsetId()).getPreferredSynonym(US_ENG_LANG_REFSET).getTerm().replace("association reference set", "");
 				String thisDetail = "Concept was as used as the " + assocType + "target of a historical association for " + source;
 				thisDetail += " (since " + (histAssoc.getEffectiveTime().isEmpty()?" prospective release":histAssoc.getEffectiveTime()) + ")";
-				report (t, inactivating, Severity.HIGH, ReportActionType.INFO, thisDetail);
-				replaceHistoricalAssociation(t, source, inactivating, replacing, inactivationIndicator);
+				if (replacing == null) {
+					//In this case we must load the source of this incoming assertion, remove this concept as a target and 
+					//if there are no associations left, set the inactivation reason to NCEP
+					unpickHistoricalAssociation(t, source, inactivateMe);
+				} else {
+					report (t, inactivateMe, Severity.HIGH, ReportActionType.INFO, thisDetail);
+					replaceHistoricalAssociation(t, source, inactivateMe, replacing, inactivationIndicator);
+				}
 			}
 		}
+	}
+
+	private void unpickHistoricalAssociation(Task t, Concept sourceCached, Concept target) throws TermServerScriptException {
+		Concept source = gl.getConcept(sourceCached.getConceptId());
+		AssociationTargets targets = source.getAssociationTargets();
+		int removedCount = targets.remove(target.getConceptId());
+		if (removedCount != 1) {
+			throw new TermServerScriptException("Unexpectedly removed " + removedCount + " associations from " + source + " when looking for " + target);
+		}
+		if (targets.size() == 0 && !source.getInactivationIndicator().equals(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY)) {
+			source.setInactivationIndicator(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
+			report (t, source, Severity.HIGH, ReportActionType.ASSOCIATION_REMOVED, "All outgoing associations removed and inactivation indicator switched to NCEP.");
+		} else {
+			report (t, source, Severity.HIGH, ReportActionType.ASSOCIATION_REMOVED, "No longer associated with " + target, "Remaining : " + targets.toString());
+		}
+		updateConcept(t, source, null);
+		t.addBefore(sourceCached, target);
+	}
+
+	protected int inactivateConcept(Task t, Concept c, Concept replacement, InactivationIndicator i) throws TermServerScriptException {
+		//Check if the concept we're about to inactivate is used as the target of a historical association
+		//and rewire that to point to our new clone
+		checkAndReplaceHistoricalAssociations(t, c, replacement, i);
+		
+		c.setActive(false);
+		c.setInactivationIndicator(i);
+		if (replacement != null) {
+			c.setAssociationTargets(AssociationTargets.possEquivTo(replacement));
+		}
+		//Inactivated concepts must necessarily be primitive
+		c.setDefinitionStatus(DefinitionStatus.PRIMITIVE);
+		
+		//Need to also remove any unpublished relationships
+		List<Relationship> allRelationships = new ArrayList<>(c.getRelationships());
+		for (Relationship r : allRelationships) {
+			if (r.isActive() && (r.getEffectiveTime() == null || r.getEffectiveTime().isEmpty())) {
+				c.removeRelationship(r);
+			}
+		}
+		report (t, c, Severity.LOW, ReportActionType.CONCEPT_INACTIVATED);
+		return CHANGE_MADE;
 	}
 
 	protected void replaceHistoricalAssociation(Task t, Concept concept, Concept current, Concept replacement, InactivationIndicator inactivationIndicator) throws TermServerScriptException {

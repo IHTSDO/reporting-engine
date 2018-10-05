@@ -5,6 +5,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import org.ihtsdo.termserver.scripting.TermServerScriptException;
+
 import com.google.gson.annotations.Expose;
 
 public class Task {
@@ -101,9 +103,21 @@ public class Task {
 		this.components.add(component);
 	}
 	
-	public void addAfter(Component component, Component after) {
+	public void addAfter(Component c, Component after) throws TermServerScriptException {
 		int insertPoint = this.components.indexOf(after) + 1;
-		this.components.add(insertPoint, component);
+		if (insertPoint == -1) {
+			throw new TermServerScriptException("Unable to insert " + c + " after " + after + " as it's not currently known in the task");
+		}
+		this.components.add(insertPoint, c);
+	}
+	
+	public void addBefore(Concept c, Concept before) throws TermServerScriptException {
+		boolean foo = true;
+		int insertPoint = this.components.indexOf((Component)before);
+		if (insertPoint == -1) {
+			throw new TermServerScriptException("Unable to insert " + c + " before " + before + " as it's not currently known in the task");
+		}
+		this.components.add(insertPoint, c);
 	}
 	
 	public int size() {

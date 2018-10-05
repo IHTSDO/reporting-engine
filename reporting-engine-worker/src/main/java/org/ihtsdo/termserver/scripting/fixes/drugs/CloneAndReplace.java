@@ -1,25 +1,12 @@
 package org.ihtsdo.termserver.scripting.fixes.drugs;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
-import org.ihtsdo.termserver.scripting.domain.AssociationTargets;
-import org.ihtsdo.termserver.scripting.domain.Component;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Description;
-import org.ihtsdo.termserver.scripting.domain.AssociationEntry;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants;
-import org.ihtsdo.termserver.scripting.domain.Relationship;
-import org.ihtsdo.termserver.scripting.domain.Task;
+import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
@@ -147,29 +134,11 @@ public class CloneAndReplace extends BatchFix implements RF2Constants{
 		clone = createConcept(task, clone, " cloned from " + loadedConcept);
 		report (task, loadedConcept, Severity.LOW, ReportActionType.CONCEPT_ADDED, clone.toString());
 		
-		//Check if the concept we're about to inactivate is used as the target of a historical association
-		//and rewire that to point to our new clone
-		checkAndReplaceHistoricalAssociations(task, loadedConcept, clone, inactivationReasons.get(loadedConcept));
-		
 		//If the save of the clone didn't throw an exception, we can inactivate the original
-		inactivateConcept(loadedConcept, clone);
+		inactivateConcept(task, loadedConcept, clone, inactivationReasons.get(loadedConcept));
 		report (task, loadedConcept, Severity.LOW, ReportActionType.CONCEPT_INACTIVATED, "");
 		
-		return 1;
-	}
-
-	private void inactivateConcept(Concept original, Concept clone) {
-		original.setActive(false);
-		original.setInactivationIndicator(inactivationReasons.get(original));
-		original.setAssociationTargets(AssociationTargets.possEquivTo(clone));
-		
-		//Need to also remove any unpublished relationships
-		List<Relationship> allRelationships = new ArrayList<>(original.getRelationships());
-		for (Relationship r : allRelationships) {
-			if (r.isActive() && (r.getEffectiveTime() == null || r.getEffectiveTime().isEmpty())) {
-				original.removeRelationship(r);
-			}
-		}
+		return CHANGE_MADE;
 	}
 
 	/*

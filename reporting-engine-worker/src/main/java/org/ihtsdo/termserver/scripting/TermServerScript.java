@@ -95,7 +95,7 @@ public abstract class TermServerScript implements RF2Constants {
 									RELATIONSHIP_GROUP_ADDED,
 									NO_CHANGE, VALIDATION_ERROR, VALIDATION_CHECK, SKIPPING,
 									REFSET_MEMBER_REMOVED, UNKNOWN, RELATIONSHIP_REACTIVATED, ASSOCIATION_ADDED,
-									INACT_IND_ADDED, INACT_IND_MODIFIED};
+									INACT_IND_ADDED, INACT_IND_MODIFIED, ASSOCIATION_REMOVED};
 									
 	public enum Severity { NONE, LOW, MEDIUM, HIGH, CRITICAL }; 
 
@@ -432,6 +432,8 @@ public abstract class TermServerScript implements RF2Constants {
 			//The loaded concept has some idea of the preferred term.  We'll have that now
 			concept.setPreferredSynonym(loadedConcept.getPreferredSynonym());
 		}
+		//In any event, copy any issues over from the cached concept to the loaded one
+		loadedConcept.setIssue(concept.getIssues());
 		return loadedConcept;
 	}
 	
@@ -460,7 +462,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected Concept updateConcept(Task t, Concept c, String info) throws TermServerScriptException {
 		try {
 			String conceptSerialised = gson.toJson(c);
-			debug ((dryRun ?"Dry run updating ":"Updating ") + "state of " + c + info);
+			debug ((dryRun ?"Dry run updating ":"Updating ") + "state of " + c + (info == null?"":info));
 			if (!dryRun) {
 				JSONResource response = tsClient.updateConcept(new JSONObject(conceptSerialised), t.getBranchPath());
 				String json = response.toObject().toString();

@@ -37,5 +37,11 @@ public abstract class Component {
 		issues = issue;
 	}
 
-	
+	@Override
+	public boolean equals(Object other) {
+		if (other instanceof Component) {
+			return this.getId().equals(((Component)other).getId());
+		}
+		return false;
+	}
 }
