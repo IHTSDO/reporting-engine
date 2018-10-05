@@ -89,11 +89,14 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		
 		subHierarchyStr = "95896000";  //QI-19  |Protozoan infection (disorder)|
 		templateNames = new String[] {"templates/Infection caused by Protozoa with optional bodysite.json"};
-		*/
+		
 		subHierarchyStr = "416886008"; //QI-129 |Closed wound| 
 		templateNames = new String[] {	"templates/wound/wound of bodysite.json",
 										"templates/wound/closed wound of bodysite.json"};
-				
+		*/
+		subHierarchyStr = "8098009";	// QI-130 |Sexually transmitted infectious disease (disorder)| 
+		templateNames = new String[] {	"templates/Sexually transmitted Infection with optional bodysite.json"};
+		
 		super.init(args);
 	}
 

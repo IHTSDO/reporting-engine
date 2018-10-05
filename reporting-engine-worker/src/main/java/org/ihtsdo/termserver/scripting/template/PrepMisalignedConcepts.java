@@ -125,7 +125,6 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		exclusionWords.add("gangrene");
 		exclusionWords.add("obstruction");
 		
-		
 		super.init(args);
 	}
 	

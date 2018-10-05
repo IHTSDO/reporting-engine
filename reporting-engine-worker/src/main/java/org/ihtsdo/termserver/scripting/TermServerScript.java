@@ -840,7 +840,9 @@ public abstract class TermServerScript implements RF2Constants {
 							value += detail;
 						else {
 							firstDetail = false;
-							value += ", " + detail;
+							if (detail != null && !detail.toString().isEmpty()) {
+								value += ", " + detail;
+							}
 						}
 					}
 				}

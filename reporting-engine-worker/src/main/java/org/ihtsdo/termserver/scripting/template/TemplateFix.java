@@ -124,7 +124,7 @@ abstract public class TemplateFix extends BatchFix {
 		//We could ignore on the basis of a word, or SCTID
 		String fsn = " " + c.getFsn().toLowerCase();
 		for (String word : exclusionWords) {
-			word = " " + word + " ";
+			//word = " " + word + " ";
 			if (fsn.contains(word)) {
 				debug (c + "ignored due to fsn containing:" + word);
 				incrementSummaryInformation("Concepts excluded due to lexical match");

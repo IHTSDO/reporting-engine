@@ -16,7 +16,6 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.authoringtemplate.domain.logical.*;
 
 /**
- * QI-21 (Bacterial), QI-23 (Viral), QI-30 (Bone), QI-116 (Parasite)
  * Where a concept has limited modeling, pull the most specific attributes available 
  * into group 1.  Skip any cases of multiple attributes types with values that are not in 
  * the same subhierarchy.
@@ -64,10 +63,10 @@ public class RemodelGroupOne extends TemplateFix {
 		templateNames = new String[] {	"templates/Fracture of Bone Structure.json" }; /*,
 										"templates/Fracture Dislocation of Bone Structure.json",
 										"templates/Pathologic fracture of bone due to Disease.json"};
-		
+		*/
 		subHierarchyStr =  "128294001";  // QI-36 |Chronic inflammatory disorder (disorder)
 		templateNames = new String[] {"templates/Chronic Inflammatory Disorder.json"};
-		
+		/*
 		subHierarchyStr =  "126537000";  //QI-14 |Neoplasm of bone (disorder)|
 		templateNames = new String[] {"templates/Neoplasm of Bone.json"};
 		*/
@@ -92,14 +91,17 @@ public class RemodelGroupOne extends TemplateFix {
 		
 		subHierarchyStr = "3218000"; //QI-70 |Mycosis (disorder)|
 		templateNames = new String[] {	"templates/Infection caused by Fungus.json"};
-		*/
+		
 		subHierarchyStr = "17322007"; //QI-116 |Parasite (disorder)|
 		templateNames = new String[] {	"templates/Infection caused by Parasite.json"};
-		/*
+		
 		subHierarchyStr = "125643001"; //QI-117 |Open wound| 
 		templateNames = new String[] {	"templates/wound/wound of bodysite.json"
 				//"templates/wound/open wound of bodysite.json"
 				};
+		exclusionWords = new ArrayList<String>();
+		exclusionWords.add("complication");
+		exclusionWords.add("fracture");
 		*/
 		super.init(args);
 	}
