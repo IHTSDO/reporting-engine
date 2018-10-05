@@ -6,6 +6,7 @@ import javax.annotation.PostConstruct;
 
 import org.ihtsdo.otf.dao.resources.ResourceManager;
 import org.ihtsdo.termserver.job.mq.Transmitter;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.reflections.Reflections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,6 +74,19 @@ public class JobManager {
 		if (buildProperties != null) {
 			buildVersion = buildProperties.getVersion();
 		}
+	}
+	
+	public Job getJob (String jobName) {
+		//Do I know about this job?
+		Class<? extends JobClass> jobClass = knownJobs.get(jobName);
+		if (jobClass != null) {
+			try {
+				return jobClass.newInstance().getJob();
+			} catch (IllegalAccessException | InstantiationException e) {
+				TermServerScript.warn("Unable to instantiate job: " + jobName);
+			}
+		}
+		return null;
 	}
 
 	public void run(JobRun jobRun) {
