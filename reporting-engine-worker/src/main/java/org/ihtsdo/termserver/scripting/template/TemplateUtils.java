@@ -135,7 +135,7 @@ public class TemplateUtils {
 
 	private static boolean containsAllOptional(AttributeGroup group) {
 		for (Attribute a : group.getAttributes()) {
-			if (!a.getCardinalityMin().equals("0")) {
+			if (a.getCardinalityMin() != null && !a.getCardinalityMin().equals("0")) {
 				return false;
 			}
 		}

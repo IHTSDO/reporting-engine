@@ -3,6 +3,7 @@ package org.ihtsdo.termserver.scripting.template;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
@@ -31,8 +32,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 			app.init(args);
 			app.loadProjectSnapshot(false);  //Load all descriptions
 			app.postInit();
-			Batch batch = app.formIntoBatch();
-			app.batchProcess(batch);
+			app.processFile();
 		} catch (Exception e) {
 			info("Failed to NormaliseTemplateCompliantConcepts due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
@@ -51,41 +51,41 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		
 		/*
 		subHierarchyStr = "125605004";  // QI-17 |Fracture of bone (disorder)|
-		templateNames = new String[] {	"fracture/Fracture of Bone Structure.json",
-										"fracture/Fracture Dislocation of Bone Structure.json",
-										"fracture/Pathologic fracture of bone due to Disease.json",
-										"fracture/Pathologic fracture morphology of bone structure co-occurrent and due to Neoplasm of bone.json",
-										"fracture/Traumatic abnormality of spinal cord structure co-occurrent and due to fracture morphology of vertebral bone structure.json",
+		templateNames = new String[] {	"templates/fracture/Fracture of Bone Structure.json",
+										"templates/fracture/Fracture Dislocation of Bone Structure.json",
+										//"templates/fracture/Pathologic fracture of bone due to Disease.json",
+										//"templates/fracture/Pathologic fracture morphology of bone structure co-occurrent and due to Neoplasm of bone.json",
+										//"templates/fracture/Traumatic abnormality of spinal cord structure co-occurrent and due to fracture morphology of vertebral bone structure.json",
 										//"Injury of finding site due to birth trauma.json"
 										 };
 		
 		subHierarchyStr =  "128294001";  // QI-9 |Chronic inflammatory disorder (disorder)
-		templateNames = new String[] {"Chronic Inflammatory Disorder.json"};
+		templateNames = new String[] {"templates/Chronic Inflammatory Disorder.json"};
 		
 		subHierarchyStr =  "126537000";  //QI-31 |Neoplasm of bone (disorder)|
-		templateNames = new String[] {	"Neoplasm of Bone.json",
-										"Pathologic fracture morphology of bone structure co-occurrent and due to Neoplasm of bone.json"};
-
-		subHierarchyStr =  "34014006"; //QI-15 + QI-23 |Viral disease (disorder)|
-		templateNames = new String[] {	"Infection caused by virus with optional bodysite.json"};
-		
+		templateNames = new String[] {	"templates/Neoplasm of Bone.json",
+										"templates/Pathologic fracture morphology of bone structure co-occurrent and due to Neoplasm of bone.json"};
+		*/
+		subHierarchyStr =  "34014006"; //QI-125 |Viral disease (disorder)|
+		templateNames = new String[] {	"templates/Infection caused by virus with optional bodysite.json"};
+		/*
 		subHierarchyStr =  "87628006";  //QI-16 + QI-21 |Bacterial infectious disease (disorder)|
-		templateNames = new String[] {	"Infection caused by bacteria with optional bodysite.json"}; 
+		templateNames = new String[] {	"templates/Infection caused by bacteria with optional bodysite.json"}; 
 		
 		subHierarchyStr =  "95896000";  //QI-19 + QI-27  |Protozoan infection (disorder)|
-		templateNames = new String[] {"Infection caused by Protozoa with optional bodysite.json"};
+		templateNames = new String[] {"templates/Infection caused by Protozoa with optional bodysite.json"};
 		
 		subHierarchyStr =  "125666000";  //QI-37  |Burn (disorder)|
 		templateNames = new String[] {
-				"burn/Burn of body structure.json",
-				"burn/Epidermal burn of body structure.json",
-				"burn/Partial thickness burn of body structure.json",
-				"burn/Full thickness burn of body structure.json",
-				"burn/Deep partial thickness burn of body structure.json",
-				"burn/Superficial partial thickness burn of body structure.json"};
+				"templates/burn/Burn of body structure.json",
+				"templates/burn/Epidermal burn of body structure.json",
+				"templates/burn/Partial thickness burn of body structure.json",
+				"templates/burn/Full thickness burn of body structure.json",
+				"templates/burn/Deep partial thickness burn of body structure.json",
+				"templates/burn/Superficial partial thickness burn of body structure.json"};
 		
 		subHierarchyStr = "8098009";	// QI-120 |Sexually transmitted infectious disease (disorder)| 
-		templateNames = new String[] {	"Sexually transmitted Infection with optional bodysite.json"};
+		templateNames = new String[] {	"templates/Sexually transmitted Infection with optional bodysite.json"};
 		
 		subHierarchyStr = "95896000";  //QI-19  |Protozoan infection (disorder)|
 		templateNames = new String[] {"templates/Infection caused by Protozoa with optional bodysite.json"};
@@ -93,10 +93,10 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		subHierarchyStr = "416886008"; //QI-129 |Closed wound| 
 		templateNames = new String[] {	"templates/wound/wound of bodysite.json",
 										"templates/wound/closed wound of bodysite.json"};
-		*/
+		
 		subHierarchyStr = "8098009";	// QI-130 |Sexually transmitted infectious disease (disorder)| 
 		templateNames = new String[] {	"templates/Sexually transmitted Infection with optional bodysite.json"};
-		
+		*/
 		super.init(args);
 	}
 
@@ -188,6 +188,9 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 			alignedConcepts.addAll(findTemplateMatches(template));
 		}
 		alignedConcepts.removeAll(ignoredConcepts);
+		alignedConcepts = alignedConcepts.stream()
+				.filter(c -> !isExcluded(c))
+				.collect(Collectors.toSet());
 		
 		//Now first pass attempt to remodel because we don't want to batch anything that results 
 		//in no changes being made.
