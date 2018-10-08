@@ -12,6 +12,7 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.*;
 import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import us.monoid.json.*;
@@ -1074,6 +1075,39 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			if (doAddition) {
 				Relationship newParentRel = new Relationship(c, IS_A, newParent, 0);
 				changesMade += addRelationship(t, c, newParentRel);
+			}
+		}
+		return changesMade;
+	}
+	
+	public int applyRemodelledGroups(Task t, Concept c, Set<RelationshipGroup> groups) throws TermServerScriptException {
+		int changesMade = 0;
+		List<Relationship> availableForReuse = new ArrayList<>();
+		Set<String> idsUsed = new HashSet<>();
+		for (RelationshipGroup group : groups) {
+			if (group != null) {
+				
+				//Do we need to retire any existing relationships?
+				for (Relationship potentialRemoval : c.getRelationshipGroupSafely(CharacteristicType.STATED_RELATIONSHIP, group.getGroupId()).getRelationships()) {
+					if (!group.getRelationships().contains(potentialRemoval)) {
+						TermServerScript.warn ("Removing " + potentialRemoval + " from " + c);
+						availableForReuse.add(potentialRemoval);
+						removeRelationship(t, c, potentialRemoval);
+						changesMade++;
+					}
+				}
+				
+				//If we've used the same relationship twice, the 2nd instance should have a new SCTID
+				for (Relationship r : group.getRelationships()) {
+					if (idsUsed.contains(r.getId())) {
+						TermServerScript.warn ("Mutliple use of: " + r);
+						r.setRelationshipId(null);
+					} else if (r.getId() != null && !r.getId().isEmpty()) {
+						idsUsed.add(r.getId());
+					}
+				}
+				
+				changesMade += c.addRelationshipGroup(group, availableForReuse);
 			}
 		}
 		return changesMade;

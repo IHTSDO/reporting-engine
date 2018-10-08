@@ -12,6 +12,7 @@ import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 /*
 For DRUGS-482
@@ -121,7 +122,18 @@ public class ReplaceConcepts extends DrugBatchFix implements RF2Constants{
 		findReturnedParent(gl.getConcept(c.getId()),parentFind);  //use cached concept so we can walk the transative closure
 		report(t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, parentFind);
 		int changesMade = replaceParents(t, c, MEDICINAL_PRODUCT);
-		return replaceParents(t, c, parentFind.parents);
+		
+		//Now we want to take all the attributes from our parents and make them stated
+		//but only if the parents have been properly modelled - filter out any "(product)" semtags
+		Set<RelationshipGroup> allInheritedGroups = parentFind.parents
+				.stream()
+				.filter(p -> !p.getFsn().contains("(product)"))
+				.flatMap(p -> p.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP).stream())
+				.collect(Collectors.toSet());
+		
+		changesMade += applyRemodelledGroups(t, c, allInheritedGroups);
+		report(t, c, Severity.MEDIUM, ReportActionType.INFO, SnomedUtils.getModel(c, CharacteristicType.STATED_RELATIONSHIP));
+		return changesMade;
 	}
 
 	private void findReturnedParent(Concept c, ParentFind parentFind) throws TermServerScriptException {
@@ -129,11 +141,12 @@ public class ReplaceConcepts extends DrugBatchFix implements RF2Constants{
 		List<Concept> parents = originalParents.get(c);
 		if (parents == null || parents.size() == 0) {
 			//Are the current parents still useful?
-			String parentStr = c.getParents(CharacteristicType.STATED_RELATIONSHIP)
-					.stream()
-					.map(Concept::toString) 
-					.collect(Collectors.joining(",\n"));
-			throw new ValidationFailure(c, "Can't find original parents of " + c + " are current parents useful? '" + parentStr + "'");
+			List<Concept> currentParents = c.getParents(CharacteristicType.STATED_RELATIONSHIP);
+			if (currentParents.size() > 0) {
+				parentFind.parents.addAll(currentParents);
+			} else {
+				throw new ValidationFailure(c, "Can't find original or current parents of " + c);
+			} 
 		} else {
 			parentFind.stepsTaken = parentFind.stepsTaken + 1;
 			for (Concept parent : parents) {
@@ -147,10 +160,15 @@ public class ReplaceConcepts extends DrugBatchFix implements RF2Constants{
 								.stream()
 								.map(AssociationEntry::toString)
 								.collect(Collectors.joining(",\n"));
-						throw new ValidationFailure(c, "Found multiple associations: " + assocStr);
+						warn ("Multiple associations for " + c + ": " + assocStr);
+						List<Concept> assocTargets = assocs.stream()
+								.map(a -> gl.getConceptSafely(a.getTargetComponentId()))
+								.collect(Collectors.toList());
+						parentFind.histAssocsFollowed += assocs.size();
+						parentFind.parents.addAll(assocTargets);
 					} else if (assocs.size() == 1) {
 						//We're assuming the association will point to a live concept
-						parentFind.histAssocsFollowed = parentFind.histAssocsFollowed + 1;
+						parentFind.histAssocsFollowed++;
 						parentFind.parents.add(gl.getConcept(assocs.get(0).getTargetComponentId()));
 					} else {
 						findReturnedParent(parent, parentFind);  //Recurse
@@ -217,7 +235,11 @@ public class ReplaceConcepts extends DrugBatchFix implements RF2Constants{
 		
 		@Override
 		public String toString() {
-			return "Found " + parents.size() + "parents taking " + stepsTaken + " steps and following " + histAssocsFollowed + " historical associations.";
+			String parentStr = "\n" + parents.stream().map(Concept::toString).collect(Collectors.joining(",\n"));
+			return "Found " + parents.size() + " parents taking " 
+					+ stepsTaken + " steps and following " 
+					+ histAssocsFollowed + " historical associations: " 
+					+ parentStr;
 		}
 	}
 }

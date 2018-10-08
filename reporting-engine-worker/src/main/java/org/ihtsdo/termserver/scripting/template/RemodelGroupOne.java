@@ -238,7 +238,7 @@ public class RemodelGroupOne extends TemplateFix {
 		}
 		
 		if (ignoreUngroupedMoves > 0) {
-			applyRemodelledGroups(t,c,groups);
+			applyRemodelledGroups(t,c,new HashSet<RelationshipGroup>(Arrays.asList(groups)));
 			String modifiedForm = SnomedUtils.getModel(c, CharacteristicType.STATED_RELATIONSHIP);
 			
 			//Now check that we've actually ended up making actual changes
@@ -308,35 +308,7 @@ public class RemodelGroupOne extends TemplateFix {
 		}
 	}*/
 
-	private void applyRemodelledGroups(Task t, Concept c, RelationshipGroup[] groups) throws TermServerScriptException {
-		List<Relationship> availableForReuse = new ArrayList<>();
-		Set<String> idsUsed = new HashSet<>();
-		for (RelationshipGroup group : groups) {
-			if (group != null) {
-				
-				//Do we need to retire any existing relationships?
-				for (Relationship potentialRemoval : c.getRelationshipGroupSafely(CharacteristicType.STATED_RELATIONSHIP, group.getGroupId()).getRelationships()) {
-					if (!group.getRelationships().contains(potentialRemoval)) {
-						warn ("Removing " + potentialRemoval + " from " + c);
-						availableForReuse.add(potentialRemoval);
-						removeRelationship(t, c, potentialRemoval);
-					}
-				}
-				
-				//If we've used the same relationship twice, the 2nd instance should have a new SCTID
-				for (Relationship r : group.getRelationships()) {
-					if (idsUsed.contains(r.getId())) {
-						warn ("Mutliple use of: " + r);
-						r.setRelationshipId(null);
-					} else if (r.getId() != null && !r.getId().isEmpty()) {
-						idsUsed.add(r.getId());
-					}
-				}
-				
-				c.addRelationshipGroup(group, availableForReuse);
-			}
-		}
-	}
+
 
 	private int findAttributeToState(Task t, Template template, Concept c, Attribute a, RelationshipGroup[] groups, int groupOfInterest, CharacteristicType charType, boolean templateGroupOptional) throws TermServerScriptException {
 		RelationshipGroup group = groups[groupOfInterest];

@@ -414,17 +414,18 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		addRelationship(r, false);
 	}
 	
-	public void addOrReactivateRelationship(Relationship r) {
+	public int addOrReactivateRelationship(Relationship r) {
 		//Do we already have an inactive version of this relationship to reactivate?
 		//Only relevant if this relationship is new
 		if (r.getId() == null) {
 			for (Relationship match : getRelationships(r, ActiveState.INACTIVE)) {
 				System.out.println ("Reactivating " + match);
 				match.setActive(true);
-				return;
+				return CHANGE_MADE;
 			}
 		}
 		addRelationship(r);
+		return CHANGE_MADE;
 	}
 	
 	public void addRelationship(Relationship r, boolean replaceTripleMatch) {
@@ -1078,7 +1079,8 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		return relationshipGroups;
 	}
 
-	public void addRelationshipGroup(RelationshipGroup group, List<Relationship> availableForReuse) {
+	public int addRelationshipGroup(RelationshipGroup group, List<Relationship> availableForReuse) {
+		int changesMade = 0;
 		for (Relationship r : group.getRelationships()) {
 			//Do we have one of these relationships available to be reused?
 			for (Relationship reuseMe : new ArrayList<>(availableForReuse)) {
@@ -1091,11 +1093,12 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 					break;
 				}
 			}
-			addOrReactivateRelationship(r);
+			changesMade += addOrReactivateRelationship(r);
 		}
 		//Force recalculation of groups
 		statedRelationshipGroups = null;
 		inferredRelationshipGroups = null;
+		return changesMade;
 	}
 
 }

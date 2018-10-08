@@ -17,6 +17,7 @@ import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
 import org.ihtsdo.termserver.scripting.template.AncestorsCache;
 import org.ihtsdo.termserver.scripting.template.DescendentsCache;
 
@@ -1007,5 +1008,5 @@ public class SnomedUtils implements RF2Constants {
 		}
 		concepts.removeAll(redundant);
 	}
-
+	
 }
