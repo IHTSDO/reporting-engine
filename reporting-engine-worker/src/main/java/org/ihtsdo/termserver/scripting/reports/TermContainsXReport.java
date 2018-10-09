@@ -1,80 +1,76 @@
 package org.ihtsdo.termserver.scripting.reports;
 
 import java.io.IOException;
-import java.io.PrintStream;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
+import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Description;
+import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
+import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.snomed.otf.scheduler.domain.*;
 
 /**
- * FD19459
- * Reports all terms that contain the specified text
+ * FD19459 Reports all terms that contain the specified text
  * Optionally only report the first description matched for each concept
  * 
  * CTR-19 Match organism taxon
- * 
  * MAINT-224 Check for full stop in descriptions other than text definitions
+ * SUBST-314 Converting to ReportClass and also list arbitrary attribute
  */
-public class TermContainsXReport extends TermServerReport {
+public class TermContainsXReport extends TermServerReport implements ReportClass {
 	
 	//String[] textsToMatch = new String[] {"remission", "diabet" };
-	/*String[] textsToMatch = new String[] { "Clade","Class","Division",
-								"Domain","Family","Genus","Infraclass",
-								"Infraclass","Infrakingdom","Infraorder",
-								"Infraorder","Kingdom","Order","Phylum",
-								"Species","Subclass","Subdivision",
-								"Subfamily","Subgenus","Subkingdom",
-								"Suborder","Subphylum","Subspecies",
-								"Superclass","Superdivision","Superfamily",
-								"Superkingdom","Superorder"};*/
-	String[] textsToMatch = new String[] {"." };
+	String[] textsToMatch;
 	boolean reportConceptOnceOnly = true;
-	//Concept subHierarchy = ORGANISM;
-	Concept subHierarchy = ROOT_CONCEPT;
+	public static final String WORDS = "Words";
+	public static final String ATTRIBUTE_DETAIL = "AttributeDetail";
+	Concept attributeDetail;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
-		TermContainsXReport report = new TermContainsXReport();
-		try {
-			//report.headers="Concept, FSN, TermMatched, TopLevelHierarchy, SubHierarchy, SpecificHierarchy";
-			report.additionalReportColumns = "FSN, TermMatched, MatchedIn, Case, SubHierarchy, SubSubHierarchy";
-			report.init(args);
-			report.loadProjectSnapshot(false);  //Load all descriptions
-			report.reportDescriptionContainsX();
-		} catch (Exception e) {
-			info("Failed to produce Description Report due to " + e.getMessage());
-			e.printStackTrace(new PrintStream(System.out));
-		} finally {
-			report.finish();
+		Map<String, String> params = new HashMap<>();
+		params.put(SUB_HIERARCHY, SUBSTANCE.toString());
+		params.put("Words", "hydrochloride,mesilate,mesylate,maleate,anhydrous");
+		params.put("AttributeDetail", "738774007 |Is modification of (attribute)|");
+		TermServerReport.run(TermContainsXReport.class, args, params);
+	}
+	
+	public void init (JobRun run) throws TermServerScriptException {
+		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
+		additionalReportColumns = "FSN, SemTag, TermMatched, MatchedIn, Case, AttributeDetail, SubHierarchy, SubSubHierarchy";
+		super.init(run);
+		getArchiveManager().populateHierarchyDepth = true;
+		textsToMatch = run.getParameter(WORDS).split(COMMA);
+		String attribStr = run.getParameter(ATTRIBUTE_DETAIL);
+		if (attribStr != null && !attribStr.isEmpty()) {
+			attributeDetail = gl.getConcept(attribStr);
 		}
 	}
-
-	private void reportDescriptionContainsX() throws TermServerScriptException {
+	
+	@Override
+	public Job getJob() {
+		String[] parameterNames = new String[] { "SubHierarchy", "Words", "AttributeDetail" };
+		return new Job( new JobCategory(JobCategory.ADHOC_QUERIES),
+						"Term contains X",
+						"List all concept containing specified words, with optional attribute detail",
+						parameterNames);
+	}
+	
+	public void runJob() throws TermServerScriptException {
 		nextConcept:
 		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
 			if (c.isActive()) {
-				//for (Description d : c.getDescriptions(Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE)) {
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 					boolean reported = false;
 					for (String matchText : textsToMatch) {
-						//Wrap fsn with a space to ensure we can do whole word matches, even with 
-						//word at the start of the line
-						//String fsn = " " + c.getFsn().toLowerCase();
-						//String match = " " + matchText.toLowerCase() + " ";
-						
-						//if (c.getFsn().toLowerCase().startsWith(matchText.toLowerCase())) {
-						//if (fsn.contains(match)) {
 						if (d.getTerm().toLowerCase().contains(matchText.toLowerCase())) {
-							//String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
 							String[] hiearchies = getHierarchies(c);
 							String cs = SnomedUtils.translateCaseSignificanceFromEnum(c.getFSNDescription().getCaseSignificance());
-							report(c, matchText, d.getTerm(), cs/*hiearchies[0]*/, hiearchies[1], hiearchies[2]);
+							report(c, matchText, d, cs, getAttributeDetail(c), hiearchies[1], hiearchies[2]);
 							reported = true;
 							incrementSummaryInformation("Matched " + matchText);
-							//incrementSummaryInformation( "Tag: " + semTag);
 						}
 					}
 					if (reported && reportConceptOnceOnly) {
@@ -83,7 +79,16 @@ public class TermContainsXReport extends TermServerReport {
 				}
 			}
 		}
-		
+	}
+	
+	private String getAttributeDetail(Concept c) throws TermServerScriptException {
+		if (attributeDetail != null) {
+			return SnomedUtils.getTargets(c, new Concept[] {attributeDetail}, CharacteristicType.INFERRED_RELATIONSHIP)
+					.stream()
+					.map(Concept::toString)
+					.collect(Collectors.joining(",\n"));
+		}
+		return "";
 	}
 
 	//Return hierarchy depths 1, 2, 3
