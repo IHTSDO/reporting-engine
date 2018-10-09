@@ -27,11 +27,13 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 	List<Concept> excludeHierarchies = new ArrayList<>();
 	Map<String, Description> sourcesOfTruth = new HashMap<>();
 	Set<Concept> allExclusions = new HashSet<>();
+	Set<String> whiteList = new HashSet<>();  //Note this can be both descriptions and concept SCTIDs
 	boolean newlyModifiedContentOnly = true;
 	List<String> properNouns = new ArrayList<>();
 	Map<String, List<String>> properNounPhrases = new HashMap<>();
 	List<String> knownLowerCase = new ArrayList<>();
 	Pattern numberLetter = Pattern.compile("\\d[a-z]");
+	Pattern singleLetter = Pattern.compile("[^a-zA-Z][a-z][^a-zA-Z]");
 	Set<String>wilcardWords = new HashSet<>();
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
@@ -71,6 +73,10 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 				}
 			}
 		}
+		
+		whiteList.add("3722547016");
+		whiteList.add("3722542010");
+		whiteList.add("3737657014");
 	}
 
 	@Override
@@ -160,14 +166,18 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 			
 			nextConcept:
 			for (Concept c : hiearchyDescendants) {
-				if (allExclusions.contains(c)) {
+				if (allExclusions.contains(c) || whiteList.contains(c.getId())) {
 					continue;
 				}
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+					if (whiteList.contains(d.getDescriptionId())) {
+						continue;
+					}
 					if (!newlyModifiedContentOnly || !d.isReleased()) {
+						String term = d.getTerm().replaceAll("\\-", " ");
 						String caseSig = SnomedUtils.translateCaseSignificanceFromEnum(d.getCaseSignificance());
-						String firstLetter = d.getTerm().substring(0,1);
-						String chopped = d.getTerm().substring(1);
+						String firstLetter = term.substring(0,1);
+						String chopped = term.substring(1);
 						String preferred = d.isPreferred()?"Y":"N";
 						//Lower case first letters must be entire term case sensitive
 						if (Character.isLetter(firstLetter.charAt(0)) && firstLetter.equals(firstLetter.toLowerCase()) && !caseSig.equals(CS)) {
@@ -176,9 +186,9 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 							continue nextConcept;
 						} else if (caseSig.equals(CS) || caseSig.equals(cI)) {
 							if (chopped.equals(chopped.toLowerCase()) && 
-									!letterFollowsNumber(d.getTerm()) && 
-									!startsWithProperNounPhrase(d.getTerm()) &&
-									!containsKnownLowerCaseWord(d.getTerm())) {
+									!singleLetterCombo(term) && 
+									!startsWithProperNounPhrase(term) &&
+									!containsKnownLowerCaseWord(term)) {
 								if (caseSig.equals(CS) && startsWithSingleLetter(d.getTerm())){
 									//Probably OK
 								} else {
@@ -319,11 +329,20 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 		return false;
 	}
 
-	private boolean letterFollowsNumber(String term) {
+	private boolean singleLetterCombo(String term) {
 		//Do we have a letter following a number - optionally with a dash?
 		term = term.replaceAll("-", "");
 		Matcher matcher = numberLetter.matcher(term);
-		return matcher.find();
+		if (matcher.find()) {
+			return true;
+		}
+		
+		//A letter on it's own will often be lower case eg 3715305012 [768869001] US: P, GB: P: Interferon alfa-n3-containing product [cI]
+		matcher = singleLetter.matcher(term);
+		if (matcher.find()) {
+			return true;
+		}
+		return false;
 	}
 
 	public boolean singleCapital(String term) {
