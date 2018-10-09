@@ -160,6 +160,11 @@ public class DrugTermGenerator implements RF2Constants{
 				c.addDescription(fsnCounterpart);
 			}
 		}*/
+		
+		//Validation, check that we have some acceptability for both US and GB
+		if (replacement.getAcceptability(US_ENG_LANG_REFSET) == null || replacement.getAcceptability(GB_ENG_LANG_REFSET) == null) {
+			TermServerScript.warn (d + " has unacceptable acceptability");
+		}
 		return changesMade;
 	}
 

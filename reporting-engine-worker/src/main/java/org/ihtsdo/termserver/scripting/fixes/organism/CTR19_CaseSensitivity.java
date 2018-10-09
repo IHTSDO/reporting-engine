@@ -48,7 +48,7 @@ public class CTR19_CaseSensitivity extends BatchFix implements RF2Constants{
 			fix.init(args);
 			//fix.testAS();
 			fix.loadProjectSnapshot(false); //Load all descriptions
-			fix.batchProcess(fix.formIntoBatch());
+			fix.processFile();
 		} finally {
 			fix.finish();
 		}

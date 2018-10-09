@@ -481,7 +481,7 @@ public abstract class TermServerScript implements RF2Constants {
 		int attempt = 0;
 		while (true) {
 			try {
-				//Copy in the concept type which isn't known to the TS
+				//Copy across the concept type to the returned object - it isn't known to the TS
 				ConceptType conceptType = c.getConceptType();
 				Concept createdConcept = attemptConceptCreation(t,c,info);
 				createdConcept.setConceptType(conceptType);

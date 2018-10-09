@@ -12,7 +12,6 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.*;
 import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import us.monoid.json.*;
@@ -43,6 +42,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	protected boolean classifyTasks = false;
 	protected boolean validateTasks = false;
 	protected boolean groupByIssue = false;
+	protected boolean keepIssuesTogether = false;
 	protected List<Component> allComponentsToProcess = new ArrayList<>();
 	protected List<Component> priorityComponents = new ArrayList<>();
 	protected int priorityBatchSize = 10;
@@ -59,15 +59,13 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	}
 	
 	protected List<Component> processFile() throws TermServerScriptException {
-		Batch batch;
 		startTimer();
 		if (selfDetermining) {
-			batch = formIntoBatch();
+			allComponentsToProcess = identifyComponentsToProcess();
 		} else {
 			allComponentsToProcess = super.processFile();
-			batch = formIntoBatch(allComponentsToProcess);
 		}
-		batchProcess(batch);
+		batchProcess(formIntoBatch(allComponentsToProcess));
 		/*if (emailDetails != null) {
 			String msg = "Batch Scripting has completed successfully." + getSummaryText();
 			sendEmail(msg, reportFiles[0]);
@@ -85,7 +83,6 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	protected Batch formIntoBatch (List<Component> allComponents) throws TermServerScriptException {
 		Batch batch = new Batch(getScriptName());
 		Task task = batch.addNewTask(author_reviewer);
-		
 		//Do we need to prioritize some components?
 		if (priorityComponents.size() > 0) {
 			List<Component> unprioritized = new ArrayList<> (allComponents);
@@ -96,15 +93,19 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		
 		if (allComponents.size() > 0) {
 			String lastIssue = allComponents.get(0).getIssues();
+			int currentPosition = 0;
 			for (Component thisComponent : allComponents) {
 				//DRUGS-522 Priority concepts might need a smaller batch size
-				int thisTaskSize = priorityComponents.contains(thisComponent) ? priorityBatchSize : taskSize;
-				if (task.size() >= thisTaskSize ||
-						(groupByIssue && !lastIssue.equals(thisComponent.getIssues()))) {
+				int thisTaskMaxSize = priorityComponents.contains(thisComponent) ? priorityBatchSize : taskSize;
+				int remainingSpace = thisTaskMaxSize - task.size();
+				if (task.size() >= thisTaskMaxSize ||
+						(groupByIssue && !lastIssue.equals(thisComponent.getIssues())) ||
+						(keepIssuesTogether && !peekAheadFits(asConcepts(allComponents), currentPosition,remainingSpace))) {
 					task = batch.addNewTask(author_reviewer);
 				}
 				task.add(thisComponent);
 				lastIssue = thisComponent.getIssues();
+				currentPosition++;
 			}
 		}
 		addSummaryInformation("Tasks scheduled", batch.getTasks().size());
@@ -112,6 +113,19 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		return batch;
 	}
 	
+	private boolean peekAheadFits(List<Concept> concepts, int pos, int remainingSpace) {
+		//Given the issue of the current position, can we fit all successive concepts with the same issue into the 
+		//same task, or do we need to start a new one?
+		String thisIssue = concepts.get(pos).getIssues();
+		int sameIssueCount = 0;
+		
+		while (pos < concepts.size() -1 && thisIssue.equals(concepts.get(++pos).getIssues())) {
+			sameIssueCount++;
+		}
+	
+		return sameIssueCount <= remainingSpace;
+	}
+
 	protected Batch formIntoGroupedBatch (List<List<Component>> allComponentList) throws TermServerScriptException {
 		Batch batch = new Batch(getScriptName());
 		int componentsToProcess = 0;
@@ -135,14 +149,6 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		return batch;
 	}
 
-	/*
-	 * Default batching strategy is just to allocate the concepts in order
-	 */
-	protected Batch formIntoBatch() throws TermServerScriptException {
-		List<Component> allComponentsBeingProcessed = identifyComponentsToProcess();
-		return formIntoBatch(allComponentsBeingProcessed);
-	}
-	
 	protected void batchProcess(Batch batch) throws TermServerScriptException {
 		int currentTaskNum = 0;
 		for (Task task : batch.getTasks()) {

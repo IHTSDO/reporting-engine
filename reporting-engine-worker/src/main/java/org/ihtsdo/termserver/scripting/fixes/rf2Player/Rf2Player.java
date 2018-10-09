@@ -72,9 +72,7 @@ public class Rf2Player extends BatchFix {
 			info ("Processing delta");
 			processDelta();
 			info ("Grouping changes into tasks");
-			Batch batch = formIntoBatch();
-			info ("Batch processing tasks...");
-			batchProcess(batch);
+			processFile();
 		} catch (Exception e) {
 			throw new TermServerScriptException("Failed to play Rf2Archive", e);
 		} finally {

@@ -976,6 +976,11 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	}
 	
 	private Concept clone(String sctid, boolean keepIds) {
+		//Don't include inactive components by default
+		return clone(sctid, keepIds, false);
+	}
+	
+	private Concept clone(String sctid, boolean keepIds, boolean includeInactiveComponents) {
 		Concept clone = new Concept(keepIds?conceptId:sctid, getFsn());
 		clone.setEffectiveTime(keepIds?effectiveTime:null);
 		clone.setActive(active);
@@ -985,7 +990,8 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		clone.setInactivationIndicator(inactivationIndicator);
 		
 		//Copy all descriptions
-		for (Description d : getDescriptions()) {
+		ActiveState activeState = includeInactiveComponents ? ActiveState.BOTH : ActiveState.ACTIVE;
+		for (Description d : getDescriptions(activeState)) {
 			//We need to null out the conceptId since the clone is a new concept
 			Description dClone = d.clone(keepIds?d.getDescriptionId():null);
 			dClone.setConceptId(keepIds?conceptId:null);
@@ -998,7 +1004,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		}
 		
 		//Copy all stated relationships, or in the case of an exact clone (keepIds = true) also inferred
-		List<Relationship> selectedRelationships = keepIds ? relationships : getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH);
+		List<Relationship> selectedRelationships = keepIds ? relationships : getRelationships(CharacteristicType.STATED_RELATIONSHIP, activeState);
 		for (Relationship r : selectedRelationships) {
 			//We need to null out the sourceId since the clone is a new concept
 			Relationship rClone = r.clone(keepIds?r.getRelationshipId():null);

@@ -38,8 +38,7 @@ public class FractureOfXTermRemodelling extends BatchFix implements RF2Constants
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			fix.loadProjectSnapshot(false); //Load all descriptions
 			//We won't incude the project export in our timings
-			Batch batch = fix.formIntoBatch();
-			fix.batchProcess(batch);
+			fix.processFile();
 		} finally {
 			fix.finish();
 		}

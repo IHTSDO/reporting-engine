@@ -35,8 +35,7 @@ public class AlignToTemplate extends TemplateFix {
 			app.init(args);
 			app.loadProjectSnapshot(false);  //Load all descriptions
 			app.postInit();
-			Batch batch = app.formIntoBatch();
-			app.batchProcess(batch);
+			app.processFile();
 		} catch (Exception e) {
 			info("Failed to align concepts to template due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));

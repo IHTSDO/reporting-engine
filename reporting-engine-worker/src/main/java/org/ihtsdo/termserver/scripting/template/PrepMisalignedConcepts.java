@@ -34,8 +34,7 @@ public class PrepMisalignedConcepts extends TemplateFix {
 			//app.getArchiveManager().allowStaleData = true;
 			app.loadProjectSnapshot(false);  //Load all descriptions
 			app.postInit();
-			Batch batch = app.formIntoBatch();
-			app.batchProcess(batch);
+			app.processFile();
 		} catch (Exception e) {
 			info("Failed to produce ConceptsWithOrTargetsOfAttribute Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
