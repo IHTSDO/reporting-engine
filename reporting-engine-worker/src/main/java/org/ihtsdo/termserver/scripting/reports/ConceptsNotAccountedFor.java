@@ -86,7 +86,8 @@ public class ConceptsNotAccountedFor extends TermServerReport implements ReportC
 		return new Job( new JobCategory(JobCategory.QI),
 						"Concepts not accounted for",
 						"Given a number of sub-hierarchies, find the highest concepts not included",
-						parameterNames);
+						parameterNames, 
+						Job.ProductionStatus.HIDEME);
 	}
 
 	public void runJob() throws TermServerScriptException {

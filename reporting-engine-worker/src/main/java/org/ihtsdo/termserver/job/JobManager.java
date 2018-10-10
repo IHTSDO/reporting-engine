@@ -143,6 +143,13 @@ public class JobManager {
 		for (Map.Entry<String, Class<? extends JobClass>> knownJobClass : knownJobs.entrySet()) {
 			try {
 				Job thisJob = knownJobClass.getValue().newInstance().getJob();
+				
+				//Some jobs shouldn't see the light of day.
+				//TODO Make this code environemnt aware so it allows testing status in Dev and UAT
+				if (thisJob.getProductionStatus().equals(Job.ProductionStatus.HIDEME)) {
+					continue;
+				}
+				
 				JobType indicatedType = thisJob.getCategory().getType();
 				if (indicatedType == null) {
 					indicatedType = new JobType(JobType.REPORT);
