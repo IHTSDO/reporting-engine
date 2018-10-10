@@ -340,6 +340,8 @@ public abstract class TermServerScript implements RF2Constants {
 
 	public void postInit(JobRun jobRun) throws TermServerScriptException {
 		subHierarchy = gl.getConcept(jobRun.getParameter(SUB_HIERARCHY));
+		//And post that back in, so the FSN is always populated
+		jobRun.setParameter(SUB_HIERARCHY, subHierarchy.toString());
 		getReportManager().initialiseReportFiles( new String[] {headers + additionalReportColumns});
 	}
 	
