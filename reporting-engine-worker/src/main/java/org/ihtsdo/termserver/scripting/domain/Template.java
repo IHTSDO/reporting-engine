@@ -10,22 +10,23 @@ import org.ihtsdo.termserver.scripting.template.TemplateUtils;
 public class Template {
 
 	char id;
-	String fileName;
+	String name;
+	String domain;
 	LogicalTemplate logicalTemplate;
 	List<AttributeGroup> attributeGroups;
 
 	public Template (char id, LogicalTemplate logicalTemplate, String fileName) {
 		this.id = id;
 		this.logicalTemplate = logicalTemplate;
-		this.fileName = fileName;
+		this.name = fileName;
 	}
 	
-	public String getFileName() {
-		return fileName;
+	public String getName() {
+		return name;
 	}
 
-	public void setFileName(String fileName) {
-		this.fileName = fileName;
+	public void setName(String name) {
+		this.name = name;
 	}
 
 	public char getId() {
@@ -41,7 +42,7 @@ public class Template {
 	}
 	
 	public String toIdString () {
-		return id + ": " + fileName;
+		return id + ": " + name;
 	}
 
 	public Collection<AttributeGroup> getAttributeGroups() {
@@ -60,5 +61,13 @@ public class Template {
 			attributeGroups = combinedGroups;
 		}
 		return attributeGroups;
+	}
+
+	public String getDomain() {
+		return domain;
+	}
+
+	public void setDomain(String domain) {
+		this.domain = domain;
 	}
 }

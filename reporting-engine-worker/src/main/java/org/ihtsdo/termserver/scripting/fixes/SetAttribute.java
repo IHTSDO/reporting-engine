@@ -78,12 +78,13 @@ public class SetAttribute extends BatchFix implements RF2Constants{
 		
 		//Get the target attribute relationship and ensure there is 0 or 1
 		List<Relationship> attributesOfType = loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
+		int attributeCount = countAttributes(loadedConcept, CharacteristicType.STATED_RELATIONSHIP);
 		if (!loadedConcept.isActive()) {
 			String msg = "Concept now inactive ";
-			report (task, loadedConcept, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, msg, loadedConcept.getDefinitionStatus().toString(), countParents(loadedConcept), countAttributes(loadedConcept));
+			report (task, loadedConcept, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, msg, loadedConcept.getDefinitionStatus().toString(), countParents(loadedConcept), attributeCount);
 		} else if (attributesOfType.size() > 1) {
 			String msg = "Concept stating multiple " + attributeType;
-			report (task, loadedConcept, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, msg, loadedConcept.getDefinitionStatus().toString(), countParents(loadedConcept), countAttributes(loadedConcept));
+			report (task, loadedConcept, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, msg, loadedConcept.getDefinitionStatus().toString(), countParents(loadedConcept), attributeCount);
 		} else if (relationshipExists(loadedConcept, targetValue)) {
 			List<Relationship> allExisting = loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
 					attributeType,
@@ -91,14 +92,14 @@ public class SetAttribute extends BatchFix implements RF2Constants{
 					ActiveState.BOTH);
 			if (allExisting.size() > 1) {
 				String msg = "Mix of active / inactive existing relationship with same type/value";
-				report (task, loadedConcept, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, msg, loadedConcept.getDefinitionStatus().toString(), countParents(loadedConcept), countAttributes(loadedConcept));
+				report (task, loadedConcept, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, msg, loadedConcept.getDefinitionStatus().toString(), countParents(loadedConcept), attributeCount);
 			} else {
 				Relationship existing = allExisting.get(0);
 				//If this rel is active, nothing to do.  Otherwise, activate
 				if (!existing.isActive()) {
 					existing.setActive(true);
 					String msg = "Reactivated " + existing;
-					report (task, loadedConcept, Severity.MEDIUM, ReportActionType.RELATIONSHIP_MODIFIED, msg, loadedConcept.getDefinitionStatus().toString(), countParents(loadedConcept), countAttributes(loadedConcept));
+					report (task, loadedConcept, Severity.MEDIUM, ReportActionType.RELATIONSHIP_MODIFIED, msg, loadedConcept.getDefinitionStatus().toString(), countParents(loadedConcept), attributeCount);
 					changesMade++;
 				}
 				//Are there any other relationships here that need to be inactivated?
@@ -106,7 +107,7 @@ public class SetAttribute extends BatchFix implements RF2Constants{
 					if (!checkMe.getTarget().equals(targetValue)) {
 						checkMe.setActive(false);
 						String msg = "Inactivated " + checkMe;
-						report (task, loadedConcept, Severity.MEDIUM, ReportActionType.RELATIONSHIP_MODIFIED, msg, loadedConcept.getDefinitionStatus().toString(), countParents(loadedConcept), countAttributes(loadedConcept));
+						report (task, loadedConcept, Severity.MEDIUM, ReportActionType.RELATIONSHIP_MODIFIED, msg, loadedConcept.getDefinitionStatus().toString(), countParents(loadedConcept), attributeCount);
 						changesMade++;
 					}
 				}
@@ -116,7 +117,7 @@ public class SetAttribute extends BatchFix implements RF2Constants{
 			Relationship r = new Relationship (loadedConcept, attributeType, targetValue, 0);
 			loadedConcept.addRelationship(r);
 			changesMade++;
-			report (task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, targetValues.get(loadedConcept).toString(), loadedConcept.getDefinitionStatus().toString(), countParents(loadedConcept), countAttributes(loadedConcept));
+			report (task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, targetValues.get(loadedConcept).toString(), loadedConcept.getDefinitionStatus().toString(), countParents(loadedConcept), attributeCount);
 		} else {
 			//Case where yes we have 1 existing active relationship, but not with the correct target value
 			Relationship current = attributesOfType.get(0);
@@ -132,7 +133,7 @@ public class SetAttribute extends BatchFix implements RF2Constants{
 				loadedConcept.addRelationship(r);
 				changesMade++;
 				String msg = "Replaced target " + current.getTarget() + " with " + targetValue;
-				report (task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_REPLACED, msg, loadedConcept.getDefinitionStatus().toString(), countParents(loadedConcept), countAttributes(loadedConcept));
+				report (task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_REPLACED, msg, loadedConcept.getDefinitionStatus().toString(), countParents(loadedConcept), attributeCount);
 			}
 		}
 		return changesMade;
@@ -160,17 +161,7 @@ public class SetAttribute extends BatchFix implements RF2Constants{
 			default : loadedConcept.setConceptType(ConceptType.UNKNOWN);
 		}
 	}
-	
-	private String countAttributes(Concept c) {
-		int attributeCount = 0;
-		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
-			if (!r.getType().equals(IS_A)) {
-				attributeCount++;
-			}
-		}
-		return Integer.toString(attributeCount);
-	}
-	
+
 	private String countParents(Concept c) {
 		int parentCount = 0;
 		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {

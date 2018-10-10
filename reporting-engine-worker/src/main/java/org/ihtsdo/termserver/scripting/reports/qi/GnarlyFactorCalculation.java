@@ -153,7 +153,7 @@ public class GnarlyFactorCalculation extends TermServerReport {
 
 	private Concept getBestOrganisingPrinciple(Concept c) {
 		//Do we even have any attributes?
-		if (SnomedUtils.countAttributes(c) == 0) {
+		if (countAttributes(c, CharacteristicType.STATED_RELATIONSHIP) == 0) {
 			return null;
 		}
 		//Otherwise, work through all relationships checking for good organising principles

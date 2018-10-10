@@ -203,16 +203,6 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 		return sb.toString();
 	}
 
-	private int countAttributes(Concept c, CharacteristicType charType) {
-		int attributes = 0;
-		for (Relationship r : c.getRelationships(charType, ActiveState.ACTIVE)) {
-			if (!r.getType().equals(IS_A)) {
-				attributes++;
-			}
-		}
-		return attributes;
-	}
-
 	private boolean containsFdConcept(Collection<Concept> concepts) {
 		for (Concept c : concepts) {
 			if (c.isActive() && c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {

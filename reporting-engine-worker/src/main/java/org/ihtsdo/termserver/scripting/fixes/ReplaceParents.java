@@ -13,6 +13,7 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.Task;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import us.monoid.json.JSONObject;
@@ -61,7 +62,7 @@ public class ReplaceParents extends BatchFix implements RF2Constants{
 		
 		//All concepts should be fully defined, if possible
 		if (loadedConcept.getDefinitionStatus().equals(DefinitionStatus.PRIMITIVE)) {
-			if (countAttributes(loadedConcept) > 0) {
+			if (countAttributes(loadedConcept, CharacteristicType.STATED_RELATIONSHIP) > 0) {
 				loadedConcept.setDefinitionStatus(DefinitionStatus.FULLY_DEFINED);
 				changesMade++;
 				report (task, loadedConcept, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept marked as fully defined");
@@ -89,7 +90,7 @@ public class ReplaceParents extends BatchFix implements RF2Constants{
 																		IS_A,
 																		ActiveState.ACTIVE));
 		String parentCount = Integer.toString(parentRels.size());
-		String attributeCount = Integer.toString(countAttributes(loadedConcept));
+		String attributeCount = Integer.toString(countAttributes(loadedConcept, CharacteristicType.STATED_RELATIONSHIP));
 		
 		String semTag = SnomedUtils.deconstructFSN(loadedConcept.getFsn())[1];
 		switch (semTag) {
@@ -123,16 +124,6 @@ public class ReplaceParents extends BatchFix implements RF2Constants{
 			report (task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_INACTIVATED, msg, loadedConcept.getDefinitionStatus().toString(), parentCount, attributeCount);
 		}
 		return changesMade;
-	}
-
-	private Integer countAttributes(Concept c) {
-		int attributeCount = 0;
-		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
-			if (!r.getType().equals(IS_A)) {
-				attributeCount++;
-			}
-		}
-		return attributeCount;
 	}
 
 	@Override

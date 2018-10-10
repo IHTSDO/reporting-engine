@@ -65,42 +65,45 @@ public class TemplateUtils {
 		return sb.toString();
 	}
 	
-	public static boolean matchesTemplate(Concept c, Template t, DescendentsCache cache, CharacteristicType charType) throws TermServerScriptException {
+	public static boolean matchesTemplate(Concept c, Template t, DescendentsCache descendantsCache, CharacteristicType charType) throws TermServerScriptException {
 		//Default to not allowing additional attributes
-		return matchesTemplate(c, t, cache, charType, false);
+		return matchesTemplate(c, t, descendantsCache, charType, false);
 	}
 		
 
 	public static boolean matchesTemplate(Concept c, Template t, DescendentsCache cache, CharacteristicType charType, boolean allowAdditional) throws TermServerScriptException {
 		//TODO Check the focus concept
-
-		//Map relGroups to template attribute groups, and visa versa
-		Map<RelationshipGroup, List<AttributeGroup>> relGroupMatchesTemplateGroups = new HashMap<>();
-		Map<AttributeGroup,  List<RelationshipGroup>> templateGroupMatchesRelGroups = new HashMap<>();
-		
-		//Pre-populate the attributeGroups in case we have no relationship groups, and the relationship groups in case we have no matching template groups
-		t.getAttributeGroups().stream().forEach(attributeGroup -> templateGroupMatchesRelGroups.put(attributeGroup, new ArrayList<RelationshipGroup>()));
-		//Include group 0
-		c.getRelationshipGroups(charType).stream().forEach(relGroup -> relGroupMatchesTemplateGroups.put(relGroup, new ArrayList<AttributeGroup>()));
-		
-		//Work through each group (including 0) and check which of the groups in the template it matches
-		nextRelGroup:
-		for (RelationshipGroup relGroup : c.getRelationshipGroups(charType)) {
-			//Work through each template group and confirm that one of them matches
-			for (AttributeGroup templateGroup : t.getAttributeGroups()) {
-				if (matchesTemplateGroup (relGroup, templateGroup, cache)) {
-					//Update map of concept relationship groups matching template attribute groups
-					List<AttributeGroup> matchedAttributeGroups = relGroupMatchesTemplateGroups.get(relGroup);
-					matchedAttributeGroups.add(templateGroup);
-					
-					//Update map of template attribute groups matching concept relationship groups  
-					List<RelationshipGroup> matchedRelGroups = templateGroupMatchesRelGroups.get(templateGroup);
-					matchedRelGroups.add(relGroup);
-					continue nextRelGroup;
+		try {
+			//Map relGroups to template attribute groups, and visa versa
+			Map<RelationshipGroup, List<AttributeGroup>> relGroupMatchesTemplateGroups = new HashMap<>();
+			Map<AttributeGroup,  List<RelationshipGroup>> templateGroupMatchesRelGroups = new HashMap<>();
+			
+			//Pre-populate the attributeGroups in case we have no relationship groups, and the relationship groups in case we have no matching template groups
+			t.getAttributeGroups().stream().forEach(attributeGroup -> templateGroupMatchesRelGroups.put(attributeGroup, new ArrayList<RelationshipGroup>()));
+			//Include group 0
+			c.getRelationshipGroups(charType).stream().forEach(relGroup -> relGroupMatchesTemplateGroups.put(relGroup, new ArrayList<AttributeGroup>()));
+			
+			//Work through each group (including 0) and check which of the groups in the template it matches
+			nextRelGroup:
+			for (RelationshipGroup relGroup : c.getRelationshipGroups(charType)) {
+				//Work through each template group and confirm that one of them matches
+				for (AttributeGroup templateGroup : t.getAttributeGroups()) {
+					if (matchesTemplateGroup (relGroup, templateGroup, cache)) {
+						//Update map of concept relationship groups matching template attribute groups
+						List<AttributeGroup> matchedAttributeGroups = relGroupMatchesTemplateGroups.get(relGroup);
+						matchedAttributeGroups.add(templateGroup);
+						
+						//Update map of template attribute groups matching concept relationship groups  
+						List<RelationshipGroup> matchedRelGroups = templateGroupMatchesRelGroups.get(templateGroup);
+						matchedRelGroups.add(relGroup);
+						continue nextRelGroup;
+					}
 				}
 			}
+			return validateCardinality(relGroupMatchesTemplateGroups, templateGroupMatchesRelGroups, c, t.getId());
+		} catch (Exception e) {
+			throw new TermServerScriptException("Failed to validate concept " + c + " against template '" + t.getName() + "'", e);
 		}
-		return validateCardinality(relGroupMatchesTemplateGroups, templateGroupMatchesRelGroups, c, t.getId());
 	}
 
 	private static boolean validateCardinality(

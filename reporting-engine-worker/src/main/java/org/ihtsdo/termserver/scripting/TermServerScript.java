@@ -9,6 +9,8 @@ import org.apache.commons.lang.time.DurationFormatUtils;
 import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.dao.ReportManager;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.ActiveState;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.ihtsdo.termserver.scripting.util.StringUtils;
 import org.snomed.otf.scheduler.domain.*;
@@ -966,6 +968,16 @@ public abstract class TermServerScript implements RF2Constants {
 	
 	public void setExclusions(String[] exclusions) throws TermServerScriptException {
 		this.exclusions = exclusions;
+	}
+	
+	public Integer countAttributes(Concept c, CharacteristicType cType) {
+		int attributeCount = 0;
+		for (Relationship r : c.getRelationships(cType, ActiveState.ACTIVE)) {
+			if (!r.getType().equals(IS_A)) {
+				attributeCount++;
+			}
+		}
+		return attributeCount;
 	}
 
 }

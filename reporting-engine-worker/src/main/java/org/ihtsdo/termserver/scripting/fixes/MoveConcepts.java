@@ -150,7 +150,7 @@ public class MoveConcepts extends BatchFix implements RF2Constants{
 				ReportActionType.INFO, 
 				"",
 				c.getDefinitionStatus().toString(), 
-				countAttributes(c),
+				countAttributes(c, CharacteristicType.STATED_RELATIONSHIP),
 				statedChildCount,
 				inferredChildCount);
 		
@@ -286,7 +286,7 @@ public class MoveConcepts extends BatchFix implements RF2Constants{
 
 	private void remove(Task t, Relationship rel, Concept c, String retained, boolean isParent) throws TermServerScriptException {
 		String msgQualifier = isParent ? "parent's" : "child's parent";
-		Integer attributeCount = countAttributes(c);
+		Integer attributeCount = countAttributes(c, CharacteristicType.STATED_RELATIONSHIP);
 		
 		//Are we inactivating or deleting this relationship?
 		if (rel.getEffectiveTime() == null || rel.getEffectiveTime().isEmpty()) {
@@ -299,16 +299,6 @@ public class MoveConcepts extends BatchFix implements RF2Constants{
 			String msg = "Inactivated " + msgQualifier + " relationship: " + rel.getTarget() + " in favour of " + retained;
 			report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_INACTIVATED, msg, c.getDefinitionStatus().toString(), attributeCount.toString());
 		}
-	}
-
-	private Integer countAttributes(Concept c) {
-		int attributeCount = 0;
-		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
-			if (!r.getType().equals(IS_A)) {
-				attributeCount++;
-			}
-		}
-		return attributeCount;
 	}
 
 	@Override

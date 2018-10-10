@@ -29,7 +29,7 @@ abstract public class TemplateFix extends BatchFix {
 	
 	String[] templateNames;
 	List<Template> templates = new ArrayList<>();
-	TemplateServiceClient tsc = new TemplateServiceClient();
+	TemplateServiceClient tsc = new TemplateServiceClient(null, null);
 	
 	Map<Concept, Template> conceptToTemplateMap = new HashMap<>();
 

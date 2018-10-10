@@ -142,16 +142,6 @@ public class ConceptsNotAccountedFor extends TermServerReport implements ReportC
 		.filter(c -> countAttributes(c, CharacteristicType.INFERRED_RELATIONSHIP) == 0)
 		.collect(Collectors.toSet());
 	}*/
-	
-	private Integer countAttributes(Concept c, CharacteristicType charType) {
-		int attributeCount = 0;
-		for (Relationship r : c.getRelationships(charType, ActiveState.ACTIVE)) {
-			if (!r.getType().equals(IS_A)) {
-				attributeCount++;
-			}
-		}
-		return attributeCount;
-	}
 
 	private Set<Concept> findHighestNotAccountedFor(Concept c) throws TermServerScriptException {
 		//Is this concept already accounted for?

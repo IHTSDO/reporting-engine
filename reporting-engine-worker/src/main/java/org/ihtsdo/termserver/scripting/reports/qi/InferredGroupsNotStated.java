@@ -232,16 +232,5 @@ public class InferredGroupsNotStated extends TermServerReport {
 		} while (consolidationMade);
 		debug ("After consolidation size = " + instancesPerSubHierarchy.size());
 	}
-	
-	private Integer countAttributes(Concept c, CharacteristicType charType) {
-		int attributeCount = 0;
-		for (Relationship r : c.getRelationships(charType, ActiveState.ACTIVE)) {
-			if (!r.getType().equals(IS_A)) {
-				attributeCount++;
-			}
-		}
-		return attributeCount;
-	}
-
 
 }

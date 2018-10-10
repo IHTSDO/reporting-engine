@@ -58,7 +58,7 @@ public class NormalizeDoseForms extends DrugBatchFix implements RF2Constants{
 				IS_A,
 				ActiveState.ACTIVE));
 		String parentCount = Integer.toString(parentRels.size());
-		String attributeCount = Integer.toString(SnomedUtils.countAttributes(loadedConcept));
+		String attributeCount = Integer.toString(SnomedUtils.countAttributes(loadedConcept, CharacteristicType.STATED_RELATIONSHIP));
 		Relationship newParentRel = new Relationship (loadedConcept, IS_A, MEDICINAL_PRODUCT, UNGROUPED);
 		
 		int changes = replaceParents (task, loadedConcept, newParentRel, new String[] { parentCount, attributeCount });

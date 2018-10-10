@@ -493,14 +493,4 @@ public class ValidateDrugModeling extends TermServerReport{
 		}
 		return true;
 	}
-
-	private Integer countAttributes(Concept c, CharacteristicType charType) {
-		int attributeCount = 0;
-		for (Relationship r : c.getRelationships(charType, ActiveState.ACTIVE)) {
-			if (!r.getType().equals(IS_A)) {
-				attributeCount++;
-			}
-		}
-		return attributeCount;
-	}
 }

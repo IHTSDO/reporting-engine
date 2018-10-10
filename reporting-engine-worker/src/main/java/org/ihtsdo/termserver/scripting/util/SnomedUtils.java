@@ -825,9 +825,9 @@ public class SnomedUtils implements RF2Constants {
 		return model;
 	}
 	
-	public static Integer countAttributes(Concept c) {
+	public static Integer countAttributes(Concept c, CharacteristicType charType) {
 		int attributeCount = 0;
-		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
+		for (Relationship r : c.getRelationships(charType, ActiveState.ACTIVE)) {
 			if (!r.getType().equals(IS_A)) {
 				attributeCount++;
 			}
