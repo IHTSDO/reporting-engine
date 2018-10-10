@@ -34,4 +34,6 @@ public interface ScheduleService {
 
 	public void processMetadata(JobMetadata metadata);
 
+	public boolean deleteJobRun(String typeName, String jobName, UUID runId);
+
 }

@@ -217,5 +217,18 @@ public class ScheduleServiceImpl implements ScheduleService {
 			}
 		}
 	}
+
+	@Override
+	public boolean deleteJobRun(String typeName, String jobName, UUID runId) {
+		//Do we have this job?
+		JobRun jobRun = getJobRun(typeName, jobName, runId);
+		if (jobRun == null) {
+			logger.error("Unable to delete. JobRun with id {} not found.", runId);
+			return false;
+		}
+		logger.info("Deleting JobRun {}", jobRun);
+		jobRunRepository.delete(jobRun);
+		return true;
+	}
 	
 }

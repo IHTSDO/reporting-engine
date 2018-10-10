@@ -103,6 +103,18 @@ public class SchedulerController {
 		return scheduleService.getJobRun(typeName, jobName, runId);
 	}
 	
+	@ApiOperation(value="Delete job run")
+	@RequestMapping(value = "/jobs/{typeName}/{jobName}/runs/{runId}", method = RequestMethod.DELETE)
+	public ResponseEntity<?> deleteJobRun(@PathVariable final String typeName,
+			@PathVariable final String jobName,
+			@PathVariable final UUID runId) {
+		boolean deleted = scheduleService.deleteJobRun(typeName, jobName, runId);
+		if (!deleted) {
+			return new ResponseEntity<JobRun>(HttpStatus.NOT_FOUND);
+		}
+		return new ResponseEntity<JobRun>(HttpStatus.NO_CONTENT);
+	}
+	
 	@ApiOperation(value="Re-initialise")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
