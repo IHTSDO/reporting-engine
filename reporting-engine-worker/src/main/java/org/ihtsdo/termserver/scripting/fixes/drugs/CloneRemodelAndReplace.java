@@ -43,7 +43,7 @@ public class CloneRemodelAndReplace extends BatchFix implements RF2Constants{
 			fix.populateTaskDescription = true;
 			fix.selfDetermining = true;
 			fix.keepIssuesTogether = true;
-			fix.classifyTasks = true;
+			//fix.classifyTasks = true;
 			fix.additionalReportColumns = "ACTION_DETAIL, DEF_STATUS, PARENT_COUNT, ATTRIBUTE_COUNT";
 			fix.init(args);
 			fix.loadProjectSnapshot(false); 

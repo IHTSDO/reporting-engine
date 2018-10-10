@@ -363,7 +363,7 @@ public class DrugTermGenerator implements RF2Constants{
 
 		if (drugVariance != ingredientVariance || (presentationVariance != null && !drugVariance && presentationVariance)) {
 			String msg = "Drug vs Ingredient vs Presentation US/GB term variance mismatch : Drug=" + drugVariance + " Ingredients=" + ingredientVariance + " Presentation=" + presentationVariance;
-			report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, msg);
+			report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, msg);
 			if (!drugVariance && (ingredientVariance || presentationVariance)) {
 				splitPreferredTerm(t, c, allowDuplicates);
 			}
