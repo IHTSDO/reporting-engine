@@ -68,6 +68,7 @@ public abstract class TermServerScript implements RF2Constants {
 	public static String CONCEPTS_IN_FILE = "Concepts in file";
 	public static String CONCEPTS_TO_PROCESS = "Concepts to process";
 	public static String REPORTED_NOT_PROCESSED = "Reported not processed";
+	public static String ISSUE_COUNT = "Issue count";
 	public static String CRITICAL_ISSUE = "CRITICAL ISSUE";
 	public static String inputFileDelimiter = TSV_FIELD_DELIMITER;
 	protected String tsRoot = "MAIN/"; //"MAIN/2016-01-31/SNOMEDCT-DK/";
@@ -340,7 +341,7 @@ public abstract class TermServerScript implements RF2Constants {
 
 	public void postInit(JobRun jobRun) throws TermServerScriptException {
 		subHierarchy = gl.getConcept(jobRun.getParameter(SUB_HIERARCHY));
-		//And post that back in, so the FSN is always populated
+		//RP-4 And post that back in, so the FSN is always populated
 		jobRun.setParameter(SUB_HIERARCHY, subHierarchy.toString());
 		getReportManager().initialiseReportFiles( new String[] {headers + additionalReportColumns});
 	}
@@ -353,6 +354,9 @@ public abstract class TermServerScript implements RF2Constants {
 			jobRun.setResultUrl(getReportManager().getUrl());
 			runJob();
 			jobRun.setStatus(JobStatus.Complete);
+			String issueCountStr = summaryDetails.get(ISSUE_COUNT).toString();
+			int issueCount = StringUtils.isNumeric(issueCountStr) ? Integer.parseInt(issueCountStr) : 0;
+			jobRun.setIssuesReported(issueCount);
 		} catch (Exception e) {
 			String msg = "Failed to complete " + jobRun.getJobName() + " due to: " + e.getMessage();
 			jobRun.setStatus(JobStatus.Failed);
