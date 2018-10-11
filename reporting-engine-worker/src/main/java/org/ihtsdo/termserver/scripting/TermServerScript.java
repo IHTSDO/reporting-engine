@@ -9,8 +9,6 @@ import org.apache.commons.lang.time.DurationFormatUtils;
 import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.dao.ReportManager;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.ActiveState;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.ihtsdo.termserver.scripting.util.StringUtils;
 import org.snomed.otf.scheduler.domain.*;
@@ -354,8 +352,11 @@ public abstract class TermServerScript implements RF2Constants {
 			jobRun.setResultUrl(getReportManager().getUrl());
 			runJob();
 			jobRun.setStatus(JobStatus.Complete);
-			String issueCountStr = summaryDetails.get(ISSUE_COUNT).toString();
-			int issueCount = StringUtils.isNumeric(issueCountStr) ? Integer.parseInt(issueCountStr) : 0;
+			Object issueCountObj = summaryDetails.get(ISSUE_COUNT);
+			int issueCount = 0;
+			if (issueCountObj != null && StringUtils.isNumeric(issueCountObj.toString())) {
+				issueCount = Integer.parseInt(issueCountObj.toString());
+			}
 			jobRun.setIssuesReported(issueCount);
 		} catch (Exception e) {
 			String msg = "Failed to complete " + jobRun.getJobName() + " due to: " + e.getMessage();
