@@ -32,6 +32,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected String url = environments[0];
 	protected boolean useAuthenticatedCookie = true;
 	protected boolean stateComponentType = true;
+	protected JobRun jobRun;
 	protected SnowOwlClient tsClient;
 	protected AuthoringServicesClient scaClient;
 	private ArchiveManager archiveManager; 
@@ -77,6 +78,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected static final String DRY_RUN = "DryRun";
 	protected static final String INPUT_FILE = "InputFile";
 	protected static final String SUB_HIERARCHY = "SubHierarchy";
+	protected static final String HIERARCHIES = "Hierarchies";
 
 	public static Gson gson;
 	static {
@@ -298,8 +300,9 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 
 	protected void init (JobRun jobRun) throws TermServerScriptException {
-		url = jobRun.getTerminologyServerUrl();
-		env = getEnv(url);
+		this.url = jobRun.getTerminologyServerUrl();
+		this.env = getEnv(url);
+		this.jobRun = jobRun;
 		authenticatedCookie = jobRun.getAuthToken();
 		if (StringUtils.isEmpty(jobRun.getParameter(PROJECT))) {
 			warn("No project specified, running against MAIN");

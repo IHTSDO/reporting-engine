@@ -19,12 +19,13 @@ public class SemanticTagHierarchy extends TermServerReport implements ReportClas
 	Map<String, Map<String, Concept>> semanticTagHierarchy = new HashMap<>();
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
+		Map<String, String> params = new HashMap<>();
+		params.put(SUB_HIERARCHY, BODY_STRUCTURE.toString());
 		TermServerReport.run(SemanticTagHierarchy.class, args);
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc
-		run.setParameter(SUB_HIERARCHY, BODY_STRUCTURE);
 		super.init(run);
 	}
 

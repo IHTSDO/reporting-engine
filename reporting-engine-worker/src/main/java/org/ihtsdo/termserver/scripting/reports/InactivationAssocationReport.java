@@ -38,7 +38,8 @@ public class InactivationAssocationReport extends TermServerScript implements Re
 		return new Job( new JobCategory(JobCategory.RELEASE_VALIDATION),
 						"List Inactivated Concepts",
 						"Lists all concepts for the specified inactivation reasons (TODO) along with the historical associations used.",
-						parameterNames);
+						parameterNames,
+						Job.ProductionStatus.HIDEME);
 	}
 
 	public void runJob() throws TermServerScriptException {

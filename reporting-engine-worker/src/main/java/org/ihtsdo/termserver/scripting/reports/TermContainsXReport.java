@@ -32,8 +32,8 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		Map<String, String> params = new HashMap<>();
 		params.put(SUB_HIERARCHY, SUBSTANCE.toString());
-		params.put("Words", "hydrochloride,mesilate,mesylate,maleate,anhydrous");
-		params.put("AttributeDetail", "738774007 |Is modification of (attribute)|");
+		params.put(WORDS, "hydrochloride,mesilate,mesylate,maleate,anhydrous");
+		params.put(ATTRIBUTE_DETAIL, "738774007 |Is modification of (attribute)|");
 		TermServerReport.run(TermContainsXReport.class, args, params);
 	}
 	

@@ -31,7 +31,7 @@ public class DuplicateTermsInSubhierarchy extends TermServerReport implements Re
 
 	@Override
 	public Job getJob() {
-		String[] parameterNames = new String[] { "SubHierarchy" };
+		String[] parameterNames = new String[] { SUB_HIERARCHY };
 		return new Job( new JobCategory(JobCategory.RELEASE_VALIDATION),
 						"Duplicate Terms",
 						"Lists concepts that have the same PT or Synonyms within the same sub-hierarchy",
@@ -65,6 +65,7 @@ public class DuplicateTermsInSubhierarchy extends TermServerReport implements Re
 						incrementSummaryInformation("Legacy Issues Reported");
 					}	else {
 						incrementSummaryInformation("Fresh Issues Reported");
+						incrementSummaryInformation(ISSUE_COUNT);  //We'll only flag up fresh issues
 					}
 					Concept alreadyKnownConcept = gl.getConcept(alreadyKnown.getConceptId());
 					String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];

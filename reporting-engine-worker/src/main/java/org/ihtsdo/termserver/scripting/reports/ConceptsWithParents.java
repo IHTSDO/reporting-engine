@@ -21,14 +21,15 @@ public class ConceptsWithParents extends TermServerReport implements ReportClass
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1E6kDgFExNA9CRd25yZk_Y7l-KWRf8k6B"; //Drugs / Re-terming
-		additionalReportColumns="FSN, DEF_STATUS, ConceptType, ImmedateStatedParent, Inferred Parents, PARENT'S PARENT";
+		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
+		//additionalReportColumns="FSN, DEF_STATUS, ConceptType, ImmedateStatedParent, Inferred Parents, PARENT'S PARENT";
+		additionalReportColumns="FSN, SemTag, DEF_STATUS, ImmedateStatedParent, Inferred Parents, PARENT'S PARENT";
 		super.init(run);
 	}
 
 	@Override
 	public Job getJob() {
-		String[] parameterNames = new String[] { "SubHierarchy" };
+		String[] parameterNames = new String[] { HIERARCHIES };
 		return new Job( new JobCategory(JobCategory.ADHOC_QUERIES),
 						"Concepts with Parents",
 						"Lists concepts along with their parents, and their parent's parents",
@@ -36,34 +37,39 @@ public class ConceptsWithParents extends TermServerReport implements ReportClass
 	}
 
 	public void runJob() throws TermServerScriptException {
-		
 		//TODO work through all our subhierarchies and join them together
 		//so we don't get duplicates
-		Concept dispositions = gl.getConcept("766779001 |Medicinal product categorized by disposition (product)|");
+		/*Concept dispositions = gl.getConcept("766779001 |Medicinal product categorized by disposition (product)|");
 		Concept structures = gl.getConcept("763760008 |Medicinal product categorized by structure (product)|");
 		Set<Concept> conceptsOfInterest = dispositions.getDescendents(NOT_SET);
 		conceptsOfInterest.addAll(structures.getDescendents(NOT_SET));
 		ConceptType[] typesOfInterest = new ConceptType[] { ConceptType.STRUCTURE_AND_DISPOSITION_GROUPER,
 															ConceptType.STRUCTURAL_GROUPER,
 															ConceptType.DISPOSITION_GROUPER };
+		*/
+		Set<Concept> conceptsOfInterest = new HashSet<>();
+		for (String hierarchyStr : jobRun.getParameter(HIERARCHIES).split(COMMA)) {
+			Concept hierarchy = gl.getConcept(hierarchyStr);
+			conceptsOfInterest.addAll(hierarchy.getDescendents(NOT_SET));
+		}
 		
 		for (Concept c : conceptsOfInterest) {
-			if (SnomedUtils.isConceptType(c, typesOfInterest)) {
-				SnomedUtils.populateConceptType(c);
-				List<Concept> statedParents = c.getParents(CharacteristicType.STATED_RELATIONSHIP);
-				String statedParentsStr = statedParents.stream().map(p->p.toString())
-						.collect(Collectors.joining(",\n"));
-				List<Concept> parents = c.getParents(CharacteristicType.INFERRED_RELATIONSHIP);
-				String parentsStr = parents.stream().map(p->p.toString())
-						.collect(Collectors.joining(",\n"));
-				String parentsParentsStr = parents.stream()
-						.flatMap(p->p.getParents(CharacteristicType.INFERRED_RELATIONSHIP).stream())
-						.map(pp->pp.toString())
-						.collect(Collectors.joining(",\n"));
-				String defn = SnomedUtils.translateDefnStatus(c.getDefinitionStatus());
-				report (c, defn, c.getConceptType(), statedParentsStr, parentsStr, parentsParentsStr);
-				incrementSummaryInformation("Concepts reported");
-			}
+			//if (SnomedUtils.isConceptType(c, typesOfInterest)) {
+			//SnomedUtils.populateConceptType(c);
+			List<Concept> statedParents = c.getParents(CharacteristicType.STATED_RELATIONSHIP);
+			String statedParentsStr = statedParents.stream().map(p->p.toString())
+					.collect(Collectors.joining(",\n"));
+			List<Concept> parents = c.getParents(CharacteristicType.INFERRED_RELATIONSHIP);
+			String parentsStr = parents.stream().map(p->p.toString())
+					.collect(Collectors.joining(",\n"));
+			String parentsParentsStr = parents.stream()
+					.flatMap(p->p.getParents(CharacteristicType.INFERRED_RELATIONSHIP).stream())
+					.map(pp->pp.toString())
+					.collect(Collectors.joining(",\n"));
+			String defn = SnomedUtils.translateDefnStatus(c.getDefinitionStatus());
+			report (c, defn, c.getConceptType(), statedParentsStr, parentsStr, parentsParentsStr);
+			incrementSummaryInformation("Concepts reported");
+			//}
 		}
 	}
 

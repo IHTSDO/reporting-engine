@@ -174,7 +174,8 @@ public class TemplateCompliance extends TermServerReport implements ReportClass 
 		return new Job( new JobCategory(JobCategory.QI),
 						"SNOMEDCT Template Compliance",
 						"For every domain which has a known template, determine how many concepts comply to that template.",
-						parameterNames);
+						parameterNames,
+						Job.ProductionStatus.HIDEME);
 	}
 	
 	public void runJob() throws TermServerScriptException {

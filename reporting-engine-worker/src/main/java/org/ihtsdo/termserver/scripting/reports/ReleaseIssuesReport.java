@@ -64,6 +64,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 						incrementSummaryInformation("Legacy Issues Reported");
 					}	else {
 						incrementSummaryInformation("Fresh Issues Reported");
+						incrementSummaryInformation(ISSUE_COUNT);  //We'll only flag up fresh issues
 					}
 				}
 			}
@@ -81,6 +82,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 						incrementSummaryInformation("Legacy Issues Reported");
 					}	else {
 						incrementSummaryInformation("Fresh Issues Reported");
+						incrementSummaryInformation(ISSUE_COUNT);  //We'll only flag up fresh issues
 					}
 				}
 			}
@@ -89,7 +91,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	
 	//MAINT-224 Synonyms created as TextDefinitions new content only
 	private void fullStopInSynonym() throws TermServerScriptException {
-		for (Concept c : ROOT_CONCEPT.getDescendents(NOT_SET)) {
+		for (Concept c : gl.getAllConcepts()) {
 			if (c.isActive()) {
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 					//We're only working on descriptions modified in the current release
@@ -102,6 +104,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 							incrementSummaryInformation("Legacy Issues Reported");
 						}	else {
 							incrementSummaryInformation("Fresh Issues Reported");
+							incrementSummaryInformation(ISSUE_COUNT);  //We'll only flag up fresh issues
 						}
 					}
 				}
@@ -137,6 +140,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 						incrementSummaryInformation("Legacy Issues Reported");
 					}	else {
 						incrementSummaryInformation("Fresh Issues Reported");
+						incrementSummaryInformation(ISSUE_COUNT);  //We'll only flag up fresh issues
 					}
 				}
 			}
@@ -158,6 +162,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				if (StringUtils.isEmpty(semTag)) {
 					String legacy = isLegacy(c.getFSNDescription());
 					report(c,"FSN missing semantic tag" ,legacy, isActive(c,c.getFSNDescription()), c.getFsn());
+					incrementSummaryInformation(ISSUE_COUNT);  //We'll only flag up fresh issues
 				} else {
 					knownSemanticTags.put(semTag, c);
 				}
@@ -169,6 +174,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		for (Concept c : gl.getAllConcepts()) {
 			if (c.getFSNDescription() == null) {
 				warn("No FSN Description found (2nd pass) for concept " + c.getConceptId());
+				incrementSummaryInformation(ISSUE_COUNT);  //We'll only flag up fresh issues
 				continue;
 			}
 			String legacy = isLegacy(c.getFSNDescription());
@@ -180,6 +186,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 						incrementSummaryInformation("Legacy Issues Reported");
 					}	else {
 						incrementSummaryInformation("Fresh Issues Reported");
+						incrementSummaryInformation(ISSUE_COUNT);  //We'll only flag up fresh issues
 					}
 				}
 			}
@@ -198,6 +205,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 						incrementSummaryInformation("Legacy Issues Reported");
 					}	else {
 						incrementSummaryInformation("Fresh Issues Reported");
+						incrementSummaryInformation(ISSUE_COUNT);  //We'll only flag up fresh issues
 					}
 				}
 			}

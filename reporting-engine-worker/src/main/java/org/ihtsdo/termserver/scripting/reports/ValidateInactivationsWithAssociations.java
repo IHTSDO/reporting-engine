@@ -37,7 +37,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 
 	@Override
 	public Job getJob() {
-		String[] parameterNames = new String[] { "SubHierarchy" };
+		String[] parameterNames = new String[] { };
 		return new Job( new JobCategory(JobCategory.RELEASE_VALIDATION),
 						"Validate Inactivations with Associations",
 						"Ensures that inactivation indicators are appropriate to historical associations",
@@ -57,6 +57,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 							.map(i->i.toString())
 							.collect(Collectors.joining(",\n"));
 					report (c, c.getEffectiveTime(), null, "Concept has multiple inactivation indicators", isLegacy, data);
+					incrementSummaryInformation(ISSUE_COUNT);
 				} else {
 					InactivationIndicatorEntry i = c.getInactivationIndicatorEntries(ActiveState.ACTIVE).get(0); 
 					switch (i.getInactivationReasonId()) {
@@ -81,7 +82,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 							break;
 						default :
 							report (c, c.getEffectiveTime(), "Unrecognised concept inactivation indicator", isLegacy, i);
-					
+							incrementSummaryInformation(ISSUE_COUNT);
 					}
 				}
 			}
@@ -102,6 +103,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 				for (InactivationIndicatorEntry i : d.getInactivationIndicatorEntries(ActiveState.ACTIVE)) {
 					if (!i.getRefsetId().equals(SCTID_DESC_INACT_IND_REFSET)) {
 						report (c, c.getEffectiveTime(), d, "Description has something other than a description inactivation indicator", cdLegacy, d, i);
+						incrementSummaryInformation(ISSUE_COUNT);
 					}
 					continue nextDescription;
 				}
@@ -113,26 +115,31 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 					//Expect a single "Concept not current" indicator
 					if (d.getInactivationIndicatorEntries(ActiveState.ACTIVE).size() == 0) {
 						report (c, c.getEffectiveTime(), "Active description of inactive concept is missing 'Concept non-current' indicator", cdLegacy, d);
+						incrementSummaryInformation(ISSUE_COUNT);
 					} else {
 						InactivationIndicatorEntry i = d.getInactivationIndicatorEntries(ActiveState.ACTIVE).get(0); 
 						if (!i.getInactivationReasonId().equals(SCTID_INACT_CONCEPT_NON_CURRENT)) {
 							report (c, c.getEffectiveTime(), "Active description of inactive concept has something other than a 'Concept non-current' indicator", cdLegacy, d, i);
+							incrementSummaryInformation(ISSUE_COUNT);
 						}
 					}
 				} else if (d.isActive() && c.isActive()) {
 					//Expect NO inactivation indicator here
 					if (d.getInactivationIndicatorEntries(ActiveState.ACTIVE).size() > 0) {
 						report (c, c.getEffectiveTime(), d, "Active description of active concept should not have an inactivation indicator", cdLegacy, d, data);
+						incrementSummaryInformation(ISSUE_COUNT);
 					}
 				} else if (!d.isActive() && !c.isActive()) {
 					//Expect inactivation indicator here, but not Concept-non-current
 					if (d.getInactivationIndicatorEntries(ActiveState.ACTIVE).size() != 1) {
 						//report (c, c.getEffectiveTime(), d, "Inactive description of active concept should have an inactivation indicator", cdLegacy, d);
 						incrementSummaryInformation("Inactive description of active concept should have an inactivation indicator");
+						incrementSummaryInformation(ISSUE_COUNT);
 					} else {
 						InactivationIndicatorEntry i = d.getInactivationIndicatorEntries(ActiveState.ACTIVE).get(0); 
 						if (i.getInactivationReasonId().equals(SCTID_INACT_CONCEPT_NON_CURRENT)) {
 							report (c, c.getEffectiveTime(), d, "Inactive description of an active concept should not have a 'Concept non-current' indicator", cdLegacy, d, i);
+							incrementSummaryInformation(ISSUE_COUNT);
 						}
 					}
 				}
@@ -165,8 +172,10 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 		int assocCount = c.getAssociations(ActiveState.ACTIVE, true).size();
 		if (assocCount > maxAssocs) {
 			report (c, c.getEffectiveTime(), inactStr + " inactivation must have no more than " + maxStr + " historical associations.", legacy,  data);
+			incrementSummaryInformation(ISSUE_COUNT);
 		} else if  (assocCount < minAssocs) {
 			report (c, c.getEffectiveTime(), inactStr + " inactivation must have at least " + minAssocs + " historical associations.", legacy, data);
+			incrementSummaryInformation(ISSUE_COUNT);
 		} else {
 			//Now check association is appropriate for the inactivation indicator used
 			for (AssociationEntry h : c.getAssociations(ActiveState.ACTIVE, true)) {
