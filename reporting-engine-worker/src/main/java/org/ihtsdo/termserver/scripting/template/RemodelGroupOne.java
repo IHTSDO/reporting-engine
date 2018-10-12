@@ -57,22 +57,22 @@ public class RemodelGroupOne extends TemplateFix {
 		populateEditPanel = true;
 		populateTaskDescription = true;
 		additionalReportColumns = "CharacteristicType, Template, AFTER Stated, BEFORE Stated, Inferred";
+		
+		formNewGroupAround.add(FINDING_SITE);
+		formNewGroupAround.add(CAUSE_AGENT);
+		formNewGroupAround.add(ASSOC_MORPH);
 		/*
 		subHierarchyStr = "125605004";  // QI-30 |Fracture of bone (disorder)|
 		templateNames = new String[] {	"templates/Fracture of Bone Structure.json" }; /*,
 										"templates/Fracture Dislocation of Bone Structure.json",
 										"templates/Pathologic fracture of bone due to Disease.json"};
-		*/
+		
 		subHierarchyStr =  "128294001";  // QI-36 |Chronic inflammatory disorder (disorder)
 		templateNames = new String[] {"templates/Chronic Inflammatory Disorder.json"};
 		/*
 		subHierarchyStr =  "126537000";  //QI-14 |Neoplasm of bone (disorder)|
 		templateNames = new String[] {"templates/Neoplasm of Bone.json"};
-		*/
-		formNewGroupAround.add(FINDING_SITE);
-		formNewGroupAround.add(CAUSE_AGENT);
-		formNewGroupAround.add(ASSOC_MORPH);
-		/*
+
 		subHierarchyStr =  "34014006"; //QI-15 + QI-23 |Viral disease (disorder)|
 		templateNames = new String[] {	"templates/Infection caused by virus with optional bodysite.json"};
 
@@ -90,10 +90,10 @@ public class RemodelGroupOne extends TemplateFix {
 		
 		subHierarchyStr = "3218000"; //QI-70 |Mycosis (disorder)|
 		templateNames = new String[] {	"templates/Infection caused by Fungus.json"};
-		
+		*/
 		subHierarchyStr = "17322007"; //QI-116 |Parasite (disorder)|
 		templateNames = new String[] {	"templates/Infection caused by Parasite.json"};
-		
+		/*
 		subHierarchyStr = "125643001"; //QI-117 |Open wound| 
 		templateNames = new String[] {	"templates/wound/wound of bodysite.json"
 				//"templates/wound/open wound of bodysite.json"

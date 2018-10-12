@@ -74,7 +74,7 @@ abstract public class TemplateFix extends BatchFix {
 		
 		if (!includeComplexTemplates) {
 			exclusionWords.add("due to");
-			//exclusionWords.add("with");
+			exclusionWords.add("with");
 			exclusionWords.add("without");
 		}
 		
