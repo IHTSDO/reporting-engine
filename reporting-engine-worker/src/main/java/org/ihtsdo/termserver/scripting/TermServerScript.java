@@ -252,8 +252,6 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 		info("Full path for projected determined to be: " + project.getBranchPath());
 		setArchiveManager(new ArchiveManager(this));
-		reportManager = ReportManager.create(env, getReportName());
-		
 	}
 
 	protected void checkSettingsWithUser(JobRun jobRun) {
@@ -344,6 +342,7 @@ public abstract class TermServerScript implements RF2Constants {
 		subHierarchy = gl.getConcept(jobRun.getParameter(SUB_HIERARCHY));
 		//RP-4 And post that back in, so the FSN is always populated
 		jobRun.setParameter(SUB_HIERARCHY, subHierarchy.toString());
+		reportManager = ReportManager.create(env, getReportName());
 		getReportManager().initialiseReportFiles( new String[] {headers + additionalReportColumns});
 	}
 	
@@ -777,11 +776,16 @@ public abstract class TermServerScript implements RF2Constants {
 		String fileName = SnomedUtils.deconstructFilename(inputFile)[1];
 		String spacer = " ";
 		String reportName = getScriptName() + (fileName.isEmpty()?"" : spacer + fileName);
-		
-		if (subHierarchy != null && !subHierarchy.equals(ROOT_CONCEPT)) {
-			reportName += spacer + subHierarchy;
-		} else if (subHierarchyStr != null && !subHierarchyStr.contains(ROOT_CONCEPT.getConceptId())) {
-			reportName += " SCT" + subHierarchyStr;
+		try {
+			if (subHierarchy == null && subHierarchyStr != null && !subHierarchyStr.contains(ROOT_CONCEPT.getConceptId())) {
+				subHierarchy = gl.getConcept(subHierarchyStr);
+			}
+			
+			if (subHierarchy != null && !subHierarchy.equals(ROOT_CONCEPT)) {
+				reportName += spacer + subHierarchy.getPreferredSynonym();
+			}
+		} catch (Exception e) {
+			error ("Recoverable hiccup while setting report name",e);
 		}
 		return reportName;
 	}
