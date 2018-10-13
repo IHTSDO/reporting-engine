@@ -23,7 +23,7 @@ public class ConceptsWithParents extends TermServerReport implements ReportClass
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
 		//additionalReportColumns="FSN, DEF_STATUS, ConceptType, ImmedateStatedParent, Inferred Parents, PARENT'S PARENT";
-		additionalReportColumns="FSN, SemTag, DEF_STATUS, ImmedateStatedParent, Inferred Parents, PARENT'S PARENT";
+		additionalReportColumns="FSN, SemTag, DEF_STATUS, ImmediateStatedParent, Inferred Parents, Grand Parents";
 		super.init(run);
 	}
 
@@ -67,7 +67,7 @@ public class ConceptsWithParents extends TermServerReport implements ReportClass
 					.map(pp->pp.toString())
 					.collect(Collectors.joining(",\n"));
 			String defn = SnomedUtils.translateDefnStatus(c.getDefinitionStatus());
-			report (c, defn, c.getConceptType(), statedParentsStr, parentsStr, parentsParentsStr);
+			report (c, defn, statedParentsStr, parentsStr, parentsParentsStr);
 			incrementSummaryInformation("Concepts reported");
 			//}
 		}
