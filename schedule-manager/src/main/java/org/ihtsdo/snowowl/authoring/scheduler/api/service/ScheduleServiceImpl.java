@@ -211,6 +211,15 @@ public class ScheduleServiceImpl implements ScheduleService {
 						job.setCategory(knownCategory);
 						jobRepository.save(job);
 					}
+					
+					//Do we have to remove any jobs that have been withdrawn?
+					List<Job> savedJobs = jobRepository.findByCategoryId(knownCategory.getId());
+					savedJobs.removeAll(jobCategory.getJobs());
+					//All the jobs we're left with were not represented in the metadata, so hide
+					for (Job withdrawnJob : savedJobs) {
+						withdrawnJob.setProductionStatus(Job.ProductionStatus.HIDEME);
+						jobRepository.save(withdrawnJob);
+					}
 				}
 			} catch (Exception e) {
 				logger.error("Unable to process metadata", e);

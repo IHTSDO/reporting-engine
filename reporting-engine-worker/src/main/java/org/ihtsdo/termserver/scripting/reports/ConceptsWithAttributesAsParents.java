@@ -41,11 +41,12 @@ public class ConceptsWithAttributesAsParents extends TermServerReport {
 		}
 	}
 
-	private void postInit() throws TermServerScriptException {
+	public void postInit() throws TermServerScriptException {
 		attributeType = gl.getConcept("738774007"); // |Is modification of (attribute)|)
 		ignoreTypes = new ArrayList<>();
 		ignoreTypes.add(DUE_TO);
 		ignoreTypes.add(PART_OF);
+		super.postInit();
 	}
 
 	private void runConceptsWithAttributesAsParentsReport() throws TermServerScriptException {

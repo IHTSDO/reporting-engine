@@ -43,13 +43,14 @@ public class PreferredAcceptableDialectCombo extends BatchFix implements RF2Cons
 		}
 	}
 
-	private void postInit() throws TermServerScriptException {
+	public void postInit() throws TermServerScriptException {
 		allExclusions = new HashSet<>();
 		for (String exclusion : exclusions) {
 			Concept subHierarchy = gl.getConcept(exclusion);
 			allExclusions.addAll(subHierarchy.getDescendents(NOT_SET));
 		}
 		getSubstancesUsedInProducts();
+		super.postInit();
 	}
 	
 	private void getSubstancesUsedInProducts() throws TermServerScriptException {

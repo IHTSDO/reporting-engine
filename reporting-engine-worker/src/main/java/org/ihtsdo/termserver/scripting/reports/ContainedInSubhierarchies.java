@@ -42,17 +42,26 @@ public class ContainedInSubhierarchies extends TermServerReport {
 		}
 	}
 
-	private void postInit() throws IOException, TermServerScriptException {
+	public void postInit() throws TermServerScriptException {
 		df.setMaximumFractionDigits(2);
 		//Load the starter set
-		for (String line : Files.readLines(inputFile, Charsets.UTF_8)) {
-			conceptsOfInterest.add(gl.getConcept(line));
+		try {
+			for (String line : Files.readLines(inputFile, Charsets.UTF_8)) {
+				conceptsOfInterest.add(gl.getConcept(line));
+			}
+		} catch (IOException e) {
+			throw new TermServerScriptException("Unable to load " + inputFile, e);
 		}
 		
 		//Load Yong's list of subhierarchies
-		for (String line : Files.readLines(inputFile2, Charsets.UTF_8)) {
-			subHierarchies.add(gl.getConcept(line));
+		try {
+			for (String line : Files.readLines(inputFile2, Charsets.UTF_8)) {
+				subHierarchies.add(gl.getConcept(line));
+			}
+		} catch (IOException e) {
+			throw new TermServerScriptException("Unable to load " + inputFile2, e);
 		}
+		super.postInit();
 	}
 
 	private void runContainedInSubhierarchyReport() throws TermServerScriptException {

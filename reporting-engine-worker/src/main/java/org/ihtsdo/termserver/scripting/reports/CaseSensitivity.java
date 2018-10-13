@@ -47,8 +47,8 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 		inputFile = new File("resources/cs_words.txt");
 	}
 	
-	public void postInit(JobRun run) throws TermServerScriptException {
-		super.postInit(run);
+	public void postInit() throws TermServerScriptException {
+		super.postInit();
 		
 		loadCSWords();
 		

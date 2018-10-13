@@ -61,8 +61,9 @@ public class MissingDrugConcepts extends TermServerReport {
 		}
 	}
 
-	private void postInit() throws TermServerScriptException {
+	public void postInit() throws TermServerScriptException {
 		subHierarchy = gl.getConcept(PHARM_BIO_PRODUCT.getConceptId());
+		super.postInit();
 	}
 
 	private void runIdentifyMissingMPConceptsReport() throws TermServerScriptException {

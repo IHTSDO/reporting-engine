@@ -45,13 +45,14 @@ public class DeleteBornInactiveStatedRelationships extends BatchFix implements R
 		}
 	}
 
-	private void postInit() {
+	public void postInit() throws TermServerScriptException {
 		//Gather a map of all known inactive stated relationships
 		for (Concept c : gl.getAllConcepts()) {
 			for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.INACTIVE)) {
 				relationshipMap.put(r.getId(), c);
 			}
 		}
+		super.postInit();
 	}
 
 	@Override

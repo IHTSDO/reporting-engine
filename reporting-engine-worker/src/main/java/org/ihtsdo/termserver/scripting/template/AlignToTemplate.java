@@ -44,11 +44,11 @@ public class AlignToTemplate extends TemplateFix {
 		}
 	}
 	
-	protected void postInit() throws TermServerScriptException {
+	public void postInit() throws TermServerScriptException {
 		subHierarchy = gl.getConcept(subHierarchyStr);
 		templates.add(loadTemplate('A', "Chronic Inflammatory Disorder.json"));
 		info(templates.size() + " Templates loaded successfully");
-
+		super.postInit();
 	}
 
 	@Override

@@ -340,7 +340,7 @@ public abstract class TermServerScript implements RF2Constants {
 		return machineName.substring(0, lastDash);
 	}
 
-	public void postInit(JobRun jobRun) throws TermServerScriptException {
+	public void postInit() throws TermServerScriptException {
 		subHierarchy = gl.getConcept(jobRun.getParameter(SUB_HIERARCHY));
 		//RP-4 And post that back in, so the FSN is always populated
 		jobRun.setParameter(SUB_HIERARCHY, subHierarchy.toString());
@@ -351,7 +351,7 @@ public abstract class TermServerScript implements RF2Constants {
 		try {
 			init(jobRun);
 			loadProjectSnapshot(false);  //Load all descriptions
-			postInit(jobRun);
+			postInit();
 			jobRun.setResultUrl(getReportManager().getUrl());
 			runJob();
 			jobRun.setStatus(JobStatus.Complete);

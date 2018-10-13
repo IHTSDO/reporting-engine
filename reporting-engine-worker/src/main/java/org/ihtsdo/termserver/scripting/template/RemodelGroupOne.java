@@ -105,7 +105,7 @@ public class RemodelGroupOne extends TemplateFix {
 		super.init(args);
 	}
 	
-	protected void postInit() throws TermServerScriptException {
+	public void postInit() throws TermServerScriptException {
 		super.postInit();
 		
 		//Populate grouped and ungrouped attributes

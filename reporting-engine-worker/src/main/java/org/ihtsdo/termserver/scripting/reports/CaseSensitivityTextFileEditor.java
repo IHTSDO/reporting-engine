@@ -57,7 +57,7 @@ public class CaseSensitivityTextFileEditor extends TermServerReport{
 		super.init(args);
 	}
 	
-	private void postInit() throws TermServerScriptException {
+	public void postInit() throws TermServerScriptException {
 		info("Collecting organism terms...");
 		for (Concept c : ORGANISM.getDescendents(NOT_SET)) {
 			for (Description d : c.getDescriptions(Acceptability.PREFERRED, null, ActiveState.ACTIVE)) {
@@ -85,6 +85,7 @@ public class CaseSensitivityTextFileEditor extends TermServerReport{
 				}
 			}
 		}
+		super.postInit();
 	}
 
 	private void processCSWordsFile() throws IOException, TermServerScriptException {

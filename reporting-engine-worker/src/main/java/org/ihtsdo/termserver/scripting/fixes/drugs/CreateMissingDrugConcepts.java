@@ -72,7 +72,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 		}
 	}
 	
-	private void postInit() throws TermServerScriptException {
+	public void postInit() throws TermServerScriptException {
 		for (Concept c : MEDICINAL_PRODUCT.getDescendents(NOT_SET)) {
 			SnomedUtils.populateConceptType(c);
 			if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM)) {
@@ -95,6 +95,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 		allowMoreSpecificDoseForms.add(gl.getConcept("765166009 | Ocular or otic dose form (dose form)|"));
 		allowMoreSpecificDoseForms.add(gl.getConcept("772805002 | Endotracheopulmonary dose form (dose form)|"));
 		allowMoreSpecificDoseForms.add(gl.getConcept("772806001 | Buccal dose form (dose form)||"));
+		super.postInit();
 	}
 
 	protected void init(String[] args) throws TermServerScriptException, IOException {

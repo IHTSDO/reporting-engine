@@ -36,7 +36,7 @@ public class ConceptsNotAccountedFor extends TermServerReport implements ReportC
 		TermServerReport.run(ConceptsNotAccountedFor.class, args);
 	}
 	
-	public void init (JobRun run) throws TermServerScriptException {
+	public void init(JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "1YoJa68WLAMPKG6h4_gZ5-QT974EU9ui6"; //QI / Stats
 		additionalReportColumns="FSN, Descendants NOC, Already accounted, SIMPLE, PURE_CO, COMPLEX, COMPLEX_NO_MORPH, NONE";
 		run.setParameter(SUB_HIERARCHY, CLINICAL_FINDING);
@@ -44,7 +44,7 @@ public class ConceptsNotAccountedFor extends TermServerReport implements ReportC
 		getArchiveManager().allowStaleData = true;
 	}
 
-	public void postInit (JobRun run) throws TermServerScriptException {
+	public void postInit() throws TermServerScriptException {
 		List<String> lines = null;
 		try {
 			lines = Files.readLines(inputFile, Charsets.UTF_8);
@@ -58,7 +58,7 @@ public class ConceptsNotAccountedFor extends TermServerReport implements ReportC
 			accountedForHierarchies.add(accountedForSubHierarchy);
 			accountedForHierarchiesExpanded.addAll(accountedForSubHierarchy.getDescendents(NOT_SET));
 		}
-		super.postInit(run);
+		super.postInit();
 		
 		tooHigh.add(subHierarchy);
 		tooHigh.add(DISEASE);

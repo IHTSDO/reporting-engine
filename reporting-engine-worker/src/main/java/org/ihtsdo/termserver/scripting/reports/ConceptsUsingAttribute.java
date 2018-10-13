@@ -32,8 +32,9 @@ public class ConceptsUsingAttribute extends TermServerReport {
 	}
 
 
-	private void postInit() throws TermServerScriptException {
+	public void postInit() throws TermServerScriptException {
 		attributeType = gl.getConcept("118170007");  // |Specimen source identity (attribute)|
+		super.postInit();
 	}
 
 

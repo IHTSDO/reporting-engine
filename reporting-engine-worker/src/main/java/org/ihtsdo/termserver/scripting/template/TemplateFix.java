@@ -48,7 +48,7 @@ abstract public class TemplateFix extends BatchFix {
 		super.init(args);
 	}
 
-	protected void postInit() throws TermServerScriptException {
+	public void postInit() throws TermServerScriptException {
 		subHierarchy = gl.getConcept(subHierarchyStr);
 		char id = 'A';
 		for (int x = 0; x < templateNames.length; x++, id++) {
@@ -80,6 +80,7 @@ abstract public class TemplateFix extends BatchFix {
 		
 		complexTemplateAttributes = new ArrayList<>();
 		complexTemplateAttributes.add(DUE_TO);
+		super.postInit();
 	}
 	
 	protected Template loadTemplate (char id, String fileName) throws TermServerScriptException {

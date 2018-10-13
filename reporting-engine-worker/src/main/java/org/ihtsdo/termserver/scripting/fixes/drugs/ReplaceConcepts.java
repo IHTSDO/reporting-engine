@@ -66,24 +66,29 @@ public class ReplaceConcepts extends DrugBatchFix implements RF2Constants{
 		}
 	}
 
-	private void postInit() throws TermServerScriptException, IOException {
+	public void postInit() throws TermServerScriptException {
 		subHierarchy = gl.getConcept("770654000 |TEMPORARY parent for CDs that are not updated (product)|");
 	
 		//Load in our IS_A relationship from the before time of the long long ago
 		info ("Loading IS_A relationships from some previous release");
 		originalParents = new HashMap<>();
-		for (String line : FileUtils.readLines(new File(orignalParentsFileName))) {
-			String[] items = line.split(TAB);
-			Concept child = gl.getConcept(items[REL_IDX_SOURCEID]);
-			Concept parent = gl.getConcept(items[REL_IDX_DESTINATIONID]);
-			//Have we seen this concept before?
-			List<Concept> parents = originalParents.get(child);
-			if (parents == null) {
-				parents = new ArrayList<>();
-				originalParents.put(child, parents);
+		try {
+			for (String line : FileUtils.readLines(new File(orignalParentsFileName))) {
+				String[] items = line.split(TAB);
+				Concept child = gl.getConcept(items[REL_IDX_SOURCEID]);
+				Concept parent = gl.getConcept(items[REL_IDX_DESTINATIONID]);
+				//Have we seen this concept before?
+				List<Concept> parents = originalParents.get(child);
+				if (parents == null) {
+					parents = new ArrayList<>();
+					originalParents.put(child, parents);
+				}
+				parents.add(parent);
 			}
-			parents.add(parent);
+		} catch (IOException e) {
+			throw new TermServerScriptException("Unable to read from " + orignalParentsFileName, e);
 		}
+		super.postInit();
 	}
 
 	@Override

@@ -38,7 +38,7 @@ public class OrganismsInSubstances extends TermServerReport {
 		}
 	}
 
-	private void postInit() throws TermServerScriptException {
+	public void postInit() throws TermServerScriptException {
 		substancesUsedInProducts = DrugUtils.getSubstancesUsedInProducts();
 		skipOrganisms = new ArrayList<>();
 		skipOrganisms.add("nit");
@@ -72,6 +72,7 @@ public class OrganismsInSubstances extends TermServerReport {
 				}
 			}
 		}
+		super.postInit();
 	}
 
 	private void reportOrganismsInSubstances() throws TermServerScriptException {

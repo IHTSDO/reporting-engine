@@ -48,7 +48,7 @@ public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants{
 		}
 	}
 	
-	private void postInit() throws TermServerScriptException {
+	public void postInit() throws TermServerScriptException {
 		//When we use the CS Fixer, we'll tell it to use our report printWriter rather than its own,
 		//otherwise things get horribly confused!
 		//This code modified to only report possible issues, not fix them.
@@ -61,6 +61,7 @@ public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants{
 			Description pt = doseForm.getDescriptions(Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE).get(0);
 			doseForms.add(" " + pt.getTerm());
 		}*/
+		super.postInit();
 	}
 
 	protected void init(String[] args) throws TermServerScriptException, IOException {

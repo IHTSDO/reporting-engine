@@ -49,7 +49,7 @@ public class InferredGroupsNotStated extends TermServerReport {
 		}
 	}
 
-	private void postInit() throws TermServerScriptException {
+	public void postInit() throws TermServerScriptException {
 		//subHierarchy = gl.getConcept("138875005"); // |SNOMED CT Concept (SNOMED RT+CTV3)|
 		subHierarchy = gl.getConcept("46866001").getDescendents(NOT_SET); // |Fracture of lower limb (disorder)|
 		
@@ -61,6 +61,7 @@ public class InferredGroupsNotStated extends TermServerReport {
 				largeHierarchies.add(hierarchy);
 			}
 		}
+		super.postInit();
 	}
 	
 	public void setSubHierarchy(Concept concept) throws TermServerScriptException {
