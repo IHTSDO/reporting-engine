@@ -169,6 +169,15 @@ public class ScheduleServiceImpl implements ScheduleService {
 	@Override
 	public void processResponse(JobRun jobRun) {
 		try {
+			//If we already know about this jobRun, don't allow the status to be reverted
+			Optional<JobRun> savedJob = jobRunRepository.findById(jobRun.getId());
+			if (savedJob.isPresent()) {
+				JobStatus existingStatus = savedJob.get().getStatus();
+				if (existingStatus.equals(JobStatus.Complete) || existingStatus.equals(JobStatus.Failed)) {
+					logger.error("Job already at status {}, ignoring response {}", existingStatus, jobRun);
+					return;
+				}
+			}
 			logger.info("Saving job response: {}", jobRun);
 			jobRunRepository.save(jobRun);
 		} catch (Exception e) {
@@ -194,9 +203,9 @@ public class ScheduleServiceImpl implements ScheduleService {
 					String categoryName = jobCategory.getName();
 					JobCategory knownCategory = jobCategoryRepository.findByName(categoryName);
 					if (knownCategory == null) {
-						jobCategory.setType (jobType);
 						knownCategory = jobCategoryRepository.save(jobCategory);
 					}
+					jobCategory.setType (jobType);
 					
 					logger.info("Processing metadata for {} jobs in category '{}'",jobCategory.getJobs().size(), jobCategory.getName());
 					for (Job job : jobCategory.getJobs()) {
@@ -217,6 +226,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 					savedJobs.removeAll(jobCategory.getJobs());
 					//All the jobs we're left with were not represented in the metadata, so hide
 					for (Job withdrawnJob : savedJobs) {
+						logger.info("Marking job as withdrawn/hidden: {}", withdrawnJob);
 						withdrawnJob.setProductionStatus(Job.ProductionStatus.HIDEME);
 						jobRepository.save(withdrawnJob);
 					}
