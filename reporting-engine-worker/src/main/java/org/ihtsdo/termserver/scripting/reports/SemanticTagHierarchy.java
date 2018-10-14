@@ -68,9 +68,14 @@ public class SemanticTagHierarchy extends TermServerReport implements ReportClas
 		}
 		level++;
 		String indent = StringUtils.repeat("--", level);
-		for (Map.Entry<String, Concept> childTag : semanticTagHierarchy.get(semTag).entrySet()) {
-			writeToReportFile(0, indent + childTag.getKey() + COMMA + childTag.getValue());
-			outputHierarchialStructure(childTag.getKey(), level);
+		
+		if (level > 10) {
+			writeToReportFile(0, indent + "Recursion limit reached");
+		} else {
+			for (Map.Entry<String, Concept> childTag : semanticTagHierarchy.get(semTag).entrySet()) {
+				writeToReportFile(0, indent + childTag.getKey() + COMMA + childTag.getValue());
+				outputHierarchialStructure(childTag.getKey(), level);
+			}
 		}
 	}
 
