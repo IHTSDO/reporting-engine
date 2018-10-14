@@ -2,5 +2,5 @@
   "name": "[Morphology] of [ site ] due to [bite event] (disorder)",
   "documentation": "https://confluence.ihtsdotools.org/pages/viewpage.action?pageId=64260632",
   "version": 1,
-  "logicalTemplate": "25358000 |Superficial injury without infection: [[~0..1]] 42752001 |Due to (attribute)| = [[ +id( << 418975000 |Bite of animal (event)|) @biteEvent]], {\n\t\t  [[~1..1]] 116676008 |Associated morphology (attribute)| = [[ +id ( << 3404009 |Bite (morphologic abnormality)| ) @morphology]], [[~1..1]] 363698007 |Finding site (attribute)| = [[ +id( < 91723000 |Anatomical structure (body structure)| ) @site]] }\n"
+  "logicalTemplate": "25358000 |Superficial injury without infection: [[~0..1]] 42752001 |Due to (attribute)| = [[ +id( << 782161000 |Bite (event)|) @biteEvent]], {\n\t\t  [[~1..1]] 116676008 |Associated morphology (attribute)| = [[ +id ( << 3404009 |Bite (morphologic abnormality)| ) @morphology]], [[~1..1]] 363698007 |Finding site (attribute)| = [[ +id( < 91723000 |Anatomical structure (body structure)| ) @site]] }\n"
 }

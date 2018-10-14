@@ -11,9 +11,6 @@ import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 
-import us.monoid.json.JSONException;
-import us.monoid.json.JSONObject;
-
 /**
  * See https://confluence.ihtsdotools.org/display/IAP/Quality+Improvements+2018
  * Update: https://confluence.ihtsdotools.org/pages/viewpage.action?pageId=61155633
@@ -51,7 +48,7 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		runStandAlone = true; 
 		populateEditPanel = true;
 		populateTaskDescription = true;
-		additionalReportColumns = "CharacteristicType, MatchedTemplate, Template Diagnostic";
+		additionalReportColumns += "CharacteristicType, MatchedTemplate, Template Diagnostic";
 		/*
 		subHierarchyStr = "125605004";  // QI-5 |Fracture of bone (disorder)|
 		templateNames = new String[] {	"fracture/Fracture of Bone Structure.json",
@@ -150,7 +147,7 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		return CHANGE_MADE;
 	}
 
-	private void touchConcept(Task t, Concept c, String info) throws SnowOwlClientException, JSONException {
+/*	private void touchConcept(Task t, Concept c, String info) throws SnowOwlClientException, JSONException {
 		debug ("Touching FSN CS for " + c + info);
 		CaseSignificance orig = c.getFSNDescription().getCaseSignificance();
 		CaseSignificance flip = orig.equals(CaseSignificance.CASE_INSENSITIVE)?CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE : CaseSignificance.CASE_INSENSITIVE;
@@ -165,6 +162,7 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		conceptSerialised = gson.toJson(c);
 		tsClient.updateConcept(new JSONObject(conceptSerialised), t.getBranchPath());
 	}
+	*/
 
 	private void report(Task t, Concept c) throws TermServerScriptException {
 		//Collect the diagnostic information about why this concept didn't match any templates as a string
