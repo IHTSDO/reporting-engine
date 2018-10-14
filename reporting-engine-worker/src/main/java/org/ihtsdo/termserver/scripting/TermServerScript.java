@@ -339,9 +339,11 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 
 	public void postInit() throws TermServerScriptException {
-		subHierarchy = gl.getConcept(jobRun.getParameter(SUB_HIERARCHY));
-		//RP-4 And post that back in, so the FSN is always populated
-		jobRun.setParameter(SUB_HIERARCHY, subHierarchy.toString());
+		if (jobRun != null && jobRun.getParameter(SUB_HIERARCHY) != null) {
+			subHierarchy = gl.getConcept(jobRun.getParameter(SUB_HIERARCHY));
+			//RP-4 And post that back in, so the FSN is always populated
+			jobRun.setParameter(SUB_HIERARCHY, subHierarchy.toString());
+		}
 		reportManager = ReportManager.create(env, getReportName());
 		getReportManager().initialiseReportFiles( new String[] {headers + additionalReportColumns});
 	}
@@ -782,7 +784,7 @@ public abstract class TermServerScript implements RF2Constants {
 			}
 			
 			if (subHierarchy != null && !subHierarchy.equals(ROOT_CONCEPT)) {
-				reportName += spacer + subHierarchy.getPreferredSynonym();
+				reportName += spacer + subHierarchy.toStringPref();
 			}
 		} catch (Exception e) {
 			error ("Recoverable hiccup while setting report name",e);

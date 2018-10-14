@@ -172,12 +172,16 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	 * @return
 	 * @throws TermServerScriptException 
 	 */
-	public String getPreferredSynonym() throws TermServerScriptException {
-		if (preferredSynonym == null) {
-			Description pt = getPreferredSynonym(US_ENG_LANG_REFSET);
-			return pt == null ? null : pt.getTerm();
+	public String getPreferredSynonym() {
+		try {
+			if (preferredSynonym == null) {
+				Description pt = getPreferredSynonym(US_ENG_LANG_REFSET);
+				return pt == null ? null : pt.getTerm();
+			}
+			return preferredSynonym;
+		} catch (Exception e) {
+			return "";
 		}
-		return preferredSynonym;
 	}
 	
 	public Description getPreferredSynonym(String refsetId) throws TermServerScriptException {
@@ -329,7 +333,11 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	public String toString() {
 		return conceptId + " |" + this.fsn + "|";
 	}
-	
+
+	public String toStringPref() {
+		return conceptId + " |" + getPreferredSynonym() + "|";
+	}
+
 	public String toExpression(CharacteristicType charType) {
 		String expression = getParents(charType).stream().map(p -> p.toString())
 							.collect(Collectors.joining (" + \n"));

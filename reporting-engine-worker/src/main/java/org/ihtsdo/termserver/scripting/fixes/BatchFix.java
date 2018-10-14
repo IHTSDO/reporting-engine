@@ -56,6 +56,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			this.tsClient = clone.tsClient;
 			this.scaClient = clone.scaClient;
 		}
+		this.additionalReportColumns = "TASK_KEY, TASK_DESC, SCTID, FSN, CONCEPT_TYPE, SEVERITY, ACTION_TYPE";
 	}
 	
 	protected List<Component> processFile() throws TermServerScriptException {
