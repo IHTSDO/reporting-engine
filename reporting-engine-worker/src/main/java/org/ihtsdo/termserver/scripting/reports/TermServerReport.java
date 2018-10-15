@@ -1,37 +1,16 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
-import org.ihtsdo.termserver.scripting.domain.Component;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Relationship;
+import org.ihtsdo.termserver.scripting.domain.*;
 import org.snomed.otf.scheduler.domain.JobRun;
 
 public abstract class TermServerReport extends TermServerScript {
 	
-	protected void init(String[] args) throws TermServerScriptException, SnowOwlClientException {
-		init(args, false); //Don't delay initialisation of report files by default
-	}
-	protected void init(String[] args, boolean delayReportInitialisation) throws TermServerScriptException, SnowOwlClientException {
-		try {
-			super.init(args);
-			if (!delayReportInitialisation) {
-				getReportManager().initialiseReportFiles( new String[] {headers + additionalReportColumns});
-			}
-		} catch (IOException e) {
-			throw new TermServerScriptException("Unable to initialise output report",e);
-		}
-	}
-
 	@Override
 	protected List<Component> loadLine(String[] lineItems)
 			throws TermServerScriptException {

@@ -26,6 +26,7 @@ public class SemanticTagHierarchy extends TermServerReport implements ReportClas
 	
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc
+		additionalReportColumns = "SemTag, As used by";
 		super.init(run);
 	}
 
@@ -67,7 +68,7 @@ public class SemanticTagHierarchy extends TermServerReport implements ReportClas
 			writeToReportFile(0, semTag);
 		}
 		level++;
-		String indent = StringUtils.repeat("--", level);
+		String indent = StringUtils.repeat("-- ", level);
 		
 		if (level > 10) {
 			writeToReportFile(0, indent + "Recursion limit reached");

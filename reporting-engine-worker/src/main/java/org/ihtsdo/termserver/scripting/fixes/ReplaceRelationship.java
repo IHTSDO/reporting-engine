@@ -38,7 +38,7 @@ public class ReplaceRelationship extends BatchFix implements RF2Constants{
 		}
 	}
 	
-	protected void init(String[] args) throws TermServerScriptException, IOException {
+	protected void init(String[] args) throws TermServerScriptException {
 		super.init(args);
 		
 		//Populate our attributes of interest

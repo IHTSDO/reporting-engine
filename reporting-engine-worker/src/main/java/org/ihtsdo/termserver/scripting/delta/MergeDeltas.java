@@ -57,7 +57,7 @@ public class MergeDeltas extends DeltaGenerator {
 		return "MergedDeltaFixes";
 	}
 	
-	protected void init (String[] args) throws IOException, TermServerScriptException, SnowOwlClientException, SnowOwlClientException {
+	protected void init (String[] args) throws TermServerScriptException {
 		super.init(args);
 		
 		for (int x=0; x<args.length; x++) {

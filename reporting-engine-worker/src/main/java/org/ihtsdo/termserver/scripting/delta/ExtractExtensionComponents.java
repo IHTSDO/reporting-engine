@@ -52,7 +52,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
   		}
 	}
 	
-	protected void init (String[] args) throws IOException, TermServerScriptException, SnowOwlClientException, SnowOwlClientException {
+	protected void init (String[] args) throws TermServerScriptException {
 		super.init(args);
 		
 		info ("Select an environment for secondary checking ");

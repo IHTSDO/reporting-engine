@@ -50,7 +50,7 @@ public class FixIncorrectModuleId extends BatchFix implements RF2Constants{
 		}
 	}
 	
-	protected void init(String[] args) throws TermServerScriptException, IOException {
+	protected void init(String[] args) throws TermServerScriptException {
 		super.init(args);
 		intendedModuleId = project.getMetadata().getDefaultModuleId();
 		info ("Identified correct module to be " + intendedModuleId);

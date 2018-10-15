@@ -50,7 +50,7 @@ public class RemodelGroupOne extends TemplateFix {
 		}
 	}
 	
-	protected void init(String[] args) throws TermServerScriptException, IOException {
+	protected void init(String[] args) throws TermServerScriptException {
 		selfDetermining = true;
 		runStandAlone = true; 
 		classifyTasks = true;

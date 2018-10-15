@@ -1,23 +1,14 @@
 package org.ihtsdo.termserver.scripting.refset;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Description;
+import org.ihtsdo.termserver.scripting.domain.*;
 
 public abstract class RefsetGenerator extends TermServerScript {
 	
@@ -49,7 +40,7 @@ public abstract class RefsetGenerator extends TermServerScript {
 		writeToReportFile(line);
 	}
 	
-	protected void init (String[] args) throws IOException, TermServerScriptException, SnowOwlClientException {
+	protected void init (String[] args) throws TermServerScriptException {
 		super.init(args);
 		getReportManager().initialiseReportFiles( new String[] {"Concept,DescSctId,Term,Severity,Action,Detail"});
 

@@ -36,7 +36,7 @@ public class CaseSignificanceFix extends DeltaGenerator implements RF2Constants 
 		}
 	}
 	
-	protected void init(String[] args) throws IOException, TermServerScriptException, SnowOwlClientException {
+	protected void init(String[] args) throws TermServerScriptException {
 		super.init(args);
 		exceptions.add("10692681000119108");
 		exceptions.add("108796006");

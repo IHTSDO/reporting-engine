@@ -40,16 +40,20 @@ public class ReplaceDescriptionIds extends BatchFix implements RF2Constants{
 		}
 	}
 	
-	protected void init(String[] args) throws TermServerScriptException, IOException {
+	protected void init(String[] args) throws TermServerScriptException {
 		super.init(args);
 		loadDescIds();
 	}
 	
-	private void loadDescIds() throws IOException {
-		List<String> lines = Files.readLines(inputFile, Charsets.UTF_8);
-		info ("Loading description ids from " + inputFile);
-		for (String line : lines) {
-			descIds.add(line);
+	private void loadDescIds() throws TermServerScriptException {
+		try {
+			List<String> lines = Files.readLines(inputFile, Charsets.UTF_8);
+			info ("Loading description ids from " + inputFile);
+			for (String line : lines) {
+				descIds.add(line);
+			}
+		} catch (IOException e) {
+			throw new TermServerScriptException("Unable to load description ids",e);
 		}
 	}
 

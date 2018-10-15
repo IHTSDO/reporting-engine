@@ -59,10 +59,6 @@ public class ProximatePrimitiveRemodeller extends BatchFix implements RF2Constan
 		newParent = new RelationshipTemplate (isa, subHierarchy, CharacteristicType.STATED_RELATIONSHIP);
 	}
 
-	protected void init(String[] args) throws TermServerScriptException, IOException {
-		super.init(args);
-	}
-
 	@Override
 	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());

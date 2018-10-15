@@ -46,16 +46,20 @@ public class RestateInferredAsStated extends BatchFix implements RF2Constants{
 		}
 	}
 	
-	protected void init(String[] args) throws TermServerScriptException, IOException {
+	protected void init(String[] args) throws TermServerScriptException {
 		super.init(args);
 		//Populate our attributes of interest
 		attributesOfInterest.add(gl.getConcept("127489000")); //Has active ingredient (attribute)|)
 		attributesOfInterest.add(gl.getConcept("411116001")); //Has manufactured dose form (attribute)
 		
-		List<String> lines = Files.readLines(inputFile, Charsets.UTF_8);
-		info ("Loading concepts agreed for change from " + inputFile);
-		for (String line : lines) {
-			conceptsAgreedToChange.add(gl.getConcept(line.trim()));
+		try {
+			List<String> lines = Files.readLines(inputFile, Charsets.UTF_8);
+			info ("Loading concepts agreed for change from " + inputFile);
+			for (String line : lines) {
+				conceptsAgreedToChange.add(gl.getConcept(line.trim()));
+			}
+		} catch (IOException e) {
+			throw new TermServerScriptException("Unable to load changing concepts",e);
 		}
 	}
 

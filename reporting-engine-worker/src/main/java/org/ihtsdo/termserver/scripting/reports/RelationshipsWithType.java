@@ -81,7 +81,7 @@ public class RelationshipsWithType extends TermServerScript{
 		writeToReportFile(line);
 	}
 	
-	protected void init(String[] args) throws IOException, TermServerScriptException, SnowOwlClientException {
+	protected void init(String[] args) throws TermServerScriptException {
 		super.init(args);
 		print ("What date identifies 'new' relationships? [" + transientEffectiveDate + "]: ");
 		String response = STDIN.nextLine().trim();

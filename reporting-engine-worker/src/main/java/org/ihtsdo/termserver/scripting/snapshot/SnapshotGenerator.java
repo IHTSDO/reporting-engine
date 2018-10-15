@@ -82,7 +82,7 @@ public class SnapshotGenerator extends TermServerScript {
 		return archive;
 	}
 	
-	protected void init (String[] args) throws IOException, TermServerScriptException, SnowOwlClientException, SnowOwlClientException {
+	protected void init (String[] args) throws TermServerScriptException {
 		super.init(args);
 		File newLocation = new File("SnomedCT_RF2Release_" + edition);
 		init(newLocation, true);

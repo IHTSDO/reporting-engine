@@ -32,10 +32,6 @@ public class InactivateRedundantStatedRelationships extends BatchFix implements 
 			fix.finish();
 		}
 	}
-	
-	protected void init(String[] args) throws TermServerScriptException, IOException {
-		super.init(args);
-	}
 
 	@Override
 	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {

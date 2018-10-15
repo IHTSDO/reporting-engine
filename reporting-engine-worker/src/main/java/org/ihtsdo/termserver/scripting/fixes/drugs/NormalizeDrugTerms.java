@@ -64,7 +64,7 @@ public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants{
 		super.postInit();
 	}
 
-	protected void init(String[] args) throws TermServerScriptException, IOException {
+	protected void init(String[] args) throws TermServerScriptException {
 		super.init(args);
 		/*exceptions.add("423967005");
 		exceptions.add("319925005");

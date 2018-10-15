@@ -126,7 +126,7 @@ public class BanUsanReport extends TermServerScript{
 		writeToReportFile(line);
 	}
 	
-	protected void init(String[] args) throws IOException, TermServerScriptException, SnowOwlClientException, SnowOwlClientException {
+	protected void init(String[] args) throws TermServerScriptException {
 		super.init(args);
 		boolean fileLoaded = false;
 		for (int i=0; i < args.length; i++) {

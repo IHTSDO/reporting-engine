@@ -37,7 +37,7 @@ abstract public class TemplateFix extends BatchFix {
 		super(clone);
 	}
 	
-	protected void init(String[] args) throws TermServerScriptException, IOException {
+	protected void init(String[] args) throws TermServerScriptException {
 		AttributeGroup.useDefaultValues = true;
 		//We'll check these now so we know if there's some parsing error
 		char id = 'A';

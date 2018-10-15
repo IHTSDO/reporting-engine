@@ -248,7 +248,7 @@ public class GnarlyFactorCalculation extends TermServerReport {
 		return bestAncestor;
 	}
 
-	protected void init(String[] args) throws TermServerScriptException, SnowOwlClientException {
+	protected void init(String[] args) throws TermServerScriptException {
 		super.init(args);
 		
 		intermediatePrimitivesReport = new InitialAnalysis(this);

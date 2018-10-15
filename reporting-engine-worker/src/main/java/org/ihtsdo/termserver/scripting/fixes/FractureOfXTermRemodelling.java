@@ -43,10 +43,6 @@ public class FractureOfXTermRemodelling extends BatchFix implements RF2Constants
 			fix.finish();
 		}
 	}
-	
-	protected void init(String[] args) throws TermServerScriptException, IOException {
-		super.init(args);
-	}
 
 	@Override
 	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {

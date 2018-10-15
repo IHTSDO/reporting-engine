@@ -52,9 +52,9 @@ public class MultiReportRunner extends TermServerReport {
 		return report.getReportName();
 	}
 	
-	public void init (String[] args) throws TermServerScriptException, SnowOwlClientException {
+	public void init (String[] args) throws TermServerScriptException {
 		report = new InitialAnalysis(this);
-		super.init(args, true);  //Delay initialisation of reports
+		super.init(args); 
 		jira = new JiraHelper();
 	}
 

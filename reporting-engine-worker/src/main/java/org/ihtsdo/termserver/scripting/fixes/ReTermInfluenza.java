@@ -45,7 +45,7 @@ public class ReTermInfluenza extends BatchFix implements RF2Constants{
 		}
 	}
 	
-	protected void init(String[] args) throws TermServerScriptException, IOException {
+	protected void init(String[] args) throws TermServerScriptException {
 		super.init(args);
 		
 		greekMap.put("A", "Alpha");

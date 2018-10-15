@@ -70,7 +70,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 	}
 	
 	@Override
-	public void init(String[] args) throws TermServerScriptException, IOException {
+	public void init(String[] args) throws TermServerScriptException {
 		super.init(args);
 		if (inputFile2 == null) {
 			warn ("No input file specified to verify terms");

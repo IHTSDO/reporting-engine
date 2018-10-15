@@ -53,7 +53,7 @@ public class ModelCongenitalAbnormality extends DeltaGenerator {
 		}
 	}
 
-	protected void init (String[] args) throws IOException, TermServerScriptException, SnowOwlClientException, SnowOwlClientException {
+	protected void init (String[] args) throws TermServerScriptException {
 		super.init(args);
 		
 		findRelationshipsForReplace.add(createTemplate("116676008", "107656002")); //|Associated morphology (attribute)| -> |Congenital anomaly (morphologic abnormality)| 

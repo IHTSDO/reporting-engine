@@ -42,7 +42,7 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		}
 	}
 
-	protected void init(String[] args) throws TermServerScriptException, IOException {
+	protected void init(String[] args) throws TermServerScriptException {
 		selfDetermining = true;
 		reportNoChange = false;
 		runStandAlone = true; 

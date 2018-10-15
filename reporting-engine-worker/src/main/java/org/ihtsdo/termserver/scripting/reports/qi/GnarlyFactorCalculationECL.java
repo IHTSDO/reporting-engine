@@ -134,7 +134,7 @@ public class GnarlyFactorCalculationECL extends TermServerReport {
 		return modified;
 	}
 
-	protected void init(String[] args) throws TermServerScriptException, SnowOwlClientException {
+	protected void init(String[] args) throws TermServerScriptException {
 		super.init(args);
 		
 		intermediatePrimitivesReport = new InitialAnalysis(this);

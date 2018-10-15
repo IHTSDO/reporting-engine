@@ -38,7 +38,7 @@ public class NumberLetterLowerCase extends DrugBatchFix implements RF2Constants{
 		}
 	}
 	
-	protected void init(String[] args) throws TermServerScriptException, IOException {
+	protected void init(String[] args) throws TermServerScriptException {
 		super.init(args);
 		csReport = new CaseSensitivity();
 		csReport.loadCSWords();

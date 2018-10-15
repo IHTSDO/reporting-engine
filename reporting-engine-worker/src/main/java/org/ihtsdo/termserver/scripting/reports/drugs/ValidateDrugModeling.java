@@ -22,6 +22,7 @@ public class ValidateDrugModeling extends TermServerReport{
 	
 	Concept [] solidUnits = new Concept [] { PICOGRAM, NANOGRAM, MICROGRAM, MILLIGRAM, GRAM };
 	Concept [] liquidUnits = new Concept [] { MILLILITER, LITER };
+	String[] semTagHiearchy = new String[] { "(product)", "(medicinal product)", "(medicinal product form)", "(clinical drug)" };
 	
 	private static final String[] badWords = new String[] { "preparation", "agent", "+", "product"};
 	private static final String remodelledDrugIndicator = "Product containing";
@@ -34,11 +35,12 @@ public class ValidateDrugModeling extends TermServerReport{
 		try {
 			//report.getArchiveManager().allowStaleData = true;
 			ReportSheetManager.targetFolderId = "1wtB15Soo-qdvb0GHZke9o_SjFSL_fxL3";  //DRUGS/Validation
-			report.additionalReportColumns = "FSN, SemTag, Definition, Stated, Inferred";  //DRUGS-518
-			//report.additionalReportColumns = "FSN, Issue, Data, Detail";   //DRUGS-267
+			//report.additionalReportColumns = "FSN, SemTag, Definition, Stated, Inferred";  //DRUGS-518
+			report.additionalReportColumns = "FSN, SemTag, Issue, Data, Detail";   //DRUGS-267
 			//report.additionalReportColumns = "Substance, Presentation, Concentration, Unit Change, Issue Detected, Ratio Calculated";
 			report.init(args);
 			report.loadProjectSnapshot(false); //Load all descriptions
+			report.postInit();
 			report.validateDrugsModeling();
 			//report.validateSubstancesModeling();
 		} catch (Exception e) {
@@ -67,38 +69,41 @@ public class ValidateDrugModeling extends TermServerReport{
 			}
 			
 			// DRUGS-281, DRUGS-282
-			//issueCount += validateIngredientsInFSN(concept, drugTypes);  
+			//validateIngredientsInFSN(concept, drugTypes);  
 			
 			// DRUGS-267
-			//issueCount += validateIngredientsAgainstBoSS(concept);
+			//validateIngredientsAgainstBoSS(concept);
 			
 			// DRUGS-296 
 			/*if (concept.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED) && 
 				concept.getParents(CharacteristicType.STATED_RELATIONSHIP).get(0).equals(MEDICINAL_PRODUCT)) {
-				issueCount += validateStatedVsInferredAttributes(concept, HAS_ACTIVE_INGRED, drugTypes);
-				issueCount += validateStatedVsInferredAttributes(concept, HAS_PRECISE_INGRED, drugTypes);
-				issueCount += validateStatedVsInferredAttributes(concept, HAS_MANUFACTURED_DOSE_FORM, drugTypes);
+				validateStatedVsInferredAttributes(concept, HAS_ACTIVE_INGRED, drugTypes);
+				validateStatedVsInferredAttributes(concept, HAS_PRECISE_INGRED, drugTypes);
+				validateStatedVsInferredAttributes(concept, HAS_MANUFACTURED_DOSE_FORM, drugTypes);
 			}
 			*/
 			//DRUGS-518
-			if (SnomedUtils.isConceptType(concept, drugTypes)) {
-				issueCount += checkForInferredGroupsNotStated(concept);
-			}
+			/*if (SnomedUtils.isConceptType(concept, drugTypes)) {
+				checkForInferredGroupsNotStated(concept);
+			}*/
 			
 			//DRUGS-51?
 			/*if (concept.getConceptType().equals(ConceptType.CLINICAL_DRUG)) {
-				issueCount += validateConcentrationStrength(concept);
+				validateConcentrationStrength(concept);
 			}*/
 			
 			// DRUGS-288
-			//issueCount += validateAttributeValueCardinality(concept, HAS_ACTIVE_INGRED);
+			//validateAttributeValueCardinality(concept, HAS_ACTIVE_INGRED);
 			
 			//DRUGS-93
-			//issueCount += checkForBadWords(concept);  
+			//checkForBadWords(concept);  
+			
+			//DRUGS-629
+			checkForSemTagViolations(concept);
 		}
 		info ("Drugs validation complete.  Detected " + issueCount + " issues.");
 	}
-	
+
 	/**
 	 * For Pattern 2A Drugs (liquids) where we have both a presentation strength and a concentration
 	 * report these values and confirm if the units change between the two, and if the calculation is correct
@@ -106,9 +111,8 @@ public class ValidateDrugModeling extends TermServerReport{
 	 * @return
 	 * @throws TermServerScriptException 
 	 */
-	private long validateConcentrationStrength(Concept c) throws TermServerScriptException {
+	private void validateConcentrationStrength(Concept c) throws TermServerScriptException {
 		//For each group, do we have both a concentration and a presentation?
-		int issueCount = 0;
 		for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
 			Ingredient i = DrugUtils.getIngredientDetails(c, g.getGroupId(), CharacteristicType.STATED_RELATIONSHIP);
 			if (i.presStrength != null && i.concStrength != null) {
@@ -138,13 +142,12 @@ public class ValidateDrugModeling extends TermServerReport{
 				
 				if (!presRatio.equals(concRatio)) {
 					issueDetected = true;
-					issueCount++;
+					incrementSummaryInformation(ISSUE_COUNT);
 					incrementSummaryInformation("Issues Detected");
 				}
 				report (c, i.substance, i.presToString(), i.concToString(), unitsChange, issueDetected, issueDetected? presRatio + " vs " + concRatio : "");
 			}
 		}
-		return issueCount;
 	}
 
 	private BigDecimal calculateUnitFactor(Concept unit1, Concept unit2) {
@@ -178,42 +181,37 @@ public class ValidateDrugModeling extends TermServerReport{
 
 	private void validateSubstancesModeling() throws TermServerScriptException {
 		Set<Concept> subHierarchy = SUBSTANCE.getDescendents(NOT_SET);
-		long issueCount = 0;
 		for (Concept concept : subHierarchy) {
 			DrugUtils.setConceptType(concept);
 			//issueCount += validateDisposition(concept);
-			issueCount += checkForBadWords(concept);  //DRUGS-93
+			checkForBadWords(concept);  //DRUGS-93
 		}
-		info ("Substances validation complete.  Detected " + issueCount + " issues.");
+		info ("Substances validation complete.");
 	}
 	
 	//Ensure that all stated dispositions exist as inferred, and visa-versa
-	private long validateDisposition(Concept concept) throws TermServerScriptException {
-		long issuesCount = 0;
-		issuesCount += validateAttributeViewsMatch (concept, HAS_DISPOSITION, CharacteristicType.STATED_RELATIONSHIP);
+	private void validateDisposition(Concept concept) throws TermServerScriptException {
+		validateAttributeViewsMatch (concept, HAS_DISPOSITION, CharacteristicType.STATED_RELATIONSHIP);
 
 		//If this concept has one or more hasDisposition attributes, check if the inferred parent has the same.
 		if (concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_DISPOSITION, ActiveState.ACTIVE).size() > 0) {
-			issuesCount += validateAttributeViewsMatch (concept, HAS_DISPOSITION, CharacteristicType.INFERRED_RELATIONSHIP);
-			issuesCount += checkForOddlyInferredParent(concept, HAS_DISPOSITION);
+			validateAttributeViewsMatch (concept, HAS_DISPOSITION, CharacteristicType.INFERRED_RELATIONSHIP);
+			checkForOddlyInferredParent(concept, HAS_DISPOSITION);
 		}
-		return issuesCount;
 	}
 
-	private long validateAttributeViewsMatch(Concept concept,
+	private void validateAttributeViewsMatch(Concept concept,
 			Concept attributeType,
 			CharacteristicType fromCharType) throws TermServerScriptException {
 		//Check that all relationships of the given type "From" match "To"
-		long issuesCount = 0;
 		CharacteristicType toCharType = fromCharType.equals(CharacteristicType.STATED_RELATIONSHIP)? CharacteristicType.INFERRED_RELATIONSHIP : CharacteristicType.STATED_RELATIONSHIP;
 		for (Relationship r : concept.getRelationships(fromCharType, attributeType, ActiveState.ACTIVE)) {
 			if (findRelationship(concept, r, toCharType) == null) {
 				String msg = fromCharType.toString() + " has no counterpart";
 				report (concept, msg, r.toString());
-				issuesCount++;
+				incrementSummaryInformation(ISSUE_COUNT);
 			}
 		}
-		return issuesCount;
 	}
 
 	/**
@@ -222,9 +220,8 @@ public class ValidateDrugModeling extends TermServerReport{
 	 * @return
 	 * @throws TermServerScriptException 
 	 */
-	private long checkForOddlyInferredParent(Concept concept, Concept attributeType) throws TermServerScriptException {
+	private void checkForOddlyInferredParent(Concept concept, Concept attributeType) throws TermServerScriptException {
 		//Work through inferred parents
-		long issuesCount = 0;
 		for (Concept parent : concept.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
 			//Find all STATED attributes of interest
 			for (Relationship parentAttribute : parent.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE)) {
@@ -232,11 +229,10 @@ public class ValidateDrugModeling extends TermServerReport{
 				if (null == findRelationship(concept, parentAttribute, CharacteristicType.STATED_RELATIONSHIP)) {
 					String msg ="Inferred parent has a stated attribute not stated in child.";
 					report (concept, msg, parentAttribute.toString());
-					issuesCount++;
+					incrementSummaryInformation(ISSUE_COUNT);
 				}
 			}
 		}
-		return issuesCount;
 	}
 
 	private Relationship findRelationship(Concept concept, Relationship exampleRel, CharacteristicType charType) {
@@ -257,8 +253,7 @@ public class ValidateDrugModeling extends TermServerReport{
 		preparation
 		product (except in the semantic tag)
 	 */
-	private long checkForBadWords(Concept concept) throws TermServerScriptException {
-		long issueCount = 0;
+	private void checkForBadWords(Concept concept) throws TermServerScriptException {
 		//Check if we're product containing and then look for bad words
 		for (Description d : concept.getDescriptions(ActiveState.ACTIVE)) {
 			String term = d.getTerm();
@@ -272,25 +267,23 @@ public class ValidateDrugModeling extends TermServerReport{
 						continue;
 					} else {
 						String msg = "Term contains bad word: " + badWord;
-						issueCount++;
+						incrementSummaryInformation(ISSUE_COUNT);
 						report (concept, msg, concept.getFsn().contains(remodelledDrugIndicator), d.toString());
 					}
 				}
 			}
 		}
-		return issueCount;
 	}
 
-	private int validateStatedVsInferredAttributes(Concept concept,
+	private void validateStatedVsInferredAttributes(Concept concept,
 			Concept attributeType, ConceptType[] drugTypes) throws TermServerScriptException {
-		int issueCount = 0;
 		if (drugTypes==null || SnomedUtils.isConceptType(concept, drugTypes)) {
 			List<Relationship> statedAttributes = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
 			List<Relationship> infAttributes = concept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
 			if (statedAttributes.size() != infAttributes.size()) {
 				String msg = "Cardinality mismatch stated vs inferred " + attributeType;
 				String data = "(s" + statedAttributes.size() + " i" + infAttributes.size() + ")";
-				issueCount++;
+				incrementSummaryInformation(ISSUE_COUNT);
 				report (concept, msg, data);
 			} else {
 				for (Relationship statedAttribute : statedAttributes) {
@@ -304,17 +297,15 @@ public class ValidateDrugModeling extends TermServerReport{
 					if (!found) {
 						String msg = "Stated " + statedAttribute.getType() + " is not present in inferred view";
 						String data = statedAttribute.toString();
-						issueCount++;
+						incrementSummaryInformation(ISSUE_COUNT);
 						report (concept, msg, data);
 					}
 				}
 			}
 		}
-		return issueCount;
 	}
 
-	private int validateIngredientsAgainstBoSS(Concept concept) throws TermServerScriptException {
-		int issueCount = 0;
+	private void validateIngredientsAgainstBoSS(Concept concept) throws TermServerScriptException {
 		List<Relationship> bossAttributes = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_BOSS, ActiveState.ACTIVE);
 		//Check BOSS attributes against active ingredients - must be in the same relationship group
 		List<Relationship> ingredientRels = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_PRECISE_INGRED, ActiveState.ACTIVE);
@@ -347,19 +338,15 @@ public class ValidateDrugModeling extends TermServerReport{
 				String issue = "Basis of Strength not equal or subtype of active ingredient, neither is active ingredient a modification of the BoSS";
 				report (concept, issue, null, boSS);
 				incrementSummaryInformation(BOSS_FAIL);
-				issueCount++;
+				incrementSummaryInformation(ISSUE_COUNT);
 			}
 		}
-		return issueCount;
 	}
 
-	private int validateIngredientsInFSN(Concept c, ConceptType[] drugTypes) throws TermServerScriptException {
-		int issueCount = 0;
-		
+	private void validateIngredientsInFSN(Concept c, ConceptType[] drugTypes) throws TermServerScriptException {
 		//Only check FSN for certain drug types (to be expanded later)
 		if (!SnomedUtils.isConceptType(c, drugTypes)) {
 			incrementSummaryInformation("Concepts ignored - wrong type");
-			return issueCount;
 		}
 		incrementSummaryInformation("Concepts validated to ensure ingredients correct in FSN");
 		Description currentFSN = c.getFSNDescription();
@@ -372,9 +359,8 @@ public class ValidateDrugModeling extends TermServerReport{
 			String issue = "FSN did not match expected pattern";
 			String differences = findDifferences (currentFSN.getTerm(), proposedFSN.getTerm());
 			report (c, issue, proposedFSN.getTerm(), differences);
-			issueCount++;
+			incrementSummaryInformation(ISSUE_COUNT);
 		}
-		return issueCount;
 	}
 	
 	private String findDifferences(String actual, String expected) {
@@ -399,15 +385,12 @@ public class ValidateDrugModeling extends TermServerReport{
 		return differences;
 	}
 
-	private int validateAttributeValueCardinality(Concept concept, Concept activeIngredient) throws TermServerScriptException {
-		int issuesEncountered = 0;
-		issuesEncountered += checkforRepeatedAttributeValue(concept, CharacteristicType.INFERRED_RELATIONSHIP, activeIngredient);
-		issuesEncountered += checkforRepeatedAttributeValue(concept, CharacteristicType.STATED_RELATIONSHIP, activeIngredient);
-		return issuesEncountered;
+	private void validateAttributeValueCardinality(Concept concept, Concept activeIngredient) throws TermServerScriptException {
+		checkforRepeatedAttributeValue(concept, CharacteristicType.INFERRED_RELATIONSHIP, activeIngredient);
+		checkforRepeatedAttributeValue(concept, CharacteristicType.STATED_RELATIONSHIP, activeIngredient);
 	}
 
-	private int checkforRepeatedAttributeValue(Concept c, CharacteristicType charType, Concept activeIngredient) throws TermServerScriptException {
-		int issues = 0;
+	private void checkforRepeatedAttributeValue(Concept c, CharacteristicType charType, Concept activeIngredient) throws TermServerScriptException {
 		Set<Concept> valuesEncountered = new HashSet<Concept>();
 		for (Relationship r : c.getRelationships(charType, activeIngredient, ActiveState.ACTIVE)) {
 			//Have we seen this value for the target attribute type before?
@@ -415,11 +398,10 @@ public class ValidateDrugModeling extends TermServerReport{
 			if (valuesEncountered.contains(target)) {
 				String msg = "Multiple " + charType + " instances of active ingredient";
 				report(c, msg, target.toString());
-				issues++;
+				incrementSummaryInformation(ISSUE_COUNT);
 			}
 			valuesEncountered.add(target);
 		}
-		return issues;
 	}
 	
 	private void report (Concept c, String data, String detail) throws TermServerScriptException {
@@ -492,5 +474,30 @@ public class ValidateDrugModeling extends TermServerReport{
 			return false;
 		}
 		return true;
+	}
+	
+	
+	private void checkForSemTagViolations(Concept c) throws TermServerScriptException {
+		//Ensure that the hierarchical level of this semantic tag is the same or deeper than those of the parent
+		int tagLevel = getTagLevel(c);
+		for (Concept p : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
+			int parentTagLevel = getTagLevel(p);
+			if (tagLevel < parentTagLevel) {
+				report (c, "Has higher level semantic tag than parent", p);
+				incrementSummaryInformation(ISSUE_COUNT);
+			}
+		}
+	}
+
+	private int getTagLevel(Concept c) throws TermServerScriptException {
+		String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
+		for (int i=0; i < semTagHiearchy.length; i++) {
+			if (semTagHiearchy[i].equals(semTag)) {
+				return i;
+			}
+		}
+		//throw new TermServerScriptException("Unable to find semantic tag level for: " + c);
+		error("Unable to find semantic tag level for: " + c, null);
+		return NOT_SET;
 	}
 }

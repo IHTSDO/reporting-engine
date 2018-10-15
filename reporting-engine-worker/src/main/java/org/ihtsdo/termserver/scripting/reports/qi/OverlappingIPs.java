@@ -39,8 +39,8 @@ public class OverlappingIPs extends TermServerReport {
 		}
 	}
 	
-	protected void init(String[] args) throws TermServerScriptException, SnowOwlClientException {
-		super.init(args, true);
+	protected void init(String[] args) throws TermServerScriptException {
+		super.init(args);
 		intermediatePrimitivesReport = new InitialAnalysis(this);
 		intermediatePrimitivesReport.setQuiet(true);
 	}

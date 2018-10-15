@@ -31,7 +31,7 @@ public class HierarchyConceptsUsedInDefinitionsReport extends TermServerScript{
 	Set<Concept> ignoredHierarchies;
 	Set<String> alreadyReported = new HashSet<>();
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
+	public static void main(String[] args) throws TermServerScriptException {
 		HierarchyConceptsUsedInDefinitionsReport report = new HierarchyConceptsUsedInDefinitionsReport();
 		try {
 			report.additionalReportColumns="UsedToDefine, InAttribute, Defn_Status";
@@ -123,7 +123,7 @@ public class HierarchyConceptsUsedInDefinitionsReport extends TermServerScript{
 		writeToReportFile(line);
 	}
 	
-	protected void init(String[] args) throws IOException, TermServerScriptException, SnowOwlClientException {
+	protected void init(String[] args) throws TermServerScriptException {
 		super.init(args);
 		ignoredHierarchies = new HashSet<>();
 		ignoredHierarchies.add (gl.getConcept("105590001")); // |Substance (substance)|

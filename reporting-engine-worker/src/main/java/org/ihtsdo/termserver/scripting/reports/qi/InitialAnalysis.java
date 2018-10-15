@@ -41,7 +41,7 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 		InitialAnalysis report = new InitialAnalysis(null);
 		try {
 			ReportSheetManager.targetFolderId = "1m7MVhMePldYrNjOvsE_WTAYcowZ4ps50";  //
-			report.init(args, true); //delay report initialisation
+			report.init(args);
 			report.getReportManager().setNumberOfDistinctReports(3);
 			report.loadProjectSnapshot(true);  //just FSNs
 			report.postInit(null);

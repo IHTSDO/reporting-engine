@@ -52,10 +52,6 @@ public class CaseSensitivityTextFileEditor extends TermServerReport{
 			report.finish();
 		}
 	}
-
-	protected void init(String[] args) throws TermServerScriptException, SnowOwlClientException {
-		super.init(args);
-	}
 	
 	public void postInit() throws TermServerScriptException {
 		info("Collecting organism terms...");

@@ -74,10 +74,6 @@ public class CTR19_CaseSensitivity extends BatchFix implements RF2Constants{
 		}
 	}
 
-	protected void init(String[] args) throws TermServerScriptException, IOException {
-		super.init(args);
-	}
-
 	@Override
 	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());

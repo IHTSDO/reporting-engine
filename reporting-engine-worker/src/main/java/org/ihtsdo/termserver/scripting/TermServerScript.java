@@ -143,7 +143,8 @@ public abstract class TermServerScript implements RF2Constants {
 	
 	public static void error (Object obj, Exception e) {
 		System.err.println ("*** " + (obj==null?"NULL":obj.toString()));
-		System.err.println (ExceptionUtils.getStackTrace(e));
+		if (e != null) 
+			System.err.println (ExceptionUtils.getStackTrace(e));
 	}
 	
 	public static void print (Object msg) {
@@ -159,7 +160,7 @@ public abstract class TermServerScript implements RF2Constants {
 		return msg;
 	}
 	
-	protected void init(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
+	protected void init(String[] args) throws TermServerScriptException {
 		
 		if (args.length < 3) {
 			info("Usage: java <TSScriptClass> [-a author] [-n <taskSize>] [-r <restart position>] [-c <authenticatedCookie>] [-d <Y/N>] [-p <projectName>] -f <batch file Location>");
