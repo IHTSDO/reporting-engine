@@ -44,7 +44,7 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 			report.init(args);
 			report.getReportManager().setNumberOfDistinctReports(3);
 			report.loadProjectSnapshot(true);  //just FSNs
-			report.postInit(null);
+			report.postInit();
 			info("Generating Intermediate Primitive Report for " + report.subHierarchyStart);
 			report.runJob();
 		} catch (Exception e) {
@@ -67,8 +67,8 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 		reportAttributeUsageCounts();
 	}
 	
-	public void postInit(JobRun run) throws TermServerScriptException {
-		subHierarchyStr = run == null ? null : run.getParameter(SUB_HIERARCHY);
+	public void postInit() throws TermServerScriptException {
+		subHierarchyStr = this.jobRun == null ? null : this.jobRun.getParameter(SUB_HIERARCHY);
 		try {
 			if (subHierarchyStr == null) {
 				//setSubHierarchy("46866001");	//       |Fracture of lower limb (disorder)|

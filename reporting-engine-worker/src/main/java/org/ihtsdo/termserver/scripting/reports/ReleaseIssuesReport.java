@@ -32,7 +32,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA
 		super.init(run);
-		additionalReportColumns = "FSN, Issue, Legacy, C/D/R Active, Detail";
+		additionalReportColumns = "FSN, Semtag, Issue, Legacy, C/D/R Active, Detail";
 	}
 
 	@Override
