@@ -95,9 +95,9 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 				setSubHierarchy(subHierarchyStr);
 			}
 
-			String[] columnHeadings = new String[] {	"FSN, SemTag, Proximal Primitive Parent, is Intermediate, Defn Status, Stated Attributes, Stated Role Groups, Inferred Role Groups, Stated Parents",
-														"FSN, Can Be Sufficiently Defined (1=yes 0=no), JIRA, Comments, Authoring Task, In Subhierarchy,Prim Above Here (NOS),Descendants,Total SDs affected, SD Concepts in subhierarchy, Total Primitive Concepts affected, Primitive Concepts in SubHierarchy",
-														"FSN, Concepts Using Type, Example" };
+			String[] columnHeadings = new String[] {	"SCTID, FSN, SemTag, Proximal Primitive Parent, is Intermediate, Defn Status, Stated Attributes, Stated Role Groups, Inferred Role Groups, Stated Parents",
+														"SCTID, FSN, Can Be Sufficiently Defined (1=yes 0=no), JIRA, Comments, Authoring Task, In Subhierarchy,Prim Above Here (NOS),Descendants,Total SDs affected, SD Concepts in subhierarchy, Total Primitive Concepts affected, Primitive Concepts in SubHierarchy",
+														"SCTID, FSN, Concepts Using Type, Example" };
 			String[] tabNames = new String[] {	"Concepts in Subhierarchy with PPPs",
 												"IPs with Counts",
 												"Attribute Usage"};
