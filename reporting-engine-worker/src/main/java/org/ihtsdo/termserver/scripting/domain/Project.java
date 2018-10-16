@@ -176,5 +176,12 @@ public class Project {
 		this.branchPath = branchPath;
 		return this;
 	}
+	
+	public boolean equals (Object other) {
+		if (other instanceof Project) {
+			return this.getKey().equals(((Project)other).getKey());
+		}
+		return false;
+	}
 
 }

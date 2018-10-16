@@ -25,13 +25,22 @@ public class ArchiveManager implements RF2Constants {
 	private SnowOwlClient tsClient;
 	public boolean allowStaleData = false;
 	public boolean populateHierarchyDepth = false;
+	static ArchiveManager singleton;
+	private Project currentlyHeldInMemory;
 	
-	ArchiveManager (TermServerScript ts) {
-		//this.ts = ts;
-		this.project = ts.getProject();
-		this.env = ts.getEnv();
-		this.gl = ts.getGraphLoader();
-		this.tsClient = ts.getTSClient();
+	public static ArchiveManager getArchiveManager(TermServerScript ts) {
+		if (singleton == null) {
+			singleton = new ArchiveManager();
+		}
+		singleton.project = ts.getProject();
+		singleton.env = ts.getEnv();
+		singleton.gl = ts.getGraphLoader();
+		singleton.tsClient = ts.getTSClient();
+		return singleton;
+	}
+	
+	private ArchiveManager () {
+		//Only access via singleton above
 	}
 	
 	protected void info(String msg) {
@@ -49,7 +58,7 @@ public class ArchiveManager implements RF2Constants {
 	protected Branch loadBranch(Project project) throws TermServerScriptException {
 		String branchPath = project.getBranchPath();
 		try {
-			debug ("Loading TS branch " + branchPath);
+			debug ("Checking TS branch metadata: " + branchPath);
 			Branch branch = tsClient.getBranch(branchPath);
 			//TODO Merge metadata from parent branches recursively, but for now, if empty, recover parent
 			if (branch.getMetadata().getPreviousRelease() == null) {
@@ -86,32 +95,23 @@ public class ArchiveManager implements RF2Constants {
 			if (isStale) {
 				TermServerScript.warn(project + " snapshot held locally is stale.  Requesting delta to rebuild...");
 			}
-		} /*else if (runStandAlone && !snapshot.exists()) {
-			throw new TermServerScriptException("Cannot run stand alone without snapshot archive provide");
-		}*/
-		
-		//Update:  Requesting a snapshot is now too costly.  We'll generate it from the 
-		//previous snapshot + a new delta.
-		//Do we already have a copy of the project locally?  If not, recover it.
-		/*if (!snapshot.exists()) {
-			//Add in a double check if we're working in prod - else we could scupper validation and classification for 90 minutes!
-			if (env.equals("prod")) {
-				print ("About to request snapshot export from production - are you sure? Y/N");
-				if (!STDIN.nextLine().trim().toUpperCase().equals("Y")) {
-					throw new TermServerScriptException("Snapshot export aborted.");
-				}
-			}
-			info ("Recovering current snapshot of " + project + " from TS (" + env + ")");
-			tsClient.export(project.getBranchPath(), null, ExportType.MIXED, ExtractType.SNAPSHOT, snapshot);
-		}*/
+		}
 		
 		if (!snapshot.exists() || ( isStale && !allowStaleData)) {
 			snapshot = generateSnapshot (project, branch);
 			//We don't need to load the snapshot if we've just generated it
-			//It will still be in memory
 		} else {
-			info ("Loading snapshot archive contents into memory...");
-			loadArchive(snapshot, fsnOnly, "Snapshot");
+			//We might already have this project in memory
+			if (currentlyHeldInMemory != null && currentlyHeldInMemory.equals(this.project)) {
+				info (project + " already held in memory, no need to reload");
+			} else {
+				//Make sure the Graph Loader is clean
+				gl.reset();
+				System.gc();
+				info ("Loading snapshot archive contents into memory...");
+				loadArchive(snapshot, fsnOnly, "Snapshot");
+				currentlyHeldInMemory = project;
+			}
 		}
 	}
 	
@@ -139,7 +139,7 @@ public class ArchiveManager implements RF2Constants {
 		delta.deleteOnExit();
 		tsClient.export(project.getBranchPath(), null, ExportType.UNPUBLISHED, ExtractType.DELTA, delta);
 		
-		SnapshotGenerator snapshotGenerator = new SnapshotGenerator(this);
+		SnapshotGenerator snapshotGenerator = new SnapshotGenerator();
 		//Lets have a separate output report for generation of the snapshot - local only
 		ReportManager rm = ReportManager.create(env, "SnapshotGeneration_" + project.getKey());
 		rm.setFileOnly();

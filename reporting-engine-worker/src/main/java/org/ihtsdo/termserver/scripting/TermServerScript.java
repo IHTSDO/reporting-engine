@@ -252,7 +252,6 @@ public abstract class TermServerScript implements RF2Constants {
 			project.setKey(projectName);
 		}
 		info("Full path for projected determined to be: " + project.getBranchPath());
-		setArchiveManager(new ArchiveManager(this));
 	}
 
 	protected void checkSettingsWithUser(JobRun jobRun) {
@@ -369,10 +368,6 @@ public abstract class TermServerScript implements RF2Constants {
 			jobRun.setDebugInfo(msg);
 			error(msg, e);
 		} finally {
-			//TODO Remove this, make ArchiveManager a singleton and let it 
-			//keep data in memory until it knows what the next job requires.
-			gl.reset();  //Free up memory
-			System.gc();
 			finish();
 		}
 	}
@@ -964,11 +959,7 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 
 	public ArchiveManager getArchiveManager() {
-		return archiveManager;
-	}
-
-	public void setArchiveManager(ArchiveManager archiveManager) {
-		this.archiveManager = archiveManager;
+		return ArchiveManager.getArchiveManager(this);
 	}
 
 	public File getInputFile() {

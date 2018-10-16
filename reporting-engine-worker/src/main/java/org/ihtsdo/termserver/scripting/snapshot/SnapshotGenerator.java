@@ -4,7 +4,6 @@ import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-import org.ihtsdo.termserver.scripting.ArchiveManager;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
@@ -41,15 +40,9 @@ public class SnapshotGenerator extends TermServerScript {
 	protected String[] langHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","acceptabilityId"};
 	protected String[] attribValHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","valueId"};
 	protected String[] assocHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","targetComponentId"};
-
-	public SnapshotGenerator (ArchiveManager archiveManager) {
-		if (archiveManager != null) {
-			this.setArchiveManager(archiveManager);
-		}
-	}
 	
 	public static void main (String[] args) throws IOException, TermServerScriptException, SnowOwlClientException, InterruptedException {
-		SnapshotGenerator snapGen = new SnapshotGenerator(null);
+		SnapshotGenerator snapGen = new SnapshotGenerator();
 		try {
 			snapGen.runStandAlone = true;
 			snapGen.init(args);
@@ -95,6 +88,10 @@ public class SnapshotGenerator extends TermServerScript {
 			String proposedOutputDirName = outputDirName + "_" + (++increment) ;
 			outputDir = new File(proposedOutputDirName);
 		}
+		
+		//Make sure the Graph Loader is clean
+		gl.reset();
+		System.gc();
 		
 		if (leaveArchiveUncompressed) {
 			packageDir = outputDir.getPath() + File.separator;
