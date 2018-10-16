@@ -46,9 +46,11 @@ public class Transmitter {
 		
 		//We also need to only return parameters that the job indicated it can handle
 		Job job = jobManager.getJob(run.getJobName());
-		for (String key : run.getParameters().keySet()) {
-			if (!job.getParameterNames().contains(key)) {
-				run.getParameters().remove(key);
+		if (run.getParameters() != null) {
+			for (String key : run.getParameters().keySet()) {
+				if (!job.getParameterNames().contains(key)) {
+					run.getParameters().remove(key);
+				}
 			}
 		}
 
