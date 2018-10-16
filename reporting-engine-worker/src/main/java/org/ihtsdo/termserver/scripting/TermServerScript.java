@@ -901,9 +901,12 @@ public abstract class TermServerScript implements RF2Constants {
 		.append(c==null?"":c.getConceptId())
 		.append(QUOTE_COMMA_QUOTE)
 		.append(c.getFsn())
-		.append(QUOTE_COMMA_QUOTE)
-		.append(SnomedUtils.deconstructFSN(c.getFsn())[1])
-		.append(QUOTE);
+		.append(QUOTE_COMMA_QUOTE);
+		
+		if (!StringUtils.isEmpty(c.getFsn())) {
+			sb.append(SnomedUtils.deconstructFSN(c.getFsn())[1]);
+		}
+		sb.append(QUOTE);
 		
 		for (Object detail : details) {
 			if (detail instanceof String[]) {
