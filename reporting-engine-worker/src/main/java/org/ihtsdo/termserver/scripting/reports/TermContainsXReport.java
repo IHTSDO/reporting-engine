@@ -22,18 +22,20 @@ import org.snomed.otf.scheduler.domain.*;
  */
 public class TermContainsXReport extends TermServerReport implements ReportClass {
 	
-	//String[] textsToMatch = new String[] {"remission", "diabet" };
 	String[] textsToMatch;
 	boolean reportConceptOnceOnly = true;
+	public static final String STARTS_WITH_YN = "StartsWithY/N";
 	public static final String WORDS = "Words";
 	public static final String ATTRIBUTE_DETAIL = "AttributeDetail";
 	Concept attributeDetail;
+	boolean startsWith = false;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		Map<String, String> params = new HashMap<>();
-		params.put(SUB_HIERARCHY, SUBSTANCE.toString());
-		params.put(WORDS, "hydrochloride,mesilate,mesylate,maleate,anhydrous");
-		params.put(ATTRIBUTE_DETAIL, "738774007 |Is modification of (attribute)|");
+		params.put(STARTS_WITH_YN, "Y");
+		params.put(SUB_HIERARCHY, ROOT_CONCEPT.toString());
+		params.put(WORDS, "[");
+		params.put(ATTRIBUTE_DETAIL, null);
 		TermServerReport.run(TermContainsXReport.class, args, params);
 	}
 	
@@ -43,15 +45,21 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 		super.init(run);
 		getArchiveManager().populateHierarchyDepth = true;
 		textsToMatch = run.getParameter(WORDS).split(COMMA);
+		
 		String attribStr = run.getParameter(ATTRIBUTE_DETAIL);
 		if (attribStr != null && !attribStr.isEmpty()) {
 			attributeDetail = gl.getConcept(attribStr);
+		}
+		
+		String startsWithStr = run.getParameter(STARTS_WITH_YN);
+		if (startsWithStr != null && startsWithStr.toUpperCase().equals("Y")) {
+			startsWith = true;
 		}
 	}
 	
 	@Override
 	public Job getJob() {
-		String[] parameterNames = new String[] { "SubHierarchy", "Words", "AttributeDetail" };
+		String[] parameterNames = new String[] { SUB_HIERARCHY, WORDS, ATTRIBUTE_DETAIL, STARTS_WITH_YN };
 		return new Job( new JobCategory(JobCategory.ADHOC_QUERIES),
 						"Term contains X",
 						"List all concept containing specified words, with optional attribute detail",
@@ -65,7 +73,8 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 					boolean reported = false;
 					for (String matchText : textsToMatch) {
-						if (d.getTerm().toLowerCase().contains(matchText.toLowerCase())) {
+						if ( (!startsWith && d.getTerm().toLowerCase().contains(matchText.toLowerCase())) ||
+								(startsWith && d.getTerm().toLowerCase().startsWith(matchText.toLowerCase()))) {
 							String[] hiearchies = getHierarchies(c);
 							String cs = SnomedUtils.translateCaseSignificanceFromEnum(c.getFSNDescription().getCaseSignificance());
 							report(c, matchText, d, cs, getAttributeDetail(c), hiearchies[1], hiearchies[2]);

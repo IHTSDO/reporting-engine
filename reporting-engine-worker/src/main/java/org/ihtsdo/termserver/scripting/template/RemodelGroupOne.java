@@ -37,7 +37,6 @@ public class RemodelGroupOne extends TemplateFix {
 		try {
 			ReportSheetManager.targetFolderId = "15FSegsDC4Tz7vP5NPayGeG2Q4SB1wvnr"; //QI  / Group One Remodel
 			//ReportSheetManager.targetFolderId = "18xZylGhgL7ML782pu6-6u_VUw3p5Hfr7"; //QI / Development
-			app.includeComplexTemplates = true;
 			app.init(args);
 			app.loadProjectSnapshot(false);  //Load all descriptions
 			app.postInit();
@@ -57,6 +56,7 @@ public class RemodelGroupOne extends TemplateFix {
 		populateEditPanel = true;
 		populateTaskDescription = true;
 		additionalReportColumns = "CharacteristicType, Template, AFTER Stated, BEFORE Stated, Inferred";
+		//includeComplexTemplates = true;
 		
 		formNewGroupAround.add(FINDING_SITE);
 		formNewGroupAround.add(CAUSE_AGENT);
@@ -90,18 +90,21 @@ public class RemodelGroupOne extends TemplateFix {
 		
 		subHierarchyStr = "3218000"; //QI-70 |Mycosis (disorder)|
 		templateNames = new String[] {	"templates/Infection caused by Fungus.json"};
-		*/
+		
 		subHierarchyStr = "17322007"; //QI-116 |Parasite (disorder)|
 		templateNames = new String[] {	"templates/Infection caused by Parasite.json"};
-		/*
+		*/
+		
 		subHierarchyStr = "125643001"; //QI-117 |Open wound| 
 		templateNames = new String[] {	"templates/wound/wound of bodysite.json"
 				//"templates/wound/open wound of bodysite.json"
 				};
-		exclusionWords = new ArrayList<String>();
+		if (exclusionWords == null) {
+			exclusionWords = new ArrayList<>();
+		}
 		exclusionWords.add("complication");
 		exclusionWords.add("fracture");
-		*/
+		
 		super.init(args);
 	}
 	

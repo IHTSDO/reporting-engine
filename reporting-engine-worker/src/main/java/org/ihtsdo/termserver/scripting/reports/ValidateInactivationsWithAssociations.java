@@ -31,7 +31,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 	
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA
-		additionalReportColumns="FSN, Concept EffectiveTime, Issue, isLegacy (C/D), Data";
+		additionalReportColumns="FSN, SemTag, Concept EffectiveTime, Issue, isLegacy (C/D), Data";
 		super.init(run);
 	}
 
