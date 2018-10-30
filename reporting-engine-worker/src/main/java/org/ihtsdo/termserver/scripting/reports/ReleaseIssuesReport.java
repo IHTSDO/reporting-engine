@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.reports;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
@@ -16,6 +17,16 @@ import org.springframework.util.StringUtils;
  * INFRA-2723 Detect various possible issues
  * 
  * https://docs.google.com/spreadsheets/d/1jrCR_VOZ6k7qBwDAhTqbt67iisbm_rThV7vt37lr_Rg/edit#gid=0
+ 
+ For cut-n-paste list of issues checked:
+ ISRS-391 Descriptions whose module id does not match that of the component
+ ISRS-392 Stated Relationships whose module id does not match that of the component
+ MAINT-224 Synonyms created as TextDefinitions new content only
+ INFRA-2580, MAINT-342 Inactivated concepts without active PT or synonym – new instances only
+ ATF-1550 Check that concept has only one semantic tag – new and released content
+ ISRS-414 Descriptions which contain a non-breaking space
+ ISRS-286 Ensure Parents in same module
+ Active concept parents should not belong to more than one top-level hierarchy – please check NEW and LEGACY content for issues
  */
 public class ReleaseIssuesReport extends TermServerReport implements ReportClass {
 	
@@ -45,15 +56,47 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	}
 
 	public void runJob() throws TermServerScriptException {
+		parentsInSameModule();
 		unexpectedDescriptionModules();
 		unexpectedRelationshipModules();
 		fullStopInSynonym();
 		inactiveMissingFSN_PT();
 		duplicateSemanticTags();
 		nonBreakingSpace();
+		parentsInSameTopLevelHierarchy();
 	}
+	
+	//ISRS-286 Ensure Parents in same module.
+	//TODO To avoid issues with LOINC and ManagedService, only check core and model module
+	//concepts
+	private void parentsInSameModule() throws TermServerScriptException {
+		for (Concept c : gl.getAllConcepts()) {
+			if (!c.getModuleId().equals(SCTID_CORE_MODULE) && !c.getModuleId().equals(SCTID_MODEL_MODULE)) {
+				continue;
+			}
+			
+			//Also skip the top of the metadata hierarchy - it has a core parent
+			//900000000000441003 |SNOMED CT Model Component (metadata)|
+			if (!c.isActive() || c.getConceptId().equals("900000000000441003")) {
+				continue;
+			}
+			
+			for (Concept p : c.getParents(CharacteristicType.STATED_RELATIONSHIP)) {
+				if (!p.getModuleId().equals(c.getModuleId())) {
+					report(c, "Mismatching parent moduleId",isLegacy(c), isActive(c,null), p);
+					if (isLegacy(c).equals("Y")) {
+						incrementSummaryInformation("Legacy Issues Reported");
+					}	else {
+						incrementSummaryInformation("Fresh Issues Reported");
+						incrementSummaryInformation(ISSUE_COUNT);  //We'll only flag up fresh issues
+					}
+				}
+			}
+		}
+	}
+	
 
-	// ISRS-391 Descriptions whose module id does not match that of the component
+	//ISRS-391 Descriptions whose module id does not match that of the component
 	private void unexpectedDescriptionModules() throws TermServerScriptException {
 		for (Concept c : gl.getAllConcepts()) {
 			for (Description d : c.getDescriptions()) {
@@ -70,8 +113,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			}
 		}
 	}
-	
-	// ISRS-392 Stated Relationships whose module id does not match that of the component
+	//ISRS-392 Part II Stated Relationships whose module id does not match that of the component
 	private void unexpectedRelationshipModules() throws TermServerScriptException {
 		for (Concept c : gl.getAllConcepts()) {
 			for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH)) {
@@ -116,7 +158,6 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	private void inactiveMissingFSN_PT() throws TermServerScriptException {
 		for (Concept c : gl.getAllConcepts()) {
 			if (!c.isActive()) {
-				
 				boolean reported = false;
 				if (c.getFSNDescription() == null || !c.getFSNDescription().isActive()) {
 					report(c, "Inactive concept without active FSN",isLegacy(c), isActive(c,null));
@@ -150,6 +191,11 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	//ATF-1550 Check that concept has only one semantic tag – new and released content
 	private void duplicateSemanticTags() throws TermServerScriptException {
 		Map<String, Concept> knownSemanticTags = new HashMap<>();
+		Set<String> whiteList = new HashSet<>();
+		whiteList.add("368847001");
+		whiteList.add("368812009");
+		whiteList.add("385238005");
+		whiteList.add("368808003");
 		
 		//First pass through all concepts to find semantic tags
 		for (Concept c : gl.getAllConcepts()) {
@@ -172,6 +218,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		//Second pass to see if we have any of these remaining once
 		//the real semantic tag (last set of brackets) has been removed
 		for (Concept c : gl.getAllConcepts()) {
+			if (whiteList.contains(c.getId())) {
+				continue;
+			}
 			if (c.getFSNDescription() == null) {
 				warn("No FSN Description found (2nd pass) for concept " + c.getConceptId());
 				incrementSummaryInformation(ISSUE_COUNT);  //We'll only flag up fresh issues
@@ -206,6 +255,60 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 					}	else {
 						incrementSummaryInformation("Fresh Issues Reported");
 						incrementSummaryInformation(ISSUE_COUNT);  //We'll only flag up fresh issues
+					}
+				}
+			}
+		}
+	}
+	
+	//Active concept parents should not belong to more than one top-level hierarchy – please check NEW and LEGACY content for issues
+	private void parentsInSameTopLevelHierarchy() throws TermServerScriptException {
+		Set<Concept> whiteList = new HashSet<>();
+		whiteList.add(gl.getConcept("411115002 |Drug-device combination product (product)|")); 
+				
+		nextConcept:
+		for (Concept c : gl.getAllConcepts()) {
+			if (c.isActive()) {
+				String legacy = isLegacy(c);
+				
+				//Skip root concept - has no highest ancestor
+				if (c.equals(ROOT_CONCEPT)) {
+					continue;
+				}
+				
+				//If this concept - or any of its ancestors - are whitelisted, then skip
+				for (Concept a : gl.getAncestorsCache().getAncestorsOrSelf(c)){
+					if (whiteList.contains(a)) {
+						continue nextConcept;
+					}
+				}
+				
+				Concept lastTopLevel = null;
+				for (Concept p : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
+					//If we are a top level, skip also
+					if (p.equals(ROOT_CONCEPT)) {
+						continue nextConcept;
+					}
+					//What top level hierarchy is this parent in?
+					Set<Concept> topLevels = SnomedUtils.getHighestAncestorsBefore(p, ROOT_CONCEPT);
+					
+					if (topLevels.size() > 1) {
+						String topLevelStr = topLevels.stream().map(cp -> cp.toString()).collect(Collectors.joining(",\n"));
+						report(c, "Parent has multiple top level ancestors", legacy, isActive(c,null), topLevelStr);
+						continue nextConcept;
+					}
+					
+					Concept thisTopLevel = topLevels.iterator().next();
+					if (lastTopLevel == null) {
+						lastTopLevel = thisTopLevel;
+					} else if ( !lastTopLevel.equals(thisTopLevel)) {
+						report(c, "Mixed TopLevel Parents", legacy, isActive(c,null), thisTopLevel, lastTopLevel);
+						if (legacy.equals("Y")) {
+							incrementSummaryInformation("Legacy Issues Reported");
+						}	else {
+							incrementSummaryInformation("Fresh Issues Reported");
+							incrementSummaryInformation(ISSUE_COUNT);  //We'll only flag up fresh issues
+						}
 					}
 				}
 			}

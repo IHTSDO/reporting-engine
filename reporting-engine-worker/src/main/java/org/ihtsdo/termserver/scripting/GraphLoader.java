@@ -51,20 +51,24 @@ public class GraphLoader implements RF2Constants {
 	public static GraphLoader getGraphLoader() {
 		if (singleton == null) {
 			singleton = new GraphLoader();
-			//Pre populate known concepts to ensure we only ever refer to one object
-			singleton.concepts.put(SCTID_ROOT_CONCEPT.toString(), ROOT_CONCEPT);
-			singleton.concepts.put(SCTID_IS_A_CONCEPT.toString(), IS_A);
-			singleton.concepts.put(PHARM_BIO_PRODUCT.getConceptId(), PHARM_BIO_PRODUCT);
-			singleton.concepts.put(MEDICINAL_PRODUCT.getConceptId(), MEDICINAL_PRODUCT);
-			singleton.concepts.put(SUBSTANCE.getConceptId(), SUBSTANCE);
-			singleton.concepts.put(CLINICAL_FINDING.getConceptId(), CLINICAL_FINDING);
-			singleton.concepts.put(BODY_STRUCTURE.getConceptId(), BODY_STRUCTURE);
-			singleton.concepts.put(ORGANISM.getConceptId(), ORGANISM);
+			populateKnownConcepts();
 		}
 		
 		return singleton;
 	}
 	
+	private static void populateKnownConcepts() {
+		//Pre populate known concepts to ensure we only ever refer to one object
+		singleton.concepts.put(SCTID_ROOT_CONCEPT.toString(), ROOT_CONCEPT);
+		singleton.concepts.put(SCTID_IS_A_CONCEPT.toString(), IS_A);
+		singleton.concepts.put(PHARM_BIO_PRODUCT.getConceptId(), PHARM_BIO_PRODUCT);
+		singleton.concepts.put(MEDICINAL_PRODUCT.getConceptId(), MEDICINAL_PRODUCT);
+		singleton.concepts.put(SUBSTANCE.getConceptId(), SUBSTANCE);
+		singleton.concepts.put(CLINICAL_FINDING.getConceptId(), CLINICAL_FINDING);
+		singleton.concepts.put(BODY_STRUCTURE.getConceptId(), BODY_STRUCTURE);
+		singleton.concepts.put(ORGANISM.getConceptId(), ORGANISM);
+	}
+
 	public Collection <Concept> getAllConcepts() {
 		return concepts.values();
 	}
@@ -77,6 +81,7 @@ public class GraphLoader implements RF2Constants {
 		fsnMap = null;
 		descendantsCache.reset();
 		ancestorsCache.reset();
+		populateKnownConcepts();
 	}
 	
 	public Set<Concept> loadRelationships(CharacteristicType characteristicType, InputStream relStream, boolean addRelationshipsToConcepts, boolean isDelta) 

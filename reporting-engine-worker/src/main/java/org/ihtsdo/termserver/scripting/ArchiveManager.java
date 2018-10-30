@@ -105,9 +105,11 @@ public class ArchiveManager implements RF2Constants {
 			if (currentlyHeldInMemory != null && currentlyHeldInMemory.equals(this.project)) {
 				info (project + " already held in memory, no need to reload");
 			} else {
-				//Make sure the Graph Loader is clean
-				gl.reset();
-				System.gc();
+				if (currentlyHeldInMemory != null) {
+					//Make sure the Graph Loader is clean
+					gl.reset();
+					System.gc();
+				}
 				info ("Loading snapshot archive contents into memory...");
 				loadArchive(snapshot, fsnOnly, "Snapshot");
 				currentlyHeldInMemory = project;

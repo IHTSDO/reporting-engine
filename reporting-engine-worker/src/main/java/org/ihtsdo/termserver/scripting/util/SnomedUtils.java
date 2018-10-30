@@ -851,24 +851,27 @@ public class SnomedUtils implements RF2Constants {
 	 * @return the highest concept reached before hitting "end"
 	 */
 	public static Concept getHighestAncestorBefore(Concept start, Concept end) {
-		Set<Concept> topLevelAncestors = new HashSet<>();
-		for (Concept parent : start.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
-			if (parent.equals(end)) {
-				return start;
-			} else if (parent.equals(ROOT_CONCEPT)) {
-				throw new IllegalStateException(start + " reached ROOT before finding " + end);
-			} else {
-				topLevelAncestors.add(getHighestAncestorBefore(parent, end));
-			}
-		}
-		
+		Set<Concept> topLevelAncestors = getHighestAncestorsBefore(start, end);
 		if (topLevelAncestors.size() > 1) {
 			throw new IllegalArgumentException(start + " has multiple ancestors immediately before " + end);
 		} else if (topLevelAncestors.isEmpty()) {
 			throw new IllegalArgumentException("Failed to find ancestors of " + start + " before " + end);
 		}
-		
 		return topLevelAncestors.iterator().next();
+	}
+	
+	public static Set<Concept> getHighestAncestorsBefore(Concept start, Concept end) {
+		Set<Concept> topLevelAncestors = new HashSet<>();
+		for (Concept parent : start.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
+			if (parent.equals(end)) {
+				return Collections.singleton(start);
+			} else if (parent.equals(ROOT_CONCEPT)) {
+				throw new IllegalStateException(start + " reached ROOT before finding " + end);
+			} else {
+				topLevelAncestors.addAll(getHighestAncestorsBefore(parent, end));
+			}
+		}
+		return topLevelAncestors;
 	}
 
 	/**

@@ -83,6 +83,7 @@ public interface RF2Constants {
 	static String productPrefix = "Product containing ";
 	
 	static String SCTID_CORE_MODULE = "900000000000207008";
+	static String SCTID_MODEL_MODULE = "900000000000012004"; // |SNOMED CT model component module (core metadata concept)|
 	static String SCTID_US_MODULE = "731000124108";
 	
 	//ECL Constants

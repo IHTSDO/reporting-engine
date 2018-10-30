@@ -49,7 +49,6 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 	
 	public void postInit() throws TermServerScriptException {
 		super.postInit();
-		
 		loadCSWords();
 		
 		targetHierarchies.add(ROOT_CONCEPT);
@@ -89,25 +88,9 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 	}
 
 	public void runJob() throws TermServerScriptException {
+		initialiseSummaryInformation(ISSUE_COUNT);
 		checkCaseSignificance();
 	}
-	
-	/*public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
-		CaseSensitivity report = new CaseSensitivity(null);
-		try {
-			report.additionalReportColumns = "Semtag, description, isPreferred, caseSignificance, issue";
-			//report.additionalReportColumns = "description, isPreferred, caseSignificance, usedInProduct, logicRuleOK, issue";
-			report.init(args);
-			report.loadCSWords();
-			report.loadProjectSnapshot(false);  //Load all descriptions
-			report.postInit();
-			info ("Producing case sensitivity report...");
-			report.checkCaseSignificance();
-			//report.checkCaseSignificanceSubstances();
-		} finally {
-			report.finish();
-		}
-	}*/
 
 	public void loadCSWords() throws TermServerScriptException {
 		info("Loading " + inputFile);
@@ -153,7 +136,6 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 	private void checkCaseSignificance() throws TermServerScriptException {
 		//Work through all active descriptions of all hierarchies
 		for (Concept targetHierarchy : targetHierarchies) {
-			
 			List<Concept> hiearchyDescendants = new ArrayList<>(targetHierarchy.getDescendents(NOT_SET));
 			Collections.sort(hiearchyDescendants, new Comparator<Concept>() {
 				@Override
@@ -170,6 +152,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 					continue;
 				}
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+					incrementSummaryInformation("Descriptions checked");
 					if (whiteList.contains(d.getDescriptionId())) {
 						continue;
 					}
@@ -238,49 +221,6 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 		}
 		return false;
 	}
-/*
-	private void checkCaseSignificanceSubstances() throws TermServerScriptException {
-		Set<Concept> substancesUsedInProducts = getSubstancesUsedInProducts();
-		for (Concept c : SUBSTANCE.getDescendents(NOT_SET)) {
-			boolean usedInProduct = substancesUsedInProducts.contains(c);
-			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-				String caseSig = SnomedUtils.translateCaseSignificanceFromEnum(d.getCaseSignificance());
-				String firstLetter = d.getTerm().substring(0,1);
-				String chopped = d.getTerm().substring(1);
-				String preferred = d.isPreferred()?"Y":"N";
-				//Lower case first letters must be entire term case sensitive
-				if (Character.isLetter(firstLetter.charAt(0)) && firstLetter.equals(firstLetter.toLowerCase()) && !caseSig.equals(CS)) {
-					report (c, d, preferred, caseSig, (usedInProduct?"Y":"N"), "N", "Terms starting with lower case letter must be CS");
-					incrementSummaryInformation("issues");
-				} else if (caseSig.equals(CS) || caseSig.equals(cI)) {
-					if (chopped.equals(chopped.toLowerCase())) {
-						boolean logicRuleOK = letterFollowsNumber(d.getTerm()) || startsWithProperNoun(d.getTerm());
-						report (c, d, preferred, caseSig, (usedInProduct?"Y":"N"), (logicRuleOK?"Y":"N"), "Case sensitive term does not have capital after first letter");
-						incrementSummaryInformation("issues");
-					}
-				} else {
-					//For case insensitive terms, we're on the look out for capitial letters after the first letter
-					if (!chopped.equals(chopped.toLowerCase())) {
-						report (c, d, preferred, caseSig, (usedInProduct?"Y":"N"), "N", "Case insensitive term has a capital after first letter");
-						incrementSummaryInformation("issues");
-					}
-				}
-			}
-		}
-	}
-
-	private Set<Concept> getSubstancesUsedInProducts() throws TermServerScriptException {
-		Set<Concept> substancesUsedInProducts = new HashSet<>();
-		for (Concept product : PHARM_BIO_PRODUCT.getDescendents(NOT_SET)) {
-			for (Relationship r : product.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE)) {
-				substancesUsedInProducts.add(r.getTarget());
-			}
-			for (Relationship r : product.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HAS_PRECISE_INGRED, ActiveState.ACTIVE)) {
-				substancesUsedInProducts.add(r.getTarget());
-			}
-		}
-		return substancesUsedInProducts;
-	}*/
 
 	public boolean startsWithProperNounPhrase(String term) {
 		String[] words = term.split(" ");
