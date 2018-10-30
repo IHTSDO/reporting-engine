@@ -7,9 +7,10 @@ import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.util.StringUtils;
 
 /*
- * INFRA-2496
+ * INFRA-2496, QI-135
  * Inactivate concepts where a replacement exists - driven by list.
  * Children should have their Medical Procedure parent removed.
  */
@@ -17,6 +18,7 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 	
 	Map<Concept, Concept> replacements = new HashMap<>();
 	Map<Concept, Task> inactivations = new HashMap<>();
+	boolean expectReplacements = false;
 	
 	protected InactivateConcepts(BatchFix clone) {
 		super(clone);
@@ -29,6 +31,7 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 			fix.expectNullConcepts = true;
 			fix.init(args);
 			fix.loadProjectSnapshot(false); //Just the FSNs
+			fix.postInit(true);
 			fix.processFile();
 		} finally {
 			fix.finish();
@@ -38,14 +41,23 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 	@Override
 	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
-		int changesMade = modifyConcept(task, loadedConcept);
-		if (changesMade > 0) {
-			save(task, loadedConcept, info);
+		int changesMade = 0;
+		
+		if (concept.getConceptId().equals("781540003")) {
+			warn ("Debug Here");
+		}
+		if (loadedConcept.isReleased()) {
+			changesMade = inactivateConcept(task, loadedConcept);
+			if (changesMade > 0) {
+				save(task, loadedConcept, info);
+			}
+		} else {
+			changesMade = deleteConcept(task, loadedConcept);
 		}
 		return changesMade;
 	}
 	
-	private int modifyConcept(Task task, Concept concept) throws TermServerScriptException {
+	private int inactivateConcept(Task task, Concept concept) throws TermServerScriptException {
 		//Do we have a replacement for this concepts?  Only inactivate concepts with replacements
 		Concept replacement = replacements.get(concept);
 		if (replacement == null) {
@@ -118,6 +130,13 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 			report (task, child, Severity.HIGH, ReportActionType.API_ERROR, "Did not remove " + parent + " as parent of " + child);
 		}
 	}
+	
+	protected int deleteConcept(Task t, Concept c) throws TermServerScriptException {
+		//Check for this concept being the target of any historical associations and rewire them to the replacement
+		checkAndInactivatateIncomingAssociations(t, c, InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY, null);
+		report (t, c, Severity.MEDIUM, ReportActionType.CONCEPT_DELETED);
+		return super.deleteConcept(t, c);
+	}
 
 	private void checkAndInactivatateIncomingAssociations(Task task, Concept c, InactivationIndicator reason, Concept replacement) throws TermServerScriptException {
 		if (gl.usedAsHistoricalAssociationTarget(c) == null) {
@@ -130,23 +149,34 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 
 	private void inactivateHistoricalAssociation(Task task, AssociationEntry assoc, InactivationIndicator reason, Concept replacement) throws TermServerScriptException {
 		//The source concept can no longer have this historical association, and its
-		//inactivation reason must also change to NonConformance.
+		//inactivation reason must also change.
 		Concept incomingConcept = loadConcept(assoc.getReferencedComponentId(), task.getBranchPath());
 		incomingConcept.setInactivationIndicator(reason);
-		if (reason.equals(InactivationIndicator.DUPLICATE)) {
+		if (reason.equals(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY)) {
+			incomingConcept.setAssociationTargets(null);
+		} else if (reason.equals(InactivationIndicator.DUPLICATE)) {
 			incomingConcept.setAssociationTargets(AssociationTargets.sameAs(replacement));
 		} else if  (reason.equals(InactivationIndicator.AMBIGUOUS)) {
 			incomingConcept.setAssociationTargets(AssociationTargets.possEquivTo(replacement));
 		} else {
 			throw new IllegalArgumentException("Don't know what historical association to use with " + reason);
 		}
-		report(task, incomingConcept, Severity.MEDIUM, ReportActionType.CONCEPT_CHANGE_MADE, "Incoming historical association rewired to " + replacement);
+		Severity severity = replacement == null ? Severity.CRITICAL : Severity.MEDIUM;
+		report(task, incomingConcept, severity, ReportActionType.CONCEPT_CHANGE_MADE, "Historical association rewired to " + replacement);
+		//Add this concept into our task so we know it's been updated
+		task.addAfter(incomingConcept, gl.getConcept(assoc.getTargetComponentId()));
 		save(task, incomingConcept, "");
 	}
 
 	@Override
 	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
-		Concept c = gl.findConcept(lineItems[0]);
+		Concept c;
+		
+		if (StringUtils.isNumeric(lineItems[0])) {
+			c = gl.getConcept(lineItems[0]);
+		} else {
+			c = gl.findConcept(lineItems[0]);
+		}
 		
 		Concept replacement = null;
 		if (lineItems.length > 1) {
@@ -156,13 +186,17 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 				try {
 					replacement = gl.getConcept(lineItems[1]);
 				} catch (Exception e) {
-					warn ("Failed to identify replacement concept: " + lineItems[1]);
+					if (expectReplacements) {
+						warn ("Failed to identify replacement concept: " + lineItems[1]);
+					}
 				}
 			}
 		}
 		
 		if (replacement != null) {
 			replacements.put(c, replacement);
+			return Collections.singletonList(c);
+		} else if (!expectReplacements){
 			return Collections.singletonList(c);
 		}
 		return null;

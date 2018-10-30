@@ -20,6 +20,9 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	@SerializedName("active")
 	@Expose
 	private boolean active = true;
+	@SerializedName("released")
+	@Expose
+	private Boolean released;
 	@SerializedName(value="conceptId", alternate={"id"})
 	@Expose
 	private String conceptId;
@@ -1113,6 +1116,19 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		statedRelationshipGroups = null;
 		inferredRelationshipGroups = null;
 		return changesMade;
+	}
+	
+	public Boolean isReleased() {
+		//If the field has not been populated (say because its not been loaded from the TS) then use effectiveTime
+		//Which isn't ideal if we've just changed the definition status!
+		if (released == null) {
+			return !(effectiveTime == null || effectiveTime.isEmpty());
+		}
+		return released;
+	}
+
+	public void setReleased(Boolean released) {
+		this.released = released;
 	}
 
 }

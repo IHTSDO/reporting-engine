@@ -102,7 +102,7 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 												"IPs with Counts",
 												"Attribute Usage"};
 			
-			super.postInit(tabNames, columnHeadings);
+			super.postInit(tabNames, columnHeadings, false);
 		} catch (Exception e) {
 			throw new TermServerScriptException ("Unable to initialise " + this.getClass().getSimpleName(), e);
 		}

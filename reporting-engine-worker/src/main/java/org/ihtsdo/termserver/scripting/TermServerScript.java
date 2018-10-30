@@ -339,10 +339,18 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 
 	public void postInit() throws TermServerScriptException {
-		postInit(null, new String[] {headers + additionalReportColumns});
+		postInit(null, new String[] {headers + additionalReportColumns}, false);
 	}
 	
-	public void postInit(String[] tabNames, String[] columnHeadings) throws TermServerScriptException {
+	public void postInit(boolean csvOutput) throws TermServerScriptException {
+		postInit(null, new String[] {headers + additionalReportColumns}, csvOutput);
+	}
+	
+	/*public void postInit(String[] tabNames, String[] columnHeadings) throws TermServerScriptException {
+		postInit(tabNames, columnHeadings, false);
+	}*/
+	
+	public void postInit(String[] tabNames, String[] columnHeadings, boolean csvOutput) throws TermServerScriptException {
 		if (jobRun != null && jobRun.getParameter(SUB_HIERARCHY) != null) {
 			subHierarchy = gl.getConcept(jobRun.getParameter(SUB_HIERARCHY));
 			//RP-4 And post that back in, so the FSN is always populated
@@ -351,6 +359,10 @@ public abstract class TermServerScript implements RF2Constants {
 		reportManager = ReportManager.create(env, getReportName());
 		if (tabNames != null) {
 			reportManager.setTabNames(tabNames);
+		}
+		if (csvOutput) {
+			reportManager.setWriteToFile(true);
+			reportManager.setWriteToSheet(false);
 		}
 		getReportManager().initialiseReportFiles(columnHeadings);
 	}
@@ -546,12 +558,13 @@ public abstract class TermServerScript implements RF2Constants {
 		return created;
 	}
 	
-	protected void deleteConcept(Task t, Concept c) throws TermServerScriptException {
+	protected int deleteConcept(Task t, Concept c) throws TermServerScriptException {
 		try {
 			debug ((dryRun ?"Dry run deleting ":"Deleting ") + c );
 			if (!dryRun) {
 				tsClient.deleteConcept(c.getConceptId(), t.getBranchPath());
-			} 
+			}
+			return CHANGE_MADE;
 		} catch (Exception e) {
 			throw new TermServerScriptException("Failed to delete " + c + " in TS due to " + e.getMessage(),e);
 		}
