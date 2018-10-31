@@ -1,6 +1,8 @@
 package org.ihtsdo.termserver.scripting.reports;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.job.ReportClass;
@@ -13,7 +15,7 @@ import org.snomed.otf.scheduler.domain.*;
 import org.springframework.util.StringUtils;
 
 /**
- * INFRA-2454
+ * INFRA-2454, INFRA-2723
  * MAINT-489 Ensure that inactivation indicators are appropriate to historical associations
  * No active historical associations if the concept does not have an inactivation indicator
  * Inactivated as "Non conformance to Ed Policy" should have no historical associations
@@ -25,11 +27,18 @@ import org.springframework.util.StringUtils;
  */
 public class ValidateInactivationsWithAssociations extends TermServerReport implements ReportClass {
 	
+	public static String NEW_INACTIVATIONS_ONLY = "New Inactivations OnlyYN";
+	boolean newInactivationsOnly = false;
+	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
-		TermServerReport.run(ValidateInactivationsWithAssociations.class, args);
+		Map<String, String> params = new HashMap<>();
+		params.put(SUB_HIERARCHY, ROOT_CONCEPT.toString());
+		params.put(NEW_INACTIVATIONS_ONLY, "Y");
+		TermServerReport.run(ValidateInactivationsWithAssociations.class, args, params);
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
+		newInactivationsOnly = run.getParameter(NEW_INACTIVATIONS_ONLY).equals("Y");
 		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA
 		additionalReportColumns="FSN, SemTag, Concept EffectiveTime, Issue, isLegacy (C/D), Data";
 		super.init(run);
@@ -49,6 +58,16 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 		for (Concept c : gl.getAllConcepts()) {
 			String isLegacy = isLegacy(c);
 			if (!c.isActive()) {
+				//Are we only interested in concepts that have any new inactivation indicator?
+				if (newInactivationsOnly) {
+					if (c.getInactivationIndicatorEntries(ActiveState.ACTIVE).stream()
+							.filter(i -> StringUtils.isEmpty(i.getEffectiveTime()))
+							.collect(Collectors.toList())
+							.size() == 0) {
+						continue;
+					}
+				}
+				
 				if (c.getInactivationIndicatorEntries(ActiveState.ACTIVE).size() == 0) {
 					incrementSummaryInformation("Inactive concept missing inactivation indicator");
 					//report (c, c.getEffectiveTime(), "Inactive concept missing inactivation indicator", isLegacy);

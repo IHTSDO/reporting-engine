@@ -1,7 +1,9 @@
 package org.ihtsdo.termserver.scripting.reports;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScript;
@@ -19,16 +21,22 @@ import org.snomed.otf.scheduler.domain.*;
  */
 public class InactivationAssocationReport extends TermServerScript implements ReportClass {
 	
+	public static String NEW_INACTIVATIONS_ONLY = "New Inactivations OnlyYN";
 	String[] targetInactivationReasons = new String[] {SCTID_INACT_LIMITED, SCTID_INACT_OUTDATED, SCTID_INACT_ERRONEOUS};
 	String[] targetAssocationRefsetIds = new String[] {SCTID_ASSOC_WAS_A_REFSETID};
+	boolean newInactivationsOnly = false;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
-		TermServerReport.run(InactivationAssocationReport.class, args);
+		Map<String, String> params = new HashMap<>();
+		params.put(SUB_HIERARCHY, ROOT_CONCEPT.toString());
+		params.put(NEW_INACTIVATIONS_ONLY, "Y");
+		TermServerReport.run(InactivationAssocationReport.class, args, params);
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA
 		super.init(run);
+		newInactivationsOnly = run.getParameter(NEW_INACTIVATIONS_ONLY).equals("Y");
 		additionalReportColumns = "inact_effective, inactivation_reason, assocation_effective, association";
 	}
 
