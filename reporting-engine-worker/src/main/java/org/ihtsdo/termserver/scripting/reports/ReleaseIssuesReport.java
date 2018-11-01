@@ -134,12 +134,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	//MAINT-224 Synonyms created as TextDefinitions new content only
 	private void fullStopInSynonym() throws TermServerScriptException {
 		for (Concept c : gl.getAllConcepts()) {
-			if (c.isActive()) {
+			if (c.isActive() && SnomedUtils.hasNewChanges(c)) {
+				//Only look at concepts that have been in some way edited in this release cycle
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-					//We're only working on descriptions modified in the current release
-					if (d.getEffectiveTime() != null) {
-						continue;
-					}
 					if (d.getTerm().contains(FULL_STOP) && !allowableFullStop(d.getTerm())) {
 						report(c, "Possible TextDefn as Synonym",isLegacy(d), isActive(c,d), d);
 						if (isLegacy(d).equals("Y")) {
@@ -149,6 +146,14 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 							incrementSummaryInformation(ISSUE_COUNT);  //We'll only flag up fresh issues
 						}
 					}
+				}
+				
+				//Check we've only got max 1 Text Defn for each dialect
+				if (c.getDescriptions(US_ENG_LANG_REFSET, Acceptability.BOTH, DescriptionType.TEXT_DEFINITION, ActiveState.ACTIVE).size() > 1 ||
+					c.getDescriptions(GB_ENG_LANG_REFSET, Acceptability.BOTH, DescriptionType.TEXT_DEFINITION, ActiveState.ACTIVE).size() > 1 ) {
+					report(c, ">1 Text Definition per Dialect","N", "Y");
+					incrementSummaryInformation("Fresh Issues Reported");
+					incrementSummaryInformation(ISSUE_COUNT);
 				}
 			}
 		}

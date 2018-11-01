@@ -455,6 +455,10 @@ public abstract class TermServerScript implements RF2Constants {
 	
 	protected Concept loadConcept(Concept concept, String branchPath) throws TermServerScriptException {
 		Concept loadedConcept = loadConcept(concept.getConceptId(), branchPath);
+		//Detect attempt to load a deleted concept
+		if (StringUtils.isEmpty(loadedConcept.getConceptId())) {
+			return null;
+		}
 		loadedConcept.setConceptType(concept.getConceptType());
 		if (!dryRun) {
 			//The loaded concept has some idea of the preferred term.  We'll have that now
@@ -566,7 +570,8 @@ public abstract class TermServerScript implements RF2Constants {
 			}
 			return CHANGE_MADE;
 		} catch (Exception e) {
-			throw new TermServerScriptException("Failed to delete " + c + " in TS due to " + e.getMessage(),e);
+			report (t, c, Severity.MEDIUM, ReportActionType.API_ERROR, "Failed to delete concept due to " + e.getMessage());
+			return NO_CHANGES_MADE;
 		}
 	}
 	

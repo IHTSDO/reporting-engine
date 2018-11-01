@@ -42,11 +42,9 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
 		int changesMade = 0;
-		
-		if (concept.getConceptId().equals("781540003")) {
-			warn ("Debug Here");
-		}
-		if (loadedConcept.isReleased()) {
+		if (loadedConcept == null) {
+			report (task, concept, Severity.LOW, ReportActionType.NO_CHANGE, "Concept already deleted?");
+		} else if (loadedConcept.isReleased()) {
 			changesMade = inactivateConcept(task, loadedConcept);
 			if (changesMade > 0) {
 				save(task, loadedConcept, info);

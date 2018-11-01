@@ -32,6 +32,10 @@ public class ValidationFailure extends TermServerScriptException {
 	public ValidationFailure(Concept c, String msg) {
 		this(c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, msg);
 	}
+	
+	public ValidationFailure(Task t, Concept c, String msg) {
+		this(t, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, msg);
+	}
 
 	public Concept getConcept() {
 		return concept;

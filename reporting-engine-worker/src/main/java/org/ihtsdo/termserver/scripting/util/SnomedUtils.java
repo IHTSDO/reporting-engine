@@ -1011,5 +1011,27 @@ public class SnomedUtils implements RF2Constants {
 		}
 		concepts.removeAll(redundant);
 	}
+
+	/**
+	 * @return TRUE if the concept or any descriptions, relationships have a null effective Time
+	 */
+	public static boolean hasNewChanges(Concept c) {
+		if (StringUtils.isEmpty(c.getEffectiveTime())) {
+			return true;
+		}
+		
+		for (Description d : c.getDescriptions()) {
+			if (StringUtils.isEmpty(d.getEffectiveTime())) {
+				return true;
+			}
+		}
+		
+		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH)) {
+			if (StringUtils.isEmpty(r.getEffectiveTime())) {
+				return true;
+			}
+		}
+		return false;
+	}
 	
 }
