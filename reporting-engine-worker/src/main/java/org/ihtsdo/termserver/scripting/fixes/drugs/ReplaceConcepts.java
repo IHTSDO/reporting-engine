@@ -136,7 +136,7 @@ public class ReplaceConcepts extends DrugBatchFix implements RF2Constants{
 				.flatMap(p -> p.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP).stream())
 				.collect(Collectors.toSet());
 		
-		changesMade += applyRemodelledGroups(t, c, allInheritedGroups);
+		changesMade += applyRemodelledGroups(t, c, new ArrayList<>(allInheritedGroups));
 		report(t, c, Severity.MEDIUM, ReportActionType.INFO, SnomedUtils.getModel(c, CharacteristicType.STATED_RELATIONSHIP));
 		return changesMade;
 	}

@@ -56,7 +56,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			this.tsClient = clone.tsClient;
 			this.scaClient = clone.scaClient;
 		}
-		this.additionalReportColumns = "TASK_KEY, TASK_DESC, SCTID, FSN, CONCEPT_TYPE, SEVERITY, ACTION_TYPE";
+		this.headers = "TASK_KEY, TASK_DESC, SCTID, FSN, CONCEPT_TYPE, SEVERITY, ACTION_TYPE";
 	}
 	
 	protected List<Component> processFile() throws TermServerScriptException {
@@ -1088,7 +1088,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		return changesMade;
 	}
 	
-	public int applyRemodelledGroups(Task t, Concept c, Set<RelationshipGroup> groups) throws TermServerScriptException {
+	public int applyRemodelledGroups(Task t, Concept c, List<RelationshipGroup> groups) throws TermServerScriptException {
 		int changesMade = 0;
 		List<Relationship> availableForReuse = new ArrayList<>();
 		Set<String> idsUsed = new HashSet<>();
