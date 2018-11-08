@@ -48,7 +48,7 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		runStandAlone = true; 
 		populateEditPanel = true;
 		populateTaskDescription = true;
-		additionalReportColumns += "CharacteristicType, MatchedTemplate, Template Diagnostic";
+		additionalReportColumns = "CharacteristicType, MatchedTemplate, Template Diagnostic";
 		/*
 		subHierarchyStr = "125605004";  // QI-5 |Fracture of bone (disorder)|
 		templateNames = new String[] {	"fracture/Fracture of Bone Structure.json",
@@ -94,11 +94,11 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		
 		subHierarchyStr = "8098009";	// QI-45 |Sexually transmitted infectious disease (disorder)| 
 		templateNames = new String[] {	"templates/Sexually transmitted Infection with optional bodysite.json"};
-		*/
+		
 		subHierarchyStr = "283682007"; // QI-39 |Bite - wound (disorder)|
 		templateNames = new String[] {	"templates/bite/bite of bodysite caused by bite event.json", 
 										"templates/bite/bite of bodysite caused by bite event with infection.json"};
-		/*
+		
 		subHierarchyStr = "3218000"; //QI-67 |Mycosis (disorder)|
 		templateNames = new String[] {	"templates/Infection caused by Fungus.json"};
 		
@@ -109,12 +109,12 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		templateNames = new String[] {	"templates/wound/wound of bodysite.json"
 				//"templates/wound/closed wound of bodysite.json"
 				};
-		
+		*/
 		subHierarchyStr = "125643001"; //QI-107 |Open wound| 
 		templateNames = new String[] {	"templates/wound/wound of bodysite.json"
 				//"templates/wound/open wound of bodysite.json"
 				};
-		
+		/*
 		subHierarchyStr = "128545000"; //QI-75 |Hernia of abdominal wall (disorder)|
 		//subHierarchyStr = "773623000";
 		templateNames = new String[] {	"templates/Hernia of abdominal wall.json"};
