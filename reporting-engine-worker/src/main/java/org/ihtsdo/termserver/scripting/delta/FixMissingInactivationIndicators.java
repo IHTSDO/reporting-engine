@@ -30,6 +30,7 @@ public class FixMissingInactivationIndicators extends DeltaGenerator implements 
 			delta.newIdsRequired = false; // We'll only be modifying existing descriptions
 			delta.init(args);
 			delta.loadProjectSnapshot(false); //Need all descriptions loaded.
+			delta.postInit();
 			delta.process();
 			delta.flushFiles(false);
 			SnomedUtils.createArchive(new File(delta.outputDirName));

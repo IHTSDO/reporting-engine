@@ -15,6 +15,9 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 
 /**
+ * NB See also ValidationInactivationsWithAssociations report to run general cross field validadtion between 
+ * indicators and associations
+ * 
  * Reports all concepts inactivated with the target inactivation reason, 
  * which also has an active association
  * Run a query to find inactive concepts using WAS A as the Association type for LIMITED, OUTDATED or ERRONEOUS inactivation reasons.

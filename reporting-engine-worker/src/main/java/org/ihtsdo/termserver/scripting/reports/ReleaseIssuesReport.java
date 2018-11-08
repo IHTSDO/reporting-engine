@@ -113,6 +113,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			}
 		}
 	}
+	
 	//ISRS-392 Part II Stated Relationships whose module id does not match that of the component
 	private void unexpectedRelationshipModules() throws TermServerScriptException {
 		for (Concept c : gl.getAllConcepts()) {

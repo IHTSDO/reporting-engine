@@ -123,7 +123,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 		if (newIdsRequired && descIdGenerator == null && relIdGenerator == null && conIdGenerator == null) {
 			throw new TermServerScriptException("Command line arguments must supply a list of available sctid using the -iC/D/R option, or specify newIdsRequired=false");
 		}
-		getReportManager().initialiseReportFiles( new String[] {"Concept,FSN,Severity,Action," + additionalReportColumns } );
+		
 		//Don't add to previously exported data
 		File outputDir = new File (outputDirName);
 		int increment = 0;
@@ -135,6 +135,10 @@ public abstract class DeltaGenerator extends TermServerScript {
 		packageRoot = outputDirName + File.separator + "SnomedCT_RF2Release_" + edition +"_";
 		packageDir = packageRoot + today + File.separator;
 		info ("Outputting data to " + packageDir);
+	}
+	
+	public void postInit() throws TermServerScriptException {
+		super.postInit();
 		initialiseFileHeaders();
 	}
 	
