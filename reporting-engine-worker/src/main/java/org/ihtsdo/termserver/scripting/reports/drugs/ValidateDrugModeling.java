@@ -33,16 +33,13 @@ public class ValidateDrugModeling extends TermServerReport{
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		ValidateDrugModeling report = new ValidateDrugModeling();
 		try {
-			//report.getArchiveManager().allowStaleData = true;
 			ReportSheetManager.targetFolderId = "1wtB15Soo-qdvb0GHZke9o_SjFSL_fxL3";  //DRUGS/Validation
-			//report.additionalReportColumns = "FSN, SemTag, Definition, Stated, Inferred";  //DRUGS-518
 			report.additionalReportColumns = "FSN, SemTag, Issue, Data, Detail";   //DRUGS-267
-			//report.additionalReportColumns = "Substance, Presentation, Concentration, Unit Change, Issue Detected, Ratio Calculated";
 			report.init(args);
 			report.loadProjectSnapshot(false); //Load all descriptions
 			report.postInit();
 			report.validateDrugsModeling();
-			//report.validateSubstancesModeling();
+			report.validateSubstancesModeling();
 		} catch (Exception e) {
 			info("Failed to produce Druge Model Validation Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
@@ -53,11 +50,8 @@ public class ValidateDrugModeling extends TermServerReport{
 	
 	private void validateDrugsModeling() throws TermServerScriptException {
 		Set<Concept> subHierarchy = MEDICINAL_PRODUCT.getDescendents(NOT_SET);
-		//ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT, ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.CLINICAL_DRUG };
-		//ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.CLINICAL_DRUG };
-		//ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT_FORM};
-		//ConceptType[] drugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT };
-		ConceptType[] drugTypes = new ConceptType[] { ConceptType.CLINICAL_DRUG };  //DRUGS-267
+		ConceptType[] allDrugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT, ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.CLINICAL_DRUG };
+		ConceptType[] cds = new ConceptType[] { ConceptType.CLINICAL_DRUG };  //DRUGS-267
 		initialiseSummaryInformation(BOSS_FAIL);
 		
 		long issueCount = 0;
@@ -69,34 +63,34 @@ public class ValidateDrugModeling extends TermServerReport{
 			}
 			
 			// DRUGS-281, DRUGS-282
-			//validateIngredientsInFSN(concept, drugTypes);  
+			validateIngredientsInFSN(concept, allDrugTypes);  
 			
 			// DRUGS-267
-			//validateIngredientsAgainstBoSS(concept);
+			validateIngredientsAgainstBoSS(concept);
 			
 			// DRUGS-296 
-			/*if (concept.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED) && 
+			if (concept.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED) && 
 				concept.getParents(CharacteristicType.STATED_RELATIONSHIP).get(0).equals(MEDICINAL_PRODUCT)) {
-				validateStatedVsInferredAttributes(concept, HAS_ACTIVE_INGRED, drugTypes);
-				validateStatedVsInferredAttributes(concept, HAS_PRECISE_INGRED, drugTypes);
-				validateStatedVsInferredAttributes(concept, HAS_MANUFACTURED_DOSE_FORM, drugTypes);
+				validateStatedVsInferredAttributes(concept, HAS_ACTIVE_INGRED, allDrugTypes);
+				validateStatedVsInferredAttributes(concept, HAS_PRECISE_INGRED, allDrugTypes);
+				validateStatedVsInferredAttributes(concept, HAS_MANUFACTURED_DOSE_FORM, allDrugTypes);
 			}
-			*/
+			
 			//DRUGS-518
-			/*if (SnomedUtils.isConceptType(concept, drugTypes)) {
+			if (SnomedUtils.isConceptType(concept, cds)) {
 				checkForInferredGroupsNotStated(concept);
-			}*/
+			}
 			
 			//DRUGS-51?
-			/*if (concept.getConceptType().equals(ConceptType.CLINICAL_DRUG)) {
+			if (concept.getConceptType().equals(ConceptType.CLINICAL_DRUG)) {
 				validateConcentrationStrength(concept);
-			}*/
+			}
 			
 			// DRUGS-288
-			//validateAttributeValueCardinality(concept, HAS_ACTIVE_INGRED);
+			validateAttributeValueCardinality(concept, HAS_ACTIVE_INGRED);
 			
 			//DRUGS-93
-			//checkForBadWords(concept);  
+			checkForBadWords(concept);  
 			
 			//DRUGS-629
 			checkForSemTagViolations(concept);
@@ -183,7 +177,7 @@ public class ValidateDrugModeling extends TermServerReport{
 		Set<Concept> subHierarchy = SUBSTANCE.getDescendents(NOT_SET);
 		for (Concept concept : subHierarchy) {
 			DrugUtils.setConceptType(concept);
-			//issueCount += validateDisposition(concept);
+			validateDisposition(concept);
 			checkForBadWords(concept);  //DRUGS-93
 		}
 		info ("Substances validation complete.");
@@ -222,9 +216,11 @@ public class ValidateDrugModeling extends TermServerReport{
 	 */
 	private void checkForOddlyInferredParent(Concept concept, Concept attributeType) throws TermServerScriptException {
 		//Work through inferred parents
+		Concept disposition = gl.getConcept("726542003 |Has disposition (attribute)|");
 		for (Concept parent : concept.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
 			//Find all STATED attributes of interest
 			for (Relationship parentAttribute : parent.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE)) {
+				
 				//Does our original concept have that attribute?  Report if not.
 				if (null == findRelationship(concept, parentAttribute, CharacteristicType.STATED_RELATIONSHIP)) {
 					String msg ="Inferred parent has a stated attribute not stated in child.";
