@@ -35,6 +35,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	String[] knownAbbrevs = new String[] {	"ser","ss","subsp",
 											"f","E", "var", "St"};
 	char NBSP = 255;
+	String NBSPSTR = "\u00A0";
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		TermServerReport.run(ReleaseIssuesReport.class, args);
@@ -252,10 +253,10 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	private void nonBreakingSpace () throws TermServerScriptException {
 		for (Concept c : gl.getAllConcepts()) {
 			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-				if (d.getTerm().indexOf(NBSP) != NOT_SET) {
-					String msg = "Multiple semantic tags";
+				if (d.getTerm().indexOf(NBSPSTR) != NOT_SET) {
 					String legacy = isLegacy(d);
-					report(c, "Non-breaking space",legacy, isActive(c,d), msg, d);
+					String msg = "At position: " + d.getTerm().indexOf(NBSPSTR);
+					report(c, "Non-breaking space",legacy, isActive(c,d),msg, d);
 					if (legacy.equals("Y")) {
 						incrementSummaryInformation("Legacy Issues Reported");
 					}	else {
