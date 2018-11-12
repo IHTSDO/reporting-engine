@@ -107,13 +107,13 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		
 		subHierarchyStr = "416886008"; //QI-106 |Closed wound| 
 		templateNames = new String[] {	"templates/wound/wound of bodysite.json"
-				//"templates/wound/closed wound of bodysite.json"
 				};
 		*/
 		subHierarchyStr = "125643001"; //QI-107 |Open wound| 
-		templateNames = new String[] {	"templates/wound/wound of bodysite.json"
-				//"templates/wound/open wound of bodysite.json"
+		templateNames = new String[] {	"templates/wound/wound of bodysite due to event.json"
 				};
+		exclusionWords = new ArrayList<String>();
+		exclusionWords.add("fracture");
 		/*
 		subHierarchyStr = "128545000"; //QI-75 |Hernia of abdominal wall (disorder)|
 		//subHierarchyStr = "773623000";
