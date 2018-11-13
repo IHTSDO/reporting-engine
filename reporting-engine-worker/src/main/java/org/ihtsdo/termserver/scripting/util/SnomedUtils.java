@@ -1,11 +1,6 @@
 package org.ihtsdo.termserver.scripting.util;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
+import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
@@ -17,7 +12,6 @@ import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
 import org.ihtsdo.termserver.scripting.template.AncestorsCache;
 import org.ihtsdo.termserver.scripting.template.DescendentsCache;
 
@@ -1032,6 +1026,17 @@ public class SnomedUtils implements RF2Constants {
 			}
 		}
 		return false;
+	}
+
+	public static ComponentType getComponentType(String sctId) throws TermServerScriptException {
+		//Check out the 2nd to last character - indicates type of component
+		String penultimate = sctId.substring(sctId.length() - 2, sctId.length() - 1);
+		switch (penultimate) {
+			case "0" : return ComponentType.CONCEPT;
+			case "1" : return ComponentType.DESCRIPTION;
+			case "2" : return ComponentType.RELATIONSHIP;
+			default : throw new TermServerScriptException("Unable to determine component type of: " + sctId);
+		}
 	}
 	
 }

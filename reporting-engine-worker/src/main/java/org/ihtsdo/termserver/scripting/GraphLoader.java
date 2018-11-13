@@ -37,7 +37,7 @@ public class GraphLoader implements RF2Constants {
 	private Map<String, Component> allComponents = null;
 	private Map<Component, Concept> componentOwnerMap = null;
 	private Map<String, Concept> fsnMap = null;
-	private String excludeModule = "715515008";
+	private String excludeModule = SCTID_LOINC_MODULE;
 	public static int MAX_DEPTH = 1000;
 	
 	private DescendentsCache descendantsCache = DescendentsCache.getDescendentsCache();
@@ -96,21 +96,21 @@ public class GraphLoader implements RF2Constants {
 			if (!isHeaderLine) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
 				
-				/*if (lineItems[REL_IDX_ID].equals("7062677028")) {
-					TermServerScript.debug("Checkpoint");
-				}*/
-				
 				//Exclude LOINC
 				if (lineItems[IDX_MODULEID].equals(excludeModule)) {
 					continue;
 				}
+				
+				/*if (lineItems[IDX_ID].equals("10011096023")) {
+					System.out.println ("Debug Here");
+				}*/
 				
 				if (!isConcept(lineItems[REL_IDX_SOURCEID])) {
 					System.out.println (characteristicType + " relationship " + lineItems[REL_IDX_ID] + " referenced a non concept identifier: " + lineItems[REL_IDX_SOURCEID]);
 				}
 				Concept thisConcept = getConcept(lineItems[REL_IDX_SOURCEID]);
 				if (addRelationshipsToConcepts) {
-					addRelationshipToConcept(thisConcept, characteristicType, lineItems, isDelta);
+					addRelationshipToConcept(characteristicType, lineItems, isDelta);
 				}
 				concepts.add(thisConcept);
 				relationshipsLoaded++;
@@ -136,10 +136,10 @@ public class GraphLoader implements RF2Constants {
 		}
 		return fsnMap.get(fsn);
 	}
-
-	public void addRelationshipToConcept(Concept source, CharacteristicType characteristicType, String[] lineItems, boolean isDelta) throws TermServerScriptException {
-		
+	
+	private Relationship createRelationshipFromRF2(CharacteristicType charType, String[] lineItems) throws TermServerScriptException {
 		String sourceId = lineItems[REL_IDX_SOURCEID];
+		Concept source = getConcept(sourceId);
 		String destId = lineItems[REL_IDX_DESTINATIONID];
 		String typeId = lineItems[REL_IDX_TYPEID];
 		
@@ -152,33 +152,33 @@ public class GraphLoader implements RF2Constants {
 		
 		Relationship r = new Relationship(source, type, destination, groupNum);
 		r.setRelationshipId(lineItems[REL_IDX_ID]);
-		r.setCharacteristicType(characteristicType);
+		r.setCharacteristicType(charType);
 		r.setActive(lineItems[REL_IDX_ACTIVE].equals("1"));
 		r.setEffectiveTime(lineItems[REL_IDX_EFFECTIVETIME].isEmpty()?null:lineItems[REL_IDX_EFFECTIVETIME]);
 		r.setModifier(SnomedUtils.translateModifier(lineItems[REL_IDX_MODIFIERID]));
 		r.setModuleId(lineItems[REL_IDX_MODULEID]);
 		//Changing those values after the defaults were set in the constructor will incorrectly mark dirty
 		r.setClean();
-		
-		/*if (source.getConceptId().equals("87310001") && type.equals(IS_A)) {
-			System.out.println ("Checkpoint for testies");
-		}*/
-		
+		return r;
+	}
+
+	public void addRelationshipToConcept(CharacteristicType charType, String[] lineItems, boolean isDelta) throws TermServerScriptException {
+		Relationship r = createRelationshipFromRF2(charType, lineItems);
 		//Consider adding or removing parents if the relationship is ISA
 		//But only remove items if we're processing a delta
-		if (type.equals(IS_A)) {
+		if (r.getType().equals(IS_A)) {
 			if (r.isActive()) {
-				source.addParent(r.getCharacteristicType(),destination);
-				destination.addChild(r.getCharacteristicType(),source);
+				r.getSource().addParent(r.getCharacteristicType(),r.getTarget());
+				r.getTarget().addChild(r.getCharacteristicType(),r.getSource());
 			} else if (isDelta) {
-				source.removeParent(r.getCharacteristicType(),destination);
-				destination.removeChild(r.getCharacteristicType(),source);
+				r.getSource().removeParent(r.getCharacteristicType(),r.getTarget());
+				r.getTarget().removeChild(r.getCharacteristicType(),r.getSource());
 			}
 		} 
 		
 		//In the case of importing an Inferred Delta, we could end up adding a relationship instead of replacing
 		//if it has a different SCTID.  We need to check for equality using triple, not SCTID in that case.
-		source.addRelationship(r, isDelta);
+		r.getSource().addRelationship(r, isDelta);
 	}
 
 	public Concept getConcept(String identifier) throws TermServerScriptException {
@@ -281,6 +281,11 @@ public class GraphLoader implements RF2Constants {
 				if (lineItems[IDX_MODULEID].equals(excludeModule)) {
 					continue;
 				}
+				
+				/*if (lineItems[DES_IDX_ID].equals("3727472012")) {
+					System.out.println ("Debug Here");
+				}*/
+				
 				Concept c = getConcept(lineItems[DES_IDX_CONCEPTID]);
 				if (lineItems[DES_IDX_ACTIVE].equals(ACTIVE_FLAG) && lineItems[DES_IDX_TYPEID].equals(FULLY_SPECIFIED_NAME)) {
 					c.setFsn(lineItems[DES_IDX_TERM]);
@@ -516,24 +521,25 @@ public class GraphLoader implements RF2Constants {
 	}
 
 	private void populateAllComponents() {
+		System.out.print("Populating map of all components...");
 		allComponents = new HashMap<String, Component>();
 		componentOwnerMap = new HashMap<Component, Concept>();
 		
 		for (Concept c : getAllConcepts()) {
+			
+			/*if (c.getId().equals("773986009") || c.getId().equals("762566005")) {
+				System.out.println("here");
+			}*/
 			allComponents.put(c.getId(), c);
 			componentOwnerMap.put(c,  c);
 			for (Description d : c.getDescriptions()) {
 				populateDescriptionComponents(c, d);
 			}
 			
-			for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH)) {
+			for (Relationship r : c.getRelationships()) {
 				allComponents.put(r.getRelationshipId(), r);
 			}
-			
-			for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.BOTH)) {
-				allComponents.put(r.getRelationshipId(), r);
-			}
-			
+
 			for (InactivationIndicatorEntry i : c.getInactivationIndicatorEntries()) {
 				allComponents.put(i.getId(), i);
 				componentOwnerMap.put(i,  c);
@@ -544,18 +550,22 @@ public class GraphLoader implements RF2Constants {
 				componentOwnerMap.put(h,  c);
 			}
 		}
-		
+		System.out.println("complete.");
 	}
 
 	private void populateDescriptionComponents(Concept c, Description d) {
 		allComponents.put(d.getDescriptionId(), d);
-		componentOwnerMap.put(d,  c);
+		componentOwnerMap.put(d, c);
 		
 		for (InactivationIndicatorEntry i : d.getInactivationIndicatorEntries()) {
 			allComponents.put(i.getId(), i);
-			componentOwnerMap.put(i,  c);
+			componentOwnerMap.put(i, c);
 		}
 		
+		for (LangRefsetEntry l : d.getLangRefsetEntries()) {
+			allComponents.put(l.getId(), l);
+			componentOwnerMap.put(l, c);
+		}
 	}
 
 	public String listAssociationParticipation(Concept c) {
@@ -574,6 +584,50 @@ public class GraphLoader implements RF2Constants {
 
 	public AncestorsCache getAncestorsCache() {
 		return ancestorsCache;
+	}
+
+	public Concept getComponentOwner(ComponentType componentType, Component c) throws TermServerScriptException {
+		if (c==null) {
+			return null;
+		}
+		//Work out the owning component given the known type of this component
+		switch (componentType) {
+			case CONCEPT : //Concepts own themselves
+							return (Concept)c;
+			case DESCRIPTION :
+			case TEXT_DEFINITION : return getConcept(((Description)c).getConceptId());
+			case RELATIONSHIP:
+			case STATED_RELATIONSHIP : return getConcept(((Relationship)c).getSourceId());
+			case HISTORICAL_ASSOCIATION : String referencedComponentId = ((AssociationEntry)c).getReferencedComponentId();
+											ComponentType referencedType = SnomedUtils.getComponentType(referencedComponentId);
+											return getComponentOwner(referencedType, getComponent(referencedComponentId));
+			case ATTRIBUTE_VALUE : referencedComponentId = ((InactivationIndicatorEntry)c).getReferencedComponentId();
+											referencedType = SnomedUtils.getComponentType(referencedComponentId);
+											return getComponentOwner(referencedType, getComponent(referencedComponentId));
+			case LANGREFSET : referencedComponentId = ((LangRefsetEntry)c).getReferencedComponentId();
+											referencedType = SnomedUtils.getComponentType(referencedComponentId);
+											return getComponentOwner(referencedType, getComponent(referencedComponentId));
+			default: throw new TermServerScriptException("Unknown component Type: " + componentType);
+		}
+	}
+	
+	public Component createComponent(ComponentType componentType, String[] lineItems) throws TermServerScriptException {
+		//Work out the owning component given the known type of this component
+		switch (componentType) {
+			case CONCEPT :	Concept c = getConcept(lineItems[IDX_ID]);
+							Concept.fillFromRf2(c, lineItems);
+							return c;
+			case DESCRIPTION :
+			case TEXT_DEFINITION :	Description d = getDescription (lineItems[DES_IDX_ID]);
+									Description.fillFromRf2(d,lineItems);
+									return d;
+			case RELATIONSHIP: return createRelationshipFromRF2(CharacteristicType.INFERRED_RELATIONSHIP, lineItems);
+			case STATED_RELATIONSHIP : return createRelationshipFromRF2(CharacteristicType.STATED_RELATIONSHIP, lineItems);
+			case HISTORICAL_ASSOCIATION : return loadHistoricalAssociationLine(lineItems);
+			case ATTRIBUTE_VALUE : return  InactivationIndicatorEntry.fromRf2(lineItems);
+			case LANGREFSET : return LangRefsetEntry.fromRf2(lineItems);
+		default: throw new TermServerScriptException("Unknown component Type: " + componentType);
+		}
 	}
 
 

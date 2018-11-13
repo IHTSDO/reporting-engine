@@ -228,7 +228,7 @@ public abstract class TermServerScript implements RF2Constants {
 		resty.withHeader("Cookie", authenticatedCookie);  
 		scaClient = new AuthoringServicesClient(url, authenticatedCookie);
 		initialiseSnowOwlClient();
-		
+		boolean loadingRelease = false;
 		//Recover the full project path from authoring services, if not already fully specified
 		project = new Project();
 		if (projectName.startsWith("MAIN")) {
@@ -238,6 +238,10 @@ public abstract class TermServerScript implements RF2Constants {
 			} else {
 				project.setKey(projectName.substring(projectName.lastIndexOf("/")));
 			}
+		} else if (StringUtils.isNumeric(projectName)) {
+			info ("Loading release: " + projectName); 
+			loadingRelease = true;
+			project.setKey(projectName);
 		} else {
 			if (runStandAlone) {
 				info ("Running stand alone. Guessing project path to be MAIN/" + projectName);
@@ -251,7 +255,9 @@ public abstract class TermServerScript implements RF2Constants {
 			}
 			project.setKey(projectName);
 		}
-		info("Full path for projected determined to be: " + project.getBranchPath());
+		if (!loadingRelease) {
+			info("Full path for projected determined to be: " + project.getBranchPath());
+		}
 	}
 
 	protected void checkSettingsWithUser(JobRun jobRun) {

@@ -2,26 +2,15 @@ package org.ihtsdo.termserver.scripting.delta;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.termserver.scripting.IdGenerator;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Description;
-import org.ihtsdo.termserver.scripting.domain.AssociationEntry;
-import org.ihtsdo.termserver.scripting.domain.Component;
-import org.ihtsdo.termserver.scripting.domain.InactivationIndicatorEntry;
-import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
-import org.ihtsdo.termserver.scripting.domain.Relationship;
+import org.ihtsdo.termserver.scripting.domain.*;
 
 public abstract class DeltaGenerator extends TermServerScript {
 	
@@ -35,6 +24,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 	protected String assocDeltaFilename;
 	protected String sRelDeltaFilename;
 	protected String descDeltaFilename;
+	protected String textDfnDeltaFilename;
 	protected String langDeltaFilename;
 	protected String edition = "INT";
 	protected String additionalReportColumns = "ActionDetail";
@@ -177,6 +167,10 @@ public abstract class DeltaGenerator extends TermServerScript {
 		descDeltaFilename = termDir + "sct2_Description_Delta-"+languageCode+"_"+edition+"_" + today + ".txt";
 		fileMap.put(ComponentType.DESCRIPTION, descDeltaFilename);
 		writeToRF2File(descDeltaFilename, descHeader);
+		
+		textDfnDeltaFilename = termDir + "sct2_TextDefinition_Delta-"+languageCode+"_"+edition+"_" + today + ".txt";
+		fileMap.put(ComponentType.TEXT_DEFINITION, textDfnDeltaFilename);
+		writeToRF2File(textDfnDeltaFilename, descHeader);
 		
 		langDeltaFilename = refDir + "Language/der2_cRefset_LanguageDelta-"+languageCode+"_"+edition+"_" + today + ".txt";
 		fileMap.put(ComponentType.LANGREFSET, langDeltaFilename);

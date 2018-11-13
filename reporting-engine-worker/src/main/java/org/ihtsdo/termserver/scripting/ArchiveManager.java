@@ -14,6 +14,7 @@ import org.ihtsdo.termserver.scripting.client.SnowOwlClient.*;
 import org.ihtsdo.termserver.scripting.dao.ReportManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.snapshot.SnapshotGenerator;
+import org.ihtsdo.termserver.scripting.util.StringUtils;
 
 
 public class ArchiveManager implements RF2Constants {
@@ -81,6 +82,11 @@ public class ArchiveManager implements RF2Constants {
 		if (!snapshot.exists()) {
 			//Otherwise, do we have a zip file to play with?
 			snapshot = new File (snapshot.getPath() + ".zip");
+		}
+		
+		//If we're loading a particular release, it will be stale
+		if (StringUtils.isNumeric(project.getKey())) {
+			allowStaleData = true;
 		}
 		
 		Branch branch = null;
@@ -154,7 +160,12 @@ public class ArchiveManager implements RF2Constants {
 	}
 
 	private File getSnapshotPath() {
-		return new File (dataStoreRoot + "snapshots/" + project + "_" + env);
+		//Do we have a release effective time as a project?
+		if (StringUtils.isNumeric(project.getKey())) {
+			return new File (dataStoreRoot + "releases/" + project + ".zip");
+		} else {
+			return new File (dataStoreRoot + "snapshots/" + project + "_" + env);
+		}
 	}
 
 	protected void loadArchive(File archive, boolean fsnOnly, String fileType) throws TermServerScriptException, SnowOwlClientException {
@@ -241,6 +252,9 @@ public class ArchiveManager implements RF2Constants {
 				gl.loadRelationships(CharacteristicType.STATED_RELATIONSHIP, is, true, isDelta);
 			} else if (fileName.contains("sct2_Description_" + fileType )) {
 				info("Loading Description " + fileType + " file.");
+				gl.loadDescriptionFile(is, fsnOnly);
+			} else if (fileName.contains("sct2_TextDefinition_" + fileType )) {
+				info("Loading Text Definition " + fileType + " file.");
 				gl.loadDescriptionFile(is, fsnOnly);
 			} else if (fileName.contains("der2_cRefset_ConceptInactivationIndicatorReferenceSet" + fileType )) {
 				info("Loading Concept Inactivation Indicator " + fileType + " file.");

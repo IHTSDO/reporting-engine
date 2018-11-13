@@ -85,10 +85,10 @@ public class MergeDeltas extends DeltaGenerator {
 					if (!ze.isDirectory()) {
 						Path p = Paths.get(ze.getName());
 						String fileName = p.getFileName().toString();
-						ComponentType compoonentType = Rf2File.getComponentType(fileName, FileType.DELTA);
-						if (compoonentType != null && !fileName.startsWith("._")) {
+						ComponentType componentType = Rf2File.getComponentType(fileName, FileType.DELTA);
+						if (componentType != null && !fileName.startsWith("._")) {
 							info ("Processing " + fileName);
-							processFixDeltaFile(zis, compoonentType);
+							processFixDeltaFile(zis, componentType);
 						} else {
 							info ("Skipping unrecognised file: " + fileName);
 						}
@@ -104,7 +104,7 @@ public class MergeDeltas extends DeltaGenerator {
 		}
 	}
 
-	private void processFixDeltaFile(InputStream is, ComponentType compoonentType) throws Exception {
+	private void processFixDeltaFile(InputStream is, ComponentType componentType) throws Exception {
 		//Not putting this in a try resource block otherwise it will close the stream on completion and we've got more to read!
 		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 		String line;
@@ -112,15 +112,15 @@ public class MergeDeltas extends DeltaGenerator {
 		while ((line = br.readLine()) != null) {
 			if (!isHeader) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
-				String[] output = processFixDeltaLine(compoonentType, lineItems);
-				outputRF2(compoonentType, output);
+				String[] output = processFixDeltaLine(componentType, lineItems);
+				outputRF2(componentType, output);
 			} else {
 				isHeader = false;
 			}
 		}
 	}
 
-	private String[] processFixDeltaLine(ComponentType compoonentType, String[] fixLineItems) throws TermServerScriptException {
+	private String[] processFixDeltaLine(ComponentType componentType, String[] fixLineItems) throws TermServerScriptException {
 		String id = fixLineItems[IDX_ID];
 		String fixEffectiveTime = fixLineItems[IDX_EFFECTIVETIME];
 		String[] alphaFields;
@@ -131,7 +131,7 @@ public class MergeDeltas extends DeltaGenerator {
 		//If the current delta does not know about this component, then it's not changed at all since release, so we should use the fix
 		if (currentFields==null) {
 			String msg = "Fixed component has not been changed since versioning.  Using fix version";
-			report (relevantComponent, null, Severity.LOW, ReportActionType.INFO,compoonentType.toString(), id, msg, StringUtils.join(fixLineItems, "|"));
+			report (relevantComponent, null, Severity.LOW, ReportActionType.INFO,componentType.toString(), id, msg, StringUtils.join(fixLineItems, "|"));
 			return fixLineItems;			
 		}
 		String currentEffectiveTime = currentFields[IDX_EFFECTIVETIME];
@@ -142,7 +142,7 @@ public class MergeDeltas extends DeltaGenerator {
 			//Otherwise, apply the current state
 			if (currentEffectiveTime == "") {
 				String msg = "Current state has changed since versioning.  Ignoring reversion.";
-				report (relevantComponent, null, Severity.HIGH, ReportActionType.INFO, compoonentType.toString(), id, msg, StringUtils.join(fixLineItems, "|"));
+				report (relevantComponent, null, Severity.HIGH, ReportActionType.INFO, componentType.toString(), id, msg, StringUtils.join(fixLineItems, "|"));
 				return null;
 			}
 		}
@@ -179,11 +179,11 @@ public class MergeDeltas extends DeltaGenerator {
 		//HOWEVER, if the ONLY field to be different to the fix is the effective date, then we actually want to reset that component back to being alpha, ie use the fix line
 		if (differsOnlyInEffectiveTime(output, fixLineItems)) {
 			String msg = "Current rows shows as unpublished, but is otherwise the same as the published fix.  Resetting to fix row to prevent no-change delta in next release.";
-			report (relevantComponent, null, Severity.HIGH, ReportActionType.INFO,compoonentType.toString(), id, msg,  StringUtils.join(fixLineItems, "|"));	
+			report (relevantComponent, null, Severity.HIGH, ReportActionType.INFO,componentType.toString(), id, msg,  StringUtils.join(fixLineItems, "|"));	
 			output = fixLineItems;
 		} else {
 			String msg = "Using fields " + fieldsChanged + ", modified since versioning: " + dataComparisons;
-			report (relevantComponent, null, Severity.MEDIUM, ReportActionType.INFO,compoonentType.toString(), id, msg);
+			report (relevantComponent, null, Severity.MEDIUM, ReportActionType.INFO,componentType.toString(), id, msg);
 		}
 		return output;
 	}

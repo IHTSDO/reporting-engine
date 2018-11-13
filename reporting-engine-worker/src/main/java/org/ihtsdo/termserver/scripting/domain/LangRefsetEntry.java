@@ -6,7 +6,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 
 //id	effectiveTime	active	moduleId	refsetId	referencedComponentId	acceptabilityId
-public class LangRefsetEntry implements RF2Constants{
+public class LangRefsetEntry extends Component implements RF2Constants{
 
 	private String id;
 	private String effectiveTime;
@@ -172,5 +172,22 @@ public class LangRefsetEntry implements RF2Constants{
 		} catch (Exception e) {
 			return e.getMessage();
 		}
+	}
+
+	@Override
+	public String getReportedName() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String getReportedType() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public ComponentType getComponentType() {
+		return ComponentType.LANGREFSET;
 	}
 }
