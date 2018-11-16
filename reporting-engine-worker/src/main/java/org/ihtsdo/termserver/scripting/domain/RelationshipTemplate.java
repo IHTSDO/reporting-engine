@@ -13,6 +13,11 @@ public class RelationshipTemplate {
 		this.characteristicType = characteristicType;
 	}
 	
+	public RelationshipTemplate (Concept type, Concept target) {
+		this.type = type;
+		this.target = target;
+	}
+	
 	public Concept getType() {
 		return type;
 	}

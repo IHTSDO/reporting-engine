@@ -71,6 +71,7 @@ public interface RF2Constants {
 	static Concept ASSOC_MORPH = new Concept ("116676008", "Associated morphology (attribute)");
 	static Concept OBSERVABLE_ENTITY = new Concept("363787002"); // |Observable entity (observable entity)|
 	static Concept DUE_TO = new Concept("42752001", "Due to (attribute)");
+	static Concept AFTER = new Concept("255234002", "|After (attribute)|");
 	static Concept PART_OF = new Concept("123005000"); // |Part of (attribute)|
 	static Concept FINDING_SITE = new Concept ("363698007", "Finding site (attribute)");
 	

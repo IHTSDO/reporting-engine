@@ -160,9 +160,4 @@ public class QI75_HerniaRemodel extends BatchFix {
 		return formIntoGroupedBatch(buckets);
 	}
 
-	@Override
-	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
-		throw new NotImplementedException();
-	}
-
 }

@@ -245,6 +245,10 @@ public class Relationship extends Component implements RF2Constants, Comparable<
 	}
 	
 	public Relationship clone() {
+		return clone(null);
+	}
+	
+	public Relationship cloneWithIds() {
 		return clone(this.getId());
 	}
 

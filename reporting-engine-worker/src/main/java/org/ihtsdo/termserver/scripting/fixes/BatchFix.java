@@ -815,6 +815,34 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		return changesMade;
 	}
 	
+	protected int replaceRelationship(Task t, Concept c, RelationshipTemplate from, RelationshipTemplate to) throws TermServerScriptException {
+		int changesMade = 0;
+		boolean newValueAdded = false;
+		//Firstly, do we have any inactive relationships that we could reactivate?
+		List<Relationship> inactiveRels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, from.getType(), from.getTarget(), ActiveState.INACTIVE);
+		if (inactiveRels.size() >= 1) {
+			Relationship rel = inactiveRels.get(0);
+			report (t, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_REACTIVATED, rel);
+			rel.setActive(true);
+			newValueAdded = true;
+			changesMade++;
+		}
+		List<Relationship> originalRels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, from.getType(), from.getTarget(), ActiveState.ACTIVE);
+		for (Relationship r : originalRels) {
+			if (!newValueAdded) {
+				Relationship newRel = r.clone();
+				newRel.setType(to.getType());
+				newRel.setTarget(to.getTarget());
+				c.addRelationship(newRel);
+				changesMade++;
+				report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, newRel);
+			}
+			removeRelationship(t, c, r);
+			changesMade++;
+		}
+		return changesMade;
+	}
+	
 	protected void removeRedundancy(Task t, Concept c, Concept type, int groupNum) throws TermServerScriptException {
 		//Remove any redundant attribute in the given group
 		List<Concept> allValues = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, type, groupNum)

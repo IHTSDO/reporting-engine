@@ -41,6 +41,9 @@ public class DescendentsCache implements RF2Constants {
 		}*/
 		//Ensure we're working with the local copy rather than TS JSON
 		Concept localConcept = GraphLoader.getGraphLoader().getConcept(c.getConceptId());
+		if (!localConcept.isActive()) {
+			throw new TermServerScriptException(c + " is inactive. Unlikely you want to find its decendants");
+		}
 		Set<Concept> descendents = descendentOrSelfCache.get(localConcept);
 		if (descendents == null) {
 			descendents = localConcept.getDescendents(NOT_SET);

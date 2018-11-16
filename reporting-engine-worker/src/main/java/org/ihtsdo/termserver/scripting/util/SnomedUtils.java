@@ -840,6 +840,18 @@ public class SnomedUtils implements RF2Constants {
 		}
 		return false;
 	}
+	
+	/**
+	 * @return true if the concept has the specified attributeValue
+	 */
+	public static boolean hasValue(CharacteristicType charType, Concept c, Concept value) {
+		for (Relationship r : c.getRelationships(charType, ActiveState.ACTIVE)) {
+			if (r.getTarget().equals(value)) {
+				return true;
+			}
+		}
+		return false;
+	}
 
 	/**
 	 * @return the highest concept reached before hitting "end"
