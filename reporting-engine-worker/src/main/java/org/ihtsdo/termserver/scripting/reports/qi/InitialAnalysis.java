@@ -42,7 +42,6 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 		try {
 			ReportSheetManager.targetFolderId = "1m7MVhMePldYrNjOvsE_WTAYcowZ4ps50";  //
 			report.init(args);
-			report.getReportManager().setNumberOfDistinctReports(3);
 			report.loadProjectSnapshot(true);  //just FSNs
 			report.postInit();
 			info("Generating Intermediate Primitive Report for " + report.subHierarchyStart);
@@ -90,7 +89,11 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 				//setSubHierarchy("416462003");  //QI-50 |Wound (disorder)
 				//setSubHierarchy("125643001");  //QI-51 |Open wound|
 				//setSubHierarchy("416886008");  //QI-52 |Closed wound|
-				setSubHierarchy("432119003");  //QI- |Aneurysm (disorder)|
+				//setSubHierarchy("432119003");  //QI- |Aneurysm (disorder)|
+				setSubHierarchy("40733004|Infectious disease|"); //QI-142
+				setExclusions(new String[] {"87628006 |Bacterial infectious disease (disorder)|","34014006 |Viral disease (disorder)|",
+						"3218000 |Mycosis (disorder)|","8098009 |Sexually transmitted infectious disease (disorder)|", 
+						"17322007 |Disease caused by parasite (disorder)|", "91302008 |Sepsis (disorder)|"});
 			} else {
 				setSubHierarchy(subHierarchyStr);
 			}

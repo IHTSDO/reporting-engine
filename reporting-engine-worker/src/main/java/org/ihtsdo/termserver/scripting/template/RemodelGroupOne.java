@@ -15,9 +15,6 @@ import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.authoringtemplate.domain.logical.*;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
-
 /**
  * Where a concept has limited modeling, pull the most specific attributes available 
  * into group 1.  Skip any cases of multiple attributes types with values that are not in 
@@ -70,8 +67,13 @@ public class RemodelGroupOne extends TemplateFix {
 										"templates/Fracture Dislocation of Bone Structure.json",
 										"templates/Pathologic fracture of bone due to Disease.json"};
 		
-		subHierarchyStr =  "128294001";  // QI-36 |Chronic inflammatory disorder (disorder)
+		// QI-36 Part 1 |Chronic inflammatory disorder (disorder)
+		subHierarchyECL =  "<< 128294001 MINUS  (<< 128294001 : 246075003 |Causative agent (attribute)| = <<410607006 |Organism (organism)|)";
 		templateNames = new String[] {"templates/Chronic Inflammatory Disorder.json"};
+		*/
+		// QI-36 Part 2 |Chronic inflammatory disorder (disorder)
+		subHierarchyECL =  "<< 128294001 : 246075003 |Causative agent (attribute)| = <<410607006 |Organism (organism)|";
+		templateNames = new String[] {"templates/Infectious Chronic Inflammatory Disorder.json"};
 		/*
 		subHierarchyStr =  "126537000";  //QI-14 |Neoplasm of bone (disorder)|
 		templateNames = new String[] {"templates/Neoplasm of Bone.json"};
@@ -93,10 +95,10 @@ public class RemodelGroupOne extends TemplateFix {
 		
 		subHierarchyStr = "3218000"; //QI-70 |Mycosis (disorder)|
 		templateNames = new String[] {	"templates/Infection caused by Fungus.json"};
-		*/
+		
 		subHierarchyStr = "17322007"; //QI-116 |Parasite (disorder)|
 		templateNames = new String[] {	"templates/Infection caused by Parasite.json"};
-		/*
+		
 		
 		subHierarchyStr = "125643001"; //QI-117 |Open wound| 
 		templateNames = new String[] {	"templates/wound/wound of bodysite.json"
@@ -202,19 +204,19 @@ public class RemodelGroupOne extends TemplateFix {
 
 			//Have we formed an additional group? Find different attributes if so
 			//TODO Check group 1 has 1 to many cardinality before assuming we can replicate it
-			if (templateGroupId == 1 && additionalGroupNums.size() > 0) {
-				RelationshipGroup additionalGroup = groups.get(additionalGroupNums.keySet().iterator().next());
-				if (additionalGroup != null && !additionalGroup.isEmpty()) {
-					for (Attribute a : templateGroup.getAttributes()) {
-						//Does this group ALREADY satisfy the template attribute?
-						if (TemplateUtils.containsMatchingRelationship(additionalGroup, a, gl.getDescendantsCache())) {
-							continue;
-						}
-						int statedChangeMade = findAttributeToState(t, template, c, a, groups, 2, CharacteristicType.STATED_RELATIONSHIP, templateGroupOptional, additionalGroupNums);
-						if (statedChangeMade == NO_CHANGES_MADE) {
+			if (templateGroupId == 1) {
+				Iterator<Integer> additionalGroupItr = additionalGroupNums.keySet().iterator();
+				while (additionalGroupItr.hasNext()) {
+					RelationshipGroup additionalGroup = groups.get(additionalGroupItr.next());
+					if (additionalGroup != null && !additionalGroup.isEmpty()) {
+						for (Attribute a : templateGroup.getAttributes()) {
+							//Does this group ALREADY satisfy the template attribute?
+							if (TemplateUtils.containsMatchingRelationship(additionalGroup, a, gl.getDescendantsCache())) {
+								continue;
+							}
+							//Don't check stated relationships because we could then run code to work with a single relationship when 
+							//we should be choosing between multiple of the same type available in the inferred view
 							changesMade += findAttributeToState(t, template, c, a, groups, 2, CharacteristicType.INFERRED_RELATIONSHIP, templateGroupOptional, additionalGroupNums);
-						} else {
-							changesMade += statedChangeMade;
 						}
 					}
 				}
@@ -354,14 +356,17 @@ public class RemodelGroupOne extends TemplateFix {
 			SnomedUtils.removeRedundancies(values);
 		}
 		
-		//Do we have a single value?  Can't model otherwise
+		//Do we have a single value, or should we consider creating an additional grouping?
 		boolean additionNeeded = true;
 		if (values.size() == 0) {
 			return NO_CHANGES_MADE;
 		} else if (values.size() == 1) {
 			//If we're pulling from stated rels, move any group 0 instances to the new group id
 			if (charType.equals(CharacteristicType.STATED_RELATIONSHIP)) {
-				List<Relationship> ungroupedRels = c.getRelationships(charType, type, UNGROUPED);
+				//List<Relationship> ungroupedRels = c.getRelationships(charType, type, UNGROUPED); <- Was allowing same rel into mutiple groups
+				List<Relationship> ungroupedRels = groups.get(UNGROUPED).getRelationships().stream()
+						.filter(r -> r.getType().equals(type))
+						.collect(Collectors.toList());
 				if (ungroupedRels.size() == 1) {
 					Relationship ungroupedRel = ungroupedRels.get(0);
 					groups.get(UNGROUPED).removeRelationship(ungroupedRel);
@@ -445,11 +450,14 @@ public class RemodelGroupOne extends TemplateFix {
 						groups.set(groupId, new RelationshipGroup(groupId));
 					}
 					
+					if (groups.get(groupId).isEmpty()) {
+						//Record that we're starting an additional group here
+						additionalGroupNums.put(groupId, groupOfInterest);
+					}
+					
 					Relationship r = new Relationship(c,type,value, groupId);
 					if (!groups.get(groupId).containsTypeValue(r)) {
 						groups.get(groupId).addRelationship(r);
-						//Record that we have an additional group here
-						additionalGroupNums.put(groupId, groupOfInterest);
 						
 						//Can we remove a less specific relationship?
 						for (Relationship possibleAncestor : new ArrayList<>(groups.get(groupId).getRelationships())) {
@@ -559,9 +567,9 @@ public class RemodelGroupOne extends TemplateFix {
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		//Find concepts that only have ungrouped attributes, or none at all.
 		List<Concept> processMe = new ArrayList<>();
-		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
-			if (!c.getConceptId().equals("186116005")) {
-	//			continue;
+		for (Concept c : findConcepts(project.getBranchPath(), subHierarchyECL)) {
+			if (!c.getConceptId().equals("58419006")) {
+				//continue;
 			}
 			Concept potentialCandidate = null;
 			if (!isExcluded(c)) {
@@ -654,6 +662,7 @@ public class RemodelGroupOne extends TemplateFix {
 		for (Concept unchanged : noChangesMade) {
 			report ((Task)null, unchanged, Severity.NONE, ReportActionType.NO_CHANGE, "");
 		}
+		info("First pass attempt at remodel complete");
 		return firstPassComplete;
 	}
 

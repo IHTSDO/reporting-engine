@@ -3,6 +3,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.scripting.client.SnowOwlClient;
 import org.ihtsdo.termserver.scripting.domain.Concept;
@@ -17,10 +18,11 @@ public class EclCache {
 	private static int PAGING_LIMIT = 500;
 	private SnowOwlClient tsClient;
 	private Gson gson;
+	private GraphLoader gl;
 	
 	Map <String, List<Concept>> expansionCache = new HashMap<>();
 	
-	static EclCache getCache(String branch, SnowOwlClient tsClient, Gson gson) {
+	static EclCache getCache(String branch, SnowOwlClient tsClient, Gson gson, GraphLoader gl) {
 		if (branchCaches == null) {
 			branchCaches  = new HashMap<>();
 		}
@@ -30,6 +32,7 @@ public class EclCache {
 			branchCache = new EclCache(tsClient, gson);
 			branchCaches.put(branch, branchCache);
 		}
+		branchCache.gl = gl;
 		return branchCache;
 	}
 	
@@ -72,7 +75,11 @@ public class EclCache {
 						}
 					}
 					
-					allConcepts.addAll(collection.getItems());
+					//Recover our locally held copy of these concepts so that we have the full hierarchy populated
+					List<Concept> localCopies = collection.getItems().stream()
+							.map(c -> gl.getConceptSafely(c.getId()))
+							.collect(Collectors.toList());
+					allConcepts.addAll(localCopies);
 					//Did we get all the concepts that there are?
 					if (allConcepts.size() < collection.getTotal()) {
 						offset = allConcepts.size();

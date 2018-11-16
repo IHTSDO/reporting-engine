@@ -1,12 +1,9 @@
 package org.ihtsdo.termserver.scripting.domain;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Set;
-
 public interface RF2Constants {
 	
 	static int NOT_SET = -1;
+	static int NOT_FOUND = -1;
 	static int IMMEDIATE_CHILD = 1;
 	static int IMMEDIATE_PARENT = 1;
 	static int NA = -1;

@@ -52,6 +52,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected String projectName;
 	
 	protected String subHierarchyStr;
+	protected String subHierarchyECL;
 	protected Concept subHierarchy;
 	protected String[] exclusions;
 
@@ -582,7 +583,7 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	protected List<Concept> findConcepts(String branch, String ecl) throws TermServerScriptException {
-		EclCache cache = EclCache.getCache(branch, tsClient, gson);
+		EclCache cache = EclCache.getCache(branch, tsClient, gson, gl);
 		return cache.findConcepts(branch, ecl); 
 	}
 
@@ -812,6 +813,16 @@ public abstract class TermServerScript implements RF2Constants {
 			
 			if (subHierarchy != null && !subHierarchy.equals(ROOT_CONCEPT)) {
 				reportName += spacer + subHierarchy.toStringPref();
+			}
+			
+			if (subHierarchy == null && subHierarchyStr == null && subHierarchyECL != null) {
+				//Take the first focus concept
+				int cutPoint = subHierarchyECL.indexOf(":");
+				int potentialCut = subHierarchyECL.indexOf("MINUS");
+				if (potentialCut > NOT_SET && potentialCut < cutPoint) {
+					cutPoint = potentialCut;
+				}
+				reportName += spacer + subHierarchyECL.subSequence(0, cutPoint);
 			}
 		} catch (Exception e) {
 			error ("Recoverable hiccup while setting report name",e);
