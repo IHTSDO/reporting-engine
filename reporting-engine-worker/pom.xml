@@ -85,6 +85,11 @@
 			</exclusions>
 		</dependency>
 		<dependency>
+			<groupId>org.ihtsdo.otf.common</groupId>
+			<artifactId>resource-manager</artifactId>
+			<version>${otf.resource-manager.version}</version>
+		</dependency>
+		<dependency>
 			<groupId>org.snomed.languages</groupId>
 			<artifactId>snomed-template-parser</artifactId>
 			<version>0.1.0-SNAPSHOT</version>
