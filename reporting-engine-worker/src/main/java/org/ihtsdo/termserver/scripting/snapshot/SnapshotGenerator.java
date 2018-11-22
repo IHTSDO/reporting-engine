@@ -67,7 +67,7 @@ public class SnapshotGenerator extends TermServerScript {
 		loadArchive(previousReleaseSnapshot, false, "Snapshot");
 		loadArchive(delta, false, "Delta");
 		outputRF2();
-		flushFiles(false);
+		getRF2Manager().flushFiles(true);
 		if (!leaveArchiveUncompressed) {	
 			archive = SnomedUtils.createArchive(new File(outputDirName));
 		}
@@ -180,13 +180,6 @@ public class SnapshotGenerator extends TermServerScript {
 		}
 	}
 	
-	@Override
-	protected List<Component> loadLine(String[] lineItems)
-			throws TermServerScriptException {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
 	public void leaveArchiveUncompressed() {
 		leaveArchiveUncompressed = true;
 	}

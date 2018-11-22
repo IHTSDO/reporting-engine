@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.lang.time.DurationFormatUtils;
 import org.ihtsdo.termserver.scripting.client.*;
+import org.ihtsdo.termserver.scripting.dao.RF2Manager;
 import org.ihtsdo.termserver.scripting.dao.ReportManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -58,6 +59,7 @@ public abstract class TermServerScript implements RF2Constants {
 
 	protected GraphLoader gl = GraphLoader.getGraphLoader();
 	private ReportManager reportManager;
+	private RF2Manager rf2Manager;
 	protected String headers = "Concept SCTID,";
 	protected String additionalReportColumns = "ActionDetail";
 	protected String secondaryReportColumns = "ActionDetail";
@@ -666,8 +668,6 @@ public abstract class TermServerScript implements RF2Constants {
 		return items;
 	}
 
-	protected abstract List<Component> loadLine(String[] lineItems) throws TermServerScriptException;
-
 	public Project getProject() {
 		return project;
 	}
@@ -790,7 +790,7 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	protected void writeToRF2File(String fileName, Object[] columns) throws TermServerScriptException {
-		getReportManager().writeToRF2File(fileName, columns);
+		getRF2Manager().writeToRF2File(fileName, columns);
 	}
 	
 	protected void writeToReportFile(int reportIdx, String line) throws TermServerScriptException {
@@ -1014,6 +1014,13 @@ public abstract class TermServerScript implements RF2Constants {
 	public ReportManager getReportManager() {
 		return reportManager;
 	}
+	
+	public RF2Manager getRF2Manager() {
+		if (rf2Manager == null) {
+			rf2Manager = new RF2Manager();
+		}
+		return rf2Manager;
+	}
 
 	public void setReportManager(ReportManager reportManager) {
 		this.reportManager = reportManager;
@@ -1032,5 +1039,12 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 		return attributeCount;
 	}
+	
+
+	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 
 }
