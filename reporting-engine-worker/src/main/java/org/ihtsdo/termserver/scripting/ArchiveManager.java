@@ -220,7 +220,15 @@ public class ArchiveManager implements RF2Constants {
 	private void loadArchiveDirectory(File dir, boolean fsnOnly, String fileType, boolean isDelta) throws IOException {
 		try (Stream<Path> paths = Files.walk(dir.toPath())) {
 			paths.filter(Files::isRegularFile)
-			.forEach(path -> loadFile(path, toInputStream(path), fileType, isDelta, fsnOnly));
+			.forEach( path ->  {
+				try {
+					InputStream is =  toInputStream(path);
+					loadFile(path, is , fileType, isDelta, fsnOnly);
+					is.close();
+				} catch (Exception e) {
+					throw new RuntimeException ("Faied to load " + path + " due to " + e.getMessage());
+				}
+			});
 		} 
 	}
 	
