@@ -4,7 +4,7 @@ import java.util.*;
 
 import javax.annotation.PostConstruct;
 
-import org.ihtsdo.otf.dao.resources.ResourceManager;
+import org.ihtsdo.otf.resourcemanager.*;
 import org.ihtsdo.termserver.job.mq.Transmitter;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.reflections.Reflections;
