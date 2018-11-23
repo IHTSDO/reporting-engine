@@ -61,20 +61,26 @@ public class RemodelGroupOne extends TemplateFix {
 		formNewGroupAround.add(FINDING_SITE);
 		formNewGroupAround.add(CAUSE_AGENT);
 		formNewGroupAround.add(ASSOC_MORPH);
+		
+		if (exclusionWords == null) {
+			exclusionWords = new ArrayList<>();
+		}
 		/*
 		subHierarchyStr = "125605004";  // QI-30 |Fracture of bone (disorder)|
 		templateNames = new String[] {	"templates/Fracture of Bone Structure.json" }; /*,
 										"templates/Fracture Dislocation of Bone Structure.json",
 										"templates/Pathologic fracture of bone due to Disease.json"};
-		
+		*/
 		// QI-36 Part 1 |Chronic inflammatory disorder (disorder)
 		subHierarchyECL =  "<< 128294001 MINUS  (<< 128294001 : 246075003 |Causative agent (attribute)| = <<410607006 |Organism (organism)|)";
 		templateNames = new String[] {"templates/Chronic Inflammatory Disorder.json"};
-		*/
+		exclusionWords.add("arthritis");
+		/*
 		// QI-36 Part 2 |Chronic inflammatory disorder (disorder)
 		subHierarchyECL =  "<< 128294001 : 246075003 |Causative agent (attribute)| = <<410607006 |Organism (organism)|";
 		templateNames = new String[] {"templates/Infectious Chronic Inflammatory Disorder.json"};
-		/*
+		exclusionWords.add("arthritis");
+		
 		subHierarchyStr =  "126537000";  //QI-14 |Neoplasm of bone (disorder)|
 		templateNames = new String[] {"templates/Neoplasm of Bone.json"};
 
@@ -104,9 +110,6 @@ public class RemodelGroupOne extends TemplateFix {
 		templateNames = new String[] {	"templates/wound/wound of bodysite.json"
 				//"templates/wound/open wound of bodysite.json"
 				};
-		if (exclusionWords == null) {
-			exclusionWords = new ArrayList<>();
-		}
 		exclusionWords.add("complication");
 		exclusionWords.add("fracture");
 		*/
