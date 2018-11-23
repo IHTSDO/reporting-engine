@@ -103,8 +103,8 @@ public class DuplicateTermsInSubhierarchy extends TermServerReport implements Re
 			reportDuplicateDescriptions(subHierarchy);
 		}
 		
-		ptOnly = jobRun.getParameter(PT_ONLY).equals("Y");
-		newIssuesOnly = jobRun.getParameter(NEW_ISSUES_ONLY).equals("Y");
+		ptOnly = jobRun.getMandatoryParameter(PT_ONLY).equals("Y");
+		newIssuesOnly = jobRun.getMandatoryParameter(NEW_ISSUES_ONLY).equals("Y");
 	}
 
 	private void reportDuplicateDescriptions(Concept subHierarchy) throws TermServerScriptException {
