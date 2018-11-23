@@ -18,7 +18,7 @@ public class Receiver {
 	
 	@JmsListener(destination = "${schedule.manager.queue.request}")
 	public void receiveMessage(JobRun jobRun) {
-		logger.info("Received request to run {}", jobRun);
+		logger.info("Received request to run {} with parameters ", jobRun, jobRun.getParameters());
 		jobManager.run(jobRun);
 	}
 
