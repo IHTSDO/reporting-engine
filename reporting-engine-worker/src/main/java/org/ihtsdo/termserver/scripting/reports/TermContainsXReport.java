@@ -46,7 +46,7 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 		getArchiveManager().populateHierarchyDepth = true;
 		textsToMatch = run.getMandatoryParamValue(WORDS).split(COMMA);
 		
-		String attribStr = run.getMandatoryParamValue(ATTRIBUTE_DETAIL);
+		String attribStr = run.getParamValue(ATTRIBUTE_DETAIL);
 		if (attribStr != null && !attribStr.isEmpty()) {
 			attributeDetail = gl.getConcept(attribStr);
 		}
