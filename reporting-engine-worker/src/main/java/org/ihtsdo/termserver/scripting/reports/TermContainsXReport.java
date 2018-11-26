@@ -59,11 +59,15 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 	
 	@Override
 	public Job getJob() {
-		String[] parameterNames = new String[] { SUB_HIERARCHY, WORDS, ATTRIBUTE_DETAIL, STARTS_WITH_YN };
+		JobParameters params = new JobParameters()
+				.add(SUB_HIERARCHY)
+				.add(WORDS).withType(JobParameter.Type.STRING)
+				.add(ATTRIBUTE_DETAIL).withType(JobParameter.Type.CONCEPT)
+				.add(STARTS_WITH_YN).withType(JobParameter.Type.BOOLEAN).build();
 		return new Job( new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES),
 						"Term contains X",
 						"List all concept containing specified words, with optional attribute detail",
-						new JobParameters(parameterNames));
+						params);
 	}
 	
 	public void runJob() throws TermServerScriptException {
