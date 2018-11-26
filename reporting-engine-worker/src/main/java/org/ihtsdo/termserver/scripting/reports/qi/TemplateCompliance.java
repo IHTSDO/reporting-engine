@@ -34,6 +34,17 @@ public class TemplateCompliance extends TermServerReport implements ReportClass 
 		TermServerReport.run(TemplateCompliance.class, args, null);
 	}
 	
+
+	@Override
+	public Job getJob() {
+		String[] parameterNames = new String[] {};
+		return new Job( new JobCategory(JobType.REPORT, JobCategory.QI),
+						"SNOMEDCT Template Compliance",
+						"For every domain which has a known template, determine how many concepts comply to that template.",
+						new JobParameters(parameterNames),
+						Job.ProductionStatus.HIDEME);
+	}
+	
 	public void init (JobRun run) throws TermServerScriptException {
 		
 		tsc = new TemplateServiceClient(templateServiceUrl, "dev-ims-ihtsdo=b3xnn4IWTRv0liESEcB3LA00");
@@ -125,6 +136,29 @@ public class TemplateCompliance extends TermServerReport implements ReportClass 
 		super.init(run);
 	}
 	
+	public void runJob() throws TermServerScriptException {
+		
+		//We're going to sort by the top level domain and the domain's FSN
+		Comparator<Entry<String, List<Template>>> comparator = (e1, e2) -> compare(e1, e2);
+
+		Map<String, List<Template>> sortedDomainTemplates = domainTemplates.entrySet().stream()
+				.sorted(comparator)
+				.collect(Collectors.toMap(Entry::getKey, Entry::getValue, (k, v) -> k, LinkedHashMap::new));
+		
+		//Work through all domains
+		for (Map.Entry<String, List<Template>> entry : sortedDomainTemplates.entrySet()) {
+			String domainStr = entry.getKey();
+			try {
+				Concept domain = gl.getConcept(domainStr);
+				List<Template> templates = entry.getValue();
+				info ("Examining " + domain + " against " + templates.size() + " templates");
+				examineDomain(domain, templates);
+			} catch (Exception e) {
+				error ("Exception while processing domain " + domainStr, e);
+			}
+		}
+	}
+	
 	private void populateTemplatesFromTS() throws TermServerScriptException {
 		try {
 			Character id = 'A';
@@ -166,39 +200,6 @@ public class TemplateCompliance extends TermServerReport implements ReportClass 
 				}
 			}
 			domainTemplates.put(domainStr, templates);
-	}
-
-	@Override
-	public Job getJob() {
-		String[] parameterNames = new String[] {};
-		return new Job( new JobCategory(JobCategory.QI),
-						"SNOMEDCT Template Compliance",
-						"For every domain which has a known template, determine how many concepts comply to that template.",
-						parameterNames,
-						Job.ProductionStatus.HIDEME);
-	}
-	
-	public void runJob() throws TermServerScriptException {
-		
-		//We're going to sort by the top level domain and the domain's FSN
-		Comparator<Entry<String, List<Template>>> comparator = (e1, e2) -> compare(e1, e2);
-
-		Map<String, List<Template>> sortedDomainTemplates = domainTemplates.entrySet().stream()
-				.sorted(comparator)
-				.collect(Collectors.toMap(Entry::getKey, Entry::getValue, (k, v) -> k, LinkedHashMap::new));
-		
-		//Work through all domains
-		for (Map.Entry<String, List<Template>> entry : sortedDomainTemplates.entrySet()) {
-			String domainStr = entry.getKey();
-			try {
-				Concept domain = gl.getConcept(domainStr);
-				List<Template> templates = entry.getValue();
-				info ("Examining " + domain + " against " + templates.size() + " templates");
-				examineDomain(domain, templates);
-			} catch (Exception e) {
-				error ("Exception while processing domain " + domainStr, e);
-			}
-		}
 	}
 
 	private int compare(Entry<String, List<Template>> entry1, Entry<String, List<Template>> entry2) {

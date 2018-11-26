@@ -44,14 +44,14 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 		additionalReportColumns = "FSN, SemTag, TermMatched, MatchedIn, Case, AttributeDetail, SubHierarchy, SubSubHierarchy";
 		super.init(run);
 		getArchiveManager().populateHierarchyDepth = true;
-		textsToMatch = run.getParameter(WORDS).split(COMMA);
+		textsToMatch = run.getValue(WORDS).split(COMMA);
 		
-		String attribStr = run.getParameter(ATTRIBUTE_DETAIL);
+		String attribStr = run.getValue(ATTRIBUTE_DETAIL);
 		if (attribStr != null && !attribStr.isEmpty()) {
 			attributeDetail = gl.getConcept(attribStr);
 		}
 		
-		String startsWithStr = run.getParameter(STARTS_WITH_YN);
+		String startsWithStr = run.getValue(STARTS_WITH_YN);
 		if (startsWithStr != null && startsWithStr.toUpperCase().equals("Y")) {
 			startsWith = true;
 		}
@@ -60,10 +60,10 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 	@Override
 	public Job getJob() {
 		String[] parameterNames = new String[] { SUB_HIERARCHY, WORDS, ATTRIBUTE_DETAIL, STARTS_WITH_YN };
-		return new Job( new JobCategory(JobCategory.ADHOC_QUERIES),
+		return new Job( new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES),
 						"Term contains X",
 						"List all concept containing specified words, with optional attribute detail",
-						parameterNames);
+						new JobParameters(parameterNames));
 	}
 	
 	public void runJob() throws TermServerScriptException {

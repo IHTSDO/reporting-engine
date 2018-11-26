@@ -12,7 +12,9 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.Job;
 import org.snomed.otf.scheduler.domain.JobCategory;
+import org.snomed.otf.scheduler.domain.JobParameters;
 import org.snomed.otf.scheduler.domain.JobRun;
+import org.snomed.otf.scheduler.domain.JobType;
 
 public class SemanticTagHierarchy extends TermServerReport implements ReportClass {
 	
@@ -33,10 +35,10 @@ public class SemanticTagHierarchy extends TermServerReport implements ReportClas
 	@Override
 	public Job getJob() {
 		String[] parameterNames = new String[] { "SubHierarchy" };
-		return new Job( new JobCategory(JobCategory.ADHOC_QUERIES),
+		return new Job( new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES),
 						"Semantic Tag Hierarchy",
 						"Lists semantic tags used in a subhierchy",
-						parameterNames);
+						new JobParameters(parameterNames));
 	}
 
 	public void runJob() throws TermServerScriptException {

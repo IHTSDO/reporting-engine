@@ -36,7 +36,6 @@ public abstract class TermServerScript implements RF2Constants {
 	protected JobRun jobRun;
 	protected SnowOwlClient tsClient;
 	protected AuthoringServicesClient scaClient;
-	private ArchiveManager archiveManager; 
 	protected String authenticatedCookie;
 	protected Resty resty = new Resty();
 	protected Project project;
@@ -286,8 +285,8 @@ public abstract class TermServerScript implements RF2Constants {
 			authenticatedCookie = STDIN.nextLine().trim();
 		}
 		
-		if (jobRun != null && !jobRun.getParameter(PROJECT).isEmpty()) {
-			projectName = jobRun.getParameter(PROJECT);
+		if (jobRun != null && !jobRun.getValue(PROJECT).isEmpty()) {
+			projectName = jobRun.getValue(PROJECT);
 		}
 		
 		print ("Specify Project " + (projectName==null?": ":"[" + projectName + "]: "));
@@ -311,21 +310,21 @@ public abstract class TermServerScript implements RF2Constants {
 		this.env = getEnv(url);
 		this.jobRun = jobRun;
 		authenticatedCookie = jobRun.getAuthToken();
-		if (StringUtils.isEmpty(jobRun.getParameter(PROJECT))) {
+		if (StringUtils.isEmpty(jobRun.getValue(PROJECT))) {
 			warn("No project specified, running against MAIN");
 			projectName = "MAIN";
 		} else {
-			projectName = jobRun.getParameter(PROJECT);
+			projectName = jobRun.getValue(PROJECT);
 		}
-		if (StringUtils.isEmpty(jobRun.getParameter(SUB_HIERARCHY))) {
+		if (StringUtils.isEmpty(jobRun.getValue(SUB_HIERARCHY))) {
 			jobRun.setParameter(SUB_HIERARCHY, ROOT_CONCEPT.toString());
 		}
-		String inputFileName = jobRun.getParameter(INPUT_FILE);
+		String inputFileName = jobRun.getValue(INPUT_FILE);
 		if (!StringUtils.isEmpty(inputFileName)) {
 			inputFile = new File(inputFileName);
 		}
 		
-		subHierarchy = gl.getConcept(jobRun.getParameter(SUB_HIERARCHY));
+		subHierarchy = gl.getConcept(jobRun.getValue(SUB_HIERARCHY));
 		if (authenticatedCookie == null || authenticatedCookie.trim().isEmpty()) {
 			throw new TermServerScriptException("Unable to proceed without an authenticated token/cookie");
 		}
@@ -360,8 +359,8 @@ public abstract class TermServerScript implements RF2Constants {
 	}*/
 	
 	public void postInit(String[] tabNames, String[] columnHeadings, boolean csvOutput) throws TermServerScriptException {
-		if (jobRun != null && jobRun.getParameter(SUB_HIERARCHY) != null) {
-			subHierarchy = gl.getConcept(jobRun.getParameter(SUB_HIERARCHY));
+		if (jobRun != null && jobRun.getValue(SUB_HIERARCHY) != null) {
+			subHierarchy = gl.getConcept(jobRun.getValue(SUB_HIERARCHY));
 			//RP-4 And post that back in, so the FSN is always populated
 			jobRun.setParameter(SUB_HIERARCHY, subHierarchy.toString());
 		}

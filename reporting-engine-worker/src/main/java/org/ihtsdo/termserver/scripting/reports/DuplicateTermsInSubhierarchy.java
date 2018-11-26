@@ -9,9 +9,7 @@ import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-import org.snomed.otf.scheduler.domain.Job;
-import org.snomed.otf.scheduler.domain.JobCategory;
-import org.snomed.otf.scheduler.domain.JobRun;
+import org.snomed.otf.scheduler.domain.*;
 
 /**
  * Check for duplicate terms (PT only by default) within the same hierarchy.
@@ -85,11 +83,14 @@ public class DuplicateTermsInSubhierarchy extends TermServerReport implements Re
 
 	@Override
 	public Job getJob() {
-		String[] parameterNames = new String[] { SUB_HIERARCHY, NEW_ISSUES_ONLY, PT_ONLY };
-		return new Job( new JobCategory(JobCategory.RELEASE_VALIDATION),
+		JobParameters params = new JobParameters()
+				.add(SUB_HIERARCHY)
+				.add(NEW_ISSUES_ONLY).withType(JobParameter.Type.BOOLEAN).withDefaultValue("Y")
+				.add(PT_ONLY).withType(JobParameter.Type.BOOLEAN).withDefaultValue("Y").build();
+		return new Job( new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION),
 						"Duplicate Terms",
 						"Lists concepts that have the same PT or (optionally) Synonyms within the same sub-hierarchy",
-						parameterNames);
+						params);
 	}
 
 	public void runJob() throws TermServerScriptException {
@@ -103,8 +104,8 @@ public class DuplicateTermsInSubhierarchy extends TermServerReport implements Re
 			reportDuplicateDescriptions(subHierarchy);
 		}
 		
-		ptOnly = jobRun.getMandatoryParameter(PT_ONLY).equals("Y");
-		newIssuesOnly = jobRun.getMandatoryParameter(NEW_ISSUES_ONLY).equals("Y");
+		ptOnly = jobRun.getParameters().getMandatory(PT_ONLY).equals("Y");
+		newIssuesOnly = jobRun.getParameters().getMandatory(NEW_ISSUES_ONLY).equals("Y");
 	}
 
 	private void reportDuplicateDescriptions(Concept subHierarchy) throws TermServerScriptException {

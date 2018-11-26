@@ -136,16 +136,16 @@ public class ScheduleServiceStub extends ScheduleServiceImpl {
 	}
 	
 	private void createJobs() {
-		String[] params = new String[] { "subHierarchy", "project" };
+		JobParameters params = new JobParameters(new String[]{ "subHierarchy", "project" });
 		
-		JobCategory qiReports = new JobCategory("Quality Improvement");
+		JobCategory qiReports = new JobCategory(JobType.REPORT, "Quality Improvement");
 		Job qiReport = new Job (qiReports, JOB_IA, "Produces tabs to show intermediate primitives and counts for attribute type occurrance.", params);
 		qiReports.addJob(qiReport);
 		
-		JobCategory qaReports = new JobCategory("General QA");
+		JobCategory qaReports = new JobCategory(JobType.REPORT,"General QA");
 		Job csReport = new Job (qaReports, JOB_CS, "Produces a list of terms which appear to have an incorrect case sensitivity setting.", params);
 		
-		params = new String[] { "AttributeType", "project" };
+		params = new JobParameters(new String[]{"AttributeType", "project" });
 		Job aapReport = new Job (qaReports, JOB_AAP, "For a given attribute type, produces a list of concepts which have the same concept as an attribute value and parent. For example, 'Is Modification Of'.", params);
 		qaReports.addJob(csReport);
 		qaReports.addJob(aapReport);
@@ -160,14 +160,14 @@ public class ScheduleServiceStub extends ScheduleServiceImpl {
 		
 		JobRun scheduledJob = JobRun.create(JOB_CS, "system");
 		scheduledJob.setStatus(JobStatus.Scheduled);
-		populateParameter(scheduledJob, "subHierarchy", "105590001 |Substance (substance)|");
-		populateParameter(scheduledJob, "Project", "SUBST2019");
+		scheduledJob.getParameters().setValue("subHierarchy", "105590001 |Substance (substance)|");
+		scheduledJob.getParameters().setValue("Project", "SUBST2019");
 		
 		JobRun completeJob = JobRun.create(JOB_CS, "system");
 		completeJob.setStatus(JobStatus.Complete);
 		completeJob.setResultUrl("https://docs.google.com/spreadsheets/d/1OkNqnFmjNhe5IOcoCmK4P3-1uEHqWO0Xf1mq0mya-PE/edit");
-		populateParameter(completeJob, "SubHierarchy", "105590001 |Substance (substance)|");
-		populateParameter(completeJob, "Project", "SUBST2019");
+		completeJob.getParameters().setValue("SubHierarchy", "105590001 |Substance (substance)|");
+		completeJob.getParameters().setValue( "Project", "SUBST2019");
 		
 		List <JobRun> csRuns = new ArrayList<>();
 		csRuns.add(scheduledJob);
@@ -178,7 +178,7 @@ public class ScheduleServiceStub extends ScheduleServiceImpl {
 		JobRun completeQIJob = JobRun.create(JOB_IA, "jcase");
 		completeQIJob.setStatus(JobStatus.Complete);
 		completeQIJob.setResultUrl("https://docs.google.com/spreadsheets/d/1HMtHqUaIP-DTKbt-7Jae8lrCf9SzP7QlK8DDwu00nZ8/edit#gid=0");
-		populateParameter(completeQIJob, "Project", "QI2018");
+		completeQIJob.getParameters().setValue("Project", "QI2018");
 		
 		List <JobRun> iaRuns = new ArrayList<>();
 		iaRuns.add(completeQIJob);
@@ -188,7 +188,7 @@ public class ScheduleServiceStub extends ScheduleServiceImpl {
 		JobRun completeAAPJob = JobRun.create(JOB_AAP, "tmorrison");
 		completeAAPJob.setStatus(JobStatus.Complete);
 		completeAAPJob.setResultUrl("https://docs.google.com/spreadsheets/d/1pXOQNEnSnSra2nISCG9eGcfsHuLewfjEWqUiSLz-6b4/edit");
-		populateParameter(completeAAPJob, "AttributeType", "738774007 |Is modification of (attribute)|");
+		completeAAPJob.getParameters().setValue("AttributeType", "738774007 |Is modification of (attribute)|");
 		
 		List <JobRun> aapRuns = new ArrayList<>();
 		aapRuns.add(completeAAPJob);
@@ -196,12 +196,4 @@ public class ScheduleServiceStub extends ScheduleServiceImpl {
 		jobRuns.put(aapJob, aapRuns);
 	}
 
-	private void populateParameter(JobRun jobRun, String key, String value) {
-		Map<String, String> params = jobRun.getParameters();
-		if (params == null) {
-			params = new HashMap<>();
-			jobRun.setParameters(params);
-		}
-		params.put(key, value);
-	}
 }

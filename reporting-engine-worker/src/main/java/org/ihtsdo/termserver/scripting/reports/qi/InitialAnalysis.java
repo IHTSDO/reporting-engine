@@ -54,6 +54,17 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 		}
 	}
 	
+
+	@Override
+	public Job getJob() {
+		String[] parameterNames = new String[] { "SubHierarchy" };
+		return new Job(	new JobCategory(JobType.REPORT, JobCategory.QI),
+						"Initial Analysis",
+						"Lists Intermediate Primitives and attribute usage for a given subHierarchy",
+						new JobParameters(parameterNames));
+	}
+
+	
 	public void runJob() throws TermServerScriptException {
 		
 		info("Reviewing concepts affected by intermediate primitives");
@@ -67,7 +78,7 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 	}
 	
 	public void postInit() throws TermServerScriptException {
-		subHierarchyStr = this.jobRun == null ? null : this.jobRun.getParameter(SUB_HIERARCHY);
+		subHierarchyStr = this.jobRun == null ? null : this.jobRun.getValue(SUB_HIERARCHY);
 		try {
 			if (subHierarchyStr == null) {
 				//setSubHierarchy("46866001");	//       |Fracture of lower limb (disorder)|
@@ -294,15 +305,6 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 				.stream()
 				.map(r -> r.getType())
 				.collect(Collectors.toSet());
-	}
-
-	@Override
-	public Job getJob() {
-		String[] parameterNames = new String[] { "SubHierarchy" };
-		return new Job(	new JobCategory(JobCategory.QI),
-						"Initial Analysis",
-						"Lists Intermediate Primitives and attribute usage for a given subHierarchy",
-						parameterNames);
 	}
 
 }

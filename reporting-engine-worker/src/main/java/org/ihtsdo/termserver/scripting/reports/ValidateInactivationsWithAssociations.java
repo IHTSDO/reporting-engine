@@ -38,7 +38,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
-		newInactivationsOnly = run.getParameter(NEW_INACTIVATIONS_ONLY).equals("Y");
+		newInactivationsOnly = run.getValue(NEW_INACTIVATIONS_ONLY).equals("Y");
 		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA
 		additionalReportColumns="FSN, SemTag, Concept EffectiveTime, Issue, isLegacy (C/D), Data";
 		super.init(run);
@@ -47,10 +47,10 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 	@Override
 	public Job getJob() {
 		String[] parameterNames = new String[] { };
-		return new Job( new JobCategory(JobCategory.RELEASE_VALIDATION),
+		return new Job( new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION),
 						"Validate Inactivations with Associations",
 						"Ensures that inactivation indicators are appropriate to historical associations",
-						parameterNames);
+						new JobParameters(parameterNames));
 	}
 
 	public void runJob() throws TermServerScriptException {

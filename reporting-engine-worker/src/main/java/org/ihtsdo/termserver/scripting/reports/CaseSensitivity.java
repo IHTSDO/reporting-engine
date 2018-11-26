@@ -80,11 +80,10 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 
 	@Override
 	public Job getJob() {
-		String[] parameterNames = new String[] { };
-		return new Job( new JobCategory(JobCategory.RELEASE_VALIDATION),
+		return new Job( new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION),
 						"Case Significance",
 						"Validates that case significance of new/modified descriptions are correct",
-						parameterNames);
+						new JobParameters(new String[] { }));
 	}
 
 	public void runJob() throws TermServerScriptException {

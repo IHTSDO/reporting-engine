@@ -166,11 +166,13 @@ public class JobManager {
 				} else {
 					JobCategory jobCategory = jobType.getCategory(thisJob.getCategory().getName());
 					if (jobCategory == null) {
-						jobCategory = new JobCategory(thisJob.getCategory().getName());
+						jobCategory = new JobCategory(null, thisJob.getCategory().getName());
 						jobType.addCategory(jobCategory);
 					}
 					jobCategory.addJob(thisJob);
+					thisJob.setCategory(jobCategory);
 				}
+				thisJob.getCategory().setType(indicatedType);
 			} catch (IllegalAccessException | InstantiationException e) {
 				logger.error("Unable to return metadata on {}",knownJobClass.getKey(), e);
 			} 

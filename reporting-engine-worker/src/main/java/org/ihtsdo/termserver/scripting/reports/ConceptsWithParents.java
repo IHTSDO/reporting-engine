@@ -30,10 +30,10 @@ public class ConceptsWithParents extends TermServerReport implements ReportClass
 	@Override
 	public Job getJob() {
 		String[] parameterNames = new String[] { HIERARCHIES };
-		return new Job( new JobCategory(JobCategory.ADHOC_QUERIES),
+		return new Job( new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES),
 						"Concepts with Parents",
 						"Lists concepts along with their parents, and their parent's parents",
-						parameterNames);
+						new JobParameters(parameterNames));
 	}
 
 	public void runJob() throws TermServerScriptException {
@@ -48,7 +48,7 @@ public class ConceptsWithParents extends TermServerReport implements ReportClass
 															ConceptType.DISPOSITION_GROUPER };
 		*/
 		Set<Concept> conceptsOfInterest = new HashSet<>();
-		for (String hierarchyStr : jobRun.getParameter(HIERARCHIES).split(COMMA)) {
+		for (String hierarchyStr : jobRun.getValue(HIERARCHIES).split(COMMA)) {
 			Concept hierarchy = gl.getConcept(hierarchyStr);
 			conceptsOfInterest.addAll(hierarchy.getDescendents(NOT_SET));
 		}

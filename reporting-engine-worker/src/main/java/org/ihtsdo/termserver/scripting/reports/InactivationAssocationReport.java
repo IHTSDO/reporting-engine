@@ -39,17 +39,17 @@ public class InactivationAssocationReport extends TermServerScript implements Re
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA
 		super.init(run);
-		newInactivationsOnly = run.getParameter(NEW_INACTIVATIONS_ONLY).equals("Y");
+		newInactivationsOnly = run.getValue(NEW_INACTIVATIONS_ONLY).equals("Y");
 		additionalReportColumns = "inact_effective, inactivation_reason, assocation_effective, association";
 	}
 
 	@Override
 	public Job getJob() {
 		String[] parameterNames = new String[] { "SubHierarchy" };
-		return new Job( new JobCategory(JobCategory.RELEASE_VALIDATION),
+		return new Job( new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION),
 						"List Inactivated Concepts",
 						"Lists all concepts for the specified inactivation reasons (TODO) along with the historical associations used.",
-						parameterNames,
+						new JobParameters(parameterNames),
 						Job.ProductionStatus.HIDEME);
 	}
 

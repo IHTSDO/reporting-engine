@@ -39,7 +39,7 @@ public class ConceptsNotAccountedFor extends TermServerReport implements ReportC
 	public void init(JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "1YoJa68WLAMPKG6h4_gZ5-QT974EU9ui6"; //QI / Stats
 		additionalReportColumns="FSN, Descendants NOC, Already accounted, SIMPLE, PURE_CO, COMPLEX, COMPLEX_NO_MORPH, NONE";
-		run.setParameter(SUB_HIERARCHY, CLINICAL_FINDING);
+		run.setParameter(SUB_HIERARCHY, CLINICAL_FINDING.toString());
 		super.init(run);
 		getArchiveManager().allowStaleData = true;
 	}
@@ -83,10 +83,10 @@ public class ConceptsNotAccountedFor extends TermServerReport implements ReportC
 	@Override
 	public Job getJob() {
 		String[] parameterNames = new String[] { "SubHierarchy" };
-		return new Job( new JobCategory(JobCategory.QI),
+		return new Job( new JobCategory(JobType.REPORT, JobCategory.QI),
 						"Concepts not accounted for",
 						"Given a number of sub-hierarchies, find the highest concepts not included",
-						parameterNames, 
+						new JobParameters(parameterNames), 
 						Job.ProductionStatus.HIDEME);
 	}
 

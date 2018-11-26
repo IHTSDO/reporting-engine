@@ -48,7 +48,7 @@ public class Transmitter {
 		Job job = jobManager.getJob(run.getJobName());
 		if (run.getParameters() != null) {
 			for (String key : run.getParameters().keySet()) {
-				if (!job.getParameterNames().contains(key)) {
+				if (job.getParameters().get(key) == null) {
 					run.getParameters().remove(key);
 				}
 			}

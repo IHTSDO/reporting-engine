@@ -45,10 +45,10 @@ public class FindNewClones extends TermServerReport implements ReportClass {
 	@Override
 	public Job getJob() {
 		String[] parameterNames = new String[] { TARGET_SEMTAG, SOURCE_SEMTAG, IGNORE_TEXT};
-		return new Job( new JobCategory(JobCategory.ADHOC_QUERIES),
+		return new Job( new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES),
 						"Find new clones",
 						"List all concepts with one semantic tag that have lexical equivalents in another tag, optionally ignoring some text",
-						parameterNames);
+						new JobParameters(parameterNames));
 	}
 	
 	public void runJob() throws TermServerScriptException {
@@ -57,14 +57,14 @@ public class FindNewClones extends TermServerReport implements ReportClass {
 				//warn ("Debug Here");
 			}
 			//Do we match the ECL?
-			if (!checkEclCompliance(c, jobRun.getParameter(ATTRIBUTE_ECL))) {
+			if (!checkEclCompliance(c, jobRun.getValue(ATTRIBUTE_ECL))) {
 				continue;
 			}
 			// What's the semantic tag here?
 			String[] fsnParts = SnomedUtils.deconstructFSN(c.getFsn());
 			String term = fsnParts[0].toLowerCase();
 			
-			for (String ignore : jobRun.getParameter(IGNORE_TEXT).split(",")) {
+			for (String ignore : jobRun.getValue(IGNORE_TEXT).split(",")) {
 				term = term.replaceAll(ignore, "");
 			}
 			//Also take out any commas
@@ -76,7 +76,7 @@ public class FindNewClones extends TermServerReport implements ReportClass {
 			}
 			
 			//Is this one of our sources?  Check for matching targets
-			if (semTag.equals(jobRun.getParameter(SOURCE_SEMTAG))) {
+			if (semTag.equals(jobRun.getValue(SOURCE_SEMTAG))) {
 				List<Concept> sources = sourceMap.get(term);
 				if (sources == null) {
 					sources = new ArrayList<Concept>();
@@ -87,7 +87,7 @@ public class FindNewClones extends TermServerReport implements ReportClass {
 					report (targetMap.get(term), c, c.isActive()?"Y":"N");
 					incrementSummaryInformation(ISSUE_COUNT);
 				}
-			} else if (semTag.equals(jobRun.getParameter(TARGET_SEMTAG)) && StringUtils.isEmpty(c.getEffectiveTime())) {
+			} else if (semTag.equals(jobRun.getValue(TARGET_SEMTAG)) && StringUtils.isEmpty(c.getEffectiveTime())) {
 				targetMap.put(term, c);
 				if (sourceMap.containsKey(term)) {
 					for (Concept source : sourceMap.get(term)) {

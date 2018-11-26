@@ -50,10 +50,10 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	@Override
 	public Job getJob() {
 		String[] parameterNames = new String[] { };
-		return new Job( new JobCategory(JobCategory.RELEASE_VALIDATION),
+		return new Job( new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION),
 						"Release Issues",
 						"Lists a range of issues identified as per INFRA-2723",
-						parameterNames);
+						new JobParameters(parameterNames));
 	}
 
 	public void runJob() throws TermServerScriptException {

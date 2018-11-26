@@ -201,11 +201,11 @@ public class ScheduleServiceImpl implements ScheduleService {
 				for (JobCategory jobCategory : jobType.getCategories()) {
 					//Do we know about this job category?
 					String categoryName = jobCategory.getName();
+					jobCategory.setType (jobType);
 					JobCategory knownCategory = jobCategoryRepository.findByName(categoryName);
 					if (knownCategory == null) {
 						knownCategory = jobCategoryRepository.save(jobCategory);
 					}
-					jobCategory.setType (jobType);
 					
 					logger.info("Processing metadata for {} jobs in category '{}'",jobCategory.getJobs().size(), jobCategory.getName());
 					for (Job job : jobCategory.getJobs()) {
@@ -218,6 +218,11 @@ public class ScheduleServiceImpl implements ScheduleService {
 							logger.info("Updating job: " + job);
 						}
 						job.setCategory(knownCategory);
+						//We protect the json from having parent links in them, but this is needed 
+						//when saving to the database
+						for (String parameterKey : job.getParameters().keySet()) {
+							job.getParameters().get(parameterKey).setParentParams(job.getParameters());
+						}
 						jobRepository.save(job);
 					}
 					
