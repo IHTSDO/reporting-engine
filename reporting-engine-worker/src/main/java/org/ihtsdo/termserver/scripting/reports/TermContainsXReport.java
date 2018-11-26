@@ -44,14 +44,14 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 		additionalReportColumns = "FSN, SemTag, TermMatched, MatchedIn, Case, AttributeDetail, SubHierarchy, SubSubHierarchy";
 		super.init(run);
 		getArchiveManager().populateHierarchyDepth = true;
-		textsToMatch = run.getValue(WORDS).split(COMMA);
+		textsToMatch = run.getMandatoryParamValue(WORDS).split(COMMA);
 		
-		String attribStr = run.getValue(ATTRIBUTE_DETAIL);
+		String attribStr = run.getMandatoryParamValue(ATTRIBUTE_DETAIL);
 		if (attribStr != null && !attribStr.isEmpty()) {
 			attributeDetail = gl.getConcept(attribStr);
 		}
 		
-		String startsWithStr = run.getValue(STARTS_WITH_YN);
+		String startsWithStr = run.getMandatoryParamValue(STARTS_WITH_YN);
 		if (startsWithStr != null && startsWithStr.toUpperCase().equals("Y")) {
 			startsWith = true;
 		}

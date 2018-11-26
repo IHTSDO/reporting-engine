@@ -38,7 +38,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
-		newInactivationsOnly = run.getValue(NEW_INACTIVATIONS_ONLY).equals("Y");
+		newInactivationsOnly = run.getMandatoryParamValue(NEW_INACTIVATIONS_ONLY).equals("Y");
 		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA
 		additionalReportColumns="FSN, SemTag, Concept EffectiveTime, Issue, isLegacy (C/D), Data";
 		super.init(run);

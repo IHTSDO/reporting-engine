@@ -78,7 +78,7 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 	}
 	
 	public void postInit() throws TermServerScriptException {
-		subHierarchyStr = this.jobRun == null ? null : this.jobRun.getValue(SUB_HIERARCHY);
+		subHierarchyStr = this.jobRun == null ? null : this.jobRun.getMandatoryParamValue(SUB_HIERARCHY);
 		try {
 			if (subHierarchyStr == null) {
 				//setSubHierarchy("46866001");	//       |Fracture of lower limb (disorder)|

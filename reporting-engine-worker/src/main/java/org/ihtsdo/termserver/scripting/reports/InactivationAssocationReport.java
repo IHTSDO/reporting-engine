@@ -39,7 +39,7 @@ public class InactivationAssocationReport extends TermServerScript implements Re
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA
 		super.init(run);
-		newInactivationsOnly = run.getValue(NEW_INACTIVATIONS_ONLY).equals("Y");
+		newInactivationsOnly = run.getMandatoryParamValue(NEW_INACTIVATIONS_ONLY).equals("Y");
 		additionalReportColumns = "inact_effective, inactivation_reason, assocation_effective, association";
 	}
 

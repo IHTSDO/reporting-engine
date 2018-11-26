@@ -48,7 +48,7 @@ public class ConceptsWithParents extends TermServerReport implements ReportClass
 															ConceptType.DISPOSITION_GROUPER };
 		*/
 		Set<Concept> conceptsOfInterest = new HashSet<>();
-		for (String hierarchyStr : jobRun.getValue(HIERARCHIES).split(COMMA)) {
+		for (String hierarchyStr : jobRun.getMandatoryParamValue(HIERARCHIES).split(COMMA)) {
 			Concept hierarchy = gl.getConcept(hierarchyStr);
 			conceptsOfInterest.addAll(hierarchy.getDescendents(NOT_SET));
 		}

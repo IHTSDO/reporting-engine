@@ -285,8 +285,8 @@ public abstract class TermServerScript implements RF2Constants {
 			authenticatedCookie = STDIN.nextLine().trim();
 		}
 		
-		if (jobRun != null && !jobRun.getValue(PROJECT).isEmpty()) {
-			projectName = jobRun.getValue(PROJECT);
+		if (jobRun != null && !jobRun.getParamValue(PROJECT).isEmpty()) {
+			projectName = jobRun.getMandatoryParamValue(PROJECT);
 		}
 		
 		print ("Specify Project " + (projectName==null?": ":"[" + projectName + "]: "));
@@ -310,21 +310,21 @@ public abstract class TermServerScript implements RF2Constants {
 		this.env = getEnv(url);
 		this.jobRun = jobRun;
 		authenticatedCookie = jobRun.getAuthToken();
-		if (StringUtils.isEmpty(jobRun.getValue(PROJECT))) {
+		if (StringUtils.isEmpty(jobRun.getParamValue(PROJECT))) {
 			warn("No project specified, running against MAIN");
 			projectName = "MAIN";
 		} else {
-			projectName = jobRun.getValue(PROJECT);
+			projectName = jobRun.getMandatoryParamValue(PROJECT);
 		}
-		if (StringUtils.isEmpty(jobRun.getValue(SUB_HIERARCHY))) {
+		if (StringUtils.isEmpty(jobRun.getParamValue(SUB_HIERARCHY))) {
 			jobRun.setParameter(SUB_HIERARCHY, ROOT_CONCEPT.toString());
 		}
-		String inputFileName = jobRun.getValue(INPUT_FILE);
+		String inputFileName = jobRun.getParamValue(INPUT_FILE);
 		if (!StringUtils.isEmpty(inputFileName)) {
 			inputFile = new File(inputFileName);
 		}
 		
-		subHierarchy = gl.getConcept(jobRun.getValue(SUB_HIERARCHY));
+		subHierarchy = gl.getConcept(jobRun.getParamValue(SUB_HIERARCHY));
 		if (authenticatedCookie == null || authenticatedCookie.trim().isEmpty()) {
 			throw new TermServerScriptException("Unable to proceed without an authenticated token/cookie");
 		}
@@ -359,8 +359,8 @@ public abstract class TermServerScript implements RF2Constants {
 	}*/
 	
 	public void postInit(String[] tabNames, String[] columnHeadings, boolean csvOutput) throws TermServerScriptException {
-		if (jobRun != null && jobRun.getValue(SUB_HIERARCHY) != null) {
-			subHierarchy = gl.getConcept(jobRun.getValue(SUB_HIERARCHY));
+		if (jobRun != null && jobRun.getParamValue(SUB_HIERARCHY) != null) {
+			subHierarchy = gl.getConcept(jobRun.getMandatoryParamValue(SUB_HIERARCHY));
 			//RP-4 And post that back in, so the FSN is always populated
 			jobRun.setParameter(SUB_HIERARCHY, subHierarchy.toString());
 		}
