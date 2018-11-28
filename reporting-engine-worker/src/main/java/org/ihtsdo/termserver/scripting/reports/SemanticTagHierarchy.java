@@ -39,7 +39,7 @@ public class SemanticTagHierarchy extends TermServerReport implements ReportClas
 				.add(SUB_HIERARCHY).withType(JobParameter.Type.CONCEPT).withMandatory().build();
 		return new Job( new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES),
 						"Semantic Tag Hierarchy",
-						"Lists semantic tags used in a subhierchy",
+						"Lists semantic tags used in a subhierarchy",
 						params);
 	}
 
@@ -81,9 +81,13 @@ public class SemanticTagHierarchy extends TermServerReport implements ReportClas
 		if (level > 10) {
 			writeToReportFile(0, indent + "Recursion limit reached");
 		} else {
-			for (Map.Entry<String, Concept> childTag : semanticTagHierarchy.get(semTag).entrySet()) {
-				writeToReportFile(0, indent + childTag.getKey() + COMMA + childTag.getValue());
-				outputHierarchialStructure(childTag.getKey(), level);
+			if (semanticTagHierarchy.get(semTag) == null) {
+				writeToReportFile(0, indent + "Invalid semantic tag '" + semTag + "'");
+			} else {
+				for (Map.Entry<String, Concept> childTag : semanticTagHierarchy.get(semTag).entrySet()) {
+					writeToReportFile(0, indent + childTag.getKey() + COMMA + childTag.getValue());
+					outputHierarchialStructure(childTag.getKey(), level);
+				}
 			}
 		}
 	}

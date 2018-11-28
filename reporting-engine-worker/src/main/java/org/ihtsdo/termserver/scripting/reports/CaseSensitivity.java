@@ -137,7 +137,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 	private void checkCaseSignificance() throws TermServerScriptException {
 		//Work through all active descriptions of all hierarchies
 		for (Concept targetHierarchy : targetHierarchies) {
-			info ("Checking case significance in target hierarchy: " + targetHierarchy);
+			info ("Sorting descendants: " + targetHierarchy);
 			List<Concept> hiearchyDescendants = new ArrayList<>(targetHierarchy.getDescendents(NOT_SET));
 			Collections.sort(hiearchyDescendants, new Comparator<Concept>() {
 				@Override
@@ -153,8 +153,14 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 				}
 			});
 			
+			info ("Checking case significance in target hierarchy: " + targetHierarchy);
+			
+			int count = 0;
 			nextConcept:
 			for (Concept c : hiearchyDescendants) {
+				if (++count %10000 == 0) {
+					print (".");
+				}
 				if (allExclusions.contains(c) || whiteList.contains(c.getId())) {
 					continue;
 				}
@@ -206,6 +212,8 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 					}
 				}
 			}
+			info ("Completed hierarchy: " + targetHierarchy);
+			
 		}
 	}
 	
