@@ -114,8 +114,15 @@ public class ScheduleServiceImpl implements ScheduleService {
 		jobRun.setTerminologyServerUrl(terminologyServerUrl);
 		populateAuthenticationDetails(jobRun);
 		
+		//We protect the json from having parent links and redundant keys, 
+		//but these are needed  when saving to the database
+		for (String parameterKey : jobRun.getParameters().keySet()) {
+			jobRun.getParameters().get(parameterKey).setParentParams(jobRun.getParameters());
+			jobRun.getParameters().get(parameterKey).setParamKey(parameterKey);
+		}
+		
 		jobRun = jobRunRepository.save(jobRun);
-		logger.info("Running job {}", jobRun);
+		logger.info("Running job: {}", jobRun);
 		transmitter.send(jobRun);
 		return jobRun;
 	}
@@ -171,12 +178,23 @@ public class ScheduleServiceImpl implements ScheduleService {
 		try {
 			//If we already know about this jobRun, don't allow the status to be reverted
 			Optional<JobRun> savedJob = jobRunRepository.findById(jobRun.getId());
+			
+			//We protect the json from having parent links in them, but this is needed 
+			//when saving to the database
+			for (String parameterKey : jobRun.getParameters().keySet()) {
+				jobRun.getParameters().get(parameterKey).setParamKey(parameterKey);
+				jobRun.getParameters().get(parameterKey).setParentParams(jobRun.getParameters());
+			}
+			
 			if (savedJob.isPresent()) {
 				JobStatus existingStatus = savedJob.get().getStatus();
 				if (existingStatus.equals(JobStatus.Complete) || existingStatus.equals(JobStatus.Failed)) {
 					logger.error("Job already at status {}, ignoring response {}", existingStatus, jobRun);
 					return;
 				}
+				//We need to grab the ID of the saved parameters objects 
+				//so we can update the correct one in the db, otherwise we save a fresh copy
+				jobRun.getParameters().setId(savedJob.get().getParameters().getId());
 			}
 			logger.info("Saving job response: {}", jobRun);
 			jobRunRepository.save(jobRun);
@@ -209,6 +227,8 @@ public class ScheduleServiceImpl implements ScheduleService {
 					
 					logger.info("Processing metadata for {} jobs in category '{}'",jobCategory.getJobs().size(), jobCategory.getName());
 					for (Job job : jobCategory.getJobs()) {
+						job.setCategory(knownCategory);
+
 						//Do we know about this job already
 						Job knownJob = jobRepository.findByName(job.getName());
 						if (knownJob == null) {
@@ -217,11 +237,12 @@ public class ScheduleServiceImpl implements ScheduleService {
 							job.setId(knownJob.getId());
 							logger.info("Updating job: " + job);
 						}
-						job.setCategory(knownCategory);
-						//We protect the json from having parent links in them, but this is needed 
-						//when saving to the database
+						
+						//We protect the json from having parent links and redundant keys, 
+						//but these are needed  when saving to the database
 						for (String parameterKey : job.getParameters().keySet()) {
 							job.getParameters().get(parameterKey).setParentParams(job.getParameters());
+							job.getParameters().get(parameterKey).setParamKey(parameterKey);
 						}
 						jobRepository.save(job);
 					}

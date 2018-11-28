@@ -45,8 +45,9 @@ public class Transmitter {
 		clone.setAuthToken(null);
 		
 		//We also need to only return parameters that the job indicated it can handle
+		//Can only do this for jobs we know about however!
 		Job job = jobManager.getJob(run.getJobName());
-		if (run.getParameters() != null) {
+		if (run.getParameters() != null && job != null) {
 			for (String key : run.getParameters().keySet()) {
 				if (job.getParameters().get(key) == null) {
 					run.getParameters().remove(key);
@@ -63,7 +64,13 @@ public class Transmitter {
 	}
 	
 	public void send (JobMetadata metadata) {
-		logger.info("Transmitting metadata for " + metadata.getJobTypes().size() + " job types");
+		logger.info("Transmitting metadata for " + metadata.getJobTypes().size() + " job types:");
+		for (JobType type : metadata.getJobTypes()) {
+			logger.info ("  {}:", type.getName());
+			for (JobCategory category : type.getCategories()) {
+				logger.info("\t{} : {} jobs", category.getName(), category.getJobs().size());
+			}
+		}
 		jmsTemplate.convertAndSend(metadataQueueName, metadata);
 	}
 
