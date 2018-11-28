@@ -29,11 +29,12 @@ public class ConceptsWithParents extends TermServerReport implements ReportClass
 
 	@Override
 	public Job getJob() {
-		String[] parameterNames = new String[] { HIERARCHIES };
+		JobParameters params = new JobParameters()
+				.add(HIERARCHIES).withType(JobParameter.Type.CONCEPT_LIST).withMandatory().build();
 		return new Job( new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES),
 						"Concepts with Parents",
 						"Lists concepts along with their parents, and their parent's parents",
-						new JobParameters(parameterNames));
+						params);
 	}
 
 	public void runJob() throws TermServerScriptException {

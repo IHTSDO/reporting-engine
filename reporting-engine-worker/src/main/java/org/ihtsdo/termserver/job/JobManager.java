@@ -104,11 +104,13 @@ public class JobManager {
 					jobRun.setDebugInfo("Job '" + jobRun.getJobName() + "' not known to Reporting Engine Worker - " + buildVersion);
 				} else {
 					try {
-						if (ensureJobValid(jobRun)) {
+						if (ensureJobValid(jobRun, jobClass.newInstance().getJob())) {
 							JobClass thisJob = jobClass.newInstance();
 							jobRun.setStatus(JobStatus.Running);
 							transmitter.send(jobRun);
 							thisJob.instantiate(jobRun);
+						} else {
+							jobRun.setStatus(JobStatus.Failed);
 						}
 					} catch (IllegalAccessException | InstantiationException e) {
 						jobRun.setStatus(JobStatus.Failed);
@@ -124,7 +126,7 @@ public class JobManager {
 		}
 	}
 
-	private boolean ensureJobValid(JobRun jobRun) {
+	private boolean ensureJobValid(JobRun jobRun, Job job) {
 		if (StringUtils.isEmpty(jobRun.getAuthToken())) {
 			jobRun.setStatus(JobStatus.Failed);
 			jobRun.setDebugInfo("No valid authenticatin token included in request");
@@ -135,6 +137,19 @@ public class JobManager {
 			jobRun.setStatus(JobStatus.Failed);
 			jobRun.setDebugInfo("No terminology server url included in request");
 			return false;
+		}
+		
+		//Check we have all mandatory parameters
+		if (job != null) {
+			for (String paramKey : job.getParameters().keySet()) {
+				if (job.getParameters().get(paramKey).getMandatory()) {
+					String value = jobRun.getParamValue(paramKey);
+					if (StringUtils.isEmpty(value)) {
+						jobRun.setDebugInfo("Mandatory parameter '" + paramKey + "' not supplied.");
+						return false;
+					}
+				}
+			}
 		}
 		return true;
 	}

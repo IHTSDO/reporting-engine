@@ -12,6 +12,7 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.Job;
 import org.snomed.otf.scheduler.domain.JobCategory;
+import org.snomed.otf.scheduler.domain.JobParameter;
 import org.snomed.otf.scheduler.domain.JobParameters;
 import org.snomed.otf.scheduler.domain.JobRun;
 import org.snomed.otf.scheduler.domain.JobType;
@@ -34,17 +35,22 @@ public class SemanticTagHierarchy extends TermServerReport implements ReportClas
 
 	@Override
 	public Job getJob() {
-		String[] parameterNames = new String[] { "SubHierarchy" };
+		JobParameters params = new JobParameters()
+				.add(SUB_HIERARCHY).withType(JobParameter.Type.CONCEPT).withMandatory().build();
 		return new Job( new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES),
 						"Semantic Tag Hierarchy",
 						"Lists semantic tags used in a subhierchy",
-						new JobParameters(parameterNames));
+						params);
 	}
 
 	public void runJob() throws TermServerScriptException {
 		//Work out the path of semantic tags with examples
 		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
 			//Have we seen this semantic tag before?
+			if (c.getFsn() == null) {
+				warn(c + " encountered without a semantic tag");
+				continue;
+			}
 			String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
 			Map<String, Concept> childTags = semanticTagHierarchy.get(semTag);
 			if (childTags == null) {

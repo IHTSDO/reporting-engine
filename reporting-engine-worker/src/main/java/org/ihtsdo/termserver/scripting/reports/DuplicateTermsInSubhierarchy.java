@@ -84,7 +84,7 @@ public class DuplicateTermsInSubhierarchy extends TermServerReport implements Re
 	@Override
 	public Job getJob() {
 		JobParameters params = new JobParameters()
-				.add(SUB_HIERARCHY)
+				.add(SUB_HIERARCHY).withType(JobParameter.Type.CONCEPT).withDefaultValue(ROOT_CONCEPT)
 				.add(NEW_ISSUES_ONLY).withType(JobParameter.Type.BOOLEAN).withDefaultValue("Y")
 				.add(PT_ONLY).withType(JobParameter.Type.BOOLEAN).withDefaultValue("Y").build();
 		return new Job( new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION),

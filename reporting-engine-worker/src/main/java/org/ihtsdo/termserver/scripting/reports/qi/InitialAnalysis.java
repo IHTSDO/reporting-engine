@@ -57,11 +57,16 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 
 	@Override
 	public Job getJob() {
-		String[] parameterNames = new String[] { "SubHierarchy" };
+		JobParameters params = new JobParameters()
+				.add(SUB_HIERARCHY)
+					.withType(JobParameter.Type.CONCEPT)
+					.withMandatory()
+				.build();
+		
 		return new Job(	new JobCategory(JobType.REPORT, JobCategory.QI),
 						"Initial Analysis",
 						"Lists Intermediate Primitives and attribute usage for a given subHierarchy",
-						new JobParameters(parameterNames));
+						params);
 	}
 
 	

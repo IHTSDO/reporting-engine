@@ -10,6 +10,7 @@ import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
+import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.springframework.util.StringUtils;
 
 /**
@@ -48,7 +49,7 @@ public class FindNewClones extends TermServerReport implements ReportClass {
 		return new Job( new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES),
 						"Find new clones",
 						"List all concepts with one semantic tag that have lexical equivalents in another tag, optionally ignoring some text",
-						new JobParameters(parameterNames));
+						new JobParameters(parameterNames), ProductionStatus.HIDEME);
 	}
 	
 	public void runJob() throws TermServerScriptException {
