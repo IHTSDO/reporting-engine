@@ -1,6 +1,6 @@
 package org.ihtsdo.termserver.job.mq;
 
-
+import java.util.*;
 import java.util.concurrent.*;
 
 import javax.annotation.PostConstruct;
@@ -48,7 +48,8 @@ public class Transmitter {
 		//Can only do this for jobs we know about however!
 		Job job = jobManager.getJob(run.getJobName());
 		if (run.getParameters() != null && job != null) {
-			for (String key : run.getParameters().keySet()) {
+			Set<String> paramKeys = new HashSet<>(run.getParameters().keySet());
+			for (String key : paramKeys) {
 				if (job.getParameters().get(key) == null) {
 					run.getParameters().remove(key);
 				}
