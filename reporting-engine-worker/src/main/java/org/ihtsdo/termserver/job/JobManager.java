@@ -112,7 +112,7 @@ public class JobManager {
 						} else {
 							jobRun.setStatus(JobStatus.Failed);
 						}
-					} catch (IllegalAccessException | InstantiationException e) {
+					} catch (Exception e) {
 						jobRun.setStatus(JobStatus.Failed);
 						jobRun.setDebugInfo("Job '" + jobRun.getJobName() + "' failed due to: '" + e + "'");
 					} 
@@ -140,7 +140,7 @@ public class JobManager {
 		}
 		
 		//Check we have all mandatory parameters
-		if (job != null) {
+		if (job != null && job.getParameters() != null) {
 			for (String paramKey : job.getParameters().keySet()) {
 				if (job.getParameters().get(paramKey).getMandatory()) {
 					String value = jobRun.getParamValue(paramKey);
