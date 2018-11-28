@@ -50,7 +50,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 	public void postInit() throws TermServerScriptException {
 		super.postInit();
 		loadCSWords();
-		
+		info ("Processing exclusions");
 		targetHierarchies.add(ROOT_CONCEPT);
 		//targetHierarchies.add(gl.getConcept("771115008"));
 		excludeHierarchies.add(SUBSTANCE);
@@ -92,7 +92,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 	}
 
 	public void loadCSWords() throws TermServerScriptException {
-		info("Loading " + inputFile);
+		print("Loading " + inputFile + "...");
 		if (!inputFile.canRead()) {
 			throw new TermServerScriptException("Cannot read: " + inputFile);
 		}
@@ -102,6 +102,8 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 		} catch (IOException e) {
 			throw new TermServerScriptException("Failure while reading: " + inputFile, e);
 		}
+		info ("Complete");
+		debug("Processing cs words file");
 		for (String line : lines) {
 			//Split the line up on tabs
 			String[] items = line.split(TAB);
@@ -135,13 +137,19 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 	private void checkCaseSignificance() throws TermServerScriptException {
 		//Work through all active descriptions of all hierarchies
 		for (Concept targetHierarchy : targetHierarchies) {
+			info ("Checking case significance in target hierarchy: " + targetHierarchy);
 			List<Concept> hiearchyDescendants = new ArrayList<>(targetHierarchy.getDescendents(NOT_SET));
 			Collections.sort(hiearchyDescendants, new Comparator<Concept>() {
 				@Override
 				public int compare(Concept c1, Concept c2) {
-					String sortOn1 = SnomedUtils.deconstructFSN(c1.getFsn())[1] + c1.getFsn();
-					String sortOn2 = SnomedUtils.deconstructFSN(c2.getFsn())[1] + c2.getFsn();
-					return sortOn1.compareTo(sortOn2);
+					try {
+						String sortOn1 = SnomedUtils.deconstructFSN(c1.getFsn())[1] + c1.getFsn();
+						String sortOn2 = SnomedUtils.deconstructFSN(c2.getFsn())[1] + c2.getFsn();
+						return sortOn1.compareTo(sortOn2);
+					} catch (Exception e) {
+						warn(e.toString() + " sorting " + c1 + " and " + c2);
+					}
+					return c1.getConceptId().compareTo(c2.getConceptId());
 				}
 			});
 			
