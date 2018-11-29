@@ -58,8 +58,12 @@ public class SemanticTagHierarchy extends TermServerReport implements ReportClas
 				semanticTagHierarchy.put(semTag, childTags);
 			}
 			
-			//Has this semtag know about all the child semtags?
+			//Record all the child semtags if not seen before
 			for (Concept child : c.getDescendents(IMMEDIATE_CHILD, CharacteristicType.INFERRED_RELATIONSHIP)) {
+				if (StringUtils.isEmpty(child.getFsn())) {
+					warn ("Encountered concept without FSN during traversal: " + c);
+					continue;
+				}
 				String childSemTag = SnomedUtils.deconstructFSN(child.getFsn())[1];
 				if (!childSemTag.equals(semTag) && !childTags.containsKey(childSemTag)) {
 					childTags.put(childSemTag, child);
