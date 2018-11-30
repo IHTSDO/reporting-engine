@@ -70,17 +70,17 @@ public class RemodelGroupOne extends TemplateFix {
 		templateNames = new String[] {	"templates/Fracture of Bone Structure.json" }; /*,
 										"templates/Fracture Dislocation of Bone Structure.json",
 										"templates/Pathologic fracture of bone due to Disease.json"};
-		*/
+		
 		// QI-36 Part 1 |Chronic inflammatory disorder (disorder)
 		subHierarchyECL =  "<< 128294001 MINUS  (<< 128294001 : 246075003 |Causative agent (attribute)| = <<410607006 |Organism (organism)|)";
 		templateNames = new String[] {"templates/Chronic Inflammatory Disorder.json"};
 		exclusionWords.add("arthritis");
-		/*
+		*/
 		// QI-36 Part 2 |Chronic inflammatory disorder (disorder)
 		subHierarchyECL =  "<< 128294001 : 246075003 |Causative agent (attribute)| = <<410607006 |Organism (organism)|";
 		templateNames = new String[] {"templates/Infectious Chronic Inflammatory Disorder.json"};
 		exclusionWords.add("arthritis");
-		
+		/*
 		subHierarchyStr =  "126537000";  //QI-14 |Neoplasm of bone (disorder)|
 		templateNames = new String[] {"templates/Neoplasm of Bone.json"};
 
@@ -578,6 +578,16 @@ public class RemodelGroupOne extends TemplateFix {
 			if (!isExcluded(c)) {
 				boolean hasGroupedAttributes = false;
 				for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
+					//Actually, at this point in the evolution of this code, 
+					//if we have more inferred attributes than stated ones,
+					//it's probably worth taking a look at
+					int statedAttrbs = SnomedUtils.countAttributes(c, CharacteristicType.STATED_RELATIONSHIP);
+					int inferdAttrbs = SnomedUtils.countAttributes(c, CharacteristicType.INFERRED_RELATIONSHIP);
+					if (inferdAttrbs > statedAttrbs) {
+						potentialCandidate = c;
+						break;
+					}
+					
 					//If the concept has no grouped attributes we want it, and also 
 					//if there are any ungrouped attributes in group 1, or grouped attributes
 					//in group 0 (even if group 1 also exists!)
