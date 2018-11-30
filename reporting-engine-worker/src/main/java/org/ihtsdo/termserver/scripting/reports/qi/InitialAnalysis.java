@@ -147,7 +147,7 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 	
 	public void setSubHierarchy(String subHierarchyStr) throws TermServerScriptException {
 		subHierarchyStart = gl.getConcept(subHierarchyStr);
-		this.subHierarchy = subHierarchyStart.getDescendents(NOT_SET);
+		this.subHierarchy = gl.getDescendantsCache().getDescendentsOrSelf(subHierarchyStart);
 		intermediatePrimitives = new HashMap<>();
 		attributeUsage = new HashMap<>();
 		attributeExamples = new HashMap<>();

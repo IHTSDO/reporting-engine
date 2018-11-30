@@ -9,6 +9,7 @@ import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.template.DescendentsCache;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 
@@ -51,7 +52,7 @@ public class ConceptsWithParents extends TermServerReport implements ReportClass
 		Set<Concept> conceptsOfInterest = new HashSet<>();
 		for (String hierarchyStr : jobRun.getMandatoryParamValue(HIERARCHIES).split(COMMA)) {
 			Concept hierarchy = gl.getConcept(hierarchyStr);
-			conceptsOfInterest.addAll(hierarchy.getDescendents(NOT_SET));
+			conceptsOfInterest.addAll(gl.getDescendantsCache().getDescendentsOrSelf(hierarchy));
 		}
 		
 		for (Concept c : conceptsOfInterest) {
