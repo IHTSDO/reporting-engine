@@ -27,7 +27,7 @@ import org.springframework.util.StringUtils;
  */
 public class ValidateInactivationsWithAssociations extends TermServerReport implements ReportClass {
 	
-	public static String NEW_INACTIVATIONS_ONLY = "New Inactivations OnlyYN";
+	public static String NEW_INACTIVATIONS_ONLY = "New Inactivations Only";
 	boolean newInactivationsOnly = false;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {

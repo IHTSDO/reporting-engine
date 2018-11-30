@@ -15,8 +15,8 @@ import org.snomed.otf.scheduler.domain.*;
  * Check for duplicate terms (PT only by default) within the same hierarchy.
  */
 public class DuplicateTermsInSubhierarchy extends TermServerReport implements ReportClass {
-	public static String NEW_ISSUES_ONLY = "New Issues OnlyYN";
-	public static String PT_ONLY = "Preferred Terms OnlyYN";
+	public static String NEW_ISSUES_ONLY = "New Issues Only";
+	public static String PT_ONLY = "Preferred Terms Only";
 	Set<String> whitelist = new HashSet<>();
 	boolean newIssuesOnly = true;
 	boolean ptOnly = true;

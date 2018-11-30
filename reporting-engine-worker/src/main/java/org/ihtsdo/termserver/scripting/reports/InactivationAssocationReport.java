@@ -24,7 +24,7 @@ import org.snomed.otf.scheduler.domain.*;
  */
 public class InactivationAssocationReport extends TermServerScript implements ReportClass {
 	
-	public static String NEW_INACTIVATIONS_ONLY = "New Inactivations OnlyYN";
+	public static String NEW_INACTIVATIONS_ONLY = "New Inactivations Only";
 	String[] targetInactivationReasons = new String[] {SCTID_INACT_LIMITED, SCTID_INACT_OUTDATED, SCTID_INACT_ERRONEOUS};
 	String[] targetAssocationRefsetIds = new String[] {SCTID_ASSOC_WAS_A_REFSETID};
 	boolean newInactivationsOnly = false;

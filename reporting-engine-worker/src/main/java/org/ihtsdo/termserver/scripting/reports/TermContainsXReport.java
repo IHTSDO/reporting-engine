@@ -24,7 +24,7 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 	
 	String[] textsToMatch;
 	boolean reportConceptOnceOnly = true;
-	public static final String STARTS_WITH_YN = "StartsWithY/N";
+	public static final String STARTS_WITH = "StartsWith";
 	public static final String WORDS = "Words";
 	public static final String ATTRIBUTE_DETAIL = "AttributeDetail";
 	Concept attributeDetail;
@@ -32,7 +32,7 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		Map<String, String> params = new HashMap<>();
-		params.put(STARTS_WITH_YN, "Y");
+		params.put(STARTS_WITH, "Y");
 		params.put(SUB_HIERARCHY, ROOT_CONCEPT.toString());
 		params.put(WORDS, "[");
 		params.put(ATTRIBUTE_DETAIL, null);
@@ -51,7 +51,7 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 			attributeDetail = gl.getConcept(attribStr);
 		}
 		
-		String startsWithStr = run.getMandatoryParamValue(STARTS_WITH_YN);
+		String startsWithStr = run.getMandatoryParamValue(STARTS_WITH);
 		if (startsWithStr != null && startsWithStr.toUpperCase().equals("Y")) {
 			startsWith = true;
 		}
@@ -63,7 +63,7 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 				.add(SUB_HIERARCHY).withType(JobParameter.Type.CONCEPT).withDefaultValue(ROOT_CONCEPT)
 				.add(WORDS).withType(JobParameter.Type.STRING).withMandatory()
 				.add(ATTRIBUTE_DETAIL).withType(JobParameter.Type.CONCEPT)
-				.add(STARTS_WITH_YN).withType(JobParameter.Type.BOOLEAN).withMandatory().build();
+				.add(STARTS_WITH).withType(JobParameter.Type.BOOLEAN).withMandatory().build();
 		return new Job( new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES),
 						"Term contains X",
 						"List all concept containing specified words, with optional attribute detail",
