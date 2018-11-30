@@ -72,6 +72,10 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	//concepts
 	private void parentsInSameModule() throws TermServerScriptException {
 		for (Concept c : gl.getAllConcepts()) {
+			if (c.getModuleId() == null) {
+				warn ("Encountered concept with no module defined: " + c);
+				continue;
+			}
 			if (!c.getModuleId().equals(SCTID_CORE_MODULE) && !c.getModuleId().equals(SCTID_MODEL_MODULE)) {
 				continue;
 			}
