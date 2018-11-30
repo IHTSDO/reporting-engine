@@ -4,7 +4,7 @@ import java.util.*;
 
 import javax.annotation.PostConstruct;
 
-import org.ihtsdo.otf.resourcemanager.*;
+//import org.ihtsdo.otf.resourcemanager.*;
 import org.ihtsdo.termserver.job.mq.Transmitter;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.reflections.Reflections;
@@ -24,7 +24,7 @@ public class JobManager {
 	
 	protected Logger logger = LoggerFactory.getLogger(this.getClass());
 	
-	private final ResourceManager snomedReleaseResourceManager;
+	//private final ResourceManager snomedReleaseResourceManager;
 	
 	Map<String, Class<? extends JobClass>> knownJobs = new HashMap<>();
 	Map<String, JobType> knownJobTypes = new HashMap<>();
@@ -40,7 +40,7 @@ public class JobManager {
 			@Autowired SnomedReleaseResourceConfiguration snomedReleaseResourceConfiguration,
 			@Autowired ResourceLoader cloudResourceLoader) {
 		logger.info("Configuring Release Resource Manager");
-		snomedReleaseResourceManager = new ResourceManager(snomedReleaseResourceConfiguration, cloudResourceLoader);
+		//snomedReleaseResourceManager = new ResourceManager(snomedReleaseResourceConfiguration, cloudResourceLoader);
 	}
 
 	@PostConstruct
@@ -196,4 +196,5 @@ public class JobManager {
 		metadata.setJobTypes(new ArrayList<>(knownJobTypes.values()));
 		transmitter.send(metadata);
 	}
+	
 }
