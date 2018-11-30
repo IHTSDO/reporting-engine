@@ -503,17 +503,53 @@ public abstract class TermServerScript implements RF2Constants {
 		try {
 			String conceptSerialised = gson.toJson(c);
 			debug ((dryRun ?"Dry run updating ":"Updating ") + "state of " + c + (info == null?"":info));
+			Concept savedConcept = c;
 			if (!dryRun) {
 				JSONResource response = tsClient.updateConcept(new JSONObject(conceptSerialised), t.getBranchPath());
 				String json = response.toObject().toString();
-				c = gson.fromJson(json, Concept.class);
+				TSErrorMessage errorMsg = gson.fromJson(json, TSErrorMessage.class);
+				if (errorMsg.getCode() != null) {
+					throw new TermServerScriptException("Failed to update concept: " + errorMsg.getCode() + " - " + errorMsg.getDeveloperMessage());
+				}
+				savedConcept = gson.fromJson(json, Concept.class);
+				ensureSaveEffective(c, savedConcept);
 			}
-			return c;
+			return savedConcept;
 		} catch (Exception e) {
 			throw new TermServerScriptException("Failed to update " + c + " in TS due to " + e.getMessage(),e);
 		}
 	}
 	
+	private void ensureSaveEffective(Concept before, Concept after) throws TermServerScriptException {
+		//Check we've got the same number of active / inactive descriptions / relationships
+		int activeDescBefore = before.getDescriptions(ActiveState.ACTIVE).size();
+		int activeDescAfter = after.getDescriptions(ActiveState.ACTIVE).size();
+		
+		int inactiveDescBefore = before.getDescriptions(ActiveState.INACTIVE).size();
+		int inactiveDescAfter = after.getDescriptions(ActiveState.INACTIVE).size();
+
+		int activeStdRelBefore = before.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE).size();
+		int activeStdRelAfter = after.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE).size();
+	
+		int inactiveStdRelBefore = before.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.INACTIVE).size();
+		int inactiveStdRelAfter = after.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.INACTIVE).size();
+	
+		int activeInfRelBefore = before.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE).size();
+		int activeInfRelAfter = after.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE).size();
+	
+		int inactiveInfRelBefore = before.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.INACTIVE).size();
+		int inactiveInfRelAfter = after.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.INACTIVE).size();
+	
+		if (	activeDescBefore != activeDescAfter ||
+				inactiveDescBefore != inactiveDescAfter ||
+				activeStdRelBefore != activeStdRelAfter ||
+				inactiveStdRelBefore != inactiveStdRelAfter ||
+				activeInfRelBefore != activeInfRelAfter ||
+				inactiveInfRelBefore != inactiveInfRelAfter) {
+			throw new TermServerScriptException("Concept has not fully saved to TS, although no error was reported");
+		}
+	}
+
 	protected Concept createConcept(Task t, Concept c, String info) throws TermServerScriptException {
 		if (c.getFsn() == null || c.getFsn().isEmpty()) {
 			throw new ValidationFailure(c, "Cannot create concept with no FSN");
