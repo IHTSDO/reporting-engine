@@ -62,8 +62,9 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 		JobParameters params = new JobParameters()
 				.add(SUB_HIERARCHY).withType(JobParameter.Type.CONCEPT).withDefaultValue(ROOT_CONCEPT)
 				.add(WORDS).withType(JobParameter.Type.STRING).withMandatory()
+				.add(STARTS_WITH).withType(JobParameter.Type.BOOLEAN).withMandatory()
 				.add(ATTRIBUTE_DETAIL).withType(JobParameter.Type.CONCEPT)
-				.add(STARTS_WITH).withType(JobParameter.Type.BOOLEAN).withMandatory().build();
+				.build();
 		return new Job( new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES),
 						"Term contains X",
 						"List all concept containing specified words, with optional attribute detail",
