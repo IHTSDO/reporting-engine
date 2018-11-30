@@ -429,8 +429,14 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		//Do we already have an inactive version of this relationship to reactivate?
 		//Only relevant if this relationship is new
 		if (r.getId() == null) {
+			//Before considering inactive rels, check we don't already have this relationship
+			List<Relationship> activeRels = getRelationships(r);
+			if (activeRels.size() > 0) {
+				System.out.println ("Ignoring relationship add in " + this + ", triple + group already present and active " + activeRels.get(0));
+				return NO_CHANGES_MADE;
+			}
 			for (Relationship match : getRelationships(r, ActiveState.INACTIVE)) {
-				System.out.println ("Reactivating " + match);
+				System.out.println ("Reactivating " + match + " in " + this);
 				match.setActive(true);
 				return CHANGE_MADE;
 			}
@@ -1116,6 +1122,10 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		statedRelationshipGroups = null;
 		inferredRelationshipGroups = null;
 		return changesMade;
+	}
+	
+	public Boolean getReleased() {
+		return isReleased();
 	}
 	
 	public Boolean isReleased() {
