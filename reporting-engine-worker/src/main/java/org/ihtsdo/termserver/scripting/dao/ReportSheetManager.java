@@ -57,9 +57,10 @@ public class ReportSheetManager implements RF2Constants {
 		if (credential == null) {
 			String dir = System.getProperty("user.dir");
 			File secret = new File (dir + File.separator + CLIENT_SECRET_DIR);
-			System.out.println("Looking for client secret file " + secret);
+			System.out.print("Looking for client secret file " + secret + "...");
 			//return GoogleCredential.fromStream(new FileInputStream(secret)).createScoped(SCOPES);
 			credential = GoogleCredential.fromStream(new FileInputStream(secret)).createScoped(SheetsScopes.all());
+			System.out.println ("found.");
 		}
 		return credential;
 	}
@@ -90,7 +91,22 @@ public class ReportSheetManager implements RF2Constants {
 			}
 			Spreadsheet requestBody = new Spreadsheet();
 			Sheets.Spreadsheets.Create request = sheetsService.spreadsheets().create(requestBody);
-			sheet = request.execute();
+			int attempt = 0;
+			while (sheet == null) {
+				try {
+					sheet = request.execute();
+				} catch (Exception e) {
+					System.out.println("Failed to initialise sheet due to " + e.getMessage());
+					if (++attempt < 3 ) {
+						System.out.println("Retrying..." + attempt);
+						try {
+							Thread.sleep(5 * 1000);
+						} catch (Exception i) {}
+					} else {
+						throw e;
+					}
+				}
+			}
 			System.out.println("Created: " + sheet.getSpreadsheetUrl());
 			
 			//And share it with everyone in the company
@@ -186,23 +202,27 @@ public class ReportSheetManager implements RF2Constants {
 	private void flush(boolean optional) throws TermServerScriptException {
 		//Are we ready to flush?
 		//How long is it since we last wrote to the file?  Write every 5 seconds
-		long secondsSinceLastWrite = (new Date().getTime()-lastWriteTime.getTime())/1000;
-		if (optional && secondsSinceLastWrite < MIN_REQUEST_RATE) {
-			return;
+		if (lastWriteTime != null) {
+			long secondsSinceLastWrite = (new Date().getTime()-lastWriteTime.getTime())/1000;
+			if (optional && secondsSinceLastWrite < MIN_REQUEST_RATE) {
+				return;
+			}
 		}
 		//Execute update of data values
-		BatchUpdateValuesRequest body = new BatchUpdateValuesRequest()
-			.setValueInputOption(RAW)
-			.setData(dataToBeWritten);
-		try {
-			System.out.println(new Date() + " flushing to sheets");
-			sheetsService.spreadsheets().values().batchUpdate(sheet.getSpreadsheetId(),body)
-			.execute();
-		} catch (IOException e) {
-			throw new TermServerScriptException("Unable to update spreadsheet " + sheet.getSpreadsheetUrl(), e);
-		} finally {
-			lastWriteTime = new Date();
-			dataToBeWritten.clear();
+		if (sheet != null) {
+			BatchUpdateValuesRequest body = new BatchUpdateValuesRequest()
+				.setValueInputOption(RAW)
+				.setData(dataToBeWritten);
+			try {
+				System.out.println(new Date() + " flushing to sheets");
+				sheetsService.spreadsheets().values().batchUpdate(sheet.getSpreadsheetId(),body)
+				.execute();
+			} catch (IOException e) {
+				throw new TermServerScriptException("Unable to update spreadsheet " + sheet.getSpreadsheetUrl(), e);
+			} finally {
+				lastWriteTime = new Date();
+				dataToBeWritten.clear();
+			}
 		}
 	}
 	
