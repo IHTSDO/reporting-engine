@@ -16,12 +16,13 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * not represent an actual change.
  * 
  * This is useful when exporting a delta from an unversioned branch where
- * MAIN has in fact been versioned.
+ * MAIN has in fact been versioned eg recovering QI2019 into QIJUL19
  */
 public class RemoveNoChangeRows extends DeltaGenerator {
 	
 	File deltaToFilter;
-	Concept hierarchyOfInterest = CLINICAL_FINDING;
+	//Concept hierarchyOfInterest = CLINICAL_FINDING;
+	Concept hierarchyOfInterest = BODY_STRUCTURE;
 	List<String> semTagsOfInterest; 
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
@@ -56,8 +57,10 @@ public class RemoveNoChangeRows extends DeltaGenerator {
 		}
 		
 		semTagsOfInterest = new ArrayList<>();
-		semTagsOfInterest.add("(disorder)");
-		semTagsOfInterest.add("(finding)");
+		//semTagsOfInterest.add("(disorder)");
+		//semTagsOfInterest.add("(finding)");
+		semTagsOfInterest.add("(morphologic abnormality)");
+		semTagsOfInterest.add("(body structure)");
 	}
 	
 	private void filterNoChangeDelta() throws TermServerScriptException{
@@ -180,6 +183,10 @@ public class RemoveNoChangeRows extends DeltaGenerator {
 				}
 			} else {
 				//Can we work out the semantic tag and check that?
+				if (owner.getFsn() == null) {
+					warn ("No FSN available for " + owner);
+					return true;
+				}
 				String semTag = SnomedUtils.deconstructFSN(owner.getFsn())[1];
 				if (semTag != null) {
 					if (!semTagsOfInterest.contains(semTag)) {

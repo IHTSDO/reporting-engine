@@ -757,6 +757,9 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	public void flushFiles(boolean andClose) throws TermServerScriptException {
+		if (getRF2Manager() != null) {
+			getRF2Manager().flushFiles(andClose);
+		}
 		if (getReportManager() != null) {
 			getReportManager().flushFiles(andClose);
 		}

@@ -251,6 +251,8 @@ public class SnomedUtils implements RF2Constants {
 				FileUtils.deleteDirectory(dirToZip);
 			} catch (IOException e) {}
 		}
+		TermServerScript.info("Created archive: " + outputFile);
+		
 		return outputFile;
 	}
 	
