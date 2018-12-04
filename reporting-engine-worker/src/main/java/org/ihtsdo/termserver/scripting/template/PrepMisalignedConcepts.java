@@ -108,13 +108,13 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		subHierarchyStr = "416886008"; //QI-106 |Closed wound| 
 		templateNames = new String[] {	"templates/wound/wound of bodysite.json"
 				};
-		*/
+		
 		subHierarchyStr = "125643001"; //QI-107 |Open wound| 
 		templateNames = new String[] {	"templates/wound/wound of bodysite due to event.json"
 				};
 		exclusionWords = new ArrayList<String>();
 		exclusionWords.add("fracture");
-		/*
+		
 		subHierarchyStr = "128545000"; //QI-75 |Hernia of abdominal wall (disorder)|
 		//subHierarchyStr = "773623000";
 		templateNames = new String[] {	"templates/Hernia of abdominal wall.json"};
@@ -124,6 +124,9 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		exclusionWords.add("obstruction");
 		*/
 		
+		subHierarchyStr = "432119003 |Aneurysm (disorder)|"; //QI-143 
+		templateNames = new String[] {	"templates/Aneurysm of Cardiovascular system.json" };
+				
 		super.init(args);
 	}
 	

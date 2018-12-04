@@ -106,7 +106,8 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 				//setSubHierarchy("125643001");  //QI-51 |Open wound|
 				//setSubHierarchy("416886008");  //QI-52 |Closed wound|
 				//setSubHierarchy("432119003");  //QI- |Aneurysm (disorder)|
-				setSubHierarchy("399963005 |Abrasion|"); //QI-96
+				//setSubHierarchy("399963005 |Abrasion|"); //QI-96
+				setSubHierarchy("233776003 |Tracheobronchial disorder|"); //QI-152
 				/* setSubHierarchy("40733004|Infectious disease|"); //QI-142
 				setExclusions(new String[] {"87628006 |Bacterial infectious disease (disorder)|","34014006 |Viral disease (disorder)|",
 						"3218000 |Mycosis (disorder)|","8098009 |Sexually transmitted infectious disease (disorder)|", 
