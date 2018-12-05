@@ -122,11 +122,16 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		exclusionWords = new ArrayList<String>();
 		exclusionWords.add("gangrene");
 		exclusionWords.add("obstruction");
-		*/
 		
 		subHierarchyStr = "432119003 |Aneurysm (disorder)|"; //QI-143 
 		templateNames = new String[] {	"templates/Aneurysm of Cardiovascular system.json" };
-				
+		*/
+		subHierarchyStr = "40733004|Infectious disease|"; //QI-153
+		templateNames = new String[] {	"templates/Infection NOS.json" };
+		setExclusions(new String[] {"87628006 |Bacterial infectious disease (disorder)|","34014006 |Viral disease (disorder)|",
+				"3218000 |Mycosis (disorder)|","8098009 |Sexually transmitted infectious disease (disorder)|", 
+				"17322007 |Disease caused by parasite (disorder)|", "91302008 |Sepsis (disorder)|"});
+	
 		super.init(args);
 	}
 	
