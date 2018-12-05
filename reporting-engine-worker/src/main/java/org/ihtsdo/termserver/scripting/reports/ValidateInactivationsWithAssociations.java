@@ -55,7 +55,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 
 		return new Job( new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION),
 						"Validate Inactivations with Associations",
-						"Ensures that inactivation indicators are appropriate to historical associations",
+						"This report ensures that inactive concepts have exactly one inactivation indicator, and appropriate historical associations",
 						params);
 	}
 

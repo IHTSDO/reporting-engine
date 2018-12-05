@@ -9,7 +9,6 @@ import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.template.DescendentsCache;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 
@@ -23,8 +22,7 @@ public class ConceptsWithParents extends TermServerReport implements ReportClass
 	
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
-		//additionalReportColumns="FSN, DEF_STATUS, ConceptType, ImmedateStatedParent, Inferred Parents, PARENT'S PARENT";
-		additionalReportColumns="FSN, SemTag, DEF_STATUS, ImmediateStatedParent, Inferred Parents, Grand Parents";
+		additionalReportColumns="FSN, SemTag, DEF_STATUS, Immediate Stated Parent, Immediate Inferred Parents ,Inferred Grand Parents";
 		super.init(run);
 	}
 
@@ -34,7 +32,7 @@ public class ConceptsWithParents extends TermServerReport implements ReportClass
 				.add(HIERARCHIES).withType(JobParameter.Type.CONCEPT_LIST).withMandatory().build();
 		return new Job( new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES),
 						"Concepts with Parents",
-						"Lists concepts along with their parents, and their parent's parents",
+						"This report lists all parents and grandparents of concepts in the specified hierarchies.",
 						params);
 	}
 

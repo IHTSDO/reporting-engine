@@ -24,9 +24,9 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 	
 	String[] textsToMatch;
 	boolean reportConceptOnceOnly = true;
-	public static final String STARTS_WITH = "StartsWith";
+	public static final String STARTS_WITH = "Starts With";
 	public static final String WORDS = "Words";
-	public static final String ATTRIBUTE_DETAIL = "AttributeDetail";
+	public static final String ATTRIBUTE_TYPE = "Attribute Type";
 	Concept attributeDetail;
 	boolean startsWith = false;
 	
@@ -35,7 +35,7 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 		params.put(STARTS_WITH, "Y");
 		params.put(SUB_HIERARCHY, ROOT_CONCEPT.toString());
 		params.put(WORDS, "[");
-		params.put(ATTRIBUTE_DETAIL, null);
+		params.put(ATTRIBUTE_TYPE, null);
 		TermServerReport.run(TermContainsXReport.class, args, params);
 	}
 	
@@ -46,7 +46,7 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 		getArchiveManager().populateHierarchyDepth = true;
 		textsToMatch = run.getMandatoryParamValue(WORDS).split(COMMA);
 		
-		String attribStr = run.getParamValue(ATTRIBUTE_DETAIL);
+		String attribStr = run.getParamValue(ATTRIBUTE_TYPE);
 		if (attribStr != null && !attribStr.isEmpty()) {
 			attributeDetail = gl.getConcept(attribStr);
 		}
@@ -63,11 +63,11 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 				.add(SUB_HIERARCHY).withType(JobParameter.Type.CONCEPT).withDefaultValue(ROOT_CONCEPT)
 				.add(WORDS).withType(JobParameter.Type.STRING).withMandatory()
 				.add(STARTS_WITH).withType(JobParameter.Type.BOOLEAN).withMandatory()
-				.add(ATTRIBUTE_DETAIL).withType(JobParameter.Type.CONCEPT)
+				.add(ATTRIBUTE_TYPE).withType(JobParameter.Type.CONCEPT).withDescription("Optional. Will show the attribute values per concept for the specified attribute type.  For example in Substances, show me all concepts that are used as a target for 738774007 |Is modification of (attribute)| by specifying that attribute type in this field.")
 				.build();
 		return new Job( new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES),
 						"Term contains X",
-						"List all concept containing specified words, with optional attribute detail",
+						"This report lists all concepts containing the specified words, with optional attribute details.",
 						params);
 	}
 	

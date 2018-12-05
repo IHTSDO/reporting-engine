@@ -82,7 +82,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 	public Job getJob() {
 		return new Job( new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION),
 						"Case Significance",
-						"Validates that case significance of new/modified descriptions are correct",
+						"This report validates the case significance of new and modified descriptions.",
 						new JobParameters(new String[] { }));
 	}
 
