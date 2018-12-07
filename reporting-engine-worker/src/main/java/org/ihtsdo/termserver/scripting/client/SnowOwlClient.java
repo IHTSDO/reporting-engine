@@ -170,7 +170,9 @@ public class SnowOwlClient {
 
 	public JSONResource getConcepts(String ecl, String branchPath, int offset, int limit) throws SnowOwlClientException {
 		try {
-			return resty.json(getConceptsPath(branchPath) + "?limit=" + limit + "&offset=" + offset + "&ecl=" + URLEncoder.encode(ecl, "UTF-8"));
+			String url = getConceptsPath(branchPath) + "?limit=" + limit + "&offset=" + offset + "&ecl=" + URLEncoder.encode(ecl, "UTF-8");
+			System.out.println("Calling " + url);
+			return resty.json(url);
 		} catch (IOException e) {
 			throw new SnowOwlClientException(e);
 		}

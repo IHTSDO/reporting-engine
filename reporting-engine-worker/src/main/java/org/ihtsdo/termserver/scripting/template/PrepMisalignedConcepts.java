@@ -25,7 +25,7 @@ public class PrepMisalignedConcepts extends TemplateFix {
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		PrepMisalignedConcepts app = new PrepMisalignedConcepts(null);
 		try {
-			app.includeComplexTemplates = true;
+			//app.includeComplexTemplates = true;
 			//ReportSheetManager.targetFolderId = "18xZylGhgL7ML782pu6-6u_VUw3p5Hfr7"; //QI/Development
 			ReportSheetManager.targetFolderId = "1uywo1VGAIh7MMY7wCn2yEj312OQCjt9J"; // QI / Misaligned Concepts
 			app.init(args);
@@ -98,10 +98,10 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		subHierarchyStr = "283682007"; // QI-39 |Bite - wound (disorder)|
 		templateNames = new String[] {	"templates/bite/bite of bodysite caused by bite event.json", 
 										"templates/bite/bite of bodysite caused by bite event with infection.json"};
-		
+		*/
 		subHierarchyStr = "3218000"; //QI-67 |Mycosis (disorder)|
 		templateNames = new String[] {	"templates/Infection caused by Fungus.json"};
-		
+		/*
 		subHierarchyStr = "17322007"; //QI-68 |Parasite (disorder)|
 		templateNames = new String[] {	"templates/Infection caused by Parasite.json"};
 		
@@ -125,13 +125,13 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		
 		subHierarchyStr = "432119003 |Aneurysm (disorder)|"; //QI-143 
 		templateNames = new String[] {	"templates/Aneurysm of Cardiovascular system.json" };
-		*/
+		
 		subHierarchyStr = "40733004|Infectious disease|"; //QI-153
 		templateNames = new String[] {	"templates/Infection NOS.json" };
 		setExclusions(new String[] {"87628006 |Bacterial infectious disease (disorder)|","34014006 |Viral disease (disorder)|",
 				"3218000 |Mycosis (disorder)|","8098009 |Sexually transmitted infectious disease (disorder)|", 
 				"17322007 |Disease caused by parasite (disorder)|", "91302008 |Sepsis (disorder)|"});
-	
+	*/
 		super.init(args);
 	}
 	
@@ -207,7 +207,7 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		}
 		
 		for (Concept c : unalignedConcepts) {
-			if (!c.getConceptId().equals("67508005")) {
+			if (!c.getConceptId().equals("186868000")) {
 				//continue;
 			}
 			if (isExcluded(c)) {

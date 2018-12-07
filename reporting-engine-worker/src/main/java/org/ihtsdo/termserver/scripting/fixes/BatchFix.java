@@ -652,7 +652,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		}
 	}
 	
-	protected void removeRelationship(Task t, Concept c, Relationship r) throws TermServerScriptException {
+	protected int removeRelationship(Task t, Concept c, Relationship r) throws TermServerScriptException {
 		//Are we inactivating or deleting this relationship?
 		ReportActionType action = ReportActionType.UNKNOWN;
 		if (!r.isReleased()) {
@@ -664,7 +664,9 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			r.setActive(false);
 			action = ReportActionType.RELATIONSHIP_INACTIVATED;
 		}
+		c.recalculateGroups();
 		report (t, c, Severity.LOW, action, r);
+		return CHANGE_MADE;
 	}
 	
 	protected void removeDescription(Task t, Concept c, Description d, InactivationIndicator i) throws TermServerScriptException {

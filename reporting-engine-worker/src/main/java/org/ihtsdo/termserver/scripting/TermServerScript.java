@@ -97,7 +97,7 @@ public abstract class TermServerScript implements RF2Constants {
 									DESCRIPTION_CHANGE_MADE, DESCRIPTION_ACCEPTABILIY_CHANGED, DESCRIPTION_ADDED, DESCRIPTION_INACTIVATED, DESCRIPTION_DELETED,
 									CASE_SIGNIFICANCE_CHANGE_MADE, MODULE_CHANGE_MADE, 
 									RELATIONSHIP_ADDED, RELATIONSHIP_REPLACED, RELATIONSHIP_INACTIVATED, RELATIONSHIP_DELETED, RELATIONSHIP_MODIFIED, 
-									RELATIONSHIP_GROUP_ADDED,
+									RELATIONSHIP_GROUP_ADDED,RELATIONSHIP_GROUP_REMOVED,
 									NO_CHANGE, VALIDATION_ERROR, VALIDATION_CHECK, SKIPPING,
 									REFSET_MEMBER_REMOVED, UNKNOWN, RELATIONSHIP_REACTIVATED, ASSOCIATION_ADDED,
 									INACT_IND_ADDED, INACT_IND_MODIFIED, ASSOCIATION_REMOVED};
@@ -856,11 +856,15 @@ public abstract class TermServerScript implements RF2Constants {
 			if (subHierarchy == null && subHierarchyStr == null && subHierarchyECL != null) {
 				//Take the first focus concept
 				int cutPoint = subHierarchyECL.indexOf(":");
-				int potentialCut = subHierarchyECL.indexOf("MINUS");
-				if (potentialCut > NOT_SET && potentialCut < cutPoint) {
-					cutPoint = potentialCut;
+				if (cutPoint > NOT_SET) {
+					int potentialCut = subHierarchyECL.indexOf("MINUS");
+					if (potentialCut > NOT_SET && potentialCut < cutPoint) {
+						cutPoint = potentialCut;
+					}
+					reportName += spacer + subHierarchyECL.subSequence(0, cutPoint);
+				} else {
+					reportName += spacer + gl.getConcept(subHierarchyECL.replaceAll("<", "").trim()).toStringPref();
 				}
-				reportName += spacer + subHierarchyECL.subSequence(0, cutPoint);
 			}
 		} catch (Exception e) {
 			error ("Recoverable hiccup while setting report name",e);

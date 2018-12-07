@@ -306,6 +306,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 			throw new IllegalArgumentException("Attempt to deleted published relationship " + r);
 		}
 		this.relationships.remove(r);
+		recalculateGroups();
 	}
 
 	public boolean isIsLeafStated() {
@@ -405,8 +406,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		r.setTarget(target);
 		r.setModifier(Modifier.EXISTENTIAL);
 		relationships.add(r);
-		//Reset our cache of relationship groups
-		statedRelationshipGroups = null;
+		recalculateGroups();
 	}
 
 	public boolean isLoaded() {
@@ -471,13 +471,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		}
 		r.setRelationshipId(id);
 		relationships.add(r);
-		
-		//Reset our cache of relationship groups, recalculate next time it's requested
-		if (r.getCharacteristicType().equals(CharacteristicType.STATED_RELATIONSHIP)) {
-			statedRelationshipGroups = null;
-		} else {
-			inferredRelationshipGroups = null;
-		}
+		recalculateGroups();
 	}
 	
 	public void addChild(CharacteristicType charType, Concept c) {
@@ -1118,12 +1112,16 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 			}
 			changesMade += addOrReactivateRelationship(r);
 		}
-		//Force recalculation of groups
-		statedRelationshipGroups = null;
-		inferredRelationshipGroups = null;
+		recalculateGroups();
 		return changesMade;
 	}
 	
+	public void recalculateGroups() {
+		//Force recalculation of groups next time they're requested
+		statedRelationshipGroups = null;
+		inferredRelationshipGroups = null;
+	}
+
 	public Boolean getReleased() {
 		return isReleased();
 	}

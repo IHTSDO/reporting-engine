@@ -92,6 +92,9 @@ public class EclCache {
 		}
 		//Cache this result
 		expansionCache.put(ecl, allConcepts);
+		if (allConcepts.size() == 0) {
+			TermServerScript.warn ("ECL " + ecl + " recovered 0 concepts.  Check?");
+		}
 		return allConcepts;
 	}
 }

@@ -51,7 +51,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	public Job getJob() {
 		String[] parameterNames = new String[] { };
 		return new Job( new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION),
-						"Release Issues",
+						"Release Issues Report",
 						"This report lists a range of potential issues identified in INFRA-2723. For example 1. Descriptions where the module id does not match the concept module id and, 2. Inactive concepts without an active Preferred Term. ",
 						new JobParameters(parameterNames));
 	}

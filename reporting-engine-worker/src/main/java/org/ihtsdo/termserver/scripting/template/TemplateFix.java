@@ -78,10 +78,18 @@ abstract public class TemplateFix extends BatchFix {
 			exclusionWords.add("due to");
 			exclusionWords.add("with");
 			exclusionWords.add("without");
+		} else {
+			warn ("Including complex templates");
 		}
 		
 		complexTemplateAttributes = new ArrayList<>();
 		complexTemplateAttributes.add(DUE_TO);
+		complexTemplateAttributes.add(AFTER);
+		complexTemplateAttributes.add(gl.getConcept("726633004")); //|Temporally related to (attribute)|
+		complexTemplateAttributes.add(gl.getConcept("288556008")); //|Before (attribute)|
+		complexTemplateAttributes.add(gl.getConcept("371881003")); //|During (attribute)|
+		complexTemplateAttributes.add(gl.getConcept("363713009")); //|Has interpretation (attribute)|
+		complexTemplateAttributes.add(gl.getConcept("363714003")); //|Interprets (attribute)|
 		super.postInit();
 	}
 	
