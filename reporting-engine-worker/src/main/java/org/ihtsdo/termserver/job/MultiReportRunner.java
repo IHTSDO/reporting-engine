@@ -71,7 +71,7 @@ public class MultiReportRunner extends TermServerReport {
 			String[] items = line.split(COMMA);
 			String subHiearchyStr = items[0];
 			String[] exclusions = (String[]) ArrayUtils.removeElement(items, subHiearchyStr);
-			Concept subHierarchy = gl.getConcept(line);
+			Concept subHierarchy = gl.getConcept(line.split(TAB)[0]);
 			//TODO
 			//report.postInit(line);
 			report.setExclusions(exclusions);

@@ -3,12 +3,15 @@ package org.ihtsdo.termserver.scripting.reports.qi;
 import java.io.*;
 import java.util.*;
 
+import org.apache.commons.io.Charsets;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+
+import com.google.common.io.Files;
 
 /**
  * QI
@@ -31,7 +34,7 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 		GenerateWorkDoneStatsWithTempateTypes report = new GenerateWorkDoneStatsWithTempateTypes();
 		try {
 			ReportSheetManager.targetFolderId = "1YoJa68WLAMPKG6h4_gZ5-QT974EU9ui6"; //QI / Stats
-			report.additionalReportColumns = "FSN, Counted elsewhere, Simple, modified, Pure, modified, Complex, modified, ComplexNoMorph, modified, None, modified, Total";
+			report.additionalReportColumns = "FSN, SemTag, Counted elsewhere, Simple, modified, Pure, modified, Complex, modified, ComplexNoMorph, modified, None, modified, Total";
 			report.init(args);
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.postLoadInit();
@@ -51,7 +54,7 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 		if (!inputFile.canRead()) {
 			throw new TermServerScriptException ("Cannot read: " + inputFile);
 		}
-		/*
+		
 		List<String> lines = Files.readLines(inputFile, Charsets.UTF_8);
 		for (String line : lines) {
 			if (!line.trim().isEmpty()) {
@@ -67,8 +70,8 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 					exclusionMap.put(concept, exclusions);
 				}
 			}
-		} */
-		subHierarchies.addAll(ROOT_CONCEPT.getDescendents(IMMEDIATE_CHILD));
+		} 
+		//subHierarchies.addAll(ROOT_CONCEPT.getDescendents(IMMEDIATE_CHILD));
 		//subHierarchies.add(CLINICAL_FINDING);
 		co_occurrantTypeAttrb =  new Concept[] {
 				gl.getConcept("47429007") //|Associated with (attribute)|
@@ -83,7 +86,7 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 			gl.getConcept("363713009"), //|Has interpretation (attribute)|
 			gl.getConcept("363714003")  //|Interprets (attribute)|
 		};
-		
+		postInit();
 		ipReport = new InitialAnalysis(this);
 	}
 
