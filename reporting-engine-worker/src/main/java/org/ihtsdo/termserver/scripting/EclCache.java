@@ -90,10 +90,15 @@ public class EclCache {
 				throw new TermServerScriptException("Failed to recover concepts using ECL '" + ecl + "' due to " + e.getMessage(),e);
 			}
 		}
-		//Cache this result
-		expansionCache.put(ecl, allConcepts);
+		
 		if (allConcepts.size() == 0) {
 			TermServerScript.warn ("ECL " + ecl + " recovered 0 concepts.  Check?");
+			expansionCache.remove(ecl);
+		} else {
+			//Seeing a transient issue where we're getting 0 concepts back on the first call, and the concepts back on a 
+			//subsequent call.  So for now, don't cache a null response and we'll sleep / retry
+			//Cache this result
+			expansionCache.put(ecl, allConcepts);
 		}
 		return allConcepts;
 	}

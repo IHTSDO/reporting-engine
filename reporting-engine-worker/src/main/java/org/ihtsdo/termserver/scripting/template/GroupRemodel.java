@@ -70,12 +70,12 @@ public class GroupRemodel extends TemplateFix {
 		templateNames = new String[] {	"templates/Fracture of Bone Structure.json" }; /*,
 										"templates/Fracture Dislocation of Bone Structure.json",
 										"templates/Pathologic fracture of bone due to Disease.json"};
-		
+		*/
 		// QI-36 Part 1 |Chronic inflammatory disorder (disorder)
 		subHierarchyECL =  "<< 128294001 MINUS  (<< 128294001 : 246075003 |Causative agent (attribute)| = <<410607006 |Organism (organism)|)";
 		templateNames = new String[] {"templates/Chronic Inflammatory Disorder.json"};
 		exclusionWords.add("arthritis");
-		
+		/*
 		// QI-36 Part 2 |Chronic inflammatory disorder (disorder)
 		subHierarchyECL =  "<< 128294001 : 246075003 |Causative agent (attribute)| = <<410607006 |Organism (organism)|";
 		templateNames = new String[] {"templates/Infectious Chronic Inflammatory Disorder.json"};
@@ -98,10 +98,10 @@ public class GroupRemodel extends TemplateFix {
 		templateNames = new String[] {	"templates/Complication co-occurrent and due to Diabetes Melitus.json",
 				//"templates/Complication co-occurrent and due to Diabetes Melitus - Minimal.json"
 				};
-		*/
+		
 		subHierarchyECL =  "<< 3218000"; //QI-70 |Mycosis (disorder)|
 		templateNames = new String[] {	"templates/Infection caused by Fungus.json"};
-		/*
+		
 		subHierarchyECL =  "<< 17322007"; //QI-116 |Parasite (disorder)|
 		templateNames = new String[] {	"templates/Infection caused by Parasite.json"};
 		
