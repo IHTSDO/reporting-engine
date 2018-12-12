@@ -82,7 +82,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 	public Job getJob() {
 		return new Job( new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION),
 						"Case Significance",
-						"This report validates the case significance of new and modified descriptions.",
+						"This report validates the case significance of new and modified descriptions.  Note that the Substances and Organism hierarchies are excluded as they are taken to be a 'source of truth'.",
 						new JobParameters(new String[] { }));
 	}
 
@@ -137,8 +137,10 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 	private void checkCaseSignificance() throws TermServerScriptException {
 		//Work through all active descriptions of all hierarchies
 		for (Concept targetHierarchy : targetHierarchies) {
-			info ("Sorting descendants: " + targetHierarchy);
 			List<Concept> hiearchyDescendants = new ArrayList<>(targetHierarchy.getDescendents(NOT_SET));
+			//Sorting is doing String creation and manipulation multiple times for each concept
+			//We'll let the user do the sorting in the spreadsheet output if they want.
+			/*info ("Sorting descendants: " + targetHierarchy);
 			Collections.sort(hiearchyDescendants, new Comparator<Concept>() {
 				@Override
 				public int compare(Concept c1, Concept c2) {
@@ -151,7 +153,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 					}
 					return c1.getConceptId().compareTo(c2.getConceptId());
 				}
-			});
+			});*/
 			
 			info ("Checking case significance in target hierarchy: " + targetHierarchy);
 			
@@ -160,6 +162,10 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 			for (Concept c : hiearchyDescendants) {
 				if (++count %10000 == 0) {
 					print (".");
+				}
+				
+				if (c.getConceptId().equals("322280009")) {
+//					debug ("Temp - check here");
 				}
 				if (allExclusions.contains(c) || whiteList.contains(c.getId())) {
 					continue;
