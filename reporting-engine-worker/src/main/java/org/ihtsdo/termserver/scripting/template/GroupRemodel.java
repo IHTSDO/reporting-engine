@@ -134,7 +134,10 @@ public class GroupRemodel extends TemplateFix {
 	@Override
 	protected int doFix(Task task, Concept concept, String info) throws TermServerScriptException, ValidationFailure {
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
-
+		if (!loadedConcept.isActive()) {
+			report(task, concept, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Attempt to remodel an inactive concept");
+			return NO_CHANGES_MADE;
+		}
 		int changesMade = remodelConcept(task, loadedConcept, templates.get(0));
 		if (changesMade > 0) {
 			List<String> focusConceptIds = templates.get(0).getLogicalTemplate().getFocusConcepts();
