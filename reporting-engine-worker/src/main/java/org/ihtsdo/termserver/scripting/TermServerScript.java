@@ -54,7 +54,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected String subHierarchyStr;
 	protected String subHierarchyECL;
 	protected Concept subHierarchy;
-	protected String[] exclusions;
+	protected String[] excludeHierarchies;
 
 	protected GraphLoader gl = GraphLoader.getGraphLoader();
 	private ReportManager reportManager;
@@ -1075,7 +1075,7 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	public void setExclusions(String[] exclusions) throws TermServerScriptException {
-		this.exclusions = exclusions;
+		this.excludeHierarchies = exclusions;
 	}
 	
 	public Integer countAttributes(Concept c, CharacteristicType cType) {

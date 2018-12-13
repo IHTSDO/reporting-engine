@@ -21,8 +21,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 abstract public class TemplateFix extends BatchFix {
 	
-	String [] excludeHierarchies = new String[] {};
-	List<Concept> exclusions;
+	Set<Concept> exclusions;
 	List<String> exclusionWords;
 	boolean includeComplexTemplates = false;
 	List<Concept> complexTemplateAttributes;
@@ -60,9 +59,15 @@ abstract public class TemplateFix extends BatchFix {
 		info(templates.size() + " Templates loaded successfully");
 		
 		if (exclusions == null) {
-			exclusions = new ArrayList<>();
+			exclusions = new HashSet<>();
 		}
+		
+		if (excludeHierarchies == null) {
+			excludeHierarchies = new String[] {};
+		}
+
 		for (String thisExclude : excludeHierarchies) {
+			info("Setting exclusion of " + thisExclude + " subHierarchy.");
 			exclusions.addAll(gl.getConcept(thisExclude).getDescendents(NOT_SET));
 		}
 		
@@ -91,6 +96,7 @@ abstract public class TemplateFix extends BatchFix {
 		complexTemplateAttributes.add(gl.getConcept("363713009")); //|Has interpretation (attribute)|
 		complexTemplateAttributes.add(gl.getConcept("363714003")); //|Interprets (attribute)|
 		super.postInit();
+		info ("Post initialisation complete");
 	}
 	
 	protected Template loadTemplate (char id, String fileName) throws TermServerScriptException {

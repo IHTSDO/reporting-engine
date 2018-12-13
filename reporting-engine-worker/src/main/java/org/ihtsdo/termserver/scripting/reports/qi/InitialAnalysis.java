@@ -40,7 +40,7 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		InitialAnalysis report = new InitialAnalysis(null);
 		try {
-			ReportSheetManager.targetFolderId = "1m7MVhMePldYrNjOvsE_WTAYcowZ4ps50";  //
+			ReportSheetManager.targetFolderId = "1m7MVhMePldYrNjOvsE_WTAYcowZ4ps50";  // QI/Initial Analysis
 			report.init(args);
 			report.loadProjectSnapshot(true);  //just FSNs
 			report.postInit();

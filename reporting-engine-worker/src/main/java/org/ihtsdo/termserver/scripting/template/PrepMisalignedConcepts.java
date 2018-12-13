@@ -29,7 +29,6 @@ public class PrepMisalignedConcepts extends TemplateFix {
 			//ReportSheetManager.targetFolderId = "18xZylGhgL7ML782pu6-6u_VUw3p5Hfr7"; //QI/Development
 			ReportSheetManager.targetFolderId = "1uywo1VGAIh7MMY7wCn2yEj312OQCjt9J"; // QI / Misaligned Concepts
 			app.init(args);
-			app.getArchiveManager().allowStaleData = true;
 			//app.getArchiveManager().allowStaleData = true;
 			app.loadProjectSnapshot(false);  //Load all descriptions
 			app.postInit();
@@ -49,6 +48,9 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		populateEditPanel = true;
 		populateTaskDescription = true;
 		additionalReportColumns = "CharacteristicType, MatchedTemplate, Template Diagnostic";
+		if (exclusionWords == null) {
+			exclusionWords = new ArrayList<>();
+		}
 		/*
 		subHierarchyStr = "125605004";  // QI-5 |Fracture of bone (disorder)|
 		templateNames = new String[] {	"fracture/Fracture of Bone Structure.json",
@@ -58,13 +60,15 @@ public class PrepMisalignedConcepts extends TemplateFix {
 										"fracture/Traumatic abnormality of spinal cord structure co-occurrent and due to fracture morphology of vertebral bone structure.json",
 										//"Injury of finding site due to birth trauma.json"
 										 };
-		
+		*/
 		subHierarchyStr =  "128294001";  // QI-9 |Chronic inflammatory disorder (disorder)
-		templateNames = new String[] {"Chronic Inflammatory Disorder.json"}; 
-		
+		templateNames = new String[] {"templates/Chronic Inflammatory Disorder.json"}; 
+		setExclusions(new String[] {"40733004|Infectious disease|"});
+		exclusionWords.add("arthritis");
+		/*
 		subHierarchyStr =  "126537000";  //QI-14 |Neoplasm of bone (disorder)|
-		templateNames = new String[] {	"Neoplasm of Bone.json",
-										"Pathologic fracture morphology of bone structure co-occurrent and due to Neoplasm of bone.json"};
+		templateNames = new String[] {	"templates/Neoplasm of Bone.json",
+										"templates/Pathologic fracture morphology of bone structure co-occurrent and due to Neoplasm of bone.json"};
 		
 		subHierarchyStr =  "34014006"; //QI-15 |Viral disease (disorder)|
 		templateNames = new String[] {	"templates/Infection caused by Virus.json",
@@ -98,10 +102,10 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		subHierarchyStr = "283682007"; // QI-39 |Bite - wound (disorder)|
 		templateNames = new String[] {	"templates/bite/bite of bodysite caused by bite event.json", 
 										"templates/bite/bite of bodysite caused by bite event with infection.json"};
-		*/
+		
 		subHierarchyStr = "3218000"; //QI-67 |Mycosis (disorder)|
 		templateNames = new String[] {	"templates/Infection caused by Fungus.json"};
-		/*
+		
 		subHierarchyStr = "17322007"; //QI-68 |Parasite (disorder)|
 		templateNames = new String[] {	"templates/Infection caused by Parasite.json"};
 		
