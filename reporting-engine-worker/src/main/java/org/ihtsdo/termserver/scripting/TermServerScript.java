@@ -4,6 +4,8 @@ import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import org.slf4j.*;
+
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.lang.time.DurationFormatUtils;
 import org.ihtsdo.termserver.scripting.client.*;
@@ -24,6 +26,8 @@ import us.monoid.web.JSONResource;
 import us.monoid.web.Resty;
 
 public abstract class TermServerScript implements RF2Constants {
+	
+	static Logger logger = LoggerFactory.getLogger(TermServerScript.class);
 	
 	protected static boolean debug = true;
 	protected static boolean dryRun = true;
@@ -132,21 +136,21 @@ public abstract class TermServerScript implements RF2Constants {
 	};
 	
 	public static void info (String msg) {
-		System.out.println (msg);
+		logger.info(msg);
 	}
 	
 	public static void debug (Object obj) {
-		System.out.println (obj==null?"NULL":obj.toString());
+		logger.debug(obj==null?"NULL":obj.toString());
 	}
 	
 	public static void warn (Object obj) {
-		System.out.println ("*** " + (obj==null?"NULL":obj.toString()));
+		logger.warn("*** " + (obj==null?"NULL":obj.toString()));
 	}
 	
 	public static void error (Object obj, Exception e) {
 		System.err.println ("*** " + (obj==null?"NULL":obj.toString()));
 		if (e != null) 
-			System.err.println (ExceptionUtils.getStackTrace(e));
+			logger.error(ExceptionUtils.getStackTrace(e));
 	}
 	
 	public static void print (Object msg) {

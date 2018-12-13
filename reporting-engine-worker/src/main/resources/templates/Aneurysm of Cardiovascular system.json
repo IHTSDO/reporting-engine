@@ -1,0 +1,6 @@
+{
+  "name": "Chronic inflammatory disorder",
+  "documentation": "https://confluence.ihtsdotools.org/display/AUTHS/Infection+caused+by+%5Bbacteria%5D+%28disorder%29+v2+-+Ready+for+implementation",
+  "version": 1,
+  "logicalTemplate": "64572001 |Disease (disorder)|:\n\t [[~1..*]]{\n\t\t  [[~0..1]] 246454002 |Occurrence (attribute)| = 255399007 |Congenital (qualifier value)| , 116676008 |Associated morphology (attribute)| = [[+id(<< 85659009 |Aneurysm (morphologic abnormality)|) @morphology ]]\n\t, 363698007 |Finding site (attribute)| = [[+id(<< 113257007 |Structure of cardiovascular system (body structure)|) @site ]], [[~0..1]] 370135005 |Pathological process (attribute)| = 308490002 |Pathological developmental process (qualifier value)| }\n"
+}
