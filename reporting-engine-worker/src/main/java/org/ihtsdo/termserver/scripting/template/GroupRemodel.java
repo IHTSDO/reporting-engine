@@ -98,10 +98,10 @@ public class GroupRemodel extends TemplateFix {
 		templateNames = new String[] {	"templates/Complication co-occurrent and due to Diabetes Melitus.json",
 				//"templates/Complication co-occurrent and due to Diabetes Melitus - Minimal.json"
 				};
-		
+		*/
 		subHierarchyECL =  "<< 3218000"; //QI-70 |Mycosis (disorder)|
-		templateNames = new String[] {	"templates/Infection caused by Fungus.json"};
-		
+		templateNames = new String[] {	"templates/infection/Infection caused by Fungus.json"};
+		/*
 		subHierarchyECL =  "<< 17322007"; //QI-116 |Parasite (disorder)|
 		templateNames = new String[] {	"templates/Infection caused by Parasite.json"};
 		
@@ -111,7 +111,7 @@ public class GroupRemodel extends TemplateFix {
 		exclusionWords.add("complication");
 		exclusionWords.add("fracture");
 		includeDueTos = true;
-		*/
+		
 		
 		subHierarchyECL = "<<40733004|Infectious disease|"; //QI-159
 		templateNames = new String[] {	"templates/infection/Infection NOS.json" };
@@ -119,6 +119,7 @@ public class GroupRemodel extends TemplateFix {
 				"3218000 |Mycosis (disorder)|","8098009 |Sexually transmitted infectious disease (disorder)|", 
 				"17322007 |Disease caused by parasite (disorder)|", "91302008 |Sepsis (disorder)|"});
 		exclusionWords.add("shock");
+		*/
 		super.init(args);
 	}
 	
