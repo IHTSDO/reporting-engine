@@ -210,32 +210,52 @@
 		</plugins>
 	</build>
 	
-	<repositories>
-		<repository>
-			<id>ihtsdo-releases</id>
-			<releases><enabled>true</enabled></releases>
-			<snapshots><enabled>false</enabled></snapshots>
-			<url>https://maven2.ihtsdotools.org/repository/Releases/</url>
-		</repository>
-		<repository>
-			<id>ihtsdo-snapshots</id>
-			<releases><enabled>false</enabled></releases>
-			<snapshots><enabled>true</enabled></snapshots>
-			<url>https://maven2.ihtsdotools.org/repository/Snapshots/</url>
-		</repository>
-	</repositories>
-
-	<distributionManagement>
-		<repository>
-			<id>ihtsdo-public-nexus2</id>
-			<name>IHTSDO Public Nexus2 Releases</name>
-			<url>https://maven2.ihtsdotools.org/repository/Releases/</url>
-		</repository>
-		<snapshotRepository>
-			<id>ihtsdo-public-nexus2</id>
-			<name>IHTSDO Public Nexus2 Snapshots</name>
-			<url>https://maven2.ihtsdotools.org/repository/Snapshots/</url>
-		</snapshotRepository>
-	</distributionManagement>
-	
+	<profiles>
+		<profile>
+			<id>deb</id>
+			<build>
+				<plugins>
+					<!-- Debian packaging -->
+					<plugin>
+						<groupId>org.vafer</groupId>
+						<artifactId>jdeb</artifactId>
+						<version>1.1.1</version>
+						<executions>
+							<execution>
+								<phase>package</phase>
+								<goals>
+									<goal>jdeb</goal>
+								</goals>
+								<configuration>
+									<deb>${project.build.directory}/${packageName}-${project.version}-all.deb</deb>
+									<controlDir>${basedir}/src/deb/control</controlDir>
+									<snapshotExpand>true</snapshotExpand>
+									<snapshotEnv>BUILD_NUMBER</snapshotEnv>
+									<verbose>true</verbose>
+									<classifier>all</classifier>
+									<signPackage>false</signPackage>
+									<dataSet>
+										<data>
+											<src>${project.build.directory}/${execFinalName}</src>
+											<dst>app.jar</dst>
+											<type>file</type>
+											<mapper>
+												<type>perm</type>
+												<prefix>/opt/${packageName}/</prefix>
+											</mapper>
+										</data>
+										<data>
+											<src>${basedir}/src/deb/supervisor.conf</src>
+											<dst>/etc/supervisor/conf.d/${packageName}.conf</dst>
+											<type>file</type>
+										</data>
+									</dataSet>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 </project>
