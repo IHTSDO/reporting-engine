@@ -105,10 +105,10 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		
 		subHierarchyStr = "3218000"; //QI-67 |Mycosis (disorder)|
 		templateNames = new String[] {	"templates/infection/Infection caused by Fungus.json"};
-		*/
+		
 		subHierarchyStr = "17322007"; //QI-68 |Parasite (disorder)|
 		templateNames = new String[] {	"templates/infection/Infection caused by Parasite.json"};
-		/*
+		
 		subHierarchyStr = "416886008"; //QI-106 |Closed wound| 
 		templateNames = new String[] {	"templates/wound/wound of bodysite.json"
 				};
@@ -125,10 +125,10 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		exclusionWords = new ArrayList<String>();
 		exclusionWords.add("gangrene");
 		exclusionWords.add("obstruction");
-		
+		*/
 		subHierarchyStr = "432119003 |Aneurysm (disorder)|"; //QI-143 
 		templateNames = new String[] {	"templates/Aneurysm of Cardiovascular system.json" };
-		
+		/*
 		subHierarchyStr = "40733004|Infectious disease|"; //QI-153
 		templateNames = new String[] {	"templates/infection/Infection NOS.json" };
 		setExclusions(new String[] {"87628006 |Bacterial infectious disease (disorder)|","34014006 |Viral disease (disorder)|",

@@ -141,8 +141,12 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	private void fullStopInSynonym() throws TermServerScriptException {
 		for (Concept c : gl.getAllConcepts()) {
 			if (c.isActive() && SnomedUtils.hasNewChanges(c)) {
+				
+/*				if (c.getConceptId().equals("722431007")) {
+					debug("Check here");
+				} */
 				//Only look at concepts that have been in some way edited in this release cycle
-				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+				for (Description d : c.getDescriptions(Acceptability.BOTH, DescriptionType.SYNONYM, ActiveState.ACTIVE)) {
 					if (d.getTerm().contains(FULL_STOP) && !allowableFullStop(d.getTerm())) {
 						report(c, "Possible TextDefn as Synonym",isLegacy(d), isActive(c,d), d);
 						if (isLegacy(d).equals("Y")) {

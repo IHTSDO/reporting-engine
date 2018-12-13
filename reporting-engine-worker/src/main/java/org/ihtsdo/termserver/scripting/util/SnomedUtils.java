@@ -12,6 +12,7 @@ import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.Acceptability;
 import org.ihtsdo.termserver.scripting.template.AncestorsCache;
 import org.ihtsdo.termserver.scripting.template.DescendentsCache;
 
@@ -1072,6 +1073,23 @@ public class SnomedUtils implements RF2Constants {
 			case "2" : return ComponentType.RELATIONSHIP;
 			default : throw new TermServerScriptException("Unable to determine component type of: " + sctId);
 		}
+	}
+
+	public static boolean hasAcceptabilityInDialect(Description d, String langRefsetId,
+			Acceptability targetAcceptability) throws TermServerScriptException {
+		
+		Acceptability acceptability = d.getAcceptability(langRefsetId);
+		if (targetAcceptability == null && acceptability == null) {
+			return true;
+		} else if (acceptability == null || targetAcceptability == null) {
+			return false;
+		}
+		
+		//Once we're here, the descriptions acceptability cannot be null.
+		if (targetAcceptability == Acceptability.BOTH) {
+			return true;
+		}
+		return acceptability.equals(targetAcceptability);
 	}
 	
 }

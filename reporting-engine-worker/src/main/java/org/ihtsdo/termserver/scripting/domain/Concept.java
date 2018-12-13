@@ -624,8 +624,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		List<Description> matchingDescriptions = new ArrayList<Description>();
 		for (Description d : getDescriptions(targetAcceptability, descriptionType, active)) {
 			//We might have this acceptability either from a Map (JSON) or Langrefset entry (RF2)
-			Acceptability acceptability = d.getAcceptability(langRefsetId);
-			if (targetAcceptability == Acceptability.BOTH || (acceptability!= null && acceptability.equals(targetAcceptability))) {
+			if (SnomedUtils.hasAcceptabilityInDialect(d, langRefsetId, targetAcceptability)) {
 				//Need to check the Acceptability because the first function might match on some other language
 				matchingDescriptions.add(d);
 			}
