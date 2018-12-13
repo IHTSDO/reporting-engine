@@ -25,6 +25,7 @@ abstract public class TemplateFix extends BatchFix {
 	List<String> exclusionWords;
 	boolean includeComplexTemplates = false;
 	List<Concept> complexTemplateAttributes;
+	boolean includeDueTos = false;
 	
 	String[] templateNames;
 	List<Template> templates = new ArrayList<>();
@@ -80,7 +81,9 @@ abstract public class TemplateFix extends BatchFix {
 		exclusionWords.add("co-occurrent");
 		
 		if (!includeComplexTemplates) {
-			exclusionWords.add("due to");
+			if (!includeDueTos) {
+				exclusionWords.add("due to");
+			}
 			exclusionWords.add("with");
 			exclusionWords.add("without");
 		} else {
@@ -88,7 +91,9 @@ abstract public class TemplateFix extends BatchFix {
 		}
 		
 		complexTemplateAttributes = new ArrayList<>();
-		complexTemplateAttributes.add(DUE_TO);
+		if (!includeDueTos) {
+			complexTemplateAttributes.add(DUE_TO);
+		}
 		complexTemplateAttributes.add(AFTER);
 		complexTemplateAttributes.add(gl.getConcept("726633004")); //|Temporally related to (attribute)|
 		complexTemplateAttributes.add(gl.getConcept("288556008")); //|Before (attribute)|

@@ -60,26 +60,26 @@ public class PrepMisalignedConcepts extends TemplateFix {
 										"fracture/Traumatic abnormality of spinal cord structure co-occurrent and due to fracture morphology of vertebral bone structure.json",
 										//"Injury of finding site due to birth trauma.json"
 										 };
-		*/
+		
 		subHierarchyStr =  "128294001";  // QI-9 |Chronic inflammatory disorder (disorder)
 		templateNames = new String[] {"templates/Chronic Inflammatory Disorder.json"}; 
 		setExclusions(new String[] {"40733004|Infectious disease|"});
 		exclusionWords.add("arthritis");
-		/*
+		
 		subHierarchyStr =  "126537000";  //QI-14 |Neoplasm of bone (disorder)|
 		templateNames = new String[] {	"templates/Neoplasm of Bone.json",
 										"templates/Pathologic fracture morphology of bone structure co-occurrent and due to Neoplasm of bone.json"};
 		
 		subHierarchyStr =  "34014006"; //QI-15 |Viral disease (disorder)|
-		templateNames = new String[] {	"templates/Infection caused by Virus.json",
-										"templates/Infection of bodysite caused by virus.json"};
+		templateNames = new String[] {	"templates/infection/Infection caused by Virus.json",
+										"templates/infection/Infection of bodysite caused by virus.json"};
 		
 		subHierarchyStr = "87628006";  //QI-16 |Bacterial infectious disease (disorder)|
-		templateNames = new String[] {	"templates/Infection caused by Bacteria.json",
-										"templates/Infection of bodysite caused by bacteria.json"};
+		templateNames = new String[] {	"templates/infection/Infection caused by Bacteria.json",
+										"templates/infection/Infection of bodysite caused by bacteria.json"};
 		 
 		subHierarchyStr = "95896000";  //QI-19  |Protozoan infection (disorder)|
-		templateNames = new String[] {"templates/Infection caused by Protozoa with optional bodysite.json"};
+		templateNames = new String[] {"templates/infection/Infection caused by Protozoa with optional bodysite.json"};
 			
 		subHierarchyStr = "125666000";  //QI-33  |Burn (disorder)|
 
@@ -104,19 +104,18 @@ public class PrepMisalignedConcepts extends TemplateFix {
 										"templates/bite/bite of bodysite caused by bite event with infection.json"};
 		
 		subHierarchyStr = "3218000"; //QI-67 |Mycosis (disorder)|
-		templateNames = new String[] {	"templates/Infection caused by Fungus.json"};
+		templateNames = new String[] {	"templates/infection/Infection caused by Fungus.json"};
 		
 		subHierarchyStr = "17322007"; //QI-68 |Parasite (disorder)|
-		templateNames = new String[] {	"templates/Infection caused by Parasite.json"};
+		templateNames = new String[] {	"templates/infection/Infection caused by Parasite.json"};
 		
 		subHierarchyStr = "416886008"; //QI-106 |Closed wound| 
 		templateNames = new String[] {	"templates/wound/wound of bodysite.json"
 				};
 		
 		subHierarchyStr = "125643001"; //QI-107 |Open wound| 
-		templateNames = new String[] {	"templates/wound/wound of bodysite due to event.json"
-				};
-		exclusionWords = new ArrayList<String>();
+		templateNames = new String[] {	"templates/wound/wound of bodysite due to event.json" };
+		includeDueTos = true;
 		exclusionWords.add("fracture");
 		
 		subHierarchyStr = "128545000"; //QI-75 |Hernia of abdominal wall (disorder)|
@@ -129,13 +128,18 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		
 		subHierarchyStr = "432119003 |Aneurysm (disorder)|"; //QI-143 
 		templateNames = new String[] {	"templates/Aneurysm of Cardiovascular system.json" };
-		
+		*/
 		subHierarchyStr = "40733004|Infectious disease|"; //QI-153
-		templateNames = new String[] {	"templates/Infection NOS.json" };
+		templateNames = new String[] {	"templates/infection/Infection NOS.json" };
 		setExclusions(new String[] {"87628006 |Bacterial infectious disease (disorder)|","34014006 |Viral disease (disorder)|",
 				"3218000 |Mycosis (disorder)|","8098009 |Sexually transmitted infectious disease (disorder)|", 
 				"17322007 |Disease caused by parasite (disorder)|", "91302008 |Sepsis (disorder)|"});
-	*/
+		exclusionWords.add("shock");
+		/*
+		subHierarchyStr = "399963005 |Abrasion|"; //QI-147
+		templateNames = new String[] {	"templates/wound/abrasion.json" };
+		includeDueTos = true;
+		*/
 		super.init(args);
 	}
 	

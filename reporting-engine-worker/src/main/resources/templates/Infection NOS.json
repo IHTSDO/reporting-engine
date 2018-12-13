@@ -1,7 +1,0 @@
-{
-  "name": "Infection NOS.json",
-  "documentation": "https://confluence.ihtsdotools.org/display/AUTHS/Infection+NOS+-+In+Review",
-  "version": 1,
-  "logicalTemplate": "64572001 |Disease (disorder)| :  [[~0..1]] 42752001 |Due to (attribute)| =  [[+id(<<  64572001 |Disease (disorder)|) @cause]] , [[~0..1]] 263502005 |Clinical course (attribute)| =  [[+id( < 288524001 |Courses (qualifier value)|) @course]], [[~1..*]] { [[~0..1]] 246454002 |Occurrence (attribute)| = [[ +id ( <<  282032007 |Periods of life (qualifier value)|) @period]], [[~1..1]] 370135005 |Pathological process (attribute)| = [[ +id ( << 441862004 |Infectious process (qualifier value)| ) @process ]], [[~0..1]] 363698007 |Finding site (attribute)| = [[+id( <  442083009 |Anatomical or acquired body structure (body structure)|) @site]], [[~1..1]] 246075003 |Causative agent (attribute)| = [[+id(<<  410607006 |Organism (organism)|) @cause]], [[~0..1]] 116676008 |Associated morphology (attribute)| = [[+id(<< 49755003 |Morphologically abnormal structure (morphologic abnormality)|) @morphology]]}"
-
-}

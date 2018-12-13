@@ -157,6 +157,10 @@ public abstract class TermServerScript implements RF2Constants {
 		System.out.print (msg.toString());
 	}
 	
+	public static void println (Object msg) {
+		System.out.println (msg.toString());
+	}
+	
 	public static String getMessage (Exception e) {
 		String msg = e.getMessage();
 		Throwable cause = e.getCause();
@@ -169,8 +173,8 @@ public abstract class TermServerScript implements RF2Constants {
 	protected void init(String[] args) throws TermServerScriptException {
 		
 		if (args.length < 3) {
-			info("Usage: java <TSScriptClass> [-a author] [-n <taskSize>] [-r <restart position>] [-c <authenticatedCookie>] [-d <Y/N>] [-p <projectName>] -f <batch file Location>");
-			info(" d - dry run");
+			println("Usage: java <TSScriptClass> [-a author] [-n <taskSize>] [-r <restart position>] [-c <authenticatedCookie>] [-d <Y/N>] [-p <projectName>] -f <batch file Location>");
+			println(" d - dry run");
 			System.exit(-1);
 		}
 		boolean isProjectName = false;
@@ -269,7 +273,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected void checkSettingsWithUser(JobRun jobRun) {
 		info ("Select an environment ");
 		for (int i=0; i < environments.length; i++) {
-			info ("  " + i + ": " + environments[i]);
+			println ("  " + i + ": " + environments[i]);
 		}
 		
 		print ("Choice: ");

@@ -70,12 +70,12 @@ public class GroupRemodel extends TemplateFix {
 		templateNames = new String[] {	"templates/Fracture of Bone Structure.json" }; /*,
 										"templates/Fracture Dislocation of Bone Structure.json",
 										"templates/Pathologic fracture of bone due to Disease.json"};
-		*/
+		
 		// QI-36 Part 1 |Chronic inflammatory disorder (disorder)
 		subHierarchyECL =  "<< 128294001 MINUS  (<< 128294001 : 246075003 |Causative agent (attribute)| = <<410607006 |Organism (organism)|)";
 		templateNames = new String[] {"templates/Chronic Inflammatory Disorder.json"};
 		exclusionWords.add("arthritis");
-		/*
+		
 		// QI-36 Part 2 |Chronic inflammatory disorder (disorder)
 		subHierarchyECL =  "<< 128294001 : 246075003 |Causative agent (attribute)| = <<410607006 |Organism (organism)|";
 		templateNames = new String[] {"templates/Infectious Chronic Inflammatory Disorder.json"};
@@ -107,12 +107,18 @@ public class GroupRemodel extends TemplateFix {
 		
 		
 		subHierarchyECL =  "<< 125643001"; //QI-117 |Open wound| 
-		templateNames = new String[] {	"templates/wound/wound of bodysite.json"
-				//"templates/wound/open wound of bodysite.json"
-				};
+		templateNames = new String[] {	"templates/wound/wound of bodysite due to event.json" };
 		exclusionWords.add("complication");
 		exclusionWords.add("fracture");
+		includeDueTos = true;
 		*/
+		
+		subHierarchyECL = "<<40733004|Infectious disease|"; //QI-159
+		templateNames = new String[] {	"templates/infection/Infection NOS.json" };
+		setExclusions(new String[] {"87628006 |Bacterial infectious disease (disorder)|","34014006 |Viral disease (disorder)|",
+				"3218000 |Mycosis (disorder)|","8098009 |Sexually transmitted infectious disease (disorder)|", 
+				"17322007 |Disease caused by parasite (disorder)|", "91302008 |Sepsis (disorder)|"});
+		exclusionWords.add("shock");
 		super.init(args);
 	}
 	
