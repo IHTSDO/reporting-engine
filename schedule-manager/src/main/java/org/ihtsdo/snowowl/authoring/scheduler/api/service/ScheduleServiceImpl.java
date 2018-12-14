@@ -174,7 +174,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 	}
 
 	@Override
-	public void processResponse(JobRun jobRun) {
+	public synchronized void processResponse(JobRun jobRun) {
 		try {
 			//If we already know about this jobRun, don't allow the status to be reverted
 			Optional<JobRun> savedJob = jobRunRepository.findById(jobRun.getId());
