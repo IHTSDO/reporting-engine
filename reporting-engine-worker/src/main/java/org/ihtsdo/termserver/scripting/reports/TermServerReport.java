@@ -36,7 +36,9 @@ public abstract class TermServerReport extends TermServerScript {
 		}
 		
 		for (Object detail : details) {
-			if (detail instanceof String[]) {
+			if (detail == null) {
+				line += COMMA;
+			} else if (detail instanceof String[]) {
 				for (Object subDetail : (String[])detail) {
 					String item = subDetail.toString();
 					if (StringUtils.isNumeric(item)) {
