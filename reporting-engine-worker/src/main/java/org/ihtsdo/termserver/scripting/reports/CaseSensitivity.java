@@ -181,8 +181,15 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 						String firstLetter = term.substring(0,1);
 						String chopped = term.substring(1);
 						String preferred = d.isPreferred()?"Y":"N";
-						//Lower case first letters must be entire term case sensitive
-						if (Character.isLetter(firstLetter.charAt(0)) && firstLetter.equals(firstLetter.toLowerCase()) && !caseSig.equals(CS)) {
+						
+						//Text Definitions must be CS
+						if (d.getType().equals(DescriptionType.TEXT_DEFINITION)) {
+							if (!caseSig.equals(CS)) {
+								report(c, d, preferred, caseSig, "Text Definitions must be CS");
+								incrementSummaryInformation(ISSUE_COUNT);
+							}
+						} else if (Character.isLetter(firstLetter.charAt(0)) && firstLetter.equals(firstLetter.toLowerCase()) && !caseSig.equals(CS)) {
+							//Lower case first letters must be entire term case sensitive
 							report(c, d, preferred, caseSig, "Terms starting with lower case letter must be CS");
 							incrementSummaryInformation(ISSUE_COUNT);
 							continue nextConcept;
