@@ -251,8 +251,8 @@ public class ArchiveManager implements RF2Constants {
 			} else if (fileName.contains("sct2_Relationship_" + fileType )) {
 				info("Loading Relationship " + fileType + " file.");
 				gl.loadRelationships(CharacteristicType.INFERRED_RELATIONSHIP, is, true, isDelta);
-				info("Calculating concept depth...");
 				if (populateHierarchyDepth) {
+					info("Calculating concept depth...");
 					gl.populateHierarchyDepth(ROOT_CONCEPT, 0);
 				}
 			} else if (fileName.contains("sct2_StatedRelationship_" + fileType )) {
