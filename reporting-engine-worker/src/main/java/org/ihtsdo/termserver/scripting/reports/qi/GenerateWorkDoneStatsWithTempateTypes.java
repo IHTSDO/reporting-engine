@@ -4,6 +4,7 @@ import java.io.*;
 import java.util.*;
 
 import org.apache.commons.io.Charsets;
+import org.ihtsdo.termserver.scripting.ArchiveManager;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
@@ -34,7 +35,8 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 		GenerateWorkDoneStatsWithTempateTypes report = new GenerateWorkDoneStatsWithTempateTypes();
 		try {
 			ReportSheetManager.targetFolderId = "1YoJa68WLAMPKG6h4_gZ5-QT974EU9ui6"; //QI / Stats
-			report.additionalReportColumns = "FSN, SemTag, Counted elsewhere, Simple, modified, Pure, modified, Complex, modified, ComplexNoMorph, modified, None, modified, Total";
+			report.additionalReportColumns = "FSN, SemTag, Depth, Counted elsewhere, Simple, modified, Pure, modified, Complex, modified, ComplexNoMorph, modified, None, modified, Total";
+			ArchiveManager.getArchiveManager(report).populateHierarchyDepth = true;
 			report.init(args);
 			report.loadProjectSnapshot(false);  //Load all descriptions
 			report.postLoadInit();
@@ -112,7 +114,8 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 				}
 			}
 			
-			report (subHierarchyStart, countedElsewhere, 
+			report (subHierarchyStart, subHierarchyStart.getDepth(),
+					countedElsewhere, 
 					templateTypeTotal[0] , templateTypeModified[0],
 					templateTypeTotal[1] , templateTypeModified[1],
 					templateTypeTotal[2] ,templateTypeModified[2],
