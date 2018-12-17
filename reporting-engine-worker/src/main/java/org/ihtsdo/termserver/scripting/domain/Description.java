@@ -111,10 +111,12 @@ public class Description extends Component implements RF2Constants {
 		d.setActive(true);
 		d.setTerm(term);
 		d.setType(type);
-		if (acceptability.equals(Acceptability.PREFERRED)) {
-			d.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(AcceptabilityMode.PREFERRED_BOTH));
-		} else {
-			d.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(AcceptabilityMode.ACCEPTABLE_BOTH));
+		if (acceptability != null) {
+			if (acceptability.equals(Acceptability.PREFERRED)) {
+				d.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(AcceptabilityMode.PREFERRED_BOTH));
+			} else {
+				d.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(AcceptabilityMode.ACCEPTABLE_BOTH));
+			}
 		}
 		return d;
 	}

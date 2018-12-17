@@ -89,7 +89,7 @@ public class DuplicateTermsInSubhierarchy extends TermServerReport implements Re
 				.add(PT_ONLY).withType(JobParameter.Type.BOOLEAN).withDefaultValue("Y").build();
 		return new Job( new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION),
 						"Duplicate Terms",
-						"This report lists concepts that have the same Preferred Term (or optionally Synonyms) within the same sub-hierarchy.",
+						"This report lists concepts that have the same preferred term (or optionally, synonyms) within the same sub-hierarchy.",
 						params);
 	}
 

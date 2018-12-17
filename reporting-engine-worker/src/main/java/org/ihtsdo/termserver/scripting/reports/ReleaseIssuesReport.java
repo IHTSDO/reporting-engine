@@ -238,7 +238,6 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			}
 			if (c.getFSNDescription() == null) {
 				warn("No FSN Description found (2nd pass) for concept " + c.getConceptId());
-				incrementSummaryInformation(ISSUE_COUNT);  //We'll only flag up fresh issues
 				continue;
 			}
 			String legacy = isLegacy(c.getFSNDescription());
