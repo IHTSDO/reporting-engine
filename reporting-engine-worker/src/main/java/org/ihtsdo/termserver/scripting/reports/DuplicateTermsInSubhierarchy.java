@@ -136,8 +136,7 @@ public class DuplicateTermsInSubhierarchy extends TermServerReport implements Re
 						incrementSummaryInformation("Fresh Issues Reported");
 					}
 					Concept alreadyKnownConcept = gl.getConcept(alreadyKnown.getConceptId());
-					String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
-					report (c, semTag, legacyIssue, d, alreadyKnown, alreadyKnownConcept);
+					report (c, legacyIssue, d, alreadyKnown, alreadyKnownConcept);
 					incrementSummaryInformation(ISSUE_COUNT); 
 				} else {
 					knownTerms.put(d.getTerm(), d);
