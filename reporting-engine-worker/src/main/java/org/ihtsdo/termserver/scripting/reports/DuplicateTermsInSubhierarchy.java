@@ -95,7 +95,10 @@ public class DuplicateTermsInSubhierarchy extends TermServerReport implements Re
 	}
 
 	public void runJob() throws TermServerScriptException {
-		//Am I working through multiple subHierarchies, or targetting one?
+		ptOnly = jobRun.getParameters().getMandatoryBoolean(PT_ONLY);
+		newIssuesOnly = jobRun.getParameters().getMandatoryBoolean(NEW_ISSUES_ONLY);
+		
+		//Am I working through multiple subHierarchies, or targeting one?
 		if (subHierarchy.equals(ROOT_CONCEPT)) {
 			for (Concept majorHierarchy : subHierarchy.getDescendents(IMMEDIATE_CHILD)) {
 				info ("Reporting " + majorHierarchy);
@@ -104,9 +107,6 @@ public class DuplicateTermsInSubhierarchy extends TermServerReport implements Re
 		} else {
 			reportDuplicateDescriptions(subHierarchy);
 		}
-		
-		ptOnly = jobRun.getParameters().getMandatory(PT_ONLY).equals("Y");
-		newIssuesOnly = jobRun.getParameters().getMandatory(NEW_ISSUES_ONLY).equals("Y");
 	}
 
 	private void reportDuplicateDescriptions(Concept subHierarchy) throws TermServerScriptException {
@@ -134,11 +134,11 @@ public class DuplicateTermsInSubhierarchy extends TermServerReport implements Re
 						incrementSummaryInformation("Legacy Issues Reported");
 					}	else {
 						incrementSummaryInformation("Fresh Issues Reported");
-						incrementSummaryInformation(ISSUE_COUNT);  //We'll only flag up fresh issues
 					}
 					Concept alreadyKnownConcept = gl.getConcept(alreadyKnown.getConceptId());
 					String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
 					report (c, semTag, legacyIssue, d, alreadyKnown, alreadyKnownConcept);
+					incrementSummaryInformation(ISSUE_COUNT); 
 				} else {
 					knownTerms.put(d.getTerm(), d);
 				}
