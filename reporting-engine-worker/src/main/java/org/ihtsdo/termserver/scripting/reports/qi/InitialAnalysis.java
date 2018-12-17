@@ -66,7 +66,7 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 		return new Job(	new JobCategory(JobType.REPORT, JobCategory.QI),
 						"Initial Analysis",
 						"This report lists intermediate primitives and how often attribute types are used in the specified sub-hierarchy. " +
-						"Note that the 'Issue' count here refers to the number of intermediate primitives reported.",
+						"Note that the 'Issues' count here refers to the number of intermediate primitives reported in the 2nd tab.",
 						params);
 	}
 

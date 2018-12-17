@@ -32,7 +32,8 @@ public class ConceptsWithParents extends TermServerReport implements ReportClass
 				.add(HIERARCHIES).withType(JobParameter.Type.CONCEPT_LIST).withMandatory().build();
 		return new Job( new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES),
 						"Concepts with Parents",
-						"This report lists all parents and grandparents of concepts in the specified hierarchies.",
+						"This report lists all parents and grandparents of concepts in the specified hierarchies." +
+								"Note that since this report is not listing any problems, the 'Issue' count will always be 0.",
 						params);
 	}
 

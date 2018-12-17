@@ -55,7 +55,8 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 
 		return new Job( new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION),
 						"Validate Inactivations with Associations",
-						"This report ensures that inactive concepts have exactly one inactivation indicator, and appropriate historical associations.",
+						"This report ensures that inactive concepts have exactly one inactivation indicator, and appropriate historical associations. " +
+						"The 'Issues' count here reflects the number of rows in the report.", 
 						params);
 	}
 
@@ -159,7 +160,6 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 					if (d.getInactivationIndicatorEntries(ActiveState.ACTIVE).size() != 1) {
 						//report (c, c.getEffectiveTime(), d, "Inactive description of active concept should have an inactivation indicator", cdLegacy, d);
 						incrementSummaryInformation("Inactive description of active concept should have an inactivation indicator");
-						incrementSummaryInformation(ISSUE_COUNT);
 					} else {
 						InactivationIndicatorEntry i = d.getInactivationIndicatorEntries(ActiveState.ACTIVE).get(0); 
 						if (i.getInactivationReasonId().equals(SCTID_INACT_CONCEPT_NON_CURRENT)) {
@@ -212,6 +212,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 						incrementSummaryInformation(msg);
 					} else {
 						report (c, c.getEffectiveTime(), msg, legacy, data);
+						incrementSummaryInformation(ISSUE_COUNT);
 					}
 				}
 			}

@@ -82,7 +82,8 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 	public Job getJob() {
 		return new Job( new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION),
 						"Case Significance",
-						"This report validates the case significance of new and modified descriptions.  Note that the Substances and Organism hierarchies are excluded as they are taken to be a 'source of truth'.",
+						"This report validates the case significance of new and modified descriptions.  Note that the Substances and Organism hierarchies are excluded as they are taken to be a 'source of truth'. " +
+						"The 'Issues' count here reflects the number of rows in the report.", 
 						new JobParameters(new String[] { }));
 	}
 

@@ -40,7 +40,8 @@ public class SemanticTagHierarchy extends TermServerReport implements ReportClas
 				.add(SUB_HIERARCHY).withType(JobParameter.Type.CONCEPT).withMandatory().build();
 		return new Job( new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES),
 						"Semantic Tag Hierarchy",
-						"This report lists all semantic tags used in the specified subhierarchy.",
+						"This report lists all semantic tags used in the specified subhierarchy. " +
+						"Note that since this report is not listing any problems, the 'Issue' count will always be 0.",
 						params);
 	}
 
