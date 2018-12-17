@@ -43,6 +43,7 @@ public class ReportSheetManager implements RF2Constants {
 	List<ValueRange> dataToBeWritten = new ArrayList<>();
 	SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
 	Map<Integer, Integer> tabLineCount;
+	long totalLinesWritten = 0;
 	
 	public ReportSheetManager(ReportManager owner) {
 		this.owner = owner;	}
@@ -181,7 +182,7 @@ public class ReportSheetManager implements RF2Constants {
 					.setRange(range)
 					.setValues(cells));
 		
-		//Are we getting close to the limit of what can be written?
+		//Are we getting close to the limits of what can be written?
 		if (dataToBeWritten.size() > 2000) {
 			System.err.println("Attempting to write > 2000 rows to sheets, pausing...");
 			try { Thread.sleep(5*1000); } catch (Exception e) {}
@@ -208,6 +209,13 @@ public class ReportSheetManager implements RF2Constants {
 				return;
 			}
 		}
+		
+		//Will we exceed the limit of what a spreadsheet can hold?
+		totalLinesWritten += dataToBeWritten.size();
+		if (totalLinesWritten >=  MAX_ROWS) {
+			throw new TermServerScriptException ("Total number of lines written to report has exceeded limit of : " + MAX_ROWS);
+		}
+		
 		//Execute update of data values
 		if (sheet != null) {
 			BatchUpdateValuesRequest body = new BatchUpdateValuesRequest()
