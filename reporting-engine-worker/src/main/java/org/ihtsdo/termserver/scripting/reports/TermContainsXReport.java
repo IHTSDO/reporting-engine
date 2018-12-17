@@ -67,7 +67,8 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 				.build();
 		return new Job( new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES),
 						"Term contains X",
-						"This report lists all concepts containing the specified words, with optional attribute details.",
+						"This report lists all concepts containing the specified words, with optional attribute details. " +
+						"Note that since this report is not listing any problems, the 'Issue' count will always be 0.",
 						params);
 	}
 	

@@ -65,7 +65,8 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 		
 		return new Job(	new JobCategory(JobType.REPORT, JobCategory.QI),
 						"Initial Analysis",
-						"This report lists intermediate primitives and how often attribute types are used in the specified sub-hierarchy.",
+						"This report lists intermediate primitives and how often attribute types are used in the specified sub-hierarchy. " +
+						"Note that the 'Issue' count here refers to the number of intermediate primitives reported.",
 						params);
 	}
 
@@ -275,6 +276,7 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 		int aboveMe = primitivesAboveHere(intermediatePrimitive);
 		int descendants = gl.getDescendantsCache().getDescendents(intermediatePrimitive).size();
 		report (SECONDARY_REPORT, intermediatePrimitive, blankColumns, IPinSubHierarchy, aboveMe, descendants, totalFDsUnderIP, fdsInSubHierarchy, totalPrimitiveConceptsUnderIP, totalPrimitiveConceptsUnderIPInSubHierarchy);
+		incrementSummaryInformation(ISSUE_COUNT);
 	}
 	
 	
