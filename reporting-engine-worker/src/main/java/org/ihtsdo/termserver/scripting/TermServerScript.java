@@ -83,7 +83,8 @@ public abstract class TermServerScript implements RF2Constants {
 	protected static final String PROJECT = "Project";
 	protected static final String DRY_RUN = "DryRun";
 	protected static final String INPUT_FILE = "InputFile";
-	protected static final String SUB_HIERARCHY = "SubHierarchy";
+	protected static final String SUB_HIERARCHY = "Subhierarchy";
+	protected static final String ATTRIBUTE_TYPE = "Attribute Type";
 	protected static final String HIERARCHIES = "Hierarchies";
 
 	public static Gson gson;
