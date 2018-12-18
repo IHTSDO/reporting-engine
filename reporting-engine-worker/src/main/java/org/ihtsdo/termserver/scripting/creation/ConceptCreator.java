@@ -2,11 +2,11 @@ package org.ihtsdo.termserver.scripting.creation;
 
 import java.util.*;
 
+import org.ihtsdo.termserver.scripting.DescendentsCache;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
-import org.ihtsdo.termserver.scripting.template.DescendentsCache;
 	
 public abstract class ConceptCreator implements RF2Constants {
 	

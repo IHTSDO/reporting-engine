@@ -8,13 +8,13 @@ import java.util.zip.ZipOutputStream;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.validator.routines.checkdigit.VerhoeffCheckDigit;
+import org.ihtsdo.termserver.scripting.AncestorsCache;
+import org.ihtsdo.termserver.scripting.DescendentsCache;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants.Acceptability;
-import org.ihtsdo.termserver.scripting.template.AncestorsCache;
-import org.ihtsdo.termserver.scripting.template.DescendentsCache;
 
 public class SnomedUtils implements RF2Constants {
 	

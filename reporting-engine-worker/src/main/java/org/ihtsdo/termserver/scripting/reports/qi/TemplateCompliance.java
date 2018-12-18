@@ -6,13 +6,13 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.job.ReportClass;
+import org.ihtsdo.termserver.scripting.DescendentsCache;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.client.TemplateServiceClient;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
-import org.ihtsdo.termserver.scripting.template.DescendentsCache;
 import org.ihtsdo.termserver.scripting.template.TemplateUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.authoringtemplate.domain.ConceptTemplate;

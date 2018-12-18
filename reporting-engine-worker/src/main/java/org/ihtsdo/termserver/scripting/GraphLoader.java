@@ -25,8 +25,6 @@ import org.ihtsdo.termserver.scripting.domain.InactivationIndicatorEntry;
 import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
-import org.ihtsdo.termserver.scripting.template.AncestorsCache;
-import org.ihtsdo.termserver.scripting.template.DescendentsCache;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 public class GraphLoader implements RF2Constants {

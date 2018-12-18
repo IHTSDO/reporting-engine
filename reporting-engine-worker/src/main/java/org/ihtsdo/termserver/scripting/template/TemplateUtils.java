@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang.NotImplementedException;
 import org.snomed.authoringtemplate.domain.logical.*;
+import org.ihtsdo.termserver.scripting.DescendentsCache;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;

@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.template;
+package org.ihtsdo.termserver.scripting;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -6,8 +6,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.ihtsdo.termserver.scripting.GraphLoader;
-import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 

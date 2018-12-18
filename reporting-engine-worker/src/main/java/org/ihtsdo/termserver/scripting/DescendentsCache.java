@@ -1,9 +1,7 @@
-package org.ihtsdo.termserver.scripting.template;
+package org.ihtsdo.termserver.scripting;
 
 import java.util.*;
 
-import org.ihtsdo.termserver.scripting.GraphLoader;
-import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 
