@@ -118,9 +118,9 @@ public class ArchiveManager implements RF2Constants {
 				}
 				info ("Loading snapshot archive contents into memory...");
 				loadArchive(snapshot, fsnOnly, "Snapshot");
-				currentlyHeldInMemory = project;
 			}
 		}
+		currentlyHeldInMemory = project;
 	}
 	
 	private File generateSnapshot(Project project, Branch branch) throws TermServerScriptException, IOException, SnowOwlClientException {
