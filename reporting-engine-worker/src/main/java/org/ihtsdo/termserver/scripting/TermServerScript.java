@@ -631,9 +631,10 @@ public abstract class TermServerScript implements RF2Constants {
 	protected List<Concept> findConcepts(String branch, String ecl) throws TermServerScriptException {
 		EclCache cache = EclCache.getCache(branch, tsClient, gson, gl);
 		List<Concept> concepts = cache.findConcepts(branch, ecl); 
-		if (concepts.size() == 0 && true) {
-			try { Thread.sleep(5*1000); } catch (Exception e) {}
-			debug("Double checking that result...");
+		int retry = 0;
+		if (concepts.size() == 0 && ++retry < 3) {
+			debug("No concepts returned. Double checking that result in 30s...");
+			try { Thread.sleep(30*1000); } catch (Exception e) {}
 			concepts = cache.findConcepts(branch, ecl); 
 		}
 		return cache.findConcepts(branch, ecl); 

@@ -98,20 +98,20 @@ public class GroupRemodel extends TemplateFix {
 		templateNames = new String[] {	"templates/Complication co-occurrent and due to Diabetes Melitus.json",
 				//"templates/Complication co-occurrent and due to Diabetes Melitus - Minimal.json"
 				};
-		*/
+		
 		subHierarchyECL =  "<< 3218000"; //QI-70 |Mycosis (disorder)|
 		templateNames = new String[] {	"templates/infection/Infection caused by Fungus.json"};
-		/*
+		
 		subHierarchyECL =  "<< 17322007"; //QI-116 |Parasite (disorder)|
 		templateNames = new String[] {	"templates/Infection caused by Parasite.json"};
 		
-		
+		*/
 		subHierarchyECL =  "<< 125643001"; //QI-117 |Open wound| 
 		templateNames = new String[] {	"templates/wound/wound of bodysite due to event.json" };
 		exclusionWords.add("complication");
 		exclusionWords.add("fracture");
 		includeDueTos = true;
-		
+		/*
 		
 		subHierarchyECL = "<<40733004|Infectious disease|"; //QI-159
 		templateNames = new String[] {	"templates/infection/Infection NOS.json" };
