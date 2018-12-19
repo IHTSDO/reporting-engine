@@ -3,6 +3,7 @@ package org.ihtsdo.termserver.scripting.dao;
 import java.io.*;
 import java.util.*;
 
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 
@@ -16,21 +17,23 @@ public class ReportManager implements RF2Constants {
 	ReportSheetManager reportSheetManager;
 	
 	protected int numberOfDistinctReports = 1;
-	protected String reportName;
+	protected TermServerScript ts;
 	protected String env;
 	List<String> tabNames;
 	
 	private ReportManager() {};
 	
-	public static ReportManager create(String environment, String reportName) {
+	public static ReportManager create(TermServerScript ts) {
 		ReportManager rm = new ReportManager();
-		rm.init(environment, reportName);
+		rm.init(ts);
 		return rm;
 	}
 	
-	public void init(String environment, String reportName) {
-		this.env = environment;
-		this.reportName = reportName;
+	public void init(TermServerScript ts) {
+		if (ts != null) {
+			this.env = ts.getEnv();
+			this.ts = ts;
+		}
 		reportFileManager = new ReportFileManager(this);
 		reportSheetManager = new ReportSheetManager(this);
 		tabNames = Arrays.asList(new String[] {"Sheet1"});
@@ -98,14 +101,10 @@ public class ReportManager implements RF2Constants {
 		return numberOfDistinctReports;
 	}
 
-	public String getReportName() {
-		return reportName;
+	public TermServerScript getScript() {
+		return ts;
 	}
-	
-	public void setReportName(String reportName) {
-		this.reportName = reportName;
-	}
-	
+
 	public List<String> getTabNames() {
 		return tabNames;
 	}

@@ -67,7 +67,7 @@ public class ReportFileManager implements RF2Constants {
 		reportFiles = new File[owner.getNumberOfDistinctReports()];
 		for (int reportIdx = 0; reportIdx < owner.getNumberOfDistinctReports(); reportIdx++) {
 			String idxStr = reportIdx == 0 ? "" : "_" + reportIdx;
-			String reportName = owner.getReportName().replaceAll(" ", "_");
+			String reportName = owner.getScript().getReportName().replaceAll(" ", "_");
 			String reportFilename = "results_" + reportName + "_" + currentTimeStamp + "_" + owner.getEnv()  + idxStr + ".csv";
 			reportFiles[reportIdx] = new File(reportFilename);
 			TermServerScript.info("Outputting Report to " + reportFiles[reportIdx].getAbsolutePath());

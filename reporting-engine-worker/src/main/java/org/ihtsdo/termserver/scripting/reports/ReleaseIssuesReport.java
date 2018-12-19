@@ -214,7 +214,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		whiteList.add("385238005");
 		whiteList.add("368808003");
 		
-		//First pass through all concepts to find semantic tags
+		//First pass through all active concepts to find semantic tags
 		for (Concept c : gl.getAllConcepts()) {
 			if (c.getFSNDescription() == null) {
 				warn("No FSN Description found for concept " + c.getConceptId());

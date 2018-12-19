@@ -51,6 +51,7 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 
 	private void postLoadInit() throws TermServerScriptException, IOException {
 		subHierarchies = new ArrayList<>();
+		reportConceptAsInteger = true;
 		
 		info ("Loading " + inputFile);
 		if (!inputFile.canRead()) {
@@ -131,6 +132,7 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 		List<Concept> theseExclusions = exclusionMap.get(subHierarchyStart);
 		if (theseExclusions != null) {
 			for (Concept thisExclusion : theseExclusions) {
+				info ("For " + subHierarchyStart + " removing " + thisExclusion);
 				subHierarchy.removeAll(gl.getDescendantsCache().getDescendentsOrSelf(thisExclusion));
 			}
 		}

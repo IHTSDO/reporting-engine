@@ -69,7 +69,7 @@ public class OverlappingIPs extends TermServerReport {
 		
 		String reportName = shortNames.keySet().stream().collect(Collectors.joining(" + "));
 		reportName += " IP overlap";
-		getReportManager().setReportName(reportName);
+		setReportName(reportName);
 		additionalReportColumns = "FSN, Overlap";
 		getReportManager().initialiseReportFiles(new String[] {"SCTID, FSN, Overlap"});
 	}

@@ -20,10 +20,11 @@ import org.ihtsdo.termserver.scripting.util.StringUtils;
 public class ArchiveManager implements RF2Constants {
 	
 	protected String dataStoreRoot = "";
-	private Project project;
-	private String env;
+	//private Project project;
+	//private String env;
 	protected GraphLoader gl;
-	private SnowOwlClient tsClient;
+	//private SnowOwlClient tsClient;
+	protected TermServerScript ts;
 	public boolean allowStaleData = false;
 	public boolean populateHierarchyDepth = false;
 	static ArchiveManager singleton;
@@ -33,10 +34,8 @@ public class ArchiveManager implements RF2Constants {
 		if (singleton == null) {
 			singleton = new ArchiveManager();
 		}
-		singleton.project = ts.getProject();
-		singleton.env = ts.getEnv();
+		singleton.ts = ts;
 		singleton.gl = ts.getGraphLoader();
-		singleton.tsClient = ts.getTSClient();
 		return singleton;
 	}
 	
@@ -60,7 +59,7 @@ public class ArchiveManager implements RF2Constants {
 		String branchPath = project.getBranchPath();
 		try {
 			debug ("Checking TS branch metadata: " + branchPath);
-			Branch branch = tsClient.getBranch(branchPath);
+			Branch branch = ts.getTSClient().getBranch(branchPath);
 			//TODO Merge metadata from parent branches recursively, but for now, if empty, recover parent
 			if (branch.getMetadata().getPreviousRelease() == null) {
 				Branch parent = loadBranch(new Project().withBranchPath("MAIN"));
@@ -85,7 +84,7 @@ public class ArchiveManager implements RF2Constants {
 		}
 		
 		//If we're loading a particular release, it will be stale
-		if (StringUtils.isNumeric(project.getKey())) {
+		if (StringUtils.isNumeric(ts.getProject().getKey())) {
 			allowStaleData = true;
 		}
 		
@@ -93,23 +92,23 @@ public class ArchiveManager implements RF2Constants {
 		//Are we lacking data, or is our data out of date?  
 		boolean isStale = false;
 		if (snapshot.exists() && !allowStaleData) {
-			branch = loadBranch(project);
+			branch = loadBranch(ts.getProject());
 			Date branchHeadTime = new Date(branch.getHeadTimestamp());
 			BasicFileAttributes attr = java.nio.file.Files.readAttributes(snapshot.toPath(), BasicFileAttributes.class);
 			Date snapshotCreation = new Date(attr.creationTime().toMillis());
 			isStale = branchHeadTime.after(snapshotCreation);
 			if (isStale) {
-				TermServerScript.warn(project + " snapshot held locally is stale.  Requesting delta to rebuild...");
+				TermServerScript.warn(ts.getProject() + " snapshot held locally is stale.  Requesting delta to rebuild...");
 			}
 		}
 		
 		if (!snapshot.exists() || ( isStale && !allowStaleData)) {
-			snapshot = generateSnapshot (project, branch);
+			snapshot = generateSnapshot (ts.getProject(), branch);
 			//We don't need to load the snapshot if we've just generated it
 		} else {
 			//We might already have this project in memory
-			if (currentlyHeldInMemory != null && currentlyHeldInMemory.equals(this.project)) {
-				info (project + " already held in memory, no need to reload");
+			if (currentlyHeldInMemory != null && currentlyHeldInMemory.equals(ts.getProject())) {
+				info (ts.getProject() + " already held in memory, no need to reload");
 			} else {
 				if (currentlyHeldInMemory != null) {
 					//Make sure the Graph Loader is clean
@@ -120,7 +119,7 @@ public class ArchiveManager implements RF2Constants {
 				loadArchive(snapshot, fsnOnly, "Snapshot");
 			}
 		}
-		currentlyHeldInMemory = project;
+		currentlyHeldInMemory = ts.getProject();
 	}
 	
 	private File generateSnapshot(Project project, Branch branch) throws TermServerScriptException, IOException, SnowOwlClientException {
@@ -145,11 +144,11 @@ public class ArchiveManager implements RF2Constants {
 		//Now we need a recent delta to add to it
 		File delta = File.createTempFile("delta_export-", ".zip");
 		delta.deleteOnExit();
-		tsClient.export(project.getBranchPath(), null, ExportType.UNPUBLISHED, ExtractType.DELTA, delta);
+		ts.getTSClient().export(project.getBranchPath(), null, ExportType.UNPUBLISHED, ExtractType.DELTA, delta);
 		
 		SnapshotGenerator snapshotGenerator = new SnapshotGenerator();
 		//Lets have a separate output report for generation of the snapshot - local only
-		ReportManager rm = ReportManager.create(env, "SnapshotGeneration_" + project.getKey());
+		ReportManager rm = ReportManager.create(ts);
 		rm.setFileOnly();
 		rm.initialiseReportFiles(new String[] {ReportManager.STANDARD_HEADERS});
 		snapshotGenerator.setReportManager(rm);
@@ -161,10 +160,10 @@ public class ArchiveManager implements RF2Constants {
 
 	private File getSnapshotPath() {
 		//Do we have a release effective time as a project?
-		if (StringUtils.isNumeric(project.getKey())) {
-			return new File (dataStoreRoot + "releases/" + project + ".zip");
+		if (StringUtils.isNumeric(ts.getProject().getKey())) {
+			return new File (dataStoreRoot + "releases/" + ts.getProject() + ".zip");
 		} else {
-			return new File (dataStoreRoot + "snapshots/" + project + "_" + env);
+			return new File (dataStoreRoot + "snapshots/" + ts.getProject() + "_" + ts.getEnv());
 		}
 	}
 

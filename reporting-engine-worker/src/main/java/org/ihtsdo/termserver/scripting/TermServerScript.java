@@ -54,11 +54,14 @@ public abstract class TermServerScript implements RF2Constants {
 	protected File inputFile;
 	protected File inputFile2;
 	protected String projectName;
+	private String reportName;
 	
 	protected String subHierarchyStr;
 	protected String subHierarchyECL;
 	protected Concept subHierarchy;
 	protected String[] excludeHierarchies;
+	
+	protected boolean reportConceptAsInteger = false;
 
 	protected GraphLoader gl = GraphLoader.getGraphLoader();
 	private ReportManager reportManager;
@@ -373,7 +376,7 @@ public abstract class TermServerScript implements RF2Constants {
 			//RP-4 And post that back in, so the FSN is always populated
 			jobRun.setParameter(SUB_HIERARCHY, subHierarchy.toString());
 		}
-		reportManager = ReportManager.create(env, getReportName());
+		reportManager = ReportManager.create(this);
 		if (tabNames != null) {
 			reportManager.setTabNames(tabNames);
 		}
@@ -857,33 +860,35 @@ public abstract class TermServerScript implements RF2Constants {
 	
 
 	public String getReportName() {
-		String fileName = SnomedUtils.deconstructFilename(inputFile)[1];
-		String spacer = " ";
-		String reportName = getScriptName() + (fileName.isEmpty()?"" : spacer + fileName);
-		try {
-			if (subHierarchy == null && subHierarchyStr != null && !subHierarchyStr.contains(ROOT_CONCEPT.getConceptId())) {
-				subHierarchy = gl.getConcept(subHierarchyStr);
-			}
-			
-			if (subHierarchy != null && !subHierarchy.equals(ROOT_CONCEPT)) {
-				reportName += spacer + subHierarchy.toStringPref();
-			}
-			
-			if (subHierarchy == null && subHierarchyStr == null && subHierarchyECL != null) {
-				//Take the first focus concept
-				int cutPoint = subHierarchyECL.indexOf(":");
-				if (cutPoint > NOT_SET) {
-					int potentialCut = subHierarchyECL.indexOf("MINUS");
-					if (potentialCut > NOT_SET && potentialCut < cutPoint) {
-						cutPoint = potentialCut;
-					}
-					reportName += spacer + subHierarchyECL.subSequence(0, cutPoint);
-				} else {
-					reportName += spacer + gl.getConcept(subHierarchyECL.replaceAll("<", "").trim()).toStringPref();
+		if (reportName == null) {
+			String fileName = SnomedUtils.deconstructFilename(inputFile)[1];
+			String spacer = " ";
+			reportName = getScriptName() + (fileName.isEmpty()?"" : spacer + fileName);
+			try {
+				if (subHierarchy == null && subHierarchyStr != null && !subHierarchyStr.contains(ROOT_CONCEPT.getConceptId())) {
+					subHierarchy = gl.getConcept(subHierarchyStr);
 				}
+				
+				if (subHierarchy != null && !subHierarchy.equals(ROOT_CONCEPT)) {
+					reportName += spacer + subHierarchy.toStringPref();
+				}
+				
+				if (subHierarchy == null && subHierarchyStr == null && subHierarchyECL != null) {
+					//Take the first focus concept
+					int cutPoint = subHierarchyECL.indexOf(":");
+					if (cutPoint > NOT_SET) {
+						int potentialCut = subHierarchyECL.indexOf("MINUS");
+						if (potentialCut > NOT_SET && potentialCut < cutPoint) {
+							cutPoint = potentialCut;
+						}
+						reportName += spacer + subHierarchyECL.subSequence(0, cutPoint);
+					} else {
+						reportName += spacer + gl.getConcept(subHierarchyECL.replaceAll("<", "").trim()).toStringPref();
+					}
+				}
+			} catch (Exception e) {
+				error ("Recoverable hiccup while setting report name",e);
 			}
-		} catch (Exception e) {
-			error ("Recoverable hiccup while setting report name",e);
 		}
 		return reportName;
 	}
@@ -997,9 +1002,9 @@ public abstract class TermServerScript implements RF2Constants {
 	protected void report (Concept c, Object...details) throws TermServerScriptException {
 		incrementSummaryInformation("Report lines written");
 		StringBuffer sb = new StringBuffer();
-		sb.append (QUOTE)
+		sb.append (reportConceptAsInteger?"":QUOTE)
 		.append(c==null?"":c.getConceptId())
-		.append(QUOTE_COMMA_QUOTE)
+		.append(reportConceptAsInteger?COMMA_QUOTE:QUOTE_COMMA_QUOTE)
 		.append(c.getFsn())
 		.append(QUOTE_COMMA_QUOTE);
 		
@@ -1097,12 +1102,16 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 		return attributeCount;
 	}
-	
 
 	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
-
+	public JobRun getJobRun() {
+		return jobRun;
+	}
+	
+	public void setReportName(String reportName) {
+		this.reportName = reportName;
+	}
 }

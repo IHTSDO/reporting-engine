@@ -67,7 +67,7 @@ public class ReportSheetManager implements RF2Constants {
 	}
 
 	public static void main(String... args) throws Exception {
-		ReportManager rm = ReportManager.create("local", "test report");
+		ReportManager rm = ReportManager.create(null);
 		rm.setTabNames(new String[] {"first tab", "second tab", "third tab"});
 		ReportSheetManager rsm = new ReportSheetManager(rm);
 		rsm.initialiseReportFiles(new String[] { "foo, bar" , "bar, boo", "tim ,tum"});
@@ -132,10 +132,14 @@ public class ReportSheetManager implements RF2Constants {
 		init();
 		try {
 			List<Request> requests = new ArrayList<>();
+			String titleStr = owner.getScript().getReportName() + " " + df.format(new Date()) + "_" + owner.getEnv();
+			if (owner.getScript().getJobRun() != null && owner.getScript().getJobRun().getUser() != null) {
+				titleStr += "_" + owner.getScript().getJobRun().getUser().toLowerCase();
+			}
 			requests.add(new Request()
 					.setUpdateSpreadsheetProperties(new UpdateSpreadsheetPropertiesRequest()
 							.setProperties(new SpreadsheetProperties()
-									.setTitle(owner.getReportName() + " " + df.format(new Date()) + "_" + owner.getEnv()))
+									.setTitle(titleStr))
 									.setFields("title")));
 			int tabIdx = 0;
 			for (String header : columnHeaders) {
