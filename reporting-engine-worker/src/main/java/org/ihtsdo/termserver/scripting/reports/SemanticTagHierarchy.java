@@ -41,13 +41,17 @@ public class SemanticTagHierarchy extends TermServerReport implements ReportClas
 		return new Job( new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES),
 						"Semantic Tag Hierarchy",
 						"This report lists all semantic tags used in the specified subhierarchy. " +
-						"Note that since this report is not listing any problems, the 'Issue' count will always be 0.",
+						"Note that since this report is not listing any problems, the 'Issues' count will always be 0.",
 						params);
 	}
 
 	public void runJob() throws TermServerScriptException {
 		//Work out the path of semantic tags with examples
-		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
+		info ("Generating Semantic Tag Hierarchy report");
+		Set<Concept> concepts = gl.getDescendantsCache().getDescendentsOrSelf(subHierarchy);
+		
+		info ("Examining all concepts");
+		for (Concept c : concepts) {
 			//Have we seen this semantic tag before?
 			if (c.getFsn() == null) {
 				warn(c + " encountered without a semantic tag");
@@ -87,8 +91,10 @@ public class SemanticTagHierarchy extends TermServerReport implements ReportClas
 		if (level > 10) {
 			writeToReportFile(0, indent + "Recursion limit reached");
 		} else {
-			if (semanticTagHierarchy.get(semTag) == null) {
-				writeToReportFile(0, indent + "Invalid semantic tag '" + semTag + "'");
+			if (semanticTagHierarchy.size() == 0) {
+				writeToReportFile(0, indent + "No child tags detected.");
+			} else if (semanticTagHierarchy.get(semTag) == null) {
+				writeToReportFile(0, indent + "Unknown semantic tag encountered: '" + semTag + "'");
 			} else {
 				for (Map.Entry<String, Concept> childTag : semanticTagHierarchy.get(semTag).entrySet()) {
 					writeToReportFile(0, indent + childTag.getKey() + COMMA + childTag.getValue());
