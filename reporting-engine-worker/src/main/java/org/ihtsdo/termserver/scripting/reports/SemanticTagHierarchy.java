@@ -50,7 +50,7 @@ public class SemanticTagHierarchy extends TermServerReport implements ReportClas
 		info ("Generating Semantic Tag Hierarchy report");
 		Set<Concept> concepts = gl.getDescendantsCache().getDescendentsOrSelf(subHierarchy);
 		
-		info ("Examining all concepts");
+		info ("Examining all concepts to determine tag hierarchy");
 		for (Concept c : concepts) {
 			//Have we seen this semantic tag before?
 			if (c.getFsn() == null) {
@@ -76,6 +76,8 @@ public class SemanticTagHierarchy extends TermServerReport implements ReportClas
 				}
 			}
 		}
+		
+		info ("Encountered: " + semanticTagHierarchy.size() + " child tags across " + concepts.size() + " concepts");
 		
 		//Start with the top level hierarchy and go from there
 		outputHierarchialStructure(SnomedUtils.deconstructFSN(subHierarchy.getFsn())[1], 0);
