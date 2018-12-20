@@ -57,8 +57,10 @@ public class ArchiveManager implements RF2Constants {
 	
 	protected Branch loadBranch(Project project) throws TermServerScriptException {
 		String branchPath = project.getBranchPath();
+		String server = "uknown";
 		try {
 			debug ("Checking TS branch metadata: " + branchPath);
+			server = ts.getTSClient().getUrl();
 			Branch branch = ts.getTSClient().getBranch(branchPath);
 			//TODO Merge metadata from parent branches recursively, but for now, if empty, recover parent
 			if (branch.getMetadata().getPreviousRelease() == null) {
@@ -71,7 +73,7 @@ public class ArchiveManager implements RF2Constants {
 				debug ("Unable to find branch " + branchPath);
 				return null;
 			}
-			throw new TermServerScriptException("Failed to recover " + project + " from TS due to " + e.getMessage(),e);
+			throw new TermServerScriptException("Failed to recover " + project + " from TS (" + server + ") due to " + e.getMessage(),e);
 		}
 	}
 
