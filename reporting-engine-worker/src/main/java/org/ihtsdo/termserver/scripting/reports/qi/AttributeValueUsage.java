@@ -10,6 +10,7 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
+import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 
 import com.google.common.util.concurrent.AtomicLongMap;
 
@@ -54,7 +55,7 @@ public class AttributeValueUsage extends TermServerReport implements ReportClass
 						"Attribute Value Usage",
 						"This report lists - for a given attribute type - how often each value is used, with cumulative hierarchial totals." +
 						"Note that the 'Issues' count here refers to the number of rows reported.",
-						params);
+						params, ProductionStatus.HIDEME);
 	}
 
 	
