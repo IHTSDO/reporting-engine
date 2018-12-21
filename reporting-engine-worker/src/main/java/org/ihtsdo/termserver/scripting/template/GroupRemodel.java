@@ -30,6 +30,7 @@ public class GroupRemodel extends TemplateFix {
 	Set<Concept> groupedAttributeTypes = new HashSet<>();
 	Set<Concept> ungroupedAttributeTypes = new HashSet<>();
 	Set<Concept> formNewGroupAround = new HashSet<>();
+	Set<Relationship> removeRelationships = new HashSet<>();
 	
 	boolean skipMultipleUngroupedFindingSites = true;
 	
@@ -105,10 +106,12 @@ public class GroupRemodel extends TemplateFix {
 		templateNames = new String[] {	"templates/Complication co-occurrent and due to Diabetes Melitus.json",
 				//"templates/Complication co-occurrent and due to Diabetes Melitus - Minimal.json"
 				};
-		
-		subHierarchyECL =  "<< 3218000"; //QI-70 |Mycosis (disorder)|
+		*/
+		//subHierarchyECL =  "<< 3218000"; //QI-70 |Mycosis (disorder)|
+		subHierarchyECL =  "<< 276206000 |Superficial mycosis (disorder)|"; //QI-70 |Mycosis (disorder)|
 		templateNames = new String[] {	"templates/infection/Infection caused by Fungus.json"};
-		
+		removeRelationships.add(new Relationship(FINDING_SITE, ANAT_OR_ACQ_BODY_STRUCT));
+		/*
 		subHierarchyECL =  "<< 17322007"; //QI-116 |Parasite (disorder)|
 		templateNames = new String[] {	"templates/Infection caused by Parasite.json"};
 		
@@ -119,7 +122,7 @@ public class GroupRemodel extends TemplateFix {
 		exclusionWords.add("fracture");
 		includeDueTos = true;
 		
-		*/
+		
 		subHierarchyECL = "<<40733004|Infectious disease|"; //QI-159
 		templateNames = new String[] {	"templates/infection/Infection NOS.json" };
 		setExclusions(new String[] {"87628006 |Bacterial infectious disease (disorder)|","34014006 |Viral disease (disorder)|",
@@ -127,9 +130,7 @@ public class GroupRemodel extends TemplateFix {
 				"17322007 |Disease caused by parasite (disorder)|", "91302008 |Sepsis (disorder)|"});
 		exclusionWords.add("shock");
 		alreadyProcessedFile = new File(".QI-159_already_processed.txt");
-		if (!alreadyProcessedFile.exists()) {
-			
-		}
+		*/
 		super.init(args);
 		
 		//Ensure our ECL matching more than 0 concepts
@@ -260,6 +261,18 @@ public class GroupRemodel extends TemplateFix {
 			}
 		}
 		
+		//Do we have any relationships to remove?
+		for (Relationship removeRel : removeRelationships) {
+			for (RelationshipGroup group : groups) {
+				for (Relationship r : new ArrayList<>(group.getRelationships())) {
+					if (r.equalsTypeValue(removeRel)) {
+						group.removeRelationship(r);
+						report (t, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_INACTIVATED, "Removed unwanted: " + r);
+					}
+				}
+			}
+		}
+		
 		int ignoreUngroupedMoves = changesMade;
 		
 		//Now work through all relationship and move any ungrouped attributes out of groups
@@ -340,24 +353,6 @@ public class GroupRemodel extends TemplateFix {
 		}
 	}
 
-/*	private void removeDuplicateTypes(Concept c, RelationshipGroup group) {
-		List<Relationship> originalRels = new ArrayList<>(group.getRelationships());
-		for (Relationship potentialTypeDup : originalRels) {
-			List<Relationship> dupTypes = group.getRelationships().stream()
-											.filter(r -> r.getType().equals(potentialTypeDup.getType()))
-											.sorted((Relationship r1, Relationship r2) -> r1.getType().getFsn().compareTo(r2.getType().getFsn()))
-											.collect(Collectors.toList());
-			if (dupTypes.size() > 1) {
-				//We'll keep the first element
-				dupTypes.remove(0);
-				warn ("Removing duplicate type " + dupTypes.get(0) + "  in " + c);
-				group.getRelationships().removeAll(dupTypes);
-			}
-		}
-	}*/
-
-
-
 	private int findAttributeToState(Task t, Template template, Concept c, Attribute a, List<RelationshipGroup> groups, int groupOfInterest, CharacteristicType charType, boolean templateGroupOptional, Map<Integer, Integer> additionalGroupNums) throws TermServerScriptException {
 		RelationshipGroup group = groups.get(groupOfInterest);
 		
@@ -392,6 +387,14 @@ public class GroupRemodel extends TemplateFix {
 		//Remove the less specific values from this list
 		if (values.size() > 1) {
 			SnomedUtils.removeRedundancies(values);
+		}
+		
+		//Also potentially remove any values if we've been told to remove that relationship
+		for (Relationship removeRel : removeRelationships) {
+			if (removeRel.getType().equals(type)) {
+				values.remove(removeRel.getTarget());
+				debug("Removed potential relationship " + removeRel);
+			}
 		}
 		
 		//Do we have a single value, or should we consider creating an additional grouping?
@@ -608,7 +611,7 @@ public class GroupRemodel extends TemplateFix {
 		
 		//Have we already processed concepts in this area?
 		Set<Concept> alreadyProcessed = new HashSet<>();
-		if (alreadyProcessedFile.exists()) {
+		if (alreadyProcessedFile !=null && alreadyProcessedFile.exists()) {
 			try {
 				for (String conceptStr : Files.readLines(alreadyProcessedFile, Charset.forName("utf-8"))) {
 					alreadyProcessed.add(gl.getConcept(conceptStr));
@@ -627,43 +630,9 @@ public class GroupRemodel extends TemplateFix {
 				incrementSummaryInformation("Skipped as already processed");
 				continue;
 			}
-			Concept potentialCandidate = null;
-			if (!isExcluded(c)) {
-				//Actually, at this point in the evolution of this code, 
-				//if we have more inferred attributes than stated ones,
-				//it's probably worth taking a look at
-				int statedAttrbs = SnomedUtils.countAttributes(c, CharacteristicType.STATED_RELATIONSHIP);
-				int inferdAttrbs = SnomedUtils.countAttributes(c, CharacteristicType.INFERRED_RELATIONSHIP);
-				if (inferdAttrbs > statedAttrbs) {
-					potentialCandidate = c;
-				} else {
-					boolean hasGroupedAttributes = false;
-					for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
-						//If the concept has no grouped attributes we want it, and also 
-						//if there are any ungrouped attributes in group 1, or grouped attributes
-						//in group 0 (even if group 1 also exists!)
-						if (r.getGroupId() == UNGROUPED) {
-							if (groupedAttributeTypes.contains(r.getType())) {
-								potentialCandidate = c;
-								break;
-							}
-						} else if (ungroupedAttributeTypes.contains(r.getType())) {
-							potentialCandidate = c;
-							break;
-						}
-						
-						if (r.getGroupId() != UNGROUPED) {
-							hasGroupedAttributes = true;
-						}
-					}
-					
-					if (!hasGroupedAttributes) {
-						potentialCandidate = c;
-					}
-				}
-			}
-			
-			if (potentialCandidate != null) {
+			//At THIS point in the evolution of the code, attempt to remodel any concept
+			//where the stated attribute do not match the inferred
+			if (!isExcluded(c) && !SnomedUtils.inferredMatchesStated(c)) {
 				//just check we don't match any of the other templates in the stated form
 				//Eg having two ungrouped finding sites for complications of diabetes
 				boolean isFirst = true;
@@ -672,7 +641,7 @@ public class GroupRemodel extends TemplateFix {
 					if (isFirst) {
 						isFirst = false;
 					} else {
-						if (TemplateUtils.matchesTemplate(potentialCandidate, template, 
+						if (TemplateUtils.matchesTemplate(c, template, 
 								gl.getDescendantsCache(), 
 								CharacteristicType.STATED_RELATIONSHIP, 
 								true //Do allow additional unspecified ungrouped attributes
@@ -683,7 +652,7 @@ public class GroupRemodel extends TemplateFix {
 					}
 				}
 				if (!matchesSubsequentTemplate) {
-					processMe.add(potentialCandidate);
+					processMe.add(c);
 				}
 			}
 		}

@@ -640,7 +640,7 @@ public abstract class TermServerScript implements RF2Constants {
 			try { Thread.sleep(30*1000); } catch (Exception e) {}
 			concepts = cache.findConcepts(branch, ecl); 
 		}
-		return cache.findConcepts(branch, ecl); 
+		return concepts; 
 	}
 
 	protected List<Component> processFile() throws TermServerScriptException {

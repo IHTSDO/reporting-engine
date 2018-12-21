@@ -1,25 +1,13 @@
 package org.ihtsdo.termserver.scripting.template;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.snomed.authoringtemplate.domain.logical.*;
+import org.springframework.util.StringUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.TermServerScript.ReportActionType;
-import org.ihtsdo.termserver.scripting.TermServerScript.Severity;
 import org.ihtsdo.termserver.scripting.client.TemplateServiceClient;
-import org.ihtsdo.termserver.scripting.domain.Component;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Relationship;
-import org.ihtsdo.termserver.scripting.domain.RelationshipGroup;
-import org.ihtsdo.termserver.scripting.domain.Task;
-import org.ihtsdo.termserver.scripting.domain.Template;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
+import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
@@ -150,6 +138,11 @@ abstract public class TemplateFix extends BatchFix {
 		//These hierarchies have been excluded
 		if (exclusions.contains(c)) {
 			incrementSummaryInformation("Concepts excluded due to hierarchial exclusion");
+			return true;
+		}
+		
+		if (StringUtils.isEmpty(c.getFsn())) {
+			warn("Skipping concept with no FSN: " + c.getConceptId());
 			return true;
 		}
 		

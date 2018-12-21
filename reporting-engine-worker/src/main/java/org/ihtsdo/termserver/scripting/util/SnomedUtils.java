@@ -1091,5 +1091,28 @@ public class SnomedUtils implements RF2Constants {
 		}
 		return acceptability.equals(targetAcceptability);
 	}
+
+	//Check every stated relationship is exactly matched by an inferred one
+	//Actually we have to check for matching groups to ensure we're checking like-for-like
+	public static boolean inferredMatchesStated(Concept c) {
+		Collection<RelationshipGroup> statedGroups = c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP);
+		Collection<RelationshipGroup> inferredGroups = c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP);
+		
+		//First of all, do we have the same number?
+		if (statedGroups.size() != inferredGroups.size()) {
+			return false;
+		}
+		nextStatedGroup:
+		for (RelationshipGroup statedGroup : statedGroups) {
+			for (RelationshipGroup inferredGroup : inferredGroups) {
+				if (statedGroup.equals(inferredGroup)) {
+					continue nextStatedGroup;
+				}
+			}
+			//If we get to here, we've failed to find an inferred group to match the stated one
+			return false;
+		}
+		return true;
+	}
 	
 }
