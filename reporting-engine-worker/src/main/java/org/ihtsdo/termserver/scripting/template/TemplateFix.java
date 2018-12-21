@@ -10,12 +10,16 @@ import java.util.Set;
 
 import org.snomed.authoringtemplate.domain.logical.*;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.TermServerScript.ReportActionType;
+import org.ihtsdo.termserver.scripting.TermServerScript.Severity;
 import org.ihtsdo.termserver.scripting.client.TemplateServiceClient;
 import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
+import org.ihtsdo.termserver.scripting.domain.RelationshipGroup;
 import org.ihtsdo.termserver.scripting.domain.Task;
 import org.ihtsdo.termserver.scripting.domain.Template;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
@@ -143,6 +147,12 @@ abstract public class TemplateFix extends BatchFix {
 	}
 	
 	protected boolean isExcluded(Concept c) {
+		//These hierarchies have been excluded
+		if (exclusions.contains(c)) {
+			incrementSummaryInformation("Concepts excluded due to hierarchial exclusion");
+			return true;
+		}
+		
 		//We could ignore on the basis of a word, or SCTID
 		String fsn = " " + c.getFsn().toLowerCase();
 		for (String word : exclusionWords) {
@@ -176,5 +186,25 @@ abstract public class TemplateFix extends BatchFix {
 			relevantTemplate = conceptToTemplateMap.get(c).getId();
 		}
 		super.report (task, component, severity, actionType, SnomedUtils.translateDefnStatus(c.getDefinitionStatus()), relevantTemplate, details);
+	}
+	
+	protected int removeRedundandGroups(Task t, Concept c) throws TermServerScriptException {
+		int changesMade = 0;
+		List<RelationshipGroup> originalGroups = new ArrayList<>(c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP));
+		for (RelationshipGroup originalGroup : originalGroups) {
+			for (RelationshipGroup potentialRedundancy : originalGroups) {
+				//Don't compare self
+				if (originalGroup.getGroupId() == potentialRedundancy.getGroupId()) {
+					continue;
+				}
+				if (SnomedUtils.isSameOrMoreSpecific(originalGroup, potentialRedundancy, gl.getAncestorsCache())) {
+					report (t, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_GROUP_REMOVED, "Redundant relationship group removed", potentialRedundancy);
+					for (Relationship r : potentialRedundancy.getRelationships()) {
+						changesMade += removeRelationship(t, c, r);
+					}
+				}
+			}
+		}
+		return changesMade;
 	}
 }

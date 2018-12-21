@@ -1,10 +1,13 @@
 package org.ihtsdo.termserver.scripting.template;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
@@ -14,6 +17,8 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.authoringtemplate.domain.logical.*;
+
+import com.google.common.io.Files;
 
 /**
  * Where a concept has limited modeling, pull the most specific attributes available 
@@ -27,6 +32,8 @@ public class GroupRemodel extends TemplateFix {
 	Set<Concept> formNewGroupAround = new HashSet<>();
 	
 	boolean skipMultipleUngroupedFindingSites = true;
+	
+	File alreadyProcessedFile;
 
 	protected GroupRemodel(BatchFix clone) {
 		super(clone);
@@ -105,22 +112,30 @@ public class GroupRemodel extends TemplateFix {
 		subHierarchyECL =  "<< 17322007"; //QI-116 |Parasite (disorder)|
 		templateNames = new String[] {	"templates/Infection caused by Parasite.json"};
 		
-		*/
+		
 		subHierarchyECL =  "<< 125643001"; //QI-117 |Open wound| 
 		templateNames = new String[] {	"templates/wound/wound of bodysite due to event.json" };
 		exclusionWords.add("complication");
 		exclusionWords.add("fracture");
 		includeDueTos = true;
-		/*
 		
+		*/
 		subHierarchyECL = "<<40733004|Infectious disease|"; //QI-159
 		templateNames = new String[] {	"templates/infection/Infection NOS.json" };
 		setExclusions(new String[] {"87628006 |Bacterial infectious disease (disorder)|","34014006 |Viral disease (disorder)|",
 				"3218000 |Mycosis (disorder)|","8098009 |Sexually transmitted infectious disease (disorder)|", 
 				"17322007 |Disease caused by parasite (disorder)|", "91302008 |Sepsis (disorder)|"});
 		exclusionWords.add("shock");
-		*/
+		alreadyProcessedFile = new File(".QI-159_already_processed.txt");
+		if (!alreadyProcessedFile.exists()) {
+			
+		}
 		super.init(args);
+		
+		//Ensure our ECL matching more than 0 concepts
+		if (findConcepts(project.getBranchPath(), subHierarchyECL).size() == 0) {
+			throw new TermServerScriptException(subHierarchyECL + " returned 0 rows");
+		}
 	}
 	
 	public void postInit() throws TermServerScriptException {
@@ -136,11 +151,23 @@ public class GroupRemodel extends TemplateFix {
 		groupedAttributeTypes = groupIterator.next().getAttributes().stream()
 				.map(a -> gl.getConceptSafely(a.getType()))
 				.collect(Collectors.toSet());
+		
+
 	}
 
 	@Override
 	protected int doFix(Task task, Concept concept, String info) throws TermServerScriptException, ValidationFailure {
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
+		
+		//Record that we've looked at this file
+		if (alreadyProcessedFile != null) {
+			try {
+				FileUtils.writeStringToFile(alreadyProcessedFile, loadedConcept.toString()+"\n", true);
+			} catch (IOException e) {
+				throw new TermServerScriptException("Failed to record already processed in " + alreadyProcessedFile,e);
+			}
+		}
+
 		if (!loadedConcept.isActive()) {
 			report(task, concept, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Attempt to remodel an inactive concept");
 			return NO_CHANGES_MADE;
@@ -169,7 +196,7 @@ public class GroupRemodel extends TemplateFix {
 		if (c.getConceptId().equals("43925005")) {
 		//	debug("Check me");
 		}
-		
+
 		//Create as many groups as required, but minimum 3
 		int numConceptGroups = c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP).size();
 		int numTemplateGroups = template.getAttributeGroups().size();
@@ -269,26 +296,6 @@ public class GroupRemodel extends TemplateFix {
 				throw new ValidationFailure(c, "Stated modelling unchanged");
 			}
 			report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_GROUP_ADDED, modifiedForm, statedForm, inferredForm);
-		}
-		return changesMade;
-	}
-
-	private int removeRedundandGroups(Task t, Concept c) throws TermServerScriptException {
-		int changesMade = 0;
-		List<RelationshipGroup> originalGroups = new ArrayList<>(c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP));
-		for (RelationshipGroup originalGroup : originalGroups) {
-			for (RelationshipGroup potentialRedundancy : originalGroups) {
-				//Don't compare self
-				if (originalGroup.getGroupId() == potentialRedundancy.getGroupId()) {
-					continue;
-				}
-				if (SnomedUtils.isSameOrMoreSpecific(originalGroup, potentialRedundancy, gl.getAncestorsCache())) {
-					report (t, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_GROUP_REMOVED, "Redundant relationship group removed", potentialRedundancy);
-					for (Relationship r : potentialRedundancy.getRelationships()) {
-						changesMade += removeRelationship(t, c, r);
-					}
-				}
-			}
 		}
 		return changesMade;
 	}
@@ -598,9 +605,27 @@ public class GroupRemodel extends TemplateFix {
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		//Find concepts that only have ungrouped attributes, or none at all.
 		List<Concept> processMe = new ArrayList<>();
+		
+		//Have we already processed concepts in this area?
+		Set<Concept> alreadyProcessed = new HashSet<>();
+		if (alreadyProcessedFile.exists()) {
+			try {
+				for (String conceptStr : Files.readLines(alreadyProcessedFile, Charset.forName("utf-8"))) {
+					alreadyProcessed.add(gl.getConcept(conceptStr));
+				}
+			} catch (Exception e) {
+				throw new TermServerScriptException("Unable to read already processed concepts from " + alreadyProcessedFile, e);
+			}
+			info ("Skipping " + alreadyProcessed.size() + " concepts declared as already processed in " + alreadyProcessedFile);
+		}
+		
 		for (Concept c : findConcepts(project.getBranchPath(), subHierarchyECL)) {
 			if (!c.getConceptId().equals("187137009")) {
 				//continue;
+			}
+			if (alreadyProcessed.contains(c)) {
+				incrementSummaryInformation("Skipped as already processed");
+				continue;
 			}
 			Concept potentialCandidate = null;
 			if (!isExcluded(c)) {

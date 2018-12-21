@@ -49,6 +49,10 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		//validateTasks = true; Currently failing with 500 error.  Take out Resty?
 		additionalReportColumns = "CharacteristicType, Template, ActionDetail";
 		
+		if (exclusionWords == null) {
+			exclusionWords = new ArrayList<>();
+		}
+		
 		/*
 		subHierarchyStr = "125605004";  // QI-17 |Fracture of bone (disorder)|
 		templateNames = new String[] {	"templates/fracture/Fracture of Bone Structure.json",
@@ -65,10 +69,10 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		subHierarchyStr =  "126537000";  //QI-31 |Neoplasm of bone (disorder)|
 		templateNames = new String[] {	"templates/Neoplasm of Bone.json",
 										"templates/Pathologic fracture morphology of bone structure co-occurrent and due to Neoplasm of bone.json"};
-		*/
+		
 		subHierarchyStr =  "34014006"; //QI-125 |Viral disease (disorder)|
 		templateNames = new String[] {	"templates/Infection caused by virus with optional bodysite.json"};
-		/*
+		
 		subHierarchyStr =  "87628006";  //QI-16 + QI-21 |Bacterial infectious disease (disorder)|
 		templateNames = new String[] {	"templates/Infection caused by bacteria with optional bodysite.json"}; 
 		
@@ -96,7 +100,21 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		
 		subHierarchyStr = "8098009";	// QI-130 |Sexually transmitted infectious disease (disorder)| 
 		templateNames = new String[] {	"templates/Sexually transmitted Infection with optional bodysite.json"};
+		
+		subHierarchyStr = "17322007"; //QI-163 |Parasite (disorder)|
+		templateNames = new String[] {	"templates/infection/Infection caused by Parasite.json"};
+		
+		subHierarchyStr =  "128294001";  // QI-164 |Chronic inflammatory disorder (disorder)
+		templateNames = new String[] {"templates/Chronic Inflammatory Disorder.json"}; 
+		setExclusions(new String[] {"40733004|Infectious disease|"});
+		exclusionWords.add("arthritis");
 		*/
+		subHierarchyStr = "283682007"; // QI-169 |Bite - wound (disorder)|
+		includeDueTos = true;
+		templateNames = new String[] {	"templates/bite/bite of bodysite caused by bite event.json", 
+										"templates/bite/bite of bodysite caused by bite event with infection.json"};
+	
+		
 		super.init(args);
 	}
 
@@ -104,6 +122,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 	protected int doFix(Task task, Concept concept, String info) throws TermServerScriptException, ValidationFailure {
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
 		int changesMade = normaliseConceptToTemplate(task, loadedConcept, conceptToTemplateMap.get(concept));
+		changesMade += removeRedundandGroups(task, loadedConcept);
 		if (changesMade > 0) {
 			updateConcept(task, loadedConcept, info);
 		}
@@ -183,7 +202,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		//Start with the whole subHierarchy and remove concepts that match each of our templates
 		Set<Concept> alignedConcepts = new HashSet<>();
 		Set<Concept> ignoredConcepts = new HashSet<>();
-		
+		info ("Identifying concepts aligned to template");
 		for (Template template : templates) {
 			alignedConcepts.addAll(findTemplateMatches(template));
 		}
@@ -198,6 +217,9 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		Set<Concept> noChangesRequired = new HashSet<>();
 		setQuiet(true);
 		for (Concept alignedConcept : alignedConcepts) {
+			if (!alignedConcept.getConceptId().equals("722761003")) {
+			//		continue;
+			}
 			//Make changes to a clone of the concept so we don't affect our local copy
 			Concept alignedClone = alignedConcept.cloneWithIds();
 			int changesMade = normaliseConceptToTemplate(null, alignedClone, conceptToTemplateMap.get(alignedConcept));
@@ -208,6 +230,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 			}
 		}
 		setQuiet(false);
+		info ("Identified " + changesRequired.size() + " concepts requiring update.");
 		addSummaryInformation("Concepts matching templates, no change required", noChangesRequired.size());
 		return asComponents(changesRequired);
 	}
