@@ -41,6 +41,10 @@ public class EclCache {
 		this.gson = gson;
 	}
 	
+	public static void reset() {
+		branchCaches  = new HashMap<>();
+	}
+	
 	protected List<Concept> findConcepts(String branch, String ecl) throws TermServerScriptException {
 		//Have we already recovered this ECL?
 		if (expansionCache.containsKey(ecl)) {

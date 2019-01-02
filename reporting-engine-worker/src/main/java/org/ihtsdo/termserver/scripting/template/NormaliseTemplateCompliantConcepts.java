@@ -54,7 +54,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		}
 		
 		/*
-		subHierarchyStr = "125605004";  // QI-17 |Fracture of bone (disorder)|
+		subHierarchyECL = "<<125605004";  // QI-17 |Fracture of bone (disorder)|
 		templateNames = new String[] {	"templates/fracture/Fracture of Bone Structure.json",
 										"templates/fracture/Fracture Dislocation of Bone Structure.json",
 										//"templates/fracture/Pathologic fracture of bone due to Disease.json",
@@ -88,34 +88,43 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 				"templates/burn/Deep partial thickness burn of body structure.json",
 				"templates/burn/Superficial partial thickness burn of body structure.json"};
 		
-		subHierarchyStr = "8098009";	// QI-120 |Sexually transmitted infectious disease (disorder)| 
+		subHierarchyECL = "<<8098009";	// QI-120 |Sexually transmitted infectious disease (disorder)| 
 		templateNames = new String[] {	"templates/Sexually transmitted Infection with optional bodysite.json"};
 		
-		subHierarchyStr = "95896000";  //QI-19  |Protozoan infection (disorder)|
+		subHierarchyECL = "<<95896000";  //QI-19  |Protozoan infection (disorder)|
 		templateNames = new String[] {"templates/Infection caused by Protozoa with optional bodysite.json"};
 		
-		subHierarchyStr = "416886008"; //QI-129 |Closed wound| 
+		subHierarchyECL = "<<416886008"; //QI-129 |Closed wound| 
 		templateNames = new String[] {	"templates/wound/wound of bodysite.json",
 										"templates/wound/closed wound of bodysite.json"};
 		
-		subHierarchyStr = "8098009";	// QI-130 |Sexually transmitted infectious disease (disorder)| 
+		subHierarchyECL = "<<8098009";	// QI-130 |Sexually transmitted infectious disease (disorder)| 
 		templateNames = new String[] {	"templates/Sexually transmitted Infection with optional bodysite.json"};
 		
-		subHierarchyStr = "17322007"; //QI-163 |Parasite (disorder)|
+		subHierarchyECL = "<<17322007"; //QI-163 |Parasite (disorder)|
 		templateNames = new String[] {	"templates/infection/Infection caused by Parasite.json"};
 		
 		subHierarchyStr =  "128294001";  // QI-164 |Chronic inflammatory disorder (disorder)
 		templateNames = new String[] {"templates/Chronic Inflammatory Disorder.json"}; 
 		setExclusions(new String[] {"40733004|Infectious disease|"});
 		exclusionWords.add("arthritis");
-		*/
-		subHierarchyStr = "283682007"; // QI-169 |Bite - wound (disorder)|
+		
+		subHierarchyECL = "<<283682007"; // QI-169 |Bite - wound (disorder)|
 		includeDueTos = true;
 		templateNames = new String[] {	"templates/bite/bite of bodysite caused by bite event.json", 
 										"templates/bite/bite of bodysite caused by bite event with infection.json"};
-	
+		*/
+		subHierarchyECL = "<<399963005|Abrasion|"; //QI-170
+		templateNames = new String[] {	"templates/wound/abrasion.json" ,
+										"templates/Disorder due to birth trauma.json"};
+		includeDueTos = true;
 		
 		super.init(args);
+		
+		//Ensure our ECL matches more than 0 concepts.  This will also cache the result
+		if (findConcepts(project.getBranchPath(), subHierarchyECL).size() == 0) {
+			throw new TermServerScriptException(subHierarchyECL + " returned 0 rows");
+		}
 	}
 
 	@Override

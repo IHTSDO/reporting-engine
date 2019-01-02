@@ -80,6 +80,7 @@ public class GraphLoader implements RF2Constants {
 		descendantsCache.reset();
 		ancestorsCache.reset();
 		historicalAssociations =  new HashMap<Concept, List<AssociationEntry>>();
+		EclCache.reset();
 		populateKnownConcepts();
 	}
 	
