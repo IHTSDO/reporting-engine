@@ -26,7 +26,6 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		PrepMisalignedConcepts app = new PrepMisalignedConcepts(null);
 		try {
 			//app.includeComplexTemplates = true;
-			//ReportSheetManager.targetFolderId = "18xZylGhgL7ML782pu6-6u_VUw3p5Hfr7"; //QI/Development
 			ReportSheetManager.targetFolderId = "1uywo1VGAIh7MMY7wCn2yEj312OQCjt9J"; // QI / Misaligned Concepts
 			app.init(args);
 			//app.getArchiveManager().allowStaleData = true;
@@ -52,7 +51,7 @@ public class PrepMisalignedConcepts extends TemplateFix {
 			exclusionWords = new ArrayList<>();
 		}
 		/*
-		subHierarchyStr = "125605004";  // QI-5 |Fracture of bone (disorder)|
+		subHierarchyECL = "<<125605004";  // QI-5 |Fracture of bone (disorder)|
 		templateNames = new String[] {	"fracture/Fracture of Bone Structure.json",
 										"fracture/Fracture Dislocation of Bone Structure.json",
 										"fracture/Pathologic fracture of bone due to Disease.json",
@@ -74,14 +73,14 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		templateNames = new String[] {	"templates/infection/Infection caused by Virus.json",
 										"templates/infection/Infection of bodysite caused by virus.json"};
 		
-		subHierarchyStr = "87628006";  //QI-16 |Bacterial infectious disease (disorder)|
+		subHierarchyECL = "<<87628006";  //QI-16 |Bacterial infectious disease (disorder)|
 		templateNames = new String[] {	"templates/infection/Infection caused by Bacteria.json",
 										"templates/infection/Infection of bodysite caused by bacteria.json"};
 		 
-		subHierarchyStr = "95896000";  //QI-19  |Protozoan infection (disorder)|
+		subHierarchyECL = "<<95896000";  //QI-19  |Protozoan infection (disorder)|
 		templateNames = new String[] {"templates/infection/Infection caused by Protozoa with optional bodysite.json"};
 			
-		subHierarchyStr = "125666000";  //QI-33  |Burn (disorder)|
+		subHierarchyECL = "<<125666000";  //QI-33  |Burn (disorder)|
 
 		excludeHierarchies = new String[] { "426284001" } ; // |Chemical burn (disorder)| 
 		templateNames = new String[] {
@@ -92,93 +91,72 @@ public class PrepMisalignedConcepts extends TemplateFix {
 				"templates/burn/Deep partial thickness burn of body structure.json",
 				"templates/burn/Superficial partial thickness burn of body structure.json"};
 		
-		subHierarchyStr = "74627003";  //QI-48 |Diabetic Complication|
+		subHierarchyECL = "<<74627003";  //QI-48 |Diabetic Complication|
 		templateNames = new String[] {	"templates/Complication co-occurrent and due to Diabetes Melitus.json",
 										"templates/Complication co-occurrent and due to Diabetes Melitus - Minimal.json"};
 		
-		subHierarchyStr = "8098009";	// QI-45 |Sexually transmitted infectious disease (disorder)| 
+		subHierarchyECL = "<<8098009";	// QI-45 |Sexually transmitted infectious disease (disorder)| 
 		templateNames = new String[] {	"templates/Sexually transmitted Infection with optional bodysite.json"};
 		
-		subHierarchyStr = "283682007"; // QI-39 |Bite - wound (disorder)|
+		subHierarchyECL = "<<283682007"; // QI-39 |Bite - wound (disorder)|
 		templateNames = new String[] {	"templates/bite/bite of bodysite caused by bite event.json", 
 										"templates/bite/bite of bodysite caused by bite event with infection.json"};
 		
-		subHierarchyStr = "3218000"; //QI-67 |Mycosis (disorder)|
+		subHierarchyECL = "<<3218000"; //QI-67 |Mycosis (disorder)|
 		templateNames = new String[] {	"templates/infection/Infection caused by Fungus.json"};
 		
-		subHierarchyStr = "17322007"; //QI-68 |Parasite (disorder)|
+		subHierarchyECL = "<<17322007"; //QI-68 |Parasite (disorder)|
 		templateNames = new String[] {	"templates/infection/Infection caused by Parasite.json"};
 		
-		subHierarchyStr = "416886008"; //QI-106 |Closed wound| 
+		subHierarchyECL = "<<416886008"; //QI-106 |Closed wound| 
 		templateNames = new String[] {	"templates/wound/wound of bodysite.json"
 				};
 		
-		subHierarchyStr = "125643001"; //QI-107 |Open wound| 
+		subHierarchyECL = "<<125643001"; //QI-107 |Open wound| 
 		templateNames = new String[] {	"templates/wound/wound of bodysite due to event.json" };
 		includeDueTos = true;
 		exclusionWords.add("fracture");
 		
-		subHierarchyStr = "128545000"; //QI-75 |Hernia of abdominal wall (disorder)|
-		//subHierarchyStr = "773623000";
+		subHierarchyECL = "<<128545000"; //QI-75 |Hernia of abdominal wall (disorder)|
+		//subHierarchyECL = "<<773623000";
 		templateNames = new String[] {	"templates/Hernia of abdominal wall.json"};
 		excludeHierarchies = new String[] { "236037000 |Incisional hernia (disorder)|" };
 		exclusionWords = new ArrayList<String>();
 		exclusionWords.add("gangrene");
 		exclusionWords.add("obstruction");
 		
-		subHierarchyStr = "432119003 |Aneurysm (disorder)|"; //QI-143 
+		subHierarchyECL = "<<432119003 |Aneurysm (disorder)|"; //QI-143 
 		templateNames = new String[] {	"templates/Aneurysm of Cardiovascular system.json" };
 		
-		subHierarchyStr = "40733004|Infectious disease|"; //QI-153
+		subHierarchyECL = "<<40733004|Infectious disease|"; //QI-153
 		templateNames = new String[] {	"templates/infection/Infection NOS.json" };
 		setExclusions(new String[] {"87628006 |Bacterial infectious disease (disorder)|","34014006 |Viral disease (disorder)|",
 				"3218000 |Mycosis (disorder)|","8098009 |Sexually transmitted infectious disease (disorder)|", 
 				"17322007 |Disease caused by parasite (disorder)|", "91302008 |Sepsis (disorder)|"});
 		exclusionWords.add("shock");
+		
+		subHierarchyECL = "<<399963005 |Abrasion|"; //QI-147
+		templateNames = new String[] {	"templates/wound/abrasion.json" ,
+										"templates/Disorder due to birth trauma.json"};
+		includeDueTos = true;
 		*/
-		subHierarchyStr = "399963005 |Abrasion|"; //QI-147
-		templateNames = new String[] {	"templates/wound/abrasion.json" };
+		subHierarchyECL = "300935003 OR 206203003 OR 276623000"; //QI-147
+		templateNames = new String[] {	"templates/Disorder due to birth trauma.json" };
 		includeDueTos = true;
 		
 		super.init(args);
+		
+		//Ensure our ECL matches more than 0 concepts.  This will also cache the result
+		if (findConcepts(project.getBranchPath(), subHierarchyECL).size() == 0) {
+			throw new TermServerScriptException(subHierarchyECL + " returned 0 rows");
+		}
 	}
 	
 	@Override
 	protected int doFix(Task task, Concept concept, String info) throws TermServerScriptException, ValidationFailure {
-		/*Concept loadedConcept = loadConcept(concept, task.getBranchPath());
-		//We're not currently able to programmatically fix template infractions, so we'll save
-		//the concept unaltered so it appears in the task description and for review.
-		report(task, loadedConcept);
-		try {
-			if (!dryRun) {
-				touchConcept(task, loadedConcept, info);
-			} else {
-				debug ("Skipping concept touch for " + loadedConcept);
-			}
-		} catch (Exception e) {
-			report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
-		}
-		return 0;*/
 		report(task, concept);
 		return CHANGE_MADE;
 	}
-
-/*	private void touchConcept(Task t, Concept c, String info) throws SnowOwlClientException, JSONException {
-		debug ("Touching FSN CS for " + c + info);
-		CaseSignificance orig = c.getFSNDescription().getCaseSignificance();
-		CaseSignificance flip = orig.equals(CaseSignificance.CASE_INSENSITIVE)?CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE : CaseSignificance.CASE_INSENSITIVE;
-		
-		//Flip it
-		c.getFSNDescription().setCaseSignificance(flip);
-		String conceptSerialised = gson.toJson(c);
-		tsClient.updateConcept(new JSONObject(conceptSerialised), t.getBranchPath());
-		
-		//Flip it back
-		c.getFSNDescription().setCaseSignificance(orig);
-		conceptSerialised = gson.toJson(c);
-		tsClient.updateConcept(new JSONObject(conceptSerialised), t.getBranchPath());
-	}
-	*/
 
 	private void report(Task t, Concept c) throws TermServerScriptException {
 		//Collect the diagnostic information about why this concept didn't match any templates as a string
@@ -186,21 +164,11 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, diagnosticStr);
 	}
 
-	/* Termserver must support ECL1.3 for this code to work
-	 * private void reportUnlignedConcepts() throws TermServerScriptException {	
-		//Get the template as an ECL Expression and recover concepts which do NOT meet this criteria
-		String ecl = TemplateUtils.covertToECL(template);
-		//Take the inverse to find all concepts that DO NOT match one of our templates
-		String inverseEcl = "<<" + subHierarchyStr + " MINUS (" + ecl + ")";
-		List<Concept> concepts = findConcepts("MAIN", inverseEcl);
-		for (Concept c : concepts) {
-			debug (c);
-		}
-	}*/
-	
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
+		
 		//Start with the whole subHierarchy and remove concepts that match each of our templates
-		Set<Concept> unalignedConcepts = new HashSet<>(gl.getDescendantsCache().getDescendentsOrSelf(subHierarchy));
+		List<Concept> unalignedConcepts = findConcepts(project.getBranchPath(), subHierarchyECL);
+		
 		//Set<Concept> unalignedConcepts = Collections.singleton(gl.getConcept("773623000"));
 		Set<Concept> ignoredConcepts = new HashSet<>();
 		

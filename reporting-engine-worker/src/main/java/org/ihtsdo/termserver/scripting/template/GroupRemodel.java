@@ -133,7 +133,7 @@ public class GroupRemodel extends TemplateFix {
 		*/
 		super.init(args);
 		
-		//Ensure our ECL matching more than 0 concepts
+		//Ensure our ECL matches more than 0 concepts.  This will also cache the result
 		if (findConcepts(project.getBranchPath(), subHierarchyECL).size() == 0) {
 			throw new TermServerScriptException(subHierarchyECL + " returned 0 rows");
 		}

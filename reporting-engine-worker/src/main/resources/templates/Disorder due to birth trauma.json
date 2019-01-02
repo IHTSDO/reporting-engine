@@ -1,0 +1,7 @@
+{
+  "name": "Disorder due to birth trauma",
+  "documentation": "https://confluence.ihtsdotools.org/display/AUTHS/Disorder+due+to+birth+trauma+-+In+progress",
+  "version": 1,
+  "logicalTemplate": "64572001 |Disease (disorder)|:\n\t 42752001 |Due to (attribute)| = 236973005 |Delivery procedure (procedure)| , [[~1..*]]{\n\t\t  116676008 |Associated morphology (attribute)| = [[+id(< 49755003 |Morphologically abnormal structure (morphologic abnormality)|) @morphology ]]\n\t, 363698007 |Finding site (attribute)| = [[+id(< 91723000 |Anatomical structure (body structure)|) @site ]], [[~0..1]] 246454002 |Occurrence (attribute)| = 371578004 |Perinatal period (qualifier value)| }\n"
+}
+

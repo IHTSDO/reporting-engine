@@ -107,7 +107,7 @@ abstract public class TemplateFix extends BatchFix {
 	
 	protected Set<Concept> findTemplateMatches(Template t) throws TermServerScriptException {
 		Set<Concept> matches = new HashSet<Concept>();
-		for (Concept c : gl.getDescendantsCache().getDescendentsOrSelf(subHierarchy)) {
+		for (Concept c : findConcepts(project.getBranchPath(), subHierarchyECL)) {
 			if (c.getConceptId().equals("19378003")) {
 				debug ("Check template match here");
 			}
