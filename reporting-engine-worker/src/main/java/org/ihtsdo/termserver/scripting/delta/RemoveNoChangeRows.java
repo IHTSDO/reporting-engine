@@ -35,7 +35,7 @@ public class RemoveNoChangeRows extends DeltaGenerator {
 			app.loadProjectSnapshot(false);  //Not just FSN, load all terms with lang refset also
 			app.postInit();
 			app.filterNoChangeDelta();
-			app.flushFiles(false);
+			app.flushFiles(false, true); //Need to flush files before zipping
 			SnomedUtils.createArchive(new File(app.outputDirName));
 		} finally {
 			app.finish();

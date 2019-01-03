@@ -37,7 +37,7 @@ public class GenerateTranslation extends DeltaGenerator {
 			delta.loadProjectSnapshot(false);  //Not just FSN, load all terms with lang refset also
 			delta.startTimer();
 			delta.processFile();
-			delta.flushFiles(false);
+			delta.flushFiles(false, true); //Need to flush files before zipping
 			SnomedUtils.createArchive(new File(delta.outputDirName));
 		} finally {
 			delta.finish();

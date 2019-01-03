@@ -64,7 +64,7 @@ public class CreateLoincConcepts extends DeltaGenerator {
 			delta.initMap();
 			delta.startTimer();
 			delta.processFile();
-			delta.flushFiles(true); //Need to flush files before zipping
+			delta.flushFiles(false, true); //Need to flush files before zipping
 			SnomedUtils.createArchive(new File(delta.outputDirName));
 		} finally {
 			delta.finish();

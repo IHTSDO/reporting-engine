@@ -33,7 +33,7 @@ public class CaseSignificanceSpecified extends DeltaGenerator implements RF2Cons
 			delta.startTimer();
 			List<Component> modifiedConcepts = delta.processFile();
 			delta.writeRF2(modifiedConcepts);
-			delta.flushFiles(false);
+			delta.flushFiles(false, true); //Need to flush files before zipping
 			SnomedUtils.createArchive(new File(delta.outputDirName));
 		} finally {
 			delta.finish();

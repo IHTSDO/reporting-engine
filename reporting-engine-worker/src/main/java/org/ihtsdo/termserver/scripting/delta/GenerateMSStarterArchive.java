@@ -35,7 +35,7 @@ public class GenerateMSStarterArchive extends DeltaGenerator {
 			delta.startTimer();
 			List<Concept> newConcepts = delta.generateStarter();
 			delta.outputRF2(newConcepts);
-			delta.flushFiles(false);
+			delta.flushFiles(false, true); //Need to flush files before zipping
 			SnomedUtils.createArchive(new File(delta.outputDirName));
 		} finally {
 			delta.finish();

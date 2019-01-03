@@ -46,7 +46,7 @@ public class FixReusedAssociations extends DeltaGenerator implements RF2Constant
 			delta.getArchiveManager().allowStaleData = true;
 			delta.loadProjectSnapshot(false); //Need all descriptions loaded.
 			delta.process();
-			delta.flushFiles(false);
+			delta.flushFiles(false, true); //Need to flush files before zipping
 			SnomedUtils.createArchive(new File(delta.outputDirName));
 		} finally {
 			delta.finish();

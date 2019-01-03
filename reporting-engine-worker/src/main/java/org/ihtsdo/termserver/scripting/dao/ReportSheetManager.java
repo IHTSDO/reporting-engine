@@ -196,21 +196,30 @@ public class ReportSheetManager implements RF2Constants {
 			flushSoft();
 		}
 	}
+	
+	public void flushWithWait() throws TermServerScriptException {
+		flush(false, true);  //Not optional, also wait
+	}
+	
 	public void flush() throws TermServerScriptException {
-		flush(false);  //Not optional
+		flush(false, false);  //Not optional, don't wait
 	}
 
 	public void flushSoft() throws TermServerScriptException {
-		flush(true); //optional
+		flush(true, false); //optional, don't wait
 	}
 	
-	private void flush(boolean optional) throws TermServerScriptException {
+	private void flush(boolean optional, boolean withWait) throws TermServerScriptException {
 		//Are we ready to flush?
 		//How long is it since we last wrote to the file?  Write every 5 seconds
 		if (lastWriteTime != null) {
 			long secondsSinceLastWrite = (new Date().getTime()-lastWriteTime.getTime())/1000;
-			if (optional && secondsSinceLastWrite < MIN_REQUEST_RATE) {
-				return;
+			if (secondsSinceLastWrite < MIN_REQUEST_RATE) {
+				if (withWait) {
+					try { Thread.sleep(MIN_REQUEST_RATE - secondsSinceLastWrite); } catch (InterruptedException e) {}
+				} else if (optional) {
+					return;
+				}
 			}
 		}
 		

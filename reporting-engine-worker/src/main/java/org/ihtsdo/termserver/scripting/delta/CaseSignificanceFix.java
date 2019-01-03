@@ -29,7 +29,7 @@ public class CaseSignificanceFix extends DeltaGenerator implements RF2Constants 
 			//We won't include the project export in our timings
 			delta.startTimer();
 			delta.process();
-			delta.flushFiles(false);
+			delta.flushFiles(false, true); //Need to flush files before zipping
 			SnomedUtils.createArchive(new File(delta.outputDirName));
 		} finally {
 			delta.finish();

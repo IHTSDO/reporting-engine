@@ -43,7 +43,7 @@ public class ModelCongenitalAbnormality extends DeltaGenerator {
 			delta.prep(); //Further initiation once hierarchy is available
 			delta.startTimer();
 			delta.process();
-			delta.flushFiles(false);
+			delta.flushFiles(false, true); //Need to flush files before zipping
 			SnomedUtils.createArchive(new File(delta.outputDirName));
 		} finally {
 			delta.finish();

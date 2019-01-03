@@ -53,12 +53,12 @@ public class ReportManager implements RF2Constants {
 		return reportFileManager.getPrintWriter(fileName);
 	}
 
-	public void flushFiles(boolean andClose) throws TermServerScriptException {
+	public void flushFiles(boolean andClose, boolean withWait) throws TermServerScriptException {
 		//Watch that we might have written to RF2 files, even if writeToFile is set to false
 		reportFileManager.flushFiles(andClose);
 		
 		if (writeToSheet) {
-			reportSheetManager.flush();
+			reportSheetManager.flushWithWait();
 			if (andClose) {
 				System.out.println("See Google Sheet: " + reportSheetManager.getUrl());
 			}

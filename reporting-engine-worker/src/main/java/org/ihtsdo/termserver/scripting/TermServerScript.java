@@ -394,6 +394,7 @@ public abstract class TermServerScript implements RF2Constants {
 			postInit();
 			jobRun.setResultUrl(getReportManager().getUrl());
 			runJob();
+			flushFilesWithWait(false);  //Make sure we successfully write the last of the data before considering ourselves "Complete"
 			jobRun.setStatus(JobStatus.Complete);
 			Object issueCountObj = summaryDetails.get(ISSUE_COUNT);
 			int issueCount = 0;
@@ -775,18 +776,28 @@ public abstract class TermServerScript implements RF2Constants {
 		getReportManager().flushFilesSoft();
 	}
 	
-	public void flushFiles(boolean andClose) throws TermServerScriptException {
+	public void flushFiles(boolean andClose, boolean withWait) throws TermServerScriptException {
 		if (getRF2Manager() != null) {
 			getRF2Manager().flushFiles(andClose);
 		}
 		if (getReportManager() != null) {
-			getReportManager().flushFiles(andClose);
+			getReportManager().flushFiles(andClose, withWait);
 		}
 	}
 	
 	public void flushFilesSafely(boolean andClose) {
 		try {
-			flushFiles(andClose);
+			boolean andWait = false;
+			flushFiles(andClose, andWait);
+		} catch (Exception e) {
+			error("Failed to flush files.", e);
+		}
+	}
+	
+	public void flushFilesWithWait(boolean andClose) {
+		try {
+			boolean andWait = true;
+			flushFiles(andClose, andWait);
 		} catch (Exception e) {
 			error("Failed to flush files.", e);
 		}

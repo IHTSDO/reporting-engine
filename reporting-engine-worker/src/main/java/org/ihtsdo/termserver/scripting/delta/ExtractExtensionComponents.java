@@ -45,7 +45,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			delta.startTimer();
 			delta.processFile();
 			delta.outputModifiedComponents();
-			delta.flushFiles(false);
+			delta.flushFiles(false, true); //Need to flush files before zipping
 			SnomedUtils.createArchive(new File(delta.outputDirName));
 		} finally {
 			delta.finish();
