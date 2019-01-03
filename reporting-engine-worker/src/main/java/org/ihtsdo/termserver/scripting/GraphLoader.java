@@ -72,6 +72,7 @@ public class GraphLoader implements RF2Constants {
 	}
 	
 	public void reset() {
+		TermServerScript.info("Resetting Graph Loader");
 		concepts = new HashMap<String, Concept>();
 		descriptions = new HashMap<String, Description>();
 		allComponents = null;
