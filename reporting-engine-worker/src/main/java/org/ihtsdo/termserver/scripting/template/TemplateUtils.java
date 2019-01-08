@@ -70,7 +70,6 @@ public class TemplateUtils {
 		//Default to not allowing additional attributes
 		return matchesTemplate(c, t, descendantsCache, charType, false);
 	}
-		
 
 	public static boolean matchesTemplate(Concept c, Template t, DescendentsCache cache, CharacteristicType charType, boolean allowAdditional) throws TermServerScriptException {
 		//TODO Check the focus concept

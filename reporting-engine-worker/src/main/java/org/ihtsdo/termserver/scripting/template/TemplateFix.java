@@ -108,8 +108,12 @@ abstract public class TemplateFix extends BatchFix {
 	protected Set<Concept> findTemplateMatches(Template t) throws TermServerScriptException {
 		Set<Concept> matches = new HashSet<Concept>();
 		for (Concept c : findConcepts(project.getBranchPath(), subHierarchyECL)) {
-			if (c.getConceptId().equals("19378003")) {
+			if (c.getConceptId().equals("415771000")) {
 				debug ("Check template match here");
+			}
+			if (!c.isActive()) {
+				warn ("Ignoring inactive concept returned by ECL: " + c);
+				continue;
 			}
 			if (TemplateUtils.matchesTemplate(c, t, gl.getDescendantsCache(), CharacteristicType.INFERRED_RELATIONSHIP)) {
 				//Do we already have a template for this concept?  
