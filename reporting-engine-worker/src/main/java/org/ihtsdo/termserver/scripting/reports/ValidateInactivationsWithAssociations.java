@@ -3,6 +3,7 @@ package org.ihtsdo.termserver.scripting.reports;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.job.ReportClass;
@@ -24,16 +25,21 @@ import org.springframework.util.StringUtils;
  * Inactivated as "Duplicate" should have [1...1] Same As associations
  * Inactivated as "Erroneous" or "Outdated" should have [1...1] Replaced By associations
  * Inactivated as "Limited Component" should have [1..*] Was A associations
+ * 
+ * Update: as pointed out by Jeremy Rogers (thanks Jeremy!) we have a small number of hist
+ * assocs which are NOT "MovedTo", but are pointing to some namespace concept.  This is obviously wrong.
+ * 
  */
 public class ValidateInactivationsWithAssociations extends TermServerReport implements ReportClass {
 	
 	public static String NEW_INACTIVATIONS_ONLY = "New Inactivations Only";
 	boolean newInactivationsOnly = false;
+	Set<Concept> namespaceConcepts;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		Map<String, String> params = new HashMap<>();
 		params.put(SUB_HIERARCHY, ROOT_CONCEPT.toString());
-		params.put(NEW_INACTIVATIONS_ONLY, "Y");
+		params.put(NEW_INACTIVATIONS_ONLY, "N");
 		TermServerReport.run(ValidateInactivationsWithAssociations.class, args, params);
 	}
 	
@@ -61,7 +67,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 	}
 
 	public void runJob() throws TermServerScriptException {
-		
+		namespaceConcepts = gl.getDescendantsCache().getDescendentsOrSelf(NAMESPACE_CONCEPT);
 		for (Concept c : gl.getAllConcepts()) {
 			String isLegacy = isLegacy(c);
 			if (!c.isActive()) {
@@ -204,8 +210,14 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 		} else {
 			//Now check association is appropriate for the inactivation indicator used
 			for (AssociationEntry h : c.getAssociations(ActiveState.ACTIVE, true)) {
-				if (!h.getRefsetId().equals(requiredAssociation)) {
-					String assocStr = SnomedUtils.translateAssociation(h.getRefsetId()).toString();
+				String assocStr = SnomedUtils.translateAssociation(h.getRefsetId()).toString();
+				Concept target = gl.getConcept(h.getTargetComponentId());
+				//Only the "MovedTo" historical association should point to a Namespace Concept
+				if (!h.getRefsetId().equals(SCTID_ASSOC_MOVED_TO_REFSETID) && namespaceConcepts.contains(target)) {
+					String msg = assocStr + " should not point to namespace concept: " + target;
+					report (c, c.getEffectiveTime(), msg, legacy, data);
+					incrementSummaryInformation(ISSUE_COUNT);
+				} else if (!h.getRefsetId().equals(requiredAssociation)) {
 					//If we found a "WAS_A" then just record the stat for that
 					String msg = inactStr + " inactivation requires " + reqAssocStr + " historical association.  Found: " + assocStr;
 					if (assocStr.equals(Association.WAS_A.toString()) && !inactStr.equals(InactivationIndicator.AMBIGUOUS.toString())) {
@@ -217,7 +229,6 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 				}
 			}
 		}
-		
 	}
 	
 	private String isLegacy(Component c) {
