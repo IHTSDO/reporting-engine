@@ -118,7 +118,23 @@ public class ArchiveManager implements RF2Constants {
 					System.gc();
 				}
 				info ("Loading snapshot archive contents into memory...");
-				loadArchive(snapshot, fsnOnly, "Snapshot");
+				try {
+					loadArchive(snapshot, fsnOnly, "Snapshot");
+				} catch (Exception e) {
+					info ("Non-viable snapshot detected.  Deleting " + snapshot + "...");
+					try {
+						if (snapshot.isFile()) {
+							snapshot.delete();
+						} else if (snapshot.isDirectory()) {
+							FileUtils.deleteDirectory(snapshot);
+						} else {
+							throw new TermServerScriptException (snapshot + " is neither file nor directory.");
+						}
+					} catch (Exception e2) {
+						TermServerScript.warn("Failed to delete snapshot " + snapshot + " due to " + e2);
+					}
+					throw new TermServerScriptException("Non-viable snapshot detected",e);
+				}
 			}
 		}
 		currentlyHeldInMemory = ts.getProject();
@@ -183,13 +199,13 @@ public class ArchiveManager implements RF2Constants {
 			
 			if (!fsnOnly) {  
 				//Check that we've got some descriptions to be sure we've not been given
-				//a classification style archive.
-				List<Description> first50Descriptions = gl.getAllConcepts()
+				//a malformed, or classification style archive.
+				List<Description> first100Descriptions = gl.getAllConcepts()
 						.stream()
-						.limit(50)
+						.limit(100)
 						.flatMap(c -> c.getDescriptions().stream())
 						.collect(Collectors.toList());
-				if (first50Descriptions.size() < 20) {
+				if (first100Descriptions.size() < 100) {
 					throw new TermServerScriptException("Failed to find sufficient number of descriptions - classification archive used?");
 				}
 			}

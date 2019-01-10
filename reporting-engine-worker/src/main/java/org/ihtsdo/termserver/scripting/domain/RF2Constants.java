@@ -76,6 +76,7 @@ public interface RF2Constants {
 	static Concept FINDING_SITE = new Concept ("363698007", "Finding site (attribute)");
 	static Concept ANAT_OR_ACQ_BODY_STRUCT = new Concept("442083009", "Anatomical or acquired body structure (body structure)");
 	static Concept NAMESPACE_CONCEPT = new Concept("370136006", "Namespace concept (nameespace concept)");
+	static Concept SPECIAL_CONCEPT = new Concept("370115009", "Special concept (special concept)");
 	
 	//Drug Terms
 	static String ACETAMINOPHEN = "acetaminophen";

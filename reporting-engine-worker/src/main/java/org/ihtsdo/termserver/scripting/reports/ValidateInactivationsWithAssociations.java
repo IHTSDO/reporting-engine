@@ -229,7 +229,9 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 				}
 				
 				if (!h.getRefsetId().equals(SCTID_ASSOC_MOVED_TO_REFSETID)) {
-					validateTargetAppropriate(c,assocStr, target, h);
+					//In fact, so much of this has occurred historically that it would be a huge
+					//undertaking to review them all.
+					//validateTargetAppropriate(c,assocStr, target, h);
 				}
 			}
 		}
@@ -242,13 +244,18 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 			Concept topLevelSource = SnomedUtils.getHighestAncestorBefore(wasA, ROOT_CONCEPT);
 			Concept topLevelTarget = SnomedUtils.getHighestAncestorBefore(target, ROOT_CONCEPT);
 			
-			if (topLevelSource != null && topLevelTarget != null) {
+			if (topLevelSource != null && topLevelTarget != null 
+					&& !topLevelSource.equals(SPECIAL_CONCEPT)
+					&& !topLevelTarget.equals(SPECIAL_CONCEPT)
+					&& !topLevelSource.equals(topLevelTarget)) {
 				String msg = assocStr + " pointing to target in other top level hierarchy: " + target;
 				report (c, c.getEffectiveTime(), msg);
 				incrementSummaryInformation(ISSUE_COUNT);
 			}
 		} else {
-			warn ("Unable to determine histroical parent of " + c);
+			if (c.getRelationships().size() > 0) {
+				warn ("Unable to determine histroical parent of " + c);
+			}
 		}
 		
 	}
