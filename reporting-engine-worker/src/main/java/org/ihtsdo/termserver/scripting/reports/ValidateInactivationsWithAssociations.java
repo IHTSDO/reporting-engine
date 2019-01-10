@@ -227,10 +227,32 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 						incrementSummaryInformation(ISSUE_COUNT);
 					}
 				}
+				
+				if (!h.getRefsetId().equals(SCTID_ASSOC_MOVED_TO_REFSETID)) {
+					validateTargetAppropriate(c,assocStr, target, h);
+				}
 			}
 		}
 	}
 	
+	private void validateTargetAppropriate(Concept c, String assocStr, Concept target, AssociationEntry h) throws TermServerScriptException {
+		//What did this concept used to be?
+		Concept wasA = SnomedUtils.getHistoricalParent(c);
+		if (wasA != null) {
+			Concept topLevelSource = SnomedUtils.getHighestAncestorBefore(wasA, ROOT_CONCEPT);
+			Concept topLevelTarget = SnomedUtils.getHighestAncestorBefore(target, ROOT_CONCEPT);
+			
+			if (topLevelSource != null && topLevelTarget != null) {
+				String msg = assocStr + " pointing to target in other top level hierarchy: " + target;
+				report (c, c.getEffectiveTime(), msg);
+				incrementSummaryInformation(ISSUE_COUNT);
+			}
+		} else {
+			warn ("Unable to determine histroical parent of " + c);
+		}
+		
+	}
+
 	private String isLegacy(Component c) {
 		return StringUtils.isEmpty(c.getEffectiveTime()) ? "N" : "Y";
 	}

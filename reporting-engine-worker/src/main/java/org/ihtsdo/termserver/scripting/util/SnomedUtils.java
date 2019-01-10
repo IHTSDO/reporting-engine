@@ -1114,5 +1114,33 @@ public class SnomedUtils implements RF2Constants {
 		}
 		return true;
 	}
+
+	public static Concept getHistoricalParent(Concept c) throws TermServerScriptException {
+		if (c.isActive()) {
+			throw new TermServerScriptException("Attempted to find historical parent of an active concept: " + c);
+		}
+		//TODO Sort the parent relationships by time so we get the one most recently inactivated
+		List<Concept> parents = c.getRelationships().stream()
+				.filter(r -> r.getType().equals(IS_A))
+				.map(r -> r.getTarget())
+				.collect(Collectors.toList());
+		
+		//Return the first one that is still active
+		for (Concept parent : parents) {
+			if (parent.isActive()) {
+				return parent;
+			}
+		}
+		
+		//Otherwise, find the parent's parent and see if that's 
+		//TODO This could be done as a breadth first recursive search
+		for (Concept parent : parents) {
+			Concept grandParent = getHistoricalParent(parent);
+			if (grandParent != null) {
+				return grandParent;
+			}
+		}
+		return null;
+	}
 	
 }
