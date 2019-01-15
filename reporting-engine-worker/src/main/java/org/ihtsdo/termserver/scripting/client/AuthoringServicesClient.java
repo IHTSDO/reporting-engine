@@ -11,6 +11,7 @@ import org.springframework.web.client.RestTemplate;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import us.monoid.json.JSONObject;
@@ -101,9 +102,11 @@ public class AuthoringServicesClient {
 		
 		if (reviewer != null) {
 			requestJson.addProperty("status", "IN_REVIEW");
+			JsonArray reviewers = new JsonArray();
 			JsonObject reviewerJson = new JsonObject();
 			reviewerJson.addProperty("username", reviewer);
-			requestJson.add("reviewer", reviewerJson);
+			reviewers.add(reviewerJson);
+			requestJson.add("reviewers", reviewers);
 		}
 		
 		HttpEntity<Object> requestEntity = new HttpEntity<Object>(requestJson, headers);

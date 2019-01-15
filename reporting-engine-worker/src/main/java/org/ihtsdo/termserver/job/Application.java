@@ -5,8 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
 
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.boot.SpringApplication;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
@@ -23,6 +21,9 @@ import java.util.TimeZone;
 @ImportResource("classpath:services-context.xml")
 @EnableJms
 public class Application  {
+	
+	public enum Mode { SERVER, CLIENT }
+	public static Mode mode = Mode.CLIENT;
 
 	@Bean
 	public ObjectMapper objectMapper() {
@@ -43,12 +44,12 @@ public class Application  {
 		return converter;
 	}
 	
-	/*@Bean
-	public JobManager getJobManager() {
-		return new JobManager();
-	}*/
+	public static Mode getMode() {
+		return mode;
+	}
 
 	public static void main(String[] args) {
+		mode = Mode.SERVER;
 		new SpringApplicationBuilder(Application.class)
 		.web(WebApplicationType.NONE) // .REACTIVE, .SERVLET
 		.run(args);

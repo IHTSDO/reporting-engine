@@ -37,7 +37,6 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	protected boolean populateEditPanel = true;
 	protected boolean populateTaskDescription = true;
 	protected boolean reportNoChange = true;
-	protected boolean putTaskIntoReview = false;
 	protected boolean worksWithConcepts = true;
 	protected boolean classifyTasks = false;
 	protected boolean validateTasks = false;
@@ -819,19 +818,22 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	
 	protected int replaceRelationship(Task t, Concept c, RelationshipTemplate from, RelationshipTemplate to) throws TermServerScriptException {
 		int changesMade = 0;
-		boolean newValueAdded = false;
-		//Firstly, do we have any inactive relationships that we could reactivate?
-		List<Relationship> inactiveRels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, from.getType(), from.getTarget(), ActiveState.INACTIVE);
-		if (inactiveRels.size() >= 1) {
-			Relationship rel = inactiveRels.get(0);
-			report (t, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_REACTIVATED, rel);
-			rel.setActive(true);
-			newValueAdded = true;
-			changesMade++;
-		}
+		
+		//Do we have any inactive relationships that we could reactivate, rather than creating new ones?
+		List<Relationship> inactiveRels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, to.getType(), to.getTarget(), ActiveState.INACTIVE);
+
 		List<Relationship> originalRels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, from.getType(), from.getTarget(), ActiveState.ACTIVE);
 		for (Relationship r : originalRels) {
-			if (!newValueAdded) {
+			if (inactiveRels.size() > 0) {
+				//We'll reuse and reactivate this row, rather than create a new one
+				//Do we have one with the same group, if not, use any
+				Relationship bestReactivation = getBestReactivation(inactiveRels, r.getGroupId());
+				bestReactivation.setActive(true);
+				bestReactivation.setGroupId(r.getGroupId());
+				inactiveRels.remove(bestReactivation);
+				changesMade++;
+				report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_REACTIVATED, bestReactivation);
+			} else {
 				Relationship newRel = r.clone();
 				newRel.setType(to.getType());
 				newRel.setTarget(to.getTarget());
@@ -839,12 +841,23 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 				changesMade++;
 				report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, newRel);
 			}
+			
 			removeRelationship(t, c, r);
 			changesMade++;
 		}
 		return changesMade;
 	}
 	
+	private Relationship getBestReactivation(List<Relationship> rels, int targetGroupId) {
+		for (Relationship r : rels) {
+			if (r.getGroupId() == targetGroupId) {
+				return r;
+			}
+		}
+		//If not found in the same group, return the first one
+		return rels.get(0);
+	}
+
 	protected void removeRedundancy(Task t, Concept c, Concept type, int groupNum) throws TermServerScriptException {
 		//Remove any redundant attribute in the given group
 		List<Concept> allValues = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, type, groupNum)

@@ -232,6 +232,10 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		return getRelationships(r.getCharacteristicType(), r.getType(), r.getTarget(), r.getGroupId(), ActiveState.ACTIVE);
 	}
 	
+	public List<Relationship> getRelationships(CharacteristicType characteristicType, RelationshipTemplate t) {
+		return getRelationships(characteristicType, t.getType(), t.getTarget(), ActiveState.ACTIVE);
+	}
+	
 	public List<Relationship> getRelationships(Relationship r, ActiveState activeState) {
 		return getRelationships(r.getCharacteristicType(), r.getType(), r.getTarget(), r.getGroupId(), activeState);
 	}

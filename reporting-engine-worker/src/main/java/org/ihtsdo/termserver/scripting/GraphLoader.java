@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.zip.ZipInputStream;
 
+import org.ihtsdo.termserver.job.Application;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.AssociationTargets;
 import org.ihtsdo.termserver.scripting.domain.Component;
@@ -81,7 +82,9 @@ public class GraphLoader implements RF2Constants {
 		descendantsCache.reset();
 		ancestorsCache.reset();
 		historicalAssociations =  new HashMap<Concept, List<AssociationEntry>>();
-		EclCache.reset();
+		if (Application.getMode().equals(Application.Mode.SERVER)) {
+			EclCache.reset();
+		}
 		populateKnownConcepts();
 	}
 	

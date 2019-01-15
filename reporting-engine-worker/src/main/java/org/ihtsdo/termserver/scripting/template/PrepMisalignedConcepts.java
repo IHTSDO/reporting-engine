@@ -138,12 +138,13 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		subHierarchyECL = "<<399963005 |Abrasion|"; //QI-147
 		templateNames = new String[] {	"templates/wound/abrasion.json" ,
 										"templates/Disorder due to birth trauma.json"};
+		setExclusions(new String[] {"118938008 |Disorder of mouth (disorder)|"};
 		includeDueTos = true;
 		
 		subHierarchyECL = "300935003 OR 206203003 OR 276623000"; //QI-147
 		templateNames = new String[] {	"templates/Disorder due to birth trauma.json" };
 		includeDueTos = true;
-		*/
+		
 		
 		subHierarchyECL = "<< 52515009 |Hernia of abdominal cavity|"; //QI-172
 		setExclusions(new String[] {"236037000 |Incisional hernia (disorder)|", 
@@ -153,6 +154,13 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		exclusionWords.add("gangrene");
 		exclusionWords.add("obstruction");
 		exclusionWords.add("obstructed");
+		*/
+		
+		subHierarchyECL = "<<312608009 |Laceration - injury|"; //QI-177
+		templateNames = new String[] {	"templates/wound/laceration.json" };
+		includeDueTos = true;
+		
+		
 		super.init(args);
 		
 		//Ensure our ECL matches more than 0 concepts before we import SNOMED - expensive!

@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClient;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.ConceptCollection;
+import org.springframework.util.StringUtils;
 
 import com.google.gson.Gson;
 
@@ -49,6 +50,14 @@ public class EclCache {
 		//Have we already recovered this ECL?
 		if (expansionCache.containsKey(ecl)) {
 			List<Concept> cached = expansionCache.get(ecl);
+			//Have we reset the GL? Recover full local cached objects if so
+			if (cached.size() > 0 && StringUtils.isEmpty(cached.get(0).getFsn())) {
+				List<Concept> localCopies = cached.stream()
+						.map(c -> gl.getConceptSafely(c.getId()))
+						.collect(Collectors.toList());
+				cached = localCopies;
+				expansionCache.put(ecl, cached);
+			}
 			TermServerScript.debug ("Recovering cached " + cached.size() + " concepts matching " + ecl);
 			return cached;
 		}

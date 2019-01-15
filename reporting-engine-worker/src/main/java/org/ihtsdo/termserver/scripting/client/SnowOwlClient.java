@@ -7,6 +7,7 @@ import java.text.SimpleDateFormat;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -170,7 +171,9 @@ public class SnowOwlClient {
 
 	public JSONResource getConcepts(String ecl, String branchPath, int offset, int limit) throws SnowOwlClientException {
 		try {
-			String url = getConceptsPath(branchPath) + "?active=true&limit=" + limit + "&offset=" + offset + "&ecl=" + URLEncoder.encode(ecl, "UTF-8");
+			//I suspect a failure of 0 concepts gets cached somewhere, so I'm adding a random string to force a fresh request
+			String random = RandomStringUtils.random(5, true, true);
+			String url = getConceptsPath(branchPath) + "?rnd=" + random + "&active=true&limit=" + limit + "&offset=" + offset + "&ecl=" + URLEncoder.encode(ecl, "UTF-8");
 			System.out.println("Calling " + url);
 			return resty.json(url);
 		} catch (IOException e) {
