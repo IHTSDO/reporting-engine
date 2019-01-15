@@ -106,12 +106,12 @@ public class GroupRemodel extends TemplateFix {
 		templateNames = new String[] {	"templates/Complication co-occurrent and due to Diabetes Melitus.json",
 				//"templates/Complication co-occurrent and due to Diabetes Melitus - Minimal.json"
 				};
-		
-		//subHierarchyECL =  "<< 3218000"; //QI-70 |Mycosis (disorder)|
-		subHierarchyECL =  "<< 276206000 |Superficial mycosis (disorder)|"; //QI-70 |Mycosis (disorder)|
+		*/
+		subHierarchyECL =  "<< 3218000"; //QI-70 |Mycosis (disorder)|
+		//subHierarchyECL =  "<< 276206000 |Superficial mycosis (disorder)|"; //QI-70 |Mycosis (disorder)|
 		templateNames = new String[] {	"templates/infection/Infection caused by Fungus.json"};
-		removeRelationships.add(new Relationship(FINDING_SITE, ANAT_OR_ACQ_BODY_STRUCT));
-		
+		//removeRelationships.add(new Relationship(FINDING_SITE, ANAT_OR_ACQ_BODY_STRUCT));
+		/*
 		subHierarchyECL =  "<< 17322007"; //QI-116 |Parasite (disorder)|
 		templateNames = new String[] {	"templates/Infection caused by Parasite.json"};
 		
@@ -122,7 +122,6 @@ public class GroupRemodel extends TemplateFix {
 		exclusionWords.add("fracture");
 		setExclusions(new String[] {"399963005 |Abrasion (disorder)|", "312608009 |Laceration - injury|"});
 		includeDueTos = true;
-		*/
 		
 		subHierarchyECL = "<<40733004|Infectious disease|"; //QI-159
 		templateNames = new String[] {	"templates/infection/Infection NOS.json" };
@@ -131,7 +130,7 @@ public class GroupRemodel extends TemplateFix {
 				"17322007 |Disease caused by parasite (disorder)|", "91302008 |Sepsis (disorder)|"});
 		exclusionWords.add("shock");
 		alreadyProcessedFile = new File(".QI-159_already_processed.txt");
-		
+		*/
 		super.init(args);
 		
 		//Ensure our ECL matches more than 0 concepts.  This will also cache the result
