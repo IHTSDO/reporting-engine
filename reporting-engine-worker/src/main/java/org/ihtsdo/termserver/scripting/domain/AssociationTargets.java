@@ -76,6 +76,14 @@ public class AssociationTargets {
 		return targets;
 	}
 	
+	public static AssociationTargets replacedBy(Concept c) {
+		AssociationTargets targets = new AssociationTargets();
+		List<String> targetList = new ArrayList<>();
+		targetList.add(c.getId());
+		targets.setReplacedBy(targetList);
+		return targets;
+	}
+	
 	public static AssociationTargets wasA(Concept c) {
 		AssociationTargets targets = new AssociationTargets();
 		List<String> targetList = new ArrayList<>();

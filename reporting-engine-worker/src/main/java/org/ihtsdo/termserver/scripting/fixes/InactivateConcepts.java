@@ -6,19 +6,21 @@ import java.util.*;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.StringUtils;
 
 /*
- * INFRA-2496, QI-135
+ * INFRA-2496, QI-135, DRUGS-667
  * Inactivate concepts where a replacement exists - driven by list.
- * Children should have their Medical Procedure parent removed.
  */
 public class InactivateConcepts extends BatchFix implements RF2Constants {
 	
 	Map<Concept, Concept> replacements = new HashMap<>();
+	Map<Concept, InactivationIndicator> inactivationIndicators = new HashMap<>();
 	Map<Concept, Task> inactivations = new HashMap<>();
 	boolean expectReplacements = false;
+	boolean autoInactivateChildren = true;
 	
 	protected InactivateConcepts(BatchFix clone) {
 		super(clone);
@@ -27,11 +29,12 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
 		InactivateConcepts fix = new InactivateConcepts(null);
 		try {
+			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
 			fix.inputFileHasHeaderRow = false;
-			fix.expectNullConcepts = true;
+			fix.expectNullConcepts = false;
 			fix.init(args);
-			fix.loadProjectSnapshot(false); //Just the FSNs
-			fix.postInit(true);
+			fix.loadProjectSnapshot(true);
+			fix.postInit();
 			fix.processFile();
 		} finally {
 			fix.finish();
@@ -39,70 +42,93 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 	}
 
 	@Override
-	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
-		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
+	public int doFix(Task t, Concept c, String info) throws TermServerScriptException {
+		Concept loadedConcept = loadConcept(c, t.getBranchPath());
 		int changesMade = 0;
-		if (loadedConcept == null) {
-			report (task, concept, Severity.LOW, ReportActionType.NO_CHANGE, "Concept already deleted?");
+		if (loadedConcept == null || !loadedConcept.isActive()) {
+			report (t, c, Severity.LOW, ReportActionType.NO_CHANGE, "Concept already inactivated?");
 		} else if (loadedConcept.isReleased()) {
-			changesMade = inactivateConcept(task, loadedConcept);
+			changesMade = inactivateConcept(t, loadedConcept);
 			if (changesMade > 0) {
-				save(task, loadedConcept, info);
+				save(t, loadedConcept, info);
 			}
 		} else {
-			changesMade = deleteConcept(task, loadedConcept);
+			changesMade = deleteConcept(t, loadedConcept);
 		}
 		return changesMade;
 	}
 	
-	private int inactivateConcept(Task task, Concept concept) throws TermServerScriptException {
-		//Do we have a replacement for this concepts?  Only inactivate concepts with replacements
-		Concept replacement = replacements.get(concept);
-		if (replacement == null) {
-			throw new ValidationFailure(concept, "Unable to inactivate without replacement");
+	private int inactivateConcept(Task t, Concept c) throws TermServerScriptException {
+		//Do we have a replacement for this concepts?  
+		Concept replacement = replacements.get(c);
+		if (expectReplacements && replacement == null) {
+			throw new ValidationFailure(c, "Unable to inactivate without replacement");
 		}
 		
 		//Have we already inactivated this concept?
-		if (inactivations.containsKey(concept)) {
-			report(task, concept, Severity.LOW, ReportActionType.VALIDATION_CHECK, "Concept already inactivated in " + task.getKey());
+		if (inactivations.containsKey(c)) {
+			report(t, c, Severity.LOW, ReportActionType.VALIDATION_CHECK, "Concept already inactivated in " + t.getKey());
 			return NO_CHANGES_MADE;
 		}
 		
 		//Check for this concept being the target of any historical associations and rewire them to the replacement
-		checkAndInactivatateIncomingAssociations(task, concept, InactivationIndicator.AMBIGUOUS, replacement);
+		//With the same inactivation reasons
+		InactivationIndicator inactivationIndicator = inactivationIndicators.get(c);
+		checkAndInactivatateIncomingAssociations(t, c, inactivationIndicator, replacement);
 		
 		//Check for any stated children and remove this concept as a parent
-		for (Concept child :  gl.getConcept(concept.getConceptId()).getDescendents(IMMEDIATE_CHILD, CharacteristicType.STATED_RELATIONSHIP)) {
+		for (Concept child : gl.getConcept(c.getConceptId()).getDescendents(IMMEDIATE_CHILD, CharacteristicType.STATED_RELATIONSHIP)) {
 			//Have we already inactivated this child
 			if (!inactivations.containsKey(child)) {
-				task.addAfter(child, concept);
+				t.addAfter(child, c);
 				//Is this a concept we have to inactivate?  Go through whole process if so
-				if (replacements.containsKey(child)) {
-					report(task, child, Severity.LOW, ReportActionType.INFO, "Inactivating child of " + concept);
-					doFix(task, child, " as descendant of " + concept);
+				if (replacements.containsKey(child) || autoInactivateChildren) {
+					String extraInfo = " as per file";
+					Severity severity = Severity.LOW;
+					if (!replacements.containsKey(child)) {
+						//In this case, we should inactivate the child with the same details as the parent
+						inactivationIndicators.put(child, inactivationIndicator);
+						replacements.put(child, replacement);
+						extraInfo = " NOT SPECIFIED IN FILE";
+						severity = Severity.HIGH;
+					}
+					report(t, child, severity, ReportActionType.INFO, "Inactivating child of " + c + extraInfo + ", prior to parent inactivation");
+					doFix(t, child, " as descendant of " + c);
 				} else {
 					//Otherwise, just remove the concept as a child of the parent
-					removeParent(task, child, concept);
+					removeParent(t, child, c);
 				}
 			}
 		}
-		concept.setActive(false);
-		concept.setEffectiveTime(null);
-		if (replacement.equals(NULL_CONCEPT)) {
-			concept.setInactivationIndicator(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
-			concept.setAssociationTargets(new AssociationTargets());
-			report(task, concept, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept inactivated as 'NonConformance to Editorial Policy'");
-		} /*else {
-			concept.setInactivationIndicator(InactivationIndicator.DUPLICATE);
-			concept.setAssociationTargets(AssociationTargets.sameAs(replacement));
-			report(task, concept, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept inactivated as duplicate, same as: " + replacement);
-		}*/
-		else {
-			concept.setInactivationIndicator(InactivationIndicator.AMBIGUOUS);
-			concept.setAssociationTargets(AssociationTargets.possEquivTo(replacement));
-			report(task, concept, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept inactivated as ambiguous, possibly equivalent to: " + replacement);
+		c.setActive(false);
+		c.setEffectiveTime(null);
+		
+		String histAssocType = "Unknown Historical Association";
+		if ((replacement== null || replacement.equals(NULL_CONCEPT)) && !inactivationIndicator.equals(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY)) {
+			if (inactivationIndicator != null) {
+				report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "File specified " + inactivationIndicator + " inactivation but no HistAssoc found. Switching to NCEP");
+			}
+			c.setInactivationIndicator(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
+			c.setAssociationTargets(new AssociationTargets());
+			report(t, c, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept inactivated as 'NonConformance to Editorial Policy'");
+		} else {
+			c.setInactivationIndicator(inactivationIndicator);
+			switch (inactivationIndicator) {
+				case OUTDATED : c.setAssociationTargets(AssociationTargets.replacedBy(replacement));
+								histAssocType = " replaced by ";
+								break;
+				case AMBIGUOUS : c.setAssociationTargets(AssociationTargets.possEquivTo(replacement));
+								histAssocType = " possibly equiv to ";
+								break;
+				case NONCONFORMANCE_TO_EDITORIAL_POLICY :	c.setAssociationTargets(new AssociationTargets());
+															histAssocType = "";
+															break;
+				default : throw new TermServerScriptException("Unexpected inactivation indicator: " + inactivationIndicator);
+			}
+			
+			report(t, c, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept inactivated as " + inactivationIndicator + histAssocType + (replacement.equals(NULL_CONCEPT)?"":replacement));
 		}
-		inactivations.put(concept, task);
+		inactivations.put(c, t);
 		return CHANGE_MADE;
 	}
 
@@ -148,10 +174,13 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 	private void inactivateHistoricalAssociation(Task task, AssociationEntry assoc, InactivationIndicator reason, Concept replacement) throws TermServerScriptException {
 		//The source concept can no longer have this historical association, and its
 		//inactivation reason must also change.
+		Concept originalTarget = gl.getConcept(assoc.getTargetComponentId());
 		Concept incomingConcept = loadConcept(assoc.getReferencedComponentId(), task.getBranchPath());
 		incomingConcept.setInactivationIndicator(reason);
 		if (reason.equals(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY)) {
 			incomingConcept.setAssociationTargets(null);
+		} else if (reason.equals(InactivationIndicator.OUTDATED)) {
+			incomingConcept.setAssociationTargets(AssociationTargets.replacedBy(replacement));
 		} else if (reason.equals(InactivationIndicator.DUPLICATE)) {
 			incomingConcept.setAssociationTargets(AssociationTargets.sameAs(replacement));
 		} else if  (reason.equals(InactivationIndicator.AMBIGUOUS)) {
@@ -160,7 +189,7 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 			throw new IllegalArgumentException("Don't know what historical association to use with " + reason);
 		}
 		Severity severity = replacement == null ? Severity.CRITICAL : Severity.MEDIUM;
-		report(task, incomingConcept, severity, ReportActionType.CONCEPT_CHANGE_MADE, "Historical association rewired to " + replacement);
+		report(task, incomingConcept, severity, ReportActionType.CONCEPT_CHANGE_MADE, "Historical association to " + originalTarget + " rewired to " + replacement);
 		//Add this concept into our task so we know it's been updated
 		task.addAfter(incomingConcept, gl.getConcept(assoc.getTargetComponentId()));
 		save(task, incomingConcept, "");
@@ -177,15 +206,32 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 		}
 		
 		Concept replacement = null;
+		int idxReplacement = 1;
+		
+		if (lineItems.length > 2) {
+			idxReplacement = 2;
+			//In this case, column 1 will be in inactivation reason
+			String strInact = lineItems[1];
+			if (strInact.contains("Outdated")) {
+				inactivationIndicators.put(c, InactivationIndicator.OUTDATED);
+			} else if (strInact.contains("Nonconformance")) {
+				inactivationIndicators.put(c, InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
+			} else if (strInact.contains("Ambiguous")) {
+				inactivationIndicators.put(c, InactivationIndicator.AMBIGUOUS);
+			} else {
+				warn ("Failed to identify inactivation indicator for: " + c);
+			}
+		}
+		
 		if (lineItems.length > 1) {
-			if (lineItems[1].trim().equals("N/A")) {
+			if (lineItems[idxReplacement].toUpperCase().trim().equals("N/A")) {
 				replacement = NULL_CONCEPT;
 			} else {
 				try {
-					replacement = gl.getConcept(lineItems[1]);
+					replacement = gl.getConcept(lineItems[idxReplacement]);
 				} catch (Exception e) {
 					if (expectReplacements) {
-						warn ("Failed to identify replacement concept: " + lineItems[1]);
+						warn ("Failed to identify replacement concept: " + lineItems[idxReplacement]);
 					}
 				}
 			}
