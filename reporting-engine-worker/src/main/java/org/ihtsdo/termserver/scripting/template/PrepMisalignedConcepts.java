@@ -80,7 +80,7 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 						"Template Compliance",
 						"This report lists concepts which match the specified selection (either a subhierarchy OR an ECL expression) " +
 						"which DO NOT comply with the selected template.",
-						params, ProductionStatus.HIDEME);
+						params, ProductionStatus.TESTING);
 	}
 	
 	protected void init(JobRun jobRun) throws TermServerScriptException {
