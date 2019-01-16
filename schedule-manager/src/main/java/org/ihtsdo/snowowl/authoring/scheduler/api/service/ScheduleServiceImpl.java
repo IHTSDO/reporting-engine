@@ -116,9 +116,21 @@ public class ScheduleServiceImpl implements ScheduleService {
 		
 		//We protect the json from having parent links and redundant keys, 
 		//but these are needed  when saving to the database
+		//Also reinforce the display order that is specified by the job
 		for (String parameterKey : jobRun.getParameters().keySet()) {
 			jobRun.getParameters().get(parameterKey).setParentParams(jobRun.getParameters());
 			jobRun.getParameters().get(parameterKey).setParamKey(parameterKey);
+			JobParameter jobParam = job.getParameters().get(parameterKey);
+			if (jobParam == null) {
+				throw new BusinessServiceException(jobRun.getJobName() + " did not originally specify unexpected supplied parameter: '" + parameterKey + "'");
+			} else {
+				Integer displayOrder = job.getParameters().get(parameterKey).getDisplayOrder();
+				if (displayOrder == null) {
+					logger.warn(jobRun.getJobName() + " parameter " + parameterKey + " does not specify a display order");
+					displayOrder = 0;
+				}
+				jobRun.getParameters().get(parameterKey).setDisplayOrder(displayOrder);
+			}
 		}
 		
 		jobRun = jobRunRepository.save(jobRun);
