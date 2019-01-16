@@ -1,10 +1,8 @@
 package org.ihtsdo.termserver.scripting.domain;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
-import com.google.gson.annotations.Expose;
-import com.google.gson.annotations.SerializedName;
+import com.google.gson.annotations.*;
 
 public class ConceptCollection {
 	

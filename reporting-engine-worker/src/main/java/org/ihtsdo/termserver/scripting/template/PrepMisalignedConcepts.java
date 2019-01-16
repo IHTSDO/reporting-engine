@@ -95,11 +95,9 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 			exclusionWords = new ArrayList<>();
 		}
 		
-		super.init(jobRun);
-		
 		//Have we been called via the reporting platform?
 		if (jobRun != null) {
-			
+			super.init(jobRun);
 			includeComplexTemplates = jobRun.getParameters().getMandatoryBoolean(INCLUDE_COMPLEX);
 		
 			subHierarchyECL = jobRun.getParamValue(ECL);
@@ -187,14 +185,14 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 		subHierarchyECL = "<<416886008"; //QI-106 |Closed wound| 
 		templateNames = new String[] {	"templates/wound/wound of bodysite.json"
 				};
-		
+		*/
 		subHierarchyECL = "<<125643001"; //QI-107 |Open wound| 
 		templateNames = new String[] {	"templates/wound/wound of bodysite due to event.json" };
 		exclusionWords.add("complication");
 		exclusionWords.add("fracture");
 		setExclusions(new String[] {"399963005 |Abrasion (disorder)|", "312608009 |Laceration - injury|"});
 		includeDueTos = true;
-		
+		/*
 		subHierarchyECL = "<<128545000"; //QI-75 |Hernia of abdominal wall (disorder)|
 		//subHierarchyECL = "<<773623000";
 		templateNames = new String[] {	"templates/Hernia of abdominal wall.json"};
@@ -232,11 +230,11 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 		exclusionWords.add("gangrene");
 		exclusionWords.add("obstruction");
 		exclusionWords.add("obstructed");
-		*/
+		
 		subHierarchyECL = "<<312608009 |Laceration - injury|"; //QI-177
 		templateNames = new String[] {	"templates/wound/laceration.json" };
 		includeDueTos = true;
-		
+		*/
 		super.init(args);
 		
 		//Ensure our ECL matches more than 0 concepts before we import SNOMED - expensive!

@@ -15,18 +15,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.zip.ZipInputStream;
 
-import org.ihtsdo.termserver.job.Application;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
-import org.ihtsdo.termserver.scripting.domain.AssociationTargets;
-import org.ihtsdo.termserver.scripting.domain.Component;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Description;
-import org.ihtsdo.termserver.scripting.domain.AssociationEntry;
-import org.ihtsdo.termserver.scripting.domain.InactivationIndicatorEntry;
-import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants;
-import org.ihtsdo.termserver.scripting.domain.Relationship;
+import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.springframework.util.StringUtils;
 
 public class GraphLoader implements RF2Constants {
 
@@ -204,10 +196,13 @@ public class GraphLoader implements RF2Constants {
 	
 	public Concept getConcept(String identifier, boolean createIfRequired, boolean validateExists) throws TermServerScriptException {
 		//Have we been passed a full identifier for the concept eg SCTID |FSN| ?
-		String sctId = identifier;
-		if (identifier.contains(PIPE)) {
-			sctId = identifier.split(ESCAPED_PIPE)[0].trim();
+		if (StringUtils.isEmpty(identifier)) {
+			throw new IllegalArgumentException("Empty SCTID encountered");
 		}
+		if (identifier.contains(PIPE)) {
+			identifier = identifier.split(ESCAPED_PIPE)[0].trim();
+		}
+		String sctId = identifier;
 		
 		//Make sure we're actually being asked for a concept
 		if (sctId.length() < 6 || !isConcept(sctId)) {

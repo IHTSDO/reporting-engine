@@ -23,9 +23,11 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	@SerializedName("released")
 	@Expose
 	private Boolean released;
-	@SerializedName(value="conceptId", alternate={"id"})
+	
+	@SerializedName(value="conceptId", alternate="id")
 	@Expose
 	private String conceptId;
+	
 	@SerializedName("fsn")
 	@Expose
 	private String fsn;

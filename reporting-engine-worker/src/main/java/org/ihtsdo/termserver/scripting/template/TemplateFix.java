@@ -121,7 +121,9 @@ abstract public class TemplateFix extends BatchFix {
 	
 	protected Set<Concept> findTemplateMatches(Template t) throws TermServerScriptException {
 		Set<Concept> matches = new HashSet<Concept>();
-		for (Concept c : findConcepts(project.getBranchPath(), subHierarchyECL)) {
+		Collection<Concept> concepts = findConcepts(project.getBranchPath(), subHierarchyECL);
+		info ("Examining " + concepts.size() + " concepts in " + subHierarchyECL + " against template " + t);
+		for (Concept c : concepts) {
 			if (c.getConceptId().equals("415771000")) {
 				debug ("Check template match here");
 			}
@@ -129,7 +131,6 @@ abstract public class TemplateFix extends BatchFix {
 				warn ("Ignoring inactive concept returned by ECL: " + c);
 				continue;
 			}
-			info ("Searching for concepts in " + subHierarchyECL + " matching template " + t);
 			if (TemplateUtils.matchesTemplate(c, t, gl.getDescendantsCache(), CharacteristicType.INFERRED_RELATIONSHIP)) {
 				//Do we already have a template for this concept?  
 				//TODO Assign the most specific template if so
@@ -144,6 +145,8 @@ abstract public class TemplateFix extends BatchFix {
 				matches.add(c);
 			}
 		}
+		info (matches.size() + " concepts in " + subHierarchyECL + " matching template " + t);
+		
 		return matches;
 	}
 

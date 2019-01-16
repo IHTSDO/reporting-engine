@@ -95,7 +95,6 @@ public abstract class TermServerScript implements RF2Constants {
 	public static Gson gson;
 	static {
 		GsonBuilder gsonBuilder = new GsonBuilder();
-		//gsonBuilder.registerTypeAdapter(Concept.class, new ConceptDeserializer());
 		gsonBuilder.registerTypeAdapter(Relationship.class, new RelationshipSerializer());
 		gsonBuilder.setPrettyPrinting();
 		gsonBuilder.excludeFieldsWithoutExposeAnnotation();
