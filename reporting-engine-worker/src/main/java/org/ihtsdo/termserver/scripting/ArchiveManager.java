@@ -26,7 +26,7 @@ public class ArchiveManager implements RF2Constants {
 	//private SnowOwlClient tsClient;
 	protected TermServerScript ts;
 	public boolean allowStaleData = false;
-	public boolean populateHierarchyDepth = false;
+	public boolean populateHierarchyDepth = true;  //Term contains X needs this
 	static ArchiveManager singleton;
 	private Project currentlyHeldInMemory;
 	

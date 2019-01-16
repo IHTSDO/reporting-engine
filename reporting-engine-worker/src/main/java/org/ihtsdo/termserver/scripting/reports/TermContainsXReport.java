@@ -41,7 +41,7 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 	
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
-		additionalReportColumns = "FSN, SemTag, TermMatched, MatchedIn, Case, AttributeDetail, SubHierarchy, SubSubHierarchy";
+		additionalReportColumns = "FSN, SemTag, Def Status, TermMatched, MatchedIn, Case, AttributeDetail, SubHierarchy, SubSubHierarchy";
 		super.init(run);
 		getArchiveManager().populateHierarchyDepth = true;
 		textsToMatch = run.getMandatoryParamValue(WORDS).split(COMMA);
@@ -83,7 +83,8 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 								(startsWith && d.getTerm().toLowerCase().startsWith(matchText.toLowerCase()))) {
 							String[] hiearchies = getHierarchies(c);
 							String cs = SnomedUtils.translateCaseSignificanceFromEnum(c.getFSNDescription().getCaseSignificance());
-							report(c, matchText, d, cs, getAttributeDetail(c), hiearchies[1], hiearchies[2]);
+							String ds = SnomedUtils.translateDefnStatus(c.getDefinitionStatus());
+							report(c, ds, matchText, d, cs, getAttributeDetail(c), hiearchies[1], hiearchies[2]);
 							reported = true;
 							incrementSummaryInformation("Matched " + matchText);
 						}
