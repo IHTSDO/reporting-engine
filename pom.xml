@@ -23,7 +23,7 @@
 		<packageName>${project.artifactId}</packageName>
 		<execFinalName>${project.build.finalName}.jar</execFinalName>
 		<snowowl.version>4.8.0</snowowl.version>
-		<otf.common.version>2.0.2-SNAPSHOT</otf.common.version>
+		<otf.common.version>2.1.1-SNAPSHOT</otf.common.version>
 		<otf.resource-manager.version>2.0.1-SNAPSHOT</otf.resource-manager.version>
 		<spring.activeMQ.version>5.15.0</spring.activeMQ.version>
 		<springfox-swagger.version>2.7.0</springfox-swagger.version>
