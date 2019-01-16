@@ -106,12 +106,12 @@ public class GroupRemodel extends TemplateFix {
 		templateNames = new String[] {	"templates/Complication co-occurrent and due to Diabetes Melitus.json",
 				//"templates/Complication co-occurrent and due to Diabetes Melitus - Minimal.json"
 				};
-		*/
+		
 		subHierarchyECL =  "<< 3218000"; //QI-70 |Mycosis (disorder)|
 		//subHierarchyECL =  "<< 276206000 |Superficial mycosis (disorder)|"; //QI-70 |Mycosis (disorder)|
 		templateNames = new String[] {	"templates/infection/Infection caused by Fungus.json"};
 		//removeRelationships.add(new Relationship(FINDING_SITE, ANAT_OR_ACQ_BODY_STRUCT));
-		/*
+		
 		subHierarchyECL =  "<< 17322007"; //QI-116 |Parasite (disorder)|
 		templateNames = new String[] {	"templates/Infection caused by Parasite.json"};
 		
@@ -122,7 +122,9 @@ public class GroupRemodel extends TemplateFix {
 		exclusionWords.add("fracture");
 		setExclusions(new String[] {"399963005 |Abrasion (disorder)|", "312608009 |Laceration - injury|"});
 		includeDueTos = true;
+		alreadyProcessedFile = new File(".QI-117_already_processed.txt");
 		
+		*/
 		subHierarchyECL = "<<40733004|Infectious disease|"; //QI-159
 		templateNames = new String[] {	"templates/infection/Infection NOS.json" };
 		setExclusions(new String[] {"87628006 |Bacterial infectious disease (disorder)|","34014006 |Viral disease (disorder)|",
@@ -130,7 +132,7 @@ public class GroupRemodel extends TemplateFix {
 				"17322007 |Disease caused by parasite (disorder)|", "91302008 |Sepsis (disorder)|"});
 		exclusionWords.add("shock");
 		alreadyProcessedFile = new File(".QI-159_already_processed.txt");
-		*/
+		
 		super.init(args);
 		
 		//Ensure our ECL matches more than 0 concepts.  This will also cache the result
@@ -153,7 +155,6 @@ public class GroupRemodel extends TemplateFix {
 				.map(a -> gl.getConceptSafely(a.getType()))
 				.collect(Collectors.toSet());
 		
-
 	}
 
 	@Override
@@ -631,28 +632,28 @@ public class GroupRemodel extends TemplateFix {
 				continue;
 			}
 			//At THIS point in the evolution of the code, attempt to remodel any concept
-			//where the stated attribute do not match the inferred
-			if (!isExcluded(c) && !SnomedUtils.inferredMatchesStated(c)) {
-				//just check we don't match any of the other templates in the stated form
-				//Eg having two ungrouped finding sites for complications of diabetes
-				boolean isFirst = true;
-				boolean matchesSubsequentTemplate = false;
-				for (Template template : templates) {
-					if (isFirst) {
-						isFirst = false;
-					} else {
+			//where the stated attribute do not match the inferred OR where the concept
+			//is not aligned to the template
+			if (!isExcluded(c)) {
+				if (!SnomedUtils.inferredMatchesStated(c)) {
+					processMe.add(c);
+				} else {
+					//just check we don't match any of the other templates in the stated form
+					//Eg having two ungrouped finding sites for complications of diabetes
+					boolean matchesTemplate = false;
+					for (Template template : templates) {
 						if (TemplateUtils.matchesTemplate(c, template, 
 								gl.getDescendantsCache(), 
 								CharacteristicType.STATED_RELATIONSHIP, 
 								true //Do allow additional unspecified ungrouped attributes
 								)) {
-							matchesSubsequentTemplate = true;
+							matchesTemplate = true;
 							break;
 						}
 					}
-				}
-				if (!matchesSubsequentTemplate) {
-					processMe.add(c);
+					if (!matchesTemplate) {
+						processMe.add(c);
+					}
 				}
 			}
 		}

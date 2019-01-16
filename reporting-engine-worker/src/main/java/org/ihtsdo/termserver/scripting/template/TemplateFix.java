@@ -115,6 +115,7 @@ abstract public class TemplateFix extends BatchFix {
 				warn ("Ignoring inactive concept returned by ECL: " + c);
 				continue;
 			}
+			info ("Searching for concepts in " + subHierarchyECL + " matching template " + t);
 			if (TemplateUtils.matchesTemplate(c, t, gl.getDescendantsCache(), CharacteristicType.INFERRED_RELATIONSHIP)) {
 				//Do we already have a template for this concept?  
 				//TODO Assign the most specific template if so

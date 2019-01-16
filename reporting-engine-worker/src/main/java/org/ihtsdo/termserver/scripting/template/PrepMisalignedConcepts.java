@@ -114,8 +114,10 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		
 		subHierarchyECL = "<<125643001"; //QI-107 |Open wound| 
 		templateNames = new String[] {	"templates/wound/wound of bodysite due to event.json" };
-		includeDueTos = true;
+		exclusionWords.add("complication");
 		exclusionWords.add("fracture");
+		setExclusions(new String[] {"399963005 |Abrasion (disorder)|", "312608009 |Laceration - injury|"});
+		includeDueTos = true;
 		
 		subHierarchyECL = "<<128545000"; //QI-75 |Hernia of abdominal wall (disorder)|
 		//subHierarchyECL = "<<773623000";
@@ -155,11 +157,9 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		exclusionWords.add("obstruction");
 		exclusionWords.add("obstructed");
 		*/
-		
 		subHierarchyECL = "<<312608009 |Laceration - injury|"; //QI-177
 		templateNames = new String[] {	"templates/wound/laceration.json" };
 		includeDueTos = true;
-		
 		
 		super.init(args);
 		
