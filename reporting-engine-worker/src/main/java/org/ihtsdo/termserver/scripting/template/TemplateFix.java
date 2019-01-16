@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting.template;
 
 import java.io.IOException;
+import java.net.URL;
 import java.util.*;
 
 import org.snomed.authoringtemplate.domain.logical.*;
@@ -44,12 +45,16 @@ abstract public class TemplateFix extends BatchFix {
 		if (subHierarchyStr != null) {
 			subHierarchy = gl.getConcept(subHierarchyStr);
 		}
-		char id = 'A';
-		for (int x = 0; x < templateNames.length; x++, id++) {
-			templates.add(loadTemplate(id, templateNames[x]));
-			info ("Loaded template: " + templates.get(x).toIdString());
+		
+		//Only load templates now if we've not already done so
+		if (templates.isEmpty()) {
+			char id = 'A';
+			for (int x = 0; x < templateNames.length; x++, id++) {
+				templates.add(loadTemplate(id, templateNames[x]));
+				info ("Loaded template: " + templates.get(x).toIdString());
+			}
+			info(templates.size() + " Templates loaded successfully");
 		}
-		info(templates.size() + " Templates loaded successfully");
 		
 		if (exclusions == null) {
 			exclusions = new HashSet<>();
@@ -102,6 +107,15 @@ abstract public class TemplateFix extends BatchFix {
 			return new Template(id, lt, fileName);
 		} catch (IOException e) {
 			throw new TermServerScriptException("Unable to load template " + fileName, e);
+		}
+	}
+	
+	protected Template loadTemplate (char id, URL templateUrl) throws TermServerScriptException {
+		try {
+			LogicalTemplate lt = tsc.loadLogicalTemplate(templateUrl);
+			return new Template(id, lt, null);
+		} catch (IOException e) {
+			throw new TermServerScriptException("Unable to load template " + templateUrl, e);
 		}
 	}
 	

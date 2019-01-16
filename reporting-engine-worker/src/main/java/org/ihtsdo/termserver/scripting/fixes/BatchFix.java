@@ -13,6 +13,7 @@ import org.ihtsdo.termserver.scripting.*;
 import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.snomed.otf.scheduler.domain.JobRun;
 
 import us.monoid.json.*;
 
@@ -334,6 +335,11 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			changesMade++;
 		}
 		return changesMade;
+	}
+	
+	protected void init (JobRun jobRun) throws TermServerScriptException {
+		super.init(jobRun);
+		author_reviewer = new String[] { jobRun.getUser() };
 	}
 
 	protected void init (String[] args) throws TermServerScriptException {

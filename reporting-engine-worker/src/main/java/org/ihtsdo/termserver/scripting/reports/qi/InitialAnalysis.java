@@ -47,7 +47,7 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 			info("Generating Intermediate Primitive Report for " + report.subHierarchyStart);
 			report.runJob();
 		} catch (Exception e) {
-			info("Failed to produce Description Report due to " + e.getMessage());
+			info("Failed to produce Initial Analysis Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();

@@ -89,6 +89,8 @@ public abstract class TermServerScript implements RF2Constants {
 	protected static final String SUB_HIERARCHY = "Subhierarchy";
 	protected static final String ATTRIBUTE_TYPE = "Attribute Type";
 	protected static final String HIERARCHIES = "Hierarchies";
+	protected static final String ECL = "ECL";
+	protected static final String TEMPLATE = "Template";
 
 	public static Gson gson;
 	static {
@@ -321,7 +323,9 @@ public abstract class TermServerScript implements RF2Constants {
 		this.url = jobRun.getTerminologyServerUrl();
 		this.env = getEnv(url);
 		this.jobRun = jobRun;
+		EclCache.reset();
 		authenticatedCookie = jobRun.getAuthToken();
+		
 		if (StringUtils.isEmpty(jobRun.getParamValue(PROJECT))) {
 			warn("No project specified, running against MAIN");
 			projectName = "MAIN";

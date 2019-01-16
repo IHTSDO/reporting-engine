@@ -2,22 +2,39 @@ package org.ihtsdo.termserver.scripting.template;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.net.URL;
 import java.util.*;
 
+import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.client.TemplateServiceClient;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
+import org.snomed.otf.scheduler.domain.Job;
+import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
+import org.snomed.otf.scheduler.domain.JobCategory;
+import org.snomed.otf.scheduler.domain.JobParameter;
+import org.snomed.otf.scheduler.domain.JobParameters;
+import org.snomed.otf.scheduler.domain.JobRun;
+import org.snomed.otf.scheduler.domain.JobType;
+import org.springframework.util.StringUtils;
 
 /**
  * See https://confluence.ihtsdotools.org/display/IAP/Quality+Improvements+2018
  * Update: https://confluence.ihtsdotools.org/pages/viewpage.action?pageId=61155633
  */
-public class PrepMisalignedConcepts extends TemplateFix {
+public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 	
 	Map<Concept, List<String>> conceptDiagnostics = new HashMap<>();
+	public static final String INCLUDE_COMPLEX = "Include complex cases";
+	
+	public PrepMisalignedConcepts() {
+		super(null);
+	}
+
 	protected PrepMisalignedConcepts(BatchFix clone) {
 		super(clone);
 	}
@@ -31,16 +48,43 @@ public class PrepMisalignedConcepts extends TemplateFix {
 			//app.getArchiveManager().allowStaleData = true;
 			app.loadProjectSnapshot(false);  //Load all descriptions
 			app.postInit();
-			app.processFile();
+			app.runJob();
 		} catch (Exception e) {
-			info("Failed to produce ConceptsWithOrTargetsOfAttribute Report due to " + e.getMessage());
+			info("Failed to produce Misaligned Concepts Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			app.finish();
 		}
 	}
-
-	protected void init(String[] args) throws TermServerScriptException {
+	
+	public void runJob() throws TermServerScriptException {
+		processFile();
+	}
+	
+	@Override
+	public Job getJob() {
+		JobParameters params = new JobParameters()
+				.add(TEMPLATE)
+					.withType(JobParameter.Type.TEMPLATE)
+					.withMandatory()
+				.add(SUB_HIERARCHY)
+					.withType(JobParameter.Type.CONCEPT)
+				.add(ECL)
+					.withType(JobParameter.Type.ECL)
+				.add(INCLUDE_COMPLEX)
+					.withType(JobParameter.Type.BOOLEAN)
+					.withDefaultValue(false)
+				.build();
+		
+		return new Job(	new JobCategory(JobType.REPORT, JobCategory.QI),
+						"Template Compliance",
+						"This report lists concepts which match the specified selection (either a subhierarchy OR an ECL expression) " +
+						"which DO NOT comply with the selected template.",
+						params, ProductionStatus.HIDEME);
+	}
+	
+	protected void init(JobRun jobRun) throws TermServerScriptException {
+		
 		selfDetermining = true;
 		reportNoChange = false;
 		runStandAlone = true; 
@@ -50,6 +94,38 @@ public class PrepMisalignedConcepts extends TemplateFix {
 		if (exclusionWords == null) {
 			exclusionWords = new ArrayList<>();
 		}
+		
+		super.init(jobRun);
+		
+		//Have we been called via the reporting platform?
+		if (jobRun != null) {
+			
+			includeComplexTemplates = jobRun.getParameters().getMandatoryBoolean(INCLUDE_COMPLEX);
+		
+			subHierarchyECL = jobRun.getParamValue(ECL);
+			if (StringUtils.isEmpty(subHierarchyECL)) {
+				subHierarchyECL = "<< " + jobRun.getMandatoryParamValue(SUB_HIERARCHY);
+			}
+
+			String templateUrlStr = jobRun.getMandatoryParamValue(TEMPLATE);
+			try {
+				URL templateUrl = new URL(templateUrlStr);
+				tsc = new TemplateServiceClient(templateUrlStr, authenticatedCookie);
+				templates.add(loadTemplate('A',templateUrl));
+			} catch (Exception e) {
+				throw new TermServerScriptException("Unable to load template from " + templateUrlStr, e);
+			}
+			
+			//Ensure our ECL matches more than 0 concepts before we import SNOMED - expensive!
+			//This will also cache the result
+			if (findConcepts(project.getBranchPath(), subHierarchyECL).size() == 0) {
+				throw new TermServerScriptException(subHierarchyECL + " returned 0 rows");
+			}
+		}
+	}
+
+	protected void init(String[] args) throws TermServerScriptException {
+		init((JobRun)null);
 		/*
 		subHierarchyECL = "<<125605004";  // QI-5 |Fracture of bone (disorder)|
 		templateNames = new String[] {	"fracture/Fracture of Bone Structure.json",
@@ -221,6 +297,7 @@ public class PrepMisalignedConcepts extends TemplateFix {
 					diagnostics.add(msg);
 				}
 				incrementSummaryInformation("Concepts identified as not matching any template");
+				incrementSummaryInformation(ISSUE_COUNT);
 			} 
 		}
 		unalignedConcepts.removeAll(ignoredConcepts);

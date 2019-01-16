@@ -82,9 +82,7 @@ public class GraphLoader implements RF2Constants {
 		descendantsCache.reset();
 		ancestorsCache.reset();
 		historicalAssociations =  new HashMap<Concept, List<AssociationEntry>>();
-		if (Application.getMode().equals(Application.Mode.SERVER)) {
-			EclCache.reset();
-		}
+		//We'll reset the ECL cache during TS Init 
 		populateKnownConcepts();
 	}
 	
