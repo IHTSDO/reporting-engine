@@ -205,6 +205,12 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 			c = gl.findConcept(lineItems[0]);
 		}
 		
+		if (!c.isActive()) {
+			report ((Task)null, c, Severity.NONE, ReportActionType.VALIDATION_CHECK, "Concept is already inactive.");
+			incrementSummaryInformation("Skipped, already inactivated");
+			return null;
+		}
+		
 		Concept replacement = null;
 		int idxReplacement = 1;
 		
