@@ -97,6 +97,7 @@ abstract public class TemplateFix extends BatchFix {
 		complexTemplateAttributes.add(gl.getConcept("371881003")); //|During (attribute)|
 		complexTemplateAttributes.add(gl.getConcept("363713009")); //|Has interpretation (attribute)|
 		complexTemplateAttributes.add(gl.getConcept("363714003")); //|Interprets (attribute)|
+		complexTemplateAttributes.add(gl.getConcept("47429007"));  //|Associated with (attribute)
 		super.postInit();
 		info ("Post initialisation complete");
 	}
