@@ -206,7 +206,11 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 					}
 					
 					if (classification != null) {
-						tsClient.waitForCompletion(task.getBranchPath(), classification);
+						try {
+							tsClient.waitForCompletion(task.getBranchPath(), classification);
+						} catch (Exception e) {
+							error("Failed to wait for classification " + classification, e);
+						}
 					}
 				}
 			} catch (Exception e) {
