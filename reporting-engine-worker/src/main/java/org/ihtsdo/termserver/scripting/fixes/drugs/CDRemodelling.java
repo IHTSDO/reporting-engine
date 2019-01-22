@@ -1,30 +1,18 @@
 package org.ihtsdo.termserver.scripting.fixes.drugs;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
-import org.ihtsdo.termserver.scripting.domain.Component;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.AssociationEntry;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants;
-import org.ihtsdo.termserver.scripting.domain.Relationship;
-import org.ihtsdo.termserver.scripting.domain.Task;
+import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
+import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
-import org.ihtsdo.termserver.scripting.util.DrugTermGenerator;
-import org.ihtsdo.termserver.scripting.util.DrugUtils;
-import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-import org.ihtsdo.termserver.scripting.util.TermVerifier;
-
-import us.monoid.json.JSONObject;
+import org.ihtsdo.termserver.scripting.util.*;
 
 /*
+2018 Work
 DRUGS-474 (Pattern 1a) Remodelling of Clinical Drugs including Basis of Strength Substance (BoSS) based on an input spreadsheet
 DRUGS-493 (Pattern 1b - ) 
 DRUGS-505 (Pattern 1c - Actuation)
@@ -33,10 +21,14 @@ DRUGS-499 (Pattern 2b - Oral Solutions)
 DRUGS-495 (Pattern 3a - Vials)
 DRUGS-497 (Pattern 3a - Patches)
 DRUGS-496 (Pattern 3b - Creams and Drops)
+
+2019 Work
+DRUGS-668 
 */
 public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 	
 	Map<Concept, List<Ingredient>> spreadsheet = new HashMap<>();
+	Map<Description, Concept> substanceMap = new HashMap<>();
 	DrugTermGenerator termGenerator = new DrugTermGenerator(this);
 	IngredientCounts ingredientCounter;
 	TermVerifier termVerifier;
@@ -51,21 +43,22 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 	}
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
-		CDRemodelling fix = new CDRemodelling(null);
+		CDRemodelling app = new CDRemodelling(null);
 		try {
-			fix.inputFileHasHeaderRow = true;
-			fix.runStandAlone = true;
-			fix.init(args);
-			fix.ingredientCounter = new IngredientCounts(fix);
-			fix.ingredientCounter.getReportManager().setPrintWriterMap(fix.getReportManager().getPrintWriterMap());  //Share report file!
-			fix.termGenerator.includeUnitOfPresentation(fix.includeUnitOfPresentation); 
-			fix.termGenerator.specifyDenominator(fix.specifyDenominator);
-			fix.loadProjectSnapshot(false); //Load all descriptions
+			ReportSheetManager.targetFolderId = "1gNnY3XAuopxi5yybh3Kv9P3V2vMMULB0";  // Drugs / Remodeling
+			app.expectNullConcepts = true;
+			app.inputFileHasHeaderRow = true;
+			app.runStandAlone = true;
+			app.init(args);
+			app.ingredientCounter = new IngredientCounts(app);
+			app.termGenerator.includeUnitOfPresentation(app.includeUnitOfPresentation); 
+			app.termGenerator.specifyDenominator(app.specifyDenominator);
+			app.loadProjectSnapshot(false); //Load all descriptions
+			app.postInit();
 			//We won't include the project export in our timings
-			fix.startTimer();
-			fix.processFile();
+			app.processFile();
 		} finally {
-			fix.finish();
+			app.finish();
 		}
 	}
 	
@@ -108,19 +101,10 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 			report (task, concept, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Unable to assign ingredient count due to: " + e.getMessage());
 		}
 		if (changesMade > 0) {
-			try {
-				String conceptSerialised = gson.toJson(loadedConcept);
-				debug ((dryRun?"Dry run updating":"Updating") + " state of " + loadedConcept + info);
-				if (cloneThisConcept) {
-					cloneAndReplace(loadedConcept, task);
-				} else {
-					if (!dryRun) {
-						tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
-					}
-				}
-			} catch (Exception e) {
-				report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + e.getClass().getSimpleName()  + " - " + e.getMessage());
-				e.printStackTrace();
+			if (cloneThisConcept) {
+				cloneAndReplace(loadedConcept, task);
+			} else {
+				updateConcept(task, loadedConcept, info);
 			}
 		}
 		return changesMade;
@@ -274,57 +258,12 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		return matchingRels.get(0);
 	}
 	
-	/**
-	 * PATTERN 1A
-	 * Spreadsheet columns:
-	 * [0]conceptId	[1]FSN	[2]Sequence	[3]dose_form_evaluation	[4]pharmaceutical_df	
-	 * [5]future_ingredient	[6]future_boss	[7]future_Presentation_num_qty	
-	 * [8]future_Presentation_num_unit	[9]future_Presentation_denom_qty	
-	 * [10]future_Presentation_denom_unit	[11]future_unit_of_presentation	
-	 * [12]dmd_ingredient	[13]stated_ingredient	[14]inferred_ingredient	
-	 * [15]dmd_boss	[16]Unit_of_presentation	[17]dmd_numerator_quantity	
-	 * [18]dmd_numerator_unit	[19]dmd_denominator_quantity	[20]dmd_denominator_unit	
-	 * [21]stated_dose_form	[22]Pattern	[23]Source	[24]status	[25]Comment	[26]Transfer
-	 
-	protected List<Concept> loadLine(String[] items) throws TermServerScriptException {
-		Concept c = gl.getConcept(items[0]);
-		c.setConceptType(ConceptType.CLINICAL_DRUG);
-		
-		//Is this the first time we've seen this concept?
-		if (!spreadsheet.containsKey(c)) {
-			spreadsheet.put(c, new ArrayList<Ingredient>());
-		}
-		List<Ingredient> ingredients = spreadsheet.get(c);
-		try {
-			// Booleans indicate: don't create and do validate that concept exists
-			Ingredient ingredient = new Ingredient();
-			ingredient.doseForm = getPharmDoseForm(items[4]);
-			ingredient.substance = gl.getConcept(items[5], false, true);
-			ingredient.boss = gl.getConcept(items[6], false, true);
-			ingredient.strength = DrugUtils.getNumberAsConcept(items[7]);
-			ingredient.numeratorUnit = DrugUtils.findUnit(items[8]);
-			ingredient.denomQuantity = DrugUtils.getNumberAsConcept(items[9]);
-			ingredient.denomUnit = getUnitOfPresentation(items[10]);
-			ingredient.unitOfPresentation = getUnitOfPresentation(items[11]);
-			ingredients.add(ingredient);
-		} catch (Exception e) {
-			report (null, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, e.getMessage());
-			return null;
-		}
-		
-		return Collections.singletonList(c);
-	}*/
-	
 
 	@Override
 	/*
-	 * PATTERN 1B, 1C - https://docs.google.com/spreadsheets/d/1EqZg1-Ksjy5J-Iebnjry96PgL7MbL_Au85oBXPtHCgE/edit#gid=0
-	 * PATTERN 3A - https://docs.google.com/spreadsheets/d/1EqZg1-Ksjy5J-Iebnjry96PgL7MbL_Au85oBXPtHCgE/edit#gid=0
-	 * DRUGS-499 Pattern 2B Oral Solutions https://docs.google.com/spreadsheets/d/1EqZg1-Ksjy5J-Iebnjry96PgL7MbL_Au85oBXPtHCgE/edit#gid=625769023
-	 * Spreadsheet columns: [0]conceptId	[10]FSN	[2]dose_form_evaluation	[3]dmd_name	
-	 * [4]Precise_ingredient	 [5]dmd_boss	[6]ConcNumQty	[7]ConcNumUnit	[8]ConcDenomQty	
-	 * [9]ConcDenomUnit	[10]PRESENTNumQty	[11]PRESENTNumUnit	[12]PRESENTDenomQty	
-	 * [13]PRESENTDenomUnit	[14]UoP	[15]DoseForm
+	 * RUN #1 https://docs.google.com/spreadsheets/d/1ZEAce_QljbjfVm3jmhccHT04l58DzbTHZMlWM0-8GPA/edit#gid=913407998
+	 * [0]sctid	[1]FSN	[2]sctDoseForm	[3]sctUnitOfPresentation	[4]rxn_BoSS_label	[5]rxn_activeIngredient_label	
+	 * [6]numeratorValue	[7]numeratorUnit	[8]denominatorValue	[9]denominatorUnit	[10]Status
 	 */
 	protected List<Component> loadLine(String[] items) throws TermServerScriptException {
 		Concept c = gl.getConcept(items[0]);
@@ -338,25 +277,45 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		try {
 			// Booleans indicate: don't create and do validate that concept exists
 			Ingredient ingredient = new Ingredient();
-			ingredient.substance = gl.getConcept(items[4], false, true);
-			ingredient.boss = gl.getConcept(items[5], false, true);
+			ingredient.substance = DrugUtils.findSubstance(items[5]);
+			ingredient.boss = DrugUtils.findSubstance(items[4]);
+			
+			if (ingredient.boss == null || ingredient.substance == null) {
+				report ((Task)null, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Substance or BOSS not identified - " + items[5] + " / " + items[4]);
+				return null;
+			}
+			
+			usesConcentration = items[10].contains("concentration");
+			usesPresentation = items[10].contains("presentation");
+			if (usesConcentration == false && usesPresentation == false) {
+				report ((Task)null, c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Unable to determine conc / pres");
+				return null;
+			}
+			
+			StrengthUnit numerator = new StrengthUnit(Double.parseDouble(items[6]), DrugUtils.findUnitOfMeasure(items[7]));
+			if (DrugUtils.normalizeStrengthUnit(numerator)) {
+				warn ("Normalized Strength of " + c + ": " + numerator);
+			}
+			
 			if (usesConcentration) {
-				ingredient.concStrength = DrugUtils.getNumberAsConcept(items[6]);
-				ingredient.concNumeratorUnit = DrugUtils.findUnitOfMeasure(items[7]);
+				ingredient.concStrength = DrugUtils.getNumberAsConcept(numerator.getStrengthStr());
+				ingredient.concNumeratorUnit = numerator.getUnit();
 				ingredient.concDenomQuantity = DrugUtils.getNumberAsConcept(items[8]);
 				ingredient.concDenomUnit =  DrugUtils.findUnitOfMeasure(items[9]);
 			}
+			
 			if (usesPresentation) {
-				ingredient.presStrength = DrugUtils.getNumberAsConcept(items[10]);
-				ingredient.presNumeratorUnit = DrugUtils.findUnitOfMeasure(items[11]);
-				ingredient.presDenomQuantity = DrugUtils.getNumberAsConcept(items[12]);
-				ingredient.presDenomUnit =  DrugUtils.findUnitOfMeasure(items[13]);
-			}
-			if (includeUnitOfPresentation) {
-				ingredient.unitOfPresentation = getUnitOfPresentation(items[14]);
+				ingredient.presStrength = DrugUtils.getNumberAsConcept(numerator.getStrengthStr());
+				ingredient.presNumeratorUnit = numerator.getUnit();
+				ingredient.presDenomQuantity = DrugUtils.getNumberAsConcept(items[8]);
+				ingredient.presDenomUnit =  DrugUtils.findUnitOfMeasure(items[9]);
 			}
 			
-			ingredient.doseForm = getPharmDoseForm(items[15]);
+			if (usesPresentation && includeUnitOfPresentation) {
+				ingredient.unitOfPresentation = getUnitOfPresentation(items[3]);
+			}
+			
+			ingredient.doseForm = getPharmDoseForm(items[2]);
 			ingredients.add(ingredient);
 		} catch (Exception e) {
 			report ((Task)null, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, e.getMessage());
@@ -365,42 +324,6 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		
 		return Collections.singletonList(c);
 	} 
-	
-	/*
-	 * DRUGS-497 Pattern 3APatches - https://docs.google.com/spreadsheets/d/1EqZg1-Ksjy5J-Iebnjry96PgL7MbL_Au85oBXPtHCgE/edit#gid=493556537
-	 * Spreadsheet columns: [0]conceptId	[10]FSN	[2]dose_form_evaluation	[3]dmd_name	
-	 * [4]Precise_ingredient	 [5]dmd_boss	[6]ConcNumQty	[7]ConcNumUnit	[8]ConcDenomQty	
-	 * [9]ConcDenomUnit	[10]NonNormConcNumQty	[11]NonNormConcNumUnit	[12]NonNormConcDenomQty	
-	 * [13]NonNormConcDenomUnit	[14]PRESENTNumQty	[15]PRESENTNumUnit	[16]PRESENTDenomQty	
-	 * [17]PRESENTDenomUnit	[18]UoP	[19]DoseForm
-	*
-	protected List<Concept> loadLine(String[] items) throws TermServerScriptException {
-		Concept c = gl.getConcept(items[0]);
-		c.setConceptType(ConceptType.CLINICAL_DRUG);
-		
-		//Is this the first time we've seen this concept?
-		if (!spreadsheet.containsKey(c)) {
-			spreadsheet.put(c, new ArrayList<Ingredient>());
-		}
-		List<Ingredient> ingredients = spreadsheet.get(c);
-		try {
-			// Booleans indicate: don't create and do validate that concept exists
-			Ingredient ingredient = new Ingredient();
-			ingredient.doseForm = getPharmDoseForm(items[19]);
-			ingredient.substance = gl.getConcept(items[4], false, true);
-			ingredient.boss = gl.getConcept(items[5], false, true);
-			ingredient.strength = DrugUtils.getNumberAsConcept(items[6]);
-			ingredient.numeratorUnit = DrugUtils.findUnitOfMeasure(items[7]);
-			ingredient.denomQuantity = DrugUtils.getNumberAsConcept(items[8]);
-			ingredient.denomUnit =  DrugUtils.findUnitOfMeasure(items[9]);
-			ingredients.add(ingredient);
-		} catch (Exception e) {
-			report (null, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, e.getMessage());
-			return null;
-		}
-		
-		return Collections.singletonList(c);
-	}  */
 
 	private Concept getPharmDoseForm(String doseFormStr) throws TermServerScriptException {
 		//Do we have an SCTID to work with?  

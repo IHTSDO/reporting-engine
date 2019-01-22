@@ -2,7 +2,6 @@ package org.ihtsdo.termserver.scripting.fixes.drugs;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.util.DrugUtils;
 
 public class Ingredient {

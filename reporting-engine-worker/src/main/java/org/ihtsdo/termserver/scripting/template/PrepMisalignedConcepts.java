@@ -13,13 +13,8 @@ import org.ihtsdo.termserver.scripting.client.TemplateServiceClient;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
-import org.snomed.otf.scheduler.domain.Job;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
-import org.snomed.otf.scheduler.domain.JobCategory;
-import org.snomed.otf.scheduler.domain.JobParameter;
-import org.snomed.otf.scheduler.domain.JobParameters;
-import org.snomed.otf.scheduler.domain.JobRun;
-import org.snomed.otf.scheduler.domain.JobType;
+import org.snomed.otf.scheduler.domain.*;
 import org.springframework.util.StringUtils;
 
 /**

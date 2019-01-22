@@ -974,7 +974,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	 * @throws JSONException 
 	 * @throws SnowOwlClientException 
 	 */
-	protected void cloneAndReplace(Concept concept, Task t) throws TermServerScriptException, SnowOwlClientException, JSONException {
+	protected void cloneAndReplace(Concept concept, Task t) throws TermServerScriptException {
 		String originalId = concept.getConceptId();
 		Concept original = loadConcept(originalId, t.getBranchPath());
 		//Clone the clone to wipe out all identifiers.  It might just 

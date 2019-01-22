@@ -2,19 +2,13 @@ package org.ihtsdo.termserver.scripting.util;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
-import org.ihtsdo.termserver.scripting.GraphLoader;
-import org.ihtsdo.termserver.scripting.TermServerScript;
-import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.apache.commons.lang.ArrayUtils;
+import org.ihtsdo.termserver.scripting.*;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.ActiveState;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
+
 import org.ihtsdo.termserver.scripting.fixes.drugs.Ingredient;
 
 public class DrugUtils implements RF2Constants {
@@ -24,10 +18,17 @@ public class DrugUtils implements RF2Constants {
 	public static final String MPF = "(medicinal product form)";
 	public static final String PRODUCT = "(product)";
 	
+	public static final Concept [] solidUnits = new Concept [] { PICOGRAM, NANOGRAM, MICROGRAM, MILLIGRAM, GRAM };
+	public static final Concept [] liquidUnits = new Concept [] { MILLILITER, LITER };
+	
 	static Map<String, Concept> numberConceptMap;
 	static Map<String, Concept> doseFormConceptMap;
 	static Map<String, Concept> unitOfPresentationConceptMap;
 	static Map<String, Concept> unitOfMeasureConceptMap;
+	static Map<String, Concept> substanceMap;
+	
+	//The danger here is that we can't name them uniquely
+	static Set<Concept> dangerousSubstances = new HashSet<>();  
 	
 	public static void setConceptType(Concept c) {
 		String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
@@ -119,6 +120,7 @@ public class DrugUtils implements RF2Constants {
 	}
 	
 	public static Concept findUnitOfMeasure(String unit) throws TermServerScriptException {
+		unit = unit.toLowerCase();
 		//Try a straight lookup via the SCTID if we have one
 		try {
 			return GraphLoader.getGraphLoader().getConcept(unit);
@@ -140,10 +142,49 @@ public class DrugUtils implements RF2Constants {
 		Concept unitSubHierarchy = GraphLoader.getGraphLoader().getConcept("767524001", false, true); //  |Unit of measure (qualifier value)|
 		for (Concept unit : unitSubHierarchy.getDescendents(NOT_SET)) {
 			unitOfMeasureConceptMap.put(unit.getFsn(), unit);
+			unitOfMeasureConceptMap.put(unit.getPreferredSynonym().toLowerCase(), unit);
 		}
 		
 		//We can also measure just 'unit' of a substance
 		unitOfMeasureConceptMap.put(UNIT.getFsn(), UNIT);
+	}
+	
+	public static Concept findSubstance(String substanceName) throws TermServerScriptException {
+		if (substanceMap == null) {
+			populateSubstanceMap();
+		}
+		
+		if (!substanceMap.containsKey(substanceName.toLowerCase().trim())) {
+			throw new TermServerScriptException("Unable to identify substance : " + substanceName);
+		}
+		
+		Concept substance = substanceMap.get(substanceName);
+		if (dangerousSubstances.contains(substance)) {
+			throw new TermServerScriptException("Lookup performed on substance that isn't uniquely named: " + substanceName);
+		}
+		return substance;
+	}
+
+	private static void populateSubstanceMap() throws TermServerScriptException {
+		TermServerScript.info("Populating substance map");
+		substanceMap = new HashMap<>();
+		GraphLoader gl = GraphLoader.getGraphLoader();
+		for (Concept c : gl.getDescendantsCache().getDescendents(SUBSTANCE)) {
+			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+				String term = d.getTerm().toLowerCase().trim();
+				//Do we already know about this term?  No problem if it's the same concept
+				Concept existing = substanceMap.get(term);
+				if (existing == null) {
+					substanceMap.put(term, c);
+				} else if (!c.equals(existing)) {
+					dangerousSubstances.add(c);
+					dangerousSubstances.add(existing);
+					//We won't worry about these unless someone tries to look one up
+					//TermServerScript.warn("Collision between terms in concepts " + c + " and " + existing);
+				}
+			}
+		}
+		TermServerScript.info("Populated substance map");
 	}
 
 	public static  String getDosageForm(Concept concept, boolean isFSN, String langRefset) throws TermServerScriptException {
@@ -242,6 +283,22 @@ public class DrugUtils implements RF2Constants {
 		return i;
 	}
 	
+	public static boolean normalizeStrengthUnit (StrengthUnit su) {
+		boolean changeMade = false;
+		int currentIdx =  ArrayUtils.indexOf(solidUnits, su.getUnit());
+		if (currentIdx != NOT_SET) {
+			if (su.getStrength() >= 1000) {
+				su.setUnit(solidUnits[currentIdx + 1]);
+				su.setStrength(su.getStrength() / 1000D);
+				changeMade = true;
+			} else if (su.getStrength() <1) {
+				su.setUnit(solidUnits[currentIdx - 1]);
+				su.setStrength(su.getStrength() * 1000D);
+				changeMade = true;
+			}
+		}
+		return changeMade;
+	}
 	public static String toString(double d)
 	{
 		d = new BigDecimal(d).setScale(6, RoundingMode.HALF_UP).doubleValue();

@@ -17,6 +17,7 @@ import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.DrugTermGenerator;
 import org.ihtsdo.termserver.scripting.util.DrugUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.ihtsdo.termserver.scripting.util.StrengthUnit;
 
 import us.monoid.json.JSONObject;
 
@@ -33,8 +34,6 @@ Or if value is < 1 switch to the next smaller unit and multiple the value by 100
 */
 public class NormalizeProductStrength extends DrugBatchFix implements RF2Constants {
 	
-	Concept [] solidUnits = new Concept [] { PICOGRAM, NANOGRAM, MICROGRAM, MILLIGRAM, GRAM };
-	Concept [] liquidUnits = new Concept [] { MILLILITER, LITER };
 	DrugTermGenerator termGenerator = new DrugTermGenerator(this);
 	
 	protected NormalizeProductStrength(BatchFix clone) {
@@ -98,26 +97,14 @@ public class NormalizeProductStrength extends DrugBatchFix implements RF2Constan
 			Relationship strengthRel = getTargetRel(c, strengthTypes, g.getGroupId(), CharacteristicType.STATED_RELATIONSHIP);
 			if (strengthRel != null) {
 				double strengthNumber = DrugUtils.getConceptAsNumber(strengthRel.getTarget());
-				double newStrengthNumber = NOT_SET;
-				Concept newUnit = null;
 				Relationship unitRel = getTargetRel(c, unitTypes, g.getGroupId(), CharacteristicType.STATED_RELATIONSHIP);
-				int currentIdx =  ArrayUtils.indexOf(solidUnits, unitRel.getTarget());
-				if (currentIdx != NOT_SET) {
-					if (strengthNumber >= 1000) {
-						newUnit = solidUnits[currentIdx + 1];
-						newStrengthNumber = strengthNumber / 1000D;
-					} else if (strengthRel != null && strengthNumber <1) {
-						newUnit = solidUnits[currentIdx - 1];
-						newStrengthNumber = strengthNumber * 1000D;
+				StrengthUnit strengthUnit = new StrengthUnit(strengthNumber, unitRel.getTarget());
+				if (DrugUtils.normalizeStrengthUnit(strengthUnit)) {
+					if (!quiet) {
+						remodelConcept (t, c, strengthRel, strengthUnit.getStrengthStr(), unitRel, strengthUnit.getUnit());
+						report (t, c, Severity.LOW, ReportActionType.VALIDATION_CHECK, strengthNumber + " " + unitRel.getTarget() + " --> " + strengthUnit, g);
 					}
-					if (newUnit != null) {
-						String newStrengthStr = DrugUtils.toString(newStrengthNumber);
-						if (!quiet) {
-							remodelConcept (t, c, strengthRel, newStrengthStr, unitRel, newUnit);
-							report (t, c, Severity.LOW, ReportActionType.VALIDATION_CHECK, strengthNumber + " " + unitRel.getTarget() + " --> " + newStrengthStr + " " + newUnit, g);
-						}
-						changesMade++;
-					}
+					changesMade++;
 				}
 			}
 		}
