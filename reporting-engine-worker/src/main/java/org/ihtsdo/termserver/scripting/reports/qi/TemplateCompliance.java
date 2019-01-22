@@ -169,7 +169,7 @@ public class TemplateCompliance extends TermServerReport implements ReportClass 
 					continue;
 				}
 				
-				LogicalTemplate lt = tsc.parseLogicalTemplate(ct);
+				LogicalTemplate lt = tsc.parseLogicalTemplate(ct.getLogicalTemplate());
 				Template template = new Template(id++, lt, templateName);
 				//Have we seen this domain before?
 				String domain = ct.getDomain().replaceAll("\\<", "");
@@ -193,7 +193,7 @@ public class TemplateCompliance extends TermServerReport implements ReportClass 
 			char id = 'A';
 			for (int x = 0; x < templateNames.length; x++, id++) {
 				try {
-					LogicalTemplate lt = tsc.loadLogicalTemplate(templateNames[x]);
+					LogicalTemplate lt = tsc.loadLogicalLocalTemplate(templateNames[x]);
 					templates.add(new Template(id, lt, templateNames[x]));
 				} catch (Exception e) {
 					throw new TermServerScriptException("Unable to load " + domainStr + " template " + templateNames[x] + " from local resources", e);

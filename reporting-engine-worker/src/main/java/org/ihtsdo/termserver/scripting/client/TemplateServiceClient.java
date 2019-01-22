@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting.client;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.util.List;
 
@@ -40,34 +41,30 @@ public class TemplateServiceClient {
 	private static final String CONTENT_TYPE = "application/json";
 	private final int minViableLength = 10;
 	
-	public LogicalTemplate loadLogicalTemplate (String templateName) throws JsonParseException, JsonMappingException, IOException {
+	public LogicalTemplate loadLogicalLocalTemplate (String templateName) throws JsonParseException, JsonMappingException, IOException {
 		ClassLoader classLoader = getClass().getClassLoader();
 		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		ConceptTemplate conceptTemplate = mapper.readValue(classLoader.getResourceAsStream(templateName), ConceptTemplate.class );
-		LogicalTemplate logicalTemplate = parseLogicalTemplate(conceptTemplate);
+		return loadLogicalTemplate(classLoader.getResourceAsStream(templateName));
+	}
+	
+	public LogicalTemplate loadLogicalTemplate (InputStream templateStream) throws JsonParseException, JsonMappingException, IOException {
+		ConceptTemplate conceptTemplate = mapper.readValue(templateStream, ConceptTemplate.class );
+		LogicalTemplate logicalTemplate = parseLogicalTemplate(conceptTemplate.getLogicalTemplate());
 		return logicalTemplate;
 	}
 	
-	public LogicalTemplate loadLogicalTemplate (URL templateUrl) throws IOException, TermServerScriptException {
-		
-		//We should be able to parse out the template name, or fail
-		String url = templateUrl.getFile();
-		int cutPoint = url.indexOf(TEMPLATES);
-		if (cutPoint == -1 || url.length() < cutPoint + TEMPLATES.length() + minViableLength) {
-			throw new TermServerScriptException("Malformed template url: " + url);
-		}
-		String templateName = url.substring(cutPoint + TEMPLATES.length());
+	public LogicalTemplate loadLogicalTemplate (String templateName) throws IOException, TermServerScriptException {
 		ResponseEntity<ConceptTemplate> response = restTemplate.exchange(
 				TEMPLATES + templateName,
 				HttpMethod.GET,
 				null,
 				ConceptTemplate.class);
 		ConceptTemplate conceptTemplate = response.getBody();
-		return parseLogicalTemplate(conceptTemplate);
+		return parseLogicalTemplate(conceptTemplate.getLogicalTemplate());
 	}
 	
-	public LogicalTemplate parseLogicalTemplate (ConceptTemplate template) throws JsonParseException, JsonMappingException, IOException {
-		return service.parseTemplate(template.getLogicalTemplate());
+	public LogicalTemplate parseLogicalTemplate (String template) throws JsonParseException, JsonMappingException, IOException {
+		return service.parseTemplate(template);
 	}
 	
 	public TemplateServiceClient(String serverUrl, String cookie) {

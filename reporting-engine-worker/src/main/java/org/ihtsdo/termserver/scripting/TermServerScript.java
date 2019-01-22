@@ -91,6 +91,8 @@ public abstract class TermServerScript implements RF2Constants {
 	protected static final String HIERARCHIES = "Hierarchies";
 	protected static final String ECL = "ECL";
 	protected static final String TEMPLATE = "Template";
+	protected static final String TEMPLATE_NAME = "TemplateName";
+	protected static final String SERVER_URL = "ServerUrl";
 
 	public static Gson gson;
 	static {

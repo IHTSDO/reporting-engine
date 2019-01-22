@@ -2,9 +2,9 @@ package org.ihtsdo.termserver.scripting.template;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.net.URL;
 import java.util.*;
 
+import org.apache.commons.io.IOUtils;
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
@@ -14,6 +14,7 @@ import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
+import org.snomed.authoringtemplate.domain.logical.LogicalTemplate;
 import org.snomed.otf.scheduler.domain.*;
 import org.springframework.util.StringUtils;
 
@@ -59,9 +60,8 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 	@Override
 	public Job getJob() {
 		JobParameters params = new JobParameters()
-				.add(TEMPLATE)
-					.withType(JobParameter.Type.TEMPLATE)
-					.withMandatory()
+				.add(TEMPLATE_NAME)
+					.withType(JobParameter.Type.TEMPLATE_NAME)
 				.add(SUB_HIERARCHY)
 					.withType(JobParameter.Type.CONCEPT)
 				.add(ECL)
@@ -69,13 +69,19 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 				.add(INCLUDE_COMPLEX)
 					.withType(JobParameter.Type.BOOLEAN)
 					.withDefaultValue(false)
+				.add(TEMPLATE)
+					.withType(JobParameter.Type.TEMPLATE)
+				.add(SERVER_URL)
+					.withType(JobParameter.Type.HIDDEN)
+					.withMandatory()
 				.build();
 		
 		return new Job(	new JobCategory(JobType.REPORT, JobCategory.QI),
 						"Template Compliance",
 						"This report lists concepts which match the specified selection (either a subhierarchy OR an ECL expression) " +
-						"which DO NOT comply with the selected template.",
-						params, ProductionStatus.TESTING);
+						"which DO NOT comply with the selected template. You can either select an existing published template, " + 
+								"or enter one yourself using template language, JSON or a known QI project internal path.",
+						params, ProductionStatus.PROD_READY);
 	}
 	
 	protected void init(JobRun jobRun) throws TermServerScriptException {
@@ -100,13 +106,26 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 				subHierarchyECL = "<< " + jobRun.getMandatoryParamValue(SUB_HIERARCHY);
 			}
 
-			String templateUrlStr = jobRun.getMandatoryParamValue(TEMPLATE);
-			try {
-				URL templateUrl = new URL(templateUrlStr);
-				tsc = new TemplateServiceClient(templateUrlStr, authenticatedCookie);
-				templates.add(loadTemplate('A',templateUrl));
-			} catch (Exception e) {
-				throw new TermServerScriptException("Unable to load template from " + templateUrlStr, e);
+			String templateServerUrl = jobRun.getMandatoryParamValue(SERVER_URL);
+			//Do we have a template name to load, or some actual template language?
+			String templateName = jobRun.getParamValue(TEMPLATE_NAME);
+			String template = jobRun.getParamValue(TEMPLATE);
+			if (!StringUtils.isEmpty(templateName) && !StringUtils.isEmpty(template)) {
+				throw new TermServerScriptException("Both published template name and template code were specified");
+			} else if (StringUtils.isEmpty(templateName) && StringUtils.isEmpty(template)) {
+				throw new TermServerScriptException("Neither published template name nor template code were specified");
+			}
+			
+			tsc = new TemplateServiceClient(templateServerUrl, authenticatedCookie);
+			
+			if (!StringUtils.isEmpty(templateName)) {
+				try {
+					templates.add(loadTemplate('A',templateName));
+				} catch (Exception e) {
+					throw new TermServerScriptException("Unable to load template '" + templateName + "'from " + templateServerUrl, e);
+				}
+			} else {
+				loadUserSpecifiedTemplate(template);
 			}
 			
 			//Ensure our ECL matches more than 0 concepts before we import SNOMED - expensive!
@@ -115,6 +134,30 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 				throw new TermServerScriptException(subHierarchyECL + " returned 0 rows");
 			}
 		}
+	}
+
+	private void loadUserSpecifiedTemplate(String template) throws TermServerScriptException {
+		try {
+			//This could be template language, json or a template name
+			String templateName;
+			LogicalTemplate logicalTemplate;
+			if (template.startsWith("templates")) {
+				logicalTemplate = tsc.loadLogicalLocalTemplate(template);
+				templateName = template;
+			} else if (template.startsWith("{") || template.startsWith("[")) {
+				logicalTemplate = tsc.loadLogicalTemplate(IOUtils.toInputStream(template));
+				templateName = "User supplied json block";
+			} else {
+				//We'll try to parse template language at this point
+				logicalTemplate = tsc.parseLogicalTemplate(template);
+				templateName = "User supplied template";
+			} 
+			
+			templates.add(new Template ('A', logicalTemplate, templateName));
+		} catch (Exception e) {
+			throw new TermServerScriptException("Failed to load tempate '" + template + "'", e);
+		}
+		
 	}
 
 	protected void init(String[] args) throws TermServerScriptException {

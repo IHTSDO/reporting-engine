@@ -46,7 +46,7 @@ public class AlignToTemplate extends TemplateFix {
 	
 	public void postInit() throws TermServerScriptException {
 		subHierarchy = gl.getConcept(subHierarchyStr);
-		templates.add(loadTemplate('A', "Chronic Inflammatory Disorder.json"));
+		templates.add(loadLocalTemplate('A', "Chronic Inflammatory Disorder.json"));
 		info(templates.size() + " Templates loaded successfully");
 		super.postInit();
 	}

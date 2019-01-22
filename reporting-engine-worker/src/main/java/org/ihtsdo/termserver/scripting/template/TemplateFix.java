@@ -35,7 +35,7 @@ abstract public class TemplateFix extends BatchFix {
 		//We'll check these now so we know if there's some parsing error
 		char id = 'A';
 		for (int x = 0; x < templateNames.length; x++, id++) {
-			loadTemplate(id, templateNames[x]);
+			loadLocalTemplate(id, templateNames[x]);
 			info ("Validated template: " + templateNames[x]);
 		}
 		super.init(args);
@@ -50,7 +50,7 @@ abstract public class TemplateFix extends BatchFix {
 		if (templates.isEmpty()) {
 			char id = 'A';
 			for (int x = 0; x < templateNames.length; x++, id++) {
-				templates.add(loadTemplate(id, templateNames[x]));
+				templates.add(loadLocalTemplate(id, templateNames[x]));
 				info ("Loaded template: " + templates.get(x).toIdString());
 			}
 			info(templates.size() + " Templates loaded successfully");
@@ -102,21 +102,21 @@ abstract public class TemplateFix extends BatchFix {
 		info ("Post initialisation complete");
 	}
 	
-	protected Template loadTemplate (char id, String fileName) throws TermServerScriptException {
+	protected Template loadLocalTemplate (char id, String fileName) throws TermServerScriptException {
 		try {
-			LogicalTemplate lt = tsc.loadLogicalTemplate(fileName);
+			LogicalTemplate lt = tsc.loadLogicalLocalTemplate(fileName);
 			return new Template(id, lt, fileName);
 		} catch (IOException e) {
 			throw new TermServerScriptException("Unable to load template " + fileName, e);
 		}
 	}
 	
-	protected Template loadTemplate (char id, URL templateUrl) throws TermServerScriptException {
+	protected Template loadTemplate (char id, String templateName) throws TermServerScriptException {
 		try {
-			LogicalTemplate lt = tsc.loadLogicalTemplate(templateUrl);
+			LogicalTemplate lt = tsc.loadLogicalTemplate(templateName);
 			return new Template(id, lt, null);
 		} catch (IOException e) {
-			throw new TermServerScriptException("Unable to load template " + templateUrl, e);
+			throw new TermServerScriptException("Unable to load template " + templateName, e);
 		}
 	}
 	
