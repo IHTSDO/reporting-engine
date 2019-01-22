@@ -38,12 +38,18 @@ public class SnomedUtils implements RF2Constants {
 			throw new TermServerScriptException(errMsg);
 		}
 	}
-
+	
 	public static String[] deconstructFSN(String fsn) {
+		return deconstructFSN(fsn, false);  //Noisy by default
+	}
+
+	public static String[] deconstructFSN(String fsn, boolean quiet) {
 		String[] elements = new String[2];
 		int cutPoint = fsn.lastIndexOf(SEMANTIC_TAG_START);
 		if (cutPoint == -1) {
-			System.out.println("'" + fsn + "' does not contain a semantic tag!");
+			if (!quiet) {
+				System.out.println("'" + fsn + "' does not contain a semantic tag!");
+			}
 			elements[0] = fsn;
 		} else {
 			elements[0] = fsn.substring(0, cutPoint).trim();

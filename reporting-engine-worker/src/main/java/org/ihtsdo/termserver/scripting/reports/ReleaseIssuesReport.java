@@ -59,14 +59,25 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	}
 
 	public void runJob() throws TermServerScriptException {
+		info("Checking...");
+		
+		info("...modules are appropriate");
 		parentsInSameModule();
 		unexpectedDescriptionModules();
 		unexpectedRelationshipModules();
+		
+		info("...description rules");
 		fullStopInSynonym();
 		inactiveMissingFSN_PT();
-		duplicateSemanticTags();
 		nonBreakingSpace();
+		
+		info("...duplicate Semantic Tags");
+		duplicateSemanticTags();
+		
+		info("...parent hierarchys");
 		parentsInSameTopLevelHierarchy();
+		
+		info("Checks complete");
 	}
 	
 	//ISRS-286 Ensure Parents in same module.
@@ -232,6 +243,8 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			}
 		}
 		
+		info ("Collected " + knownSemanticTags.size() + " distinct semantic tags");
+		
 		//Second pass to see if we have any of these remaining once
 		//the real semantic tag (last set of brackets) has been removed
 		for (Concept c : gl.getAllConcepts()) {
@@ -243,7 +256,14 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				continue;
 			}
 			String legacy = isLegacy(c.getFSNDescription());
-			String termWithoutTag = SnomedUtils.deconstructFSN(c.getFsn())[0];
+			
+			//Don't log lack of semantic tag for inactive concepts
+			String termWithoutTag = SnomedUtils.deconstructFSN(c.getFsn(), !c.isActive())[0];
+			
+			//We can short cut this if we don't have any brackets here.  
+			if (!termWithoutTag.contains("(")) {
+				continue;
+			}
 			for (Map.Entry<String, Concept> entry : knownSemanticTags.entrySet()) {
 				if (termWithoutTag.contains(entry.getKey())) {
 					report(c, "Multiple semantic tags",legacy, isActive(c,c.getFSNDescription()), c.getFsn(), "Contains semtag: " + entry.getKey() + " identified by " + entry.getValue());
