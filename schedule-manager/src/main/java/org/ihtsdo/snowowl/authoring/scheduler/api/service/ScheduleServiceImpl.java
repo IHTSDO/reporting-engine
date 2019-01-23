@@ -122,7 +122,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 			jobRun.getParameters().get(parameterKey).setParamKey(parameterKey);
 			JobParameter jobParam = job.getParameters().get(parameterKey);
 			if (jobParam == null) {
-				throw new BusinessServiceException(jobRun.getJobName() + " did not originally specify unexpected supplied parameter: '" + parameterKey + "'");
+				throw new BusinessServiceException(jobRun.getJobName() + " didn't expect user supplied parameter: '" + parameterKey + "'");
 			} else {
 				Integer displayOrder = job.getParameters().get(parameterKey).getDisplayOrder();
 				if (displayOrder == null) {
