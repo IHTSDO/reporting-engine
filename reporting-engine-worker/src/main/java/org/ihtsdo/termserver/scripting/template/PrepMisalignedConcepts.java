@@ -268,14 +268,16 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 		exclusionWords.add("gangrene");
 		exclusionWords.add("obstruction");
 		exclusionWords.add("obstructed");
-		
+		*/
 		subHierarchyECL = "<<312608009 |Laceration - injury|"; //QI-177
 		templateNames = new String[] {	"templates/wound/laceration.json" };
 		includeDueTos = true;
-		*/
 		
+		/*
 		subHierarchyECL = "<< 3723001 |Arthritis (disorder)|"; //QI-123
 		templateNames = new String[] {	"templates/Arthritis.json" };
+		*/
+		
 		super.init(args);
 		
 		//Ensure our ECL matches more than 0 concepts before we import SNOMED - expensive!

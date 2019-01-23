@@ -113,15 +113,16 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		includeDueTos = true;
 		templateNames = new String[] {	"templates/bite/bite of bodysite caused by bite event.json", 
 										"templates/bite/bite of bodysite caused by bite event with infection.json"};
-		
+		*/
 		subHierarchyECL = "<<399963005|Abrasion|"; //QI-170
 		templateNames = new String[] {	"templates/wound/abrasion.json" ,
 										"templates/Disorder due to birth trauma.json"};
 		includeDueTos = true;
-		*/
+		
+		/*
 		subHierarchyECL = "<<432119003 |Aneurysm (disorder)|"; //QI-183 
 		templateNames = new String[] {	"templates/Aneurysm of Cardiovascular system.json" };
-		
+		*/
 		super.init(args);
 		
 		//Ensure our ECL matches more than 0 concepts.  This will also cache the result

@@ -30,12 +30,15 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 	Map<Concept, List<Ingredient>> spreadsheet = new HashMap<>();
 	Map<Description, Concept> substanceMap = new HashMap<>();
 	DrugTermGenerator termGenerator = new DrugTermGenerator(this);
-	IngredientCounts ingredientCounter;
 	TermVerifier termVerifier;
-	boolean specifyDenominator = false;  // True for 2a, 2b, 3a, 3b  False for 1c
-	boolean includeUnitOfPresentation = true;  // True for 2a, 1c. False for 3a, 3b
-	boolean usesPresentation = true;   //True for Pattern 1b, 1c, 2a.   False for 2b, 3a.  NB 2a uses both!
-	boolean usesConcentration = false;  //True for liquids eg Pattern 2a, 2b Oral solutions, 3a solutions, 3b - creams.   False for 1c
+	Set<Concept> blackListedConcepts = new HashSet<>();
+	
+	//Determine use of presentation / concentration from the Ingredient object
+	//boolean usesPresentation = true;   //True for Pattern 1b, 1c, 2a.   False for 2b, 3a.  NB 2a uses both!
+	// usesConcentration = false;  //True for liquids eg Pattern 2a, 2b Oral solutions, 3a solutions, 3b - creams.   False for 1c
+	//boolean includeUnitOfPresentation = true;  // True for 2a, 1c. False for 3a, 3b
+	//boolean specifyDenominator = false;  // True for 2a, 2b, 3a, 3b  False for 1c
+	
 	boolean cloneAndReplace = false;  //3A Patches being replaced, also 2A Injection Infusions
 	
 	protected CDRemodelling(BatchFix clone) {
@@ -50,9 +53,8 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 			app.inputFileHasHeaderRow = true;
 			app.runStandAlone = true;
 			app.init(args);
-			app.ingredientCounter = new IngredientCounts(app);
-			app.termGenerator.includeUnitOfPresentation(app.includeUnitOfPresentation); 
-			app.termGenerator.specifyDenominator(app.specifyDenominator);
+			//app.termGenerator.includeUnitOfPresentation(app.includeUnitOfPresentation); 
+			//app.termGenerator.specifyDenominator(app.specifyDenominator);
 			app.loadProjectSnapshot(false); //Load all descriptions
 			app.postInit();
 			//We won't include the project export in our timings
@@ -96,7 +98,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		}
 		changesMade = remodelConcept(task, loadedConcept);
 		try {
-			changesMade += ingredientCounter.assignIngredientCounts(task, loadedConcept, CharacteristicType.STATED_RELATIONSHIP);
+			changesMade += assignIngredientCounts(task, loadedConcept, CharacteristicType.STATED_RELATIONSHIP);
 		} catch (Exception e) {
 			report (task, concept, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Unable to assign ingredient count due to: " + e.getMessage());
 		}
@@ -156,6 +158,10 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		//Find this ingredient.  If it's in group 0, we need to move it to a new group
 		Relationship substanceRel = getSubstanceRel(t, c, modelIngredient.substance, modelIngredient.boss);
 
+		//Are we using concentration, presentation or both?
+		boolean usesConcentration = modelIngredient.concStrength != null;
+		boolean usesPresentation = modelIngredient.presStrength != null;
+		
 		if (substanceRel == null) {
 			//We'll need to create one!
 			report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "No existing ingredient found.  Adding new relationship.");
@@ -269,24 +275,42 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		Concept c = gl.getConcept(items[0]);
 		c.setConceptType(ConceptType.CLINICAL_DRUG);
 		
+		if (c.getConceptId().equals("416375002") || c.getConceptId().equals("377208009")) {
+		//	debug("Debug here!");
+		}
+		
 		//Is this the first time we've seen this concept?
 		if (!spreadsheet.containsKey(c)) {
 			spreadsheet.put(c, new ArrayList<Ingredient>());
+		}
+		
+		//Have we seen this concept and black listed it?
+		if (blackListedConcepts.contains(c)) {
+			report ((Task)null, c, Severity.NONE, ReportActionType.VALIDATION_CHECK, "Subsequent ingredient encountered on previously failed concept");
+			blackListedConcepts.add(c);
+			return null;
 		}
 		List<Ingredient> ingredients = spreadsheet.get(c);
 		try {
 			// Booleans indicate: don't create and do validate that concept exists
 			Ingredient ingredient = new Ingredient();
-			ingredient.substance = DrugUtils.findSubstance(items[5]);
 			ingredient.boss = DrugUtils.findSubstance(items[4]);
+			ingredient.substance = DrugUtils.findSubstance(items[5]);
 			
-			if (ingredient.boss == null || ingredient.substance == null) {
-				report ((Task)null, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Substance or BOSS not identified - " + items[5] + " / " + items[4]);
+			if (ingredient.boss == null) {
+				report ((Task)null, c, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, "BOSS not identified - " + items[4]);
+				blackListedConcepts.add(c);
 				return null;
 			}
 			
-			usesConcentration = items[10].contains("concentration");
-			usesPresentation = items[10].contains("presentation");
+			if (ingredient.substance == null) {
+				report ((Task)null, c, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, "Substance not identified - " + items[5]);
+				blackListedConcepts.add(c);
+				return null;
+			}
+			
+			boolean usesConcentration = items[10].contains("concentration");
+			boolean usesPresentation = items[10].contains("presentation");
 			if (usesConcentration == false && usesPresentation == false) {
 				report ((Task)null, c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Unable to determine conc / pres");
 				return null;
@@ -295,6 +319,12 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 			StrengthUnit numerator = new StrengthUnit(Double.parseDouble(items[6]), DrugUtils.findUnitOfMeasure(items[7]));
 			if (DrugUtils.normalizeStrengthUnit(numerator)) {
 				warn ("Normalized Strength of " + c + ": " + numerator);
+			}
+			
+			//Is this a number we have as a concept?
+			if (DrugUtils.getNumberAsConcept(numerator.getStrengthStr()) == null) {
+				report ((Task)null, c, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, "Missing number concept: " + numerator.getStrengthStr());
+				return null;
 			}
 			
 			if (usesConcentration) {
@@ -311,7 +341,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 				ingredient.presDenomUnit =  DrugUtils.findUnitOfMeasure(items[9]);
 			}
 			
-			if (usesPresentation && includeUnitOfPresentation) {
+			if (usesPresentation) {
 				ingredient.unitOfPresentation = getUnitOfPresentation(items[3]);
 			}
 			

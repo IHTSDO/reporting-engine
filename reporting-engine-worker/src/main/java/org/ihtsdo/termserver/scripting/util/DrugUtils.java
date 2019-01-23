@@ -153,8 +153,8 @@ public class DrugUtils implements RF2Constants {
 		if (substanceMap == null) {
 			populateSubstanceMap();
 		}
-		
-		if (!substanceMap.containsKey(substanceName.toLowerCase().trim())) {
+		substanceName = substanceName.toLowerCase().trim();
+		if (!substanceMap.containsKey(substanceName)) {
 			throw new TermServerScriptException("Unable to identify substance : " + substanceName);
 		}
 		
@@ -184,7 +184,7 @@ public class DrugUtils implements RF2Constants {
 				}
 			}
 		}
-		TermServerScript.info("Populated substance map");
+		TermServerScript.info("Populated substance map with " + substanceMap.size() + " concepts.");
 	}
 
 	public static  String getDosageForm(Concept concept, boolean isFSN, String langRefset) throws TermServerScriptException {
@@ -286,13 +286,14 @@ public class DrugUtils implements RF2Constants {
 	public static boolean normalizeStrengthUnit (StrengthUnit su) {
 		boolean changeMade = false;
 		int currentIdx =  ArrayUtils.indexOf(solidUnits, su.getUnit());
+		GraphLoader gl = GraphLoader.getGraphLoader();
 		if (currentIdx != NOT_SET) {
 			if (su.getStrength() >= 1000) {
-				su.setUnit(solidUnits[currentIdx + 1]);
+				su.setUnit(gl.getConceptSafely(solidUnits[currentIdx + 1].getConceptId()));
 				su.setStrength(su.getStrength() / 1000D);
 				changeMade = true;
 			} else if (su.getStrength() <1) {
-				su.setUnit(solidUnits[currentIdx - 1]);
+				su.setUnit(gl.getConceptSafely(solidUnits[currentIdx - 1].getConceptId()));
 				su.setStrength(su.getStrength() * 1000D);
 				changeMade = true;
 			}

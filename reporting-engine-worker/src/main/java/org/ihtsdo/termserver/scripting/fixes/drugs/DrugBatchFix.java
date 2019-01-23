@@ -3,12 +3,22 @@ package org.ihtsdo.termserver.scripting.fixes.drugs;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.ValidationFailure;
+import org.ihtsdo.termserver.scripting.TermServerScript.ReportActionType;
+import org.ihtsdo.termserver.scripting.TermServerScript.Severity;
+import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
+import org.ihtsdo.termserver.scripting.domain.Task;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.DrugTermGenerator;
+import org.ihtsdo.termserver.scripting.util.DrugUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 public abstract class DrugBatchFix extends BatchFix implements RF2Constants{
@@ -38,82 +48,37 @@ public abstract class DrugBatchFix extends BatchFix implements RF2Constants{
 		super(clone);
 	}
 
-	//This code has been replaced by DrugTermGenerator
-/*	protected String normalizeMultiIngredientTerm(String term, DescriptionType descriptionType, ConceptType conceptType) {
-		
-		String semanticTag = "";
-		if (descriptionType.equals(DescriptionType.FSN)) {
-			String[] parts = SnomedUtils.deconstructFSN(term);
-			term = parts[0];
-			semanticTag = " " + parts[1];
-		}
-		//If this is the FSN then add "Product containing ", or remember if it's already there
-		boolean doProductPrefix = (descriptionType.equals(DescriptionType.FSN));
-		String origTerm = term;
-		if (term.startsWith(productPrefix)) {
-			doProductPrefix = true;
-			term = term.substring(productPrefix.length());
-			/*if (term.startsWith(ONLY)) {
-				prefix += ONLY;
-				term = term.substring(ONLY.length());
-			}*/
-	/*	}
-		String oneEach ="";
-		String suffix = "";
-		if (conceptType.equals(ConceptType.MEDICINAL_PRODUCT_FORM)) {
-			String[] parts = deconstructDoseForm(term);
-			term = parts[0];
-			oneEach = parts[1];
-			suffix = parts[2]; 
-			term = sortIngredients(term);
-		}
-		
-		if (!doProductPrefix) {
-			term = SnomedUtils.capitalize(term);
-		}
-		
-		term = termGenerator.checkForVitamins(term, origTerm);
-		
-		return (doProductPrefix?productPrefix:"") + term + oneEach + suffix + semanticTag;
-	}*/
-
-	/*private String sortIngredients(String term) {
-		String[] ingredients = term.split(AND);
-		//ingredients should be in alphabetical order, also trim spaces
-		for (int i = 0; i < ingredients.length; i++) {
-			ingredients[i] = ingredients[i].toLowerCase().trim();
-		}
-		Arrays.sort(ingredients);
-
-		//Reform with spaces around + sign and only first letter capitalized
-		boolean isFirstIngredient = true;
-		term = "";
-		for (String thisIngredient : ingredients) {
-			if (!isFirstIngredient) {
-				term += AND;
-			} 
-			term += thisIngredient.toLowerCase();
-			isFirstIngredient = false;
-		}
-		return term;
-	}*/
-
-/*	private String[] deconstructDoseForm(String term) {
-		String[] parts = new String[]{term,"", ""};
-		for (String doseForm : doseForms ) {
-			if (term.endsWith(doseForm)) {
-				parts[0] = term.substring(0, term.length() - doseForm.length());
-				parts[2] = doseForm;
-				if (parts[0].endsWith(find)) {
-					parts[0] = parts[0].substring(0, parts[0].length() - find.length());
-					parts[1] = find;
-				}
-				break;
+	public int assignIngredientCounts(Task t, Concept c, CharacteristicType charType) throws TermServerScriptException {
+		int changes = 0;
+		Set<Concept> ingredients = DrugUtils.getIngredients(c, charType);
+		if (ingredients == null || ingredients.size() == 0) {
+			throw new ValidationFailure(c, "No ingredients found for ingredient count");
+		} else if (ingredients.size() == 1) {
+			changes = replaceRelationship(t, c, COUNT_BASE_ACTIVE_INGREDIENT, DrugUtils.getNumberAsConcept("1"), UNGROUPED, true);
+		} else {
+			//Quick check that the number of ingredients matches the number of " and "
+			if (ingredients.size() != c.getFsn().split(AND).length) {
+				report(t,c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "FSN does not suggest " + ingredients.size() + " ingredients");
 			}
+			Set<Concept> bases = getBases(ingredients);
+			if (bases.size() != ingredients.size()) {
+				report(t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Ingredients / Base Count: " + ingredients.size() + " / " + bases.size());
+			}
+			Concept baseCountConcept = DrugUtils.getNumberAsConcept(Integer.toString(bases.size()));
+			changes = replaceRelationship(t, c, COUNT_BASE_ACTIVE_INGREDIENT, baseCountConcept, UNGROUPED, true);
 		}
-		return parts;
-	}*/
-	
+		return changes;
+	}
+
+	protected Set<Concept> getBases(Set<Concept> ingredients) throws TermServerScriptException {
+		Set<Concept> bases = new HashSet<>();
+		for (Concept ingredient : ingredients) {
+			//We need a local copy of the ingredient to get it's full set of relationship concepts
+			ingredient = gl.getConcept(ingredient.getConceptId());
+			bases.add(DrugUtils.getBase(ingredient));
+		}
+		return bases;
+	}
 	
 	protected String removeUnwantedWords(String str, boolean isFSN) {
 		String semTag = "";
