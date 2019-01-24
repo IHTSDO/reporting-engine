@@ -1,0 +1,6 @@
+{
+  "name": "Fistula",
+  "documentation": "https://confluence.ihtsdotools.org/display/AUTHS/Fistula+of+%5Bbody+structure%5D+%28disorder%29+-+In+progress",
+  "version": 1,
+  "logicalTemplate": "64572001 |Disease (disorder)|: [[~0..1]] 42752001 |Due to (attribute)| = [[ +id (<<  404684003 |Clinical finding (finding)|) @due]] , [[~1..*]]{ [[~1..1]]116676008 |Associated morphology (attribute)| = [[+id(<< 118622000 |Fistula (morphologic abnormality)|) @morphology ]], [[~1..1]] 363698007 |Finding site (attribute)| = [[+id(<< 123037004 |Body structure (body structure)|) @site ]], [[~0..1]] 246454002 |Occurrence (attribute)| = [[ +id(<<  282032007 |Periods of life (qualifier value)|) @occur]], [[~0..1]] 370135005 |Pathological process (attribute)| = [[ +id (<< 441862004 |Infectious process (qualifier value)| OR << 308490002 |Pathological developmental process (qualifier value)| ) @proc ]], [[~0..1]] 246075003 |Causative agent (attribute)| = [[ +id (<< 410607006 |Organism (organism)|) @causative]] }"
+}

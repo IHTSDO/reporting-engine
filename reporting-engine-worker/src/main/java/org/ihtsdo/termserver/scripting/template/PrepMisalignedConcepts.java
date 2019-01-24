@@ -268,15 +268,19 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 		exclusionWords.add("gangrene");
 		exclusionWords.add("obstruction");
 		exclusionWords.add("obstructed");
-		*/
+		
 		subHierarchyECL = "<<312608009 |Laceration - injury|"; //QI-177
 		templateNames = new String[] {	"templates/wound/laceration.json" };
 		includeDueTos = true;
 		
-		/*
+		
 		subHierarchyECL = "<< 3723001 |Arthritis (disorder)|"; //QI-123
 		templateNames = new String[] {	"templates/Arthritis.json" };
 		*/
+		
+		subHierarchyECL = "<<428794004 |Fistula (disorder)|"; //QI-186
+		templateNames = new String[] {	"templates/Fistula.json" };
+		includeDueTos = true;
 		
 		super.init(args);
 		
