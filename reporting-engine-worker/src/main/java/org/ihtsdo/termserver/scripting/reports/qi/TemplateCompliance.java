@@ -25,39 +25,39 @@ import org.snomed.otf.scheduler.domain.*;
  */
 public class TemplateCompliance extends TermServerReport implements ReportClass {
 	
-	final static String templateServiceUrl = "https://dev-authoring.ihtsdotools.org/template-service";
+	final static String templateServiceUrl = "https://authoring.ihtsdotools.org/template-service";
 	TemplateServiceClient tsc;
 	Map<String, List<Template>> domainTemplates = new HashMap<>();
 	Set<Concept> alreadyCounted = new HashSet<>();
+	Map<Concept, Integer> outOfScopeCache = new HashMap<>();
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		TermServerReport.run(TemplateCompliance.class, args, null);
 	}
-	
 
 	@Override
 	public Job getJob() {
-		String[] parameterNames = new String[] {};
+		JobParameters params = new JobParameters()
+				.add(SERVER_URL)
+					.withType(JobParameter.Type.HIDDEN)
+					.withMandatory()
+				.build();
 		return new Job( new JobCategory(JobType.REPORT, JobCategory.QI),
 						"SNOMEDCT Template Compliance",
 						"For every domain which has a known template, determine how many concepts comply to that template.",
-						new JobParameters(parameterNames),
-						Job.ProductionStatus.HIDEME);
+						params,
+						Job.ProductionStatus.PROD_READY);
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
 		
-		tsc = new TemplateServiceClient(templateServiceUrl, "dev-ims-ihtsdo=b3xnn4IWTRv0liESEcB3LA00");
+		tsc = new TemplateServiceClient(templateServiceUrl, run.getAuthToken());
 		ReportSheetManager.targetFolderId = "1YoJa68WLAMPKG6h4_gZ5-QT974EU9ui6"; //QI / Stats
 		additionalReportColumns = "Domain, SemTag, Hierarchy (Total), Total Concepts in Domain, OutOfScope - Domain, OutOfScope - Hierarchy, Counted Elsewhere, Template Compliant, Templates Considered";
 		
 		subHierarchyStr = "125605004";  // QI-5 |Fracture of bone (disorder)|
 		String[] templateNames = new String[] {	"templates/fracture/Fracture of Bone Structure.json",
 										"templates/fracture/Fracture Dislocation of Bone Structure.json",
-										//"templates/fracture/Pathologic fracture of bone due to Disease.json",
-										//"templates/fracture/Pathologic fracture morphology of bone structure co-occurrent and due to Neoplasm of bone.json",
-										//"templates/fracture/Traumatic abnormality of spinal cord structure co-occurrent and due to fracture morphology of vertebral bone structure.json",
-										//"Injury of finding site due to birth trauma.json"
 										};
 		populateTemplates(subHierarchyStr, templateNames);
 		
@@ -71,17 +71,17 @@ public class TemplateCompliance extends TermServerReport implements ReportClass 
 		populateTemplates(subHierarchyStr, templateNames);
 		
 		subHierarchyStr =  "34014006"; //QI-15 |Viral disease (disorder)|
-		templateNames = new String[] {	"templates/Infection caused by Virus.json",
-										"templates/Infection of bodysite caused by virus.json"};
+		templateNames = new String[] {	"templates/infection/Infection caused by Virus.json",
+										"templates/infection/Infection of bodysite caused by virus.json"};
 		populateTemplates(subHierarchyStr, templateNames);
 		
 		subHierarchyStr = "87628006";  //QI-16 |Bacterial infectious disease (disorder)|
-		templateNames = new String[] {	"templates/Infection caused by Bacteria.json",
-										"templates/Infection of bodysite caused by bacteria.json"};
+		templateNames = new String[] {	"templates/infection/Infection caused by Bacteria.json",
+										"templates/infection/Infection of bodysite caused by bacteria.json"};
 		populateTemplates(subHierarchyStr, templateNames);
 		
 		subHierarchyStr = "95896000";  //QI-19  |Protozoan infection (disorder)|
-		templateNames = new String[] {"templates/Infection caused by Protozoa with optional bodysite.json"};
+		templateNames = new String[] {"templates//infection/Infection caused by Protozoa with optional bodysite.json"};
 		populateTemplates(subHierarchyStr, templateNames);
 			
 		subHierarchyStr = "125666000";  //QI-33  |Burn (disorder)|
@@ -109,34 +109,76 @@ public class TemplateCompliance extends TermServerReport implements ReportClass 
 		populateTemplates(subHierarchyStr, templateNames);
 		
 		subHierarchyStr = "3218000"; //QI-67 |Mycosis (disorder)|
-		templateNames = new String[] {	"templates/Infection caused by Fungus.json"};
+		templateNames = new String[] {	"templates/infection/Infection caused by Fungus.json"};
 		populateTemplates(subHierarchyStr, templateNames);
 		
 		subHierarchyStr = "17322007"; //QI-68 |Parasite (disorder)|
-		templateNames = new String[] {	"templates/Infection caused by Parasite.json"};
+		templateNames = new String[] {	"templates/infection/Infection caused by Parasite.json"};
 		populateTemplates(subHierarchyStr, templateNames);
 		
 		subHierarchyStr = "416886008"; //QI-106 |Closed wound| 
-		templateNames = new String[] {	"templates/wound/wound of bodysite.json"
-				//"templates/wound/closed wound of bodysite.json"
-				};
+		templateNames = new String[] {	"templates/wound/wound of bodysite.json" };
 		populateTemplates(subHierarchyStr, templateNames);
 		
 		subHierarchyStr = "125643001"; //QI-107 |Open wound| 
-		templateNames = new String[] {	"templates/wound/wound of bodysite.json"
-				//"templates/wound/open wound of bodysite.json"
-				};
+		templateNames = new String[] {	"templates/wound/wound of bodysite.json" };
 		populateTemplates(subHierarchyStr, templateNames);
 		
 		subHierarchyStr = "128545000"; //QI-75 |Hernia of abdominal wall (disorder)|
-		//subHierarchyStr = "773623000";
-		templateNames = new String[] {	"templates/Hernia of abdominal wall.json"};
+		templateNames = new String[] {	"templates/Hernia of Body Structure.json"};
 		populateTemplates(subHierarchyStr, templateNames);
+		
+		subHierarchyStr = "432119003 |Aneurysm (disorder)|"; //QI-143 
+		templateNames = new String[] {	"templates/Aneurysm of Cardiovascular system.json" };
+		populateTemplates(subHierarchyStr, templateNames);
+		
+		subHierarchyStr = "<<40733004|Infectious disease|"; //QI-153
+		templateNames = new String[] {	"templates/infection/Infection NOS.json" };
+		
+		subHierarchyStr = "399963005 |Abrasion|"; //QI-147
+		templateNames = new String[] {	"templates/wound/abrasion.json" ,
+										"templates/Disorder due to birth trauma.json"};
+		populateTemplates(subHierarchyStr, templateNames);
+		
+		subHierarchyStr = "300935003"; //QI-147
+		templateNames = new String[] {	"templates/Disorder due to birth trauma.json" };
+		populateTemplates(subHierarchyStr, templateNames);
+		
+		subHierarchyStr = "52515009 |Hernia of abdominal cavity|"; //QI-172
+		templateNames = new String[] {"templates/Hernia of Body Structure.json" };
+		populateTemplates(subHierarchyStr, templateNames);
+		
+		subHierarchyStr = "312608009 |Laceration - injury|"; //QI-177
+		templateNames = new String[] {	"templates/wound/laceration.json" };
+		populateTemplates(subHierarchyStr, templateNames);
+		
+		subHierarchyStr = "3723001 |Arthritis (disorder)|"; //QI-123
+		templateNames = new String[] {	"templates/Arthritis.json" };
+		populateTemplates(subHierarchyStr, templateNames);
+		
+		
+		subHierarchyStr = "428794004 |Fistula (disorder)|"; //QI-186
+		templateNames = new String[] {	"templates/Fistula.json" };
+		populateTemplates(subHierarchyStr, templateNames);
+
 		populateTemplatesFromTS();
 		super.init(run);
 	}
 	
 	public void runJob() throws TermServerScriptException {
+		
+		//Check all of our domain points are still active concepts, or we'll have trouble with them!
+		Set<String> invalidTemplateDomains = domainTemplates.keySet().stream()
+			.filter(d -> !gl.getConceptSafely(d).isActive())
+			.collect(Collectors.toSet());
+		
+		for (String invalidTemplateDomain : invalidTemplateDomains) {
+			List<Template> templates = domainTemplates.get(invalidTemplateDomain);
+			for (Template t : templates) {
+				warn ("Inactive domain " + gl.getConcept(invalidTemplateDomain) + ": " + t.getName());
+			}
+			domainTemplates.remove(invalidTemplateDomain);
+		}
 		
 		//We're going to sort by the top level domain and the domain's FSN
 		Comparator<Entry<String, List<Template>>> comparator = (e1, e2) -> compare(e1, e2);
@@ -220,17 +262,27 @@ public class TemplateCompliance extends TermServerReport implements ReportClass 
 
 	private void examineDomain(Concept domain, List<Template> templates) throws TermServerScriptException {
 		DescendentsCache cache = gl.getDescendantsCache();
+		
+		if (domain.getConceptId().equals("34014006")) {
+			debug ("Debug here");
+		}
 		Set<Concept> subHierarchy = new HashSet<>(cache.getDescendentsOrSelf(domain));  //Clone as we need to modify
 		int domainSize = subHierarchy.size();
 		Concept topLevelConcept = SnomedUtils.getHighestAncestorBefore(domain, ROOT_CONCEPT);
 		Set<Concept> topLevelHierarchy = cache.getDescendentsOrSelf(topLevelConcept);
 		int topLevelHierarchySize = topLevelHierarchy.size();
-		//How much of the top level hierarchy is out of scope?
-		int outOfScope = topLevelHierarchy.stream()
-				.filter(c -> countAttributes(c, CharacteristicType.INFERRED_RELATIONSHIP) == 0)
-				.collect(Collectors.toSet()).size();
 		
+		//How much of the top level hierarchy is out of scope due to have no model?
+		//Cache this, it's expensive!
 		
+		Integer outOfScope = outOfScopeCache.get(topLevelConcept);
+		if (outOfScope == null) {
+			outOfScope = topLevelHierarchy.stream()
+					.filter(c -> countAttributes(c, CharacteristicType.INFERRED_RELATIONSHIP) == 0)
+					.collect(Collectors.toSet()).size();
+			outOfScopeCache.put(topLevelConcept, outOfScope);
+		}
+
 		//Now how many of these are we removing because they have no model?
 		Set<Concept> noModel = subHierarchy.stream()
 				.filter(c -> countAttributes(c, CharacteristicType.INFERRED_RELATIONSHIP) == 0)

@@ -439,7 +439,9 @@ public abstract class TermServerScript implements RF2Constants {
 				jobRun.setParameter(DRY_RUN, args[i+1]);
 			} else if (args[i].equals("-f")) {
 				jobRun.setParameter(INPUT_FILE, args[i+1]);
-			} 
+			} else if (args[i].equals("-c")) {
+				jobRun.setAuthToken(args[i+1]);
+			}
 		}
 		
 		return jobRun;

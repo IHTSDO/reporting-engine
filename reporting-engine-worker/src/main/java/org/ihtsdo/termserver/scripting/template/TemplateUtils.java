@@ -13,6 +13,7 @@ import org.apache.commons.lang.NotImplementedException;
 import org.snomed.authoringtemplate.domain.logical.*;
 import org.ihtsdo.termserver.scripting.DescendentsCache;
 import org.ihtsdo.termserver.scripting.GraphLoader;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
@@ -27,6 +28,8 @@ public class TemplateUtils {
 	public static String ECL_OR = " OR ";
 	public static String ECL_STAR = "*";
 	public static Pattern p = Pattern.compile("[0-9]+");
+	
+	public static boolean SLOT_NAME_WARNING_MADE = false;
 	
 	public static String covertToECL (LogicalTemplate template, boolean restrictive) {
 		StringBuffer sb = new StringBuffer();
@@ -67,6 +70,15 @@ public class TemplateUtils {
 	}
 	
 	public static boolean matchesTemplate(Concept c, Template t, DescendentsCache descendantsCache, CharacteristicType charType) throws TermServerScriptException {
+		//Do a check here that unspecified cardinality on a group should be clarified as [[0..*]]
+		for (AttributeGroup g : t.getAttributeGroups()) {
+			if (g.getCardinalityMin() == null || g.getCardinalityMax() == null) {
+				TermServerScript.warn("Template " + t.getName() + " failed to specify cardinality in group " + g + " clarifying as [[0..*]]");
+				g.setCardinalityMin("0");
+				g.setCardinalityMax("*");
+			}
+		}
+		
 		//Default to not allowing additional attributes
 		return matchesTemplate(c, t, descendantsCache, charType, false);
 	}
@@ -180,8 +192,14 @@ public class TemplateUtils {
 				return matchesAttributeValue(r.getTarget(), a.getAllowableRangeECL().trim(), cache);
 			} else if (a.getValue() != null) {
 				return r.getTarget().getConceptId().equals(a.getValue());
+			} else if (a.getSlotReference() != null) {
+				if (!SLOT_NAME_WARNING_MADE) {
+					TermServerScript.warn("TODO - maintain list of matched slot name values to pass in");
+					SLOT_NAME_WARNING_MADE = true;
+				}
+				return matchesAttributeValue(r.getTarget(), ECL_STAR, cache);
 			} else {
-				throw new IllegalArgumentException ("Template segment has neither ECL nor Value: " + a);
+				throw new IllegalArgumentException ("Template segment has neither ECL, Value nor SlotReference: " + a);
 			}
 		}
 		return false;
@@ -238,10 +256,13 @@ public class TemplateUtils {
 		return c1.equals(c2);
 	}
 
-	public static Cardinality getCardinality(AttributeGroup group) {
+	public static Cardinality getCardinality(AttributeGroup g) {
+		int min = g.getCardinalityMin()==null?1:getCardinality(g.getCardinalityMin());
+		int max = g.getCardinalityMax()==null?Integer.MAX_VALUE:getCardinality(g.getCardinalityMax());
+		
 		Cardinality cardinality = new Cardinality();
-		cardinality.setMin(getCardinality(group.getCardinalityMin()));
-		cardinality.setMax(getCardinality(group.getCardinalityMax()));
+		cardinality.setMin(min);
+		cardinality.setMax(max);
 		return cardinality;
 	}
 	
