@@ -298,6 +298,10 @@ public class DrugUtils implements RF2Constants {
 				changeMade = true;
 			}
 		}
+		if (changeMade) {
+			//See if we need to shift by another 1000 eg for 0.000313
+			normalizeStrengthUnit(su);
+		}
 		return changeMade;
 	}
 	public static String toString(double d)
