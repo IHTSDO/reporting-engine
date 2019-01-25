@@ -215,9 +215,10 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		//Start with the whole subHierarchy and remove concepts that match each of our templates
 		Set<Concept> alignedConcepts = new HashSet<>();
 		Set<Concept> ignoredConcepts = new HashSet<>();
+		Collection<Concept> potentialMatches = findConcepts(project.getBranchPath(), subHierarchyECL);
 		info ("Identifying concepts aligned to template");
 		for (Template template : templates) {
-			alignedConcepts.addAll(findTemplateMatches(template));
+			alignedConcepts.addAll(findTemplateMatches(template, potentialMatches));
 		}
 		alignedConcepts.removeAll(ignoredConcepts);
 		alignedConcepts = alignedConcepts.stream()

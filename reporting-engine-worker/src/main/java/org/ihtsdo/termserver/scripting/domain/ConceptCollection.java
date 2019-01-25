@@ -18,6 +18,10 @@ public class ConceptCollection {
 	@Expose
 	int offset;
 	
+	@SerializedName("searchAfter")
+	@Expose
+	String searchAfter;
+	
 	@SerializedName("total")
 	@Expose
 	int total;
@@ -52,5 +56,13 @@ public class ConceptCollection {
 
 	public void setItems(List<Concept> items) {
 		this.items = items;
+	}
+
+	public String getSearchAfter() {
+		return searchAfter;
+	}
+
+	public void setSearchAfter(String searchAfter) {
+		this.searchAfter = searchAfter;
 	}
 }

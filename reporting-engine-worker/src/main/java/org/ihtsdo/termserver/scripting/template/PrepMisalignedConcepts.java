@@ -44,7 +44,7 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 			//app.getArchiveManager().allowStaleData = true;
 			app.loadProjectSnapshot(false);  //Load all descriptions
 			app.postInit();
-			app.runJob();
+  			app.runJob();
 		} catch (Exception e) {
 			info("Failed to produce Misaligned Concepts Report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
@@ -241,7 +241,7 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 		
 		subHierarchyECL = "<<432119003 |Aneurysm (disorder)|"; //QI-143 
 		templateNames = new String[] {	"templates/Aneurysm of Cardiovascular system.json" };
-		
+		*/
 		subHierarchyECL = "<<40733004|Infectious disease|"; //QI-153
 		templateNames = new String[] {	"templates/infection/Infection NOS.json" };
 		setExclusions(new String[] {"87628006 |Bacterial infectious disease (disorder)|","34014006 |Viral disease (disorder)|",
@@ -249,6 +249,7 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 				"17322007 |Disease caused by parasite (disorder)|", "91302008 |Sepsis (disorder)|"});
 		exclusionWords.add("shock");
 		
+		/*
 		subHierarchyECL = "<<399963005 |Abrasion|"; //QI-147
 		templateNames = new String[] {	"templates/wound/abrasion.json" ,
 										"templates/Disorder due to birth trauma.json"};
@@ -276,11 +277,11 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 		
 		subHierarchyECL = "<< 3723001 |Arthritis (disorder)|"; //QI-123
 		templateNames = new String[] {	"templates/Arthritis.json" };
-		*/
 		
 		subHierarchyECL = "<<428794004 |Fistula (disorder)|"; //QI-186
 		templateNames = new String[] {	"templates/Fistula.json" };
 		includeDueTos = true;
+		*/
 		
 		super.init(args);
 		
@@ -306,13 +307,13 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		
 		//Start with the whole subHierarchy and remove concepts that match each of our templates
-		List<Concept> unalignedConcepts = findConcepts(project.getBranchPath(), subHierarchyECL);
+		Set<Concept> unalignedConcepts = findConcepts(project.getBranchPath(), subHierarchyECL);
 		
 		//Set<Concept> unalignedConcepts = Collections.singleton(gl.getConcept("415771000"));
 		Set<Concept> ignoredConcepts = new HashSet<>();
 		
 		for (Template template : templates) {
-			Set<Concept> matches = findTemplateMatches(template);
+			Set<Concept> matches = findTemplateMatches(template, unalignedConcepts);
 			incrementSummaryInformation("Matched templates",matches.size());
 			unalignedConcepts.removeAll(matches);
 			int beforeCount = unalignedConcepts.size();

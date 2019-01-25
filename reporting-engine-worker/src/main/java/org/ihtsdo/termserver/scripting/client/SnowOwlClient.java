@@ -169,11 +169,12 @@ public class SnowOwlClient {
 		}
 	}
 
-	public JSONResource getConcepts(String ecl, String branchPath, int offset, int limit) throws SnowOwlClientException {
+	public JSONResource getConcepts(String ecl, String branchPath, int offset, String searchAfter, int limit) throws SnowOwlClientException {
 		try {
-			//I suspect a failure of 0 concepts gets cached somewhere, so I'm adding a random string to force a fresh request
-			String random = RandomStringUtils.random(5, true, true);
-			String url = getConceptsPath(branchPath) + "?rnd=" + random + "&active=true&limit=" + limit + "&offset=" + offset + "&ecl=" + URLEncoder.encode(ecl, "UTF-8");
+			String url = getConceptsPath(branchPath) + "?active=true&limit=" + limit + "&offset=" + offset + "&ecl=" + URLEncoder.encode(ecl, "UTF-8");
+			if (!StringUtils.isEmpty(searchAfter)) {
+				url += "&searchAfter=" + searchAfter;
+			}
 			System.out.println("Calling " + url);
 			return resty.json(url);
 		} catch (IOException e) {

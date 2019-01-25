@@ -639,7 +639,7 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 	}
 	
-	protected List<Concept> findConcepts(String branch, String ecl) throws TermServerScriptException {
+	protected Set<Concept> findConcepts(String branch, String ecl) throws TermServerScriptException {
 		EclCache cache = EclCache.getCache(branch, tsClient, gson, gl);
 		List<Concept> concepts = cache.findConcepts(branch, ecl); 
 		int retry = 0;
@@ -648,7 +648,13 @@ public abstract class TermServerScript implements RF2Constants {
 			try { Thread.sleep(30*1000); } catch (Exception e) {}
 			concepts = cache.findConcepts(branch, ecl); 
 		}
-		return concepts; 
+		//Failure in the pagination can cause duplicates.  Check for this
+		Set<Concept> uniqConcepts = new HashSet<>(concepts);
+		if (uniqConcepts.size() != concepts.size()) {
+			int diff = concepts.size() - uniqConcepts.size();
+			throw new TermServerScriptException(diff + " duplicate concepts returned from ecl: " + ecl);
+		}
+		return uniqConcepts; 
 	}
 
 	protected List<Component> processFile() throws TermServerScriptException {

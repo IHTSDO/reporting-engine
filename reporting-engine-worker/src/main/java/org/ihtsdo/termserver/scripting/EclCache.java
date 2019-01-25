@@ -65,12 +65,10 @@ public class EclCache {
 		List<Concept> allConcepts = new ArrayList<>();
 		boolean allRecovered = false;
 		int offset = 0;
+		String searchAfter = null;
 		while (!allRecovered) {
 			try {
-					JSONResource response = tsClient.getConcepts(ecl, branch, offset, PAGING_LIMIT);
-					/*if (response.getHTTPStatus() != 200) {
-						throw new TermServerScriptException ("HTTP " + response.getHTTPStatus());
-					}*/
+					JSONResource response = tsClient.getConcepts(ecl, branch, offset, searchAfter, PAGING_LIMIT);
 					String json = response.toObject().toString();
 					ConceptCollection collection = gson.fromJson(json, ConceptCollection.class);
 					if (offset == 0) {
@@ -96,6 +94,7 @@ public class EclCache {
 					//Did we get all the concepts that there are?
 					if (allConcepts.size() < collection.getTotal()) {
 						offset = allConcepts.size();
+						searchAfter = collection.getSearchAfter();
 					} else {
 						allRecovered = true;
 					}

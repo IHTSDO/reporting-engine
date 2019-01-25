@@ -1,7 +1,6 @@
 package org.ihtsdo.termserver.scripting.template;
 
 import java.io.IOException;
-import java.net.URL;
 import java.util.*;
 
 import org.snomed.authoringtemplate.domain.logical.*;
@@ -69,6 +68,7 @@ abstract public class TemplateFix extends BatchFix {
 			exclusions.addAll(gl.getConcept(thisExclude).getDescendents(NOT_SET));
 		}
 		
+		//Note add words as lower case as we do all lower case matching
 		if (exclusionWords == null) {
 			exclusionWords = new ArrayList<>();
 		}
@@ -76,6 +76,9 @@ abstract public class TemplateFix extends BatchFix {
 		exclusionWords.add("avulsion");
 		exclusionWords.add("associated");
 		exclusionWords.add("co-occurrent");
+		exclusionWords.add("on examination");
+		exclusionWords.add("complex");
+		exclusionWords.add("complication");
 		
 		if (!includeComplexTemplates) {
 			if (!includeDueTos) {
@@ -120,19 +123,18 @@ abstract public class TemplateFix extends BatchFix {
 		}
 	}
 	
-	protected Set<Concept> findTemplateMatches(Template t) throws TermServerScriptException {
+	protected Set<Concept> findTemplateMatches(Template t, Collection<Concept> concepts) throws TermServerScriptException {
 		Set<Concept> matches = new HashSet<Concept>();
-		Collection<Concept> concepts = findConcepts(project.getBranchPath(), subHierarchyECL);
-		info ("Examining " + concepts.size() + " concepts in " + subHierarchyECL + " against template " + t);
+		info ("Examining " + concepts.size() + " concepts against template " + t);
 		for (Concept c : concepts) {
-			if (c.getConceptId().equals("415771000")) {
+			if (c.getConceptId().equals("234195006")) {
 				debug ("Check template match here");
 			}
 			if (!c.isActive()) {
 				warn ("Ignoring inactive concept returned by ECL: " + c);
 				continue;
 			}
-			if (TemplateUtils.matchesTemplate(c, t, gl.getDescendantsCache(), CharacteristicType.INFERRED_RELATIONSHIP)) {
+			if (!isExcluded(c) && TemplateUtils.matchesTemplate(c, t, gl.getDescendantsCache(), CharacteristicType.INFERRED_RELATIONSHIP)) {
 				//Do we already have a template for this concept?  
 				//TODO Assign the most specific template if so
 				if (conceptToTemplateMap.containsKey(c)) {
@@ -174,7 +176,7 @@ abstract public class TemplateFix extends BatchFix {
 		for (String word : exclusionWords) {
 			//word = " " + word + " ";
 			if (fsn.contains(word)) {
-				debug (c + "ignored due to fsn containing:" + word);
+				//debug (c + "ignored due to fsn containing:" + word);
 				incrementSummaryInformation("Concepts excluded due to lexical match");
 				return true;
 			}
