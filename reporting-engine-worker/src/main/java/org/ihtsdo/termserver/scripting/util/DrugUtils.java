@@ -20,6 +20,7 @@ public class DrugUtils implements RF2Constants {
 	
 	public static final Concept [] solidUnits = new Concept [] { PICOGRAM, NANOGRAM, MICROGRAM, MILLIGRAM, GRAM };
 	public static final Concept [] liquidUnits = new Concept [] { MILLILITER, LITER };
+	public static final Concept [] equivUnits = new Concept [] { UEQ, MEQ };
 	
 	static Map<String, Concept> numberConceptMap;
 	static Map<String, Concept> doseFormConceptMap;
@@ -160,7 +161,7 @@ public class DrugUtils implements RF2Constants {
 		
 		Concept substance = substanceMap.get(substanceName);
 		if (dangerousSubstances.contains(substance)) {
-			throw new TermServerScriptException("Lookup performed on substance that isn't uniquely named: " + substanceName);
+			TermServerScript.warn("Lookup performed on substance that isn't uniquely named: '" + substanceName +"'. Using " + substance);
 		}
 		return substance;
 	}
@@ -172,11 +173,18 @@ public class DrugUtils implements RF2Constants {
 		for (Concept c : gl.getDescendantsCache().getDescendents(SUBSTANCE)) {
 			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 				String term = d.getTerm().toLowerCase().trim();
+				if (d.getType().equals(DescriptionType.FSN)) {
+					term = SnomedUtils.deconstructFSN(term)[0];
+				}
 				//Do we already know about this term?  No problem if it's the same concept
 				Concept existing = substanceMap.get(term);
 				if (existing == null) {
 					substanceMap.put(term, c);
 				} else if (!c.equals(existing)) {
+					//The one that's the preferred term will win
+					if (d.isPreferred()) {
+						substanceMap.put(term, c);
+					}
 					dangerousSubstances.add(c);
 					dangerousSubstances.add(existing);
 					//We won't worry about these unless someone tries to look one up
@@ -285,15 +293,29 @@ public class DrugUtils implements RF2Constants {
 	
 	public static boolean normalizeStrengthUnit (StrengthUnit su) {
 		boolean changeMade = false;
+		Concept[] unitsArray = null;
 		int currentIdx =  ArrayUtils.indexOf(solidUnits, su.getUnit());
+		if (currentIdx != NOT_SET) {
+			unitsArray = solidUnits;
+		} else {
+			currentIdx =  ArrayUtils.indexOf(liquidUnits, su.getUnit());
+			if (currentIdx != NOT_SET) {
+				unitsArray = liquidUnits;
+			} else {
+				currentIdx =  ArrayUtils.indexOf(equivUnits, su.getUnit());
+				if (currentIdx != NOT_SET) {
+					unitsArray = equivUnits;
+				}
+			}
+		}
 		GraphLoader gl = GraphLoader.getGraphLoader();
 		if (currentIdx != NOT_SET) {
 			if (su.getStrength() >= 1000) {
-				su.setUnit(gl.getConceptSafely(solidUnits[currentIdx + 1].getConceptId()));
+				su.setUnit(gl.getConceptSafely(unitsArray[currentIdx + 1].getConceptId()));
 				su.setStrength(su.getStrength() / 1000D);
 				changeMade = true;
 			} else if (su.getStrength() <1) {
-				su.setUnit(gl.getConceptSafely(solidUnits[currentIdx - 1].getConceptId()));
+				su.setUnit(gl.getConceptSafely(unitsArray[currentIdx - 1].getConceptId()));
 				su.setStrength(su.getStrength() * 1000D);
 				changeMade = true;
 			}

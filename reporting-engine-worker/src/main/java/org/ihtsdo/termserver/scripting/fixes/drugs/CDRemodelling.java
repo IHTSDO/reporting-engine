@@ -275,8 +275,8 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		Concept c = gl.getConcept(items[0]);
 		c.setConceptType(ConceptType.CLINICAL_DRUG);
 		
-		if (c.getConceptId().equals("416375002") || c.getConceptId().equals("377208009")) {
-		//	debug("Debug here!");
+		if (c.getConceptId().equals("333356006") || c.getConceptId().equals("437830007")) {
+			debug("Debug here!");
 		}
 		
 		//Is this the first time we've seen this concept?

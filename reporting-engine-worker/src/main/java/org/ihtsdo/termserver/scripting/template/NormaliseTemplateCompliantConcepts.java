@@ -45,7 +45,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		reportNoChange = false;
 		selfDetermining = true;
 		runStandAlone = true;
-		classifyTasks = true;
+		//classifyTasks = true;
 		//validateTasks = true; Currently failing with 500 error.  Take out Resty?
 		additionalReportColumns = "CharacteristicType, Template, ActionDetail";
 		
