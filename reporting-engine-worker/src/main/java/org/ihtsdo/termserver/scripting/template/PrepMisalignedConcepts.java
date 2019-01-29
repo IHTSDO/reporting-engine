@@ -60,8 +60,6 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 	@Override
 	public Job getJob() {
 		JobParameters params = new JobParameters()
-				.add(TEMPLATE_NAME)
-					.withType(JobParameter.Type.TEMPLATE_NAME)
 				.add(SUB_HIERARCHY)
 					.withType(JobParameter.Type.CONCEPT)
 				.add(ECL)
@@ -71,6 +69,8 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 					.withDefaultValue(false)
 				.add(TEMPLATE)
 					.withType(JobParameter.Type.TEMPLATE)
+				.add(TEMPLATE_NAME)
+					.withType(JobParameter.Type.TEMPLATE_NAME)
 				.add(SERVER_URL)
 					.withType(JobParameter.Type.HIDDEN)
 					.withMandatory()
@@ -213,10 +213,10 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 		subHierarchyECL = "<<283682007"; // QI-39 |Bite - wound (disorder)|
 		templateNames = new String[] {	"templates/bite/bite of bodysite caused by bite event.json", 
 										"templates/bite/bite of bodysite caused by bite event with infection.json"};
-		*/
+		
 		subHierarchyECL = "<<3218000"; //QI-67 |Mycosis (disorder)|
 		templateNames = new String[] {	"templates/infection/Infection caused by Fungus.json"};
-		/*
+		
 		subHierarchyECL = "<<17322007"; //QI-68 |Parasite (disorder)|
 		templateNames = new String[] {	"templates/infection/Infection caused by Parasite.json"};
 		
@@ -280,6 +280,8 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 		templateNames = new String[] {	"templates/Fistula.json" };
 		includeDueTos = true;
 		*/
+		subHierarchyECL = "<<441457006 |Cyst|"; //QI-181
+		templateNames = new String[] {	"templates/Cyst.json" };
 		
 		super.init(args);
 		
