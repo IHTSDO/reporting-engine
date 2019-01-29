@@ -11,7 +11,7 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.StringUtils;
 
 /*
- * INFRA-2496, QI-135, DRUGS-667
+ * INFRA-2496, QI-135, DRUGS-667, IHTSDO-175
  * Inactivate concepts where a replacement exists - driven by list.
  */
 public class InactivateConcepts extends BatchFix implements RF2Constants {
@@ -20,7 +20,8 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 	Map<Concept, InactivationIndicator> inactivationIndicators = new HashMap<>();
 	Map<Concept, Task> inactivations = new HashMap<>();
 	boolean expectReplacements = false;
-	boolean autoInactivateChildren = true;
+	boolean autoInactivateChildren = false;
+	boolean rewireChildrenToGrandparents = true;
 	
 	protected InactivateConcepts(BatchFix clone) {
 		super(clone);
@@ -65,6 +66,8 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 			throw new ValidationFailure(c, "Unable to inactivate without replacement");
 		}
 		
+		List<Concept> parents = c.getParents(CharacteristicType.STATED_RELATIONSHIP);
+		
 		//Have we already inactivated this concept?
 		if (inactivations.containsKey(c)) {
 			report(t, c, Severity.LOW, ReportActionType.VALIDATION_CHECK, "Concept already inactivated in " + t.getKey());
@@ -75,6 +78,13 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 		//With the same inactivation reasons
 		InactivationIndicator inactivationIndicator = inactivationIndicators.get(c);
 		checkAndInactivatateIncomingAssociations(t, c, inactivationIndicator, replacement);
+		
+		//How many children do we have to do something different with?
+		Set<Concept> descendants = c.getDescendents(NOT_SET, CharacteristicType.STATED_RELATIONSHIP);
+		descendants.removeAll(inactivations.keySet());
+		if (descendants.size() > 0) {
+			report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Inactivated concept has " + descendants.size() + " descendants not scheduled for inactivation");
+		}
 		
 		//Check for any stated children and remove this concept as a parent
 		for (Concept child : gl.getConcept(c.getConceptId()).getDescendents(IMMEDIATE_CHILD, CharacteristicType.STATED_RELATIONSHIP)) {
@@ -95,8 +105,12 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 					report(t, child, severity, ReportActionType.INFO, "Inactivating child of " + c + extraInfo + ", prior to parent inactivation");
 					doFix(t, child, " as descendant of " + c);
 				} else {
-					//Otherwise, just remove the concept as a child of the parent
-					removeParent(t, child, c);
+					if (rewireChildrenToGrandparents) {
+						rewireChildToGrandparents(t, child, c, parents);
+					} else {
+						//Otherwise, just remove the concept as a child of the parent
+						removeParent(t, child, c);
+					}
 				}
 			}
 		}
@@ -132,6 +146,25 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 		return CHANGE_MADE;
 	}
 
+	private void rewireChildToGrandparents(Task t, Concept child, Concept parent, List<Concept> grandParents) throws TermServerScriptException {
+		child = loadConcept(child, t.getBranchPath());
+		report(t, child, Severity.MEDIUM, ReportActionType.INFO, "Rewiring child of " + parent + " to grandparents");
+		
+		List<Relationship> parentRels = child.getRelationships(CharacteristicType.STATED_RELATIONSHIP, IS_A, ActiveState.ACTIVE);
+		for (Relationship parentRel : parentRels) {
+			if (parentRel.getTarget().equals(parent)) {
+				removeRelationship(t, child, parentRel);
+			}
+		}
+		
+		//Remove any existing parents from list of new (grand)parents to add
+		grandParents.removeAll(child.getParents(CharacteristicType.STATED_RELATIONSHIP));
+		for (Concept grandParent : grandParents) {
+			Relationship newParentRel = new Relationship (child, IS_A, grandParent, UNGROUPED);
+			addRelationship(t,  child, newParentRel);
+		}
+	}
+
 	private void removeParent(Task task, Concept child, Concept parent) throws TermServerScriptException {
 		
 		child = loadConcept(child, task.getBranchPath());
@@ -150,6 +183,7 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 		
 		if (changesMade > 0) {
 			save(task, child, "");
+			task.addAfter(child, parent);
 		} else {
 			report (task, child, Severity.HIGH, ReportActionType.API_ERROR, "Did not remove " + parent + " as parent of " + child);
 		}
@@ -214,7 +248,7 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 		Concept replacement = null;
 		int idxReplacement = 1;
 		
-		if (lineItems.length > 2) {
+		/*if (lineItems.length > 2) {
 			idxReplacement = 2;
 			//In this case, column 1 will be in inactivation reason
 			String strInact = lineItems[1];
@@ -241,7 +275,11 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 					}
 				}
 			}
-		}
+		}*/
+		
+		//Specific to IHTSDO-175
+		inactivationIndicators.put(c, InactivationIndicator.AMBIGUOUS);
+		replacement = gl.getConcept(" 782902008 |Implantation procedure (procedure)|");
 		
 		if (replacement != null) {
 			replacements.put(c, replacement);
