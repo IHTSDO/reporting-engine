@@ -213,10 +213,10 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 		subHierarchyECL = "<<283682007"; // QI-39 |Bite - wound (disorder)|
 		templateNames = new String[] {	"templates/bite/bite of bodysite caused by bite event.json", 
 										"templates/bite/bite of bodysite caused by bite event with infection.json"};
-		
+		*/
 		subHierarchyECL = "<<3218000"; //QI-67 |Mycosis (disorder)|
 		templateNames = new String[] {	"templates/infection/Infection caused by Fungus.json"};
-		
+		/*
 		subHierarchyECL = "<<17322007"; //QI-68 |Parasite (disorder)|
 		templateNames = new String[] {	"templates/infection/Infection caused by Parasite.json"};
 		
@@ -272,10 +272,10 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 		templateNames = new String[] {	"templates/wound/laceration.json" };
 		includeDueTos = true;
 		
-		*/
+		
 		subHierarchyECL = "<< 3723001 |Arthritis (disorder)|"; //QI-123
 		templateNames = new String[] {	"templates/Arthritis.json" };
-		/*
+		
 		subHierarchyECL = "<<428794004 |Fistula (disorder)|"; //QI-186
 		templateNames = new String[] {	"templates/Fistula.json" };
 		includeDueTos = true;
