@@ -16,7 +16,6 @@ import org.snomed.otf.scheduler.domain.*;
 public class DuplicateTermsInSubhierarchy extends TermServerReport implements ReportClass {
 	public static String NEW_ISSUES_ONLY = "New Issues Only";
 	public static String PT_ONLY = "Preferred Terms Only";
-	Set<String> whitelist = new HashSet<>();
 	boolean newIssuesOnly = true;
 	boolean ptOnly = true;
 	
@@ -32,6 +31,7 @@ public class DuplicateTermsInSubhierarchy extends TermServerReport implements Re
 		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA
 		super.init(run);
 		additionalReportColumns = "FSN, SemTag, Legacy, Description, Matched Description, Matched Concept";
+		/*
 		whitelist.add("764498003");
 		whitelist.add("738993004");
 		whitelist.add("738991002");
@@ -78,6 +78,7 @@ public class DuplicateTermsInSubhierarchy extends TermServerReport implements Re
 		whitelist.add("732987003");
 		whitelist.add("733001005");
 		whitelist.add("733014006");
+		*/
 	}
 
 	@Override
@@ -113,11 +114,6 @@ public class DuplicateTermsInSubhierarchy extends TermServerReport implements Re
 		Map<String, Description> knownTerms = new HashMap<>();
 		Acceptability acceptability = ptOnly ? Acceptability.PREFERRED : Acceptability.BOTH;
 		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
-			//Have we whitelisted this concept?
-			//TODO We might whitelist description ids also for a finer grained approach
-			if (whitelist.contains(c.getId())) {
-				continue;
-			}
 			for (Description d : c.getDescriptions(acceptability, DescriptionType.SYNONYM, ActiveState.ACTIVE)) {
 				//Do we already know about this term?
 				Description alreadyKnown = knownTerms.get(d.getTerm());

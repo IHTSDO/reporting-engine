@@ -1,7 +1,6 @@
 package org.ihtsdo.snowowl.authoring.scheduler.api.service;
 
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.snomed.otf.scheduler.domain.*;
@@ -35,5 +34,9 @@ public interface ScheduleService {
 	public void processMetadata(JobMetadata metadata);
 
 	public boolean deleteJobRun(String typeName, String jobName, UUID runId);
+
+	public Set<WhiteListedConcept> getWhiteList(String typeName, String jobName);
+
+	public void setWhiteList(String typeName, String jobName, Set<WhiteListedConcept> whiteList);
 
 }

@@ -61,6 +61,8 @@ public abstract class TermServerScript implements RF2Constants {
 	protected Concept subHierarchy;
 	protected String[] excludeHierarchies;
 	
+	protected Set<Concept> whiteListedConcepts;
+	
 	protected boolean reportConceptAsInteger = false;
 
 	protected GraphLoader gl = GraphLoader.getGraphLoader();
@@ -339,6 +341,12 @@ public abstract class TermServerScript implements RF2Constants {
 		String inputFileName = jobRun.getParamValue(INPUT_FILE);
 		if (!StringUtils.isEmpty(inputFileName)) {
 			inputFile = new File(inputFileName);
+		}
+		
+		if (jobRun.getWhiteList() != null) {
+			whiteListedConcepts = jobRun.getWhiteList().stream()
+					.map( w -> gl.getConceptSafely(w.getSctId()))
+					.collect(Collectors.toSet());
 		}
 		
 		subHierarchy = gl.getConcept(jobRun.getParamValue(SUB_HIERARCHY));
@@ -1024,7 +1032,6 @@ public abstract class TermServerScript implements RF2Constants {
 
 	
 	protected void report (Concept c, Object...details) throws TermServerScriptException {
-		incrementSummaryInformation("Report lines written");
 		StringBuffer sb = new StringBuffer();
 		sb.append (reportConceptAsInteger?"":QUOTE)
 		.append(c==null?"":c.getConceptId())
@@ -1047,7 +1054,14 @@ public abstract class TermServerScript implements RF2Constants {
 				sb.append(COMMA_QUOTE + detail + QUOTE);
 			}
 		}
-		writeToReportFile (sb.toString());
+		
+		//Have we whiteListed this concept?
+		if (whiteListedConcepts != null && whiteListedConcepts.contains(c)) {
+			warn ("Ignoring whiteListed concept: " + sb);
+		} else {
+			writeToReportFile (sb.toString());
+			incrementSummaryInformation("Report lines written");
+		}
 	}
 
 	protected List<Concept> determineProximalPrimitiveParents(Concept c) throws TermServerScriptException {

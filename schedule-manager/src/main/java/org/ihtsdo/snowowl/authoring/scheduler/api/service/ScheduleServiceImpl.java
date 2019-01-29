@@ -6,6 +6,7 @@ import javax.annotation.PostConstruct;
 
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
+import org.ihtsdo.otf.rest.exception.ResourceNotFoundException;
 import org.ihtsdo.snowowl.authoring.scheduler.api.AuthenticationService;
 import org.ihtsdo.snowowl.authoring.scheduler.api.mq.Transmitter;
 import org.ihtsdo.snowowl.authoring.scheduler.api.repository.*;
@@ -74,7 +75,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 		if (jobType != null) {
 			return jobCategoryRepository.findByType(jobType);
 		} else {
-			throw new BusinessServiceException("Unknown jobType : '" + typeName + "'");
+			throw new ResourceNotFoundException("Unknown jobType : '" + typeName + "'");
 		}
 	}
 
@@ -97,7 +98,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 		//Make sure we know what this job is before we run it!
 		Job job = getJob(jobName);
 		if (job == null) {
-			throw new BusinessServiceException("Unknown job : '" + jobType + "/" + jobName + "'");
+			throw new ResourceNotFoundException("Unknown job : '" + jobType + "/" + jobName + "'");
 		}
 		return runJob(jobRun);
 	}
@@ -106,12 +107,13 @@ public class ScheduleServiceImpl implements ScheduleService {
 		//Do we know about this job?
 		Job job = getJob(jobRun.getJobName());
 		if (job == null) {
-			throw new BusinessServiceException("Job unknown to Schedule Service: '" + jobRun.getJobName() +"' If job exists and is active, re-run initialise.");
+			throw new ResourceNotFoundException("Job unknown to Schedule Service: '" + jobRun.getJobName() +"' If job exists and is active, re-run initialise.");
 		}
 		
 		jobRun.setRequestTime(new Date());
 		jobRun.setStatus(JobStatus.Scheduled);
 		jobRun.setTerminologyServerUrl(terminologyServerUrl);
+		jobRun.setWhiteList(job.getWhiteList());
 		populateAuthenticationDetails(jobRun);
 		
 		//We protect the json from having parent links and redundant keys, 
@@ -286,6 +288,27 @@ public class ScheduleServiceImpl implements ScheduleService {
 		logger.info("Deleting JobRun {}", jobRun);
 		jobRunRepository.delete(jobRun);
 		return true;
+	}
+
+	@Override
+	public Set<WhiteListedConcept> getWhiteList(String typeName, String jobName) throws ResourceNotFoundException {
+		//Do we know about this job?
+		Job job = getJob(jobName);
+		if (job == null) {
+			throw new ResourceNotFoundException("Job unknown to Schedule Service: '" + jobName+"' If job exists and is active, re-run initialise.");
+		}
+		return job.getWhiteList();
+	}
+
+	@Override
+	public void setWhiteList(String typeName, String jobName, Set<WhiteListedConcept> whiteList) throws ResourceNotFoundException {
+		//Do we know about this job?
+		Job job = getJob(jobName);
+		if (job == null) {
+			throw new ResourceNotFoundException("Job unknown to Schedule Service: '" + jobName +"' If job exists and is active, re-run initialise.");
+		}
+		job.setWhiteList(whiteList);
+		jobRepository.save(job);
 	}
 	
 }

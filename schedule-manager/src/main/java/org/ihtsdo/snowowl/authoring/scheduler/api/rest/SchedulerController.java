@@ -1,6 +1,7 @@
 package org.ihtsdo.snowowl.authoring.scheduler.api.rest;
 
 import io.swagger.annotations.*;
+
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.authoring.scheduler.api.service.ScheduleService;
 import org.snomed.otf.scheduler.domain.*;
@@ -8,9 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @Api("Authoring Projects")
 @RestController
@@ -124,4 +123,24 @@ public class SchedulerController {
 		scheduleService.initialise();
 	}
 
+	@ApiOperation(value="List whitelisted concepts for the given job")
+	@ApiResponses({
+			@ApiResponse(code = 200, message = "OK")
+	})
+	@RequestMapping(value="/jobs/{typeName}/{jobName}/whitelist", method= RequestMethod.GET)
+	public Set<WhiteListedConcept> getWhiteList(@PathVariable final String typeName,
+			@PathVariable final String jobName) throws BusinessServiceException {
+		return scheduleService.getWhiteList(typeName, jobName);
+	}
+	
+	@ApiOperation(value="Set whitelisted concept for the given job")
+	@ApiResponses({
+			@ApiResponse(code = 200, message = "OK")
+	})
+	@RequestMapping(value="/jobs/{typeName}/{jobName}/whitelist", method= RequestMethod.POST)
+	public void setWhiteList(@PathVariable final String typeName, 
+			@PathVariable final String jobName,
+			@RequestBody Set<WhiteListedConcept> whiteList) throws BusinessServiceException {
+		scheduleService.setWhiteList(typeName, jobName, whiteList);
+	}
 }
