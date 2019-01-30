@@ -91,6 +91,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected static final String SUB_HIERARCHY = "Subhierarchy";
 	protected static final String ATTRIBUTE_TYPE = "Attribute Type";
 	protected static final String HIERARCHIES = "Hierarchies";
+	protected static final String INCLUDE_LEGACY_ISSUES = "Include Legacy Issues";
 	protected static final String ECL = "ECL";
 	protected static final String TEMPLATE = "Template";
 	protected static final String TEMPLATE_NAME = "TemplateName";

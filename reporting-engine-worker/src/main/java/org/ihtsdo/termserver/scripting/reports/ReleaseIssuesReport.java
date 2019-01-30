@@ -36,6 +36,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 											"f","E", "var", "St"};
 	char NBSP = 255;
 	String NBSPSTR = "\u00A0";
+	boolean includeLegacyIssues = false;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		TermServerReport.run(ReleaseIssuesReport.class, args);
@@ -44,18 +45,23 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA
 		super.init(run);
+		includeLegacyIssues = run.getParameters().getMandatoryBoolean(INCLUDE_LEGACY_ISSUES);
 		additionalReportColumns = "FSN, Semtag, Issue, Legacy, C/D/R Active, Detail";
 	}
 
 	@Override
 	public Job getJob() {
-		String[] parameterNames = new String[] { };
+		JobParameters params = new JobParameters()
+				.add(INCLUDE_LEGACY_ISSUES)
+					.withType(JobParameter.Type.BOOLEAN)
+					.withDefaultValue("N")
+				.build();
 		return new Job( new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION),
 						"Release Issues Report",
 						"This report lists a range of potential issues identified in INFRA-2723. " + 
 						"For example 1. Descriptions where the module id does not match the concept module id and, 2. Inactive concepts without an active Preferred Term. "  +
 						"Note that the 'Issues' count here refers to components added/modified in the current authoring cycle.",
-						new JobParameters(parameterNames));
+						params);
 	}
 
 	public void runJob() throws TermServerScriptException {
@@ -153,20 +159,17 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	//MAINT-224 Synonyms created as TextDefinitions new content only
 	private void fullStopInSynonym() throws TermServerScriptException {
 		for (Concept c : gl.getAllConcepts()) {
-			if (c.isActive() && SnomedUtils.hasNewChanges(c)) {
-				
-/*				if (c.getConceptId().equals("722431007")) {
-					debug("Check here");
-				} */
-				//Only look at concepts that have been in some way edited in this release cycle
+			//Only look at concepts that have been in some way edited in this release cycle
+			//Unless we're interested in legacy issues
+			if (c.isActive() && (includeLegacyIssues || SnomedUtils.hasNewChanges(c))) {
 				for (Description d : c.getDescriptions(Acceptability.BOTH, DescriptionType.SYNONYM, ActiveState.ACTIVE)) {
 					if (d.getTerm().contains(FULL_STOP) && !allowableFullStop(d.getTerm())) {
 						report(c, "Possible TextDefn as Synonym",isLegacy(d), isActive(c,d), d);
+						incrementSummaryInformation(ISSUE_COUNT);  //We'll only flag up fresh issues
 						if (isLegacy(d).equals("Y")) {
 							incrementSummaryInformation("Legacy Issues Reported");
 						}	else {
 							incrementSummaryInformation("Fresh Issues Reported");
-							incrementSummaryInformation(ISSUE_COUNT);  //We'll only flag up fresh issues
 						}
 					}
 				}
