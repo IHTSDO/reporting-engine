@@ -19,7 +19,7 @@ public class DrugUtils implements RF2Constants {
 	public static final String PRODUCT = "(product)";
 	
 	public static final Concept [] solidUnits = new Concept [] { PICOGRAM, NANOGRAM, MICROGRAM, MILLIGRAM, GRAM };
-	public static final Concept [] liquidUnits = new Concept [] { MILLILITER, LITER };
+	public static final Concept [] liquidUnits = new Concept [] { MICROLITER, MILLILITER, LITER };
 	public static final Concept [] equivUnits = new Concept [] { UEQ, MEQ };
 	
 	static Map<String, Concept> numberConceptMap;
