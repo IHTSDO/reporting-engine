@@ -25,7 +25,7 @@ import org.snomed.otf.scheduler.domain.*;
  */
 public class TemplateCompliance extends TermServerReport implements ReportClass {
 	
-	final static String templateServiceUrl = "https://authoring.ihtsdotools.org/template-service";
+	//final static String templateServiceUrl = "https://authoring.ihtsdotools.org/template-service";
 	TemplateServiceClient tsc;
 	Map<String, List<Template>> domainTemplates = new HashMap<>();
 	Set<Concept> alreadyCounted = new HashSet<>();
@@ -50,7 +50,7 @@ public class TemplateCompliance extends TermServerReport implements ReportClass 
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
-		
+		String templateServiceUrl = run.getMandatoryParamValue(SERVER_URL);
 		tsc = new TemplateServiceClient(templateServiceUrl, run.getAuthToken());
 		ReportSheetManager.targetFolderId = "1YoJa68WLAMPKG6h4_gZ5-QT974EU9ui6"; //QI / Stats
 		additionalReportColumns = "Domain, SemTag, Hierarchy (Total), Total Concepts in Domain, OutOfScope - Domain, OutOfScope - Hierarchy, Counted Elsewhere, Template Compliant, Templates Considered";
@@ -234,6 +234,7 @@ public class TemplateCompliance extends TermServerReport implements ReportClass 
 			List<Template> templates = new ArrayList<>();
 			char id = 'A';
 			for (int x = 0; x < templateNames.length; x++, id++) {
+				info ("Loading template: " + templateNames[x]);
 				try {
 					LogicalTemplate lt = tsc.loadLogicalLocalTemplate(templateNames[x]);
 					templates.add(new Template(id, lt, templateNames[x]));

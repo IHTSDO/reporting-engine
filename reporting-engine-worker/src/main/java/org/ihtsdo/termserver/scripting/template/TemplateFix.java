@@ -166,6 +166,11 @@ abstract public class TemplateFix extends BatchFix {
 			return true;
 		}
 		
+		if (gl.isOrphanetConcept(c)) {
+			incrementSummaryInformation("Orphanet concepts excluded");
+			return true;
+		}
+		
 		if (StringUtils.isEmpty(c.getFsn())) {
 			warn("Skipping concept with no FSN: " + c.getConceptId());
 			return true;

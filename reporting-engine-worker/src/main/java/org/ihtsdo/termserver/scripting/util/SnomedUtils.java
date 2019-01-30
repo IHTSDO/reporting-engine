@@ -13,6 +13,7 @@ import org.ihtsdo.termserver.scripting.domain.*;
 public class SnomedUtils implements RF2Constants {
 	
 	private static VerhoeffCheckDigit verhoeffCheck = new VerhoeffCheckDigit();
+	
 	public static String isValid(String sctId, PartitionIdentifier partitionIdentifier) {
 		String errorMsg=null;
 		int partitionNumber = Integer.valueOf("" + sctId.charAt(sctId.length() -2));
@@ -1142,5 +1143,4 @@ public class SnomedUtils implements RF2Constants {
 		}
 		return null;
 	}
-	
 }

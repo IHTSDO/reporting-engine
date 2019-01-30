@@ -169,6 +169,12 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 			if (exclusions.contains(c)) {
 				continue;
 			}
+			
+			if (gl.isOrphanetConcept(c)) {
+				incrementSummaryInformation("Orphanet concepts excluded");
+				continue;
+			}
+			
 			//We're only interested in fully defined concepts
 			//Update:  OR leaf concepts 
 			if (c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED) || 

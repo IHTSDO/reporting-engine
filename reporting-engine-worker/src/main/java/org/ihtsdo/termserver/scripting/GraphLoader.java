@@ -7,6 +7,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -15,6 +16,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.zip.ZipInputStream;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -30,6 +33,7 @@ public class GraphLoader implements RF2Constants {
 	private Map<String, Concept> fsnMap = null;
 	private String excludeModule = SCTID_LOINC_MODULE;
 	public static int MAX_DEPTH = 1000;
+	private Set<Concept> orphanetConcepts;
 	
 	private DescendentsCache descendantsCache = DescendentsCache.getDescendentsCache();
 	private AncestorsCache ancestorsCache = AncestorsCache.getAncestorsCache();
@@ -71,6 +75,7 @@ public class GraphLoader implements RF2Constants {
 		allComponents = null;
 		componentOwnerMap = null;
 		fsnMap = null;
+		orphanetConcepts = null;
 		descendantsCache.reset();
 		ancestorsCache.reset();
 		historicalAssociations =  new HashMap<Concept, List<AssociationEntry>>();
@@ -625,6 +630,25 @@ public class GraphLoader implements RF2Constants {
 		default: throw new TermServerScriptException("Unknown component Type: " + componentType);
 		}
 	}
+	
+	public Collection<Concept> getOrphanetConcepts() {
+		if (orphanetConcepts == null) {
+			try {
+				InputStream is = GraphLoader.class.getResourceAsStream("/data/orphanet_concepts.txt");
+				if (is == null) {
+					throw new RuntimeException ("Failed to load Orphanet data file - not found.");
+				}
+				orphanetConcepts = IOUtils.readLines(is, "UTF-8").stream()
+						.map( s -> getConceptSafely(s))
+						.collect(Collectors.toSet());
+			} catch (Exception e) {
+				throw new RuntimeException ("Failed to load list of Orphanet Concepts",e);
+			}
+		}
+		return Collections.unmodifiableCollection(orphanetConcepts);
+	}
 
-
+	public boolean isOrphanetConcept (Concept c) {
+		return getOrphanetConcepts().contains(c);
+	}
 }

@@ -42,9 +42,15 @@ public class TemplateServiceClient {
 	private final int minViableLength = 10;
 	
 	public LogicalTemplate loadLogicalLocalTemplate (String templateName) throws JsonParseException, JsonMappingException, IOException {
-		ClassLoader classLoader = getClass().getClassLoader();
+		if (!templateName.startsWith("/")) {
+			templateName = "/" + templateName;
+		}
+		InputStream is = TemplateServiceClient.class.getResourceAsStream(templateName);
+		if (is == null) {
+			throw new RuntimeException ("Failed to load template file - not found: " + templateName);
+		}
 		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		return loadLogicalTemplate(classLoader.getResourceAsStream(templateName));
+		return loadLogicalTemplate(is);
 	}
 	
 	public LogicalTemplate loadLogicalTemplate (InputStream templateStream) throws JsonParseException, JsonMappingException, IOException {

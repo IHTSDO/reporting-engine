@@ -42,7 +42,7 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 			report.postLoadInit();
 			report.generateWorkDoneStats();
 		} catch (Exception e) {
-			info("Failed to produce MissingAttributeReport due to " + e.getMessage());
+			info("Failed to produce work done report due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			report.finish();
@@ -102,6 +102,7 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 			debug ("Analysing subHierarchy: " + subHierarchyStart);
 			Set<Concept> subHierarchy = new HashSet<>(gl.getDescendantsCache().getDescendentsOrSelf(subHierarchyStart)); //
 			removeExclusions(subHierarchyStart, subHierarchy);
+			subHierarchy.removeAll(gl.getOrphanetConcepts());
 			int total = subHierarchy.size();
 			subHierarchy.removeAll(alreadyAccountedFor);
 			int withRemovals = subHierarchy.size();
