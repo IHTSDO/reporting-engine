@@ -17,6 +17,7 @@ import us.monoid.web.JSONResource;
 public class EclCache {
 	private static Map <String, EclCache> branchCaches;
 	private static int PAGING_LIMIT = 500;
+	private static int MAX_RESULTS = 9999;
 	private SnowOwlClient tsClient;
 	private Gson gson;
 	private GraphLoader gl;
@@ -78,11 +79,8 @@ public class EclCache {
 							TermServerScript.info ("...which seems rather large, don't you think?");
 						}
 						
-						if (collection.getTotal() > 9999) {
-							TermServerScript.warn ("too large, returning null");
-							//Cache this response too, so that we don't ask again
-							expansionCache.put(ecl, new ArrayList<Concept>());
-							return expansionCache.get(ecl);
+						if (collection.getTotal() > MAX_RESULTS) {
+							throw new TermServerScriptException("ECL returned " + collection.getTotal() + " concepts, exceeding limit of " + MAX_RESULTS);
 						}
 					}
 					
