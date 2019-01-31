@@ -27,7 +27,7 @@ public class TemplateList extends AllKnownTemplates implements ReportClass {
 	}
 	
 	public void init (JobRun jobRun) throws TermServerScriptException {
-		additionalReportColumns = "Domain, SemTag, Template Name, Source, Documentation";
+		additionalReportColumns = "Domain, SemTag, Template Name / QI Path, Source, Documentation";
 		super.init(jobRun);
 	}
 

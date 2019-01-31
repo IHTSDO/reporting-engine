@@ -81,7 +81,7 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 						"Template Compliance",
 						"This report lists concepts which match the specified selection (either a subhierarchy OR an ECL expression) " +
 						"which DO NOT comply with the selected template. You can either select an existing published template, " + 
-								"or enter one yourself using template language, JSON or a known QI project internal path.",
+								"or enter one yourself using template language or a known QI project internal path (eg /reporting-engine-worker/src/main/resources/templates/burn/Burn of body structure.json).",
 						params, ProductionStatus.PROD_READY);
 	}
 	
