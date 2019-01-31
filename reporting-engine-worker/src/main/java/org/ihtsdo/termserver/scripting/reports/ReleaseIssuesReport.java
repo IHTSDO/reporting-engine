@@ -37,6 +37,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	char NBSP = 255;
 	String NBSPSTR = "\u00A0";
 	boolean includeLegacyIssues = false;
+	private static final int MIN_TEXT_DEFN_LENGTH = 12;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		TermServerReport.run(ReleaseIssuesReport.class, args);
@@ -159,11 +160,14 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	//MAINT-224 Synonyms created as TextDefinitions new content only
 	private void fullStopInSynonym() throws TermServerScriptException {
 		for (Concept c : gl.getAllConcepts()) {
+			if (whiteListedConcepts.contains(c)) {
+				continue;
+			}
 			//Only look at concepts that have been in some way edited in this release cycle
 			//Unless we're interested in legacy issues
 			if (c.isActive() && (includeLegacyIssues || SnomedUtils.hasNewChanges(c))) {
 				for (Description d : c.getDescriptions(Acceptability.BOTH, DescriptionType.SYNONYM, ActiveState.ACTIVE)) {
-					if (d.getTerm().contains(FULL_STOP) && !allowableFullStop(d.getTerm())) {
+					if (d.getTerm().endsWith(FULL_STOP) && d.getTerm().length() > MIN_TEXT_DEFN_LENGTH) {
 						report(c, "Possible TextDefn as Synonym",isLegacy(d), isActive(c,d), d);
 						incrementSummaryInformation(ISSUE_COUNT);  //We'll only flag up fresh issues
 						if (isLegacy(d).equals("Y")) {
@@ -362,30 +366,4 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		return c.getEffectiveTime() == null ? "N" : "Y";
 	}
 
-	private boolean allowableFullStop(String term) {
-		//Work through all full stops in the term
-		int index = term.indexOf(FULL_STOP);
-		while (index >= 0) {
-			boolean thisStopOK = false;
-			//If the character after the full stop is a number, that's fine
-			if (term.length() > index + 1 && Character.isDigit(term.charAt(index+1))) {
-				thisStopOK = true;
-			} else {
-				for (String thisAbbrev : knownAbbrevs) {
-					if ((index - thisAbbrev.length()) >= 0 && term.substring(index - thisAbbrev.length(), index).equals(thisAbbrev)) {
-						thisStopOK = true;
-						break;
-					}
-				}
-			}
-			
-			if (thisStopOK) {
-				index = term.indexOf(FULL_STOP, index + 1);
-				continue;
-			} else {
-				return false;
-			}
-		}
-		return true;
-	}
 }
