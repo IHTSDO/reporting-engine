@@ -2,7 +2,7 @@ package org.ihtsdo.termserver.scripting.domain;
 
 import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
 
-public class RelationshipTemplate {
+public class RelationshipTemplate implements IRelationshipTemplate {
 	private Concept type;
 	private Concept target;
 	private CharacteristicType characteristicType;
@@ -37,7 +37,7 @@ public class RelationshipTemplate {
 		this.characteristicType = characteristicType;
 	}
 
-	public boolean matches(Relationship rel) {
+	public boolean equalsTypeValue(Relationship rel) {
 		if (this.type.equals(rel.getType()) && this.target.equals(rel.getTarget())) {
 			return true;
 		}

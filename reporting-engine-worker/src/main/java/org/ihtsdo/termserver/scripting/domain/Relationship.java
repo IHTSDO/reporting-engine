@@ -8,7 +8,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
-public class Relationship extends Component implements RF2Constants, Comparable<Relationship> {
+public class Relationship extends Component implements IRelationshipTemplate, RF2Constants, Comparable<Relationship> {
 
 	@SerializedName("effectiveTime")
 	@Expose
@@ -370,4 +370,5 @@ public class Relationship extends Component implements RF2Constants, Comparable<
 	public boolean equalsTypeValue(Relationship rhs) {
 		return this.type.equals(rhs.type) && this.target.equals(rhs.target);
 	}
+
 }

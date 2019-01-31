@@ -11,14 +11,16 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import us.monoid.json.JSONObject;
 
 /*
-For APDS-335
-Replace all active attributes using 704318007 |Property type (attribute)| 
-with 370130000 |Property (attribute)|
+For APDS-335, QI
+Replace all relationships of one specified type / value for another
 */
 public class ReplaceRelationship extends BatchFix implements RF2Constants{
 	
 	Concept findAttribute;
 	Concept replaceAttribute;
+	
+	enum Mode { TYPE, VALUE }
+	Mode mode = Mode.VALUE;
 	
 	protected ReplaceRelationship(BatchFix clone) {
 		super(clone);
@@ -29,9 +31,11 @@ public class ReplaceRelationship extends BatchFix implements RF2Constants{
 		try {
 			fix.selfDetermining = true;
 			fix.reportNoChange = false;
+			fix.populateTaskDescription = false;  //Going above some limit
 			fix.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			fix.loadProjectSnapshot(true); 
+			fix.postInit();
 			fix.processFile();
 		} finally {
 			fix.finish();
@@ -42,8 +46,8 @@ public class ReplaceRelationship extends BatchFix implements RF2Constants{
 		super.init(args);
 		
 		//Populate our attributes of interest
-		findAttribute = gl.getConcept("704318007");  // |Property type (attribute)| 
-		replaceAttribute = gl.getConcept("370130000"); //|Property (attribute)|
+		findAttribute = gl.getConcept("23583003 |Inflammation (morphologic abnormality)|");  
+		replaceAttribute = gl.getConcept("409774005 |Inflammatory morphology (morphologic abnormality)|"); 
 	}
 
 	@Override
@@ -65,37 +69,25 @@ public class ReplaceRelationship extends BatchFix implements RF2Constants{
 		return changesMade;
 	}
 
-	private int replaceTargetRelationship(Task task, Concept loadedConcept) throws TermServerScriptException {
+	private int replaceTargetRelationship(Task t, Concept c) throws TermServerScriptException {
 		int changesMade = 0;
-		for (Relationship r : loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
-			if (r.getType().equals(findAttribute)) {
+		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
+			Concept match = mode.equals(Mode.TYPE) ? r.getType() : r.getTarget();
+			if (match.equals(findAttribute)) {
 				//Clone r and modify
 				Relationship replacement = r.clone(null);
-				replacement.setType(replaceAttribute);
-				r.setActive(false); 
-				//Do we already have a replacement attached, but inactive?
-				Relationship alreadyExists = checkForInactiveRel(loadedConcept, replacement);
-				if (alreadyExists != null) {
-					report (task, loadedConcept, Severity.HIGH, ReportActionType.RELATIONSHIP_MODIFIED, "Reactivated existing relationship: " + alreadyExists );
-					alreadyExists.setActive(true);
-				} else {
-					report (task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, "Replaced relationship: " + r );
-					loadedConcept.getRelationships().add(replacement);
+				switch (mode) {
+				case TYPE : replacement.setType(replaceAttribute);
+						break;
+				case VALUE : 
+					replacement.setTarget(replaceAttribute);
 				}
+				
+				replaceRelationship(t, c, r, replacement);
 				changesMade++;
 			}
 		}
 		return changesMade;
-	}
-
-	private Relationship checkForInactiveRel(Concept concept, Relationship stated) {
-		Relationship inactiveStated = null;
-		for (Relationship potentialReactivation : concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.INACTIVE)) {
-			if (potentialReactivation.equals(stated)) {
-				inactiveStated = potentialReactivation;
-			}
-		}
-		return inactiveStated;
 	}
 
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
@@ -103,18 +95,15 @@ public class ReplaceRelationship extends BatchFix implements RF2Constants{
 		Set<Concept> allAffected = new TreeSet<Concept>();  //We want to process in the same order each time, in case we restart and skip some.
 		for (Concept c : allPotential) {
 			for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
-				if (r.getType().equals(findAttribute)) {
+				Concept match = mode.equals(Mode.TYPE) ? r.getType() : r.getTarget();
+				if (match.equals(findAttribute)) {
 					allAffected.add(c);
 					break;
 				}
 			}
 		}
+		info ("Detected " + allAffected.size() + " concepts to modify");
 		return new ArrayList<Component>(allAffected);
-	}
-
-	@Override
-	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
-		return null; // We will identify descriptions to edit from the snapshot
 	}
 
 }
