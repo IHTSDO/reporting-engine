@@ -3,8 +3,10 @@ package org.ihtsdo.termserver.scripting.template;
 import java.io.IOException;
 import java.util.*;
 
+import org.snomed.authoringtemplate.domain.ConceptTemplate;
 import org.snomed.authoringtemplate.domain.logical.*;
 import org.springframework.util.StringUtils;
+import org.apache.commons.io.IOUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.TemplateServiceClient;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -107,7 +109,9 @@ abstract public class TemplateFix extends BatchFix {
 	
 	protected Template loadLocalTemplate (char id, String fileName) throws TermServerScriptException {
 		try {
-			LogicalTemplate lt = tsc.loadLogicalLocalTemplate(fileName);
+			ConceptTemplate ct = tsc.loadLocalConceptTemplate(fileName);
+			LogicalTemplate lt = tsc.parseLogicalTemplate(ct.getLogicalTemplate());
+		
 			return new Template(id, lt, fileName);
 		} catch (IOException e) {
 			throw new TermServerScriptException("Unable to load template " + fileName, e);

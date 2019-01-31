@@ -14,6 +14,7 @@ import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
+import org.snomed.authoringtemplate.domain.ConceptTemplate;
 import org.snomed.authoringtemplate.domain.logical.LogicalTemplate;
 import org.snomed.otf.scheduler.domain.*;
 import org.springframework.util.StringUtils;
@@ -142,10 +143,12 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 			String templateName;
 			LogicalTemplate logicalTemplate;
 			if (template.startsWith("templates")) {
-				logicalTemplate = tsc.loadLogicalLocalTemplate(template);
+				ConceptTemplate ct = tsc.loadLocalConceptTemplate(template);
+				logicalTemplate = tsc.parseLogicalTemplate(ct.getLogicalTemplate());
 				templateName = template;
 			} else if (template.startsWith("{") || template.startsWith("[")) {
-				logicalTemplate = tsc.loadLogicalTemplate(IOUtils.toInputStream(template));
+				ConceptTemplate ct = tsc.loadLocalConceptTemplate("User Defined Template",IOUtils.toInputStream(template));
+				logicalTemplate = tsc.parseLogicalTemplate(ct.getLogicalTemplate());
 				templateName = "User supplied json block";
 			} else {
 				//We'll try to parse template language at this point

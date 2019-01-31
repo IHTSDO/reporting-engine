@@ -39,24 +39,25 @@ public class TemplateServiceClient {
 	LogicalTemplateParserService service  = new LogicalTemplateParserService();
 	ObjectMapper mapper = new ObjectMapper();
 	private static final String CONTENT_TYPE = "application/json";
-	private final int minViableLength = 10;
 	
-	public LogicalTemplate loadLogicalLocalTemplate (String templateName) throws JsonParseException, JsonMappingException, IOException {
+	public ConceptTemplate loadLocalConceptTemplate (String templateName) throws TermServerScriptException {
 		if (!templateName.startsWith("/")) {
 			templateName = "/" + templateName;
 		}
-		InputStream is = TemplateServiceClient.class.getResourceAsStream(templateName);
-		if (is == null) {
+		InputStream templateStream = TemplateServiceClient.class.getResourceAsStream(templateName);
+		if (templateStream == null) {
 			throw new RuntimeException ("Failed to load template file - not found: " + templateName);
 		}
 		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		return loadLogicalTemplate(is);
+		return loadLocalConceptTemplate(templateName, templateStream);
 	}
 	
-	public LogicalTemplate loadLogicalTemplate (InputStream templateStream) throws JsonParseException, JsonMappingException, IOException {
-		ConceptTemplate conceptTemplate = mapper.readValue(templateStream, ConceptTemplate.class );
-		LogicalTemplate logicalTemplate = parseLogicalTemplate(conceptTemplate.getLogicalTemplate());
-		return logicalTemplate;
+	public ConceptTemplate loadLocalConceptTemplate (String templateName, InputStream templateStream) throws TermServerScriptException {
+		try {
+			return mapper.readValue(templateStream, ConceptTemplate.class);
+		} catch (Exception e) {
+			throw new TermServerScriptException("Unable to load template: '" + templateName + "'", e);
+		}
 	}
 	
 	public LogicalTemplate loadLogicalTemplate (String templateName) throws IOException, TermServerScriptException {
@@ -69,8 +70,8 @@ public class TemplateServiceClient {
 		return parseLogicalTemplate(conceptTemplate.getLogicalTemplate());
 	}
 	
-	public LogicalTemplate parseLogicalTemplate (String template) throws JsonParseException, JsonMappingException, IOException {
-		return service.parseTemplate(template);
+	public LogicalTemplate parseLogicalTemplate (String logicalTemplateStr) throws JsonParseException, JsonMappingException, IOException {
+		return service.parseTemplate(logicalTemplateStr);
 	}
 	
 	public TemplateServiceClient(String serverUrl, String cookie) {

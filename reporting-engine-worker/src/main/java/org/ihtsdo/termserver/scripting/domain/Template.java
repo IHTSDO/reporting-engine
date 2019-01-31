@@ -12,6 +12,8 @@ public class Template {
 	char id;
 	String name;
 	String domain;
+	String source;
+	String documentation;
 	LogicalTemplate logicalTemplate;
 	List<AttributeGroup> attributeGroups;
 
@@ -69,5 +71,21 @@ public class Template {
 
 	public void setDomain(String domain) {
 		this.domain = domain;
+	}
+
+	public String getSource() {
+		return source;
+	}
+
+	public void setSource(String source) {
+		this.source = source;
+	}
+
+	public String getDocumentation() {
+		return documentation;
+	}
+
+	public void setDocumentation(String documentation) {
+		this.documentation = documentation;
 	}
 }
