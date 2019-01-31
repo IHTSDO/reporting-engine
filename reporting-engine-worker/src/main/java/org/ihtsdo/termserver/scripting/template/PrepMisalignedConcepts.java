@@ -329,6 +329,10 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 			if (!c.getConceptId().equals("186868000")) {
 				//continue;
 			}
+			if (whiteListedConcepts.contains(c)) {
+				incrementSummaryInformation(WHITE_LISTED_COUNT);
+				continue;
+			}
 			if (isExcluded(c)) {
 				ignoredConcepts.add(c);
 			} else {

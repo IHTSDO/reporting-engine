@@ -75,6 +75,10 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 		nextConcept:
 		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
 			if (c.isActive()) {
+				if (whiteListedConcepts.contains(c)) {
+					incrementSummaryInformation(WHITE_LISTED_COUNT);
+					continue;
+				}
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 					boolean reported = false;
 					for (String matchText : textsToMatch) {

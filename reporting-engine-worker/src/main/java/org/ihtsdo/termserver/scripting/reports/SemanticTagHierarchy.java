@@ -52,6 +52,10 @@ public class SemanticTagHierarchy extends TermServerReport implements ReportClas
 		
 		info ("Examining all concepts to determine tag hierarchy");
 		for (Concept c : concepts) {
+			if (whiteListedConcepts.contains(c)) {
+				incrementSummaryInformation(WHITE_LISTED_COUNT);
+				continue;
+			}
 			//Have we seen this semantic tag before?
 			if (c.getFsn() == null) {
 				warn(c + " encountered without a semantic tag");
@@ -66,6 +70,10 @@ public class SemanticTagHierarchy extends TermServerReport implements ReportClas
 			
 			//Record all the child semtags if not seen before
 			for (Concept child : c.getDescendents(IMMEDIATE_CHILD, CharacteristicType.INFERRED_RELATIONSHIP)) {
+				if (whiteListedConcepts.contains(child)) {
+					incrementSummaryInformation(WHITE_LISTED_COUNT);
+					continue;
+				}
 				if (StringUtils.isEmpty(child.getFsn())) {
 					warn ("Encountered concept without FSN during traversal: " + c);
 					continue;

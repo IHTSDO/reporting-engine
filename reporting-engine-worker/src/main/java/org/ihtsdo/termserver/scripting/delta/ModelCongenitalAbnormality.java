@@ -168,7 +168,7 @@ public class ModelCongenitalAbnormality extends DeltaGenerator {
 		Set<Integer>groupsAffected = new HashSet<Integer>();
 		for (Relationship rel : rels) {
 			for (RelationshipTemplate findRel : findRelationships) {
-				if (findRel.matches(rel)) {
+				if (findRel.equalsTypeValue(rel)) {
 					if (groupsAffected.contains(rel.getGroupId())) {
 						String msg = "Concept has two matching relationships in same group: " + rel.getGroupId();
 						report (concept, concept.getFSNDescription(), Severity.HIGH, ReportActionType.VALIDATION_ERROR, msg);
@@ -308,7 +308,7 @@ public class ModelCongenitalAbnormality extends DeltaGenerator {
 	private boolean checkForExistingRelationship(Concept c,
 			RelationshipTemplate rt, long group) throws TermServerScriptException {
 		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH)) {
-			if (r.getGroupId() == group && rt.matches(r)) {
+			if (r.getGroupId() == group && rt.equalsTypeValue(r)) {
 				report (c, c.getFSNDescription(), Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Replacement relationship already exists as " + r);
 				return true;
 			}

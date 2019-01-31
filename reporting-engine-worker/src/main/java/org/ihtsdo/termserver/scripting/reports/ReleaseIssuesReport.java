@@ -258,6 +258,10 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			if (whiteList.contains(c.getId())) {
 				continue;
 			}
+			if (whiteListedConcepts.contains(c)) {
+				incrementSummaryInformation(WHITE_LISTED_COUNT);
+				continue;
+			}
 			if (c.getFSNDescription() == null) {
 				warn("No FSN Description found (2nd pass) for concept " + c.getConceptId());
 				continue;
@@ -311,6 +315,10 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				
 		nextConcept:
 		for (Concept c : gl.getAllConcepts()) {
+			if (whiteListedConcepts.contains(c)) {
+				incrementSummaryInformation(WHITE_LISTED_COUNT);
+				continue;
+			}
 			if (c.isActive()) {
 				String legacy = isLegacy(c);
 				

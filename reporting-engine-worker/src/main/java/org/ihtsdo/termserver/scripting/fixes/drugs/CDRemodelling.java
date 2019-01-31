@@ -78,6 +78,12 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 
 	@Override
 	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException, ValidationFailure {
+		
+		if (blackListedConcepts.contains(concept)) {
+			report (task, concept, Severity.NONE, ReportActionType.VALIDATION_CHECK, "Subsequent ingredient failed validation");
+			return NO_CHANGES_MADE;
+		}
+		
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
 		boolean cloneThisConcept = cloneAndReplace;
 		int changesMade = 0;
@@ -275,7 +281,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		Concept c = gl.getConcept(items[0]);
 		c.setConceptType(ConceptType.CLINICAL_DRUG);
 		
-		if (c.getConceptId().equals("333356006") || c.getConceptId().equals("437830007")) {
+		if (c.getConceptId().equals("377496003") || c.getConceptId().equals("377496003") ) {
 			debug("Debug here!");
 		}
 		
@@ -284,10 +290,9 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 			spreadsheet.put(c, new ArrayList<Ingredient>());
 		}
 		
-		//Have we seen this concept and black listed it?
+		//Have we seen an ingredient for this concept already and black listed it?
 		if (blackListedConcepts.contains(c)) {
 			report ((Task)null, c, Severity.NONE, ReportActionType.VALIDATION_CHECK, "Subsequent ingredient encountered on previously failed concept");
-			blackListedConcepts.add(c);
 			return null;
 		}
 		List<Ingredient> ingredients = spreadsheet.get(c);
@@ -324,6 +329,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 			//Is this a number we have as a concept?
 			if (DrugUtils.getNumberAsConcept(numerator.getStrengthStr()) == null) {
 				report ((Task)null, c, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, "Missing number concept: " + numerator.getStrengthStr());
+				blackListedConcepts.add(c);
 				return null;
 			}
 			
@@ -349,9 +355,9 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 			ingredients.add(ingredient);
 		} catch (Exception e) {
 			report ((Task)null, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, e.getMessage());
+			blackListedConcepts.add(c);
 			return null;
 		}
-		
 		return Collections.singletonList(c);
 	} 
 

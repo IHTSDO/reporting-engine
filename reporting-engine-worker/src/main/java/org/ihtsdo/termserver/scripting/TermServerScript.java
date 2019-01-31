@@ -80,6 +80,7 @@ public abstract class TermServerScript implements RF2Constants {
 	public static String REPORTED_NOT_PROCESSED = "Reported not processed";
 	public static String ISSUE_COUNT = "Issue count";
 	public static String CRITICAL_ISSUE = "CRITICAL ISSUE";
+	public static String WHITE_LISTED_COUNT = "White Listed Count";
 	public static String inputFileDelimiter = TSV_FIELD_DELIMITER;
 	protected String tsRoot = "MAIN/"; //"MAIN/2016-01-31/SNOMEDCT-DK/";
 	public static final String EXPECTED_PROTOCOL = "https://";
@@ -1059,6 +1060,7 @@ public abstract class TermServerScript implements RF2Constants {
 		//Have we whiteListed this concept?
 		if (whiteListedConcepts != null && whiteListedConcepts.contains(c)) {
 			warn ("Ignoring whiteListed concept: " + sb);
+			incrementSummaryInformation(WHITE_LISTED_COUNT);
 		} else {
 			writeToReportFile (sb.toString());
 			incrementSummaryInformation("Report lines written");

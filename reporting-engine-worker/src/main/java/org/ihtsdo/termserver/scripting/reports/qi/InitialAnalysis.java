@@ -165,6 +165,10 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 
 	public void reportConceptsAffectedByIntermediatePrimitives() throws TermServerScriptException {
 		for (Concept c : this.subHierarchy) {
+			if (whiteListedConcepts.contains(c)) {
+				incrementSummaryInformation(WHITE_LISTED_COUNT);
+				continue;
+			}
 			//Skip exclusions
 			if (exclusions.contains(c)) {
 				continue;

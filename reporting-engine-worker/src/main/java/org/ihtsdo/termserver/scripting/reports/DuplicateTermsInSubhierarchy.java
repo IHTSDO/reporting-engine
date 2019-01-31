@@ -114,6 +114,11 @@ public class DuplicateTermsInSubhierarchy extends TermServerReport implements Re
 		Map<String, Description> knownTerms = new HashMap<>();
 		Acceptability acceptability = ptOnly ? Acceptability.PREFERRED : Acceptability.BOTH;
 		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
+			//Have we white listed this concept?
+			if (whiteListedConcepts.contains(c)) {
+				incrementSummaryInformation(WHITE_LISTED_COUNT);
+				continue;
+			}
 			for (Description d : c.getDescriptions(acceptability, DescriptionType.SYNONYM, ActiveState.ACTIVE)) {
 				//Do we already know about this term?
 				Description alreadyKnown = knownTerms.get(d.getTerm());

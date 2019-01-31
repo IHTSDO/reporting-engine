@@ -69,6 +69,10 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 	public void runJob() throws TermServerScriptException {
 		namespaceConcepts = gl.getDescendantsCache().getDescendentsOrSelf(NAMESPACE_CONCEPT);
 		for (Concept c : gl.getAllConcepts()) {
+			if (whiteListedConcepts.contains(c)) {
+				incrementSummaryInformation(WHITE_LISTED_COUNT);
+				continue;
+			}
 			String isLegacy = isLegacy(c);
 			if (!c.isActive()) {
 				//Are we only interested in concepts that have any new inactivation indicator?

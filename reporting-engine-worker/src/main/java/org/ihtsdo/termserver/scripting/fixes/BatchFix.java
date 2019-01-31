@@ -826,7 +826,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		return changesMade;
 	}
 	
-	protected int replaceRelationship(Task t, Concept c, RelationshipTemplate from, RelationshipTemplate to) throws TermServerScriptException {
+	protected int replaceRelationship(Task t, Concept c, IRelationshipTemplate from, IRelationshipTemplate to) throws TermServerScriptException {
 		int changesMade = 0;
 		
 		//Do we have any inactive relationships that we could reactivate, rather than creating new ones?

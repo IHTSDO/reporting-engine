@@ -38,16 +38,7 @@ public class ConceptsWithParents extends TermServerReport implements ReportClass
 	}
 
 	public void runJob() throws TermServerScriptException {
-		//TODO work through all our subhierarchies and join them together
-		//so we don't get duplicates
-		/*Concept dispositions = gl.getConcept("766779001 |Medicinal product categorized by disposition (product)|");
-		Concept structures = gl.getConcept("763760008 |Medicinal product categorized by structure (product)|");
-		Set<Concept> conceptsOfInterest = dispositions.getDescendents(NOT_SET);
-		conceptsOfInterest.addAll(structures.getDescendents(NOT_SET));
-		ConceptType[] typesOfInterest = new ConceptType[] { ConceptType.STRUCTURE_AND_DISPOSITION_GROUPER,
-															ConceptType.STRUCTURAL_GROUPER,
-															ConceptType.DISPOSITION_GROUPER };
-		*/
+
 		Set<Concept> conceptsOfInterest = new HashSet<>();
 		for (String hierarchyStr : jobRun.getMandatoryParamValue(HIERARCHIES).split(COMMA)) {
 			Concept hierarchy = gl.getConcept(hierarchyStr);
@@ -55,8 +46,10 @@ public class ConceptsWithParents extends TermServerReport implements ReportClass
 		}
 		
 		for (Concept c : conceptsOfInterest) {
-			//if (SnomedUtils.isConceptType(c, typesOfInterest)) {
-			//SnomedUtils.populateConceptType(c);
+			if (whiteListedConcepts.contains(c)) {
+				incrementSummaryInformation(WHITE_LISTED_COUNT);
+				continue;
+			}
 			List<Concept> statedParents = c.getParents(CharacteristicType.STATED_RELATIONSHIP);
 			String statedParentsStr = statedParents.stream().map(p->p.toString())
 					.collect(Collectors.joining(",\n"));
@@ -70,7 +63,6 @@ public class ConceptsWithParents extends TermServerReport implements ReportClass
 			String defn = SnomedUtils.translateDefnStatus(c.getDefinitionStatus());
 			report (c, defn, statedParentsStr, parentsStr, parentsParentsStr);
 			incrementSummaryInformation("Concepts reported");
-			//}
 		}
 	}
 
