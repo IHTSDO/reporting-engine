@@ -6,7 +6,6 @@ import java.util.*;
 import org.snomed.authoringtemplate.domain.ConceptTemplate;
 import org.snomed.authoringtemplate.domain.logical.*;
 import org.springframework.util.StringUtils;
-import org.apache.commons.io.IOUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.TemplateServiceClient;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -41,8 +40,20 @@ abstract public class TemplateFix extends BatchFix {
 		}
 		super.init(args);
 	}
+	
+	public void postInit(String[] tabNames, String[] columnHeadings, boolean csvOutput) throws TermServerScriptException {
+		initTemplatesAndExclusions();
+		super.postInit(tabNames, columnHeadings, csvOutput);
+		info ("Post initialisation complete, with multiple tabs");
+	}
 
 	public void postInit() throws TermServerScriptException {
+		initTemplatesAndExclusions();
+		super.postInit();
+		info ("Post initialisation complete");
+	}
+	
+	private void initTemplatesAndExclusions() throws TermServerScriptException {
 		if (subHierarchyStr != null) {
 			subHierarchy = gl.getConcept(subHierarchyStr);
 		}
@@ -103,16 +114,17 @@ abstract public class TemplateFix extends BatchFix {
 		complexTemplateAttributes.add(gl.getConcept("363713009")); //|Has interpretation (attribute)|
 		complexTemplateAttributes.add(gl.getConcept("363714003")); //|Interprets (attribute)|
 		complexTemplateAttributes.add(gl.getConcept("47429007"));  //|Associated with (attribute)
-		super.postInit();
-		info ("Post initialisation complete");
+
 	}
 	
 	protected Template loadLocalTemplate (char id, String fileName) throws TermServerScriptException {
 		try {
 			ConceptTemplate ct = tsc.loadLocalConceptTemplate(fileName);
 			LogicalTemplate lt = tsc.parseLogicalTemplate(ct.getLogicalTemplate());
-		
-			return new Template(id, lt, fileName);
+			Template t = new Template(id, lt, fileName);
+			t.setDomain(ct.getDomain());
+			t.setDocumentation(ct.getDocumentation());
+			return t;
 		} catch (IOException e) {
 			throw new TermServerScriptException("Unable to load template " + fileName, e);
 		}
@@ -120,8 +132,12 @@ abstract public class TemplateFix extends BatchFix {
 	
 	protected Template loadTemplate (char id, String templateName) throws TermServerScriptException {
 		try {
-			LogicalTemplate lt = tsc.loadLogicalTemplate(templateName);
-			return new Template(id, lt, null);
+			ConceptTemplate ct = tsc.loadLogicalTemplate(templateName);
+			LogicalTemplate lt = tsc.parseLogicalTemplate(ct.getLogicalTemplate());
+			Template t = new Template(id, lt, templateName);
+			t.setDomain(ct.getDomain());
+			t.setDocumentation(ct.getDocumentation());
+			return t;
 		} catch (IOException e) {
 			throw new TermServerScriptException("Unable to load template " + templateName, e);
 		}

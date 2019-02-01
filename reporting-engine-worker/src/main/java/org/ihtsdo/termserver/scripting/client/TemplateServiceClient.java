@@ -2,7 +2,6 @@ package org.ihtsdo.termserver.scripting.client;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
 import java.util.List;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
@@ -19,9 +18,7 @@ import org.springframework.http.converter.json.GsonHttpMessageConverter;
 import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.*;
 
 /**
  * Client can either load a template from the template service, or from a local resource
@@ -60,14 +57,13 @@ public class TemplateServiceClient {
 		}
 	}
 	
-	public LogicalTemplate loadLogicalTemplate (String templateName) throws IOException, TermServerScriptException {
+	public ConceptTemplate loadLogicalTemplate (String templateName) throws IOException, TermServerScriptException {
 		ResponseEntity<ConceptTemplate> response = restTemplate.exchange(
 				TEMPLATES + templateName,
 				HttpMethod.GET,
 				null,
 				ConceptTemplate.class);
-		ConceptTemplate conceptTemplate = response.getBody();
-		return parseLogicalTemplate(conceptTemplate.getLogicalTemplate());
+		return response.getBody();
 	}
 	
 	public LogicalTemplate parseLogicalTemplate (String logicalTemplateStr) throws JsonParseException, JsonMappingException, IOException {

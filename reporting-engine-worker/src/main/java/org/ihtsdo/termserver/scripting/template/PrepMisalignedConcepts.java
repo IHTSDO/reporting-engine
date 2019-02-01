@@ -13,6 +13,7 @@ import org.ihtsdo.termserver.scripting.client.TemplateServiceClient;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.authoringtemplate.domain.ConceptTemplate;
 import org.snomed.authoringtemplate.domain.logical.LogicalTemplate;
@@ -92,7 +93,6 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 		runStandAlone = true; 
 		populateEditPanel = true;
 		populateTaskDescription = true;
-		additionalReportColumns = "CharacteristicType, MatchedTemplate, Template Diagnostic";
 		if (exclusionWords == null) {
 			exclusionWords = new ArrayList<>();
 		}
@@ -292,6 +292,30 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 		//This will also cache the result
 		if (findConcepts(project.getBranchPath(), subHierarchyECL).size() == 0) {
 			throw new TermServerScriptException(subHierarchyECL + " returned 0 rows");
+		}
+	}
+	
+	public void postInit() throws TermServerScriptException {
+		String[] columnHeadings = new String[] {"TASK_KEY, TASK_DESC, SCTID, FSN, CONCEPT_TYPE, SEVERITY, ACTION_TYP, CharacteristicType, MatchedTemplate, Template Diagnostic",
+				"Report Metadata"};
+		String[] tabNames = new String[] {	"Mismatched Concepts",
+				"Metadata"};
+		super.postInit(tabNames, columnHeadings, false);
+		String user = jobRun == null ? "System" : jobRun.getUser();
+		writeToReportFile (SECONDARY_REPORT, "Requested by: " + user);
+		writeToReportFile (SECONDARY_REPORT, "Ran against: " + subHierarchyECL);
+		writeToReportFile (SECONDARY_REPORT, "Projectt: " + project);
+		writeToReportFile (SECONDARY_REPORT, "Concepts considered: " +findConcepts(project.getBranchPath(), subHierarchyECL).size());
+		writeToReportFile (SECONDARY_REPORT, "Templates: " );
+		
+		for (Template t : templates) {
+			writeToReportFile (SECONDARY_REPORT,TAB + "Name: " + t.getName());
+			writeToReportFile (SECONDARY_REPORT,TAB + "Domain: " + t.getDomain());
+			writeToReportFile (SECONDARY_REPORT,TAB + "Documentation: " + t.getDocumentation());
+			String stl = t.getLogicalTemplate().toString();
+			stl = SnomedUtils.populateFSNs(stl);
+			writeToReportFile (SECONDARY_REPORT,TAB + "STL: " + QUOTE +  stl + QUOTE);
+			writeToReportFile (SECONDARY_REPORT,TAB);
 		}
 	}
 	

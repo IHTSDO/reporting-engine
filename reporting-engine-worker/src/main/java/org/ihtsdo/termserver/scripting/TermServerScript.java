@@ -61,7 +61,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected Concept subHierarchy;
 	protected String[] excludeHierarchies;
 	
-	protected Set<Concept> whiteListedConcepts;
+	protected Set<Concept> whiteListedConcepts = new HashSet<>();
 	
 	protected boolean reportConceptAsInteger = false;
 
@@ -381,10 +381,6 @@ public abstract class TermServerScript implements RF2Constants {
 		postInit(null, new String[] {headers + additionalReportColumns}, csvOutput);
 	}
 	
-	/*public void postInit(String[] tabNames, String[] columnHeadings) throws TermServerScriptException {
-		postInit(tabNames, columnHeadings, false);
-	}*/
-	
 	public void postInit(String[] tabNames, String[] columnHeadings, boolean csvOutput) throws TermServerScriptException {
 		if (jobRun != null && jobRun.getParamValue(SUB_HIERARCHY) != null) {
 			subHierarchy = gl.getConcept(jobRun.getMandatoryParamValue(SUB_HIERARCHY));
@@ -471,6 +467,8 @@ public abstract class TermServerScript implements RF2Constants {
 	
 	protected void loadProjectSnapshot(boolean fsnOnly) throws SnowOwlClientException, TermServerScriptException, InterruptedException, IOException {
 		getArchiveManager().loadProjectSnapshot(fsnOnly);
+		//Reset the report name to null here as it will have been set by the Snapshot Generator
+		setReportName(null);
 	}
 	
 	protected void loadArchive(File archive, boolean fsnOnly, String fileType) throws TermServerScriptException, SnowOwlClientException {
@@ -920,10 +918,16 @@ public abstract class TermServerScript implements RF2Constants {
 						reportName += spacer + gl.getConcept(subHierarchyECL.replaceAll("<", "").trim()).toStringPref();
 					}
 				}
+				
 			} catch (Exception e) {
 				error ("Recoverable hiccup while setting report name",e);
 			}
 		}
+		//Can't work out why we're seeing null in filenames here
+		if (reportName.contains("null")) {
+			debug ("TODO: Work out why we're seeing a null when we've recovered the concept from the GL?!");
+		}
+		
 		return reportName;
 	}
 
@@ -1058,7 +1062,7 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 		
 		//Have we whiteListed this concept?
-		if (whiteListedConcepts != null && whiteListedConcepts.contains(c)) {
+		if (whiteListedConcepts.contains(c)) {
 			warn ("Ignoring whiteListed concept: " + sb);
 			incrementSummaryInformation(WHITE_LISTED_COUNT);
 		} else {

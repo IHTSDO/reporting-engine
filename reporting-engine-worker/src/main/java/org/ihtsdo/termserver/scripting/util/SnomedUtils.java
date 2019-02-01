@@ -2,6 +2,8 @@ package org.ihtsdo.termserver.scripting.util;
 
 import java.io.*;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.zip.*;
 
@@ -1142,5 +1144,22 @@ public class SnomedUtils implements RF2Constants {
 			}
 		}
 		return null;
+	}
+
+	public static String populateFSNs(String stl) {
+		//Loop through string and replace any numbers that aren't followed by a pipe
+		//with the full string
+		GraphLoader gl = GraphLoader.getGraphLoader();
+		//Easiest to remove all pipes and then replace all
+		stl = stl.replaceAll("\\|.*?\\|", "").replaceAll("  ", "");
+		Pattern p = Pattern.compile("\\d{8,}");
+		Matcher m = p.matcher(stl);
+		StringBuffer sb = new StringBuffer();
+		while (m.find()) {
+			String sctId = m.group();
+			m.appendReplacement(sb, gl.getConceptSafely(sctId).toString());
+		}
+		m.appendTail(sb);
+		return sb.toString();
 	}
 }
