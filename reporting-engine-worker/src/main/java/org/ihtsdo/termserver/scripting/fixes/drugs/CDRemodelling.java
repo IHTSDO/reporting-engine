@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.fixes.drugs;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
@@ -39,7 +40,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 	//boolean includeUnitOfPresentation = true;  // True for 2a, 1c. False for 3a, 3b
 	//boolean specifyDenominator = false;  // True for 2a, 2b, 3a, 3b  False for 1c
 	
-	boolean cloneAndReplace = false;  //3A Patches being replaced, also 2A Injection Infusions
+	boolean cloneAndReplace = false;  //3A Patches being replaced, also 2A Injection Infusions, PWI-Run8
 	
 	protected CDRemodelling(BatchFix clone) {
 		super(clone);
@@ -52,6 +53,9 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 			app.expectNullConcepts = true;
 			app.inputFileHasHeaderRow = true;
 			app.runStandAlone = true;
+			
+			//app.keepIssuesTogether = true;
+			
 			app.init(args);
 			//app.termGenerator.includeUnitOfPresentation(app.includeUnitOfPresentation); 
 			//app.termGenerator.specifyDenominator(app.specifyDenominator);
@@ -353,6 +357,9 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 			
 			ingredient.doseForm = getPharmDoseForm(items[2]);
 			ingredients.add(ingredient);
+			
+			//Set the issue on the concept to ensure they're kept together by BoSS
+			c.setIssue(getBossStr(c));
 		} catch (Exception e) {
 			report ((Task)null, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, e.getMessage());
 			blackListedConcepts.add(c);
@@ -360,6 +367,13 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		}
 		return Collections.singletonList(c);
 	} 
+
+	private String getBossStr(Concept c) {
+		return spreadsheet.get(c).stream()
+				.map( i -> i.boss.toString())
+				.sorted()
+				.collect(Collectors.joining(","));
+	}
 
 	private Concept getPharmDoseForm(String doseFormStr) throws TermServerScriptException {
 		//Do we have an SCTID to work with?  
