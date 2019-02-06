@@ -128,7 +128,6 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 				"3218000 |Mycosis (disorder)|","8098009 |Sexually transmitted infectious disease (disorder)|", 
 				"17322007 |Disease caused by parasite (disorder)|", "91302008 |Sepsis (disorder)|"});
 		exclusionWords.add("shock");
-		*/
 		
 		subHierarchyECL = "<<125643001"; //QI-207 |Open wound| 
 		templateNames = new String[] {	"templates/wound/wound of bodysite due to event.json" };
@@ -136,6 +135,10 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		exclusionWords.add("fracture");
 		setExclusions(new String[] {"399963005 |Abrasion (disorder)|", "312608009 |Laceration - injury|"});
 		includeDueTos = true;
+		*/
+		
+		subHierarchyECL = "<<3218000"; //QI-208 |Mycosis (disorder)|
+		templateNames = new String[] {	"templates/infection/Infection caused by Fungus.json"};
 		
 		
 		super.init(args);
