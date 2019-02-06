@@ -32,6 +32,8 @@ public class ReplaceRelationship extends BatchFix implements RF2Constants{
 			fix.selfDetermining = true;
 			fix.reportNoChange = false;
 			fix.populateTaskDescription = false;  //Going above some limit
+			fix.populateEditPanel = false; //Going above some limit
+			warn("Description and Edit panel not being populated due to task size");
 			fix.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			fix.loadProjectSnapshot(true); 
