@@ -121,13 +121,23 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		
 		subHierarchyECL = "<<432119003 |Aneurysm (disorder)|"; //QI-183 
 		templateNames = new String[] {	"templates/Aneurysm of Cardiovascular system.json" };
-		*/
+		
 		subHierarchyECL = "<<40733004|Infectious disease|"; //QI-193
 		templateNames = new String[] {	"templates/infection/Infection NOS.json" };
 		setExclusions(new String[] {"87628006 |Bacterial infectious disease (disorder)|","34014006 |Viral disease (disorder)|",
 				"3218000 |Mycosis (disorder)|","8098009 |Sexually transmitted infectious disease (disorder)|", 
 				"17322007 |Disease caused by parasite (disorder)|", "91302008 |Sepsis (disorder)|"});
 		exclusionWords.add("shock");
+		*/
+		
+		subHierarchyECL = "<<125643001"; //QI-207 |Open wound| 
+		templateNames = new String[] {	"templates/wound/wound of bodysite due to event.json" };
+		exclusionWords.add("complication");
+		exclusionWords.add("fracture");
+		setExclusions(new String[] {"399963005 |Abrasion (disorder)|", "312608009 |Laceration - injury|"});
+		includeDueTos = true;
+		
+		
 		super.init(args);
 		
 		//Ensure our ECL matches more than 0 concepts.  This will also cache the result
