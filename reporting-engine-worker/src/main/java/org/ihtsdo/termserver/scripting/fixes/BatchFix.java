@@ -92,6 +92,13 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			allComponents.addAll(unprioritized);
 		}
 		
+		//If we're grouping by issue or keeping issues together, then we need to sort by issue
+		if (groupByIssue || keepIssuesTogether) {
+			allComponents = allComponents.stream()
+					.sorted(Comparator.comparing(Component::getIssues))
+					.collect(Collectors.toList());
+		}
+		
 		if (allComponents.size() > 0) {
 			String lastIssue = allComponents.get(0).getIssues();
 			int currentPosition = 0;
@@ -99,9 +106,14 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 				//DRUGS-522 Priority concepts might need a smaller batch size
 				int thisTaskMaxSize = priorityComponents.contains(thisComponent) ? priorityBatchSize : taskSize;
 				int remainingSpace = thisTaskMaxSize - task.size();
-				if (task.size() >= thisTaskMaxSize ||
-						(groupByIssue && !lastIssue.equals(thisComponent.getIssues())) ||
-						(keepIssuesTogether && !peekAheadFits(asConcepts(allComponents), currentPosition,remainingSpace))) {
+				if (keepIssuesTogether) {
+					//If we're on the same issue, don't break the task
+					if (!lastIssue.equals(thisComponent.getIssues()) &&
+							!peekAheadFits(asConcepts(allComponents), currentPosition,remainingSpace)) {
+						task = batch.addNewTask(author_reviewer);
+					}
+				} else if (task.size() >= thisTaskMaxSize ||
+						(groupByIssue && !lastIssue.equals(thisComponent.getIssues()))) {
 					task = batch.addNewTask(author_reviewer);
 				}
 				task.add(thisComponent);
@@ -977,7 +989,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	protected void cloneAndReplace(Concept concept, Task t) throws TermServerScriptException {
 		String originalId = concept.getConceptId();
 		Concept original = loadConcept(originalId, t.getBranchPath());
-		//Clone the clone to wipe out all identifiers.  It might just 
+		//Clone the clone to wipe out all identifiers, just in case it retained any.
 		Concept clone = concept.clone();
 		clone.setActive(true); //Just incase we've cloned an inactive concept
 		Concept savedConcept = createConcept(t, clone, ", clone of " + originalId);
@@ -1001,9 +1013,9 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		//Add our clone to the task, after the original
 		t.addAfter(savedConcept, original);
 		
-		//Now inactivate the original.  Must be made primitive at this time
+		//Now inactivate the original.
+		//This will inactivate all relationships and set the DefnStatus to Primitive
 		original.setActive(false);
-		original.setDefinitionStatus(DefinitionStatus.PRIMITIVE);
 		original.setInactivationIndicator(InactivationIndicator.AMBIGUOUS);
 		original.setAssociationTargets(AssociationTargets.possEquivTo(savedConcept));
 		report (t, original, Severity.LOW, ReportActionType.ASSOCIATION_ADDED, "Possibly Equivalent to " + savedConcept);
@@ -1028,6 +1040,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 				} else {
 					report (t, inactivateMe, Severity.HIGH, ReportActionType.INFO, thisDetail);
 					replaceHistoricalAssociation(t, source, inactivateMe, replacing, inactivationIndicator);
+					report (t, source, Severity.HIGH, ReportActionType.INFO, "Rewired as " + inactivationIndicator + " to " + replacing);
 				}
 			}
 		}

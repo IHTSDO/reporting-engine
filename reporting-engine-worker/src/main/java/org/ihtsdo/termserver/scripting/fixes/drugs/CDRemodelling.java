@@ -40,7 +40,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 	//boolean includeUnitOfPresentation = true;  // True for 2a, 1c. False for 3a, 3b
 	//boolean specifyDenominator = false;  // True for 2a, 2b, 3a, 3b  False for 1c
 	
-	boolean cloneAndReplace = false;  //3A Patches being replaced, also 2A Injection Infusions, PWI-Run8
+	boolean cloneAndReplace = true;  //3A Patches being replaced, also 2A Injection Infusions, PWI-Run8
 	
 	protected CDRemodelling(BatchFix clone) {
 		super(clone);
@@ -54,7 +54,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 			app.inputFileHasHeaderRow = true;
 			app.runStandAlone = true;
 			
-			//app.keepIssuesTogether = true;
+			app.keepIssuesTogether = true;
 			
 			app.init(args);
 			//app.termGenerator.includeUnitOfPresentation(app.includeUnitOfPresentation); 
@@ -164,7 +164,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 	private int remodel(Task t, Concept c, Ingredient modelIngredient, boolean isMultiIngredient) throws TermServerScriptException {
 		int changesMade = 0;
 		int targetGroupId = SnomedUtils.getFirstFreeGroup(c);
-		
+		report (t, c, Severity.NONE, ReportActionType.INFO, "BoSSes: " + c.getIssues());
 		//Find this ingredient.  If it's in group 0, we need to move it to a new group
 		Relationship substanceRel = getSubstanceRel(t, c, modelIngredient.substance, modelIngredient.boss);
 
