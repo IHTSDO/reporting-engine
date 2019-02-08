@@ -4,6 +4,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.scripting.*;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.DefinitionStatus;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import com.google.gson.annotations.Expose;
@@ -145,6 +146,16 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 
 	public void setActive(boolean newActiveState) {
 		this.active = newActiveState;
+		
+		if (newActiveState == false) {
+			//If the concept has been made active, then set DefnStatus
+			setDefinitionStatus(DefinitionStatus.PRIMITIVE);
+			
+			//And inactivate all relationships
+			for (Relationship r : relationships) {
+				r.setActive(false);
+			}
+		}
 	}
 
 	public String getConceptId() {
