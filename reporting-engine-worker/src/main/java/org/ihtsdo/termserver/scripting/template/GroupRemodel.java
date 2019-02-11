@@ -124,7 +124,6 @@ public class GroupRemodel extends TemplateFix {
 		includeDueTos = true;
 		alreadyProcessedFile = new File(".QI-117_already_processed.txt");
 		
-		*/
 		subHierarchyECL = "<<40733004|Infectious disease|"; //QI-159
 		templateNames = new String[] {	"templates/infection/Infection NOS.json" };
 		setExclusions(new String[] {"87628006 |Bacterial infectious disease (disorder)|","34014006 |Viral disease (disorder)|",
@@ -132,6 +131,14 @@ public class GroupRemodel extends TemplateFix {
 				"17322007 |Disease caused by parasite (disorder)|", "91302008 |Sepsis (disorder)|"});
 		exclusionWords.add("shock");
 		alreadyProcessedFile = new File(".QI-159_already_processed.txt");
+		*/
+		
+		subHierarchyECL = "<<52515009"; //QI-173 |Hernia of abdominal cavity (disorder)|
+		templateNames = new String[] {	"templates/hernia/Hernia of Body Structure.json"};
+		excludeHierarchies = new String[] { "236037000 |Incisional hernia (disorder)|" };
+		exclusionWords = new ArrayList<String>();
+		exclusionWords.add("gangrene");
+		exclusionWords.add("obstruction");
 		
 		super.init(args);
 		
