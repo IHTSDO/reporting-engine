@@ -19,15 +19,13 @@ import org.ihtsdo.termserver.scripting.util.StringUtils;
 
 public class ArchiveManager implements RF2Constants {
 	
+	static ArchiveManager singleton;
+	
 	protected String dataStoreRoot = "";
-	//private Project project;
-	//private String env;
 	protected GraphLoader gl;
-	//private SnowOwlClient tsClient;
 	protected TermServerScript ts;
 	public boolean allowStaleData = false;
 	public boolean populateHierarchyDepth = true;  //Term contains X needs this
-	static ArchiveManager singleton;
 	private Project currentlyHeldInMemory;
 	
 	public static ArchiveManager getArchiveManager(TermServerScript ts) {
@@ -113,7 +111,7 @@ public class ArchiveManager implements RF2Constants {
 				info (ts.getProject() + " already held in memory, no need to reload");
 			} else {
 				if (currentlyHeldInMemory != null) {
-					//Make sure the Graph Loader is clean
+					//Make sure the Graph Loader is clean if we're loading a different project
 					gl.reset();
 					System.gc();
 				}
@@ -165,11 +163,13 @@ public class ArchiveManager implements RF2Constants {
 		ts.getTSClient().export(project.getBranchPath(), null, ExportType.UNPUBLISHED, ExtractType.DELTA, delta);
 		
 		SnapshotGenerator snapshotGenerator = new SnapshotGenerator();
+		
 		//Lets have a separate output report for generation of the snapshot - local only
 		ReportManager rm = ReportManager.create(ts);
 		rm.setFileOnly();
 		rm.initialiseReportFiles(new String[] {ReportManager.STANDARD_HEADERS});
 		snapshotGenerator.setReportManager(rm);
+		snapshotGenerator.setProject(ts.getProject());
 		snapshotGenerator.leaveArchiveUncompressed();
 		snapshotGenerator.setOutputDirName(snapshot.getPath());
 		snapshot = snapshotGenerator.generateSnapshot(previous, delta, snapshot);

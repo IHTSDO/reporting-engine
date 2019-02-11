@@ -68,7 +68,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	public void runJob() throws TermServerScriptException {
 		info("Checking...");
 		
-		info("...modules are appropriate");
+		info("...modules are appropriate (~10 seconds)");
 		parentsInSameModule();
 		unexpectedDescriptionModules();
 		unexpectedRelationshipModules();
@@ -81,7 +81,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		info("...duplicate Semantic Tags");
 		duplicateSemanticTags();
 		
-		info("...parent hierarchys");
+		info("...parent hierarchies (~20 seconds)");
 		parentsInSameTopLevelHierarchy();
 		
 		info("Checks complete");
