@@ -1,0 +1,7 @@
+{
+  "name": "Abscess of [body structure] (disorder)",
+  "domain": "<< 128477000 |Abscess (disorder)|",
+  "documentation": "https://confluence.ihtsdotools.org/display/AUTHS/Abscess+and+cellulitis+of+%5Bbody+structure%5D+-+Ready+for+implementation",
+  "version": 1,
+  "logicalTemplate": "64572001 |Disease (disorder)|: [[~1..1]] { [[~1..1]] 116676008 |Associated morphology (attribute)| = [[ +id( << 44132006 |Abscess (morphologic abnormality)| ) @morph]], [[~0..1]] 363698007 |Finding site (attribute)| = [[ +id( < 123037004 |Body structure (body structure)| ) @site]] }, [[~1..1]] { [[~1..1]] 116676008 |Associated morphology (attribute)| = [[ +id( <<  385627004 |Cellulitis (morphologic abnormality)| ) @cell_morph]], [[~0..1]] 363698007 |Finding site (attribute)| = [[ +id( < 123037004 |Body structure (body structure)| ) @site]] }"
+}

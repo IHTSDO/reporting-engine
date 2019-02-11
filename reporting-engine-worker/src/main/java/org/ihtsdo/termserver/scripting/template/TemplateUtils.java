@@ -2,9 +2,11 @@ package org.ihtsdo.termserver.scripting.template;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -17,6 +19,7 @@ import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
+import org.ihtsdo.termserver.scripting.util.StringUtils;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.RelationshipGroup;
 import org.ihtsdo.termserver.scripting.domain.Template;
@@ -88,7 +91,8 @@ public class TemplateUtils {
 		try {
 			//Map relGroups to template attribute groups, and visa versa
 			Map<RelationshipGroup, List<AttributeGroup>> relGroupMatchesTemplateGroups = new HashMap<>();
-			Map<AttributeGroup,  List<RelationshipGroup>> templateGroupMatchesRelGroups = new HashMap<>();
+			Map<AttributeGroup, List<RelationshipGroup>> templateGroupMatchesRelGroups = new HashMap<>();
+			Map<String, List<Concept>> namedSlots = new HashMap<>();
 			
 			//Pre-populate the attributeGroups in case we have no relationship groups, and the relationship groups in case we have no matching template groups
 			t.getAttributeGroups().stream().forEach(attributeGroup -> templateGroupMatchesRelGroups.put(attributeGroup, new ArrayList<RelationshipGroup>()));
@@ -100,7 +104,7 @@ public class TemplateUtils {
 			for (RelationshipGroup relGroup : c.getRelationshipGroups(charType)) {
 				//Work through each template group and confirm that one of them matches
 				for (AttributeGroup templateGroup : t.getAttributeGroups()) {
-					if (matchesTemplateGroup (relGroup, templateGroup, cache)) {
+					if (matchesTemplateGroup (relGroup, templateGroup, namedSlots, cache)) {
 						//Update map of concept relationship groups matching template attribute groups
 						List<AttributeGroup> matchedAttributeGroups = relGroupMatchesTemplateGroups.get(relGroup);
 						matchedAttributeGroups.add(templateGroup);
@@ -112,10 +116,59 @@ public class TemplateUtils {
 					}
 				}
 			}
-			return validateCardinality(relGroupMatchesTemplateGroups, templateGroupMatchesRelGroups, c, t.getId());
+			
+			boolean isValid =  validateCardinality(relGroupMatchesTemplateGroups, templateGroupMatchesRelGroups, c, t.getId());
+			if (isValid) {
+				isValid = validateNamedSlots(c, t, namedSlots);
+			}
+			return isValid;
 		} catch (Exception e) {
 			throw new TermServerScriptException("Failed to validate concept " + c + " against template '" + t.getName() + "'", e);
 		}
+	}
+
+	private static boolean validateNamedSlots(Concept c, Template t, Map<String, List<Concept>> namedSlots) {
+		//TODO   This is actually really complicated.  We're only checking named slots when there
+		//is more than one instance of that slot name in the template, and in that case, we need
+		//to match an attribute group to the template group and ensure we're only checking 
+		//for matches between two template groups.   For now, we'll check only when there's more than one 
+		//template group
+		boolean isValid = true;
+		Set<String> repeatedTemplateSlots = findRepeatedSlots(t);
+		for (String slotName : repeatedTemplateSlots) {
+			Concept firstValue = null;
+			if (namedSlots.containsKey(slotName)) {
+				for (Concept value : namedSlots.get(slotName)) {
+					if (firstValue == null) {
+						firstValue = value;
+					} else if (!value.equals(firstValue)) {
+						c.addIssue("Repeated slot '" + slotName + "' in template '" + t.getId() + "' encountered different values " + firstValue + " and " + value);
+						isValid = false;
+					}
+				}
+			}
+		}
+		return isValid;
+	}
+
+	private static Set<String> findRepeatedSlots(Template t) {
+		//Ensure that any repeated instances of identically named slots are the same
+		Set<String> namedSlots = new HashSet<>();
+		Set<String> repeatedSlots = new HashSet<>();
+		
+		for (AttributeGroup g : t.getAttributeGroups()) {
+			for (Attribute a : g.getAttributes()) {
+				//Does this attribute have a named slot?
+				if (!StringUtils.isEmpty(a.getSlotName())) {
+					if (namedSlots.contains(a.getSlotName())) {
+						repeatedSlots.add(a.getSlotName());
+					} else {
+						namedSlots.add(a.getSlotName());
+					}
+				}
+			}
+		}
+		return repeatedSlots;
 	}
 
 	private static boolean validateCardinality(
@@ -157,12 +210,12 @@ public class TemplateUtils {
 		return true;
 	}
 
-	private static boolean matchesTemplateGroup(RelationshipGroup relGroup, AttributeGroup templateGroup, DescendentsCache cache) throws TermServerScriptException {
+	private static boolean matchesTemplateGroup(RelationshipGroup relGroup, AttributeGroup templateGroup, Map<String, List<Concept>> namedSlots, DescendentsCache cache) throws TermServerScriptException {
 		//For each attribute, check if there's a match in the template
 		nextRel:
 		for (Relationship r : relGroup.getRelationships()) {
 			for (Attribute a : templateGroup.getAttributes()) {
-				if (matchesAttribute(r, a, cache)) {
+				if (matchesAttribute(r, a, namedSlots, cache)) {
 					//We can check the next relationship
 					continue nextRel;
 				}
@@ -174,7 +227,7 @@ public class TemplateUtils {
 		for (Attribute a : templateGroup.getAttributes()) {
 			int count = 0;
 			for (Relationship r : relGroup.getRelationships()) {
-				if (matchesAttribute(r, a, cache)) {
+				if (matchesAttribute(r, a, null, cache)) {
 					count++;
 				}
 			}
@@ -185,29 +238,41 @@ public class TemplateUtils {
 		return true;
 	}
 
-	private static boolean matchesAttribute(Relationship r, Attribute a, DescendentsCache cache) throws TermServerScriptException {
+	private static boolean matchesAttribute(Relationship r, Attribute a, Map<String, List<Concept>> namedSlots, DescendentsCache cache) throws TermServerScriptException {
+		boolean matchesAttributeValue = false;
 		if (matchesAttributeType(r.getType(), a.getType())) {
 			//Is the value within the allowable ECL, or do we have a fixed value?
 			if (a.getAllowableRangeECL() != null) {
-				return matchesAttributeValue(r.getTarget(), a.getAllowableRangeECL().trim(), cache);
+				matchesAttributeValue = matchesAttributeValue(r.getTarget(), a.getAllowableRangeECL().trim(), cache);
 			} else if (a.getValue() != null) {
-				return r.getTarget().getConceptId().equals(a.getValue());
+				matchesAttributeValue = r.getTarget().getConceptId().equals(a.getValue());
 			} else if (a.getSlotReference() != null) {
 				if (!SLOT_NAME_WARNING_MADE) {
 					TermServerScript.warn("TODO - maintain list of matched slot name values to pass in");
 					SLOT_NAME_WARNING_MADE = true;
 				}
-				return matchesAttributeValue(r.getTarget(), ECL_STAR, cache);
+				matchesAttributeValue = matchesAttributeValue(r.getTarget(), ECL_STAR, cache);
 			} else {
 				throw new IllegalArgumentException ("Template segment has neither ECL, Value nor SlotReference: " + a);
 			}
 		}
-		return false;
+		
+		//If we got a match, record that this slot has been filled
+		if (namedSlots != null && matchesAttributeValue && !StringUtils.isEmpty(a.getSlotName())) {
+			List<Concept> slotValues = namedSlots.get(a.getSlotName());
+			if (slotValues == null) {
+				slotValues = new ArrayList<>();
+				namedSlots.put(a.getSlotName(), slotValues);
+			}
+			slotValues.add(r.getTarget());
+		}
+		
+		return matchesAttributeValue;
 	}
 	
-	public static boolean containsMatchingRelationship (RelationshipGroup group , Attribute a , DescendentsCache cache) throws TermServerScriptException {
+	public static boolean containsMatchingRelationship (RelationshipGroup group , Attribute a , Map<String, List<Concept>> namedSlots, DescendentsCache cache) throws TermServerScriptException {
 		for (Relationship r : group.getRelationships()) {
-			if (matchesAttribute(r, a, cache)) {
+			if (matchesAttribute(r, a, namedSlots, cache)) {
 				return true;
 			}
 		}

@@ -250,7 +250,7 @@ public class GroupRemodel extends TemplateFix {
 					if (additionalGroup != null && !additionalGroup.isEmpty()) {
 						for (Attribute a : templateGroup.getAttributes()) {
 							//Does this group ALREADY satisfy the template attribute?
-							if (TemplateUtils.containsMatchingRelationship(additionalGroup, a, gl.getDescendantsCache())) {
+							if (TemplateUtils.containsMatchingRelationship(additionalGroup, a, null, gl.getDescendantsCache())) {
 								continue;
 							}
 							//Don't check stated relationships because we could then run code to work with a single relationship when 

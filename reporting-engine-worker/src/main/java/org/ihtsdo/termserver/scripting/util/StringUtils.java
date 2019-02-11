@@ -210,4 +210,11 @@ public class StringUtils implements RF2Constants {
 		return true;
 	}
 
+	public static String safelyTrim(String str) {
+		if (StringUtils.isEmpty(str)) {
+			return "";
+		}
+		return str.trim();
+	}
+
 }

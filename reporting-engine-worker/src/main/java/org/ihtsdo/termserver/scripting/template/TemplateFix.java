@@ -5,12 +5,12 @@ import java.util.*;
 
 import org.snomed.authoringtemplate.domain.ConceptTemplate;
 import org.snomed.authoringtemplate.domain.logical.*;
-import org.springframework.util.StringUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.TemplateServiceClient;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.ihtsdo.termserver.scripting.util.StringUtils;
 
 abstract public class TemplateFix extends BatchFix {
 	
@@ -62,8 +62,10 @@ abstract public class TemplateFix extends BatchFix {
 		if (templates.isEmpty()) {
 			char id = 'A';
 			for (int x = 0; x < templateNames.length; x++, id++) {
-				templates.add(loadLocalTemplate(id, templateNames[x]));
-				info ("Loaded template: " + templates.get(x).toIdString());
+				Template t = loadLocalTemplate(id, templateNames[x]);
+				validateTemplate(t);
+				templates.add(t);
+				info ("Loaded template: " + t);
 			}
 			info(templates.size() + " Templates loaded successfully");
 		}
@@ -114,9 +116,29 @@ abstract public class TemplateFix extends BatchFix {
 		complexTemplateAttributes.add(gl.getConcept("363713009")); //|Has interpretation (attribute)|
 		complexTemplateAttributes.add(gl.getConcept("363714003")); //|Interprets (attribute)|
 		complexTemplateAttributes.add(gl.getConcept("47429007"));  //|Associated with (attribute)
-
+		
 	}
 	
+	private void validateTemplate(Template t) {
+		//Ensure that any repeated instances of identically named slots are the same
+		Map<String, String> namedSlots = new HashMap<>();
+		for (AttributeGroup g : t.getAttributeGroups()) {
+			for (Attribute a : g.getAttributes()) {
+				//Does this attribute have a named slot?
+				if (!StringUtils.isEmpty(a.getSlotName())) {
+					String attributeClause = a.getType().trim() + " = " + StringUtils.safelyTrim(a.getAllowableRangeECL()) + StringUtils.safelyTrim(a.getValue()); 
+					if (namedSlots.containsKey(a.getSlotName())) {
+						if (!attributeClause.equals(namedSlots.get(a.getSlotName()))) {
+							throw new IllegalArgumentException("Named slots sharing the same name must be identical: " + attributeClause);
+						}
+					} else {
+						namedSlots.put(a.getSlotName(), attributeClause);
+					}
+				}
+			}
+		}
+	}
+
 	protected Template loadLocalTemplate (char id, String fileName) throws TermServerScriptException {
 		try {
 			ConceptTemplate ct = tsc.loadLocalConceptTemplate(fileName);
