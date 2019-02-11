@@ -192,4 +192,8 @@ public class SnapshotGenerator extends TermServerScript {
 		this.outputDirName = outputDirName;
 	}
 
+	public void setProject(Project project) {
+		this.project = project;
+	}
+
 }

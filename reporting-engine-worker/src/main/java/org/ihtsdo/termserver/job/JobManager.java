@@ -24,8 +24,6 @@ public class JobManager {
 	
 	protected Logger logger = LoggerFactory.getLogger(this.getClass());
 	
-	//private final ResourceManager snomedReleaseResourceManager;
-	
 	Map<String, Class<? extends JobClass>> knownJobs = new HashMap<>();
 	Map<String, JobType> knownJobTypes = new HashMap<>();
 	
