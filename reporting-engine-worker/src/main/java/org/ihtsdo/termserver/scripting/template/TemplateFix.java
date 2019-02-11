@@ -35,7 +35,8 @@ abstract public class TemplateFix extends BatchFix {
 		//We'll check these now so we know if there's some parsing error
 		char id = 'A';
 		for (int x = 0; x < templateNames.length; x++, id++) {
-			loadLocalTemplate(id, templateNames[x]);
+			Template t = loadLocalTemplate(id, templateNames[x]);
+			validateTemplate(t);
 			info ("Validated template: " + templateNames[x]);
 		}
 		super.init(args);

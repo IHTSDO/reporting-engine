@@ -205,11 +205,11 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 				"templates/burn/Full thickness burn of body structure.json",
 				"templates/burn/Deep partial thickness burn of body structure.json",
 				"templates/burn/Superficial partial thickness burn of body structure.json"};
-		
+		*/
 		subHierarchyECL = "<<74627003";  //QI-48 |Diabetic Complication|
-		templateNames = new String[] {	"templates/Complication co-occurrent and due to Diabetes Melitus.json",
-										"templates/Complication co-occurrent and due to Diabetes Melitus - Minimal.json"};
-		
+		templateNames = new String[] {	"templates/Complication due to Diabetes Melitus.json"};
+		includeComplexTemplates = true;
+		/*
 		subHierarchyECL = "<<8098009";	// QI-45 |Sexually transmitted infectious disease (disorder)| 
 		templateNames = new String[] {	"templates/Sexually transmitted Infection with optional bodysite.json"};
 		
@@ -281,11 +281,11 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 		subHierarchyECL = "<<428794004 |Fistula (disorder)|"; //QI-186
 		templateNames = new String[] {	"templates/Fistula.json" };
 		includeDueTos = true;
-		*/
+		
 		subHierarchyECL = "<<441457006 |Cyst|"; //QI-181
 		templateNames = new String[] {	"templates/Cyst.json" };
 		
-		/*
+		
 		subHierarchyECL = "<< 128477000 |Abscess (disorder)|"; //QI-213
 		templateNames = new String[] {	"templates/Abscess.json",
 										"templates/Abscess with Cellulitis.json"};
@@ -302,7 +302,6 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 										"templates/wound/wound of bodysite due to event.json"};
 		includeDueTos = true;
 		*/
-		
 		
 		super.init(args);
 		

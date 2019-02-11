@@ -1,6 +1,0 @@
-{
-  "name": "Pathologic fracture morphology of bone structure co-occurrent and due to Neoplasm of bone",
-  "documentation": "https://confluence.ihtsdotools.org/pages/viewpage.action?pageId=57816205",
-  "version": 1,
-  "logicalTemplate": "116223007 |Complication (disorder)| : 42752001 |Due to (attribute)| = [[+id(<< 73211009 |Diabetes mellitus(disorder)|)]], 363698007 |Finding site (attribute)|  =  113331007 |Structure of endocrine system (body structure)|, [[~0..1]] 263502005 |Clinical course (attribute)| =  [[+id(<<  288524001 |Courses (qualifier value)|)]] \n\t [[~1..*]] { \n\t\t116676008 |Associated morphology (attribute)| = [[+id(<< 118956008 |Body Structure, altered from... (morphologic abnormality)|) @fracture]],\n\t\t363698007 |Finding site (attribute)|  =  [[+id(<< 123037004 |Body Structure (body structure)|) @site]]\n\t}, [[~0..1]] { 363714003 |Interprets (attribute)| = 441915005 |Measurement of renal function (procedure)| , 363713009 |Has interpretation (attribute)| = 260379002 |Impaired (qualifier value)| }\n"
-}
