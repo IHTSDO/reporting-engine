@@ -82,7 +82,7 @@ public class NormalizeDoseForms extends DrugBatchFix implements RF2Constants{
 		}
 		
 		try {
-			cloneAndReplace(loadedConcept, task);
+			cloneAndReplace(loadedConcept, task, InactivationIndicator.OUTDATED);
 		} catch (Exception e) {
 			report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
 		}

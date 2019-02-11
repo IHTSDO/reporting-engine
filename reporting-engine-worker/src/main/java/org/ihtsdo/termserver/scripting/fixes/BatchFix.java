@@ -986,7 +986,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	 * @throws JSONException 
 	 * @throws SnowOwlClientException 
 	 */
-	protected void cloneAndReplace(Concept concept, Task t) throws TermServerScriptException {
+	protected void cloneAndReplace(Concept concept, Task t, InactivationIndicator inactivationIndicator) throws TermServerScriptException {
 		String originalId = concept.getConceptId();
 		Concept original = loadConcept(originalId, t.getBranchPath());
 		//Clone the clone to wipe out all identifiers, just in case it retained any.
@@ -1016,11 +1016,21 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		//Now inactivate the original.
 		//This will inactivate all relationships and set the DefnStatus to Primitive
 		original.setActive(false);
-		original.setInactivationIndicator(InactivationIndicator.AMBIGUOUS);
-		original.setAssociationTargets(AssociationTargets.possEquivTo(savedConcept));
-		report (t, original, Severity.LOW, ReportActionType.ASSOCIATION_ADDED, "Possibly Equivalent to " + savedConcept);
+		original.setInactivationIndicator(inactivationIndicator);
+		String histAssocStr;
+		switch (inactivationIndicator) {
+			case AMBIGUOUS : original.setAssociationTargets(AssociationTargets.possEquivTo(savedConcept));
+							histAssocStr = "Possibly Equivalent to ";
+							break;
+			case OUTDATED : original.setAssociationTargets(AssociationTargets.replacedBy(savedConcept));
+							histAssocStr = "Replaced by ";
+							break;
+			default: 
+				throw new TermServerScriptException("Unexpected inactivation indicator: " + inactivationIndicator);
+		}
+		report (t, original, Severity.LOW, ReportActionType.ASSOCIATION_ADDED, histAssocStr + savedConcept);
 		
-		checkAndReplaceHistoricalAssociations(t, original, savedConcept, InactivationIndicator.AMBIGUOUS);
+		checkAndReplaceHistoricalAssociations(t, original, savedConcept, inactivationIndicator);
 		report(t, original, Severity.LOW, ReportActionType.CONCEPT_INACTIVATED);
 		updateConcept(t, original, "");
 	}
@@ -1040,7 +1050,6 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 				} else {
 					report (t, inactivateMe, Severity.HIGH, ReportActionType.INFO, thisDetail);
 					replaceHistoricalAssociation(t, source, inactivateMe, replacing, inactivationIndicator);
-					report (t, source, Severity.HIGH, ReportActionType.INFO, "Rewired as " + inactivationIndicator + " to " + replacing);
 				}
 			}
 		}
@@ -1098,9 +1107,20 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		}
 		AssociationTargets targets = loadedConcept.getAssociationTargets();
 		targets.remove(current.getConceptId());
-		targets.getPossEquivTo().add(replacement.getConceptId());
+		
+		String histAssocStr;
+		switch (inactivationIndicator) {
+			case AMBIGUOUS : targets.getPossEquivTo().add(replacement.getConceptId());
+							histAssocStr = "possibly equivalent to ";
+							break;
+			case OUTDATED : targets.getReplacedBy().add(replacement.getConceptId());
+							histAssocStr = "replaced by ";
+							break;
+			default: 
+				throw new TermServerScriptException("Unexpected inactivation indicator: " + inactivationIndicator);
+		}
 		updateConcept(t, loadedConcept, " with re-jigged inactivation indicator and historical associations");
-		report (t, loadedConcept, Severity.MEDIUM, ReportActionType.ASSOCIATION_ADDED, "InactReason set to " + inactivationIndicator + " and PossiblyEquivalentTo: " + replacement);
+		report (t, loadedConcept, Severity.HIGH, ReportActionType.ASSOCIATION_ADDED, "InactReason set to " + inactivationIndicator + " and " + histAssocStr + replacement);
 	}
 	
 	protected int checkAndSetProximalPrimitiveParent(Task t, Concept c, Concept newPPP) throws TermServerScriptException {

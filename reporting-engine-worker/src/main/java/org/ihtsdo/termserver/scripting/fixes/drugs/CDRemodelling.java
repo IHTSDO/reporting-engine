@@ -114,7 +114,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		}
 		if (changesMade > 0) {
 			if (cloneThisConcept) {
-				cloneAndReplace(loadedConcept, task);
+				cloneAndReplace(loadedConcept, task, InactivationIndicator.OUTDATED);
 			} else {
 				updateConcept(task, loadedConcept, info);
 			}
