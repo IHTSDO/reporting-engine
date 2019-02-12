@@ -80,7 +80,8 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 		checkAndInactivatateIncomingAssociations(t, c, inactivationIndicator, replacement);
 		
 		//How many children do we have to do something different with?
-		Set<Concept> descendants = c.getDescendents(NOT_SET, CharacteristicType.STATED_RELATIONSHIP);
+		//Use locally held concept when traversing transative closure
+		Set<Concept> descendants = gl.getConcept(c.getConceptId()).getDescendents(NOT_SET, CharacteristicType.STATED_RELATIONSHIP);
 		descendants.removeAll(inactivations.keySet());
 		if (descendants.size() > 0) {
 			report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Inactivated concept has " + descendants.size() + " descendants not scheduled for inactivation");
