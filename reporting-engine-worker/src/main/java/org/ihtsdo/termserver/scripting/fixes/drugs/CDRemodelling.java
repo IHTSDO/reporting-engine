@@ -33,6 +33,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 	DrugTermGenerator termGenerator = new DrugTermGenerator(this);
 	TermVerifier termVerifier;
 	Set<Concept> blackListedConcepts = new HashSet<>();
+	Set<Concept> allowIngredientCountChange = new HashSet<>();
 	
 	//Determine use of presentation / concentration from the Ingredient object
 	//boolean usesPresentation = true;   //True for Pattern 1b, 1c, 2a.   False for 2b, 3a.  NB 2a uses both!
@@ -77,6 +78,13 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 			termVerifier = new TermVerifier(inputFile2,this);
 			termVerifier.init();
 		}
+	}
+	
+	@Override
+	public void postInit() throws TermServerScriptException {
+		super.postInit();
+		allowIngredientCountChange.add(gl.getConcept("370303000 |Tetracaine hydrochloride 0.3%/dextrose 6% injection solution (product)|"));
+		allowIngredientCountChange.add(gl.getConcept("420628003 |Miconazole 0.25%/zinc oxide 15%/white petrolatum 81.35% topical ointment (product)|"));
 	}
 
 
@@ -130,8 +138,12 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		//Only worry about this if the model has more ingredients than the concept.  Otherwise we'll probably find them in the inferred form, 
 		//and if not, we'll throw an error at the time.
 		if (ingredientRels.size() > ingredients.size()) {
-			report (t,c,Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Count mismatch in modelled (" + ingredients.size() + ") vs current (" + ingredientRels.size() + ") ingredients");
-			return 0;
+			if (allowIngredientCountChange.contains(c)) {
+				report (t,c,Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Permissable change in ingredient count " + ingredients.size() + " from current " + ingredientRels.size() + " ingredients");
+			} else {
+				report (t,c,Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Count mismatch in modelled (" + ingredients.size() + ") vs current (" + ingredientRels.size() + ") ingredients");
+				return 0;
+			}
 		}
 		boolean isMultiIngredient = ingredients.size() > 1;
 		for (Ingredient ingredient : ingredients) {
