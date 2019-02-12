@@ -73,6 +73,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 				incrementSummaryInformation(WHITE_LISTED_COUNT);
 				continue;
 			}
+			
 			String isLegacy = isLegacy(c);
 			if (!c.isActive()) {
 				//Are we only interested in concepts that have any new inactivation indicator?
@@ -265,7 +266,40 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 	}
 
 	private String isLegacy(Component c) {
-		return StringUtils.isEmpty(c.getEffectiveTime()) ? "N" : "Y";
+		//If any relationship, description or historical association
+		//has been modified, then this is not a legacy issue
+		if (StringUtils.isEmpty(c.getEffectiveTime())) {
+			return "N";
+		}
+		
+		if (c instanceof Concept) {
+			Concept concept = (Concept)c;
+		
+			for (Description d : concept.getDescriptions()) {
+				if (StringUtils.isEmpty(d.getEffectiveTime())) {
+					return "N";
+				}
+			}
+			
+			for (Relationship r : concept.getRelationships()) {
+				if (StringUtils.isEmpty(r.getEffectiveTime())) {
+					return "N";
+				}
+			}
+			
+			for (AssociationEntry a : concept.getAssociations()) {
+				if (StringUtils.isEmpty(a.getEffectiveTime())) {
+					return "N";
+				}
+			}
+			
+			for (InactivationIndicatorEntry i : concept.getInactivationIndicatorEntries()) {
+				if (StringUtils.isEmpty(i.getEffectiveTime())) {
+					return "N";
+				}
+			}
+		}
+		return "Y";
 	}
 
 }

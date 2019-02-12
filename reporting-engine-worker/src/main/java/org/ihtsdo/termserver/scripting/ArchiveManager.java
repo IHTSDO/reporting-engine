@@ -156,7 +156,7 @@ public class ArchiveManager implements RF2Constants {
 		if (!previous.exists()) {
 			throw new TermServerScriptException("Previous release not available for snapshot creation: " + previous);
 		}
-		
+		TermServerScript.info("Building snapshot release based on previous: " + previous);
 		//Now we need a recent delta to add to it
 		File delta = File.createTempFile("delta_export-", ".zip");
 		delta.deleteOnExit();
