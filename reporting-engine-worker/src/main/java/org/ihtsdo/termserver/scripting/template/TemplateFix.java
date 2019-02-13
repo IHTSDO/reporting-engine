@@ -16,6 +16,7 @@ abstract public class TemplateFix extends BatchFix {
 	
 	Set<Concept> exclusions;
 	List<String> exclusionWords;
+	List<String> inclusionWords;
 	boolean includeComplexTemplates = false;
 	List<Concept> complexTemplateAttributes;
 	boolean includeDueTos = false;

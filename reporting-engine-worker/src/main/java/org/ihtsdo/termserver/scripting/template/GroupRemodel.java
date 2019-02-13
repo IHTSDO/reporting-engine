@@ -73,6 +73,10 @@ public class GroupRemodel extends TemplateFix {
 		if (exclusionWords == null) {
 			exclusionWords = new ArrayList<>();
 		}
+		
+		if (inclusionWords == null) {
+			inclusionWords = new ArrayList<>();
+		}
 		/*
 		subHierarchyECL =  "<< 125605004";  // QI-30 |Fracture of bone (disorder)|
 		templateNames = new String[] {	"templates/Fracture of Bone Structure.json" }; /*,
@@ -131,7 +135,7 @@ public class GroupRemodel extends TemplateFix {
 				"17322007 |Disease caused by parasite (disorder)|", "91302008 |Sepsis (disorder)|"});
 		exclusionWords.add("shock");
 		alreadyProcessedFile = new File(".QI-159_already_processed.txt");
-		*/
+		
 		
 		subHierarchyECL = "<<52515009"; //QI-173 |Hernia of abdominal cavity (disorder)|
 		templateNames = new String[] {	"templates/hernia/Hernia of Body Structure.json"};
@@ -139,7 +143,18 @@ public class GroupRemodel extends TemplateFix {
 		exclusionWords = new ArrayList<String>();
 		exclusionWords.add("gangrene");
 		exclusionWords.add("obstruction");
-		
+		*/
+		subHierarchyECL = "<< 416462003 |Wound (disorder)|"; //QI-209
+		setExclusions(new String[] {"125643001 |Open Wound|", 
+									"416886008 |Closed Wound|",
+									"312608009 |Laceration|",
+									"283682007 |Bite Wound|",
+									"399963005 |Abraision|",
+									"125670008 |Foreign Body|",
+									"125667009 |Contusion (disorder)|"});
+		templateNames = new String[] {	"templates/wound/wound of bodysite due to event.json"};
+		inclusionWords.add("nail");
+		includeDueTos = true;
 		super.init(args);
 		
 		//Ensure our ECL matches more than 0 concepts.  This will also cache the result
@@ -634,6 +649,12 @@ public class GroupRemodel extends TemplateFix {
 			if (!c.getConceptId().equals("187137009")) {
 				//continue;
 			}
+			if (inclusionWords.size() > 0) {
+				if (!containsInclusionWord(c)) {
+					incrementSummaryInformation("Skipped as doesn't contain inclusion word");
+					continue;
+				}
+			}
 			if (alreadyProcessed.contains(c)) {
 				incrementSummaryInformation("Skipped as already processed");
 				continue;
@@ -669,6 +690,17 @@ public class GroupRemodel extends TemplateFix {
 		return firstPassComplete;
 	}
 	
+	private boolean containsInclusionWord(Concept c) {
+		String fsn = c.getFsn().toLowerCase();
+		String pt = c.getPreferredSynonym().toLowerCase();
+		for (String word : inclusionWords) {
+			if (fsn.contains(word) || pt.contains(word)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	protected boolean isExcluded(Concept c) {
 		if (skipMultipleUngroupedFindingSites) {
 			if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, FINDING_SITE, UNGROUPED).size() > 1) {

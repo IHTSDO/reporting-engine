@@ -205,11 +205,11 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 				"templates/burn/Full thickness burn of body structure.json",
 				"templates/burn/Deep partial thickness burn of body structure.json",
 				"templates/burn/Superficial partial thickness burn of body structure.json"};
-		*/
+		
 		subHierarchyECL = "<<74627003";  //QI-48 |Diabetic Complication|
 		templateNames = new String[] {	"templates/Complication due to Diabetes Melitus.json"};
 		includeComplexTemplates = true;
-		/*
+		
 		subHierarchyECL = "<<8098009";	// QI-45 |Sexually transmitted infectious disease (disorder)| 
 		templateNames = new String[] {	"templates/Sexually transmitted Infection with optional bodysite.json"};
 		
@@ -270,11 +270,11 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 		exclusionWords.add("gangrene");
 		exclusionWords.add("obstruction");
 		exclusionWords.add("obstructed");
-		
+		*/
 		subHierarchyECL = "<<312608009 |Laceration - injury|"; //QI-177
 		templateNames = new String[] {	"templates/wound/laceration.json" };
 		includeDueTos = true;
-		
+		/*
 		subHierarchyECL = "<< 3723001 |Arthritis (disorder)|"; //QI-123
 		templateNames = new String[] {	"templates/Arthritis.json" };
 		
@@ -297,7 +297,8 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 									"312608009 |Laceration|",
 									"283682007 |Bite Wound|",
 									"399963005 |Abraision|",
-									"125670008 | Foreign Body|"});
+									"125670008 |Foreign Body|",
+									"125667009 |Contusion (disorder)|"});
 		templateNames = new String[] {	"templates/wound/wound of bodysite.json",
 										"templates/wound/wound of bodysite due to event.json"};
 		includeDueTos = true;
