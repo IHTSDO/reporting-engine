@@ -148,13 +148,14 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 	}
 
 	private void rewireChildToGrandparents(Task t, Concept child, Concept parent, List<Concept> grandParents) throws TermServerScriptException {
+		int changesMade = 0;
 		child = loadConcept(child, t.getBranchPath());
 		report(t, child, Severity.MEDIUM, ReportActionType.INFO, "Rewiring child of " + parent + " to grandparents");
 		
 		List<Relationship> parentRels = child.getRelationships(CharacteristicType.STATED_RELATIONSHIP, IS_A, ActiveState.ACTIVE);
 		for (Relationship parentRel : parentRels) {
 			if (parentRel.getTarget().equals(parent)) {
-				removeRelationship(t, child, parentRel);
+				changesMade += removeRelationship(t, child, parentRel);
 			}
 		}
 		
@@ -163,6 +164,14 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 		for (Concept grandParent : grandParents) {
 			Relationship newParentRel = new Relationship (child, IS_A, grandParent, UNGROUPED);
 			addRelationship(t,  child, newParentRel);
+			changesMade += CHANGE_MADE;
+		}
+		
+		if (changesMade > 0) {
+			save(t, child, "");
+			t.addAfter(child, parent);
+		} else {
+			report (t, child, Severity.CRITICAL, ReportActionType.API_ERROR, "Did not rewire " + child + " as child of " + parent + ".  Please investigate.");
 		}
 	}
 

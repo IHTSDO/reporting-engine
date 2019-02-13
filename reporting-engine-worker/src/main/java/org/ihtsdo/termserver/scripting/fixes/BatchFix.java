@@ -1001,7 +1001,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			int changesMade = replaceParent(t, loadedChild, original, savedConcept);
 			if (changesMade > 0) {
 				updateConcept(t, loadedChild, "");
-				report (t, child, Severity.MEDIUM, ReportActionType.RELATIONSHIP_REPLACED, "New Parent: " + savedConcept);
+				report (t, child, Severity.HIGH, ReportActionType.RELATIONSHIP_REPLACED, "New Parent: " + savedConcept);
 				//Add the child to the task, after the original
 				t.addAfter(child, original);
 				incrementSummaryInformation("Total children repointed to cloned concepts");
