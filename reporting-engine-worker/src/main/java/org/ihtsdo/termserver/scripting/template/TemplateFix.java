@@ -91,16 +91,17 @@ abstract public class TemplateFix extends BatchFix {
 		}
 		exclusionWords.add("subluxation");
 		exclusionWords.add("avulsion");
-		exclusionWords.add("associated");
 		exclusionWords.add("co-occurrent");
 		exclusionWords.add("on examination");
 		exclusionWords.add("complex");
-		exclusionWords.add("complication");
 		
 		if (!includeComplexTemplates) {
 			if (!includeDueTos) {
 				exclusionWords.add("due to");
 			}
+			exclusionWords.add("associated");
+			exclusionWords.add("after");
+			exclusionWords.add("complication");
 			exclusionWords.add("with");
 			exclusionWords.add("without");
 		} else {
