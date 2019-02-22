@@ -1155,4 +1155,14 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		this.released = released;
 	}
 
+	public int getMaxGroupId(CharacteristicType charType) {
+		int maxGroupId = 0;
+		for (RelationshipGroup g : getRelationshipGroups(charType)) {
+			if (g.getGroupId() > maxGroupId) {
+				maxGroupId = g.getGroupId();
+			}
+		}
+		return maxGroupId;
+	}
+
 }

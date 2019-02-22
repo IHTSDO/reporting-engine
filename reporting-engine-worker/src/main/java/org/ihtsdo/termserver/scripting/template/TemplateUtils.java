@@ -238,7 +238,7 @@ public class TemplateUtils {
 		return true;
 	}
 
-	private static boolean matchesAttribute(Relationship r, Attribute a, Map<String, List<Concept>> namedSlots, DescendentsCache cache) throws TermServerScriptException {
+	public static boolean matchesAttribute(Relationship r, Attribute a, Map<String, List<Concept>> namedSlots, DescendentsCache cache) throws TermServerScriptException {
 		boolean matchesAttributeValue = false;
 		if (matchesAttributeType(r.getType(), a.getType())) {
 			//Is the value within the allowable ECL, or do we have a fixed value?

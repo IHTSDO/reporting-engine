@@ -60,6 +60,10 @@ public class RelationshipGroup {
 	
 	public void setGroupId(int groupId) {
 		this.groupId = groupId;
+		//All relationships in this group must also conform to this groupId
+		for (Relationship r : relationships) {
+			r.setGroupId(groupId);
+		}
 	}
 	
 	public void addIssue (Concept c) {
@@ -156,5 +160,9 @@ public class RelationshipGroup {
 
 	public boolean isEmpty() {
 		return relationships.isEmpty();
+	}
+
+	public int size() {
+		return relationships.size();
 	}
 }

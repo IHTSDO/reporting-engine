@@ -46,8 +46,12 @@ public class Template {
 	public String toIdString () {
 		return id + ": " + name;
 	}
+	
+	public void setAttributeGroups(List<AttributeGroup> attributeGroups) { 
+		this.attributeGroups = attributeGroups;
+	}
 
-	public Collection<AttributeGroup> getAttributeGroups() {
+	public List<AttributeGroup> getAttributeGroups() {
 		//Does the logical template have any ungrouped attributes?  We can simplify the code by calling that 
 		//a group.  Must store it though so that the object is recognised for comparison
 		if (attributeGroups == null) {

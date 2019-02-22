@@ -136,14 +136,15 @@ public class GroupRemodel extends TemplateFix {
 		exclusionWords.add("shock");
 		alreadyProcessedFile = new File(".QI-159_already_processed.txt");
 		
-		
+		*/
 		subHierarchyECL = "<<52515009"; //QI-173 |Hernia of abdominal cavity (disorder)|
 		templateNames = new String[] {	"templates/hernia/Hernia of Body Structure.json"};
 		excludeHierarchies = new String[] { "236037000 |Incisional hernia (disorder)|" };
 		exclusionWords = new ArrayList<String>();
 		exclusionWords.add("gangrene");
 		exclusionWords.add("obstruction");
-		*/
+		
+		/*
 		subHierarchyECL = "<< 416462003 |Wound (disorder)|"; //QI-209
 		setExclusions(new String[] {"125643001 |Open Wound|", 
 									"416886008 |Closed Wound|",
@@ -155,6 +156,8 @@ public class GroupRemodel extends TemplateFix {
 		templateNames = new String[] {	"templates/wound/wound of bodysite due to event.json"};
 		inclusionWords.add("nail");
 		includeDueTos = true;
+		*/
+		
 		super.init(args);
 		
 		//Ensure our ECL matches more than 0 concepts.  This will also cache the result
@@ -222,7 +225,7 @@ public class GroupRemodel extends TemplateFix {
 		}
 
 		//Create as many groups as required, but minimum 3
-		int numConceptGroups = c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP).size();
+		int numConceptGroups = c.getMaxGroupId(CharacteristicType.STATED_RELATIONSHIP) + 1;
 		int numTemplateGroups = template.getAttributeGroups().size();
 		int maxGroups = Math.max(Math.max(numConceptGroups, numTemplateGroups),3);
 		List<RelationshipGroup> groups = new ArrayList<>(maxGroups);
@@ -252,6 +255,18 @@ public class GroupRemodel extends TemplateFix {
 		//Similarly, remove any multiple attribute types
 		removeMultiples(groups);
 		
+		//If we have any empty grouped groups, shuffle them down so we start at 1 with no gaps
+		groups = shuffleDown(groups);
+		
+		if (groups.size() < 2) {
+			debug ("Debug Here!");
+		}
+		
+		//Now if we have multiple template groups, align those to any existing attributes
+		if (template.getAttributeGroups().size() > 2 && groups.get(1).size() > 0) {
+			alignTemplateToExistingGroups(groups, template);
+		}
+		
 		//Work through the attribute groups in the template and see if we can satisfy them
 		for (int templateGroupId = 0; templateGroupId <  template.getAttributeGroups().size(); templateGroupId++) {
 			//Are we adding more groups as we find attributes to group around?  Successive template groups
@@ -264,21 +279,24 @@ public class GroupRemodel extends TemplateFix {
 			}
 
 			//Have we formed an additional group? Find different attributes if so
-			//TODO Check group 1 has 1 to many cardinality before assuming we can replicate it
-			if (templateGroupId == 1) {
-				Iterator<Integer> additionalGroupItr = additionalGroupNums.keySet().iterator();
-				while (additionalGroupItr.hasNext()) {
-					RelationshipGroup additionalGroup = groups.get(additionalGroupItr.next());
-					if (additionalGroup != null && !additionalGroup.isEmpty()) {
-						for (Attribute a : templateGroup.getAttributes()) {
-							//Does this group ALREADY satisfy the template attribute?
-							if (TemplateUtils.containsMatchingRelationship(additionalGroup, a, null, gl.getDescendantsCache())) {
-								continue;
-							}
-							//Don't check stated relationships because we could then run code to work with a single relationship when 
-							//we should be choosing between multiple of the same type available in the inferred view
-							changesMade += findAttributeToState(t, template, c, a, groups, 2, CharacteristicType.INFERRED_RELATIONSHIP, templateGroupOptional, additionalGroupNums);
+			Iterator<Integer> additionalGroupItr = additionalGroupNums.keySet().iterator();
+			while (additionalGroupItr.hasNext()) {
+				RelationshipGroup additionalGroup = groups.get(additionalGroupItr.next());
+				if (additionalGroup != null && !additionalGroup.isEmpty()) {
+					//If we have multiple template groups to choose from, which one is a best fit for this additional group?
+					AttributeGroup matchedTemplateGroup = calculateBestTemplateGroup(c, additionalGroup, template);
+					
+					//We might update our map of what template groups our new attribute group relates to
+					additionalGroupNums.put(additionalGroup.getGroupId(), matchedTemplateGroup.getGroupId());
+					
+					for (Attribute a : matchedTemplateGroup.getAttributes()) {
+						//Does this group ALREADY satisfy the template attribute?
+						if (TemplateUtils.containsMatchingRelationship(additionalGroup, a, null, gl.getDescendantsCache())) {
+							continue;
 						}
+						//Don't check stated relationships because we could then run code to work with a single relationship when 
+						//we should be choosing between multiple of the same type available in the inferred view
+						changesMade += findAttributeToState(t, template, c, a, groups, additionalGroup.getGroupId(), CharacteristicType.INFERRED_RELATIONSHIP, templateGroupOptional, additionalGroupNums);
 					}
 				}
 			}
@@ -334,6 +352,118 @@ public class GroupRemodel extends TemplateFix {
 			report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_GROUP_ADDED, modifiedForm, statedForm, inferredForm);
 		}
 		return changesMade;
+	}
+
+	private List<RelationshipGroup> shuffleDown(List<RelationshipGroup> groups) {
+		List<RelationshipGroup> newGroups = new ArrayList<>();
+		for (RelationshipGroup group : groups) {
+			if (!group.isGrouped() || group.size() > 0) {
+				group.setGroupId(newGroups.size());
+				newGroups.add(group);
+			}
+		}
+		//We always need 3 groups, even if they're empty
+		while (newGroups.size() < 3) {
+			newGroups.add(new RelationshipGroup(newGroups.size()));
+		}
+		return newGroups;
+	}
+
+	private AttributeGroup calculateBestTemplateGroup(Concept c, RelationshipGroup additionalGroup, Template template) throws TermServerScriptException {
+		//First work out which concept group is the best match for our new relationship group
+		RelationshipGroup bestConceptGroupMatch = null;
+		int bestMatchCount = 0;
+		for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP)) {
+			int thisMatchCount = 0;
+			for (Relationship conceptR : g.getRelationships()) {
+				for (Relationship additionalR : additionalGroup.getRelationships()) {
+					if (conceptR.equalsTypeValue(additionalR)) {
+						thisMatchCount++;
+					}
+				}
+			}
+			if (thisMatchCount >= bestMatchCount) {
+				bestConceptGroupMatch = g;
+				bestMatchCount = thisMatchCount;
+			}
+		}
+		
+		//Now work out which template group is best aligned to this concept group
+		AttributeGroup bestTemplateGroupMatch = null;
+		bestMatchCount = 0;
+		for (AttributeGroup attributeGroup : template.getAttributeGroups()) {
+			int thisMatchCount = 0;
+			for (Relationship r : bestConceptGroupMatch.getRelationships()) {
+				for (Attribute a : attributeGroup.getAttributes()) {
+					if (TemplateUtils.matchesAttribute(r, a, null, gl.getDescendantsCache())) {
+						thisMatchCount++;
+					}
+				}
+			}
+			if (thisMatchCount >= bestMatchCount) {
+				bestTemplateGroupMatch = attributeGroup;
+				bestMatchCount = thisMatchCount;
+			}
+		}
+		return bestTemplateGroupMatch;
+	}
+
+	private void alignTemplateToExistingGroups(List<RelationshipGroup> groups, Template template) throws TermServerScriptException {
+		Map<Integer, int[]> groupScores = calculateConceptGroupAlignment (groups, template);
+		List<AttributeGroup> newOrder = new ArrayList<>();
+		List<AttributeGroup> oldOrder = template.getAttributeGroups();
+		
+		//So what is the "best" order for our templates groups to be in?
+		for (int conceptGroupId = 0 ; conceptGroupId <= groups.size(); conceptGroupId++) {
+			if (groupScores.containsKey(conceptGroupId)) {
+				int[] groupScore = groupScores.get(conceptGroupId);
+				Integer bestScoringGroup = null;
+				int bestScore = 0;
+				for (int templateGroupId = 0; templateGroupId < groupScore.length; templateGroupId++) {
+					int thisScore = groupScore[templateGroupId];
+					if (bestScoringGroup == null || thisScore > bestScore ) {
+						if (!newOrder.contains(oldOrder.get(templateGroupId))) {
+							bestScore = thisScore;
+							bestScoringGroup = templateGroupId;
+						}
+					}
+				}
+				if (bestScoringGroup != null) {
+					newOrder.add(oldOrder.get(bestScoringGroup));
+				}
+			}
+		}
+		//Now add in any template groups we've not allocated
+		oldOrder.removeAll(newOrder);
+		newOrder.addAll(oldOrder);
+		template.setAttributeGroups(newOrder);
+	}
+	
+	private Map<Integer, int[]> calculateConceptGroupAlignment (List<RelationshipGroup> groups, Template template) throws TermServerScriptException {
+		//Each concept group Id gets a score when considered against the template group
+		Map<Integer, int[]> groupScores = new HashMap<>();
+		int attributeGroupId = 0;
+		for (AttributeGroup attributeGroup : template.getAttributeGroups()) {
+			for (RelationshipGroup conceptGroup : groups) {
+				int score = 0;
+				for (Relationship r : conceptGroup.getRelationships()) {
+					for (Attribute a : attributeGroup.getAttributes()) {
+						if (TemplateUtils.matchesAttribute(r, a, null, gl.getDescendantsCache())) {
+							score++;
+						}
+					}
+				}
+				//Have we created a score list for this concept group already?
+				int[] scores = groupScores.get(conceptGroup.getGroupId());
+				if (scores == null) {
+					scores = new int[template.getAttributeGroups().size()];
+					groupScores.put(conceptGroup.getGroupId(), scores);
+				}
+				scores[attributeGroupId] = score;
+			}
+			attributeGroupId++;
+		}
+		return groupScores;
 	}
 
 	private void removeMultiples(List<RelationshipGroup> groups) {
@@ -646,7 +776,7 @@ public class GroupRemodel extends TemplateFix {
 		}
 		
 		for (Concept c : findConcepts(project.getBranchPath(), subHierarchyECL)) {
-			if (!c.getConceptId().equals("187137009")) {
+			if (!c.getConceptId().equals("48763007")) {
 				//continue;
 			}
 			if (inclusionWords.size() > 0) {
