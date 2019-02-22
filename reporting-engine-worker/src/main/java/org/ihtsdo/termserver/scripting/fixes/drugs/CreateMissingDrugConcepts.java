@@ -1,11 +1,7 @@
 package org.ihtsdo.termserver.scripting.fixes.drugs;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.scripting.AncestorsCache;
@@ -28,6 +24,8 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  *
  * DRUGS-403 - Create MP-Only concepts where required.  Identify one-to-one mapping
  * between "MP-containing" and "P containing only".  Skip excepted substances
+ * 
+ * DRUGS-671 Create missing MP and MPFs across all drugs
  */
 public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Constants{
 	
@@ -45,8 +43,8 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 	Set<Concept> createMPFOs = new HashSet<>();
 	Set<Concept> knownMPFOs = new HashSet<>();
 	
-	String[] substanceExceptions = new String[] {"liposome"};
-	String[] complexExceptions = new String[] { "lipid", "phospholipid", "cholesteryl" };
+	String[] substanceExceptions = new String[] {}; //{"liposome"};
+	String[] complexExceptions = new String[] {}; //{ "lipid", "phospholipid", "cholesteryl" };
 	
 	Set<Concept> allowMoreSpecificDoseForms = new HashSet<>();
 	
@@ -57,7 +55,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
 		CreateMissingDrugConcepts fix = new CreateMissingDrugConcepts(null);
 		try {
-			ReportSheetManager.targetFolderId="1hYd96nzfB35ggffWR_SdPbybpmzynlI6";  //Content Reporting Artefacts/DRUGS
+			ReportSheetManager.targetFolderId="1SQw8vYXeB-LYPfoVzWwyGFjGp1yre2cT";  //Content Reporting Artefacts/Drugs/CreateMissingDrugConcepts
 			fix.populateEditPanel = true;
 			fix.populateTaskDescription = true;
 			fix.selfDetermining = true;
@@ -104,17 +102,17 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 		List<Concept> conceptsRequired = new ArrayList<>();
 		ConceptType[] targetTypes;
 		
-		//What do we expect to create based on they type of this input concept?
+		//What do we expect to create based on this type of this input concept?
 		switch (concept.getConceptType()) {
 			case CLINICAL_DRUG : 
-				targetTypes = new ConceptType[] {ConceptType.MEDICINAL_PRODUCT_FORM};
+				targetTypes = new ConceptType[]{	ConceptType.MEDICINAL_PRODUCT_FORM};
 				break;
 			case MEDICINAL_PRODUCT_FORM : 
-				targetTypes = new ConceptType[] {	ConceptType.MEDICINAL_PRODUCT,
+				targetTypes = new ConceptType[]{	ConceptType.MEDICINAL_PRODUCT,
 													ConceptType.MEDICINAL_PRODUCT_FORM_ONLY };
 				break;
 			case MEDICINAL_PRODUCT : 
-				targetTypes = new ConceptType[] {ConceptType.MEDICINAL_PRODUCT_ONLY};
+				targetTypes = new ConceptType[]{	ConceptType.MEDICINAL_PRODUCT_ONLY};
 				break;
 			default : throw new IllegalStateException("Unexpected driver concept type: " + concept.getConceptType());
 		}
@@ -319,10 +317,5 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 			}
 		}
 		return false;
-	}
-
-	@Override
-	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
-		return null; // We will identify descriptions to edit from the snapshot
 	}
 }
