@@ -290,7 +290,7 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 		templateNames = new String[] {	"templates/Abscess.json",
 										"templates/Abscess with Cellulitis.json"};
 		
-		
+		*/
 		subHierarchyECL = "<< 416462003 |Wound (disorder)|"; //QI-209
 		setExclusions(new String[] {"125643001 |Open Wound|", 
 									"416886008 |Closed Wound|",
@@ -303,14 +303,15 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 										"templates/wound/wound of bodysite due to event.json"};
 		includeDueTos = true;
 		
+		/*
 		subHierarchyECL = "< 125670008 |Foreign body (disorder)|"; //QI-156
 		templateNames = new String[] {	"templates/Foreign body.json" };
 		
-		*/
+		
 		subHierarchyECL = "<  193570009 |Cataract (disorder)|"; //MQI-7
 		templateNames = new String[] {	"templates/Cataract.json" };
 		includeComplexTemplates = true;
-		
+		*/
 		super.init(args);
 		
 		//Ensure our ECL matches more than 0 concepts before we import SNOMED - expensive!

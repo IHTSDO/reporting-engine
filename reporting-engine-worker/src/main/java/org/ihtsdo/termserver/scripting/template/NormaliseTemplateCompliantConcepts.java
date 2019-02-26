@@ -45,7 +45,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		reportNoChange = false;
 		selfDetermining = true;
 		runStandAlone = true;
-		//classifyTasks = true;
+		classifyTasks = true;
 		//validateTasks = true; Currently failing with 500 error.  Take out Resty?
 		additionalReportColumns = "CharacteristicType, Template, ActionDetail";
 		
@@ -135,11 +135,14 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		exclusionWords.add("fracture");
 		setExclusions(new String[] {"399963005 |Abrasion (disorder)|", "312608009 |Laceration - injury|"});
 		includeDueTos = true;
-		*/
 		
 		subHierarchyECL = "<<3218000"; //QI-208 |Mycosis (disorder)|
 		templateNames = new String[] {	"templates/infection/Infection caused by Fungus.json"};
+		*/
 		
+		subHierarchyECL = "<<312608009 |Laceration - injury|"; //QI-226
+		templateNames = new String[] {	"templates/wound/laceration.json" };
+		includeDueTos = true;
 		
 		super.init(args);
 		
