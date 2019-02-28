@@ -138,10 +138,21 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		
 		subHierarchyECL = "<<3218000"; //QI-208 |Mycosis (disorder)|
 		templateNames = new String[] {	"templates/infection/Infection caused by Fungus.json"};
-		*/
 		
 		subHierarchyECL = "<<312608009 |Laceration - injury|"; //QI-226
 		templateNames = new String[] {	"templates/wound/laceration.json" };
+		includeDueTos = true;
+		*/
+		subHierarchyECL = "<< 416462003 |Wound (disorder)|"; //QI-235
+		setExclusions(new String[] {"125643001 |Open Wound|", 
+									"416886008 |Closed Wound|",
+									"312608009 |Laceration|",
+									"283682007 |Bite Wound|",
+									"399963005 |Abraision|",
+									"125670008 |Foreign Body|",
+									"125667009 |Contusion (disorder)|"});
+		templateNames = new String[] {	"templates/wound/wound of bodysite.json",
+										"templates/wound/wound of bodysite due to event.json"};
 		includeDueTos = true;
 		
 		super.init(args);
