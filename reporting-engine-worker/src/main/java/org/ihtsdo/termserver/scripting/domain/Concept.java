@@ -4,7 +4,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.scripting.*;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.DefinitionStatus;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import com.google.gson.annotations.Expose;
@@ -438,8 +437,8 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		return originalFileLineNumber;
 	}
 	
-	public void addRelationship(Relationship r) {
-		addRelationship(r, false);
+	public boolean addRelationship(Relationship r) {
+		return addRelationship(r, false);
 	}
 	
 	public int addOrReactivateRelationship(Relationship r) {
@@ -462,7 +461,10 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		return CHANGE_MADE;
 	}
 	
-	public void addRelationship(Relationship r, boolean replaceTripleMatch) {
+	/**
+	 * @return true if the relationship was successfully added, or false if it was ignored
+	 */
+	public boolean addRelationship(Relationship r, boolean replaceTripleMatch) {
 		//Do we already had a relationship with this id?  Replace if so.
 		//Actually since delta files from the TS could have different SCTIDs
 		//Null out the ID temporarily to force a triple + groupId comparison
@@ -478,8 +480,8 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 			if (replaceTripleMatch && r.getEffectiveTime() == null && !r.isActive()) {
 				for (Relationship match : getRelationships(r)) {
 					if (match.isActive() && match.getEffectiveTime() == null) {
-						System.out.println ("Ignoring inactivation in " + this + " between already received active " + match + " and incoming inactive " + r);
-						return;
+						//System.out.println ("Ignoring inactivation in " + this + " between already received active " + match + " and incoming inactive " + r);
+						return false;
 					}
 				}
 			}
@@ -489,6 +491,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		r.setRelationshipId(id);
 		relationships.add(r);
 		recalculateGroups();
+		return true;
 	}
 	
 	public void addChild(CharacteristicType charType, Concept c) {

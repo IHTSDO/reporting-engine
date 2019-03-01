@@ -5,14 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.zip.ZipInputStream;
 
@@ -90,6 +83,7 @@ public class GraphLoader implements RF2Constants {
 		String line;
 		boolean isHeaderLine = true;
 		long relationshipsLoaded = 0;
+		int ignoredRelationships = 0;
 		while ((line = br.readLine()) != null) {
 			if (!isHeaderLine) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
@@ -108,7 +102,7 @@ public class GraphLoader implements RF2Constants {
 				}
 				Concept thisConcept = getConcept(lineItems[REL_IDX_SOURCEID]);
 				if (addRelationshipsToConcepts) {
-					addRelationshipToConcept(characteristicType, lineItems, isDelta);
+					ignoredRelationships += addRelationshipToConcept(characteristicType, lineItems, isDelta);
 				}
 				concepts.add(thisConcept);
 				relationshipsLoaded++;
@@ -117,6 +111,9 @@ public class GraphLoader implements RF2Constants {
 			}
 		}
 		log.append("\tLoaded " + relationshipsLoaded + " relationships of type " + characteristicType + " which were " + (addRelationshipsToConcepts?"":"not ") + "added to concepts\n");
+		if (isDelta) {
+			TermServerScript.info (ignoredRelationships + " inactivating relationships were ignored as activating ones received in same delta");
+		}
 		return concepts;
 	}
 	
@@ -160,7 +157,11 @@ public class GraphLoader implements RF2Constants {
 		return r;
 	}
 
-	public void addRelationshipToConcept(CharacteristicType charType, String[] lineItems, boolean isDelta) throws TermServerScriptException {
+	/**
+	 * @return ignored count (ie 1 if relationship addition was ignored)
+	 * @throws TermServerScriptException
+	 */
+	public int addRelationshipToConcept(CharacteristicType charType, String[] lineItems, boolean isDelta) throws TermServerScriptException {
 		Relationship r = createRelationshipFromRF2(charType, lineItems);
 		//Consider adding or removing parents if the relationship is ISA
 		//But only remove items if we're processing a delta
@@ -176,7 +177,8 @@ public class GraphLoader implements RF2Constants {
 		
 		//In the case of importing an Inferred Delta, we could end up adding a relationship instead of replacing
 		//if it has a different SCTID.  We need to check for equality using triple, not SCTID in that case.
-		r.getSource().addRelationship(r, isDelta);
+		boolean successfullyAdded = r.getSource().addRelationship(r, isDelta);
+		return successfullyAdded ? 0 : 1;
 	}
 
 	public Concept getConcept(String identifier) throws TermServerScriptException {
