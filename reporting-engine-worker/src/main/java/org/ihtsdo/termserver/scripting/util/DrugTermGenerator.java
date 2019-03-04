@@ -6,6 +6,7 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.TermServerScript.ReportActionType;
 import org.ihtsdo.termserver.scripting.TermServerScript.Severity;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -146,6 +147,17 @@ public class DrugTermGenerator implements RF2Constants{
 			changesMade += replaceTerm(t, c, d, replacement);
 		}
 		
+		//Validation check that we should never end up with the same word twice 
+		//eg Product containing precisely methadone hydrochloride 40 milligram/1 tablet tablet for conventional release oral suspension (clinical drug)
+		String[] words = replacementTerm.split(SPACE);
+		String lastWord = ""; 
+		for (String word : words) {
+			if (lastWord.equals(word)) {
+				throw new ValidationFailure(t, c, "Repetition of '" + word + "' in term '" + replacementTerm + "'");
+			}
+			lastWord = word;
+		}
+		
 		//If this is the FSN, then we should have another description without the semantic tag as an acceptable term
 		//Update: We're not doing FSN Counterparts now, because of issues with US / GB Variants
 		/*if (isFSN) {
@@ -165,6 +177,7 @@ public class DrugTermGenerator implements RF2Constants{
 		if (replacement.getAcceptability(US_ENG_LANG_REFSET) == null || replacement.getAcceptability(GB_ENG_LANG_REFSET) == null) {
 			TermServerScript.warn (d + " has unacceptable acceptability");
 		}
+		
 		return changesMade;
 	}
 
