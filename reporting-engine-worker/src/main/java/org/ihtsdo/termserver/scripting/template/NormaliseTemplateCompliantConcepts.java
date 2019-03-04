@@ -142,7 +142,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		subHierarchyECL = "<<312608009 |Laceration - injury|"; //QI-226
 		templateNames = new String[] {	"templates/wound/laceration.json" };
 		includeDueTos = true;
-		*/
+		
 		subHierarchyECL = "<< 416462003 |Wound (disorder)|"; //QI-235
 		setExclusions(new String[] {"125643001 |Open Wound|", 
 									"416886008 |Closed Wound|",
@@ -154,6 +154,17 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		templateNames = new String[] {	"templates/wound/wound of bodysite.json",
 										"templates/wound/wound of bodysite due to event.json"};
 		includeDueTos = true;
+		
+		subHierarchyECL = "<<52515009"; //QI-236 |Hernia of abdominal cavity (disorder)|
+		templateNames = new String[] {	"templates/hernia/Hernia of Body Structure.json"};
+		excludeHierarchies = new String[] { "236037000 |Incisional hernia (disorder)|" };
+		exclusionWords = new ArrayList<String>();
+		exclusionWords.add("gangrene");
+		exclusionWords.add("obstruction");
+		*/
+		subHierarchyECL = "<< 128477000 |Abscess (disorder)|"; //QI-214
+		templateNames = new String[] {	"templates/Abscess.json",
+										"templates/Abscess with Cellulitis.json"};
 		
 		super.init(args);
 		
