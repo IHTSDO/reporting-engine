@@ -635,6 +635,7 @@ public class GraphLoader implements RF2Constants {
 	
 	public Collection<Concept> getOrphanetConcepts() {
 		if (orphanetConcepts == null) {
+			TermServerScript.info("Loading list of Orphanet Concepts...");
 			try {
 				InputStream is = GraphLoader.class.getResourceAsStream("/data/orphanet_concepts.txt");
 				if (is == null) {
