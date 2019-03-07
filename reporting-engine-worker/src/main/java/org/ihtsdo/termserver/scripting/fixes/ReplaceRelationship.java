@@ -6,12 +6,13 @@ import java.util.*;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 
 import us.monoid.json.JSONObject;
 
 /*
-For APDS-335, QI
+For APDS-335, QI-234
 Replace all relationships of one specified type / value for another
 */
 public class ReplaceRelationship extends BatchFix implements RF2Constants{
@@ -46,7 +47,7 @@ public class ReplaceRelationship extends BatchFix implements RF2Constants{
 	
 	protected void init(String[] args) throws TermServerScriptException {
 		super.init(args);
-		
+		ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"; //Ad-Hoc Batch Updates
 		//Populate our attributes of interest
 		findAttribute = gl.getConcept("23583003 |Inflammation (morphologic abnormality)|");  
 		replaceAttribute = gl.getConcept("409774005 |Inflammatory morphology (morphologic abnormality)|"); 
