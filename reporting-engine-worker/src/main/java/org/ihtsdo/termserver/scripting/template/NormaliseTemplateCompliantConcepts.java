@@ -161,10 +161,15 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		exclusionWords = new ArrayList<String>();
 		exclusionWords.add("gangrene");
 		exclusionWords.add("obstruction");
-		*/
+		
 		subHierarchyECL = "<< 128477000 |Abscess (disorder)|"; //QI-214
 		templateNames = new String[] {	"templates/Abscess.json",
 										"templates/Abscess with Cellulitis.json"};
+		*/
+		
+		subHierarchyECL = "<<428794004 |Fistula (disorder)|"; //QI-186
+		templateNames = new String[] {	"templates/Fistula.json" };
+		includeDueTos = true;
 		
 		super.init(args);
 		
@@ -203,6 +208,9 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		//Restate inferred relationships as stated where required
 		changesMade += restateInferredRelationships(t,c);
 		
+		//Remove stated ungrouped relationships where they're not also inferred
+		changesMade += removeUngroupedRelationships(t,c);
+		
 		return changesMade;
 	}
 
@@ -229,6 +237,26 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		changesMade += stateRelationshipGroups(t, c, toBeStated);
 		if (changesMade == 0) {
 			report (t, c, Severity.NONE, ReportActionType.NO_CHANGE, "Stated/Inferred groups already matched " + statedGroups.size() + "/" + inferredGroups.size());
+		}
+		return changesMade;
+	}
+	
+	private int removeUngroupedRelationships(Task t, Concept c) throws TermServerScriptException {
+		//Work through stated ungrouped relationships and remove them if they don't also exist inferred, ungrouped
+		
+		//If there are no ungrouped relationships, then nothing to do here
+		if (c.getRelationshipGroup(CharacteristicType.STATED_RELATIONSHIP, UNGROUPED) == null) {
+			return NO_CHANGES_MADE;
+		}
+		
+		int changesMade = 0;
+		List<Relationship> ungrouped = c.getRelationshipGroup(CharacteristicType.STATED_RELATIONSHIP, UNGROUPED).getRelationships();
+		for (Relationship r : ungrouped) {
+			List<Relationship> inferredMatches = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, r);
+			if (inferredMatches.size() == 0) {
+				removeRelationship(t, c, r, "Redundant ungrouped stated: ");
+				changesMade++;
+			}
 		}
 		return changesMade;
 	}
@@ -274,7 +302,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		Set<Concept> noChangesRequired = new HashSet<>();
 		setQuiet(true);
 		for (Concept alignedConcept : alignedConcepts) {
-			if (!alignedConcept.getConceptId().equals("722761003")) {
+			if (!alignedConcept.getConceptId().equals("128066003")) {
 			//		continue;
 			}
 			//Make changes to a clone of the concept so we don't affect our local copy

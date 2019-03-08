@@ -239,9 +239,14 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		return getRelationships(characteristicType, activeState, null);
 	}
 	
-	//Gets relationships that match the triple + group
+	//Gets relationships that match the triple + group + charType
 	public List<Relationship> getRelationships(Relationship r) {
 		return getRelationships(r.getCharacteristicType(), r.getType(), r.getTarget(), r.getGroupId(), ActiveState.ACTIVE);
+	}
+	
+	//Gets relationships that match the triple + group
+	public List<Relationship> getRelationships(CharacteristicType charType, Relationship r) {
+		return getRelationships(charType, r.getType(), r.getTarget(), r.getGroupId(), ActiveState.ACTIVE);
 	}
 	
 	public List<Relationship> getRelationships(CharacteristicType characteristicType, RelationshipTemplate t) {
@@ -1092,6 +1097,10 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		Collection<RelationshipGroup> relationshipGroups = characteristicType.equals(CharacteristicType.STATED_RELATIONSHIP) ? statedRelationshipGroups : inferredRelationshipGroups;
 		if (relationshipGroups == null) {
 			Map<Integer, RelationshipGroup> groups = new HashMap<>();
+			//If we're including group 0, always add that in any event
+			if (includeGroup0) {
+				groups.put(UNGROUPED, new RelationshipGroup(UNGROUPED));
+			}
 			for (Relationship r : getRelationships(characteristicType, activeState)) {
 				if (r.getType().equals(IS_A) || (!includeGroup0 && r.getGroupId() == 0)) {
 					continue;

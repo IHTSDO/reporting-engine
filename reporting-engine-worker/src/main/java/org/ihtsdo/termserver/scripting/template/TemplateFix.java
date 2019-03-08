@@ -261,18 +261,47 @@ abstract public class TemplateFix extends BatchFix {
 		List<RelationshipGroup> originalGroups = new ArrayList<>(c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP));
 		for (RelationshipGroup originalGroup : originalGroups) {
 			for (RelationshipGroup potentialRedundancy : originalGroups) {
-				//Don't compare self
-				if (originalGroup.getGroupId() == potentialRedundancy.getGroupId()) {
+				//Don't compare self, or empty groups
+				if (originalGroup.getGroupId() == potentialRedundancy.getGroupId() ||
+					originalGroup.size() == 0) {
 					continue;
 				}
 				if (SnomedUtils.isSameOrMoreSpecific(originalGroup, potentialRedundancy, gl.getAncestorsCache())) {
+					if (originalGroup.size() != potentialRedundancy.size()) {
+						throw new TermServerScriptException ("Code needs enhanced here to check that redundant group " +
+										"does not contain more attributes than the original.  Check redundancy in both directions " +
+										"and remove the smaller if applicable, or the higher group number if equivalent");
+					}
 					report (t, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_GROUP_REMOVED, "Redundant relationship group removed", potentialRedundancy);
 					for (Relationship r : potentialRedundancy.getRelationships()) {
 						changesMade += removeRelationship(t, c, r);
+						if (true);
 					}
 				}
 			}
 		}
+		if (changesMade > 0) {
+			shuffleDown(t,c);
+			for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
+				report (t, c, Severity.LOW, ReportActionType.INFO, "Post redundancy removal group", g);
+			}
+		}
 		return changesMade;
 	}
+
+	private void shuffleDown(Task t, Concept c) {
+		List<RelationshipGroup> newGroups = new ArrayList<>();
+		for (RelationshipGroup group : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
+			if (!group.isGrouped() || group.size() > 0) {
+				//Since we're working with the true concept relationships here, this will have
+				//the effect of changing the groupId in all affected relationships
+				group.setGroupId(newGroups.size());
+				newGroups.add(group);
+			} else if (group.isGrouped()){
+				//Add an empty group skip group 0 and prevent shuffling group 1 into group 0
+				newGroups.add(new RelationshipGroup(UNGROUPED));
+			}
+		}
+	}
 }
+
