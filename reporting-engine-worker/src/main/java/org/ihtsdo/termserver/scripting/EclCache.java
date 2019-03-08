@@ -21,6 +21,7 @@ public class EclCache {
 	private SnowOwlClient tsClient;
 	private Gson gson;
 	private GraphLoader gl;
+	boolean safetyProtocolEngaged = true;
 	
 	Map <String, List<Concept>> expansionCache = new HashMap<>();
 	
@@ -79,7 +80,7 @@ public class EclCache {
 							TermServerScript.info ("...which seems rather large, don't you think?");
 						}
 						
-						if (collection.getTotal() > MAX_RESULTS) {
+						if (safetyProtocolEngaged && collection.getTotal() > MAX_RESULTS) {
 							throw new TermServerScriptException("ECL returned " + collection.getTotal() + " concepts, exceeding limit of " + MAX_RESULTS);
 						}
 					}
@@ -111,5 +112,12 @@ public class EclCache {
 			expansionCache.put(ecl, allConcepts);
 		}
 		return allConcepts;
+	}
+	
+	public void engageSafetyProtocol(boolean engaged) {
+		safetyProtocolEngaged = engaged;
+		if (!engaged) {
+			TermServerScript.warn ("ECL cache safety protocols have been disengaged. There's no limit");
+		}
 	}
 }

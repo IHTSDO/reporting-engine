@@ -55,6 +55,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected File inputFile2;
 	protected String projectName;
 	private String reportName;
+	protected boolean safetyProtocols = true;  //Switch off to bypass all limits
 	
 	protected String subHierarchyStr;
 	protected String subHierarchyECL;
@@ -649,6 +650,7 @@ public abstract class TermServerScript implements RF2Constants {
 	
 	protected Set<Concept> findConcepts(String branch, String ecl) throws TermServerScriptException {
 		EclCache cache = EclCache.getCache(branch, tsClient, gson, gl);
+		cache.engageSafetyProtocol(safetyProtocols);
 		List<Concept> concepts = cache.findConcepts(branch, ecl); 
 		int retry = 0;
 		if (concepts.size() == 0 && ++retry < 3) {

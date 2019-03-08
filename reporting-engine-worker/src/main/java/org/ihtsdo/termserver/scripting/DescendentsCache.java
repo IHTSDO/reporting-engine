@@ -5,11 +5,14 @@ import java.util.*;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+
 public class DescendentsCache implements RF2Constants {
 
 	private static DescendentsCache singleton = null;
 	
-	Map<Concept, Set<Concept>> descendentOrSelfCache = new HashMap<>();
+	Map<Concept, Set<Concept>> descendentCache = new HashMap<>();
 	
 	public static DescendentsCache getDescendentsCache() {
 		if (singleton == null) {
@@ -23,39 +26,36 @@ public class DescendentsCache implements RF2Constants {
 	}
 	
 	public void reset() {
-		descendentOrSelfCache = new HashMap<>();
+		descendentCache = new HashMap<>();
 	}
 	
-	public Set<Concept> getDescendentsOrSelf(Concept c) throws TermServerScriptException {
-		return getDescendentsOrSelf(c, false);  //Default implementation is immutable
+	public Set<Concept> getDescendents(Concept c) throws TermServerScriptException {
+		return getDescendents(c, false);  //Default implementation is immutable
 	}
 	
-	private Set<Concept> getDescendentsOrSelf (Concept c, boolean mutable) throws TermServerScriptException {
+	private Set<Concept> getDescendents (Concept c, boolean mutable) throws TermServerScriptException {
 		if (c == null) {
 			throw new IllegalArgumentException("Null concept requested");
 		}
-		/*if (c.getConceptId().equals("126537000")) {
-			TermServerScript.debug ("Check descendants here");
-		}*/
+
 		//Ensure we're working with the local copy rather than TS JSON
 		Concept localConcept = GraphLoader.getGraphLoader().getConcept(c.getConceptId());
 		if (!localConcept.isActive()) {
 			throw new TermServerScriptException(c + " is inactive. Unlikely you want to find its decendants");
 		}
-		Set<Concept> descendents = descendentOrSelfCache.get(localConcept);
+		Set<Concept> descendents = descendentCache.get(localConcept);
 		if (descendents == null) {
 			descendents = localConcept.getDescendents(NOT_SET);
 			//Don't allow anyone to change this!
-			descendentOrSelfCache.put(localConcept, descendents);
+			descendentCache.put(localConcept, descendents);
 		}
-		descendents.add(localConcept); //Or Self
 		return mutable ? new HashSet<>(descendents) : Collections.unmodifiableSet(descendents);
 	}
 
-	public Set<Concept>  getDescendents(Concept c) throws TermServerScriptException {
-		Set<Concept> descendents = getDescendentsOrSelf(c, true);
-		descendents.remove(c);  // Not self!
-		return Collections.unmodifiableSet(descendents);
+	public Set<Concept> getDescendentsOrSelf(Concept c) throws TermServerScriptException {
+		Set<Concept> descendents = getDescendents(c, false);
+		Set<Concept> orSelf = Collections.singleton(c);
+		return ImmutableSet.copyOf(Iterables.concat(descendents, orSelf));
 	}
 
 	public Set<Concept> getDescendentsOrSelf (String sctid) throws TermServerScriptException {

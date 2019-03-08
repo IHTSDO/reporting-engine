@@ -5,6 +5,7 @@ import java.util.*;
 
 import org.snomed.authoringtemplate.domain.ConceptTemplate;
 import org.snomed.authoringtemplate.domain.logical.*;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.TemplateServiceClient;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -144,6 +145,7 @@ abstract public class TemplateFix extends BatchFix {
 
 	protected Template loadLocalTemplate (char id, String fileName) throws TermServerScriptException {
 		try {
+			TermServerScript.info("Loading local tempate " + id + ": " + fileName );
 			ConceptTemplate ct = tsc.loadLocalConceptTemplate(fileName);
 			LogicalTemplate lt = tsc.parseLogicalTemplate(ct.getLogicalTemplate());
 			Template t = new Template(id, lt, fileName);
@@ -157,6 +159,7 @@ abstract public class TemplateFix extends BatchFix {
 	
 	protected Template loadTemplate (char id, String templateName) throws TermServerScriptException {
 		try {
+			TermServerScript.info("Loading remote tempate " + id + ": " + templateName );
 			ConceptTemplate ct = tsc.loadLogicalTemplate(templateName);
 			LogicalTemplate lt = tsc.parseLogicalTemplate(ct.getLogicalTemplate());
 			Template t = new Template(id, lt, templateName);
@@ -171,6 +174,7 @@ abstract public class TemplateFix extends BatchFix {
 	protected Set<Concept> findTemplateMatches(Template t, Collection<Concept> concepts) throws TermServerScriptException {
 		Set<Concept> matches = new HashSet<Concept>();
 		info ("Examining " + concepts.size() + " concepts against template " + t);
+		int conceptsExamined = 0;
 		for (Concept c : concepts) {
 			if (c.getConceptId().equals("234195006")) {
 				debug ("Check template match here");
@@ -192,7 +196,11 @@ abstract public class TemplateFix extends BatchFix {
 				}
 				matches.add(c);
 			}
+			if (++conceptsExamined % 1000 == 0) {
+				print(".");
+			}
 		}
+		println("");
 		info (matches.size() + " concepts in " + subHierarchyECL + " matching template " + t);
 		
 		return matches;
