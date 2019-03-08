@@ -35,7 +35,7 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 		GenerateWorkDoneStatsWithTempateTypes report = new GenerateWorkDoneStatsWithTempateTypes();
 		try {
 			ReportSheetManager.targetFolderId = "1YoJa68WLAMPKG6h4_gZ5-QT974EU9ui6"; //QI / Stats
-			report.additionalReportColumns = "FSN, SemTag, Depth, Counted elsewhere, Simple, modified, Pure, modified, Complex, modified, ComplexNoMorph, modified, None, modified, Total";
+			report.additionalReportColumns = "FSN, SemTag, Depth, Counted elsewhere, Phase 1, Phase 2, Out of Scope, Total";
 			ArchiveManager.getArchiveManager(report).populateHierarchyDepth = true;
 			report.init(args);
 			report.loadProjectSnapshot(false);  //Load all descriptions
@@ -108,21 +108,23 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 			int withRemovals = subHierarchy.size();
 			int countedElsewhere = total - withRemovals;
 			for (Concept c : subHierarchy) {
+				if (gl.isOrphanetConcept(c)) {
+					incrementSummaryInformation("Orphanet concepts excluded");
+					continue;
+				}
 				TemplateType type = getTemplateType(c);
 				templateTypeTotal[type.ordinal()]++;
 				//Has this concept been modified in the stated form since X?
-				if (isModified(c, CharacteristicType.STATED_RELATIONSHIP)) {
+				/*if (isModified(c, CharacteristicType.STATED_RELATIONSHIP)) {
 					templateTypeModified[type.ordinal()]++;
-				}
+				}*/
 			}
 			
 			report (subHierarchyStart, subHierarchyStart.getDepth(),
 					countedElsewhere, 
-					templateTypeTotal[0] , templateTypeModified[0],
-					templateTypeTotal[1] , templateTypeModified[1],
-					templateTypeTotal[2] ,templateTypeModified[2],
-					templateTypeTotal[3] , templateTypeModified[3],
-					templateTypeTotal[4] , templateTypeModified[4],
+					templateTypeTotal[0] + templateTypeTotal[1],
+					templateTypeTotal[2] + templateTypeTotal[3],
+					templateTypeTotal[4],
 					total);
 			alreadyAccountedFor.addAll(subHierarchy);
 		}
