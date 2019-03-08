@@ -41,7 +41,6 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 		PrepMisalignedConcepts app = new PrepMisalignedConcepts(null);
 		try {
 			//app.includeComplexTemplates = true;
-			ReportSheetManager.targetFolderId = "1uywo1VGAIh7MMY7wCn2yEj312OQCjt9J"; // QI / Misaligned Concepts
 			app.init(args);
 			//app.getArchiveManager().allowStaleData = true;
 			app.loadProjectSnapshot(false);  //Load all descriptions
@@ -87,7 +86,7 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 	}
 	
 	protected void init(JobRun jobRun) throws TermServerScriptException {
-		
+		ReportSheetManager.targetFolderId = "1uywo1VGAIh7MMY7wCn2yEj312OQCjt9J"; // QI / Misaligned Concepts
 		selfDetermining = true;
 		reportNoChange = false;
 		runStandAlone = true; 
@@ -160,7 +159,7 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 		} catch (Exception e) {
 			throw new TermServerScriptException("Failed to load tempate '" + template + "'", e);
 		}
-		
+		info ("Loaded user specified template: " + template);
 	}
 
 	protected void init(String[] args) throws TermServerScriptException {
@@ -327,6 +326,8 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 		String[] tabNames = new String[] {	"Mismatched Concepts",
 				"Metadata"};
 		super.postInit(tabNames, columnHeadings, false);
+		
+		info("Outputting metadata tab");
 		String user = jobRun == null ? "System" : jobRun.getUser();
 		writeToReportFile (SECONDARY_REPORT, "Requested by: " + user);
 		writeToReportFile (SECONDARY_REPORT, "Ran against: " + subHierarchyECL);
@@ -389,14 +390,12 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 				List<String> diagnostics = new ArrayList<String>();
 				conceptDiagnostics.put(c, diagnostics);
 				String msg = "Cardinality mismatch: " +  (c.getIssues().isEmpty()?" N/A" : c.getIssues());
-				debug (c + ".  " + msg);
 				diagnostics.add(msg);
 				diagnostics.add("Relationship Group mismatches:");
 				for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP)) {
 					//is this group purely inferred?  Add an indicator if so 
 					String purelyInferredIndicator = groupPurelyInferred(c,g)?"^":"";
 					msg = "    " + purelyInferredIndicator + g;
-					debug (msg);
 					diagnostics.add(msg);
 				}
 				incrementSummaryInformation("Concepts identified as not matching any template");
