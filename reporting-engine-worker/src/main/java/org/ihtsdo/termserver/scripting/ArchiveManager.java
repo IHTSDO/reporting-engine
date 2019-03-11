@@ -108,7 +108,8 @@ public class ArchiveManager implements RF2Constants {
 		} else {
 			//We might already have this project in memory
 			if (currentlyHeldInMemory != null && currentlyHeldInMemory.equals(ts.getProject())) {
-				info (ts.getProject() + " already held in memory, no need to reload");
+				info (ts.getProject() + " already held in memory, no need to reload.  Resetting any issues held against components...");
+				gl.makeReady();
 			} else {
 				if (currentlyHeldInMemory != null) {
 					//Make sure the Graph Loader is clean if we're loading a different project

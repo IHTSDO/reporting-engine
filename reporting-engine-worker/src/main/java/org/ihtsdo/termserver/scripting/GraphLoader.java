@@ -655,4 +655,10 @@ public class GraphLoader implements RF2Constants {
 	public boolean isOrphanetConcept (Concept c) {
 		return getOrphanetConcepts().contains(c);
 	}
+
+	public void makeReady() {
+		for (Component c : allComponents.values()) {
+			c.setIssue(null);
+		}
+	}
 }
