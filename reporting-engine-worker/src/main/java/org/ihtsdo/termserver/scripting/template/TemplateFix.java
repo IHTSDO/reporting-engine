@@ -267,23 +267,43 @@ abstract public class TemplateFix extends BatchFix {
 	protected int removeRedundandGroups(Task t, Concept c) throws TermServerScriptException {
 		int changesMade = 0;
 		List<RelationshipGroup> originalGroups = new ArrayList<>(c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP));
+		Set<RelationshipGroup> removedGroups = new HashSet<>();
+		
 		for (RelationshipGroup originalGroup : originalGroups) {
+			if (removedGroups.contains(originalGroup) || originalGroup.size() == 0) {
+				continue;
+			}
 			for (RelationshipGroup potentialRedundancy : originalGroups) {
-				//Don't compare self, or empty groups
+				//Don't compare self, removed or empty groups
 				if (originalGroup.getGroupId() == potentialRedundancy.getGroupId() ||
-					originalGroup.size() == 0) {
+					potentialRedundancy.size() == 0 ||
+					removedGroups.contains(potentialRedundancy)) {
 					continue;
 				}
-				if (SnomedUtils.isSameOrMoreSpecific(originalGroup, potentialRedundancy, gl.getAncestorsCache())) {
-					if (originalGroup.size() != potentialRedundancy.size()) {
-						throw new TermServerScriptException ("Code needs enhanced here to check that redundant group " +
-										"does not contain more attributes than the original.  Check redundancy in both directions " +
-										"and remove the smaller if applicable, or the higher group number if equivalent");
+				boolean aCoversB = SnomedUtils.covers(originalGroup, potentialRedundancy, gl.getAncestorsCache());
+				boolean bCoversA = SnomedUtils.covers(potentialRedundancy, originalGroup, gl.getAncestorsCache());
+				RelationshipGroup groupToRemove = null;
+				if (aCoversB || bCoversA) {
+					//If they're the same, remove the potential - likely to be a higher group number
+					if (aCoversB && bCoversA && potentialRedundancy.size() <= originalGroup.size()) {
+						groupToRemove = potentialRedundancy;
+					} else if (aCoversB && potentialRedundancy.size() <= originalGroup.size()) {
+						groupToRemove = potentialRedundancy;
+					} else if (bCoversA && potentialRedundancy.size() >= originalGroup.size()) {
+						groupToRemove = originalGroup;
+					} else if (bCoversA && potentialRedundancy.size() < originalGroup.size()) {
+						report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Group of larger size appears redundant - check!");
+						groupToRemove = originalGroup;
+					} else {
+						warn ("DEBUG HERE, Redundancy in " + c);
 					}
-					report (t, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_GROUP_REMOVED, "Redundant relationship group removed", potentialRedundancy);
-					for (Relationship r : potentialRedundancy.getRelationships()) {
-						changesMade += removeRelationship(t, c, r);
-						if (true);
+					
+					if (groupToRemove != null && groupToRemove.size() > 0) {
+						removedGroups.add(groupToRemove);
+						report (t, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_GROUP_REMOVED, "Redundant relationship group removed:", groupToRemove);
+						for (Relationship r : groupToRemove.getRelationships()) {
+							changesMade += removeRelationship(t, c, r);
+						}
 					}
 				}
 			}

@@ -953,12 +953,15 @@ public class SnomedUtils implements RF2Constants {
 	}
 	
 	/**
-	 * @return true if a is more specific than b
+	 * @return true if a is same or more specific than b
+	 * Note a may have more attributes than b, as long as all of b's attributes are 
+	 * present (or more specific) in a, then the presence of a covers b.  
+	 * b is redundant
 	 */
-	public static boolean isSameOrMoreSpecific(RelationshipGroup a, RelationshipGroup b, AncestorsCache cache) throws TermServerScriptException {
-		for (Relationship ra : a.getRelationships()) {
+	public static boolean covers(RelationshipGroup a, RelationshipGroup b, AncestorsCache cache) throws TermServerScriptException {
+		for (Relationship rb : b.getRelationships()) {
 			boolean matchFound = false;
-			for (Relationship rb : b.getRelationships()) {
+			for (Relationship ra : a.getRelationships()) {
 				if (ra.equalsTypeValue(rb) || isMoreSpecific(ra, rb, cache)) {
 					matchFound = true;
 					break;
@@ -968,8 +971,8 @@ public class SnomedUtils implements RF2Constants {
 				return false;
 			}
 		}
-		//If we get here, all relationships in group "a" match, or are more specific
-		//than those in group b
+		//If we get here, all relationships in group "b" match, or are more general
+		//than those in group a
 		return true;
 	}
 
