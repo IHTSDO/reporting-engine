@@ -318,9 +318,12 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 		
 		subHierarchyECL = "< 429040005 |Ulcer (disorder)|"; //QI-248
 		templateNames = new String[] {	"templates/Ulcer.json" };
-		 */
+		
 		subHierarchyECL = "< 64572001 |Disease (disorder)|"; 
 		templateNames = new String[] {	"templates/Disease.json" };
+		 */
+		subHierarchyECL = "<< 109355002 |Carcinoma in situ (disorder)|"; //QI-231
+		templateNames = new String[] {	"templates/Carcinoma in Situ.json" };
 		
 		super.init(args);
 		
