@@ -25,7 +25,8 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 	InitialAnalysis ipReport;
 	int modifiedSince = 20180131;
 	
-	String [] co_occurrantWords = new String[] { " and ", " with ", " in " };
+	String [] co_occurrantWords = new String[] { " and ", " with ", " in ", " or " };
+	String [] complexWords = new String[] { "complication", "sequela", "late effect", "secondary" };
 	Concept[] co_occurrantTypeAttrb;
 	Concept[] complexTypeAttrbs;
 	
@@ -87,7 +88,8 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 			gl.getConcept("288556008"), //|Before (attribute)|
 			gl.getConcept("371881003"), //|During (attribute)|
 			gl.getConcept("363713009"), //|Has interpretation (attribute)|
-			gl.getConcept("363714003")  //|Interprets (attribute)|
+			gl.getConcept("363714003"), //|Interprets (attribute)|
+			gl.getConcept("47429007")   //|Associated with (attribute)|
 		};
 		postInit();
 		ipReport = new InitialAnalysis(this);
@@ -154,6 +156,13 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 				return TemplateType.COMPLEX;
 			} else {
 				return TemplateType.COMPLEX_NO_MORPH;
+			}
+		}
+		
+		//Do we have a complex word?
+		for (String word : complexWords) {
+			if (c.getFsn().contains(word)) {
+				return TemplateType.COMPLEX;
 			}
 		}
 		
