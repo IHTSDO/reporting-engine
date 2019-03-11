@@ -42,10 +42,16 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 	}
 	
 	protected void init(String[] args) throws TermServerScriptException {
+		safetyProtocols = false;  //IF YOU SEE THIS, TELL ME!
 		reportNoChange = false;
 		selfDetermining = true;
 		runStandAlone = true;
 		classifyTasks = true;
+		if (!safetyProtocols) {
+			//We're expecting to exceed limits if the safetys are off
+			populateEditPanel = false;
+			populateTaskDescription = false;
+		}
 		//validateTasks = true; Currently failing with 500 error.  Take out Resty?
 		additionalReportColumns = "CharacteristicType, Template, ActionDetail";
 		
@@ -165,11 +171,14 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		subHierarchyECL = "<< 128477000 |Abscess (disorder)|"; //QI-214
 		templateNames = new String[] {	"templates/Abscess.json",
 										"templates/Abscess with Cellulitis.json"};
-		*/
+		
 		
 		subHierarchyECL = "<<428794004 |Fistula (disorder)|"; //QI-186
 		templateNames = new String[] {	"templates/Fistula.json" };
 		includeDueTos = true;
+		*/
+		subHierarchyECL = "< 64572001 |Disease (disorder)|"; 
+		templateNames = new String[] {	"templates/Disease.json" };
 		
 		super.init(args);
 		

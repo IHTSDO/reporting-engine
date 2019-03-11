@@ -16,6 +16,8 @@ import java.io.*;
 import java.security.GeneralSecurityException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.util.StringUtils;
@@ -27,9 +29,9 @@ public class ReportSheetManager implements RF2Constants {
 	private static final String APPLICATION_NAME = "SI Reporting Engine";
 	private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
 	private static final String CLIENT_SECRET_DIR = "secure/google-api-secret.json";
-	private static final int MAX_ROWS = 42000;
-	private static final int MAX_COLUMNS = 15;
-	private static final String MAX_COLUMN_STR = Character.toString((char)('A' + MAX_COLUMNS));
+	private static int MAX_ROWS = 42000;
+	private static int MAX_COLUMNS = 15;
+	private static String MAX_COLUMN_STR = Character.toString((char)('A' + MAX_COLUMNS));
 	private static final int MIN_REQUEST_RATE = 10;
 
 	Credential credential;
@@ -46,7 +48,14 @@ public class ReportSheetManager implements RF2Constants {
 	long totalLinesWritten = 0;
 	
 	public ReportSheetManager(ReportManager owner) {
-		this.owner = owner;	}
+		this.owner = owner;
+		if (!this.owner.getScript().safetyProtocolsEnabled()) {
+			MAX_ROWS = 99999;
+			MAX_COLUMNS = 11;
+			MAX_COLUMN_STR = Character.toString((char)('A' + MAX_COLUMNS));
+			TermServerScript.warn("Google Sheet size set to " + MAX_ROWS + " x " + MAX_COLUMNS);
+		}
+	}
 
 	/**
 	 * Creates an authorized Credential object.
@@ -189,7 +198,7 @@ public class ReportSheetManager implements RF2Constants {
 		//Are we getting close to the limits of what can be written?
 		if (dataToBeWritten.size() > 2000) {
 			System.err.println("Attempting to write > 2000 rows to sheets, pausing...");
-			try { Thread.sleep(5*1000); } catch (Exception e) {}
+			try { Thread.sleep(7*1000); } catch (Exception e) {}
 		}
 		
 		if (!delayWrite) {

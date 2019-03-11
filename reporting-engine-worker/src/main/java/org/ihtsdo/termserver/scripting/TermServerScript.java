@@ -1161,4 +1161,8 @@ public abstract class TermServerScript implements RF2Constants {
 	public void setReportName(String reportName) {
 		this.reportName = reportName;
 	}
+	
+	public boolean safetyProtocolsEnabled() {
+		return safetyProtocols;
+	}
 }
