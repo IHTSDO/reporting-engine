@@ -20,6 +20,7 @@ import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.Task;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import us.monoid.json.JSONObject;
 
@@ -106,7 +107,7 @@ public class FlattenHierarchy extends BatchFix implements RF2Constants{
 																		IS_A,
 																		ActiveState.ACTIVE));
 		String parentCount = Integer.toString(parentRels.size());
-		String attributeCount = Integer.toString(countAttributes(loadedConcept));
+		String attributeCount = Integer.toString(SnomedUtils.countAttributes(loadedConcept, CharacteristicType.STATED_RELATIONSHIP));
 		
 		if (expectedTarget == null) {
 			String expectedTargetStr = expectedTargetMap.get(loadedConcept.getConceptId());
@@ -392,16 +393,6 @@ public class FlattenHierarchy extends BatchFix implements RF2Constants{
 				}
 			}
 		}
-	}
-
-	private Integer countAttributes(Concept c) {
-		int attributeCount = 0;
-		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
-			if (!r.getType().equals(IS_A)) {
-				attributeCount++;
-			}
-		}
-		return attributeCount;
 	}
 
 	@Override

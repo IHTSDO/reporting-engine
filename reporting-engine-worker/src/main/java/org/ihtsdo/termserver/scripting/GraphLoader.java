@@ -51,10 +51,15 @@ public class GraphLoader implements RF2Constants {
 		singleton.concepts.put(SCTID_IS_A_CONCEPT.toString(), IS_A);
 		singleton.concepts.put(PHARM_BIO_PRODUCT.getConceptId(), PHARM_BIO_PRODUCT);
 		singleton.concepts.put(MEDICINAL_PRODUCT.getConceptId(), MEDICINAL_PRODUCT);
+		singleton.concepts.put(PHARM_DOSE_FORM.getConceptId(), PHARM_DOSE_FORM);
 		singleton.concepts.put(SUBSTANCE.getConceptId(), SUBSTANCE);
 		singleton.concepts.put(CLINICAL_FINDING.getConceptId(), CLINICAL_FINDING);
 		singleton.concepts.put(BODY_STRUCTURE.getConceptId(), BODY_STRUCTURE);
-		singleton.concepts.put(ORGANISM.getConceptId(), ORGANISM);
+		singleton.concepts.put(PROCEDURE.getConceptId(), PROCEDURE);
+		singleton.concepts.put(SITN_WITH_EXP_CONTXT.getConceptId(), SITN_WITH_EXP_CONTXT);
+		singleton.concepts.put(SPECIMEN.getConceptId(), SPECIMEN);
+		singleton.concepts.put(OBSERVABLE_ENTITY.getConceptId(),OBSERVABLE_ENTITY);
+		singleton.concepts.put(EVENT.getConceptId(),EVENT);
 	}
 
 	public Collection <Concept> getAllConcepts() {

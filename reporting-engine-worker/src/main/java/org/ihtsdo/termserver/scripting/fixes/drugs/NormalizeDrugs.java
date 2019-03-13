@@ -15,6 +15,7 @@ import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.Task;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.DrugTermGenerator;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import us.monoid.json.JSONObject;
 
@@ -64,7 +65,7 @@ public class NormalizeDrugs extends DrugBatchFix implements RF2Constants{
 				IS_A,
 				ActiveState.ACTIVE));
 		String parentCount = Integer.toString(parentRels.size());
-		String attributeCount = Integer.toString(countAttributes(loadedConcept));
+		String attributeCount = Integer.toString(SnomedUtils.countAttributes(loadedConcept, CharacteristicType.STATED_RELATIONSHIP));
 		int changes = replaceParents (task, loadedConcept, newParentRel, new String[] { parentCount, attributeCount });
 		
 		if (!loadedConcept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM)) {
@@ -85,7 +86,7 @@ public class NormalizeDrugs extends DrugBatchFix implements RF2Constants{
 					canFullyDefine = false;
 				}
 			} else {
-				canFullyDefine = countAttributes(loadedConcept) > 0;
+				canFullyDefine = SnomedUtils.countAttributes(loadedConcept, CharacteristicType.STATED_RELATIONSHIP) > 0;
 			}
 			
 			
@@ -108,16 +109,6 @@ public class NormalizeDrugs extends DrugBatchFix implements RF2Constants{
 			report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
 		}
 		return changes;
-	}
-
-	private Integer countAttributes(Concept c) {
-		int attributeCount = 0;
-		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
-			if (!r.getType().equals(IS_A)) {
-				attributeCount++;
-			}
-		}
-		return attributeCount;
 	}
 
 	@Override

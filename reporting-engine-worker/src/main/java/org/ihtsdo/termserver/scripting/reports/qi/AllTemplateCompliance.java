@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting.reports.qi;
 
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
@@ -15,14 +16,19 @@ import org.ihtsdo.termserver.scripting.template.TemplateUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+
 /**
  * See https://confluence.ihtsdotools.org/display/IAP/Quality+Improvements+2018
  * Update: https://confluence.ihtsdotools.org/pages/viewpage.action?pageId=61155633
+ * Update: RP-139
  */
 public class AllTemplateCompliance extends AllKnownTemplates implements ReportClass {
 	
 	Set<Concept> alreadyCounted = new HashSet<>();
 	Map<Concept, Integer> outOfScopeCache = new HashMap<>();
+	int totalTemplateMatches = 0;
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
 		Map<String, String> params = new HashMap<>();
@@ -30,9 +36,12 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 		TermServerReport.run(AllTemplateCompliance.class, args, params);
 	}
 	
-	public void init (JobRun jobRun) throws TermServerScriptException {
-		additionalReportColumns = "Domain, SemTag, Hierarchy (Total), Total Concepts in Domain, OutOfScope - Domain, OutOfScope - Hierarchy, Counted Elsewhere, Template Compliant, Templates Considered";
-		super.init(jobRun);
+	public void postInit() throws TermServerScriptException {
+		String[] columnHeadings = new String[] {"SCTID, Domain, SemTag, Hierarchy (Total), Total Concepts in Domain, OutOfScope - Domain, OutOfScope - Hierarchy, Counted Elsewhere, Template Compliant, Templates Considered", 
+												",KPI, Count"};
+		String[] tabNames = new String[] {	"Template Compliance", 
+											"Summary Stats / KPIs"};
+		super.postInit(tabNames, columnHeadings, false);
 	}
 
 	@Override
@@ -84,8 +93,51 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 				error ("Exception while processing domain " + domainStr, e);
 			}
 		}
+		reportKPIs();
 	}
 	
+	private void reportKPIs() throws TermServerScriptException {
+		//Total number of active concepts
+		long activeConcepts = gl.getAllConcepts().stream()
+							.filter(c -> c.isActive())
+							.count();
+		report (SECONDARY_REPORT, null, "Total number of active concepts", activeConcepts);
+		long inScope = calculateInScopeConcepts();
+		long outOfScope = activeConcepts - inScope;
+		report (SECONDARY_REPORT, null, "Out of scope (No model or non-clinical concepts, metadata, etc)", outOfScope);
+		report (SECONDARY_REPORT, null, "In Scope (should conform to a template)", inScope);
+		report (SECONDARY_REPORT, null, "Actually conform", totalTemplateMatches);
+		
+		DecimalFormat df = new DecimalFormat("##.##%");
+		double percentConformance = (totalTemplateMatches / (double)inScope);
+		String formattedPercentConformance = df.format(percentConformance);
+		report (SECONDARY_REPORT, null, "% of 'in scope' concepts that conform to a template", formattedPercentConformance);
+	}
+
+	private long calculateInScopeConcepts() throws TermServerScriptException {
+		info ("Obtaining count of concepts that are 'in scope'");
+		int inScopeCount = 0;
+		Concept[] inScope = new Concept[] { BODY_STRUCTURE, CLINICAL_FINDING,
+											PHARM_BIO_PRODUCT, PROCEDURE,
+											SITN_WITH_EXP_CONTXT, SPECIMEN,
+											OBSERVABLE_ENTITY, EVENT, 
+											PHARM_DOSE_FORM};
+		Set<Concept> allInScopeConcepts = new HashSet<>();
+		//We'll create a set to avoid double counting concepts in multiple TLHs
+		for (Concept subHierarchy : inScope) {
+			Set<Concept> concepts = gl.getDescendantsCache().getDescendentsOrSelf(subHierarchy);
+			info(subHierarchy + " contains " + concepts.size() + " concepts.");
+			allInScopeConcepts = ImmutableSet.copyOf(Iterables.concat(allInScopeConcepts, concepts));
+		}
+		//Now only count those concepts that have some non-ISA inferred attributes
+		for (Concept c : allInScopeConcepts) {
+			if (SnomedUtils.countAttributes(c, CharacteristicType.INFERRED_RELATIONSHIP) > 0) {
+				inScopeCount++;
+			}
+		}
+		return inScopeCount;
+	}
+
 	private int compare(Entry<String, List<Template>> entry1, Entry<String, List<Template>> entry2) {
 		//First sort on top level hierarchy
 		Concept c1 = gl.getConceptSafely(entry1.getKey());
@@ -155,6 +207,7 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 		
 		//Domain/SemTag, Hierarchy (Total), Total Concepts in Domain, OutOfScope - Domain, OutOfScope - Hierarchy, Counted Elsewhere, Template Compliant, Templates Considered";
 		report(domain, topHierarchyText, domainSize, noModelSize, outOfScope, countedElsewhere, templateMatches.size(), templatesConsidered);
+		totalTemplateMatches += templateMatches.size();
 	}
 	
 }

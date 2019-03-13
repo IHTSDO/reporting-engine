@@ -71,11 +71,17 @@ public interface RF2Constants {
 	static Concept ROOT_CONCEPT = new Concept (SCTID_ROOT_CONCEPT.toString(), "SNOMED CT Concept (SNOMED RT+CTV3)");
 	static Concept BODY_STRUCTURE = new Concept ("123037004","Body structure (body structure)|");
 	static Concept CLINICAL_FINDING = new Concept ("404684003", "Clinical finding (finding)");
+	static Concept PROCEDURE = new Concept ("71388002", "Procedure (procedure)");
+	static Concept SITN_WITH_EXP_CONTXT = new Concept ("243796009","Situation with explicit context (situation)");
+	static Concept SPECIMEN = new Concept("123038009","Specimen (specimen)");
 	static Concept COMPLICATION = new Concept ("116223007", "Complication (disorder)");
 	static Concept DISEASE = new Concept ("64572001", "Disease (disorder)");
+	static Concept EVENT = new Concept("272379006", "Event (event)");
+	
+	
 	static Concept CAUSE_AGENT = new Concept ("246075003","Causative agent (attribute)");
 	static Concept ASSOC_MORPH = new Concept ("116676008", "Associated morphology (attribute)");
-	static Concept OBSERVABLE_ENTITY = new Concept("363787002"); // |Observable entity (observable entity)|
+	static Concept OBSERVABLE_ENTITY = new Concept("363787002","Observable entity (observable entity)");
 	static Concept DUE_TO = new Concept("42752001", "Due to (attribute)");
 	static Concept AFTER = new Concept("255234002", "|After (attribute)|");
 	static Concept PART_OF = new Concept("123005000"); // |Part of (attribute)|
