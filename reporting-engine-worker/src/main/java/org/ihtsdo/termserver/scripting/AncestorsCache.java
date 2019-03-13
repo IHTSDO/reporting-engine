@@ -1,13 +1,11 @@
 package org.ihtsdo.termserver.scripting;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants;
+import org.ihtsdo.termserver.scripting.domain.*;
+
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 
 public class AncestorsCache implements RF2Constants {
 	
@@ -42,9 +40,9 @@ public class AncestorsCache implements RF2Constants {
 	}
 	
 	public Set<Concept> getAncestorsOrSelf (Concept c) throws TermServerScriptException {
-		Set<Concept> ancestors = new HashSet<>(getAncestors(c, true));
-		ancestors.add(c);
-		return ancestors;
+		Set<Concept> ancestors = getAncestors(c, false);
+		Set<Concept> orSelf = Collections.singleton(c);
+		return ImmutableSet.copyOf(Iterables.concat(ancestors, orSelf));
 	}
 	
 	/**
@@ -55,9 +53,7 @@ public class AncestorsCache implements RF2Constants {
 	 */
 	public Set<Concept> getAncestorsOrSelfSafely (Concept c) {
 		try {
-			Set<Concept> ancestors = getAncestors(c, true);
-			ancestors.add(c);
-			return Collections.unmodifiableSet(ancestors);
+			return getAncestorsOrSelf(c);
 		} catch (TermServerScriptException e) {
 			throw new IllegalArgumentException("Failed to calculate ancestors of " + c, e);
 		}

@@ -27,7 +27,7 @@ public class RelationshipGroup {
 		this.relationships = new ArrayList<>();
 	}
 	
-	RelationshipGroup (int groupId, List<Relationship> relationships) {
+	public RelationshipGroup (int groupId, List<Relationship> relationships) {
 		this.groupId = groupId;
 		this.relationships = relationships;
 	}

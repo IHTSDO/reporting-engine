@@ -271,7 +271,7 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 		setExclusions(new String[] {"236037000 |Incisional hernia (disorder)|", 
 									"372070002 |Gangrenous disorder (disorder)|",
 									"309753005 |Hiatus hernia with obstruction (disorder)|"});
-		templateNames = new String[] {"templates/Hernia of Body Structure.json" };
+		templateNames = new String[] {"templates/hernia/Hernia of Body Structure.json" };
 		exclusionWords.add("gangrene");
 		exclusionWords.add("obstruction");
 		exclusionWords.add("obstructed");

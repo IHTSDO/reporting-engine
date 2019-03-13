@@ -42,7 +42,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 	}
 	
 	protected void init(String[] args) throws TermServerScriptException {
-		//safetyProtocols = false;  
+		safetyProtocols = false;  //DON"T CHECK IN
 		reportNoChange = false;
 		selfDetermining = true;
 		runStandAlone = true;
@@ -176,16 +176,16 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		subHierarchyECL = "<<428794004 |Fistula (disorder)|"; //QI-186
 		templateNames = new String[] {	"templates/Fistula.json" };
 		includeDueTos = true;
-		
+		*/
 		subHierarchyECL = "< 64572001 |Disease (disorder)|"; 
 		templateNames = new String[] {	"templates/Disease.json" };
-		
+		/*
 		subHierarchyECL = "<<441457006 |Cyst|"; //QI-182
 		templateNames = new String[] {	"templates/Cyst.json" };
-		*/
+		
 		subHierarchyECL = "<< 109355002 |Carcinoma in situ (disorder)|"; //QI-231
 		templateNames = new String[] {	"templates/Carcinoma in Situ.json" };
-		
+		*/
 		super.init(args);
 		
 		//Ensure our ECL matches more than 0 concepts.  This will also cache the result

@@ -178,12 +178,20 @@ public class ArchiveManager implements RF2Constants {
 	}
 
 	private File getSnapshotPath() {
-		//Do we have a release effective time as a project?
-		if (StringUtils.isNumeric(ts.getProject().getKey())) {
+		//Do we have a release effective time as a project?  Or a branch release
+		String releaseBranch = detectReleaseBranch(ts.getProject().getKey());
+		if (releaseBranch != null) {
+			return new File (dataStoreRoot + "releases/" + releaseBranch + ".zip");
+		} else if (StringUtils.isNumeric(ts.getProject().getKey())) {
 			return new File (dataStoreRoot + "releases/" + ts.getProject() + ".zip");
 		} else {
 			return new File (dataStoreRoot + "snapshots/" + ts.getProject() + "_" + ts.getEnv());
 		}
+	}
+
+	private String detectReleaseBranch(String projectKey) {
+		String releaseBranch = projectKey.replace("MAIN/", "").replace("-", "");
+		return StringUtils.isNumeric(releaseBranch) ? releaseBranch : null;
 	}
 
 	protected void loadArchive(File archive, boolean fsnOnly, String fileType) throws TermServerScriptException, SnowOwlClientException {

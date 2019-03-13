@@ -1074,6 +1074,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 				return g;
 			}
 		}
+		if (true);
 		return null;
 	}
 	
@@ -1085,24 +1086,16 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		return group;
 	}
 	
-	public Collection<RelationshipGroup> getRelationshipGroups(CharacteristicType characteristicType) {
-		//Include group 0 by default
-		return getRelationshipGroups(characteristicType, ActiveState.ACTIVE, true);
-	}
-	
 	/**
 	 * Relationship groups will not include IS A relationships
 	 */
-	public Collection<RelationshipGroup> getRelationshipGroups(CharacteristicType characteristicType, ActiveState activeState, boolean includeGroup0) {
+	public Collection<RelationshipGroup> getRelationshipGroups(CharacteristicType characteristicType) {
 		Collection<RelationshipGroup> relationshipGroups = characteristicType.equals(CharacteristicType.STATED_RELATIONSHIP) ? statedRelationshipGroups : inferredRelationshipGroups;
 		if (relationshipGroups == null) {
 			Map<Integer, RelationshipGroup> groups = new HashMap<>();
 			//If we're including group 0, always add that in any event
-			if (includeGroup0) {
-				groups.put(UNGROUPED, new RelationshipGroup(UNGROUPED));
-			}
-			for (Relationship r : getRelationships(characteristicType, activeState)) {
-				if (r.getType().equals(IS_A) || (!includeGroup0 && r.getGroupId() == 0)) {
+			for (Relationship r : getRelationships(characteristicType, ActiveState.ACTIVE)) {
+				if (r.getType().equals(IS_A)) {
 					continue;
 				}
 				//Do we know about this Relationship Group yet?

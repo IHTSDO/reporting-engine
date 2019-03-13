@@ -19,13 +19,15 @@ import org.snomed.otf.scheduler.domain.*;
  * See https://confluence.ihtsdotools.org/display/IAP/Quality+Improvements+2018
  * Update: https://confluence.ihtsdotools.org/pages/viewpage.action?pageId=61155633
  */
-public class TemplateCompliance extends AllKnownTemplates implements ReportClass {
+public class AllTemplateCompliance extends AllKnownTemplates implements ReportClass {
 	
 	Set<Concept> alreadyCounted = new HashSet<>();
 	Map<Concept, Integer> outOfScopeCache = new HashMap<>();
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
-		TermServerReport.run(TemplateCompliance.class, args, null);
+		Map<String, String> params = new HashMap<>();
+		params.put(SERVER_URL, "https://authoring.ihtsdotools.org/template-service");
+		TermServerReport.run(AllTemplateCompliance.class, args, params);
 	}
 	
 	public void init (JobRun jobRun) throws TermServerScriptException {
@@ -104,7 +106,7 @@ public class TemplateCompliance extends AllKnownTemplates implements ReportClass
 		DescendentsCache cache = gl.getDescendantsCache();
 		
 		if (domain.getConceptId().equals("34014006")) {
-			debug ("Debug here");
+			//debug ("Debug here");
 		}
 		Set<Concept> subHierarchy = new HashSet<>(cache.getDescendentsOrSelf(domain));  //Clone as we need to modify
 		int domainSize = subHierarchy.size();

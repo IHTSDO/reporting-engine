@@ -97,7 +97,10 @@ public class AlignToTemplate extends TemplateFix {
 	private int alignAttributes(Task t, Concept c, AttributeGroup templateGroup) throws TermServerScriptException {
 		int changesMade = 0;
 		//Each group in the concept must features all the attributes from the template group.  Not Group 0
-		for (RelationshipGroup relGroup : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE, false)) {
+		for (RelationshipGroup relGroup : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
+			if (!relGroup.isGrouped()) {
+				continue;
+			}
 			for (Attribute a : templateGroup.getAttributes()) {
 				if (!isSpecialCircumstance(t, c, a, relGroup)) {
 					changesMade += ensureAttributePresent (t, c, a, relGroup.getGroupId());

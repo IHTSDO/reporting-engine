@@ -209,8 +209,8 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 								isIntermediate?"Yes":"No",
 								c.getDefinitionStatus(),
 								Integer.toString(countAttributes(c, CharacteristicType.STATED_RELATIONSHIP)),
-								Integer.toString(c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE, false).size()),
-								Integer.toString(c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE, false).size()),
+								Integer.toString(c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP).size() - 1),
+								Integer.toString(c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP).size() - 1),
 								getParentsWithDefnStatus(c)
 								);
 					}

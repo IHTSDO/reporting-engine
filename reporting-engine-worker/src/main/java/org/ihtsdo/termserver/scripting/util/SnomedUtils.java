@@ -952,6 +952,45 @@ public class SnomedUtils implements RF2Constants {
 		return false;
 	}
 	
+
+	/*Very similar to "moreSpecific", but here we're saying the type might be more 
+	 * specific and the value less so, or visa versa.
+	 * This will also pick up the "more specific" case, so check those first
+	 */
+	public static boolean inconsistentSubsumption(Relationship a, Relationship b, AncestorsCache cache) throws TermServerScriptException {
+		boolean sameType = false;
+		boolean subsumptionRelationshipType = false;
+		//Compare Types
+		if (a.getType().equals(b.getType())) {
+			sameType = true;
+		} else if (cache.getAncestors(a.getType()).contains(b.getType()) ||
+				cache.getAncestors(b.getType()).contains(a.getType())) {
+			subsumptionRelationshipType = true;
+		} else {
+			return false;
+		}
+		
+		//If type has some subsumption relationship how does value compare?
+		boolean sameValue = false;
+		boolean subsumptionRelationshipValue = false;
+		if (a.getTarget().equals(b.getTarget())) {
+			sameValue = true;
+		} else if (cache.getAncestors(a.getTarget()).contains(b.getTarget()) ||
+				cache.getAncestors(b.getTarget()).contains(a.getTarget())) {
+			subsumptionRelationshipValue = true;
+		} else {
+			return false;
+		}
+		
+		//If they're exactly the same, then it's not MORE specific
+		if (sameType && sameValue) {
+			return false;
+		} else if (subsumptionRelationshipType || subsumptionRelationshipValue) {
+			return true;
+		}
+		return false;
+	}
+	
 	/**
 	 * @return true if a is same or more specific than b
 	 * Note a may have more attributes than b, as long as all of b's attributes are 
@@ -1165,4 +1204,5 @@ public class SnomedUtils implements RF2Constants {
 		m.appendTail(sb);
 		return sb.toString();
 	}
+
 }

@@ -25,14 +25,17 @@ public abstract class TermServerReport extends TermServerScript {
 	
 	protected void report (int reportIdx, Component c, Object... details) throws TermServerScriptException {
 		String line = "";
-		if (c instanceof Concept) {
-			Concept concept = (Concept) c;
-			line = concept.getConceptId() + COMMA_QUOTE + 
-					 concept.getFsn() + QUOTE;
-		} else if (c instanceof Relationship) {
-			Relationship r = (Relationship) c;
-			line = r.getSourceId() + COMMA_QUOTE + 
-					r.toString() + QUOTE;
+		
+		if (c != null) {
+			if (c instanceof Concept) {
+				Concept concept = (Concept) c;
+				line = concept.getConceptId() + COMMA_QUOTE + 
+						 concept.getFsn() + QUOTE;
+			} else if (c instanceof Relationship) {
+				Relationship r = (Relationship) c;
+				line = r.getSourceId() + COMMA_QUOTE + 
+						r.toString() + QUOTE;
+			}
 		}
 		
 		for (Object detail : details) {

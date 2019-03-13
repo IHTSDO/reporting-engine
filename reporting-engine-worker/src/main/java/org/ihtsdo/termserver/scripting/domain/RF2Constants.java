@@ -12,8 +12,11 @@ public interface RF2Constants {
 	final Long SCTID_ROOT_CONCEPT = 138875005L;
 	final Long SCTID_IS_A_CONCEPT = 116680003L;
 	
+	final int PRIMARY_REPORT = 0;
 	final int SECONDARY_REPORT = 1;
 	final int TERTIARY_REPORT = 2;
+	final int QUATERNARY_REPORT = 3;
+	//quinary, senary, septenary, octonary, nonary, denary if you need more!
 	
 	static Concept IS_A =  new Concept ("116680003");  // | Is a (attribute) |
 	static Concept NULL_CONCEPT = new Concept ("-1");  

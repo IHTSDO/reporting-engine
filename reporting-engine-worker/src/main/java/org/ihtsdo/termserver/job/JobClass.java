@@ -5,7 +5,7 @@ import org.snomed.otf.scheduler.domain.Job;
 import org.snomed.otf.scheduler.domain.JobRun;
 
 public interface JobClass {
-
+	
 	public void postInit() throws TermServerScriptException;
 
 	public Job getJob();

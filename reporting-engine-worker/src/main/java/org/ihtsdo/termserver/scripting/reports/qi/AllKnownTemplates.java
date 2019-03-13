@@ -64,8 +64,7 @@ public abstract class AllKnownTemplates extends TermServerReport {
 		populateTemplates(subHierarchyStr, templateNames);
 		
 		subHierarchyStr = "74627003";  //QI-48 |Diabetic Complication|
-		templateNames = new String[] {	"templates/Complication co-occurrent and due to Diabetes Melitus.json",
-										"templates/Complication co-occurrent and due to Diabetes Melitus - Minimal.json"};
+		templateNames = new String[] {	"templates/Complication due to Diabetes Melitus.json"};
 		populateTemplates(subHierarchyStr, templateNames);
 		
 		subHierarchyStr = "8098009";	// QI-45 |Sexually transmitted infectious disease (disorder)| 
@@ -93,10 +92,6 @@ public abstract class AllKnownTemplates extends TermServerReport {
 		templateNames = new String[] {	"templates/wound/wound of bodysite.json" };
 		populateTemplates(subHierarchyStr, templateNames);
 		
-		subHierarchyStr = "128545000"; //QI-75 |Hernia of abdominal wall (disorder)|
-		templateNames = new String[] {	"templates/Hernia of Body Structure.json"};
-		populateTemplates(subHierarchyStr, templateNames);
-		
 		subHierarchyStr = "432119003 |Aneurysm (disorder)|"; //QI-143 
 		templateNames = new String[] {	"templates/Aneurysm of Cardiovascular system.json" };
 		populateTemplates(subHierarchyStr, templateNames);
@@ -114,7 +109,7 @@ public abstract class AllKnownTemplates extends TermServerReport {
 		populateTemplates(subHierarchyStr, templateNames);
 		
 		subHierarchyStr = "52515009 |Hernia of abdominal cavity|"; //QI-172
-		templateNames = new String[] {"templates/Hernia of Body Structure.json" };
+		templateNames = new String[] {"templates/hernia/Hernia of Body Structure.json" };
 		populateTemplates(subHierarchyStr, templateNames);
 		
 		subHierarchyStr = "312608009 |Laceration - injury|"; //QI-177
@@ -129,8 +124,34 @@ public abstract class AllKnownTemplates extends TermServerReport {
 		templateNames = new String[] {	"templates/Fistula.json" };
 		populateTemplates(subHierarchyStr, templateNames);
 		
-		subHierarchyECL = "441457006 |Cyst|"; //QI-181
+		subHierarchyStr = "441457006 |Cyst|"; //QI-181
 		templateNames = new String[] {	"templates/Cyst.json" };
+		populateTemplates(subHierarchyStr, templateNames);
+		
+		subHierarchyStr = "128477000 |Abscess (disorder)|"; //QI-213
+		templateNames = new String[] {	"templates/Abscess.json",
+										"templates/Abscess with Cellulitis.json"};
+		populateTemplates(subHierarchyStr, templateNames);
+		
+		subHierarchyStr = "416462003 |Wound (disorder)|"; //QI-209
+		templateNames = new String[] {	"templates/wound/wound of bodysite.json",
+										"templates/wound/wound of bodysite due to event.json"};
+		populateTemplates(subHierarchyStr, templateNames);
+		
+		subHierarchyStr = "125670008 |Foreign body (disorder)|"; //QI-156
+		templateNames = new String[] {	"templates/Foreign body.json" };
+		populateTemplates(subHierarchyStr, templateNames);
+		
+		subHierarchyStr = "193570009 |Cataract (disorder)|"; //MQI-7
+		templateNames = new String[] {	"templates/Cataract.json" };
+		populateTemplates(subHierarchyStr, templateNames);
+		
+		subHierarchyStr = "429040005 |Ulcer (disorder)|"; //QI-248
+		templateNames = new String[] {	"templates/Ulcer.json" };
+		populateTemplates(subHierarchyStr, templateNames);
+		
+		subHierarchyStr = "109355002 |Carcinoma in situ (disorder)|"; //QI-231
+		templateNames = new String[] {	"templates/Carcinoma in Situ.json" };
 		populateTemplates(subHierarchyStr, templateNames);
 		
 		populateTemplatesFromTS();
