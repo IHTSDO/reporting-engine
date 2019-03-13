@@ -166,12 +166,17 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 			}
 		}
 		int ipCount = 0;
+		int orphanetIPs = 0;
 		for (Concept c : gl.getAllConcepts()) {
 			if (c.getIssues() != null && c.getIssues().equals(IP)) {
 				ipCount++;
+				if (gl.isOrphanetConcept(c)) {
+					orphanetIPs++;
+				}
 			}
 		}
 		report (PRIMARY_REPORT, null, "Number of Intermediate Primitives", ipCount);
+		report (PRIMARY_REPORT, null, "Of which Orphanet", orphanetIPs);
 	}
 	
 	private boolean containsFdConcept(Collection<Concept> concepts) {

@@ -189,7 +189,7 @@ public class ArchiveManager implements RF2Constants {
 		}
 	}
 
-	private String detectReleaseBranch(String projectKey) {
+	public String detectReleaseBranch(String projectKey) {
 		String releaseBranch = projectKey.replace("MAIN/", "").replace("-", "");
 		return StringUtils.isNumeric(releaseBranch) ? releaseBranch : null;
 	}

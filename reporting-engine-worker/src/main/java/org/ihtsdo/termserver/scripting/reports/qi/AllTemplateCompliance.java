@@ -166,20 +166,22 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 		Set<Concept> topLevelHierarchy = cache.getDescendentsOrSelf(topLevelConcept);
 		int topLevelHierarchySize = topLevelHierarchy.size();
 		
-		//How much of the top level hierarchy is out of scope due to have no model?
+		//How much of the top level hierarchy is out of scope due to have no model, or Oprhanet
 		//Cache this, it's expensive!
-		
 		Integer outOfScope = outOfScopeCache.get(topLevelConcept);
 		if (outOfScope == null) {
 			outOfScope = topLevelHierarchy.stream()
-					.filter(c -> countAttributes(c, CharacteristicType.INFERRED_RELATIONSHIP) == 0)
+					.filter(c -> countAttributes(c, CharacteristicType.INFERRED_RELATIONSHIP) == 0 ||
+							gl.isOrphanetConcept(c))
 					.collect(Collectors.toSet()).size();
 			outOfScopeCache.put(topLevelConcept, outOfScope);
 		}
 
 		//Now how many of these are we removing because they have no model?
+		//OR Orphanet
 		Set<Concept> noModel = subHierarchy.stream()
-				.filter(c -> countAttributes(c, CharacteristicType.INFERRED_RELATIONSHIP) == 0)
+				.filter(c -> countAttributes(c, CharacteristicType.INFERRED_RELATIONSHIP) == 0 ||
+						gl.isOrphanetConcept(c))
 				.collect(Collectors.toSet());
 		int noModelSize = noModel.size();
 		subHierarchy.removeAll(noModel);

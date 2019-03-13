@@ -120,7 +120,10 @@ public class ReportManager implements RF2Constants {
 	}
 
 	public String getEnv() {
-		return env;
+		//If we're working against a published release, then the environment isn't relevant
+		String projKey = getScript().getProject().getKey();
+		String releaseBranch = getScript().getArchiveManager().detectReleaseBranch(projKey);
+		return releaseBranch == null ? env : releaseBranch;
 	}
 	
 	public String getUrl() {
