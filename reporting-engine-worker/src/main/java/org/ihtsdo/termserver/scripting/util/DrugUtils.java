@@ -154,14 +154,19 @@ public class DrugUtils implements RF2Constants {
 		if (substanceMap == null) {
 			populateSubstanceMap();
 		}
+		Concept substance;
 		substanceName = substanceName.toLowerCase().trim();
 		if (!substanceMap.containsKey(substanceName)) {
-			throw new TermServerScriptException("Unable to identify substance : " + substanceName);
-		}
-		
-		Concept substance = substanceMap.get(substanceName);
-		if (dangerousSubstances.contains(substance)) {
-			TermServerScript.warn("Lookup performed on substance that isn't uniquely named: '" + substanceName +"'. Using " + substance);
+			//Do we have an SCTID|FSN?
+			substance = GraphLoader.getGraphLoader().getConcept(substanceName, false, false); //Don't create, don't validate
+			if (substance == null) {
+				throw new TermServerScriptException("Unable to identify substance : " + substanceName);
+			}
+		} else {
+			substance = substanceMap.get(substanceName);
+			if (dangerousSubstances.contains(substance)) {
+				TermServerScript.warn("Lookup performed on substance that isn't uniquely named: '" + substanceName +"'. Using " + substance);
+			}
 		}
 		return substance;
 	}
