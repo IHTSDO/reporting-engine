@@ -25,7 +25,7 @@ public class HierarchyConceptsNotInFileReport extends TermServerScript{
 	String file2Purpose = "UsedToDefineConcepts";
 	String hierarchy = "49062001"; // |Device (physical object)|
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
 		HierarchyConceptsNotInFileReport report = new HierarchyConceptsNotInFileReport();
 		try {
 			report.init(args);

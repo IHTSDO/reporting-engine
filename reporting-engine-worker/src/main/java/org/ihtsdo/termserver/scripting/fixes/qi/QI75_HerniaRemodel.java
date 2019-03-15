@@ -7,7 +7,7 @@ import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -34,7 +34,7 @@ public class QI75_HerniaRemodel extends BatchFix {
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException, InterruptedException {
 		QI75_HerniaRemodel fix = new QI75_HerniaRemodel(null);
 		try {
 			fix.populateEditPanel = true;

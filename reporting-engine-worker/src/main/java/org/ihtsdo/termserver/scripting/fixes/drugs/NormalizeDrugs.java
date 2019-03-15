@@ -7,7 +7,7 @@ import java.util.List;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
@@ -34,7 +34,7 @@ public class NormalizeDrugs extends DrugBatchFix implements RF2Constants{
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException, InterruptedException {
 		NormalizeDrugs fix = new NormalizeDrugs(null);
 		try {
 			fix.reportNoChange = true;

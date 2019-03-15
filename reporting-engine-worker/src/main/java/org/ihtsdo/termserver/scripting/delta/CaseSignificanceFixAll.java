@@ -7,7 +7,7 @@ import java.util.*;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.ihtsdo.termserver.scripting.util.StringUtils;
@@ -33,7 +33,7 @@ public class CaseSignificanceFixAll extends DeltaGenerator implements RF2Constan
 		this.mode = mode;
 	}
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException, InterruptedException {
 		CaseSignificanceFixAll delta = new CaseSignificanceFixAll(null, Mode.REPORT_CHANGE);
 		try {
 			delta.newIdsRequired = false; // We'll only be modifying existing descriptions\

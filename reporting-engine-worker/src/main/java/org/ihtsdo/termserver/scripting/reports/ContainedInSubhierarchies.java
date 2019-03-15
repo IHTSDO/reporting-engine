@@ -5,7 +5,7 @@ import java.io.PrintStream;
 import java.text.DecimalFormat;
 import java.util.*;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
@@ -26,7 +26,7 @@ public class ContainedInSubhierarchies extends TermServerReport {
 	int contained = 0;
 	int notContained = 0;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
 		ContainedInSubhierarchies report = new ContainedInSubhierarchies();
 		try {
 			report.additionalReportColumns = "FSN, Contained by";

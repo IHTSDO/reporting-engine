@@ -9,7 +9,7 @@ import java.util.Map;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
@@ -38,7 +38,7 @@ public class NormalizeGroupersViaDisposition extends DrugBatchFix implements RF2
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException, InterruptedException {
 		NormalizeGroupersViaDisposition fix = new NormalizeGroupersViaDisposition(null);
 		try {
 			fix.inputFileHasHeaderRow = true;

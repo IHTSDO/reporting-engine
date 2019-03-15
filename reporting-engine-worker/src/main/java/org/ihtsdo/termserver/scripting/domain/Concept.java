@@ -30,7 +30,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	
 	@SerializedName("fsn")
 	@Expose
-	private String fsn;
+	private Object fsn;
 	@SerializedName("definitionStatus")
 	@Expose
 	private DefinitionStatus definitionStatus;
@@ -166,7 +166,10 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	}
 
 	public String getFsn() {
-		return fsn;
+		if (fsn != null)
+			return fsn.toString();
+		
+		return null;
 	}
 
 	public void setFsn(String fsn) {
@@ -389,7 +392,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 			return conceptId.hashCode();
 		
 		//Where a conceptId does not exist, hash the FSN
-		if (fsn !=null && !fsn.trim().isEmpty()) {
+		if (fsn !=null && !getFsn().trim().isEmpty()) {
 			return fsn.hashCode();
 		}
 		
@@ -409,7 +412,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		}
 		
 		//Otherwise, compare FSNs or expressions
-		if (this.fsn != null && !this.fsn.isEmpty() && rhs.fsn != null && !rhs.fsn.isEmpty()) {
+		if (this.fsn != null && !this.getFsn().isEmpty() && rhs.fsn != null && !rhs.getFsn().isEmpty()) {
 			return (this.fsn.equals(rhs.fsn));
 		}
 		String thisExpression = this.toExpression(CharacteristicType.STATED_RELATIONSHIP);
@@ -962,7 +965,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 
 	@Override
 	public String getReportedName() {
-		return fsn;
+		return getFsn();
 	}
 
 	@Override

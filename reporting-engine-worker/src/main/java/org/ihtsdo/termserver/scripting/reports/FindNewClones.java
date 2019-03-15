@@ -5,7 +5,7 @@ import java.util.*;
 
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -27,7 +27,7 @@ public class FindNewClones extends TermServerReport implements ReportClass {
 	Map<String, List<Concept>> sourceMap = new HashMap<>();
 	Map<String, Concept> targetMap = new HashMap<>();
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
 		Map<String, String> params = new HashMap<>();
 		params.put(SUB_HIERARCHY, CLINICAL_FINDING.getConceptId());
 		params.put(TARGET_SEMTAG, "(finding)");

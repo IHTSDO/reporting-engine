@@ -6,8 +6,8 @@ import java.util.*;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClient;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.client.TermServerClient;
+import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.domain.*;
 
 import us.monoid.json.JSONObject;
@@ -24,12 +24,12 @@ public class InactivateDuplicateInactivationIndicators_fail extends BatchFix imp
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException, InterruptedException {
 		InactivateDuplicateInactivationIndicators_fail fix = new InactivateDuplicateInactivationIndicators_fail(null);
 		try {
 			fix.selfDetermining = true;
 			fix.populateEditPanel = false;
-			SnowOwlClient.supportsIncludeUnpublished = false;   //This code not yet available in MS
+			TermServerClient.supportsIncludeUnpublished = false;   //This code not yet available in MS
 			fix.tsRoot="MAIN/2017-01-31/SNOMEDCT-US/";
 			fix.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts

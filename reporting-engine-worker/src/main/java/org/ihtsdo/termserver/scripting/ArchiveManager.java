@@ -10,7 +10,7 @@ import java.util.zip.*;
 
 import org.apache.commons.io.FileUtils;
 import org.ihtsdo.termserver.scripting.client.*;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClient.*;
+import org.ihtsdo.termserver.scripting.client.TermServerClient.*;
 import org.ihtsdo.termserver.scripting.dao.ReportManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.snapshot.SnapshotGenerator;
@@ -60,8 +60,8 @@ public class ArchiveManager implements RF2Constants {
 			debug ("Checking TS branch metadata: " + branchPath);
 			server = ts.getTSClient().getUrl();
 			Branch branch = ts.getTSClient().getBranch(branchPath);
-			//TODO Merge metadata from parent branches recursively, but for now, if empty, recover parent
-			if (branch.getMetadata().getPreviousRelease() == null) {
+			//If empty, recover parent
+			if (branch.getMetadata() == null || branch.getMetadata().getPreviousRelease() == null) {
 				Branch parent = loadBranch(new Project().withBranchPath("MAIN"));
 				branch.setMetadata(parent.getMetadata());
 			}
@@ -75,7 +75,7 @@ public class ArchiveManager implements RF2Constants {
 		}
 	}
 
-	public void loadProjectSnapshot(boolean fsnOnly) throws SnowOwlClientException, TermServerScriptException, InterruptedException, IOException {
+	public void loadProjectSnapshot(boolean fsnOnly) throws TermServerClientException, TermServerScriptException, InterruptedException, IOException {
 		//Look for an expanded directory by preference
 		File snapshot = getSnapshotPath();
 		if (!snapshot.exists()) {
@@ -139,7 +139,7 @@ public class ArchiveManager implements RF2Constants {
 		currentlyHeldInMemory = ts.getProject();
 	}
 	
-	private File generateSnapshot(Project project, Branch branch) throws TermServerScriptException, IOException, SnowOwlClientException {
+	private File generateSnapshot(Project project, Branch branch) throws TermServerScriptException, IOException, TermServerClientException {
 		//We need to know the previous release to base our snapshot on
 		if (branch == null) {
 			branch = loadBranch(project);
@@ -194,7 +194,7 @@ public class ArchiveManager implements RF2Constants {
 		return StringUtils.isNumeric(releaseBranch) ? releaseBranch : null;
 	}
 
-	protected void loadArchive(File archive, boolean fsnOnly, String fileType) throws TermServerScriptException, SnowOwlClientException {
+	protected void loadArchive(File archive, boolean fsnOnly, String fileType) throws TermServerScriptException, TermServerClientException {
 		try {
 			boolean isDelta = (fileType.equals(DELTA));
 			//Are we loading an expanded or compressed archive?
@@ -224,7 +224,7 @@ public class ArchiveManager implements RF2Constants {
 		}
 	}
 
-	private void loadArchiveZip(File archive, boolean fsnOnly, String fileType, boolean isDelta) throws IOException, TermServerScriptException, SnowOwlClientException {
+	private void loadArchiveZip(File archive, boolean fsnOnly, String fileType, boolean isDelta) throws IOException, TermServerScriptException, TermServerClientException {
 		ZipInputStream zis = new ZipInputStream(new FileInputStream(archive));
 		ZipEntry ze = zis.getNextEntry();
 		try {
@@ -308,7 +308,7 @@ public class ArchiveManager implements RF2Constants {
 				info("Loading Language Reference Set File - " + fileName);
 				gl.loadLanguageFile(is);
 			}
-		} catch (TermServerScriptException | IOException | SnowOwlClientException e) {
+		} catch (TermServerScriptException | IOException | TermServerClientException e) {
 			throw new IllegalArgumentException("Unable to load " + path, e);
 		}
 	}

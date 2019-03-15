@@ -9,7 +9,7 @@ import java.util.Set;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
@@ -39,7 +39,7 @@ public class FixIncorrectModuleId extends BatchFix implements RF2Constants{
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException, InterruptedException {
 		FixIncorrectModuleId fix = new FixIncorrectModuleId(null);
 		try {
 			fix.init(args);
@@ -111,7 +111,7 @@ public class FixIncorrectModuleId extends BatchFix implements RF2Constants{
 		return changesMade;
 	}
 
-	private void loadEntriesToFix() throws IOException, SnowOwlClientException, TermServerScriptException {
+	private void loadEntriesToFix() throws IOException, TermServerClientException, TermServerScriptException {
 		List<String> lines = Files.readLines(inputFile, Charsets.UTF_8);
 		info ("Loading affected description ids from " + inputFile);
 		for (String line : lines) {

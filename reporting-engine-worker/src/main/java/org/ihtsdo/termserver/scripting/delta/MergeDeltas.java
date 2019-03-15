@@ -17,7 +17,7 @@ import java.util.zip.ZipInputStream;
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.termserver.scripting.FlatFileLoader;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.domain.Rf2File;
 import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
@@ -34,7 +34,7 @@ public class MergeDeltas extends DeltaGenerator {
 	File fixDeltaFile;
 	Long publishedEffectiveTime = 20180131L;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException, InterruptedException {
 		MergeDeltas app = new MergeDeltas();
 		try {
 			app.newIdsRequired = false;
@@ -67,7 +67,7 @@ public class MergeDeltas extends DeltaGenerator {
 		}
 	}
 	
-	private void doMerge() throws TermServerScriptException, SnowOwlClientException, FileNotFoundException, IOException {
+	private void doMerge() throws TermServerScriptException, TermServerClientException, FileNotFoundException, IOException {
 		//First load in the current state
 		currentDelta.loadArchive(inputFile);
 		

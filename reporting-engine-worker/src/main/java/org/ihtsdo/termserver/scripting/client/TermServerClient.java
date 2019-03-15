@@ -7,7 +7,6 @@ import java.text.SimpleDateFormat;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -21,19 +20,14 @@ import org.springframework.http.converter.json.GsonHttpMessageConverter;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
-import us.monoid.json.JSONArray;
-import us.monoid.json.JSONException;
-import us.monoid.json.JSONObject;
-import us.monoid.web.AbstractContent;
-import us.monoid.web.BinaryResource;
-import us.monoid.web.JSONResource;
-import us.monoid.web.Resty;
+import us.monoid.json.*;
+import us.monoid.web.*;
 
 import com.google.common.base.Preconditions;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-public class SnowOwlClient {
+public class TermServerClient {
 	
 	public enum ExtractType {
 		DELTA, SNAPSHOT, FULL;
@@ -65,7 +59,7 @@ public class SnowOwlClient {
 	private Logger logger = LoggerFactory.getLogger(getClass());
 	public static boolean supportsIncludeUnpublished = true;
 
-	public SnowOwlClient(String serverUrl, String cookie) {
+	public TermServerClient(String serverUrl, String cookie) {
 		this.url = serverUrl;
 		eventListeners = new HashSet<>();
 		resty = new Resty(new RestyOverrideAccept(ALL_CONTENT_TYPE));
@@ -92,14 +86,14 @@ public class SnowOwlClient {
 		}); 
 	}
 	
-	public Branch getBranch(String branchPath) throws SnowOwlClientException {
+	public Branch getBranch(String branchPath) throws TermServerClientException {
 		try {
 			String url = getBranchesPath(branchPath);
 			logger.debug("Recovering branch information from " + url);
 			return restTemplate.getForObject(url, Branch.class);
 		} catch (RestClientException e) {
 			
-			throw new SnowOwlClientException(translateRestClientException(e));
+			throw new TermServerClientException(translateRestClientException(e));
 		}
 	}
 
@@ -114,18 +108,18 @@ public class SnowOwlClient {
 		return e;
 	}
 
-	public JSONResource createConcept(JSONObject json, String branchPath) throws SnowOwlClientException {
+	public JSONResource createConcept(JSONObject json, String branchPath) throws TermServerClientException {
 		final JSONResource newConcept;
 		try {
 			newConcept = resty.json(getConceptBrowserPath(branchPath), RestyHelper.content(json, SNOWOWL_CONTENT_TYPE));
 			logger.info("Created concept " + newConcept.get("conceptId") + " |" + newConcept.get("fsn") + "|");
 			return newConcept;
 		} catch (Exception e) {
-			throw new SnowOwlClientException(e);
+			throw new TermServerClientException(e);
 		}
 	}
 
-	public JSONResource updateConcept(JSONObject concept, String branchPath) throws SnowOwlClientException {
+	public JSONResource updateConcept(JSONObject concept, String branchPath) throws TermServerClientException {
 		try {
 			JSONResource response = null;
 			final String id = concept.getString("conceptId");
@@ -140,7 +134,7 @@ public class SnowOwlClient {
 				} catch (Exception e) {
 					tries++;
 					if (tries >= MAX_TRIES) {
-						throw new SnowOwlClientException("Failed to update concept " + id + " after " + tries + " attempts due to " + e.getMessage() + "\nJSON representation: " + concept.toString(), e);
+						throw new TermServerClientException("Failed to update concept " + id + " after " + tries + " attempts due to " + e.getMessage() + "\nJSON representation: " + concept.toString(), e);
 					}
 					logger.debug("Update of concept failed, trying again....",e);
 					Thread.sleep(30*1000); //Give the server 30 seconds to recover
@@ -148,28 +142,41 @@ public class SnowOwlClient {
 			}
 			return response;
 		} catch (Exception e) {
-			throw new SnowOwlClientException(e);
+			throw new TermServerClientException(e);
 		}
 	}
 
-	public JSONResource getConcept(String sctid, String branchPath) throws SnowOwlClientException {
+	public JSONResource getConcept(String sctid, String branchPath) throws TermServerClientException {
 		try {
 			return resty.json(getConceptBrowserPath(branchPath) + "/" + sctid);
 		} catch (IOException e) {
-			throw new SnowOwlClientException(e);
+			throw new TermServerClientException(e);
 		}
 	}
 
-	public void deleteConcept(String sctId, String branchPath) throws SnowOwlClientException {
+	public void deleteConcept(String sctId, String branchPath) throws TermServerClientException {
 		try {
 			resty.json(getConceptsPath(sctId, branchPath), Resty.delete());
 			logger.info("Deleted concept " + sctId + " from " + branchPath);
 		} catch (Exception e) {
-			throw new SnowOwlClientException(e);
+			throw new TermServerClientException(e);
+		}
+	}
+	
+	public JSONResource getConcepts(String ecl, String branchPath, String searchAfter, int limit) throws TermServerClientException {
+		try {
+			String url = getConceptsPath(branchPath) + "?active=true&limit=" + limit + "&ecl=" + URLEncoder.encode(ecl, "UTF-8");
+			if (!StringUtils.isEmpty(searchAfter)) {
+				url += "&searchAfter=" + searchAfter;
+			}
+			System.out.println("Calling " + url);
+			return resty.json(url);
+		} catch (IOException e) {
+			throw new TermServerClientException(e);
 		}
 	}
 
-	public JSONResource getConcepts(String ecl, String branchPath, int offset, String searchAfter, int limit) throws SnowOwlClientException {
+	/*public JSONResource getConcepts(String ecl, String branchPath, int offset, String searchAfter, int limit) throws TermServerClientException {
 		try {
 			String url = getConceptsPath(branchPath) + "?active=true&limit=" + limit + "&offset=" + offset + "&ecl=" + URLEncoder.encode(ecl, "UTF-8");
 			if (!StringUtils.isEmpty(searchAfter)) {
@@ -178,9 +185,9 @@ public class SnowOwlClient {
 			System.out.println("Calling " + url);
 			return resty.json(url);
 		} catch (IOException e) {
-			throw new SnowOwlClientException(e);
+			throw new TermServerClientException(e);
 		}
-	}
+	}*/
 	
 	private String getBranchesPath(String branchPath) {
 		return  url + "/branches/" + branchPath;
@@ -202,7 +209,7 @@ public class SnowOwlClient {
 		return url  + "/" + branchPath + "/descriptions/" + id;
 	}
 
-	public String createBranch(String parent, String branchName) throws SnowOwlClientException {
+	public String createBranch(String parent, String branchName) throws TermServerClientException {
 		try {
 			JSONObject jsonObject = new JSONObject();
 			jsonObject.put("parent", parent);
@@ -215,11 +222,11 @@ public class SnowOwlClient {
 			}
 			return branchPath;
 		} catch (Exception e) {
-			throw new SnowOwlClientException(e);
+			throw new TermServerClientException(e);
 		}
 	}
 
-	public void mergeBranch(String source, String target) throws SnowOwlClientException {
+	public void mergeBranch(String source, String target) throws TermServerClientException {
 		try {
 			final JSONObject json = new JSONObject();
 			json.put("source", source);
@@ -229,32 +236,32 @@ public class SnowOwlClient {
 			logger.info(message);
 			resty.json(url + "/merges", RestyHelper.content(json, SNOWOWL_CONTENT_TYPE));
 		} catch (Exception e) {
-			throw new SnowOwlClientException(e);
+			throw new TermServerClientException(e);
 		}
 	}
 
-	public void deleteBranch(String branchPath) throws SnowOwlClientException {
+	public void deleteBranch(String branchPath) throws TermServerClientException {
 		try {
 			resty.json(url + "/branches/" + branchPath, Resty.delete());
 			logger.info("Deleted branch {}", branchPath);
 		} catch (IOException e) {
-			throw new SnowOwlClientException(e);
+			throw new TermServerClientException(e);
 		}
 	}
 
-	public JSONResource search(String query, String branchPath) throws SnowOwlClientException {
+	public JSONResource search(String query, String branchPath) throws TermServerClientException {
 		try {
 			return resty.json(url + "/browser/" + branchPath + "/descriptions?query=" + query);
 		} catch (IOException e) {
-			throw new SnowOwlClientException(e);
+			throw new TermServerClientException(e);
 		}
 	}
 
-	public JSONResource searchWithPT(String query, String branchPath) throws SnowOwlClientException {
+	public JSONResource searchWithPT(String query, String branchPath) throws TermServerClientException {
 		try {
 			return resty.json(url + "/browser/" + branchPath + "/descriptions-pt?query=" + query);
 		} catch (IOException e) {
-			throw new SnowOwlClientException(e);
+			throw new TermServerClientException(e);
 		}
 	}
 
@@ -270,7 +277,7 @@ public class SnowOwlClient {
 	 * @throws JSONException
 	 * @throws InterruptedException
 	 */
-	public String classifyAndWaitForComplete(String branchPath) throws SnowOwlClientException {
+	public String classifyAndWaitForComplete(String branchPath) throws TermServerClientException {
 		try {
 			final JSONObject json = new JSONObject();
 			json.put("reasonerId", "org.semanticweb.elk.elk.reasoner.factory");
@@ -290,10 +297,10 @@ public class SnowOwlClient {
 			if ("COMPLETED".equals(status)) {
 				return location.substring(location.lastIndexOf("/"));
 			} else {
-				throw new SnowOwlClientException("Unexpected classification state " + status);
+				throw new TermServerClientException("Unexpected classification state " + status);
 			}
 		} catch (Exception e) {
-			throw new SnowOwlClientException(e);
+			throw new TermServerClientException(e);
 		}
 	}
 
@@ -310,12 +317,12 @@ public class SnowOwlClient {
 		return url;
 	}
 
-	public JSONArray getMergeReviewDetails(String mergeReviewId) throws SnowOwlClientException {
+	public JSONArray getMergeReviewDetails(String mergeReviewId) throws TermServerClientException {
 		logger.info("Getting merge review {}", mergeReviewId);
 		try {
 			return resty.json(getMergeReviewUrl(mergeReviewId) + "/details").array();
 		} catch (Exception e) {
-			throw new SnowOwlClientException(e);
+			throw new TermServerClientException(e);
 		}
 	}
 
@@ -323,18 +330,18 @@ public class SnowOwlClient {
 		return this.url + "/merge-reviews/" + mergeReviewId;
 	}
 
-	public void saveConceptMerge(String mergeReviewId, JSONObject mergedConcept) throws SnowOwlClientException {
+	public void saveConceptMerge(String mergeReviewId, JSONObject mergedConcept) throws TermServerClientException {
 		try {
 			String id = ConceptHelper.getConceptId(mergedConcept);
 			logger.info("Saving merged concept {} for merge review {}", id, mergeReviewId);
 			resty.json(getMergeReviewUrl(mergeReviewId) + "/" + id, RestyHelper.content(mergedConcept, SNOWOWL_CONTENT_TYPE));
 		} catch (JSONException | IOException e) {
-			throw new SnowOwlClientException(e);
+			throw new TermServerClientException(e);
 		}
 	}
 
 	public File export(String branchPath, String effectiveDate, ExportType exportType, ExtractType extractType, File saveLocation)
-			throws SnowOwlClientException {
+			throws TermServerClientException {
 		JSONObject jsonObj = prepareExportJSON(branchPath, effectiveDate, exportType, extractType);
 		logger.info ("Initiating export with {}",jsonObj.toString());
 		String exportLocationURL = initiateExport(jsonObj);
@@ -343,7 +350,7 @@ public class SnowOwlClient {
 	}
 	
 	private JSONObject prepareExportJSON(String branchPath, String effectiveDate, ExportType exportType, ExtractType extractType)
-			throws SnowOwlClientException {
+			throws TermServerClientException {
 		JSONObject jsonObj = new JSONObject();
 		try {
 			jsonObj.put("type", extractType);
@@ -352,7 +359,7 @@ public class SnowOwlClient {
 				case MIXED:  //Snapshot allows for both published and unpublished, where unpublished
 					//content would get the transient effective Date
 					if (!extractType.equals(ExtractType.SNAPSHOT)) {
-						throw new SnowOwlClientException("Export type " + exportType + " not recognised");
+						throw new TermServerClientException("Export type " + exportType + " not recognised");
 					}
 					if (supportsIncludeUnpublished) {
 						jsonObj.put("includeUnpublished", true);
@@ -366,7 +373,7 @@ public class SnowOwlClient {
 					break;
 				case PUBLISHED:
 					if (effectiveDate == null) {
-						throw new SnowOwlClientException("Cannot export published data without an effective date");
+						throw new TermServerClientException("Cannot export published data without an effective date");
 					}
 					jsonObj.put("deltaStartEffectiveTime", effectiveDate);
 					jsonObj.put("deltaEndEffectiveTime", effectiveDate);
@@ -374,31 +381,31 @@ public class SnowOwlClient {
 					break;
 				
 				default:
-					throw new SnowOwlClientException("Export type " + exportType + " not recognised");
+					throw new TermServerClientException("Export type " + exportType + " not recognised");
 			}
 		} catch (JSONException e) {
-			throw new SnowOwlClientException("Failed to prepare JSON for export request.", e);
+			throw new TermServerClientException("Failed to prepare JSON for export request.", e);
 		}
 		return jsonObj;
 	}
 
-	private String initiateExport(JSONObject jsonObj) throws SnowOwlClientException {
+	private String initiateExport(JSONObject jsonObj) throws TermServerClientException {
 		try {
 			JSONResource jsonResponse = resty.json(url + "/exports", RestyHelper.content(jsonObj, SNOWOWL_CONTENT_TYPE));
 			Object exportLocationURLObj = jsonResponse.getUrlConnection().getHeaderField("Location");
 			if (exportLocationURLObj == null) {
-				throw new SnowOwlClientException("Failed to obtain location of export:");
+				throw new TermServerClientException("Failed to obtain location of export:");
 			} else {
 				logger.info ("Recovering export from {}",exportLocationURLObj.toString());
 			}
 			return exportLocationURLObj.toString() + "/archive";
 		} catch (Exception e) {
 			// TODO Change this to catch JSONException once Resty no longer throws Exceptions
-			throw new SnowOwlClientException("Failed to initiate export", e);
+			throw new TermServerClientException("Failed to initiate export", e);
 		}
 	}
 
-	private File recoverExportedArchive(String exportLocationURL, File saveLocation) throws SnowOwlClientException {
+	private File recoverExportedArchive(String exportLocationURL, File saveLocation) throws TermServerClientException {
 		try {
 			logger.info("Recovering exported archive from {}", exportLocationURL);
 			resty.withHeader("Accept", ALL_CONTENT_TYPE);
@@ -410,48 +417,48 @@ public class SnowOwlClient {
 			logger.debug("Extract saved to {}", saveLocation.getAbsolutePath());
 			return saveLocation;
 		} catch (IOException e) {
-			throw new SnowOwlClientException("Unable to recover exported archive from " + exportLocationURL, e);
+			throw new TermServerClientException("Unable to recover exported archive from " + exportLocationURL, e);
 		}
 	}
 
-	public JSONResource updateDescription(String descId, JSONObject descObj, String branchPath) throws SnowOwlClientException {
+	public JSONResource updateDescription(String descId, JSONObject descObj, String branchPath) throws TermServerClientException {
 		try {
 			Preconditions.checkNotNull(descId);
 			JSONResource response =  resty.json(getDescriptionsPath(branchPath,descId) + "/updates", RestyHelper.content(descObj, SNOWOWL_CONTENT_TYPE));
 			logger.info("Updated description " + descId);
 			return response;
 		} catch (Exception e) {
-			throw new SnowOwlClientException(e);
+			throw new TermServerClientException(e);
 		}
 	}
 
-	public JSONArray getLangRefsetMembers(String descriptionId, String refsetId, String branch) throws SnowOwlClientException {
+	public JSONArray getLangRefsetMembers(String descriptionId, String refsetId, String branch) throws TermServerClientException {
 		final String url = this.url + "/" + branch + "/members?referenceSet=" + refsetId + "&referencedComponentId=" + descriptionId;
 		try {
 			return (JSONArray) resty.json(url).get("items");
 		} catch (Exception e) {
-			throw new SnowOwlClientException(e);
+			throw new TermServerClientException(e);
 		}
 	}
 
-	public void deleteRefsetMember(String langRefMemberId, String branch, boolean toForce) throws SnowOwlClientException {
+	public void deleteRefsetMember(String langRefMemberId, String branch, boolean toForce) throws TermServerClientException {
 		
 		try {
 			resty.json(getRefsetMemberUpdateUrl(langRefMemberId, branch, toForce), Resty.delete());
 			logger.info("deleted refset member id:" + langRefMemberId);
 		} catch (IOException e) {
-			throw new SnowOwlClientException(e);
+			throw new TermServerClientException(e);
 		}
 	}
 
-	public JSONResource updateRefsetMember(JSONObject refsetUpdate, String branch, boolean toForce) throws SnowOwlClientException {
+	public JSONResource updateRefsetMember(JSONObject refsetUpdate, String branch, boolean toForce) throws TermServerClientException {
 		try {
 			final String id = refsetUpdate.getString("id");
 			Preconditions.checkNotNull(id);
 			logger.info("Updating refset member " + id);
 			return resty.json(getRefsetMemberUpdateUrl(id, branch, toForce), Resty.put(RestyHelper.content(refsetUpdate, SNOWOWL_CONTENT_TYPE)));
 		} catch (Exception e) {
-			throw new SnowOwlClientException(e);
+			throw new TermServerClientException(e);
 		}
 	}
 	
@@ -468,23 +475,23 @@ public class SnowOwlClient {
 		return getRefsetMemberUrl(refSetMemberId, branch) + "?force=" + toForce;
 	}
 
-	public JSONResource getRefsetMemberById(String id, String branch) throws SnowOwlClientException {
+	public JSONResource getRefsetMemberById(String id, String branch) throws TermServerClientException {
 		try {
 			return resty.json(getRefsetMemberUrl(id, branch));
 		} catch (IOException e) {
-			throw new SnowOwlClientException(e);
+			throw new TermServerClientException(e);
 		}
 	}
 
-	public JSONResource getDescriptionById(String descriptionId, String branch) throws SnowOwlClientException {
+	public JSONResource getDescriptionById(String descriptionId, String branch) throws TermServerClientException {
 		try {
 			return resty.json(getDescriptionUrl(descriptionId, branch));
 		} catch (IOException e) {
-			throw new SnowOwlClientException(e);
+			throw new TermServerClientException(e);
 		}
 	}
 
-	public Refset loadRefsetEntries(String branchPath, String refsetId, String referencedComponentId) throws SnowOwlClientException {
+	public Refset loadRefsetEntries(String branchPath, String refsetId, String referencedComponentId) throws TermServerClientException {
 		try {
 			String endPoint = this.url + "/" + branchPath + "/members?referenceSet=" + refsetId + "&referencedComponentId=" + referencedComponentId;
 			JSONResource response = resty.json(endPoint);
@@ -492,11 +499,11 @@ public class SnowOwlClient {
 			Refset refsetObj = gson.fromJson(json, Refset.class);
 			return refsetObj;
 		} catch (Exception e) {
-			throw new SnowOwlClientException("Unable to recover refset for " + refsetId + " - " + referencedComponentId, e);
+			throw new TermServerClientException("Unable to recover refset for " + refsetId + " - " + referencedComponentId, e);
 		}
 	}
 
-	public void updateRefsetMember(String branchPath, RefsetEntry refsetEntry, boolean forceUpdate) throws SnowOwlClientException {
+	public void updateRefsetMember(String branchPath, RefsetEntry refsetEntry, boolean forceUpdate) throws TermServerClientException {
 		try {
 			String endPoint = this.url + "/" + branchPath + "/members/" + refsetEntry.getId();
 			if (forceUpdate) {
@@ -506,12 +513,12 @@ public class SnowOwlClient {
 			AbstractContent content = Resty.put(RestyHelper.content(new JSONObject(json), SNOWOWL_CONTENT_TYPE));
 			resty.json(endPoint, content);
 		} catch (Exception e) {
-			throw new SnowOwlClientException("Unable to update refset entry " + refsetEntry + " due to " + e.getMessage(), e);
+			throw new TermServerClientException("Unable to update refset entry " + refsetEntry + " due to " + e.getMessage(), e);
 		}
 	}
 	
 
-	public void waitForCompletion(String branchPath, Classification classification) throws SnowOwlClientException {
+	public void waitForCompletion(String branchPath, Classification classification) throws TermServerClientException {
 		try {
 			String endPoint = this.url + "/" + branchPath + "/classifications/" + classification.getId();
 			Status status = new Status("Unknown");
@@ -529,7 +536,7 @@ public class SnowOwlClient {
 				}
 			} while (!status.isFinalState());
 		} catch (Exception e) {
-			throw new SnowOwlClientException("Unable to recover status of classification " + classification.getId() + " due to " + e.getMessage(), e);
+			throw new TermServerClientException("Unable to recover status of classification " + classification.getId() + " due to " + e.getMessage(), e);
 		}
 	}
 

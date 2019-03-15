@@ -11,7 +11,7 @@ import java.util.Set;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
@@ -30,7 +30,7 @@ public class BanUsanReport extends TermServerScript{
 	String matchText = "+";
 	List<NationalTermRule> nationalTermRules;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
 		BanUsanReport report = new BanUsanReport();
 		try {
 			report.additionalReportColumns="Desc_SCTID, Term, Issue";

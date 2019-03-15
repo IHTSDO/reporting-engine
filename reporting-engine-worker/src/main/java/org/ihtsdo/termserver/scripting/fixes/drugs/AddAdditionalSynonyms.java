@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.domain.Batch;
 import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
@@ -30,7 +30,7 @@ public class AddAdditionalSynonyms extends BatchFix implements RF2Constants{
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException, InterruptedException {
 		AddAdditionalSynonyms fix = new AddAdditionalSynonyms(null);
 		try {
 			fix.additionalReportColumns = "term, hasPT_US_GB_Variance";

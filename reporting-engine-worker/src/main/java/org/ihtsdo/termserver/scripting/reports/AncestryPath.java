@@ -4,7 +4,7 @@ package org.ihtsdo.termserver.scripting.reports;
 import java.io.IOException;
 import java.io.PrintStream;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.domain.*;
 
 /**
@@ -16,7 +16,7 @@ public class AncestryPath extends TermServerReport {
 	Concept subHierarchy;
 	Concept conceptOfInterest;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
 		AncestryPath report = new AncestryPath();
 		try {
 			report.additionalReportColumns = "FSN";

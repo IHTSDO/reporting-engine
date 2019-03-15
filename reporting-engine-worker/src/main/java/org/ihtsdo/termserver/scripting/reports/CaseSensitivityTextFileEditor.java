@@ -35,7 +35,7 @@ public class CaseSensitivityTextFileEditor extends TermServerReport{
 	String lastWildcardWritten = "";
 	public static final String WILDCARD = "*";
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException, InterruptedException {
 		CaseSensitivityTextFileEditor report = new CaseSensitivityTextFileEditor();
 		try {
 			ReportSheetManager.targetFolderId = "1bwgl8BkUSdNDfXHoL__ENMPQy_EdEP7d"; //Substances

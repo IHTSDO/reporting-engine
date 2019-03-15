@@ -5,8 +5,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.ihtsdo.termserver.scripting.client.SnowOwlClient;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.client.TermServerClient;
+import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 
 import us.monoid.json.JSONArray;
 import us.monoid.json.JSONException;
@@ -14,12 +14,12 @@ import us.monoid.json.JSONObject;
 
 public class DuplicateLangRefsetsFix {
 
-	public static void main(String[] args) throws SnowOwlClientException, JSONException, IOException {
+	public static void main(String[] args) throws TermServerClientException, JSONException, IOException {
 		String url = "http://localhost:8080/";
 		//CONREQEXT-1715
 		String branch = "MAIN/CONREQEXT/CONREQEXT-1740";
 //		String branch = "MAIN/CONREQEXT/FIXTEST";
-		SnowOwlClient client = new SnowOwlClient(url + "snowowl/snomed-ct/v2", null);
+		TermServerClient client = new TermServerClient(url + "snowowl/snomed-ct/v2", null);
 		String [] toDelete = {"2549528011","40528016","40525018","2773447011","2838341018","3289886013"};
 		
 		List<String> descriptionIds = new ArrayList<>();

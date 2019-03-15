@@ -6,7 +6,7 @@ import java.util.*;
 
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
@@ -41,7 +41,7 @@ public class SnapshotGenerator extends TermServerScript {
 	protected String[] attribValHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","valueId"};
 	protected String[] assocHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","targetComponentId"};
 	
-	public static void main (String[] args) throws IOException, TermServerScriptException, SnowOwlClientException, InterruptedException {
+	public static void main (String[] args) throws IOException, TermServerScriptException, TermServerClientException, InterruptedException {
 		SnapshotGenerator snapGen = new SnapshotGenerator();
 		try {
 			snapGen.runStandAlone = true;
@@ -60,7 +60,7 @@ public class SnapshotGenerator extends TermServerScript {
 		}
 	}
 	
-	public File generateSnapshot (File previousReleaseSnapshot, File delta, File newLocation) throws TermServerScriptException, SnowOwlClientException {
+	public File generateSnapshot (File previousReleaseSnapshot, File delta, File newLocation) throws TermServerScriptException, TermServerClientException {
 		File archive = null;
 		setQuiet(true);
 		init(newLocation, false);

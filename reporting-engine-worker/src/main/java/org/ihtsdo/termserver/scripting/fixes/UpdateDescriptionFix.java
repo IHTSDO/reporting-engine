@@ -1,7 +1,7 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
 
-import org.ihtsdo.termserver.scripting.client.SnowOwlClient;
+import org.ihtsdo.termserver.scripting.client.TermServerClient;
 
 import us.monoid.json.JSONArray;
 import us.monoid.json.JSONObject;
@@ -14,7 +14,7 @@ public class UpdateDescriptionFix {
 		String url = "http://localhost:8080/";
 		//CONREQEXT-1715
 		String branch = "MAIN/CONREQEXT/CONREQEXT-1740";
-		SnowOwlClient client = new SnowOwlClient(url + "snowowl/snomed-ct/v2", null);
+		TermServerClient client = new TermServerClient(url + "snowowl/snomed-ct/v2", null);
 		
 		JSONObject concept = client.getConcept("95531001", branch).toObject();
 		

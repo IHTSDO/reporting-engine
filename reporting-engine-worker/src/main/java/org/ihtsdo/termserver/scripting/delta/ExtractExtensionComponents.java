@@ -9,8 +9,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClient;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.client.TermServerClient;
+import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
@@ -28,10 +28,10 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	private List<Component> allIdentifiedConcepts;
 	private List<Component> allModifiedConcepts = new ArrayList<>();
 	private Map<String, Concept> loadedConcepts = new HashMap<>();
-	SnowOwlClient secondaryConnection;
+	TermServerClient secondaryConnection;
 	private static Concept NULL_CONCEPT = new Concept("-1");
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException, InterruptedException {
 		ExtractExtensionComponents delta = new ExtractExtensionComponents();
 		try {
 			delta.runStandAlone = true;
@@ -67,7 +67,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		
 		print ("Please enter your authenticated cookie for connection to " + url + " : ");
 		String secondaryCookie = STDIN.nextLine().trim();
-		secondaryConnection = new SnowOwlClient(url + "snowowl/snomed-ct/v2", secondaryCookie);
+		secondaryConnection = new TermServerClient(url + "snowowl/snomed-ct/v2", secondaryCookie);
 	}
 
 	protected List<Component> processFile() throws TermServerScriptException {

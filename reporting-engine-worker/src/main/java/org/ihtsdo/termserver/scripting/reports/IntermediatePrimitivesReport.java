@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
@@ -23,7 +23,7 @@ public class IntermediatePrimitivesReport extends TermServerReport{
 	CharacteristicType targetCharType = CharacteristicType.STATED_RELATIONSHIP;
 	//CharacteristicType targetCharType = CharacteristicType.INFERRED_RELATIONSHIP;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
 		IntermediatePrimitivesReport report = new IntermediatePrimitivesReport();
 		try {
 			report.additionalReportColumns = "semanticTag, hasImmediateSDParent, hasImmediateSDChild, hasAllParentsSD, hasAllSDChildren";

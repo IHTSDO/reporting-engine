@@ -11,7 +11,7 @@ import java.util.zip.ZipInputStream;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.springframework.util.StringUtils;
@@ -82,7 +82,7 @@ public class GraphLoader implements RF2Constants {
 	}
 	
 	public Set<Concept> loadRelationships(CharacteristicType characteristicType, InputStream relStream, boolean addRelationshipsToConcepts, boolean isDelta) 
-			throws IOException, TermServerScriptException, SnowOwlClientException {
+			throws IOException, TermServerScriptException, TermServerClientException {
 		Set<Concept> concepts = new HashSet<Concept>();
 		BufferedReader br = new BufferedReader(new InputStreamReader(relStream, StandardCharsets.UTF_8));
 		String line;
@@ -277,7 +277,7 @@ public class GraphLoader implements RF2Constants {
 		}
 	}
 	
-	public void loadDescriptionFile(InputStream descStream, boolean fsnOnly) throws IOException, TermServerScriptException, SnowOwlClientException {
+	public void loadDescriptionFile(InputStream descStream, boolean fsnOnly) throws IOException, TermServerScriptException, TermServerClientException {
 		//Not putting this in a try resource block otherwise it will close the stream on completion and we've got more to read!
 		BufferedReader br = new BufferedReader(new InputStreamReader(descStream, StandardCharsets.UTF_8));
 		String line;
@@ -311,16 +311,16 @@ public class GraphLoader implements RF2Constants {
 		}
 	}
 
-	public Set<Concept> loadRelationshipDelta(CharacteristicType characteristicType, InputStream relStream) throws IOException, TermServerScriptException, SnowOwlClientException {
+	public Set<Concept> loadRelationshipDelta(CharacteristicType characteristicType, InputStream relStream) throws IOException, TermServerScriptException, TermServerClientException {
 		return loadRelationships(characteristicType, relStream, true, true);
 	}
 
 	public Set<Concept> getModifiedConcepts(
-			CharacteristicType characteristicType, ZipInputStream relStream) throws IOException, TermServerScriptException, SnowOwlClientException {
+			CharacteristicType characteristicType, ZipInputStream relStream) throws IOException, TermServerScriptException, TermServerClientException {
 		return loadRelationships(characteristicType, relStream, false, false);
 	}
 
-	public void loadLanguageFile(InputStream is) throws IOException, TermServerScriptException, SnowOwlClientException {
+	public void loadLanguageFile(InputStream is) throws IOException, TermServerScriptException, TermServerClientException {
 		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 		boolean isHeaderLine = true;
 		String line;
@@ -402,7 +402,7 @@ public class GraphLoader implements RF2Constants {
 		}
 	}
 
-	public void loadInactivationIndicatorFile(InputStream is) throws IOException, TermServerScriptException, SnowOwlClientException {
+	public void loadInactivationIndicatorFile(InputStream is) throws IOException, TermServerScriptException, TermServerClientException {
 		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 		boolean isHeaderLine = true;
 		String line;
@@ -433,7 +433,7 @@ public class GraphLoader implements RF2Constants {
 		}
 	}
 	
-	public void loadHistoricalAssociationFile(InputStream is) throws IOException, TermServerScriptException, SnowOwlClientException {
+	public void loadHistoricalAssociationFile(InputStream is) throws IOException, TermServerScriptException, TermServerClientException {
 		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 		boolean isHeaderLine = true;
 		String line;

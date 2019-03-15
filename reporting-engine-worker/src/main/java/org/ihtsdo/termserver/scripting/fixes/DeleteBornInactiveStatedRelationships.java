@@ -5,7 +5,7 @@ import java.util.*;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
@@ -30,7 +30,7 @@ public class DeleteBornInactiveStatedRelationships extends BatchFix implements R
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException, InterruptedException {
 		DeleteBornInactiveStatedRelationships fix = new DeleteBornInactiveStatedRelationships(null);
 		try {
 			ReportSheetManager.targetFolderId="15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ";  //Release QA

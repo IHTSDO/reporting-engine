@@ -236,7 +236,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		}
 	}
 
-	private void createTask(Task task) throws SnowOwlClientException, TermServerScriptException, InterruptedException {
+	private void createTask(Task task) throws TermServerClientException, TermServerScriptException, InterruptedException {
 		if (!dryRun) {
 			if (firstTaskCreated) {
 				debug ("Letting TS catch up - " + taskThrottle + "s nap.");
@@ -988,7 +988,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	 * and points to it as a replacement
 	 * @throws TermServerScriptException 
 	 * @throws JSONException 
-	 * @throws SnowOwlClientException 
+	 * @throws TermServerClientException 
 	 */
 	protected void cloneAndReplace(Concept concept, Task t, InactivationIndicator inactivationIndicator) throws TermServerScriptException {
 		String originalId = concept.getConceptId();

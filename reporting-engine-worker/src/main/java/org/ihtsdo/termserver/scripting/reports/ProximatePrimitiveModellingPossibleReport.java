@@ -26,7 +26,7 @@ public class ProximatePrimitiveModellingPossibleReport extends TermServerScript{
 	String publishedArchive;
 	String[] hierarchies = {"64572001"}; //Disease (disorder)
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
 		ProximatePrimitiveModellingPossibleReport report = new ProximatePrimitiveModellingPossibleReport();
 		try {
 			report.additionalReportColumns = " Sem_Tag, alreadyModelledCorrectly, FDToTop, immedPrimParent, notImmediatePrimitive";

@@ -6,7 +6,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
@@ -20,7 +20,7 @@ public class MultipleModifications extends TermServerReport {
 	
 	Set<Concept> substancesWithMultipleModifications = new HashSet<>();
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
 		MultipleModifications report = new MultipleModifications();
 		try {
 			ReportSheetManager.targetFolderId = "1hYd96nzfB35ggffWR_SdPbybpmzynlI6"; //Drugs

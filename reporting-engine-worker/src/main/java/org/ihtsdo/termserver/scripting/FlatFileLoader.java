@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 
 public class FlatFileLoader implements RF2Constants {
@@ -28,7 +28,7 @@ public class FlatFileLoader implements RF2Constants {
 		return componentMap.get(id);
 	}
 
-	public void loadArchive(File archive) throws TermServerScriptException, SnowOwlClientException {
+	public void loadArchive(File archive) throws TermServerScriptException, TermServerClientException {
 		try {
 			ZipInputStream zis = new ZipInputStream(new FileInputStream(archive));
 			ZipEntry ze = zis.getNextEntry();
@@ -53,7 +53,7 @@ public class FlatFileLoader implements RF2Constants {
 		}
 	}
 	
-	public void loadFile(ZipInputStream zis) throws IOException, TermServerScriptException, SnowOwlClientException {
+	public void loadFile(ZipInputStream zis) throws IOException, TermServerScriptException, TermServerClientException {
 		BufferedReader br = new BufferedReader(new InputStreamReader(zis, StandardCharsets.UTF_8));
 		boolean isHeaderLine = true;
 		String line;

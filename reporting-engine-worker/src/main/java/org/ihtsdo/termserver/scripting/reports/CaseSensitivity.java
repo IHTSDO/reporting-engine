@@ -36,7 +36,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 	Pattern singleLetter = Pattern.compile("[^a-zA-Z][a-z][^a-zA-Z]");
 	Set<String>wilcardWords = new HashSet<>();
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
 		TermServerReport.run(CaseSensitivity.class, args);
 	}
 	

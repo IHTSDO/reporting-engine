@@ -6,7 +6,7 @@ import java.util.List;
 
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Refset;
 import org.ihtsdo.termserver.scripting.domain.RefsetEntry;
@@ -26,7 +26,7 @@ public class ModuleCorrection extends TermServerScript/*extends RefsetFixer*/ {
 	
 	List<String> descIds = new ArrayList<String>();
 	
-	public static void main (String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
+	public static void main (String[] args) throws TermServerScriptException, IOException, TermServerClientException {
 		ModuleCorrection app = new ModuleCorrection();
 		app.init(args);
 		app.loadEntriesToFix();
@@ -52,7 +52,7 @@ public class ModuleCorrection extends TermServerScript/*extends RefsetFixer*/ {
 		}
 	}
 	
-	void fixRefsetEntry(String descId) throws SnowOwlClientException, TermServerScriptException {
+	void fixRefsetEntry(String descId) throws TermServerClientException, TermServerScriptException {
 		//Load the refset entry
 		Refset refset = tsClient.loadRefsetEntries(project.getBranchPath(), refsetId, descId);
 		

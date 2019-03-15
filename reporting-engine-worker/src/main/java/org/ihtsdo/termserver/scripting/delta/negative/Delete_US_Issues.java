@@ -7,8 +7,8 @@ import java.util.List;
 
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClient;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.client.TermServerClient;
+import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
@@ -24,11 +24,11 @@ public class Delete_US_Issues extends NegativeDeltaGenerator implements RF2Const
 	List<Concept> affectedConcepts = new ArrayList<Concept>();
 	GraphLoader gl = GraphLoader.getGraphLoader();
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException, InterruptedException {
 		Delete_US_Issues delta = new Delete_US_Issues();
 		try {
 			delta.newIdsRequired = false; // We'll only be reactivating exisiting langrefset entries
-			SnowOwlClient.supportsIncludeUnpublished = false;   //This code not yet available in MS
+			TermServerClient.supportsIncludeUnpublished = false;   //This code not yet available in MS
 			delta.tsRoot="MAIN/2017-01-31/SNOMEDCT-US/";
 			delta.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts

@@ -7,7 +7,7 @@ import java.util.*;
 import org.apache.commons.lang.ArrayUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.JiraHelper;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.reports.qi.InitialAnalysis;
@@ -26,7 +26,7 @@ public class MultiReportRunner extends TermServerReport {
 	ReportClass report; 
 	JiraHelper jira;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
 		MultiReportRunner report = new MultiReportRunner();
 		try {
 			//report.testJira();

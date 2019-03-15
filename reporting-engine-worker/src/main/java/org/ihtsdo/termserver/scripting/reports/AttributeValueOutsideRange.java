@@ -5,7 +5,7 @@ import java.io.PrintStream;
 import java.util.Set;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 
@@ -20,7 +20,7 @@ public class AttributeValueOutsideRange extends TermServerReport {
 	Set<Concept> acceptableRange;
 	Concept subHierarchy;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
 		AttributeValueOutsideRange report = new AttributeValueOutsideRange();
 		try {
 			report.additionalReportColumns = "CharacteristicType, Attribute, WhatWasInferred?";

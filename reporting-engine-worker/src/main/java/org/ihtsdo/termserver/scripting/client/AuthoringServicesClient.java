@@ -114,7 +114,7 @@ public class AuthoringServicesClient {
 		return taskKey;
 	}
 	
-	public void deleteTask(String project, String taskKey, boolean optional) throws SnowOwlClientException {
+	public void deleteTask(String project, String taskKey, boolean optional) throws TermServerClientException {
 		String endPoint = serverUrl + apiRoot + "projects/" + project + "/tasks/" + taskKey;
 		try {
 			JSONObject requestJson = new JSONObject();
@@ -125,12 +125,12 @@ public class AuthoringServicesClient {
 			if (optional) {
 				System.out.println(errStr + ": " + e.getMessage());
 			} else {
-				throw new SnowOwlClientException (errStr, e);
+				throw new TermServerClientException (errStr, e);
 			}
 		}
 	}
 
-	public Project getProject(String projectStr) throws SnowOwlClientException {
+	public Project getProject(String projectStr) throws TermServerClientException {
 		JSONResource response = null;
 		String json = null;
 		try {
@@ -140,11 +140,11 @@ public class AuthoringServicesClient {
 			Project projectObj = gson.fromJson(json, Project.class);
 			return projectObj;
 		} catch (Exception e) {
-			throw new SnowOwlClientException("Unable to recover project " + projectStr +". Received: " + (json==null?"NULL" : json), e);
+			throw new TermServerClientException("Unable to recover project " + projectStr +". Received: " + (json==null?"NULL" : json), e);
 		}
 	}
 	
-	public Task getTask(String taskKey) throws SnowOwlClientException {
+	public Task getTask(String taskKey) throws TermServerClientException {
 		try {
 			String projectStr = taskKey.substring(0, taskKey.indexOf("-"));
 			String endPoint = serverUrl + apiRoot + "projects/" + projectStr + "/tasks/" + taskKey;
@@ -153,22 +153,22 @@ public class AuthoringServicesClient {
 			Task taskObj = gson.fromJson(json, Task.class);
 			return taskObj;
 		} catch (Exception e) {
-			throw new SnowOwlClientException("Unable to recover task " + taskKey, e);
+			throw new TermServerClientException("Unable to recover task " + taskKey, e);
 		}
 	}
 
-	public Classification classify(String taskKey) throws SnowOwlClientException {
+	public Classification classify(String taskKey) throws TermServerClientException {
 		try {
 			String projectStr = taskKey.substring(0, taskKey.indexOf("-"));
 			String endPoint = serverUrl + apiRoot + "projects/" + projectStr + "/tasks/" + taskKey + "/classifications";
 			HttpEntity<Object> requestEntity = new HttpEntity<Object>("", headers);
 			return restTemplate.postForObject(endPoint, requestEntity, Classification.class);
 		} catch (Exception e) {
-			throw new SnowOwlClientException("Unable to classify " + taskKey, e);
+			throw new TermServerClientException("Unable to classify " + taskKey, e);
 		}
 	}
 	
-	public Status validate(String taskKey) throws SnowOwlClientException {
+	public Status validate(String taskKey) throws TermServerClientException {
 		try {
 			String projectStr = taskKey.substring(0, taskKey.indexOf("-"));
 			String endPoint = serverUrl + apiRoot + "projects/" + projectStr + "/tasks/" + taskKey + "/validation";
@@ -177,7 +177,7 @@ public class AuthoringServicesClient {
 			Status status = gson.fromJson(json, Status.class);
 			return status;
 		} catch (Exception e) {
-			throw new SnowOwlClientException("Unable to initiate validation on " + taskKey, e);
+			throw new TermServerClientException("Unable to initiate validation on " + taskKey, e);
 		}
 	}
 

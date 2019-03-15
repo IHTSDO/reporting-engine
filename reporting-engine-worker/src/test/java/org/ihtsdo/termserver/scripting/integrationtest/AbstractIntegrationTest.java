@@ -1,8 +1,8 @@
 package org.ihtsdo.termserver.scripting.integrationtest;
 
-import org.ihtsdo.termserver.scripting.client.SnowOwlClient;
+import org.ihtsdo.termserver.scripting.client.TermServerClient;
 import org.ihtsdo.termserver.scripting.client.SnowOwlClientEventListener;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.domain.ConceptHelper;
 import org.junit.After;
 import org.junit.Before;
@@ -20,17 +20,17 @@ public abstract class AbstractIntegrationTest implements SnowOwlClientEventListe
 
 	private final String url = "http://localhost:8080/snowowl/snomed-ct/v2";
 //	private final String url = "https://dev-term.ihtsdotools.org/snowowl/snomed-ct/v2";
-	protected SnowOwlClient client;
+	protected TermServerClient client;
 	protected String branchName;
 	protected String branchPath;
 	protected Set<String> branchesToTearDown;
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
 	@Before
-	public void setup() throws SnowOwlClientException {
+	public void setup() throws TermServerClientException {
 		branchesToTearDown = new HashSet<>();
 		//TODO Wire in security which can use token override
-		client = new SnowOwlClient(url, null);
+		client = new TermServerClient(url, null);
 		client.addEventListener(this);
 		branchName = generateTestBranchName();
 		branchPath = client.createBranch("MAIN", branchName);

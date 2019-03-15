@@ -5,7 +5,7 @@ import java.util.*;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.domain.*;
 
 /*
@@ -21,7 +21,7 @@ public class RemoveRedundantRelationships extends BatchFix implements RF2Constan
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException, InterruptedException {
 		RemoveRedundantRelationships fix = new RemoveRedundantRelationships(null);
 		try {
 			fix.reportNoChange = true;

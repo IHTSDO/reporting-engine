@@ -6,7 +6,7 @@ import java.util.*;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.domain.*;
 
 import us.monoid.json.JSONObject;
@@ -25,7 +25,7 @@ public class RemoveSubstringFromNewTerms extends BatchFix implements RF2Constant
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException, InterruptedException {
 		RemoveSubstringFromNewTerms fix = new RemoveSubstringFromNewTerms(null);
 		try {
 			fix.selfDetermining = true;

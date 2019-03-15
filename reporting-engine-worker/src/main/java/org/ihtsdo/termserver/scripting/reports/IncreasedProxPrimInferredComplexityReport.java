@@ -28,7 +28,7 @@ public class IncreasedProxPrimInferredComplexityReport extends TermServerScript{
 	String publishedArchive;
 	String[] hierarchies = {"64572001"}; //Disease (disorder)
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
 		IncreasedProxPrimInferredComplexityReport report = new IncreasedProxPrimInferredComplexityReport();
 		try {
 			report.init(args);

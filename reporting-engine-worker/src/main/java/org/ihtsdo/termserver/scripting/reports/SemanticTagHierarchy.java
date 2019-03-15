@@ -6,7 +6,7 @@ import java.util.*;
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -21,7 +21,7 @@ public class SemanticTagHierarchy extends TermServerReport implements ReportClas
 	
 	Map<String, Map<String, Concept>> semanticTagHierarchy = new HashMap<>();
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
 		Map<String, String> params = new HashMap<>();
 		params.put(SUB_HIERARCHY, BODY_STRUCTURE.toString());
 		TermServerReport.run(SemanticTagHierarchy.class, args);

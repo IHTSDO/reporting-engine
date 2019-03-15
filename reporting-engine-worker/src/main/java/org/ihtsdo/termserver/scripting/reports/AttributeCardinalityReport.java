@@ -8,7 +8,7 @@ import java.util.*;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.domain.*;
 
 /**
@@ -23,7 +23,7 @@ public class AttributeCardinalityReport extends TermServerScript{
 	GraphLoader gl = GraphLoader.getGraphLoader();
 	String matchText = "+"; 
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
 		AttributeCardinalityReport report = new AttributeCardinalityReport();
 		try {
 			report.init(args);

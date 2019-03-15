@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 
@@ -19,7 +19,7 @@ public class FullyDefinedParentsInSubHierarchy extends TermServerReport {
 	
 	Concept subHierarchy;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
 		FullyDefinedParentsInSubHierarchy report = new FullyDefinedParentsInSubHierarchy();
 		try {
 			report.additionalReportColumns = "FSN, Parents, Calculated PPPs";

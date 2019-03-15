@@ -38,7 +38,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected boolean useAuthenticatedCookie = true;
 	protected boolean stateComponentType = true;
 	protected JobRun jobRun;
-	protected SnowOwlClient tsClient;
+	protected TermServerClient tsClient;
 	protected AuthoringServicesClient scaClient;
 	protected String authenticatedCookie;
 	protected Resty resty = new Resty();
@@ -136,13 +136,14 @@ public abstract class TermServerScript implements RF2Constants {
 		this.authenticatedCookie = authenticatedCookie;
 	}
 	
-	protected static String[] envKeys = new String[] {"local","dev","uat","prod","dev","uat","prod"};
+	protected static String[] envKeys = new String[] {"local","dev","uat","prod","dev","dev","uat","prod"};
 
 	protected static String[] environments = new String[] {	"http://localhost:8080/",
 															"https://dev-authoring.ihtsdotools.org/",
 															"https://uat-authoring.ihtsdotools.org/",
 															"https://prod-authoring.ihtsdotools.org/",
 															"https://dev-ms-authoring.ihtsdotools.org/",
+															"https://dev-snowstorm.ihtsdotools.org/",
 															"https://uat-ms-authoring.ihtsdotools.org/",
 															"https://prod-ms-authoring.ihtsdotools.org/",
 	};
@@ -271,7 +272,7 @@ public abstract class TermServerScript implements RF2Constants {
 			} else {
 				try {
 					project = scaClient.getProject(projectName);
-				} catch (SnowOwlClientException e) {
+				} catch (TermServerClientException e) {
 					throw new TermServerScriptException("Unable to recover project: " + projectName,e);
 				}
 			}
@@ -459,20 +460,23 @@ public abstract class TermServerScript implements RF2Constants {
 			if (!authenticatedCookie.contains("ihtsdo=")) {
 				throw new IllegalArgumentException("Malformed cookie detected.  Expected <env>-ihtsdo=<token> instead received: " + authenticatedCookie);
 			}
-			tsClient = new SnowOwlClient(url + "snowowl/snomed-ct/v2", authenticatedCookie);
+			String contextPath = "snowowl/snomed-ct/v2";
+			if (url.contains("storm")) {
+				contextPath = "snowstorm/snomed-ct/v2";
+			}
+			tsClient = new TermServerClient(url + contextPath, authenticatedCookie);
 		} else {
 			throw new IllegalArgumentException("Support for username/password access to SnowOwl has been removed");
-			//tsClient = new SnowOwlClient(url + "snowowl/snomed-ct/v2", "snowowl", "snowowl");
 		}
 	}
 	
-	protected void loadProjectSnapshot(boolean fsnOnly) throws SnowOwlClientException, TermServerScriptException, InterruptedException, IOException {
+	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerClientException, TermServerScriptException, InterruptedException, IOException {
 		getArchiveManager().loadProjectSnapshot(fsnOnly);
 		//Reset the report name to null here as it will have been set by the Snapshot Generator
 		setReportName(null);
 	}
 	
-	protected void loadArchive(File archive, boolean fsnOnly, String fileType) throws TermServerScriptException, SnowOwlClientException {
+	protected void loadArchive(File archive, boolean fsnOnly, String fileType) throws TermServerScriptException, TermServerClientException {
 		getArchiveManager().loadArchive(archive, fsnOnly, fileType);
 	}
 	
@@ -506,11 +510,11 @@ public abstract class TermServerScript implements RF2Constants {
 		return loadedConcept;
 	}
 	
-	protected Concept loadConcept(SnowOwlClient client, Concept concept, String branchPath) throws TermServerScriptException {
+	protected Concept loadConcept(TermServerClient client, Concept concept, String branchPath) throws TermServerScriptException {
 			return loadConcept(client, concept.getConceptId(), branchPath);
 	}
 	
-	protected Concept loadConcept(SnowOwlClient client, String sctId, String branchPath) throws TermServerScriptException {
+	protected Concept loadConcept(TermServerClient client, String sctId, String branchPath) throws TermServerScriptException {
 		Concept concept =  gl.getConcept(sctId);
 		try {
 			debug ("Loading: " + concept + " from TS branch " + branchPath);
@@ -1109,7 +1113,7 @@ public abstract class TermServerScript implements RF2Constants {
 		return gl;
 	}
 
-	public SnowOwlClient getTSClient() {
+	public TermServerClient getTSClient() {
 		return tsClient;
 	}
 

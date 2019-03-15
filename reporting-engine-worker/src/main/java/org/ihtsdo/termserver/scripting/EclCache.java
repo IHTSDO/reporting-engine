@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.ihtsdo.termserver.scripting.client.SnowOwlClient;
+import org.ihtsdo.termserver.scripting.client.TermServerClient;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.ConceptCollection;
 import org.springframework.util.StringUtils;
@@ -18,14 +18,14 @@ public class EclCache {
 	private static Map <String, EclCache> branchCaches;
 	private static int PAGING_LIMIT = 500;
 	private static int MAX_RESULTS = 9999;
-	private SnowOwlClient tsClient;
+	private TermServerClient tsClient;
 	private Gson gson;
 	private GraphLoader gl;
 	boolean safetyProtocolEngaged = true;
 	
 	Map <String, List<Concept>> expansionCache = new HashMap<>();
 	
-	static EclCache getCache(String branch, SnowOwlClient tsClient, Gson gson, GraphLoader gl) {
+	static EclCache getCache(String branch, TermServerClient tsClient, Gson gson, GraphLoader gl) {
 		if (branchCaches == null) {
 			branchCaches  = new HashMap<>();
 		}
@@ -39,7 +39,7 @@ public class EclCache {
 		return branchCache;
 	}
 	
-	EclCache (SnowOwlClient tsClient,Gson gson) {
+	EclCache (TermServerClient tsClient,Gson gson) {
 		this.tsClient = tsClient;
 		this.gson = gson;
 	}
@@ -66,14 +66,15 @@ public class EclCache {
 		
 		List<Concept> allConcepts = new ArrayList<>();
 		boolean allRecovered = false;
-		int offset = 0;
+		//int offset = 0;
 		String searchAfter = null;
 		while (!allRecovered) {
 			try {
-					JSONResource response = tsClient.getConcepts(ecl, branch, offset, searchAfter, PAGING_LIMIT);
+					JSONResource response = tsClient.getConcepts(ecl, branch, searchAfter, PAGING_LIMIT);
 					String json = response.toObject().toString();
 					ConceptCollection collection = gson.fromJson(json, ConceptCollection.class);
-					if (offset == 0) {
+					//if (offset == 0) {
+					if (searchAfter == null) {
 						//First time round, report how many we're receiving.
 						TermServerScript.debug ("Recovering " + collection.getTotal() + " concepts matching " + ecl);
 						if (collection.getTotal() > 2000) {
@@ -92,7 +93,7 @@ public class EclCache {
 					allConcepts.addAll(localCopies);
 					//Did we get all the concepts that there are?
 					if (allConcepts.size() < collection.getTotal()) {
-						offset = allConcepts.size();
+						//offset = allConcepts.size();
 						searchAfter = collection.getSearchAfter();
 					} else {
 						allRecovered = true;

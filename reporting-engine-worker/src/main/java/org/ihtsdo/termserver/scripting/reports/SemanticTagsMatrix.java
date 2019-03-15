@@ -19,7 +19,7 @@ public class SemanticTagsMatrix extends TermServerReport{
 	List<Concept> topLevelHierarchies;
 	Map<String, int[]> tagToUsageMap;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
 		SemanticTagsMatrix report = new SemanticTagsMatrix();
 		try {
 			report.init(args);

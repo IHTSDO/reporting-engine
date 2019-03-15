@@ -26,7 +26,7 @@ public class ListSemanticTagsByHierarchy extends TermServerScript{
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	GraphLoader gl = GraphLoader.getGraphLoader();
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
 		ListSemanticTagsByHierarchy report = new ListSemanticTagsByHierarchy();
 		try {
 			report.init(args);

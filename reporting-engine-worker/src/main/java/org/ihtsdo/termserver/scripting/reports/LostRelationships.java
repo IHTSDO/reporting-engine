@@ -6,7 +6,7 @@ import java.util.*;
 
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.SnowOwlClientException;
+import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.domain.*;
 
 public class LostRelationships extends TermServerScript{
@@ -15,7 +15,7 @@ public class LostRelationships extends TermServerScript{
 	Set<Concept> descendentOfProductRole;
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, SnowOwlClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
 		LostRelationships report = new LostRelationships();
 		try {
 			report.additionalReportColumns = "Active, Not Replaced Relationship, ValueIsProdRoleDesc";
