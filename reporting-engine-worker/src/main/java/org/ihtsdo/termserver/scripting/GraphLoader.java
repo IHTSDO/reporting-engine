@@ -1,19 +1,18 @@
 package org.ihtsdo.termserver.scripting;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.zip.ZipInputStream;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.snomed.otf.owltoolkit.conversion.AxiomRelationshipConversionService;
+import org.snomed.otf.owltoolkit.conversion.ConversionException;
+import org.snomed.otf.owltoolkit.domain.AxiomRepresentation;
 import org.springframework.util.StringUtils;
 
 public class GraphLoader implements RF2Constants {
@@ -27,6 +26,7 @@ public class GraphLoader implements RF2Constants {
 	private String excludeModule = SCTID_LOINC_MODULE;
 	public static int MAX_DEPTH = 1000;
 	private Set<Concept> orphanetConcepts;
+	private AxiomRelationshipConversionService axiomService;
 	
 	private DescendentsCache descendantsCache = DescendentsCache.getDescendentsCache();
 	private AncestorsCache ancestorsCache = AncestorsCache.getAncestorsCache();
@@ -39,6 +39,7 @@ public class GraphLoader implements RF2Constants {
 	public static GraphLoader getGraphLoader() {
 		if (singleton == null) {
 			singleton = new GraphLoader();
+			singleton.axiomService = new AxiomRelationshipConversionService (null);
 			populateKnownConcepts();
 		}
 		
@@ -122,6 +123,46 @@ public class GraphLoader implements RF2Constants {
 		return concepts;
 	}
 	
+	public void loadAxioms(InputStream axiomStream, boolean isDelta) 
+			throws IOException, TermServerScriptException, TermServerClientException {
+		BufferedReader br = new BufferedReader(new InputStreamReader(axiomStream, StandardCharsets.UTF_8));
+		String line;
+		boolean isHeaderLine = true;
+		int axiomsLoaded = 0;
+		while ((line = br.readLine()) != null) {
+			if (!isHeaderLine) {
+				String[] lineItems = line.split(FIELD_DELIMITER);
+				
+				//Only load OWL Expressions
+				if (!lineItems[REF_IDX_REFSETID].equals(SCTID_OWL_AXIOM_REFSET)) {
+					continue;
+				}
+				
+				/*if (lineItems[IDX_ID].equals("10011096023")) {
+					System.out.println ("Debug Here");
+				}*/
+				Long conceptId = Long.parseLong(lineItems[REF_IDX_REFCOMPID]);
+				if (!isConcept(lineItems[REF_IDX_REFCOMPID])) {
+					System.out.println ("Axiom " + lineItems[REL_IDX_ID] + " referenced a non concept identifier: " + lineItems[REF_IDX_REFCOMPID]);
+				}
+				try {
+					AxiomRepresentation axiom = axiomService.convertAxiomToRelationships(conceptId, lineItems[REF_IDX_AXIOM_STR]);
+					//Filter out any additional statements such as TransitiveObjectProperty(:123005000)]
+					if (axiom != null) {
+						for (Relationship r :  AxiomUtils.toRelationships(getConcept(conceptId), axiom)) {
+							addRelationshipToConcept(CharacteristicType.STATED_RELATIONSHIP, r, isDelta);
+						}
+					}
+				} catch (ConversionException e) {
+					throw new TermServerScriptException("Failed to load axiom: " + line, e);
+				}
+			} else {
+				isHeaderLine = false;
+			}
+		}
+		log.append("\tLoaded " + axiomsLoaded + " axioms");
+	}
+	
 	private boolean isConcept(String sctId) {
 		return sctId.charAt(sctId.length()-2) == '0';
 	}
@@ -168,6 +209,10 @@ public class GraphLoader implements RF2Constants {
 	 */
 	public int addRelationshipToConcept(CharacteristicType charType, String[] lineItems, boolean isDelta) throws TermServerScriptException {
 		Relationship r = createRelationshipFromRF2(charType, lineItems);
+		return addRelationshipToConcept(charType, r, isDelta);
+	}
+	
+	public int addRelationshipToConcept(CharacteristicType charType, Relationship r, boolean isDelta) throws TermServerScriptException {
 		//Consider adding or removing parents if the relationship is ISA
 		//But only remove items if we're processing a delta
 		if (r.getType().equals(IS_A)) {
@@ -183,9 +228,8 @@ public class GraphLoader implements RF2Constants {
 		//In the case of importing an Inferred Delta, we could end up adding a relationship instead of replacing
 		//if it has a different SCTID.  We need to check for equality using triple, not SCTID in that case.
 		boolean successfullyAdded = r.getSource().addRelationship(r, isDelta);
-		return successfullyAdded ? 0 : 1;
+		return successfullyAdded ? 0 : 1;	
 	}
-
 	public Concept getConcept(String identifier) throws TermServerScriptException {
 		return getConcept(identifier.trim(), true, true);
 	}
@@ -662,7 +706,7 @@ public class GraphLoader implements RF2Constants {
 	}
 
 	public void makeReady() {
-		for (Component c : allComponents.values()) {
+		for (Concept c : concepts.values()) {
 			c.setIssue(null);
 		}
 	}

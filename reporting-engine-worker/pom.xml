@@ -85,6 +85,11 @@
 			</exclusions>
 		</dependency>
 		<dependency>
+			<groupId>org.snomed.otf</groupId>
+			<artifactId>snomed-owl-toolkit</artifactId>
+			<version>2.3.0</version>
+		</dependency>
+		<dependency>
 			<groupId>org.snomed.languages</groupId>
 			<artifactId>snomed-template-parser</artifactId>
 			<version>1.1.2-SNAPSHOT</version>

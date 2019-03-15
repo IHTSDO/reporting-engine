@@ -215,7 +215,7 @@ public class ArchiveManager implements RF2Constants {
 						.flatMap(c -> c.getDescriptions().stream())
 						.collect(Collectors.toList());
 				if (first100Descriptions.size() < 100) {
-					throw new TermServerScriptException("Failed to find sufficient number of descriptions - classification archive used?");
+					throw new TermServerScriptException("Failed to find sufficient number of descriptions - classification archive used? Deleting snapshot, please retry.");
 				}
 			}
 				
@@ -284,6 +284,12 @@ public class ArchiveManager implements RF2Constants {
 			} else if (fileName.contains("sct2_StatedRelationship_" + fileType )) {
 				info("Loading StatedRelationship " + fileType + " file.");
 				gl.loadRelationships(CharacteristicType.STATED_RELATIONSHIP, is, true, isDelta);
+			} else if (fileName.contains("sct2_StatedRelationship_" + fileType )) {
+				info("Loading StatedRelationship " + fileType + " file.");
+				gl.loadRelationships(CharacteristicType.STATED_RELATIONSHIP, is, true, isDelta);
+			} else if (fileName.contains("sct2_sRefset_OWLExpression" + fileType )) {
+				info("Loading Axiom " + fileType + " refset file.");
+				gl.loadAxioms(is, isDelta);
 			} else if (fileName.contains("sct2_Description_" + fileType )) {
 				info("Loading Description " + fileType + " file.");
 				gl.loadDescriptionFile(is, fsnOnly);
@@ -293,13 +299,13 @@ public class ArchiveManager implements RF2Constants {
 			} else if (fileName.contains("der2_cRefset_ConceptInactivationIndicatorReferenceSet" + fileType )) {
 				info("Loading Concept Inactivation Indicator " + fileType + " file.");
 				gl.loadInactivationIndicatorFile(is);
-			}  else if (fileName.contains("der2_cRefset_DescriptionInactivationIndicatorReferenceSet" + fileType )) {
+			} else if (fileName.contains("der2_cRefset_DescriptionInactivationIndicatorReferenceSet" + fileType )) {
 				info("Loading Description Inactivation Indicator " + fileType + " file.");
 				gl.loadInactivationIndicatorFile(is);
 			} else if (fileName.contains("der2_cRefset_AttributeValue" + fileType )) {
 				info("Loading Concept/Description Inactivation Indicators " + fileType + " file.");
 				gl.loadInactivationIndicatorFile(is);
-			}  else if (fileName.contains("Association" + fileType ) || fileName.contains("AssociationReferenceSet" + fileType )) {
+			} else if (fileName.contains("Association" + fileType ) || fileName.contains("AssociationReferenceSet" + fileType )) {
 				info("Loading Historical Association File: " + fileName);
 				gl.loadHistoricalAssociationFile(is);
 			}

@@ -62,6 +62,14 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	@Expose
 	private AssociationTargets associationTargets;
 	
+	@SerializedName("additionalAxioms")
+	@Expose
+	private List<Axiom> additionalAxioms;
+	
+	@SerializedName("gciAxioms")
+	@Expose
+	private List<Axiom> gciAxioms;
+	
 	private boolean isLoaded = false;
 	private int originalFileLineNumber;
 	private ConceptType conceptType;
