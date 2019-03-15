@@ -34,7 +34,7 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 		Map<String, String> params = new HashMap<>();
 		params.put(STARTS_WITH, "Y");
 		params.put(SUB_HIERARCHY, ROOT_CONCEPT.toString());
-		params.put(WORDS, "[");
+		params.put(WORDS, "Dog");
 		params.put(ATTRIBUTE_TYPE, null);
 		TermServerReport.run(TermContainsXReport.class, args, params);
 	}
@@ -51,10 +51,7 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 			attributeDetail = gl.getConcept(attribStr);
 		}
 		
-		String startsWithStr = run.getMandatoryParamValue(STARTS_WITH);
-		if (startsWithStr != null && startsWithStr.toUpperCase().equals("Y")) {
-			startsWith = true;
-		}
+		startsWith = run.getParameters().getMandatoryBoolean(STARTS_WITH);
 	}
 	
 	@Override
