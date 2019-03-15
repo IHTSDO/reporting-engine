@@ -501,10 +501,13 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 					}
 				}
 			}
-			
 			relationships.removeAll(Collections.singleton(r));
 		}
 		r.setRelationshipId(id);
+		
+		//Now we might need to remove a relationship with the same id if it also moved group
+		relationships.removeAll(Collections.singleton(r));
+		
 		relationships.add(r);
 		recalculateGroups();
 		return true;

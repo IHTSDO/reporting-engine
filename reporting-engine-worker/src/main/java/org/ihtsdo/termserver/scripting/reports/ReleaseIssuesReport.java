@@ -26,6 +26,7 @@ import org.springframework.util.StringUtils;
  ATF-1550 Check that concept has only one semantic tag – new and released content
  ISRS-414 Descriptions which contain a non-breaking space
  ISRS-286 Ensure Parents in same module
+ RP-128 Ensure concepts referenced in axioms are active
  Active concept parents should not belong to more than one top-level hierarchy – please check NEW and LEGACY content for issues
  */
 public class ReleaseIssuesReport extends TermServerReport implements ReportClass {
@@ -40,7 +41,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	private static final int MIN_TEXT_DEFN_LENGTH = 12;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
-		TermServerReport.run(ReleaseIssuesReport.class, args);
+		Map<String, String> params = new HashMap<>();
+		params.put(INCLUDE_ALL_LEGACY_ISSUES, "Y");
+		TermServerReport.run(ReleaseIssuesReport.class, args, params);
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
@@ -84,9 +87,11 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		info("...parent hierarchies (~20 seconds)");
 		parentsInSameTopLevelHierarchy();
 		
+		info("...axiom integrity");
+		axiomIntegrity();
+		
 		info("Checks complete");
 	}
-	
 	//ISRS-286 Ensure Parents in same module.
 	//TODO To avoid issues with LOINC and ManagedService, only check core and model module
 	//concepts
@@ -359,6 +364,28 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 						}	else {
 							incrementSummaryInformation("Fresh Issues Reported");
 							incrementSummaryInformation(ISSUE_COUNT);  //We'll only flag up fresh issues
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	//RP-128
+	private void axiomIntegrity() throws TermServerScriptException {
+		//Check all concepts referenced in relationships are valid
+		for (Concept c : gl.getAllConcepts()) {
+			if (c.isActive()) {
+				for (Relationship r : c.getRelationships()) {
+					if (r.isActive()) {
+						String legacy = isLegacy(r);
+						if (!r.getType().isActive()) {
+							report(c, "Axiom contains inactive type", legacy, isActive(c,r), r);
+							incrementSummaryInformation(ISSUE_COUNT); 
+						}
+						if (!r.getTarget().isActive()) {
+							report(c, "Axiom contains inactive target", legacy, isActive(c,r), r);
+							incrementSummaryInformation(ISSUE_COUNT); 
 						}
 					}
 				}

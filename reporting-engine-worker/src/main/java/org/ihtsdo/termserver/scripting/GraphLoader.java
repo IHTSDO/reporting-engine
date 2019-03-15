@@ -99,7 +99,7 @@ public class GraphLoader implements RF2Constants {
 					continue;
 				}
 				
-				/*if (lineItems[IDX_ID].equals("10011096023")) {
+				/*if (lineItems[REL_IDX_SOURCEID].equals("204889008")) {
 					System.out.println ("Debug Here");
 				}*/
 				
@@ -138,7 +138,7 @@ public class GraphLoader implements RF2Constants {
 					continue;
 				}
 				
-				/*if (lineItems[IDX_ID].equals("10011096023")) {
+				/*if (lineItems[REF_IDX_REFCOMPID].equals("204889008")) {
 					System.out.println ("Debug Here");
 				}*/
 				Long conceptId = Long.parseLong(lineItems[REF_IDX_REFCOMPID]);
@@ -146,10 +146,12 @@ public class GraphLoader implements RF2Constants {
 					System.out.println ("Axiom " + lineItems[REL_IDX_ID] + " referenced a non concept identifier: " + lineItems[REF_IDX_REFCOMPID]);
 				}
 				try {
+					boolean isActive = lineItems[REF_IDX_ACTIVE].equals(ACTIVE_FLAG);
 					AxiomRepresentation axiom = axiomService.convertAxiomToRelationships(conceptId, lineItems[REF_IDX_AXIOM_STR]);
 					//Filter out any additional statements such as TransitiveObjectProperty(:123005000)]
 					if (axiom != null) {
 						for (Relationship r :  AxiomUtils.toRelationships(getConcept(conceptId), axiom)) {
+							r.setActive(isActive);
 							addRelationshipToConcept(CharacteristicType.STATED_RELATIONSHIP, r, isDelta);
 						}
 					}
