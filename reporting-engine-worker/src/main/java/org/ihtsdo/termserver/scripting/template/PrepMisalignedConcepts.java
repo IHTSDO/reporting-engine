@@ -423,7 +423,7 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 			} else {
 				List<String> diagnostics = new ArrayList<String>();
 				conceptDiagnostics.put(c, diagnostics);
-				String msg = "Cardinality mismatch: " +  (c.getIssues().isEmpty()?" N/A" : c.getIssues());
+				String msg = "Cardinality mismatch: " +  (StringUtils.isEmpty(c.getIssues())?" N/A" : c.getIssues());
 				diagnostics.add(msg);
 				diagnostics.add("Relationship Group mismatches:");
 				for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP)) {
