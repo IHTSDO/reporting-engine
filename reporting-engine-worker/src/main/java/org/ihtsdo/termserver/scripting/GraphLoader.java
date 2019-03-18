@@ -712,6 +712,7 @@ public class GraphLoader implements RF2Constants {
 			c.setIssue(null);
 			for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP)) {
 				g.setIssues(null);
+				g.resetIndicators();
 			}
 		}
 	}

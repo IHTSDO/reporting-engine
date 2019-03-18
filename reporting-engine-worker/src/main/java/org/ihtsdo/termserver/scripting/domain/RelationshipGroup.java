@@ -89,6 +89,10 @@ public class RelationshipGroup {
 		this.indicators += indicator;
 	}
 	
+	public void resetIndicators() {
+		this.indicators = "";
+	}
+	
 	@Override
 	public boolean equals (Object other) {
 		if (!(other instanceof RelationshipGroup)) {
