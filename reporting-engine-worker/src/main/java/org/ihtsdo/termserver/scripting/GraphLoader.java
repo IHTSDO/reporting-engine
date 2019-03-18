@@ -150,6 +150,11 @@ public class GraphLoader implements RF2Constants {
 					AxiomRepresentation axiom = axiomService.convertAxiomToRelationships(conceptId, lineItems[REF_IDX_AXIOM_STR]);
 					//Filter out any additional statements such as TransitiveObjectProperty(:123005000)]
 					if (axiom != null) {
+						Long LHS = axiom.getLeftHandSideNamedConcept();
+						if (LHS != null && conceptId != LHS) {
+							throw new IllegalArgumentException("Axiom LHS != RefCompId: " + line);
+						}
+						
 						for (Relationship r :  AxiomUtils.toRelationships(getConcept(conceptId), axiom)) {
 							r.setActive(isActive);
 							addRelationshipToConcept(CharacteristicType.STATED_RELATIONSHIP, r, isDelta);
