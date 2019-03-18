@@ -315,11 +315,11 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 		subHierarchyECL = "< 125670008 |Foreign body (disorder)|"; //QI-156
 		templateNames = new String[] {	"templates/Foreign body.json" };
 		
-		
+		*/
 		subHierarchyECL = "<  193570009 |Cataract (disorder)|"; //MQI-7
 		templateNames = new String[] {	"templates/Cataract.json" };
 		includeComplexTemplates = true;
-		
+		/*
 		subHierarchyECL = "< 429040005 |Ulcer (disorder)|"; //QI-248
 		templateNames = new String[] {	"templates/Ulcer.json" };
 		
@@ -328,11 +328,11 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 		
 		subHierarchyECL = "<< 109355002 |Carcinoma in situ (disorder)|"; //QI-231
 		templateNames = new String[] {	"templates/Carcinoma in Situ.json" };
-		*/
 		
 		subHierarchyECL = "<< 247441003 |Erythema|"; //QI-240
 		templateNames = new String[] {	"templates/Erythema of body structure.json" };
 		inclusionWords.add("finding");
+		*/
 		
 		super.init(args);
 		
