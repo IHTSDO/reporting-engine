@@ -151,7 +151,7 @@ public class GraphLoader implements RF2Constants {
 					//Filter out any additional statements such as TransitiveObjectProperty(:123005000)]
 					if (axiom != null) {
 						Long LHS = axiom.getLeftHandSideNamedConcept();
-						if (LHS != null && conceptId != LHS) {
+						if (LHS != null && !conceptId.equals(LHS)) {
 							throw new IllegalArgumentException("Axiom LHS != RefCompId: " + line);
 						}
 						
