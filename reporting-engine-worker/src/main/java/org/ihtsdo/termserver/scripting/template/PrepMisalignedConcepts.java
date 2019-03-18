@@ -97,6 +97,10 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 		runStandAlone = true; 
 		populateEditPanel = true;
 		populateTaskDescription = true;
+		
+		if (inclusionWords == null) {
+			inclusionWords = new ArrayList<>();
+		}
 		if (exclusionWords == null) {
 			exclusionWords = new ArrayList<>();
 		}
@@ -321,9 +325,14 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 		
 		subHierarchyECL = "< 64572001 |Disease (disorder)|"; 
 		templateNames = new String[] {	"templates/Disease.json" };
-		 */
+		
 		subHierarchyECL = "<< 109355002 |Carcinoma in situ (disorder)|"; //QI-231
 		templateNames = new String[] {	"templates/Carcinoma in Situ.json" };
+		*/
+		
+		subHierarchyECL = "<< 247441003 |Erythema|"; //QI-240
+		templateNames = new String[] {	"templates/Erythema of body structure.json" };
+		inclusionWords.add("finding");
 		
 		super.init(args);
 		
@@ -368,7 +377,10 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 
 	private void report(Task t, Concept c) throws TermServerScriptException {
 		//Collect the diagnostic information about why this concept didn't match any templates as a string
-		String diagnosticStr = String.join("\n", conceptDiagnostics.get(c));
+		String diagnosticStr = "No diagnostic information available";
+		if (conceptDiagnostics.get(c) != null) {
+			diagnosticStr = String.join("\n", conceptDiagnostics.get(c));
+		}
 		report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, diagnosticStr);
 	}
 
@@ -396,7 +408,15 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 			}
 			if (whiteListedConcepts.contains(c)) {
 				incrementSummaryInformation(WHITE_LISTED_COUNT);
+				ignoredConcepts.add(c);
 				continue;
+			}
+			if (inclusionWords.size() > 0) {
+				if (!containsInclusionWord(c)) {
+					ignoredConcepts.add(c);
+					incrementSummaryInformation("Skipped as doesn't contain inclusion word");
+					continue;
+				}
 			}
 			if (isExcluded(c)) {
 				ignoredConcepts.add(c);

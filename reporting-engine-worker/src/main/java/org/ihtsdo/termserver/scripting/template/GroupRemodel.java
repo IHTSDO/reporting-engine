@@ -820,17 +820,6 @@ public class GroupRemodel extends TemplateFix {
 		return firstPassComplete;
 	}
 	
-	private boolean containsInclusionWord(Concept c) {
-		String fsn = c.getFsn().toLowerCase();
-		String pt = c.getPreferredSynonym().toLowerCase();
-		for (String word : inclusionWords) {
-			if (fsn.contains(word) || pt.contains(word)) {
-				return true;
-			}
-		}
-		return false;
-	}
-
 	protected boolean isExcluded(Concept c) {
 		if (skipMultipleUngroupedFindingSites) {
 			if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, FINDING_SITE, UNGROUPED).size() > 1) {

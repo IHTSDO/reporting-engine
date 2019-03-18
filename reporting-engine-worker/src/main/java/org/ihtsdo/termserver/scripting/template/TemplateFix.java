@@ -331,5 +331,16 @@ abstract public class TemplateFix extends BatchFix {
 			}
 		}
 	}
+	
+	protected boolean containsInclusionWord(Concept c) {
+		String fsn = c.getFsn().toLowerCase();
+		String pt = c.getPreferredSynonym().toLowerCase();
+		for (String word : inclusionWords) {
+			if (fsn.contains(word) || pt.contains(word)) {
+				return true;
+			}
+		}
+		return false;
+	}
 }
 
