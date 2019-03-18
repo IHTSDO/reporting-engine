@@ -23,10 +23,14 @@ public abstract class Component {
 	public abstract String[] toRF2() throws TermServerScriptException;
 	
 	public void addIssue(String issue) {
-		if (!this.issues.isEmpty()) {
-			this.issues += ", ";
+		if (this.issues == null) {
+			this.issues = issue;
+		} else {
+			if (!this.issues.isEmpty()) {
+				this.issues += ", ";
+			}
+			this.issues += issue;
 		}
-		this.issues += issue;
 	}
 	
 	public String getIssues() {
