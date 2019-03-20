@@ -5,6 +5,7 @@ import java.util.*;
 
 import org.snomed.authoringtemplate.domain.ConceptTemplate;
 import org.snomed.authoringtemplate.domain.logical.*;
+import org.ihtsdo.termserver.scripting.AncestorsCache;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.TemplateServiceClient;
@@ -264,6 +265,33 @@ abstract public class TemplateFix extends BatchFix {
 		super.report (task, component, severity, actionType, SnomedUtils.translateDefnStatus(c.getDefinitionStatus()), relevantTemplate, details);
 	}
 	
+	/**
+	 * Within each group, check if there are any relationships which are entirely 
+	 * redundant as more specific versions of the same type/value exist
+	 */
+	protected int removeRedundandRelationships(Task t, Concept c) throws TermServerScriptException {
+		int changesMade = 0;
+		AncestorsCache cache = gl.getAncestorsCache();
+		List<Relationship> removedRels = new ArrayList<>();
+		for (RelationshipGroup group : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
+			List<Relationship> originalRels = group.getRelationships();
+			for (Relationship originalRel : originalRels) {
+				if (removedRels.contains(originalRel)) {
+					continue;
+				}
+				for (Relationship potentialRedundancy : originalRels) {
+					if (SnomedUtils.isMoreSpecific(originalRel, potentialRedundancy, cache)) {
+						report (t, c, Severity.MEDIUM, ReportActionType.INFO, "Redundant relationship within group", potentialRedundancy, originalRel );
+						removeRelationship(t, c, potentialRedundancy);
+						removedRels.add(potentialRedundancy);
+						changesMade++;
+					}
+				}
+			}
+		}
+		return changesMade;
+	}
+	
 	protected int removeRedundandGroups(Task t, Concept c) throws TermServerScriptException {
 		int changesMade = 0;
 		List<RelationshipGroup> originalGroups = new ArrayList<>(c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP));
@@ -317,18 +345,20 @@ abstract public class TemplateFix extends BatchFix {
 		return changesMade;
 	}
 
-	private void shuffleDown(Task t, Concept c) {
+	private void shuffleDown(Task t, Concept c) throws TermServerScriptException {
 		List<RelationshipGroup> newGroups = new ArrayList<>();
 		for (RelationshipGroup group : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
-			if (!group.isGrouped() || group.size() > 0) {
-				//Since we're working with the true concept relationships here, this will have
-				//the effect of changing the groupId in all affected relationships
-				group.setGroupId(newGroups.size());
-				newGroups.add(group);
-			} else if (group.isGrouped()){
-				//Add an empty group skip group 0 and prevent shuffling group 1 into group 0
+			//Have we missed out the ungrouped group? fill in if so
+			if (group.isGrouped() && newGroups.size() == 0) {
 				newGroups.add(new RelationshipGroup(UNGROUPED));
 			}
+			//Since we're working with the true concept relationships here, this will have
+			//the effect of changing the groupId in all affected relationships
+			if (group.getGroupId() != newGroups.size()) {
+				report (t, c, Severity.MEDIUM, ReportActionType.INFO, "Shuffling stated group " + group.getGroupId() + " to " + newGroups.size());
+			}
+			group.setGroupId(newGroups.size());
+			newGroups.add(group);
 		}
 	}
 	

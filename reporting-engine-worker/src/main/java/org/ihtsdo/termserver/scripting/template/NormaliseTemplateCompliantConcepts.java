@@ -180,10 +180,10 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		subHierarchyECL = "<<428794004 |Fistula (disorder)|"; //QI-186
 		templateNames = new String[] {	"templates/Fistula.json" };
 		includeDueTos = true;
-		
+		*/
 		subHierarchyECL = "< 64572001 |Disease (disorder)|"; 
 		templateNames = new String[] {	"templates/Disease.json" };
-		
+		/*
 		subHierarchyECL = "<<441457006 |Cyst|"; //QI-182
 		templateNames = new String[] {	"templates/Cyst.json" };
 		
@@ -193,10 +193,10 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		subHierarchyECL = "<< 247441003 |Erythema|"; //QI-240
 		templateNames = new String[] {	"templates/Erythema of body structure.json" };
 		inclusionWords.add("finding");
-		*/
+		
 		subHierarchyECL = "<< 3723001 |Arthritis (disorder)|"; //QI-167
 		templateNames = new String[] {	"templates/Arthritis.json" };
-		
+		*/
 		super.init(args);
 		
 		//Ensure our ECL matches more than 0 concepts.  This will also cache the result
@@ -208,7 +208,8 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 	@Override
 	protected int doFix(Task task, Concept concept, String info) throws TermServerScriptException, ValidationFailure {
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
-		int changesMade = normaliseConceptToTemplate(task, loadedConcept, conceptToTemplateMap.get(concept));
+		int changesMade = removeRedundandRelationships(task, loadedConcept);
+		changesMade += normaliseConceptToTemplate(task, loadedConcept, conceptToTemplateMap.get(concept));
 		changesMade += removeRedundandGroups(task, loadedConcept);
 		if (changesMade > 0) {
 			updateConcept(task, loadedConcept, info);
@@ -328,9 +329,9 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		Set<Concept> noChangesRequired = new HashSet<>();
 		setQuiet(true);
 		for (Concept alignedConcept : alignedConcepts) {
-			if (!alignedConcept.getConceptId().equals("128066003")) {
-			//		continue;
-			}
+			/*if (!alignedConcept.getConceptId().equals("109924004")) {
+					continue;
+			}*/
 			
 			if (inclusionWords.size() > 0) {
 				if (!containsInclusionWord(alignedConcept)) {
