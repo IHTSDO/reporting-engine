@@ -1,0 +1,6 @@
+{
+  "name": "MP-only",
+  "documentation": "https://confluence.ihtsdotools.org/display/SCTEMPLATES/MP-only+-+Ready+for+implementation",
+  "version": 1,
+  "logicalTemplate": "763158003 |Medicinal product (product)| : [[~1..*]] 127489000 |Has active ingredient (attribute)| = [[ +id( < 105590001 |Substance (substance)|) @ingredient]], [[~1..1]] 766952006 |Count of base of active ingredient (attribute)| = [[ +id( < 260299005 |Number (qualifier value)|) @baseCount]], [[~0..1]] 766954007 |Count of base and modification pair (attribute)| = [[ +id( < 260299005 |Number (qualifier value)|) @baseModCount]], [[~0..1]] 766953001 |Count of active ingredient (attribute)| = [[ +id ( < 260299005 |Number (qualifier value)|) @ingredCount]]"
+}

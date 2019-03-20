@@ -154,6 +154,15 @@ public abstract class AllKnownTemplates extends TermServerReport {
 		templateNames = new String[] {	"templates/Carcinoma in Situ.json" };
 		populateTemplates(subHierarchyStr, templateNames);
 		
+		subHierarchyStr = "763158003 |Medicinal product (product)|"; //RP-135
+		templateNames = new String[] {	"templates/drugs/MP only.json",
+										"templates/drugs/MP containing.json",
+										"templates/drugs/MPF containing.json",
+										"templates/drugs/MPF only.json",
+										"templates/drugs/CD precise discrete.json",
+										"templates/drugs/CD precise continuous.json"};
+		populateTemplates(subHierarchyStr, templateNames);
+		
 		populateTemplatesFromTS();
 		super.init(run);
 	}
