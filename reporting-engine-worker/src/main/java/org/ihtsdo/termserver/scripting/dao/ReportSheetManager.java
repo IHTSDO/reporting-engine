@@ -33,7 +33,7 @@ public class ReportSheetManager implements RF2Constants {
 	private static int MAX_COLUMNS = 15;
 	private static String MAX_COLUMN_STR = Character.toString((char)('A' + MAX_COLUMNS));
 	private static final int MIN_REQUEST_RATE = 10;
-	private static final int MAX_WRITE_ATTEMPTS = 4;
+	private static final int MAX_WRITE_ATTEMPTS = 3;
 
 	Credential credential;
 	ReportManager owner;
