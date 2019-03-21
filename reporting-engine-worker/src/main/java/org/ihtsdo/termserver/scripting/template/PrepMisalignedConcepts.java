@@ -97,6 +97,7 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 		runStandAlone = true; 
 		populateEditPanel = true;
 		populateTaskDescription = true;
+		includeSummaryTab = true;
 		
 		if (inclusionWords == null) {
 			inclusionWords = new ArrayList<>();
@@ -315,11 +316,11 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 		subHierarchyECL = "< 125670008 |Foreign body (disorder)|"; //QI-156
 		templateNames = new String[] {	"templates/Foreign body.json" };
 		
-		*/
+		
 		subHierarchyECL = "<  193570009 |Cataract (disorder)|"; //MQI-7
 		templateNames = new String[] {	"templates/Cataract.json" };
 		includeComplexTemplates = true;
-		/*
+		
 		subHierarchyECL = "< 429040005 |Ulcer (disorder)|"; //QI-248
 		templateNames = new String[] {	"templates/Ulcer.json" };
 		
@@ -333,6 +334,8 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 		templateNames = new String[] {	"templates/Erythema of body structure.json" };
 		inclusionWords.add("finding");
 		*/
+		subHierarchyECL = "<< 445505000 |Contracture of joint of spine (disorder)|";
+		templateNames = new String[] {	"templates/Finding of range of joint movement.json" };
 		
 		super.init(args);
 		
@@ -418,7 +421,7 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 					continue;
 				}
 			}
-			if (isExcluded(c)) {
+			if (isExcluded(c, false)) {
 				ignoredConcepts.add(c);
 			} else {
 				List<String> diagnostics = new ArrayList<String>();

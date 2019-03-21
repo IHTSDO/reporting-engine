@@ -184,9 +184,9 @@ abstract public class TemplateFix extends BatchFix {
 				warn ("Ignoring inactive concept returned by ECL: " + c);
 				continue;
 			}
-			if (!isExcluded(c) && TemplateUtils.matchesTemplate(c, t, gl.getDescendantsCache(), CharacteristicType.INFERRED_RELATIONSHIP)) {
+			if (!isExcluded(c, true) && TemplateUtils.matchesTemplate(c, t, gl.getDescendantsCache(), CharacteristicType.INFERRED_RELATIONSHIP)) {
 				//Do we already have a template for this concept?  
-				//TODO Assign the most specific template if so
+				//Assign the most specific template if so (TODO Don't assume order indicates complexity!)
 				if (conceptToTemplateMap.containsKey(c)) {
 					Template existing = conceptToTemplateMap.get(c);
 					Template moreSpecific = t.getId() > existing.getId() ? t : existing; 
@@ -213,20 +213,26 @@ abstract public class TemplateFix extends BatchFix {
 		return null;
 	}
 	
-	protected boolean isExcluded(Concept c) {
+	protected boolean isExcluded(Concept c, boolean quiet) {
 		//These hierarchies have been excluded
 		if (exclusions.contains(c)) {
-			incrementSummaryInformation("Concepts excluded due to hierarchial exclusion");
+			if (!quiet) {
+				incrementSummaryInformation("Concepts excluded due to hierarchial exclusion");
+			}
 			return true;
 		}
 		
 		if (gl.isOrphanetConcept(c)) {
-			incrementSummaryInformation("Orphanet concepts excluded");
+			if (!quiet) {
+				incrementSummaryInformation("Orphanet concepts excluded");
+			}
 			return true;
 		}
 		
 		if (StringUtils.isEmpty(c.getFsn())) {
-			warn("Skipping concept with no FSN: " + c.getConceptId());
+			if (!quiet) {
+				warn("Skipping concept with no FSN: " + c.getConceptId());
+			}
 			return true;
 		}
 		
@@ -235,8 +241,9 @@ abstract public class TemplateFix extends BatchFix {
 		for (String word : exclusionWords) {
 			//word = " " + word + " ";
 			if (fsn.contains(word)) {
-				//debug (c + "ignored due to fsn containing:" + word);
-				incrementSummaryInformation("Concepts excluded due to lexical match");
+				if (!quiet) {
+					incrementSummaryInformation("Concepts excluded due to lexical match");
+				}
 				return true;
 			}
 		}

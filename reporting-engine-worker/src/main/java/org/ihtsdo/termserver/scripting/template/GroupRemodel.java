@@ -792,7 +792,7 @@ public class GroupRemodel extends TemplateFix {
 			//At THIS point in the evolution of the code, attempt to remodel any concept
 			//where the stated attribute do not match the inferred OR where the concept
 			//is not aligned to the template
-			if (!isExcluded(c)) {
+			if (!isExcluded(c, false)) {
 				if (!SnomedUtils.inferredMatchesStated(c)) {
 					processMe.add(c);
 				} else {
@@ -820,14 +820,14 @@ public class GroupRemodel extends TemplateFix {
 		return firstPassComplete;
 	}
 	
-	protected boolean isExcluded(Concept c) {
+	protected boolean isExcluded(Concept c, boolean quiet) {
 		if (skipMultipleUngroupedFindingSites) {
 			if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, FINDING_SITE, UNGROUPED).size() > 1) {
 				warn("Excluding due to multiple ungrouped finding sites: " + c);
 				return true;
 			}
 		}
-		return super.isExcluded(c);
+		return super.isExcluded(c, quiet);
 	}
 
 	private List<Component> firstPassRemodel(List<Concept> processMe) throws TermServerScriptException {

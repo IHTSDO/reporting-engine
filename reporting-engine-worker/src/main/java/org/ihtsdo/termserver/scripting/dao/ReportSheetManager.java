@@ -33,6 +33,7 @@ public class ReportSheetManager implements RF2Constants {
 	private static int MAX_COLUMNS = 15;
 	private static String MAX_COLUMN_STR = Character.toString((char)('A' + MAX_COLUMNS));
 	private static final int MIN_REQUEST_RATE = 10;
+	private static final int MAX_WRITE_ATTEMPTS = 4;
 
 	Credential credential;
 	ReportManager owner;
@@ -244,9 +245,23 @@ public class ReportSheetManager implements RF2Constants {
 				.setValueInputOption(RAW)
 				.setData(dataToBeWritten);
 			try {
-				System.out.println(new Date() + " flushing to sheets");
-				sheetsService.spreadsheets().values().batchUpdate(sheet.getSpreadsheetId(),body)
-				.execute();
+				TermServerScript.info(new Date() + " flushing to sheets");
+				int writeAttempts = 0;
+				boolean writeSuccess = false;
+				while (!writeSuccess && writeAttempts <= MAX_WRITE_ATTEMPTS) {
+					try {
+						sheetsService.spreadsheets().values().batchUpdate(sheet.getSpreadsheetId(),body)
+						.execute();
+						writeSuccess = true;
+					}catch(Exception e) {
+						if (writeAttempts <= MAX_WRITE_ATTEMPTS) {
+							TermServerScript.info(e.getMessage() + " trying again...");
+						} else {
+							throw (e);
+						}
+					}
+					writeAttempts++;
+				}
 			} catch (IOException e) {
 				throw new TermServerScriptException("Unable to update spreadsheet " + sheet.getSpreadsheetUrl(), e);
 			} finally {

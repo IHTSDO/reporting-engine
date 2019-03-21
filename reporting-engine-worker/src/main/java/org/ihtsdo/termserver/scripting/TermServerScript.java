@@ -48,7 +48,6 @@ public abstract class TermServerScript implements RF2Constants {
 	protected int processingLimit = NOT_SET;
 	private Date startTime;
 	private Map<String, Object> summaryDetails = new TreeMap<String, Object>();
-	private String summaryText = "";
 	protected boolean inputFileHasHeaderRow = false;
 	protected boolean runStandAlone = true; //Set to true to avoid loading concepts from Termserver.  Should be used with Dry Run only.
 	protected File inputFile;
@@ -56,6 +55,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected String projectName;
 	private String reportName;
 	protected boolean safetyProtocols = true;  //Switch off to bypass all limits
+	protected boolean includeSummaryTab = false;
 	
 	protected String subHierarchyStr;
 	protected String subHierarchyECL;
@@ -832,7 +832,7 @@ public abstract class TermServerScript implements RF2Constants {
 	
 	public void finish() {
 		info (BREAK);
-		flushFilesSafely(true);
+
 		Date endTime = new Date();
 		if (startTime != null) {
 			long diff = endTime.getTime() - startTime.getTime();
@@ -840,8 +840,12 @@ public abstract class TermServerScript implements RF2Constants {
 			recordSummaryText ("Started at: " + startTime);
 		}
 		recordSummaryText ("Finished at: " + endTime);
-		List<String> criticalIssues = new ArrayList<String>();
 		
+		if (includeSummaryTab) {
+			recordSummaryText("");
+		}
+		
+		List<String> criticalIssues = new ArrayList<String>();
 		for (Map.Entry<String, Object> summaryDetail : summaryDetails.entrySet()) {
 			String key = summaryDetail.getKey();
 			Object value = summaryDetail.getValue();
@@ -871,17 +875,18 @@ public abstract class TermServerScript implements RF2Constants {
 				recordSummaryText(thisCriticalIssue);
 			}
 		}
-		
+		flushFilesSafely(true);
 	}
 	
 	private synchronized void recordSummaryText(String msg) {
 		info (msg);
-		msg = msg.replace("\n", "\n</br>");
-		summaryText += msg + "\n<br/>";
-	}
-	
-	public String getSummaryText() {
-		return summaryText;
+		if (includeSummaryTab) {
+			try {
+				writeToReportFile (SECONDARY_REPORT, msg);
+			} catch (Exception e) {
+				error ("Failed to write summary info: " + msg, e);
+			}
+		}
 	}
 	
 	protected void writeToRF2File(String fileName, Object[] columns) throws TermServerScriptException {

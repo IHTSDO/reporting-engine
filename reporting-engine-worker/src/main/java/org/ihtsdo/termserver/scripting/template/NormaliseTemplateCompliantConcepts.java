@@ -327,7 +327,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		}
 		alignedConcepts.removeAll(ignoredConcepts);
 		alignedConcepts = alignedConcepts.stream()
-				.filter(c -> !isExcluded(c))
+				.filter(c -> !isExcluded(c, false))
 				.collect(Collectors.toSet());
 		
 		//Now first pass attempt to remodel because we don't want to batch anything that results 
