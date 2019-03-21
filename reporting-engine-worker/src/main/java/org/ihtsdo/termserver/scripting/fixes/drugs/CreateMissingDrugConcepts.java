@@ -158,7 +158,11 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 		List<Relationship> needleRels = needle.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
 		nextStraw:
 		for (Concept straw : haystack) {
-			List<Relationship> strawRels = straw.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
+			//We need to filter out the "Plays role" attribute since we don't know when those might pop up and we
+			//don't model them for our missing concepts
+			List<Relationship> strawRels = straw.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE).stream()
+											.filter(r -> !r.getType().equals(PLAYS_ROLE))
+											.collect(Collectors.toList());
 			if (needleRels.size() != strawRels.size()) {
 				continue nextStraw;
 			}
