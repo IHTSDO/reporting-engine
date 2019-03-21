@@ -253,7 +253,9 @@ abstract public class TemplateFix extends BatchFix {
 			for (Concept excludedType : complexTemplateAttributes) {
 				for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
 					if (r.getType().equals(excludedType)) {
-						incrementSummaryInformation("Concepts excluded due to complexity");
+						if (!quiet) {
+							incrementSummaryInformation("Concepts excluded due to complexity");
+						}
 						return true;
 					}
 				}
