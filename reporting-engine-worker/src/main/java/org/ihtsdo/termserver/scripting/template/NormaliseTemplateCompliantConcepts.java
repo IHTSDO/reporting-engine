@@ -196,7 +196,11 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		
 		subHierarchyECL = "<< 3723001 |Arthritis (disorder)|"; //QI-167
 		templateNames = new String[] {	"templates/Arthritis.json" };
+		
+		subHierarchyECL = "< 429040005 |Ulcer (disorder)|"; //QI-288
+		templateNames = new String[] {	"templates/Ulcer.json" };
 		*/
+		
 		super.init(args);
 		
 		//Ensure our ECL matches more than 0 concepts.  This will also cache the result
@@ -208,6 +212,9 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 	@Override
 	protected int doFix(Task task, Concept concept, String info) throws TermServerScriptException, ValidationFailure {
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
+		if (loadedConcept.getGciAxioms() != null || loadedConcept.getAdditionalAxioms() != null) {
+			throw new ValidationFailure(task, loadedConcept, "Concept uses axioms");
+		}
 		int changesMade = removeRedundandRelationships(task, loadedConcept);
 		changesMade += normaliseConceptToTemplate(task, loadedConcept, conceptToTemplateMap.get(concept));
 		changesMade += removeRedundandGroups(task, loadedConcept);

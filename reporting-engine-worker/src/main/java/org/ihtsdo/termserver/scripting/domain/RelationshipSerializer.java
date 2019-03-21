@@ -39,6 +39,9 @@ public class RelationshipSerializer implements JsonSerializer<Relationship> {
 		json.addProperty("sourceId", r.getSourceId());
 		json.addProperty("groupId", r.getGroupId());
 		json.addProperty("characteristicType", r.getCharacteristicType().toString());
+		if (r.getModifier() == null) {
+			throw new IllegalArgumentException("Modifier encountered with no modifier specified: " + r);
+		}
 		json.addProperty("modifier", r.getModifier().toString());
 		
 		return json;

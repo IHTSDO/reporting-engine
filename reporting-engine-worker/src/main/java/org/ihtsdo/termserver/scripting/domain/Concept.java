@@ -1184,4 +1184,20 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		return maxGroupId;
 	}
 
+	public List<Axiom> getAdditionalAxioms() {
+		return additionalAxioms;
+	}
+
+	public void setAdditionalAxioms(List<Axiom> additionalAxioms) {
+		this.additionalAxioms = additionalAxioms;
+	}
+
+	public List<Axiom> getGciAxioms() {
+		return gciAxioms;
+	}
+
+	public void setGciAxioms(List<Axiom> gciAxioms) {
+		this.gciAxioms = gciAxioms;
+	}
+
 }
