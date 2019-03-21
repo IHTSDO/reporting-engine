@@ -72,6 +72,9 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 	
 	public void postInit() throws TermServerScriptException {
 		for (Concept c : MEDICINAL_PRODUCT.getDescendents(NOT_SET)) {
+/*			if (c.getConceptId().equals("412182005")) {
+				debug("Here");
+			}*/
 			SnomedUtils.populateConceptType(c);
 			if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM)) {
 				knownMPFs.add(c);
@@ -129,6 +132,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 		for (Concept required : conceptsRequired) {
 			termGenerator.ensureDrugTermsConform(task, required, CharacteristicType.STATED_RELATIONSHIP, true);
 			required.setDefinitionStatus(DefinitionStatus.FULLY_DEFINED);
+			report (task, concept, Severity.NONE, ReportActionType.INFO, "Concepts suggests need for :" + required);
 			required = createConcept(task, required, info);
 			
 			if (required.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT) || 
@@ -158,6 +162,9 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 		List<Relationship> needleRels = needle.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
 		nextStraw:
 		for (Concept straw : haystack) {
+		/*	if (straw.getConceptId().equals("412256008")) {
+				debug ("debug here also");
+			}*/
 			//We need to filter out the "Plays role" attribute since we don't know when those might pop up and we
 			//don't model them for our missing concepts
 			List<Relationship> strawRels = straw.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE).stream()
@@ -225,7 +232,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 		List<Concept> allAffected = new ArrayList<Concept>(); 
 		nextConcept:
 		for (Concept c : MEDICINAL_PRODUCT.getDescendents(NOT_SET)) {
-			/*if (!c.getConceptId().equals("767585002")) {
+/*			if (!c.getConceptId().equals("768330004")) {
 				continue;
 			}*/
 			try {

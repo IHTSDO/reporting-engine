@@ -99,8 +99,12 @@ public class GraphLoader implements RF2Constants {
 					continue;
 				}
 				
-				/*if (lineItems[REL_IDX_SOURCEID].equals("204889008")) {
-					System.out.println ("Debug Here");
+				if (lineItems[REL_IDX_ID].isEmpty()) {
+					throw new TermServerScriptException("Attempt to load relationship with empty ID: " + line);
+				}
+				
+/*				if (lineItems[REL_IDX_SOURCEID].equals("412256008") && characteristicType.equals(CharacteristicType.STATED_RELATIONSHIP)) {
+					System.out.println ("Debug Here: " + line);
 				}*/
 				
 				if (!isConcept(lineItems[REL_IDX_SOURCEID])) {

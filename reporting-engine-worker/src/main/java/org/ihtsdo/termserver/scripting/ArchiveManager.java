@@ -120,7 +120,7 @@ public class ArchiveManager implements RF2Constants {
 				try {
 					loadArchive(snapshot, fsnOnly, "Snapshot");
 				} catch (Exception e) {
-					info ("Non-viable snapshot detected.  Deleting " + snapshot + "...");
+					TermServerScript.error ("Non-viable snapshot encountered (Exception: " + e.getMessage()  +").  Deleting " + snapshot + "...", e);
 					try {
 						if (snapshot.isFile()) {
 							snapshot.delete();
