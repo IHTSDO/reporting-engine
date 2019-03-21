@@ -357,7 +357,7 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 		String user = jobRun == null ? "System" : jobRun.getUser();
 		writeToReportFile (SECONDARY_REPORT, "Requested by: " + user);
 		writeToReportFile (SECONDARY_REPORT, "Ran against: " + subHierarchyECL);
-		writeToReportFile (SECONDARY_REPORT, "Projectt: " + project);
+		writeToReportFile (SECONDARY_REPORT, "Project: " + project);
 		writeToReportFile (SECONDARY_REPORT, "Concepts considered: " +findConcepts(project.getBranchPath(), subHierarchyECL).size());
 		writeToReportFile (SECONDARY_REPORT, "Templates: " );
 		
