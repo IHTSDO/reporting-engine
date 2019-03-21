@@ -39,7 +39,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
 		Map<String, String> params = new HashMap<>();
 		params.put(SUB_HIERARCHY, ROOT_CONCEPT.toString());
-		params.put(NEW_INACTIVATIONS_ONLY, "N");
+		params.put(NEW_INACTIVATIONS_ONLY, "false");
 		TermServerReport.run(ValidateInactivationsWithAssociations.class, args, params);
 	}
 	
@@ -56,7 +56,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 		JobParameters params = new JobParameters()
 				.add(NEW_INACTIVATIONS_ONLY)
 					.withType(JobParameter.Type.BOOLEAN)
-					.withDefaultValue("Y")
+					.withDefaultValue(true)
 				.build();
 
 		return new Job( new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION),

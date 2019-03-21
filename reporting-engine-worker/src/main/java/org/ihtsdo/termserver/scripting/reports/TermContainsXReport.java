@@ -58,7 +58,7 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 	public Job getJob() {
 		JobParameters params = new JobParameters()
 				.add(SUB_HIERARCHY).withType(JobParameter.Type.CONCEPT).withDefaultValue(ROOT_CONCEPT)
-				.add(STARTS_WITH).withType(JobParameter.Type.BOOLEAN).withMandatory()
+				.add(STARTS_WITH).withType(JobParameter.Type.BOOLEAN).withMandatory().withDefaultValue(false)
 				.add(WORDS).withType(JobParameter.Type.STRING).withMandatory()
 				.add(ATTRIBUTE_TYPE).withType(JobParameter.Type.CONCEPT).withDescription("Optional. Will show the attribute values per concept for the specified attribute type.  For example in Substances, show me all concepts that are used as a target for 738774007 |Is modification of (attribute)| by specifying that attribute type in this field.")
 				.build();

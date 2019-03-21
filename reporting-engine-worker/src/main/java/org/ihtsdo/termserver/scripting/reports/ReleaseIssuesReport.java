@@ -58,7 +58,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		JobParameters params = new JobParameters()
 				.add(INCLUDE_ALL_LEGACY_ISSUES)
 					.withType(JobParameter.Type.BOOLEAN)
-					.withDefaultValue("N")
+					.withDefaultValue(false)
 				.build();
 		return new Job( new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION),
 						"Release Issues Report",
