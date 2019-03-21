@@ -167,6 +167,8 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 		}
 		int ipCount = 0;
 		int orphanetIPs = 0;
+		//Pre-load Orphanet concepts incase in case it causes another concept to be created
+		gl.getOrphanetConcepts();
 		for (Concept c : gl.getAllConcepts()) {
 			if (c.getIssues() != null && c.getIssues().equals(IP)) {
 				ipCount++;
