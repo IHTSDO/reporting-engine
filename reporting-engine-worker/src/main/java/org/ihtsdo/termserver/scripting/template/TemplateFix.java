@@ -146,7 +146,7 @@ abstract public class TemplateFix extends BatchFix {
 
 	protected Template loadLocalTemplate (char id, String fileName) throws TermServerScriptException {
 		try {
-			TermServerScript.info("Loading local tempate " + id + ": " + fileName );
+			TermServerScript.info("Loading local template " + id + ": " + fileName );
 			ConceptTemplate ct = tsc.loadLocalConceptTemplate(fileName);
 			LogicalTemplate lt = tsc.parseLogicalTemplate(ct.getLogicalTemplate());
 			Template t = new Template(id, lt, fileName);
@@ -160,7 +160,7 @@ abstract public class TemplateFix extends BatchFix {
 	
 	protected Template loadTemplate (char id, String templateName) throws TermServerScriptException {
 		try {
-			TermServerScript.info("Loading remote tempate " + id + ": " + templateName );
+			TermServerScript.info("Loading remote template " + id + ": " + templateName );
 			ConceptTemplate ct = tsc.loadLogicalTemplate(templateName);
 			LogicalTemplate lt = tsc.parseLogicalTemplate(ct.getLogicalTemplate());
 			Template t = new Template(id, lt, templateName);
@@ -365,8 +365,25 @@ abstract public class TemplateFix extends BatchFix {
 			//the effect of changing the groupId in all affected relationships
 			if (group.getGroupId() != newGroups.size()) {
 				report (t, c, Severity.MEDIUM, ReportActionType.INFO, "Shuffling stated group " + group.getGroupId() + " to " + newGroups.size());
+				group.setGroupId(newGroups.size());
+				//If we have relationships without SCTIDs here, see if we can pinch them from inactive relationships
+				int reuseCount = 0;
+				for (Relationship moved : new ArrayList<>(group.getRelationships())) {
+					if (StringUtils.isEmpty(moved.getId())) {
+						List<Relationship> existingInactives = c.getRelationships(moved, ActiveState.INACTIVE);
+						if (existingInactives.size() > 0) {
+							group.removeRelationship(moved);
+							c.removeRelationship(moved);
+							Relationship reuse = existingInactives.get(0);
+							reuse.setActive(true);
+							group.addRelationship(reuse);
+							c.addRelationship(reuse);
+							reuseCount++;
+						}
+					}
+				}
+				report (t, c, Severity.MEDIUM, ReportActionType.INFO, "Reused " + reuseCount + " inactivated Ids");
 			}
-			group.setGroupId(newGroups.size());
 			newGroups.add(group);
 		}
 	}

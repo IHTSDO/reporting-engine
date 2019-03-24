@@ -255,6 +255,9 @@ public class ReportSheetManager implements RF2Constants {
 						writeSuccess = true;
 					}catch(Exception e) {
 						if (writeAttempts <= MAX_WRITE_ATTEMPTS) {
+							try {
+								Thread.sleep(30*1000);
+							} catch (InterruptedException e1) {}
 							TermServerScript.info(e.getMessage() + " trying again...");
 						} else {
 							throw (e);

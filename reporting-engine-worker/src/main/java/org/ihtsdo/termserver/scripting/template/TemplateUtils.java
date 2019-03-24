@@ -1,12 +1,7 @@
 package org.ihtsdo.termserver.scripting.template;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -17,14 +12,10 @@ import org.ihtsdo.termserver.scripting.DescendentsCache;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
+import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.StringUtils;
-import org.ihtsdo.termserver.scripting.domain.Relationship;
-import org.ihtsdo.termserver.scripting.domain.RelationshipGroup;
-import org.ihtsdo.termserver.scripting.domain.Template;
 
-public class TemplateUtils {
+public class TemplateUtils implements RF2Constants {
 	
 	public static String ECL_DESCENDANT_OR_SELF = "<<";
 	public static String ECL_DESCENDANT = "<";
@@ -190,8 +181,10 @@ public class TemplateUtils {
 			Cardinality cardinality = getCardinality(entry.getKey());
 			int count = entry.getValue().size();
 			if (count < cardinality.getMin() || count > cardinality.getMax()) {
-				//Buf if all elements within the group are optional, the cardinality on the group overall is irrelevant
-				if (!containsAllOptional(entry.getKey())) {
+				//Group 0 can have optional cardinality if all its attributes are optional
+				if (entry.getKey().getGroupId() == UNGROUPED && containsAllOptional(entry.getKey())) {
+					continue;
+				} else {
 					isValid = false;
 					c.addIssue(templateId + " " + count + " found != " + getCardinalityStr(entry.getKey()) + " required. " + entry.getKey().toString());
 					break;

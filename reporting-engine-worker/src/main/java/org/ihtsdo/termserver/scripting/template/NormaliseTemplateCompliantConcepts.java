@@ -42,7 +42,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 	}
 	
 	protected void init(String[] args) throws TermServerScriptException {
-		//safetyProtocols = false;
+		safetyProtocols = false;
 		reportNoChange = false;
 		selfDetermining = true;
 		runStandAlone = true;
@@ -182,6 +182,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		includeDueTos = true;
 		*/
 		subHierarchyECL = "< 64572001 |Disease (disorder)|"; 
+		//subHierarchyECL = "<< 38215007";
 		templateNames = new String[] {	"templates/Disease.json" };
 		/*
 		subHierarchyECL = "<<441457006 |Cyst|"; //QI-182
@@ -212,7 +213,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 	@Override
 	protected int doFix(Task task, Concept concept, String info) throws TermServerScriptException, ValidationFailure {
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
-		if (loadedConcept.getGciAxioms() != null || loadedConcept.getAdditionalAxioms() != null) {
+		if (loadedConcept.getGciAxioms().size() > 0 || loadedConcept.getAdditionalAxioms().size() > 0) {
 			throw new ValidationFailure(task, loadedConcept, "Concept uses axioms");
 		}
 		int changesMade = removeRedundandRelationships(task, loadedConcept);

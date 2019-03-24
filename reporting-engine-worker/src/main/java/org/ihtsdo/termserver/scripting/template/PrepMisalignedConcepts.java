@@ -333,9 +333,14 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 		subHierarchyECL = "<< 247441003 |Erythema|"; //QI-240
 		templateNames = new String[] {	"templates/Erythema of body structure.json" };
 		inclusionWords.add("finding");
-		*/
+		
 		subHierarchyECL = "<< 445505000 |Contracture of joint of spine (disorder)|";
 		templateNames = new String[] {	"templates/Finding of range of joint movement.json" };
+		*/
+		
+		subHierarchyECL = "< 64572001 |Disease (disorder)|"; 
+		//subHierarchyECL = "<< 38215007";
+		templateNames = new String[] {	"templates/Disease.json" };
 		
 		super.init(args);
 		

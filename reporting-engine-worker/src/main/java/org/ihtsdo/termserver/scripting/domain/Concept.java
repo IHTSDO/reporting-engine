@@ -337,7 +337,15 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		if (r.getEffectiveTime() != null) {
 			throw new IllegalArgumentException("Attempt to deleted published relationship " + r);
 		}
-		this.relationships.remove(r);
+		boolean checkMoreToRemove = true;
+		int relationshipsRemoved = 0;
+		do {
+			checkMoreToRemove = this.relationships.remove(r);
+			relationshipsRemoved++;
+		} while (checkMoreToRemove);
+		if (relationshipsRemoved > 1) {
+			TermServerScript.debug("Check " + this + " relationship " + r);
+		}
 		recalculateGroups();
 	}
 
@@ -507,7 +515,6 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		
 		//Now we might need to remove a relationship with the same id if it also moved group
 		relationships.removeAll(Collections.singleton(r));
-		
 		relationships.add(r);
 		recalculateGroups();
 		return true;

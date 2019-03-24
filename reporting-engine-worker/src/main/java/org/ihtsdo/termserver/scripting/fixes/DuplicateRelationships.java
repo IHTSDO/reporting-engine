@@ -86,35 +86,24 @@ public class DuplicateRelationships extends BatchFix implements RF2Constants{
 		//Code to protect us from SCTIDs changing between released and TS files is 
 		//Also preventing us from seeing duplicates, so I'll have to hard code the list
 		
-		processMe.add(gl.getConcept("14311001"));
-		processMe.add(gl.getConcept("18665000"));
-		processMe.add(gl.getConcept("18665000"));
-		processMe.add(gl.getConcept("19429009"));
-		processMe.add(gl.getConcept("39023007"));
-		processMe.add(gl.getConcept("39023007"));
-		processMe.add(gl.getConcept("74046003"));
-		processMe.add(gl.getConcept("74046003"));
-		processMe.add(gl.getConcept("78324009"));
-		processMe.add(gl.getConcept("78712000"));
-		processMe.add(gl.getConcept("111204001"));
-		processMe.add(gl.getConcept("111204001"));
-		processMe.add(gl.getConcept("111204001"));
-		processMe.add(gl.getConcept("111204001"));
-		processMe.add(gl.getConcept("128600008"));
-		processMe.add(gl.getConcept("195657008"));
-		processMe.add(gl.getConcept("195657008"));
-		processMe.add(gl.getConcept("195668008"));
-		processMe.add(gl.getConcept("195668008"));
-		processMe.add(gl.getConcept("195681001"));
-		processMe.add(gl.getConcept("195681001"));
-		processMe.add(gl.getConcept("427921009"));
-		processMe.add(gl.getConcept("429354005"));
-		processMe.add(gl.getConcept("429354005"));
-		processMe.add(gl.getConcept("430935001"));
-		processMe.add(gl.getConcept("442159003"));
-		processMe.add(gl.getConcept("442159003"));
-		processMe.add(gl.getConcept("444546002"));
-		processMe.add(gl.getConcept("699211004"));
+		processMe.add(gl.getConcept("127214002"));
+		processMe.add(gl.getConcept("14114003"));
+		processMe.add(gl.getConcept("197683002"));
+		processMe.add(gl.getConcept("200893007"));
+		processMe.add(gl.getConcept("201279004"));
+		processMe.add(gl.getConcept("204702007"));
+		processMe.add(gl.getConcept("204799005"));
+		processMe.add(gl.getConcept("21346009"));
+		processMe.add(gl.getConcept("234962001"));
+		processMe.add(gl.getConcept("234963006"));
+		processMe.add(gl.getConcept("238989000"));
+		processMe.add(gl.getConcept("253291009"));
+		processMe.add(gl.getConcept("253674003"));
+		processMe.add(gl.getConcept("253829008"));
+		processMe.add(gl.getConcept("41890004"));
+		processMe.add(gl.getConcept("6111009"));
+		processMe.add(gl.getConcept("67653003"));
+
 		
 		/*
 		//for (Concept c : gl.getAllConcepts()) {

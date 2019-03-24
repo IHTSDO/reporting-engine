@@ -291,7 +291,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			incrementSummaryInformation("Total changes made", changesMade);
 		} catch (ValidationFailure f) {
 			if (++validationCount > maxFailures) { 
-				warn ("Validation failrues now " + validationCount);
+				warn ("Validation failures now " + validationCount);
 			}
 			report (f);
 		} catch (InterruptedException | TermServerScriptException e) {
@@ -491,7 +491,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	 * @throws TermServerScriptException 
 	 */
 	protected int validateAttributeValues(Task task, Concept concept,
-			Concept attributeType, Concept descendentsOfValue, Cardinality cardinality) throws TermServerScriptException {
+			Concept attributeType, Concept descendentsOfValue, CardinalityExpressions cardinality) throws TermServerScriptException {
 		
 		List<Relationship> attributes = concept.getRelationships(CharacteristicType.ALL, attributeType, ActiveState.ACTIVE);
 		Set<Concept> descendents = ClosureCache.getClosureCache().getClosure(descendentsOfValue);
@@ -536,13 +536,13 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	
 
 	private int transferInferredRelationshipsToStated(Task task,
-			Concept concept, Concept attributeType, Cardinality cardinality) throws TermServerScriptException {
+			Concept concept, Concept attributeType, CardinalityExpressions cardinality) throws TermServerScriptException {
 		List<Relationship> replacements = concept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
 		int changesMade = 0;
 		if (replacements.size() == 0) {
 			String msg = "Unable to find any inferred " + attributeType + " relationships to state.";
 			report(task, concept, Severity.HIGH, ReportActionType.INFO, msg);
-		} else if (cardinality.equals(Cardinality.EXACTLY_ONE) && replacements.size() > 1) {
+		} else if (cardinality.equals(CardinalityExpressions.EXACTLY_ONE) && replacements.size() > 1) {
 			String msg = "Found " + replacements.size() + " " + attributeType + " relationships to state but wanted only one!";
 			report(task, concept, Severity.HIGH, ReportActionType.INFO, msg);
 		} else {

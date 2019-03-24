@@ -315,7 +315,7 @@ public class ArchiveManager implements RF2Constants {
 				gl.loadLanguageFile(is);
 			}
 		} catch (TermServerScriptException | IOException | TermServerClientException e) {
-			throw new IllegalArgumentException("Unable to load " + path, e);
+			throw new IllegalStateException("Unable to load " + path + " due to " + e.getMessage(), e);
 		}
 	}
 }

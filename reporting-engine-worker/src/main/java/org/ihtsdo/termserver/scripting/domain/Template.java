@@ -1,13 +1,10 @@
 package org.ihtsdo.termserver.scripting.domain;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
+import java.util.*;
 import org.snomed.authoringtemplate.domain.logical.*;
 import org.ihtsdo.termserver.scripting.template.TemplateUtils;
 
-public class Template {
+public class Template implements RF2Constants {
 
 	char id;
 	String name;
@@ -58,12 +55,16 @@ public class Template {
 			List<Attribute> ungrouped = logicalTemplate.getUngroupedAttributes();
 			//Always add group 0 for consistency, even if it's empty
 			List<AttributeGroup> combinedGroups = new ArrayList<>();
-			AttributeGroup group0 = new AttributeGroup();
+			AttributeGroup group0 = new AttributeGroup(UNGROUPED);
 			group0.setAttributes(ungrouped);
 			group0.setCardinalityMin("1");  //We'll always have a group 0 - a focus concept at least!
 			group0.setCardinalityMax("1");
 			combinedGroups.add(group0);
-			combinedGroups.addAll(logicalTemplate.getAttributeGroups());
+			for (int i = 0; i < logicalTemplate.getAttributeGroups().size(); i++) {
+				AttributeGroup group = logicalTemplate.getAttributeGroups().get(i);
+				group.setGroupId(i + 1);
+				combinedGroups.add(group);
+			}
 			attributeGroups = combinedGroups;
 		}
 		return attributeGroups;
