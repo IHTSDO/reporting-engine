@@ -31,7 +31,11 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 
 	@Override
 	public Job getJob() {
-		JobParameters params = new JobParameters();
+		JobParameters params = new JobParameters()
+				.add(PROJECT)
+				.withType(JobParameter.Type.PROJECT)
+				.withDefaultValue("MAIN")
+			.build();
 		return new Job(	new JobCategory(JobType.REPORT, JobCategory.RELEASE_STATS),
 						"Release Stats",
 						"This report measures a number of quality KPIs",
