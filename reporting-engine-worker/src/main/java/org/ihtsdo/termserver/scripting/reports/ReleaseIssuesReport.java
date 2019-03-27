@@ -5,11 +5,14 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.job.ReportClass;
+import org.ihtsdo.termserver.scripting.AxiomUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.snomed.otf.owltoolkit.conversion.ConversionException;
+import org.snomed.otf.owltoolkit.domain.AxiomRepresentation;
 import org.snomed.otf.scheduler.domain.*;
 import org.springframework.util.StringUtils;
 
@@ -376,6 +379,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		//Check all concepts referenced in relationships are valid
 		for (Concept c : gl.getAllConcepts()) {
 			if (c.isActive()) {
+				//Check all RHS relationships are active
 				for (Relationship r : c.getRelationships()) {
 					if (r.isActive()) {
 						String legacy = isLegacy(r);
@@ -387,6 +391,31 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 							report(c, "Axiom contains inactive target", legacy, isActive(c,r), r);
 							incrementSummaryInformation(ISSUE_COUNT); 
 						}
+					}
+				}
+				
+				//Check all LHS relationships are active
+				for (AxiomEntry a : c.getAxiomEntries()) {
+					try {
+						String legacy = isLegacy(a);
+						AxiomRepresentation axiom = gl.getAxiomService().convertAxiomToRelationships(Long.parseLong(c.getConceptId()), a.getOwlExpression());
+						//Things like property chains give us a null axiom
+						if (axiom == null) {
+							continue;
+						}
+						
+						for (Relationship r : AxiomUtils.getLHSRelationships(c, axiom)) {
+							if (!r.getType().isActive()) {
+								report(c, "GCI Axiom contains inactive type", legacy, isActive(c,r), r);
+								incrementSummaryInformation(ISSUE_COUNT); 
+							}
+							if (!r.getTarget().isActive()) {
+								report(c, "GCI Axiom contains inactive target", legacy, isActive(c,r), r);
+								incrementSummaryInformation(ISSUE_COUNT); 
+							}
+						}
+					} catch (ConversionException e) {
+						error ("Failed to convert: " + a, e);
 					}
 				}
 			}

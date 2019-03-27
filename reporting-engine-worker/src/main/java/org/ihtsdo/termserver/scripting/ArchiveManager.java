@@ -103,6 +103,7 @@ public class ArchiveManager implements RF2Constants {
 		}
 		
 		if (!snapshot.exists() || ( isStale && !allowStaleData)) {
+			gl.reset();
 			snapshot = generateSnapshot (ts.getProject(), branch);
 			//We don't need to load the snapshot if we've just generated it
 		} else {
@@ -113,6 +114,7 @@ public class ArchiveManager implements RF2Constants {
 			} else {
 				if (currentlyHeldInMemory != null) {
 					//Make sure the Graph Loader is clean if we're loading a different project
+					info (currentlyHeldInMemory.getKey() + " being wiped to make room for " + ts.getProject());
 					gl.reset();
 					System.gc();
 				}
@@ -287,7 +289,8 @@ public class ArchiveManager implements RF2Constants {
 			} else if (fileName.contains("sct2_StatedRelationship_" + fileType )) {
 				info("Loading StatedRelationship " + fileType + " file.");
 				gl.loadRelationships(CharacteristicType.STATED_RELATIONSHIP, is, true, isDelta);
-			} else if (fileName.contains("sct2_sRefset_OWLExpression" + fileType )) {
+			} else if (fileName.contains("sct2_sRefset_OWLExpression" + fileType ) ||
+					   fileName.contains("sct2_sRefset_OWLAxiom" + fileType )) {
 				info("Loading Axiom " + fileType + " refset file.");
 				gl.loadAxioms(is, isDelta);
 			} else if (fileName.contains("sct2_Description_" + fileType )) {

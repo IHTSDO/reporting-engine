@@ -72,6 +72,7 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 					.withDefaultValue(false)
 				.add(SAFETY_PROTOCOLS)
 					.withType(JobParameter.Type.BOOLEAN)
+					.withDescription("Please uncheck to remove safety protocols")
 					.withDefaultValue(true)
 				.add(TEMPLATE)
 					.withType(JobParameter.Type.TEMPLATE)

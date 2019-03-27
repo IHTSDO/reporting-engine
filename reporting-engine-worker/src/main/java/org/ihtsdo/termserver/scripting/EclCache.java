@@ -45,7 +45,7 @@ public class EclCache {
 	}
 	
 	public static void reset() {
-		branchCaches  = new HashMap<>();
+		branchCaches = new HashMap<>();
 	}
 	
 	protected List<Concept> findConcepts(String branch, String ecl) throws TermServerScriptException {

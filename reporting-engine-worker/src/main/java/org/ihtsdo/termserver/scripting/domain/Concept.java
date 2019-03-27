@@ -86,6 +86,8 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	//When interacting with the TS, only one inactivation indicator is used (see above).
 	List<InactivationIndicatorEntry> inactivationIndicatorEntries;
 	List<AssociationEntry> associations;
+	List<AxiomEntry> axiomEntries;
+	
 	Collection<RelationshipGroup> statedRelationshipGroups;
 	Collection<RelationshipGroup> inferredRelationshipGroups;
 	
@@ -908,6 +910,13 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 			}
 			return selectedAssociations;
 		}
+	}
+	
+	public List<AxiomEntry> getAxiomEntries() {
+		if (axiomEntries == null) {
+			axiomEntries = new ArrayList<AxiomEntry>();
+		}
+		return axiomEntries;
 	}
 	
 	//id	effectiveTime	active	moduleId	definitionStatusId

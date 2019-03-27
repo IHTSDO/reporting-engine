@@ -9,6 +9,9 @@ import com.google.gson.annotations.SerializedName;
 
 public class Axiom extends Component implements RF2Constants, Comparable<Axiom>  {
 
+	@SerializedName(value="axiomId", alternate="id")
+	@Expose
+	private String axiomId;
 	@SerializedName("effectiveTime")
 	@Expose
 	private String effectiveTime;
@@ -21,9 +24,6 @@ public class Axiom extends Component implements RF2Constants, Comparable<Axiom> 
 	@SerializedName("released")
 	@Expose
 	private Boolean released;
-	@SerializedName(value="axiomId", alternate="id")
-	@Expose
-	private String axiomId;
 	@SerializedName("definitionStatus")
 	@Expose
 	private DefinitionStatus definitionStatus;

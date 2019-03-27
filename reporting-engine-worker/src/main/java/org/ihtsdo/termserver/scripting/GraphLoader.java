@@ -78,7 +78,7 @@ public class GraphLoader implements RF2Constants {
 		descendantsCache.reset();
 		ancestorsCache.reset();
 		historicalAssociations =  new HashMap<Concept, List<AssociationEntry>>();
-		//We'll reset the ECL cache during TS Init 
+		//We'll reset the ECL cache during TS Init
 		populateKnownConcepts();
 	}
 	
@@ -129,11 +129,20 @@ public class GraphLoader implements RF2Constants {
 			if (!isHeaderLine) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
 				
+				/*if (lineItems[REF_IDX_ID].equals("76a3311f-e003-4ec9-8070-82d5581bdcadv")) {
+					System.out.println ("Debug Here");
+				}
+				
+				if (lineItems[REF_IDX_ID].equals("8016bcd2-83e7-47c1-a998-8f9c6d3a97b4")) {
+					System.out.println ("Debug Here");
+				}*/
+				
 				//Only load OWL Expressions
 				if (!lineItems[REF_IDX_REFSETID].equals(SCTID_OWL_AXIOM_REFSET)) {
 					continue;
 				}
 				
+
 				/*if (lineItems[REF_IDX_REFCOMPID].equals("204889008")) {
 					System.out.println ("Debug Here");
 				}*/
@@ -141,6 +150,13 @@ public class GraphLoader implements RF2Constants {
 				if (!isConcept(lineItems[REF_IDX_REFCOMPID])) {
 					System.out.println ("Axiom " + lineItems[REL_IDX_ID] + " referenced a non concept identifier: " + lineItems[REF_IDX_REFCOMPID]);
 				}
+				
+				//Also save data in RF2 form so we can build Snapshot
+				AxiomEntry axiomEntry = AxiomEntry.fromRf2(lineItems);
+				//Remove first in case we're replacing
+				getConcept(conceptId).getAxiomEntries().remove(axiomEntry);
+				getConcept(conceptId).getAxiomEntries().add(axiomEntry);
+				
 				try {
 					boolean isActive = lineItems[REF_IDX_ACTIVE].equals(ACTIVE_FLAG);
 					AxiomRepresentation axiom = axiomService.convertAxiomToRelationships(conceptId, lineItems[REF_IDX_AXIOM_STR]);
@@ -151,7 +167,7 @@ public class GraphLoader implements RF2Constants {
 							throw new IllegalArgumentException("Axiom LHS != RefCompId: " + line);
 						}
 						
-						for (Relationship r :  AxiomUtils.toRelationships(getConcept(conceptId), axiom)) {
+						for (Relationship r :  AxiomUtils.getRHSRelationships(getConcept(conceptId), axiom)) {
 							r.setActive(isActive);
 							addRelationshipToConcept(CharacteristicType.STATED_RELATIONSHIP, r, isDelta);
 						}
@@ -716,5 +732,9 @@ public class GraphLoader implements RF2Constants {
 				g.resetIndicators();
 			}
 		}
+	}
+	
+	public AxiomRelationshipConversionService getAxiomService() {
+		return axiomService;
 	}
 }

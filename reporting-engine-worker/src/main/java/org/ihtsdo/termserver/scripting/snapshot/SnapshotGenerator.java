@@ -20,6 +20,7 @@ public class SnapshotGenerator extends TermServerScript {
 	protected String relSnapshotFilename;
 	protected String attribValSnapshotFilename;
 	protected String assocSnapshotFilename;
+	protected String owlSnapshotFilename;
 	protected String sRelSnapshotFilename;
 	protected String descSnapshotFilename;
 	protected String langSnapshotFilename;
@@ -40,6 +41,8 @@ public class SnapshotGenerator extends TermServerScript {
 	protected String[] langHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","acceptabilityId"};
 	protected String[] attribValHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","valueId"};
 	protected String[] assocHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","targetComponentId"};
+	protected String[] owlHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","owlExpression"};
+	
 	
 	public static void main (String[] args) throws IOException, TermServerScriptException, TermServerClientException, InterruptedException {
 		SnapshotGenerator snapGen = new SnapshotGenerator();
@@ -127,6 +130,11 @@ public class SnapshotGenerator extends TermServerScript {
 		
 		assocSnapshotFilename = refDir + "Content/der2_cRefset_AssociationSnapshot_"+edition+"_" + today + ".txt";
 		writeToRF2File(assocSnapshotFilename, assocHeader);
+		
+		owlSnapshotFilename = termDir + "sct2_sRefset_OWLExpressionSnapshot_"+edition+"_" + today + ".txt";
+		writeToRF2File(owlSnapshotFilename, owlHeader);
+		
+		getRF2Manager().flushFiles(false);
 	}
 	
 	private void outputRF2() throws TermServerScriptException {
@@ -156,6 +164,10 @@ public class SnapshotGenerator extends TermServerScript {
 		
 		for (AssociationEntry h: c.getAssociations()) {
 			writeToRF2File(assocSnapshotFilename, h.toRF2());
+		}
+		
+		for (AxiomEntry o: c.getAxiomEntries()) {
+			writeToRF2File(owlSnapshotFilename, o.toRF2());
 		}
 	}
 
