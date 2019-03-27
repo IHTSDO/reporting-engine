@@ -31,6 +31,7 @@ public abstract class TermServerScript implements RF2Constants {
 	
 	protected static boolean debug = true;
 	protected static boolean dryRun = true;
+	protected boolean offlineMode = false;
 	protected boolean quiet = false; 
 	protected static int dryRunCounter = 0;
 	protected String env;
@@ -1173,5 +1174,16 @@ public abstract class TermServerScript implements RF2Constants {
 	
 	public boolean safetyProtocolsEnabled() {
 		return safetyProtocols;
+	}
+	
+	public void offlineMode(boolean offline) {
+		if (offline) {
+			getArchiveManager().allowStaleData = true;
+		}
+		this.offlineMode = offline;
+	}
+	
+	public boolean isOffline() {
+		return this.offlineMode;
 	}
 }

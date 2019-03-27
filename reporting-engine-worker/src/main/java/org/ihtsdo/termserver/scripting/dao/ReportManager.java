@@ -35,7 +35,12 @@ public class ReportManager implements RF2Constants {
 			this.ts = ts;
 		}
 		reportFileManager = new ReportFileManager(this);
-		reportSheetManager = new ReportSheetManager(this);
+		if (!this.ts.isOffline()) {
+			reportSheetManager = new ReportSheetManager(this);
+			writeToFile = true;
+		} else {
+			writeToSheet = false;
+		}
 		tabNames = Arrays.asList(new String[] {"Sheet1"});
 	}
 	
