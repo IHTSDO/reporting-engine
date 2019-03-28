@@ -117,11 +117,11 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			for (Concept p : c.getParents(CharacteristicType.STATED_RELATIONSHIP)) {
 				if (!p.getModuleId().equals(c.getModuleId())) {
 					report(c, "Mismatching parent moduleId",isLegacy(c), isActive(c,null), p);
+					incrementSummaryInformation(ISSUE_COUNT);
 					if (isLegacy(c).equals("Y")) {
 						incrementSummaryInformation("Legacy Issues Reported");
 					}	else {
 						incrementSummaryInformation("Fresh Issues Reported");
-						incrementSummaryInformation(ISSUE_COUNT);  //We'll only flag up fresh issues
 					}
 				}
 			}
@@ -136,11 +136,11 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				if (!d.getModuleId().equals(c.getModuleId())) {
 					String msg = "Concept module " + c.getModuleId() + " vs Desc module " + d.getModuleId();
 					report(c, "Unexpected Description Module",isLegacy(d), isActive(c,d), msg, d);
+					incrementSummaryInformation(ISSUE_COUNT);
 					if (isLegacy(d).equals("Y")) {
 						incrementSummaryInformation("Legacy Issues Reported");
 					}	else {
 						incrementSummaryInformation("Fresh Issues Reported");
-						incrementSummaryInformation(ISSUE_COUNT);  //We'll only flag up fresh issues
 					}
 				}
 			}
@@ -154,11 +154,11 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				if (!r.getModuleId().equals(c.getModuleId())) {
 					String msg = "Concept module " + c.getModuleId() + " vs Rel module " + r.getModuleId();
 					report(c, "Unexpected Stated Rel Module",isLegacy(r), isActive(c,r), msg, r);
+					incrementSummaryInformation(ISSUE_COUNT);
 					if (isLegacy(r).equals("Y")) {
 						incrementSummaryInformation("Legacy Issues Reported");
 					}	else {
 						incrementSummaryInformation("Fresh Issues Reported");
-						incrementSummaryInformation(ISSUE_COUNT);  //We'll only flag up fresh issues
 					}
 				}
 			}
@@ -220,11 +220,11 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				}
 				
 				if (reported) {
+					incrementSummaryInformation(ISSUE_COUNT);
 					if (isLegacy(c).equals("Y")) {
 						incrementSummaryInformation("Legacy Issues Reported");
 					}	else {
 						incrementSummaryInformation("Fresh Issues Reported");
-						incrementSummaryInformation(ISSUE_COUNT);  //We'll only flag up fresh issues
 					}
 				}
 			}
@@ -286,11 +286,11 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			for (Map.Entry<String, Concept> entry : knownSemanticTags.entrySet()) {
 				if (termWithoutTag.contains(entry.getKey())) {
 					report(c, "Multiple semantic tags",legacy, isActive(c,c.getFSNDescription()), c.getFsn(), "Contains semtag: " + entry.getKey() + " identified by " + entry.getValue());
+					incrementSummaryInformation(ISSUE_COUNT);
 					if (legacy.equals("Y")) {
 						incrementSummaryInformation("Legacy Issues Reported");
 					}	else {
 						incrementSummaryInformation("Fresh Issues Reported");
-						incrementSummaryInformation(ISSUE_COUNT);  //We'll only flag up fresh issues
 					}
 				}
 			}
@@ -305,11 +305,11 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 					String legacy = isLegacy(d);
 					String msg = "At position: " + d.getTerm().indexOf(NBSPSTR);
 					report(c, "Non-breaking space",legacy, isActive(c,d),msg, d);
+					incrementSummaryInformation(ISSUE_COUNT);
 					if (legacy.equals("Y")) {
 						incrementSummaryInformation("Legacy Issues Reported");
 					}	else {
 						incrementSummaryInformation("Fresh Issues Reported");
-						incrementSummaryInformation(ISSUE_COUNT);  //We'll only flag up fresh issues
 					}
 				}
 			}
@@ -354,6 +354,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 					if (topLevels.size() > 1) {
 						String topLevelStr = topLevels.stream().map(cp -> cp.toString()).collect(Collectors.joining(",\n"));
 						report(c, "Parent has multiple top level ancestors", legacy, isActive(c,null), topLevelStr);
+						incrementSummaryInformation(ISSUE_COUNT);
 						continue nextConcept;
 					}
 					
@@ -362,11 +363,11 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 						lastTopLevel = thisTopLevel;
 					} else if ( !lastTopLevel.equals(thisTopLevel)) {
 						report(c, "Mixed TopLevel Parents", legacy, isActive(c,null), thisTopLevel, lastTopLevel);
+						incrementSummaryInformation(ISSUE_COUNT);
 						if (legacy.equals("Y")) {
 							incrementSummaryInformation("Legacy Issues Reported");
 						}	else {
 							incrementSummaryInformation("Fresh Issues Reported");
-							incrementSummaryInformation(ISSUE_COUNT);  //We'll only flag up fresh issues
 						}
 					}
 				}
