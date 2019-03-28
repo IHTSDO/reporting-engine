@@ -1,51 +1,60 @@
 package org.ihtsdo.termserver.scripting.reports.drugs;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang.ArrayUtils;
+import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.drugs.Ingredient;
+import org.ihtsdo.termserver.scripting.reports.TermContainsXReport;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.DrugTermGenerator;
 import org.ihtsdo.termserver.scripting.util.DrugUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.snomed.otf.scheduler.domain.*;
 
-public class ValidateDrugModeling extends TermServerReport{
+public class ValidateDrugModeling extends TermServerReport implements ReportClass {
 	
 	Concept [] solidUnits = new Concept [] { PICOGRAM, NANOGRAM, MICROGRAM, MILLIGRAM, GRAM };
 	Concept [] liquidUnits = new Concept [] { MILLILITER, LITER };
 	String[] semTagHiearchy = new String[] { "(product)", "(medicinal product)", "(medicinal product form)", "(clinical drug)" };
 	
-	private static final String[] badWords = new String[] { "preparation", "agent", "+", "product"};
+	private static final String[] badWords = new String[] { "preparation", "agent", "+"};
 	private static final String remodelledDrugIndicator = "Product containing";
 	private static final String BOSS_FAIL = "BoSS failed to relate to ingredient";
 	
 	DrugTermGenerator termGenerator = new DrugTermGenerator(this);
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
-		ValidateDrugModeling report = new ValidateDrugModeling();
-		try {
-			ReportSheetManager.targetFolderId = "1wtB15Soo-qdvb0GHZke9o_SjFSL_fxL3";  //DRUGS/Validation
-			report.additionalReportColumns = "FSN, SemTag, Issue, Data, Detail";   //DRUGS-267
-			report.init(args);
-			report.loadProjectSnapshot(false); //Load all descriptions
-			report.postInit();
-			report.validateDrugsModeling();
-			report.validateSubstancesModeling();
-		} catch (Exception e) {
-			info("Failed to produce Druge Model Validation Report due to " + e.getMessage());
-			e.printStackTrace(new PrintStream(System.out));
-		} finally {
-			report.finish();
-		}
+		Map<String, String> params = new HashMap<>();
+		TermServerReport.run(ValidateDrugModeling.class, args, params);
+	}
+	
+	public void init (JobRun run) throws TermServerScriptException {
+		ReportSheetManager.targetFolderId = "1wtB15Soo-qdvb0GHZke9o_SjFSL_fxL3";  //DRUGS/Validation
+		additionalReportColumns = "FSN, SemTag, Issue, Data, Detail";   //DRUGS-267
+		super.init(run);
+	}
+	
+	@Override
+	public Job getJob() {
+		JobParameters params = new JobParameters();
+		return new Job( new JobCategory(JobType.REPORT, JobCategory.DRUGS),
+						"Drugs validation",
+						"This report checks for a number of potential inconsistencies in the Medicinal Product hierarchy.",
+						params);
+	}
+	
+	public void runJob() throws TermServerScriptException {
+		validateDrugsModeling();
+		validateSubstancesModeling();
 	}
 	
 	private void validateDrugsModeling() throws TermServerScriptException {
@@ -54,7 +63,6 @@ public class ValidateDrugModeling extends TermServerReport{
 		ConceptType[] cds = new ConceptType[] { ConceptType.CLINICAL_DRUG };  //DRUGS-267
 		initialiseSummaryInformation(BOSS_FAIL);
 		
-		long issueCount = 0;
 		for (Concept concept : subHierarchy) {
 			DrugUtils.setConceptType(concept);
 			
@@ -95,7 +103,7 @@ public class ValidateDrugModeling extends TermServerReport{
 			//DRUGS-629
 			checkForSemTagViolations(concept);
 		}
-		info ("Drugs validation complete.  Detected " + issueCount + " issues.");
+		info ("Drugs validation complete.");
 	}
 
 	/**
@@ -137,7 +145,6 @@ public class ValidateDrugModeling extends TermServerReport{
 				if (!presRatio.equals(concRatio)) {
 					issueDetected = true;
 					incrementSummaryInformation(ISSUE_COUNT);
-					incrementSummaryInformation("Issues Detected");
 				}
 				report (c, i.substance, i.presToString(), i.concToString(), unitsChange, issueDetected, issueDetected? presRatio + " vs " + concRatio : "");
 			}
@@ -216,7 +223,6 @@ public class ValidateDrugModeling extends TermServerReport{
 	 */
 	private void checkForOddlyInferredParent(Concept concept, Concept attributeType) throws TermServerScriptException {
 		//Work through inferred parents
-		Concept disposition = gl.getConcept("726542003 |Has disposition (attribute)|");
 		for (Concept parent : concept.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
 			//Find all STATED attributes of interest
 			for (Relationship parentAttribute : parent.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE)) {
@@ -321,6 +327,7 @@ public class ValidateDrugModeling extends TermServerReport{
 						if (isSubType) {
 							incrementSummaryInformation("Active ingredient is a subtype of BoSS");
 							String issue = "Active ingredient is a subtype of BoSS.  Expected modification.";
+							incrementSummaryInformation(ISSUE_COUNT);
 							report (concept, issue, ingred, boSS);
 						} else if (isModificationOf) {
 							incrementSummaryInformation("Valid Ingredients as Modification of BoSS");
@@ -436,6 +443,7 @@ public class ValidateDrugModeling extends TermServerReport{
 				}
 			}
 				String unmatchedStr = unmatched.stream().map(r -> r.toString(true)).collect(Collectors.joining(",\n"));
+				incrementSummaryInformation(ISSUE_COUNT);
 				report (c, semTag, c.getDefinitionStatus(),
 						c.toExpression(CharacteristicType.STATED_RELATIONSHIP),
 						c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP), unmatchedStr);

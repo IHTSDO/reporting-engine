@@ -33,12 +33,13 @@ public class DrugUtils implements RF2Constants {
 	
 	public static void setConceptType(Concept c) {
 		String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
+		boolean hasBaseCount = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, COUNT_BASE_ACTIVE_INGREDIENT, ActiveState.ACTIVE).size() > 0;
 		switch (semTag) {
-			case "(medicinal product form)" : c.setConceptType(ConceptType.MEDICINAL_PRODUCT_FORM);
+			case "(medicinal product form)" : c.setConceptType(hasBaseCount ? ConceptType.MEDICINAL_PRODUCT_FORM_ONLY : ConceptType.MEDICINAL_PRODUCT_FORM);
 												break;
 			case "(product)" : c.setConceptType(ConceptType.PRODUCT);
 								break;
-			case "(medicinal product)" : c.setConceptType(ConceptType.MEDICINAL_PRODUCT);
+			case "(medicinal product)" : c.setConceptType(hasBaseCount ? ConceptType.MEDICINAL_PRODUCT_ONLY : ConceptType.MEDICINAL_PRODUCT);
 										 break;
 			case "(clinical drug)" : c.setConceptType(ConceptType.CLINICAL_DRUG);
 										break;
