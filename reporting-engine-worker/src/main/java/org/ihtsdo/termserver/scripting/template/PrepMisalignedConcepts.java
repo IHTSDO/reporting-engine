@@ -28,7 +28,7 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 	
 	Map<Concept, List<String>> conceptDiagnostics = new HashMap<>();
 	public static final String INCLUDE_COMPLEX = "Include complex cases";
-	public static final String SAFETY_PROTOCOLS = "Safety Protocols";
+	public static final String ALLOW_LARGE_RESULTS= "Allow large results";
 	
 	public PrepMisalignedConcepts() {
 		super(null);
@@ -70,10 +70,9 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 				.add(INCLUDE_COMPLEX)
 					.withType(JobParameter.Type.BOOLEAN)
 					.withDefaultValue(false)
-				.add(SAFETY_PROTOCOLS)
+				.add(ALLOW_LARGE_RESULTS)
 					.withType(JobParameter.Type.BOOLEAN)
-					.withDescription("Please uncheck to remove safety protocols")
-					.withDefaultValue(true)
+					.withDefaultValue(false)
 				.add(TEMPLATE)
 					.withType(JobParameter.Type.TEMPLATE)
 				.add(TEMPLATE_NAME)
@@ -111,7 +110,7 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 		if (jobRun != null) {
 			super.init(jobRun);
 			includeComplexTemplates = jobRun.getParameters().getMandatoryBoolean(INCLUDE_COMPLEX);
-			safetyProtocols = jobRun.getParameters().getMandatoryBoolean(SAFETY_PROTOCOLS);
+			safetyProtocols = !jobRun.getParameters().getMandatoryBoolean(ALLOW_LARGE_RESULTS);
 		
 			subHierarchyECL = jobRun.getParamValue(ECL);
 			if (StringUtils.isEmpty(subHierarchyECL)) {
