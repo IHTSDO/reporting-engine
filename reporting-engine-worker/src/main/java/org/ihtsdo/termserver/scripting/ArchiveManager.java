@@ -11,11 +11,9 @@ import java.util.zip.*;
 import org.apache.commons.io.FileUtils;
 import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.client.TermServerClient.*;
-import org.ihtsdo.termserver.scripting.dao.ReportManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.snapshot.SnapshotGenerator;
 import org.ihtsdo.termserver.scripting.util.StringUtils;
-
 
 public class ArchiveManager implements RF2Constants {
 	
@@ -166,12 +164,6 @@ public class ArchiveManager implements RF2Constants {
 		ts.getTSClient().export(project.getBranchPath(), null, ExportType.UNPUBLISHED, ExtractType.DELTA, delta);
 		
 		SnapshotGenerator snapshotGenerator = new SnapshotGenerator();
-		
-		//Lets have a separate output report for generation of the snapshot - local only
-		ReportManager rm = ReportManager.create(ts);
-		rm.setFileOnly();
-		rm.initialiseReportFiles(new String[] {ReportManager.STANDARD_HEADERS});
-		snapshotGenerator.setReportManager(rm);
 		snapshotGenerator.setProject(ts.getProject());
 		snapshotGenerator.leaveArchiveUncompressed();
 		snapshotGenerator.setOutputDirName(snapshot.getPath());
