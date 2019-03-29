@@ -91,16 +91,14 @@ abstract public class TemplateFix extends BatchFix {
 		if (exclusionWords == null) {
 			exclusionWords = new ArrayList<>();
 		}
-		exclusionWords.add("subluxation");
-		exclusionWords.add("avulsion");
-		exclusionWords.add("co-occurrent");
-		exclusionWords.add("on examination");
-		exclusionWords.add("complex");
 		
 		if (!includeComplexTemplates) {
 			if (!includeDueTos) {
 				exclusionWords.add("due to");
 			}
+			exclusionWords.add("co-occurrent");
+			exclusionWords.add("on examination");
+			exclusionWords.add("complex");
 			exclusionWords.add("associated");
 			exclusionWords.add("after");
 			exclusionWords.add("complication");
