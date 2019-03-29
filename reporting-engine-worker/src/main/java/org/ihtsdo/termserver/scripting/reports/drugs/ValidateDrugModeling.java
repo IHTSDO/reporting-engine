@@ -13,7 +13,6 @@ import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.drugs.Ingredient;
-import org.ihtsdo.termserver.scripting.reports.TermContainsXReport;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.DrugTermGenerator;
 import org.ihtsdo.termserver.scripting.util.DrugUtils;
@@ -39,7 +38,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 	
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "1wtB15Soo-qdvb0GHZke9o_SjFSL_fxL3";  //DRUGS/Validation
-		additionalReportColumns = "FSN, SemTag, Issue, Data, Detail";   //DRUGS-267
+		additionalReportColumns = "FSN, SemTag, Issue, Data, Detail";  //DRUGS-267
 		super.init(run);
 	}
 	
@@ -49,7 +48,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		return new Job( new JobCategory(JobType.REPORT, JobCategory.DRUGS),
 						"Drugs validation",
 						"This report checks for a number of potential inconsistencies in the Medicinal Product hierarchy.",
-						params);
+						params, Job.ProductionStatus.HIDEME);
 	}
 	
 	public void runJob() throws TermServerScriptException {
@@ -64,10 +63,18 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		initialiseSummaryInformation(BOSS_FAIL);
 		
 		for (Concept concept : subHierarchy) {
+			/*if (concept.getConceptId().equals("769993004")) {
+				debug ("Check here");
+			}*/
 			DrugUtils.setConceptType(concept);
+			if (concept.getConceptType().equals(ConceptType.PRODUCT)) {
+				continue;
+			}
 			
-			if (concept.getConceptId().equals("769993004")) {
-				//debug ("Check here");
+			//DRUGS-585
+			if (concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT) || 
+					concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM)) {
+				validateNoModifiedSubstances(concept);
 			}
 			
 			// DRUGS-281, DRUGS-282
@@ -82,6 +89,11 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 				validateStatedVsInferredAttributes(concept, HAS_ACTIVE_INGRED, allDrugTypes);
 				validateStatedVsInferredAttributes(concept, HAS_PRECISE_INGRED, allDrugTypes);
 				validateStatedVsInferredAttributes(concept, HAS_MANUFACTURED_DOSE_FORM, allDrugTypes);
+			}
+			
+			//DRUGS-689 - Various modelling rules
+			if (concept.getConceptType().equals(ConceptType.CLINICAL_DRUG)) {
+				validateCdModellingRules(concept);
 			}
 			
 			//DRUGS-518
@@ -104,6 +116,63 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 			checkForSemTagViolations(concept);
 		}
 		info ("Drugs validation complete.");
+	}
+
+	/**
+	*	Acutation should be modeled with presentation strength and unit of presentation.
+	*	Has presentation strength denominator unit (attribute) cannot be 258773002|Milliliter (qualifier value)
+	*	Has concentration strength denominator unit (attribute) cannot be 732936001|Tablet (unit of presentation)
+	*	Has presentation strength denominator unit (attribute) cannot be 258684004|milligram (qualifier value)
+	*	Has concentration strength numerator unit (attribute) cannot be 258727004|milliequivalent (qualifier value)
+	 * @throws TermServerScriptException 
+	*/
+	private void validateCdModellingRules(Concept c) throws TermServerScriptException {
+		for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP)) {
+			if (g.isGrouped()) {
+				List<Relationship> ps = g.getType(HAS_PRES_STRENGTH_VALUE);
+				List<Relationship> psdu = g.getType(HAS_PRES_STRENGTH_DENOM_UNIT);
+				List<Relationship> csdu = g.getType(HAS_CONC_STRENGTH_DENOM_UNIT);
+				List<Relationship> csnu = g.getType(HAS_CONC_STRENGTH_UNIT);
+				if (psdu.size() > 1 || csdu.size() > 1) {
+					report(c, "Group contains > 1 presentation/concentration strength", g);
+					return;
+				} 
+				if (c.getFsn().toLowerCase().contains("actuation")) {
+					if (ps.size() < 1 || psdu.size() < 1) {
+						report(c, "Group contains > 1 presentation/concentration strength", g);
+						return;
+					}
+				}
+				if (psdu.size() == 1 && psdu.get(0).getTarget().equals(MILLILITER)) {
+					report (c, "Invalid Model", psdu.get(0));
+				}
+				if (csdu.size() == 1 && csdu.get(0).getTarget().equals(gl.getConcept("732936001|Tablet|"))) {
+					report (c, "Invalid Model", csdu.get(0));
+				}
+				if (psdu.size() == 1 && psdu.get(0).getTarget().equals(MILLIGRAM)) {
+					report (c, "Invalid Model", psdu.get(0));
+				}
+				if (csnu.size() == 1 && csnu.get(0).getTarget().equals(gl.getConcept("258727004|milliequivalent|"))) {
+					report (c, "Invalid Model", csdu.get(0));
+				}
+			}
+		}
+	}
+
+	private void validateNoModifiedSubstances(Concept c) throws TermServerScriptException {
+		//Check all ingredients for any that themselves have modification relationships
+		for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
+			if (r.getType().equals(HAS_PRECISE_INGRED)) {
+				Concept ingredient = r.getTarget();
+				for (Relationship ir :  ingredient.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
+					if (ir.getType().equals(IS_MODIFICATION_OF)) {
+						String msg = c.getConceptType() + " has modified ingredient";
+						report (c, msg, ingredient);
+						
+					}
+				}
+			}
+		}
 	}
 
 	/**
@@ -144,7 +213,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 				
 				if (!presRatio.equals(concRatio)) {
 					issueDetected = true;
-					incrementSummaryInformation(ISSUE_COUNT);
+					
 				}
 				report (c, i.substance, i.presToString(), i.concToString(), unitsChange, issueDetected, issueDetected? presRatio + " vs " + concRatio : "");
 			}
@@ -210,7 +279,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 			if (findRelationship(concept, r, toCharType) == null) {
 				String msg = fromCharType.toString() + " has no counterpart";
 				report (concept, msg, r.toString());
-				incrementSummaryInformation(ISSUE_COUNT);
+				
 			}
 		}
 	}
@@ -231,7 +300,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 				if (null == findRelationship(concept, parentAttribute, CharacteristicType.STATED_RELATIONSHIP)) {
 					String msg ="Inferred parent has a stated attribute not stated in child.";
 					report (concept, msg, parentAttribute.toString());
-					incrementSummaryInformation(ISSUE_COUNT);
+					
 				}
 			}
 		}
@@ -269,7 +338,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 						continue;
 					} else {
 						String msg = "Term contains bad word: " + badWord;
-						incrementSummaryInformation(ISSUE_COUNT);
+						
 						report (concept, msg, concept.getFsn().contains(remodelledDrugIndicator), d.toString());
 					}
 				}
@@ -285,7 +354,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 			if (statedAttributes.size() != infAttributes.size()) {
 				String msg = "Cardinality mismatch stated vs inferred " + attributeType;
 				String data = "(s" + statedAttributes.size() + " i" + infAttributes.size() + ")";
-				incrementSummaryInformation(ISSUE_COUNT);
+				
 				report (concept, msg, data);
 			} else {
 				for (Relationship statedAttribute : statedAttributes) {
@@ -299,7 +368,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 					if (!found) {
 						String msg = "Stated " + statedAttribute.getType() + " is not present in inferred view";
 						String data = statedAttribute.toString();
-						incrementSummaryInformation(ISSUE_COUNT);
+						
 						report (concept, msg, data);
 					}
 				}
@@ -327,7 +396,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 						if (isSubType) {
 							incrementSummaryInformation("Active ingredient is a subtype of BoSS");
 							String issue = "Active ingredient is a subtype of BoSS.  Expected modification.";
-							incrementSummaryInformation(ISSUE_COUNT);
+							
 							report (concept, issue, ingred, boSS);
 						} else if (isModificationOf) {
 							incrementSummaryInformation("Valid Ingredients as Modification of BoSS");
@@ -341,7 +410,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 				String issue = "Basis of Strength not equal or subtype of active ingredient, neither is active ingredient a modification of the BoSS";
 				report (concept, issue, null, boSS);
 				incrementSummaryInformation(BOSS_FAIL);
-				incrementSummaryInformation(ISSUE_COUNT);
+				
 			}
 		}
 	}
@@ -362,7 +431,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 			String issue = "FSN did not match expected pattern";
 			String differences = findDifferences (currentFSN.getTerm(), proposedFSN.getTerm());
 			report (c, issue, proposedFSN.getTerm(), differences);
-			incrementSummaryInformation(ISSUE_COUNT);
+			
 		}
 	}
 	
@@ -401,7 +470,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 			if (valuesEncountered.contains(target)) {
 				String msg = "Multiple " + charType + " instances of active ingredient";
 				report(c, msg, target.toString());
-				incrementSummaryInformation(ISSUE_COUNT);
+				
 			}
 			valuesEncountered.add(target);
 		}
@@ -443,7 +512,6 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 				}
 			}
 				String unmatchedStr = unmatched.stream().map(r -> r.toString(true)).collect(Collectors.joining(",\n"));
-				incrementSummaryInformation(ISSUE_COUNT);
 				report (c, semTag, c.getDefinitionStatus(),
 						c.toExpression(CharacteristicType.STATED_RELATIONSHIP),
 						c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP), unmatchedStr);
@@ -488,7 +556,6 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 			int parentTagLevel = getTagLevel(p);
 			if (tagLevel < parentTagLevel) {
 				report (c, "Has higher level semantic tag than parent", p);
-				incrementSummaryInformation(ISSUE_COUNT);
 			}
 		}
 	}
@@ -503,5 +570,10 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		//throw new TermServerScriptException("Unable to find semantic tag level for: " + c);
 		error("Unable to find semantic tag level for: " + c, null);
 		return NOT_SET;
+	}
+	
+	protected void report (Concept c, Object...details) throws TermServerScriptException {
+		incrementSummaryInformation(ISSUE_COUNT);
+		super.report(c, details);
 	}
 }

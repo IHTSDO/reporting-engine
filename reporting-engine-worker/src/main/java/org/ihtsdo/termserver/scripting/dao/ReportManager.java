@@ -36,6 +36,7 @@ public class ReportManager implements RF2Constants {
 		}
 		reportFileManager = new ReportFileManager(this);
 		if (this.ts.isOffline()) {
+			TermServerScript.info("Running in offline mode. Outputting to file rather than google sheets");
 			writeToSheet = false;
 			writeToFile = true;
 		} else {

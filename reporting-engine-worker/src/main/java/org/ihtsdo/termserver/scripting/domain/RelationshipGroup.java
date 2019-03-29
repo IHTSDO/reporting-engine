@@ -132,6 +132,12 @@ public class RelationshipGroup {
 		return false;
 	}
 	
+	public List<Relationship> getType(Concept t) {
+		return relationships.stream()
+		.filter(r -> r.getType().equals(t))
+		.collect(Collectors.toList());
+	}
+	
 	public Relationship getTypeValue(Relationship r1) {
 		List<Relationship> matches = new ArrayList<>();
 		for (Relationship r2 : relationships) {
