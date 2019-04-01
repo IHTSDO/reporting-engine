@@ -42,7 +42,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 	}
 	
 	protected void init(String[] args) throws TermServerScriptException {
-		safetyProtocols = false;
+		//safetyProtocols = false;
 		reportNoChange = false;
 		selfDetermining = true;
 		runStandAlone = true;
@@ -181,11 +181,10 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		subHierarchyECL = "<<428794004 |Fistula (disorder)|"; //QI-186
 		templateNames = new String[] {	"templates/Fistula.json" };
 		includeDueTos = true;
-		*/
+		
 		subHierarchyECL = "< 64572001 |Disease (disorder)|"; 
-		//subHierarchyECL = "<< 38215007";
 		templateNames = new String[] {	"templates/Disease.json" };
-		/*
+		
 		subHierarchyECL = "<<441457006 |Cyst|"; //QI-182
 		templateNames = new String[] {	"templates/Cyst.json" };
 		
@@ -201,7 +200,13 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		
 		subHierarchyECL = "< 429040005 |Ulcer (disorder)|"; //QI-288
 		templateNames = new String[] {	"templates/Ulcer.json" };
+		
+		subHierarchyECL = "< 125670008 |Foreign body (disorder)|"; //QI-291
+		templateNames = new String[] {	"templates/Foreign body.json" };
 		*/
+		
+		subHierarchyECL = "<< 125667009 |Contusion (disorder)|"; //QI-245
+		templateNames = new String[] {	"templates/wound/contusion.json" };
 		
 		super.init(args);
 		
@@ -214,7 +219,8 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 	@Override
 	protected int doFix(Task task, Concept concept, String info) throws TermServerScriptException, ValidationFailure {
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
-		if (loadedConcept.getGciAxioms().size() > 0 || loadedConcept.getAdditionalAxioms().size() > 0) {
+		if ((loadedConcept.getGciAxioms() != null && loadedConcept.getGciAxioms().size() > 0) 
+				|| (loadedConcept.getAdditionalAxioms() != null && loadedConcept.getAdditionalAxioms().size() > 0)) {
 			throw new ValidationFailure(task, loadedConcept, "Concept uses axioms");
 		}
 		int changesMade = removeRedundandRelationships(task, loadedConcept);

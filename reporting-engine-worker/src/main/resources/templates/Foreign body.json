@@ -3,5 +3,5 @@
   "domain": "<  125670008 |Foreign body (disorder)|",
   "documentation": "https://confluence.ihtsdotools.org/display/AUTHS/Foreign+body+of+%5Bbody+structure%5D+%28disorder%29+-+In+progress",
   "version": 1,
-  "logicalTemplate": "64572001 |Disease (disorder)|: [[~1..*]] { [[~1..1]] 116676008 |Associated morphology (attribute)| = [[ +id( <<  19227008 |Foreign body (morphologic abnormality)| ) @morph]], [[~1..1]] 363698007 |Finding site (attribute)| = [[ +id( < 123037004 |Body structure (body structure)| ) @site]], [[~0..1]] 370135005 |Pathological process (attribute)| = 441862004 |Infectious process (qualifier value)|, [[~0..1]] 246075003 |Causative agent (attribute)| = [[ +id ( <<  410607006 |Organism (organism)|) @causeAgent]] }"
+  "logicalTemplate": "64572001 |Disease (disorder)|: [[~1..*]] { [[~1..1]] 116676008 |Associated morphology (attribute)| = [[ +id( <<  19227008 |Foreign body (morphologic abnormality)| ) @morph]], [[~0..1]] 363698007 |Finding site (attribute)| = [[ +id( < 123037004 |Body structure (body structure)| ) @site]] }"
 }

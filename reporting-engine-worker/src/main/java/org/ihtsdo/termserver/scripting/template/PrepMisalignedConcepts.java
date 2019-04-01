@@ -295,11 +295,9 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 		subHierarchyECL = "<<441457006 |Cyst|"; //QI-181
 		templateNames = new String[] {	"templates/Cyst.json" };
 		
-		
 		subHierarchyECL = "<< 128477000 |Abscess (disorder)|"; //QI-213
 		templateNames = new String[] {	"templates/Abscess.json",
 										"templates/Abscess with Cellulitis.json"};
-		
 		
 		subHierarchyECL = "<< 416462003 |Wound (disorder)|"; //QI-209
 		setExclusions(new String[] {"125643001 |Open Wound|", 
@@ -312,11 +310,10 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 		templateNames = new String[] {	"templates/wound/wound of bodysite.json",
 										"templates/wound/wound of bodysite due to event.json"};
 		includeDueTos = true;
-		
+		*/
 		subHierarchyECL = "< 125670008 |Foreign body (disorder)|"; //QI-156
 		templateNames = new String[] {	"templates/Foreign body.json" };
-		
-		
+		/*
 		subHierarchyECL = "<  193570009 |Cataract (disorder)|"; //MQI-7
 		templateNames = new String[] {	"templates/Cataract.json" };
 		includeComplexTemplates = true;
@@ -336,12 +333,10 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 		
 		subHierarchyECL = "<< 445505000 |Contracture of joint of spine (disorder)|";
 		templateNames = new String[] {	"templates/Finding of range of joint movement.json" };
-		*/
 		
 		subHierarchyECL = "< 64572001 |Disease (disorder)|"; 
-		//subHierarchyECL = "<< 38215007";
 		templateNames = new String[] {	"templates/Disease.json" };
-		
+		*/
 		super.init(args);
 		
 		//Ensure our ECL matches more than 0 concepts before we import SNOMED - expensive!
