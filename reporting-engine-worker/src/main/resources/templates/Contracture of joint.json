@@ -1,0 +1,6 @@
+{
+  "name": "Contracture of joint",
+  "documentation": "",
+  "version": 1,
+  "logicalTemplate": "64572001 |Disease (disorder)| : [[~1..2 @rolegroup]]{ [[~1..1]] 116676008 |Associated morphology (attribute)| = [[+id(<< 57048009 |Contracture (morphologic abnormality)| ) @morphology ]], [[~1..1]] 363698007 |Finding site (attribute)| = [[+id(<< 785818007 |Structure of joint region (body structure)|)]], [[~0..1]] 246454002 |Occurrence (attribute)| = [[ +id(< 282032007 |Periods of life (qualifier value)| ) @occur]], [[~0..1]] 370135005 |Pathological process (attribute)| = [[ +id ( < 308489006 |Pathological process (qualifier value)| ) @proc]]}, [[~1..1]] {[[~1..1]] 363714003 |Interprets (attribute)| = [[+id(<< 364564000 |Range of joint movement (observable entity)| )]], [[~1..1]] 363713009 |Has interpretation (attribute)| = 1250004 |Decreased (qualifier value)| }"
+}

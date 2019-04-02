@@ -182,7 +182,7 @@ abstract public class TemplateFix extends BatchFix {
 				warn ("Ignoring inactive concept returned by ECL: " + c);
 				continue;
 			}
-			if (!isExcluded(c, true) && TemplateUtils.matchesTemplate(c, t, gl.getDescendantsCache(), CharacteristicType.INFERRED_RELATIONSHIP)) {
+			if (!isExcluded(c, true) && TemplateUtils.matchesTemplate(c, t, this, CharacteristicType.INFERRED_RELATIONSHIP)) {
 				//Do we already have a template for this concept?  
 				//Assign the most specific template if so (TODO Don't assume order indicates complexity!)
 				if (conceptToTemplateMap.containsKey(c)) {

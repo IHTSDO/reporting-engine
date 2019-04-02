@@ -24,27 +24,27 @@ import org.springframework.util.StringUtils;
  * See https://confluence.ihtsdotools.org/display/IAP/Quality+Improvements+2018
  * Update: https://confluence.ihtsdotools.org/pages/viewpage.action?pageId=61155633
  */
-public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
+public class MisalignedConcepts extends TemplateFix implements ReportClass {
 	
 	Map<Concept, List<String>> conceptDiagnostics = new HashMap<>();
 	public static final String INCLUDE_COMPLEX = "Include complex cases";
 	public static final String ALLOW_LARGE_RESULTS= "Allow large results";
 	
-	public PrepMisalignedConcepts() {
+	public MisalignedConcepts() {
 		super(null);
 	}
 
-	protected PrepMisalignedConcepts(BatchFix clone) {
+	protected MisalignedConcepts(BatchFix clone) {
 		super(clone);
 	}
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
-		PrepMisalignedConcepts app = new PrepMisalignedConcepts(null);
+		MisalignedConcepts app = new MisalignedConcepts(null);
 		try {
 			//app.includeComplexTemplates = true;
-			app.safetyProtocols = false;
+			//app.safetyProtocols = false;
 			app.init(args);
-			//app.getArchiveManager().allowStaleData = true;
+			//app.getArchiveManager().allowStaleData = true;  //Use when running offline
 			app.loadProjectSnapshot(false);  //Load all descriptions
 			app.postInit();
   			app.runJob();
@@ -141,7 +141,7 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 			
 			//Ensure our ECL matches more than 0 concepts before we import SNOMED - expensive!
 			//This will also cache the result
-			if (findConcepts(project.getBranchPath(), subHierarchyECL).size() == 0) {
+			if (findConcepts(subHierarchyECL).size() == 0) {
 				throw new TermServerScriptException(subHierarchyECL + " returned 0 rows");
 			}
 		}
@@ -197,11 +197,10 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 		subHierarchyStr =  "34014006"; //QI-15 |Viral disease (disorder)|
 		templateNames = new String[] {	"templates/infection/Infection caused by Virus.json",
 										"templates/infection/Infection of bodysite caused by virus.json"};
-		
+		*/
 		subHierarchyECL = "<<87628006";  //QI-16 |Bacterial infectious disease (disorder)|
-		templateNames = new String[] {	"templates/infection/Infection caused by Bacteria.json",
-										"templates/infection/Infection of bodysite caused by bacteria.json"};
-		 
+		templateNames = new String[] {	"templates/infection/Infection caused by bacteria.json"};
+		/*
 		subHierarchyECL = "<<95896000";  //QI-19  |Protozoan infection (disorder)|
 		templateNames = new String[] {"templates/infection/Infection caused by Protozoa with optional bodysite.json"};
 			
@@ -310,10 +309,10 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 		templateNames = new String[] {	"templates/wound/wound of bodysite.json",
 										"templates/wound/wound of bodysite due to event.json"};
 		includeDueTos = true;
-		*/
+		
 		subHierarchyECL = "< 125670008 |Foreign body (disorder)|"; //QI-156
 		templateNames = new String[] {	"templates/Foreign body.json" };
-		/*
+		
 		subHierarchyECL = "<  193570009 |Cataract (disorder)|"; //MQI-7
 		templateNames = new String[] {	"templates/Cataract.json" };
 		includeComplexTemplates = true;
@@ -337,11 +336,16 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 		subHierarchyECL = "< 64572001 |Disease (disorder)|"; 
 		templateNames = new String[] {	"templates/Disease.json" };
 		*/
+		
+		subHierarchyECL = "< 7890003 |Contracture of joint (disorder)|"; //QI-261
+		templateNames = new String[] {	"templates/Contracture of joint minus.json" };
+		includeComplexTemplates = true;
+		
 		super.init(args);
 		
 		//Ensure our ECL matches more than 0 concepts before we import SNOMED - expensive!
 		//This will also cache the result
-		if (findConcepts(project.getBranchPath(), subHierarchyECL).size() == 0) {
+		if (findConcepts(subHierarchyECL).size() == 0) {
 			throw new TermServerScriptException(subHierarchyECL + " returned 0 rows");
 		}
 	}
@@ -358,7 +362,7 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 		writeToReportFile (SECONDARY_REPORT, "Requested by: " + user);
 		writeToReportFile (SECONDARY_REPORT, "Ran against: " + subHierarchyECL);
 		writeToReportFile (SECONDARY_REPORT, "Project: " + project);
-		writeToReportFile (SECONDARY_REPORT, "Concepts considered: " +findConcepts(project.getBranchPath(), subHierarchyECL).size());
+		writeToReportFile (SECONDARY_REPORT, "Concepts considered: " + findConcepts(subHierarchyECL).size());
 		writeToReportFile (SECONDARY_REPORT, "Templates: " );
 		
 		for (Template t : templates) {
@@ -390,7 +394,7 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		
 		//Start with the whole subHierarchy and remove concepts that match each of our templates
-		Set<Concept> unalignedConcepts = findConcepts(project.getBranchPath(), subHierarchyECL);
+		Set<Concept> unalignedConcepts = findConcepts(subHierarchyECL);
 		
 		//Set<Concept> unalignedConcepts = Collections.singleton(gl.getConcept("415771000"));
 		Set<Concept> ignoredConcepts = new HashSet<>();

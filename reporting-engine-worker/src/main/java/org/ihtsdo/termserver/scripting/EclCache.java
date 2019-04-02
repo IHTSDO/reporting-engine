@@ -22,10 +22,11 @@ public class EclCache {
 	private Gson gson;
 	private GraphLoader gl;
 	boolean safetyProtocolEngaged = true;
+	boolean quiet = false;
 	
 	Map <String, List<Concept>> expansionCache = new HashMap<>();
 	
-	static EclCache getCache(String branch, TermServerClient tsClient, Gson gson, GraphLoader gl) {
+	static EclCache getCache(String branch, TermServerClient tsClient, Gson gson, GraphLoader gl, boolean quiet) {
 		if (branchCaches == null) {
 			branchCaches  = new HashMap<>();
 		}
@@ -36,6 +37,7 @@ public class EclCache {
 			branchCaches.put(branch, branchCache);
 		}
 		branchCache.gl = gl;
+		branchCache.quiet = quiet;
 		return branchCache;
 	}
 	
@@ -60,7 +62,9 @@ public class EclCache {
 				cached = localCopies;
 				expansionCache.put(ecl, cached);
 			}
-			TermServerScript.debug ("Recovering cached " + cached.size() + " concepts matching " + ecl);
+			if (!quiet) {
+				TermServerScript.debug ("Recovering cached " + cached.size() + " concepts matching '" + ecl +"'");
+			}
 			return cached;
 		}
 		
@@ -76,7 +80,7 @@ public class EclCache {
 					//if (offset == 0) {
 					if (searchAfter == null) {
 						//First time round, report how many we're receiving.
-						TermServerScript.debug ("Recovering " + collection.getTotal() + " concepts matching " + ecl);
+						TermServerScript.debug ("Recovering " + collection.getTotal() + " concepts matching '" + ecl +"'");
 						if (collection.getTotal() > 2000) {
 							TermServerScript.info ("...which seems rather large, don't you think?");
 						}

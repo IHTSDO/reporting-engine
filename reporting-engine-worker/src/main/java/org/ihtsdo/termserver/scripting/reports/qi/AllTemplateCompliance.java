@@ -196,7 +196,7 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 		nextConcept:
 		for (Concept c : subHierarchy) {
 			for (Template t : templates) {
-				if (TemplateUtils.matchesTemplate(c, t, cache, CharacteristicType.INFERRED_RELATIONSHIP)) {
+				if (TemplateUtils.matchesTemplate(c, t, this, CharacteristicType.INFERRED_RELATIONSHIP)) {
 					templateMatches.add(c);
 					continue nextConcept;
 				}

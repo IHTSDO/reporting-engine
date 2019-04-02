@@ -98,10 +98,10 @@ public class GroupRemodel extends TemplateFix {
 
 		subHierarchyECL =  "<< 34014006"; //QI-15 + QI-23 |Viral disease (disorder)|
 		templateNames = new String[] {	"templates/Infection caused by virus with optional bodysite.json"};
-
-		subHierarchyECL =  "<< 87628006";  //QI-16 + QI-21 |Bacterial infectious disease (disorder)|
-		templateNames = new String[] {	"templates/Infection caused by bacteria with optional bodysite.json"}; 
-		
+		*/
+		subHierarchyECL = "<<87628006";  //QI-21 |Bacterial infectious disease (disorder)|
+		templateNames = new String[] {	"templates/infection/Infection caused by bacteria.json"};
+		/*
 		subHierarchyECL =  "<< 95896000";  //QI-27  |Protozoan infection (disorder)|
 		templateNames = new String[] {"templates/Infection caused by Protozoa with optional bodysite.json"};
 		
@@ -136,7 +136,7 @@ public class GroupRemodel extends TemplateFix {
 		exclusionWords.add("shock");
 		alreadyProcessedFile = new File(".QI-159_already_processed.txt");
 		
-		*/
+		
 		subHierarchyECL = "<<52515009"; //QI-173 |Hernia of abdominal cavity (disorder)|
 		templateNames = new String[] {	"templates/hernia/Hernia of Body Structure.json"};
 		excludeHierarchies = new String[] { "236037000 |Incisional hernia (disorder)|" };
@@ -144,13 +144,12 @@ public class GroupRemodel extends TemplateFix {
 		exclusionWords.add("gangrene");
 		exclusionWords.add("obstruction");
 		
-		/*
 		subHierarchyECL = "<< 416462003 |Wound (disorder)|"; //QI-209
 		setExclusions(new String[] {"125643001 |Open Wound|", 
 									"416886008 |Closed Wound|",
 									"312608009 |Laceration|",
 									"283682007 |Bite Wound|",
-									"399963005 |Abraision|",
+									"399963005 |Abrasion|",
 									"125670008 |Foreign Body|",
 									"125667009 |Contusion (disorder)|"});
 		templateNames = new String[] {	"templates/wound/wound of bodysite due to event.json"};
@@ -161,7 +160,7 @@ public class GroupRemodel extends TemplateFix {
 		super.init(args);
 		
 		//Ensure our ECL matches more than 0 concepts.  This will also cache the result
-		if (findConcepts(project.getBranchPath(), subHierarchyECL).size() == 0) {
+		if (findConcepts(subHierarchyECL).size() == 0) {
 			throw new TermServerScriptException(subHierarchyECL + " returned 0 rows");
 		}
 	}
@@ -291,7 +290,7 @@ public class GroupRemodel extends TemplateFix {
 					
 					for (Attribute a : matchedTemplateGroup.getAttributes()) {
 						//Does this group ALREADY satisfy the template attribute?
-						if (TemplateUtils.containsMatchingRelationship(additionalGroup, a, null, gl.getDescendantsCache())) {
+						if (TemplateUtils.containsMatchingRelationship(additionalGroup, a, null, this)) {
 							continue;
 						}
 						//Don't check stated relationships because we could then run code to work with a single relationship when 
@@ -395,7 +394,7 @@ public class GroupRemodel extends TemplateFix {
 			int thisMatchCount = 0;
 			for (Relationship r : bestConceptGroupMatch.getRelationships()) {
 				for (Attribute a : attributeGroup.getAttributes()) {
-					if (TemplateUtils.matchesAttribute(r, a, null, gl.getDescendantsCache())) {
+					if (TemplateUtils.matchesAttribute(r, a, null, this)) {
 						thisMatchCount++;
 					}
 				}
@@ -448,7 +447,7 @@ public class GroupRemodel extends TemplateFix {
 				int score = 0;
 				for (Relationship r : conceptGroup.getRelationships()) {
 					for (Attribute a : attributeGroup.getAttributes()) {
-						if (TemplateUtils.matchesAttribute(r, a, null, gl.getDescendantsCache())) {
+						if (TemplateUtils.matchesAttribute(r, a, null, this)) {
 							score++;
 						}
 					}
@@ -775,7 +774,7 @@ public class GroupRemodel extends TemplateFix {
 			info ("Skipping " + alreadyProcessed.size() + " concepts declared as already processed in " + alreadyProcessedFile);
 		}
 		
-		for (Concept c : findConcepts(project.getBranchPath(), subHierarchyECL)) {
+		for (Concept c : findConcepts(subHierarchyECL)) {
 			if (!c.getConceptId().equals("48763007")) {
 				//continue;
 			}
@@ -801,7 +800,7 @@ public class GroupRemodel extends TemplateFix {
 					boolean matchesTemplate = false;
 					for (Template template : templates) {
 						if (TemplateUtils.matchesTemplate(c, template, 
-								gl.getDescendantsCache(), 
+								this, 
 								CharacteristicType.STATED_RELATIONSHIP, 
 								true //Do allow additional unspecified ungrouped attributes
 								)) {

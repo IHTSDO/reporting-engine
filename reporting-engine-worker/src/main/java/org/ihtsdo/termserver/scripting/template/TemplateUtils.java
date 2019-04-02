@@ -2,13 +2,10 @@ package org.ihtsdo.termserver.scripting.template;
 
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang.NotImplementedException;
 import org.snomed.authoringtemplate.domain.logical.*;
-import org.ihtsdo.termserver.scripting.DescendentsCache;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
@@ -17,10 +14,6 @@ import org.ihtsdo.termserver.scripting.util.StringUtils;
 
 public class TemplateUtils implements RF2Constants {
 	
-	public static String ECL_DESCENDANT_OR_SELF = "<<";
-	public static String ECL_DESCENDANT = "<";
-	public static String ECL_OR = " OR ";
-	public static String ECL_STAR = "*";
 	public static Pattern p = Pattern.compile("[0-9]+");
 	
 	public static boolean SLOT_NAME_WARNING_MADE = false;
@@ -63,7 +56,7 @@ public class TemplateUtils implements RF2Constants {
 		return sb.toString();
 	}
 	
-	public static boolean matchesTemplate(Concept c, Template t, DescendentsCache descendantsCache, CharacteristicType charType) throws TermServerScriptException {
+	public static boolean matchesTemplate(Concept c, Template t, TermServerScript ts, CharacteristicType charType) throws TermServerScriptException {
 		//Do a check here that unspecified cardinality on a group should be clarified as [[0..*]]
 		for (AttributeGroup g : t.getAttributeGroups()) {
 			if (g.getCardinalityMin() == null || g.getCardinalityMax() == null) {
@@ -74,10 +67,10 @@ public class TemplateUtils implements RF2Constants {
 		}
 		
 		//Default to not allowing additional attributes
-		return matchesTemplate(c, t, descendantsCache, charType, false);
+		return matchesTemplate(c, t, ts, charType, false);
 	}
 
-	public static boolean matchesTemplate(Concept c, Template t, DescendentsCache cache, CharacteristicType charType, boolean allowAdditional) throws TermServerScriptException {
+	public static boolean matchesTemplate(Concept c, Template t, TermServerScript ts, CharacteristicType charType, boolean allowAdditional) throws TermServerScriptException {
 		//TODO Check the focus concept
 		try {
 			//Map relGroups to template attribute groups, and visa versa
@@ -95,7 +88,7 @@ public class TemplateUtils implements RF2Constants {
 			for (RelationshipGroup relGroup : c.getRelationshipGroups(charType)) {
 				//Work through each template group and confirm that one of them matches
 				for (AttributeGroup templateGroup : t.getAttributeGroups()) {
-					if (matchesTemplateGroup (relGroup, templateGroup, namedSlots, cache)) {
+					if (matchesTemplateGroup (relGroup, templateGroup, namedSlots, ts)) {
 						//Update map of concept relationship groups matching template attribute groups
 						List<AttributeGroup> matchedAttributeGroups = relGroupMatchesTemplateGroups.get(relGroup);
 						matchedAttributeGroups.add(templateGroup);
@@ -203,12 +196,12 @@ public class TemplateUtils implements RF2Constants {
 		return true;
 	}
 
-	private static boolean matchesTemplateGroup(RelationshipGroup relGroup, AttributeGroup templateGroup, Map<String, List<Concept>> namedSlots, DescendentsCache cache) throws TermServerScriptException {
+	private static boolean matchesTemplateGroup(RelationshipGroup relGroup, AttributeGroup templateGroup, Map<String, List<Concept>> namedSlots, TermServerScript ts) throws TermServerScriptException {
 		//For each attribute, check if there's a match in the template
 		nextRel:
 		for (Relationship r : relGroup.getRelationships()) {
 			for (Attribute a : templateGroup.getAttributes()) {
-				if (matchesAttribute(r, a, namedSlots, cache)) {
+				if (matchesAttribute(r, a, namedSlots, ts)) {
 					//We can check the next relationship
 					continue nextRel;
 				}
@@ -220,7 +213,7 @@ public class TemplateUtils implements RF2Constants {
 		for (Attribute a : templateGroup.getAttributes()) {
 			int count = 0;
 			for (Relationship r : relGroup.getRelationships()) {
-				if (matchesAttribute(r, a, null, cache)) {
+				if (matchesAttribute(r, a, null, ts)) {
 					count++;
 				}
 			}
@@ -231,12 +224,12 @@ public class TemplateUtils implements RF2Constants {
 		return true;
 	}
 
-	public static boolean matchesAttribute(Relationship r, Attribute a, Map<String, List<Concept>> namedSlots, DescendentsCache cache) throws TermServerScriptException {
+	public static boolean matchesAttribute(Relationship r, Attribute a, Map<String, List<Concept>> namedSlots, TermServerScript ts) throws TermServerScriptException {
 		boolean matchesAttributeValue = false;
 		if (matchesAttributeType(r.getType(), a.getType())) {
 			//Is the value within the allowable ECL, or do we have a fixed value?
 			if (a.getAllowableRangeECL() != null) {
-				matchesAttributeValue = matchesAttributeValue(r.getTarget(), a.getAllowableRangeECL().trim(), cache);
+				matchesAttributeValue = matchesAttributeValue(r.getTarget(), a.getAllowableRangeECL().trim(), ts);
 			} else if (a.getValue() != null) {
 				matchesAttributeValue = r.getTarget().getConceptId().equals(a.getValue());
 			} else if (a.getSlotReference() != null) {
@@ -244,7 +237,7 @@ public class TemplateUtils implements RF2Constants {
 					TermServerScript.warn("TODO - maintain list of matched slot name values to pass in");
 					SLOT_NAME_WARNING_MADE = true;
 				}
-				matchesAttributeValue = matchesAttributeValue(r.getTarget(), ECL_STAR, cache);
+				matchesAttributeValue = true;
 			} else {
 				throw new IllegalArgumentException ("Template segment has neither ECL, Value nor SlotReference: " + a);
 			}
@@ -263,50 +256,18 @@ public class TemplateUtils implements RF2Constants {
 		return matchesAttributeValue;
 	}
 	
-	public static boolean containsMatchingRelationship (RelationshipGroup group , Attribute a , Map<String, List<Concept>> namedSlots, DescendentsCache cache) throws TermServerScriptException {
+	public static boolean containsMatchingRelationship (RelationshipGroup group , Attribute a , Map<String, List<Concept>> namedSlots, TermServerScript ts) throws TermServerScriptException {
 		for (Relationship r : group.getRelationships()) {
-			if (matchesAttribute(r, a, namedSlots, cache)) {
+			if (matchesAttribute(r, a, namedSlots, ts)) {
 				return true;
 			}
 		}
 		return false;
 	}
 
-	private static boolean matchesAttributeValue(Concept target, String ecl, DescendentsCache cache) throws TermServerScriptException {
-		//We'll only handle the simplest of ECL here
-		//TODO Parse the ECL properly
-		String[] eclAlternatives = ecl.split(ECL_OR);  //Any of the alternatives can match
-		for (String thisEcl : eclAlternatives) {
-			thisEcl = thisEcl.trim();
-			if (thisEcl.startsWith(ECL_DESCENDANT_OR_SELF)) {
-				String valueRangeSctId = recoverSctId(thisEcl);
-				Concept valueRange = GraphLoader.getGraphLoader().getConcept(valueRangeSctId);
-				if (valueRange != null && cache.getDescendentsOrSelf(valueRange).contains(target)) {
-					return true;
-				}
-			} else if (thisEcl.startsWith(ECL_DESCENDANT)) {
-				String valueRangeSctId = recoverSctId(thisEcl);
-				Concept valueRange = GraphLoader.getGraphLoader().getConcept(valueRangeSctId);
-				if (valueRange != null && cache.getDescendents(valueRange).contains(target)) {
-					return true;
-				}
-			} else if (thisEcl.equals(ECL_STAR)){
-				//Anything matches the wildcard
-				return true;
-			} else {
-				//TODO Call the server to resolve this, and cache result
-				throw new NotImplementedException("Unable to handle ecl: " + ecl);
-			}
-		}
-		return false;
-	}
-
-	private static String recoverSctId(String str) {
-		Matcher m = p.matcher(str);
-		if (m.find()) {
-			return m.group();
-		}
-		return null;
+	private static boolean matchesAttributeValue(Concept target, String ecl, TermServerScript ts) throws TermServerScriptException {
+		Set<Concept> permittedConcepts = ts.findConcepts(ecl, true);
+		return permittedConcepts.contains(target);
 	}
 
 	private static boolean matchesAttributeType(Concept c1, String c2Str) throws TermServerScriptException {

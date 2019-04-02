@@ -39,7 +39,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 	}
 	
 	public void runJob() throws TermServerScriptException {
-		for (Concept c : findConcepts(project.getBranchPath(), ecl)) {
+		for (Concept c : findConcepts(ecl)) {
 			
 		}
 	}

@@ -211,7 +211,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		super.init(args);
 		
 		//Ensure our ECL matches more than 0 concepts.  This will also cache the result
-		if (!getArchiveManager().allowStaleData && findConcepts(project.getBranchPath(), subHierarchyECL).size() == 0) {
+		if (!getArchiveManager().allowStaleData && findConcepts(subHierarchyECL).size() == 0) {
 			throw new TermServerScriptException(subHierarchyECL + " returned 0 rows");
 		}
 	}
@@ -328,7 +328,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		//Start with the whole subHierarchy and remove concepts that match each of our templates
 		Set<Concept> alignedConcepts = new HashSet<>();
 		Set<Concept> ignoredConcepts = new HashSet<>();
-		Collection<Concept> potentialMatches = findConcepts(project.getBranchPath(), subHierarchyECL);
+		Collection<Concept> potentialMatches = findConcepts(subHierarchyECL);
 		//Collection<Concept> potentialMatches = Collections.singleton(gl.getConcept("283905005 |Avulsion of kidney (disorder)|"));
 		
 		info ("Identifying concepts aligned to template");

@@ -83,7 +83,7 @@ public class GnarlyFactorCalculationECL extends TermServerReport {
 			debug ("Found cached expansion for " + r);
 			return expansionMap.get(r);
 		}
-		return findConcepts(project.getBranchPath(), ecl);
+		return findConcepts(ecl);
 	}
 
 	private Relationship findOptimalECL(Relationship r, int hopCount) throws TermServerScriptException {
