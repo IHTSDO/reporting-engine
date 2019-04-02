@@ -175,9 +175,6 @@ abstract public class TemplateFix extends BatchFix {
 		info ("Examining " + concepts.size() + " concepts against template " + t);
 		int conceptsExamined = 0;
 		for (Concept c : concepts) {
-			if (c.getConceptId().equals("234195006")) {
-				debug ("Check template match here");
-			}
 			if (!c.isActive()) {
 				warn ("Ignoring inactive concept returned by ECL: " + c);
 				continue;

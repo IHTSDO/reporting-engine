@@ -60,9 +60,9 @@ public class TemplateUtils implements RF2Constants {
 		//Do a check here that unspecified cardinality on a group should be clarified as [[0..*]]
 		for (AttributeGroup g : t.getAttributeGroups()) {
 			if (g.getCardinalityMin() == null || g.getCardinalityMax() == null) {
-				TermServerScript.warn("Template " + t.getName() + " failed to specify cardinality in group " + g + " clarifying as [[0..*]]");
-				g.setCardinalityMin("0");
-				g.setCardinalityMax("*");
+				TermServerScript.warn("Template " + t.getName() + " failed to specify cardinality in group " + g + " clarifying as [[1..1]]");
+				g.setCardinalityMin("1");
+				g.setCardinalityMax("1");
 			}
 		}
 		
@@ -84,6 +84,7 @@ public class TemplateUtils implements RF2Constants {
 			c.getRelationshipGroups(charType).stream().forEach(relGroup -> relGroupMatchesTemplateGroups.put(relGroup, new ArrayList<AttributeGroup>()));
 			
 			//Work through each group (including 0) and check which of the groups in the template it matches
+			//However, template groups should not match ungrouped concept attributes
 			nextRelGroup:
 			for (RelationshipGroup relGroup : c.getRelationshipGroups(charType)) {
 				//Work through each template group and confirm that one of them matches
@@ -197,6 +198,10 @@ public class TemplateUtils implements RF2Constants {
 	}
 
 	private static boolean matchesTemplateGroup(RelationshipGroup relGroup, AttributeGroup templateGroup, Map<String, List<Concept>> namedSlots, TermServerScript ts) throws TermServerScriptException {
+		//Grouped template groups (ie > 0) cannot match ungrouped concept attributes and visa versa
+		if (relGroup.isGrouped() != templateGroup.isGrouped()) {
+			return false;
+		}
 		//For each attribute, check if there's a match in the template
 		nextRel:
 		for (Relationship r : relGroup.getRelationships()) {
@@ -266,7 +271,7 @@ public class TemplateUtils implements RF2Constants {
 	}
 
 	private static boolean matchesAttributeValue(Concept target, String ecl, TermServerScript ts) throws TermServerScriptException {
-		Set<Concept> permittedConcepts = ts.findConcepts(ecl, true);
+		Set<Concept> permittedConcepts = ts.findConcepts(ecl, true, true);
 		return permittedConcepts.contains(target);
 	}
 

@@ -51,6 +51,10 @@ public class EclCache {
 	}
 	
 	protected List<Concept> findConcepts(String branch, String ecl) throws TermServerScriptException {
+		return findConcepts(branch, ecl, !safetyProtocolEngaged);
+	}
+	
+	protected List<Concept> findConcepts(String branch, String ecl, boolean expectLargeResults) throws TermServerScriptException {
 		//Have we already recovered this ECL?
 		if (expansionCache.containsKey(ecl)) {
 			List<Concept> cached = expansionCache.get(ecl);
@@ -77,15 +81,14 @@ public class EclCache {
 					JSONResource response = tsClient.getConcepts(ecl, branch, searchAfter, PAGING_LIMIT);
 					String json = response.toObject().toString();
 					ConceptCollection collection = gson.fromJson(json, ConceptCollection.class);
-					//if (offset == 0) {
 					if (searchAfter == null) {
 						//First time round, report how many we're receiving.
 						TermServerScript.debug ("Recovering " + collection.getTotal() + " concepts matching '" + ecl +"'");
-						if (collection.getTotal() > 2000) {
+						if (collection.getTotal() > 2000 && !expectLargeResults) {
 							TermServerScript.info ("...which seems rather large, don't you think?");
 						}
 						
-						if (safetyProtocolEngaged && collection.getTotal() > MAX_RESULTS) {
+						if (!expectLargeResults && collection.getTotal() > MAX_RESULTS) {
 							throw new TermServerScriptException("ECL returned " + collection.getTotal() + " concepts, exceeding limit of " + MAX_RESULTS);
 						}
 					}

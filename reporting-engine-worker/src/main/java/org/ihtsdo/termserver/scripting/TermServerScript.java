@@ -654,22 +654,22 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	public Set<Concept> findConcepts(String ecl) throws TermServerScriptException {
-		return findConcepts(project.getBranchPath(), ecl, false);
+		return findConcepts(project.getBranchPath(), ecl, false, false);
 	}
 	
-	public Set<Concept> findConcepts(String ecl, boolean quiet) throws TermServerScriptException {
-		return findConcepts(project.getBranchPath(), ecl, quiet);
+	public Set<Concept> findConcepts(String ecl, boolean quiet, boolean expectLargeResults) throws TermServerScriptException {
+		return findConcepts(project.getBranchPath(), ecl, quiet, expectLargeResults);
 	}
 	
-	public Set<Concept> findConcepts(String branch, String ecl, boolean quiet) throws TermServerScriptException {
+	public Set<Concept> findConcepts(String branch, String ecl, boolean quiet, boolean expectLargeResults) throws TermServerScriptException {
 		EclCache cache = EclCache.getCache(branch, tsClient, gson, gl, quiet);
 		cache.engageSafetyProtocol(safetyProtocols);
-		List<Concept> concepts = cache.findConcepts(branch, ecl); 
+		List<Concept> concepts = cache.findConcepts(branch, ecl, expectLargeResults); 
 		int retry = 0;
 		if (concepts.size() == 0 && ++retry < 3) {
 			debug("No concepts returned. Double checking that result in 30s...");
 			try { Thread.sleep(30*1000); } catch (Exception e) {}
-			concepts = cache.findConcepts(branch, ecl); 
+			concepts = cache.findConcepts(branch, ecl, expectLargeResults); 
 		}
 		//Failure in the pagination can cause duplicates.  Check for this
 		Set<Concept> uniqConcepts = new HashSet<>(concepts);

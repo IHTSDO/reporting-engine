@@ -335,11 +335,13 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		
 		subHierarchyECL = "< 64572001 |Disease (disorder)|"; 
 		templateNames = new String[] {	"templates/Disease.json" };
-		*/
 		
 		subHierarchyECL = "< 7890003 |Contracture of joint (disorder)|"; //QI-261
 		templateNames = new String[] {	"templates/Contracture of joint minus.json" };
 		includeComplexTemplates = true;
+		*/
+		subHierarchyECL = "<< 125667009 |Contusion (disorder)|"; //QI-244 
+		templateNames = new String[] {	"templates/wound/contusion.json" };
 		
 		super.init(args);
 		
@@ -394,9 +396,8 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		
 		//Start with the whole subHierarchy and remove concepts that match each of our templates
-		Set<Concept> unalignedConcepts = findConcepts(subHierarchyECL);
-		
-		//Set<Concept> unalignedConcepts = Collections.singleton(gl.getConcept("415771000"));
+		//Set<Concept> unalignedConcepts = findConcepts(subHierarchyECL);
+		Set<Concept> unalignedConcepts = Collections.singleton(gl.getConcept("269214009"));
 		Set<Concept> ignoredConcepts = new HashSet<>();
 		
 		for (Template template : templates) {
@@ -410,9 +411,6 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		}
 		
 		for (Concept c : unalignedConcepts) {
-			if (!c.getConceptId().equals("186868000")) {
-				//continue;
-			}
 			if (whiteListedConcepts.contains(c)) {
 				incrementSummaryInformation(WHITE_LISTED_COUNT);
 				ignoredConcepts.add(c);
