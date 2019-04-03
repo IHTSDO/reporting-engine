@@ -2,7 +2,6 @@ package org.ihtsdo.termserver.scripting.reports.release;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.AncestorsCache;
@@ -13,15 +12,12 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
-import org.springframework.util.StringUtils;
 
 /**
  * Reports concepts that are intermediate primitives from point of view of some subhierarchy
  * Update: Adding a 2nd report to determine how many sufficiently defined concepts are affected by an IP
  * */
 public class ReleaseStats extends TermServerReport implements ReportClass {
-	
-	public static final String IP = "IP";
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
 		Map<String, String> params = new HashMap<>();
@@ -146,52 +142,18 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 	}
 
 	public void countIPs () throws TermServerScriptException {
-		for (Concept c : gl.getAllConcepts()) {
-			if (!c.getConceptId().equals("210416002")) {
-			//	continue;
-			}
-			//We're only interested in fully defined (QI project includes leaf concepts)
-			if (c.isActive() &&
-				c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
-				//Get a list of all my primitive ancestors
-				List<Concept> proxPrimParents = gl.getAncestorsCache().getAncestors(c).stream()
-						.filter(a -> a.getDefinitionStatus().equals(DefinitionStatus.PRIMITIVE))
-						.collect(Collectors.toList());
-				//Do those ancestors themselves have sufficiently defined ancestors ie making them intermediate primitives
-				for (Concept thisPPP : proxPrimParents) {
-					if (containsFdConcept(gl.getAncestorsCache().getAncestors(thisPPP))) {
-						if (StringUtils.isEmpty(thisPPP.getIssues())) {
-							String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
-							report(QUATERNARY_REPORT, thisPPP, semTag);
-						}
-						thisPPP.setIssue(IP);
-					} 
-				}
-			}
-		}
 		int ipCount = 0;
 		int orphanetIPs = 0;
 		//Pre-load Orphanet concepts incase in case it causes another concept to be created
 		gl.getOrphanetConcepts();
-		for (Concept c : gl.getAllConcepts()) {
-			if (c.getIssues() != null && c.getIssues().equals(IP)) {
-				ipCount++;
-				if (gl.isOrphanetConcept(c)) {
-					orphanetIPs++;
-				}
+		for (Concept c : identifyIntermediatePrimitives(gl.getAllConcepts(), QUATERNARY_REPORT)) {
+			ipCount++;
+			if (gl.isOrphanetConcept(c)) {
+				orphanetIPs++;
 			}
 		}
 		report (PRIMARY_REPORT, null, "Number of Intermediate Primitives", ipCount);
 		report (PRIMARY_REPORT, null, "Of which Orphanet", orphanetIPs);
-	}
-	
-	private boolean containsFdConcept(Collection<Concept> concepts) {
-		for (Concept c : concepts) {
-			if (c.isActive() && c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
-				return true;
-			}
-		}
-		return false;
 	}
 	
 	class GroupPair {

@@ -73,70 +73,76 @@ public class ArchiveManager implements RF2Constants {
 		}
 	}
 
-	public void loadProjectSnapshot(boolean fsnOnly) throws TermServerClientException, TermServerScriptException, InterruptedException, IOException {
-		//Look for an expanded directory by preference
-		File snapshot = getSnapshotPath();
-		if (!snapshot.exists()) {
-			//Otherwise, do we have a zip file to play with?
-			snapshot = new File (snapshot.getPath() + ".zip");
-		}
-		
-		//If we're loading a particular release, it will be stale
-		if (StringUtils.isNumeric(ts.getProject().getKey())) {
-			allowStaleData = true;
-		}
-		
-		Branch branch = null;
-		//Are we lacking data, or is our data out of date?  
-		boolean isStale = false;
-		if (snapshot.exists() && !allowStaleData) {
-			branch = loadBranch(ts.getProject());
-			Date branchHeadTime = new Date(branch.getHeadTimestamp());
-			BasicFileAttributes attr = java.nio.file.Files.readAttributes(snapshot.toPath(), BasicFileAttributes.class);
-			Date snapshotCreation = new Date(attr.creationTime().toMillis());
-			isStale = branchHeadTime.after(snapshotCreation);
-			if (isStale) {
-				TermServerScript.warn(ts.getProject() + " snapshot held locally is stale.  Requesting delta to rebuild...");
+	public void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException {
+		try {	
+			//Look for an expanded directory by preference
+			File snapshot = getSnapshotPath();
+			if (!snapshot.exists()) {
+				//Otherwise, do we have a zip file to play with?
+				snapshot = new File (snapshot.getPath() + ".zip");
 			}
-		}
-		
-		if (!snapshot.exists() || ( isStale && !allowStaleData)) {
-			gl.reset();
-			snapshot = generateSnapshot (ts.getProject(), branch);
-			//We don't need to load the snapshot if we've just generated it
-		} else {
-			//We might already have this project in memory
-			if (currentlyHeldInMemory != null && currentlyHeldInMemory.equals(ts.getProject())) {
-				info (ts.getProject() + " already held in memory, no need to reload.  Resetting any issues held against components...");
-				gl.makeReady();
+			
+			boolean originalStateDataFlag = allowStaleData;
+			//If we're loading a particular release, it will be stale
+			if (StringUtils.isNumeric(ts.getProject().getKey())) {
+				allowStaleData = true;
+			}
+			
+			Branch branch = null;
+			//Are we lacking data, or is our data out of date?  
+			boolean isStale = false;
+			if (snapshot.exists() && !allowStaleData) {
+				branch = loadBranch(ts.getProject());
+				Date branchHeadTime = new Date(branch.getHeadTimestamp());
+				BasicFileAttributes attr = java.nio.file.Files.readAttributes(snapshot.toPath(), BasicFileAttributes.class);
+				Date snapshotCreation = new Date(attr.creationTime().toMillis());
+				isStale = branchHeadTime.after(snapshotCreation);
+				if (isStale) {
+					TermServerScript.warn(ts.getProject() + " snapshot held locally is stale.  Requesting delta to rebuild...");
+				}
+			}
+			
+			if (!snapshot.exists() || ( isStale && !allowStaleData)) {
+				gl.reset();
+				snapshot = generateSnapshot (ts.getProject(), branch);
+				//We don't need to load the snapshot if we've just generated it
 			} else {
-				if (currentlyHeldInMemory != null) {
-					//Make sure the Graph Loader is clean if we're loading a different project
-					info (currentlyHeldInMemory.getKey() + " being wiped to make room for " + ts.getProject());
-					gl.reset();
-					System.gc();
-				}
-				info ("Loading snapshot archive contents into memory...");
-				try {
-					loadArchive(snapshot, fsnOnly, "Snapshot");
-				} catch (Exception e) {
-					TermServerScript.error ("Non-viable snapshot encountered (Exception: " + e.getMessage()  +").  Deleting " + snapshot + "...", e);
-					try {
-						if (snapshot.isFile()) {
-							snapshot.delete();
-						} else if (snapshot.isDirectory()) {
-							FileUtils.deleteDirectory(snapshot);
-						} else {
-							throw new TermServerScriptException (snapshot + " is neither file nor directory.");
-						}
-					} catch (Exception e2) {
-						TermServerScript.warn("Failed to delete snapshot " + snapshot + " due to " + e2);
+				//We might already have this project in memory
+				if (currentlyHeldInMemory != null && currentlyHeldInMemory.equals(ts.getProject())) {
+					info (ts.getProject() + " already held in memory, no need to reload.  Resetting any issues held against components...");
+					gl.makeReady();
+				} else {
+					if (currentlyHeldInMemory != null) {
+						//Make sure the Graph Loader is clean if we're loading a different project
+						info (currentlyHeldInMemory.getKey() + " being wiped to make room for " + ts.getProject());
+						gl.reset();
+						System.gc();
 					}
-					throw new TermServerScriptException("Non-viable snapshot detected",e);
+					info ("Loading snapshot archive contents into memory...");
+					try {
+						loadArchive(snapshot, fsnOnly, "Snapshot");
+					} catch (Exception e) {
+						TermServerScript.error ("Non-viable snapshot encountered (Exception: " + e.getMessage()  +").  Deleting " + snapshot + "...", e);
+						try {
+							if (snapshot.isFile()) {
+								snapshot.delete();
+							} else if (snapshot.isDirectory()) {
+								FileUtils.deleteDirectory(snapshot);
+							} else {
+								throw new TermServerScriptException (snapshot + " is neither file nor directory.");
+							}
+						} catch (Exception e2) {
+							TermServerScript.warn("Failed to delete snapshot " + snapshot + " due to " + e2);
+						}
+						throw new TermServerScriptException("Non-viable snapshot detected",e);
+					}
 				}
 			}
+			currentlyHeldInMemory = ts.getProject();
+			allowStaleData = originalStateDataFlag;
+		} catch (Exception e) {
+			throw new TermServerScriptException ("Unable to load " + ts.getProject(), e);
 		}
-		currentlyHeldInMemory = ts.getProject();
 	}
 	
 	private File generateSnapshot(Project project, Branch branch) throws TermServerScriptException, IOException, TermServerClientException {

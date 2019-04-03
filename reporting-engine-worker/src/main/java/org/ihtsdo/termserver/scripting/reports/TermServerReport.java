@@ -1,15 +1,19 @@
 package org.ihtsdo.termserver.scripting.reports;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.JobRun;
 
 public abstract class TermServerReport extends TermServerScript {
+	
+	public static final String IP = "IP";
 	
 	@Override
 	protected List<Component> loadLine(String[] lineItems)
@@ -108,5 +112,42 @@ public abstract class TermServerReport extends TermServerScript {
 			throw new TermServerScriptException("Unable to instantiate " + reportClass.getSimpleName(), e);
 		}
 		report.instantiate(jobRun);
+	}
+	
+	protected Set<Concept> identifyIntermediatePrimitives(Collection<Concept> concepts, int reportIdx) throws TermServerScriptException {
+		Set<Concept> allIps = new HashSet<>();
+		for (Concept c : concepts) {
+			//We're only interested in fully defined (QI project includes leaf concepts)
+			if (c.isActive() &&
+				c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
+				//Get a list of all my primitive ancestors
+				List<Concept> proxPrimParents = gl.getAncestorsCache().getAncestors(c).stream()
+						.filter(a -> a.getDefinitionStatus().equals(DefinitionStatus.PRIMITIVE))
+						.collect(Collectors.toList());
+				//Do those ancestors themselves have sufficiently defined ancestors ie making them intermediate primitives
+				for (Concept thisPPP : proxPrimParents) {
+					if (containsFdConcept(gl.getAncestorsCache().getAncestors(thisPPP))) {
+						if (StringUtils.isEmpty(thisPPP.getIssues())) {
+							String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
+							if (reportIdx != NOT_SET) {
+								report(reportIdx, thisPPP, semTag);
+							}
+						}
+						thisPPP.setIssue(IP);
+						allIps.add(thisPPP);
+					}
+				}
+			}
+		}
+		return allIps;
+	}
+
+	private boolean containsFdConcept(Collection<Concept> concepts) {
+		for (Concept c : concepts) {
+			if (c.isActive() && c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
+				return true;
+			}
+		}
+		return false;
 	}
 }

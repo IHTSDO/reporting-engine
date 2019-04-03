@@ -50,6 +50,11 @@ public class Project {
 	public Project(String projectKey) {
 		this.key = projectKey;
 	}
+	
+	public Project(String projectKey, String branchPath) {
+		this.key = projectKey;
+		this.branchPath = branchPath;
+	}
 
 	/**
 	 * 

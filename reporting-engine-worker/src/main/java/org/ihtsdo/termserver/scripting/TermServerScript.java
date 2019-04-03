@@ -57,6 +57,7 @@ public abstract class TermServerScript implements RF2Constants {
 	private String reportName;
 	protected boolean safetyProtocols = true;  //Switch off to bypass all limits
 	protected boolean includeSummaryTab = false;
+	protected boolean reportNullConcept = true;
 	
 	protected String subHierarchyStr;
 	protected String subHierarchyECL;
@@ -334,12 +335,15 @@ public abstract class TermServerScript implements RF2Constants {
 		EclCache.reset();
 		authenticatedCookie = jobRun.getAuthToken();
 		
-		if (StringUtils.isEmpty(jobRun.getParamValue(PROJECT))) {
-			warn("No project specified, running against MAIN");
-			projectName = "MAIN";
-		} else {
-			projectName = jobRun.getMandatoryParamValue(PROJECT);
+		if (projectName == null) {
+			if (StringUtils.isEmpty(jobRun.getParamValue(PROJECT))) {
+				warn("No project specified, running against MAIN");
+				projectName = "MAIN";
+			} else {
+				projectName = jobRun.getMandatoryParamValue(PROJECT);
+			}
 		}
+		
 		if (StringUtils.isEmpty(jobRun.getParamValue(SUB_HIERARCHY))) {
 			jobRun.setParameter(SUB_HIERARCHY, ROOT_CONCEPT.toString());
 		}
@@ -1059,25 +1063,31 @@ public abstract class TermServerScript implements RF2Constants {
 	
 	protected void report (Concept c, Object...details) throws TermServerScriptException {
 		StringBuffer sb = new StringBuffer();
-		sb.append (reportConceptAsInteger?"":QUOTE)
-		.append(c==null?"":c.getConceptId())
-		.append(reportConceptAsInteger?COMMA_QUOTE:QUOTE_COMMA_QUOTE)
-		.append(c.getFsn())
-		.append(QUOTE_COMMA_QUOTE);
 		
-		if (!StringUtils.isEmpty(c.getFsn())) {
-			sb.append(SnomedUtils.deconstructFSN(c.getFsn())[1]);
+		if (reportNullConcept || c != null) {
+			sb.append (reportConceptAsInteger?"":QUOTE)
+			.append(c==null?"":c.getConceptId())
+			.append(reportConceptAsInteger?COMMA_QUOTE:QUOTE_COMMA_QUOTE)
+			.append(c==null?"":c.getFsn())
+			.append(QUOTE_COMMA_QUOTE);
+			
+			if (c != null && !StringUtils.isEmpty(c.getFsn())) {
+				sb.append(SnomedUtils.deconstructFSN(c.getFsn())[1]);
+			}
+			sb.append(QUOTE);
 		}
-		sb.append(QUOTE);
 		
+		boolean isFirst = true;
 		for (Object detail : details) {
+			String prefix = isFirst ? QUOTE : COMMA_QUOTE;
+			isFirst = false;
 			if (detail instanceof String[]) {
 				String[] arr = (String[]) detail;
 				for (String str : arr) {
-					sb.append(COMMA_QUOTE + str + QUOTE);
+					sb.append(prefix + str + QUOTE);
 				}
 			} else {
-				sb.append(COMMA_QUOTE + detail + QUOTE);
+				sb.append(prefix + detail + QUOTE);
 			}
 		}
 		
