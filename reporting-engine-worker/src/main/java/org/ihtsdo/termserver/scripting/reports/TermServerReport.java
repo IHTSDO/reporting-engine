@@ -5,6 +5,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.termserver.job.ReportClass;
+import org.ihtsdo.termserver.scripting.AncestorsCache;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -115,18 +116,23 @@ public abstract class TermServerReport extends TermServerScript {
 	}
 	
 	protected Set<Concept> identifyIntermediatePrimitives(Collection<Concept> concepts, int reportIdx) throws TermServerScriptException {
+		return identifyIntermediatePrimitives(concepts, reportIdx, CharacteristicType.INFERRED_RELATIONSHIP);
+	}
+	
+	protected Set<Concept> identifyIntermediatePrimitives(Collection<Concept> concepts, int reportIdx, CharacteristicType charType) throws TermServerScriptException {
 		Set<Concept> allIps = new HashSet<>();
+		AncestorsCache cache = charType.equals(CharacteristicType.INFERRED_RELATIONSHIP) ? gl.getAncestorsCache() : gl.getStatedAncestorsCache();
 		for (Concept c : concepts) {
 			//We're only interested in fully defined (QI project includes leaf concepts)
 			if (c.isActive() &&
 				c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
 				//Get a list of all my primitive ancestors
-				List<Concept> proxPrimParents = gl.getAncestorsCache().getAncestors(c).stream()
+				List<Concept> proxPrimParents = cache.getAncestors(c).stream()
 						.filter(a -> a.getDefinitionStatus().equals(DefinitionStatus.PRIMITIVE))
 						.collect(Collectors.toList());
 				//Do those ancestors themselves have sufficiently defined ancestors ie making them intermediate primitives
 				for (Concept thisPPP : proxPrimParents) {
-					if (containsFdConcept(gl.getAncestorsCache().getAncestors(thisPPP))) {
+					if (containsFdConcept(cache.getAncestors(thisPPP))) {
 						if (StringUtils.isEmpty(thisPPP.getIssues())) {
 							String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
 							if (reportIdx != NOT_SET) {

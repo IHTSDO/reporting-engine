@@ -30,8 +30,8 @@ public class HistoricComparison extends TermServerReport implements ReportClass 
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
 		Map<String, String> params = new HashMap<>();
-		//params.put(START_RELEASE, "20170731");
-		params.put(START_RELEASE, "20190131");
+		params.put(START_RELEASE, "20170731");
+		//params.put(START_RELEASE, "20190131");
 		//params.put(END_RELEASE, "20190131");
 		TermServerReport.run(HistoricComparison.class, args, params);
 	}
@@ -77,14 +77,18 @@ public class HistoricComparison extends TermServerReport implements ReportClass 
 	}
 
 	private void populateHistoricData() throws TermServerScriptException {
-		Set<Concept> allKnownIps = identifyIntermediatePrimitives(gl.getAllConcepts(), NOT_SET);
+		Set<Concept> allKnownIps = identifyIntermediatePrimitives(gl.getAllConcepts(), NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP);
+		Set<Concept> allKnownStatedIps = identifyIntermediatePrimitives(gl.getAllConcepts(), NOT_SET, CharacteristicType.STATED_RELATIONSHIP);
+		
 		int activeConcepts = 0;
 		int ipCount = 0;
+		int statedIpCount = 0;
 		int sdCount = 0;
 		for (Concept c : gl.getAllConcepts()) {
 			HistoricData hd = new HistoricData();
 			hd.isSD = c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED);
 			hd.isIP = allKnownIps.contains(c);
+			hd.isStatedIP = allKnownStatedIps.contains(c);
 			hd.isActive = c.isActive();
 			histDataMap.put(Long.parseLong(c.getConceptId()), hd);
 			
@@ -92,6 +96,9 @@ public class HistoricComparison extends TermServerReport implements ReportClass 
 				activeConcepts++;
 				if (hd.isIP) {
 					ipCount++;
+				}
+				if (hd.isStatedIP) {
+					statedIpCount++;
 				}
 				if (hd.isSD) {
 					sdCount++;
@@ -101,6 +108,7 @@ public class HistoricComparison extends TermServerReport implements ReportClass 
 		
 		report (null, project.getKey() + " Total Active Concepts: ", activeConcepts);
 		report (null, project.getKey() + " Intermediate Primitives: ", ipCount); 
+		report (null, project.getKey() + " Stated Intermediate Primitives: ", statedIpCount); 
 		report (null, project.getKey() + " Percentage IPs: ", perc(ipCount, activeConcepts));
 		report (null, project.getKey() + " Sufficiently defined: ", sdCount); 
 		report (null, project.getKey() + " Percentage SDs: ", perc(sdCount, activeConcepts));
@@ -116,6 +124,7 @@ public class HistoricComparison extends TermServerReport implements ReportClass 
 		int pBecameIp = 0;
 		int pStoppedBeingIp = 0;
 		int ipCount = 0;
+		int statedIpCount = 0;
 		int sdCount = 0;
 		
 		//Work out a superset of all possible concepts
@@ -123,7 +132,10 @@ public class HistoricComparison extends TermServerReport implements ReportClass 
 				.map(c -> Long.parseLong(c.getConceptId()))
 				.collect(Collectors.toSet());
 		allKnownConceptIds.addAll(histDataMap.keySet());
+		
 		Set<Concept> allKnownIps = identifyIntermediatePrimitives(gl.getAllConcepts(), NOT_SET);
+		Set<Concept> allKnownStatedIps = identifyIntermediatePrimitives(gl.getAllConcepts(), NOT_SET, CharacteristicType.STATED_RELATIONSHIP);
+		
 		for (Long sctId : allKnownConceptIds) {
 			Concept c = gl.getConcept(sctId);
 			boolean isSD = c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED);
@@ -175,10 +187,14 @@ public class HistoricComparison extends TermServerReport implements ReportClass 
 				if (isSD) {
 					sdCount++;
 				}
+				if (allKnownStatedIps.contains(c)) {
+					statedIpCount++;
+				}
 			}
 		}
 		report (null, endRelease + " Total Active Concepts: ", activeConcepts);
 		report (null, endRelease + " Intermediate Primitives: ", ipCount); 
+		report (null, endRelease + " Stated Intermediate Primitives: ", statedIpCount); 
 		report (null, endRelease + " Percentage IPs: ", perc(ipCount, activeConcepts));
 		report (null, endRelease + " Sufficiently defined: ", sdCount); 
 		report (null, endRelease + " Percentage SDs: ", perc(sdCount, activeConcepts));
@@ -199,6 +215,7 @@ public class HistoricComparison extends TermServerReport implements ReportClass 
 
 	class HistoricData {
 		boolean isIP = false;
+		boolean isStatedIP = false;
 		boolean isSD = false;
 		boolean isActive = false;
 	}

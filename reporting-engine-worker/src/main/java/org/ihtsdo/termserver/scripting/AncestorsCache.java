@@ -10,14 +10,24 @@ import com.google.common.collect.Iterables;
 public class AncestorsCache implements RF2Constants {
 	
 	private static AncestorsCache singleton = null;
-
+	private static AncestorsCache singletonStated = null;
+	
 	Map<Concept, Set<Concept>> ancestorsCache = new HashMap<>();
+	CharacteristicType charType = CharacteristicType.INFERRED_RELATIONSHIP;
 	
 	public static AncestorsCache getAncestorsCache() {
 		if (singleton == null) {
 			singleton = new AncestorsCache();
 		}
 		return singleton;
+	}
+	
+	public static AncestorsCache getStatedAncestorsCache() {
+		if (singletonStated == null) {
+			singletonStated = new AncestorsCache();
+			singletonStated.charType = CharacteristicType.STATED_RELATIONSHIP;
+		}
+		return singletonStated;
 	}
 	
 	private AncestorsCache() {
@@ -33,7 +43,7 @@ public class AncestorsCache implements RF2Constants {
 		if (ancestors == null) {
 			//Ensure we're working with the local copy rather than TS JSON
 			Concept localConcept = GraphLoader.getGraphLoader().getConcept(c.getConceptId());
-			ancestors = localConcept.getAncestors(NOT_SET);
+			ancestors = localConcept.getAncestors(NOT_SET, charType, false);
 			ancestorsCache.put(localConcept, ancestors);
 		}
 		return mutable ? ancestors : Collections.unmodifiableSet(ancestors);

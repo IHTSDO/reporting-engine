@@ -1074,7 +1074,7 @@ public abstract class TermServerScript implements RF2Constants {
 			if (c != null && !StringUtils.isEmpty(c.getFsn())) {
 				sb.append(SnomedUtils.deconstructFSN(c.getFsn())[1]);
 			}
-			sb.append(QUOTE);
+			sb.append(QUOTE_COMMA);
 		}
 		
 		boolean isFirst = true;

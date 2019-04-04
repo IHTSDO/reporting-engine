@@ -30,6 +30,7 @@ public class GraphLoader implements RF2Constants {
 	
 	private DescendentsCache descendantsCache = DescendentsCache.getDescendentsCache();
 	private AncestorsCache ancestorsCache = AncestorsCache.getAncestorsCache();
+	private AncestorsCache statedAncestorsCache = AncestorsCache.getStatedAncestorsCache();
 	
 	//Watch that this map is of the TARGET of the association, ie all concepts used in a historical association
 	private Map<Concept, List<AssociationEntry>> historicalAssociations =  new HashMap<Concept, List<AssociationEntry>>();
@@ -655,6 +656,10 @@ public class GraphLoader implements RF2Constants {
 
 	public AncestorsCache getAncestorsCache() {
 		return ancestorsCache;
+	}
+	
+	public AncestorsCache getStatedAncestorsCache() {
+		return statedAncestorsCache;
 	}
 
 	public Concept getComponentOwner(ComponentType componentType, Component c) throws TermServerScriptException {
