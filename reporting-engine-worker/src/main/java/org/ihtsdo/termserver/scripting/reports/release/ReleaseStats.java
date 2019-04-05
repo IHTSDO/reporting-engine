@@ -21,7 +21,7 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
 		Map<String, String> params = new HashMap<>();
-		params.put(PROJECT, "20170731");
+		//params.put(PROJECT, "20170731");
 		TermServerReport.run(ReleaseStats.class, args, params);
 	}
 
@@ -48,8 +48,10 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 		reportUngroupedCrossovers();
 		
 		info("Checking for Intermediate Primitives");
-		countIPs();
+		countIPs(CharacteristicType.INFERRED_RELATIONSHIP, QUATERNARY_REPORT);
 		
+		info("Checking for Stated Intermediate Primitives");
+		countIPs(CharacteristicType.STATED_RELATIONSHIP, QUINARY_REPORT);
 	}
 
 	public void init (JobRun run) throws TermServerScriptException {
@@ -61,11 +63,13 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 		String[] columnHeadings = new String[] {",KPI, count", 
 												"SCTID, FSN, SemTag, Crossover",
 												"SCTID, FSN, SemTag, Crossover",
+												"SCTID, FSN, SemTag",
 												"SCTID, FSN, SemTag"};
 		String[] tabNames = new String[] {	"Summary Counts", 
 											"Role group crossovers",
 											"Ungrouped crossovers",
-											"Intermediate Primitives"};
+											"Intermediate Primitives",
+											"Stated Intermediate Primitives"};
 		super.postInit(tabNames, columnHeadings, false);
 	}
 
@@ -141,18 +145,20 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 		report (PRIMARY_REPORT, null, "Role group ungrouped inconsistencies", ungroupedCrossovers);
 	}
 
-	public void countIPs () throws TermServerScriptException {
+	public void countIPs (CharacteristicType charType, int reportIdx) throws TermServerScriptException {
 		int ipCount = 0;
 		int orphanetIPs = 0;
 		//Pre-load Orphanet concepts incase in case it causes another concept to be created
 		gl.getOrphanetConcepts();
-		for (Concept c : identifyIntermediatePrimitives(gl.getAllConcepts(), QUATERNARY_REPORT)) {
+		for (Concept c : identifyIntermediatePrimitives(gl.getAllConcepts(), charType)) {
 			ipCount++;
+			report(reportIdx, c, SnomedUtils.deconstructFSN(c.getFsn())[1]);
 			if (gl.isOrphanetConcept(c)) {
 				orphanetIPs++;
 			}
 		}
-		report (PRIMARY_REPORT, null, "Number of Intermediate Primitives", ipCount);
+		String statedIndicator = charType.equals(CharacteristicType.STATED_RELATIONSHIP)?" stated":"";
+		report (PRIMARY_REPORT, null, "Number of" + statedIndicator + " Intermediate Primitives", ipCount);
 		report (PRIMARY_REPORT, null, "Of which Orphanet", orphanetIPs);
 	}
 	

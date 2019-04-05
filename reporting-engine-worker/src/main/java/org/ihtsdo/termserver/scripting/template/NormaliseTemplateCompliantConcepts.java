@@ -200,14 +200,14 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		
 		subHierarchyECL = "< 429040005 |Ulcer (disorder)|"; //QI-288
 		templateNames = new String[] {	"templates/Ulcer.json" };
-		
+		*/
 		subHierarchyECL = "< 125670008 |Foreign body (disorder)|"; //QI-291
 		templateNames = new String[] {	"templates/Foreign body.json" };
-		*/
 		
+		/*
 		subHierarchyECL = "<< 125667009 |Contusion (disorder)|"; //QI-245
 		templateNames = new String[] {	"templates/wound/contusion.json" };
-		
+		*/
 		super.init(args);
 		
 		//Ensure our ECL matches more than 0 concepts.  This will also cache the result

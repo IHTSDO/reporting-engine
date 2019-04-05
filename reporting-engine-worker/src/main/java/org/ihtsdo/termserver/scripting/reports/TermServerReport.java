@@ -115,11 +115,11 @@ public abstract class TermServerReport extends TermServerScript {
 		report.instantiate(jobRun);
 	}
 	
-	protected Set<Concept> identifyIntermediatePrimitives(Collection<Concept> concepts, int reportIdx) throws TermServerScriptException {
-		return identifyIntermediatePrimitives(concepts, reportIdx, CharacteristicType.INFERRED_RELATIONSHIP);
+	protected Set<Concept> identifyIntermediatePrimitives(Collection<Concept> concepts) throws TermServerScriptException {
+		return identifyIntermediatePrimitives(concepts, CharacteristicType.INFERRED_RELATIONSHIP);
 	}
 	
-	protected Set<Concept> identifyIntermediatePrimitives(Collection<Concept> concepts, int reportIdx, CharacteristicType charType) throws TermServerScriptException {
+	protected Set<Concept> identifyIntermediatePrimitives(Collection<Concept> concepts, CharacteristicType charType) throws TermServerScriptException {
 		Set<Concept> allIps = new HashSet<>();
 		AncestorsCache cache = charType.equals(CharacteristicType.INFERRED_RELATIONSHIP) ? gl.getAncestorsCache() : gl.getStatedAncestorsCache();
 		for (Concept c : concepts) {
@@ -133,13 +133,6 @@ public abstract class TermServerReport extends TermServerScript {
 				//Do those ancestors themselves have sufficiently defined ancestors ie making them intermediate primitives
 				for (Concept thisPPP : proxPrimParents) {
 					if (containsFdConcept(cache.getAncestors(thisPPP))) {
-						if (StringUtils.isEmpty(thisPPP.getIssues())) {
-							String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
-							if (reportIdx != NOT_SET) {
-								report(reportIdx, thisPPP, semTag);
-							}
-						}
-						thisPPP.setIssue(IP);
 						allIps.add(thisPPP);
 					}
 				}

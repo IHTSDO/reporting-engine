@@ -32,7 +32,7 @@ public class ReportSheetManager implements RF2Constants {
 	private static int MAX_ROWS = 42000;
 	private static int MAX_COLUMNS = 15;
 	private static String MAX_COLUMN_STR = Character.toString((char)('A' + MAX_COLUMNS));
-	private static final int MIN_REQUEST_RATE = 10;
+	private static final int MAX_REQUEST_RATE = 10;
 	private static final int MAX_WRITE_ATTEMPTS = 3;
 
 	Credential credential;
@@ -172,6 +172,9 @@ public class ReportSheetManager implements RF2Constants {
 				tabIdx++;
 			}
 			
+			//Increase the number of rows we can write if using multiple tabs
+			MAX_ROWS = MAX_ROWS * columnHeaders.length;
+			
 			//Execute creation of tabs
 			BatchUpdateSpreadsheetRequest batch = new BatchUpdateSpreadsheetRequest();
 			batch.setRequests(requests);
@@ -199,7 +202,7 @@ public class ReportSheetManager implements RF2Constants {
 		//Are we getting close to the limits of what can be written?
 		if (dataToBeWritten.size() > 2000) {
 			System.err.println("Attempting to write > 2000 rows to sheets, pausing...");
-			try { Thread.sleep(7*1000); } catch (Exception e) {}
+			try { Thread.sleep(MAX_REQUEST_RATE*1000); } catch (Exception e) {}
 		}
 		
 		if (!delayWrite) {
@@ -224,9 +227,9 @@ public class ReportSheetManager implements RF2Constants {
 		//How long is it since we last wrote to the file?  Write every 5 seconds
 		if (lastWriteTime != null) {
 			long secondsSinceLastWrite = (new Date().getTime()-lastWriteTime.getTime())/1000;
-			if (secondsSinceLastWrite < MIN_REQUEST_RATE) {
+			if (secondsSinceLastWrite < MAX_REQUEST_RATE) {
 				if (withWait) {
-					try { Thread.sleep(MIN_REQUEST_RATE - secondsSinceLastWrite); } catch (InterruptedException e) {}
+					try { Thread.sleep(MAX_REQUEST_RATE - secondsSinceLastWrite); } catch (InterruptedException e) {}
 				} else if (optional) {
 					return;
 				}

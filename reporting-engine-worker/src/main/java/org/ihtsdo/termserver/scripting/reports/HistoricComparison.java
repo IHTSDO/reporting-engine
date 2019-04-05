@@ -77,8 +77,8 @@ public class HistoricComparison extends TermServerReport implements ReportClass 
 	}
 
 	private void populateHistoricData() throws TermServerScriptException {
-		Set<Concept> allKnownIps = identifyIntermediatePrimitives(gl.getAllConcepts(), NOT_SET, CharacteristicType.INFERRED_RELATIONSHIP);
-		Set<Concept> allKnownStatedIps = identifyIntermediatePrimitives(gl.getAllConcepts(), NOT_SET, CharacteristicType.STATED_RELATIONSHIP);
+		Set<Concept> allKnownIps = identifyIntermediatePrimitives(gl.getAllConcepts(), CharacteristicType.INFERRED_RELATIONSHIP);
+		Set<Concept> allKnownStatedIps = identifyIntermediatePrimitives(gl.getAllConcepts(), CharacteristicType.STATED_RELATIONSHIP);
 		
 		int activeConcepts = 0;
 		int ipCount = 0;
@@ -108,8 +108,8 @@ public class HistoricComparison extends TermServerReport implements ReportClass 
 		
 		report (null, project.getKey() + " Total Active Concepts: ", activeConcepts);
 		report (null, project.getKey() + " Intermediate Primitives: ", ipCount); 
-		report (null, project.getKey() + " Stated Intermediate Primitives: ", statedIpCount); 
 		report (null, project.getKey() + " Percentage IPs: ", perc(ipCount, activeConcepts));
+		report (null, project.getKey() + " Stated Intermediate Primitives: ", statedIpCount); 
 		report (null, project.getKey() + " Sufficiently defined: ", sdCount); 
 		report (null, project.getKey() + " Percentage SDs: ", perc(sdCount, activeConcepts));
 		report (null, "");
@@ -123,8 +123,6 @@ public class HistoricComparison extends TermServerReport implements ReportClass 
 		int activeConcepts = 0;
 		int pBecameIp = 0;
 		int pStoppedBeingIp = 0;
-		int ipCount = 0;
-		int statedIpCount = 0;
 		int sdCount = 0;
 		
 		//Work out a superset of all possible concepts
@@ -133,8 +131,8 @@ public class HistoricComparison extends TermServerReport implements ReportClass 
 				.collect(Collectors.toSet());
 		allKnownConceptIds.addAll(histDataMap.keySet());
 		
-		Set<Concept> allKnownIps = identifyIntermediatePrimitives(gl.getAllConcepts(), NOT_SET);
-		Set<Concept> allKnownStatedIps = identifyIntermediatePrimitives(gl.getAllConcepts(), NOT_SET, CharacteristicType.STATED_RELATIONSHIP);
+		Set<Concept> allKnownIps = identifyIntermediatePrimitives(gl.getAllConcepts());
+		Set<Concept> allKnownStatedIps = identifyIntermediatePrimitives(gl.getAllConcepts(), CharacteristicType.STATED_RELATIONSHIP);
 		
 		for (Long sctId : allKnownConceptIds) {
 			Concept c = gl.getConcept(sctId);
@@ -181,21 +179,15 @@ public class HistoricComparison extends TermServerReport implements ReportClass 
 			
 			if (c.isActive()) {
 				activeConcepts++;
-				if (isIP) {
-					ipCount++;
-				}
 				if (isSD) {
 					sdCount++;
-				}
-				if (allKnownStatedIps.contains(c)) {
-					statedIpCount++;
 				}
 			}
 		}
 		report (null, endRelease + " Total Active Concepts: ", activeConcepts);
-		report (null, endRelease + " Intermediate Primitives: ", ipCount); 
-		report (null, endRelease + " Stated Intermediate Primitives: ", statedIpCount); 
-		report (null, endRelease + " Percentage IPs: ", perc(ipCount, activeConcepts));
+		report (null, endRelease + " Intermediate Primitives: ", allKnownIps.size()); 
+		report (null, endRelease + " Percentage IPs: ", perc(allKnownIps.size(), activeConcepts));
+		report (null, endRelease + " Stated Intermediate Primitives: ", allKnownStatedIps.size()); 
 		report (null, endRelease + " Sufficiently defined: ", sdCount); 
 		report (null, endRelease + " Percentage SDs: ", perc(sdCount, activeConcepts));
 		report (null, "");
