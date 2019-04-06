@@ -678,8 +678,14 @@ public abstract class TermServerScript implements RF2Constants {
 		//Failure in the pagination can cause duplicates.  Check for this
 		Set<Concept> uniqConcepts = new HashSet<>(concepts);
 		if (uniqConcepts.size() != concepts.size()) {
-			int diff = concepts.size() - uniqConcepts.size();
-			throw new TermServerScriptException(diff + " duplicate concepts returned from ecl: " + ecl);
+			//Work out what the actual duplication is
+			for (Concept c : uniqConcepts) {
+				concepts.remove(c);
+			}
+			for (Concept c : concepts) {
+				warn ("Duplicate concept received from ECL: " + c);
+			}
+			throw new TermServerScriptException(concepts.size() + " duplicate concepts returned from ecl: " + ecl + " eg " + concepts.get(0));
 		}
 		return uniqConcepts; 
 	}
