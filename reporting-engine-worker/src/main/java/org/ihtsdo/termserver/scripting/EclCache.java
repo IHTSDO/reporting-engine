@@ -16,7 +16,7 @@ import us.monoid.web.JSONResource;
 
 public class EclCache {
 	private static Map <String, EclCache> branchCaches;
-	private static int PAGING_LIMIT = 500;
+	private static int PAGING_LIMIT = 1000;
 	private static int MAX_RESULTS = 9999;
 	private TermServerClient tsClient;
 	private Gson gson;
@@ -71,6 +71,9 @@ public class EclCache {
 			}
 			return cached;
 		}
+		
+		//TODO If the ECL is simple < or << then we can use local descendant cache
+		//which is much cheaper.
 		
 		List<Concept> allConcepts = new ArrayList<>();
 		boolean allRecovered = false;
