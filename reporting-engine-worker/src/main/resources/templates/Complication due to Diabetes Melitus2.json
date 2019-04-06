@@ -1,0 +1,6 @@
+{
+  "name": "Complication [Disease] due to [diabetes mellitus]",
+  "documentation": "https://confluence.ihtsdotools.org/display/AUTHS/Complication+%5BDisease%5D+due+to+%5Bdiabetes+mellitus%5D+-+In+progress",
+  "version": 1,
+  "logicalTemplate": "116223007 |Complication (disorder)| : [[~0..1]] 263502005 |Clinical course (attribute)| = [[ +id (< 288524001 |Courses (qualifier value)| ) @course]], [[~1..1]] 42752001 |Due to (attribute)| =[[+id(<< 73211009 |Diabetes mellitus (disorder)|) @dueto ]] , [[~1..1 @rolegroup]] { [[~0..1]] 116676008 |Associated morphology (attribute)| = [[+id(<< 49755003 |Morphologically abnormal structure (morphologic abnormality)| ) @morphology ]], [[~0..1]] 363698007 |Finding site (attribute)| = [[+id(< 123037004 |Body structure (body structure)| )]]}"
+  }

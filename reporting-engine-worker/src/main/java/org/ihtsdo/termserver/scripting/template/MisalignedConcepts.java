@@ -214,11 +214,11 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 				"templates/burn/Full thickness burn of body structure.json",
 				"templates/burn/Deep partial thickness burn of body structure.json",
 				"templates/burn/Superficial partial thickness burn of body structure.json"};
-		
+		*/
 		subHierarchyECL = "<<74627003";  //QI-48 |Diabetic Complication|
-		templateNames = new String[] {	"templates/Complication due to Diabetes Melitus.json"};
+		templateNames = new String[] {	"templates/Complication due to Diabetes Melitus2.json"};
 		includeComplexTemplates = true;
-		
+		/*
 		subHierarchyECL = "<<8098009";	// QI-45 |Sexually transmitted infectious disease (disorder)| 
 		templateNames = new String[] {	"templates/Sexually transmitted Infection with optional bodysite.json"};
 		
@@ -339,10 +339,10 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		subHierarchyECL = "< 7890003 |Contracture of joint (disorder)|"; //QI-261
 		templateNames = new String[] {	"templates/Contracture of joint minus.json" };
 		includeComplexTemplates = true;
-		*/
+		
 		subHierarchyECL = "<< 125667009 |Contusion (disorder)|"; //QI-244 
 		templateNames = new String[] {	"templates/wound/contusion.json" };
-		
+		*/
 		super.init(args);
 		
 		//Ensure our ECL matches more than 0 concepts before we import SNOMED - expensive!
