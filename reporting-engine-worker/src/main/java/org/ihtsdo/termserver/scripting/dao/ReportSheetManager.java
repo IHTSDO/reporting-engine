@@ -46,7 +46,7 @@ public class ReportSheetManager implements RF2Constants {
 	List<ValueRange> dataToBeWritten = new ArrayList<>();
 	SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
 	Map<Integer, Integer> tabLineCount;
-	long totalLinesWritten = 0;
+	Map<Integer, Integer> linesWrittenPerTab = new HashMap<>();
 	
 	public ReportSheetManager(ReportManager owner) {
 		this.owner = owner;
@@ -172,9 +172,6 @@ public class ReportSheetManager implements RF2Constants {
 				tabIdx++;
 			}
 			
-			//Increase the number of rows we can write if using multiple tabs
-			MAX_ROWS = MAX_ROWS * columnHeaders.length;
-			
 			//Execute creation of tabs
 			BatchUpdateSpreadsheetRequest batch = new BatchUpdateSpreadsheetRequest();
 			batch.setRequests(requests);
@@ -203,6 +200,12 @@ public class ReportSheetManager implements RF2Constants {
 		if (dataToBeWritten.size() > 2000) {
 			System.err.println("Attempting to write > 2000 rows to sheets, pausing...");
 			try { Thread.sleep(MAX_REQUEST_RATE*1000); } catch (Exception e) {}
+		}
+		
+		//Do we have a total count for this tab?
+		linesWrittenPerTab.merge(tabIdx, 1, Integer::sum);
+		if (linesWrittenPerTab.get(tabIdx).intValue() > MAX_ROWS) {
+			throw new TermServerScriptException("Number of rows written to tab " + tabIdx + " hit limit of " + MAX_ROWS);
 		}
 		
 		if (!delayWrite) {
@@ -234,12 +237,6 @@ public class ReportSheetManager implements RF2Constants {
 					return;
 				}
 			}
-		}
-		
-		//Will we exceed the limit of what a spreadsheet can hold?
-		totalLinesWritten += dataToBeWritten.size();
-		if (totalLinesWritten >=  MAX_ROWS) {
-			throw new TermServerScriptException ("Total number of lines written to report has exceeded limit of : " + MAX_ROWS);
 		}
 		
 		//Execute update of data values
