@@ -36,7 +36,7 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 		GenerateWorkDoneStatsWithTempateTypes report = new GenerateWorkDoneStatsWithTempateTypes();
 		try {
 			ReportSheetManager.targetFolderId = "1YoJa68WLAMPKG6h4_gZ5-QT974EU9ui6"; //QI / Stats
-			report.additionalReportColumns = "FSN, SemTag, Depth, Counted elsewhere, Phase 1, Phase 2, Out of Scope, Total";
+			report.additionalReportColumns = "FSN, SemTag, Depth, Counted elsewhere, Phase 1, Phase 2, Out of Scope, Total, Orphanet (not included)";
 			ArchiveManager.getArchiveManager(report).populateHierarchyDepth = true;
 			report.init(args);
 			report.loadProjectSnapshot(false);  //Load all descriptions
@@ -104,8 +104,10 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 			debug ("Analysing subHierarchy: " + subHierarchyStart);
 			Set<Concept> subHierarchy = new HashSet<>(gl.getDescendantsCache().getDescendentsOrSelf(subHierarchyStart)); //
 			removeExclusions(subHierarchyStart, subHierarchy);
+			int orphanetCount = subHierarchy.size();
 			subHierarchy.removeAll(gl.getOrphanetConcepts());
 			int total = subHierarchy.size();
+			orphanetCount = orphanetCount - total;
 			subHierarchy.removeAll(alreadyAccountedFor);
 			int withRemovals = subHierarchy.size();
 			int countedElsewhere = total - withRemovals;
@@ -127,7 +129,7 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 					templateTypeTotal[0] + templateTypeTotal[1],
 					templateTypeTotal[2] + templateTypeTotal[3],
 					templateTypeTotal[4],
-					total);
+					total, orphanetCount);
 			alreadyAccountedFor.addAll(subHierarchy);
 		}
 	}
