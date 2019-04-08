@@ -91,7 +91,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 				validateStatedVsInferredAttributes(concept, HAS_MANUFACTURED_DOSE_FORM, allDrugTypes);
 			}
 			
-			//DRUGS-689 - Various modelling rules
+			//DRUGS-603: DRUGS-686 - Various modelling rules
 			if (concept.getConceptType().equals(ConceptType.CLINICAL_DRUG)) {
 				validateCdModellingRules(concept);
 			}
