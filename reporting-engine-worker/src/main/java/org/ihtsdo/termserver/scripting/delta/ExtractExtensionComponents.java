@@ -2,26 +2,19 @@ package org.ihtsdo.termserver.scripting.delta;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.TermServerClient;
 import org.ihtsdo.termserver.scripting.client.TermServerClientException;
-import org.ihtsdo.termserver.scripting.domain.Component;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Description;
-import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
-import org.ihtsdo.termserver.scripting.domain.Relationship;
+import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 /**
  * Class form a delta of specified concepts from some edition and 
  * promote those (along with attribute values and necessary ancestors)
  * into the core module.
+ * 
  */
 public class ExtractExtensionComponents extends DeltaGenerator {
 	
@@ -39,9 +32,11 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			delta.additionalReportColumns = "ACTION_DETAIL, DEF_STATUS, PARENT";
 			
 			delta.init(args);
+			delta.getArchiveManager().loadExtension = true;
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			delta.loadProjectSnapshot(false);  //Not just FSN, load all terms with lang refset also
 			//We won't incude the project export in our timings
+			delta.postInit();
 			delta.startTimer();
 			delta.processFile();
 			delta.outputModifiedComponents();
@@ -49,7 +44,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			SnomedUtils.createArchive(new File(delta.outputDirName));
 		} finally {
 			delta.finish();
-  		}
+		}
 	}
 	
 	protected void init (String[] args) throws TermServerScriptException {
@@ -113,7 +108,6 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 				report (c, null, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Concept has already been promoted to core (possibly as a dependency)", c.getDefinitionStatus().toString(), parents);
 				return;
 			}
-			
 			
 			if (allIdentifiedConcepts.contains(c)) {
 				report (c, null, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Specified concept, module set to core", c.getDefinitionStatus().toString(), parents);
@@ -216,7 +210,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		if (loadedConcept == null) {
 			loadedConcept = loadConcept(secondaryConnection, c, "MAIN");
 			//If the concept was not found, that may be OK
-			if (loadedConcept == null) {
+			if (loadedConcept == null || loadedConcept.getConceptId() == null) {
 				loadedConcept = NULL_CONCEPT;
 			}
 			loadedConcepts.put(loadedConcept.getConceptId(), loadedConcept);

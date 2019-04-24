@@ -23,6 +23,7 @@ public class ArchiveManager implements RF2Constants {
 	protected GraphLoader gl;
 	protected TermServerScript ts;
 	public boolean allowStaleData = false;
+	public boolean loadExtension = false;
 	public boolean populateHierarchyDepth = true;  //Term contains X needs this
 	private Project currentlyHeldInMemory;
 	
@@ -84,7 +85,7 @@ public class ArchiveManager implements RF2Constants {
 			
 			boolean originalStateDataFlag = allowStaleData;
 			//If we're loading a particular release, it will be stale
-			if (StringUtils.isNumeric(ts.getProject().getKey())) {
+			if (loadExtension || StringUtils.isNumeric(ts.getProject().getKey())) {
 				allowStaleData = true;
 			}
 			
@@ -182,7 +183,7 @@ public class ArchiveManager implements RF2Constants {
 		String releaseBranch = detectReleaseBranch(ts.getProject().getKey());
 		if (releaseBranch != null) {
 			return new File (dataStoreRoot + "releases/" + releaseBranch + ".zip");
-		} else if (StringUtils.isNumeric(ts.getProject().getKey())) {
+		} else if (loadExtension || StringUtils.isNumeric(ts.getProject().getKey())) {
 			return new File (dataStoreRoot + "releases/" + ts.getProject() + ".zip");
 		} else {
 			return new File (dataStoreRoot + "snapshots/" + ts.getProject() + "_" + ts.getEnv());
