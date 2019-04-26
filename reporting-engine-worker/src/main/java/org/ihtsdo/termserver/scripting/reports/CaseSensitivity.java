@@ -191,12 +191,12 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 						if (d.getType().equals(DescriptionType.TEXT_DEFINITION)) {
 							if (!caseSig.equals(CS)) {
 								report(c, d, preferred, caseSig, "Text Definitions must be CS");
-								incrementSummaryInformation(ISSUE_COUNT);
+								countIssue(c);
 							}
 						} else if (Character.isLetter(firstLetter.charAt(0)) && firstLetter.equals(firstLetter.toLowerCase()) && !caseSig.equals(CS)) {
 							//Lower case first letters must be entire term case sensitive
 							report(c, d, preferred, caseSig, "Terms starting with lower case letter must be CS");
-							incrementSummaryInformation(ISSUE_COUNT);
+							countIssue(c);
 							continue nextConcept;
 						} else if (caseSig.equals(CS) || caseSig.equals(cI)) {
 							if (chopped.equals(chopped.toLowerCase()) && 
@@ -207,7 +207,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 									//Probably OK
 								} else {
 									report(c, d, preferred, caseSig, "Case sensitive term does not have capital after first letter");
-									incrementSummaryInformation(ISSUE_COUNT);
+									countIssue(c);
 									continue nextConcept;
 								}
 							}
@@ -215,7 +215,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 							//For case insensitive terms, we're on the look out for capital letters after the first letter
 							if (!chopped.equals(chopped.toLowerCase())) {
 								report (c, d, preferred, caseSig, "Case insensitive term has a capital after first letter");
-								incrementSummaryInformation(ISSUE_COUNT);
+								countIssue(c);
 								continue nextConcept;
 							}
 							
@@ -223,7 +223,7 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 							String firstWord = d.getTerm().split(" ")[0];
 							if (sourcesOfTruth.containsKey(firstWord)) {
 								report (c, d, preferred, caseSig, "Case insensitive term should be CS as per " + sourcesOfTruth.get(firstWord));
-								incrementSummaryInformation(ISSUE_COUNT);
+								countIssue(c);
 								continue nextConcept;
 							}
 						}

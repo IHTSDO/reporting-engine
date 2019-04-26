@@ -87,7 +87,7 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 							report(c, ds, matchText, d, cs, getAttributeDetail(c), hiearchies[1], hiearchies[2]);
 							reported = true;
 							incrementSummaryInformation("Matched " + matchText);
-							incrementSummaryInformation(ISSUE_COUNT);
+							countIssue(c);
 						}
 					}
 					if (reported && reportConceptOnceOnly) {

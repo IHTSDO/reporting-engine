@@ -423,12 +423,6 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		}
 	}
 	
-	private void countIssue(Concept c) {
-		if (!whiteListedConcepts.contains(c)) {
-			incrementSummaryInformation(ISSUE_COUNT);
-		}
-	}
-
 	private Object isActive(Component c1, Component c2) {
 		return (c1.isActive() ? "Y":"N") + "/" + (c2 == null?"" : (c2.isActive() ? "Y":"N"));
 	}
