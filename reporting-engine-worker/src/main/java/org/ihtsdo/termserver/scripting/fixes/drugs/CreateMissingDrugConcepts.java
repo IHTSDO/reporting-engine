@@ -177,7 +177,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 		List<Relationship> needleRels = needle.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
 		nextStraw:
 		for (Concept straw : haystack) {
-		/*	if (straw.getConceptId().equals("412256008")) {
+			/*if (straw.getConceptId().equals("773541002")) {
 				debug ("debug here also");
 			}*/
 			//We need to filter out the "Plays role" attribute since we don't know when those might pop up and we
@@ -247,9 +247,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 		List<Concept> allAffected = new ArrayList<Concept>(); 
 		nextConcept:
 		for (Concept c : MEDICINAL_PRODUCT.getDescendents(NOT_SET)) {
-/*			if (!c.getConceptId().equals("768330004")) {
-				continue;
-			}*/
+		//for (Concept c : Collections.singleton(gl.getConcept("773542009"))) {
 			try {
 				if (c.getConceptType().equals(ConceptType.CLINICAL_DRUG)) {
 					Concept mpf = calculateDrugRequired(c, ConceptType.MEDICINAL_PRODUCT_FORM);

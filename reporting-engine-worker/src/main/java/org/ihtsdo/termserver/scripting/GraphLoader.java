@@ -101,6 +101,10 @@ public class GraphLoader implements RF2Constants {
 					continue;
 				}
 				
+				/*if (lineItems[REL_IDX_SOURCEID].equals("773541002") && lineItems[REL_IDX_TYPEID].equals("116680003")) {
+					System.out.println ("Debug Here");
+				}*/
+				
 				if (!isConcept(lineItems[REL_IDX_SOURCEID])) {
 					System.out.println (characteristicType + " relationship " + lineItems[REL_IDX_ID] + " referenced a non concept identifier: " + lineItems[REL_IDX_SOURCEID]);
 				}
@@ -213,7 +217,7 @@ public class GraphLoader implements RF2Constants {
 		int groupNum = Integer.parseInt(lineItems[REL_IDX_RELATIONSHIPGROUP]);
 		
 		Relationship r = new Relationship(source, type, destination, groupNum);
-		r.setRelationshipId(lineItems[REL_IDX_ID]);
+		r.setRelationshipId(lineItems[REL_IDX_ID].isEmpty()?null:lineItems[REL_IDX_ID]);
 		r.setCharacteristicType(charType);
 		r.setActive(lineItems[REL_IDX_ACTIVE].equals("1"));
 		r.setEffectiveTime(lineItems[REL_IDX_EFFECTIVETIME].isEmpty()?null:lineItems[REL_IDX_EFFECTIVETIME]);
