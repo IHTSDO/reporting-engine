@@ -48,6 +48,8 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 	
 	Set<Concept> allowMoreSpecificDoseForms = new HashSet<>();
 	
+	Set<String> suppress = new HashSet<>();
+	
 	protected CreateMissingDrugConcepts(BatchFix clone) {
 		super(clone);
 	}
@@ -96,6 +98,12 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 		allowMoreSpecificDoseForms.add(gl.getConcept("765166009 | Ocular or otic dose form (dose form)|"));
 		allowMoreSpecificDoseForms.add(gl.getConcept("772805002 | Endotracheopulmonary dose form (dose form)|"));
 		allowMoreSpecificDoseForms.add(gl.getConcept("772806001 | Buccal dose form (dose form)||"));
+		
+		suppress.add("Product containing human alpha1 proteinase inhibitor (medicinal product)");
+		suppress.add("Product containing Influenza virus vaccine (medicinal product)");
+		suppress.add("Product containing amino acid (medicinal product)");
+		suppress.add("Product containing pituitary follicle stimulating hormone (medicinal product)");
+		suppress.add("Product containing recombinant antihemophilic factor (medicinal product)");
 		super.postInit();
 	}
 
@@ -133,24 +141,31 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 			termGenerator.ensureDrugTermsConform(task, required, CharacteristicType.STATED_RELATIONSHIP, true);
 			required.setDefinitionStatus(DefinitionStatus.FULLY_DEFINED);
 			report (task, concept, Severity.NONE, ReportActionType.INFO, "Concepts suggests need for :" + required);
-			required = createConcept(task, required, info);
 			
-			if (required.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT) || 
-				required.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM)) {
-				ConceptType invalidParentType = required.getConceptType();  //Up a level should have different type
-				String currentParents = concept.getParents(CharacteristicType.INFERRED_RELATIONSHIP)
-						.stream()
-						.filter(parent -> parent.getConceptType().equals(invalidParentType))
-						.map(parent -> parent.toString())
-						.collect(Collectors.joining(",\n"));
-				report (task, concept, Severity.LOW, ReportActionType.INFO, "Existing parents considered insufficient: " + (currentParents.isEmpty() ? "None detected" : currentParents));
+			//Are we suppressing this concept?
+			if (suppress.contains(required.getFsn())) {
+				report (task, concept, Severity.NONE, ReportActionType.INFO, "Concept suppressed", required);
+				
+			} else {
+				required = createConcept(task, required, info);
+				
+				if (required.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT) || 
+					required.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM)) {
+					ConceptType invalidParentType = required.getConceptType();  //Up a level should have different type
+					String currentParents = concept.getParents(CharacteristicType.INFERRED_RELATIONSHIP)
+							.stream()
+							.filter(parent -> parent.getConceptType().equals(invalidParentType))
+							.map(parent -> parent.toString())
+							.collect(Collectors.joining(",\n"));
+					report (task, concept, Severity.LOW, ReportActionType.INFO, "Existing parents considered insufficient: " + (currentParents.isEmpty() ? "None detected" : currentParents));
+				}
+				task.addAfter(required, concept);
+				//With the CD reported, we don't actually need to load it in the edit panel
+				task.remove(concept);
+				report (task, required, Severity.LOW, ReportActionType.CONCEPT_ADDED, required);
+				addSummaryInformation("Concept created: " +required, "");
+				report (task, required, Severity.LOW, ReportActionType.INFO, required.toExpression(CharacteristicType.STATED_RELATIONSHIP));
 			}
-			task.addAfter(required, concept);
-			//With the CD reported, we don't actually need to load it in the edit panel
-			task.remove(concept);
-			report (task, required, Severity.LOW, ReportActionType.CONCEPT_ADDED, required);
-			addSummaryInformation("Concept created: " +required, "");
-			report (task, required, Severity.LOW, ReportActionType.INFO, required.toExpression(CharacteristicType.STATED_RELATIONSHIP));
 			return CHANGE_MADE; 
 		}
 		return NO_CHANGES_MADE;
