@@ -441,7 +441,7 @@ public class PrepMisalignedConcepts extends TemplateFix implements ReportClass {
 					diagnostics.add(msg);
 				}
 				incrementSummaryInformation("Concepts identified as not matching any template");
-				incrementSummaryInformation(ISSUE_COUNT);
+				countIssue(c);
 			} 
 		}
 		unalignedConcepts.removeAll(ignoredConcepts);

@@ -286,7 +286,7 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 		int aboveMe = primitivesAboveHere(intermediatePrimitive);
 		int descendants = gl.getDescendantsCache().getDescendents(intermediatePrimitive).size();
 		report (SECONDARY_REPORT, intermediatePrimitive, blankColumns, IPinSubHierarchy, aboveMe, descendants, totalFDsUnderIP, fdsInSubHierarchy, totalPrimitiveConceptsUnderIP, totalPrimitiveConceptsUnderIPInSubHierarchy);
-		incrementSummaryInformation(ISSUE_COUNT);
+		countIssue(null);
 	}
 	
 	

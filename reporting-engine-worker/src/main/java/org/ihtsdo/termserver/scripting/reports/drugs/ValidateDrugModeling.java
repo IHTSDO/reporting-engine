@@ -573,7 +573,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 	}
 	
 	protected void report (Concept c, Object...details) throws TermServerScriptException {
-		incrementSummaryInformation(ISSUE_COUNT);
+		countIssue(c);
 		super.report(c, details);
 	}
 }

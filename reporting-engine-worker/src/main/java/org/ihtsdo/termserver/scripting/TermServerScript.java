@@ -1082,6 +1082,12 @@ public abstract class TermServerScript implements RF2Constants {
 			incrementSummaryInformation("Report lines written");
 		}
 	}
+	
+	protected void countIssue(Concept c) {
+		if (c==null || !whiteListedConcepts.contains(c)) {
+			incrementSummaryInformation(ISSUE_COUNT);
+		}
+	}
 
 	protected List<Concept> determineProximalPrimitiveParents(Concept c) throws TermServerScriptException {
 		//Filter for only the primitive ancestors

@@ -94,7 +94,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 							.map(i->i.toString())
 							.collect(Collectors.joining(",\n"));
 					report (c, c.getEffectiveTime(), null, "Concept has multiple inactivation indicators", isLegacy, data);
-					incrementSummaryInformation(ISSUE_COUNT);
+					countIssue(c);
 				} else {
 					InactivationIndicatorEntry i = c.getInactivationIndicatorEntries(ActiveState.ACTIVE).get(0); 
 					switch (i.getInactivationReasonId()) {
@@ -119,7 +119,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 							break;
 						default :
 							report (c, c.getEffectiveTime(), "Unrecognised concept inactivation indicator", isLegacy, i);
-							incrementSummaryInformation(ISSUE_COUNT);
+							countIssue(c);
 					}
 				}
 			}
@@ -140,7 +140,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 				for (InactivationIndicatorEntry i : d.getInactivationIndicatorEntries(ActiveState.ACTIVE)) {
 					if (!i.getRefsetId().equals(SCTID_DESC_INACT_IND_REFSET)) {
 						report (c, c.getEffectiveTime(), d, "Description has something other than a description inactivation indicator", cdLegacy, d, i);
-						incrementSummaryInformation(ISSUE_COUNT);
+						countIssue(c);
 					}
 					continue nextDescription;
 				}
@@ -152,19 +152,19 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 					//Expect a single "Concept not current" indicator
 					if (d.getInactivationIndicatorEntries(ActiveState.ACTIVE).size() == 0) {
 						report (c, c.getEffectiveTime(), "Active description of inactive concept is missing 'Concept non-current' indicator", cdLegacy, d);
-						incrementSummaryInformation(ISSUE_COUNT);
+						countIssue(c);
 					} else {
 						InactivationIndicatorEntry i = d.getInactivationIndicatorEntries(ActiveState.ACTIVE).get(0); 
 						if (!i.getInactivationReasonId().equals(SCTID_INACT_CONCEPT_NON_CURRENT)) {
 							report (c, c.getEffectiveTime(), "Active description of inactive concept has something other than a 'Concept non-current' indicator", cdLegacy, d, i);
-							incrementSummaryInformation(ISSUE_COUNT);
+							countIssue(c);
 						}
 					}
 				} else if (d.isActive() && c.isActive()) {
 					//Expect NO inactivation indicator here
 					if (d.getInactivationIndicatorEntries(ActiveState.ACTIVE).size() > 0) {
 						report (c, c.getEffectiveTime(), d, "Active description of active concept should not have an inactivation indicator", cdLegacy, d, data);
-						incrementSummaryInformation(ISSUE_COUNT);
+						countIssue(c);
 					}
 				} else if (!d.isActive() && !c.isActive()) {
 					//Expect inactivation indicator here, but not Concept-non-current
@@ -175,7 +175,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 						InactivationIndicatorEntry i = d.getInactivationIndicatorEntries(ActiveState.ACTIVE).get(0); 
 						if (i.getInactivationReasonId().equals(SCTID_INACT_CONCEPT_NON_CURRENT)) {
 							report (c, c.getEffectiveTime(), d, "Inactive description of an active concept should not have a 'Concept non-current' indicator", cdLegacy, d, i);
-							incrementSummaryInformation(ISSUE_COUNT);
+							countIssue(c);
 						}
 					}
 				}
@@ -208,10 +208,10 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 		int assocCount = c.getAssociations(ActiveState.ACTIVE, true).size();
 		if (assocCount > maxAssocs) {
 			report (c, c.getEffectiveTime(), inactStr + " inactivation must have no more than " + maxStr + " historical associations.", legacy,  data);
-			incrementSummaryInformation(ISSUE_COUNT);
+			countIssue(c);
 		} else if  (assocCount < minAssocs) {
 			report (c, c.getEffectiveTime(), inactStr + " inactivation must have at least " + minAssocs + " historical associations.", legacy, data);
-			incrementSummaryInformation(ISSUE_COUNT);
+			countIssue(c);
 		} else {
 			//Now check association is appropriate for the inactivation indicator used
 			for (AssociationEntry h : c.getAssociations(ActiveState.ACTIVE, true)) {
@@ -221,7 +221,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 				if (!h.getRefsetId().equals(SCTID_ASSOC_MOVED_TO_REFSETID) && namespaceConcepts.contains(target)) {
 					String msg = assocStr + " should not point to namespace concept: " + target;
 					report (c, c.getEffectiveTime(), msg, legacy, data);
-					incrementSummaryInformation(ISSUE_COUNT);
+					countIssue(c);
 				} else if (!h.getRefsetId().equals(requiredAssociation)) {
 					//If we found a "WAS_A" then just record the stat for that
 					String msg = inactStr + " inactivation requires " + reqAssocStr + " historical association.  Found: " + assocStr;
@@ -229,7 +229,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 						incrementSummaryInformation(msg);
 					} else {
 						report (c, c.getEffectiveTime(), msg, legacy, data);
-						incrementSummaryInformation(ISSUE_COUNT);
+						countIssue(c);
 					}
 				}
 				
@@ -255,7 +255,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 					&& !topLevelSource.equals(topLevelTarget)) {
 				String msg = assocStr + " pointing to target in other top level hierarchy: " + target;
 				report (c, c.getEffectiveTime(), msg);
-				incrementSummaryInformation(ISSUE_COUNT);
+				countIssue(c);
 			}
 		} else {
 			if (c.getRelationships().size() > 0) {

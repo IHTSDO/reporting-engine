@@ -86,14 +86,14 @@ public class FindNewClones extends TermServerReport implements ReportClass {
 				sources.add(c);
 				if (targetMap.containsKey(term)) {
 					report (targetMap.get(term), c, c.isActive()?"Y":"N");
-					incrementSummaryInformation(ISSUE_COUNT);
+					countIssue(c);
 				}
 			} else if (semTag.equals(jobRun.getMandatoryParamValue(TARGET_SEMTAG)) && StringUtils.isEmpty(c.getEffectiveTime())) {
 				targetMap.put(term, c);
 				if (sourceMap.containsKey(term)) {
 					for (Concept source : sourceMap.get(term)) {
 						report (c, source, source.isActive()?"Y":"N");
-						incrementSummaryInformation(ISSUE_COUNT);
+						countIssue(c);
 					}
 				}
 			}

@@ -137,7 +137,7 @@ public class DuplicateTermsInSubhierarchy extends TermServerReport implements Re
 					}
 					Concept alreadyKnownConcept = gl.getConcept(alreadyKnown.getConceptId());
 					report (c, legacyIssue, d, alreadyKnown, alreadyKnownConcept);
-					incrementSummaryInformation(ISSUE_COUNT); 
+					countIssue(c); 
 				} else {
 					knownTerms.put(d.getTerm(), d);
 				}
