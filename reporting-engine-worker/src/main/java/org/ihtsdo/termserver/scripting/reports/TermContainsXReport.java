@@ -25,10 +25,12 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 	String[] textsToMatch;
 	boolean reportConceptOnceOnly = true;
 	public static final String STARTS_WITH = "Starts With";
+	public static final String WHOLE_WORD = "Whole Word Only";
 	public static final String WORDS = "Words";
 	public static final String ATTRIBUTE_TYPE = "Attribute Type";
 	Concept attributeDetail;
 	boolean startsWith = false;
+	boolean wholeWord = false;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
 		Map<String, String> params = new HashMap<>();
@@ -52,6 +54,7 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 		}
 		
 		startsWith = run.getParameters().getMandatoryBoolean(STARTS_WITH);
+		wholeWord = run.getParameters().getMandatoryBoolean(WHOLE_WORD);
 	}
 	
 	@Override
@@ -59,6 +62,7 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 		JobParameters params = new JobParameters()
 				.add(SUB_HIERARCHY).withType(JobParameter.Type.CONCEPT).withDefaultValue(ROOT_CONCEPT)
 				.add(STARTS_WITH).withType(JobParameter.Type.BOOLEAN).withMandatory().withDefaultValue(false)
+				.add(WHOLE_WORD).withType(JobParameter.Type.BOOLEAN).withMandatory().withDefaultValue(false)
 				.add(WORDS).withType(JobParameter.Type.STRING).withMandatory()
 				.add(ATTRIBUTE_TYPE).withType(JobParameter.Type.CONCEPT).withDescription("Optional. Will show the attribute values per concept for the specified attribute type.  For example in Substances, show me all concepts that are used as a target for 738774007 |Is modification of (attribute)| by specifying that attribute type in this field.")
 				.build();
@@ -78,15 +82,25 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 				}
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 					boolean reported = false;
+					String term = d.getTerm().toLowerCase();
+					String altTerm = term;
+					if (wholeWord) {
+						term = " " + term + " ";
+						altTerm = term.replaceAll("[^A-Za-z0-9]", " ");
+					}
 					for (String matchText : textsToMatch) {
-						if ( (!startsWith && d.getTerm().toLowerCase().contains(matchText.toLowerCase())) ||
-								(startsWith && d.getTerm().toLowerCase().startsWith(matchText.toLowerCase()))) {
+						matchText = matchText.toLowerCase();
+						if (wholeWord) {
+							matchText = " " + matchText + " ";
+						}
+						if ( (!startsWith && (term.contains(matchText) || altTerm.contains(matchText))) ||
+								(startsWith && (term.startsWith(matchText) || altTerm.startsWith(matchText)))) {
 							String[] hiearchies = getHierarchies(c);
 							String cs = SnomedUtils.translateCaseSignificanceFromEnum(c.getFSNDescription().getCaseSignificance());
 							String ds = SnomedUtils.translateDefnStatus(c.getDefinitionStatus());
 							report(c, ds, matchText, d, cs, getAttributeDetail(c), hiearchies[1], hiearchies[2]);
 							reported = true;
-							incrementSummaryInformation("Matched " + matchText);
+							incrementSummaryInformation("Matched '" + matchText.trim() + "'");
 							countIssue(c);
 						}
 					}
