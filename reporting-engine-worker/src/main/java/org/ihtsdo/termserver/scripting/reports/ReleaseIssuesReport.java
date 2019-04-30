@@ -356,6 +356,10 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 						report(c, "Parent has multiple top level ancestors", legacy, isActive(c,null), topLevelStr);
 						countIssue(c);
 						continue nextConcept;
+					} else if (topLevels.size() == 0) {
+						report(c, "Failed to find top level of parent ", legacy, isActive(c,null), p);
+						countIssue(c);
+						continue nextConcept;
 					}
 					
 					Concept thisTopLevel = topLevels.iterator().next();
