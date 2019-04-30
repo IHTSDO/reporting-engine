@@ -53,6 +53,7 @@ public class CaseSignificanceFix extends BatchFix implements RF2Constants{
 			fix.loadCSWords();
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			fix.loadProjectSnapshot(false); //Load all descriptions
+			fix.postInit();
 			fix.processFile();
 		} finally {
 			fix.finish();
