@@ -275,6 +275,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 				logger.error("Unable to process metadata", e);
 			}
 		}
+		logger.info("Metadata processing complete");
 	}
 
 	@Override
