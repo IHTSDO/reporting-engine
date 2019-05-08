@@ -101,6 +101,13 @@ public class EclCache {
 							.map(c -> gl.getConceptSafely(c.getId()))
 							.collect(Collectors.toList());
 					allConcepts.addAll(localCopies);
+					
+					//Debug - check for duplicates
+					/*Concept duplicate = gl.getConcept("1162864000");
+					if (localCopies.contains(duplicate)) {
+						TermServerScript.warn ("Duplicate found");
+					}*/
+					
 					//Did we get all the concepts that there are?
 					if (allConcepts.size() < collection.getTotal()) {
 						//offset = allConcepts.size();

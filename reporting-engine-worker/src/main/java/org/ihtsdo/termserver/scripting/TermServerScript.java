@@ -658,7 +658,7 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	public Set<Concept> findConcepts(String ecl) throws TermServerScriptException {
-		return findConcepts(project.getBranchPath(), ecl, false, false);
+		return findConcepts(project.getBranchPath(), ecl, false, !safetyProtocolsEnabled());
 	}
 	
 	public Set<Concept> findConcepts(String ecl, boolean quiet, boolean expectLargeResults) throws TermServerScriptException {
@@ -675,9 +675,11 @@ public abstract class TermServerScript implements RF2Constants {
 			try { Thread.sleep(30*1000); } catch (Exception e) {}
 			concepts = cache.findConcepts(branch, ecl, expectLargeResults); 
 		}
+		debug(concepts.size() + " concepts recovered.  Removing duplicates");
 		//Failure in the pagination can cause duplicates.  Check for this
 		Set<Concept> uniqConcepts = new HashSet<>(concepts);
 		if (uniqConcepts.size() != concepts.size()) {
+			warn("Duplicates detected " + concepts.size() + " vs " + uniqConcepts.size() + " - identifying...");
 			//Work out what the actual duplication is
 			for (Concept c : uniqConcepts) {
 				concepts.remove(c);
