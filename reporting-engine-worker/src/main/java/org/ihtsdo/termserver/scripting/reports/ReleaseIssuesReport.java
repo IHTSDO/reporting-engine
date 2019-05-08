@@ -1,5 +1,6 @@
 package org.ihtsdo.termserver.scripting.reports;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -15,6 +16,9 @@ import org.snomed.otf.owltoolkit.conversion.ConversionException;
 import org.snomed.otf.owltoolkit.domain.AxiomRepresentation;
 import org.snomed.otf.scheduler.domain.*;
 import org.springframework.util.StringUtils;
+
+import com.google.common.base.Charsets;
+import com.google.common.io.Files;
 
 /**
  * INFRA-2723 Detect various possible issues
@@ -32,6 +36,7 @@ import org.springframework.util.StringUtils;
  RP-128 Ensure concepts referenced in axioms are active
  Active concept parents should not belong to more than one top-level hierarchy – please check NEW and LEGACY content for issues
  RP-127 Disease specific rules
+ RP-165 Text definition dialect rules
  */
 public class ReleaseIssuesReport extends TermServerReport implements ReportClass {
 	
@@ -96,6 +101,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		
 		info("...Disease semantic tag rule");
 		diseaseIntegrity();
+		
+		info("...Text definition dialect checks");
+		textDefinitionDialectChecks();
 		
 		info("Checks complete");
 	}
@@ -432,7 +440,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		}
 	}
 	
-	
+	//RP-127
 	private void diseaseIntegrity() throws TermServerScriptException {
 		//Rule 1 (clinical finding) concepts cannot have a (disorder) concept as a parent
 		//Rule 2 All (disorder) concepts must be a descendant of 64572001|Disease (disorder)| 
@@ -461,6 +469,79 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			}
 		}
 	}
+	
+	//RP-165
+	private void textDefinitionDialectChecks() throws TermServerScriptException {
+		List<Description> bothDialectTextDefns = new ArrayList<>();
+		for (Concept c : gl.getAllConcepts()) {
+			if (c.isActive()) {
+				List<Description> textDefns = c.getDescriptions(Acceptability.BOTH, DescriptionType.TEXT_DEFINITION, ActiveState.ACTIVE);
+				if (textDefns.size() > 2) {
+					warn (c + " has " + textDefns.size() + " active text definitions - check for compatibility");
+				}
+				boolean hasUS = false;
+				boolean hasGB = false;
+				for (Description textDefn : textDefns) {
+					boolean isUS = false;
+					boolean isGB = false;
+					if (textDefn.isPreferred(US_ENG_LANG_REFSET)) {
+						isUS = true;
+						hasUS = true;
+					}
+					if (textDefn.isPreferred(GB_ENG_LANG_REFSET)) {
+						isGB = true;
+						hasGB = true;
+					}
+					if (isUS && isGB) {
+						bothDialectTextDefns.add(textDefn);
+					}
+					if (!isUS && !isGB) {
+						warn ("Text definition is not preferred in either dialect: " + textDefn);
+					}
+				}
+				if ((hasUS && !hasGB) || (hasGB && !hasUS)) {
+					String legacy = isLegacy(c);
+					report(c, "Text Definition exists in one dialect and not the other", legacy, isActive(c,null));
+					countIssue(c); 
+				}
+			}
+		}
+		checkForUsGbSpecificSpelling(bothDialectTextDefns);
+	}
+
+	private void checkForUsGbSpecificSpelling(List<Description> bothDialectTextDefns) throws TermServerScriptException {
+		List<String> lines;
+		debug ("Loading us/gb terms");
+		try {
+			lines = Files.readLines(new File("resources/us-to-gb-terms-map.txt"), Charsets.UTF_8);
+		} catch (IOException e) {
+			throw new TermServerScriptException("Unable to read resources/us-to-gb-terms-map.txt", e);
+		}
+		List<DialectPair> dialectPairs = lines.stream()
+				.map(l -> new DialectPair(l))
+				.collect(Collectors.toList());
+		
+		debug ("Checking " + bothDialectTextDefns.size() + " both-dialect text definitions against " + dialectPairs.size() + " dialect pairs");
+		
+		nextDescription:
+		for (Description textDefn : bothDialectTextDefns) {
+			String term = " " + textDefn.getTerm().toLowerCase().replaceAll("[^A-Za-z0-9]", " ");
+			Concept c = gl.getConcept(textDefn.getConceptId());
+			String legacy = isLegacy(c);
+			for (DialectPair dialectPair : dialectPairs) {
+				if (term.contains(dialectPair.usTerm)) {
+					report(c, "Text Definition acceptable in both dialects contains US specific spelling", legacy, isActive(c,null), dialectPair.usTerm, textDefn);
+					countIssue(c);
+					continue nextDescription;
+				}
+				if (term.contains(dialectPair.gbTerm)) {
+					report(c, "Text Definition acceptable in both dialects contains GB specific spelling", legacy, isActive(c,null), dialectPair.gbTerm, textDefn);
+					countIssue(c);
+					continue nextDescription;
+				}
+			}
+		}
+	}
 
 	private Object isActive(Component c1, Component c2) {
 		return (c1.isActive() ? "Y":"N") + "/" + (c2 == null?"" : (c2.isActive() ? "Y":"N"));
@@ -468,6 +549,17 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 
 	private String isLegacy(Component c) {
 		return c.getEffectiveTime() == null ? "N" : "Y";
+	}
+	
+	class DialectPair {
+		String usTerm;
+		String gbTerm;
+		DialectPair (String line) {
+			String[] pair = line.split(TAB);
+			//Wrap in spaces to ensure whole word matching
+			usTerm = " " + pair[0] + " ";
+			gbTerm = " " + pair[1] + " ";
+		}
 	}
 
 }
