@@ -62,6 +62,7 @@ public class GraphLoader implements RF2Constants {
 		singleton.concepts.put(SPECIMEN.getConceptId(), SPECIMEN);
 		singleton.concepts.put(OBSERVABLE_ENTITY.getConceptId(),OBSERVABLE_ENTITY);
 		singleton.concepts.put(EVENT.getConceptId(),EVENT);
+		singleton.concepts.put(DISEASE.getConceptId(), DISEASE);
 	}
 
 	public Collection <Concept> getAllConcepts() {

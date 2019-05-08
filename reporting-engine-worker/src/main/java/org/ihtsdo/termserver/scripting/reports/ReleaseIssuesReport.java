@@ -31,6 +31,7 @@ import org.springframework.util.StringUtils;
  ISRS-286 Ensure Parents in same module
  RP-128 Ensure concepts referenced in axioms are active
  Active concept parents should not belong to more than one top-level hierarchy – please check NEW and LEGACY content for issues
+ RP-127 Disease specific rules
  */
 public class ReleaseIssuesReport extends TermServerReport implements ReportClass {
 	
@@ -84,7 +85,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		inactiveMissingFSN_PT();
 		nonBreakingSpace();
 		
-		info("...duplicate Semantic Tags");
+		info("...duplicate semantic tags");
 		duplicateSemanticTags();
 		
 		info("...parent hierarchies (~20 seconds)");
@@ -93,8 +94,12 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		info("...axiom integrity");
 		axiomIntegrity();
 		
+		info("...Disease semantic tag rule");
+		diseaseIntegrity();
+		
 		info("Checks complete");
 	}
+
 	//ISRS-286 Ensure Parents in same module.
 	//TODO To avoid issues with LOINC and ManagedService, only check core and model module
 	//concepts
@@ -427,6 +432,36 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		}
 	}
 	
+	
+	private void diseaseIntegrity() throws TermServerScriptException {
+		//Rule 1 (clinical finding) concepts cannot have a (disorder) concept as a parent
+		//Rule 2 All (disorder) concepts must be a descendant of 64572001|Disease (disorder)| 
+		Set<Concept> diseases = DISEASE.getDescendents(NOT_SET);
+		for (Concept c : CLINICAL_FINDING.getDescendents(NOT_SET)) {
+			String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
+			if (semTag.equals("(finding)")) {
+				checkForAncestorSemTag(c, "(disorder)");
+			} else if (semTag.equals("(disorder)") && !diseases.contains(c)) {
+				String legacy = isLegacy(c);
+				report(c, "Disorder is not descendant of 64572001|Disease (disorder)| ", legacy, isActive(c,null));
+				countIssue(c); 
+			}
+		}
+	}
+	
+	private void checkForAncestorSemTag(Concept c, String string) throws TermServerScriptException {
+		Set<Concept> ancestors = c.getAncestors(NOT_SET);
+		for (Concept ancestor : ancestors) {
+			String semTag = SnomedUtils.deconstructFSN(ancestor.getFsn())[1];
+			if (semTag.equals("(disorder)")) {
+				String legacy = isLegacy(c);
+				report(c, "Clinical finding has disorder as ancestor ", legacy, isActive(c,null), ancestor);
+				countIssue(c); 
+				return;
+			}
+		}
+	}
+
 	private Object isActive(Component c1, Component c2) {
 		return (c1.isActive() ? "Y":"N") + "/" + (c2 == null?"" : (c2.isActive() ? "Y":"N"));
 	}
