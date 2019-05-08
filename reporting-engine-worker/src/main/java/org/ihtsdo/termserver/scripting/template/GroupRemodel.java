@@ -819,14 +819,14 @@ public class GroupRemodel extends TemplateFix {
 		return firstPassComplete;
 	}
 	
-	protected boolean isExcluded(Concept c, boolean quiet) {
+	protected boolean isExcluded(Concept c, boolean quiet) throws TermServerScriptException {
 		if (skipMultipleUngroupedFindingSites) {
 			if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, FINDING_SITE, UNGROUPED).size() > 1) {
 				warn("Excluding due to multiple ungrouped finding sites: " + c);
 				return true;
 			}
 		}
-		return super.isExcluded(c, quiet);
+		return super.isExcluded(c, null);
 	}
 
 	private List<Component> firstPassRemodel(List<Concept> processMe) throws TermServerScriptException {

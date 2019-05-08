@@ -1066,8 +1066,10 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 
-	
 	protected void report (Concept c, Object...details) throws TermServerScriptException {
+		report (PRIMARY_REPORT, c, details);
+	}
+	protected void report (int reportIdx, Concept c, Object...details) throws TermServerScriptException {
 		StringBuffer sb = new StringBuffer();
 		
 		if (reportNullConcept || c != null) {
@@ -1102,7 +1104,7 @@ public abstract class TermServerScript implements RF2Constants {
 			warn ("Ignoring whiteListed concept: " + sb);
 			incrementSummaryInformation(WHITE_LISTED_COUNT);
 		} else {
-			writeToReportFile (sb.toString());
+			writeToReportFile (reportIdx, sb.toString());
 			incrementSummaryInformation("Report lines written");
 		}
 	}

@@ -170,7 +170,7 @@ abstract public class TemplateFix extends BatchFix {
 		}
 	}
 	
-	protected Set<Concept> findTemplateMatches(Template t, Collection<Concept> concepts) throws TermServerScriptException {
+	protected Set<Concept> findTemplateMatches(Template t, Collection<Concept> concepts, Integer exclusionReport) throws TermServerScriptException {
 		Set<Concept> matches = new HashSet<Concept>();
 		info ("Examining " + concepts.size() + " concepts against template " + t);
 		int conceptsExamined = 0;
@@ -179,7 +179,7 @@ abstract public class TemplateFix extends BatchFix {
 				warn ("Ignoring inactive concept returned by ECL: " + c);
 				continue;
 			}
-			if (!isExcluded(c, true) && TemplateUtils.matchesTemplate(c, t, this, CharacteristicType.INFERRED_RELATIONSHIP)) {
+			if (!isExcluded(c, exclusionReport) && TemplateUtils.matchesTemplate(c, t, this, CharacteristicType.INFERRED_RELATIONSHIP)) {
 				//Do we already have a template for this concept?  
 				//Assign the most specific template if so (TODO Don't assume order indicates complexity!)
 				if (conceptToTemplateMap.containsKey(c)) {
@@ -208,25 +208,29 @@ abstract public class TemplateFix extends BatchFix {
 		return null;
 	}
 	
-	protected boolean isExcluded(Concept c, boolean quiet) {
+	protected boolean isExcluded(Concept c, Integer exclusionReport) throws TermServerScriptException {
+		
 		//These hierarchies have been excluded
 		if (exclusions.contains(c)) {
-			if (!quiet) {
+			if (exclusionReport != null) {
 				incrementSummaryInformation("Concepts excluded due to hierarchial exclusion");
+				report (exclusionReport, c, "Hierarchial exclusion");
 			}
 			return true;
 		}
 		
 		if (gl.isOrphanetConcept(c)) {
-			if (!quiet) {
+			if (exclusionReport != null) {
 				incrementSummaryInformation("Orphanet concepts excluded");
+				report (exclusionReport, c, "Orphanet exclusion");
 			}
 			return true;
 		}
 		
 		if (StringUtils.isEmpty(c.getFsn())) {
-			if (!quiet) {
+			if (exclusionReport != null) {
 				warn("Skipping concept with no FSN: " + c.getConceptId());
+				report (exclusionReport, c, "No FSN");
 			}
 			return true;
 		}
@@ -236,8 +240,9 @@ abstract public class TemplateFix extends BatchFix {
 		for (String word : exclusionWords) {
 			//word = " " + word + " ";
 			if (fsn.contains(word)) {
-				if (!quiet) {
+				if (exclusionReport != null) {
 					incrementSummaryInformation("Concepts excluded due to lexical match");
+					report (exclusionReport, c, "Lexical exclusion", word);
 				}
 				return true;
 			}
@@ -248,8 +253,9 @@ abstract public class TemplateFix extends BatchFix {
 			for (Concept excludedType : complexTemplateAttributes) {
 				for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
 					if (r.getType().equals(excludedType)) {
-						if (!quiet) {
+						if (exclusionReport != null) {
 							incrementSummaryInformation("Concepts excluded due to complexity");
+							report (exclusionReport, c, "Complex templates excluded");
 						}
 						return true;
 					}

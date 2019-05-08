@@ -336,11 +336,18 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		
 		info ("Identifying concepts aligned to template");
 		for (Template template : templates) {
-			alignedConcepts.addAll(findTemplateMatches(template, potentialMatches));
+			alignedConcepts.addAll(findTemplateMatches(template, potentialMatches, null));
 		}
 		alignedConcepts.removeAll(ignoredConcepts);
 		alignedConcepts = alignedConcepts.stream()
-				.filter(c -> !isExcluded(c, false))
+				.filter(c -> {
+					try {
+						return !isExcluded(c, null);
+					} catch (TermServerScriptException e) {
+						System.out.println("Exception while checking for exclusion " + c + ": " + e);
+						return true;
+					}
+				})
 				.collect(Collectors.toSet());
 		
 		//Now first pass attempt to remodel because we don't want to batch anything that results 

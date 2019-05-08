@@ -357,9 +357,11 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 	
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {"TASK_KEY, TASK_DESC, SCTID, FSN, CONCEPT_TYPE, SEVERITY, ACTION_TYP, CharacteristicType, MatchedTemplate, Template Diagnostic",
-				"Report Metadata"};
+				"Report Metadata", "SCTID, FSN, SemTag, Reason", "SCTID, FSN, SemTag"};
 		String[] tabNames = new String[] {	"Mismatched Concepts",
-				"Metadata"};
+				"Metadata",
+				"Excluded Concepts",
+				"Matched Concepts"};
 		super.postInit(tabNames, columnHeadings, false);
 		
 		info("Outputting metadata tab");
@@ -404,8 +406,11 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		Set<Concept> ignoredConcepts = new HashSet<>();
 		
 		for (Template template : templates) {
-			Set<Concept> matches = findTemplateMatches(template, unalignedConcepts);
+			Set<Concept> matches = findTemplateMatches(template, unalignedConcepts, TERTIARY_REPORT);
 			incrementSummaryInformation("Matched templates",matches.size());
+			for (Concept match : matches) {
+				report (QUATERNARY_REPORT, match);
+			}
 			unalignedConcepts.removeAll(matches);
 			int beforeCount = unalignedConcepts.size();
 			unalignedConcepts.removeAll(exclusions);
@@ -416,17 +421,19 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		for (Concept c : unalignedConcepts) {
 			if (whiteListedConcepts.contains(c)) {
 				incrementSummaryInformation(WHITE_LISTED_COUNT);
+				report (TERTIARY_REPORT, c, "White listed");
 				ignoredConcepts.add(c);
 				continue;
 			}
 			if (inclusionWords.size() > 0) {
 				if (!containsInclusionWord(c)) {
 					ignoredConcepts.add(c);
+					report (TERTIARY_REPORT, c, "Did not include inclusion word");
 					incrementSummaryInformation("Skipped as doesn't contain inclusion word");
 					continue;
 				}
 			}
-			if (isExcluded(c, false)) {
+			if (isExcluded(c, TERTIARY_REPORT)) {
 				ignoredConcepts.add(c);
 			} else {
 				List<String> diagnostics = new ArrayList<String>();
