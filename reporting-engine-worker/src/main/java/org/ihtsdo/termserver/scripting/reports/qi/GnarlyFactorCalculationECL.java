@@ -52,7 +52,7 @@ public class GnarlyFactorCalculationECL extends TermServerReport {
 	private void identifyGroupersByAttribute(List<Component> components) throws TermServerScriptException {
 		for (Component component : components) {
 			Relationship ecl = (Relationship) component;
-			Set<Concept> expansion = doEclExpansion(ecl);
+			List<Concept> expansion = doEclExpansion(ecl);
 			//Work our way up the stated parents via some attribute that we have;
 			int expansionSize = expansion.size();
 			Relationship optimalECL =  ecl;
@@ -61,28 +61,20 @@ public class GnarlyFactorCalculationECL extends TermServerReport {
 				continue;
 			} else if ( expansionSize > lowerLimit) {
 				warn (ecl + " already has " + expansionSize + " members.  Adding.");
-				expansionMap.put(optimalECL, expansion);
 			} else {
 				optimalECL = findOptimalECL(ecl, 0);
 				if (optimalECL == null || optimalECL.getTarget() == null) {
 					warn ("Failed to find optimal grouper from " + ecl); 
-				} else {
-					expansionMap.put(optimalECL, expansion);
-				}
+				} 
 			}
 		}
 	}
 
-	private Set<Concept> doEclExpansion(Relationship r) throws TermServerScriptException {
+	private List<Concept> doEclExpansion(Relationship r) throws TermServerScriptException {
 		//We're looking for a Clinical Finding with the attribute given
 		String ecl = " << " + CLINICAL_FINDING + " : " +
 				r.getType() + " = << " +
 				r.getTarget();
-		//Do we already have this expansion cached?
-		if (expansionMap.containsKey(r)) {
-			debug ("Found cached expansion for " + r);
-			return expansionMap.get(r);
-		}
 		return findConcepts(ecl);
 	}
 

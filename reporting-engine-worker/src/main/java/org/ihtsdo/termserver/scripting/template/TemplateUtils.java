@@ -271,7 +271,7 @@ public class TemplateUtils implements RF2Constants {
 	}
 
 	private static boolean matchesAttributeValue(Concept target, String ecl, TermServerScript ts) throws TermServerScriptException {
-		Set<Concept> permittedConcepts = ts.findConcepts(ecl, true, true);
+		List<Concept> permittedConcepts = ts.findConcepts(ecl, true, true);
 		return permittedConcepts.contains(target);
 	}
 

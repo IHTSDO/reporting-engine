@@ -657,17 +657,18 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 	}
 	
-	public Set<Concept> findConcepts(String ecl) throws TermServerScriptException {
+	public List<Concept> findConcepts(String ecl) throws TermServerScriptException {
 		return findConcepts(project.getBranchPath(), ecl, false, !safetyProtocolsEnabled());
 	}
 	
-	public Set<Concept> findConcepts(String ecl, boolean quiet, boolean expectLargeResults) throws TermServerScriptException {
+	public List<Concept> findConcepts(String ecl, boolean quiet, boolean expectLargeResults) throws TermServerScriptException {
 		return findConcepts(project.getBranchPath(), ecl, quiet, expectLargeResults);
 	}
 	
-	public Set<Concept> findConcepts(String branch, String ecl, boolean quiet, boolean expectLargeResults) throws TermServerScriptException {
+	public List<Concept> findConcepts(String branch, String ecl, boolean quiet, boolean expectLargeResults) throws TermServerScriptException {
 		EclCache cache = EclCache.getCache(branch, tsClient, gson, gl, quiet);
 		cache.engageSafetyProtocol(safetyProtocols);
+		boolean wasCached = cache.isCached(ecl);
 		List<Concept> concepts = cache.findConcepts(branch, ecl, expectLargeResults); 
 		int retry = 0;
 		if (concepts.size() == 0 && ++retry < 3) {
@@ -675,21 +676,25 @@ public abstract class TermServerScript implements RF2Constants {
 			try { Thread.sleep(30*1000); } catch (Exception e) {}
 			concepts = cache.findConcepts(branch, ecl, expectLargeResults); 
 		}
-		debug(concepts.size() + " concepts recovered.  Removing duplicates");
-		//Failure in the pagination can cause duplicates.  Check for this
-		Set<Concept> uniqConcepts = new HashSet<>(concepts);
-		if (uniqConcepts.size() != concepts.size()) {
-			warn("Duplicates detected " + concepts.size() + " vs " + uniqConcepts.size() + " - identifying...");
-			//Work out what the actual duplication is
-			for (Concept c : uniqConcepts) {
-				concepts.remove(c);
+		
+		//If this is the first time we've seen these results, check for duplicates
+		if (!wasCached) {
+			debug(concepts.size() + " concepts recovered.  Checking for duplicates...");
+			//Failure in the pagination can cause duplicates.  Check for this
+			Set<Concept> uniqConcepts = new HashSet<>(concepts);
+			if (uniqConcepts.size() != concepts.size()) {
+				warn("Duplicates detected " + concepts.size() + " vs " + uniqConcepts.size() + " - identifying...");
+				//Work out what the actual duplication is
+				for (Concept c : uniqConcepts) {
+					concepts.remove(c);
+				}
+				for (Concept c : concepts) {
+					warn ("Duplicate concept received from ECL: " + c);
+				}
+				throw new TermServerScriptException(concepts.size() + " duplicate concepts returned from ecl: " + ecl + " eg " + concepts.get(0));
 			}
-			for (Concept c : concepts) {
-				warn ("Duplicate concept received from ECL: " + c);
-			}
-			throw new TermServerScriptException(concepts.size() + " duplicate concepts returned from ecl: " + ecl + " eg " + concepts.get(0));
 		}
-		return uniqConcepts; 
+		return concepts; 
 	}
 
 	protected List<Component> processFile() throws TermServerScriptException {

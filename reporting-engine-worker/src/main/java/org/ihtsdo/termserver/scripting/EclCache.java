@@ -54,6 +54,10 @@ public class EclCache {
 		return findConcepts(branch, ecl, !safetyProtocolEngaged);
 	}
 	
+	protected boolean isCached(String ecl) {
+		return expansionCache.containsKey(ecl);
+	}
+	
 	protected List<Concept> findConcepts(String branch, String ecl, boolean expectLargeResults) throws TermServerScriptException {
 		//Have we already recovered this ECL?
 		if (expansionCache.containsKey(ecl)) {
@@ -133,8 +137,9 @@ public class EclCache {
 	}
 	
 	public void engageSafetyProtocol(boolean engaged) {
+		boolean changed = (safetyProtocolEngaged != engaged);
 		safetyProtocolEngaged = engaged;
-		if (!engaged) {
+		if (!engaged && changed) {
 			TermServerScript.warn ("ECL cache safety protocols have been disengaged. There's no limit");
 		}
 	}
