@@ -1065,6 +1065,7 @@ public abstract class TermServerScript implements RF2Constants {
 			}
 		}
 		writeToReportFile (sb.toString());
+		incrementSummaryInformation("Report lines written");
 	}
 	
 
