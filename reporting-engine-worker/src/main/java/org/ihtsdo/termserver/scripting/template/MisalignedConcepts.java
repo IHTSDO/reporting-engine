@@ -405,19 +405,7 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		//Set<Concept> unalignedConcepts = Collections.singleton(gl.getConcept("269214009"));
 		Set<Concept> ignoredConcepts = new HashSet<>();
 		
-		for (Template template : templates) {
-			Set<Concept> matches = findTemplateMatches(template, unalignedConcepts, TERTIARY_REPORT);
-			incrementSummaryInformation("Matched templates",matches.size());
-			for (Concept match : matches) {
-				report (QUATERNARY_REPORT, match);
-			}
-			unalignedConcepts.removeAll(matches);
-			int beforeCount = unalignedConcepts.size();
-			unalignedConcepts.removeAll(exclusions);
-			int afterCount = unalignedConcepts.size();
-			addSummaryInformation("Excluded due to subHierarchy rules", (beforeCount - afterCount));
-		}
-		
+		//Remove all exclusions before we look for matches
 		for (Concept c : unalignedConcepts) {
 			if (whiteListedConcepts.contains(c)) {
 				incrementSummaryInformation(WHITE_LISTED_COUNT);
@@ -435,23 +423,40 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 			}
 			if (isExcluded(c, TERTIARY_REPORT)) {
 				ignoredConcepts.add(c);
-			} else {
-				List<String> diagnostics = new ArrayList<String>();
-				conceptDiagnostics.put(c, diagnostics);
-				String msg = "Cardinality mismatch: " +  (StringUtils.isEmpty(c.getIssues())?" N/A" : c.getIssues());
-				diagnostics.add(msg);
-				diagnostics.add("Relationship Group mismatches:");
-				for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP)) {
-					//is this group purely inferred?  Add an indicator if so 
-					String purelyInferredIndicator = groupPurelyInferred(c,g)?"^":"";
-					msg = "    " + purelyInferredIndicator + g;
-					diagnostics.add(msg);
-				}
-				incrementSummaryInformation("Concepts identified as not matching any template");
-				countIssue(c);
-			} 
+			}
 		}
 		unalignedConcepts.removeAll(ignoredConcepts);
+		
+		//Find matches against all templates
+		for (Template template : templates) {
+			Set<Concept> matches = findTemplateMatches(template, unalignedConcepts, TERTIARY_REPORT);
+			incrementSummaryInformation("Matched templates",matches.size());
+			for (Concept match : matches) {
+				report (QUATERNARY_REPORT, match);
+			}
+			unalignedConcepts.removeAll(matches);
+			int beforeCount = unalignedConcepts.size();
+			unalignedConcepts.removeAll(exclusions);
+			int afterCount = unalignedConcepts.size();
+			addSummaryInformation("Excluded due to subHierarchy rules", (beforeCount - afterCount));
+		}
+		
+		//Record diagnostics for all concepts that failed to align to a template
+		for (Concept c : unalignedConcepts) {
+			List<String> diagnostics = new ArrayList<String>();
+			conceptDiagnostics.put(c, diagnostics);
+			String msg = "Cardinality mismatch: " +  (StringUtils.isEmpty(c.getIssues())?" N/A" : c.getIssues());
+			diagnostics.add(msg);
+			diagnostics.add("Relationship Group mismatches:");
+			for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP)) {
+				//is this group purely inferred?  Add an indicator if so 
+				String purelyInferredIndicator = groupPurelyInferred(c,g)?"^":"";
+				msg = "    " + purelyInferredIndicator + g;
+				diagnostics.add(msg);
+			}
+			incrementSummaryInformation("Concepts identified as not matching any template");
+			countIssue(c);
+		}
 		return asComponents(unalignedConcepts);
 	}
 
