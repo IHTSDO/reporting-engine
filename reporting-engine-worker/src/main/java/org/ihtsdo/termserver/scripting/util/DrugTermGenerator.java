@@ -108,12 +108,6 @@ public class DrugTermGenerator implements RF2Constants{
 			return NO_CHANGES_MADE;
 		}
 		
-		//Skip FSNs that contain the word vitamin
-		/*if (isFSN && d.getTerm().toLowerCase().contains("vitamin")) {
-			report(t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Skipped vitamin FSN");
-			return NO_CHANGES_MADE;
-		}*/
-		
 		//Check the existing term has correct capitalization
 		if (d.getTerm() != null) {
 			ensureCaptialization(d);
@@ -157,21 +151,6 @@ public class DrugTermGenerator implements RF2Constants{
 			}
 			lastWord = word;
 		}
-		
-		//If this is the FSN, then we should have another description without the semantic tag as an acceptable term
-		//Update: We're not doing FSN Counterparts now, because of issues with US / GB Variants
-		/*if (isFSN) {
-			Description fsnCounterpart = replacement.clone(null);
-			String counterpartTerm = SnomedUtils.deconstructFSN(fsnCounterpart.getTerm())[0];
-			
-			if (!SnomedUtils.termAlreadyExists(c, counterpartTerm)) {
-				fsnCounterpart.setTerm(counterpartTerm);
-				report(t, c, Severity.LOW, ReportActionType.DESCRIPTION_ADDED, "FSN Counterpart added: " + counterpartTerm);
-				fsnCounterpart.setType(DescriptionType.SYNONYM);
-				fsnCounterpart.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(AcceptabilityMode.ACCEPTABLE_BOTH));
-				c.addDescription(fsnCounterpart);
-			}
-		}*/
 		
 		//Validation, check that we have some acceptability for both US and GB
 		if (replacement.getAcceptability(US_ENG_LANG_REFSET) == null || replacement.getAcceptability(GB_ENG_LANG_REFSET) == null) {
@@ -293,7 +272,7 @@ public class DrugTermGenerator implements RF2Constants{
 		if (includeUnitOfPresentation ||
 				(hasAttribute(c, HAS_UNIT_OF_PRESENTATION) && !doseForm.endsWith(unitOfPresentation)) ) {
 			if ((isFSN  && !specifyDenominator) || isActuation) {
-				suffix = (isActuation?"/":"/1 ") + unitOfPresentation + " "  + doseForm;
+				suffix = "/1 " + unitOfPresentation + " "  + doseForm;
 			} else {
 				suffix = " " + DrugUtils.getDosageForm(c, isFSN, langRefset) + " "  + unitOfPresentation;
 			}
