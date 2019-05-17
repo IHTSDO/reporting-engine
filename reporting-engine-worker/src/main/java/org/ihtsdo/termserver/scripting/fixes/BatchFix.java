@@ -848,7 +848,14 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		//Do we have any inactive relationships that we could reactivate, rather than creating new ones?
 		List<Relationship> inactiveRels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, to.getType(), to.getTarget(), ActiveState.INACTIVE);
 
-		List<Relationship> originalRels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, from.getType(), from.getTarget(), ActiveState.ACTIVE);
+		List<Relationship> originalRels;
+		//If our 'from' is a full relationship, then only replace within that groupId
+		if (from instanceof Relationship) {
+			originalRels = c.getRelationships((Relationship)from, ActiveState.ACTIVE);
+		} else {
+			originalRels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, from.getType(), from.getTarget(), ActiveState.ACTIVE);
+		}
+		
 		for (Relationship r : originalRels) {
 			if (inactiveRels.size() > 0) {
 				//We'll reuse and reactivate this row, rather than create a new one

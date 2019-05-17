@@ -16,6 +16,7 @@ public class RelationshipTemplate implements IRelationshipTemplate {
 	public RelationshipTemplate (Concept type, Concept target) {
 		this.type = type;
 		this.target = target;
+		this.characteristicType = CharacteristicType.STATED_RELATIONSHIP;
 	}
 	
 	public Concept getType() {
