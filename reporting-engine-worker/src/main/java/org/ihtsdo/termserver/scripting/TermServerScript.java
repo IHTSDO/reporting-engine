@@ -693,6 +693,7 @@ public abstract class TermServerScript implements RF2Constants {
 				}
 				throw new TermServerScriptException(concepts.size() + " duplicate concepts returned from ecl: " + ecl + " eg " + concepts.get(0));
 			}
+			debug("No duplicates detected.");
 		}
 		return concepts; 
 	}

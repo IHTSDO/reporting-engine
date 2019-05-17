@@ -63,9 +63,6 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		initialiseSummaryInformation(BOSS_FAIL);
 		
 		for (Concept concept : subHierarchy) {
-			/*if (concept.getConceptId().equals("769993004")) {
-				debug ("Check here");
-			}*/
 			DrugUtils.setConceptType(concept);
 			if (concept.getConceptType().equals(ConceptType.PRODUCT)) {
 				continue;
@@ -77,8 +74,8 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 				validateNoModifiedSubstances(concept);
 			}
 			
-			// DRUGS-281, DRUGS-282
-			validateIngredientsInFSN(concept, allDrugTypes);  
+			// DRUGS-281, DRUGS-282, DRUGS-269
+			validateTerming(concept, allDrugTypes);  
 			
 			// DRUGS-267
 			validateIngredientsAgainstBoSS(concept);
@@ -155,6 +152,12 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 				if (csnu.size() == 1 && csnu.get(0).getTarget().equals(gl.getConcept("258727004|milliequivalent|"))) {
 					report (c, "Invalid Model", csdu.get(0));
 				}
+				if (csnu.size() == 1 && csnu.get(0).getTarget().equals(gl.getConcept("258728009|microequivalent|"))) {
+					report (c, "Invalid Model", csdu.get(0));
+				}
+				if (csnu.size() == 1 && csnu.get(0).getTarget().equals(gl.getConcept("258718000|millimole|"))) {
+					report (c, "Invalid Model", csdu.get(0));
+				}
 			}
 		}
 	}
@@ -168,7 +171,6 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 					if (ir.getType().equals(IS_MODIFICATION_OF)) {
 						String msg = c.getConceptType() + " has modified ingredient";
 						report (c, msg, ingredient);
-						
 					}
 				}
 			}
@@ -408,14 +410,14 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 			}
 			if (!matchFound) {
 				String issue = "Basis of Strength not equal or subtype of active ingredient, neither is active ingredient a modification of the BoSS";
-				report (concept, issue, null, boSS);
+				report (concept, issue, boSS);
 				incrementSummaryInformation(BOSS_FAIL);
 				
 			}
 		}
 	}
 
-	private void validateIngredientsInFSN(Concept c, ConceptType[] drugTypes) throws TermServerScriptException {
+	private void validateTerming(Concept c, ConceptType[] drugTypes) throws TermServerScriptException {
 		//Only check FSN for certain drug types (to be expanded later)
 		if (!SnomedUtils.isConceptType(c, drugTypes)) {
 			incrementSummaryInformation("Concepts ignored - wrong type");
@@ -423,18 +425,38 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		incrementSummaryInformation("Concepts validated to ensure ingredients correct in FSN");
 		Description currentFSN = c.getFSNDescription();
 		termGenerator.setQuiet(true);
+		
+		//Create a clone to be retermed, and then we can compare descriptions with the original	
 		Concept clone = c.clone();
 		termGenerator.ensureDrugTermsConform(null, clone, CharacteristicType.STATED_RELATIONSHIP);
 		Description proposedFSN = clone.getFSNDescription();
-		
-		if (!currentFSN.getTerm().equals(proposedFSN.getTerm())) {
-			String issue = "FSN did not match expected pattern";
-			String differences = findDifferences (currentFSN.getTerm(), proposedFSN.getTerm());
-			report (c, issue, proposedFSN.getTerm(), differences);
-			
+		compareTerms(c, "FSN", currentFSN, proposedFSN);
+		Description ptUS = clone.getPreferredSynonym(US_ENG_LANG_REFSET);
+		Description ptGB = clone.getPreferredSynonym(GB_ENG_LANG_REFSET);
+		if (ptUS == null || ptUS.getTerm() == null || ptGB == null || ptGB.getTerm() == null) {
+			debug ("Debug here - hit a null");
+		}
+		if (ptUS.getTerm().equals(ptGB.getTerm())) {
+			compareTerms(c, "PT", c.getPreferredSynonym(US_ENG_LANG_REFSET), ptUS);
+		} else {
+			compareTerms(c, "US-PT", c.getPreferredSynonym(US_ENG_LANG_REFSET), ptUS);
+			compareTerms(c, "GB-PT", c.getPreferredSynonym(GB_ENG_LANG_REFSET), ptGB);
 		}
 	}
 	
+	private void compareTerms(Concept c, String termName, Description actual, Description expected) throws TermServerScriptException {
+		if (!actual.getTerm().equals(expected.getTerm())) {
+			String issue = termName + " does not meet expectations";
+			String differences = findDifferences (actual.getTerm(), expected.getTerm());
+			report (c, issue, expected.getTerm(), differences, actual);
+		} else if (!actual.getCaseSignificance().equals(expected.getCaseSignificance())) {
+			String issue = termName + " case significance does not meet expectations";
+			String detail = "Expected: " + SnomedUtils.translateCaseSignificanceFromEnum(expected.getCaseSignificance());
+			detail += ", Actual: " + SnomedUtils.translateCaseSignificanceFromEnum(actual.getCaseSignificance());
+			report (c, issue, detail, actual);
+		}
+	}
+
 	private String findDifferences(String actual, String expected) {
 		String differences = "";
 		//For each word, see if it exists in the other 
@@ -444,7 +466,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		for (int x=0; x < maxLoop; x++) {
 			if (actuals.length > x) {
 				if (! expected.contains(actuals[x])) {
-					differences += actuals[x] + " ";
+					differences += actuals[x] + " vs ";
 				}
 			}
 			
@@ -474,10 +496,6 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 			}
 			valuesEncountered.add(target);
 		}
-	}
-	
-	private void report (Concept c, String data, String detail) throws TermServerScriptException {
-		super.report(c, c.getConceptType(), data, detail);
 	}
 	
 	private int checkForInferredGroupsNotStated(Concept c) throws TermServerScriptException {

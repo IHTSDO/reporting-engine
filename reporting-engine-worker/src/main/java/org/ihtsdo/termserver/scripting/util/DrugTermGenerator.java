@@ -67,7 +67,8 @@ public class DrugTermGenerator implements RF2Constants{
 		
 		//This function will split out the US / GB terms if the ingredients show variance where the product does not
 		//The unit of presentation could also necessitate a variance
-		validateUsGbVariance(t,c, charType, allowDuplicates);
+		//Do allow duplicates when checking variance as splitting US/GB into two will temporarily have same term
+		validateUsGbVariance(t,c, charType, true);
 
 		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 			try { 
@@ -410,6 +411,7 @@ public class DrugTermGenerator implements RF2Constants{
 			Description usPT = preferredTerms.get(0);
 			usPT.setAcceptabilityMap(SnomedUtils.createPreferredAcceptableMap(US_ENG_LANG_REFSET, GB_ENG_LANG_REFSET));
 			Description gbPT = usPT.clone(null);
+			gbPT.setTerm("GBTERM:" + gbPT.getTerm());
 			gbPT.setAcceptabilityMap(SnomedUtils.createPreferredAcceptableMap(GB_ENG_LANG_REFSET, US_ENG_LANG_REFSET));
 			report (t, c, Severity.HIGH, ReportActionType.DESCRIPTION_ADDED, "Split PT into US/GB variants: " + usPT + "/" + gbPT);
 			c.addDescription(gbPT, allowDuplicates);
@@ -493,7 +495,7 @@ public class DrugTermGenerator implements RF2Constants{
 		List<Relationship> ingredientRels = c.getRelationships(charType, HAS_ACTIVE_INGRED, ActiveState.ACTIVE);
 		ingredientRels.addAll(c.getRelationships(charType, HAS_PRECISE_INGRED, ActiveState.ACTIVE));
 		Set<String> ingredients = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);  //Will naturally sort in alphabetical order
-		boolean ok = false;
+		
 		for (Relationship r : ingredientRels) {
 			//Need to recover the full concept to have all descriptions, not the partial one stored as the target.
 			Concept ingredient = GraphLoader.getGraphLoader().getConcept(r.getTarget().getConceptId());
