@@ -157,6 +157,9 @@ public class GroupRemodel extends TemplateFix {
 		includeDueTos = true;
 		*/
 		
+		subHierarchyECL = "<<52515009"; //QI-252 |Neoplastic disease of uncertain behavior| 
+		templateNames = new String[] {	"templates/Neoplastic Disease.json"};
+		
 		super.init(args);
 		
 		//Ensure our ECL matches more than 0 concepts.  This will also cache the result
