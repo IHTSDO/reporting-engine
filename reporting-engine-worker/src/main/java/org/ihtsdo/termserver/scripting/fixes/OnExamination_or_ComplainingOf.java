@@ -2,15 +2,19 @@ package org.ihtsdo.termserver.scripting.fixes;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.client.BrowserClient;
 import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.Task;
@@ -19,18 +23,21 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import us.monoid.json.JSONObject;
 
 /*
+ * QI-300
 For Jim.  In the Clinical Findings hierarchy, find concepts starting "On Examination - X"
 and "Complaining of X" and see if they have X on its own as a parent
+
 */
 public class OnExamination_or_ComplainingOf extends BatchFix implements RF2Constants{
 	
 	String[] itemsOfInterest = new String[] { "On examination - ", "Complaining of "};
 	String targetHierarchy = "404684003"; // |Clinical finding (finding)|
-	String except = "64572001"; // |Disease (disorder)|
+	//String except = "64572001"; // |Disease (disorder)|
 	Collection<Concept> targetDomain;
 	String[] genericTerms = new String[] {"present", "external", "microscopy", "reflex", 
 			"defect", "group", "week", "size", "organism", "female", "male", "positive"};
 	int maxPossibilities = 7;
+	BrowserClient browserClient;
 	
 	protected OnExamination_or_ComplainingOf(BatchFix clone) {
 		super(clone);
@@ -42,22 +49,23 @@ public class OnExamination_or_ComplainingOf extends BatchFix implements RF2Const
 			fix.reportNoChange = true;
 			fix.selfDetermining = true;
 			fix.runStandAlone = true;
-			fix.additionalReportColumns = "exactMatch, closeMatch, suggestedAddition, possibleAdditions, suggestedCreation";
+			fix.additionalReportColumns = "Exact Match - Existing Parent, Close Match - Existing Parent, Suggested Addition - Existing Concept, possibleAdditions, suggestedCreation";
 			fix.init(args);
-			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			fix.loadProjectSnapshot(true); 
-			fix.postLoadInit();
+			fix.postInit();
 			fix.processFile();
 		} finally {
 			fix.finish();
 		}
 	}
 
-	private void postLoadInit() throws TermServerScriptException {
+	public void postInit() throws TermServerScriptException {
 		//The target domain is Clinical Finding Hierarchy, with the disorders removed
 		targetDomain = gl.getConcept(targetHierarchy).getDescendents(NOT_SET);
-		Collection<Concept> exceptions = gl.getConcept(except).getDescendents(NOT_SET);
-		targetDomain.removeAll(exceptions);
+		//Collection<Concept> exceptions = gl.getConcept(except).getDescendents(NOT_SET);
+		//targetDomain.removeAll(exceptions);
+		browserClient = new BrowserClient();
+		super.postInit();
 	}
 
 	@Override
@@ -140,7 +148,6 @@ public class OnExamination_or_ComplainingOf extends BatchFix implements RF2Const
 		List<Component> processMe = new ArrayList<>();
 		
 		int count = 0;
-		nextConcept:
 		for (Concept c : checkMe) {
 			for (String itemOfInterest : itemsOfInterest) {
 				if (c.isActive() && c.getFsn().startsWith(itemOfInterest)) {
@@ -157,7 +164,7 @@ public class OnExamination_or_ComplainingOf extends BatchFix implements RF2Const
 
 	private void checkForXParent(Concept c, String itemOfInterest) throws TermServerScriptException {
 		//What do we think X is?
-		String X = SnomedUtils.deconstructFSN(c.getFsn())[0].replace(itemOfInterest,"");
+		String X = SnomedUtils.deconstructFSN(c.getFsn())[0].replace(itemOfInterest,"").trim();
 		Severity severity = Severity.NONE;
 		incrementSummaryInformation("ConceptsExamined");
 		
@@ -167,8 +174,16 @@ public class OnExamination_or_ComplainingOf extends BatchFix implements RF2Const
 			String fsnPart = SnomedUtils.deconstructFSN(thisParent.getFsn())[0];
 			if (fsnPart.equalsIgnoreCase(X) || fsnPart.equalsIgnoreCase("Finding of " + X) || fsnPart.equalsIgnoreCase(X + " finding")) {
 				exactMatch = thisParent;
-				incrementSummaryInformation("ExactMatch");
+				incrementSummaryInformation("ExactMatch with FSN");
 				break;
+			}
+			//Check the other descriptions of parents also
+			for (Description d : thisParent.getDescriptions(ActiveState.ACTIVE)) {
+				if (d.getTerm().equalsIgnoreCase(X)) {
+					exactMatch = thisParent;
+					incrementSummaryInformation("ExactMatch with synonym");
+					break;
+				}
 			}
 		}
 		
@@ -219,37 +234,27 @@ public class OnExamination_or_ComplainingOf extends BatchFix implements RF2Const
 		
 		//Try matching any of the words in X, if it has more than one word
 		String possibleAdditionsStr = "";
-		/*
-		if (exactMatch == null && closeMatch == null && suggestedAddition == null && tokensOfX.length > 1) {
-			Collection<Concept> possibleAdditions = new ArrayList<Concept>();
-			int numberFound = findConceptsContainingAny(tokensOfX, possibleAdditions);
-			if (possibleAdditions.size() > 0) {
-				boolean isFirst = true;
-				for (Concept possible : possibleAdditions) {
-					if (!isFirst) {
-						possibleAdditionsStr += ",\n";
-					} else {
-						isFirst = false;
-					}
-					possibleAdditionsStr += possible.toString();
-				}
-				if (numberFound > maxPossibilities) {
-					possibleAdditionsStr += ",\n" + numberFound + " found";
-				}
-				incrementSummaryInformation ("PossibleAddition");
-			}
+		if (exactMatch == null && tokensOfX.length > 1) {
+			String searchTerms = Arrays.stream(tokensOfX)
+					.map(s -> s.substring(0, s.length() > 4 ? 4 : s.length()))
+					.collect(Collectors.joining(" ")).replaceAll("[^A-Za-z0-9\\s]", "");
+			List<Concept> possibilities = browserClient.findConcepts(searchTerms, "finding", 3);
+			possibleAdditionsStr = possibilities.stream()
+					.map(p -> p.toString())
+					.filter(s -> !s.contains("examination"))
+					.filter(s -> !s.contains("Complaining"))
+					.collect(Collectors.joining(", "));
 		}
-		*/
 		
 		//If we can find one to add, what would we suggest creating?
 		String suggestedCreation="";
 		if (exactMatch == null && closeMatch == null && suggestedAddition == null && possibleAdditionsStr.isEmpty()) {
-			suggestedCreation = "Finding of " + X + " (finding)";
+			suggestedCreation = X + " (finding)";
 			severity = Severity.HIGH;
 			incrementSummaryInformation ("SuggestedCreation");
 		}
 		
-		report (c, c.getFSNDescription(), severity, ReportActionType.INFO, 
+		report ((Task)null, c, severity, ReportActionType.INFO, 
 				exactMatch == null? "" : exactMatch.toString(), 
 				closeMatch == null ? "" : closeMatch.toString(), 
 				suggestedAddition == null ? "" : suggestedAddition.toString(), 
@@ -288,31 +293,6 @@ public class OnExamination_or_ComplainingOf extends BatchFix implements RF2Const
 		return null;
 	}
 	
-	private int findConceptsContainingAny(String[] targetTerms, Collection<Concept> results) throws TermServerScriptException {
-		int numberFound = 0;
-		concept:
-		for (Concept c : targetDomain) {
-			//Don't process any of the terms we're starting with
-			if (containsOneOf(c.getFsn(), itemsOfInterest)) {
-				continue;
-			}
-			for (String targetTerm : targetTerms) {
-				//Is this a target term we'd ignore eg "present"
-				if (containsOneOf(targetTerm, genericTerms) || isStringInt(targetTerm)) {
-					continue;
-				}
-				if (c.getFsn().contains(targetTerm)) {
-					if (numberFound < maxPossibilities) {
-						results.add(c);
-					}
-					numberFound++;
-					continue concept;
-				}
-			}
-		}
-		return numberFound;
-	}
-
 	private boolean containsOneOf(String text, String[] matches) {
 		for (String match : matches) {
 			if (text.contains(match)) {
@@ -322,16 +302,4 @@ public class OnExamination_or_ComplainingOf extends BatchFix implements RF2Const
 		return false;
 	}
 	
-	public boolean isStringInt(String s)
-	{
-	    try
-	    {
-	        Integer.parseInt(s);
-	        return true;
-	    } catch (NumberFormatException ex)
-	    {
-	        return false;
-	    }
-	}
-
 }
