@@ -98,13 +98,12 @@ public class GroupRemodel extends TemplateFix {
 
 		subHierarchyECL =  "<< 34014006"; //QI-15 + QI-23 |Viral disease (disorder)|
 		templateNames = new String[] {	"templates/Infection caused by virus with optional bodysite.json"};
-		*/
+		
 		subHierarchyECL = "<<87628006";  //QI-21 |Bacterial infectious disease (disorder)|
 		templateNames = new String[] {	"templates/infection/Infection caused by bacteria.json"};
-		/*
+		
 		subHierarchyECL =  "<< 95896000";  //QI-27  |Protozoan infection (disorder)|
 		templateNames = new String[] {"templates/Infection caused by Protozoa with optional bodysite.json"};
-		
 		
 		subHierarchyECL =  "<< 74627003";  //QI-48 |Diabetic Complication|
 		templateNames = new String[] {	"templates/Complication co-occurrent and due to Diabetes Melitus.json",
@@ -136,7 +135,6 @@ public class GroupRemodel extends TemplateFix {
 		exclusionWords.add("shock");
 		alreadyProcessedFile = new File(".QI-159_already_processed.txt");
 		
-		
 		subHierarchyECL = "<<52515009"; //QI-173 |Hernia of abdominal cavity (disorder)|
 		templateNames = new String[] {	"templates/hernia/Hernia of Body Structure.json"};
 		excludeHierarchies = new String[] { "236037000 |Incisional hernia (disorder)|" };
@@ -156,8 +154,7 @@ public class GroupRemodel extends TemplateFix {
 		inclusionWords.add("nail");
 		includeDueTos = true;
 		*/
-		
-		subHierarchyECL = "<<52515009"; //QI-252 |Neoplastic disease of uncertain behavior| 
+		subHierarchyECL = "<<118616009"; //QI-252 |Neoplastic disease of uncertain behavior| 
 		templateNames = new String[] {	"templates/Neoplastic Disease.json"};
 		
 		super.init(args);

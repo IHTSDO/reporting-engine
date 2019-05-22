@@ -342,10 +342,10 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		
 		subHierarchyECL = "<< 125667009 |Contusion (disorder)|"; //QI-244 
 		templateNames = new String[] {	"templates/wound/contusion.json" };
-		*/
+		
 		subHierarchyECL = "< 85828009 |Autoimmune disease (disorder)|"; //QI-297
 		templateNames = new String[] {	"templates/Autoimune.json" };
-		
+		*/
 		super.init(args);
 		
 		//Ensure our ECL matches more than 0 concepts before we import SNOMED - expensive!
