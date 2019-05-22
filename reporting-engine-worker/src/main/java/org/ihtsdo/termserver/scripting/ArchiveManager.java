@@ -3,6 +3,12 @@ package org.ihtsdo.termserver.scripting;
 import java.io.*;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -26,6 +32,8 @@ public class ArchiveManager implements RF2Constants {
 	public boolean loadExtension = false;
 	public boolean populateHierarchyDepth = true;  //Term contains X needs this
 	private Project currentlyHeldInMemory;
+	private SimpleDateFormat timestampFormat = new SimpleDateFormat("yyyy/MM/dd HH.mm.ss ZZZ");
+	ZoneId utcZoneID= ZoneId.of("Etc/UTC");
 	
 	public static ArchiveManager getArchiveManager(TermServerScript ts) {
 		if (singleton == null) {
@@ -94,10 +102,7 @@ public class ArchiveManager implements RF2Constants {
 			boolean isStale = false;
 			if (snapshot.exists() && !allowStaleData) {
 				branch = loadBranch(ts.getProject());
-				Date branchHeadTime = new Date(branch.getHeadTimestamp());
-				BasicFileAttributes attr = java.nio.file.Files.readAttributes(snapshot.toPath(), BasicFileAttributes.class);
-				Date snapshotCreation = new Date(attr.creationTime().toMillis());
-				isStale = branchHeadTime.after(snapshotCreation);
+				isStale = checkIsStale(ts, branch, snapshot);
 				if (isStale) {
 					TermServerScript.warn(ts.getProject() + " snapshot held locally is stale.  Requesting delta to rebuild...");
 				}
@@ -146,6 +151,19 @@ public class ArchiveManager implements RF2Constants {
 		}
 	}
 	
+	private boolean checkIsStale(TermServerScript ts, Branch branch, File snapshot) throws IOException {
+		Date branchHeadTime = new Date(branch.getHeadTimestamp());
+		BasicFileAttributes attr = java.nio.file.Files.readAttributes(snapshot.toPath(), BasicFileAttributes.class);
+		LocalDateTime snapshotCreation = LocalDateTime.ofInstant(Instant.ofEpochMilli(attr.creationTime().toMillis()), ZoneId.systemDefault());
+		//What timezone is that in?
+		TimeZone localZone = TimeZone.getDefault();
+		ZonedDateTime snapshotCreationLocal = ZonedDateTime.of(snapshotCreation, localZone.toZoneId());
+		ZonedDateTime snapshotCreationUTC = snapshotCreationLocal.withZoneSameInstant(utcZoneID);
+		ZonedDateTime branchHeadUTC = ZonedDateTime.ofInstant(branchHeadTime.toInstant(), utcZoneID);
+		TermServerScript.debug("Comparing branch time: " + branchHeadUTC + " to local snapshot time: " + snapshotCreationUTC);
+		return branchHeadUTC.compareTo(snapshotCreationUTC) > 0;
+	}
+
 	private File generateSnapshot(Project project, Branch branch) throws TermServerScriptException, IOException, TermServerClientException {
 		//We need to know the previous release to base our snapshot on
 		if (branch == null) {

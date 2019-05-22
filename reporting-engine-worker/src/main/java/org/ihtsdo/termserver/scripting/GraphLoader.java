@@ -102,7 +102,7 @@ public class GraphLoader implements RF2Constants {
 					continue;
 				}
 				
-				/*if (lineItems[REL_IDX_SOURCEID].equals("773541002") && lineItems[REL_IDX_TYPEID].equals("116680003")) {
+				/*if (lineItems[REL_IDX_SOURCEID].equals("300097006") && lineItems[REL_IDX_TYPEID].equals("116680003")) {
 					System.out.println ("Debug Here");
 				}*/
 				
