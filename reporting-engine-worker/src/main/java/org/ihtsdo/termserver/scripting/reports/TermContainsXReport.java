@@ -34,9 +34,10 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
 		Map<String, String> params = new HashMap<>();
-		params.put(STARTS_WITH, "Y");
+		params.put(STARTS_WITH, "N");
 		params.put(SUB_HIERARCHY, ROOT_CONCEPT.toString());
-		params.put(WORDS, "Dog");
+		params.put(WORDS, "Located");
+		params.put(WHOLE_WORD, "true");
 		params.put(ATTRIBUTE_TYPE, null);
 		TermServerReport.run(TermContainsXReport.class, args, params);
 	}
