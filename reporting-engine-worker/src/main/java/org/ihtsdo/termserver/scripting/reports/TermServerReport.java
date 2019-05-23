@@ -9,7 +9,6 @@ import org.ihtsdo.termserver.scripting.AncestorsCache;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.JobRun;
 
 public abstract class TermServerReport extends TermServerScript {
@@ -28,9 +27,9 @@ public abstract class TermServerReport extends TermServerScript {
 		return Collections.singletonList(gl.getConcept(field));
 	}
 	
-	protected void report (int reportIdx, Component c, Object... details) throws TermServerScriptException {
+	protected void report (int reportIdx, Component c, Object...details) throws TermServerScriptException {
 		String line = "";
-		
+		boolean isFirst = true;
 		if (c != null) {
 			if (c instanceof Concept) {
 				Concept concept = (Concept) c;
@@ -41,18 +40,19 @@ public abstract class TermServerReport extends TermServerScript {
 				line = r.getSourceId() + COMMA_QUOTE + 
 						r.toString() + QUOTE;
 			}
+			isFirst = false;
 		}
 		
 		for (Object detail : details) {
 			if (detail == null) {
-				line += COMMA;
+				line += (isFirst?"":COMMA);
 			} else if (detail instanceof String[]) {
 				for (Object subDetail : (String[])detail) {
 					String item = subDetail.toString();
 					if (StringUtils.isNumeric(item)) {
-						line += COMMA + item;
+						line += (isFirst?"":COMMA) + item;
 					} else {
-						line += COMMA_QUOTE + item + QUOTE;
+						line += (isFirst?QUOTE:COMMA_QUOTE) + item + QUOTE;
 					}
 				}
 			} else if (detail instanceof int[]) {
@@ -61,16 +61,17 @@ public abstract class TermServerReport extends TermServerScript {
 				}
 			} else if (detail instanceof Collection) {
 				for (Object subDetail : (Collection<?>)detail) {
-					line += COMMA_QUOTE + subDetail.toString() + QUOTE;
+					line += (isFirst?QUOTE:COMMA_QUOTE) + subDetail.toString() + QUOTE;
 				}
 			} else {
 				String item = detail.toString();
 				if (StringUtils.isNumeric(item)) {
-					line += COMMA + (detail == null ? "" : detail.toString());
+					line += (isFirst?"":COMMA) + (detail == null ? "" : detail.toString());
 				} else {
-					line += COMMA_QUOTE + (detail == null ? "" : detail.toString()) + QUOTE;
+					line += (isFirst?QUOTE:COMMA_QUOTE) + (detail == null ? "" : detail.toString()) + QUOTE;
 				}
-			} 
+			}
+			isFirst = false;
 		}
 		writeToReportFile(reportIdx, line);
 	}

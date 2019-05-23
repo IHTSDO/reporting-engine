@@ -1,19 +1,15 @@
 package org.ihtsdo.termserver.scripting.reports;
 
 import java.io.IOException;
-import java.io.PrintStream;
-import java.text.SimpleDateFormat;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
-import org.ihtsdo.termserver.scripting.GraphLoader;
-import org.ihtsdo.termserver.scripting.TermServerScript;
+import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.*;
+import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.snomed.otf.scheduler.domain.*;
 
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
@@ -21,44 +17,42 @@ import com.google.common.collect.Multiset;
 /**
  * Lists all semantic tags used in each of the top level hierarchies.
  */
-public class ListSemanticTagsByHierarchy extends TermServerScript{
-	
-	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
-	GraphLoader gl = GraphLoader.getGraphLoader();
+public class ListSemanticTagsByHierarchy extends TermServerReport implements ReportClass {
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
-		ListSemanticTagsByHierarchy report = new ListSemanticTagsByHierarchy();
-		try {
-			report.init(args);
-			report.loadProjectSnapshot(true);  //Load FSNs only
-			report.listSemanticTags();
-		} catch (Exception e) {
-			info("Failed to validate laterality due to " + e.getMessage());
-			e.printStackTrace(new PrintStream(System.out));
-		} finally {
-			report.finish();
-		}
+		Map<String, String> params = new HashMap<>();
+		params.put(SUB_HIERARCHY, BODY_STRUCTURE.toString());
+		TermServerReport.run(ListSemanticTagsByHierarchy.class, args);
+	}
+	
+	public void init (JobRun run) throws TermServerScriptException {
+		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc
+		super.init(run);
+		headers="Hieararchy, SemTag, Count";
+		additionalReportColumns="";
 	}
 
-	private void listSemanticTags() throws TermServerScriptException {
+	@Override
+	public Job getJob() {
+		return new Job( new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES),
+						"List Semantic Tags By Hierarchy",
+						"This report lists all semantic tags used in each top level hierarchy. " +
+						"Note that since this report is not listing any problems, the 'Issues' count will always be 0.",
+						new JobParameters());
+	}
+
+	public void runJob() throws TermServerScriptException {
 		//Work through all top level hierarchies and list semantic tags along with their counts
-		Concept rootConcept = gl.getConcept(SCTID_ROOT_CONCEPT.toString());
-		for (Concept topLevel : rootConcept.getDescendents(IMMEDIATE_CHILD)) {
+		for (Concept topLevel : ROOT_CONCEPT.getDescendents(IMMEDIATE_CHILD)) {
 			Set<Concept> descendents = topLevel.getDescendents(NOT_SET);
-			info (topLevel.toString() + " - total: " + descendents.size());
+			report (PRIMARY_REPORT, (Component)null, topLevel.toString(), "", descendents.size());
 			Multiset<String> tags = HashMultiset.create();
 			for (Concept thisDescendent : descendents) {
 				tags.add(SnomedUtils.deconstructFSN(thisDescendent.getFsn())[1]);
 			}
 			for (String tag : tags.elementSet()) {
-				info ("\t" + tag + ": " + tags.count(tag));
+				report (PRIMARY_REPORT, (Component)null, "", tag, tags.count(tag));
 			}
 		}
-	}
-
-	@Override
-	protected List<Component> loadLine(String[] lineItems)
-			throws TermServerScriptException {
-		return Collections.singletonList(gl.getConcept(lineItems[0]));
 	}
 }
