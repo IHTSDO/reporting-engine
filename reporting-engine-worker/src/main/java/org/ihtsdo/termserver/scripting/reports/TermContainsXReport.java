@@ -90,7 +90,7 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 						altTerm = term.replaceAll("[^A-Za-z0-9]", " ");
 					}
 					for (String matchText : textsToMatch) {
-						matchText = matchText.toLowerCase();
+						matchText = matchText.toLowerCase().trim();
 						if (wholeWord) {
 							matchText = " " + matchText + " ";
 						}
