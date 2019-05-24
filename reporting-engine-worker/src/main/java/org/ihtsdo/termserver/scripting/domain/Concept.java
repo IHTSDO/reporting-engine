@@ -91,6 +91,14 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	Collection<RelationshipGroup> statedRelationshipGroups;
 	Collection<RelationshipGroup> inferredRelationshipGroups;
 	
+	public void reset() {
+		assertionFailures = new ArrayList<String>();
+		statedRelationshipGroups = null;
+		inferredRelationshipGroups = null;
+		descriptions = new ArrayList<Description>();
+		relationships = new ArrayList<Relationship>();
+	}
+	
 	public String getReviewer() {
 		return reviewer;
 	}

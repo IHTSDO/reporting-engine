@@ -49,21 +49,48 @@ public class GraphLoader implements RF2Constants {
 	
 	private static void populateKnownConcepts() {
 		//Pre populate known concepts to ensure we only ever refer to one object
-		//Create a fresh concept each time, to avoid contamination from previous runs
-		singleton.concepts.put(SCTID_ROOT_CONCEPT.toString(), new Concept(ROOT_CONCEPT));
-		singleton.concepts.put(SCTID_IS_A_CONCEPT.toString(), new Concept(IS_A));
-		singleton.concepts.put(PHARM_BIO_PRODUCT.getConceptId(), new Concept(PHARM_BIO_PRODUCT));
-		singleton.concepts.put(MEDICINAL_PRODUCT.getConceptId(), new Concept(MEDICINAL_PRODUCT));
-		singleton.concepts.put(PHARM_DOSE_FORM.getConceptId(), new Concept(PHARM_DOSE_FORM));
-		singleton.concepts.put(SUBSTANCE.getConceptId(), new Concept(SUBSTANCE));
-		singleton.concepts.put(CLINICAL_FINDING.getConceptId(), new Concept(CLINICAL_FINDING));
-		singleton.concepts.put(BODY_STRUCTURE.getConceptId(), new Concept(BODY_STRUCTURE));
-		singleton.concepts.put(PROCEDURE.getConceptId(), new Concept(PROCEDURE));
-		singleton.concepts.put(SITN_WITH_EXP_CONTXT.getConceptId(), new Concept(SITN_WITH_EXP_CONTXT));
-		singleton.concepts.put(SPECIMEN.getConceptId(), new Concept(SPECIMEN));
-		singleton.concepts.put(OBSERVABLE_ENTITY.getConceptId(), new Concept(OBSERVABLE_ENTITY));
-		singleton.concepts.put(EVENT.getConceptId(), new Concept(EVENT));
-		singleton.concepts.put(DISEASE.getConceptId(), new Concept(DISEASE));
+		//Reset concept each time, to avoid contamination from previous runs
+		ROOT_CONCEPT.reset();
+		singleton.concepts.put(SCTID_ROOT_CONCEPT.toString(), ROOT_CONCEPT);
+		
+		IS_A.reset();
+		singleton.concepts.put(SCTID_IS_A_CONCEPT.toString(), IS_A);
+
+		PHARM_BIO_PRODUCT.reset();
+		singleton.concepts.put(PHARM_BIO_PRODUCT.getConceptId(), PHARM_BIO_PRODUCT);
+		
+		MEDICINAL_PRODUCT.reset();
+		singleton.concepts.put(MEDICINAL_PRODUCT.getConceptId(), MEDICINAL_PRODUCT);
+
+		PHARM_DOSE_FORM.reset();
+		singleton.concepts.put(PHARM_DOSE_FORM.getConceptId(), PHARM_DOSE_FORM);
+		
+		SUBSTANCE.reset();
+		singleton.concepts.put(SUBSTANCE.getConceptId(), SUBSTANCE);
+
+		CLINICAL_FINDING.reset();
+		singleton.concepts.put(CLINICAL_FINDING.getConceptId(), CLINICAL_FINDING);
+		
+		BODY_STRUCTURE.reset();
+		singleton.concepts.put(BODY_STRUCTURE.getConceptId(), BODY_STRUCTURE);
+
+		PROCEDURE.reset();
+		singleton.concepts.put(PROCEDURE.getConceptId(), PROCEDURE);
+		
+		SITN_WITH_EXP_CONTXT.reset();
+		singleton.concepts.put(SITN_WITH_EXP_CONTXT.getConceptId(), SITN_WITH_EXP_CONTXT);
+
+		SPECIMEN.reset();
+		singleton.concepts.put(SPECIMEN.getConceptId(), SPECIMEN);
+		
+		OBSERVABLE_ENTITY.reset();
+		singleton.concepts.put(OBSERVABLE_ENTITY.getConceptId(),OBSERVABLE_ENTITY);
+
+		EVENT.reset();
+		singleton.concepts.put(EVENT.getConceptId(),EVENT);
+		
+		DISEASE.reset();
+		singleton.concepts.put(DISEASE.getConceptId(), DISEASE);
 	}
 
 	public Collection <Concept> getAllConcepts() {
