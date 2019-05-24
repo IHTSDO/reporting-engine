@@ -48,7 +48,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		return new Job( new JobCategory(JobType.REPORT, JobCategory.DRUGS),
 						"Drugs validation",
 						"This report checks for a number of potential inconsistencies in the Medicinal Product hierarchy.",
-						params, Job.ProductionStatus.HIDEME);
+						params);
 	}
 	
 	public void runJob() throws TermServerScriptException {
