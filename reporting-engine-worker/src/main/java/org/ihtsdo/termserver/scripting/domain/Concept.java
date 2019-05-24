@@ -87,6 +87,11 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	List<InactivationIndicatorEntry> inactivationIndicatorEntries;
 	List<AssociationEntry> associations;
 	List<AxiomEntry> axiomEntries;
+
+	List<Concept> statedParents = new ArrayList<Concept>();
+	List<Concept> inferredParents = new ArrayList<Concept>();
+	List<Concept> statedChildren = new ArrayList<Concept>();
+	List<Concept> inferredChildren = new ArrayList<Concept>();
 	
 	Collection<RelationshipGroup> statedRelationshipGroups;
 	Collection<RelationshipGroup> inferredRelationshipGroups;
@@ -97,6 +102,10 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		inferredRelationshipGroups = null;
 		descriptions = new ArrayList<Description>();
 		relationships = new ArrayList<Relationship>();
+		statedParents = new ArrayList<Concept>();
+		inferredParents = new ArrayList<Concept>();
+		statedChildren = new ArrayList<Concept>();
+		inferredChildren = new ArrayList<Concept>();
 	}
 	
 	public String getReviewer() {
@@ -106,11 +115,6 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	public void setReviewer(String reviewer) {
 		this.reviewer = reviewer;
 	}
-
-	List<Concept> statedParents = new ArrayList<Concept>();
-	List<Concept> inferredParents = new ArrayList<Concept>();
-	List<Concept> statedChildren = new ArrayList<Concept>();
-	List<Concept> inferredChildren = new ArrayList<Concept>();
 	
 	public Concept(String conceptId) {
 		this.conceptId = conceptId;
