@@ -339,13 +339,27 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 					if (concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT) && d.isPreferred() && badWord.equals("product")) {
 						continue;
 					} else {
+						if (badWord.equals("+") && isPlusException(term)) {
+							continue;
+						}
 						String msg = "Term contains bad word: " + badWord;
-						
 						report (concept, msg, concept.getFsn().contains(remodelledDrugIndicator), d.toString());
 					}
 				}
 			}
 		}
+	}
+
+	private boolean isPlusException(String term) {
+		//Various rules that allow a + to exist next to other characters
+		if (term.contains("^+") ||
+			term.contains("+)") ||
+			term.contains("+)") ||
+			term.contains("+]") ||
+			term.contains("(+")) {
+			return true;
+		}
+		return false;
 	}
 
 	private void validateStatedVsInferredAttributes(Concept concept,
