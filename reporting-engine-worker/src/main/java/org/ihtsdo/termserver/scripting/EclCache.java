@@ -85,9 +85,7 @@ public class EclCache {
 		String searchAfter = null;
 		while (!allRecovered) {
 			try {
-					JSONResource response = tsClient.getConcepts(ecl, branch, searchAfter, PAGING_LIMIT);
-					String json = response.toObject().toString();
-					ConceptCollection collection = gson.fromJson(json, ConceptCollection.class);
+					ConceptCollection collection = tsClient.getConcepts(ecl, branch, searchAfter, PAGING_LIMIT);
 					if (searchAfter == null) {
 						//First time round, report how many we're receiving.
 						TermServerScript.debug ("Recovering " + collection.getTotal() + " concepts matching '" + ecl +"'");

@@ -2,10 +2,8 @@ package org.ihtsdo.termserver.scripting.client;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
@@ -163,7 +161,7 @@ public class TermServerClient {
 		}
 	}
 	
-	public JSONResource getConcepts(String ecl, String branchPath, String searchAfter, int limit) throws TermServerClientException {
+/*	public JSONResource getConcepts(String ecl, String branchPath, String searchAfter, int limit) throws TermServerClientException {
 		try {
 			String url = getConceptsPath(branchPath) + "?active=true&limit=" + limit + "&ecl=" + URLEncoder.encode(ecl, "UTF-8");
 			if (!StringUtils.isEmpty(searchAfter)) {
@@ -174,21 +172,17 @@ public class TermServerClient {
 		} catch (IOException e) {
 			throw new TermServerClientException(e);
 		}
-	}
-
-	/*public JSONResource getConcepts(String ecl, String branchPath, int offset, String searchAfter, int limit) throws TermServerClientException {
-		try {
-			String url = getConceptsPath(branchPath) + "?active=true&limit=" + limit + "&offset=" + offset + "&ecl=" + URLEncoder.encode(ecl, "UTF-8");
-			if (!StringUtils.isEmpty(searchAfter)) {
-				url += "&searchAfter=" + searchAfter;
-			}
-			System.out.println("Calling " + url);
-			return resty.json(url);
-		} catch (IOException e) {
-			throw new TermServerClientException(e);
-		}
 	}*/
 	
+	public ConceptCollection getConcepts(String ecl, String branchPath, String searchAfter, int limit) {
+		String url = getConceptsPath(branchPath) + "?active=true&limit=" + limit + "&ecl=" + ecl;
+		if (!StringUtils.isEmpty(searchAfter)) {
+			url += "&searchAfter=" + searchAfter;
+		}
+		System.out.println("Calling " + url);
+		return restTemplate.getForObject(url, ConceptCollection.class);
+	}
+
 	private String getBranchesPath(String branchPath) {
 		return  url + "/branches/" + branchPath;
 	}
@@ -466,11 +460,6 @@ public class TermServerClient {
 		return this.url + "/" + branch + "/members/" + refSetMemberId;
 	}
 	
-	
-	private String getDescriptionUrl(String descriptionId, String branch) {
-		return this.url + "/" + branch + "/descriptions/" + descriptionId;
-	}
-	
 	private String getRefsetMemberUpdateUrl(String refSetMemberId, String branch, boolean toForce) {
 		return getRefsetMemberUrl(refSetMemberId, branch) + "?force=" + toForce;
 	}
@@ -478,14 +467,6 @@ public class TermServerClient {
 	public JSONResource getRefsetMemberById(String id, String branch) throws TermServerClientException {
 		try {
 			return resty.json(getRefsetMemberUrl(id, branch));
-		} catch (IOException e) {
-			throw new TermServerClientException(e);
-		}
-	}
-
-	public JSONResource getDescriptionById(String descriptionId, String branch) throws TermServerClientException {
-		try {
-			return resty.json(getDescriptionUrl(descriptionId, branch));
 		} catch (IOException e) {
 			throw new TermServerClientException(e);
 		}

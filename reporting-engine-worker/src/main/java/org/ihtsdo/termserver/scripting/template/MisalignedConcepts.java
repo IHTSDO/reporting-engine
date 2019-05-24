@@ -197,10 +197,10 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		subHierarchyStr =  "34014006"; //QI-15 |Viral disease (disorder)|
 		templateNames = new String[] {	"templates/infection/Infection caused by Virus.json",
 										"templates/infection/Infection of bodysite caused by virus.json"};
-		*/
+		
 		subHierarchyECL = "<<87628006";  //QI-16 |Bacterial infectious disease (disorder)|
 		templateNames = new String[] {	"templates/infection/Infection caused by bacteria.json"};
-		/*
+		
 		subHierarchyECL = "<<95896000";  //QI-19  |Protozoan infection (disorder)|
 		templateNames = new String[] {"templates/infection/Infection caused by Protozoa with optional bodysite.json"};
 			
@@ -342,10 +342,10 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		
 		subHierarchyECL = "<< 125667009 |Contusion (disorder)|"; //QI-244 
 		templateNames = new String[] {	"templates/wound/contusion.json" };
-		
+		*/
 		subHierarchyECL = "< 85828009 |Autoimmune disease (disorder)|"; //QI-297
 		templateNames = new String[] {	"templates/Autoimune.json" };
-		*/
+		
 		super.init(args);
 		
 		//Ensure our ECL matches more than 0 concepts before we import SNOMED - expensive!

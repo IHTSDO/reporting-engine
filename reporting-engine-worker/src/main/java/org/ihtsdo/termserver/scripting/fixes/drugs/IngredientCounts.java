@@ -10,8 +10,6 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.DrugUtils;
 
-import us.monoid.json.JSONObject;
-
 /*
 For DRUGS-482
 Add ingredient counts where required.  Algorithm described in DRUGS-476.
@@ -41,7 +39,6 @@ public class IngredientCounts extends DrugBatchFix implements RF2Constants{
 	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
 		
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
-		
 		try {
 			int changes = assignIngredientCounts(task, loadedConcept, CharacteristicType.INFERRED_RELATIONSHIP);
 			if (changes > 0) {
@@ -74,10 +71,5 @@ public class IngredientCounts extends DrugBatchFix implements RF2Constants{
 		}
 		processMe.sort(Comparator.comparing(Concept::getFsn));
 		return asComponents(processMe);
-	}
-
-	@Override
-	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
-		return null;
 	}
 }

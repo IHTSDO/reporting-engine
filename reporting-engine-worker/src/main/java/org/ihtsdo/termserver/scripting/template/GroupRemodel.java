@@ -153,9 +153,17 @@ public class GroupRemodel extends TemplateFix {
 		templateNames = new String[] {	"templates/wound/wound of bodysite due to event.json"};
 		inclusionWords.add("nail");
 		includeDueTos = true;
-		*/
+		
 		subHierarchyECL = "<<118616009"; //QI-252 |Neoplastic disease of uncertain behavior| 
 		templateNames = new String[] {	"templates/Neoplastic Disease.json"};
+		
+		subHierarchyECL = "<<74627003";  //QI-119 |Diabetic Complication|
+		templateNames = new String[] {	"templates/Complication due to Diabetes Melitus2.json"};
+		includeComplexTemplates = true;
+		*/
+		
+		subHierarchyECL = "< 85828009 |Autoimmune disease (disorder)|"; //QI-297
+		templateNames = new String[] {	"templates/Autoimune.json" };
 		
 		super.init(args);
 		
@@ -218,10 +226,6 @@ public class GroupRemodel extends TemplateFix {
 
 	private int remodelConcept(Task t, Concept c, Template template) throws TermServerScriptException {
 		int changesMade = 0;
-		
-		if (c.getConceptId().equals("43925005")) {
-		//	debug("Check me");
-		}
 
 		//Create as many groups as required, but minimum 3
 		int numConceptGroups = c.getMaxGroupId(CharacteristicType.STATED_RELATIONSHIP) + 1;
@@ -775,9 +779,7 @@ public class GroupRemodel extends TemplateFix {
 		}
 		
 		for (Concept c : findConcepts(subHierarchyECL)) {
-			if (!c.getConceptId().equals("48763007")) {
-				//continue;
-			}
+	//	for (Concept c : Collections.singleton(gl.getConcept("203052004"))) {
 			if (inclusionWords.size() > 0) {
 				if (!containsInclusionWord(c)) {
 					incrementSummaryInformation("Skipped as doesn't contain inclusion word");
