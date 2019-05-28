@@ -108,9 +108,11 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 			subHierarchy.removeAll(gl.getOrphanetConcepts());
 			int total = subHierarchy.size();
 			orphanetCount = orphanetCount - total;
-			subHierarchy.removeAll(alreadyAccountedFor);
-			int withRemovals = subHierarchy.size();
-			int countedElsewhere = total - withRemovals;
+			
+			//subHierarchy.removeAll(alreadyAccountedFor);
+			//int withRemovals = subHierarchy.size();
+			//int countedElsewhere = total - withRemovals;
+			
 			for (Concept c : subHierarchy) {
 				if (gl.isOrphanetConcept(c)) {
 					incrementSummaryInformation("Orphanet concepts excluded");
@@ -125,7 +127,7 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 			}
 			
 			report (subHierarchyStart, subHierarchyStart.getDepth(),
-					countedElsewhere, 
+					/*countedElsewhere*/ 0, 
 					templateTypeTotal[0] + templateTypeTotal[1],
 					templateTypeTotal[2] + templateTypeTotal[3],
 					templateTypeTotal[4],
