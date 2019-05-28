@@ -115,6 +115,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		info("...Text definition dialect checks");
 		textDefinitionDialectChecks();
 		
+		info("...Nested brackets check");
+		nestedBracketCheck();
+		
 		info("Checks complete, creating summary tag");
 		populateSummaryTab();
 		
@@ -596,6 +599,47 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		}
 	}
 	
+
+	private void nestedBracketCheck() throws TermServerScriptException {
+		String issueStr = "Active description on inactive concept contains nested brackets";
+		initialiseSummary(issueStr);
+		Character[][] bracketPairs = new Character[][] {{'(', ')'},
+			{'[',']'}};
+			
+		nextConcept:
+		for (Concept c : gl.getAllConcepts()) {
+			if (!c.isActive()) {
+				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+					for (Character[] bracketPair : bracketPairs) {
+						if (containsNestedBracket(c, d, bracketPair)) {
+							report (c, issueStr, d);
+							continue nextConcept;
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	private boolean containsNestedBracket(Concept c, Description d, Character[] bracketPair) throws TermServerScriptException {
+		Stack<Character> brackets = new Stack<>();
+		for (Character ch: d.getTerm().toCharArray()) {
+			if (ch.equals(bracketPair[0])) {  //Opening bracket
+				brackets.push(ch);
+				if (brackets.size() > 1) {
+					return true;
+				}
+			} else if (ch.equals(bracketPair[1])) {  //Closing bracket
+				if (brackets.size() == 0) {
+					report (c,"Closing bracket found without matching opening",d);
+				} else {
+					brackets.pop();
+				}
+			}
+		}
+		return false;
+	}
+
 	protected void initialiseSummary(String issue) {
 		issueSummaryMap.merge(issue, 0, Integer::sum);
 	}
