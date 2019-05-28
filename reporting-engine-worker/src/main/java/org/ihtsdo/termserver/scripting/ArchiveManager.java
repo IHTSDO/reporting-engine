@@ -3,7 +3,6 @@ package org.ihtsdo.termserver.scripting;
 import java.io.*;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -116,6 +115,7 @@ public class ArchiveManager implements RF2Constants {
 					(populateReleasedFlag && !releasedFlagPopulated)) {
 				gl.reset();
 				snapshot = generateSnapshot (ts.getProject(), branch);
+				releasedFlagPopulated=true;
 				//We don't need to load the snapshot if we've just generated it
 			} else {
 				//We might already have this project in memory
