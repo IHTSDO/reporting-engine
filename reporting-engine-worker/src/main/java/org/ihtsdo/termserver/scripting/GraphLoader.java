@@ -113,7 +113,7 @@ public class GraphLoader implements RF2Constants {
 		populateKnownConcepts();
 	}
 	
-	public Set<Concept> loadRelationships(CharacteristicType characteristicType, InputStream relStream, boolean addRelationshipsToConcepts, boolean isDelta) 
+	public Set<Concept> loadRelationships(CharacteristicType characteristicType, InputStream relStream, boolean addRelationshipsToConcepts, boolean isDelta, boolean isReleased) 
 			throws IOException, TermServerScriptException, TermServerClientException {
 		Set<Concept> concepts = new HashSet<Concept>();
 		BufferedReader br = new BufferedReader(new InputStreamReader(relStream, StandardCharsets.UTF_8));
@@ -139,7 +139,7 @@ public class GraphLoader implements RF2Constants {
 				}
 				Concept thisConcept = getConcept(lineItems[REL_IDX_SOURCEID]);
 				if (addRelationshipsToConcepts) {
-					ignoredRelationships += addRelationshipToConcept(characteristicType, lineItems, isDelta);
+					ignoredRelationships += addRelationshipToConcept(characteristicType, lineItems, isDelta, isReleased);
 				}
 				concepts.add(thisConcept);
 				relationshipsLoaded++;
@@ -154,7 +154,7 @@ public class GraphLoader implements RF2Constants {
 		return concepts;
 	}
 	
-	public void loadAxioms(InputStream axiomStream, boolean isDelta) 
+	public void loadAxioms(InputStream axiomStream, boolean isDelta, boolean isReleased) 
 			throws IOException, TermServerScriptException, TermServerClientException {
 		BufferedReader br = new BufferedReader(new InputStreamReader(axiomStream, StandardCharsets.UTF_8));
 		String line;
@@ -258,11 +258,13 @@ public class GraphLoader implements RF2Constants {
 	}
 
 	/**
+	 * @param isReleased 
 	 * @return ignored count (ie 1 if relationship addition was ignored)
 	 * @throws TermServerScriptException
 	 */
-	public int addRelationshipToConcept(CharacteristicType charType, String[] lineItems, boolean isDelta) throws TermServerScriptException {
+	public int addRelationshipToConcept(CharacteristicType charType, String[] lineItems, boolean isDelta, boolean isReleased) throws TermServerScriptException {
 		Relationship r = createRelationshipFromRF2(charType, lineItems);
+		r.setReleased(isReleased);
 		return addRelationshipToConcept(charType, r, isDelta);
 	}
 	
@@ -351,7 +353,7 @@ public class GraphLoader implements RF2Constants {
 		return d;
 	}
 	
-	public void loadConceptFile(InputStream is) throws IOException, TermServerScriptException {
+	public void loadConceptFile(InputStream is, boolean isReleased) throws IOException, TermServerScriptException {
 		//Not putting this in a try resource block otherwise it will close the stream on completion and we've got more to read!
 		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 		String line;
@@ -366,6 +368,9 @@ public class GraphLoader implements RF2Constants {
 				//We might already have received some details about this concept
 				Concept c = getConcept(lineItems[IDX_ID]);
 				Concept.fillFromRf2(c, lineItems);
+				if (isReleased) {
+					c.setReleased(true);
+				}
 				if (c.getDefinitionStatus() == null) {
 					throw new TermServerScriptException("Concept " + c + " did not define definition status");
 				}
@@ -375,7 +380,7 @@ public class GraphLoader implements RF2Constants {
 		}
 	}
 	
-	public void loadDescriptionFile(InputStream descStream, boolean fsnOnly) throws IOException, TermServerScriptException, TermServerClientException {
+	public void loadDescriptionFile(InputStream descStream, boolean fsnOnly, boolean isReleased) throws IOException, TermServerScriptException, TermServerClientException {
 		//Not putting this in a try resource block otherwise it will close the stream on completion and we've got more to read!
 		BufferedReader br = new BufferedReader(new InputStreamReader(descStream, StandardCharsets.UTF_8));
 		String line;
@@ -401,6 +406,7 @@ public class GraphLoader implements RF2Constants {
 					//We might already have information about this description, eg langrefset entries
 					Description d = getDescription (lineItems[DES_IDX_ID]);
 					Description.fillFromRf2(d,lineItems);
+					d.setReleased(isReleased);
 					c.addDescription(d);
 				}
 			} else {
@@ -410,12 +416,12 @@ public class GraphLoader implements RF2Constants {
 	}
 
 	public Set<Concept> loadRelationshipDelta(CharacteristicType characteristicType, InputStream relStream) throws IOException, TermServerScriptException, TermServerClientException {
-		return loadRelationships(characteristicType, relStream, true, true);
+		return loadRelationships(characteristicType, relStream, true, true, false);
 	}
 
 	public Set<Concept> getModifiedConcepts(
 			CharacteristicType characteristicType, ZipInputStream relStream) throws IOException, TermServerScriptException, TermServerClientException {
-		return loadRelationships(characteristicType, relStream, false, false);
+		return loadRelationships(characteristicType, relStream, false, false, false);
 	}
 
 	public void loadLanguageFile(InputStream is) throws IOException, TermServerScriptException, TermServerClientException {

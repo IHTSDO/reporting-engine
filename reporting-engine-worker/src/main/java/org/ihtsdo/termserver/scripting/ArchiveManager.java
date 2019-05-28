@@ -7,7 +7,6 @@ import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -30,9 +29,13 @@ public class ArchiveManager implements RF2Constants {
 	protected TermServerScript ts;
 	public boolean allowStaleData = false;
 	public boolean loadExtension = false;
+	
 	public boolean populateHierarchyDepth = true;  //Term contains X needs this
+	
+	public boolean populateReleasedFlag = false;
+	private boolean releasedFlagPopulated = false;
+	
 	private Project currentlyHeldInMemory;
-	private SimpleDateFormat timestampFormat = new SimpleDateFormat("yyyy/MM/dd HH.mm.ss ZZZ");
 	ZoneId utcZoneID= ZoneId.of("Etc/UTC");
 	
 	public static ArchiveManager getArchiveManager(TermServerScript ts) {
@@ -108,7 +111,9 @@ public class ArchiveManager implements RF2Constants {
 				}
 			}
 			
-			if (!snapshot.exists() || ( isStale && !allowStaleData)) {
+			if (!snapshot.exists() || 
+					( isStale && !allowStaleData) || 
+					(populateReleasedFlag && !releasedFlagPopulated)) {
 				gl.reset();
 				snapshot = generateSnapshot (ts.getProject(), branch);
 				//We don't need to load the snapshot if we've just generated it
@@ -126,7 +131,9 @@ public class ArchiveManager implements RF2Constants {
 					}
 					info ("Loading snapshot archive contents into memory...");
 					try {
-						loadArchive(snapshot, fsnOnly, "Snapshot");
+						//This archive is 'current state' so is not released
+						releasedFlagPopulated = false;
+						loadArchive(snapshot, fsnOnly, "Snapshot", false);
 					} catch (Exception e) {
 						TermServerScript.error ("Non-viable snapshot encountered (Exception: " + e.getMessage()  +").  Deleting " + snapshot + "...", e);
 						try {
@@ -213,14 +220,14 @@ public class ArchiveManager implements RF2Constants {
 		return StringUtils.isNumeric(releaseBranch) ? releaseBranch : null;
 	}
 
-	protected void loadArchive(File archive, boolean fsnOnly, String fileType) throws TermServerScriptException, TermServerClientException {
+	protected void loadArchive(File archive, boolean fsnOnly, String fileType, boolean isReleased) throws TermServerScriptException, TermServerClientException {
 		try {
 			boolean isDelta = (fileType.equals(DELTA));
 			//Are we loading an expanded or compressed archive?
 			if (archive.isDirectory()) {
-				loadArchiveDirectory(archive, fsnOnly, fileType, isDelta);
+				loadArchiveDirectory(archive, fsnOnly, fileType, isDelta, isReleased);
 			} else if (archive.getPath().endsWith(".zip")) {
-				loadArchiveZip(archive, fsnOnly, fileType, isDelta);
+				loadArchiveZip(archive, fsnOnly, fileType, isDelta, isReleased);
 			} else {
 				throw new TermServerScriptException("Unrecognised archive : " + archive);
 			}
@@ -243,14 +250,14 @@ public class ArchiveManager implements RF2Constants {
 		}
 	}
 
-	private void loadArchiveZip(File archive, boolean fsnOnly, String fileType, boolean isDelta) throws IOException, TermServerScriptException, TermServerClientException {
+	private void loadArchiveZip(File archive, boolean fsnOnly, String fileType, boolean isDelta, boolean isReleased) throws IOException, TermServerScriptException, TermServerClientException {
 		ZipInputStream zis = new ZipInputStream(new FileInputStream(archive));
 		ZipEntry ze = zis.getNextEntry();
 		try {
 			while (ze != null) {
 				if (!ze.isDirectory()) {
 					Path path = Paths.get(ze.getName());
-					loadFile(path, zis, fileType, isDelta, fsnOnly);
+					loadFile(path, zis, fileType, isDelta, fsnOnly, isReleased);
 				}
 				ze = zis.getNextEntry();
 			}
@@ -262,13 +269,13 @@ public class ArchiveManager implements RF2Constants {
 		}
 	}
 	
-	private void loadArchiveDirectory(File dir, boolean fsnOnly, String fileType, boolean isDelta) throws IOException {
+	private void loadArchiveDirectory(File dir, boolean fsnOnly, String fileType, boolean isDelta, boolean isReleased) throws IOException {
 		try (Stream<Path> paths = Files.walk(dir.toPath())) {
 			paths.filter(Files::isRegularFile)
 			.forEach( path ->  {
 				try {
 					InputStream is =  toInputStream(path);
-					loadFile(path, is , fileType, isDelta, fsnOnly);
+					loadFile(path, is , fileType, isDelta, fsnOnly, isReleased);
 					is.close();
 				} catch (Exception e) {
 					throw new RuntimeException ("Faied to load " + path + " due to " + e.getMessage());
@@ -287,35 +294,35 @@ public class ArchiveManager implements RF2Constants {
 		return is;
 	}
 
-	private void loadFile(Path path, InputStream is, String fileType, boolean isDelta, boolean fsnOnly)  {
+	private void loadFile(Path path, InputStream is, String fileType, boolean isDelta, boolean fsnOnly, boolean isReleased)  {
 		try {
 			String fileName = path.getFileName().toString();
 			if (fileName.contains("sct2_Concept_" + fileType )) {
 				info("Loading Concept " + fileType + " file.");
-				gl.loadConceptFile(is);
+				gl.loadConceptFile(is, isReleased);
 			} else if (fileName.contains("sct2_Relationship_" + fileType )) {
 				info("Loading Relationship " + fileType + " file.");
-				gl.loadRelationships(CharacteristicType.INFERRED_RELATIONSHIP, is, true, isDelta);
+				gl.loadRelationships(CharacteristicType.INFERRED_RELATIONSHIP, is, true, isDelta, isReleased);
 				if (populateHierarchyDepth) {
 					info("Calculating concept depth...");
 					gl.populateHierarchyDepth(ROOT_CONCEPT, 0);
 				}
 			} else if (fileName.contains("sct2_StatedRelationship_" + fileType )) {
 				info("Loading StatedRelationship " + fileType + " file.");
-				gl.loadRelationships(CharacteristicType.STATED_RELATIONSHIP, is, true, isDelta);
+				gl.loadRelationships(CharacteristicType.STATED_RELATIONSHIP, is, true, isDelta, isReleased);
 			} else if (fileName.contains("sct2_StatedRelationship_" + fileType )) {
 				info("Loading StatedRelationship " + fileType + " file.");
-				gl.loadRelationships(CharacteristicType.STATED_RELATIONSHIP, is, true, isDelta);
+				gl.loadRelationships(CharacteristicType.STATED_RELATIONSHIP, is, true, isDelta, isReleased);
 			} else if (fileName.contains("sct2_sRefset_OWLExpression" + fileType ) ||
 					   fileName.contains("sct2_sRefset_OWLAxiom" + fileType )) {
 				info("Loading Axiom " + fileType + " refset file.");
-				gl.loadAxioms(is, isDelta);
+				gl.loadAxioms(is, isDelta, isReleased);
 			} else if (fileName.contains("sct2_Description_" + fileType )) {
 				info("Loading Description " + fileType + " file.");
-				gl.loadDescriptionFile(is, fsnOnly);
+				gl.loadDescriptionFile(is, fsnOnly, isReleased);
 			} else if (fileName.contains("sct2_TextDefinition_" + fileType )) {
 				info("Loading Text Definition " + fileType + " file.");
-				gl.loadDescriptionFile(is, fsnOnly);
+				gl.loadDescriptionFile(is, fsnOnly, isReleased);
 			} else if (fileName.contains("der2_cRefset_ConceptInactivationIndicatorReferenceSet" + fileType )) {
 				info("Loading Concept Inactivation Indicator " + fileType + " file.");
 				gl.loadInactivationIndicatorFile(is);
