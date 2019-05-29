@@ -106,7 +106,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 			// DRUGS-288
 			validateAttributeValueCardinality(concept, HAS_ACTIVE_INGRED);
 			
-			//DRUGS-93
+			//DRUGS-93, DRUGS-759
 			checkForBadWords(concept);  
 			
 			//DRUGS-629
@@ -344,6 +344,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 						}
 						String msg = "Term contains bad word: " + badWord;
 						report (concept, msg, concept.getFsn().contains(remodelledDrugIndicator), d.toString());
+						return;
 					}
 				}
 			}
