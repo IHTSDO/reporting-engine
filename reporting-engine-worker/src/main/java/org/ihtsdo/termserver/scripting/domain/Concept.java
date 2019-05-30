@@ -1184,11 +1184,14 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 			//Do we have one of these relationships available to be reused?
 			for (Relationship reuseMe : new ArrayList<>(availableForReuse)) {
 				if (reuseMe.getType().equals(r.getType()) && reuseMe.getTarget().equals(r.getTarget())) {
-					System.out.println("** Reusing: " + reuseMe + " in group " + r.getGroupId());
-					availableForReuse.remove(reuseMe);
-					reuseMe.setGroupId(r.getGroupId());
-					reuseMe.setActive(true);
-					r = reuseMe;
+					//Check we actually need this relationship before reusing
+					if (getRelationships(r, ActiveState.ACTIVE).size() == 0) { 
+						System.out.println("** Reusing: " + reuseMe + " in group " + r.getGroupId());
+						availableForReuse.remove(reuseMe);
+						reuseMe.setGroupId(r.getGroupId());
+						reuseMe.setActive(true);
+						r = reuseMe;
+					}
 					break;
 				}
 			}

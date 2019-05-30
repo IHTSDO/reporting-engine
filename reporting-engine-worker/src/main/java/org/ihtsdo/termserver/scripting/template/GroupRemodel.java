@@ -161,10 +161,13 @@ public class GroupRemodel extends TemplateFix {
 		templateNames = new String[] {	"templates/Complication due to Diabetes Melitus2.json"};
 		includeComplexTemplates = true;
 		*/
-		
 		subHierarchyECL = "< 85828009 |Autoimmune disease (disorder)|"; //QI-297
 		templateNames = new String[] {	"templates/Autoimune.json" };
 		
+		/*
+		subHierarchyECL = "< 233776003 |Tracheobronchial disorder|"; //QI-266
+		templateNames = new String[] {	"templates/Tracheobronchial.json" };
+		*/
 		super.init(args);
 		
 		//Ensure our ECL matches more than 0 concepts.  This will also cache the result
@@ -186,6 +189,10 @@ public class GroupRemodel extends TemplateFix {
 		groupedAttributeTypes = groupIterator.next().getAttributes().stream()
 				.map(a -> gl.getConceptSafely(a.getType()))
 				.collect(Collectors.toSet());
+		
+		//Now it might be that some ungrouped attribute types also appear grouped.
+		//We won't call them 'ungrouped' in this case, since they'll be moved out
+		ungroupedAttributeTypes.removeAll(groupedAttributeTypes);
 		
 	}
 
@@ -717,18 +724,21 @@ public class GroupRemodel extends TemplateFix {
 				//Loop through other attributes already set in this stated group, and see if we can find them
 				//grouped in the inferred form with our proposed new relationship
 				RelationshipGroup group = groups.get(groupId);
-				if (group != null) {
+				if (group != null && !group.isEmpty()) {
 					for (Relationship r : group.getRelationships()) {
-						//If this rel's type and value exist in multiple groups, it's not a good candiate for determining affinity.  Skip
-						if (SnomedUtils.appearsInGroups(c, r, CharacteristicType.INFERRED_RELATIONSHIP).size() > 0) {
+						//If this rel's type and value exist in multiple groups, it's not a good candidate for determining affinity.  Skip
+						if (SnomedUtils.appearsInGroups(c, r, CharacteristicType.INFERRED_RELATIONSHIP).size() > 1) {
 							continue;
 						}
 						
 						if (!r.equalsTypeValue(proposedRel) && SnomedUtils.isGroupedWith(r, proposedRel, c, CharacteristicType.INFERRED_RELATIONSHIP)) {
-							if (sortedValues[groupId] == null) {
-								sortedValues[groupId] = value;
+							//adjust the target stated group Id to account for gaps in inferred group numbering
+							int statedGroupId = shuffDownInferredGroupId(r.getGroupId(), c);
+							if (sortedValues[statedGroupId] == null) {
+								sortedValues[statedGroupId] = value;
 								continue nextValue;
 							} else {
+								if (true);
 								throw new IllegalStateException("In " + c + "inferred, " + r + " is grouped with: \n" + proposedRel + "\n but also \n" + new Relationship (type, sortedValues[groupId - 1]));
 							}
 						}
@@ -750,6 +760,18 @@ public class GroupRemodel extends TemplateFix {
 			}
 		}
 		return sortedValues;
+	}
+
+	private int shuffDownInferredGroupId(int groupId, Concept c) {
+		//work our way up to groupId, skipping any non-populated groups
+		int statedGroupId = 0;
+		List<RelationshipGroup> inferredGroups = new ArrayList<>(c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP));
+		for (int i=0; i < groupId; i++) {
+			if (inferredGroups.get(i) != null && !inferredGroups.get(i).isEmpty()) {
+				statedGroupId++;
+			}
+		}
+		return statedGroupId;
 	}
 
 	private void removeRedundancies(Relationship r, RelationshipGroup group) throws TermServerScriptException {
@@ -778,8 +800,8 @@ public class GroupRemodel extends TemplateFix {
 			info ("Skipping " + alreadyProcessed.size() + " concepts declared as already processed in " + alreadyProcessedFile);
 		}
 		
-		for (Concept c : findConcepts(subHierarchyECL)) {
-	//	for (Concept c : Collections.singleton(gl.getConcept("203052004"))) {
+		//for (Concept c : findConcepts(subHierarchyECL)) {
+		for (Concept c : Collections.singleton(gl.getConcept("200907003"))) {
 			if (inclusionWords.size() > 0) {
 				if (!containsInclusionWord(c)) {
 					incrementSummaryInformation("Skipped as doesn't contain inclusion word");
