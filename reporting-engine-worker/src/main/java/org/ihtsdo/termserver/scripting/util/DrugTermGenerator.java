@@ -272,8 +272,12 @@ public class DrugTermGenerator implements RF2Constants{
 		
 		if (includeUnitOfPresentation ||
 				(hasAttribute(c, HAS_UNIT_OF_PRESENTATION) && !doseForm.endsWith(unitOfPresentation)) ) {
-			if ((isFSN  && !specifyDenominator) || isActuation) {
-				suffix = "/1 " + unitOfPresentation + " "  + doseForm;
+			if ((isFSN  && !specifyDenominator) || isActuation ) {
+				if (isActuation && !isFSN) {
+					suffix = "/" + unitOfPresentation + " "  + doseForm;
+				} else {
+					suffix = "/1 " + unitOfPresentation + " "  + doseForm;
+				}
 			} else {
 				suffix = " " + DrugUtils.getDosageForm(c, isFSN, langRefset) + " "  + unitOfPresentation;
 			}
