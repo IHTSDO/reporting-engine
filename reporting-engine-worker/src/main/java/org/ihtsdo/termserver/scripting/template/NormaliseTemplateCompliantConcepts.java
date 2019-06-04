@@ -181,10 +181,10 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		subHierarchyECL = "<<428794004 |Fistula (disorder)|"; //QI-186
 		templateNames = new String[] {	"templates/Fistula.json" };
 		includeDueTos = true;
-		*/
+		
 		subHierarchyECL = "< 64572001 |Disease (disorder)|"; 
 		templateNames = new String[] {	"templates/Disease.json" };
-		/*
+		
 		subHierarchyECL = "<<441457006 |Cyst|"; //QI-182
 		templateNames = new String[] {	"templates/Cyst.json" };
 		
@@ -211,6 +211,10 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		templateNames = new String[] {	"templates/Cataract.json" };
 		includeComplexTemplates = true;
 		*/
+		subHierarchyECL = "< 7890003 |Contracture of joint (disorder)|"; //QI-262
+		templateNames = new String[] {	"templates/Contracture of joint minus.json" };
+		includeComplexTemplates = true;
+		
 		super.init(args);
 		
 		//Ensure our ECL matches more than 0 concepts.  This will also cache the result
