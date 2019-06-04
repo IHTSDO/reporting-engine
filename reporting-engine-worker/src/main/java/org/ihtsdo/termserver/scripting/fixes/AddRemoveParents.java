@@ -10,7 +10,7 @@ import org.ihtsdo.termserver.scripting.domain.*;
 
 /*
 * INFRA-2302, INFRA-2344, INFRA-2456, INFRA-2529, INFRA-2571
-* ANATOMY-190, ANATOMY-195, ANATOMY-200, 
+* ANATOMY-190, ANATOMY-195, ANATOMY-200, ANATOMY-211
 * Driven by a text file of concepts add or remove parent relationships as indicated
 */
 public class AddRemoveParents extends BatchFix implements RF2Constants{
