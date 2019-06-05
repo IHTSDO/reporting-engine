@@ -271,7 +271,9 @@ public class DrugTermGenerator implements RF2Constants{
 		boolean isActuation = unitOfPresentation.equals("actuation");
 		
 		if (includeUnitOfPresentation ||
-				(hasAttribute(c, HAS_UNIT_OF_PRESENTATION) && !doseForm.endsWith(unitOfPresentation)) ) {
+				(hasAttribute(c, HAS_UNIT_OF_PRESENTATION) 
+						&& !doseForm.endsWith(unitOfPresentation)
+						&& !doseForm.startsWith(unitOfPresentation)) ) {
 			if ((isFSN  && !specifyDenominator) || isActuation ) {
 				if (isActuation && !isFSN) {
 					suffix = "/" + unitOfPresentation + " "  + doseForm;

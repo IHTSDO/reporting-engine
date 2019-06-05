@@ -72,6 +72,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		ConceptType[] cds = new ConceptType[] { ConceptType.CLINICAL_DRUG };  //DRUGS-267
 		initialiseSummaryInformation(BOSS_FAIL);
 		
+		//for (Concept concept : Collections.singleton(gl.getConcept("418860009"))) {
 		for (Concept concept : subHierarchy) {
 			DrugUtils.setConceptType(concept);
 			if (concept.getConceptType().equals(ConceptType.PRODUCT)) {
