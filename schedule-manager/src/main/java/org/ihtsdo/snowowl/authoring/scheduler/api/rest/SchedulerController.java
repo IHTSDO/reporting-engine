@@ -41,7 +41,7 @@ public class SchedulerController {
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
 	})
-	@RequestMapping(value="/jobs/{typeName}/{jobName}", method= RequestMethod.POST)
+	@RequestMapping(value="/jobs/{typeName}/{jobName}", method= RequestMethod.GET)
 	public Job getJobDetails(@PathVariable final String typeName,
 			@PathVariable final String jobName) throws BusinessServiceException {
 		return scheduleService.getJob(jobName);
