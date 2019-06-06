@@ -23,6 +23,8 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	private Map<String, Concept> loadedConcepts = new HashMap<>();
 	TermServerClient secondaryConnection;
 	private static Concept NULL_CONCEPT = new Concept("-1");
+	//private static String secondaryCheckPath = "MAIN";
+	private static String secondaryCheckPath = "MAIN/2019-01-31";
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException, InterruptedException {
 		ExtractExtensionComponents delta = new ExtractExtensionComponents();
@@ -208,7 +210,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		//Do we already have this concept?
 		Concept loadedConcept = loadedConcepts.get(c.getConceptId());
 		if (loadedConcept == null) {
-			loadedConcept = loadConcept(secondaryConnection, c, "MAIN");
+			loadedConcept = loadConcept(secondaryConnection, c, secondaryCheckPath);
 			//If the concept was not found, that may be OK
 			if (loadedConcept == null || loadedConcept.getConceptId() == null) {
 				loadedConcept = NULL_CONCEPT;
