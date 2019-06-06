@@ -455,11 +455,11 @@ public class GraphLoader implements RF2Constants {
 				for (LangRefsetEntry existing : allExisting) {
 					if (existing.getEffectiveTime().compareTo(langRefsetEntry.getEffectiveTime()) > 1) {
 						clearToAdd = false;
-						issue = "Existing " + (existing.isActive()? "active":"inactive") +  " langrefset entry taking priority as later : " + existing;
+						issue = "Existing " + (existing.isActive()? "active":"inactive") +  " langrefset entry taking priority over incoming " + (langRefsetEntry.isActive()? "active":"inactive") + " as later : " + existing;
 					} else {
 						//New entry is later than one we already know about
 						d.getLangRefsetEntries().remove(existing);
-						issue = "Existing langrefset entry being overwritten by subsequent " + (existing.isActive()? "active":"inactive") + " value " + existing;
+						issue = "Existing " + (existing.isActive()? "active":"inactive") + " langrefset entry being overwritten by subsequent " + (langRefsetEntry.isActive()? "active":"inactive") + " value " + existing;
 					}
 				}
 				
