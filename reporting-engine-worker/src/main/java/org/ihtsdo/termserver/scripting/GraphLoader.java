@@ -459,7 +459,7 @@ public class GraphLoader implements RF2Constants {
 					} else {
 						//New entry is later than one we already know about
 						d.getLangRefsetEntries().remove(existing);
-						issue = "Existing langrefset entry being overwritten by subsequent value " + existing;
+						issue = "Existing langrefset entry being overwritten by subsequent " + (existing.isActive()? "active":"inactive") + " value " + existing;
 					}
 				}
 				
