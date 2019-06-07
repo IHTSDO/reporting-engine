@@ -64,6 +64,8 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 	public void runJob() throws TermServerScriptException {
 		validateDrugsModeling();
 		validateSubstancesModeling();
+		populateSummaryTab();
+		info("Summary tab complete, all done.");
 	}
 	
 	private void validateDrugsModeling() throws TermServerScriptException {
@@ -123,10 +125,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 			//DRUGS-629
 			checkForSemTagViolations(concept);
 		}
-		info ("Drugs validation complete, creating summary tag");
-		populateSummaryTab();
-		
-		info("Summary tab complete, all done.");
+		info ("Drugs validation complete");
 	}
 
 	private void populateSummaryTab() throws TermServerScriptException {
@@ -297,7 +296,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		//If this concept has one or more hasDisposition attributes, check if the inferred parent has the same.
 		if (concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_DISPOSITION, ActiveState.ACTIVE).size() > 0) {
 			validateAttributeViewsMatch (concept, HAS_DISPOSITION, CharacteristicType.INFERRED_RELATIONSHIP);
-			checkForOddlyInferredParent(concept, HAS_DISPOSITION);
+			checkForOddlyInferredParent(concept, HAS_DISPOSITION, true);
 		}
 	}
 
@@ -309,7 +308,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		//Check that all relationships of the given type "From" match "To"
 		CharacteristicType toCharType = fromCharType.equals(CharacteristicType.STATED_RELATIONSHIP)? CharacteristicType.INFERRED_RELATIONSHIP : CharacteristicType.STATED_RELATIONSHIP;
 		for (Relationship r : concept.getRelationships(fromCharType, attributeType, ActiveState.ACTIVE)) {
-			if (findRelationship(concept, r, toCharType) == null) {
+			if (findRelationship(concept, r, toCharType, false) == null) {
 				report (concept, issueStr, r.toString());
 			}
 		}
@@ -321,7 +320,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 	 * @return
 	 * @throws TermServerScriptException 
 	 */
-	private void checkForOddlyInferredParent(Concept concept, Concept attributeType) throws TermServerScriptException {
+	private void checkForOddlyInferredParent(Concept concept, Concept attributeType, boolean allowMoreSpecific) throws TermServerScriptException {
 		String issueStr ="Inferred parent has a stated attribute not stated in child.";
 		initialiseSummary(issueStr);
 		//Work through inferred parents
@@ -329,17 +328,25 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 			//Find all STATED attributes of interest
 			for (Relationship parentAttribute : parent.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE)) {
 				//Does our original concept have that attribute?  Report if not.
-				if (null == findRelationship(concept, parentAttribute, CharacteristicType.STATED_RELATIONSHIP)) {
+				if (null == findRelationship(concept, parentAttribute, CharacteristicType.STATED_RELATIONSHIP, allowMoreSpecific)) {
 					report (concept, issueStr, parentAttribute.toString());
+					//Reporting one issue per concept is sufficient
+					return;
 				}
 			}
 		}
 	}
 
-	private Relationship findRelationship(Concept concept, Relationship exampleRel, CharacteristicType charType) {
+	private Relationship findRelationship(Concept concept, Relationship exampleRel, CharacteristicType charType, boolean allowMoreSpecific) throws TermServerScriptException {
 		//Find the first relationship matching the type, target and activeState
 		for (Relationship r : concept.getRelationships(charType, exampleRel.getType(),  ActiveState.ACTIVE)) {
-			if (r.getTarget().equals(exampleRel.getTarget())) {
+			if (allowMoreSpecific) {
+				//Does this target value have the example rel as self or ancestor?
+				Set<Concept> ancestorsOrSelf = gl.getAncestorsCache().getAncestorsOrSelf(r.getTarget());
+				if (ancestorsOrSelf.contains(exampleRel.getTarget())) {
+					return r;
+				}
+			} else if (r.getTarget().equals(exampleRel.getTarget())) {
 				return r;
 			}
 		}
