@@ -1,6 +1,7 @@
 {
   "name": "Finding of range of joint movement",
   "documentation": "https://confluence.ihtsdotools.org/display/SCTEMPLATES/Finding+of+range+of+X+joint+movement+-+for+review",
+  "domain":"<<  298180004 |Finding of range of joint movement (finding)|  MINUS <<  7890003 |Contracture of joint (disorder)|",
   "version": 1,
-  "logicalTemplate": "404684003 |Clinical finding (finding)| : {[[~1..1]] 363714003 |Interprets (attribute)| = [[ +id(<< 364564000 |Range of joint movement (observable entity)| ) @interprets]], [[~0..1]] 363713009 |Has interpretation (attribute)| = [[ +id ( << 260245000 |Findings values (qualifier value)| ) @interpretation]] }"
+  "logicalTemplate": "404684003 |Clinical finding (finding)| : [[~1..1]] 363698007 |Finding site (attribute)| = [[+id(<<785818007 |Structure of joint region (body structure)|  )]], [[~0..1]]  363714003 |Interprets (attribute)|  = [[ +id(<<  364564000 |Range of joint movement (observable entity)|  ) @interprets]], [[~0..1]] {[[~0..1]]  363714003 |Interprets (attribute)|  = [[ +id(<<  364564000 |Range of joint movement (observable entity)|  ) @interprets]], [[~0..1]]  363713009 |Has interpretation (attribute)|  = [[ +id ( <<  260245000 |Findings values (qualifier value)|) @interpretation]] }"
 }
