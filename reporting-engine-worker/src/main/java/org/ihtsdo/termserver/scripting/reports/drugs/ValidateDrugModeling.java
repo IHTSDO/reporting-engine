@@ -77,9 +77,6 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		//for (Concept concept : Collections.singleton(gl.getConcept("418860009"))) {
 		for (Concept concept : subHierarchy) {
 			DrugUtils.setConceptType(concept);
-			if (concept.getConceptType().equals(ConceptType.PRODUCT)) {
-				continue;
-			}
 			
 			//DRUGS-585
 			if (concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT) || 
@@ -88,7 +85,9 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 			}
 			
 			// DRUGS-281, DRUGS-282, DRUGS-269
-			validateTerming(concept, allDrugTypes);  
+			if (!concept.getConceptType().equals(ConceptType.PRODUCT)) {
+				validateTerming(concept, allDrugTypes);  
+			}
 			
 			// DRUGS-267
 			validateIngredientsAgainstBoSS(concept);
@@ -630,7 +629,6 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 	private void checkForSemTagViolations(Concept c) throws TermServerScriptException {
 		String issueStr =  "Has higher level semantic tag than parent";
 		initialiseSummary(issueStr);
-		
 		//Ensure that the hierarchical level of this semantic tag is the same or deeper than those of the parent
 		int tagLevel = getTagLevel(c);
 		for (Concept p : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
