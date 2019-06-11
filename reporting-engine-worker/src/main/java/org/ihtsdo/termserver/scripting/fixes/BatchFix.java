@@ -1166,9 +1166,14 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 				} else {
 					//We can only remove relationships which are subsumed by the new Proximal Primitive Parent
 					//OR if the current parent is a supertype of the PPP, such as when we're moving from Disease to Complication.
+					//OR if the other parent itself is sufficiently defined and it's PPP is a supertype of the concepts PPP eg Clinical Finding
 					Concept thisParent = gl.getConcept(r.getTarget().getConceptId());
 					if (gl.getAncestorsCache().getAncestors(thisParent).contains(newParent) || 
 						gl.getAncestorsCache().getAncestors(newParent).contains(thisParent)) {
+						removeParentRelationship(t, r, c, newParent.toString(), null);
+						changesMade++;
+					} else if (parentRelationshipRedundantToPPP(thisParent, newParent)){
+						report (t, c, Severity.HIGH, ReportActionType.INFO, "SD parent " + thisParent + " considered redundant with presence of " + newParent);
 						removeParentRelationship(t, r, c, newParent.toString(), null);
 						changesMade++;
 					} else {
@@ -1185,6 +1190,23 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		return changesMade;
 	}
 	
+	private boolean parentRelationshipRedundantToPPP(Concept existingParent, Concept newParent) throws TermServerScriptException {
+		AncestorsCache cache = gl.getAncestorsCache();
+		//Is the existing parent's ancestry sufficiently defined up to a point that is above the new parent?
+		boolean isRedundant = false;
+		if (existingParent.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
+			List<Concept> ppps = determineProximalPrimitiveParents(existingParent);
+			for (Concept thisPPP : ppps) {
+				if (cache.getAncestors(newParent).contains(thisPPP)) {
+					isRedundant = true;
+				} else {
+					return false;
+				}
+			}
+		}
+		return isRedundant;
+	}
+
 	public int applyRemodelledGroups(Task t, Concept c, List<RelationshipGroup> groups) throws TermServerScriptException {
 		int changesMade = 0;
 		List<Relationship> availableForReuse = new ArrayList<>();

@@ -42,7 +42,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 	}
 	
 	protected void init(String[] args) throws TermServerScriptException {
-		safetyProtocols = false;
+		//safetyProtocols = false;
 		reportNoChange = false;
 		selfDetermining = true;
 		runStandAlone = true;
@@ -336,7 +336,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		Set<Concept> alignedConcepts = new HashSet<>();
 		Set<Concept> ignoredConcepts = new HashSet<>();
 		Collection<Concept> potentialMatches = findConcepts(subHierarchyECL);
-		//Collection<Concept> potentialMatches = Collections.singleton(gl.getConcept("283905005 |Avulsion of kidney (disorder)|"));
+		//Collection<Concept> potentialMatches = Collections.singleton(gl.getConcept("7890003 |Contracture of Joint|"));
 		
 		info ("Identifying concepts aligned to template");
 		for (Template template : templates) {
