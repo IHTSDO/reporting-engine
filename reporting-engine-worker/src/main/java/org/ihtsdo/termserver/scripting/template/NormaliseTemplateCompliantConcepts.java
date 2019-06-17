@@ -210,10 +210,13 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		subHierarchyECL = "< 193570009 |Cataract (disorder)|"; //QI-220
 		templateNames = new String[] {	"templates/Cataract.json" };
 		includeComplexTemplates = true;
-		*/
+		
 		subHierarchyECL = "< 7890003 |Contracture of joint (disorder)|"; //QI-262
 		templateNames = new String[] {	"templates/Contracture of joint minus.json" };
 		includeComplexTemplates = true;
+		*/
+		subHierarchyECL = "<<118616009"; //QI-253 |Neoplastic disease of uncertain behavior| 
+		templateNames = new String[] {	"templates/Neoplastic Disease.json"};
 		
 		super.init(args);
 		
