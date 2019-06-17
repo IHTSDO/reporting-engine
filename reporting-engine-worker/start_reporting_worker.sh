@@ -1,0 +1,1 @@
+nohup ./reporting_worker.sh > /var/log/supervisor/reporting_worker_startup.log 2>&1
