@@ -146,6 +146,11 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		issueSummaryMap.entrySet().stream()
 				.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
 				.forEach(e -> reportSafely (SECONDARY_REPORT, (Component)null, e.getKey(), e.getValue()));
+		
+		int total = issueSummaryMap.entrySet().stream()
+				.map(e -> e.getValue())
+				.collect(Collectors.summingInt(Integer::intValue));
+		reportSafely (SECONDARY_REPORT, (Component)null, "TOTAL", total);
 	}
 
 	//ISRS-286 Ensure Parents in same module.
