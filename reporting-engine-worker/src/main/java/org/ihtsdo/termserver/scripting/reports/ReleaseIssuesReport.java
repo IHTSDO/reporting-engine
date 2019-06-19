@@ -42,6 +42,8 @@ import com.google.common.io.Files;
  RP-181 Combined body sites cannot be the target for finding/procedure sites
  RP-181 No new combined body sites
  RP-201 Check for space before or after brackets
+ RP-180 Check for attribute types that should never appear in the same group
+ RP-180 Check for subHierarchies that should not use specific attribute types
  */
 public class ReleaseIssuesReport extends TermServerReport implements ReportClass {
 	
@@ -130,7 +132,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		info("...Modelling rules check");
 		validateAttributeDomainModellingRules();
 		validateAttributeTypeValueModellingRules();
-		validateDeprecatedHierarchies();
+		deprecatedHierarchies();
+		neverGroupTogether();
+		domainMustNotUseType();
 		
 		info("Checks complete, creating summary tag");
 		populateSummaryTab();
@@ -382,7 +386,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 
 	//RP-201
 	private void spaceBracket() throws TermServerScriptException {
-		String issueStr = "Extraneous space next to bracket";
+		String issueStr = "Extraneous space inside bracket";
 		initialiseSummary(issueStr);
 		nextConcept:
 		for (Concept c : gl.getAllConcepts()) {
@@ -737,7 +741,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	}
 	
 
-	private void validateDeprecatedHierarchies() throws TermServerScriptException {
+	private void deprecatedHierarchies() throws TermServerScriptException {
 		List<Concept> deprecatedHierarchies = new ArrayList<>();
 		deprecatedHierarchies.add(gl.getConcept("116007004|Combined site (body structure)|"));
 		for (Concept deprecatedHierarchy : deprecatedHierarchies) {
@@ -752,6 +756,67 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				}
 			}
 		}
+	}
+	
+	//RP-180
+	private void neverGroupTogether() throws TermServerScriptException {
+		Concept[][] neverTogetherList = new Concept[][] 
+				{
+					{ gl.getConcept("363589002 |Associated procedure|"), gl.getConcept("408729009 |Finding context|")},
+					{ gl.getConcept("408730004 |Procedure context|"), gl.getConcept("246090004 |Associated finding|")}
+				};
+			
+		for (Concept[] neverTogether : neverTogetherList) {
+			String issueStr = "Attributes " + neverTogether[0].toStringPref() + " and " + neverTogether[1].toStringPref() + " must not appear in same group";
+			initialiseSummary(issueStr);
+			for (Concept c : gl.getAllConcepts()) {
+				if (c.isActive()) {
+					if (appearInSameGroup(c, neverTogether[0], neverTogether[1])) {
+						report (c, issueStr, isLegacy(c), isActive(c, null));
+					}
+				}
+			}
+		}
+	}
+	
+	//RP-180
+	private void domainMustNotUseType() throws TermServerScriptException {
+		Concept[][] domainTypeIncompatibilities = new Concept[][] 
+				{
+					{ gl.getConcept("413350009 |Finding with explicit context|"), gl.getConcept("363589002 |Associated procedure|")},
+					{ gl.getConcept("129125009 |Procedure with explicit context|"), gl.getConcept("408729009 |Finding context|")}
+				};
+		for (Concept[] domainType : domainTypeIncompatibilities) {
+			String issueStr = "Domain " + domainType[0] + " should not use attribute type: " + domainType[1];
+			initialiseSummary(issueStr);
+			for (Concept c : domainType[0].getDescendents(NOT_SET)) {
+				if (c.isActive()) {
+					if (SnomedUtils.hasType(CharacteristicType.INFERRED_RELATIONSHIP, c, domainType[1])) {
+						report (c, issueStr, isLegacy(c), isActive(c, null));
+					}
+				}
+			}
+		}
+		
+	}
+
+	private boolean appearInSameGroup(Concept c, Concept c1, Concept c2) {
+		//Work through all inferred groups.  Are c1 and c2 types both present?
+		for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP)) {
+			boolean c1Present = false;
+			boolean c2Present = false;
+			for (Relationship r : g.getRelationships()) {
+				if (r.getType().equals(c1)) {
+					c1Present = true;
+				} else if (r.getType().equals(c2)) {
+					c2Present = true;
+				}
+			}
+			if (c1Present && c2Present) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	protected void initialiseSummary(String issue) {
