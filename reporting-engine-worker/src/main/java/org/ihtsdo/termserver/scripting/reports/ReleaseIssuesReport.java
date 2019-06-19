@@ -39,6 +39,8 @@ import com.google.common.io.Files;
  RP-127 Disease specific rules
  RP-165 Text definition dialect rules
  RP-179 concepts using surgical approach must be surgical procedures
+ RP-181 Combined body sites cannot be the target for finding/procedure sites
+ RP-181 No new combined body sites
  */
 public class ReleaseIssuesReport extends TermServerReport implements ReportClass {
 	
@@ -124,6 +126,8 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		
 		info("...Modelling rules check");
 		validateAttributeDomainModellingRules();
+		validateAttributeTypeValueModellingRules();
+		validateLockedDownHierarchies();
 		
 		info("Checks complete, creating summary tag");
 		populateSummaryTab();
@@ -671,6 +675,61 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		if (SnomedUtils.hasType(CharacteristicType.INFERRED_RELATIONSHIP, c, type)) {
 			if (!subHierarchyList.contains(c)) {
 				report (c, issueStr);
+			}
+		}
+	}
+
+	private void validateAttributeTypeValueModellingRules() throws TermServerScriptException {
+		String issueStr = "Finding/Procedure site cannot take a combined site value";
+		initialiseSummary(issueStr);
+		
+		//RP-181 No finding or procedure site attribute should take a combined bodysite as the value
+		List<Concept> typesOfInterest = new ArrayList<>();
+		typesOfInterest.add(FINDING_SITE);
+		Set<Concept> procSiteTypes = cache.getDescendentsOrSelf(gl.getConcept("363704007 |Procedure site (attribute)|"));
+		typesOfInterest.addAll(procSiteTypes);
+		Set<Concept> invalidValues = cache.getDescendentsOrSelf(gl.getConcept("116007004 |Combined site (body structure)|"));
+		
+		for (Concept c : gl.getAllConcepts()) {
+			if (c.isActive()) {
+				for (Concept type : typesOfInterest) {
+					validateTypeValueCombo(c, type, invalidValues, issueStr, false);
+				}
+			}
+		}
+	}
+
+	/**
+	 * If the given concept uses the particular type, checks if that type is in (or must not be in)
+	 * the list of specified values
+	 * @throws TermServerScriptException 
+	 */
+	private void validateTypeValueCombo(Concept c, Concept type, Set<Concept> values, String issueStr,
+			boolean mustBeIn) throws TermServerScriptException {
+		List<Relationship> relsWithType = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, type, ActiveState.ACTIVE);
+		for (Relationship relWithType : relsWithType) {
+			//Must the value be in, or must the value be NOT in our list of values?
+			boolean isIn = values.contains(relWithType.getTarget());
+			if (!isIn == mustBeIn) {
+				report (c, issueStr, relWithType);
+			}
+		}
+	}
+	
+
+	private void validateLockedDownHierarchies() throws TermServerScriptException {
+		List<Concept> lockedDownHierarchies = new ArrayList<>();
+		lockedDownHierarchies.add(gl.getConcept("116007004|Combined site (body structure)|"));
+		for (Concept lockedDownHierarchy : lockedDownHierarchies) {
+			String issueStr = "No new children allowed in " + lockedDownHierarchy;
+			initialiseSummary(issueStr);
+			for (Concept c : lockedDownHierarchy.getDescendents(NOT_SET)) {
+				//No child can have a new parent relationship in this hierarchy
+				for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, IS_A, ActiveState.ACTIVE)) {
+					if (r.getEffectiveTime() == null || r.getEffectiveTime().isEmpty() || !r.isReleased()) {
+						report (c, issueStr, r);
+					}
+				}
 			}
 		}
 	}
