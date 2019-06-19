@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.AxiomUtils;
@@ -136,9 +137,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	}
 
 	private void populateSummaryTab() throws TermServerScriptException {
-		for (String issue : issueSummaryMap.keySet()) {
-			report (SECONDARY_REPORT, (Component)null, issue, issueSummaryMap.get(issue).toString());
-		}
+		issueSummaryMap.entrySet().stream()
+				.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
+				.forEach(e -> reportSafely (SECONDARY_REPORT, (Component)null, e.getKey(), e.getValue()));
 	}
 
 	//ISRS-286 Ensure Parents in same module.
