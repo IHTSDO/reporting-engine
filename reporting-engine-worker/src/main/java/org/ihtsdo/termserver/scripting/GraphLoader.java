@@ -113,7 +113,7 @@ public class GraphLoader implements RF2Constants {
 		populateKnownConcepts();
 	}
 	
-	public Set<Concept> loadRelationships(CharacteristicType characteristicType, InputStream relStream, boolean addRelationshipsToConcepts, boolean isDelta, boolean isReleased) 
+	public Set<Concept> loadRelationships(CharacteristicType characteristicType, InputStream relStream, boolean addRelationshipsToConcepts, boolean isDelta, Boolean isReleased) 
 			throws IOException, TermServerScriptException, TermServerClientException {
 		Set<Concept> concepts = new HashSet<Concept>();
 		BufferedReader br = new BufferedReader(new InputStreamReader(relStream, StandardCharsets.UTF_8));
@@ -262,7 +262,7 @@ public class GraphLoader implements RF2Constants {
 	 * @return ignored count (ie 1 if relationship addition was ignored)
 	 * @throws TermServerScriptException
 	 */
-	public int addRelationshipToConcept(CharacteristicType charType, String[] lineItems, boolean isDelta, boolean isReleased) throws TermServerScriptException {
+	public int addRelationshipToConcept(CharacteristicType charType, String[] lineItems, boolean isDelta, Boolean isReleased) throws TermServerScriptException {
 		Relationship r = createRelationshipFromRF2(charType, lineItems);
 		r.setReleased(isReleased);
 		return addRelationshipToConcept(charType, r, isDelta);

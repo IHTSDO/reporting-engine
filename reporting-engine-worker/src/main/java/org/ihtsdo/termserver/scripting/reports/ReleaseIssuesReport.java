@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.AxiomUtils;
@@ -68,6 +67,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		includeLegacyIssues = run.getParameters().getMandatoryBoolean(INCLUDE_ALL_LEGACY_ISSUES);
 		additionalReportColumns = "FSN, Semtag, Issue, Legacy, C/D/R Active, Detail";
 		cache = gl.getDescendantsCache();
+		getArchiveManager().populateReleasedFlag = true;
 	}
 	
 	public void postInit() throws TermServerScriptException {
@@ -128,7 +128,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		info("...Modelling rules check");
 		validateAttributeDomainModellingRules();
 		validateAttributeTypeValueModellingRules();
-		validateLockedDownHierarchies();
+		validateDeprecatedHierarchies();
 		
 		info("Checks complete, creating summary tag");
 		populateSummaryTab();
@@ -718,13 +718,13 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	}
 	
 
-	private void validateLockedDownHierarchies() throws TermServerScriptException {
-		List<Concept> lockedDownHierarchies = new ArrayList<>();
-		lockedDownHierarchies.add(gl.getConcept("116007004|Combined site (body structure)|"));
-		for (Concept lockedDownHierarchy : lockedDownHierarchies) {
-			String issueStr = "No new children allowed in " + lockedDownHierarchy;
+	private void validateDeprecatedHierarchies() throws TermServerScriptException {
+		List<Concept> deprecatedHierarchies = new ArrayList<>();
+		deprecatedHierarchies.add(gl.getConcept("116007004|Combined site (body structure)|"));
+		for (Concept deprecatedHierarchy : deprecatedHierarchies) {
+			String issueStr = "No new descendants allowed in " + deprecatedHierarchy;
 			initialiseSummary(issueStr);
-			for (Concept c : lockedDownHierarchy.getDescendents(NOT_SET)) {
+			for (Concept c : deprecatedHierarchy.getDescendents(NOT_SET)) {
 				//No child can have a new parent relationship in this hierarchy
 				for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, IS_A, ActiveState.ACTIVE)) {
 					if (r.getEffectiveTime() == null || r.getEffectiveTime().isEmpty() || !r.isReleased()) {

@@ -131,9 +131,9 @@ public class ArchiveManager implements RF2Constants {
 					}
 					info ("Loading snapshot archive contents into memory...");
 					try {
-						//This archive is 'current state' so is not released
+						//This archive is 'current state' so we can't know what is released or not
 						releasedFlagPopulated = false;
-						loadArchive(snapshot, fsnOnly, "Snapshot", false);
+						loadArchive(snapshot, fsnOnly, "Snapshot", null);
 					} catch (Exception e) {
 						TermServerScript.error ("Non-viable snapshot encountered (Exception: " + e.getMessage()  +").  Deleting " + snapshot + "...", e);
 						try {
@@ -220,7 +220,7 @@ public class ArchiveManager implements RF2Constants {
 		return StringUtils.isNumeric(releaseBranch) ? releaseBranch : null;
 	}
 
-	protected void loadArchive(File archive, boolean fsnOnly, String fileType, boolean isReleased) throws TermServerScriptException, TermServerClientException {
+	protected void loadArchive(File archive, boolean fsnOnly, String fileType, Boolean isReleased) throws TermServerScriptException, TermServerClientException {
 		try {
 			boolean isDelta = (fileType.equals(DELTA));
 			//Are we loading an expanded or compressed archive?
@@ -250,7 +250,7 @@ public class ArchiveManager implements RF2Constants {
 		}
 	}
 
-	private void loadArchiveZip(File archive, boolean fsnOnly, String fileType, boolean isDelta, boolean isReleased) throws IOException, TermServerScriptException, TermServerClientException {
+	private void loadArchiveZip(File archive, boolean fsnOnly, String fileType, boolean isDelta, Boolean isReleased) throws IOException, TermServerScriptException, TermServerClientException {
 		ZipInputStream zis = new ZipInputStream(new FileInputStream(archive));
 		ZipEntry ze = zis.getNextEntry();
 		try {
@@ -294,7 +294,7 @@ public class ArchiveManager implements RF2Constants {
 		return is;
 	}
 
-	private void loadFile(Path path, InputStream is, String fileType, boolean isDelta, boolean fsnOnly, boolean isReleased)  {
+	private void loadFile(Path path, InputStream is, String fileType, boolean isDelta, boolean fsnOnly, Boolean isReleased)  {
 		try {
 			String fileName = path.getFileName().toString();
 			if (fileName.contains("sct2_Concept_" + fileType )) {

@@ -481,7 +481,7 @@ public abstract class TermServerScript implements RF2Constants {
 		setReportName(null);
 	}
 	
-	protected void loadArchive(File archive, boolean fsnOnly, String fileType, boolean isReleased) throws TermServerScriptException, TermServerClientException {
+	protected void loadArchive(File archive, boolean fsnOnly, String fileType, Boolean isReleased) throws TermServerScriptException, TermServerClientException {
 		getArchiveManager().loadArchive(archive, fsnOnly, fileType, isReleased);
 	}
 	

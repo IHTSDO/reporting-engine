@@ -42,7 +42,7 @@ public class Relationship extends Component implements IRelationshipTemplate, RF
 	private Modifier modifier;
 	@SerializedName("released")
 	@Expose
-	private Boolean released;
+	private Boolean released = null;
 	
 	private Concept source;
 	
