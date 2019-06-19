@@ -44,6 +44,7 @@ import com.google.common.io.Files;
  RP-201 Check for space before or after brackets
  RP-180 Check for attribute types that should never appear in the same group
  RP-180 Check for subHierarchies that should not use specific attribute types
+ RP-202 Check for MsWord style double hyphen "—" (as opposed to "-")
  */
 public class ReleaseIssuesReport extends TermServerReport implements ReportClass {
 	
@@ -53,6 +54,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 											"f","E", "var", "St"};
 	char NBSP = 255;
 	String NBSPSTR = "\u00A0";
+	String LONG_DASH = "—";
 	boolean includeLegacyIssues = false;
 	private static final int MIN_TEXT_DEFN_LENGTH = 12;
 	private Map<String, Integer> issueSummaryMap = new HashMap<>();
@@ -108,7 +110,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		info("...description rules");
 		fullStopInSynonym();
 		inactiveMissingFSN_PT();
-		nonBreakingSpace();
+		unexpectedCharacters();
 		spaceBracket();
 		
 		info("...duplicate semantic tags");
@@ -369,20 +371,28 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	}
 	
 	//ISRS-414 Descriptions which contain a non-breaking space
-	private void nonBreakingSpace () throws TermServerScriptException {
-		String issueStr = "Non-breaking space";
-		initialiseSummary(issueStr);
+	private void unexpectedCharacters () throws TermServerScriptException {
+		String [][] unwantedChars = new String[][] {
+			{ NBSPSTR , "Non-breaking space" },
+			{ LONG_DASH , "MsWord style dash" },
+			{ "--" , "Double dash" }
+		};
 		
-		for (Concept c : gl.getAllConcepts()) {
-			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-				if (d.getTerm().indexOf(NBSPSTR) != NOT_SET) {
-					String legacy = isLegacy(d);
-					String msg = "At position: " + d.getTerm().indexOf(NBSPSTR);
-					report(c, issueStr, legacy, isActive(c,d),msg, d);
-					if (legacy.equals("Y")) {
-						incrementSummaryInformation("Legacy Issues Reported");
-					}	else {
-						incrementSummaryInformation("Fresh Issues Reported");
+		for (String unwantedChar[] : unwantedChars) {
+			String issueStr = unwantedChar[1];
+			initialiseSummary(issueStr);
+			
+			for (Concept c : gl.getAllConcepts()) {
+				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+					if (d.getTerm().indexOf(unwantedChar[0]) != NOT_SET) {
+						String legacy = isLegacy(d);
+						String msg = "At position: " + d.getTerm().indexOf(unwantedChar[0]);
+						report(c, issueStr, legacy, isActive(c,d),msg, d);
+						if (legacy.equals("Y")) {
+							incrementSummaryInformation("Legacy Issues Reported");
+						}	else {
+							incrementSummaryInformation("Fresh Issues Reported");
+						}
 					}
 				}
 			}
