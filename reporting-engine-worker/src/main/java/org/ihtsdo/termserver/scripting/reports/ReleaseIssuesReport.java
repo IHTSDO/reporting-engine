@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.AxiomUtils;
+import org.ihtsdo.termserver.scripting.DescendentsCache;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
@@ -37,6 +38,7 @@ import com.google.common.io.Files;
  Active concept parents should not belong to more than one top-level hierarchy – please check NEW and LEGACY content for issues
  RP-127 Disease specific rules
  RP-165 Text definition dialect rules
+ RP-179 concepts using surgical approach must be surgical procedures
  */
 public class ReleaseIssuesReport extends TermServerReport implements ReportClass {
 	
@@ -49,6 +51,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	boolean includeLegacyIssues = false;
 	private static final int MIN_TEXT_DEFN_LENGTH = 12;
 	private Map<String, Integer> issueSummaryMap = new HashMap<>();
+	DescendentsCache cache;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
 		Map<String, String> params = new HashMap<>();
@@ -61,6 +64,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		super.init(run);
 		includeLegacyIssues = run.getParameters().getMandatoryBoolean(INCLUDE_ALL_LEGACY_ISSUES);
 		additionalReportColumns = "FSN, Semtag, Issue, Legacy, C/D/R Active, Detail";
+		cache = gl.getDescendantsCache();
 	}
 	
 	public void postInit() throws TermServerScriptException {
@@ -117,6 +121,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		
 		info("...Nested brackets check");
 		nestedBracketCheck();
+		
+		info("...Modelling rules check");
+		validateAttributeDomainModellingRules();
 		
 		info("Checks complete, creating summary tag");
 		populateSummaryTab();
@@ -638,6 +645,34 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			}
 		}
 		return false;
+	}
+	
+
+	private void validateAttributeDomainModellingRules() throws TermServerScriptException {
+		String issueStr = "Concepts using |Surgical approach| must be subtypes of |surgical procedure|";
+		initialiseSummary(issueStr);
+		Concept type = gl.getConcept("424876005 |Surgical approach (attribute)|");
+		Concept subHierarchy = gl.getConcept("387713003 |Surgical procedure (procedure)|");
+		Set<Concept> subHierarchyList = cache.getDescendentsOrSelf(subHierarchy);
+		
+		for (Concept c : gl.getAllConcepts()) {
+			if (c.isActive()) {
+				validateTypeUsedInDomain(c, type, subHierarchyList, issueStr);
+			}
+		}
+	}
+
+	/**
+	 * Where a concept uses the specified attribute type in its modelling, 
+	 * ensure that it is a descendant of the specified subhierarchy
+	 * @throws TermServerScriptException 
+	 */
+	private void validateTypeUsedInDomain(Concept c, Concept type, Set<Concept> subHierarchyList, String issueStr) throws TermServerScriptException {
+		if (SnomedUtils.hasType(CharacteristicType.INFERRED_RELATIONSHIP, c, type)) {
+			if (!subHierarchyList.contains(c)) {
+				report (c, issueStr);
+			}
+		}
 	}
 
 	protected void initialiseSummary(String issue) {
