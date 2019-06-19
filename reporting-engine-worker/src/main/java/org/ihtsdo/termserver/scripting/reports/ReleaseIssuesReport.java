@@ -41,6 +41,7 @@ import com.google.common.io.Files;
  RP-179 concepts using surgical approach must be surgical procedures
  RP-181 Combined body sites cannot be the target for finding/procedure sites
  RP-181 No new combined body sites
+ RP-201 Check for space before or after brackets
  */
 public class ReleaseIssuesReport extends TermServerReport implements ReportClass {
 	
@@ -57,7 +58,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
 		Map<String, String> params = new HashMap<>();
-		params.put(INCLUDE_ALL_LEGACY_ISSUES, "Y");
+		params.put(INCLUDE_ALL_LEGACY_ISSUES, "N");
 		TermServerReport.run(ReleaseIssuesReport.class, args, params);
 	}
 	
@@ -106,6 +107,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		fullStopInSynonym();
 		inactiveMissingFSN_PT();
 		nonBreakingSpace();
+		spaceBracket();
 		
 		info("...duplicate semantic tags");
 		duplicateSemanticTags();
@@ -377,6 +379,23 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			}
 		}
 	}
+
+	//RP-201
+	private void spaceBracket() throws TermServerScriptException {
+		String issueStr = "Extraneous space next to bracket";
+		initialiseSummary(issueStr);
+		nextConcept:
+		for (Concept c : gl.getAllConcepts()) {
+			if (c.isActive() || includeLegacyIssues) {
+				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+					if (d.getTerm().contains("( ") || d.getTerm().contains(" )")) {
+						report(c, issueStr, isLegacy(c), isActive(c,d), d);
+						continue nextConcept;
+					}
+				}
+			}
+		}
+	}
 	
 	//Active concept parents should not belong to more than one top-level hierarchy – please check NEW and LEGACY content for issues
 	private void parentsInSameTopLevelHierarchy() throws TermServerScriptException {
@@ -624,7 +643,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 					for (Character[] bracketPair : bracketPairs) {
 						if (containsNestedBracket(c, d, bracketPair)) {
-							report (c, issueStr, d);
+							report (c, issueStr, isLegacy(c), isActive(c,d), d);
 							continue nextConcept;
 						}
 					}
@@ -643,7 +662,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				}
 			} else if (ch.equals(bracketPair[1])) {  //Closing bracket
 				if (brackets.size() == 0) {
-					report (c,"Closing bracket found without matching opening",d);
+					report (c,"Closing bracket found without matching opening", isLegacy(c), isActive(c,d), d);
 				} else {
 					brackets.pop();
 				}
@@ -675,7 +694,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	private void validateTypeUsedInDomain(Concept c, Concept type, Set<Concept> subHierarchyList, String issueStr) throws TermServerScriptException {
 		if (SnomedUtils.hasType(CharacteristicType.INFERRED_RELATIONSHIP, c, type)) {
 			if (!subHierarchyList.contains(c)) {
-				report (c, issueStr);
+				report (c, issueStr, isLegacy(c), isActive(c, null));
 			}
 		}
 	}
@@ -712,7 +731,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			//Must the value be in, or must the value be NOT in our list of values?
 			boolean isIn = values.contains(relWithType.getTarget());
 			if (!isIn == mustBeIn) {
-				report (c, issueStr, relWithType);
+				report (c, issueStr, isLegacy(relWithType), isActive(c, relWithType), relWithType);
 			}
 		}
 	}
@@ -728,7 +747,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				//No child can have a new parent relationship in this hierarchy
 				for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, IS_A, ActiveState.ACTIVE)) {
 					if (r.getEffectiveTime() == null || r.getEffectiveTime().isEmpty() || !r.isReleased()) {
-						report (c, issueStr, r);
+						report (c, issueStr, isLegacy(r), isActive(c, r), r);
 					}
 				}
 			}

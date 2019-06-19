@@ -113,6 +113,9 @@ public class ArchiveManager implements RF2Constants {
 			if (!snapshot.exists() || 
 					( isStale && !allowStaleData) || 
 					(populateReleasedFlag && !releasedFlagPopulated)) {
+				if (populateReleasedFlag && !releasedFlagPopulated) {
+					info("Generating fresh snapshot because 'released' flag must be populated");
+				}
 				gl.reset();
 				snapshot = generateSnapshot (ts.getProject(), branch);
 				releasedFlagPopulated=true;
