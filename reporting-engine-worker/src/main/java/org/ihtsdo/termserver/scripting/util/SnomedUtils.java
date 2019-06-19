@@ -1205,4 +1205,25 @@ public class SnomedUtils implements RF2Constants {
 		return sb.toString();
 	}
 
+	/**
+	 * @return the list ordered so that FSN is returned first, then PT, then acceptable synonyms
+	 */
+	public static void prioritise(List<Description> descriptions) {
+		Collections.sort(descriptions, new Comparator<Description>() {
+			@Override
+			public int compare(Description d1, Description d2) {
+			return priority(d2).compareTo(priority(d1));
+			}
+		});
+	}
+	
+	private static Integer priority(Description d) {
+		if (d.getType().equals(DescriptionType.FSN)) {
+			return 2;
+		} else if (d.isPreferred()) {
+			return 1;
+		}
+		return 0;
+	}
+
 }
