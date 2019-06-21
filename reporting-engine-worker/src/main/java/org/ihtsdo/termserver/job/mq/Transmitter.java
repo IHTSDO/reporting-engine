@@ -49,6 +49,8 @@ public class Transmitter {
 		//We'll also re-assert the specified parameter order at this time, in case it's been lost
 		Job job = jobManager.getJob(run.getJobName());
 		if (run.getParameters() != null && job != null) {
+			//Ensure all jobs allow the project to be chosen
+			job.getParameters().addFirst("PROJECT");
 			Set<String> paramKeys = new HashSet<>(run.getParameters().keySet());
 			for (String key : paramKeys) {
 				if (job.getParameters().get(key) == null) {
