@@ -89,7 +89,7 @@ public abstract class TermServerScript implements RF2Constants {
 	public static final String EXPECTED_PROTOCOL = "https://";
 	
 	
-	protected static final String PROJECT = "Project";
+	public static final String PROJECT = "Project";
 	protected static final String DRY_RUN = "DryRun";
 	protected static final String INPUT_FILE = "InputFile";
 	protected static final String SUB_HIERARCHY = "Subhierarchy";

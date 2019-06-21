@@ -159,7 +159,7 @@ public class JobManager {
 				Job thisJob = knownJobClass.getValue().newInstance().getJob();
 				
 				//RP-155 All jobs will now run against a specific project
-				thisJob.getParameters().addFirst("PROJECT").withType(Type.PROJECT).withDefaultValue("MAIN");
+				thisJob.getParameters().addFirst(TermServerScript.PROJECT).withType(Type.PROJECT).withDefaultValue("MAIN");
 				
 				//Some jobs shouldn't see the light of day.
 				//TODO Make this code environment aware so it allows testing status in Dev and UAT
