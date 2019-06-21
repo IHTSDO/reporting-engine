@@ -11,6 +11,7 @@ import org.reflections.Reflections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.*;
+import org.snomed.otf.scheduler.domain.JobParameter.Type;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.core.io.ResourceLoader;
@@ -157,8 +158,11 @@ public class JobManager {
 			try {
 				Job thisJob = knownJobClass.getValue().newInstance().getJob();
 				
+				//RP-155 All jobs will now run against a specific project
+				thisJob.getParameters().addFirst("PROJECT").withType(Type.PROJECT).withDefaultValue("MAIN");
+				
 				//Some jobs shouldn't see the light of day.
-				//TODO Make this code environemnt aware so it allows testing status in Dev and UAT
+				//TODO Make this code environment aware so it allows testing status in Dev and UAT
 				if (thisJob.getProductionStatus().equals(Job.ProductionStatus.HIDEME)) {
 					continue;
 				}
