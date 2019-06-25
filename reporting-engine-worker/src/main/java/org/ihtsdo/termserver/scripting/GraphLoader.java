@@ -154,7 +154,7 @@ public class GraphLoader implements RF2Constants {
 		return concepts;
 	}
 	
-	public void loadAxioms(InputStream axiomStream, boolean isDelta, boolean isReleased) 
+	public void loadAxioms(InputStream axiomStream, boolean isDelta, Boolean isReleased) 
 			throws IOException, TermServerScriptException, TermServerClientException {
 		BufferedReader br = new BufferedReader(new InputStreamReader(axiomStream, StandardCharsets.UTF_8));
 		String line;
@@ -353,7 +353,7 @@ public class GraphLoader implements RF2Constants {
 		return d;
 	}
 	
-	public void loadConceptFile(InputStream is, boolean isReleased) throws IOException, TermServerScriptException {
+	public void loadConceptFile(InputStream is, Boolean isReleased) throws IOException, TermServerScriptException {
 		//Not putting this in a try resource block otherwise it will close the stream on completion and we've got more to read!
 		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 		String line;
@@ -368,9 +368,7 @@ public class GraphLoader implements RF2Constants {
 				//We might already have received some details about this concept
 				Concept c = getConcept(lineItems[IDX_ID]);
 				Concept.fillFromRf2(c, lineItems);
-				if (isReleased) {
-					c.setReleased(true);
-				}
+				c.setReleased(isReleased);
 				if (c.getDefinitionStatus() == null) {
 					throw new TermServerScriptException("Concept " + c + " did not define definition status");
 				}
@@ -380,7 +378,7 @@ public class GraphLoader implements RF2Constants {
 		}
 	}
 	
-	public void loadDescriptionFile(InputStream descStream, boolean fsnOnly, boolean isReleased) throws IOException, TermServerScriptException, TermServerClientException {
+	public void loadDescriptionFile(InputStream descStream, boolean fsnOnly, Boolean isReleased) throws IOException, TermServerScriptException, TermServerClientException {
 		//Not putting this in a try resource block otherwise it will close the stream on completion and we've got more to read!
 		BufferedReader br = new BufferedReader(new InputStreamReader(descStream, StandardCharsets.UTF_8));
 		String line;

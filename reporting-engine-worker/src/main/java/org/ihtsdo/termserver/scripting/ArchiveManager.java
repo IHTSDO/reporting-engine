@@ -272,7 +272,7 @@ public class ArchiveManager implements RF2Constants {
 		}
 	}
 	
-	private void loadArchiveDirectory(File dir, boolean fsnOnly, String fileType, boolean isDelta, boolean isReleased) throws IOException {
+	private void loadArchiveDirectory(File dir, boolean fsnOnly, String fileType, boolean isDelta, Boolean isReleased) throws IOException {
 		try (Stream<Path> paths = Files.walk(dir.toPath())) {
 			paths.filter(Files::isRegularFile)
 			.forEach( path ->  {
@@ -281,7 +281,7 @@ public class ArchiveManager implements RF2Constants {
 					loadFile(path, is , fileType, isDelta, fsnOnly, isReleased);
 					is.close();
 				} catch (Exception e) {
-					throw new RuntimeException ("Faied to load " + path + " due to " + e.getMessage());
+					throw new RuntimeException ("Faied to load " + path + " due to " + e.getMessage(),e);
 				}
 			});
 		} 

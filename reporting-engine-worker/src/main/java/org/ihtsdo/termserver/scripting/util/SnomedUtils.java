@@ -1226,4 +1226,17 @@ public class SnomedUtils implements RF2Constants {
 		return 0;
 	}
 
+	public static Set<Concept> hasParents(Set<Concept> matchParents, Set<Concept> range, int limit) {
+		Set<Concept> matching = new HashSet<>();
+		for (Concept testMe : range) {
+			if (testMe.getParents(CharacteristicType.INFERRED_RELATIONSHIP).containsAll(matchParents)) {
+				matching.add(testMe);
+			}
+			if (matching.size() >= limit) {
+				break;
+			}
+		}
+		return matching;
+	}
+
 }

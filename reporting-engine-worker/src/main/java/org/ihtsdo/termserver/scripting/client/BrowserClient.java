@@ -50,14 +50,14 @@ public class BrowserClient {
 					(semTagFilter==null ? "" : ("semanticFilter=" + semTagFilter)) +
 					"normalize=true&groupByConcept=1";
 			logger.debug("Browser search: " + url);
-			BrowserMatche matches = restTemplate.getForObject(url, BrowserMatche.class);
+			BrowserMatch matches = restTemplate.getForObject(url, BrowserMatch.class);
 			return matches.get();
 		} catch (Exception e) {
 			throw new TermServerScriptException("Failed to recover search for " + searchTerms ,e);
 		}
 	}
 	
-	public class BrowserMatche {
+	public class BrowserMatch {
 		List<Concept> matches;
 		
 		public void set(List<Concept> matches) {
