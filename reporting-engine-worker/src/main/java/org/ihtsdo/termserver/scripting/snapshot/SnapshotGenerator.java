@@ -134,7 +134,9 @@ public class SnapshotGenerator extends TermServerScript {
 	}
 	
 	private void outputRF2() throws TermServerScriptException {
-		for (Concept thisConcept : gl.getAllConcepts()) {
+		//Create new collection in case some other process looks at a new concept
+		Set<Concept> allConcepts = new HashSet<>(gl.getAllConcepts());
+		for (Concept thisConcept : allConcepts) {
 			outputRF2(thisConcept);
 		}
 	}
