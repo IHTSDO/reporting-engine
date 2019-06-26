@@ -491,7 +491,7 @@ public class GraphLoader implements RF2Constants {
 			//TermServerScript.debug ("Checkpoint");
 		}*/
 		
-		for (Concept child : startingPoint.getDescendents(IMMEDIATE_CHILD, CharacteristicType.INFERRED_RELATIONSHIP)) {
+		for (Concept child : startingPoint.getChildren(CharacteristicType.INFERRED_RELATIONSHIP)) {
 			if (currentDepth >= MAX_DEPTH) {
 				throw new TermServerScriptException("Maximum depth exceeded from " + startingPoint + " and inferred child " + child);
 			}
