@@ -111,7 +111,7 @@ public class ArchiveManager implements RF2Constants {
 			}
 			
 			if (!snapshot.exists() || 
-					( isStale && !allowStaleData) || 
+					(isStale && !allowStaleData) || 
 					(populateReleasedFlag && !releasedFlagPopulated)) {
 				if (populateReleasedFlag && !releasedFlagPopulated) {
 					info("Generating fresh snapshot because 'released' flag must be populated");
@@ -131,26 +131,35 @@ public class ArchiveManager implements RF2Constants {
 						info (currentlyHeldInMemory.getKey() + " being wiped to make room for " + ts.getProject());
 						gl.reset();
 						System.gc();
-					}
-					info ("Loading snapshot archive contents into memory...");
-					try {
-						//This archive is 'current state' so we can't know what is released or not
 						releasedFlagPopulated = false;
-						loadArchive(snapshot, fsnOnly, "Snapshot", null);
-					} catch (Exception e) {
-						TermServerScript.error ("Non-viable snapshot encountered (Exception: " + e.getMessage()  +").  Deleting " + snapshot + "...", e);
+					}
+					//Do we also need a fresh snapshot here so we can have the 'released' flag?
+					if (populateReleasedFlag && !releasedFlagPopulated) {
+						info("Generating fresh snapshot (despite having a non-stale on disk) because 'released' flag must be populated");
+						gl.reset();
+						snapshot = generateSnapshot (ts.getProject(), branch);
+						releasedFlagPopulated=true;
+					} else {
+						info ("Loading snapshot archive contents into memory...");
 						try {
-							if (snapshot.isFile()) {
-								snapshot.delete();
-							} else if (snapshot.isDirectory()) {
-								FileUtils.deleteDirectory(snapshot);
-							} else {
-								throw new TermServerScriptException (snapshot + " is neither file nor directory.");
+							//This archive is 'current state' so we can't know what is released or not
+							releasedFlagPopulated = false;
+							loadArchive(snapshot, fsnOnly, "Snapshot", null);
+						} catch (Exception e) {
+							TermServerScript.error ("Non-viable snapshot encountered (Exception: " + e.getMessage()  +").  Deleting " + snapshot + "...", e);
+							try {
+								if (snapshot.isFile()) {
+									snapshot.delete();
+								} else if (snapshot.isDirectory()) {
+									FileUtils.deleteDirectory(snapshot);
+								} else {
+									throw new TermServerScriptException (snapshot + " is neither file nor directory.");
+								}
+							} catch (Exception e2) {
+								TermServerScript.warn("Failed to delete snapshot " + snapshot + " due to " + e2);
 							}
-						} catch (Exception e2) {
-							TermServerScript.warn("Failed to delete snapshot " + snapshot + " due to " + e2);
+							throw new TermServerScriptException("Non-viable snapshot detected",e);
 						}
-						throw new TermServerScriptException("Non-viable snapshot detected",e);
 					}
 				}
 			}
@@ -159,6 +168,7 @@ public class ArchiveManager implements RF2Constants {
 		} catch (Exception e) {
 			throw new TermServerScriptException ("Unable to load " + ts.getProject(), e);
 		}
+		info ("Snapshot loading complete");
 	}
 	
 	private boolean checkIsStale(TermServerScript ts, Branch branch, File snapshot) throws IOException {

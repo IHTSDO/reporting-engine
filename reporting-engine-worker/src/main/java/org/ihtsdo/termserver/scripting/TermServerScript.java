@@ -394,6 +394,7 @@ public abstract class TermServerScript implements RF2Constants {
 			//RP-4 And post that back in, so the FSN is always populated
 			jobRun.setParameter(SUB_HIERARCHY, subHierarchy.toString());
 		}
+		debug ("Initialising Report Manager");
 		reportManager = ReportManager.create(this);
 		if (tabNames != null) {
 			reportManager.setTabNames(tabNames);
@@ -403,6 +404,7 @@ public abstract class TermServerScript implements RF2Constants {
 			reportManager.setWriteToSheet(false);
 		}
 		getReportManager().initialiseReportFiles(columnHeadings);
+		debug ("Report Manager initialisation complete");
 	}
 	
 	public void instantiate(JobRun jobRun) {
