@@ -60,6 +60,9 @@ public class ScheduleServiceImpl implements ScheduleService {
 		for (JobSchedule jobSchedule : jobScheduleRepository.findAll()) {
 			scheduleJob(jobSchedule);
 		}
+		
+		//Always refresh list of known jobs on startup
+		initialise();
 	}
 
 	@Override
