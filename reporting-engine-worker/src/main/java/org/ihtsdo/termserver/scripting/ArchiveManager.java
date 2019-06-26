@@ -248,6 +248,7 @@ public class ArchiveManager implements RF2Constants {
 			if (!fsnOnly) {  
 				//Check that we've got some descriptions to be sure we've not been given
 				//a malformed, or classification style archive.
+				debug("Checking first 100 concepts for integrity");
 				List<Description> first100Descriptions = gl.getAllConcepts()
 						.stream()
 						.limit(100)
@@ -256,6 +257,7 @@ public class ArchiveManager implements RF2Constants {
 				if (first100Descriptions.size() < 100) {
 					throw new TermServerScriptException("Failed to find sufficient number of descriptions - classification archive used? Deleting snapshot, please retry.");
 				}
+				debug("Integrity check complete");
 			}
 				
 		} catch (IOException e) {
