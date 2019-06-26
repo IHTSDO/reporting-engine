@@ -128,9 +128,14 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 	}
 
 	private void populateSummaryTab() throws TermServerScriptException {
-		for (String issue : issueSummaryMap.keySet()) {
-			report (SECONDARY_REPORT, (Component)null, issue, issueSummaryMap.get(issue).toString());
-		}
+		issueSummaryMap.entrySet().stream()
+				.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
+				.forEach(e -> reportSafely (SECONDARY_REPORT, (Component)null, e.getKey(), e.getValue()));
+		
+		int total = issueSummaryMap.entrySet().stream()
+				.map(e -> e.getValue())
+				.collect(Collectors.summingInt(Integer::intValue));
+		reportSafely (SECONDARY_REPORT, (Component)null, "TOTAL", total);
 	}
 
 	/**
