@@ -117,7 +117,7 @@ public class ArchiveManager implements RF2Constants {
 					info("Generating fresh snapshot because 'released' flag must be populated");
 				}
 				gl.reset();
-				snapshot = generateSnapshot (ts.getProject(), branch);
+				generateSnapshot (ts.getProject(), branch);
 				releasedFlagPopulated=true;
 				//We don't need to load the snapshot if we've just generated it
 			} else {
@@ -137,7 +137,7 @@ public class ArchiveManager implements RF2Constants {
 					if (populateReleasedFlag && !releasedFlagPopulated) {
 						info("Generating fresh snapshot (despite having a non-stale on disk) because 'released' flag must be populated");
 						gl.reset();
-						snapshot = generateSnapshot (ts.getProject(), branch);
+						generateSnapshot (ts.getProject(), branch);
 						releasedFlagPopulated=true;
 					} else {
 						info ("Loading snapshot archive contents into memory...");
@@ -184,7 +184,7 @@ public class ArchiveManager implements RF2Constants {
 		return branchHeadUTC.compareTo(snapshotCreationUTC) > 0;
 	}
 
-	private File generateSnapshot(Project project, Branch branch) throws TermServerScriptException, IOException, TermServerClientException {
+	private void generateSnapshot(Project project, Branch branch) throws TermServerScriptException, IOException, TermServerClientException {
 		//We need to know the previous release to base our snapshot on
 		if (branch == null) {
 			branch = loadBranch(project);
@@ -212,8 +212,7 @@ public class ArchiveManager implements RF2Constants {
 		snapshotGenerator.setProject(ts.getProject());
 		snapshotGenerator.leaveArchiveUncompressed();
 		snapshotGenerator.setOutputDirName(snapshot.getPath());
-		snapshot = snapshotGenerator.generateSnapshot(previous, delta, snapshot);
-		return snapshot;
+		snapshotGenerator.generateSnapshot(previous, delta, snapshot);
 	}
 
 	private File getSnapshotPath() {
