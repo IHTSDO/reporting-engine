@@ -379,12 +379,12 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		};
 		
 		for (String unwantedChar[] : unwantedChars) {
-			String issueStr = unwantedChar[1];
+			String issueStr = "Unexpected character(s) - " + unwantedChar[1];
 			initialiseSummary(issueStr);
 			
 			for (Concept c : gl.getAllConcepts()) {
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-					if (d.getTerm().indexOf(unwantedChar[0]) != NOT_SET) {
+					if (d.getTerm().indexOf(unwantedChar[0]) != NOT_SET && !allowableException(c, unwantedChar[0], d.getTerm())) {
 						String legacy = isLegacy(d);
 						String msg = "At position: " + d.getTerm().indexOf(unwantedChar[0]);
 						report(c, issueStr, legacy, isActive(c,d),msg, d);
@@ -393,10 +393,31 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 						}	else {
 							incrementSummaryInformation("Fresh Issues Reported");
 						}
+						//Only report the first violation for each concept
+						break;
 					}
 				}
 			}
 		}
+	}
+
+	private boolean allowableException(Concept c, String unwantedChars, String term) {
+		//Only exceptions just now are for double dashes
+		if (unwantedChars.equals("--")) {
+			//See RP-202 for specification of exceptions
+			String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
+			if (semTag.equals("(organism)")) {
+				//All double dashes in organism are allowed
+				return true;
+			} else if (semTag.equals("(substance)")) {
+				if (term.contains("-->")) {
+					return false;
+				} else {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 
 	//RP-201
