@@ -17,6 +17,7 @@ import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.DrugTermGenerator;
 import org.ihtsdo.termserver.scripting.util.DrugUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.ihtsdo.termserver.scripting.util.TermGenerator;
 import org.snomed.otf.scheduler.domain.*;
 
 public class ValidateDrugModeling extends TermServerReport implements ReportClass {
@@ -31,7 +32,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 	
 	private Map<String, Integer> issueSummaryMap = new HashMap<>();
 	
-	DrugTermGenerator termGenerator = new DrugTermGenerator(this);
+	TermGenerator termGenerator = new DrugTermGenerator(this);
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
 		Map<String, String> params = new HashMap<>();
@@ -486,7 +487,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		
 		//Create a clone to be retermed, and then we can compare descriptions with the original	
 		Concept clone = c.clone();
-		termGenerator.ensureDrugTermsConform(null, clone, CharacteristicType.STATED_RELATIONSHIP);
+		termGenerator.ensureTermsConform(null, clone, CharacteristicType.STATED_RELATIONSHIP);
 		Description proposedFSN = clone.getFSNDescription();
 		compareTerms(c, "FSN", currentFSN, proposedFSN);
 		Description ptUS = clone.getPreferredSynonym(US_ENG_LANG_REFSET);

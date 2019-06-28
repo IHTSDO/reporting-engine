@@ -10,6 +10,15 @@ public class ConceptChange extends Concept {
 	public ConceptChange(String conceptId) {
 		super(conceptId);
 	}
+	public ConceptChange(String conceptId, String newTerm) {
+		super(conceptId);
+		this.newTerm = newTerm;
+	}
+	public ConceptChange(String conceptId, String fsn, String newTerm) {
+		super(conceptId);
+		this.newTerm = newTerm;
+		this.setFsn(fsn);
+	}
 	public String getNewTerm() {
 		return newTerm;
 	}

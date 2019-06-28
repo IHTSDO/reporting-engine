@@ -10,7 +10,7 @@ import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.TermServerScript.ReportActionType;
 import org.ihtsdo.termserver.scripting.TermServerScript.Severity;
 import org.ihtsdo.termserver.scripting.domain.*;
-public class DrugTermGenerator implements RF2Constants{
+public class DrugTermGenerator extends TermGenerator {
 	
 	private TermServerScript parent;
 	private boolean quiet = false;
@@ -57,12 +57,8 @@ public class DrugTermGenerator implements RF2Constants{
 	public boolean useEach() {
 		return useEach;
 	}
-	
-	public int ensureDrugTermsConform(Task t, Concept c, CharacteristicType charType) throws TermServerScriptException {
-		return ensureDrugTermsConform(t, c, charType, false);  //Do not allow duplicate descriptions by default
-	}
 
-	public int ensureDrugTermsConform(Task t, Concept c, CharacteristicType charType, boolean allowDuplicates) throws TermServerScriptException {
+	public int ensureTermsConform(Task t, Concept c, String X, CharacteristicType charType) throws TermServerScriptException {
 		int changesMade = 0;
 		
 		//This function will split out the US / GB terms if the ingredients show variance where the product does not
@@ -139,7 +135,7 @@ public class DrugTermGenerator implements RF2Constants{
 		
 		//Have we made any changes?  Create a new description if so
 		if (!replacementTerm.equals(d.getTerm())) {
-			changesMade += replaceTerm(t, c, d, replacement);
+			changesMade += replaceTerm(t, c, d, replacement, true);
 		}
 		
 		//Validation check that we should never end up with the same word twice 
@@ -341,17 +337,6 @@ public class DrugTermGenerator implements RF2Constants{
 		return changesMade;
 	}
 
-	private boolean removeDescription(Concept c, Description d) {
-		if (d.isReleased()) {
-			d.setActive(false);
-			d.setInactivationIndicator(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
-			return true;
-		} else {
-			c.getDescriptions().remove(d);
-			return false;
-		}
-	}
-	
 	private void validateUsGbVariance(Task t, Concept c, CharacteristicType charType, boolean allowDuplicates) throws TermServerScriptException {
 		//If the ingredient names have US/GB variance, the Drug should too.
 		//If the unit of presentation is present and has variance, the drug should too.
@@ -421,61 +406,6 @@ public class DrugTermGenerator implements RF2Constants{
 			gbPT.setAcceptabilityMap(SnomedUtils.createPreferredAcceptableMap(GB_ENG_LANG_REFSET, US_ENG_LANG_REFSET));
 			report (t, c, Severity.HIGH, ReportActionType.DESCRIPTION_ADDED, "Split PT into US/GB variants: " + usPT + "/" + gbPT);
 			c.addDescription(gbPT, allowDuplicates);
-		}
-	}
-
-	private int replaceTerm(Task t, Concept c, Description removing, Description replacement) throws TermServerScriptException {
-		int changesMade = 0;
-		boolean doReplacement = true;
-		if (SnomedUtils.termAlreadyExists(c, replacement.getTerm())) {
-			//But does it exist inactive?
-			if (SnomedUtils.termAlreadyExists(c, replacement.getTerm(), ActiveState.INACTIVE)) {
-				reactivateMatchingTerm(t, c, replacement);
-			} else {
-				report(t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Replacement term already exists: '" + replacement.getTerm() + "' inactivating unwanted term only.");
-			}
-			//If we're removing a PT, merge the acceptability into the existing term, also any from the replacement
-			if (removing.isPreferred()) {
-				mergeAcceptability(t, c, removing, replacement);
-			}
-			doReplacement = false;
-		}
-		
-		//Has our description been published?  Remove entirely if not
-		boolean isInactivated = removeDescription(c,removing);
-		String msg = (isInactivated?"Inactivated desc ":"Deleted desc ") +  removing;
-		changesMade++;
-		
-		//We're only going to report this if the term really existed, silently delete null terms
-		if (removing.getTerm() != null) {
-			Severity severity = removing.getType().equals(DescriptionType.FSN)?Severity.MEDIUM:Severity.LOW;
-			report(t, c, severity, ReportActionType.DESCRIPTION_INACTIVATED, msg);
-		}
-		
-		if (doReplacement) {
-			report(t, c, Severity.LOW, ReportActionType.DESCRIPTION_ADDED, replacement);
-			c.addDescription(replacement);
-		}
-		
-		return changesMade;
-	}
-
-	private void mergeAcceptability(Task t, Concept c, Description removing, Description replacement) throws TermServerScriptException {
-		//Find the matching term that is not removing and merge that with the acceptability of removing
-		boolean merged = false;
-		for (Description match : c.getDescriptions(ActiveState.ACTIVE)) {
-			if (!removing.equals(match) && match.getTerm().equals(replacement.getTerm())) {
-				Map<String,Acceptability> mergedMap = SnomedUtils.mergeAcceptabilityMap(removing.getAcceptabilityMap(), match.getAcceptabilityMap());
-				match.setAcceptabilityMap(mergedMap);
-				//Now add in any improved acceptability that was coming from the replacement 
-				mergedMap = SnomedUtils.mergeAcceptabilityMap(match.getAcceptabilityMap(), replacement.getAcceptabilityMap());
-				match.setAcceptabilityMap(mergedMap);
-				report(t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Merged acceptability from description being replaced and replacement into term that already exists: " + match);
-				merged = true;
-			}
-		}
-		if (!merged) {
-			report(t, c, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to find existing term to receive accepabilty merge with " + removing);
 		}
 	}
 

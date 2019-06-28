@@ -62,7 +62,7 @@ public class NormalizeProductStrength extends DrugBatchFix implements RF2Constan
 		try {
 			int changesMade = normalizeProductStrength(task, loadedConcept);
 			if (changesMade > 0) {
-				changesMade += termGenerator.ensureDrugTermsConform(task, loadedConcept, CharacteristicType.STATED_RELATIONSHIP);
+				changesMade += termGenerator.ensureTermsConform(task, loadedConcept, CharacteristicType.STATED_RELATIONSHIP);
 				String conceptSerialised = gson.toJson(loadedConcept);
 				debug ((dryRun?"Dry run updating":"Updating") + " state of " + loadedConcept + info);
 				if (!dryRun) {
