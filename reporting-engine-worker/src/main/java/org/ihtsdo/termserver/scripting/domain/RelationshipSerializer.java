@@ -2,12 +2,7 @@ package org.ihtsdo.termserver.scripting.domain;
 
 import java.lang.reflect.Type;
 
-import org.ihtsdo.termserver.scripting.TermServerScript;
-
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
+import com.google.gson.*;
 
 public class RelationshipSerializer implements JsonSerializer<Relationship>, RF2Constants {
 
@@ -21,11 +16,7 @@ public class RelationshipSerializer implements JsonSerializer<Relationship>, RF2
 		json.addProperty("released", r.isReleased());
 		json.addProperty("relationshipId", r.getRelationshipId());
 		
-		JsonObject type = new JsonObject();
-		type.addProperty("conceptId", r.getType().getConceptId());
-		type.addProperty("fsn", r.getType().getFsn());
-		json.add("type", type);
-		
+		json.add("type", createTypeJson(r));
 		json.add("target", createTargetJson(r));
 		
 		json.addProperty("sourceId", r.getSourceId());
@@ -42,6 +33,13 @@ public class RelationshipSerializer implements JsonSerializer<Relationship>, RF2
 		}
 		
 		return json;
+	}
+
+	private JsonElement createTypeJson(Relationship r) {
+		JsonObject typeJson = new JsonObject();
+		typeJson.addProperty("conceptId", r.getType().getConceptId());
+		typeJson.addProperty("fsn", r.getType().getFsn());
+		return typeJson;
 	}
 
 	private JsonElement createTargetJson(Relationship r) {

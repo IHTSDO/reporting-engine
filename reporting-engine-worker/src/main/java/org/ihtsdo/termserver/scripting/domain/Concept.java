@@ -70,7 +70,6 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	@SerializedName("gciAxioms")
 	@Expose
 	private List<Axiom> gciAxioms;
-	
 	private boolean isLoaded = false;
 	private int originalFileLineNumber;
 	private ConceptType conceptType;
@@ -1068,16 +1067,20 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		return clone(null, true);
 	}
 	
+	public Concept cloneWithUUIDs() {
+		return clone(null, true, true, true);
+	}
+	
 	public Concept clone(String sctid) {
 		return clone(sctid, false);
 	}
 	
 	private Concept clone(String sctid, boolean keepIds) {
 		//Don't include inactive components by default
-		return clone(sctid, keepIds, false);
+		return clone(sctid, keepIds, false, false);
 	}
 	
-	private Concept clone(String sctid, boolean keepIds, boolean includeInactiveComponents) {
+	private Concept clone(String sctid, boolean keepIds, boolean includeInactiveComponents, boolean populateUUIDs) {
 		Concept clone = new Concept(keepIds?conceptId:sctid, getFsn());
 		clone.setEffectiveTime(keepIds?effectiveTime:null);
 		clone.setActive(active);
@@ -1096,7 +1099,10 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 			clone.addDescription(dClone);
 			//If we're keeping IDs, copy any inactivation indicators also.
 			if (keepIds) {
-				dClone.inactivationIndicatorEntries = new ArrayList<>(d.getInactivationIndicatorEntries());
+				dClone.setInactivationIndicatorEntries(new ArrayList<>(d.getInactivationIndicatorEntries()));
+			}
+			if (populateUUIDs && d.getId() == null) {
+				dClone.setDescriptionId(UUID.randomUUID().toString());
 			}
 		}
 		
@@ -1108,6 +1114,9 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 			rClone.setEffectiveTime(keepIds?r.getEffectiveTime():null);
 			rClone.setSourceId(null);
 			clone.addRelationship(rClone);
+			if (populateUUIDs && r.getId() == null) {
+				rClone.setRelationshipId(UUID.randomUUID().toString());
+			}
 		}
 		
 		//Copy Parent/Child arrays

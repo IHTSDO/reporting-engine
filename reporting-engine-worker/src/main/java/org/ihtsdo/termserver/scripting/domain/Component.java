@@ -6,7 +6,7 @@ import org.ihtsdo.termserver.scripting.domain.RF2Constants.ComponentType;
 public abstract class Component {
 	
 	//Generic debug string to say if concept should be highlighted for some reason, eg cause a template match to fail
-	String issues = "";
+	private transient String issues = "";
 
 	public abstract String getId();
 	

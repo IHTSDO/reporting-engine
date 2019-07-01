@@ -1,10 +1,7 @@
 
 package org.ihtsdo.termserver.scripting.domain;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.util.AcceptabilityMode;
@@ -20,47 +17,58 @@ public class Description extends Component implements RF2Constants {
 	@SerializedName("effectiveTime")
 	@Expose
 	private String effectiveTime;
+	
 	@SerializedName("moduleId")
 	@Expose
 	private String moduleId;
+	
 	@SerializedName("active")
 	@Expose
 	private Boolean active;
+	
 	@SerializedName("released")
 	@Expose
 	private Boolean released;
+	
 	@SerializedName("descriptionId")
 	@Expose
 	private String descriptionId;
+	
 	@SerializedName("conceptId")
 	@Expose
 	private String conceptId;
+	
 	@SerializedName("type")
 	@Expose
 	private DescriptionType type;
+	
 	@SerializedName("lang")
 	@Expose
 	private String lang;
+	
 	@SerializedName("term")
 	@Expose
 	private String term;
+	
 	@SerializedName("caseSignificance")
 	@Expose
 	private CaseSignificance caseSignificance;
+	
 	@SerializedName("acceptabilityMap")
 	@Expose
 	private Map<String, Acceptability> acceptabilityMap = null;
+	
 	@SerializedName("inactivationIndicator")
 	@Expose
 	private InactivationIndicator inactivationIndicator;
-	List<LangRefsetEntry> langRefsetEntries;
-	private boolean dirty = false;
-	private boolean isDeleted = false;
-	private String deletionEffectiveTime;
+	private transient List<LangRefsetEntry> langRefsetEntries;
+	private transient boolean dirty = false;
+	private transient boolean isDeleted = false;
+	private transient String deletionEffectiveTime;
 	
 	//Note that these values are used when loading from RF2 where multiple entries can exist.
 	//When interacting with the TS, only one inactivation indicator is used (see above).
-	List<InactivationIndicatorEntry> inactivationIndicatorEntries;
+	private transient List<InactivationIndicatorEntry> inactivationIndicatorEntries;
 	
 	/**
 	 * No args constructor for use in serialization

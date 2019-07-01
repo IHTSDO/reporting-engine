@@ -31,6 +31,7 @@ public abstract class TermServerScript implements RF2Constants {
 	
 	protected static boolean debug = true;
 	protected static boolean dryRun = true;
+	protected boolean validateConceptOnUpdate = true;
 	protected boolean offlineMode = false;
 	protected boolean quiet = false; 
 	protected static int dryRunCounter = 0;
@@ -544,12 +545,17 @@ public abstract class TermServerScript implements RF2Constants {
 		try {
 			boolean updatedOK = false;
 			int retries = 0;
-			conceptSerialised = gson.toJson(c);
-			debug ((dryRun ?"Dry run updating ":"Updating ") + "state of " + c + (info == null?"":info));
-			Concept savedConcept = c;
-			while (!updatedOK) {
-				try {
-					if (!dryRun) {
+			if (!dryRun) {
+				if (validateConceptOnUpdate) {
+					validateConcept(t, c);
+				}
+				
+				conceptSerialised = gson.toJson(c);
+				debug ((dryRun ?"Dry run updating ":"Updating ") + "state of " + c + (info == null?"":info));
+				Concept savedConcept = c;
+			
+				while (!updatedOK) {
+					try {
 						JSONResource response = tsClient.updateConcept(new JSONObject(conceptSerialised), t.getBranchPath());
 						String json = response.toObject().toString();
 						TSErrorMessage errorMsg = gson.fromJson(json, TSErrorMessage.class);
@@ -558,23 +564,47 @@ public abstract class TermServerScript implements RF2Constants {
 						}
 						savedConcept = gson.fromJson(json, Concept.class);
 						ensureSaveEffective(c, savedConcept);
+						return savedConcept;
+					} catch (Exception e) {
+						retries++;
+						if (retries >= 3) {
+							throw e;
+						}
+						warn("Failed to update concept due to " + e.getLocalizedMessage() + " retrying...");
+						Thread.sleep(10*1000);
 					}
-					return savedConcept;
-				} catch (Exception e) {
-					retries++;
-					if (retries >= 3) {
-						throw e;
-					}
-					warn("Failed to update concept due to " + e.getLocalizedMessage() + " retrying...");
-					Thread.sleep(10*1000);
 				}
 			}
+		} catch (ValidationFailure e) {
+			throw e;
 		} catch (Exception e) {
-			throw new TermServerScriptException("Failed to update " + c + " in TS due to " + e.getMessage() + "\n JSON = " + conceptSerialised,e);
+			String msg = "Failed to update " + c + " in TS due to " + e.getMessage();
+			error (msg + " JSON = " + conceptSerialised, e);
+			throw new TermServerScriptException(msg,e); 
 		}
 		throw new IllegalStateException("Unexpected point in the code");
 	}
 	
+	private void validateConcept(Task t, Concept c) throws TermServerScriptException {
+		//We need to populate new components with UUIDs for validation
+		Concept uuidClone = c.cloneWithUUIDs();
+		if (true);
+		DroolsResponse[] validations = tsClient.validateConcept(uuidClone, t.getBranchPath());
+		if (validations.length == 0) {
+			debug("Validation clear: " + c);
+		} else {
+			for (DroolsResponse response : validations) {
+				if (response.getSeverity().equals(DroolsResponse.Severity.ERROR)) {
+					throw new ValidationFailure(t,  c, "Drools error: " + response.getMessage());
+				} else if (response.getSeverity().equals(DroolsResponse.Severity.WARNING)) {
+					report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Drools warning: " + response.getMessage());
+				} else {
+					throw new IllegalStateException("Unexpected drools response: " + response);
+				}
+			}
+		}
+	}
+
 	private void ensureSaveEffective(Concept before, Concept after) throws TermServerScriptException {
 		//Check we've got the same number of active / inactive descriptions / relationships
 		int activeDescBefore = before.getDescriptions(ActiveState.ACTIVE).size();

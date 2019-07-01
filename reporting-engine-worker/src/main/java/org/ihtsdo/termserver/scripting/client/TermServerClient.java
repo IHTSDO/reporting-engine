@@ -11,6 +11,7 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpRequest;
 import org.springframework.http.client.*;
@@ -43,6 +44,7 @@ public class TermServerClient {
 	static {
 		GsonBuilder gsonBuilder = new GsonBuilder();
 		gsonBuilder.setPrettyPrinting();
+		gsonBuilder.registerTypeAdapter(Relationship.class, new RelationshipSerializer());
 		gsonBuilder.excludeFieldsWithoutExposeAnnotation();
 		gson = gsonBuilder.create();
 	}
@@ -70,7 +72,7 @@ public class TermServerClient {
 		
 		restTemplate = new RestTemplateBuilder()
 				.rootUri(this.url)
-				.additionalMessageConverters(new GsonHttpMessageConverter())
+				.additionalMessageConverters(new GsonHttpMessageConverter(gson))
 				.errorHandler(new ExpressiveErrorHandler())
 				.build();
 		
@@ -161,19 +163,6 @@ public class TermServerClient {
 		}
 	}
 	
-/*	public JSONResource getConcepts(String ecl, String branchPath, String searchAfter, int limit) throws TermServerClientException {
-		try {
-			String url = getConceptsPath(branchPath) + "?active=true&limit=" + limit + "&ecl=" + URLEncoder.encode(ecl, "UTF-8");
-			if (!StringUtils.isEmpty(searchAfter)) {
-				url += "&searchAfter=" + searchAfter;
-			}
-			System.out.println("Calling " + url);
-			return resty.json(url);
-		} catch (IOException e) {
-			throw new TermServerClientException(e);
-		}
-	}*/
-	
 	public ConceptCollection getConcepts(String ecl, String branchPath, String searchAfter, int limit) {
 		String url = getConceptsPath(branchPath) + "?active=true&limit=" + limit + "&ecl=" + ecl;
 		if (!StringUtils.isEmpty(searchAfter)) {
@@ -197,6 +186,10 @@ public class TermServerClient {
 
 	private String getConceptBrowserPath(String branchPath) {
 		return url + "/browser/" + branchPath + "/concepts";
+	}
+	
+	private String getConceptBrowserValidationPath(String branchPath) {
+		return url + "/browser/" + branchPath + "/validate/concept";
 	}
 	
 	private String getDescriptionsPath(String branchPath, String id) {
@@ -519,6 +512,12 @@ public class TermServerClient {
 		} catch (Exception e) {
 			throw new TermServerClientException("Unable to recover status of classification " + classification.getId() + " due to " + e.getMessage(), e);
 		}
+	}
+
+	public DroolsResponse[] validateConcept(Concept c, String branchPath) {
+		String url = getConceptBrowserValidationPath(branchPath);
+		HttpEntity<Concept> request = new HttpEntity<>(c, headers); 
+		return restTemplate.postForObject(url, request, DroolsResponse[].class);
 	}
 
 }
