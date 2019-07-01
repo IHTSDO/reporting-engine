@@ -29,6 +29,7 @@ public class NormalizeTerms extends BatchFix implements RF2Constants{
 			fix.inputFileHasHeaderRow = true;
 			fix.populateEditPanel = true;
 			fix.populateTaskDescription = true;
+			fix.reportNoChange = true;
 			fix.init(args);
 			fix.loadProjectSnapshot(false);
 			fix.postInit();
@@ -47,6 +48,8 @@ public class NormalizeTerms extends BatchFix implements RF2Constants{
 		Concept loadedConcept = loadConcept(c, t.getBranchPath());
 		int changesMade = termGenerator.ensureTermsConform(t, loadedConcept, X, CharacteristicType.INFERRED_RELATIONSHIP);
 		if (changesMade > 0) {
+			//Keep the PT on the concept in line with the description list
+			loadedConcept.setPreferredSynonym(loadedConcept.getPreferredSynonym(US_ENG_LANG_REFSET).getTerm());
 			updateConcept(t, loadedConcept, info);
 		}
 		return changesMade;

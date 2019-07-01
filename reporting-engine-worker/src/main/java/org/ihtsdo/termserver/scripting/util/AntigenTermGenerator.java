@@ -77,8 +77,12 @@ public class AntigenTermGenerator extends TermGenerator {
 			//If this is the FSN and we've changed it, then retain the original as an acceptable term
 			if (!newCounterpartTerm.equals(originalCounterpart)) {
 				Description legacyCounterpart = Description.withDefaults(originalCounterpart, DescriptionType.SYNONYM, Acceptability.ACCEPTABLE);
-				legacyCounterpart.setCaseSignificance(replacement.getCaseSignificance());
-				changesMade += addTerm(t, c, legacyCounterpart);
+				legacyCounterpart.setCaseSignificance(d.getCaseSignificance());
+				int changeMade = addTerm(t, c, legacyCounterpart);
+				if (changeMade > 0) {
+					report (t, c, Severity.MEDIUM, ReportActionType.INFO, "Added old FSN as acceptable synonym", originalCounterpart );
+					changesMade += changeMade;
+				}
 				nonRedundantTerms.add(legacyCounterpart.getTerm());
 			}
 			
@@ -96,8 +100,9 @@ public class AntigenTermGenerator extends TermGenerator {
 		
 		//Have we made any changes?  Create a new description if so
 		if (!replacementTerm.equals(d.getTerm())) {
-			changesMade += replaceTerm(t, c, d, replacement, false);  //Don't merge acceptability - we've set it here already
-		}
+			boolean mergeAcceptability = isPT;  //PT might reactive an inactive term, needs acceptability merged.
+			changesMade += replaceTerm(t, c, d, replacement, mergeAcceptability); 
+		} 
 		
 		//Validation, check that we have some acceptability for both US and GB
 		if (replacement.getAcceptability(US_ENG_LANG_REFSET) == null || replacement.getAcceptability(GB_ENG_LANG_REFSET) == null) {

@@ -540,24 +540,39 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	protected Concept updateConcept(Task t, Concept c, String info) throws TermServerScriptException {
+		String conceptSerialised = "PARSE FAILURE";
 		try {
-			String conceptSerialised = gson.toJson(c);
+			boolean updatedOK = false;
+			int retries = 0;
+			conceptSerialised = gson.toJson(c);
 			debug ((dryRun ?"Dry run updating ":"Updating ") + "state of " + c + (info == null?"":info));
 			Concept savedConcept = c;
-			if (!dryRun) {
-				JSONResource response = tsClient.updateConcept(new JSONObject(conceptSerialised), t.getBranchPath());
-				String json = response.toObject().toString();
-				TSErrorMessage errorMsg = gson.fromJson(json, TSErrorMessage.class);
-				if (errorMsg.getCode() != null) {
-					throw new TermServerScriptException("Failed to update concept: " + errorMsg.getCode() + " - " + errorMsg.getDeveloperMessage());
+			while (!updatedOK) {
+				try {
+					if (!dryRun) {
+						JSONResource response = tsClient.updateConcept(new JSONObject(conceptSerialised), t.getBranchPath());
+						String json = response.toObject().toString();
+						TSErrorMessage errorMsg = gson.fromJson(json, TSErrorMessage.class);
+						if (errorMsg.getCode() != null) {
+							throw new TermServerScriptException("Failed to update concept: " + errorMsg.getCode() + " - " + errorMsg.getDeveloperMessage());
+						}
+						savedConcept = gson.fromJson(json, Concept.class);
+						ensureSaveEffective(c, savedConcept);
+					}
+					return savedConcept;
+				} catch (Exception e) {
+					retries++;
+					if (retries >= 3) {
+						throw e;
+					}
+					warn("Failed to update concept due to " + e.getLocalizedMessage() + " retrying...");
+					Thread.sleep(10*1000);
 				}
-				savedConcept = gson.fromJson(json, Concept.class);
-				ensureSaveEffective(c, savedConcept);
 			}
-			return savedConcept;
 		} catch (Exception e) {
-			throw new TermServerScriptException("Failed to update " + c + " in TS due to " + e.getMessage(),e);
+			throw new TermServerScriptException("Failed to update " + c + " in TS due to " + e.getMessage() + "\n JSON = " + conceptSerialised,e);
 		}
+		throw new IllegalStateException("Unexpected point in the code");
 	}
 	
 	private void ensureSaveEffective(Concept before, Concept after) throws TermServerScriptException {

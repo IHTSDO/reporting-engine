@@ -34,6 +34,7 @@ public abstract class TermGenerator implements RF2Constants {
 		if (d.isReleased()) {
 			d.setActive(false);
 			d.setInactivationIndicator(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
+			d.setAcceptabilityMap(null);
 			return true;
 		} else {
 			c.getDescriptions().remove(d);
@@ -52,6 +53,7 @@ public abstract class TermGenerator implements RF2Constants {
 			//But does it exist inactive?
 			if (SnomedUtils.termAlreadyExists(c, replacement.getTerm(), ActiveState.INACTIVE)) {
 				reactivateMatchingTerm(t, c, replacement);
+				changesMade++;
 			} else {
 				report(t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Replacement term already exists: '" + replacement.getTerm() + "' inactivating unwanted term only.");
 			}
@@ -77,7 +79,9 @@ public abstract class TermGenerator implements RF2Constants {
 		
 		if (doReplacement) {
 			report(t, c, Severity.LOW, ReportActionType.DESCRIPTION_ADDED, replacement);
+			replacement.setConceptId(c.getConceptId());
 			c.addDescription(replacement);
+			changesMade++;
 		}
 		
 		return changesMade;

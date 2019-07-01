@@ -34,6 +34,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	@SerializedName("definitionStatus")
 	@Expose
 	private DefinitionStatus definitionStatus;
+	
 	@SerializedName("preferredSynonym")
 	@Expose
 	private String preferredSynonym;

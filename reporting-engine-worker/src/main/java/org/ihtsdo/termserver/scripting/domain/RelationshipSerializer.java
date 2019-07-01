@@ -2,12 +2,14 @@ package org.ihtsdo.termserver.scripting.domain;
 
 import java.lang.reflect.Type;
 
+import org.ihtsdo.termserver.scripting.TermServerScript;
+
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 
-public class RelationshipSerializer implements JsonSerializer<Relationship> {
+public class RelationshipSerializer implements JsonSerializer<Relationship>, RF2Constants {
 
 	@Override
 	public JsonElement serialize(Relationship r, Type typeOfSrc,
@@ -24,6 +26,25 @@ public class RelationshipSerializer implements JsonSerializer<Relationship> {
 		type.addProperty("fsn", r.getType().getFsn());
 		json.add("type", type);
 		
+		json.add("target", createTargetJson(r));
+		
+		json.addProperty("sourceId", r.getSourceId());
+		json.addProperty("groupId", r.getGroupId());
+		json.addProperty("characteristicType", r.getCharacteristicType().toString());
+		if (r.getModifier() == null) {
+			//If the source concept is also missing, then we're probably part of an axiom
+			//which doesn't specify the existential modifier
+			if (r.getSource() != null) {
+				throw new IllegalArgumentException("Modifier encountered with no modifier specified: " + r);
+			}
+		} else {
+			json.addProperty("modifier", r.getModifier().toString());
+		}
+		
+		return json;
+	}
+
+	private JsonElement createTargetJson(Relationship r) {
 		JsonObject target = new JsonObject();
 		if (r.getTarget() == null) {
 			throw new IllegalArgumentException("Null Target when serializing relationship: " + r);
@@ -34,17 +55,7 @@ public class RelationshipSerializer implements JsonSerializer<Relationship> {
 		target.addProperty("conceptId", r.getTarget().getConceptId());
 		target.addProperty("fsn", r.getTarget().getFsn());
 		target.addProperty("definitionStatus", r.getTarget().getDefinitionStatus().toString());
-		json.add("target", target);
-		
-		json.addProperty("sourceId", r.getSourceId());
-		json.addProperty("groupId", r.getGroupId());
-		json.addProperty("characteristicType", r.getCharacteristicType().toString());
-		if (r.getModifier() == null) {
-			throw new IllegalArgumentException("Modifier encountered with no modifier specified: " + r);
-		}
-		json.addProperty("modifier", r.getModifier().toString());
-		
-		return json;
+		return target;
 	}
 
 }
