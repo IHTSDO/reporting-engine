@@ -553,7 +553,6 @@ public abstract class TermServerScript implements RF2Constants {
 				conceptSerialised = gson.toJson(c);
 				debug ((dryRun ?"Dry run updating ":"Updating ") + "state of " + c + (info == null?"":info));
 				Concept savedConcept = c;
-			
 				while (!updatedOK) {
 					try {
 						JSONResource response = tsClient.updateConcept(new JSONObject(conceptSerialised), t.getBranchPath());
@@ -574,6 +573,8 @@ public abstract class TermServerScript implements RF2Constants {
 						Thread.sleep(10*1000);
 					}
 				}
+			} else {
+				return c;
 			}
 		} catch (ValidationFailure e) {
 			throw e;

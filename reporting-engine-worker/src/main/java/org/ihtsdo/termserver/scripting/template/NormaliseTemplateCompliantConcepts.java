@@ -217,15 +217,22 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		
 		subHierarchyECL = "<<118616009"; //QI-253 |Neoplastic disease of uncertain behavior| 
 		templateNames = new String[] {	"templates/Neoplastic Disease.json"};
-		 */
-		//subHierarchyECL = "<400178008 |Lymphangioma (disorder)|"; //QI-317 Various neoplasms
+		
+		subHierarchyECL = "<400178008 |Lymphangioma (disorder)|"; //QI-317 Various neoplasms
 		//subHierarchyECL = "< 400210000 |Hemangioma (disorder)|";
-		subHierarchyECL = "< 205562004 |Angiomatosis (disorder)|"; 
-		templateNames = new String[] {	"templates/Misc Neoplasms.json"};
-		/*
+		//subHierarchyECL = "< 205562004 |Angiomatosis (disorder)|"; 
+		//templateNames = new String[] {	"templates/Misc Neoplasms.json"};
+		
 		subHierarchyECL = "<20376005 |Benign neoplastic disease|"; //QI-272
 		templateNames = new String[] {	"templates/Benign Neoplastic Disease.json"};
+		
+		subHierarchyECL = "< 233776003 |Tracheobronchial disorder|"; //QI-268
+		templateNames = new String[] {	"templates/Tracheobronchial.json" };
 		*/
+		subHierarchyECL = "<< 298180004 |Finding of range of joint movement (finding)| MINUS << 7890003 |Contracture of joint (disorder)|"; //QI-284
+		templateNames = new String[] {	"templates/Finding of range of joint movement.json" };
+		includeComplexTemplates = true;
+		
 		super.init(args);
 		
 		//Ensure our ECL matches more than 0 concepts.  This will also cache the result
