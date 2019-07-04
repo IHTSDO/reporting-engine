@@ -1147,9 +1147,12 @@ public abstract class TermServerScript implements RF2Constants {
 			String prefix = isFirst ? QUOTE : COMMA_QUOTE;
 			isFirst = false;
 			if (detail instanceof String[]) {
+				boolean isNestedFirst = true;
 				String[] arr = (String[]) detail;
 				for (String str : arr) {
+					sb.append(isNestedFirst?"":COMMA);
 					sb.append(prefix + str + QUOTE);
+					isNestedFirst = false;
 				}
 			} else {
 				sb.append(prefix + detail + QUOTE);
