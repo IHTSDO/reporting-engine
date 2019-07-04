@@ -101,7 +101,7 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 		ReportSheetManager.targetFolderId = "1m7MVhMePldYrNjOvsE_WTAYcowZ4ps50";  // QI/Initial Analysis
 		subHierarchyStr = this.jobRun.getParamValue(SUB_HIERARCHY);
 		subHierarchyECL = this.jobRun.getParamValue(ECL);
-		if (subHierarchyStr != null || subHierarchyECL == null) {
+		if (subHierarchyStr != null && subHierarchyECL == null) {
 			subHierarchyECL = "<<" + subHierarchyStr;
 		} else if (subHierarchyStr == null && subHierarchyECL == null ) {
 			throw new TermServerScriptException("Either subhierarchy or ECL must be specified");
@@ -132,7 +132,7 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 		} else {
 			String itemOfInterest;
 			if (subHierarchyECL.contains(":")) {
-				itemOfInterest = subHierarchyECL.substring(subHierarchyECL.indexOf(":"));
+				itemOfInterest = subHierarchyECL.substring(subHierarchyECL.indexOf(":") + 1).trim();
 			} else {
 				itemOfInterest = subHierarchyECL.replaceAll("<",""); 
 			}
@@ -141,7 +141,7 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 	}
 	
 	public void setSubHierarchy() throws TermServerScriptException {
-		this.conceptsToAnalyse = findConcepts(getJobRun().getMandatoryParamValue(ECL));
+		this.conceptsToAnalyse = findConcepts(subHierarchyECL);
 		intermediatePrimitives = new HashMap<>();
 		attributeUsage = new HashMap<>();
 		attributeExamples = new HashMap<>();
