@@ -52,7 +52,7 @@ public class GnarlyFactorCalculationECL extends TermServerReport {
 	private void identifyGroupersByAttribute(List<Component> components) throws TermServerScriptException {
 		for (Component component : components) {
 			Relationship ecl = (Relationship) component;
-			List<Concept> expansion = doEclExpansion(ecl);
+			Collection<Concept> expansion = doEclExpansion(ecl);
 			//Work our way up the stated parents via some attribute that we have;
 			int expansionSize = expansion.size();
 			Relationship optimalECL =  ecl;
@@ -70,7 +70,7 @@ public class GnarlyFactorCalculationECL extends TermServerReport {
 		}
 	}
 
-	private List<Concept> doEclExpansion(Relationship r) throws TermServerScriptException {
+	private Collection<Concept> doEclExpansion(Relationship r) throws TermServerScriptException {
 		//We're looking for a Clinical Finding with the attribute given
 		String ecl = " << " + CLINICAL_FINDING + " : " +
 				r.getType() + " = << " +

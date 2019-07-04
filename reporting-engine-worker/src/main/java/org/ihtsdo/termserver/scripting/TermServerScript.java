@@ -705,19 +705,19 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 	}
 	
-	public List<Concept> findConcepts(String ecl) throws TermServerScriptException {
+	public Collection<Concept> findConcepts(String ecl) throws TermServerScriptException {
 		return findConcepts(project.getBranchPath(), ecl, false, !safetyProtocolsEnabled());
 	}
 	
-	public List<Concept> findConcepts(String ecl, boolean quiet, boolean expectLargeResults) throws TermServerScriptException {
+	public Collection<Concept> findConcepts(String ecl, boolean quiet, boolean expectLargeResults) throws TermServerScriptException {
 		return findConcepts(project.getBranchPath(), ecl, quiet, expectLargeResults);
 	}
 	
-	public List<Concept> findConcepts(String branch, String ecl, boolean quiet, boolean expectLargeResults) throws TermServerScriptException {
+	public Collection<Concept> findConcepts(String branch, String ecl, boolean quiet, boolean expectLargeResults) throws TermServerScriptException {
 		EclCache cache = EclCache.getCache(branch, tsClient, gson, gl, quiet);
 		cache.engageSafetyProtocol(safetyProtocols);
 		boolean wasCached = cache.isCached(ecl);
-		List<Concept> concepts = cache.findConcepts(branch, ecl, expectLargeResults); 
+		Collection<Concept> concepts = cache.findConcepts(branch, ecl, expectLargeResults); 
 		int retry = 0;
 		if (concepts.size() == 0 && ++retry < 3) {
 			debug("No concepts returned. Double checking that result in 30s...");
@@ -739,7 +739,7 @@ public abstract class TermServerScript implements RF2Constants {
 				for (Concept c : concepts) {
 					warn ("Duplicate concept received from ECL: " + c);
 				}
-				throw new TermServerScriptException(concepts.size() + " duplicate concepts returned from ecl: " + ecl + " eg " + concepts.get(0));
+				throw new TermServerScriptException(concepts.size() + " duplicate concepts returned from ecl: " + ecl + " eg " + concepts.iterator().next());
 			}
 			debug("No duplicates detected.");
 		}

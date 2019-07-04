@@ -404,7 +404,7 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		
 		//Start with the whole subHierarchy and remove concepts that match each of our templates
-		List<Concept> unalignedConcepts = findConcepts(subHierarchyECL);
+		Collection<Concept> unalignedConcepts = findConcepts(subHierarchyECL);
 		//Set<Concept> unalignedConcepts = Collections.singleton(gl.getConcept("269214009"));
 		Set<Concept> ignoredConcepts = new HashSet<>();
 		

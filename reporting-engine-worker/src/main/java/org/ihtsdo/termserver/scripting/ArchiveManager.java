@@ -69,7 +69,8 @@ public class ArchiveManager implements RF2Constants {
 			debug ("Checking TS branch metadata: " + branchPath);
 			server = ts.getTSClient().getUrl();
 			Branch branch = ts.getTSClient().getBranch(branchPath);
-			//If empty, recover parent
+			//If metadata is empty, or missing previous release, recover parent
+			//But timestamp will remain a property of the branch
 			if (branch.getMetadata() == null || branch.getMetadata().getPreviousRelease() == null) {
 				Branch parent = loadBranch(new Project().withBranchPath("MAIN"));
 				branch.setMetadata(parent.getMetadata());
@@ -107,12 +108,15 @@ public class ArchiveManager implements RF2Constants {
 				isStale = checkIsStale(ts, branch, snapshot);
 				if (isStale) {
 					TermServerScript.warn(ts.getProject() + " snapshot held locally is stale.  Requesting delta to rebuild...");
+				} else {
+					TermServerScript.debug(ts.getProject() + " snapshot held locally is sufficiently recent");
 				}
 			}
 			
 			if (!snapshot.exists() || 
 					(isStale && !allowStaleData) || 
 					(populateReleasedFlag && !releasedFlagPopulated)) {
+				
 				if (populateReleasedFlag && !releasedFlagPopulated) {
 					info("Generating fresh snapshot because 'released' flag must be populated");
 				}
@@ -180,7 +184,7 @@ public class ArchiveManager implements RF2Constants {
 		ZonedDateTime snapshotCreationLocal = ZonedDateTime.of(snapshotCreation, localZone.toZoneId());
 		ZonedDateTime snapshotCreationUTC = snapshotCreationLocal.withZoneSameInstant(utcZoneID);
 		ZonedDateTime branchHeadUTC = ZonedDateTime.ofInstant(branchHeadTime.toInstant(), utcZoneID);
-		TermServerScript.debug("Comparing branch time: " + branchHeadUTC + " to local snapshot time: " + snapshotCreationUTC);
+		TermServerScript.debug("Comparing branch time: " + branchHeadUTC + " to local " + snapshot.getName() + " snapshot time: " + snapshotCreationUTC);
 		return branchHeadUTC.compareTo(snapshotCreationUTC) > 0;
 	}
 

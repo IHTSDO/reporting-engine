@@ -1,10 +1,8 @@
 package org.ihtsdo.termserver.scripting;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
+import org.apache.commons.collections4.collection.CompositeCollection;
 import org.ihtsdo.termserver.scripting.client.TermServerClient;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.ConceptCollection;
@@ -12,19 +10,16 @@ import org.springframework.util.StringUtils;
 
 import com.google.gson.Gson;
 
-import us.monoid.web.JSONResource;
-
 public class EclCache {
 	private static Map <String, EclCache> branchCaches;
 	private static int PAGING_LIMIT = 1000;
 	private static int MAX_RESULTS = 9999;
 	private TermServerClient tsClient;
-	private Gson gson;
 	private GraphLoader gl;
 	boolean safetyProtocolEngaged = true;
 	boolean quiet = false;
 	
-	Map <String, List<Concept>> expansionCache = new HashMap<>();
+	Map <String, Collection<Concept>> expansionCache = new HashMap<>();
 	
 	static EclCache getCache(String branch, TermServerClient tsClient, Gson gson, GraphLoader gl, boolean quiet) {
 		if (branchCaches == null) {
@@ -43,14 +38,13 @@ public class EclCache {
 	
 	EclCache (TermServerClient tsClient,Gson gson) {
 		this.tsClient = tsClient;
-		this.gson = gson;
 	}
 	
 	public static void reset() {
 		branchCaches = new HashMap<>();
 	}
 	
-	protected List<Concept> findConcepts(String branch, String ecl) throws TermServerScriptException {
+	protected Collection<Concept> findConcepts(String branch, String ecl) throws TermServerScriptException {
 		return findConcepts(branch, ecl, !safetyProtocolEngaged);
 	}
 	
@@ -58,15 +52,19 @@ public class EclCache {
 		return expansionCache.containsKey(ecl);
 	}
 	
-	protected List<Concept> findConcepts(String branch, String ecl, boolean expectLargeResults) throws TermServerScriptException {
+	protected Collection<Concept> findConcepts(String branch, String ecl, boolean expectLargeResults) throws TermServerScriptException {
+		ecl = ecl.trim();
+		String machineEcl = org.ihtsdo.termserver.scripting.util.StringUtils.makeMachineReadable(ecl);
+		Collection<Concept> allConcepts;
+		
 		//Have we already recovered this ECL?
 		if (expansionCache.containsKey(ecl)) {
-			List<Concept> cached = expansionCache.get(ecl);
+			Collection<Concept> cached = expansionCache.get(ecl);
 			//Have we reset the GL? Recover full local cached objects if so
-			if (cached.size() > 0 && StringUtils.isEmpty(cached.get(0).getFsn())) {
-				List<Concept> localCopies = cached.stream()
+			if (cached.size() > 0 && StringUtils.isEmpty(cached.iterator().next().getFsn())) {
+				Set<Concept> localCopies = cached.stream()
 						.map(c -> gl.getConceptSafely(c.getId()))
-						.collect(Collectors.toList());
+						.collect(Collectors.toSet());
 				cached = localCopies;
 				expansionCache.put(ecl, cached);
 			}
@@ -74,12 +72,73 @@ public class EclCache {
 				TermServerScript.debug ("Recovering cached " + cached.size() + " concepts matching '" + ecl +"'");
 			}
 			return cached;
+		} else if (ecl.contains(" OR ") && !machineEcl.contains("(") && !machineEcl.contains(" AND ")) {
+			//Can this ecl be broken down into cheaper, requestable chunks?  
+			//TODO Create class that holds these collections and can 
+			//iterate through them without copying the objects
+			Collection<Concept> combinedSet = new HashSet<>();
+			for (String eclFragment : ecl.split(" OR ")) {
+				TermServerScript.debug("Combining request for: " + eclFragment);
+				combinedSet.addAll(findConcepts(branch, eclFragment, expectLargeResults));
+			}
+			allConcepts = combinedSet;
+		} else {
+			if (ecl.equals("*")) {
+				allConcepts = gl.getAllConcepts();
+			} else if (isSimple(ecl)){
+				if (ecl.startsWith("<<")) {
+					Concept subhierarchy = gl.getConcept(ecl.substring(2).trim());
+					allConcepts = gl.getDescendantsCache().getDescendentsOrSelf(subhierarchy);
+				} else if (ecl.startsWith("<")) {
+					Concept subhierarchy = gl.getConcept(ecl.substring(1).trim());
+					allConcepts = gl.getDescendantsCache().getDescendents(subhierarchy);
+				} else {
+					throw new IllegalStateException("ECL is not simple: " + ecl);
+				}
+				TermServerScript.debug("Recovered " + allConcepts.size() + " concepts for simple ecl from local memory: " + ecl);
+			} else {
+				allConcepts = recoverConceptsFromTS(branch, ecl, expectLargeResults);
+			}
 		}
 		
-		//TODO If the ECL is simple < or << then we can use local descendant cache
-		//which is much cheaper.
-		
-		List<Concept> allConcepts = new ArrayList<>();
+		if (allConcepts.size() == 0) {
+			TermServerScript.warn ("ECL " + ecl + " recovered 0 concepts.  Check?");
+			expansionCache.remove(ecl);
+		} else {
+			//Seeing a transient issue where we're getting 0 concepts back on the first call, and the concepts back on a 
+			//subsequent call.  So for now, don't cache a null response and we'll sleep / retry
+			//Cache this result
+			expansionCache.put(ecl, allConcepts);
+		}
+		return allConcepts;
+	}
+	
+	private boolean isSimple(String ecl) {
+		//Any braces, commas, more than two pipes, hats, colons mark this ecl as not being simple
+		boolean isSimple = true;
+		if (StringUtils.countOccurrencesOf(ecl, "|") > 2) {
+			isSimple = false;
+		} else {
+			//Need to strip out all FSNs that might contain odd characters
+			ecl = org.ihtsdo.termserver.scripting.util.StringUtils.makeMachineReadable(ecl);
+			if (ecl.contains("{") || ecl.contains(",") || ecl.contains("^") || ecl.contains("(") ||
+					ecl.contains(" AND ") || ecl.contains(":")) {
+				isSimple = false;
+			}
+		}
+		return isSimple;
+	}
+
+	public void engageSafetyProtocol(boolean engaged) {
+		boolean changed = (safetyProtocolEngaged != engaged);
+		safetyProtocolEngaged = engaged;
+		if (!engaged && changed) {
+			TermServerScript.warn ("ECL cache safety protocols have been disengaged. There's no limit");
+		}
+	}
+	
+	private Set<Concept> recoverConceptsFromTS(String branch, String ecl, boolean expectLargeResults) throws TermServerScriptException {
+		Set<Concept> allConcepts = new HashSet<>();
 		boolean allRecovered = false;
 		//int offset = 0;
 		String searchAfter = null;
@@ -121,24 +180,6 @@ public class EclCache {
 				throw new TermServerScriptException("Failed to recover concepts using ECL '" + ecl + "' due to " + e.getMessage(),e);
 			}
 		}
-		
-		if (allConcepts.size() == 0) {
-			TermServerScript.warn ("ECL " + ecl + " recovered 0 concepts.  Check?");
-			expansionCache.remove(ecl);
-		} else {
-			//Seeing a transient issue where we're getting 0 concepts back on the first call, and the concepts back on a 
-			//subsequent call.  So for now, don't cache a null response and we'll sleep / retry
-			//Cache this result
-			expansionCache.put(ecl, allConcepts);
-		}
 		return allConcepts;
-	}
-	
-	public void engageSafetyProtocol(boolean engaged) {
-		boolean changed = (safetyProtocolEngaged != engaged);
-		safetyProtocolEngaged = engaged;
-		if (!engaged && changed) {
-			TermServerScript.warn ("ECL cache safety protocols have been disengaged. There's no limit");
-		}
 	}
 }

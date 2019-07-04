@@ -154,6 +154,14 @@ public class StringUtils implements RF2Constants {
 
 	private static Pattern csvPattern = Pattern.compile(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)");
 
+	public static String makeMachineReadable (String exp) {
+		StringBuffer hrExp = new StringBuffer(exp);
+		makeMachineReadable(hrExp);
+		exp = hrExp.toString();
+		exp = exp.replaceAll("OR", " OR ").replaceAll("AND", " AND ");
+		return exp;
+	}
+	
 	public static void makeMachineReadable (StringBuffer hrExp) {
 		int pipeIdx =  hrExp.indexOf(PIPE);
 		while (pipeIdx != -1) {
