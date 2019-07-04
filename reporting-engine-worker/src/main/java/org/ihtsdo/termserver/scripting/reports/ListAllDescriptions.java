@@ -11,14 +11,17 @@ import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
-
+/**
+ * See FD#25496
+ */
 public class ListAllDescriptions extends TermServerReport implements ReportClass {
 	Set<Concept> alreadyReported = new HashSet<>();
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
 		Map<String, String> params = new HashMap<>();
 		//params.put(SUB_HIERARCHY, "43959009 |Cataract of eye due to diabetes mellitus (disorder)|");
-		params.put(SUB_HIERARCHY, "38199008 |Tooth structure (body structure)|");
+		//params.put(SUB_HIERARCHY, "38199008 |Tooth structure (body structure)|");
+		params.put(SUB_HIERARCHY, "25093002 |Disorder of eye due to diabetes mellitus (disorder)|");
 		TermServerReport.run(ListAllDescriptions.class, args, params);
 	}
 	
