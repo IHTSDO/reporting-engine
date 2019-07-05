@@ -1,31 +1,46 @@
 #!/bin/bash
 
-#RPW_Version
-RP_Environment="dev"
+#Variables to be set by calling script: RPW_Environment, RPW_Version
+echo "Reporting Platform Worker installation for environment: $RPW_Environment and version: $RPW_Version"
 
 # Check that we're running as root
 if [[ $EUID -ne 0 ]]; then
-	echo "This script must be run as root" 
+	echo "This script must be run as root"
 	exit 1
 fi
 
-#In Dev and UAT we'll install the latest version
-#In Prod, we want a specific number
+if [[ "$RPW_Environment" =~ "dev" ]]; then
+	echo "Setting snapshot apt repo"
+	rm -f /etc/apt/sources.list.d/maven3_ihtsdotools_org_repository_debian_releases.list || true;
+	echo "deb https://maven3.ihtsdotools.org/repository/debian-snapshots/ bionic main" > /etc/apt/sources.list.d/maven3_ihtsdotools_org_repository_debian_snapshots.list
+else
+	echo "Setting release apt repo"
+	rm -f /etc/apt/sources.list.d/maven3_ihtsdotools_org_repository_debian_snapshots.list || true;
+	echo "deb https://maven3.ihtsdotools.org/repository/debian-releases/ bionic main" > /etc/apt/sources.list.d/maven3_ihtsdotools_org_repository_debian_releases.list
 
-if [ "$RP_Environment" == "dev"]; then
-    # TODO Do we need a function here to edit /etc/apt/sources.d ?
-	RPW_Version="latest"
-elif [ "$RP_Environment" == "dev"]; then
-	RPW_Version="latest"
-else 
-	RPW_Version="3.6.1"
 fi
+
+supervisorctl stop reporting-engine-worker || true;
 
 { # try
 	apt-get update
-	apt-get install reporting-worker=$RPW_Version
+	if [[ "$RPW_Version" == "latest" ]]; then
+		apt-get --assume-yes install reporting-engine-worker
+	else
+		apt-get --assume-yes install reporting-engine-worker=${RPW_Version}
+	fi
 } || { # catch
-    # save log for exception 
+	echo "Failure detected installing reporting-worker"
 }
 
-supervisorctl start reporting-worker
+rp_config="/opt/reporting-engine-worker/application.properties"
+echo "Configuring $rp_config"
+if [ -e  $rp_config ];then
+	sed -i "/schedule.manager.queue.request/c\schedule.manager.queue.request = ${RPW_Environment}.schedule-manager.request" ${rp_config}
+	sed -i "/schedule.manager.queue.response/c\schedule.manager.queue.response = ${RPW_Environment}.schedule-manager.response" ${rp_config}
+	sed -i "/schedule.manager.queue.metadata/c\schedule.manager.queue.metadata = ${RPW_Environment}.schedule-manager.metadata" ${rp_config}
+else
+	echo "$rp_config not found"
+fi
+supervisorctl restart reporting-engine-worker
+echo "Installation and configuration complete"
