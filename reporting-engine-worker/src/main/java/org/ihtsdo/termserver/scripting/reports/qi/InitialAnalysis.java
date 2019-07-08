@@ -5,6 +5,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.job.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
@@ -16,6 +17,7 @@ import org.snomed.otf.scheduler.domain.*;
 /**
  * Reports concepts that are intermediate primitives from point of view of some subhierarchy
  * Update: Adding a 2nd report to determine how many sufficiently defined concepts are affected by an IP
+ * QI-222 Select concepts by ECL
  * */
 public class InitialAnalysis extends TermServerReport implements ReportClass {
 	
@@ -35,7 +37,36 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 		}
 	}
 	
+	//QI-222  Multi-ecl report runner
 	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+		TermServerScript.runHeadless(3);
+		String[] morphologies = new String[] {
+				"11889001|Abiotrophy (morphologic abnormality)|",
+				"13331008|Atrophy (morphologic abnormality)|",
+				"33359002|Degeneration (morphologic abnormality)|",
+				"32693004|Demyelination (morphologic abnormality)|",
+				"69251000|Depletion (morphologic abnormality)|",
+				"46595003|Deposition (morphologic abnormality)|",
+				"4720007|Dystrophy (morphologic abnormality)|",
+				"2218006|Endothelial degeneration (morphologic abnormality)|",
+				"47939006|Etat criblé (morphologic abnormality)|",
+				"66984008|Etat lacunaire (morphologic abnormality)|",
+				"16190006|Herring's bodies (morphologic abnormality)|",
+				"18695008|Hyaline body (morphologic abnormality)|",
+				"708529002|Lesion of degenerative abnormality (morphologic abnormality)|",
+				"107670002|Lysis AND/OR resorbed tissue (morphologic abnormality)|",
+				"35828005|Malacia (morphologic abnormality)|",
+				"15524008|Obliteration (morphologic abnormality)|",
+				"107671003|Vascular sclerosis (morphologic abnormality)|"};
+		for (String morphology : morphologies) {
+			String ecl = "<< 404684003 |Clinical finding (finding)| : 116676008 |Associated morphology (attribute)| = << " + morphology;
+			Map<String, String> params = new HashMap<>();
+			params.put(ECL, ecl);
+			TermServerReport.run(InitialAnalysis.class, args, params);
+		}
+	}
+	
+/*	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
 		Map<String, String> params = new HashMap<>();
 		//params.put(ECL, "<< 46866001");	//       |Fracture of lower limb (disorder)|
 		//params.put(ECL, "<< 125605004");	// QI-2  |Fracture of bone (disorder)|
@@ -63,10 +94,10 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 		/* setExclusions(new String[] {"87628006 |Bacterial infectious disease (disorder)|","34014006 |Viral disease (disorder)|",
 				"3218000 |Mycosis (disorder)|","8098009 |Sexually transmitted infectious disease (disorder)|", 
 				"17322007 |Disease caused by parasite (disorder)|", "91302008 |Sepsis (disorder)|"});
-		*/
+		
 		params.put(ECL, "<< 404684003 |Clinical finding (finding)| : 116676008 |Associated morphology (attribute)| = 72704001 |Fracture (morphologic abnormality)|");
 		TermServerReport.run(InitialAnalysis.class, args, params);
-	}
+	}*/
 	
 	@Override
 	public Job getJob() {

@@ -31,6 +31,7 @@ public abstract class TermServerScript implements RF2Constants {
 	
 	protected static boolean debug = true;
 	protected static boolean dryRun = true;
+	protected static Integer headlessEnvironment = null;
 	protected boolean validateConceptOnUpdate = true;
 	protected boolean offlineMode = false;
 	protected boolean quiet = false; 
@@ -287,14 +288,19 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 
 	protected void checkSettingsWithUser(JobRun jobRun) {
-		info ("Select an environment ");
-		for (int i=0; i < environments.length; i++) {
-			println ("  " + i + ": " + environments[i]);
+		int envChoice = NOT_SET;
+		if (headlessEnvironment != null) {
+			envChoice = headlessEnvironment;
+		} else {
+			info ("Select an environment ");
+			for (int i=0; i < environments.length; i++) {
+				println ("  " + i + ": " + environments[i]);
+			}
+			
+			print ("Choice: ");
+			String choice = STDIN.nextLine().trim();
+			envChoice = Integer.parseInt(choice);
 		}
-		
-		print ("Choice: ");
-		String choice = STDIN.nextLine().trim();
-		int envChoice = Integer.parseInt(choice);
 		url = environments[envChoice];
 		env = envKeys[envChoice];
 		
@@ -313,20 +319,21 @@ public abstract class TermServerScript implements RF2Constants {
 			projectName = jobRun.getMandatoryParamValue(PROJECT);
 		}
 		
-		print ("Specify Project " + (projectName==null?": ":"[" + projectName + "]: "));
-		String response = STDIN.nextLine().trim();
-		if (!response.isEmpty()) {
-			projectName = response;
-		}
-		
-		if (restartPosition != NOT_SET) {
-			print ("Restarting from position [" +restartPosition + "]: ");
-			response = STDIN.nextLine().trim();
+		if (headlessEnvironment == null) {
+			print ("Specify Project " + (projectName==null?": ":"[" + projectName + "]: "));
+			String response = STDIN.nextLine().trim();
 			if (!response.isEmpty()) {
-				restartPosition = Integer.parseInt(response);
+				projectName = response;
+			}
+		
+			if (restartPosition != NOT_SET) {
+				print ("Restarting from position [" +restartPosition + "]: ");
+				response = STDIN.nextLine().trim();
+				if (!response.isEmpty()) {
+					restartPosition = Integer.parseInt(response);
+				}
 			}
 		}
-		
 	}
 
 	protected void init (JobRun jobRun) throws TermServerScriptException {
@@ -1277,5 +1284,9 @@ public abstract class TermServerScript implements RF2Constants {
 	
 	public boolean isOffline() {
 		return this.offlineMode;
+	}
+
+	public static void runHeadless(Integer envNum) {
+		headlessEnvironment = envNum;
 	}
 }
