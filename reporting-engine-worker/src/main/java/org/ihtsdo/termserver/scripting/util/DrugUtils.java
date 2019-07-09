@@ -214,7 +214,7 @@ public class DrugUtils implements RF2Constants {
 			if (isFSN) {
 				doseFormStr = SnomedUtils.deconstructFSN(doseForm.getFsn())[0];
 			} else {
-				doseFormStr = doseForm.getPreferredSynonym(US_ENG_LANG_REFSET).getTerm();
+				doseFormStr = doseForm.getPreferredSynonym(langRefset).getTerm();
 			}
 			return StringUtils.deCapitalize(doseFormStr);
 		}

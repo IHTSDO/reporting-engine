@@ -59,6 +59,7 @@ public interface RF2Constants {
 	static Concept PICOGRAM = new Concept ("258687006", "picogram (qualifier value)");
 	static Concept NANOGRAM = new Concept ("258686002", "nanogram (qualifier value)");
 	static Concept MICROGRAM = new Concept ("258685003", "microgram (qualifier value)"); 
+	static Concept MICROEQUIVALENT = new Concept ("258728009", "microequivalent (qualifier value)"); 
 	static Concept MILLIGRAM = new Concept ("258684004", "milligram (qualifier value)"); 
 	static Concept MILLILITER = new Concept ("258773002","Milliliter (qualifier value)");
 	static Concept MICROLITER = new Concept ("258774008","Microliter (qualifier value)|");

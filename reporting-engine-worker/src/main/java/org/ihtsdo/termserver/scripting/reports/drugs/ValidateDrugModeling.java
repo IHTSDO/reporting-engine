@@ -509,7 +509,6 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		initialiseSummary(issueStr);
 		initialiseSummary(issue2Str);
 		if (!actual.getTerm().equals(expected.getTerm())) {
-			
 			String differences = findDifferences (actual.getTerm(), expected.getTerm());
 			report (c, issueStr, expected.getTerm(), differences, actual);
 		} else if (!actual.getCaseSignificance().equals(expected.getCaseSignificance())) {
