@@ -228,15 +228,20 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		
 		subHierarchyECL = "< 233776003 |Tracheobronchial disorder|"; //QI-268
 		templateNames = new String[] {	"templates/Tracheobronchial.json" };
-		*/
+
 		subHierarchyECL = "<< 298180004 |Finding of range of joint movement (finding)| MINUS << 7890003 |Contracture of joint (disorder)|"; //QI-284
 		templateNames = new String[] {	"templates/Finding of range of joint movement.json" };
 		includeComplexTemplates = true;
+		*/
 		
+		subHierarchyECL = "< 400006008 |Hamartoma (disorder)|"; //QI-296
+		templateNames = new String[] {	"templates/Harmartoma.json" };
 		super.init(args);
 		
 		//Ensure our ECL matches more than 0 concepts.  This will also cache the result
-		if (!getArchiveManager().allowStaleData && findConcepts(subHierarchyECL).size() == 0) {
+		boolean expectLargeResults = !safetyProtocols;
+		boolean useLocalStoreIfSimple = false;
+		if (!getArchiveManager().allowStaleData && findConcepts(subHierarchyECL, false, expectLargeResults, useLocalStoreIfSimple).size() == 0) {
 			throw new TermServerScriptException(subHierarchyECL + " returned 0 rows");
 		}
 	}
