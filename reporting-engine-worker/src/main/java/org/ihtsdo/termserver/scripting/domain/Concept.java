@@ -233,6 +233,18 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		List<Description> pts = getDescriptions(refsetId, Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE);
 		return pts.size() == 0 ? null : pts.get(0);
 	}
+	
+	public Description getPreferredSynonymSafely(String refsetId) {
+		String debug = "";
+		try {
+			List<Description> pts = getDescriptions(refsetId, Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE);
+			return pts.size() == 0 ? null : pts.get(0);
+		} catch (Exception e) {
+			e.printStackTrace();
+			debug = e.getMessage();
+		}
+		return new Description("Exception recovering PT: " + debug);
+	}
 
 	public void setPreferredSynonym(String preferredSynonym) {
 		this.preferredSynonym = preferredSynonym;

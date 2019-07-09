@@ -45,14 +45,14 @@ public class EclCache {
 	}
 	
 	protected Collection<Concept> findConcepts(String branch, String ecl) throws TermServerScriptException {
-		return findConcepts(branch, ecl, !safetyProtocolEngaged);
+		return findConcepts(branch, ecl, !safetyProtocolEngaged, true);
 	}
 	
 	protected boolean isCached(String ecl) {
 		return expansionCache.containsKey(ecl);
 	}
 	
-	protected Collection<Concept> findConcepts(String branch, String ecl, boolean expectLargeResults) throws TermServerScriptException {
+	protected Collection<Concept> findConcepts(String branch, String ecl, boolean expectLargeResults, boolean useLocalStoreIfSimple) throws TermServerScriptException {
 		ecl = ecl.trim();
 		String machineEcl = org.ihtsdo.termserver.scripting.util.StringUtils.makeMachineReadable(ecl);
 		Collection<Concept> allConcepts;
@@ -79,13 +79,13 @@ public class EclCache {
 			Collection<Concept> combinedSet = new HashSet<>();
 			for (String eclFragment : ecl.split(" OR ")) {
 				TermServerScript.debug("Combining request for: " + eclFragment);
-				combinedSet.addAll(findConcepts(branch, eclFragment, expectLargeResults));
+				combinedSet.addAll(findConcepts(branch, eclFragment, expectLargeResults, useLocalStoreIfSimple));
 			}
 			allConcepts = combinedSet;
 		} else {
-			if (ecl.equals("*")) {
+			if (useLocalStoreIfSimple && ecl.equals("*")) {
 				allConcepts = gl.getAllConcepts();
-			} else if (isSimple(ecl)){
+			} else if (useLocalStoreIfSimple && isSimple(ecl)){
 				if (ecl.startsWith("<<")) {
 					Concept subhierarchy = gl.getConcept(ecl.substring(2).trim());
 					allConcepts = gl.getDescendantsCache().getDescendentsOrSelf(subhierarchy);

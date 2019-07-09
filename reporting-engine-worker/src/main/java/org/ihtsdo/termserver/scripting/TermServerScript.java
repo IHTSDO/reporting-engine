@@ -713,23 +713,27 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	public Collection<Concept> findConcepts(String ecl) throws TermServerScriptException {
-		return findConcepts(project.getBranchPath(), ecl, false, !safetyProtocolsEnabled());
+		return findConcepts(project.getBranchPath(), ecl, false, !safetyProtocolsEnabled(), true);
 	}
 	
 	public Collection<Concept> findConcepts(String ecl, boolean quiet, boolean expectLargeResults) throws TermServerScriptException {
-		return findConcepts(project.getBranchPath(), ecl, quiet, expectLargeResults);
+		return findConcepts(ecl, quiet, expectLargeResults, true);
 	}
 	
-	public Collection<Concept> findConcepts(String branch, String ecl, boolean quiet, boolean expectLargeResults) throws TermServerScriptException {
+	public Collection<Concept> findConcepts(String ecl, boolean quiet, boolean expectLargeResults, boolean useLocalStoreIfSimple) throws TermServerScriptException {
+		return findConcepts(project.getBranchPath(), ecl, quiet, expectLargeResults, useLocalStoreIfSimple);
+	}
+	
+	public Collection<Concept> findConcepts(String branch, String ecl, boolean quiet, boolean expectLargeResults, boolean useLocalStoreIfSimple) throws TermServerScriptException {
 		EclCache cache = EclCache.getCache(branch, tsClient, gson, gl, quiet);
 		cache.engageSafetyProtocol(safetyProtocols);
 		boolean wasCached = cache.isCached(ecl);
-		Collection<Concept> concepts = cache.findConcepts(branch, ecl, expectLargeResults); 
+		Collection<Concept> concepts = cache.findConcepts(branch, ecl, expectLargeResults, useLocalStoreIfSimple); 
 		int retry = 0;
 		if (concepts.size() == 0 && ++retry < 3) {
 			debug("No concepts returned. Double checking that result in 30s...");
 			try { Thread.sleep(30*1000); } catch (Exception e) {}
-			concepts = cache.findConcepts(branch, ecl, expectLargeResults); 
+			concepts = cache.findConcepts(branch, ecl, expectLargeResults, useLocalStoreIfSimple); 
 		}
 		
 		//If this is the first time we've seen these results, check for duplicates
