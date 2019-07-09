@@ -344,16 +344,23 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		
 		subHierarchyECL = "< 85828009 |Autoimmune disease (disorder)|"; //QI-297
 		templateNames = new String[] {	"templates/Autoimune.json" };
-		*/
 		
 		subHierarchyECL = "<< 298180004 |Finding of range of joint movement (finding)|  MINUS <<  7890003 |Contracture of joint (disorder)|";
 		templateNames = new String[] {	"templates/Finding of range of joint movement.json" };
 		includeComplexTemplates = true;
+		*/
+		
+		subHierarchyECL = "<< 417893002|Deformity|"; //QI-278
+		templateNames = new String[] {	"templates/Deformity - disorder.json",
+				"templates/Deformity - finding.json"};
+		
 		super.init(args);
 	
 		//Ensure our ECL matches more than 0 concepts before we import SNOMED - expensive!
-		//This will also cache the result
-		if (findConcepts(subHierarchyECL).size() == 0) {
+		//This will also cache the result.  Don't use the local store - hasn't been initialised yet!
+		boolean expectLargeResults = !safetyProtocols;
+		boolean useLocalStoreIfSimple = false;
+		if (findConcepts(subHierarchyECL, false, expectLargeResults, useLocalStoreIfSimple).size() == 0) {
 			throw new TermServerScriptException(subHierarchyECL + " returned 0 rows");
 		}
 	}
@@ -405,7 +412,7 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		
 		//Start with the whole subHierarchy and remove concepts that match each of our templates
 		Collection<Concept> unalignedConcepts = findConcepts(subHierarchyECL);
-		//Set<Concept> unalignedConcepts = Collections.singleton(gl.getConcept("269214009"));
+		//Set<Concept> unalignedConcepts = Collections.singleton(gl.getConcept("58660009"));
 		Set<Concept> ignoredConcepts = new HashSet<>();
 		
 		//Remove all exclusions before we look for matches
