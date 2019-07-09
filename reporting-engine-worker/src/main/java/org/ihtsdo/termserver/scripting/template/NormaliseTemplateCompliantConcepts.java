@@ -217,12 +217,13 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		
 		subHierarchyECL = "<<118616009"; //QI-253 |Neoplastic disease of uncertain behavior| 
 		templateNames = new String[] {	"templates/Neoplastic Disease.json"};
-		
-		subHierarchyECL = "<400178008 |Lymphangioma (disorder)|"; //QI-317 Various neoplasms
-		//subHierarchyECL = "< 400210000 |Hemangioma (disorder)|";
-		//subHierarchyECL = "< 205562004 |Angiomatosis (disorder)|"; 
-		//templateNames = new String[] {	"templates/Misc Neoplasms.json"};
-		
+		*/
+		//QI-317 Various neoplasms
+		subHierarchyECL = "<400178008 |Lymphangioma (disorder)|"; // << 115236002 |Lymphatic vessel tumor (morphologic abnormality)|
+		//subHierarchyECL = "< 400210000 |Hemangioma (disorder)|"; // << 253053003 |Benign hemangioma (morphologic abnormality)|
+		//subHierarchyECL = "< 205562004 |Angiomatosis (disorder)|";  //<< 14350002 |Angiomatosis (morphologic abnormality)|
+		templateNames = new String[] {	"templates/Misc Neoplasms.json"};
+		/*
 		subHierarchyECL = "<20376005 |Benign neoplastic disease|"; //QI-272
 		templateNames = new String[] {	"templates/Benign Neoplastic Disease.json"};
 		
@@ -232,10 +233,11 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		subHierarchyECL = "<< 298180004 |Finding of range of joint movement (finding)| MINUS << 7890003 |Contracture of joint (disorder)|"; //QI-284
 		templateNames = new String[] {	"templates/Finding of range of joint movement.json" };
 		includeComplexTemplates = true;
-		*/
 		
 		subHierarchyECL = "< 400006008 |Hamartoma (disorder)|"; //QI-296
 		templateNames = new String[] {	"templates/Harmartoma.json" };
+		*/
+		
 		super.init(args);
 		
 		//Ensure our ECL matches more than 0 concepts.  This will also cache the result

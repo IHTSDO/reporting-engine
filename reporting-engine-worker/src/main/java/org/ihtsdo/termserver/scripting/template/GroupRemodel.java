@@ -160,18 +160,23 @@ public class GroupRemodel extends TemplateFix {
 		subHierarchyECL = "<<74627003";  //QI-119 |Diabetic Complication|
 		templateNames = new String[] {	"templates/Complication due to Diabetes Melitus2.json"};
 		includeComplexTemplates = true;
-		*/
+		
 		subHierarchyECL = "< 85828009 |Autoimmune disease (disorder)|"; //QI-297
 		templateNames = new String[] {	"templates/Autoimune.json" };
 		
-		/*
 		subHierarchyECL = "< 233776003 |Tracheobronchial disorder|"; //QI-266
 		templateNames = new String[] {	"templates/Tracheobronchial.json" };
 		*/
+		
+		subHierarchyECL = "<< 417893002|Deformity|"; //QI-278
+		templateNames = new String[] {	"templates/Deformity - disorder.json"};
+		
 		super.init(args);
 		
 		//Ensure our ECL matches more than 0 concepts.  This will also cache the result
-		if (findConcepts(subHierarchyECL).size() == 0) {
+		boolean expectLargeResults = !safetyProtocols;
+		boolean useLocalStoreIfSimple = false;
+		if (!getArchiveManager().allowStaleData && findConcepts(subHierarchyECL, false, expectLargeResults, useLocalStoreIfSimple).size() == 0) {
 			throw new TermServerScriptException(subHierarchyECL + " returned 0 rows");
 		}
 	}
@@ -800,8 +805,8 @@ public class GroupRemodel extends TemplateFix {
 			info ("Skipping " + alreadyProcessed.size() + " concepts declared as already processed in " + alreadyProcessedFile);
 		}
 		
-		//for (Concept c : findConcepts(subHierarchyECL)) {
-		for (Concept c : Collections.singleton(gl.getConcept("200907003"))) {
+		for (Concept c : findConcepts(subHierarchyECL)) {
+		//for (Concept c : Collections.singleton(gl.getConcept("200907003"))) {
 			if (inclusionWords.size() > 0) {
 				if (!containsInclusionWord(c)) {
 					incrementSummaryInformation("Skipped as doesn't contain inclusion word");
