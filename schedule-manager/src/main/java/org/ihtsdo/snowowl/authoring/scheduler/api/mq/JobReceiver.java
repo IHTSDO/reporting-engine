@@ -20,5 +20,4 @@ public class JobReceiver {
 	public void receiveMessage(JobRun jobRun) {
 		service.processResponse(jobRun);
 	}
-
 }

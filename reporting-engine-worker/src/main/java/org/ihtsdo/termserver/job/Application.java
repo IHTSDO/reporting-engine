@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
 
+import org.ihtsdo.termserver.job.mq.ActiveMQConnectionFactoryForAutoscaling;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
@@ -42,6 +43,11 @@ public class Application  {
 		converter.setTargetType(MessageType.TEXT);
 		converter.setTypeIdPropertyName("_type");
 		return converter;
+	}
+	
+	@Bean
+	public ActiveMQConnectionFactoryForAutoscaling autoScalingFactory() {
+		return new ActiveMQConnectionFactoryForAutoscaling();
 	}
 	
 	public static Mode getMode() {

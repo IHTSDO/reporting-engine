@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
+
+import org.ihtsdo.snowowl.authoring.scheduler.api.mq.ActiveMQConnectionFactoryForAutoscaling;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
@@ -48,6 +50,11 @@ public class Application {
 		converter.setTargetType(MessageType.TEXT);
 		converter.setTypeIdPropertyName("_type");
 		return converter;
+	}
+	
+	@Bean
+	public ActiveMQConnectionFactoryForAutoscaling autoScalingFactory() {
+		return new ActiveMQConnectionFactoryForAutoscaling();
 	}
 
 /*	@Bean
