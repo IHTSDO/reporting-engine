@@ -37,6 +37,11 @@ public class StringUtils implements RF2Constants {
 	
 	public static boolean initialLetterLowerCase(String term) {
 		String first = term.substring(0,1);
+		
+		//Being a number doesn't make you lower case
+		if (!Character.isLetter(first.charAt(0))) {
+			return false;
+		}
 		return first.equals(first.toLowerCase());
 	}
 

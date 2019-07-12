@@ -128,18 +128,9 @@ public class DrugTermGenerator extends TermGenerator {
 			replacement.setAcceptabilityMap(SnomedUtils.createPreferredAcceptableMap(US_ENG_LANG_REFSET, GB_ENG_LANG_REFSET));
 		}
 		
-		//Does the case significance of the ingredients suggest a need to modify the term?
-		if (StringUtils.initialLetterLowerCase(replacement.getTerm())) {
-			replacement.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
-		} else if (replacement.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE) && StringUtils.isCaseSensitive(replacementTerm)) {
-			replacement.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
-		} else if (!StringUtils.isCaseSensitive(replacementTerm)) {
-			replacement.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
-		}
-		
 		//We might have a CS ingredient that starts the term.  Check for this, set and warn
 		//OR a case ingredient that would cause the FSN to switch to cI
-		checkCaseSensitiveOfIngredients(t, c, replacement, isFSN, charType);
+		changesMade += checkCaseSensitivitySetting(t, c, replacement, isFSN, charType, langRefset);
 		
 		//Have we made any changes?  Create a new description if so
 		if (!replacementTerm.equals(d.getTerm())) {
@@ -174,24 +165,80 @@ public class DrugTermGenerator extends TermGenerator {
 		return changesMade;
 	}
 
-	private void checkCaseSensitiveOfIngredients(Task t, Concept c, Description d, boolean isFSN,
-			CharacteristicType charType) throws TermServerScriptException {
-		if (d.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE)) {
-			for (Concept ingred : DrugUtils.getIngredients(c, charType)) {
-				ingred = GraphLoader.getGraphLoader().getConcept(ingred.getConceptId());
-				Description ingredDesc = isFSN ? ingred.getFSNDescription() : ingred.getPreferredSynonym(US_ENG_LANG_REFSET);
+	private int checkCaseSensitivitySetting(Task t, Concept c, Description d, boolean isFSN,
+			CharacteristicType charType, String langRefset) throws TermServerScriptException {
+		int changesMade = 0;
+		//Firstly, are there any absolute rules that would force the case signficance like a capital after the first letter
+		//or starting with a lower case?
+		if (StringUtils.initialLetterLowerCase(d.getTerm())) {
+			return modifyIfRequired(d, CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
+			//For the other settings, we need to check further rules below as lower case letters might not look case sensitive.
+		} else if (StringUtils.isCaseSensitive(d.getTerm())) {
+			d.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
+		} else if (!StringUtils.isCaseSensitive(d.getTerm())) {
+			d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
+		}
+		
+		boolean hasCaseSensitiveIngredient = false;
+		Set<Concept> ingreds = DrugUtils.getIngredients(c, charType);
+		boolean isFirstIngred = true;
+		for (Concept ingred : ingreds) {
+			ingred = GraphLoader.getGraphLoader().getConcept(ingred.getConceptId());
+			Description ingredDesc = isFSN ? ingred.getFSNDescription() : ingred.getPreferredSynonym(langRefset);
+			
+			if (ingredDesc.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE) ||
+				ingredDesc.getCaseSignificance().equals(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE)) {
+				hasCaseSensitiveIngredient = true;
+			}
+			
+			if (d.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE)) {
 				if (ingredDesc.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE)) {
 					//For the FSN, a CS ingredient will cause us to go to cI due to the "Product containing" prefix
 					if (isFSN) {
-						report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Set term to cI in FSN due to CS present in ingredient term : " + ingredDesc);
+						report (t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Set term to cI in FSN due to CS present in ingredient term", ingredDesc);
 						d.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
 					} else {
-						report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Set term to CS due to CS present in ingredient term : " + ingredDesc);
-						d.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
+						if (isFirstIngred) {
+							report (t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Set term to CS due to CS present in first ingredient term", ingredDesc);
+							d.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
+							break;  // Don't let subsequent ingredients undo this
+						} else {
+							report (t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Set term to cI due to CS present in (not first) ingredient term", ingredDesc);
+							d.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
+						}
 					}
+					changesMade++;
+				} else if (ingredDesc.getCaseSignificance().equals(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE)) {
+					//For the FSN, a cI ingredient will cause us to go to cI in the product
+					report (t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Set term to cI due to cI present in ingredient term", ingredDesc);
+					d.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
+					changesMade++;
+				}
+			} else if (d.getCaseSignificance().equals(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE)) {
+				//If this is the PT and the FIRST ingredient is CS, then the term becomes CS
+				if (!isFSN && isFirstIngred && ingredDesc.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE)) {
+					report (t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Set PT to CS due to CS present in (first) ingredient term", ingredDesc);
+					d.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
+					changesMade++;
 				}
 			}
+			isFirstIngred = false;
 		}
+		//TODO Watch that this doesn't allow for any case sensitivity in the dose form, units, or presentation.  Currently there is none...
+		if (!hasCaseSensitiveIngredient && !d.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE) && !StringUtils.isCaseSensitive(d.getTerm())) {
+			report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Set term to ci due to lack of case sensitivity in any ingredient");
+			d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
+			changesMade++;
+		}
+		return changesMade;
+	}
+
+	private int modifyIfRequired(Description d, CaseSignificance caseSig) {
+		if (!d.getCaseSignificance().equals(caseSig)) {
+			d.setCaseSignificance(caseSig);
+			return CHANGE_MADE;
+		}
+		return NO_CHANGES_MADE;
 	}
 
 	public String calculateTermFromIngredients(Concept c, boolean isFSN, boolean isPT, String langRefset, CharacteristicType charType) throws TermServerScriptException {
@@ -377,14 +424,19 @@ public class DrugTermGenerator extends TermGenerator {
 		boolean ingredientVariance = checkIngredientVariance(c, charType);
 		Boolean doseFormVariance = checkTypeValueVariance(c, HAS_MANUFACTURED_DOSE_FORM, charType);
 		Boolean presentationVariance = checkTypeValueVariance(c, HAS_UNIT_OF_PRESENTATION, charType);  //May be null if no presentation is specified
-
-		if (drugVariance != ingredientVariance || (presentationVariance != null && !drugVariance && presentationVariance) || (doseFormVariance != null && drugVariance != doseFormVariance)) {
-			String msg = "Drug vs Ingredient vs Presentation US/GB term variance mismatch : Drug=" + drugVariance + 
-					", Ingredients=" + ingredientVariance + 
-					", Presentation=" + presentationVariance +
-					", DoseForm=" + doseFormVariance;
-			report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, msg);
-			if (!drugVariance && (ingredientVariance || presentationVariance)) {
+		boolean strengthUnitVariance = checkStrengthUnitsVariance(c, charType);
+		
+		if (drugVariance != ingredientVariance || 
+				(presentationVariance != null && !drugVariance && presentationVariance) || 
+				(doseFormVariance != null && drugVariance != doseFormVariance) ||
+				drugVariance != strengthUnitVariance) {
+			if (!drugVariance) {
+				String msg = "Drug vs Ingredient vs Presentation US/GB term variance mismatch : Drug=" + drugVariance + 
+						", Ingredients=" + ingredientVariance + 
+						", Presentation=" + presentationVariance +
+						", DoseForm=" + doseFormVariance + 
+						", StrengthUnits=" + strengthUnitVariance;
+				report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, msg);
 				splitPreferredTerm(t, c, allowDuplicates);
 			}
 		} 
@@ -423,6 +475,27 @@ public class DrugTermGenerator extends TermGenerator {
 			}
 		}
 		return ingredientVariance;
+	}
+	
+	private boolean checkStrengthUnitsVariance(Concept c, CharacteristicType charType) throws TermServerScriptException {
+		boolean strengthUnitsVariance = false;
+		//Collect all possible strength units and work out if any should be us/gb specific
+		//Watch that for never abbreviated cases, we might need to hard code since the FSN is US only
+		Concept[] strengthTypes = new Concept[] { HAS_PRES_STRENGTH_UNIT, HAS_PRES_STRENGTH_DENOM_UNIT, 
+												HAS_CONC_STRENGTH_UNIT, HAS_CONC_STRENGTH_DENOM_UNIT };
+		Set<Concept> strengthUnits = SnomedUtils.getTargets(c, strengthTypes, charType);
+		for (Concept unit : strengthUnits) {
+			//Use in-memory copy so we have all descriptions
+			unit = GraphLoader.getGraphLoader().getConcept(unit.getConceptId());
+			//Does the unit have more than one PT?
+			//OR is it never abbreviated (ie use FSN) and contains the word liter?
+			if (unit.getDescriptions(Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE).size() > 1 || 
+					(neverAbbrev.contains(unit) && unit.getFsn().contains("liter")) ) {
+				strengthUnitsVariance = true;
+				break;
+			} 
+		}
+		return strengthUnitsVariance;
 	}
 
 	/**
@@ -541,7 +614,11 @@ public class DrugTermGenerator extends TermGenerator {
 		}
 		
 		if (unit != null) {
-			ingredientTerm += " " + getTermForConcat(unit, isFSN || neverAbbrev.contains(unit), langRefset);
+			String unitForConcat = getTermForConcat(unit, isFSN || neverAbbrev.contains(unit), langRefset);
+			if (!isFSN && neverAbbrev.contains(unit) && unitForConcat.contains("liter") && langRefset.equals(GB_ENG_LANG_REFSET)) {
+				unitForConcat = unitForConcat.replace("liter", "litre");
+			}
+			ingredientTerm += " " + unitForConcat;
 		}
 		
 		ingredientTerm += denominatorStr;
