@@ -1239,4 +1239,24 @@ public class SnomedUtils implements RF2Constants {
 		return matching;
 	}
 
+	public static int notNullCount(Concept[] concepts) {
+		int notNullCount = 0;
+		for (Concept concept : concepts) {
+			if (concept != null) {
+				notNullCount++;
+			}
+		}
+		return notNullCount;
+	}
+
+	public static int appearances(Concept[] concepts, Concept conceptOfInterest) {
+		int appearances = 0;
+		for (Concept concept : concepts) {
+			if (concept != null && concept.equals(conceptOfInterest)) {
+				appearances++;
+			}
+		}
+		return appearances;
+	}
+
 }

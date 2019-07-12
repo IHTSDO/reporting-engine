@@ -629,7 +629,7 @@ public class GroupRemodel extends TemplateFix {
 		}*/
 		
 		//Does the template specify one of the values specifically in group 0?  No need to move
-		//to group 2 in that case.
+		//to an additional group in that case.
 		for ( Attribute a : template.getLogicalTemplate().getUngroupedAttributes()) {
 			if (a.getValue() != null && a.getType().equals(type.getConceptId())) {
 				for (Concept value : values) {
@@ -644,6 +644,7 @@ public class GroupRemodel extends TemplateFix {
 		//Is this an attribute that we might want to form a new group around?
 		if (formNewGroupAround.contains(type)) {
 			//Sort values so they remain with other attributes they're already grouped with
+			//Issue here when the same type/value appears in multiple groups. Multiple up if so
 			Concept[] affinitySorted = sortByAffinity(disjointAttributeValues, type, c, groups, ungrouped);
 			//Add the attributes to the appropriate group.  We only need to do this for the first
 			//pass, since that will assign both values
@@ -706,50 +707,51 @@ public class GroupRemodel extends TemplateFix {
 	 */
 	private Concept[] sortByAffinity(List<Concept> values, Concept type, Concept c, List<RelationshipGroup> groups, boolean ungrouped) throws TermServerScriptException {
 		Concept[] sortedValues = new Concept[groups.size()];
-		//Do we already have attributes in group 1 or 2 which should be grouped with one of our values?
+		//Do we already have attributes in groups which should be grouped with one of our values?
 		nextValue:
 		for (Concept value : values) {
 			Relationship proposedRel = new Relationship (type, value);
 			
 			//In fact, we might already have one of these values stated in a group, in which case the affinity is already set
 			//Or a less specific one that we could replace
+			int idx=1;
 			for (RelationshipGroup group : groups) {
 				if (group!= null && (group.containsTypeValue(proposedRel) || group.containsTypeValue(type, gl.getAncestorsCache().getAncestorsOrSelf(value)))) {
 					//If we're considering grouped attributes, and we find one ungrouped, move it up
 					if (group.getGroupId() == UNGROUPED && !ungrouped) {
-						sortedValues[1] = value;
+						sortedValues[idx] = value;
 					} else {
 						sortedValues[group.getGroupId()] = value;
 					}
-					break nextValue; //If we've set one, the other value has no choice where it goes.
+					//We need to check for other instances of the same type/value so continue through the groups
+					idx++;
 				}
 			}
 			
-			for (int groupId = ungrouped ? 0 : 1 ; groupId < groups.size(); groupId++) {
-				//Loop through other attributes already set in this stated group, and see if we can find them
-				//grouped in the inferred form with our proposed new relationship
-				RelationshipGroup group = groups.get(groupId);
-				if (group != null && !group.isEmpty()) {
-					for (Relationship r : group.getRelationships()) {
-						//If this rel's type and value exist in multiple groups, it's not a good candidate for determining affinity.  Skip
-						if (SnomedUtils.appearsInGroups(c, r, CharacteristicType.INFERRED_RELATIONSHIP).size() > 1) {
-							continue;
-						}
-						
-						if (!r.equalsTypeValue(proposedRel) && SnomedUtils.isGroupedWith(r, proposedRel, c, CharacteristicType.INFERRED_RELATIONSHIP)) {
-							//adjust the target stated group Id to account for gaps in inferred group numbering
-							int statedGroupId = shuffDownInferredGroupId(r.getGroupId(), c);
-							if (sortedValues[statedGroupId] == null) {
-								sortedValues[statedGroupId] = value;
-								continue nextValue;
-							} else {
-								if (true);
-								throw new IllegalStateException("In " + c + "inferred, " + r + " is grouped with: \n" + proposedRel + "\n but also \n" + new Relationship (type, sortedValues[groupId - 1]));
+			//If we've found stated as many items of this type value as are inferred, there's no need to 
+			//search the inferred groups
+			int inferredCount = SnomedUtils.appearsInGroups(c, proposedRel, CharacteristicType.INFERRED_RELATIONSHIP).size();
+			int statedCount = SnomedUtils.appearances(sortedValues, value);
+			if (statedCount < inferredCount) {
+				for (int groupId = ungrouped ? 0 : 1 ; groupId < groups.size(); groupId++) {
+					//Loop through other attributes already set in this stated group, and see if we can find them
+					//grouped in the inferred form with our proposed new relationship
+					RelationshipGroup group = groups.get(groupId);
+					if (group != null && !group.isEmpty()) {
+						for (Relationship r : group.getRelationships()) {
+							if (!r.equalsTypeValue(proposedRel) && SnomedUtils.isGroupedWith(r, proposedRel, c, CharacteristicType.INFERRED_RELATIONSHIP)) {
+								//adjust the target stated group Id to account for gaps in inferred group numbering
+								int statedGroupId = shuffDownInferredGroupId(r.getGroupId(), c);
+								if (sortedValues[statedGroupId] == null) {
+									sortedValues[statedGroupId] = value;
+									continue nextValue;
+								} 
+								//It's OK if we found our value grouped with this relationship but couldn't use it.
+								//It might also be grouped with it in another group, so carry on
 							}
 						}
 					}
 				}
-				
 			}
 		}
 		
@@ -759,7 +761,7 @@ public class GroupRemodel extends TemplateFix {
 		//If we've assigned one, we can auto assign the other.
 		//Or if neither, keep the original order ie alphabetical
 		Iterator<Concept> iter = values.iterator();
-		for (int i = ungrouped ? 0 : 1; i < sortedValues.length; i++) {
+		for (int i = ungrouped ? 0 : 1; i < sortedValues.length && iter.hasNext(); i++) {
 			if (sortedValues[i] == null && iter.hasNext()) {
 				sortedValues[i] = iter.next();
 			}
@@ -806,7 +808,7 @@ public class GroupRemodel extends TemplateFix {
 		}
 		
 		for (Concept c : findConcepts(subHierarchyECL)) {
-		//for (Concept c : Collections.singleton(gl.getConcept("200907003"))) {
+		//for (Concept c : Collections.singleton(gl.getConcept("231937002"))) {
 			if (inclusionWords.size() > 0) {
 				if (!containsInclusionWord(c)) {
 					incrementSummaryInformation("Skipped as doesn't contain inclusion word");
