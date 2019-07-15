@@ -3,13 +3,10 @@ package org.ihtsdo.termserver.scripting.fixes;
 import java.io.IOException;
 import java.util.*;
 
-import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
-
-import us.monoid.json.JSONObject;
 
 /*
 For APDS-335, QI-234 (QI-99)
@@ -34,6 +31,7 @@ public class ReplaceRelationship extends BatchFix implements RF2Constants{
 			fix.reportNoChange = false;
 			fix.populateTaskDescription = false;  //Going above some limit
 			fix.populateEditPanel = false; //Going above some limit
+			fix.validateConceptOnUpdate = false;
 			warn("Description and Edit panel not being populated due to task size");
 			fix.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
@@ -54,20 +52,11 @@ public class ReplaceRelationship extends BatchFix implements RF2Constants{
 	}
 
 	@Override
-	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
-		
-		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
-		int changesMade = replaceTargetRelationship(task, loadedConcept);
+	public int doFix(Task t, Concept c, String info) throws TermServerScriptException {
+		Concept loadedConcept = loadConcept(c, t.getBranchPath());
+		int changesMade = replaceTargetRelationship(t, loadedConcept);
 		if (changesMade > 0) {
-			try {
-				String conceptSerialised = gson.toJson(loadedConcept);
-				debug ("Updating state of " + loadedConcept + info);
-				if (!dryRun) {
-					tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
-				}
-			} catch (Exception e) {
-				report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
-			}
+			updateConcept(t, loadedConcept, info);
 		}
 		return changesMade;
 	}
