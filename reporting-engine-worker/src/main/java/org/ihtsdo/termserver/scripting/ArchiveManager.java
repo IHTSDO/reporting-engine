@@ -252,6 +252,9 @@ public class ArchiveManager implements RF2Constants {
 				//Check that we've got some descriptions to be sure we've not been given
 				//a malformed, or classification style archive.
 				debug("Checking first 100 concepts for integrity");
+				if (gl.getAllConcepts().size() < 300000) {
+					throw new TermServerScriptException("Insufficient number of concepts loaded " + gl.getAllConcepts().size() + " - Snapshot archive damaged?");
+				}
 				List<Description> first100Descriptions = gl.getAllConcepts()
 						.stream()
 						.limit(100)
