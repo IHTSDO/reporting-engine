@@ -57,6 +57,11 @@ public class ReportSheetManager implements RF2Constants {
 			TermServerScript.warn("Google Sheet size set to " + MAX_ROWS + " x " + MAX_COLUMNS);
 		}
 	}
+	
+	public static void setMaxColumns (int maxCols) {
+		MAX_COLUMNS = maxCols;
+		MAX_COLUMN_STR = Character.toString((char)('A' + MAX_COLUMNS));
+	}
 
 	/**
 	 * Creates an authorized Credential object.
