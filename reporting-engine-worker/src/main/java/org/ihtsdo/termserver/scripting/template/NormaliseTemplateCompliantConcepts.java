@@ -3,7 +3,6 @@ package org.ihtsdo.termserver.scripting.template;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
@@ -47,14 +46,14 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		selfDetermining = true;
 		runStandAlone = true;
 		classifyTasks = true;
+		includeSummaryTab = true;
 		//offlineMode(true);
+		
 		if (!safetyProtocols) {
 			//We're expecting to exceed limits if the safeties are off
 			populateEditPanel = false;
 			populateTaskDescription = false;
 		}
-		//validateTasks = true; Currently failing with 500 error.  Take out Resty?
-		additionalReportColumns = "CharacteristicType, Template, ActionDetail";
 		
 		if (exclusionWords == null) {
 			exclusionWords = new ArrayList<>();
@@ -217,13 +216,13 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		
 		subHierarchyECL = "<<118616009"; //QI-253 |Neoplastic disease of uncertain behavior| 
 		templateNames = new String[] {	"templates/Neoplastic Disease.json"};
-		*/
+		
 		//QI-317 Various neoplasms
 		subHierarchyECL = "<400178008 |Lymphangioma (disorder)|"; // << 115236002 |Lymphatic vessel tumor (morphologic abnormality)|
 		//subHierarchyECL = "< 400210000 |Hemangioma (disorder)|"; // << 253053003 |Benign hemangioma (morphologic abnormality)|
 		//subHierarchyECL = "< 205562004 |Angiomatosis (disorder)|";  //<< 14350002 |Angiomatosis (morphologic abnormality)|
 		templateNames = new String[] {	"templates/Misc Neoplasms.json"};
-		/*
+		
 		subHierarchyECL = "<20376005 |Benign neoplastic disease|"; //QI-272
 		templateNames = new String[] {	"templates/Benign Neoplastic Disease.json"};
 		
@@ -236,7 +235,14 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		
 		subHierarchyECL = "< 400006008 |Hamartoma (disorder)|"; //QI-296
 		templateNames = new String[] {	"templates/Harmartoma.json" };
+		
+		subHierarchyECL = "<<87628006";  //QI-338 |Bacterial infectious disease (disorder)|
+		templateNames = new String[] {	"templates/infection/Infection caused by bacteria.json"};
 		*/
+		
+		//QI-331
+		subHierarchyECL = "<<362975008 |Degenerative disorder (disorder)|: 116676008 |Associated morphology (attribute)| = << 69251000 |Depletion (morphologic abnormality)|";
+		templateNames = new String[] {	"templates/infection/Infection caused by bacteria.json"};
 		
 		super.init(args);
 		
@@ -246,6 +252,16 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		if (!getArchiveManager().allowStaleData && findConcepts(subHierarchyECL, false, expectLargeResults, useLocalStoreIfSimple).size() == 0) {
 			throw new TermServerScriptException(subHierarchyECL + " returned 0 rows");
 		}
+	}
+	
+	public void postInit() throws TermServerScriptException {
+		String[] columnHeadings = new String[] {"TASK_KEY, TASK_DESC, SCTID, FSN, CONCEPT_TYPE, SEVERITY, ACTION_TYP, CharacteristicType, MatchedTemplate, Template Diagnostic",
+				"Report Metadata", "SCTID, FSN, SemTag, Reason"};
+		String[] tabNames = new String[] {	"Mismatched Concepts",
+				"Metadata",
+				"Excluded Concepts"};
+		super.postInit(tabNames, columnHeadings, false);
+		outputMetaData();
 	}
 
 	@Override
@@ -359,25 +375,18 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		//Start with the whole subHierarchy and remove concepts that match each of our templates
 		Set<Concept> alignedConcepts = new HashSet<>();
-		Set<Concept> ignoredConcepts = new HashSet<>();
 		Collection<Concept> potentialMatches = findConcepts(subHierarchyECL);
 		//Collection<Concept> potentialMatches = Collections.singleton(gl.getConcept("7890003 |Contracture of Joint|"));
+		addSummaryInformation("Concepts matching ECL", potentialMatches.size());
 		
 		info ("Identifying concepts aligned to template");
 		for (Template template : templates) {
-			alignedConcepts.addAll(findTemplateMatches(template, potentialMatches, null));
+			alignedConcepts.addAll(findTemplateMatches(template, potentialMatches, TERTIARY_REPORT));
 		}
-		alignedConcepts.removeAll(ignoredConcepts);
-		alignedConcepts = alignedConcepts.stream()
-				.filter(c -> {
-					try {
-						return !isExcluded(c, null);
-					} catch (TermServerScriptException e) {
-						System.out.println("Exception while checking for exclusion " + c + ": " + e);
-						return true;
-					}
-				})
-				.collect(Collectors.toSet());
+		
+		//So how many did NOT align?
+		int misalignedCount = potentialMatches.size() - alignedConcepts.size();
+		addSummaryInformation("Concepts misaligned or excluded", misalignedCount);
 		
 		//Now first pass attempt to remodel because we don't want to batch anything that results 
 		//in no changes being made.
@@ -401,7 +410,6 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 			}
 		}
 		setQuiet(false);
-		info ("Identified " + changesRequired.size() + " concepts requiring update.");
 		addSummaryInformation("Concepts matching templates, no change required", noChangesRequired.size());
 		return asComponents(changesRequired);
 	}

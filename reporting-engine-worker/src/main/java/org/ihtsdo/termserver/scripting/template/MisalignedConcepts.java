@@ -13,7 +13,6 @@ import org.ihtsdo.termserver.scripting.client.TemplateServiceClient;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
-import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.authoringtemplate.domain.ConceptTemplate;
 import org.snomed.authoringtemplate.domain.logical.LogicalTemplate;
@@ -372,24 +371,7 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 				"Excluded Concepts",
 				"Matched Concepts"};
 		super.postInit(tabNames, columnHeadings, false);
-		
-		info("Outputting metadata tab");
-		String user = jobRun == null ? "System" : jobRun.getUser();
-		writeToReportFile (SECONDARY_REPORT, "Requested by: " + user);
-		writeToReportFile (SECONDARY_REPORT, "Ran against: " + subHierarchyECL);
-		writeToReportFile (SECONDARY_REPORT, "Project: " + project);
-		writeToReportFile (SECONDARY_REPORT, "Concepts considered: " + findConcepts(subHierarchyECL).size());
-		writeToReportFile (SECONDARY_REPORT, "Templates: " );
-		
-		for (Template t : templates) {
-			writeToReportFile (SECONDARY_REPORT,TAB + "Name: " + t.getName());
-			writeToReportFile (SECONDARY_REPORT,TAB + "Domain: " + t.getDomain());
-			writeToReportFile (SECONDARY_REPORT,TAB + "Documentation: " + t.getDocumentation());
-			String stl = t.getLogicalTemplate().toString();
-			stl = SnomedUtils.populateFSNs(stl);
-			writeToReportFile (SECONDARY_REPORT,TAB + "STL: " + QUOTE +  stl + QUOTE);
-			writeToReportFile (SECONDARY_REPORT,TAB);
-		}
+		outputMetaData();
 	}
 	
 	@Override
