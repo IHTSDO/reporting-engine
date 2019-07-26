@@ -232,18 +232,18 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		subHierarchyECL = "<< 298180004 |Finding of range of joint movement (finding)| MINUS << 7890003 |Contracture of joint (disorder)|"; //QI-284
 		templateNames = new String[] {	"templates/Finding of range of joint movement.json" };
 		includeComplexTemplates = true;
-		*/
+		
 		subHierarchyECL = "< 400006008 |Hamartoma (disorder)|"; //QI-296
 		templateNames = new String[] {	"templates/Harmartoma.json" };
-		/*
+		
 		subHierarchyECL = "<<87628006";  //QI-338 |Bacterial infectious disease (disorder)|
 		templateNames = new String[] {	"templates/infection/Infection caused by bacteria.json"};
-		
-		
-		//QI-331
-		subHierarchyECL = "<<362975008 |Degenerative disorder (disorder)|: 116676008 |Associated morphology (attribute)| = << 69251000 |Depletion (morphologic abnormality)|";
-		templateNames = new String[] {	"templates/infection/Infection caused by bacteria.json"};
 		*/
+		
+		//QI-331, QI-353
+		subHierarchyECL = "<<362975008 |Degenerative disorder (disorder)|: 116676008 |Associated morphology (attribute)| = << 35828005 |Malacia (morphologic abnormality)|";
+		templateNames = new String[] {	"templates/Degenerative disorder.json"};
+		
 		super.init(args);
 		
 		//Ensure our ECL matches more than 0 concepts.  This will also cache the result
