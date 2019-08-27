@@ -14,8 +14,8 @@ public class ActiveMQConnectionFactoryForAutoscaling implements ActiveMQConnecti
 	public void customize(ActiveMQConnectionFactory factory) {
 		ActiveMQPrefetchPolicy prefetchPolicy = new ActiveMQPrefetchPolicy();
 		//Autoscaling only effective if we consume one message at a time.
-		prefetchPolicy.setQueuePrefetch(1);
+		prefetchPolicy.setQueuePrefetch(0);
 		factory.setPrefetchPolicy(prefetchPolicy);
-		logger.info("Prefetch policy set to '1' for autoscaling");
+		logger.info("Prefetch policy set to '0' for autoscaling");
 	}
 }
