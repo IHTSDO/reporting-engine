@@ -59,6 +59,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	private static final int MIN_TEXT_DEFN_LENGTH = 12;
 	private Map<String, Integer> issueSummaryMap = new HashMap<>();
 	DescendentsCache cache;
+	private Set<Concept> deprecatedHierarchies;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
 		Map<String, String> params = new HashMap<>();
@@ -82,6 +83,8 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				"Summary"};
 		
 		super.postInit(tabNames, columnHeadings, false);
+		deprecatedHierarchies = new HashSet<>();
+		deprecatedHierarchies.add(gl.getConcept("116007004|Combined site (body structure)|"));
 	}
 
 	@Override
@@ -137,6 +140,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		deprecatedHierarchies();
 		neverGroupTogether();
 		domainMustNotUseType();
+		
+		info("...Deprecation rules");
+		checkDeprecatedHierarchies();
 		
 		info("Checks complete, creating summary tag");
 		populateSummaryTab();
@@ -754,6 +760,20 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			if (c.isActive()) {
 				for (Concept type : typesOfInterest) {
 					validateTypeValueCombo(c, type, invalidValues, issueStr, false);
+				}
+			}
+		}
+	}
+	
+	private void checkDeprecatedHierarchies() throws TermServerScriptException {
+		String issueStr = "New concept created in deprecated hierarchy";
+		initialiseSummary(issueStr);
+		
+		//RP-181 No new combined bodysite concepts should be created
+		for (Concept deprecatedHierarchy : deprecatedHierarchies) {
+			for (Concept c : deprecatedHierarchy.getDescendents(NOT_SET)) {
+				if (!c.isReleased()) {
+					report (c, issueStr, isLegacy(c), isActive(c, null), deprecatedHierarchy);
 				}
 			}
 		}
