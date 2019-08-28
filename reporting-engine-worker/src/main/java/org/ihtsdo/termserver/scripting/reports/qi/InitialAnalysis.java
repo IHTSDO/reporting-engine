@@ -130,9 +130,11 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 	
 	public void postInit() throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "1m7MVhMePldYrNjOvsE_WTAYcowZ4ps50";  // QI/Initial Analysis
+		
 		subHierarchyStr = this.jobRun.getParamValue(SUB_HIERARCHY);
 		subHierarchyECL = this.jobRun.getParamValue(ECL);
-		if (subHierarchyStr != null && subHierarchyECL == null) {
+		
+		if (subHierarchyStr != null && (subHierarchyECL == null || subHierarchyECL.trim().isEmpty())) {
 			subHierarchyECL = "<<" + subHierarchyStr;
 		} else if (subHierarchyStr == null && subHierarchyECL == null ) {
 			throw new TermServerScriptException("Either subhierarchy or ECL must be specified");
