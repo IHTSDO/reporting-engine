@@ -38,7 +38,7 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 	
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {"SCTID, Domain, SemTag, Hierarchy (Total), Total Concepts in Domain, OutOfScope - Domain, OutOfScope - Hierarchy, Counted Elsewhere, Template Compliant, Templates Considered", 
-												",KPI, Count"};
+												",,,KPI, Count"};
 		String[] tabNames = new String[] {	"Template Compliance", 
 											"Summary Stats / KPIs"};
 		super.postInit(tabNames, columnHeadings, false);
