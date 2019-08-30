@@ -873,6 +873,12 @@ public class SnomedUtils implements RF2Constants {
 	}
 	
 	public static Set<Concept> getHighestAncestorsBefore(Concept start, Concept end) {
+		if (start == null) {
+			throw new IllegalStateException("Asked to find highest ancestor - start concept not specified");
+		}
+		if (end == null) {
+			throw new IllegalStateException("Asked to find highest ancestor - end concept not specified");
+		}
 		Set<Concept> topLevelAncestors = new HashSet<>();
 		for (Concept parent : start.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
 			if (parent.equals(end)) {

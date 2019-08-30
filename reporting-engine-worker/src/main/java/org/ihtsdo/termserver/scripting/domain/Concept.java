@@ -31,6 +31,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	@SerializedName("fsn")
 	@Expose
 	private Object fsn;
+	
 	@SerializedName("definitionStatus")
 	@Expose
 	private DefinitionStatus definitionStatus;
@@ -194,7 +195,13 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 
 	public String getFsn() {
 		if (fsn != null)
-			return fsn.toString();
+			if (fsn instanceof String) {
+				return fsn.toString();
+			} else if (fsn instanceof Map){
+				return ((Map)fsn).get("term").toString();
+			}else {
+				return fsn.toString();
+			}
 		
 		return null;
 	}
