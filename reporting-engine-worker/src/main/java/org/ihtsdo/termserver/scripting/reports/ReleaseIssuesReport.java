@@ -137,7 +137,6 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		info("...Modelling rules check");
 		validateAttributeDomainModellingRules();
 		validateAttributeTypeValueModellingRules();
-		deprecatedHierarchies();
 		neverGroupTogether();
 		domainMustNotUseType();
 		
@@ -719,12 +718,12 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	
 
 	private void validateAttributeDomainModellingRules() throws TermServerScriptException {
+		//RP-179 concepts using surgical approach must be surgical procedures
 		String issueStr = "Concepts using |Surgical approach| must be subtypes of |surgical procedure|";
 		initialiseSummary(issueStr);
 		Concept type = gl.getConcept("424876005 |Surgical approach (attribute)|");
 		Concept subHierarchy = gl.getConcept("387713003 |Surgical procedure (procedure)|");
 		Set<Concept> subHierarchyList = cache.getDescendentsOrSelf(subHierarchy);
-		
 		for (Concept c : gl.getAllConcepts()) {
 			if (c.isActive()) {
 				validateTypeUsedInDomain(c, type, subHierarchyList, issueStr);
@@ -778,7 +777,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			}
 		}
 	}
-
+	
 	/**
 	 * If the given concept uses the particular type, checks if that type is in (or must not be in)
 	 * the list of specified values
@@ -796,23 +795,6 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		}
 	}
 	
-
-	private void deprecatedHierarchies() throws TermServerScriptException {
-		List<Concept> deprecatedHierarchies = new ArrayList<>();
-		deprecatedHierarchies.add(gl.getConcept("116007004|Combined site (body structure)|"));
-		for (Concept deprecatedHierarchy : deprecatedHierarchies) {
-			String issueStr = "No new descendants allowed in " + deprecatedHierarchy;
-			initialiseSummary(issueStr);
-			for (Concept c : deprecatedHierarchy.getDescendents(NOT_SET)) {
-				//No child can have a new parent relationship in this hierarchy
-				for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, IS_A, ActiveState.ACTIVE)) {
-					if (r.getEffectiveTime() == null || r.getEffectiveTime().isEmpty() || !r.isReleased()) {
-						report (c, issueStr, isLegacy(r), isActive(c, r), r);
-					}
-				}
-			}
-		}
-	}
 	
 	//RP-180
 	private void neverGroupTogether() throws TermServerScriptException {
