@@ -499,10 +499,6 @@ public class Description extends Component implements RF2Constants {
 	}
 
 	public Boolean isReleased() {
-		//If the field has not been populated (say because its not been loaded from the TS) then use effectiveTime
-		if (released == null) {
-			return !(effectiveTime == null || effectiveTime.isEmpty());
-		}
 		return released;
 	}
 

@@ -356,10 +356,6 @@ public class Relationship extends Component implements IRelationshipTemplate, RF
 	
 	
 	public Boolean isReleased() {
-		//If we don't know if it's been released, fall back to the presence of an effectiveTime
-		if (released == null) {
-			return !(effectiveTime == null || effectiveTime.isEmpty());
-		}
 		return released;
 	}
 

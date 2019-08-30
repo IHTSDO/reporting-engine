@@ -264,7 +264,9 @@ public class GraphLoader implements RF2Constants {
 	 */
 	public int addRelationshipToConcept(CharacteristicType charType, String[] lineItems, boolean isDelta, Boolean isReleased) throws TermServerScriptException {
 		Relationship r = createRelationshipFromRF2(charType, lineItems);
-		r.setReleased(isReleased);
+		if (r.isReleased() == null) {
+			r.setReleased(isReleased);
+		}
 		return addRelationshipToConcept(charType, r, isDelta);
 	}
 	
@@ -365,10 +367,18 @@ public class GraphLoader implements RF2Constants {
 				if (lineItems[IDX_MODULEID].equals(excludeModule)) {
 					continue;
 				}
+				
+				/*if (lineItems[IDX_ID].equals("296813001")) {
+					TermServerScript.debug("here");
+				}*/
 				//We might already have received some details about this concept
 				Concept c = getConcept(lineItems[IDX_ID]);
 				Concept.fillFromRf2(c, lineItems);
-				c.setReleased(isReleased);
+				
+				//Only set the released flag if it's not set already
+				if (c.isReleased() == null) {
+					c.setReleased(isReleased);
+				}
 				if (c.getDefinitionStatus() == null) {
 					throw new TermServerScriptException("Concept " + c + " did not define definition status");
 				}
@@ -404,7 +414,10 @@ public class GraphLoader implements RF2Constants {
 					//We might already have information about this description, eg langrefset entries
 					Description d = getDescription (lineItems[DES_IDX_ID]);
 					Description.fillFromRf2(d,lineItems);
-					d.setReleased(isReleased);
+					//Only set the released flag if it's not set already
+					if (d.isReleased() == null) {
+						d.setReleased(isReleased);
+					}
 					c.addDescription(d);
 				}
 			} else {

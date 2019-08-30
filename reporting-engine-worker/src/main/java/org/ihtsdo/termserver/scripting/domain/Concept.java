@@ -1236,16 +1236,8 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		inferredRelationshipGroups = null;
 	}
 
-	public Boolean getReleased() {
-		return isReleased();
-	}
 	
 	public Boolean isReleased() {
-		//If the field has not been populated (say because its not been loaded from the TS) then use effectiveTime
-		//Which isn't ideal if we've just changed the definition status!
-		if (released == null) {
-			return !(effectiveTime == null || effectiveTime.isEmpty());
-		}
 		return released;
 	}
 

@@ -33,7 +33,6 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
 		Map<String, String> params = new HashMap<>();
-		//params.put(ECL, "<< " + ROOT_CONCEPT.toString());
 		TermServerReport.run(ConceptChanged.class, args, params);
 	}
 	
@@ -41,9 +40,24 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
 		ReportSheetManager.setMaxColumns(18);
 		getArchiveManager().populateReleasedFlag = true;
-		additionalReportColumns = "FSN, Semtag, Active, New Concept, defStatusChanged, hasNewStatedRelationships, hasNewInferredRelationships, hasLostStatedRelationships, hasLostInferredRelationships, hasNewDescriptions, hasChangedDescriptions, hasLostDescriptions, hasChangedAssociations, hasChangedInactivationIndicators, isTargetOfNewStatedRelationship, isTargetOfNewInferredRelationship, wasTargetOfLostStatedRelationship, wasTargetOfLostInferredRelationship";
 		subHierarchyECL = run.getParamValue(ECL);
 		super.init(run);
+	}
+	
+	public void postInit() throws TermServerScriptException {
+		String[] columnHeadings = new String[] {
+				"Id, FSN, SemTag, Active, New, DefStatusChanged",
+				"Id, FSN, SemTag, Active, hasNewStatedRelationships, hasNewInferredRelationships, hasLostStatedRelationships, hasLostInferredRelationships",
+				"Id, FSN, SemTag, Active, hasNewDescriptions, hasChangedDescriptions, hasLostDescriptions",
+				"Id, FSN, SemTag, Active, hasChangedAssociations, hasChangedInactivationIndicators",
+				"Id, FSN, SemTag, Active,isTargetOfNewStatedRelationship, isTargetOfNewInferredRelationship, wasTargetOfLostStatedRelationship, wasTargetOfLostInferredRelationship"};
+		String[] tabNames = new String[] {	
+				"Concept Changes",
+				"Relationship Changes",
+				"Description Changes",
+				"Association Changes",
+				"Incoming Relationship Changes"};
+		super.postInit(tabNames, columnHeadings, false);
 	}
 	
 	@Override
@@ -78,7 +92,10 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 			if (!c.isReleased()) {
 				newConcepts.add(c);
 			} else if (c.getEffectiveTime() == null || c.getEffectiveTime().isEmpty()) {
-				defStatusChanged.add(c);
+				//Only want to log def status change if the concept has not been made inactive
+				if (c.isActive()) {
+					defStatusChanged.add(c);
+				}
 			}
 			
 			for (Description d : c.getDescriptions()) {
@@ -138,50 +155,78 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 	}
 	
 	private void reportConceptsChanged() throws TermServerScriptException {
-		debug ("Creating super set of all concept changes identified");
 		HashSet<Concept> superSet = new HashSet<>();
+		
 		superSet.addAll(newConcepts);
 		superSet.addAll(defStatusChanged);
+		debug ("Creating concept report for " + superSet.size() + " concepts");
+		for (Concept c : sort(superSet)) {
+			report (c,
+				c.isActive()?"Y":"N",
+				newConcepts.contains(c)?"Y":"N",
+				defStatusChanged.contains(c)?"Y":"N");
+		}
+		superSet.clear();
+		
 		superSet.addAll(hasNewStatedRelationships);
 		superSet.addAll(hasNewInferredRelationships);
 		superSet.addAll(hasLostStatedRelationships);
 		superSet.addAll(hasLostInferredRelationships);
+		debug ("Creating relationship report for " + superSet.size() + " concepts");
+		for (Concept c : sort(superSet)) {
+			report (SECONDARY_REPORT, c,
+				c.isActive()?"Y":"N",
+				hasNewStatedRelationships.contains(c)?"Y":"N",
+				hasNewInferredRelationships.contains(c)?"Y":"N",
+				hasLostStatedRelationships.contains(c)?"Y":"N",
+				hasLostInferredRelationships.contains(c)?"Y":"N");
+		}
+		superSet.clear();
+		
 		superSet.addAll(hasNewDescriptions);
 		superSet.addAll(hasChangedDescriptions);
 		superSet.addAll(hasLostDescriptions);
+		debug ("Creating description report for " + superSet.size() + " concepts");
+		for (Concept c : sort(superSet)) {
+			report (TERTIARY_REPORT, c,
+				c.isActive()?"Y":"N",
+				hasNewDescriptions.contains(c)?"Y":"N",
+				hasChangedDescriptions.contains(c)?"Y":"N",
+				hasLostDescriptions.contains(c)?"Y":"N");
+		}
+		superSet.clear();
+		
 		superSet.addAll(hasChangedAssociations);
 		superSet.addAll(hasChangedInactivationIndicators);
+		debug ("Creating association report for " + superSet.size() + " concepts");
+		for (Concept c : sort(superSet)) {
+			report (QUATERNARY_REPORT, c,
+				c.isActive()?"Y":"N",
+				hasChangedAssociations.contains(c)?"Y":"N",
+				hasChangedInactivationIndicators.contains(c)?"Y":"N");
+		}
+		superSet.clear();
+		
 		superSet.addAll(isTargetOfNewStatedRelationship);
 		superSet.addAll(wasTargetOfLostStatedRelationship);
 		superSet.addAll(isTargetOfNewInferredRelationship);
 		superSet.addAll(wasTargetOfLostInferredRelationship);
-		
-		//We're going to sort on top level hierarchy, then alphabetically
-		debug ("Sorting super set");
-		List<Concept> sortedList = superSet.stream()
-		.sorted((c1, c2) -> compareSemTagFSN(c1,c2))
-		.collect(Collectors.toList());
-		
-		debug ("Creating report for " + sortedList.size() + " concepts");
-		for (Concept c : sortedList) {
-			report (c,
+		debug ("Creating incoming relatonshiip report for " + superSet.size() + " concepts");
+		for (Concept c : sort(superSet)) {
+			report (QUINARY_REPORT, c,
 				c.isActive()?"Y":"N",
-				newConcepts.contains(c)?"Y":"N",
-				defStatusChanged.contains(c)?"Y":"N",
-				hasNewStatedRelationships.contains(c)?"Y":"N",
-				hasNewInferredRelationships.contains(c)?"Y":"N",
-				hasLostStatedRelationships.contains(c)?"Y":"N",
-				hasLostInferredRelationships.contains(c)?"Y":"N",
-				hasNewDescriptions.contains(c)?"Y":"N",
-				hasChangedDescriptions.contains(c)?"Y":"N",
-				hasLostDescriptions.contains(c)?"Y":"N",
-				hasChangedAssociations.contains(c)?"Y":"N",
-				hasChangedInactivationIndicators.contains(c)?"Y":"N",
 				isTargetOfNewStatedRelationship.contains(c)?"Y":"N",
 				wasTargetOfLostStatedRelationship.contains(c)?"Y":"N",
 				isTargetOfNewInferredRelationship.contains(c)?"Y":"N",
 				wasTargetOfLostInferredRelationship.contains(c)?"Y":"N");
 		}
+	}
+	
+	private List<Concept> sort(Set<Concept> superSet) {
+		//We're going to sort on top level hierarchy, then alphabetically
+		return superSet.stream()
+		.sorted((c1, c2) -> compareSemTagFSN(c1,c2))
+		.collect(Collectors.toList());
 	}
 
 	private int compareSemTagFSN(Concept c1, Concept c2) {
