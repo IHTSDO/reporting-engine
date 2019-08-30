@@ -435,7 +435,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			if (c.isActive() || includeLegacyIssues) {
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 					if (d.getTerm().contains("( ") || d.getTerm().contains(" )")) {
-						report(c, issueStr, isLegacy(c), isActive(c,d), d);
+						report(c, issueStr, isLegacy(d), isActive(c,d), d);
 						continue nextConcept;
 					}
 				}
@@ -891,7 +891,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	}
 
 	private String isLegacy(Component c) {
-		return c.getEffectiveTime() == null ? "N" : "Y";
+		return (c.getEffectiveTime() == null || c.getEffectiveTime().isEmpty()) ? "N" : "Y";
 	}
 	
 	class DialectPair {
