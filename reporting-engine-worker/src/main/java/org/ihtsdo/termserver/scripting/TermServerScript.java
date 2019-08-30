@@ -140,7 +140,7 @@ public abstract class TermServerScript implements RF2Constants {
 		this.authenticatedCookie = authenticatedCookie;
 	}
 	
-	protected static String[] envKeys = new String[] {"local","dev","uat","prod","dev","dev","uat","prod"};
+	protected static String[] envKeys = new String[] {"local","dev","uat","prod","dev","dev","uat", "uat", "prod"};
 
 	protected static String[] environments = new String[] {	"http://localhost:8080/",
 															"https://dev-authoring.ihtsdotools.org/",
@@ -149,6 +149,7 @@ public abstract class TermServerScript implements RF2Constants {
 															"https://dev-ms-authoring.ihtsdotools.org/",
 															"https://dev-snowstorm.ihtsdotools.org/",
 															"https://uat-ms-authoring.ihtsdotools.org/",
+															"https://uat-snowstorm.ihtsdotools.org/",
 															"https://prod-ms-authoring.ihtsdotools.org/",
 	};
 	

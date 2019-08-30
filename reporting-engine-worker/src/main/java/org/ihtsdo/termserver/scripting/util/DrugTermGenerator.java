@@ -634,6 +634,9 @@ public class DrugTermGenerator extends TermGenerator {
 			term = SnomedUtils.deconstructFSN(desc.getTerm())[0];
 		} else {
 			desc = c.getPreferredSynonym(langRefset);
+			if (desc == null) {
+				TermServerScript.warn("No preferred description found for " + c + " in " + langRefset);
+			}
 			term = desc.getTerm();
 		}
 		if (!desc.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE)) {

@@ -318,49 +318,51 @@ public class ArchiveManager implements RF2Constants {
 	private void loadFile(Path path, InputStream is, String fileType, boolean isDelta, boolean fsnOnly, Boolean isReleased)  {
 		try {
 			String fileName = path.getFileName().toString();
-			if (fileName.contains("sct2_Concept_" + fileType )) {
-				info("Loading Concept " + fileType + " file.");
-				gl.loadConceptFile(is, isReleased);
-			} else if (fileName.contains("sct2_Relationship_" + fileType )) {
-				info("Loading Relationship " + fileType + " file.");
-				gl.loadRelationships(CharacteristicType.INFERRED_RELATIONSHIP, is, true, isDelta, isReleased);
-				if (populateHierarchyDepth) {
-					info("Calculating concept depth...");
-					gl.populateHierarchyDepth(ROOT_CONCEPT, 0);
+			if (fileName.contains(fileType)) {
+				if (fileName.contains("sct2_Concept_" )) {
+					info("Loading Concept " + fileType + " file.");
+					gl.loadConceptFile(is, isReleased);
+				} else if (fileName.contains("sct2_Relationship_" )) {
+					info("Loading Relationship " + fileType + " file.");
+					gl.loadRelationships(CharacteristicType.INFERRED_RELATIONSHIP, is, true, isDelta, isReleased);
+					if (populateHierarchyDepth) {
+						info("Calculating concept depth...");
+						gl.populateHierarchyDepth(ROOT_CONCEPT, 0);
+					}
+				} else if (fileName.contains("sct2_StatedRelationship_" )) {
+					info("Loading StatedRelationship " + fileType + " file.");
+					gl.loadRelationships(CharacteristicType.STATED_RELATIONSHIP, is, true, isDelta, isReleased);
+				} else if (fileName.contains("sct2_StatedRelationship_" )) {
+					info("Loading StatedRelationship " + fileType + " file.");
+					gl.loadRelationships(CharacteristicType.STATED_RELATIONSHIP, is, true, isDelta, isReleased);
+				} else if (fileName.contains("sct2_sRefset_OWLExpression" ) ||
+						   fileName.contains("sct2_sRefset_OWLAxiom" )) {
+					info("Loading Axiom " + fileType + " refset file.");
+					gl.loadAxioms(is, isDelta, isReleased);
+				} else if (fileName.contains("sct2_Description_" )) {
+					info("Loading Description " + fileType + " file.");
+					gl.loadDescriptionFile(is, fsnOnly, isReleased);
+				} else if (fileName.contains("sct2_TextDefinition_" )) {
+					info("Loading Text Definition " + fileType + " file.");
+					gl.loadDescriptionFile(is, fsnOnly, isReleased);
+				} else if (fileName.contains("der2_cRefset_ConceptInactivationIndicatorReferenceSet" )) {
+					info("Loading Concept Inactivation Indicator " + fileType + " file.");
+					gl.loadInactivationIndicatorFile(is);
+				} else if (fileName.contains("der2_cRefset_DescriptionInactivationIndicatorReferenceSet" )) {
+					info("Loading Description Inactivation Indicator " + fileType + " file.");
+					gl.loadInactivationIndicatorFile(is);
+				} else if (fileName.contains("der2_cRefset_AttributeValue" )) {
+					info("Loading Concept/Description Inactivation Indicators " + fileType + " file.");
+					gl.loadInactivationIndicatorFile(is);
+				} else if (fileName.contains("Association" ) || fileName.contains("AssociationReferenceSet" )) {
+					info("Loading Historical Association File: " + fileName);
+					gl.loadHistoricalAssociationFile(is);
 				}
-			} else if (fileName.contains("sct2_StatedRelationship_" + fileType )) {
-				info("Loading StatedRelationship " + fileType + " file.");
-				gl.loadRelationships(CharacteristicType.STATED_RELATIONSHIP, is, true, isDelta, isReleased);
-			} else if (fileName.contains("sct2_StatedRelationship_" + fileType )) {
-				info("Loading StatedRelationship " + fileType + " file.");
-				gl.loadRelationships(CharacteristicType.STATED_RELATIONSHIP, is, true, isDelta, isReleased);
-			} else if (fileName.contains("sct2_sRefset_OWLExpression" + fileType ) ||
-					   fileName.contains("sct2_sRefset_OWLAxiom" + fileType )) {
-				info("Loading Axiom " + fileType + " refset file.");
-				gl.loadAxioms(is, isDelta, isReleased);
-			} else if (fileName.contains("sct2_Description_" + fileType )) {
-				info("Loading Description " + fileType + " file.");
-				gl.loadDescriptionFile(is, fsnOnly, isReleased);
-			} else if (fileName.contains("sct2_TextDefinition_" + fileType )) {
-				info("Loading Text Definition " + fileType + " file.");
-				gl.loadDescriptionFile(is, fsnOnly, isReleased);
-			} else if (fileName.contains("der2_cRefset_ConceptInactivationIndicatorReferenceSet" + fileType )) {
-				info("Loading Concept Inactivation Indicator " + fileType + " file.");
-				gl.loadInactivationIndicatorFile(is);
-			} else if (fileName.contains("der2_cRefset_DescriptionInactivationIndicatorReferenceSet" + fileType )) {
-				info("Loading Description Inactivation Indicator " + fileType + " file.");
-				gl.loadInactivationIndicatorFile(is);
-			} else if (fileName.contains("der2_cRefset_AttributeValue" + fileType )) {
-				info("Loading Concept/Description Inactivation Indicators " + fileType + " file.");
-				gl.loadInactivationIndicatorFile(is);
-			} else if (fileName.contains("Association" + fileType ) || fileName.contains("AssociationReferenceSet" + fileType )) {
-				info("Loading Historical Association File: " + fileName);
-				gl.loadHistoricalAssociationFile(is);
-			}
-			//If we're loading all terms, load the language refset as well
-			if (!fsnOnly && (fileName.contains("English" + fileType ) || fileName.contains("Language" + fileType))) {
-				info("Loading Language Reference Set File - " + fileName);
-				gl.loadLanguageFile(is);
+				//If we're loading all terms, load the language refset as well
+				if (!fsnOnly && (fileName.contains("English" ) || fileName.contains("Language"))) {
+					info("Loading " + fileType + " Language Reference Set File - " + fileName);
+					gl.loadLanguageFile(is);
+				}
 			}
 		} catch (TermServerScriptException | IOException | TermServerClientException e) {
 			throw new IllegalStateException("Unable to load " + path + " due to " + e.getMessage(), e);
