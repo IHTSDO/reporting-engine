@@ -3,6 +3,7 @@ package org.ihtsdo.termserver.scripting.util;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang.ArrayUtils;
@@ -272,11 +273,16 @@ public class DrugUtils implements RF2Constants {
 	}
 	
 
-	public static Set<Concept> getIngredients(Concept c, CharacteristicType charType) throws TermServerScriptException {
-		return getIngredientRelationships(c, charType)
+	public static List<Concept> getIngredients(Concept c, CharacteristicType charType) throws TermServerScriptException {
+		Set<Concept> ingredients = getIngredientRelationships(c, charType)
 				.stream()
 				.map(r -> r.getTarget())
 				.collect(Collectors.toSet());
+		
+		//With any duplicates dealt with in set, now sort on FSN 
+		return ingredients.stream()
+				.sorted(Comparator.comparing(Concept::getFsn))
+				.collect(Collectors.toList());
 	}
 
 	public static Ingredient getIngredientDetails(Concept c, int groupId, CharacteristicType charType) throws TermServerScriptException {

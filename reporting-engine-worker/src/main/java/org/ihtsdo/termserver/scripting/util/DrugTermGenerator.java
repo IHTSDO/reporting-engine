@@ -181,7 +181,7 @@ public class DrugTermGenerator extends TermGenerator {
 		}
 		
 		boolean hasCaseSensitiveIngredient = false;
-		Set<Concept> ingreds = DrugUtils.getIngredients(c, charType);
+		List<Concept> ingreds = DrugUtils.getIngredients(c, charType);
 		boolean isFirstIngred = true;
 		for (Concept ingred : ingreds) {
 			ingred = GraphLoader.getGraphLoader().getConcept(ingred.getConceptId());

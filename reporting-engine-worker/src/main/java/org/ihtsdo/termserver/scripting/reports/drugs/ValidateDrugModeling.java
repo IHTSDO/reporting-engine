@@ -72,7 +72,6 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 	
 	public void runJob() throws TermServerScriptException {
 		validateDrugsModeling();
-		validateSubstancesModeling();
 		populateSummaryTab();
 		info("Summary tab complete, all done.");
 	}
@@ -329,80 +328,6 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 			factor = unit1Idx > unit2Idx ? new BigDecimal(0.001D) : new BigDecimal(1000) ; 
 		}
 		return factor;
-	}
-
-	private void validateSubstancesModeling() throws TermServerScriptException {
-		Set<Concept> subHierarchy = SUBSTANCE.getDescendents(NOT_SET);
-		for (Concept concept : subHierarchy) {
-			DrugUtils.setConceptType(concept);
-			validateDisposition(concept);
-			checkForBadWords(concept);  //DRUGS-93
-		}
-		info ("Substances validation complete.");
-	}
-	
-	//Ensure that all stated dispositions exist as inferred, and visa-versa
-	private void validateDisposition(Concept concept) throws TermServerScriptException {
-		validateAttributeViewsMatch (concept, HAS_DISPOSITION, CharacteristicType.STATED_RELATIONSHIP);
-
-		//If this concept has one or more hasDisposition attributes, check if the inferred parent has the same.
-		if (concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_DISPOSITION, ActiveState.ACTIVE).size() > 0) {
-			validateAttributeViewsMatch (concept, HAS_DISPOSITION, CharacteristicType.INFERRED_RELATIONSHIP);
-			checkForOddlyInferredParent(concept, HAS_DISPOSITION, true);
-		}
-	}
-
-	private void validateAttributeViewsMatch(Concept concept,
-			Concept attributeType,
-			CharacteristicType fromCharType) throws TermServerScriptException {
-		String issueStr = fromCharType.toString() + " has no counterpart";
-		initialiseSummary(issueStr);
-		//Check that all relationships of the given type "From" match "To"
-		CharacteristicType toCharType = fromCharType.equals(CharacteristicType.STATED_RELATIONSHIP)? CharacteristicType.INFERRED_RELATIONSHIP : CharacteristicType.STATED_RELATIONSHIP;
-		for (Relationship r : concept.getRelationships(fromCharType, attributeType, ActiveState.ACTIVE)) {
-			if (findRelationship(concept, r, toCharType, false) == null) {
-				report (concept, issueStr, r.toString());
-			}
-		}
-	}
-
-	/**
-	 * list of concepts that have an inferred parent with a stated attribute 
-	 * that is not the same as the that of the concept.
-	 * @return
-	 * @throws TermServerScriptException 
-	 */
-	private void checkForOddlyInferredParent(Concept concept, Concept attributeType, boolean allowMoreSpecific) throws TermServerScriptException {
-		String issueStr ="Inferred parent has a stated attribute not stated in child.";
-		initialiseSummary(issueStr);
-		//Work through inferred parents
-		for (Concept parent : concept.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
-			//Find all STATED attributes of interest
-			for (Relationship parentAttribute : parent.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE)) {
-				//Does our original concept have that attribute?  Report if not.
-				if (null == findRelationship(concept, parentAttribute, CharacteristicType.STATED_RELATIONSHIP, allowMoreSpecific)) {
-					report (concept, issueStr, parentAttribute.toString());
-					//Reporting one issue per concept is sufficient
-					return;
-				}
-			}
-		}
-	}
-
-	private Relationship findRelationship(Concept concept, Relationship exampleRel, CharacteristicType charType, boolean allowMoreSpecific) throws TermServerScriptException {
-		//Find the first relationship matching the type, target and activeState
-		for (Relationship r : concept.getRelationships(charType, exampleRel.getType(),  ActiveState.ACTIVE)) {
-			if (allowMoreSpecific) {
-				//Does this target value have the example rel as self or ancestor?
-				Set<Concept> ancestorsOrSelf = gl.getAncestorsCache().getAncestorsOrSelf(r.getTarget());
-				if (ancestorsOrSelf.contains(exampleRel.getTarget())) {
-					return r;
-				}
-			} else if (r.getTarget().equals(exampleRel.getTarget())) {
-				return r;
-			}
-		}
-		return null;
 	}
 
 	/*

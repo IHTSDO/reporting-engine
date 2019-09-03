@@ -59,7 +59,7 @@ public class ReportSheetManager implements RF2Constants {
 			MAX_ROWS = DEFAULT_MAX_ROWS;
 			setMaxColumns(DEFAULT_MAX_COLUMNS);
 		}
-		TermServerScript.warn("Google Sheet size set to " + MAX_ROWS + " x " + MAX_COLUMNS);
+		TermServerScript.info("Google Sheet size set to " + MAX_ROWS + " x " + MAX_COLUMNS);
 	}
 	
 	public static void setMaxColumns (int maxCols) {
