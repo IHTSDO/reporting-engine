@@ -31,13 +31,12 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 	String[] semTagHiearchy = new String[] { "(product)", "(medicinal product)", "(medicinal product form)", "(clinical drug)" };
 	
 	private static final String[] badWords = new String[] { "preparation", "agent", "+"};
-	private static final String BOSS_FAIL = "BoSS failed to relate to ingredient";
 	
-	Concept[] doseFormTypes = new Concept[] {HAS_MANUFACTURED_DOSE_FORM};
+	private Concept[] doseFormTypes = new Concept[] {HAS_MANUFACTURED_DOSE_FORM};
 	private Map<Concept, Boolean> acceptableMpfDoseForms = new HashMap<>();
 	private Map<Concept, Boolean> acceptableCdDoseForms = new HashMap<>();	
-	
 	private Map<String, Integer> issueSummaryMap = new HashMap<>();
+	private Map<Concept,Concept> grouperSubstanceUsage = new HashMap<>();
 	
 	TermGenerator termGenerator = new DrugTermGenerator(this);
 	
@@ -58,6 +57,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		String[] tabNames = new String[] {	"Issues",
 				"Summary"};
 		populateAcceptableDoseFormMaps();
+		populateGrouperSubstances();
 		super.postInit(tabNames, columnHeadings, false);
 	}
 
@@ -77,10 +77,9 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 	}
 	
 	private void validateDrugsModeling() throws TermServerScriptException {
-		Set<Concept> subHierarchy = MEDICINAL_PRODUCT.getDescendents(NOT_SET);
+		Set<Concept> subHierarchy = gl.getDescendantsCache().getDescendents(MEDICINAL_PRODUCT);
 		ConceptType[] allDrugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT, ConceptType.MEDICINAL_PRODUCT_ONLY, ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.MEDICINAL_PRODUCT_FORM_ONLY, ConceptType.CLINICAL_DRUG };
 		ConceptType[] cds = new ConceptType[] { ConceptType.CLINICAL_DRUG };  //DRUGS-267
-		initialiseSummaryInformation(BOSS_FAIL);
 		
 		//for (Concept concept : Collections.singleton(gl.getConcept("778271007"))) {
 		for (Concept concept : subHierarchy) {
@@ -102,10 +101,16 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 				validateTerming(concept, allDrugTypes);  
 			}
 			
-			// DRUGS-267
+			//DRUGS-267
 			validateIngredientsAgainstBoSS(concept);
 			
-			// DRUGS-296 
+			//DRUGS-793
+			if (!concept.getConceptType().equals(ConceptType.PRODUCT)) {
+				checkForBossGroupers(concept);
+				checkForPaiGroupers(concept);
+			}
+			
+			//DRUGS-296 
 			if (concept.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED) && 
 				concept.getParents(CharacteristicType.STATED_RELATIONSHIP).get(0).equals(MEDICINAL_PRODUCT)) {
 				validateStatedVsInferredAttributes(concept, HAS_ACTIVE_INGRED, allDrugTypes);
@@ -128,7 +133,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 				validateConcentrationStrength(concept);
 			}
 			
-			// DRUGS-288
+			//DRUGS-288
 			validateAttributeValueCardinality(concept, HAS_ACTIVE_INGRED);
 			
 			//DRUGS-93, DRUGS-759
@@ -148,6 +153,41 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 	private boolean isMPF(Concept concept) {
 		return concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM) || 
 				concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM_ONLY);
+	}
+
+	private void populateGrouperSubstances() throws TermServerScriptException {
+		//DRUGS-793 Ingredients of "(product)" Medicinal products will be
+		//considered 'grouper substances' that should not be used as BoSS 
+		for (Concept c : gl.getDescendantsCache().getDescendents(MEDICINAL_PRODUCT)) {
+			DrugUtils.setConceptType(c);
+			if (c.getConceptType().equals(ConceptType.PRODUCT)) {
+				for (Concept substance : DrugUtils.getIngredients(c, CharacteristicType.INFERRED_RELATIONSHIP)) {
+					if (!grouperSubstanceUsage.containsKey(substance)) {
+						grouperSubstanceUsage.put(substance, c);
+					}
+				}
+			}
+		}
+	}
+
+	private void checkForBossGroupers(Concept c) throws TermServerScriptException {
+		String issueStr = "Grouper substance used as BoSS";
+		initialiseSummary(issueStr);
+		for (Concept boss : SnomedUtils.getTargets(c, new Concept[] {HAS_BOSS}, CharacteristicType.INFERRED_RELATIONSHIP)) {
+			if (grouperSubstanceUsage.containsKey(boss)) {
+				report (c, issueStr, boss, " identified as grouper in ", grouperSubstanceUsage.get(boss));
+			}
+		}
+	}
+	
+	private void checkForPaiGroupers(Concept c) throws TermServerScriptException {
+		String issueStr = "Grouper substance used as PAI";
+		initialiseSummary(issueStr);
+		for (Concept pai : SnomedUtils.getTargets(c, new Concept[] {HAS_PRECISE_INGRED}, CharacteristicType.INFERRED_RELATIONSHIP)) {
+			if (grouperSubstanceUsage.containsKey(pai)) {
+				report (c, issueStr, pai, " identified as grouper in ", grouperSubstanceUsage.get(pai));
+			}
+		}
 	}
 
 	private void validateAcceptableDoseForm(Concept c) throws TermServerScriptException {
@@ -409,7 +449,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 	}
 
 	private void validateIngredientsAgainstBoSS(Concept concept) throws TermServerScriptException {
-		String issueStr = "Active ingredient is a subtype of BoSS.  Expected modification.";
+		String issueStr  = "Active ingredient is a subtype of BoSS.  Expected modification.";
 		String issue2Str = "Basis of Strength not equal or subtype of active ingredient, neither is active ingredient a modification of the BoSS";
 		initialiseSummary(issueStr);
 		initialiseSummary(issue2Str);
@@ -443,7 +483,6 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 			}
 			if (!matchFound) {
 				report (concept, issue2Str, boSS);
-				incrementSummaryInformation(BOSS_FAIL);
 			}
 		}
 	}

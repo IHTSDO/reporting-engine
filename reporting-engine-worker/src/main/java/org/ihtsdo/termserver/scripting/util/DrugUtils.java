@@ -33,6 +33,9 @@ public class DrugUtils implements RF2Constants {
 	static Set<Concept> dangerousSubstances = new HashSet<>();  
 	
 	public static void setConceptType(Concept c) {
+		if (c.getConceptType() != null) {
+			return;
+		}
 		String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
 		boolean hasBaseCount = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, COUNT_BASE_ACTIVE_INGREDIENT, ActiveState.ACTIVE).size() > 0;
 		switch (semTag) {
