@@ -29,8 +29,10 @@ public class ReportSheetManager implements RF2Constants {
 	private static final String APPLICATION_NAME = "SI Reporting Engine";
 	private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
 	private static final String CLIENT_SECRET_DIR = "secure/google-api-secret.json";
-	private static int MAX_ROWS = 42000;
-	private static int MAX_COLUMNS = 15;
+	private static int DEFAULT_MAX_ROWS = 42000;
+	private static int DEFAULT_MAX_COLUMNS = 19;
+	private static int MAX_ROWS = DEFAULT_MAX_ROWS;
+	private static int MAX_COLUMNS = DEFAULT_MAX_COLUMNS;
 	private static String MAX_COLUMN_STR = Character.toString((char)('A' + MAX_COLUMNS));
 	private static final int MAX_REQUEST_RATE = 10;
 	private static final int MAX_WRITE_ATTEMPTS = 3;
@@ -52,10 +54,17 @@ public class ReportSheetManager implements RF2Constants {
 		this.owner = owner;
 		if (!this.owner.getScript().safetyProtocolsEnabled()) {
 			MAX_ROWS = 99999;
-			MAX_COLUMNS = 11;
-			MAX_COLUMN_STR = Character.toString((char)('A' + MAX_COLUMNS));
-			TermServerScript.warn("Google Sheet size set to " + MAX_ROWS + " x " + MAX_COLUMNS);
+			setMaxColumns(11);
+		} else {
+			MAX_ROWS = DEFAULT_MAX_ROWS;
+			setMaxColumns(DEFAULT_MAX_COLUMNS);
 		}
+		TermServerScript.info("Google Sheet size set to " + MAX_ROWS + " x " + MAX_COLUMNS);
+	}
+	
+	public static void setMaxColumns (int maxCols) {
+		MAX_COLUMNS = maxCols;
+		MAX_COLUMN_STR = Character.toString((char)('A' + MAX_COLUMNS));
 	}
 
 	/**

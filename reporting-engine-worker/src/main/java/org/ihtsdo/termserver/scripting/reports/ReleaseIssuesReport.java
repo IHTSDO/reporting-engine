@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.AxiomUtils;
+import org.ihtsdo.termserver.scripting.DescendentsCache;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
@@ -37,6 +38,13 @@ import com.google.common.io.Files;
  Active concept parents should not belong to more than one top-level hierarchy – please check NEW and LEGACY content for issues
  RP-127 Disease specific rules
  RP-165 Text definition dialect rules
+ RP-179 concepts using surgical approach must be surgical procedures
+ RP-181 Combined body sites cannot be the target for finding/procedure sites
+ RP-181 No new combined body sites
+ RP-201 Check for space before or after brackets
+ RP-180 Check for attribute types that should never appear in the same group
+ RP-180 Check for subHierarchies that should not use specific attribute types
+ RP-202 Check for MsWord style double hyphen "—" (as opposed to "-")
  */
 public class ReleaseIssuesReport extends TermServerReport implements ReportClass {
 	
@@ -46,13 +54,16 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 											"f","E", "var", "St"};
 	char NBSP = 255;
 	String NBSPSTR = "\u00A0";
+	String LONG_DASH = "—";
 	boolean includeLegacyIssues = false;
 	private static final int MIN_TEXT_DEFN_LENGTH = 12;
 	private Map<String, Integer> issueSummaryMap = new HashMap<>();
+	DescendentsCache cache;
+	private Set<Concept> deprecatedHierarchies;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
 		Map<String, String> params = new HashMap<>();
-		params.put(INCLUDE_ALL_LEGACY_ISSUES, "Y");
+		params.put(INCLUDE_ALL_LEGACY_ISSUES, "N");
 		TermServerReport.run(ReleaseIssuesReport.class, args, params);
 	}
 	
@@ -61,6 +72,8 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		super.init(run);
 		includeLegacyIssues = run.getParameters().getMandatoryBoolean(INCLUDE_ALL_LEGACY_ISSUES);
 		additionalReportColumns = "FSN, Semtag, Issue, Legacy, C/D/R Active, Detail";
+		cache = gl.getDescendantsCache();
+		getArchiveManager().populateReleasedFlag = true;
 	}
 	
 	public void postInit() throws TermServerScriptException {
@@ -70,6 +83,8 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				"Summary"};
 		
 		super.postInit(tabNames, columnHeadings, false);
+		deprecatedHierarchies = new HashSet<>();
+		deprecatedHierarchies.add(gl.getConcept("116007004|Combined site (body structure)|"));
 	}
 
 	@Override
@@ -98,7 +113,8 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		info("...description rules");
 		fullStopInSynonym();
 		inactiveMissingFSN_PT();
-		nonBreakingSpace();
+		unexpectedCharacters();
+		spaceBracket();
 		
 		info("...duplicate semantic tags");
 		duplicateSemanticTags();
@@ -118,6 +134,15 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		info("...Nested brackets check");
 		nestedBracketCheck();
 		
+		info("...Modelling rules check");
+		validateAttributeDomainModellingRules();
+		validateAttributeTypeValueModellingRules();
+		neverGroupTogether();
+		domainMustNotUseType();
+		
+		info("...Deprecation rules");
+		checkDeprecatedHierarchies();
+		
 		info("Checks complete, creating summary tag");
 		populateSummaryTab();
 		
@@ -125,9 +150,14 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	}
 
 	private void populateSummaryTab() throws TermServerScriptException {
-		for (String issue : issueSummaryMap.keySet()) {
-			report (SECONDARY_REPORT, (Component)null, issue, issueSummaryMap.get(issue).toString());
-		}
+		issueSummaryMap.entrySet().stream()
+				.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
+				.forEach(e -> reportSafely (SECONDARY_REPORT, (Component)null, e.getKey(), e.getValue()));
+		
+		int total = issueSummaryMap.entrySet().stream()
+				.map(e -> e.getValue())
+				.collect(Collectors.summingInt(Integer::intValue));
+		reportSafely (SECONDARY_REPORT, (Component)null, "TOTAL", total);
 	}
 
 	//ISRS-286 Ensure Parents in same module.
@@ -346,20 +376,66 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	}
 	
 	//ISRS-414 Descriptions which contain a non-breaking space
-	private void nonBreakingSpace () throws TermServerScriptException {
-		String issueStr = "Non-breaking space";
-		initialiseSummary(issueStr);
+	private void unexpectedCharacters () throws TermServerScriptException {
+		String [][] unwantedChars = new String[][] {
+			{ NBSPSTR , "Non-breaking space" },
+			{ LONG_DASH , "MsWord style dash" },
+			{ "--" , "Double dash" }
+		};
 		
+		for (String unwantedChar[] : unwantedChars) {
+			String issueStr = "Unexpected character(s) - " + unwantedChar[1];
+			initialiseSummary(issueStr);
+			
+			for (Concept c : gl.getAllConcepts()) {
+				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+					if (d.getTerm().indexOf(unwantedChar[0]) != NOT_SET && !allowableException(c, unwantedChar[0], d.getTerm())) {
+						String legacy = isLegacy(d);
+						String msg = "At position: " + d.getTerm().indexOf(unwantedChar[0]);
+						report(c, issueStr, legacy, isActive(c,d),msg, d);
+						if (legacy.equals("Y")) {
+							incrementSummaryInformation("Legacy Issues Reported");
+						}	else {
+							incrementSummaryInformation("Fresh Issues Reported");
+						}
+						//Only report the first violation for each concept
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	private boolean allowableException(Concept c, String unwantedChars, String term) {
+		//Only exceptions just now are for double dashes
+		if (unwantedChars.equals("--")) {
+			//See RP-202 for specification of exceptions
+			String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
+			if (semTag.equals("(organism)")) {
+				//All double dashes in organism are allowed
+				return true;
+			} else if (semTag.equals("(substance)")) {
+				if (term.contains("-->")) {
+					return false;
+				} else {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	//RP-201
+	private void spaceBracket() throws TermServerScriptException {
+		String issueStr = "Extraneous space inside bracket";
+		initialiseSummary(issueStr);
+		nextConcept:
 		for (Concept c : gl.getAllConcepts()) {
-			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-				if (d.getTerm().indexOf(NBSPSTR) != NOT_SET) {
-					String legacy = isLegacy(d);
-					String msg = "At position: " + d.getTerm().indexOf(NBSPSTR);
-					report(c, issueStr, legacy, isActive(c,d),msg, d);
-					if (legacy.equals("Y")) {
-						incrementSummaryInformation("Legacy Issues Reported");
-					}	else {
-						incrementSummaryInformation("Fresh Issues Reported");
+			if (c.isActive() || includeLegacyIssues) {
+				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+					if (d.getTerm().contains("( ") || d.getTerm().contains(" )")) {
+						report(c, issueStr, isLegacy(d), isActive(c,d), d);
+						continue nextConcept;
 					}
 				}
 			}
@@ -612,7 +688,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 					for (Character[] bracketPair : bracketPairs) {
 						if (containsNestedBracket(c, d, bracketPair)) {
-							report (c, issueStr, d);
+							report (c, issueStr, isLegacy(c), isActive(c,d), d);
 							continue nextConcept;
 						}
 					}
@@ -631,10 +707,151 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				}
 			} else if (ch.equals(bracketPair[1])) {  //Closing bracket
 				if (brackets.size() == 0) {
-					report (c,"Closing bracket found without matching opening",d);
+					report (c,"Closing bracket found without matching opening", isLegacy(c), isActive(c,d), d);
 				} else {
 					brackets.pop();
 				}
+			}
+		}
+		return false;
+	}
+	
+
+	private void validateAttributeDomainModellingRules() throws TermServerScriptException {
+		//RP-179 concepts using surgical approach must be surgical procedures
+		String issueStr = "Concepts using |Surgical approach| must be subtypes of |surgical procedure|";
+		initialiseSummary(issueStr);
+		Concept type = gl.getConcept("424876005 |Surgical approach (attribute)|");
+		Concept subHierarchy = gl.getConcept("387713003 |Surgical procedure (procedure)|");
+		Set<Concept> subHierarchyList = cache.getDescendentsOrSelf(subHierarchy);
+		for (Concept c : gl.getAllConcepts()) {
+			if (c.isActive()) {
+				validateTypeUsedInDomain(c, type, subHierarchyList, issueStr);
+			}
+		}
+	}
+
+	/**
+	 * Where a concept uses the specified attribute type in its modelling, 
+	 * ensure that it is a descendant of the specified subhierarchy
+	 * @throws TermServerScriptException 
+	 */
+	private void validateTypeUsedInDomain(Concept c, Concept type, Set<Concept> subHierarchyList, String issueStr) throws TermServerScriptException {
+		if (SnomedUtils.hasType(CharacteristicType.INFERRED_RELATIONSHIP, c, type)) {
+			if (!subHierarchyList.contains(c)) {
+				report (c, issueStr, isLegacy(c), isActive(c, null));
+			}
+		}
+	}
+
+	private void validateAttributeTypeValueModellingRules() throws TermServerScriptException {
+		String issueStr = "Finding/Procedure site cannot take a combined site value";
+		initialiseSummary(issueStr);
+		
+		//RP-181 No finding or procedure site attribute should take a combined bodysite as the value
+		List<Concept> typesOfInterest = new ArrayList<>();
+		typesOfInterest.add(FINDING_SITE);
+		Set<Concept> procSiteTypes = cache.getDescendentsOrSelf(gl.getConcept("363704007 |Procedure site (attribute)|"));
+		typesOfInterest.addAll(procSiteTypes);
+		Set<Concept> invalidValues = cache.getDescendentsOrSelf(gl.getConcept("116007004 |Combined site (body structure)|"));
+		
+		for (Concept c : gl.getAllConcepts()) {
+			if (c.isActive()) {
+				for (Concept type : typesOfInterest) {
+					validateTypeValueCombo(c, type, invalidValues, issueStr, false);
+				}
+			}
+		}
+	}
+	
+	private void checkDeprecatedHierarchies() throws TermServerScriptException {
+		String issueStr = "New concept created in deprecated hierarchy";
+		initialiseSummary(issueStr);
+		
+		//RP-181 No new combined bodysite concepts should be created
+		for (Concept deprecatedHierarchy : deprecatedHierarchies) {
+			for (Concept c : deprecatedHierarchy.getDescendents(NOT_SET)) {
+				if (!c.isReleased()) {
+					report (c, issueStr, isLegacy(c), isActive(c, null), deprecatedHierarchy);
+				}
+			}
+		}
+	}
+	
+	/**
+	 * If the given concept uses the particular type, checks if that type is in (or must not be in)
+	 * the list of specified values
+	 * @throws TermServerScriptException 
+	 */
+	private void validateTypeValueCombo(Concept c, Concept type, Set<Concept> values, String issueStr,
+			boolean mustBeIn) throws TermServerScriptException {
+		List<Relationship> relsWithType = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, type, ActiveState.ACTIVE);
+		for (Relationship relWithType : relsWithType) {
+			//Must the value be in, or must the value be NOT in our list of values?
+			boolean isIn = values.contains(relWithType.getTarget());
+			if (!isIn == mustBeIn) {
+				report (c, issueStr, isLegacy(relWithType), isActive(c, relWithType), relWithType);
+			}
+		}
+	}
+	
+	
+	//RP-180
+	private void neverGroupTogether() throws TermServerScriptException {
+		Concept[][] neverTogetherList = new Concept[][] 
+				{
+					{ gl.getConcept("363589002 |Associated procedure|"), gl.getConcept("408729009 |Finding context|")},
+					{ gl.getConcept("408730004 |Procedure context|"), gl.getConcept("246090004 |Associated finding|")}
+				};
+			
+		for (Concept[] neverTogether : neverTogetherList) {
+			String issueStr = "Attributes " + neverTogether[0].toStringPref() + " and " + neverTogether[1].toStringPref() + " must not appear in same group";
+			initialiseSummary(issueStr);
+			for (Concept c : gl.getAllConcepts()) {
+				if (c.isActive()) {
+					if (appearInSameGroup(c, neverTogether[0], neverTogether[1])) {
+						report (c, issueStr, isLegacy(c), isActive(c, null));
+					}
+				}
+			}
+		}
+	}
+	
+	//RP-180
+	private void domainMustNotUseType() throws TermServerScriptException {
+		Concept[][] domainTypeIncompatibilities = new Concept[][] 
+				{
+					{ gl.getConcept("413350009 |Finding with explicit context|"), gl.getConcept("363589002 |Associated procedure|")},
+					{ gl.getConcept("129125009 |Procedure with explicit context|"), gl.getConcept("408729009 |Finding context|")}
+				};
+		for (Concept[] domainType : domainTypeIncompatibilities) {
+			String issueStr = "Domain " + domainType[0] + " should not use attribute type: " + domainType[1];
+			initialiseSummary(issueStr);
+			for (Concept c : domainType[0].getDescendents(NOT_SET)) {
+				if (c.isActive()) {
+					if (SnomedUtils.hasType(CharacteristicType.INFERRED_RELATIONSHIP, c, domainType[1])) {
+						report (c, issueStr, isLegacy(c), isActive(c, null));
+					}
+				}
+			}
+		}
+		
+	}
+
+	private boolean appearInSameGroup(Concept c, Concept c1, Concept c2) {
+		//Work through all inferred groups.  Are c1 and c2 types both present?
+		for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP)) {
+			boolean c1Present = false;
+			boolean c2Present = false;
+			for (Relationship r : g.getRelationships()) {
+				if (r.getType().equals(c1)) {
+					c1Present = true;
+				} else if (r.getType().equals(c2)) {
+					c2Present = true;
+				}
+			}
+			if (c1Present && c2Present) {
+				return true;
 			}
 		}
 		return false;
@@ -656,7 +873,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	}
 
 	private String isLegacy(Component c) {
-		return c.getEffectiveTime() == null ? "N" : "Y";
+		return (c.getEffectiveTime() == null || c.getEffectiveTime().isEmpty()) ? "N" : "Y";
 	}
 	
 	class DialectPair {

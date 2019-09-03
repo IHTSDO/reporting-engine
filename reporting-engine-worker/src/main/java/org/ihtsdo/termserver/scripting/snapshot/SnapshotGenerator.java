@@ -63,19 +63,15 @@ public class SnapshotGenerator extends TermServerScript {
 		}
 	}
 	
-	public File generateSnapshot (File previousReleaseSnapshot, File delta, File newLocation) throws TermServerScriptException, TermServerClientException {
-		File archive = null;
+	public void generateSnapshot (File previousReleaseSnapshot, File delta, File newLocation) throws TermServerScriptException, TermServerClientException {
 		setQuiet(true);
 		init(newLocation, false);
 		loadArchive(previousReleaseSnapshot, false, "Snapshot", true);
 		loadArchive(delta, false, "Delta", false);
-		outputRF2();
-		getRF2Manager().flushFiles(true);
-		if (!leaveArchiveUncompressed) {	
-			archive = SnomedUtils.createArchive(new File(outputDirName));
-		}
+		//Writing to disk can be done asynchronously and complete at any time.  We have the in-memory copy to work with.
+		//The disk copy will save time when we run again for the same project
+		new Thread(new ArchiveWriter()).start();
 		setQuiet(false);
-		return archive;
 	}
 	
 	protected void init (String[] args) throws TermServerScriptException {
@@ -138,7 +134,9 @@ public class SnapshotGenerator extends TermServerScript {
 	}
 	
 	private void outputRF2() throws TermServerScriptException {
-		for (Concept thisConcept : gl.getAllConcepts()) {
+		//Create new collection in case some other process looks at a new concept
+		Set<Concept> allConcepts = new HashSet<>(gl.getAllConcepts());
+		for (Concept thisConcept : allConcepts) {
 			outputRF2(thisConcept);
 		}
 	}
@@ -206,6 +204,22 @@ public class SnapshotGenerator extends TermServerScript {
 
 	public void setProject(Project project) {
 		this.project = project;
+	}
+	
+	public class ArchiveWriter implements Runnable {
+		public void run() {
+			debug("Writing RF2 Snapshot to disk" + (leaveArchiveUncompressed?".":" and compressing."));
+			try {
+				outputRF2();
+				getRF2Manager().flushFiles(true);
+				if (!leaveArchiveUncompressed) {	
+					SnomedUtils.createArchive(new File(outputDirName));
+				}
+				debug("Completed writing RF2 Snapshot to disk");
+			} catch (Exception e) {
+				error ("Failed to write archive to disk",e);
+			}
+		}
 	}
 
 }

@@ -31,6 +31,8 @@ public abstract class TermServerScript implements RF2Constants {
 	
 	protected static boolean debug = true;
 	protected static boolean dryRun = true;
+	protected static Integer headlessEnvironment = null;
+	protected boolean validateConceptOnUpdate = true;
 	protected boolean offlineMode = false;
 	protected boolean quiet = false; 
 	protected static int dryRunCounter = 0;
@@ -89,7 +91,7 @@ public abstract class TermServerScript implements RF2Constants {
 	public static final String EXPECTED_PROTOCOL = "https://";
 	
 	
-	protected static final String PROJECT = "Project";
+	public static final String PROJECT = "Project";
 	protected static final String DRY_RUN = "DryRun";
 	protected static final String INPUT_FILE = "InputFile";
 	protected static final String SUB_HIERARCHY = "Subhierarchy";
@@ -138,7 +140,7 @@ public abstract class TermServerScript implements RF2Constants {
 		this.authenticatedCookie = authenticatedCookie;
 	}
 	
-	protected static String[] envKeys = new String[] {"local","dev","uat","prod","dev","dev","uat","prod"};
+	protected static String[] envKeys = new String[] {"local","dev","uat","prod","dev","dev","uat", "uat", "prod"};
 
 	protected static String[] environments = new String[] {	"http://localhost:8080/",
 															"https://dev-authoring.ihtsdotools.org/",
@@ -147,6 +149,7 @@ public abstract class TermServerScript implements RF2Constants {
 															"https://dev-ms-authoring.ihtsdotools.org/",
 															"https://dev-snowstorm.ihtsdotools.org/",
 															"https://uat-ms-authoring.ihtsdotools.org/",
+															"https://uat-snowstorm.ihtsdotools.org/",
 															"https://prod-ms-authoring.ihtsdotools.org/",
 	};
 	
@@ -286,14 +289,19 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 
 	protected void checkSettingsWithUser(JobRun jobRun) {
-		info ("Select an environment ");
-		for (int i=0; i < environments.length; i++) {
-			println ("  " + i + ": " + environments[i]);
+		int envChoice = NOT_SET;
+		if (headlessEnvironment != null) {
+			envChoice = headlessEnvironment;
+		} else {
+			info ("Select an environment ");
+			for (int i=0; i < environments.length; i++) {
+				println ("  " + i + ": " + environments[i]);
+			}
+			
+			print ("Choice: ");
+			String choice = STDIN.nextLine().trim();
+			envChoice = Integer.parseInt(choice);
 		}
-		
-		print ("Choice: ");
-		String choice = STDIN.nextLine().trim();
-		int envChoice = Integer.parseInt(choice);
 		url = environments[envChoice];
 		env = envKeys[envChoice];
 		
@@ -312,20 +320,21 @@ public abstract class TermServerScript implements RF2Constants {
 			projectName = jobRun.getMandatoryParamValue(PROJECT);
 		}
 		
-		print ("Specify Project " + (projectName==null?": ":"[" + projectName + "]: "));
-		String response = STDIN.nextLine().trim();
-		if (!response.isEmpty()) {
-			projectName = response;
-		}
-		
-		if (restartPosition != NOT_SET) {
-			print ("Restarting from position [" +restartPosition + "]: ");
-			response = STDIN.nextLine().trim();
+		if (headlessEnvironment == null) {
+			print ("Specify Project " + (projectName==null?": ":"[" + projectName + "]: "));
+			String response = STDIN.nextLine().trim();
 			if (!response.isEmpty()) {
-				restartPosition = Integer.parseInt(response);
+				projectName = response;
+			}
+		
+			if (restartPosition != NOT_SET) {
+				print ("Restarting from position [" +restartPosition + "]: ");
+				response = STDIN.nextLine().trim();
+				if (!response.isEmpty()) {
+					restartPosition = Integer.parseInt(response);
+				}
 			}
 		}
-		
 	}
 
 	protected void init (JobRun jobRun) throws TermServerScriptException {
@@ -394,6 +403,7 @@ public abstract class TermServerScript implements RF2Constants {
 			//RP-4 And post that back in, so the FSN is always populated
 			jobRun.setParameter(SUB_HIERARCHY, subHierarchy.toString());
 		}
+		debug ("Initialising Report Manager");
 		reportManager = ReportManager.create(this);
 		if (tabNames != null) {
 			reportManager.setTabNames(tabNames);
@@ -403,6 +413,7 @@ public abstract class TermServerScript implements RF2Constants {
 			reportManager.setWriteToSheet(false);
 		}
 		getReportManager().initialiseReportFiles(columnHeadings);
+		debug ("Report Manager initialisation complete");
 	}
 	
 	public void instantiate(JobRun jobRun) {
@@ -481,7 +492,7 @@ public abstract class TermServerScript implements RF2Constants {
 		setReportName(null);
 	}
 	
-	protected void loadArchive(File archive, boolean fsnOnly, String fileType, boolean isReleased) throws TermServerScriptException, TermServerClientException {
+	protected void loadArchive(File archive, boolean fsnOnly, String fileType, Boolean isReleased) throws TermServerScriptException, TermServerClientException {
 		getArchiveManager().loadArchive(archive, fsnOnly, fileType, isReleased);
 	}
 	
@@ -538,26 +549,71 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	protected Concept updateConcept(Task t, Concept c, String info) throws TermServerScriptException {
+		String conceptSerialised = "PARSE FAILURE";
 		try {
-			String conceptSerialised = gson.toJson(c);
-			debug ((dryRun ?"Dry run updating ":"Updating ") + "state of " + c + (info == null?"":info));
-			Concept savedConcept = c;
+			boolean updatedOK = false;
+			int retries = 0;
 			if (!dryRun) {
-				JSONResource response = tsClient.updateConcept(new JSONObject(conceptSerialised), t.getBranchPath());
-				String json = response.toObject().toString();
-				TSErrorMessage errorMsg = gson.fromJson(json, TSErrorMessage.class);
-				if (errorMsg.getCode() != null) {
-					throw new TermServerScriptException("Failed to update concept: " + errorMsg.getCode() + " - " + errorMsg.getDeveloperMessage());
+				if (validateConceptOnUpdate) {
+					validateConcept(t, c);
 				}
-				savedConcept = gson.fromJson(json, Concept.class);
-				ensureSaveEffective(c, savedConcept);
+				
+				conceptSerialised = gson.toJson(c);
+				debug ((dryRun ?"Dry run updating ":"Updating ") + "state of " + c + (info == null?"":info));
+				Concept savedConcept = c;
+				while (!updatedOK) {
+					try {
+						JSONResource response = tsClient.updateConcept(new JSONObject(conceptSerialised), t.getBranchPath());
+						String json = response.toObject().toString();
+						TSErrorMessage errorMsg = gson.fromJson(json, TSErrorMessage.class);
+						if (errorMsg.getCode() != null) {
+							throw new TermServerScriptException("Failed to update concept: " + errorMsg.getCode() + " - " + errorMsg.getDeveloperMessage());
+						}
+						savedConcept = gson.fromJson(json, Concept.class);
+						ensureSaveEffective(c, savedConcept);
+						return savedConcept;
+					} catch (Exception e) {
+						retries++;
+						if (retries >= 3) {
+							throw e;
+						}
+						warn("Failed to update concept due to " + e.getLocalizedMessage() + " retrying...");
+						Thread.sleep(10*1000);
+					}
+				}
+			} else {
+				return c;
 			}
-			return savedConcept;
+		} catch (ValidationFailure e) {
+			throw e;
 		} catch (Exception e) {
-			throw new TermServerScriptException("Failed to update " + c + " in TS due to " + e.getMessage(),e);
+			String msg = "Failed to update " + c + " in TS due to " + e.getMessage();
+			error (msg + " JSON = " + conceptSerialised, e);
+			throw new TermServerScriptException(msg,e); 
 		}
+		throw new IllegalStateException("Unexpected point in the code");
 	}
 	
+	private void validateConcept(Task t, Concept c) throws TermServerScriptException {
+		//We need to populate new components with UUIDs for validation
+		Concept uuidClone = c.cloneWithUUIDs();
+		if (true);
+		DroolsResponse[] validations = tsClient.validateConcept(uuidClone, t.getBranchPath());
+		if (validations.length == 0) {
+			debug("Validation clear: " + c);
+		} else {
+			for (DroolsResponse response : validations) {
+				if (response.getSeverity().equals(DroolsResponse.Severity.ERROR)) {
+					throw new ValidationFailure(t,  c, "Drools error: " + response.getMessage());
+				} else if (response.getSeverity().equals(DroolsResponse.Severity.WARNING)) {
+					report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Drools warning: " + response.getMessage());
+				} else {
+					throw new IllegalStateException("Unexpected drools response: " + response);
+				}
+			}
+		}
+	}
+
 	private void ensureSaveEffective(Concept before, Concept after) throws TermServerScriptException {
 		//Check we've got the same number of active / inactive descriptions / relationships
 		int activeDescBefore = before.getDescriptions(ActiveState.ACTIVE).size();
@@ -657,24 +713,28 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 	}
 	
-	public List<Concept> findConcepts(String ecl) throws TermServerScriptException {
-		return findConcepts(project.getBranchPath(), ecl, false, !safetyProtocolsEnabled());
+	public Collection<Concept> findConcepts(String ecl) throws TermServerScriptException {
+		return findConcepts(project.getBranchPath(), ecl, false, !safetyProtocolsEnabled(), true);
 	}
 	
-	public List<Concept> findConcepts(String ecl, boolean quiet, boolean expectLargeResults) throws TermServerScriptException {
-		return findConcepts(project.getBranchPath(), ecl, quiet, expectLargeResults);
+	public Collection<Concept> findConcepts(String ecl, boolean quiet, boolean expectLargeResults) throws TermServerScriptException {
+		return findConcepts(ecl, quiet, expectLargeResults, true);
 	}
 	
-	public List<Concept> findConcepts(String branch, String ecl, boolean quiet, boolean expectLargeResults) throws TermServerScriptException {
+	public Collection<Concept> findConcepts(String ecl, boolean quiet, boolean expectLargeResults, boolean useLocalStoreIfSimple) throws TermServerScriptException {
+		return findConcepts(project.getBranchPath(), ecl, quiet, expectLargeResults, useLocalStoreIfSimple);
+	}
+	
+	public Collection<Concept> findConcepts(String branch, String ecl, boolean quiet, boolean expectLargeResults, boolean useLocalStoreIfSimple) throws TermServerScriptException {
 		EclCache cache = EclCache.getCache(branch, tsClient, gson, gl, quiet);
 		cache.engageSafetyProtocol(safetyProtocols);
 		boolean wasCached = cache.isCached(ecl);
-		List<Concept> concepts = cache.findConcepts(branch, ecl, expectLargeResults); 
+		Collection<Concept> concepts = cache.findConcepts(branch, ecl, expectLargeResults, useLocalStoreIfSimple); 
 		int retry = 0;
 		if (concepts.size() == 0 && ++retry < 3) {
 			debug("No concepts returned. Double checking that result in 30s...");
 			try { Thread.sleep(30*1000); } catch (Exception e) {}
-			concepts = cache.findConcepts(branch, ecl, expectLargeResults); 
+			concepts = cache.findConcepts(branch, ecl, expectLargeResults, useLocalStoreIfSimple); 
 		}
 		
 		//If this is the first time we've seen these results, check for duplicates
@@ -691,7 +751,7 @@ public abstract class TermServerScript implements RF2Constants {
 				for (Concept c : concepts) {
 					warn ("Duplicate concept received from ECL: " + c);
 				}
-				throw new TermServerScriptException(concepts.size() + " duplicate concepts returned from ecl: " + ecl + " eg " + concepts.get(0));
+				throw new TermServerScriptException(concepts.size() + " duplicate concepts returned from ecl: " + ecl + " eg " + concepts.iterator().next());
 			}
 			debug("No duplicates detected.");
 		}
@@ -786,6 +846,7 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	public void addSummaryInformation(String item, Object detail) {
+		info(item + ": " + detail);
 		summaryDetails.put(item, detail);
 	}
 	
@@ -1099,9 +1160,12 @@ public abstract class TermServerScript implements RF2Constants {
 			String prefix = isFirst ? QUOTE : COMMA_QUOTE;
 			isFirst = false;
 			if (detail instanceof String[]) {
+				boolean isNestedFirst = true;
 				String[] arr = (String[]) detail;
 				for (String str : arr) {
+					sb.append(isNestedFirst?"":COMMA);
 					sb.append(prefix + str + QUOTE);
+					isNestedFirst = false;
 				}
 			} else {
 				sb.append(prefix + detail + QUOTE);
@@ -1226,5 +1290,9 @@ public abstract class TermServerScript implements RF2Constants {
 	
 	public boolean isOffline() {
 		return this.offlineMode;
+	}
+
+	public static void runHeadless(Integer envNum) {
+		headlessEnvironment = envNum;
 	}
 }

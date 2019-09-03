@@ -179,33 +179,33 @@ abstract public class TemplateFix extends BatchFix {
 				warn ("Ignoring inactive concept returned by ECL: " + c);
 				continue;
 			}
-			if (!isExcluded(c, exclusionReport) && TemplateUtils.matchesTemplate(c, t, this, CharacteristicType.INFERRED_RELATIONSHIP)) {
-				//Do we already have a template for this concept?  
-				//Assign the most specific template if so (TODO Don't assume order indicates complexity!)
-				if (conceptToTemplateMap.containsKey(c)) {
-					Template existing = conceptToTemplateMap.get(c);
-					Template moreSpecific = t.getId() > existing.getId() ? t : existing; 
-					warn( c + "matches two templates: " + t.getId() + " & " + existing.getId() + " using most specific " + moreSpecific.getId());
-					conceptToTemplateMap.put(c, moreSpecific);
-				} else {
-					conceptToTemplateMap.put(c, t);
+			if (!isExcluded(c, exclusionReport)) {
+				if (TemplateUtils.matchesTemplate(c, t, this, CharacteristicType.INFERRED_RELATIONSHIP)) {
+					//Do we already have a template for this concept?  
+					//Assign the most specific template if so (TODO Don't assume order indicates complexity!)
+					if (conceptToTemplateMap.containsKey(c)) {
+						Template existing = conceptToTemplateMap.get(c);
+						Template moreSpecific = t.getId() > existing.getId() ? t : existing; 
+						warn( c + "matches two templates: " + t.getId() + " & " + existing.getId() + " using most specific " + moreSpecific.getId());
+						conceptToTemplateMap.put(c, moreSpecific);
+					} else {
+						conceptToTemplateMap.put(c, t);
+					}
+					matches.add(c);
+				} 
+			} else {
+				//Only count exclusions for the first pass
+				if (t.getId() == 'A') {
+					incrementSummaryInformation("Concept excluded");
 				}
-				matches.add(c);
 			}
 			if (++conceptsExamined % 1000 == 0) {
 				print(".");
 			}
 		}
 		println("");
-		info (matches.size() + " concepts in " + subHierarchyECL + " matching template " + t);
-		
+		addSummaryInformation("Concepts in " + subHierarchyECL + " matching template " + t, matches.size());
 		return matches;
-	}
-
-	@Override
-	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
-		// TODO Auto-generated method stub
-		return null;
 	}
 	
 	protected boolean isExcluded(Concept c, Integer exclusionReport) throws TermServerScriptException {
@@ -398,6 +398,26 @@ abstract public class TemplateFix extends BatchFix {
 			}
 		}
 		return false;
+	}
+	
+	protected void outputMetaData() throws TermServerScriptException {
+		info("Outputting metadata tab");
+		String user = jobRun == null ? "System" : jobRun.getUser();
+		writeToReportFile (SECONDARY_REPORT, "Requested by: " + user);
+		writeToReportFile (SECONDARY_REPORT, "Ran against: " + subHierarchyECL);
+		writeToReportFile (SECONDARY_REPORT, "Project: " + project);
+		writeToReportFile (SECONDARY_REPORT, "Concepts considered: " + findConcepts(subHierarchyECL).size());
+		writeToReportFile (SECONDARY_REPORT, "Templates: " );
+		
+		for (Template t : templates) {
+			writeToReportFile (SECONDARY_REPORT,TAB + "Name: " + t.getName());
+			writeToReportFile (SECONDARY_REPORT,TAB + "Domain: " + t.getDomain());
+			writeToReportFile (SECONDARY_REPORT,TAB + "Documentation: " + t.getDocumentation());
+			String stl = t.getLogicalTemplate().toString();
+			stl = SnomedUtils.populateFSNs(stl);
+			writeToReportFile (SECONDARY_REPORT,TAB + "STL: " + QUOTE +  stl + QUOTE);
+			writeToReportFile (SECONDARY_REPORT,TAB);
+		}
 	}
 }
 

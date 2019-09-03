@@ -69,7 +69,7 @@ public class NormalizeDrugs extends DrugBatchFix implements RF2Constants{
 		int changes = replaceParents (task, loadedConcept, newParentRel, new String[] { parentCount, attributeCount });
 		
 		if (!loadedConcept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM)) {
-			changes += termGenerator.ensureDrugTermsConform(task, loadedConcept, CharacteristicType.STATED_RELATIONSHIP);
+			changes += termGenerator.ensureTermsConform(task, loadedConcept, CharacteristicType.STATED_RELATIONSHIP);
 		}
 		
 		if (loadedConcept.getDefinitionStatus().equals(DefinitionStatus.PRIMITIVE)) {

@@ -1,21 +1,10 @@
 package org.ihtsdo.termserver.scripting.fixes.drugs;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
-import org.ihtsdo.termserver.scripting.TermServerScript.ReportActionType;
-import org.ihtsdo.termserver.scripting.TermServerScript.Severity;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants;
-import org.ihtsdo.termserver.scripting.domain.Task;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
+import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.DrugTermGenerator;
 import org.ihtsdo.termserver.scripting.util.DrugUtils;
@@ -50,7 +39,7 @@ public abstract class DrugBatchFix extends BatchFix implements RF2Constants{
 
 	public int assignIngredientCounts(Task t, Concept c, CharacteristicType charType) throws TermServerScriptException {
 		int changes = 0;
-		Set<Concept> ingredients = DrugUtils.getIngredients(c, charType);
+		List<Concept> ingredients = DrugUtils.getIngredients(c, charType);
 		if (ingredients == null || ingredients.size() == 0) {
 			throw new ValidationFailure(c, "No ingredients found for ingredient count");
 		} else if (ingredients.size() == 1) {
@@ -70,7 +59,7 @@ public abstract class DrugBatchFix extends BatchFix implements RF2Constants{
 		return changes;
 	}
 
-	protected Set<Concept> getBases(Set<Concept> ingredients) throws TermServerScriptException {
+	protected Set<Concept> getBases(List<Concept> ingredients) throws TermServerScriptException {
 		Set<Concept> bases = new HashSet<>();
 		for (Concept ingredient : ingredients) {
 			//We need a local copy of the ingredient to get it's full set of relationship concepts

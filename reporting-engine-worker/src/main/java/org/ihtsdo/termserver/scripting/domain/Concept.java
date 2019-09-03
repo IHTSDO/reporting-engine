@@ -22,7 +22,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	private boolean active = true;
 	@SerializedName("released")
 	@Expose
-	private Boolean released;
+	private Boolean released = null;
 	
 	@SerializedName(value="conceptId", alternate="id")
 	@Expose
@@ -31,9 +31,11 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	@SerializedName("fsn")
 	@Expose
 	private Object fsn;
+	
 	@SerializedName("definitionStatus")
 	@Expose
 	private DefinitionStatus definitionStatus;
+	
 	@SerializedName("preferredSynonym")
 	@Expose
 	private String preferredSynonym;
@@ -69,7 +71,6 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	@SerializedName("gciAxioms")
 	@Expose
 	private List<Axiom> gciAxioms;
-	
 	private boolean isLoaded = false;
 	private int originalFileLineNumber;
 	private ConceptType conceptType;
@@ -194,7 +195,13 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 
 	public String getFsn() {
 		if (fsn != null)
-			return fsn.toString();
+			if (fsn instanceof String) {
+				return fsn.toString();
+			} else if (fsn instanceof Map){
+				return ((Map)fsn).get("term").toString();
+			}else {
+				return fsn.toString();
+			}
 		
 		return null;
 	}
@@ -232,6 +239,18 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	public Description getPreferredSynonym(String refsetId) throws TermServerScriptException {
 		List<Description> pts = getDescriptions(refsetId, Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE);
 		return pts.size() == 0 ? null : pts.get(0);
+	}
+	
+	public Description getPreferredSynonymSafely(String refsetId) {
+		String debug = "";
+		try {
+			List<Description> pts = getDescriptions(refsetId, Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE);
+			return pts.size() == 0 ? null : pts.get(0);
+		} catch (Exception e) {
+			e.printStackTrace();
+			debug = e.getMessage();
+		}
+		return new Description("Exception recovering PT: " + debug);
 	}
 
 	public void setPreferredSynonym(String preferredSynonym) {
@@ -1067,16 +1086,20 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		return clone(null, true);
 	}
 	
+	public Concept cloneWithUUIDs() {
+		return clone(null, true, true, true);
+	}
+	
 	public Concept clone(String sctid) {
 		return clone(sctid, false);
 	}
 	
 	private Concept clone(String sctid, boolean keepIds) {
 		//Don't include inactive components by default
-		return clone(sctid, keepIds, false);
+		return clone(sctid, keepIds, false, false);
 	}
 	
-	private Concept clone(String sctid, boolean keepIds, boolean includeInactiveComponents) {
+	private Concept clone(String sctid, boolean keepIds, boolean includeInactiveComponents, boolean populateUUIDs) {
 		Concept clone = new Concept(keepIds?conceptId:sctid, getFsn());
 		clone.setEffectiveTime(keepIds?effectiveTime:null);
 		clone.setActive(active);
@@ -1095,7 +1118,10 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 			clone.addDescription(dClone);
 			//If we're keeping IDs, copy any inactivation indicators also.
 			if (keepIds) {
-				dClone.inactivationIndicatorEntries = new ArrayList<>(d.getInactivationIndicatorEntries());
+				dClone.setInactivationIndicatorEntries(new ArrayList<>(d.getInactivationIndicatorEntries()));
+			}
+			if (populateUUIDs && d.getId() == null) {
+				dClone.setDescriptionId(UUID.randomUUID().toString());
 			}
 		}
 		
@@ -1107,6 +1133,9 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 			rClone.setEffectiveTime(keepIds?r.getEffectiveTime():null);
 			rClone.setSourceId(null);
 			clone.addRelationship(rClone);
+			if (populateUUIDs && r.getId() == null) {
+				rClone.setRelationshipId(UUID.randomUUID().toString());
+			}
 		}
 		
 		//Copy Parent/Child arrays
@@ -1207,16 +1236,8 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		inferredRelationshipGroups = null;
 	}
 
-	public Boolean getReleased() {
-		return isReleased();
-	}
 	
 	public Boolean isReleased() {
-		//If the field has not been populated (say because its not been loaded from the TS) then use effectiveTime
-		//Which isn't ideal if we've just changed the definition status!
-		if (released == null) {
-			return !(effectiveTime == null || effectiveTime.isEmpty());
-		}
 		return released;
 	}
 

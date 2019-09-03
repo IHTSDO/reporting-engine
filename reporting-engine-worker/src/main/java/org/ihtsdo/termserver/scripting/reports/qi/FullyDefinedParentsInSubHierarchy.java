@@ -1,62 +1,76 @@
 package org.ihtsdo.termserver.scripting.reports.qi;
 
 import java.io.IOException;
-import java.io.PrintStream;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
+import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
+import org.snomed.otf.scheduler.domain.*;
+import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 
 /**
  * QI-31
  * Once remodelling is complete, a "Post Changes" check that can be run is to 
  * check for any concepts that still have immediate fully defined parents.
+ * 
+ * SUBST-153 Also uses this report.
  */
-public class FullyDefinedParentsInSubHierarchy extends TermServerReport {
-	
-	Concept subHierarchy;
+public class FullyDefinedParentsInSubHierarchy extends TermServerReport implements ReportClass {
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
-		FullyDefinedParentsInSubHierarchy report = new FullyDefinedParentsInSubHierarchy();
-		try {
-			report.additionalReportColumns = "FSN, Parents, Calculated PPPs";
-			report.init(args);
-			report.loadProjectSnapshot(false);  //Load all descriptions
-			report.postLoadInit();
-			report.runFullyDefinedInSubHierarchyReport();
-		} catch (Exception e) {
-			info("Failed to produce MissingAttributeReport due to " + e.getMessage());
-			e.printStackTrace(new PrintStream(System.out));
-		} finally {
-			report.finish();
-		}
+		Map<String, String> params = new HashMap<>();
+		params.put(SUB_HIERARCHY, "105590001"); // Substance
+		TermServerReport.run(FullyDefinedParentsInSubHierarchy.class, args, params);
 	}
-
-	private void postLoadInit() throws TermServerScriptException {
-		subHierarchy = gl.getConcept("126537000"); // |Neoplasm of bone (disorder)|
+	
+	public void init (JobRun run) throws TermServerScriptException {
+		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA
+		additionalReportColumns = "FSN, SemTag, Stated Parents, Calculated PPPs";
+		super.init(run);
 	}
-
-	private void runFullyDefinedInSubHierarchyReport() throws TermServerScriptException {
+	
+	@Override
+	public Job getJob() {
+		JobParameters params = new JobParameters()
+				.add(SUB_HIERARCHY).withType(JobParameter.Type.CONCEPT).withDefaultValue(ROOT_CONCEPT)
+				.build();
+		return new Job( new JobCategory(JobType.REPORT, JobCategory.GENERAL_QA),
+						"Check for FD Parents",
+						"This report lists all concepts in the specified subhierarchy which have one or more fully defined stated parents",
+						params, ProductionStatus.HIDEME);
+	}
+	
+	public void runJob() throws TermServerScriptException {
 		nextConcept:
 		for (Concept c : gl.getDescendantsCache().getDescendents(subHierarchy)) {
 			for (Concept parent : c.getParents(CharacteristicType.STATED_RELATIONSHIP)) {
 				if (parent.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
 					String parentStr = c.getParents(CharacteristicType.STATED_RELATIONSHIP)
 							.stream()
-							.map(p -> p.toString())
+							.map(p -> defStatus(p) + p.toString())
 							.collect(Collectors.joining(", \n"));
 					List<Concept> PPPs = determineProximalPrimitiveParents(c);
 					String PPPStr = PPPs.stream()
 							.map(p -> p.toString())
 							.collect(Collectors.joining(", \n"));
 					report (c, parentStr, PPPStr);
-					incrementSummaryInformation("Concepts reported");
+					countIssue(c);
 					continue nextConcept;
 				}
 			}
+		}
+	}
+
+	private String defStatus(Concept c) {
+		switch (c.getDefinitionStatus()) {
+		case FULLY_DEFINED : return "[FD] ";
+		case PRIMITIVE : return "[P] ";
+		default: return "[?] ";
 		}
 	}
 	

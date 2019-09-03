@@ -60,6 +60,9 @@ public class ScheduleServiceImpl implements ScheduleService {
 		for (JobSchedule jobSchedule : jobScheduleRepository.findAll()) {
 			scheduleJob(jobSchedule);
 		}
+		
+		//Always refresh list of known jobs on startup
+		initialise();
 	}
 
 	@Override
@@ -249,6 +252,8 @@ public class ScheduleServiceImpl implements ScheduleService {
 							logger.info("Saving job: " + job);
 						} else {
 							job.setId(knownJob.getId());
+							//Whitelists are maintained by schedule manager, so retain
+							job.replaceWhiteList(knownJob.getWhiteList());
 							logger.info("Updating job: " + job);
 						}
 						

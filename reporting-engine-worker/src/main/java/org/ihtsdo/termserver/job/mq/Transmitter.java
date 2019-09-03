@@ -6,6 +6,7 @@ import java.util.concurrent.*;
 import javax.annotation.PostConstruct;
 
 import org.ihtsdo.termserver.job.JobManager;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.*;
@@ -49,6 +50,8 @@ public class Transmitter {
 		//We'll also re-assert the specified parameter order at this time, in case it's been lost
 		Job job = jobManager.getJob(run.getJobName());
 		if (run.getParameters() != null && job != null) {
+			//Ensure all jobs allow the project to be chosen
+			job.getParameters().addFirst(TermServerScript.PROJECT);
 			Set<String> paramKeys = new HashSet<>(run.getParameters().keySet());
 			for (String key : paramKeys) {
 				if (job.getParameters().get(key) == null) {

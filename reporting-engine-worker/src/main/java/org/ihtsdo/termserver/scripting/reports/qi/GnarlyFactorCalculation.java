@@ -267,7 +267,8 @@ public class GnarlyFactorCalculation extends TermServerReport {
 		int x = 0;
 		for (Concept subHierarchy : subHierarchies) {
 			String size = getSize(subHierarchy);
-			intermediatePrimitivesReport.setSubHierarchy(subHierarchy.getConceptId());
+			throw new IllegalStateException("Modify this code to set ECL rather than subHierarchy");
+			/*intermediatePrimitivesReport.setSubHierarchy(subHierarchy.getConceptId());
 			inferredGroupsNotStatedReport.setSubHierarchy(subHierarchy);
 			splitRoleGroupsWithRepeatedAttributes.setSubHierarchy(subHierarchy);
 			
@@ -286,7 +287,7 @@ public class GnarlyFactorCalculation extends TermServerReport {
 			
 			if (++x%10==0) {
 				print(".");
-			}
+			}*/
 		}
 		info("");
 	}

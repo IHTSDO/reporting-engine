@@ -17,6 +17,7 @@ import org.ihtsdo.termserver.scripting.reports.TermServerReport;
  * */
 public class OverlappingIPs extends TermServerReport {
 	
+	/* TODO ON REQUEST: Modify this code to work with ECL rather than subhierarchies
 	Map<String, Concept> shortNames = new HashMap<>();
 	Map<Concept, List<Concept>> subHierarchyIpMap = new HashMap<>();
 	List<Concept> subHierarchies;
@@ -58,7 +59,7 @@ public class OverlappingIPs extends TermServerReport {
 		subHierarchies.add(shortNames.get("protozoa")); // |Protozoan infection (disorder)| 
 		
 		shortNames.put("fungus", gl.getConcept("3218000"));
-		subHierarchies.add(shortNames.get("fungus"));  // |Mycosis (disorder)|*/
+		subHierarchies.add(shortNames.get("fungus"));  // |Mycosis (disorder)|
 		
 		shortNames.put("wound", gl.getConcept("416462003"));
 		subHierarchies.add(shortNames.get("wound")); //  |Wound (disorder)|
@@ -103,4 +104,5 @@ public class OverlappingIPs extends TermServerReport {
 			}
 		}
 	}
+	*/
 }

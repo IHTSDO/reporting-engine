@@ -45,7 +45,7 @@ public abstract class AllKnownTemplates extends TermServerReport {
 		populateTemplates(subHierarchyStr, templateNames);
 		
 		subHierarchyStr = "87628006";  //QI-16 |Bacterial infectious disease (disorder)|
-		templateNames = new String[] {	"templates/infection/Infection caused by Bacteria.json",
+		templateNames = new String[] {	"templates/infection/Infection caused by bacteria.json",
 										"templates/infection/Infection of bodysite caused by bacteria.json"};
 		populateTemplates(subHierarchyStr, templateNames);
 		

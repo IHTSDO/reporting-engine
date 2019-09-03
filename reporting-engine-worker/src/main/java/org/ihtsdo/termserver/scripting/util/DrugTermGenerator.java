@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting.util;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.GraphLoader;
@@ -10,7 +11,7 @@ import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.TermServerScript.ReportActionType;
 import org.ihtsdo.termserver.scripting.TermServerScript.Severity;
 import org.ihtsdo.termserver.scripting.domain.*;
-public class DrugTermGenerator implements RF2Constants{
+public class DrugTermGenerator extends TermGenerator {
 	
 	private TermServerScript parent;
 	private boolean quiet = false;
@@ -27,8 +28,13 @@ public class DrugTermGenerator implements RF2Constants{
 	public DrugTermGenerator (TermServerScript parent) {
 		this.parent = parent;
 		neverAbbrev.add(MICROGRAM);
+		neverAbbrev.add(MICROLITER);
 		neverAbbrev.add(INTERNATIONAL_UNIT);
 		neverAbbrev.add(NANOGRAM);
+		neverAbbrev.add(MICROEQUIVALENT);
+		neverAbbrev.add(PICOGRAM);
+		neverAbbrev.add(UNIT);
+		neverAbbrev.add(MILLION_UNIT);
 	}
 	
 	public DrugTermGenerator includeUnitOfPresentation(Boolean state) {
@@ -57,12 +63,8 @@ public class DrugTermGenerator implements RF2Constants{
 	public boolean useEach() {
 		return useEach;
 	}
-	
-	public int ensureDrugTermsConform(Task t, Concept c, CharacteristicType charType) throws TermServerScriptException {
-		return ensureDrugTermsConform(t, c, charType, false);  //Do not allow duplicate descriptions by default
-	}
 
-	public int ensureDrugTermsConform(Task t, Concept c, CharacteristicType charType, boolean allowDuplicates) throws TermServerScriptException {
+	public int ensureTermsConform(Task t, Concept c, String X, CharacteristicType charType) throws TermServerScriptException {
 		int changesMade = 0;
 		
 		//This function will split out the US / GB terms if the ingredients show variance where the product does not
@@ -127,19 +129,22 @@ public class DrugTermGenerator implements RF2Constants{
 			replacement.setAcceptabilityMap(SnomedUtils.createPreferredAcceptableMap(US_ENG_LANG_REFSET, GB_ENG_LANG_REFSET));
 		}
 		
-		//Does the case significance of the ingredients suggest a need to modify the term?
-		if (replacement.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE) && StringUtils.isCaseSensitive(replacementTerm)) {
-			replacement.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
-		} else if (!StringUtils.isCaseSensitive(replacementTerm)) {
-			replacement.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
-		}
-		
 		//We might have a CS ingredient that starts the term.  Check for this, set and warn
-		checkCaseSensitiveOfIngredients(t, c, replacement, isFSN, charType);
+		//OR a case ingredient that would cause the FSN to switch to cI
+		changesMade += checkCaseSensitivitySetting(t, c, replacement, isFSN, charType, langRefset);
 		
 		//Have we made any changes?  Create a new description if so
 		if (!replacementTerm.equals(d.getTerm())) {
-			changesMade += replaceTerm(t, c, d, replacement);
+			changesMade += replaceTerm(t, c, d, replacement, true);
+		} else {
+			//Are we seeing a difference in the case signficance?
+			if (!d.getCaseSignificance().equals(replacement.getCaseSignificance())) {
+				String before = SnomedUtils.translateCaseSignificanceFromEnum(d.getCaseSignificance());
+				String after = SnomedUtils.translateCaseSignificanceFromEnum(replacement.getCaseSignificance());
+				d.setCaseSignificance(replacement.getCaseSignificance());
+				changesMade++;
+				report (t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Case significance changed from " + before + "->" + after, d);
+			}
 		}
 		
 		//Validation check that we should never end up with the same word twice 
@@ -161,18 +166,80 @@ public class DrugTermGenerator implements RF2Constants{
 		return changesMade;
 	}
 
-	private void checkCaseSensitiveOfIngredients(Task t, Concept c, Description d, boolean isFSN,
-			CharacteristicType charType) throws TermServerScriptException {
-		if (d.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE)) {
-			for (Concept ingred : DrugUtils.getIngredients(c, charType)) {
-				ingred = GraphLoader.getGraphLoader().getConcept(ingred.getConceptId());
-				Description ingredDesc = isFSN ? ingred.getFSNDescription() : ingred.getPreferredSynonym(US_ENG_LANG_REFSET);
+	private int checkCaseSensitivitySetting(Task t, Concept c, Description d, boolean isFSN,
+			CharacteristicType charType, String langRefset) throws TermServerScriptException {
+		int changesMade = 0;
+		//Firstly, are there any absolute rules that would force the case signficance like a capital after the first letter
+		//or starting with a lower case?
+		if (StringUtils.initialLetterLowerCase(d.getTerm())) {
+			return modifyIfRequired(d, CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
+			//For the other settings, we need to check further rules below as lower case letters might not look case sensitive.
+		} else if (StringUtils.isCaseSensitive(d.getTerm())) {
+			d.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
+		} else if (!StringUtils.isCaseSensitive(d.getTerm())) {
+			d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
+		}
+		
+		boolean hasCaseSensitiveIngredient = false;
+		List<Concept> ingreds = DrugUtils.getIngredients(c, charType);
+		boolean isFirstIngred = true;
+		for (Concept ingred : ingreds) {
+			ingred = GraphLoader.getGraphLoader().getConcept(ingred.getConceptId());
+			Description ingredDesc = isFSN ? ingred.getFSNDescription() : ingred.getPreferredSynonym(langRefset);
+			
+			if (ingredDesc.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE) ||
+				ingredDesc.getCaseSignificance().equals(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE)) {
+				hasCaseSensitiveIngredient = true;
+			}
+			
+			if (d.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE)) {
 				if (ingredDesc.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE)) {
-					report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Set term to CS due to CS present in ingredient term : " + ingredDesc);
+					//For the FSN, a CS ingredient will cause us to go to cI due to the "Product containing" prefix
+					if (isFSN) {
+						report (t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Set term to cI in FSN due to CS present in ingredient term", ingredDesc);
+						d.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
+					} else {
+						if (isFirstIngred) {
+							report (t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Set term to CS due to CS present in first ingredient term", ingredDesc);
+							d.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
+							break;  // Don't let subsequent ingredients undo this
+						} else {
+							report (t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Set term to cI due to CS present in (not first) ingredient term", ingredDesc);
+							d.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
+						}
+					}
+					changesMade++;
+				} else if (ingredDesc.getCaseSignificance().equals(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE)) {
+					//For the FSN, a cI ingredient will cause us to go to cI in the product
+					report (t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Set term to cI due to cI present in ingredient term", ingredDesc);
+					d.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
+					changesMade++;
+				}
+			} else if (d.getCaseSignificance().equals(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE)) {
+				//If this is the PT and the FIRST ingredient is CS, then the term becomes CS
+				if (!isFSN && isFirstIngred && ingredDesc.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE)) {
+					report (t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Set PT to CS due to CS present in (first) ingredient term", ingredDesc);
 					d.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
+					changesMade++;
 				}
 			}
+			isFirstIngred = false;
 		}
+		//TODO Watch that this doesn't allow for any case sensitivity in the dose form, units, or presentation.  Currently there is none...
+		if (!hasCaseSensitiveIngredient && !d.getCaseSignificance().equals(CaseSignificance.CASE_INSENSITIVE) && !StringUtils.isCaseSensitive(d.getTerm())) {
+			report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Set term to ci due to lack of case sensitivity in any ingredient");
+			d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
+			changesMade++;
+		}
+		return changesMade;
+	}
+
+	private int modifyIfRequired(Description d, CaseSignificance caseSig) {
+		if (!d.getCaseSignificance().equals(caseSig)) {
+			d.setCaseSignificance(caseSig);
+			return CHANGE_MADE;
+		}
+		return NO_CHANGES_MADE;
 	}
 
 	public String calculateTermFromIngredients(Concept c, boolean isFSN, boolean isPT, String langRefset, CharacteristicType charType) throws TermServerScriptException {
@@ -260,8 +327,17 @@ public class DrugTermGenerator implements RF2Constants{
 		if (isFSN) {
 			proposedTerm += " " + semTag;
 		}
-		proposedTerm = StringUtils.capitalize(proposedTerm);
+		
+		//We need to not capitalize ingredients like von Willebrand factor
+		if (isFSN || !firstIngredientCS(c,langRefset, charType)) {
+			proposedTerm = StringUtils.capitalize(proposedTerm);
+		}
 		return proposedTerm;
+	}
+
+	private boolean firstIngredientCS(Concept c, String langRefset, CharacteristicType charType) {
+		return getOrderedIngredientDescriptions(c, langRefset, charType).get(0)
+				.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
 	}
 
 	private String getCdSuffix(Concept c, boolean isFSN, String langRefset) throws TermServerScriptException {
@@ -341,50 +417,50 @@ public class DrugTermGenerator implements RF2Constants{
 		return changesMade;
 	}
 
-	private boolean removeDescription(Concept c, Description d) {
-		if (d.isReleased()) {
-			d.setActive(false);
-			d.setInactivationIndicator(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
-			return true;
-		} else {
-			c.getDescriptions().remove(d);
-			return false;
-		}
-	}
-	
 	private void validateUsGbVariance(Task t, Concept c, CharacteristicType charType, boolean allowDuplicates) throws TermServerScriptException {
 		//If the ingredient names have US/GB variance, the Drug should too.
 		//If the unit of presentation is present and has variance, the drug should too.
 		//Do we have two preferred terms?
 		boolean drugVariance = c.getDescriptions(Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE).size() > 1;
 		boolean ingredientVariance = checkIngredientVariance(c, charType);
-		Boolean presentationVariance = checkPresentationVariance(c, charType);  //May be null if no presentation is specified
-
-		if (drugVariance != ingredientVariance || (presentationVariance != null && !drugVariance && presentationVariance)) {
-			String msg = "Drug vs Ingredient vs Presentation US/GB term variance mismatch : Drug=" + drugVariance + " Ingredients=" + ingredientVariance + " Presentation=" + presentationVariance;
-			report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, msg);
-			if (!drugVariance && (ingredientVariance || presentationVariance)) {
+		Boolean doseFormVariance = checkTypeValueVariance(c, HAS_MANUFACTURED_DOSE_FORM, charType);
+		Boolean presentationVariance = checkTypeValueVariance(c, HAS_UNIT_OF_PRESENTATION, charType);  //May be null if no presentation is specified
+		boolean strengthUnitVariance = checkStrengthUnitsVariance(c, charType);
+		
+		if (drugVariance != ingredientVariance || 
+				(presentationVariance != null && !drugVariance && presentationVariance) || 
+				(doseFormVariance != null && drugVariance != doseFormVariance) ||
+				drugVariance != strengthUnitVariance) {
+			if (!drugVariance) {
+				String msg = "Drug vs Ingredient vs Presentation US/GB term variance mismatch : Drug=" + drugVariance + 
+						", Ingredients=" + ingredientVariance + 
+						", Presentation=" + presentationVariance +
+						", DoseForm=" + doseFormVariance + 
+						", StrengthUnits=" + strengthUnitVariance;
+				report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, msg);
 				splitPreferredTerm(t, c, allowDuplicates);
 			}
 		} 
 	}
 
-	private Boolean checkPresentationVariance(Concept c, CharacteristicType charType) throws TermServerScriptException {
-		Boolean presentationVariance = null;  
-		List<Relationship> presentationRels = c.getRelationships(charType, HAS_UNIT_OF_PRESENTATION, ActiveState.ACTIVE);
+	private Boolean checkTypeValueVariance(Concept c, Concept relType, CharacteristicType charType) throws TermServerScriptException {
+		Boolean relTypeVariance = null;  
+		List<Relationship> presentationRels = c.getRelationships(charType, relType, ActiveState.ACTIVE);
 		if (presentationRels.size() > 0) {
-			presentationVariance = false;
+			relTypeVariance = false;
 		}
 		for (Relationship r : presentationRels) {
-			Concept presentation = GraphLoader.getGraphLoader().getConcept(r.getTarget().getConceptId());
-			//Does the ingredient have more than one PT?
-			if (presentation.getDescriptions(Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE).size() > 1 ) {
-				presentationVariance = true;
+			Concept target = GraphLoader.getGraphLoader().getConcept(r.getTarget().getConceptId());
+			//Does the target have more than one PT?
+			if (target.getDescriptions(Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE).size() > 1 ) {
+				relTypeVariance = true;
 				break;
 			}
 		}
-		return presentationVariance;
+		return relTypeVariance;
 	}
+	
+	
 
 	private boolean checkIngredientVariance(Concept c, CharacteristicType charType) throws TermServerScriptException {
 		boolean ingredientVariance = false;
@@ -400,6 +476,27 @@ public class DrugTermGenerator implements RF2Constants{
 			}
 		}
 		return ingredientVariance;
+	}
+	
+	private boolean checkStrengthUnitsVariance(Concept c, CharacteristicType charType) throws TermServerScriptException {
+		boolean strengthUnitsVariance = false;
+		//Collect all possible strength units and work out if any should be us/gb specific
+		//Watch that for never abbreviated cases, we might need to hard code since the FSN is US only
+		Concept[] strengthTypes = new Concept[] { HAS_PRES_STRENGTH_UNIT, HAS_PRES_STRENGTH_DENOM_UNIT, 
+												HAS_CONC_STRENGTH_UNIT, HAS_CONC_STRENGTH_DENOM_UNIT };
+		Set<Concept> strengthUnits = SnomedUtils.getTargets(c, strengthTypes, charType);
+		for (Concept unit : strengthUnits) {
+			//Use in-memory copy so we have all descriptions
+			unit = GraphLoader.getGraphLoader().getConcept(unit.getConceptId());
+			//Does the unit have more than one PT?
+			//OR is it never abbreviated (ie use FSN) and contains the word liter?
+			if (unit.getDescriptions(Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE).size() > 1 || 
+					(neverAbbrev.contains(unit) && unit.getFsn().contains("liter")) ) {
+				strengthUnitsVariance = true;
+				break;
+			} 
+		}
+		return strengthUnitsVariance;
 	}
 
 	/**
@@ -424,61 +521,6 @@ public class DrugTermGenerator implements RF2Constants{
 		}
 	}
 
-	private int replaceTerm(Task t, Concept c, Description removing, Description replacement) throws TermServerScriptException {
-		int changesMade = 0;
-		boolean doReplacement = true;
-		if (SnomedUtils.termAlreadyExists(c, replacement.getTerm())) {
-			//But does it exist inactive?
-			if (SnomedUtils.termAlreadyExists(c, replacement.getTerm(), ActiveState.INACTIVE)) {
-				reactivateMatchingTerm(t, c, replacement);
-			} else {
-				report(t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Replacement term already exists: '" + replacement.getTerm() + "' inactivating unwanted term only.");
-			}
-			//If we're removing a PT, merge the acceptability into the existing term, also any from the replacement
-			if (removing.isPreferred()) {
-				mergeAcceptability(t, c, removing, replacement);
-			}
-			doReplacement = false;
-		}
-		
-		//Has our description been published?  Remove entirely if not
-		boolean isInactivated = removeDescription(c,removing);
-		String msg = (isInactivated?"Inactivated desc ":"Deleted desc ") +  removing;
-		changesMade++;
-		
-		//We're only going to report this if the term really existed, silently delete null terms
-		if (removing.getTerm() != null) {
-			Severity severity = removing.getType().equals(DescriptionType.FSN)?Severity.MEDIUM:Severity.LOW;
-			report(t, c, severity, ReportActionType.DESCRIPTION_INACTIVATED, msg);
-		}
-		
-		if (doReplacement) {
-			report(t, c, Severity.LOW, ReportActionType.DESCRIPTION_ADDED, replacement);
-			c.addDescription(replacement);
-		}
-		
-		return changesMade;
-	}
-
-	private void mergeAcceptability(Task t, Concept c, Description removing, Description replacement) throws TermServerScriptException {
-		//Find the matching term that is not removing and merge that with the acceptability of removing
-		boolean merged = false;
-		for (Description match : c.getDescriptions(ActiveState.ACTIVE)) {
-			if (!removing.equals(match) && match.getTerm().equals(replacement.getTerm())) {
-				Map<String,Acceptability> mergedMap = SnomedUtils.mergeAcceptabilityMap(removing.getAcceptabilityMap(), match.getAcceptabilityMap());
-				match.setAcceptabilityMap(mergedMap);
-				//Now add in any improved acceptability that was coming from the replacement 
-				mergedMap = SnomedUtils.mergeAcceptabilityMap(match.getAcceptabilityMap(), replacement.getAcceptabilityMap());
-				match.setAcceptabilityMap(mergedMap);
-				report(t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Merged acceptability from description being replaced and replacement into term that already exists: " + match);
-				merged = true;
-			}
-		}
-		if (!merged) {
-			report(t, c, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to find existing term to receive accepabilty merge with " + removing);
-		}
-	}
-
 	public String checkForVitamins(String term, String origTerm) {
 		//See if we've accidentally made vitamin letters lower case and switch back
 		for (String vitamin : vitamins) {
@@ -500,7 +542,7 @@ public class DrugTermGenerator implements RF2Constants{
 	private Set<String> getIngredientsWithStrengths(Concept c, boolean isFSN, String langRefset, CharacteristicType charType) throws TermServerScriptException {
 		List<Relationship> ingredientRels = c.getRelationships(charType, HAS_ACTIVE_INGRED, ActiveState.ACTIVE);
 		ingredientRels.addAll(c.getRelationships(charType, HAS_PRECISE_INGRED, ActiveState.ACTIVE));
-		Set<String> ingredients = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);  //Will naturally sort in alphabetical order
+		Set<String> ingredientsWithStrengths = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);  //Will naturally sort in alphabetical order
 		
 		for (Relationship r : ingredientRels) {
 			//Need to recover the full concept to have all descriptions, not the partial one stored as the target.
@@ -530,9 +572,19 @@ public class DrugTermGenerator implements RF2Constants{
 			Concept unit = SnomedUtils.getTarget(c, new Concept[] {HAS_PRES_STRENGTH_UNIT, HAS_CONC_STRENGTH_UNIT}, r.getGroupId(), charType);
 			
 			String ingredientWithStrengthTerm = formIngredientWithStrengthTerm (ingredient, boSS, strength, unit, denominatorStr, isFSN, langRefset);
-			ingredients.add(ingredientWithStrengthTerm);
+			ingredientsWithStrengths.add(ingredientWithStrengthTerm);
 		}
-		return ingredients;
+		return ingredientsWithStrengths;
+	}
+
+	private List<Description> getOrderedIngredientDescriptions(Concept c, String langRefset, CharacteristicType charType) {
+		List<Relationship> ingredientRels = c.getRelationships(charType, HAS_ACTIVE_INGRED, ActiveState.ACTIVE);
+		ingredientRels.addAll(c.getRelationships(charType, HAS_PRECISE_INGRED, ActiveState.ACTIVE));
+		return ingredientRels.stream()
+				.map(r -> GraphLoader.getGraphLoader().getConceptSafely(r.getTarget().getConceptId()))
+				.map(i -> i.getPreferredSynonymSafely(langRefset))
+				.sorted((d1, d2) -> d1.getTerm().compareTo(d2.getTerm()))
+				.collect(Collectors.toList());
 	}
 
 	private boolean hasAttribute(Concept c, Concept attrib) {
@@ -563,7 +615,11 @@ public class DrugTermGenerator implements RF2Constants{
 		}
 		
 		if (unit != null) {
-			ingredientTerm += " " + getTermForConcat(unit, isFSN || neverAbbrev.contains(unit), langRefset);
+			String unitForConcat = getTermForConcat(unit, isFSN || neverAbbrev.contains(unit), langRefset);
+			if (!isFSN && neverAbbrev.contains(unit) && unitForConcat.contains("liter") && langRefset.equals(GB_ENG_LANG_REFSET)) {
+				unitForConcat = unitForConcat.replace("liter", "litre");
+			}
+			ingredientTerm += " " + unitForConcat;
 		}
 		
 		ingredientTerm += denominatorStr;
@@ -579,25 +635,15 @@ public class DrugTermGenerator implements RF2Constants{
 			term = SnomedUtils.deconstructFSN(desc.getTerm())[0];
 		} else {
 			desc = c.getPreferredSynonym(langRefset);
+			if (desc == null) {
+				TermServerScript.warn("No preferred description found for " + c + " in " + langRefset);
+			}
 			term = desc.getTerm();
 		}
 		if (!desc.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE)) {
 			term = StringUtils.deCapitalize(term);
 		}
 		return term;
-	}
-
-	private void reactivateMatchingTerm(Task t, Concept c, Description replacement) throws TermServerScriptException {
-		//Loop through the inactive terms and reactivate the one that matches the replacement
-		for (Description d : c.getDescriptions(ActiveState.INACTIVE)) {
-			if (d.getTerm().equals(replacement.getTerm())) {
-				d.setActive(true);
-				d.setCaseSignificance(replacement.getCaseSignificance());
-				d.setAcceptabilityMap(replacement.getAcceptabilityMap());
-				report(t, c, Severity.LOW, ReportActionType.DESCRIPTION_CHANGE_MADE, "Re-activated inactive term " + d);
-				return;
-			}
-		}
 	}
 	
 	protected void report(Task task, Component component, Severity severity, ReportActionType actionType, Object... details) throws TermServerScriptException {

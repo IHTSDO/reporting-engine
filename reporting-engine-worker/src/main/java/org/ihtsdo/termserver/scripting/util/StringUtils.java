@@ -34,11 +34,23 @@ public class StringUtils implements RF2Constants {
 		
 		return true;
 	}
+	
+	public static boolean initialLetterLowerCase(String term) {
+		String first = term.substring(0,1);
+		
+		//Being a number doesn't make you lower case
+		if (!Character.isLetter(first.charAt(0))) {
+			return false;
+		}
+		return first.equals(first.toLowerCase());
+	}
 
 	public static boolean isCaseSensitive(String term) {
 		String afterFirst = term.substring(1);
 		boolean allLowerCase = afterFirst.equals(afterFirst.toLowerCase());
-		return !allLowerCase;
+		
+		//Also case sensitive if we start with a lower case letter
+		return !allLowerCase || initialLetterLowerCase(term);
 	}
 	
 	/**
@@ -154,6 +166,14 @@ public class StringUtils implements RF2Constants {
 
 	private static Pattern csvPattern = Pattern.compile(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)");
 
+	public static String makeMachineReadable (String exp) {
+		StringBuffer hrExp = new StringBuffer(exp);
+		makeMachineReadable(hrExp);
+		exp = hrExp.toString();
+		exp = exp.replaceAll("OR", " OR ").replaceAll("AND", " AND ");
+		return exp;
+	}
+	
 	public static void makeMachineReadable (StringBuffer hrExp) {
 		int pipeIdx =  hrExp.indexOf(PIPE);
 		while (pipeIdx != -1) {

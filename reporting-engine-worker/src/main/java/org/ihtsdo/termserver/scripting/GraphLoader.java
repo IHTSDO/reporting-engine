@@ -113,7 +113,7 @@ public class GraphLoader implements RF2Constants {
 		populateKnownConcepts();
 	}
 	
-	public Set<Concept> loadRelationships(CharacteristicType characteristicType, InputStream relStream, boolean addRelationshipsToConcepts, boolean isDelta, boolean isReleased) 
+	public Set<Concept> loadRelationships(CharacteristicType characteristicType, InputStream relStream, boolean addRelationshipsToConcepts, boolean isDelta, Boolean isReleased) 
 			throws IOException, TermServerScriptException, TermServerClientException {
 		Set<Concept> concepts = new HashSet<Concept>();
 		BufferedReader br = new BufferedReader(new InputStreamReader(relStream, StandardCharsets.UTF_8));
@@ -154,7 +154,7 @@ public class GraphLoader implements RF2Constants {
 		return concepts;
 	}
 	
-	public void loadAxioms(InputStream axiomStream, boolean isDelta, boolean isReleased) 
+	public void loadAxioms(InputStream axiomStream, boolean isDelta, Boolean isReleased) 
 			throws IOException, TermServerScriptException, TermServerClientException {
 		BufferedReader br = new BufferedReader(new InputStreamReader(axiomStream, StandardCharsets.UTF_8));
 		String line;
@@ -262,9 +262,11 @@ public class GraphLoader implements RF2Constants {
 	 * @return ignored count (ie 1 if relationship addition was ignored)
 	 * @throws TermServerScriptException
 	 */
-	public int addRelationshipToConcept(CharacteristicType charType, String[] lineItems, boolean isDelta, boolean isReleased) throws TermServerScriptException {
+	public int addRelationshipToConcept(CharacteristicType charType, String[] lineItems, boolean isDelta, Boolean isReleased) throws TermServerScriptException {
 		Relationship r = createRelationshipFromRF2(charType, lineItems);
-		r.setReleased(isReleased);
+		if (r.isReleased() == null) {
+			r.setReleased(isReleased);
+		}
 		return addRelationshipToConcept(charType, r, isDelta);
 	}
 	
@@ -353,7 +355,7 @@ public class GraphLoader implements RF2Constants {
 		return d;
 	}
 	
-	public void loadConceptFile(InputStream is, boolean isReleased) throws IOException, TermServerScriptException {
+	public void loadConceptFile(InputStream is, Boolean isReleased) throws IOException, TermServerScriptException {
 		//Not putting this in a try resource block otherwise it will close the stream on completion and we've got more to read!
 		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 		String line;
@@ -365,11 +367,17 @@ public class GraphLoader implements RF2Constants {
 				if (lineItems[IDX_MODULEID].equals(excludeModule)) {
 					continue;
 				}
+				
+				/*if (lineItems[IDX_ID].equals("296813001")) {
+					TermServerScript.debug("here");
+				}*/
 				//We might already have received some details about this concept
 				Concept c = getConcept(lineItems[IDX_ID]);
 				Concept.fillFromRf2(c, lineItems);
-				if (isReleased) {
-					c.setReleased(true);
+				
+				//Only set the released flag if it's not set already
+				if (c.isReleased() == null) {
+					c.setReleased(isReleased);
 				}
 				if (c.getDefinitionStatus() == null) {
 					throw new TermServerScriptException("Concept " + c + " did not define definition status");
@@ -380,7 +388,7 @@ public class GraphLoader implements RF2Constants {
 		}
 	}
 	
-	public void loadDescriptionFile(InputStream descStream, boolean fsnOnly, boolean isReleased) throws IOException, TermServerScriptException, TermServerClientException {
+	public void loadDescriptionFile(InputStream descStream, boolean fsnOnly, Boolean isReleased) throws IOException, TermServerScriptException, TermServerClientException {
 		//Not putting this in a try resource block otherwise it will close the stream on completion and we've got more to read!
 		BufferedReader br = new BufferedReader(new InputStreamReader(descStream, StandardCharsets.UTF_8));
 		String line;
@@ -406,7 +414,10 @@ public class GraphLoader implements RF2Constants {
 					//We might already have information about this description, eg langrefset entries
 					Description d = getDescription (lineItems[DES_IDX_ID]);
 					Description.fillFromRf2(d,lineItems);
-					d.setReleased(isReleased);
+					//Only set the released flag if it's not set already
+					if (d.isReleased() == null) {
+						d.setReleased(isReleased);
+					}
 					c.addDescription(d);
 				}
 			} else {
@@ -493,7 +504,7 @@ public class GraphLoader implements RF2Constants {
 			//TermServerScript.debug ("Checkpoint");
 		}*/
 		
-		for (Concept child : startingPoint.getDescendents(IMMEDIATE_CHILD, CharacteristicType.INFERRED_RELATIONSHIP)) {
+		for (Concept child : startingPoint.getChildren(CharacteristicType.INFERRED_RELATIONSHIP)) {
 			if (currentDepth >= MAX_DEPTH) {
 				throw new TermServerScriptException("Maximum depth exceeded from " + startingPoint + " and inferred child " + child);
 			}

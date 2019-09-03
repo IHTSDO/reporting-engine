@@ -138,7 +138,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 		}
 		
 		for (Concept required : conceptsRequired) {
-			termGenerator.ensureDrugTermsConform(task, required, CharacteristicType.STATED_RELATIONSHIP, true);
+			termGenerator.ensureTermsConform(task, required, CharacteristicType.STATED_RELATIONSHIP);
 			required.setDefinitionStatus(DefinitionStatus.FULLY_DEFINED);
 			report (task, concept, Severity.NONE, ReportActionType.INFO, "Concepts suggests need for :" + required);
 			

@@ -103,7 +103,7 @@ public class CDUpdate extends DrugBatchFix implements RF2Constants {
 		}
 		
 		//We're definitely going to have everything we need in the stated form, and in fact the inferred will be wrong because we haven't changed it.
-		changesMade += termGenerator.ensureDrugTermsConform(t,c, CharacteristicType.STATED_RELATIONSHIP);
+		changesMade += termGenerator.ensureTermsConform(t, c, null, CharacteristicType.STATED_RELATIONSHIP);
 		return changesMade;
 	}
 	

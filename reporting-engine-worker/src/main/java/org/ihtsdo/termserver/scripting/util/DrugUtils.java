@@ -3,6 +3,7 @@ package org.ihtsdo.termserver.scripting.util;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang.ArrayUtils;
@@ -32,6 +33,9 @@ public class DrugUtils implements RF2Constants {
 	static Set<Concept> dangerousSubstances = new HashSet<>();  
 	
 	public static void setConceptType(Concept c) {
+		if (c.getConceptType() != null) {
+			return;
+		}
 		String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
 		boolean hasBaseCount = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, COUNT_BASE_ACTIVE_INGREDIENT, ActiveState.ACTIVE).size() > 0;
 		switch (semTag) {
@@ -214,7 +218,7 @@ public class DrugUtils implements RF2Constants {
 			if (isFSN) {
 				doseFormStr = SnomedUtils.deconstructFSN(doseForm.getFsn())[0];
 			} else {
-				doseFormStr = doseForm.getPreferredSynonym(US_ENG_LANG_REFSET).getTerm();
+				doseFormStr = doseForm.getPreferredSynonym(langRefset).getTerm();
 			}
 			return StringUtils.deCapitalize(doseFormStr);
 		}
@@ -272,11 +276,16 @@ public class DrugUtils implements RF2Constants {
 	}
 	
 
-	public static Set<Concept> getIngredients(Concept c, CharacteristicType charType) throws TermServerScriptException {
-		return getIngredientRelationships(c, charType)
+	public static List<Concept> getIngredients(Concept c, CharacteristicType charType) throws TermServerScriptException {
+		Set<Concept> ingredients = getIngredientRelationships(c, charType)
 				.stream()
 				.map(r -> r.getTarget())
 				.collect(Collectors.toSet());
+		
+		//With any duplicates dealt with in set, now sort on FSN 
+		return ingredients.stream()
+				.sorted(Comparator.comparing(Concept::getFsn))
+				.collect(Collectors.toList());
 	}
 
 	public static Ingredient getIngredientDetails(Concept c, int groupId, CharacteristicType charType) throws TermServerScriptException {

@@ -873,6 +873,12 @@ public class SnomedUtils implements RF2Constants {
 	}
 	
 	public static Set<Concept> getHighestAncestorsBefore(Concept start, Concept end) {
+		if (start == null) {
+			throw new IllegalStateException("Asked to find highest ancestor - start concept not specified");
+		}
+		if (end == null) {
+			throw new IllegalStateException("Asked to find highest ancestor - end concept not specified");
+		}
 		Set<Concept> topLevelAncestors = new HashSet<>();
 		for (Concept parent : start.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
 			if (parent.equals(end)) {
@@ -1203,6 +1209,60 @@ public class SnomedUtils implements RF2Constants {
 		}
 		m.appendTail(sb);
 		return sb.toString();
+	}
+
+	/**
+	 * @return the list ordered so that FSN is returned first, then PT, then acceptable synonyms
+	 */
+	public static void prioritise(List<Description> descriptions) {
+		Collections.sort(descriptions, new Comparator<Description>() {
+			@Override
+			public int compare(Description d1, Description d2) {
+			return priority(d2).compareTo(priority(d1));
+			}
+		});
+	}
+	
+	private static Integer priority(Description d) {
+		if (d.getType().equals(DescriptionType.FSN)) {
+			return 2;
+		} else if (d.isPreferred()) {
+			return 1;
+		}
+		return 0;
+	}
+
+	public static Set<Concept> hasParents(Set<Concept> matchParents, Set<Concept> range, int limit) {
+		Set<Concept> matching = new HashSet<>();
+		for (Concept testMe : range) {
+			if (testMe.getParents(CharacteristicType.INFERRED_RELATIONSHIP).containsAll(matchParents)) {
+				matching.add(testMe);
+			}
+			if (matching.size() >= limit) {
+				break;
+			}
+		}
+		return matching;
+	}
+
+	public static int notNullCount(Concept[] concepts) {
+		int notNullCount = 0;
+		for (Concept concept : concepts) {
+			if (concept != null) {
+				notNullCount++;
+			}
+		}
+		return notNullCount;
+	}
+
+	public static int appearances(Concept[] concepts, Concept conceptOfInterest) {
+		int appearances = 0;
+		for (Concept concept : concepts) {
+			if (concept != null && concept.equals(conceptOfInterest)) {
+				appearances++;
+			}
+		}
+		return appearances;
 	}
 
 }

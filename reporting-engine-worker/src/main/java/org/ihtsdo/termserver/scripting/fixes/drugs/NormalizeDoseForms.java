@@ -65,7 +65,7 @@ public class NormalizeDoseForms extends DrugBatchFix implements RF2Constants{
 		
 		changes += replaceDoseForm(task, loadedConcept);
 		
-		changes += termGenerator.ensureDrugTermsConform(task, loadedConcept, CharacteristicType.STATED_RELATIONSHIP);
+		changes += termGenerator.ensureTermsConform(task, loadedConcept, CharacteristicType.STATED_RELATIONSHIP);
 		
 		if (loadedConcept.getDefinitionStatus().equals(DefinitionStatus.PRIMITIVE)) {
 			

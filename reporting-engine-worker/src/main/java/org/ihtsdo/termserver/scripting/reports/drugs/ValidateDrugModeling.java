@@ -1,5 +1,6 @@
 package org.ihtsdo.termserver.scripting.reports.drugs;
 
+import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -17,7 +18,11 @@ import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.DrugTermGenerator;
 import org.ihtsdo.termserver.scripting.util.DrugUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.ihtsdo.termserver.scripting.util.TermGenerator;
 import org.snomed.otf.scheduler.domain.*;
+
+import com.google.common.base.Charsets;
+import com.google.common.io.Files;
 
 public class ValidateDrugModeling extends TermServerReport implements ReportClass {
 	
@@ -26,12 +31,14 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 	String[] semTagHiearchy = new String[] { "(product)", "(medicinal product)", "(medicinal product form)", "(clinical drug)" };
 	
 	private static final String[] badWords = new String[] { "preparation", "agent", "+"};
-	private static final String remodelledDrugIndicator = "Product containing";
-	private static final String BOSS_FAIL = "BoSS failed to relate to ingredient";
 	
+	private Concept[] doseFormTypes = new Concept[] {HAS_MANUFACTURED_DOSE_FORM};
+	private Map<Concept, Boolean> acceptableMpfDoseForms = new HashMap<>();
+	private Map<Concept, Boolean> acceptableCdDoseForms = new HashMap<>();	
 	private Map<String, Integer> issueSummaryMap = new HashMap<>();
+	private Map<Concept,Concept> grouperSubstanceUsage = new HashMap<>();
 	
-	DrugTermGenerator termGenerator = new DrugTermGenerator(this);
+	TermGenerator termGenerator = new DrugTermGenerator(this);
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
 		Map<String, String> params = new HashMap<>();
@@ -49,9 +56,11 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 				"Issue, Count"};
 		String[] tabNames = new String[] {	"Issues",
 				"Summary"};
+		populateAcceptableDoseFormMaps();
+		populateGrouperSubstances();
 		super.postInit(tabNames, columnHeadings, false);
 	}
-	
+
 	@Override
 	public Job getJob() {
 		JobParameters params = new JobParameters();
@@ -63,25 +72,28 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 	
 	public void runJob() throws TermServerScriptException {
 		validateDrugsModeling();
-		validateSubstancesModeling();
 		populateSummaryTab();
 		info("Summary tab complete, all done.");
 	}
 	
 	private void validateDrugsModeling() throws TermServerScriptException {
-		Set<Concept> subHierarchy = MEDICINAL_PRODUCT.getDescendents(NOT_SET);
-		ConceptType[] allDrugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT, ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.CLINICAL_DRUG };
+		Set<Concept> subHierarchy = gl.getDescendantsCache().getDescendents(MEDICINAL_PRODUCT);
+		ConceptType[] allDrugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT, ConceptType.MEDICINAL_PRODUCT_ONLY, ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.MEDICINAL_PRODUCT_FORM_ONLY, ConceptType.CLINICAL_DRUG };
 		ConceptType[] cds = new ConceptType[] { ConceptType.CLINICAL_DRUG };  //DRUGS-267
-		initialiseSummaryInformation(BOSS_FAIL);
 		
-		//for (Concept concept : Collections.singleton(gl.getConcept("418860009"))) {
+		//for (Concept concept : Collections.singleton(gl.getConcept("778271007"))) {
 		for (Concept concept : subHierarchy) {
 			DrugUtils.setConceptType(concept);
 			
 			//DRUGS-585
-			if (concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT) || 
-					concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM)) {
+			if (isMP(concept) || isMPF(concept)) {
 				validateNoModifiedSubstances(concept);
+			}
+			
+			//DRUGS-784
+			if (concept.getConceptType().equals(ConceptType.CLINICAL_DRUG) || 
+					isMPF(concept)) {
+				validateAcceptableDoseForm(concept);
 			}
 			
 			// DRUGS-281, DRUGS-282, DRUGS-269
@@ -89,10 +101,16 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 				validateTerming(concept, allDrugTypes);  
 			}
 			
-			// DRUGS-267
+			//DRUGS-267
 			validateIngredientsAgainstBoSS(concept);
 			
-			// DRUGS-296 
+			//DRUGS-793
+			if (!concept.getConceptType().equals(ConceptType.PRODUCT)) {
+				checkForBossGroupers(concept);
+				checkForPaiGroupers(concept);
+			}
+			
+			//DRUGS-296 
 			if (concept.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED) && 
 				concept.getParents(CharacteristicType.STATED_RELATIONSHIP).get(0).equals(MEDICINAL_PRODUCT)) {
 				validateStatedVsInferredAttributes(concept, HAS_ACTIVE_INGRED, allDrugTypes);
@@ -115,7 +133,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 				validateConcentrationStrength(concept);
 			}
 			
-			// DRUGS-288
+			//DRUGS-288
 			validateAttributeValueCardinality(concept, HAS_ACTIVE_INGRED);
 			
 			//DRUGS-93, DRUGS-759
@@ -127,10 +145,84 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		info ("Drugs validation complete");
 	}
 
-	private void populateSummaryTab() throws TermServerScriptException {
-		for (String issue : issueSummaryMap.keySet()) {
-			report (SECONDARY_REPORT, (Component)null, issue, issueSummaryMap.get(issue).toString());
+	private boolean isMP(Concept concept) {
+		return concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT) || 
+				concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_ONLY);
+	}
+	
+	private boolean isMPF(Concept concept) {
+		return concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM) || 
+				concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM_ONLY);
+	}
+
+	private void populateGrouperSubstances() throws TermServerScriptException {
+		//DRUGS-793 Ingredients of "(product)" Medicinal products will be
+		//considered 'grouper substances' that should not be used as BoSS 
+		for (Concept c : gl.getDescendantsCache().getDescendents(MEDICINAL_PRODUCT)) {
+			DrugUtils.setConceptType(c);
+			if (c.getConceptType().equals(ConceptType.PRODUCT)) {
+				for (Concept substance : DrugUtils.getIngredients(c, CharacteristicType.INFERRED_RELATIONSHIP)) {
+					if (!grouperSubstanceUsage.containsKey(substance)) {
+						grouperSubstanceUsage.put(substance, c);
+					}
+				}
+			}
 		}
+	}
+
+	private void checkForBossGroupers(Concept c) throws TermServerScriptException {
+		String issueStr = "Grouper substance used as BoSS";
+		initialiseSummary(issueStr);
+		for (Concept boss : SnomedUtils.getTargets(c, new Concept[] {HAS_BOSS}, CharacteristicType.INFERRED_RELATIONSHIP)) {
+			if (grouperSubstanceUsage.containsKey(boss)) {
+				report (c, issueStr, boss, " identified as grouper in ", grouperSubstanceUsage.get(boss));
+			}
+		}
+	}
+	
+	private void checkForPaiGroupers(Concept c) throws TermServerScriptException {
+		String issueStr = "Grouper substance used as PAI";
+		initialiseSummary(issueStr);
+		for (Concept pai : SnomedUtils.getTargets(c, new Concept[] {HAS_PRECISE_INGRED}, CharacteristicType.INFERRED_RELATIONSHIP)) {
+			if (grouperSubstanceUsage.containsKey(pai)) {
+				report (c, issueStr, pai, " identified as grouper in ", grouperSubstanceUsage.get(pai));
+			}
+		}
+	}
+
+	private void validateAcceptableDoseForm(Concept c) throws TermServerScriptException {
+		String issueStr1 = c.getConceptType() + " uses unlisted dose form";
+		String issueStr2 = c.getConceptType() + " uses unacceptable dose form";
+		initialiseSummary(issueStr1);
+		initialiseSummary(issueStr2);
+		
+		Map<Concept, Boolean> acceptableDoseForms;
+		if (isMPF(c)) {
+			acceptableDoseForms = acceptableMpfDoseForms;
+		} else {
+			acceptableDoseForms = acceptableCdDoseForms;
+		}
+		
+		Concept thisDoseForm = SnomedUtils.getTarget(c, doseFormTypes, UNGROUPED, CharacteristicType.INFERRED_RELATIONSHIP);
+		//Is this dose form acceptable?
+		if (acceptableDoseForms.containsKey(thisDoseForm)) {
+			if (acceptableDoseForms.get(thisDoseForm).equals(Boolean.FALSE)) {
+				report (c, issueStr2, thisDoseForm);
+			}
+		} else {
+			report (c, issueStr1, thisDoseForm);
+		}
+	}
+
+	private void populateSummaryTab() throws TermServerScriptException {
+		issueSummaryMap.entrySet().stream()
+				.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
+				.forEach(e -> reportSafely (SECONDARY_REPORT, (Component)null, e.getKey(), e.getValue()));
+		
+		int total = issueSummaryMap.entrySet().stream()
+				.map(e -> e.getValue())
+				.collect(Collectors.summingInt(Integer::intValue));
+		reportSafely (SECONDARY_REPORT, (Component)null, "TOTAL", total);
 	}
 
 	/**
@@ -192,11 +284,11 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		initialiseSummary(issueStr);
 		//Check all ingredients for any that themselves have modification relationships
 		for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
-			if (r.getType().equals(HAS_PRECISE_INGRED)) {
+			if (r.getType().equals(HAS_PRECISE_INGRED) || r.getType().equals(HAS_ACTIVE_INGRED) ) {
 				Concept ingredient = r.getTarget();
 				for (Relationship ir :  ingredient.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
 					if (ir.getType().equals(IS_MODIFICATION_OF)) {
-						report (c, issueStr, ingredient);
+						report (c, issueStr, ingredient, "is modification of", ir.getTarget());
 					}
 				}
 			}
@@ -278,80 +370,6 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		return factor;
 	}
 
-	private void validateSubstancesModeling() throws TermServerScriptException {
-		Set<Concept> subHierarchy = SUBSTANCE.getDescendents(NOT_SET);
-		for (Concept concept : subHierarchy) {
-			DrugUtils.setConceptType(concept);
-			validateDisposition(concept);
-			checkForBadWords(concept);  //DRUGS-93
-		}
-		info ("Substances validation complete.");
-	}
-	
-	//Ensure that all stated dispositions exist as inferred, and visa-versa
-	private void validateDisposition(Concept concept) throws TermServerScriptException {
-		validateAttributeViewsMatch (concept, HAS_DISPOSITION, CharacteristicType.STATED_RELATIONSHIP);
-
-		//If this concept has one or more hasDisposition attributes, check if the inferred parent has the same.
-		if (concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_DISPOSITION, ActiveState.ACTIVE).size() > 0) {
-			validateAttributeViewsMatch (concept, HAS_DISPOSITION, CharacteristicType.INFERRED_RELATIONSHIP);
-			checkForOddlyInferredParent(concept, HAS_DISPOSITION, true);
-		}
-	}
-
-	private void validateAttributeViewsMatch(Concept concept,
-			Concept attributeType,
-			CharacteristicType fromCharType) throws TermServerScriptException {
-		String issueStr = fromCharType.toString() + " has no counterpart";
-		initialiseSummary(issueStr);
-		//Check that all relationships of the given type "From" match "To"
-		CharacteristicType toCharType = fromCharType.equals(CharacteristicType.STATED_RELATIONSHIP)? CharacteristicType.INFERRED_RELATIONSHIP : CharacteristicType.STATED_RELATIONSHIP;
-		for (Relationship r : concept.getRelationships(fromCharType, attributeType, ActiveState.ACTIVE)) {
-			if (findRelationship(concept, r, toCharType, false) == null) {
-				report (concept, issueStr, r.toString());
-			}
-		}
-	}
-
-	/**
-	 * list of concepts that have an inferred parent with a stated attribute 
-	 * that is not the same as the that of the concept.
-	 * @return
-	 * @throws TermServerScriptException 
-	 */
-	private void checkForOddlyInferredParent(Concept concept, Concept attributeType, boolean allowMoreSpecific) throws TermServerScriptException {
-		String issueStr ="Inferred parent has a stated attribute not stated in child.";
-		initialiseSummary(issueStr);
-		//Work through inferred parents
-		for (Concept parent : concept.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
-			//Find all STATED attributes of interest
-			for (Relationship parentAttribute : parent.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE)) {
-				//Does our original concept have that attribute?  Report if not.
-				if (null == findRelationship(concept, parentAttribute, CharacteristicType.STATED_RELATIONSHIP, allowMoreSpecific)) {
-					report (concept, issueStr, parentAttribute.toString());
-					//Reporting one issue per concept is sufficient
-					return;
-				}
-			}
-		}
-	}
-
-	private Relationship findRelationship(Concept concept, Relationship exampleRel, CharacteristicType charType, boolean allowMoreSpecific) throws TermServerScriptException {
-		//Find the first relationship matching the type, target and activeState
-		for (Relationship r : concept.getRelationships(charType, exampleRel.getType(),  ActiveState.ACTIVE)) {
-			if (allowMoreSpecific) {
-				//Does this target value have the example rel as self or ancestor?
-				Set<Concept> ancestorsOrSelf = gl.getAncestorsCache().getAncestorsOrSelf(r.getTarget());
-				if (ancestorsOrSelf.contains(exampleRel.getTarget())) {
-					return r;
-				}
-			} else if (r.getTarget().equals(exampleRel.getTarget())) {
-				return r;
-			}
-		}
-		return null;
-	}
-
 	/*
 	Need to identify and update:
 		FSN beginning with "Product containing" that includes any of the following in any active description:
@@ -378,7 +396,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 						if (badWord.equals("+") && isPlusException(term)) {
 							continue;
 						}
-						report (concept, issueStr, concept.getFsn().contains(remodelledDrugIndicator), d.toString());
+						report (concept, issueStr, d.toString());
 						return;
 					}
 				}
@@ -431,7 +449,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 	}
 
 	private void validateIngredientsAgainstBoSS(Concept concept) throws TermServerScriptException {
-		String issueStr = "Active ingredient is a subtype of BoSS.  Expected modification.";
+		String issueStr  = "Active ingredient is a subtype of BoSS.  Expected modification.";
 		String issue2Str = "Basis of Strength not equal or subtype of active ingredient, neither is active ingredient a modification of the BoSS";
 		initialiseSummary(issueStr);
 		initialiseSummary(issue2Str);
@@ -465,7 +483,6 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 			}
 			if (!matchFound) {
 				report (concept, issue2Str, boSS);
-				incrementSummaryInformation(BOSS_FAIL);
 			}
 		}
 	}
@@ -481,7 +498,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		
 		//Create a clone to be retermed, and then we can compare descriptions with the original	
 		Concept clone = c.clone();
-		termGenerator.ensureDrugTermsConform(null, clone, CharacteristicType.STATED_RELATIONSHIP);
+		termGenerator.ensureTermsConform(null, clone, CharacteristicType.STATED_RELATIONSHIP);
 		Description proposedFSN = clone.getFSNDescription();
 		compareTerms(c, "FSN", currentFSN, proposedFSN);
 		Description ptUS = clone.getPreferredSynonym(US_ENG_LANG_REFSET);
@@ -503,7 +520,6 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		initialiseSummary(issueStr);
 		initialiseSummary(issue2Str);
 		if (!actual.getTerm().equals(expected.getTerm())) {
-			
 			String differences = findDifferences (actual.getTerm(), expected.getTerm());
 			report (c, issueStr, expected.getTerm(), differences, actual);
 		} else if (!actual.getCaseSignificance().equals(expected.getCaseSignificance())) {
@@ -660,6 +676,27 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		issueSummaryMap.merge(details[0].toString(), 1, Integer::sum);
 		countIssue(c);
 		super.report (PRIMARY_REPORT, c, details);
+	}
+	
+	private void populateAcceptableDoseFormMaps() throws TermServerScriptException {
+		String fileName = "resources/acceptable_dose_forms.tsv";
+		debug ("Loading " + fileName );
+		try {
+			List<String> lines = Files.readLines(new File(fileName), Charsets.UTF_8);
+			boolean isHeader = true;
+			for (String line : lines) {
+				String[] items = line.split(TAB);
+				if (!isHeader) {
+					Concept c = gl.getConcept(items[0]);
+					acceptableMpfDoseForms.put(c, items[2].equals("yes"));
+					acceptableCdDoseForms.put(c, items[3].equals("yes"));
+				} else {
+					isHeader = false;
+				}
+			}
+		} catch (IOException e) {
+			throw new TermServerScriptException("Unable to read " + fileName, e);
+		}
 	}
 	
 }

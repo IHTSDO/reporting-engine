@@ -133,7 +133,7 @@ public class CloneRemodelAndReplace extends BatchFix implements RF2Constants{
 			}
 		}
 		//And reterm
-		termGenerator.ensureDrugTermsConform(t, clone, CharacteristicType.STATED_RELATIONSHIP);
+		termGenerator.ensureTermsConform(t, clone, null, CharacteristicType.STATED_RELATIONSHIP);
 		
 		//Have we already got one of these?  If not, create it, otherwise re-use
 		Concept cd = allKnownCDs.get(clone.getFsn());

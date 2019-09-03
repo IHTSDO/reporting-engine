@@ -11,6 +11,7 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.DrugTermGenerator;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.ihtsdo.termserver.scripting.util.TermGenerator;
 
 /*
  * Combination of DRUGS-363 to remove "/1 each" from preferred terms
@@ -20,14 +21,15 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * DRUGS-514 - Editorial Guide updated for MPFs eg "-containing"
  * DRUGS-560 - Editorial Guide updated for MPs eg "-containing"
  * DRUGS-562 - Editorial Guide updated for Structure and Disposition Groupers
+ * DRUGS-786 - Batch terming update
  */
-public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants{
+public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants {
 	
 	String subHierarchyStr = "373873005"; // |Pharmaceutical / biologic product (product)|
-	static Map<String, String> replacementMap = new HashMap<String, String>();
-	private List<String> exceptions = new ArrayList<>();
+	//static Map<String, String> replacementMap = new HashMap<String, String>();
+	//private List<String> exceptions = new ArrayList<>();
 	//CaseSignificanceFixAll csFixer;
-	DrugTermGenerator termGenerator = new DrugTermGenerator(this);
+	TermGenerator termGenerator = new DrugTermGenerator(this);
 	
 	protected NormalizeDrugTerms(BatchFix clone) {
 		super(clone);
@@ -37,11 +39,12 @@ public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants{
 		NormalizeDrugTerms fix = new NormalizeDrugTerms(null);
 		try {
 			ReportSheetManager.targetFolderId="1E6kDgFExNA9CRd25yZk_Y7l-KWRf8k6B"; //Drugs/Normalize Terming
-			fix.populateEditPanel = false;
+			fix.populateEditPanel = true;
 			fix.populateTaskDescription = true;
 			//fix.selfDetermining = true;
 			fix.init(args);
 			fix.loadProjectSnapshot(false); //Load all descriptions
+			fix.postInit();
 			fix.processFile();
 		} finally {
 			fix.finish();
@@ -54,13 +57,6 @@ public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants{
 		//This code modified to only report possible issues, not fix them.
 		//csFixer = new CaseSignificanceFixAll(reportFile, printWriterMap, CaseSignificanceFixAll.Mode.REPORT_ONLY);
 		
-		/*	Concept doseFormRoot = gl.getConcept(421967003L);  // |Drug dose form (qualifier value)|);
-		doseForms.add(" oral tablet");
-		doseForms.add(" in oral dosage form");
-		for (Concept doseForm : doseFormRoot.getDescendents(NOT_SET)) {
-			Description pt = doseForm.getDescriptions(Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE).get(0);
-			doseForms.add(" " + pt.getTerm());
-		}*/
 		super.postInit();
 	}
 
@@ -77,13 +73,11 @@ public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants{
 	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
 		SnomedUtils.populateConceptType(loadedConcept);
-		/*if (loadedConcept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT) && loadedConcept.getDefinitionStatus().equals(DefinitionStatus.PRIMITIVE)) {
-			report (null, loadedConcept, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Skipping primitive MP");
-			return 0;
-		}*/
+
 		//We'll take a little diversion here to correct the case significance of the ingredients
 		//validateIngredientCaseSignficance(task, loadedConcept);
-		int changesMade = termGenerator.ensureDrugTermsConform(task, loadedConcept, CharacteristicType.INFERRED_RELATIONSHIP);
+		
+		int changesMade = termGenerator.ensureTermsConform(task, loadedConcept, CharacteristicType.INFERRED_RELATIONSHIP);
 		if (changesMade > 0) {
 			updateConcept(task, loadedConcept, info);
 		}
@@ -103,9 +97,13 @@ public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants{
 				}
 			}
 		}
-	}*/
-
-	/*protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
+	}
+	
+	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
+		return Collections.singletonList(gl.getConcept("446322005"));
+	}
+	
+	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		debug("Identifying concepts to process");
 		termGenerator.setQuiet(true);
 		termGenerator.setPtOnly(false);

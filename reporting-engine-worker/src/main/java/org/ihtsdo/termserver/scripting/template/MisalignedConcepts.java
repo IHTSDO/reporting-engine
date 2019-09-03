@@ -13,7 +13,6 @@ import org.ihtsdo.termserver.scripting.client.TemplateServiceClient;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
-import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.authoringtemplate.domain.ConceptTemplate;
 import org.snomed.authoringtemplate.domain.logical.LogicalTemplate;
@@ -197,10 +196,10 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		subHierarchyStr =  "34014006"; //QI-15 |Viral disease (disorder)|
 		templateNames = new String[] {	"templates/infection/Infection caused by Virus.json",
 										"templates/infection/Infection of bodysite caused by virus.json"};
-		
+		*/
 		subHierarchyECL = "<<87628006";  //QI-16 |Bacterial infectious disease (disorder)|
 		templateNames = new String[] {	"templates/infection/Infection caused by bacteria.json"};
-		
+		/*
 		subHierarchyECL = "<<95896000";  //QI-19  |Protozoan infection (disorder)|
 		templateNames = new String[] {"templates/infection/Infection caused by Protozoa with optional bodysite.json"};
 			
@@ -344,16 +343,22 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		
 		subHierarchyECL = "< 85828009 |Autoimmune disease (disorder)|"; //QI-297
 		templateNames = new String[] {	"templates/Autoimune.json" };
-		*/
 		
 		subHierarchyECL = "<< 298180004 |Finding of range of joint movement (finding)|  MINUS <<  7890003 |Contracture of joint (disorder)|";
 		templateNames = new String[] {	"templates/Finding of range of joint movement.json" };
 		includeComplexTemplates = true;
+		
+		subHierarchyECL = "<< 417893002|Deformity|"; //QI-278
+		templateNames = new String[] {	"templates/Deformity - disorder.json",
+				"templates/Deformity - finding.json"};
+		*/
 		super.init(args);
 	
 		//Ensure our ECL matches more than 0 concepts before we import SNOMED - expensive!
-		//This will also cache the result
-		if (findConcepts(subHierarchyECL).size() == 0) {
+		//This will also cache the result.  Don't use the local store - hasn't been initialised yet!
+		boolean expectLargeResults = !safetyProtocols;
+		boolean useLocalStoreIfSimple = false;
+		if (findConcepts(subHierarchyECL, false, expectLargeResults, useLocalStoreIfSimple).size() == 0) {
 			throw new TermServerScriptException(subHierarchyECL + " returned 0 rows");
 		}
 	}
@@ -361,29 +366,12 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {"TASK_KEY, TASK_DESC, SCTID, FSN, CONCEPT_TYPE, SEVERITY, ACTION_TYP, CharacteristicType, MatchedTemplate, Template Diagnostic",
 				"Report Metadata", "SCTID, FSN, SemTag, Reason", "SCTID, FSN, SemTag"};
-		String[] tabNames = new String[] {	"Mismatched Concepts",
+		String[] tabNames = new String[] {	"Misaligned Concepts",
 				"Metadata",
 				"Excluded Concepts",
-				"Matched Concepts"};
+				"Aligned Concepts"};
 		super.postInit(tabNames, columnHeadings, false);
-		
-		info("Outputting metadata tab");
-		String user = jobRun == null ? "System" : jobRun.getUser();
-		writeToReportFile (SECONDARY_REPORT, "Requested by: " + user);
-		writeToReportFile (SECONDARY_REPORT, "Ran against: " + subHierarchyECL);
-		writeToReportFile (SECONDARY_REPORT, "Project: " + project);
-		writeToReportFile (SECONDARY_REPORT, "Concepts considered: " + findConcepts(subHierarchyECL).size());
-		writeToReportFile (SECONDARY_REPORT, "Templates: " );
-		
-		for (Template t : templates) {
-			writeToReportFile (SECONDARY_REPORT,TAB + "Name: " + t.getName());
-			writeToReportFile (SECONDARY_REPORT,TAB + "Domain: " + t.getDomain());
-			writeToReportFile (SECONDARY_REPORT,TAB + "Documentation: " + t.getDocumentation());
-			String stl = t.getLogicalTemplate().toString();
-			stl = SnomedUtils.populateFSNs(stl);
-			writeToReportFile (SECONDARY_REPORT,TAB + "STL: " + QUOTE +  stl + QUOTE);
-			writeToReportFile (SECONDARY_REPORT,TAB);
-		}
+		outputMetaData();
 	}
 	
 	@Override
@@ -404,8 +392,8 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		
 		//Start with the whole subHierarchy and remove concepts that match each of our templates
-		List<Concept> unalignedConcepts = findConcepts(subHierarchyECL);
-		//Set<Concept> unalignedConcepts = Collections.singleton(gl.getConcept("269214009"));
+		Collection<Concept> unalignedConcepts = findConcepts(subHierarchyECL);
+		//Set<Concept> unalignedConcepts = Collections.singleton(gl.getConcept("58660009"));
 		Set<Concept> ignoredConcepts = new HashSet<>();
 		
 		//Remove all exclusions before we look for matches

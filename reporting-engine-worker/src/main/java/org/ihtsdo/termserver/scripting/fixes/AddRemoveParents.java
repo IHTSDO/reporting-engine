@@ -95,8 +95,8 @@ public class AddRemoveParents extends BatchFix implements RF2Constants{
 			report ((Task)null, c, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, "Cannot modify concept - is inactive");
 			return null;
 		}
-		//if (lineItems[2].equals(ACTIVE_FLAG)) {
-		if (!lineItems[2].equals(ACTIVE_FLAG)) {
+		if (lineItems[2].equals(ACTIVE_FLAG)) {
+		//if (!lineItems[2].equals(ACTIVE_FLAG)) {
 			RelationshipGroup g = changeMap.get(c);
 			if (g == null) {
 				g = new RelationshipGroup(UNGROUPED);

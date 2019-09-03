@@ -42,7 +42,7 @@ public class Relationship extends Component implements IRelationshipTemplate, RF
 	private Modifier modifier;
 	@SerializedName("released")
 	@Expose
-	private Boolean released;
+	private Boolean released = null;
 	
 	private Concept source;
 	
@@ -356,10 +356,6 @@ public class Relationship extends Component implements IRelationshipTemplate, RF
 	
 	
 	public Boolean isReleased() {
-		//If we don't know if it's been released, fall back to the presence of an effectiveTime
-		if (released == null) {
-			return !(effectiveTime == null || effectiveTime.isEmpty());
-		}
 		return released;
 	}
 

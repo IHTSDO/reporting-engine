@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.client;
 
 import java.util.*;
 
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.slf4j.Logger;
@@ -43,21 +44,35 @@ public class BrowserClient {
 	
 	public List<Concept> findConcepts(String searchTerms, String semTagFilter, int limit) throws TermServerScriptException {
 		try {
-			String url = serverUrl + "?query=" + searchTerms + 
-					"&limit=" + limit +
-					"&&searchMode=partialMatching&lang=english&statusFilter=activeOnly&skipTo=0" +
-					"&returnLimit=100" +
-					(semTagFilter==null ? "" : ("semanticFilter=" + semTagFilter)) +
-					"normalize=true&groupByConcept=1";
-			logger.debug("Browser search: " + url);
-			BrowserMatche matches = restTemplate.getForObject(url, BrowserMatche.class);
-			return matches.get();
+			int attempts = 0;
+			boolean success = false;
+			while (attempts < 3 && !success) {
+				try {
+					String url = serverUrl + "?query=" + searchTerms + 
+							"&limit=" + limit +
+							"&&searchMode=partialMatching&lang=english&statusFilter=activeOnly&skipTo=0" +
+							"&returnLimit=100" +
+							(semTagFilter==null ? "" : ("semanticFilter=" + semTagFilter)) +
+							"normalize=true&groupByConcept=1";
+					logger.debug("Browser search: " + url);
+					BrowserMatch matches = restTemplate.getForObject(url, BrowserMatch.class);
+					return matches.get();
+				} catch (Exception e) {
+					attempts++;
+					if (attempts == 3) {
+						throw (e);
+					}
+					TermServerScript.warn("Lexical search attempt " + attempts + " due to " + e.getMessage());
+					Thread.sleep(5 * 100);
+				}
+			}
 		} catch (Exception e) {
 			throw new TermServerScriptException("Failed to recover search for " + searchTerms ,e);
 		}
+		throw new IllegalStateException("Can't reach here");
 	}
 	
-	public class BrowserMatche {
+	public class BrowserMatch {
 		List<Concept> matches;
 		
 		public void set(List<Concept> matches) {
