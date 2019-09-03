@@ -1,5 +1,6 @@
 package org.ihtsdo.termserver.scripting.reports.drugs;
 
+import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -20,6 +21,9 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.ihtsdo.termserver.scripting.util.TermGenerator;
 import org.snomed.otf.scheduler.domain.*;
 
+import com.google.common.base.Charsets;
+import com.google.common.io.Files;
+
 public class ValidateDrugModeling extends TermServerReport implements ReportClass {
 	
 	Concept [] solidUnits = new Concept [] { PICOGRAM, NANOGRAM, MICROGRAM, MILLIGRAM, GRAM };
@@ -29,6 +33,10 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 	private static final String[] badWords = new String[] { "preparation", "agent", "+"};
 	private static final String remodelledDrugIndicator = "Product containing";
 	private static final String BOSS_FAIL = "BoSS failed to relate to ingredient";
+	
+	Concept[] doseFormTypes = new Concept[] {HAS_MANUFACTURED_DOSE_FORM};
+	private Map<Concept, Boolean> acceptableMpfDoseForms = new HashMap<>();
+	private Map<Concept, Boolean> acceptableCdDoseForms = new HashMap<>();	
 	
 	private Map<String, Integer> issueSummaryMap = new HashMap<>();
 	
@@ -50,9 +58,10 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 				"Issue, Count"};
 		String[] tabNames = new String[] {	"Issues",
 				"Summary"};
+		populateAcceptableDoseFormMaps();
 		super.postInit(tabNames, columnHeadings, false);
 	}
-	
+
 	@Override
 	public Job getJob() {
 		JobParameters params = new JobParameters();
@@ -71,7 +80,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 	
 	private void validateDrugsModeling() throws TermServerScriptException {
 		Set<Concept> subHierarchy = MEDICINAL_PRODUCT.getDescendents(NOT_SET);
-		ConceptType[] allDrugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT, ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.CLINICAL_DRUG };
+		ConceptType[] allDrugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT, ConceptType.MEDICINAL_PRODUCT_ONLY, ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.MEDICINAL_PRODUCT_FORM_ONLY, ConceptType.CLINICAL_DRUG };
 		ConceptType[] cds = new ConceptType[] { ConceptType.CLINICAL_DRUG };  //DRUGS-267
 		initialiseSummaryInformation(BOSS_FAIL);
 		
@@ -80,9 +89,14 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 			DrugUtils.setConceptType(concept);
 			
 			//DRUGS-585
-			if (concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT) || 
-					concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM)) {
+			if (isMP(concept) || isMPF(concept)) {
 				validateNoModifiedSubstances(concept);
+			}
+			
+			//DRUGS-784
+			if (concept.getConceptType().equals(ConceptType.CLINICAL_DRUG) || 
+					isMPF(concept)) {
+				validateAcceptableDoseForm(concept);
 			}
 			
 			// DRUGS-281, DRUGS-282, DRUGS-269
@@ -126,6 +140,40 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 			checkForSemTagViolations(concept);
 		}
 		info ("Drugs validation complete");
+	}
+
+	private boolean isMP(Concept concept) {
+		return concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT) || 
+				concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_ONLY);
+	}
+	
+	private boolean isMPF(Concept concept) {
+		return concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM) || 
+				concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM_ONLY);
+	}
+
+	private void validateAcceptableDoseForm(Concept c) throws TermServerScriptException {
+		String issueStr1 = c.getConceptType() + " uses unlisted dose form";
+		String issueStr2 = c.getConceptType() + " uses unacceptable dose form";
+		initialiseSummary(issueStr1);
+		initialiseSummary(issueStr2);
+		
+		Map<Concept, Boolean> acceptableDoseForms;
+		if (isMPF(c)) {
+			acceptableDoseForms = acceptableMpfDoseForms;
+		} else {
+			acceptableDoseForms = acceptableCdDoseForms;
+		}
+		
+		Concept thisDoseForm = SnomedUtils.getTarget(c, doseFormTypes, UNGROUPED, CharacteristicType.INFERRED_RELATIONSHIP);
+		//Is this dose form acceptable?
+		if (acceptableDoseForms.containsKey(thisDoseForm)) {
+			if (acceptableDoseForms.get(thisDoseForm).equals(Boolean.FALSE)) {
+				report (c, issueStr2, thisDoseForm);
+			}
+		} else {
+			report (c, issueStr1, thisDoseForm);
+		}
 	}
 
 	private void populateSummaryTab() throws TermServerScriptException {
@@ -198,11 +246,11 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		initialiseSummary(issueStr);
 		//Check all ingredients for any that themselves have modification relationships
 		for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
-			if (r.getType().equals(HAS_PRECISE_INGRED)) {
+			if (r.getType().equals(HAS_PRECISE_INGRED) || r.getType().equals(HAS_ACTIVE_INGRED) ) {
 				Concept ingredient = r.getTarget();
 				for (Relationship ir :  ingredient.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
 					if (ir.getType().equals(IS_MODIFICATION_OF)) {
-						report (c, issueStr, ingredient);
+						report (c, issueStr, ingredient, "is modification of", ir.getTarget());
 					}
 				}
 			}
@@ -665,6 +713,27 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		issueSummaryMap.merge(details[0].toString(), 1, Integer::sum);
 		countIssue(c);
 		super.report (PRIMARY_REPORT, c, details);
+	}
+	
+	private void populateAcceptableDoseFormMaps() throws TermServerScriptException {
+		String fileName = "resources/acceptable_dose_forms.tsv";
+		debug ("Loading " + fileName );
+		try {
+			List<String> lines = Files.readLines(new File(fileName), Charsets.UTF_8);
+			boolean isHeader = true;
+			for (String line : lines) {
+				String[] items = line.split(TAB);
+				if (!isHeader) {
+					Concept c = gl.getConcept(items[0]);
+					acceptableMpfDoseForms.put(c, items[2].equals("yes"));
+					acceptableCdDoseForms.put(c, items[3].equals("yes"));
+				} else {
+					isHeader = false;
+				}
+			}
+		} catch (IOException e) {
+			throw new TermServerScriptException("Unable to read " + fileName, e);
+		}
 	}
 	
 }
