@@ -69,6 +69,7 @@ public interface RF2Constants {
 	static Concept LITER = new Concept ("258770004","liter (qualifier value)");
 	static Concept INTERNATIONAL_UNIT = new Concept ("258997004", "international unit (qualifier value)"); 
 	static Concept UNIT = new Concept("767525000", "Unit (qualifier value)");
+	static Concept MILLION_UNIT = new Concept("396186001", "Million unit (qualifier value)");
 	
 	static Concept ROOT_CONCEPT = new Concept (SCTID_ROOT_CONCEPT.toString(), "SNOMED CT Concept (SNOMED RT+CTV3)");
 	static Concept BODY_STRUCTURE = new Concept ("123037004","Body structure (body structure)|");

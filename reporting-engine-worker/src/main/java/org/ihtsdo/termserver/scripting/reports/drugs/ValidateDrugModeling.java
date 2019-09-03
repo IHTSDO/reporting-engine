@@ -31,7 +31,6 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 	String[] semTagHiearchy = new String[] { "(product)", "(medicinal product)", "(medicinal product form)", "(clinical drug)" };
 	
 	private static final String[] badWords = new String[] { "preparation", "agent", "+"};
-	private static final String remodelledDrugIndicator = "Product containing";
 	private static final String BOSS_FAIL = "BoSS failed to relate to ingredient";
 	
 	Concept[] doseFormTypes = new Concept[] {HAS_MANUFACTURED_DOSE_FORM};
@@ -84,7 +83,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		ConceptType[] cds = new ConceptType[] { ConceptType.CLINICAL_DRUG };  //DRUGS-267
 		initialiseSummaryInformation(BOSS_FAIL);
 		
-		//for (Concept concept : Collections.singleton(gl.getConcept("418860009"))) {
+		//for (Concept concept : Collections.singleton(gl.getConcept("778271007"))) {
 		for (Concept concept : subHierarchy) {
 			DrugUtils.setConceptType(concept);
 			
@@ -432,7 +431,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 						if (badWord.equals("+") && isPlusException(term)) {
 							continue;
 						}
-						report (concept, issueStr, concept.getFsn().contains(remodelledDrugIndicator), d.toString());
+						report (concept, issueStr, d.toString());
 						return;
 					}
 				}

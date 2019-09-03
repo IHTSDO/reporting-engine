@@ -34,6 +34,7 @@ public class DrugTermGenerator extends TermGenerator {
 		neverAbbrev.add(MICROEQUIVALENT);
 		neverAbbrev.add(PICOGRAM);
 		neverAbbrev.add(UNIT);
+		neverAbbrev.add(MILLION_UNIT);
 	}
 	
 	public DrugTermGenerator includeUnitOfPresentation(Boolean state) {
