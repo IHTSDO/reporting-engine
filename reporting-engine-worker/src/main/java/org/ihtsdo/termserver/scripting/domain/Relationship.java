@@ -356,6 +356,9 @@ public class Relationship extends Component implements IRelationshipTemplate, RF
 	
 	
 	public Boolean isReleased() {
+		if (released == null) {
+			return !(effectiveTime == null || effectiveTime.isEmpty());
+		}
 		return released;
 	}
 
