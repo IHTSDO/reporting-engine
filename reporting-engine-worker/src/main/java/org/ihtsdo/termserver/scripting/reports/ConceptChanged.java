@@ -11,7 +11,6 @@ import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
-import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 
 public class ConceptChanged extends TermServerReport implements ReportClass {
 	
@@ -68,7 +67,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		return new Job( new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION),
 						"Concepts Changed",
 						"This report lists all concepts changed in the current release cycle",
-						params, ProductionStatus.HIDEME);
+						params);
 	}
 	
 	public void runJob() throws TermServerScriptException {
