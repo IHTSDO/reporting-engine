@@ -161,6 +161,58 @@ public abstract class AllKnownTemplates extends TermServerReport {
 										"templates/drugs/MPF only.json",
 										"templates/drugs/CD precise discrete.json",
 										"templates/drugs/CD precise continuous.json"};
+		
+		subHierarchyStr = "247441003 |Erythema|"; //QI-240
+		templateNames = new String[] {	"templates/Erythema of body structure.json" };
+		populateTemplates(subHierarchyStr, templateNames);
+		
+		subHierarchyStr = "445505000 |Contracture of joint of spine (disorder)|";
+		templateNames = new String[] {	"templates/Finding of range of joint movement.json" };
+		populateTemplates(subHierarchyStr, templateNames);
+		
+		subHierarchyStr = "64572001 |Disease (disorder)|"; 
+		templateNames = new String[] {	"templates/Disease.json" };
+		populateTemplates(subHierarchyStr, templateNames);
+		
+		subHierarchyStr = "7890003 |Contracture of joint (disorder)|"; //QI-261
+		templateNames = new String[] {	"templates/Contracture of joint minus.json" };
+		populateTemplates(subHierarchyStr, templateNames);
+		
+		subHierarchyStr = "125667009 |Contusion (disorder)|"; //QI-244 
+		templateNames = new String[] {	"templates/wound/contusion.json" };
+		populateTemplates(subHierarchyStr, templateNames);
+		
+		subHierarchyStr = "85828009 |Autoimmune disease (disorder)|"; //QI-297
+		templateNames = new String[] {	"templates/Autoimune.json" };
+		populateTemplates(subHierarchyStr, templateNames);
+		
+		subHierarchyStr = "298180004 |Finding of range of joint movement (finding)|  MINUS <<  7890003 |Contracture of joint (disorder)|";
+		templateNames = new String[] {	"templates/Finding of range of joint movement.json" };
+		populateTemplates(subHierarchyStr, templateNames);
+		
+		subHierarchyStr = "417893002|Deformity|"; //QI-278
+		templateNames = new String[] {	"templates/Deformity - disorder.json",
+				"templates/Deformity - finding.json"};
+		populateTemplates(subHierarchyStr, templateNames);
+		
+		subHierarchyStr = "118616009 |Neoplastic disease of uncertain behavior (disorder)|"; //QI-253 |Neoplastic disease of uncertain behavior| 
+		templateNames = new String[] {	"templates/Neoplastic Disease.json"};
+		populateTemplates(subHierarchyStr, templateNames);
+
+		subHierarchyStr = "20376005 |Benign neoplastic disease|"; //QI-272
+		templateNames = new String[] {	"templates/Benign Neoplastic Disease.json"};
+		populateTemplates(subHierarchyStr, templateNames);
+
+		subHierarchyStr = "233776003 |Tracheobronchial disorder|"; //QI-268
+		templateNames = new String[] {	"templates/Tracheobronchial.json" };
+		populateTemplates(subHierarchyStr, templateNames);
+
+		subHierarchyStr = "298180004 |Finding of range of joint movement (finding)| MINUS << 7890003 |Contracture of joint (disorder)|"; //QI-284
+		templateNames = new String[] {	"templates/Finding of range of joint movement.json" };
+		populateTemplates(subHierarchyStr, templateNames);
+		
+		subHierarchyStr = "400006008 |Hamartoma (disorder)|"; //QI-296
+		templateNames = new String[] {	"templates/Harmartoma.json" };
 		populateTemplates(subHierarchyStr, templateNames);
 		
 		populateTemplatesFromTS();

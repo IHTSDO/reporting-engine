@@ -63,13 +63,13 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 		
 		//Check all of our domain points are still active concepts, or we'll have trouble with them!
 		Set<String> invalidTemplateDomains = domainTemplates.keySet().stream()
-			.filter(d -> !gl.getConceptSafely(d).isActive())
+			.filter(d -> !gl.getConceptSafely(d).isActive() || gl.getConceptSafely(d).getFsn() == null)
 			.collect(Collectors.toSet());
 		
 		for (String invalidTemplateDomain : invalidTemplateDomains) {
 			List<Template> templates = domainTemplates.get(invalidTemplateDomain);
 			for (Template t : templates) {
-				warn ("Inactive domain " + gl.getConcept(invalidTemplateDomain) + ": " + t.getName());
+				warn ("Inactive or Non-existent domain " + gl.getConcept(invalidTemplateDomain) + ": " + t.getName());
 			}
 			domainTemplates.remove(invalidTemplateDomain);
 		}
