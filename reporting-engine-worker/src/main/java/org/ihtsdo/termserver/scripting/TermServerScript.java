@@ -418,6 +418,7 @@ public abstract class TermServerScript implements RF2Constants {
 	
 	public void instantiate(JobRun jobRun) {
 		try {
+			debug ("Instantiating " + this.getClass().getName() + " to process request for " + jobRun.getJobName());
 			init(jobRun);
 			loadProjectSnapshot(false);  //Load all descriptions
 			postInit();

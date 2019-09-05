@@ -643,7 +643,6 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		initialiseSummary(issueStr);
 		initialiseSummary(issue2Str);
 		
-		
 		List<String> lines;
 		debug ("Loading us/gb terms");
 		try {
