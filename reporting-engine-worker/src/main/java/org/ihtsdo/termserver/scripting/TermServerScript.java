@@ -794,7 +794,7 @@ public abstract class TermServerScript implements RF2Constants {
 						allComponents.addAll(components);
 					} else {
 						if (!expectNullConcepts) {
-							debug ("Skipped line " + lineNum + ": " + lines.get(lineNum) + ", malformed or not required?");
+							debug ("Skipped line " + lineNum + ": '" + lines.get(lineNum) + "', malformed or not required?");
 						}
 					}
 				} else {
