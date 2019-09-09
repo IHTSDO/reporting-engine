@@ -240,8 +240,8 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		templateNames = new String[] {	"templates/infection/Infection caused by bacteria.json"};
 		*/
 		
-		//QI-331, QI-353, QI-352
-		subHierarchyECL = "<<362975008 |Degenerative disorder (disorder)|: 116676008 |Associated morphology (attribute)| = << 4720007 |Dystrophy (morphologic abnormality)|";
+		//QI-331, QI-353, QI-352, QI-329
+		subHierarchyECL = "<<362975008 |Degenerative disorder (disorder)|: 116676008 |Associated morphology (attribute)| = << 32693004 |Demyelination (morphologic abnormality)|";
 		templateNames = new String[] {	"templates/Degenerative disorder.json"};
 		
 		super.init(args);
