@@ -17,6 +17,8 @@ import org.snomed.otf.scheduler.domain.*;
  * RP-227 Pattern KPIs
  * 
  * RP-228 Redundant ungrouped roles
+ * RP-229 Redundant stated groups
+ * RP-232 Redundant stated IS A
  */
 public class ReleasePatternsReport extends TermServerReport implements ReportClass {
 	
@@ -77,19 +79,26 @@ public class ReleasePatternsReport extends TermServerReport implements ReportCla
 
 	private void checkRedundantlyStatedUngroupedRoles() throws TermServerScriptException {
 		//RP-288 Redundantly stated ungrouped roles
-		String issueStr = "Pattern 2: Redundantly stated ungrouped role";
-		initialiseSummary(issueStr);
+		//RP-232 Redundantly stated IsA relationships
+		String issueStr1 = "Pattern 1: Redundantly stated IsA relationships";
+		String issueStr2 = "Pattern 2: Redundantly stated ungrouped role";
+		initialiseSummary(issueStr1);
+		initialiseSummary(issueStr2);
 		for (Concept c : gl.getAllConcepts()) {
 			if (c.isActive()) {
-				//Test each ungrouped realtionship to see if it subsumes any other
+				//Test each ungrouped relationship to see if it subsumes any other
 				for (Relationship a : c.getRelationshipGroupSafely(CharacteristicType.STATED_RELATIONSHIP, UNGROUPED).getRelationships()) {
 					for (Relationship b : c.getRelationshipGroupSafely(CharacteristicType.STATED_RELATIONSHIP, UNGROUPED).getRelationships()) {
-						if (a.equals(b) || a.getType().equals(IS_A) || b.getType().equals(IS_A)) {
+						if (a.equals(b)) {
 							continue;
+						} else if (a.getType().equals(IS_A) && b.getType().equals(IS_A)) {
+							if (cache.getAncestorsOrSelf(a.getTarget()).contains(b.getTarget())) {
+								report (c, issueStr1, a, b);
+							}
 						} else {
 							if (cache.getAncestorsOrSelf(a.getType()).contains(b.getType())) {
 								if (cache.getAncestorsOrSelf(a.getTarget()).contains(b.getTarget())) {
-									report (c, issueStr, a, b);
+									report (c, issueStr2, a, b);
 								}
 							}
 						}
@@ -101,7 +110,7 @@ public class ReleasePatternsReport extends TermServerReport implements ReportCla
 	
 	private void checkRedundantlyStatedGroups() throws TermServerScriptException {
 		//RP-289 Redundantly stated ungrouped roles
-		String issueStr = "Pattern 3: Redundantly stated ungrouped role";
+		String issueStr = "Pattern 3: Redundantly stated group";
 		initialiseSummary(issueStr);
 		for (Concept c : gl.getAllConcepts()) {
 			if (c.isActive()) {
