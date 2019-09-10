@@ -46,7 +46,6 @@ public class ReleasePatternsReport extends TermServerReport implements ReportCla
 				"Summary"};
 		cache = gl.getAncestorsCache();
 		super.postInit(tabNames, columnHeadings, false);
-		previousPreviousRelease = getArchiveManager().getPreviousPreviousBranch(project);
 	}
 
 	@Override
@@ -61,6 +60,7 @@ public class ReleasePatternsReport extends TermServerReport implements ReportCla
 		info("Checking for problematic patterns...");
 		
 		info("Checking for redundancies...");
+		checkRedundantlyStatedParents();
 		checkRedundantlyStatedUngroupedRoles();
 		checkRedundantlyStatedGroups();
 		
@@ -83,30 +83,37 @@ public class ReleasePatternsReport extends TermServerReport implements ReportCla
 				.collect(Collectors.summingInt(Integer::intValue));
 		reportSafely (SECONDARY_REPORT, (Component)null, "TOTAL", total);
 	}
+	
+	private void checkRedundantlyStatedParents() throws TermServerScriptException {
+		//RP-232 Redundantly stated IsA relationships
+		String issueStr = "Pattern 1: Redundantly stated IsA relationships";
+		initialiseSummary(issueStr);
+		for (Concept c : gl.getAllConcepts()) {
+			if (c.isActive()) {
+				//Test each ungrouped relationship to see if it subsumes any other
+				for (Concept a : c.getParents(CharacteristicType.STATED_RELATIONSHIP)) {
+					for (Concept b :c.getParents(CharacteristicType.STATED_RELATIONSHIP)) {
+						if (!a.equals(b) && cache.getAncestorsOrSelf(a).contains(b)) {
+							report (c, issueStr, a, b);
+						}
+					}
+				}
+			}
+		}
+	}
 
 	private void checkRedundantlyStatedUngroupedRoles() throws TermServerScriptException {
 		//RP-288 Redundantly stated ungrouped roles
-		//RP-232 Redundantly stated IsA relationships
-		String issueStr1 = "Pattern 1: Redundantly stated IsA relationships";
-		String issueStr2 = "Pattern 2: Redundantly stated ungrouped role";
-		initialiseSummary(issueStr1);
-		initialiseSummary(issueStr2);
+		String issueStr = "Pattern 2: Redundantly stated ungrouped role";
+		initialiseSummary(issueStr);
 		for (Concept c : gl.getAllConcepts()) {
 			if (c.isActive()) {
 				//Test each ungrouped relationship to see if it subsumes any other
 				for (Relationship a : c.getRelationshipGroupSafely(CharacteristicType.STATED_RELATIONSHIP, UNGROUPED).getRelationships()) {
 					for (Relationship b : c.getRelationshipGroupSafely(CharacteristicType.STATED_RELATIONSHIP, UNGROUPED).getRelationships()) {
-						if (a.equals(b)) {
-							continue;
-						} else if (a.getType().equals(IS_A) && b.getType().equals(IS_A)) {
+						if (!a.equals(b) && cache.getAncestorsOrSelf(a.getType()).contains(b.getType())) {
 							if (cache.getAncestorsOrSelf(a.getTarget()).contains(b.getTarget())) {
-								report (c, issueStr1, a, b);
-							}
-						} else {
-							if (cache.getAncestorsOrSelf(a.getType()).contains(b.getType())) {
-								if (cache.getAncestorsOrSelf(a.getTarget()).contains(b.getTarget())) {
-									report (c, issueStr2, a, b);
-								}
+								report (c, issueStr, a, b);
 							}
 						}
 					}
