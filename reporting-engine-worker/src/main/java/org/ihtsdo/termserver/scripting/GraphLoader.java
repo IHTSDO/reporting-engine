@@ -130,12 +130,14 @@ public class GraphLoader implements RF2Constants {
 					continue;
 				}
 				
-				/*if (lineItems[REL_IDX_SOURCEID].equals("300097006") && lineItems[REL_IDX_TYPEID].equals("116680003")) {
-					System.out.println ("Debug Here");
+/*				if (characteristicType.equals(CharacteristicType.STATED_RELATIONSHIP) && 
+						lineItems[REL_IDX_SOURCEID].equals("108554009") && 
+						lineItems[REL_IDX_TYPEID].equals("726542003")) {
+					TermServerScript.debug ("Debug Here");
 				}*/
 				
 				if (!isConcept(lineItems[REL_IDX_SOURCEID])) {
-					System.out.println (characteristicType + " relationship " + lineItems[REL_IDX_ID] + " referenced a non concept identifier: " + lineItems[REL_IDX_SOURCEID]);
+					TermServerScript.debug (characteristicType + " relationship " + lineItems[REL_IDX_ID] + " referenced a non concept identifier: " + lineItems[REL_IDX_SOURCEID]);
 				}
 				Concept thisConcept = getConcept(lineItems[REL_IDX_SOURCEID]);
 				if (addRelationshipsToConcepts) {
@@ -165,11 +167,11 @@ public class GraphLoader implements RF2Constants {
 				String[] lineItems = line.split(FIELD_DELIMITER);
 				
 				/*if (lineItems[REF_IDX_ID].equals("76a3311f-e003-4ec9-8070-82d5581bdcadv")) {
-					System.out.println ("Debug Here");
+					TermServerScript.debug("Debug Here");
 				}
 				
 				if (lineItems[REF_IDX_ID].equals("8016bcd2-83e7-47c1-a998-8f9c6d3a97b4")) {
-					System.out.println ("Debug Here");
+					TermServerScript.debug("Debug Here");
 				}*/
 				
 				//Only load OWL Expressions
@@ -177,23 +179,34 @@ public class GraphLoader implements RF2Constants {
 					continue;
 				}
 				
-
-				/*if (lineItems[REF_IDX_REFCOMPID].equals("204889008")) {
-					System.out.println ("Debug Here");
-				}*/
-				Long conceptId = Long.parseLong(lineItems[REF_IDX_REFCOMPID]);
 				if (!isConcept(lineItems[REF_IDX_REFCOMPID])) {
-					System.out.println ("Axiom " + lineItems[REL_IDX_ID] + " referenced a non concept identifier: " + lineItems[REF_IDX_REFCOMPID]);
+					TermServerScript.debug("Axiom " + lineItems[REL_IDX_ID] + " referenced a non concept identifier: " + lineItems[REF_IDX_REFCOMPID]);
 				}
 				
-				//Also save data in RF2 form so we can build Snapshot
-				AxiomEntry axiomEntry = AxiomEntry.fromRf2(lineItems);
-				//Remove first in case we're replacing
-				getConcept(conceptId).getAxiomEntries().remove(axiomEntry);
-				getConcept(conceptId).getAxiomEntries().add(axiomEntry);
+				Long conceptId = Long.parseLong(lineItems[REF_IDX_REFCOMPID]);
+				Concept c = getConcept(conceptId);
+
+/*				if (c.getConceptId().equals("135781000119105")) {
+					TermServerScript.debug("Debug Here");
+				}*/
 				
 				try {
-					boolean isActive = lineItems[REF_IDX_ACTIVE].equals(ACTIVE_FLAG);
+					//Also save data in RF2 form so we can build Snapshot
+					AxiomEntry axiomEntry = AxiomEntry.fromRf2(lineItems);
+					//Are we overwriting an existing axiom?
+					if (c.getAxiomEntries().contains(axiomEntry)) {
+						AxiomEntry replacedAxiomEntry = c.getAxiom(axiomEntry.getId());
+						c.getAxiomEntries().remove(axiomEntry);
+						//We'll inactivate all these relationships and allow them to be replaced
+						AxiomRepresentation replacedAxiom = axiomService.convertAxiomToRelationships(conceptId, replacedAxiomEntry.getOwlExpression());
+						List<Relationship> replacedRelationships = AxiomUtils.getRHSRelationships(c, replacedAxiom);
+						alignAxiomRelationships(c, replacedRelationships, false, replacedAxiomEntry.getEffectiveTime());
+						for (Relationship r : replacedRelationships) {
+							addRelationshipToConcept(CharacteristicType.STATED_RELATIONSHIP, r, isDelta);
+						}
+					}
+					c.getAxiomEntries().add(axiomEntry);
+				
 					AxiomRepresentation axiom = axiomService.convertAxiomToRelationships(conceptId, lineItems[REF_IDX_AXIOM_STR]);
 					//Filter out any additional statements such as TransitiveObjectProperty(:123005000)]
 					if (axiom != null) {
@@ -202,8 +215,12 @@ public class GraphLoader implements RF2Constants {
 							throw new IllegalArgumentException("Axiom LHS != RefCompId: " + line);
 						}
 						
-						for (Relationship r :  AxiomUtils.getRHSRelationships(getConcept(conceptId), axiom)) {
-							r.setActive(isActive);
+						List<Relationship> relationships = AxiomUtils.getRHSRelationships(c, axiom);
+						
+						//Now we might need to adjust the active flag if the axiom is being inactivated
+						//Or juggle the groupId, since individual axioms don't know about each other's existence
+						alignAxiomRelationships(c, relationships, axiomEntry.isActive(), axiomEntry.getEffectiveTime());
+						for (Relationship r : relationships) {
 							addRelationshipToConcept(CharacteristicType.STATED_RELATIONSHIP, r, isDelta);
 						}
 					}
@@ -217,6 +234,32 @@ public class GraphLoader implements RF2Constants {
 		log.append("\tLoaded " + axiomsLoaded + " axioms");
 	}
 	
+	private void alignAxiomRelationships(Concept c, List<Relationship> relationships, boolean isActive, String effectiveTime) {
+		//Do the groups already exist in the concept?  Give them that groupId if so
+		int nextFreeGroup = 1;
+		for (RelationshipGroup g : SnomedUtils.toGroups(relationships)) {
+			if (g.isGrouped()) {
+				RelationshipGroup match = SnomedUtils.findMatchingGroup(c, g, CharacteristicType.STATED_RELATIONSHIP);
+				if (match == null) {
+					//Do we need a new relationship group id for this group?
+					while (!SnomedUtils.isFreeGroup(CharacteristicType.STATED_RELATIONSHIP, c, nextFreeGroup)) {
+						nextFreeGroup++;
+					}
+					g.setGroupId(nextFreeGroup);
+					nextFreeGroup++;
+				} else {
+					g.setGroupId(match.getGroupId());
+					if (match.getGroupId() >= nextFreeGroup) {
+						nextFreeGroup++;
+					}
+				}
+			}
+			g.setActive(isActive);
+			g.setEffectiveTime(effectiveTime);
+			g.setFromAxiom(true);
+		}
+	}
+
 	private boolean isConcept(String sctId) {
 		return sctId.charAt(sctId.length()-2) == '0';
 	}
@@ -239,7 +282,7 @@ public class GraphLoader implements RF2Constants {
 		String typeId = lineItems[REL_IDX_TYPEID];
 		
 		if (sourceId.length() < 4 || destId.length() < 4 || typeId.length() < 4 ) {
-			System.out.println("*** Invalid SCTID encountered in relationship " + lineItems[REL_IDX_ID] + ": s" + sourceId + " d" + destId + " t" + typeId);
+			TermServerScript.debug("*** Invalid SCTID encountered in relationship " + lineItems[REL_IDX_ID] + ": s" + sourceId + " d" + destId + " t" + typeId);
 		}
 		Concept type = getConcept(lineItems[REL_IDX_TYPEID]);
 		Concept destination = getConcept(lineItems[REL_IDX_DESTINATIONID]);
@@ -402,7 +445,7 @@ public class GraphLoader implements RF2Constants {
 				}
 				
 				/*if (lineItems[DES_IDX_ID].equals("3727472012")) {
-					System.out.println ("Debug Here");
+					TermServerScript.debug("Debug Here");
 				}*/
 				
 				Concept c = getConcept(lineItems[DES_IDX_CONCEPTID]);
@@ -475,7 +518,7 @@ public class GraphLoader implements RF2Constants {
 				}
 				
 				if (!issue.isEmpty()) {
-					System.out.println("**Warning: " + issue);
+					TermServerScript.debug("**Warning: " + issue);
 				}
 				
 				if (clearToAdd) {
@@ -532,13 +575,13 @@ public class GraphLoader implements RF2Constants {
 				if (inactivation.getRefsetId().equals(SCTID_CON_INACT_IND_REFSET)) {
 					Concept c = getConcept(lineItems[INACT_IDX_REFCOMPID]);
 					/*if (c.getConceptId().equals("198308002")) {
-						System.out.println("Check Here");
+						TermServerScript.debug("Check Here");
 					}*/
 					c.addInactivationIndicator(inactivation);
 				} else if (inactivation.getRefsetId().equals(SCTID_DESC_INACT_IND_REFSET)) {
 					Description d = getDescription(lineItems[INACT_IDX_REFCOMPID]);
 					/*if (d.getDescriptionId().equals("1221136011")) {
-						System.out.println("Check here");
+						TermServerScript.debug("Check here");
 					}*/
 					d.addInactivationIndicator(inactivation);
 				}
@@ -651,7 +694,7 @@ public class GraphLoader implements RF2Constants {
 		for (Concept c : getAllConcepts()) {
 			
 			/*if (c.getId().equals("773986009") || c.getId().equals("762566005")) {
-				System.out.println("here");
+				TermServerScript.debug("here");
 			}*/
 			allComponents.put(c.getId(), c);
 			componentOwnerMap.put(c,  c);
@@ -673,7 +716,7 @@ public class GraphLoader implements RF2Constants {
 				componentOwnerMap.put(h,  c);
 			}
 		}
-		System.out.println("complete.");
+		System.out.print("complete.");
 	}
 
 	private void populateDescriptionComponents(Concept c, Description d) {

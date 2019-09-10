@@ -243,6 +243,7 @@ public class ArchiveManager implements RF2Constants {
 			if (archive.isDirectory()) {
 				loadArchiveDirectory(archive, fsnOnly, fileType, isDelta, isReleased);
 			} else if (archive.getPath().endsWith(".zip")) {
+				TermServerScript.debug("Loading archive file: " + archive);
 				loadArchiveZip(archive, fsnOnly, fileType, isDelta, isReleased);
 			} else {
 				throw new TermServerScriptException("Unrecognised archive : " + archive);

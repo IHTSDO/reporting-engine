@@ -49,6 +49,9 @@ public class Relationship extends Component implements IRelationshipTemplate, RF
 	private boolean dirty = false;
 	
 	private boolean isDeleted = false;
+	
+	private boolean fromAxiom = false;
+	
 	private String deletionEffectiveTime;
 	
 	public static final String[] rf2Header = new String[] {"id","effectiveTime","active","moduleId","sourceId","destinationId",
@@ -368,6 +371,14 @@ public class Relationship extends Component implements IRelationshipTemplate, RF
 
 	public boolean equalsTypeValue(Relationship rhs) {
 		return this.type.equals(rhs.type) && this.target.equals(rhs.target);
+	}
+	
+	public boolean fromAxiom() {
+		return fromAxiom;
+	}
+
+	public void setFromAxiom(boolean fromAxiom) {
+		this.fromAxiom = fromAxiom;
 	}
 
 }

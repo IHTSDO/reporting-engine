@@ -553,10 +553,21 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 			
 			//Special case were we receive conflicting rows for the same triple in a delta.
 			//keep the active row in that case.
-			if (replaceTripleMatch && r.getEffectiveTime() == null && !r.isActive()) {
+			if (!r.isActive() && replaceTripleMatch && r.getEffectiveTime() == null) {
 				for (Relationship match : getRelationships(r)) {
 					if (match.isActive() && match.getEffectiveTime() == null) {
 						//System.out.println ("Ignoring inactivation in " + this + " between already received active " + match + " and incoming inactive " + r);
+						return false;
+					}
+				}
+			}
+			
+			//Seeing an issue where a row from the snapshot stated relationships file is
+			//wiping out an axiom relationship.  Axioms always trump.
+			if (r.getCharacteristicType().equals(CharacteristicType.STATED_RELATIONSHIP) && !r.isActive() && !r.fromAxiom()) {
+				for (Relationship match : getRelationships(r)) {
+					if (match.isActive() && match.fromAxiom()) {
+						//System.out.println ("Ignoring inactivation in " + this + " between already received active axiom " + match + " and inactive " + r);
 						return false;
 					}
 				}
@@ -1269,6 +1280,15 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 
 	public void setGciAxioms(List<Axiom> gciAxioms) {
 		this.gciAxioms = gciAxioms;
+	}
+
+	public AxiomEntry getAxiom(String id) {
+		for (AxiomEntry e : axiomEntries) {
+			if (e.getId().equals(id)) {
+				return e;
+			}
+		}
+		return null;
 	}
 
 }

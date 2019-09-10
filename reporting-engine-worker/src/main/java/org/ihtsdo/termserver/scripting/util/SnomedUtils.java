@@ -1265,4 +1265,49 @@ public class SnomedUtils implements RF2Constants {
 		return appearances;
 	}
 
+	public static Collection<RelationshipGroup> toGroups(List<Relationship> relationships) {
+		Map<Integer, RelationshipGroup> groupMap = new HashMap<>();
+		for (Relationship r : relationships) {
+			RelationshipGroup g = groupMap.get(r.getGroupId());
+			if (g == null) {
+				g = new RelationshipGroup(r.getGroupId());
+				groupMap.put(r.getGroupId(), g);
+			}
+			g.addRelationship(r);
+		}
+		return groupMap.values();
+	}
+
+	public static RelationshipGroup findMatchingGroup(Concept c, RelationshipGroup g, CharacteristicType charType) {
+		nextPotentialMatch:
+		for (RelationshipGroup potentialMatch : c.getRelationshipGroups(charType)) {
+			if (potentialMatch.size() == g.size()) {
+				nextRelationship:
+				for (Relationship r1 : potentialMatch.getRelationships()) {
+					for (Relationship r2 : g.getRelationships()) {
+						if (r1.getType().equals(r2.getType())) {
+							if (r1.getTarget().equals(r2.getTarget())) {
+								continue nextRelationship;
+							}
+						}
+					}
+					//No match found for r1 in g.  Try next group.
+					continue nextPotentialMatch; 
+				}
+			//All r1s found a match - we've found a group match
+			return potentialMatch;
+			}
+		}
+		return null;
+	}
+
+	public static boolean isFreeGroup(CharacteristicType charType, Concept c, int checkIfFree) {
+		for (RelationshipGroup g : c.getRelationshipGroups(charType)) {
+			if (g.getGroupId() == checkIfFree) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 }

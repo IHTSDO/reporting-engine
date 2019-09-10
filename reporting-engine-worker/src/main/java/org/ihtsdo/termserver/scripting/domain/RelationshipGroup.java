@@ -175,4 +175,22 @@ public class RelationshipGroup {
 	public int size() {
 		return relationships.size();
 	}
+
+	public void setActive(boolean isActive) {
+		for (Relationship r : relationships) {
+			r.setActive(isActive);
+		}
+	}
+
+	public void setEffectiveTime(String effectiveTime) {
+		for (Relationship r : relationships) {
+			r.setEffectiveTime(effectiveTime);
+		}
+	}
+
+	public void setFromAxiom(boolean fromAxiom) {
+		for (Relationship r : relationships) {
+			r.setFromAxiom(fromAxiom);
+		}
+	}
 }
