@@ -3,18 +3,12 @@ package org.ihtsdo.termserver.scripting.domain;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
-import org.apache.commons.lang.builder.EqualsBuilder;
-import org.apache.commons.lang.builder.HashCodeBuilder;
-import org.apache.commons.lang.builder.ToStringBuilder;
 
 public class Branch {
 
 	@SerializedName("metadata")
 	@Expose
 	private Metadata metadata;
-	@SerializedName("name")
-	@Expose
-	private String name;
 	@SerializedName("baseTimestamp")
 	@Expose
 	private Long baseTimestamp;
@@ -48,10 +42,9 @@ public class Branch {
 	 * @param headTimestamp
 	 * @param metadata
 	 */
-	public Branch(Metadata metadata, String name, Long baseTimestamp, Long headTimestamp, Boolean deleted, String path, String state) {
+	public Branch(Metadata metadata, Long baseTimestamp, Long headTimestamp, Boolean deleted, String path, String state) {
 		super();
 		this.metadata = metadata;
-		this.name = name;
 		this.baseTimestamp = baseTimestamp;
 		this.headTimestamp = headTimestamp;
 		this.deleted = deleted;
@@ -73,16 +66,14 @@ public class Branch {
 	}
 
 	public String getName() {
-		return name;
-	}
-
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	public Branch withName(String name) {
-		this.name = name;
-		return this;
+		if (path == null) {
+			return null;
+		}
+		int cutPoint = path.lastIndexOf('/');
+		if (cutPoint > -1) {
+			return path.substring(cutPoint + 1);
+		}
+		return path;
 	}
 
 	public Long getBaseTimestamp() {
@@ -152,12 +143,12 @@ public class Branch {
 
 	@Override
 	public String toString() {
-		return new ToStringBuilder(this).append("metadata", metadata).append("name", name).append("baseTimestamp", baseTimestamp).append("headTimestamp", headTimestamp).append("deleted", deleted).append("path", path).append("state", state).toString();
+		return path;
 	}
 
 	@Override
 	public int hashCode() {
-		return new HashCodeBuilder().append(name).append(state).append(path).append(baseTimestamp).append(deleted).append(headTimestamp).append(metadata).toHashCode();
+		return path.hashCode();
 	}
 
 	@Override
@@ -169,7 +160,7 @@ public class Branch {
 			return false;
 		}
 		Branch rhs = ((Branch) other);
-		return new EqualsBuilder().append(name, rhs.name).append(state, rhs.state).append(path, rhs.path).append(baseTimestamp, rhs.baseTimestamp).append(deleted, rhs.deleted).append(headTimestamp, rhs.headTimestamp).append(metadata, rhs.metadata).isEquals();
+		return rhs.getPath().equals(this.getPath()); 
 	}
 
 }

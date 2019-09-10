@@ -24,6 +24,7 @@ public class ReleasePatternsReport extends TermServerReport implements ReportCla
 	
 	private Map<String, Integer> issueSummaryMap = new HashMap<>();
 	AncestorsCache cache;
+	String previousPreviousRelease; 
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
 		Map<String, String> params = new HashMap<>();
@@ -33,7 +34,9 @@ public class ReleasePatternsReport extends TermServerReport implements ReportCla
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA
 		super.init(run);
+		runStandAlone = false; //We need to load previous previous for real
 		getArchiveManager().populateReleasedFlag = true;
+		previousPreviousRelease = getArchiveManager().getPreviousPreviousBranch(project);
 	}
 	
 	public void postInit() throws TermServerScriptException {
@@ -43,6 +46,7 @@ public class ReleasePatternsReport extends TermServerReport implements ReportCla
 				"Summary"};
 		cache = gl.getAncestorsCache();
 		super.postInit(tabNames, columnHeadings, false);
+		previousPreviousRelease = getArchiveManager().getPreviousPreviousBranch(project);
 	}
 
 	@Override
@@ -59,6 +63,9 @@ public class ReleasePatternsReport extends TermServerReport implements ReportCla
 		info("Checking for redundancies...");
 		checkRedundantlyStatedUngroupedRoles();
 		checkRedundantlyStatedGroups();
+		
+		info("Checking for historical patterns");
+		checkCreatedButDuplicate();
 		
 		info("Checks complete, creating summary tag");
 		populateSummaryTab();
@@ -125,6 +132,28 @@ public class ReleasePatternsReport extends TermServerReport implements ReportCla
 							}
 						}
 					}
+				}
+			}
+		}
+	}
+	
+	private void checkCreatedButDuplicate() throws TermServerScriptException {
+		//RP-231 Pattern 21 Newly inactivatated duplicate was created in previous release
+		String issueStr = "Pattern 21: Newly inactivatated duplicate was created in previous release.";
+		initialiseSummary(issueStr);
+		for (Concept c : gl.getAllConcepts()) {
+			if (!c.isActive() && 
+				(c.getEffectiveTime() == null || c.getEffectiveTime().isEmpty()) &&
+				c.getInactivationIndicator().equals(InactivationIndicator.DUPLICATE)) {
+				//Did this concept exist in the previous previous release?
+				//If not, then it was created in the previous release and immediately retired
+				try {
+					Concept loadedConcept = loadConcept(c, previousPreviousRelease);
+					if (loadedConcept == null) {
+						report (c, issueStr);
+					}
+				} catch (Exception e) {
+					report (c, "API ERROR", "Failed to check previous previous release due to " + e.getMessage());
 				}
 			}
 		}

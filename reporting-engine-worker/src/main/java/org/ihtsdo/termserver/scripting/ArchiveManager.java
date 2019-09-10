@@ -3,6 +3,7 @@ package org.ihtsdo.termserver.scripting;
 import java.io.*;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -36,6 +37,7 @@ public class ArchiveManager implements RF2Constants {
 	
 	private Project currentlyHeldInMemory;
 	ZoneId utcZoneID= ZoneId.of("Etc/UTC");
+	SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 	
 	public static ArchiveManager getArchiveManager(TermServerScript ts) {
 		if (singleton == null) {
@@ -82,6 +84,28 @@ public class ArchiveManager implements RF2Constants {
 				return null;
 			}
 			throw new TermServerScriptException("Failed to recover " + project + " from TS (" + server + ") due to " + e.getMessage(),e);
+		}
+	}
+	
+	public String getPreviousPreviousBranch(Project project) throws TermServerScriptException {
+		Branch branch = loadBranch(project);
+		String previousRelease = branch.getMetadata().getPreviousRelease();
+		try {
+			List<CodeSystem> codeSystems = ts.getTSClient().getCodeSystemVersions();
+			//Filter out anything that's not a release date, then sort descending
+			List<CodeSystem> releases = codeSystems.stream()
+			.sorted(Comparator.comparing(CodeSystem::getEffectiveDate).reversed())
+			.collect(Collectors.toList());
+			
+			if (releases.size() < 2) {
+				throw new TermServerScriptException("Less than 2 previous releases detected");
+			}
+			if (!releases.get(0).getEffectiveDate().toString().equals(previousRelease)) {
+				TermServerScript.warn("Check here - unexpected previous release: " +  releases.get(0).getEffectiveDate() + " expected " + previousRelease);
+			}
+			return releases.get(1).getBranchPath();
+		} catch (Exception e) {
+			throw new TermServerScriptException("Failed to recover child branches due to " + e.getMessage(),e);
 		}
 	}
 

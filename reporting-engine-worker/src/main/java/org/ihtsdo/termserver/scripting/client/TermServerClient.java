@@ -11,9 +11,12 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpRequest;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.*;
 import org.springframework.http.converter.json.GsonHttpMessageConverter;
 import org.springframework.web.client.RestClientException;
@@ -92,7 +95,31 @@ public class TermServerClient {
 			logger.debug("Recovering branch information from " + url);
 			return restTemplate.getForObject(url, Branch.class);
 		} catch (RestClientException e) {
-			
+			throw new TermServerClientException(translateRestClientException(e));
+		}
+	}
+	
+	public List<Branch> getBranchChildren(String branchPath) throws TermServerClientException {
+		try {
+			String url = getBranchesPath(branchPath) + "/children?immediateChildren=true";
+			logger.debug("Recovering branch child information from " + url);
+			ResponseEntity<List<Branch>> response = restTemplate.exchange(
+					url,
+					HttpMethod.GET,
+					null,
+					new ParameterizedTypeReference<List<Branch>>(){});
+			return response.getBody();
+		} catch (RestClientException e) {
+			throw new TermServerClientException(translateRestClientException(e));
+		}
+	}
+	
+	public List<CodeSystem> getCodeSystemVersions() throws TermServerClientException {
+		try {
+			String url = this.url + "/codesystems/SNOMEDCT/versions";
+			logger.debug("Recovering codesystem versions from " + url);
+			return restTemplate.getForObject(url, CodeSystemCollection.class).getItems();
+		} catch (RestClientException e) {
 			throw new TermServerClientException(translateRestClientException(e));
 		}
 	}

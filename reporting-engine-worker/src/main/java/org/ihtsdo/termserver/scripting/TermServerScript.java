@@ -501,7 +501,11 @@ public abstract class TermServerScript implements RF2Constants {
 		if (dryRun) {
 			//In a dry run situation, the task branch is not created so use the Project instead
 			//But we'll clone it, so the object isn't confused with any local changes
-			branchPath = branchPath.substring(0, branchPath.lastIndexOf("/"));
+			
+			//If we're already working at project level, don't modify branchPath
+			if (branchPath.indexOf("/") != branchPath.lastIndexOf("/")) {
+				branchPath = branchPath.substring(0, branchPath.lastIndexOf("/"));
+			}
 			if (runStandAlone) {
 				debug ("Loading: " + gl.getConcept(sctid) + " from local store");
 				return gl.getConcept(sctid).cloneWithIds();
