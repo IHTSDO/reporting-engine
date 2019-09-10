@@ -34,6 +34,7 @@ public class GraphLoader implements RF2Constants {
 	
 	//Watch that this map is of the TARGET of the association, ie all concepts used in a historical association
 	private Map<Concept, List<AssociationEntry>> historicalAssociations =  new HashMap<Concept, List<AssociationEntry>>();
+	private TransativeClosure previousTransativeClosure;
 	
 	public StringBuffer log = new StringBuffer();
 	
@@ -111,6 +112,7 @@ public class GraphLoader implements RF2Constants {
 		historicalAssociations =  new HashMap<Concept, List<AssociationEntry>>();
 		//We'll reset the ECL cache during TS Init
 		populateKnownConcepts();
+		previousTransativeClosure = null;
 	}
 	
 	public Set<Concept> loadRelationships(CharacteristicType characteristicType, InputStream relStream, boolean addRelationshipsToConcepts, boolean isDelta, Boolean isReleased) 
@@ -835,5 +837,28 @@ public class GraphLoader implements RF2Constants {
 	
 	public AxiomRelationshipConversionService getAxiomService() {
 		return axiomService;
+	}
+
+	public void populatePreviousTransativeClosure() throws TermServerScriptException {
+		previousTransativeClosure = generateTransativeClosure();
+	}
+	
+	public TransativeClosure generateTransativeClosure() throws TermServerScriptException {
+		TermServerScript.debug ("Calculating Transative Closure");
+		TransativeClosure tc = new TransativeClosure();
+		//For all active concepts, populate their ancestors into the TC
+		getAllConcepts().parallelStream().forEach(c->{
+			try {
+				tc.addConcept(c);
+			} catch (TermServerScriptException e) {
+				e.printStackTrace();
+			} 
+		});
+		TermServerScript.debug ("Complete Transative Closure: " + tc.size() + " relationships mapped");
+		return tc;
+	}
+
+	public TransativeClosure getPreviousTC() {
+		return previousTransativeClosure;
 	}
 }

@@ -15,10 +15,11 @@ import org.snomed.otf.scheduler.domain.*;
 
 /**
  * RP-227 Pattern KPIs
- * 
+ * --------------------
  * RP-228 Redundant ungrouped roles
  * RP-229 Redundant stated groups
  * RP-232 Redundant stated IS A
+ * RP-231 Newly inactivatated duplicate created in prior release
  */
 public class ReleasePatternsReport extends TermServerReport implements ReportClass {
 	
@@ -36,6 +37,7 @@ public class ReleasePatternsReport extends TermServerReport implements ReportCla
 		super.init(run);
 		runStandAlone = false; //We need to load previous previous for real
 		getArchiveManager().populateReleasedFlag = true;
+		getArchiveManager().populatePreviousTransativeClosure = true;
 		previousPreviousRelease = getArchiveManager().getPreviousPreviousBranch(project);
 	}
 	

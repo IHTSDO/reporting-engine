@@ -33,6 +33,7 @@ public class ArchiveManager implements RF2Constants {
 	public boolean populateHierarchyDepth = true;  //Term contains X needs this
 	
 	public boolean populateReleasedFlag = false;
+	public boolean populatePreviousTransativeClosure = false;
 	private boolean releasedFlagPopulated = false;
 	
 	private Project currentlyHeldInMemory;
@@ -139,10 +140,13 @@ public class ArchiveManager implements RF2Constants {
 			
 			if (!snapshot.exists() || 
 					(isStale && !allowStaleData) || 
-					(populateReleasedFlag && !releasedFlagPopulated)) {
+					(populateReleasedFlag && !releasedFlagPopulated) ||
+					(populatePreviousTransativeClosure && gl.getPreviousTC() == null)) {
 				
 				if (populateReleasedFlag && !releasedFlagPopulated) {
 					info("Generating fresh snapshot because 'released' flag must be populated");
+				} else if (populatePreviousTransativeClosure && gl.getPreviousTC() == null) {
+					info("Generating fresh snapshot because previous transative closure must be populated");
 				}
 				gl.reset();
 				generateSnapshot (ts.getProject(), branch);
@@ -235,7 +239,6 @@ public class ArchiveManager implements RF2Constants {
 		File delta = File.createTempFile("delta_export-", ".zip");
 		delta.deleteOnExit();
 		ts.getTSClient().export(project.getBranchPath(), null, ExportType.UNPUBLISHED, ExtractType.DELTA, delta);
-		
 		SnapshotGenerator snapshotGenerator = new SnapshotGenerator();
 		snapshotGenerator.setProject(ts.getProject());
 		snapshotGenerator.leaveArchiveUncompressed();
@@ -289,6 +292,11 @@ public class ArchiveManager implements RF2Constants {
 					throw new TermServerScriptException("Failed to find sufficient number of descriptions - classification archive used? Deleting snapshot, please retry.");
 				}
 				debug("Integrity check complete");
+			}
+			
+			//Are we generating the transative closure?
+			if (fileType.equals(SNAPSHOT) && populatePreviousTransativeClosure) {
+				gl.populatePreviousTransativeClosure();
 			}
 				
 		} catch (IOException e) {
