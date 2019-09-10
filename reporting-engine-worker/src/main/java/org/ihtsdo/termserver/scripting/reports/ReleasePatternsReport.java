@@ -10,6 +10,7 @@ import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 
 /**
@@ -19,7 +20,6 @@ import org.snomed.otf.scheduler.domain.*;
  */
 public class ReleasePatternsReport extends TermServerReport implements ReportClass {
 	
-	Concept subHierarchy = ROOT_CONCEPT;
 	private Map<String, Integer> issueSummaryMap = new HashMap<>();
 	AncestorsCache cache;
 	
@@ -46,14 +46,17 @@ public class ReleasePatternsReport extends TermServerReport implements ReportCla
 	@Override
 	public Job getJob() {
 		return new Job( new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION),
-						"Release Patters Report",
+						"Release Patterns Report",
 						"This report identifies a number of potentially problematic patters, many of which are tracked as KPIs ",
 						new JobParameters());
 	}
 
 	public void runJob() throws TermServerScriptException {
 		info("Checking for problematic patterns...");
+		
+		info("Checking for redundancies...");
 		checkRedundantlyStatedUngroupedRoles();
+		checkRedundantlyStatedGroups();
 		
 		info("Checks complete, creating summary tag");
 		populateSummaryTab();
@@ -74,13 +77,13 @@ public class ReleasePatternsReport extends TermServerReport implements ReportCla
 
 	private void checkRedundantlyStatedUngroupedRoles() throws TermServerScriptException {
 		//RP-288 Redundantly stated ungrouped roles
-		String issueStr = "Redundantly stated ungrouped role";
+		String issueStr = "Pattern 2: Redundantly stated ungrouped role";
 		initialiseSummary(issueStr);
 		for (Concept c : gl.getAllConcepts()) {
 			if (c.isActive()) {
 				//Test each ungrouped realtionship to see if it subsumes any other
-				for (Relationship a : c.getRelationshipGroup(CharacteristicType.STATED_RELATIONSHIP, UNGROUPED).getRelationships()) {
-					for (Relationship b : c.getRelationshipGroup(CharacteristicType.STATED_RELATIONSHIP, UNGROUPED).getRelationships()) {
+				for (Relationship a : c.getRelationshipGroupSafely(CharacteristicType.STATED_RELATIONSHIP, UNGROUPED).getRelationships()) {
+					for (Relationship b : c.getRelationshipGroupSafely(CharacteristicType.STATED_RELATIONSHIP, UNGROUPED).getRelationships()) {
 						if (a.equals(b) || a.getType().equals(IS_A) || b.getType().equals(IS_A)) {
 							continue;
 						} else {
@@ -88,6 +91,28 @@ public class ReleasePatternsReport extends TermServerReport implements ReportCla
 								if (cache.getAncestorsOrSelf(a.getTarget()).contains(b.getTarget())) {
 									report (c, issueStr, a, b);
 								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	private void checkRedundantlyStatedGroups() throws TermServerScriptException {
+		//RP-289 Redundantly stated ungrouped roles
+		String issueStr = "Pattern 3: Redundantly stated ungrouped role";
+		initialiseSummary(issueStr);
+		for (Concept c : gl.getAllConcepts()) {
+			if (c.isActive()) {
+				//Test each relationship group to see if it subsumes any other
+				for (RelationshipGroup a : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
+					for (RelationshipGroup b : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
+						if (a.getGroupId() == UNGROUPED || b.getGroupId() == UNGROUPED || a.getGroupId() == b.getGroupId()) {
+							continue;
+						} else {
+							if (SnomedUtils.covers(a, b, cache)) {
+								report (c, issueStr, a, b);
 							}
 						}
 					}
