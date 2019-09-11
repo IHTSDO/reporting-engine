@@ -159,7 +159,7 @@ id	fsn	MPF	CD
 764798002	Conventional release solution for intraocular injection (dose form)	no	yes
 421765004	Conventional release solution for intraperitoneal injection (dose form)	no	yes
 385113008	Conventional release solution for iontophoresis (dose form)	no	yes
-785898006	Conventional release solution for irrigation (dose form)	no	yes
+785898006	Conventional release solution for irrigation (dose form)	yes	yes
 385153006	Conventional release solution for nasal drops (dose form)	no	yes
 385158002	Conventional release solution for nasal spray (dose form)	no	yes
 385198000	Conventional release solution for nebulizer (dose form)	no	yes
@@ -288,7 +288,7 @@ id	fsn	MPF	CD
 385128008	Prolonged-release eye drops (dose form)	no	yes
 421300005	Prolonged-release film-coated oral capsule (dose form)	no	no
 420378007	Prolonged-release film-coated oral tablet (dose form)	no	no
-785910004	Prolonged-release intralesional implant (dose form)	no	yes
+785910004	Prolonged-release intralesional implant (dose form)	yes	yes
 784576003	Prolonged-release intrauterine drug delivery system (dose form)	no	yes
 385086007	Prolonged-release muco-adhesive buccal tablet (dose form)	no	yes
 764842006	Prolonged-release ocular implant (dose form)	no	yes
@@ -321,5 +321,3 @@ id	fsn	MPF	CD
 761845009	Transdermal dose form (dose form)	yes	no
 740548000	Urethral dose form (dose form)	yes	no
 385292009	Vaginal dose form (dose form)	yes	no
-785898006	Conventional release solution for irrigation	yes	no
-785910004	Prolonged-release intralesional implant	yes	no
