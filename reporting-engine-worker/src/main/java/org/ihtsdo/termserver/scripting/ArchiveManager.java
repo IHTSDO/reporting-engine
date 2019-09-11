@@ -294,11 +294,10 @@ public class ArchiveManager implements RF2Constants {
 				debug("Integrity check complete");
 			}
 			
-			//Are we generating the transative closure?
+			//Are we generating the transitive closure?
 			if (fileType.equals(SNAPSHOT) && populatePreviousTransativeClosure) {
 				gl.populatePreviousTransativeClosure();
 			}
-				
 		} catch (IOException e) {
 			throw new TermServerScriptException("Failed to extract project state from archive " + archive.getName(), e);
 		}

@@ -33,7 +33,6 @@ public class GroupRemodel extends TemplateFix {
 	Set<Relationship> removeRelationships = new HashSet<>();
 	
 	boolean skipMultipleUngroupedFindingSites = true;
-	
 	File alreadyProcessedFile;
 
 	protected GroupRemodel(BatchFix clone) {
@@ -44,13 +43,12 @@ public class GroupRemodel extends TemplateFix {
 		GroupRemodel app = new GroupRemodel(null);
 		try {
 			ReportSheetManager.targetFolderId = "15FSegsDC4Tz7vP5NPayGeG2Q4SB1wvnr"; //QI  / Group One Remodel
-			//ReportSheetManager.targetFolderId = "18xZylGhgL7ML782pu6-6u_VUw3p5Hfr7"; //QI / Development
 			app.init(args);
 			app.loadProjectSnapshot(false);  //Load all descriptions
 			app.postInit();
 			app.processFile();
 		} catch (Exception e) {
-			info("Failed to produce ConceptsWithOrTargetsOfAttribute Report due to " + e.getMessage());
+			info("Failed to Group Remodel due to " + e.getMessage());
 			e.printStackTrace(new PrintStream(System.out));
 		} finally {
 			app.finish();
@@ -169,10 +167,12 @@ public class GroupRemodel extends TemplateFix {
 		
 		subHierarchyECL = "<< 417893002|Deformity|"; //QI-278
 		templateNames = new String[] {	"templates/Deformity - disorder.json"};
-		*/
 		
 		subHierarchyECL = "<<  126765001 |Gastrointestinal obstruction (disorder)|"; //QI-303
 		templateNames = new String[] {	"templates/Gastrointestinal.json"};
+		*/
+		subHierarchyECL = "<< 276654001 |Congenital malformation (disorder)|"; //QI-286
+		templateNames = new String[] {	"templates/Congenital Malformation.json"};
 		
 		super.init(args);
 		
