@@ -199,6 +199,8 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		Map<Concept, Boolean> acceptableDoseForms;
 		if (isMPF(c)) {
 			acceptableDoseForms = acceptableMpfDoseForms;
+			acceptableDoseForms.put(gl.getConcept("785898006 |Conventional release solution for irrigation (dose form)|"), Boolean.TRUE);
+			acceptableDoseForms.put(gl.getConcept("785910004 |Prolonged-release intralesional implant (dose form)|"), Boolean.TRUE);
 		} else {
 			acceptableDoseForms = acceptableCdDoseForms;
 		}
