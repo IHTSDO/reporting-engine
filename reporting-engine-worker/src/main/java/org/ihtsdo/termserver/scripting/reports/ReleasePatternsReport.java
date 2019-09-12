@@ -163,6 +163,7 @@ public class ReleasePatternsReport extends TermServerReport implements ReportCla
 		//RP-231 Pattern 21 Newly inactivatated duplicate was created in previous release
 		String issueStr = "Pattern 21: Newly inactivatated duplicate was created in previous release.";
 		initialiseSummary(issueStr);
+		int errorCount = 0;
 		for (Concept c : gl.getAllConcepts()) {
 			if (!c.isActive() && 
 				(c.getEffectiveTime() == null || c.getEffectiveTime().isEmpty()) &&
@@ -176,6 +177,10 @@ public class ReleasePatternsReport extends TermServerReport implements ReportCla
 					}
 				} catch (Exception e) {
 					report (c, "API ERROR", "Failed to check previous previous release due to " + e.getMessage());
+					if (++errorCount > 5) {
+						report (c, "API ERROR", "Maximum failures reached, giving up on Pattern 11");
+						break;
+					}
 				}
 			}
 		}
