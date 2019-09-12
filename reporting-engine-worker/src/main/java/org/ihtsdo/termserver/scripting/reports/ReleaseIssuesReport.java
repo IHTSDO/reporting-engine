@@ -522,15 +522,13 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		for (Concept c : gl.getAllConcepts()) {
 			if (c.isActive()) {
 				//Check all RHS relationships are active
-				for (Relationship r : c.getRelationships()) {
-					if (r.isActive()) {
-						String legacy = isLegacy(r);
-						if (!r.getType().isActive()) {
-							report(c, issueStr, legacy, isActive(c,r), r);
-						}
-						if (!r.getTarget().isActive()) {
-							report(c, issue2Str, legacy, isActive(c,r), r);
-						}
+				for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
+					String legacy = isLegacy(r);
+					if (!r.getType().isActive()) {
+						report(c, issueStr, legacy, isActive(c,r), r);
+					}
+					if (!r.getTarget().isActive()) {
+						report(c, issue2Str, legacy, isActive(c,r), r);
 					}
 				}
 				
