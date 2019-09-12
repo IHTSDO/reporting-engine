@@ -202,7 +202,7 @@ public class GraphLoader implements RF2Constants {
 						//We'll inactivate all these relationships and allow them to be replaced
 						AxiomRepresentation replacedAxiom = axiomService.convertAxiomToRelationships(conceptId, replacedAxiomEntry.getOwlExpression());
 						List<Relationship> replacedRelationships = AxiomUtils.getRHSRelationships(c, replacedAxiom);
-						alignAxiomRelationships(c, replacedRelationships, false, replacedAxiomEntry.getEffectiveTime());
+						alignAxiomRelationships(c, replacedRelationships, replacedAxiomEntry, false);
 						for (Relationship r : replacedRelationships) {
 							addRelationshipToConcept(CharacteristicType.STATED_RELATIONSHIP, r, isDelta);
 						}
@@ -221,7 +221,7 @@ public class GraphLoader implements RF2Constants {
 						
 						//Now we might need to adjust the active flag if the axiom is being inactivated
 						//Or juggle the groupId, since individual axioms don't know about each other's existence
-						alignAxiomRelationships(c, relationships, axiomEntry.isActive(), axiomEntry.getEffectiveTime());
+						alignAxiomRelationships(c, relationships, axiomEntry, axiomEntry.isActive());
 						for (Relationship r : relationships) {
 							addRelationshipToConcept(CharacteristicType.STATED_RELATIONSHIP, r, isDelta);
 						}
@@ -236,7 +236,7 @@ public class GraphLoader implements RF2Constants {
 		log.append("\tLoaded " + axiomsLoaded + " axioms");
 	}
 	
-	private void alignAxiomRelationships(Concept c, List<Relationship> relationships, boolean isActive, String effectiveTime) {
+	private void alignAxiomRelationships(Concept c, List<Relationship> relationships, AxiomEntry axiomEntry, boolean active) {
 		//Do the groups already exist in the concept?  Give them that groupId if so
 		int nextFreeGroup = 1;
 		for (RelationshipGroup g : SnomedUtils.toGroups(relationships)) {
@@ -256,10 +256,10 @@ public class GraphLoader implements RF2Constants {
 					}
 				}
 			}
-			g.setActive(isActive);
-			g.setEffectiveTime(effectiveTime);
+			g.setActive(active);
+			g.setEffectiveTime(axiomEntry.getEffectiveTime());
 			g.setFromAxiom(true);
-			g.setModule(c.getModuleId());
+			g.setModule(axiomEntry.getModuleId());
 		}
 	}
 
