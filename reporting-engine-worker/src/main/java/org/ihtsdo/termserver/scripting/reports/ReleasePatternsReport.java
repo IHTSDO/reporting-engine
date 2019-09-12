@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.AncestorsCache;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.TransitiveClosure;
 import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -20,12 +21,15 @@ import org.snomed.otf.scheduler.domain.*;
  * RP-229 Redundant stated groups
  * RP-232 Redundant stated IS A
  * RP-231 Newly inactivatated duplicate created in prior release
+ * RP-230 Existing sufficiently defined concepts that 
+ * gained a stated intermediate primitive parent and lost active inferred descendant(s)
  */
 public class ReleasePatternsReport extends TermServerReport implements ReportClass {
 	
 	private Map<String, Integer> issueSummaryMap = new HashMap<>();
 	AncestorsCache cache;
-	String previousPreviousRelease; 
+	String previousPreviousRelease;
+	TransitiveClosure tc;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
 		Map<String, String> params = new HashMap<>();
@@ -38,7 +42,12 @@ public class ReleasePatternsReport extends TermServerReport implements ReportCla
 		runStandAlone = false; //We need to load previous previous for real
 		getArchiveManager().populateReleasedFlag = true;
 		getArchiveManager().populatePreviousTransativeClosure = true;
-		previousPreviousRelease = getArchiveManager().getPreviousPreviousBranch(project);
+		try {
+			previousPreviousRelease = getArchiveManager().getPreviousPreviousBranch(project);
+		} catch (Exception e) {
+			error ("Failed to recover previous branch, falling back to hard coded 20190131", e);
+			previousPreviousRelease = "MAIN/2019-01-31";
+		}
 	}
 	
 	public void postInit() throws TermServerScriptException {
@@ -65,9 +74,13 @@ public class ReleasePatternsReport extends TermServerReport implements ReportCla
 		checkRedundantlyStatedParents();
 		checkRedundantlyStatedUngroupedRoles();
 		checkRedundantlyStatedGroups();
+	
+		info ("Building current Transitive Closure");
+		tc = gl.generateTransativeClosure();
 		
 		info("Checking for historical patterns");
 		checkCreatedButDuplicate();
+		checkPattern11();  //...a very specific situation
 		
 		info("Checks complete, creating summary tag");
 		populateSummaryTab();
@@ -166,6 +179,63 @@ public class ReleasePatternsReport extends TermServerReport implements ReportCla
 				}
 			}
 		}
+	}
+	
+	private void checkPattern11() throws TermServerScriptException {
+		//RP-230 Existing sufficiently defined concepts that: 
+		//1. gained a stated intermediate primitive parent and 
+		//2. lost active inferred descendant(s)
+		String issueStr = "Pattern 11: Existing sufficiently defined concepts that gained a stated intermediate primitive parent and lost active inferred descendant(s)";
+		initialiseSummary(issueStr);
+		for (Concept c : gl.getAllConcepts()) {
+			//Filter for active concepts that have already been published and are sufficiently defined.
+			if (c.isActive() && c.isReleased() &&
+					c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
+				List<Concept> newPrimitiveParents = getNewPrimitiveParents(c);
+				if (newPrimitiveParents.size() > 0) {
+					//What descendants have we lost?  Make sure they're still active.
+					Set<Long> previousDescendantIds = gl.getPreviousTC().getDescendants(c);
+					//Did we in fact have any descendants in the previous release?
+					if (previousDescendantIds == null) {
+						continue;
+					}
+					previousDescendantIds = new HashSet<Long>(previousDescendantIds);
+					int previousCount = previousDescendantIds.size();
+					Set<Long> currentDescendantIds = tc.getDescendants(c);
+					//Have we in fact lost _all_ descendants?
+					if (currentDescendantIds == null) {
+						currentDescendantIds = new HashSet<Long>();
+					}
+					int newCount = currentDescendantIds.size();
+					//Remove the current set, to see what's no longer a descendant
+					previousDescendantIds.removeAll(currentDescendantIds);
+					//Map to concepts and filter to retain only those that are active
+					List<Concept> lostActive = previousDescendantIds.stream()
+							.map(l -> gl.getConceptSafely(l.toString()))
+							.filter(f -> f.isActive())
+							.collect (Collectors.toList());
+					if (lostActive.size() > 0) {
+						String stats = previousCount + " -> " + newCount + " (-" + lostActive.size() + ")";
+						report (c, issueStr, toString(newPrimitiveParents), "inferred descendants", 
+								stats, "eg", lostActive.get(0));
+					}
+				}
+			}
+		}
+	}
+
+	private String toString(List<Concept> concepts) {
+		return concepts.stream()
+				.map(c -> c.toString())
+				.collect(Collectors.joining(", "));
+	}
+
+	private List<Concept> getNewPrimitiveParents(Concept c) {
+		//Get new (ie not released) stated IS_A relationship targets
+		return c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE).stream()
+				.filter(r -> r.getType().equals(IS_A) && !r.isReleased())
+				.map(r -> r.getTarget())
+				.collect(Collectors.toList());
 	}
 
 	protected void initialiseSummary(String issue) {

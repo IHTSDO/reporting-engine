@@ -41,13 +41,13 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
 		TermServerScript.runHeadless(3);
 		String[] morphologies = new String[] {
-				"11889001|Abiotrophy (morphologic abnormality)|",
+			/*	"11889001|Abiotrophy (morphologic abnormality)|",
 				"13331008|Atrophy (morphologic abnormality)|",
 				"33359002|Degeneration (morphologic abnormality)|",
 				"32693004|Demyelination (morphologic abnormality)|",
-				"69251000|Depletion (morphologic abnormality)|",
+				"69251000|Depletion (morphologic abnormality)|",*/
 				"46595003|Deposition (morphologic abnormality)|",
-				"4720007|Dystrophy (morphologic abnormality)|",
+			/*	"4720007|Dystrophy (morphologic abnormality)|",
 				"2218006|Endothelial degeneration (morphologic abnormality)|",
 				"47939006|Etat criblé (morphologic abnormality)|",
 				"66984008|Etat lacunaire (morphologic abnormality)|",
@@ -57,7 +57,7 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 				"107670002|Lysis AND/OR resorbed tissue (morphologic abnormality)|",
 				"35828005|Malacia (morphologic abnormality)|",
 				"15524008|Obliteration (morphologic abnormality)|",
-				"107671003|Vascular sclerosis (morphologic abnormality)|"};
+				"107671003|Vascular sclerosis (morphologic abnormality)|"*/};
 		for (String morphology : morphologies) {
 			String ecl = "<< 404684003 |Clinical finding (finding)| : 116676008 |Associated morphology (attribute)| = << " + morphology;
 			Map<String, String> params = new HashMap<>();

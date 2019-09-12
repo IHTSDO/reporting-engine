@@ -34,7 +34,7 @@ public class GraphLoader implements RF2Constants {
 	
 	//Watch that this map is of the TARGET of the association, ie all concepts used in a historical association
 	private Map<Concept, List<AssociationEntry>> historicalAssociations =  new HashMap<Concept, List<AssociationEntry>>();
-	private TransativeClosure previousTransativeClosure;
+	private TransitiveClosure previousTransativeClosure;
 	
 	public StringBuffer log = new StringBuffer();
 	
@@ -843,9 +843,9 @@ public class GraphLoader implements RF2Constants {
 		previousTransativeClosure = generateTransativeClosure();
 	}
 	
-	public TransativeClosure generateTransativeClosure() throws TermServerScriptException {
-		TermServerScript.debug ("Calculating Transative Closure");
-		TransativeClosure tc = new TransativeClosure();
+	public TransitiveClosure generateTransativeClosure() throws TermServerScriptException {
+		TermServerScript.debug ("Calculating transative closure...");
+		TransitiveClosure tc = new TransitiveClosure();
 		//For all active concepts, populate their ancestors into the TC
 		getAllConcepts().parallelStream().forEach(c->{
 			try {
@@ -854,11 +854,11 @@ public class GraphLoader implements RF2Constants {
 				e.printStackTrace();
 			} 
 		});
-		TermServerScript.debug ("Complete Transative Closure: " + tc.size() + " relationships mapped");
+		TermServerScript.debug ("Completed transative closure: " + tc.size() + " relationships mapped");
 		return tc;
 	}
 
-	public TransativeClosure getPreviousTC() {
+	public TransitiveClosure getPreviousTC() {
 		return previousTransativeClosure;
 	}
 }

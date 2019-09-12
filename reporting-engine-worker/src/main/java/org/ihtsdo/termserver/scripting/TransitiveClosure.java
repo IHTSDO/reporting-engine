@@ -6,7 +6,7 @@ import java.util.stream.Collectors;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 
-public class TransativeClosure implements RF2Constants {
+public class TransitiveClosure implements RF2Constants {
 
 	Map<Long, Set<Long>> ancestorMap = Collections.synchronizedMap(new HashMap<Long, Set<Long>>());
 	Map<Long, Set<Long>> descendantMap = Collections.synchronizedMap(new HashMap<Long, Set<Long>>());
