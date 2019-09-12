@@ -193,4 +193,10 @@ public class RelationshipGroup {
 			r.setFromAxiom(fromAxiom);
 		}
 	}
+
+	public void setModule(String moduleId) {
+		for (Relationship r : relationships) {
+			r.setModuleId(moduleId);
+		}
+	}
 }
