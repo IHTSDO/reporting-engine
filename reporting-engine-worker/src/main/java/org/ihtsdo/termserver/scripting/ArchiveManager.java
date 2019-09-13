@@ -74,7 +74,11 @@ public class ArchiveManager implements RF2Constants {
 			Branch branch = ts.getTSClient().getBranch(branchPath);
 			//If metadata is empty, or missing previous release, recover parent
 			//But timestamp will remain a property of the branch
+			//But not if we're already on MAIN and it's STILL missing!
 			if (branch.getMetadata() == null || branch.getMetadata().getPreviousRelease() == null) {
+				if (branchPath.equals("MAIN")) {
+					throw new TermServerScriptException("Metadata data missing in MAIN");
+				}
 				Branch parent = loadBranch(new Project().withBranchPath("MAIN"));
 				branch.setMetadata(parent.getMetadata());
 			}
