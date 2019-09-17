@@ -6,9 +6,13 @@ import java.util.*;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
+import org.ihtsdo.termserver.scripting.TermServerScript.ReportActionType;
+import org.ihtsdo.termserver.scripting.TermServerScript.Severity;
 import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.ActiveState;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
@@ -238,13 +242,21 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		
 		subHierarchyECL = "<<87628006";  //QI-338 |Bacterial infectious disease (disorder)|
 		templateNames = new String[] {	"templates/infection/Infection caused by bacteria.json"};
-		*/
 		
 		//QI-331, QI-353, QI-352, QI-329
 		subHierarchyECL = "<<362975008 |Degenerative disorder (disorder)|: 116676008 |Associated morphology (attribute)| = << 32693004 |Demyelination (morphologic abnormality)|";
 		templateNames = new String[] {	"templates/Degenerative disorder.json"};
 		includeComplexTemplates = true;
+		*/
+		subHierarchyECL = "<< 417893002|Deformity|"; //QI-279
+		templateNames = new String[] {	"templates/Deformity - finding.json"};
+		inclusionWords.add("finding");
 		
+		/*
+		subHierarchyECL = "<< 417893002|Deformity|"; //QI-279
+		templateNames = new String[] {	"templates/Deformity - disorder.json"};
+		inclusionWords.add("disorder");
+		*/
 		super.init(args);
 		
 		//Ensure our ECL matches more than 0 concepts.  This will also cache the result
@@ -296,6 +308,9 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 			report (t, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Cannot remodel PPP - template specifies multiple focus concepts");
 		}
 		
+		//Remove any redundant relationships, or they'll be missing from the inferred view
+		changesMade += removeRedundandRelationships(t,c);
+		
 		//Restate inferred relationships as stated where required
 		changesMade += restateInferredRelationships(t,c);
 		
@@ -304,7 +319,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		
 		return changesMade;
 	}
-
+	
 	private int restateInferredRelationships(Task t, Concept c) throws TermServerScriptException {
 		//Work through all inferred groups and collect any that aren't also stated, to state
 		int changesMade = 0;
@@ -394,6 +409,8 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		Set<Concept> changesRequired = new HashSet<>();
 		Set<Concept> noChangesRequired = new HashSet<>();
 		setQuiet(true);
+		
+		//for (Concept alignedConcept : Collections.singletonList(gl.getConcept("48008009"))) {
 		for (Concept alignedConcept : alignedConcepts) {
 			if (inclusionWords.size() > 0) {
 				if (!containsInclusionWord(alignedConcept)) {
