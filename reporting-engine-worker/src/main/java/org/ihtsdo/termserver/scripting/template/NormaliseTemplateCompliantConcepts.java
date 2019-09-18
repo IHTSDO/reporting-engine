@@ -6,13 +6,9 @@ import java.util.*;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
-import org.ihtsdo.termserver.scripting.TermServerScript.ReportActionType;
-import org.ihtsdo.termserver.scripting.TermServerScript.Severity;
 import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.ActiveState;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 

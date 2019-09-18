@@ -45,6 +45,7 @@ import com.google.common.io.Files;
  RP-180 Check for attribute types that should never appear in the same group
  RP-180 Check for subHierarchies that should not use specific attribute types
  RP-202 Check for MsWord style double hyphen "—" (as opposed to "-")
+ RP-241 Check axioms for correct module.  In fact, existing code is sufficient here.
  */
 public class ReleaseIssuesReport extends TermServerReport implements ReportClass {
 	
