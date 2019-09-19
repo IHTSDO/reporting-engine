@@ -26,6 +26,7 @@ import org.snomed.otf.scheduler.domain.*;
  * gained a stated intermediate primitive parent and lost active inferred descendant(s)
  * RP-233 Role group crossovers
  * RP-234 Ungrouped crossovers
+ * RP-235 Intermediate primitive concepts that have sufficiently defined supertypes and subtypes.
  */
 public class ReleasePatternsReport extends TermServerReport implements ReportClass {
 	
@@ -88,6 +89,8 @@ public class ReleasePatternsReport extends TermServerReport implements ReportCla
 		info("Checking for crossovers");
 		checkForRoleGroupCrossovers();
 		checkForUngroupedCrossovers();
+		
+		checkForIPs();
 		
 		info("Checks complete, creating summary tag");
 		populateSummaryTab();
@@ -300,6 +303,14 @@ public class ReleasePatternsReport extends TermServerReport implements ReportCla
 					}
 				}
 			}
+		}
+	}
+	
+	private void checkForIPs() throws TermServerScriptException {
+		String issueStr = "Pattern 7: Intermediate primitive";
+		initialiseSummary(issueStr);
+		for (Concept c : identifyIntermediatePrimitives(gl.getAllConcepts(), CharacteristicType.INFERRED_RELATIONSHIP)) {
+			report(c, issueStr);
 		}
 	}
 
