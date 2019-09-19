@@ -25,6 +25,7 @@ import org.snomed.otf.scheduler.domain.*;
  * RP-230 Existing sufficiently defined concepts that 
  * gained a stated intermediate primitive parent and lost active inferred descendant(s)
  * RP-233 Role group crossovers
+ * RP-234 Ungrouped crossovers
  */
 public class ReleasePatternsReport extends TermServerReport implements ReportClass {
 	
@@ -86,6 +87,7 @@ public class ReleasePatternsReport extends TermServerReport implements ReportCla
 		
 		info("Checking for crossovers");
 		checkForRoleGroupCrossovers();
+		checkForUngroupedCrossovers();
 		
 		info("Checks complete, creating summary tag");
 		populateSummaryTab();
@@ -267,6 +269,34 @@ public class ReleasePatternsReport extends TermServerReport implements ReportCla
 							default:
 						}
 						processedPairs.add(new GroupPair(left, right));
+					}
+				}
+			}
+		}
+	}
+	
+	private void checkForUngroupedCrossovers() throws TermServerScriptException {
+		String issueStr = "Pattern 5: Role and role group anomaly - more specific";
+		initialiseSummary(issueStr);
+		String issue2Str = "Pattern 5: Role and role group anomaly - inconsistent";
+		initialiseSummary(issue2Str);
+		for (Concept c : gl.getAllConcepts()) {
+			if (!c.isActive() || c.getRelationshipGroup(CharacteristicType.INFERRED_RELATIONSHIP, UNGROUPED) == null) {
+				continue;
+			}
+			List<Relationship> ungroupedRels = c.getRelationshipGroup(CharacteristicType.INFERRED_RELATIONSHIP, UNGROUPED).getRelationships();
+			for (Relationship ungroupedRel : ungroupedRels) {
+				//Is our ungrouped relationship more specific than any grouped relationship?
+				for (RelationshipGroup group : c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP)) {
+					if (!group.isGrouped()) {
+						continue;
+					}
+					for (Relationship groupedRel : group.getRelationships()) {
+						if (SnomedUtils.isMoreSpecific(ungroupedRel, groupedRel, cache)) {
+							report (c, issueStr, ungroupedRel, groupedRel);
+						} else if (SnomedUtils.inconsistentSubsumption(ungroupedRel, groupedRel, cache)) {
+							report (c, issue2Str, ungroupedRel, groupedRel);
+						}
 					}
 				}
 			}
