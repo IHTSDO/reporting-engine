@@ -637,8 +637,8 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	}
 
 	private void checkForUsGbSpecificSpelling(List<Description> bothDialectTextDefns) throws TermServerScriptException {
-		String issueStr = "Text Definition acceptable in both dialects contains US specific spelling";
-		String issue2Str = "Text Definition acceptable in both dialects contains GB specific spelling";
+		String issueStr = "Text Definition preferred in both dialects contains US specific spelling";
+		String issue2Str = "Text Definition preferred in both dialects contains GB specific spelling";
 		initialiseSummary(issueStr);
 		initialiseSummary(issue2Str);
 		

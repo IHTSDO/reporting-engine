@@ -11,6 +11,7 @@ import org.ihtsdo.termserver.scripting.TransitiveClosure;
 import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.reports.release.CrossoverUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 
@@ -23,6 +24,7 @@ import org.snomed.otf.scheduler.domain.*;
  * RP-231 Newly inactivatated duplicate created in prior release
  * RP-230 Existing sufficiently defined concepts that 
  * gained a stated intermediate primitive parent and lost active inferred descendant(s)
+ * RP-233 Role group crossovers
  */
 public class ReleasePatternsReport extends TermServerReport implements ReportClass {
 	
@@ -82,6 +84,9 @@ public class ReleasePatternsReport extends TermServerReport implements ReportCla
 		checkCreatedButDuplicate();
 		checkPattern11();  //...a very specific situation
 		
+		info("Checking for crossovers");
+		checkForRoleGroupCrossovers();
+		
 		info("Checks complete, creating summary tag");
 		populateSummaryTab();
 		
@@ -91,7 +96,7 @@ public class ReleasePatternsReport extends TermServerReport implements ReportCla
 	private void populateSummaryTab() throws TermServerScriptException {
 		issueSummaryMap.entrySet().stream()
 				.sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
-				.forEach(e -> reportSafely (SECONDARY_REPORT, (Component)null, e.getKey(), e.getValue()));
+						.forEach(e -> reportSafely (SECONDARY_REPORT, (Component)null, e.getKey(), e.getValue()));
 		
 		int total = issueSummaryMap.entrySet().stream()
 				.map(e -> e.getValue())
@@ -229,6 +234,45 @@ public class ReleasePatternsReport extends TermServerReport implements ReportCla
 		}
 	}
 
+	private void checkForRoleGroupCrossovers() throws TermServerScriptException {
+		String issueStr = "Pattern 4: Role group crossover";
+		initialiseSummary(issueStr);
+		Set<GroupPair> processedPairs = new HashSet<>();
+		for (Concept c : gl.getAllConcepts()) {
+			/*if (c.getConceptId().equals("10311005")) {
+				debug("here");
+			}*/
+			Collection<RelationshipGroup> groups = c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP);
+			//We only need to worry about concepts with >1 role group
+			if (c.isActive() && groups.size() > 1) {
+				processedPairs.clear();
+				//Test every group against every other group
+				for (RelationshipGroup left : groups) {
+					if (!left.isGrouped()) {
+						continue;
+					}
+					for (RelationshipGroup right : groups) {
+						if (left.getGroupId()==right.getGroupId() || !right.isGrouped()) {
+							continue;
+						}
+						//Have we already processed this combination in the opposite order?
+						if (processedPairs.contains(new GroupPair(right, left))) {
+							continue;
+						}
+						switch (CrossoverUtils.subsumptionRoleGroupTest(left, right)) {
+							case ROLEGROUPS_CROSSOVER :
+							case ROLES_CROSSOVER:
+									report (c, issueStr, left, right);
+									break;
+							default:
+						}
+						processedPairs.add(new GroupPair(left, right));
+					}
+				}
+			}
+		}
+	}
+
 	private String toString(List<Concept> concepts) {
 		return concepts.stream()
 				.map(c -> c.toString())
@@ -252,6 +296,31 @@ public class ReleasePatternsReport extends TermServerReport implements ReportCla
 		issueSummaryMap.merge(details[0].toString(), 1, Integer::sum);
 		countIssue(c);
 		super.report (PRIMARY_REPORT, c, details);
+	}
+	
+	class GroupPair {
+		RelationshipGroup one;
+		RelationshipGroup two;
+		int hash;
+		GroupPair (RelationshipGroup one, RelationshipGroup two) {
+			this.one = one;
+			this.two = two;
+			hash = (one.toString() + two.toString()).hashCode();
+		}
+		
+		public boolean equals(Object other) {
+			if (other instanceof GroupPair) {
+				GroupPair otherPair = (GroupPair)other;
+				if (this.one.getGroupId() == otherPair.one.getGroupId()) {
+					return this.two.getGroupId() == otherPair.two.getGroupId();
+				}
+			}
+			return false;
+		}
+		
+		public int hashCode() {
+			return hash;
+		}
 	}
 
 }
