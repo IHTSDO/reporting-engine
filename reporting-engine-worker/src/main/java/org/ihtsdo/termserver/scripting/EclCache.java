@@ -2,7 +2,6 @@ package org.ihtsdo.termserver.scripting;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import org.apache.commons.collections4.collection.CompositeCollection;
 import org.ihtsdo.termserver.scripting.client.TermServerClient;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.ConceptCollection;

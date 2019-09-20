@@ -347,10 +347,14 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		subHierarchyECL = "<< 298180004 |Finding of range of joint movement (finding)|  MINUS <<  7890003 |Contracture of joint (disorder)|";
 		templateNames = new String[] {	"templates/Finding of range of joint movement.json" };
 		includeComplexTemplates = true;
-		*/
+		
 		subHierarchyECL = "<< 417893002|Deformity|"; //QI-278
 		templateNames = new String[] {	"templates/Deformity - disorder.json",
 				"templates/Deformity - finding.json"};
+		*/
+		subHierarchyECL = "< 128139000 |Inflammatory disorder (disorder)|"; //QI-370
+		templateNames = new String[] {	"templates/Inflammatory Disorder.json",
+					"templates/Infectious Inflammatory Disorder.json"};
 		
 		super.init(args);
 	
