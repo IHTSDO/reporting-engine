@@ -861,6 +861,14 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 	}
 	
+	public int getSummaryInformationInt(String key) {
+		Object info = summaryDetails.get(key);
+		if (info == null || !(info instanceof Integer)) {
+			return 0;
+		}
+		return (Integer)info;
+	}
+	
 	public void incrementSummaryInformationQuiet(String key) {
 		//There are occasions where we can only capture all information when doing the first pass
 		//When we're looking at ALL information eg which concepts do not require changes.

@@ -243,16 +243,20 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		subHierarchyECL = "<<362975008 |Degenerative disorder (disorder)|: 116676008 |Associated morphology (attribute)| = << 32693004 |Demyelination (morphologic abnormality)|";
 		templateNames = new String[] {	"templates/Degenerative disorder.json"};
 		includeComplexTemplates = true;
-		*/
+		
 		subHierarchyECL = "<< 417893002|Deformity|"; //QI-279
 		templateNames = new String[] {	"templates/Deformity - finding.json"};
 		inclusionWords.add("finding");
 		
-		/*
 		subHierarchyECL = "<< 417893002|Deformity|"; //QI-279
 		templateNames = new String[] {	"templates/Deformity - disorder.json"};
 		inclusionWords.add("disorder");
 		*/
+		
+		//QI-373
+		subHierarchyECL = "<<362975008 |Degenerative disorder (disorder)|: 116676008 |Associated morphology (attribute)| = << 18695008 |Hyaline body (morphologic abnormality)|";
+		templateNames = new String[] {	"templates/Degenerative disorder.json"};
+		includeComplexTemplates = true;
 		super.init(args);
 		
 		//Ensure our ECL matches more than 0 concepts.  This will also cache the result
@@ -396,9 +400,10 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 			alignedConcepts.addAll(findTemplateMatches(template, potentialMatches, TERTIARY_REPORT));
 		}
 		
-		//So how many did NOT align?
-		int misalignedCount = potentialMatches.size() - alignedConcepts.size();
-		addSummaryInformation("Concepts misaligned or excluded", misalignedCount);
+		//So how many did NOT align? Total rejections minus those excluded for other reasons
+		int rejected = potentialMatches.size() - alignedConcepts.size();
+		int misalignedCount = rejected - getSummaryInformationInt("Concepts excluded");
+		addSummaryInformation("Concepts misaligned ", misalignedCount);
 		
 		//Now first pass attempt to remodel because we don't want to batch anything that results 
 		//in no changes being made.

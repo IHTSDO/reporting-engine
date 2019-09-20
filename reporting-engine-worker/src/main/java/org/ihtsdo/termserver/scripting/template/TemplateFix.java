@@ -196,7 +196,7 @@ abstract public class TemplateFix extends BatchFix {
 			} else {
 				//Only count exclusions for the first pass
 				if (t.getId() == 'A') {
-					incrementSummaryInformation("Concept excluded");
+					incrementSummaryInformation("Concepts excluded");
 				}
 			}
 			if (++conceptsExamined % 1000 == 0) {
@@ -204,7 +204,7 @@ abstract public class TemplateFix extends BatchFix {
 			}
 		}
 		println("");
-		addSummaryInformation("Concepts in " + subHierarchyECL + " matching template " + t, matches.size());
+		addSummaryInformation("Concepts in \"" + subHierarchyECL + "\" matching template: " + t.getId(), matches.size());
 		return matches;
 	}
 	
