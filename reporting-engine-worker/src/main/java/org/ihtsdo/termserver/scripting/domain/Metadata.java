@@ -15,6 +15,9 @@ public class Metadata {
     @SerializedName("previousRelease")
     @Expose
     private String previousRelease;
+    @SerializedName("previousPackage")
+    @Expose
+    private String previousPackage;
     @SerializedName("dependencyRelease")
     @Expose
     private String dependencyRelease;
@@ -83,6 +86,14 @@ public class Metadata {
 
     public void setPreviousRelease(String previousRelease) {
         this.previousRelease = previousRelease;
+    }
+    
+    public String getPreviousPackage() {
+        return previousPackage;
+    }
+
+    public void setPreviousPackagee(String previousPackage) {
+        this.previousPackage = previousPackage;
     }
 
     public String getDependencyRelease() {

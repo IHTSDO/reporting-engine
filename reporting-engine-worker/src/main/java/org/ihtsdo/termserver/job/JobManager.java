@@ -14,7 +14,6 @@ import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.JobParameter.Type;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.info.BuildProperties;
-import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -35,12 +34,6 @@ public class JobManager {
 	@Autowired
 	Transmitter transmitter;
 	
-	JobManager (
-			@Autowired SnomedReleaseResourceConfiguration snomedReleaseResourceConfiguration,
-			@Autowired ResourceLoader cloudResourceLoader) {
-		logger.info("Configuring Release Resource Manager");
-		//snomedReleaseResourceManager = new ResourceManager(snomedReleaseResourceConfiguration, cloudResourceLoader);
-	}
 
 	@PostConstruct
 	public void init(){

@@ -16,22 +16,27 @@ import java.util.zip.*;
 import org.apache.commons.io.FileUtils;
 import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.client.TermServerClient.*;
+import org.ihtsdo.termserver.scripting.dao.ArchiveDataLoader;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.snapshot.SnapshotGenerator;
 import org.ihtsdo.termserver.scripting.util.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
+@Service
 public class ArchiveManager implements RF2Constants {
 	
 	static ArchiveManager singleton;
+	
+	@Autowired
+	ArchiveDataLoader archiveDataLoader;
 	
 	protected String dataStoreRoot = "";
 	protected GraphLoader gl;
 	protected TermServerScript ts;
 	public boolean allowStaleData = false;
 	public boolean loadExtension = false;
-	
 	public boolean populateHierarchyDepth = true;  //Term contains X needs this
-	
 	public boolean populateReleasedFlag = false;
 	public boolean populatePreviousTransativeClosure = false;
 	private boolean releasedFlagPopulated = false;
@@ -234,9 +239,12 @@ public class ArchiveManager implements RF2Constants {
 			java.nio.file.Files.deleteIfExists(snapshot.toPath());
 		}
 	
-		File previous = new File (dataStoreRoot + "releases/"  + branch.getMetadata().getPreviousRelease() + ".zip");
+		File previous = new File (dataStoreRoot + "releases/"  + branch.getMetadata().getPreviousPackage());
 		if (!previous.exists()) {
-			throw new TermServerScriptException("Previous release not available for snapshot creation: " + previous);
+			if (archiveDataLoader == null) {
+				archiveDataLoader = ArchiveDataLoader.create();
+			}
+			archiveDataLoader.download(previous);
 		}
 		TermServerScript.info("Building snapshot release based on previous: " + previous);
 		//Now we need a recent delta to add to it

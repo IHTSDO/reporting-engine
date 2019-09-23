@@ -5,7 +5,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.job.ReportClass;
-import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
@@ -39,7 +38,7 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 	
 	//QI-222  Multi-ecl report runner
 	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
-		TermServerScript.runHeadless(3);
+		//TermServerScript.runHeadless(3);
 		String[] morphologies = new String[] {
 			/*	"11889001|Abiotrophy (morphologic abnormality)|",
 				"13331008|Atrophy (morphologic abnormality)|",

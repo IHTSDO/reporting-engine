@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
 
 import org.ihtsdo.termserver.job.mq.ActiveMQConnectionFactoryForAutoscaling;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
@@ -23,9 +24,8 @@ import java.util.TimeZone;
 @EnableJms
 public class Application  {
 	
-	public enum Mode { SERVER, CLIENT }
-	public static Mode mode = Mode.CLIENT;
-
+	static TermServerScript job;
+	
 	@Bean
 	public ObjectMapper objectMapper() {
 		final ObjectMapper objectMapper = new ObjectMapper();
@@ -49,15 +49,11 @@ public class Application  {
 	public ActiveMQConnectionFactoryForAutoscaling autoScalingFactory() {
 		return new ActiveMQConnectionFactoryForAutoscaling();
 	}
-	
-	public static Mode getMode() {
-		return mode;
-	}
 
 	public static void main(String[] args) {
-		mode = Mode.SERVER;
 		new SpringApplicationBuilder(Application.class)
 		.web(WebApplicationType.NONE) // .REACTIVE, .SERVLET
 		.run(args);
 	}
+	
 }
