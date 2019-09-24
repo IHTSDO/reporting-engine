@@ -28,8 +28,8 @@ public class ArchiveDataLoader {
 	@Value("${aws.key}")
 	private String awsKey;
 	
-	@Value("${aws.privateKey}")
-	private String awsPrivateKey;
+	@Value("${aws.secretKey}")
+	private String awsSecretKey;
 	
 	public void download (File archive) throws TermServerScriptException {
 		try {
@@ -42,7 +42,7 @@ public class ArchiveDataLoader {
 				awsCredProv = new EC2ContainerCredentialsProviderWrapper();
 				TermServerScript.info("Connecting to S3 with EC2 environment configured credentials");
 			} else {
-				AWSCredentials awsCreds = new BasicAWSCredentials(awsKey, awsPrivateKey);
+				AWSCredentials awsCreds = new BasicAWSCredentials(awsKey, awsSecretKey);
 				awsCredProv = new AWSStaticCredentialsProvider(awsCreds);
 				TermServerScript.info("Connecting to S3 with locally specified account: " + awsKey);
 			}
@@ -69,7 +69,7 @@ public class ArchiveDataLoader {
 		LocalProperties properties = new LocalProperties(null);
 		config.region = properties.getProperty("cloud.aws.region.static");
 		config.awsKey = properties.getProperty("aws.key");
-		config.awsPrivateKey = properties.getProperty("aws.secretKey");
+		config.awsSecretKey = properties.getProperty("aws.secretKey");
 		return config;
 	}
 	

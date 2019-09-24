@@ -11,6 +11,7 @@ import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.ImportResource;
 import org.springframework.jms.annotation.EnableJms;
 import org.springframework.jms.support.converter.MappingJackson2MessageConverter;
@@ -21,6 +22,7 @@ import java.util.TimeZone;
 
 @SpringBootApplication
 @ImportResource("classpath:services-context.xml")
+@ComponentScan(basePackages = {"org.ihtsdo.termserver.job", "org.ihtsdo.termserver.scripting"})
 @EnableJms
 public class Application  {
 	
