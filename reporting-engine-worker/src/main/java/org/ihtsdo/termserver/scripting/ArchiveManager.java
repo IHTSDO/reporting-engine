@@ -21,9 +21,11 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.snapshot.SnapshotGenerator;
 import org.ihtsdo.termserver.scripting.util.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
+import org.springframework.stereotype.Component;
 
-@Service
+@Component
 public class ArchiveManager implements RF2Constants {
 	
 	static ArchiveManager singleton;
@@ -52,6 +54,11 @@ public class ArchiveManager implements RF2Constants {
 		singleton.ts = ts;
 		singleton.gl = ts.getGraphLoader();
 		return singleton;
+	}
+	
+	@EventListener(ApplicationReadyEvent.class)
+	public void init() {
+		singleton = this;
 	}
 	
 	private ArchiveManager () {
@@ -207,7 +214,8 @@ public class ArchiveManager implements RF2Constants {
 			currentlyHeldInMemory = ts.getProject();
 			allowStaleData = originalStateDataFlag;
 		} catch (Exception e) {
-			throw new TermServerScriptException ("Unable to load " + ts.getProject(), e);
+			String msg = "Unable to load " + ts.getProject() + " due to " + e.getMessage();
+			throw new TermServerScriptException (msg, e);
 		}
 		info ("Snapshot loading complete");
 	}

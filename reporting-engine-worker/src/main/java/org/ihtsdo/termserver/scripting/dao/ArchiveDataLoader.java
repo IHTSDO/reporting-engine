@@ -8,7 +8,9 @@ import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.cloud.aws.core.io.s3.SimpleStorageResourceLoader;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 import com.amazonaws.auth.*;
@@ -30,6 +32,18 @@ public class ArchiveDataLoader {
 	
 	@Value("${aws.secretKey}")
 	private String awsSecretKey;
+	
+	@EventListener(ApplicationReadyEvent.class)
+	public void init() {
+		TermServerScript.info("ArchiveDataLoader initialised - SpringBoot configuration");
+		if (awsKey == null) {
+			TermServerScript.info("ArchiveDataLoader - AWS Key missing?");
+		} else if (awsKey.isEmpty()) {
+			TermServerScript.info("ArchiveDataLoader - AWS Key configured through EC2 instance");
+		} else {
+			TermServerScript.info("ArchiveDataLoader using AWS Key: " + awsKey);
+		}
+	}
 	
 	public void download (File archive) throws TermServerScriptException {
 		try {
