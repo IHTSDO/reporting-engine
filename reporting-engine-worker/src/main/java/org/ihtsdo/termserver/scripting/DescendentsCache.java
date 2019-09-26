@@ -33,7 +33,7 @@ public class DescendentsCache implements RF2Constants {
 		return getDescendents(c, false);  //Default implementation is immutable
 	}
 	
-	private Set<Concept> getDescendents (Concept c, boolean mutable) throws TermServerScriptException {
+	public Set<Concept> getDescendents (Concept c, boolean mutable) throws TermServerScriptException {
 		if (c == null) {
 			throw new IllegalArgumentException("Null concept requested");
 		}
@@ -56,6 +56,11 @@ public class DescendentsCache implements RF2Constants {
 		Set<Concept> descendents = getDescendents(c, false);
 		Set<Concept> orSelf = Collections.singleton(c);
 		return ImmutableSet.copyOf(Iterables.concat(descendents, orSelf));
+	}
+	
+	public Set<Concept> getDescendentsOrSelf(Concept c, boolean mutable) throws TermServerScriptException {
+		Set<Concept> dOrS = getDescendentsOrSelf(c);
+		return mutable ? new HashSet<>(dOrS) : Collections.unmodifiableSet(dOrS);
 	}
 
 	public Set<Concept> getDescendentsOrSelf (String sctid) throws TermServerScriptException {
