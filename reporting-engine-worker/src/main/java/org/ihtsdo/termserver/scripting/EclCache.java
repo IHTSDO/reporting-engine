@@ -85,12 +85,13 @@ public class EclCache {
 			if (useLocalStoreIfSimple && ecl.equals("*")) {
 				allConcepts = gl.getAllConcepts();
 			} else if (useLocalStoreIfSimple && isSimple(ecl)){
+				//We might want to modify these sets, so request mutable copies
 				if (ecl.startsWith("<<")) {
 					Concept subhierarchy = gl.getConcept(ecl.substring(2).trim());
-					allConcepts = gl.getDescendantsCache().getDescendentsOrSelf(subhierarchy);
+					allConcepts = gl.getDescendantsCache().getDescendentsOrSelf(subhierarchy, true);
 				} else if (ecl.startsWith("<")) {
 					Concept subhierarchy = gl.getConcept(ecl.substring(1).trim());
-					allConcepts = gl.getDescendantsCache().getDescendents(subhierarchy);
+					allConcepts = gl.getDescendantsCache().getDescendents(subhierarchy, true);
 				} else {
 					throw new IllegalStateException("ECL is not simple: " + ecl);
 				}
