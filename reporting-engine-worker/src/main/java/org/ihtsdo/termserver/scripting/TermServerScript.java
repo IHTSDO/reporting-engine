@@ -433,7 +433,11 @@ public abstract class TermServerScript implements RF2Constants {
 			}
 			jobRun.setIssuesReported(issueCount);
 		} catch (Exception e) {
-			String msg = "Failed to complete " + jobRun.getJobName() + " due to: " + e.getMessage();
+			String reason = e.getMessage();
+			if (reason == null) {
+				reason = e.getClass().getSimpleName();
+			}
+			String msg = "Failed to complete " + jobRun.getJobName() + " due to: " + reason;
 			jobRun.setStatus(JobStatus.Failed);
 			jobRun.setDebugInfo(msg);
 			error(msg, e);
