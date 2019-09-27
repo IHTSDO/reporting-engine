@@ -247,7 +247,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 		List<Concept> allAffected = new ArrayList<Concept>(); 
 		nextConcept:
 		for (Concept c : MEDICINAL_PRODUCT.getDescendents(NOT_SET)) {
-		//for (Concept c : Collections.singleton(gl.getConcept("773542009"))) {
+		//for (Concept c : Collections.singleton(gl.getConcept("781931005"))) {
 			try {
 				if (c.getConceptType().equals(ConceptType.CLINICAL_DRUG)) {
 					Concept mpf = calculateDrugRequired(c, ConceptType.MEDICINAL_PRODUCT_FORM);
@@ -261,7 +261,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 						Concept doseForm = SnomedUtils.getTarget(currentMPF, new Concept[] { HAS_MANUFACTURED_DOSE_FORM }, UNGROUPED, CharacteristicType.INFERRED_RELATIONSHIP);
 						if (!allowMoreSpecificDoseForms.contains(doseForm)) {
 							if (SnomedUtils.hasMoreSpecificModel(currentMPF, mpf, AncestorsCache.getAncestorsCache())) {
-								report ((Task)null, c, Severity.HIGH, ReportActionType.SKIPPING, "Existing parent : " + currentMPF + " is more specific that proposed: " + mpf.toExpression(CharacteristicType.STATED_RELATIONSHIP));
+								report ((Task)null, c, Severity.HIGH, ReportActionType.SKIPPING, "Existing parent : " + currentMPF + " is more specific than proposed (expression): " + mpf.toExpression(CharacteristicType.STATED_RELATIONSHIP));
 								continue nextConcept;
 							}
 						}
