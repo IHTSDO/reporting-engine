@@ -206,6 +206,7 @@ public class ArchiveManager implements RF2Constants {
 							} catch (Exception e2) {
 								TermServerScript.warn("Failed to delete snapshot " + snapshot + " due to " + e2);
 							}
+							releasedFlagPopulated = false;
 							throw new TermServerScriptException("Non-viable snapshot detected",e);
 						}
 					}

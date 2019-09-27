@@ -88,7 +88,9 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		
 		double lastPercentageReported = 0;
 		for (Concept c : conceptsOfInterest) {
-			if (!c.isReleased()) {
+			if (c.isReleased() == null) {
+				throw new IllegalStateException ("Malformed snapshot. Released status not populated at " + c);
+			} else if (!c.isReleased()) {
 				newConcepts.add(c);
 			} else if (c.getEffectiveTime() == null || c.getEffectiveTime().isEmpty()) {
 				//Only want to log def status change if the concept has not been made inactive
