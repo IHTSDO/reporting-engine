@@ -188,7 +188,7 @@ public class GraphLoader implements RF2Constants {
 				Long conceptId = Long.parseLong(lineItems[REF_IDX_REFCOMPID]);
 				Concept c = getConcept(conceptId);
 
-/*				if (c.getConceptId().equals("135781000119105")) {
+/*				if (c.getConceptId().equals("769025004")) {
 					TermServerScript.debug("Debug Here");
 				}*/
 				

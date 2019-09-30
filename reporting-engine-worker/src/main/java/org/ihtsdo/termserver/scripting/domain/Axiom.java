@@ -34,6 +34,12 @@ public class Axiom extends Component implements RF2Constants, Comparable<Axiom> 
 	@Expose
 	private Boolean namedConceptOnLeft;
 
+
+	public Axiom(Concept c) {
+		moduleId = c.getConceptId();
+		definitionStatus = c.getDefinitionStatus();
+	}
+	
 	public String getModuleId() {
 		return moduleId;
 	}
@@ -114,5 +120,20 @@ public class Axiom extends Component implements RF2Constants, Comparable<Axiom> 
 	public String[] toRF2() throws TermServerScriptException {
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+	public void clearRelationships() {
+		relationships = new ArrayList<>();
+	}
+
+	public Axiom clone(String id, Concept c) {
+		Axiom clone = new Axiom(c);
+		clone.setModuleId(this.getModuleId());
+		for (Relationship r : this.getRelationships()) {
+			Relationship rClone = r.clone();
+			rClone.setSource(c);
+			clone.getRelationships().add(rClone);
+		}
+		return clone;
 	}
 }

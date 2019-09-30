@@ -64,6 +64,10 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	@Expose
 	private AssociationTargets associationTargets;
 	
+	@SerializedName("classAxioms")
+	@Expose
+	private List<Axiom> classAxioms;
+	
 	@SerializedName("additionalAxioms")
 	@Expose
 	private List<Axiom> additionalAxioms;
@@ -82,6 +86,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	private boolean isDeleted = false;
 	private int depth = NOT_SET;
 	private boolean isDirty = false;
+	private Long statedRelSum = null;  //Allows cached quick comparison of relationships
 	
 	//Note that these values are used when loading from RF2 where multiple entries can exist.
 	//When interacting with the TS, only one inactivation indicator is used (see above).
@@ -389,15 +394,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		if (r.getEffectiveTime() != null) {
 			throw new IllegalArgumentException("Attempt to deleted published relationship " + r);
 		}
-		boolean checkMoreToRemove = true;
-		int relationshipsRemoved = 0;
-		do {
-			checkMoreToRemove = this.relationships.remove(r);
-			relationshipsRemoved++;
-		} while (checkMoreToRemove);
-		if (relationshipsRemoved > 1) {
-			TermServerScript.debug("Check " + this + " relationship " + r);
-		}
+		this.relationships.removeAll(Collections.singleton(r));
 		recalculateGroups();
 	}
 
@@ -427,7 +424,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 
 	@Override
 	public String toString() {
-		return conceptId + " |" + this.fsn + "|";
+		return conceptId + " |" + getFsn() + "|";
 	}
 
 	public String toStringPref() {
@@ -449,7 +446,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 			expression += group.isGrouped() ? "{" : "";
 			expression += group.getRelationships().stream().map(p -> "  " + p.toString())
 					.collect(Collectors.joining (",\n"));
-			expression += group.isGrouped() ? "}" : "";
+			expression += group.isGrouped() ? " }" : "";
 		}
 		return expression;
 	}
@@ -1112,6 +1109,9 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	
 	private Concept clone(String sctid, boolean keepIds, boolean includeInactiveComponents, boolean populateUUIDs) {
 		Concept clone = new Concept(keepIds?conceptId:sctid, getFsn());
+		if (populateUUIDs && clone.getId() == null) {
+			clone.setId(UUID.randomUUID().toString());
+		}
 		clone.setEffectiveTime(keepIds?effectiveTime:null);
 		clone.setActive(active);
 		clone.setDefinitionStatus(getDefinitionStatus());
@@ -1146,6 +1146,18 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 			clone.addRelationship(rClone);
 			if (populateUUIDs && r.getId() == null) {
 				rClone.setRelationshipId(UUID.randomUUID().toString());
+			}
+		}
+		
+		//Copy class axioms
+		List<Axiom> axioms = getClassAxioms();
+		for (Axiom axiom : axioms) {
+			//We need to null out the sourceId since the clone is a new concept
+			Axiom aClone = axiom.clone(keepIds?axiom.getId():null, clone);
+			aClone.setEffectiveTime(keepIds?axiom.getEffectiveTime():null);
+			clone.getClassAxioms().add(aClone);
+			if (populateUUIDs && axiom.getId() == null) {
+				aClone.setAxiomId(UUID.randomUUID().toString());
 			}
 		}
 		
@@ -1265,6 +1277,17 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		}
 		return maxGroupId;
 	}
+	
+	public List<Axiom> getClassAxioms() {
+		if (classAxioms == null) {
+			classAxioms = new ArrayList<>();
+		}
+		return classAxioms;
+	}
+
+	public void setClassAxioms(List<Axiom> classAxioms) {
+		this.classAxioms = classAxioms;
+	}
 
 	public List<Axiom> getAdditionalAxioms() {
 		return additionalAxioms;
@@ -1289,6 +1312,39 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 			}
 		}
 		return null;
+	}
+	
+	/**
+	 * Cache a sum of relationship target / values for quick comparison
+	 */
+	public long getStatedRelSum() {
+		if (statedRelSum == null) {
+			statedRelSum = 0L;
+			for (Relationship r : getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
+				//Drugs modelling doesn't consider 766939001 |Plays role (attribute)|
+				if (!r.getType().equals(PLAYS_ROLE)) {
+					statedRelSum += Long.parseLong(r.getType().getId()) + Long.parseLong(r.getTarget().getId());
+				}
+			}
+		}
+		return statedRelSum;
+	}
+
+	public Axiom getFirstActiveClassAxiom() {
+		if (classAxioms == null) {
+			classAxioms = new ArrayList<Axiom>();
+		}
+		for (Axiom axiom : classAxioms) {
+			if (axiom.isActive()) {
+				return axiom;
+			}
+		}
+		//All existing concepts should have an active axiom
+		//So no need to reactivate inactive ones.  
+		//We will only add a new one if this is a new concept to create
+		Axiom axiom = new Axiom(this);
+		classAxioms.add(axiom);
+		return axiom;
 	}
 
 }

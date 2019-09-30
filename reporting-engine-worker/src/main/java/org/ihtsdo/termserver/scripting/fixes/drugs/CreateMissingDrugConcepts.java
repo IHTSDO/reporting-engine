@@ -26,6 +26,8 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * between "MP-containing" and "P containing only".  Skip excepted substances
  * 
  * DRUGS-671 Create missing MP and MPFs across all drugs
+ * 
+ * DRUGS-814 Changes now that we're working with axioms.  Ingredients self grouped.
  */
 public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Constants{
 	
@@ -74,20 +76,17 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 	
 	public void postInit() throws TermServerScriptException {
 		for (Concept c : MEDICINAL_PRODUCT.getDescendents(NOT_SET)) {
-/*			if (c.getConceptId().equals("412182005")) {
+			/*if (c.getConceptId().equals("774313006")) {
 				debug("Here");
 			}*/
 			SnomedUtils.populateConceptType(c);
 			if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM)) {
 				knownMPFs.add(c);
-			}
-			if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT)) {
+			} else if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT)) {
 				knownMPs.add(c);
-			}
-			if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_ONLY)) {
+			} else if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_ONLY)) {
 				knownMPOs.add(c);
-			}
-			if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM_ONLY)) {
+			} else if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM_ONLY)) {
 				knownMPFOs.add(c);
 			}
 		}
@@ -144,11 +143,12 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 			
 			//Are we suppressing this concept?
 			if (suppress.contains(required.getFsn())) {
-				report (task, concept, Severity.NONE, ReportActionType.INFO, "Concept suppressed", required);
-				
+				report (task, concept, Severity.MEDIUM, ReportActionType.INFO, "Concept suppressed", required);
+				//And remove from the task
+				task.remove(loadedConcept);
 			} else {
+				String expression = required.toExpression(CharacteristicType.STATED_RELATIONSHIP);
 				required = createConcept(task, required, info);
-				
 				if (required.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT) || 
 					required.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM)) {
 					ConceptType invalidParentType = required.getConceptType();  //Up a level should have different type
@@ -164,7 +164,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 				task.remove(concept);
 				report (task, required, Severity.LOW, ReportActionType.CONCEPT_ADDED, required);
 				addSummaryInformation("Concept created: " +required, "");
-				report (task, required, Severity.LOW, ReportActionType.INFO, required.toExpression(CharacteristicType.STATED_RELATIONSHIP));
+				report (task, required, Severity.LOW, ReportActionType.INFO, expression);
 			}
 			return CHANGE_MADE; 
 		}
@@ -177,23 +177,34 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 		List<Relationship> needleRels = needle.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
 		nextStraw:
 		for (Concept straw : haystack) {
-			/*if (straw.getConceptId().equals("773541002")) {
+/*			if (straw.getConceptId().equals("41193000")) {
 				debug ("debug here also");
 			}*/
+			
+			//Do a simple sum check to see if we can rule out a match early doors
+			if (straw.getStatedRelSum() != needle.getStatedRelSum()) {
+				continue;
+			}
+			
 			//We need to filter out the "Plays role" attribute since we don't know when those might pop up and we
 			//don't model them for our missing concepts
 			List<Relationship> strawRels = straw.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE).stream()
 											.filter(r -> !r.getType().equals(PLAYS_ROLE))
 											.collect(Collectors.toList());
-			if (needleRels.size() != strawRels.size()) {
-				continue nextStraw;
-			}
+
 			for (Relationship thisRel : needleRels) {
 				boolean relMatchFound = false;
 				for (Relationship thatRel : strawRels) {
+					//Active ingredient is now self-grouped, so just check type/value in that case
+					//Since we can't be sure what group number will be used for multi-ingredients
 					if (thisRel.equals(thatRel)) {
 						relMatchFound = true;
 						break;
+					} else if (thisRel.getType().equals(HAS_ACTIVE_INGRED) || thisRel.getType().equals(HAS_PRECISE_INGRED)) {
+						if (thisRel.equalsTypeValue(thatRel)) {
+							relMatchFound = true;
+							break;
+						}
 					}
 				}
 				if (!relMatchFound) {
@@ -215,6 +226,9 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 		//Only if we're creating an MPF, include the dose form
 		if (targetType.equals(ConceptType.MEDICINAL_PRODUCT_FORM) || targetType.equals(ConceptType.MEDICINAL_PRODUCT_FORM_ONLY) ) {
 			Concept doseForm = SnomedUtils.getTarget(c, new Concept[] {HAS_MANUFACTURED_DOSE_FORM}, UNGROUPED, CharacteristicType.STATED_RELATIONSHIP);
+			if (doseForm == null) {
+				throw new IllegalStateException("MPF with no active stated dose form: " + c);
+			}
 			doseForm = SnomedUtils.getHighestAncestorBefore(doseForm, PHARM_DOSE_FORM);
 			Relationship formRel = new Relationship (drug, HAS_MANUFACTURED_DOSE_FORM, doseForm, UNGROUPED);
 			drug.addRelationship(formRel);
@@ -235,8 +249,10 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 			drug.addRelationship(countRel);
 		}
 		
+		//Active ingredient is now self grouped
+		int groupId = 0;
 		for (Concept base : baseIngredients) {
-			Relationship ingredRel = new Relationship (drug, HAS_ACTIVE_INGRED, base, UNGROUPED);
+			Relationship ingredRel = new Relationship (drug, HAS_ACTIVE_INGRED, base, ++groupId);
 			drug.addRelationship(ingredRel);
 		}
 		return drug;
@@ -247,7 +263,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 		List<Concept> allAffected = new ArrayList<Concept>(); 
 		nextConcept:
 		for (Concept c : MEDICINAL_PRODUCT.getDescendents(NOT_SET)) {
-		//for (Concept c : Collections.singleton(gl.getConcept("781931005"))) {
+		//for (Concept c : Collections.singleton(gl.getConcept("350210009"))) {
 			try {
 				if (c.getConceptType().equals(ConceptType.CLINICAL_DRUG)) {
 					Concept mpf = calculateDrugRequired(c, ConceptType.MEDICINAL_PRODUCT_FORM);

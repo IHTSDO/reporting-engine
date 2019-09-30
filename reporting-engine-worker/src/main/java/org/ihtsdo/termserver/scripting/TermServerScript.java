@@ -140,7 +140,7 @@ public abstract class TermServerScript implements RF2Constants {
 		this.authenticatedCookie = authenticatedCookie;
 	}
 	
-	protected static String[] envKeys = new String[] {"local","dev","uat","prod","dev","dev","uat", "uat", "prod"};
+	protected static String[] envKeys = new String[] {"local","dev","uat","prod","dev","dev","uat", "uat", "prod", "prod"};
 
 	protected static String[] environments = new String[] {	"http://localhost:8080/",
 															"https://dev-authoring.ihtsdotools.org/",
@@ -151,6 +151,7 @@ public abstract class TermServerScript implements RF2Constants {
 															"https://uat-ms-authoring.ihtsdotools.org/",
 															"https://uat-snowstorm.ihtsdotools.org/",
 															"https://prod-ms-authoring.ihtsdotools.org/",
+															"https://prod-snowstorm.ihtsdotools.org/"
 	};
 	
 	public static void info (String msg) {
@@ -547,6 +548,8 @@ public abstract class TermServerScript implements RF2Constants {
 			String json = response.toObject().toString();
 			Concept loadedConcept = gson.fromJson(json, Concept.class);
 			loadedConcept.setLoaded(true);
+			convertAxiomsToRelationships(loadedConcept, loadedConcept.getClassAxioms());
+			convertAxiomsToRelationships(loadedConcept, loadedConcept.getAdditionalAxioms());
 			return loadedConcept;
 		} catch (Exception e) {
 			if (e.getMessage().contains("[404] Not Found")) {
@@ -557,6 +560,18 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 	}
 	
+	private void convertAxiomsToRelationships(Concept c, List<Axiom> axioms) {
+		if (axioms != null) {
+			for (Axiom axiom : axioms) {
+				if (axiom.isActive()) {
+					for (Relationship r : axiom.getRelationships()) {
+						c.addRelationship(r);
+					}
+				}
+			}
+		}
+	}
+
 	protected Concept updateConcept(Task t, Concept c, String info) throws TermServerScriptException {
 		String conceptSerialised = "PARSE FAILURE";
 		try {
@@ -606,7 +621,6 @@ public abstract class TermServerScript implements RF2Constants {
 	private void validateConcept(Task t, Concept c) throws TermServerScriptException {
 		//We need to populate new components with UUIDs for validation
 		Concept uuidClone = c.cloneWithUUIDs();
-		if (true);
 		DroolsResponse[] validations = tsClient.validateConcept(uuidClone, t.getBranchPath());
 		if (validations.length == 0) {
 			debug("Validation clear: " + c);
@@ -684,18 +698,29 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	private Concept attemptConceptCreation(Task t, Concept c, String info) throws Exception {
-		
-		String conceptSerialised = gson.toJson(c);
 		debug ((dryRun ?"Dry run creating ":"Creating ") + c + info);
+		convertStatedRelationshipsToAxioms(c);
 		if (!dryRun) {
-			JSONResource response = tsClient.createConcept(new JSONObject(conceptSerialised), t.getBranchPath());
-			String json = response.toObject().toString();
-			c = gson.fromJson(json, Concept.class);
+			validateConcept(t, c);
+			c = tsClient.createConcept(c, t.getBranchPath());
 		} else {
 			c = c.clone("NEW_SCTID");
 		}
 		incrementSummaryInformation("Concepts created");
 		return c;
+	}
+
+	private void convertStatedRelationshipsToAxioms(Concept c) {
+		//Do we have an existing axiom?
+		Axiom a = c.getFirstActiveClassAxiom();
+		a.setModuleId(c.getModuleId());
+		a.clearRelationships();
+		//We'll remove the stated relationships as they get converted to the axiom
+		List<Relationship> rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
+		for (Relationship rel : rels) {
+			a.getRelationships().add(rel);
+			c.removeRelationship(rel);
+		}
 	}
 
 	/**

@@ -135,11 +135,10 @@ public class TermServerClient {
 		return e;
 	}
 
-	public JSONResource createConcept(JSONObject json, String branchPath) throws TermServerClientException {
-		final JSONResource newConcept;
+	public Concept createConcept(Concept c, String branchPath) throws TermServerClientException {
 		try {
-			newConcept = resty.json(getConceptBrowserPath(branchPath), RestyHelper.content(json, SNOWOWL_CONTENT_TYPE));
-			logger.info("Created concept " + newConcept.get("conceptId") + " |" + newConcept.get("fsn") + "|");
+			Concept newConcept =  restTemplate.postForObject(getConceptBrowserPath(branchPath), new HttpEntity<>(c, headers), Concept.class);
+			logger.info("Created concept: " + newConcept);
 			return newConcept;
 		} catch (Exception e) {
 			throw new TermServerClientException(e);
