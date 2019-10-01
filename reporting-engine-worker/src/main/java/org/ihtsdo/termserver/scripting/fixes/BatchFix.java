@@ -684,18 +684,15 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	
 	protected void removeDescription(Task t, Concept c, Description d, InactivationIndicator i) throws TermServerScriptException {
 		//Are we inactivating or deleting this relationship?
-		ReportActionType action = ReportActionType.UNKNOWN;
 		if (!d.isReleased()) {
-			d.setActive(false);
 			c.removeDescription(d);
-			action = ReportActionType.DESCRIPTION_DELETED;
+			report (t, c, Severity.LOW, ReportActionType.DESCRIPTION_DELETED, d);
 		} else {
 			d.setEffectiveTime(null);
 			d.setActive(false);
 			d.setInactivationIndicator(i);
-			action = ReportActionType.DESCRIPTION_INACTIVATED;
+			report (t, c, Severity.LOW, ReportActionType.DESCRIPTION_INACTIVATED, d, i.toString());
 		}
-		report (t, c, Severity.LOW, action, d, i.toString());
 	}
 	
 	protected Description addDescription(Task t, Concept c, Description d) throws TermServerScriptException {
