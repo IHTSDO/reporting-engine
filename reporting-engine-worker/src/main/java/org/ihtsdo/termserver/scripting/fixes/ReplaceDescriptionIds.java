@@ -3,7 +3,6 @@ package org.ihtsdo.termserver.scripting.fixes;
 import java.io.IOException;
 import java.util.*;
 
-import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.TermServerClientException;
@@ -12,8 +11,6 @@ import org.ihtsdo.termserver.scripting.util.StringUtils;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
-
-import us.monoid.json.JSONObject;
 
 /*
  * Deletes Descriptions and recreates them identically with new SCTIDS
@@ -58,19 +55,11 @@ public class ReplaceDescriptionIds extends BatchFix implements RF2Constants{
 	}
 
 	@Override
-	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
-		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
-		int changesMade = replaceDescriptionIds(task, loadedConcept);
+	public int doFix(Task t, Concept concept, String info) throws TermServerScriptException {
+		Concept loadedConcept = loadConcept(concept, t.getBranchPath());
+		int changesMade = replaceDescriptionIds(t, loadedConcept);
 		if (changesMade > 0) {
-			try {
-				String conceptSerialised = gson.toJson(loadedConcept);
-				debug ("Updating state of " + loadedConcept + info);
-				if (!dryRun) {
-					tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
-				}
-			} catch (Exception e) {
-				report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
-			}
+			updateConcept(t, loadedConcept, info);
 		}
 		return changesMade;
 	}

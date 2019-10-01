@@ -3,13 +3,10 @@ package org.ihtsdo.termserver.scripting.fixes;
 import java.io.IOException;
 import java.util.*;
 
-import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.domain.*;
-
-import us.monoid.json.JSONObject;
 
 /*
  * Removes a substring from all active Terms, where matched in context for a given subHierarchy
@@ -40,19 +37,11 @@ public class RemoveSubstringFromNewTerms extends BatchFix implements RF2Constant
 	}
 
 	@Override
-	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
-		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
-		int changesMade = removeWordsFromTerms(task, loadedConcept);
+	public int doFix(Task t, Concept concept, String info) throws TermServerScriptException {
+		Concept loadedConcept = loadConcept(concept, t.getBranchPath());
+		int changesMade = removeWordsFromTerms(t, loadedConcept);
 		if (changesMade > 0) {
-			try {
-				String conceptSerialised = gson.toJson(loadedConcept);
-				debug ("Updating state of " + loadedConcept + info);
-				if (!dryRun) {
-					tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
-				}
-			} catch (Exception e) {
-				report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
-			}
+			updateConcept(t, loadedConcept, info);
 		}
 		return changesMade;
 	}

@@ -1,25 +1,14 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.client.TermServerClientException;
-import org.ihtsdo.termserver.scripting.domain.Component;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.ConceptChange;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants;
-import org.ihtsdo.termserver.scripting.domain.Relationship;
-import org.ihtsdo.termserver.scripting.domain.Task;
+import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 
-import us.monoid.json.JSONObject;
 
 /*
 	Makes modifications to anatomy relationships, driven by an input CSV file
@@ -48,30 +37,15 @@ public class AnatomyRemodelling extends BatchFix implements RF2Constants{
 	}
 
 	@Override
-	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException, ValidationFailure {
-		Concept tsConcept = loadConcept(concept, task.getBranchPath());
+	public int doFix(Task t, Concept concept, String info) throws TermServerScriptException, ValidationFailure {
+		Concept loadedConcept = loadConcept(concept, t.getBranchPath());
 		int changesMade = 0;
-		if (tsConcept.isActive() == false) {
-			report(task, concept, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Concept is inactive.  No changes attempted");
+		if (loadedConcept.isActive() == false) {
+			report(t, concept, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Concept is inactive.  No changes attempted");
 		} else {
-			changesMade = remodelRelationships(task, concept, tsConcept, false);
+			changesMade = remodelRelationships(t, concept, loadedConcept, false);
 			if (changesMade > 0) {
-				try {
-					String conceptSerialised = gson.toJson(tsConcept);
-					debug ((dryRun?"Dry run updating":"Updating") + " state of " + tsConcept + info);
-					if (!dryRun) {
-						tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
-					}
-					//report(task, concept, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept successfully remodelled. " + changesMade + " changes made.");
-				} catch (Exception e) {
-					//See if we can get that 2nd level exception's reason which says what the problem actually was
-					String additionalInfo = "";
-					if (e.getCause().getCause() != null) {
-						additionalInfo = " - " + e.getCause().getCause().getMessage().replaceAll(COMMA, " ").replaceAll(QUOTE, "'");
-					} 
-					report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + e.getClass().getSimpleName()  + " - " + additionalInfo);
-					e.printStackTrace();
-				}
+				updateConcept(t, loadedConcept, info);
 			}
 		}
 		return changesMade;

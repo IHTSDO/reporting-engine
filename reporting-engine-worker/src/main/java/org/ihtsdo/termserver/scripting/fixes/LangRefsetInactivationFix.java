@@ -77,7 +77,7 @@ public class LangRefsetInactivationFix extends TermServerScript implements RF2Co
 			}
 			if (fixed) {
 				info("Fixing " + concept.getConceptId());
-				tsClient.updateConcept(conceptObj, branchPath);
+				//updateConcept(t, loadedConcept, info);
 			} else {
 				info("No issue with " + concept.getConceptId());
 			}

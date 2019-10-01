@@ -63,7 +63,7 @@ public class ReTermInfluenza extends BatchFix implements RF2Constants{
 		Concept loadedConcept = loadConcept(cachedConcept, t.getBranchPath());
 		int changesMade = reterm(t, loadedConcept);
 		if (changesMade > 0) {
-			save(t, loadedConcept, info);
+			updateConcept(t, loadedConcept, info);
 		}
 		return changesMade;
 	}

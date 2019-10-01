@@ -145,28 +145,31 @@ public class TermServerClient {
 		}
 	}
 
-	public JSONResource updateConcept(JSONObject concept, String branchPath) throws TermServerClientException {
+	public Concept updateConcept(Concept c, String branchPath) throws TermServerClientException {
 		try {
-			JSONResource response = null;
-			final String id = concept.getString("conceptId");
-			Preconditions.checkNotNull(id);
+			Preconditions.checkNotNull(c.getConceptId());
 			boolean updatedOK = false;
 			int tries = 0;
 			while (!updatedOK) {
 				try {
-					response =  resty.json(getConceptBrowserPath(branchPath) + "/" + id, Resty.put(RestyHelper.content(concept, SNOWOWL_CONTENT_TYPE)));
+					ResponseEntity<Concept> response = restTemplate.exchange(
+							getConceptBrowserPath(branchPath) + "/" + c.getConceptId(),
+							HttpMethod.PUT,
+							new HttpEntity<>(c, headers),
+							Concept.class);
+					c = response.getBody();
 					updatedOK = true;
-					logger.info("Updated concept " + id);
+					logger.info("Updated concept " + c.getConceptId());
 				} catch (Exception e) {
 					tries++;
 					if (tries >= MAX_TRIES) {
-						throw new TermServerClientException("Failed to update concept " + id + " after " + tries + " attempts due to " + e.getMessage() + "\nJSON representation: " + concept.toString(), e);
+						throw new TermServerClientException("Failed to update concept: " + c + " after " + tries + " attempts due to " + e.getMessage(), e);
 					}
 					logger.debug("Update of concept failed, trying again....",e);
 					Thread.sleep(30*1000); //Give the server 30 seconds to recover
 				}
 			}
-			return response;
+			return c;
 		} catch (Exception e) {
 			throw new TermServerClientException(e);
 		}

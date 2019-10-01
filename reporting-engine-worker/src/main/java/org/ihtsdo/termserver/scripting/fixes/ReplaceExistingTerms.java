@@ -3,14 +3,10 @@ package org.ihtsdo.termserver.scripting.fixes;
 import java.io.IOException;
 import java.util.*;
 
-import org.apache.commons.lang.exception.ExceptionUtils;
-import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-
-import us.monoid.json.JSONObject;
 
 /*
  * Removes a substring from all active Terms, where matched in context for a given subHierarchy
@@ -41,19 +37,11 @@ public class ReplaceExistingTerms extends BatchFix implements RF2Constants{
 	}
 
 	@Override
-	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
-		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
-		int changesMade = replaceTerms(task, loadedConcept);
+	public int doFix(Task t, Concept concept, String info) throws TermServerScriptException {
+		Concept loadedConcept = loadConcept(concept, t.getBranchPath());
+		int changesMade = replaceTerms(t, loadedConcept);
 		if (changesMade > 0) {
-			try {
-				String conceptSerialised = gson.toJson(loadedConcept);
-				if (!dryRun) {
-					debug ("Updating state of " + loadedConcept + info);
-					tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
-				}
-			} catch (Exception e) {
-				report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
-			}
+			updateConcept(t, loadedConcept, info);
 		}
 		return changesMade;
 	}
@@ -70,7 +58,7 @@ public class ReplaceExistingTerms extends BatchFix implements RF2Constants{
 	}
 
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		Set<Concept> allPotential = GraphLoader.getGraphLoader().getConcept(subHierarchyStr).getDescendents(NOT_SET);
+		Set<Concept> allPotential = gl.getConcept(subHierarchyStr).getDescendents(NOT_SET);
 		Set<Concept> allAffected = new TreeSet<Concept>();  //We want to process in the same order each time, in case we restart and skip some.
 		info("Identifying concepts to process");
 		for (Concept c : allPotential) {

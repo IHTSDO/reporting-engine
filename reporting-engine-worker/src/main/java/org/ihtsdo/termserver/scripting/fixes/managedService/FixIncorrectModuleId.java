@@ -1,27 +1,16 @@
 package org.ihtsdo.termserver.scripting.fixes.managedService;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.client.TermServerClientException;
-import org.ihtsdo.termserver.scripting.domain.Component;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Description;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants;
-import org.ihtsdo.termserver.scripting.domain.Relationship;
-import org.ihtsdo.termserver.scripting.domain.Task;
+import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 
-import us.monoid.json.JSONObject;
 
 /*
 Fix takes concepts identified in the input file and ensures that the 
@@ -44,7 +33,7 @@ public class FixIncorrectModuleId extends BatchFix implements RF2Constants{
 		try {
 			fix.init(args);
 			fix.loadEntriesToFix();
-			fix.process();
+			fix.processFile();
 		} finally {
 			fix.finish();
 		}
@@ -56,32 +45,11 @@ public class FixIncorrectModuleId extends BatchFix implements RF2Constants{
 		info ("Identified correct module to be " + intendedModuleId);
 	}
 	
-	protected void process() throws TermServerScriptException {
-		for (TaskConcept tc : processMe) {
-			Task task = tc.t;
-			Concept loadedConcept = tc.c;
-			try {
-				loadedConcept = loadConcept(tc.c, task.getBranchPath());
-				doFix (task, loadedConcept);
-			} catch (Exception e) {
-				String msg = "Failed to process " + tc.c + " in task " + task + " due to " + e.getMessage();
-				report (task, loadedConcept, Severity.CRITICAL, ReportActionType.API_ERROR, msg);
-			}
-		}
-	}
 
-	public int doFix(Task task, Concept loadedConcept) throws TermServerScriptException {
-		int changesMade = checkModuleId(task, loadedConcept);
+	public int doFix(Task t, Concept loadedConcept, String info) throws TermServerScriptException {
+		int changesMade = checkModuleId(t, loadedConcept);
 		if (changesMade > 0) {
-			try {
-				String conceptSerialised = gson.toJson(loadedConcept);
-				debug ("Updating state of " + loadedConcept);
-				if (!dryRun) {
-					tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
-				}
-			} catch (Exception e) {
-				report(task, loadedConcept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + e.getMessage());
-			}
+			updateConcept(t, loadedConcept, "");
 		}
 		return changesMade;
 	}
@@ -144,13 +112,6 @@ public class FixIncorrectModuleId extends BatchFix implements RF2Constants{
 			this.t = t;
 			this.c = c;
 		}
-	}
-
-	@Override
-	protected int doFix(Task task, Concept concept, String info)
-			throws TermServerScriptException, ValidationFailure {
-		// TODO Auto-generated method stub
-		return 0;
 	}
 
 }

@@ -40,19 +40,11 @@ public class InactivateLeafConcepts extends BatchFix implements RF2Constants{
 	}
 
 	@Override
-	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
-		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
-		int changesMade = inactivateConcept(task, loadedConcept);
+	public int doFix(Task t, Concept concept, String info) throws TermServerScriptException {
+		Concept loadedConcept = loadConcept(concept, t.getBranchPath());
+		int changesMade = inactivateConcept(t, loadedConcept);
 		if (changesMade > 0) {
-			try {
-				String conceptSerialised = gson.toJson(loadedConcept);
-				debug ((dryRun?"Dry run updating":"Updating") + " state of " + loadedConcept + info);
-				if (!dryRun) {
-					tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
-				}
-			} catch (Exception e) {
-				report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
-			}
+			updateConcept(t, loadedConcept, info);
 		}
 		return changesMade;
 	}
@@ -83,22 +75,18 @@ public class InactivateLeafConcepts extends BatchFix implements RF2Constants{
 		}
 	}
 
-	private void inactivateHistoricalAssociation(Task task, AssociationEntry assoc) throws TermServerScriptException {
+	private void inactivateHistoricalAssociation(Task t, AssociationEntry assoc) throws TermServerScriptException {
 		//The source concept can no longer have this historical association, and its
 		//inactivation reason must also change to NonConformance.
-		Concept incomingConcept = loadConcept(assoc.getReferencedComponentId(), task.getBranchPath());
+		Concept incomingConcept = loadConcept(assoc.getReferencedComponentId(), t.getBranchPath());
 		incomingConcept.setInactivationIndicator(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
 		incomingConcept.setAssociationTargets(new AssociationTargets());
-		report(task, incomingConcept, Severity.MEDIUM, ReportActionType.CONCEPT_CHANGE_MADE, "Incoming historical association detached.");
+		report(t, incomingConcept, Severity.MEDIUM, ReportActionType.CONCEPT_CHANGE_MADE, "Incoming historical association detached.");
 		
 		try {
-			String conceptSerialised = gson.toJson(incomingConcept);
-			debug ((dryRun?"Dry run updating":"Updating") + " state of incoming associated concept: " + incomingConcept);
-			if (!dryRun) {
-				tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
-			}
+			updateConcept(t, incomingConcept, "");
 		} catch (Exception e) {
-			report(task, incomingConcept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
+			report(t, incomingConcept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
 		}
 	}
 

@@ -1,28 +1,14 @@
 package org.ihtsdo.termserver.scripting.fixes.drugs;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.TermServerClientException;
-import org.ihtsdo.termserver.scripting.domain.Batch;
-import org.ihtsdo.termserver.scripting.domain.Component;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants;
-import org.ihtsdo.termserver.scripting.domain.Relationship;
-import org.ihtsdo.termserver.scripting.domain.Task;
+import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-
-import us.monoid.json.JSONObject;
 
 /*
 Updated for SUBST-254
@@ -74,30 +60,22 @@ public class FlattenHierarchy extends BatchFix implements RF2Constants{
 	}
 
 	@Override
-	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
+	public int doFix(Task t, Concept concept, String info) throws TermServerScriptException {
 		
-		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
+		Concept loadedConcept = loadConcept(concept, t.getBranchPath());
 		if (!loadedConcept.isActive()) {
-			report (task, loadedConcept, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept is recently inactive - skipping");
+			report (t, loadedConcept, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept is recently inactive - skipping");
 			return 0;
 		}
 		loadedConcept.setConceptType(ConceptType.SUBSTANCE);
 		List<Concept> modifiedConcepts = new ArrayList<Concept>();
 		//At top level, we'll recover the expected target from the file, and we'll calculate the grandparents to be used.
-		flattenHierarchy(task, loadedConcept, null, modifiedConcepts, null, null);
+		flattenHierarchy(t, loadedConcept, null, modifiedConcepts, null, null);
 		for (Concept thisModifiedConcept : modifiedConcepts) {
-			try {
-				String conceptSerialised = gson.toJson(thisModifiedConcept);
-				debug ((dryRun ?"Dry run ":"Updating state of ") + thisModifiedConcept + info);
-				if (!dryRun) {
-					tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
-				}
-			} catch (Exception e) {
-				report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
-			}
+			updateConcept(t, thisModifiedConcept, info);
 		}
 		incrementSummaryInformation("Concepts Modified", modifiedConcepts.size());
-		incrementSummaryInformation(task.getKey(), modifiedConcepts.size());
+		incrementSummaryInformation(t.getKey(), modifiedConcepts.size());
 		return modifiedConcepts.size();
 	}
 

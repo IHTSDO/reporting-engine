@@ -661,18 +661,6 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		}
 	}
 	
-	protected void save (Task task, Concept loadedConcept, String info) throws TermServerScriptException {
-		try {
-			String conceptSerialised = gson.toJson(loadedConcept);
-			debug ((dryRun?"Dry run updating":"Updating") + " state of " + loadedConcept + info);
-			if (!dryRun) {
-				tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
-			}
-		} catch (Exception e) {
-			report(task, loadedConcept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
-		}
-	}
-	
 	protected int removeRelationship(Task t, Concept c, Relationship r) throws TermServerScriptException {
 		return removeRelationship(t, c, r, "");
 	}

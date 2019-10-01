@@ -3,7 +3,6 @@ package org.ihtsdo.termserver.scripting.fixes;
 import java.io.IOException;
 import java.util.*;
 
-import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.TermServerClientException;
@@ -12,8 +11,6 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
-
-import us.monoid.json.JSONObject;
 
 /*
 For concepts with the relevant semantic tags, 
@@ -64,25 +61,17 @@ public class RestateInferredAsStated extends BatchFix implements RF2Constants{
 	}
 
 	@Override
-	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
+	public int doFix(Task t, Concept concept, String info) throws TermServerScriptException {
 		//Is this one of the concepts we've been told to fix?  Skip if not
 		if (!conceptsAgreedToChange.contains(concept)) {
-			report(task, concept, Severity.LOW, ReportActionType.VALIDATION_CHECK, "Instructed not to process");
+			report(t, concept, Severity.LOW, ReportActionType.VALIDATION_CHECK, "Instructed not to process");
 			return 0;
 		}
 		
-		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
-		int changesMade = restateInferredRelationships(task, loadedConcept);
+		Concept loadedConcept = loadConcept(concept, t.getBranchPath());
+		int changesMade = restateInferredRelationships(t, loadedConcept);
 		if (changesMade > 0) {
-			try {
-				String conceptSerialised = gson.toJson(loadedConcept);
-				debug ("Updating state of " + loadedConcept + info);
-				if (!dryRun) {
-					tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
-				}
-			} catch (Exception e) {
-				report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
-			}
+			updateConcept(t, loadedConcept, info);
 		}
 		return changesMade;
 	}

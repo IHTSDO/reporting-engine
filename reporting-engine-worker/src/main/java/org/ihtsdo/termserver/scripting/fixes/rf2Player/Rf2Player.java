@@ -9,30 +9,15 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.TermServerClientException;
-import org.ihtsdo.termserver.scripting.domain.Batch;
-import org.ihtsdo.termserver.scripting.domain.Component;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.ConceptChange;
-import org.ihtsdo.termserver.scripting.domain.Description;
-import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
-import org.ihtsdo.termserver.scripting.domain.Relationship;
-import org.ihtsdo.termserver.scripting.domain.Rf2File;
-import org.ihtsdo.termserver.scripting.domain.Task;
+import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-
-import us.monoid.json.JSONObject;
 
 /*
  * Reads from an RF2 Archive and uses the changes indicated to drive the 
@@ -243,12 +228,12 @@ public class Rf2Player extends BatchFix {
 	
 
 	@Override
-	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
+	public int doFix(Task t, Concept concept, String info) throws TermServerScriptException {
 		Concept loadedConcept = null;
 		try{
-			loadedConcept = loadConcept(concept, task.getBranchPath());
+			loadedConcept = loadConcept(concept, t.getBranchPath());
 			if (hasUnpublishedRelationships(loadedConcept, CharacteristicType.STATED_RELATIONSHIP)) {
-				report (task, loadedConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Recent stated relationship edits detected on this concept");
+				report (t, loadedConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Recent stated relationship edits detected on this concept");
 				if (!allowRecentChanges) {
 					return 0;
 				}
@@ -259,37 +244,23 @@ public class Rf2Player extends BatchFix {
 				loadedConcept.setActive(conceptChanges.isActive());
 				loadedConcept.setEffectiveTime(null);
 				loadedConcept.setDefinitionStatus(conceptChanges.getDefinitionStatus());
-				report (task, loadedConcept, Severity.MEDIUM, ReportActionType.CONCEPT_CHANGE_MADE, "Definition status set to " + conceptChanges.getDefinitionStatus());
+				report (t, loadedConcept, Severity.MEDIUM, ReportActionType.CONCEPT_CHANGE_MADE, "Definition status set to " + conceptChanges.getDefinitionStatus());
 			}
-			fixDescriptions(task, loadedConcept, conceptChanges.getDescriptions());
-			fixRelationships(task, loadedConcept, conceptChanges.getRelationships());
+			fixDescriptions(t, loadedConcept, conceptChanges.getDescriptions());
+			fixRelationships(t, loadedConcept, conceptChanges.getRelationships());
 		} catch (Exception e) {
 			//See if we can get that 2nd level exception's reason which says what the problem actually was
 			String additionalInfo = "";
 			if (e.getCause() != null && e.getCause().getCause() != null) {
 				additionalInfo = " - " + e.getCause().getCause().getMessage().replaceAll(COMMA, " ").replaceAll(QUOTE, "'");
 			} 
-			report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to make changes to concept " + concept.toString() + ": " + e.getClass().getSimpleName()  + " - " + additionalInfo);
+			report(t, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to make changes to concept " + concept.toString() + ": " + e.getClass().getSimpleName()  + " - " + additionalInfo);
 			e.printStackTrace();
 			return 0;
 		}
 		
-		try{
-			String conceptSerialised = gson.toJson(loadedConcept);
-			debug ((dryRun?"Dry run updating":"Updating") + " state of " + loadedConcept + info);
-			if (!dryRun) {
-				tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
-			}
-		} catch (Exception e) {
-			//See if we can get that 2nd level exception's reason which says what the problem actually was
-			String additionalInfo = "";
-			if (e.getCause().getCause() != null) {
-				additionalInfo = " - " + e.getCause().getCause().getMessage().replaceAll(COMMA, " ").replaceAll(QUOTE, "'");
-			} 
-			report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + e.getClass().getSimpleName()  + " - " + additionalInfo);
-			e.printStackTrace();
-		}
-		return 1;
+		updateConcept(t, loadedConcept, info);
+		return CHANGE_MADE;
 	}
 
 	private boolean hasUnpublishedRelationships(Concept loadedConcept, CharacteristicType cType) {

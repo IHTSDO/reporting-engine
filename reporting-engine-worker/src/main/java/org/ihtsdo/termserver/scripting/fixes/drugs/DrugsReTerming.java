@@ -1,28 +1,16 @@
 package org.ihtsdo.termserver.scripting.fixes.drugs;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.client.TermServerClientException;
-import org.ihtsdo.termserver.scripting.domain.Batch;
-import org.ihtsdo.termserver.scripting.domain.Component;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.ConceptChange;
-import org.ihtsdo.termserver.scripting.domain.Description;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants;
-import org.ihtsdo.termserver.scripting.domain.Task;
+import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
-import org.ihtsdo.termserver.scripting.util.AcceptabilityMode;
-import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-import org.ihtsdo.termserver.scripting.util.StringUtils;
+import org.ihtsdo.termserver.scripting.util.*;
 
-import us.monoid.json.JSONObject;
 
 /*
 	Makes modifications to terms, driven by an input CSV file
@@ -51,25 +39,15 @@ public class DrugsReTerming extends DrugBatchFix implements RF2Constants{
 	}
 
 	@Override
-	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException, ValidationFailure {
-		Concept tsConcept = loadConcept(concept, task.getBranchPath());
+	public int doFix(Task t, Concept concept, String info) throws TermServerScriptException, ValidationFailure {
+		Concept loadedConcept = loadConcept(concept, t.getBranchPath());
 		int changesMade = 0;
-		if (tsConcept.isActive() == false) {
-			report(task, concept, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Concept is inactive.  No changes attempted");
+		if (loadedConcept.isActive() == false) {
+			report(t, concept, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Concept is inactive.  No changes attempted");
 		} else {
-			changesMade = remodelDescriptions(task, concept, tsConcept);
+			changesMade = remodelDescriptions(t, concept, loadedConcept);
 			if (changesMade > 0) {
-				try {
-					String conceptSerialised = gson.toJson(tsConcept);
-					debug ((dryRun?"Dry run updating":"Updating") + " state of " + tsConcept + info);
-					if (!dryRun) {
-						tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
-					}
-					report(task, concept, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept successfully remodelled. " + changesMade + " changes made.");
-				} catch (Exception e) {
-					report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + e.getClass().getSimpleName()  + " - " + e.getMessage());
-					e.printStackTrace();
-				}
+				updateConcept(t, loadedConcept, info);
 			}
 		}
 		return changesMade;

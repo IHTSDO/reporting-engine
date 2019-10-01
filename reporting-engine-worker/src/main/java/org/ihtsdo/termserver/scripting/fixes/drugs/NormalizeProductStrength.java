@@ -1,25 +1,15 @@
 package org.ihtsdo.termserver.scripting.fixes.drugs;
 
 import java.io.IOException;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
-import org.apache.commons.lang.ArrayUtils;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
-import org.ihtsdo.termserver.scripting.util.DrugTermGenerator;
-import org.ihtsdo.termserver.scripting.util.DrugUtils;
-import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-import org.ihtsdo.termserver.scripting.util.StrengthUnit;
-
-import us.monoid.json.JSONObject;
+import org.ihtsdo.termserver.scripting.util.*;
 
 /*
 DRUGS-489
@@ -57,24 +47,14 @@ public class NormalizeProductStrength extends DrugBatchFix implements RF2Constan
 	}
 
 	@Override
-	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException, ValidationFailure {
-		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
-		try {
-			int changesMade = normalizeProductStrength(task, loadedConcept);
-			if (changesMade > 0) {
-				changesMade += termGenerator.ensureTermsConform(task, loadedConcept, CharacteristicType.STATED_RELATIONSHIP);
-				String conceptSerialised = gson.toJson(loadedConcept);
-				debug ((dryRun?"Dry run updating":"Updating") + " state of " + loadedConcept + info);
-				if (!dryRun) {
-					tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
-				}
-			}
-			return changesMade;
-		} catch (Exception e) {
-			report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to remodel " + concept + " due to " + e.getClass().getSimpleName()  + " - " + e.getMessage());
-			e.printStackTrace();
+	public int doFix(Task t, Concept concept, String info) throws TermServerScriptException, ValidationFailure {
+		Concept loadedConcept = loadConcept(concept, t.getBranchPath());
+		int changesMade = normalizeProductStrength(t, loadedConcept);
+		if (changesMade > 0) {
+			changesMade += termGenerator.ensureTermsConform(t, loadedConcept, CharacteristicType.STATED_RELATIONSHIP);
+			updateConcept(t, loadedConcept, info);
 		}
-		return 0;
+		return changesMade;
 	}
 	
 	private int normalizeProductStrength(Task t, Concept c) throws TermServerScriptException, ValidationFailure {

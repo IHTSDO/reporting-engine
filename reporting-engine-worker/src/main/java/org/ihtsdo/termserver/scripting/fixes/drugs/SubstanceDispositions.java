@@ -1,27 +1,17 @@
 package org.ihtsdo.termserver.scripting.fixes.drugs;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.TermServerClientException;
-import org.ihtsdo.termserver.scripting.domain.Component;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants;
-import org.ihtsdo.termserver.scripting.domain.Task;
+import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-
-import us.monoid.json.JSONObject;
 
 /*
 For SUBST-244
@@ -64,25 +54,17 @@ public class SubstanceDispositions extends DrugBatchFix implements RF2Constants{
 	}
 
 	@Override
-	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
+	public int doFix(Task t, Concept concept, String info) throws TermServerScriptException {
 		
-		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
+		Concept loadedConcept = loadConcept(concept, t.getBranchPath());
 		int changes = 0;
 		for (Concept disposition : conceptDispositionMap.get(loadedConcept)) {
-			changes += modelDisposition (task, loadedConcept, disposition);
+			changes += modelDisposition (t, loadedConcept, disposition);
 		}
 		
-		removeRedundancy(task, loadedConcept, HAS_DISPOSITION, UNGROUPED);
+		removeRedundancy(t, loadedConcept, HAS_DISPOSITION, UNGROUPED);
 		
-		try {
-			String conceptSerialised = gson.toJson(loadedConcept);
-			debug ((dryRun ?"Dry run ":"Updating state of ") + loadedConcept + info);
-			if (!dryRun) {
-				tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
-			}
-		} catch (Exception e) {
-			report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
-		}
+		updateConcept(t, loadedConcept, info);
 		return changes;
 	}
 

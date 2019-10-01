@@ -37,7 +37,7 @@ public class InactivateDescriptions extends BatchFix implements RF2Constants {
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
 		int changesMade = modifyConcept(task, loadedConcept);
 		if (changesMade > 0) {
-			save(task, loadedConcept, info);
+			updateConcept(task, loadedConcept, info);
 		}
 		return changesMade;
 	}

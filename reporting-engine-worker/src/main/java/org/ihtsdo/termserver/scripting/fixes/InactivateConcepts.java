@@ -51,7 +51,7 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 		} else if (loadedConcept.isReleased()) {
 			changesMade = inactivateConcept(t, loadedConcept);
 			if (changesMade > 0) {
-				save(t, loadedConcept, info);
+				updateConcept(t, loadedConcept, info);
 			}
 		} else {
 			changesMade = deleteConcept(t, loadedConcept);
@@ -168,7 +168,7 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 		}
 		
 		if (changesMade > 0) {
-			save(t, child, "");
+			updateConcept(t, child, "");
 			t.addAfter(child, parent);
 		} else {
 			report (t, child, Severity.CRITICAL, ReportActionType.API_ERROR, "Did not rewire " + child + " as child of " + parent + ".  Please investigate.");
@@ -192,7 +192,7 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 		}
 		
 		if (changesMade > 0) {
-			save(task, child, "");
+			updateConcept(task, child, "");
 			task.addAfter(child, parent);
 		} else {
 			report (task, child, Severity.HIGH, ReportActionType.API_ERROR, "Did not remove " + parent + " as parent of " + child);
@@ -236,7 +236,7 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 		report(task, incomingConcept, severity, ReportActionType.CONCEPT_CHANGE_MADE, "Historical association to " + originalTarget + " rewired to " + replacement);
 		//Add this concept into our task so we know it's been updated
 		task.addAfter(incomingConcept, gl.getConcept(assoc.getTargetComponentId()));
-		save(task, incomingConcept, "");
+		updateConcept(task, incomingConcept, "");
 	}
 
 	@Override

@@ -1,9 +1,7 @@
 package org.ihtsdo.termserver.scripting.fixes.drugs;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
@@ -11,8 +9,6 @@ import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.DrugTermGenerator;
-
-import us.monoid.json.JSONObject;
 
 /*
 DRUGS-481 Update of Clinical Drugs authored for the 20180131 release:
@@ -48,20 +44,16 @@ public class CDUpdate extends DrugBatchFix implements RF2Constants {
 	}
 
 	@Override
-	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException, ValidationFailure {
-		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
+	public int doFix(Task t, Concept concept, String info) throws TermServerScriptException, ValidationFailure {
+		Concept loadedConcept = loadConcept(concept, t.getBranchPath());
 		try {
-			int changesMade = remodelConcept(task, loadedConcept);
+			int changesMade = remodelConcept(t, loadedConcept);
 			if (changesMade > 0) {
-				String conceptSerialised = gson.toJson(loadedConcept);
-				debug ((dryRun?"Dry run updating":"Updating") + " state of " + loadedConcept + info);
-				if (!dryRun) {
-					tsClient.updateConcept(new JSONObject(conceptSerialised), task.getBranchPath());
-				}
+				updateConcept(t, loadedConcept, info);
 			}
 			return changesMade;
 		} catch (Exception e) {
-			report(task, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to remodel " + concept + " due to " + e.getClass().getSimpleName()  + " - " + e.getMessage());
+			report(t, concept, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to remodel " + concept + " due to " + e.getClass().getSimpleName()  + " - " + e.getMessage());
 			e.printStackTrace();
 		}
 		return 0;

@@ -21,7 +21,6 @@ import com.google.common.io.Files;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import us.monoid.json.JSONObject;
 import us.monoid.web.JSONResource;
 import us.monoid.web.Resty;
 
@@ -573,27 +572,21 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 
 	protected Concept updateConcept(Task t, Concept c, String info) throws TermServerScriptException {
-		String conceptSerialised = "PARSE FAILURE";
 		try {
-			boolean updatedOK = false;
-			int retries = 0;
+			//boolean updatedOK = false;
+			//int retries = 0;
 			if (!dryRun) {
+				convertStatedRelationshipsToAxioms(c);
 				if (validateConceptOnUpdate) {
 					validateConcept(t, c);
 				}
 				
-				conceptSerialised = gson.toJson(c);
-				debug ((dryRun ?"Dry run updating ":"Updating ") + "state of " + c + (info == null?"":info));
-				Concept savedConcept = c;
+				debug ("Updating state of " + c + (info == null?"":info));
+				return tsClient.updateConcept(c, t.getBranchPath());
+				/*Concept savedConcept = c;
 				while (!updatedOK) {
 					try {
-						JSONResource response = tsClient.updateConcept(new JSONObject(conceptSerialised), t.getBranchPath());
-						String json = response.toObject().toString();
-						TSErrorMessage errorMsg = gson.fromJson(json, TSErrorMessage.class);
-						if (errorMsg.getCode() != null) {
-							throw new TermServerScriptException("Failed to update concept: " + errorMsg.getCode() + " - " + errorMsg.getDeveloperMessage());
-						}
-						savedConcept = gson.fromJson(json, Concept.class);
+						savedConcept = tsClient.updateConcept(c, t.getBranchPath());
 						ensureSaveEffective(c, savedConcept);
 						return savedConcept;
 					} catch (Exception e) {
@@ -604,7 +597,7 @@ public abstract class TermServerScript implements RF2Constants {
 						warn("Failed to update concept due to " + e.getLocalizedMessage() + " retrying...");
 						Thread.sleep(10*1000);
 					}
-				}
+				}*/
 			} else {
 				return c;
 			}
@@ -612,15 +605,15 @@ public abstract class TermServerScript implements RF2Constants {
 			throw e;
 		} catch (Exception e) {
 			String msg = "Failed to update " + c + " in TS due to " + e.getMessage();
-			error (msg + " JSON = " + conceptSerialised, e);
+			error (msg + " JSON = " + gson.toJson(c), e);
 			throw new TermServerScriptException(msg,e); 
 		}
-		throw new IllegalStateException("Unexpected point in the code");
 	}
 	
 	private void validateConcept(Task t, Concept c) throws TermServerScriptException {
 		//We need to populate new components with UUIDs for validation
 		Concept uuidClone = c.cloneWithUUIDs();
+		debug("Validating " + c);
 		DroolsResponse[] validations = tsClient.validateConcept(uuidClone, t.getBranchPath());
 		if (validations.length == 0) {
 			debug("Validation clear: " + c);
@@ -637,7 +630,7 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 	}
 
-	private void ensureSaveEffective(Concept before, Concept after) throws TermServerScriptException {
+	/*private void ensureSaveEffective(Concept before, Concept after) throws TermServerScriptException {
 		//Check we've got the same number of active / inactive descriptions / relationships
 		int activeDescBefore = before.getDescriptions(ActiveState.ACTIVE).size();
 		int activeDescAfter = after.getDescriptions(ActiveState.ACTIVE).size();
@@ -665,7 +658,7 @@ public abstract class TermServerScript implements RF2Constants {
 				inactiveInfRelBefore != inactiveInfRelAfter) {
 			throw new TermServerScriptException("Concept has not fully saved to TS, although no error was reported");
 		}
-	}
+	}*/
 
 	protected Concept createConcept(Task t, Concept c, String info) throws TermServerScriptException {
 		if (c.getFsn() == null || c.getFsn().isEmpty()) {

@@ -68,7 +68,7 @@ public class DeleteBornInactiveStatedRelationships extends BatchFix implements R
 			if (rLoaded.getId().equals(r.getId()) && !rLoaded.isActive() && !rLoaded.isReleased()) {
 				loadedConcept.removeRelationship(rLoaded);
 				report (t, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_DELETED, rLoaded);
-				save(t, loadedConcept, info);
+				updateConcept(t, loadedConcept, info);
 				return CHANGE_MADE;
 			}
 		}

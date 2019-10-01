@@ -253,8 +253,8 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		inclusionWords.add("disorder");
 		*/
 		
-		//QI-373
-		subHierarchyECL = "<<362975008 |Degenerative disorder (disorder)|: 116676008 |Associated morphology (attribute)| = << 18695008 |Hyaline body (morphologic abnormality)|";
+		//QI-373, QI-376
+		subHierarchyECL = "<<362975008 |Degenerative disorder (disorder)|: 116676008 |Associated morphology (attribute)| = << 107671003 |Vascular sclerosis (morphologic abnormality)| ";
 		templateNames = new String[] {	"templates/Degenerative disorder.json"};
 		includeComplexTemplates = true;
 		super.init(args);
@@ -268,7 +268,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 	}
 	
 	public void postInit() throws TermServerScriptException {
-		String[] columnHeadings = new String[] {"TASK_KEY, TASK_DESC, SCTID, FSN, CONCEPT_TYPE, SEVERITY, ACTION_TYP, CharacteristicType, MatchedTemplate, Template Diagnostic",
+		String[] columnHeadings = new String[] {"TASK_KEY, TASK_DESC, SCTID, FSN, ConceptType, Severity, ActionType, CharacteristicType, MatchedTemplate, Detail",
 				"Report Metadata", "SCTID, FSN, SemTag, Reason"};
 		String[] tabNames = new String[] {	"Normalization Processing",
 				"Metadata",
