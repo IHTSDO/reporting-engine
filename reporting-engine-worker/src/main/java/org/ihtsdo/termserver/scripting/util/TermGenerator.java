@@ -31,7 +31,9 @@ public abstract class TermGenerator implements RF2Constants {
 	}
 	
 	protected boolean removeDescription(Concept c, Description d) {
-		if (d.isReleased() == null || d.isReleased()) {
+		if (d.isReleased() == null) {
+			throw new IllegalStateException ("'Released' flag must be populated to safely remove description in: " + c);
+		} else if (d.isReleased()) {
 			d.setActive(false);
 			d.setInactivationIndicator(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
 			d.setAcceptabilityMap(null);

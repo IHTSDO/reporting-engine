@@ -119,6 +119,7 @@ public class Description extends Component implements RF2Constants {
 		d.setActive(true);
 		d.setTerm(term);
 		d.setType(type);
+		d.setReleased(false);
 		if (acceptability != null) {
 			if (acceptability.equals(Acceptability.PREFERRED)) {
 				d.setAcceptabilityMap(SnomedUtils.createAcceptabilityMap(AcceptabilityMode.PREFERRED_BOTH));
@@ -303,6 +304,7 @@ public class Description extends Component implements RF2Constants {
 		clone.lang = this.lang;
 		clone.term = this.term;
 		clone.caseSignificance = this.caseSignificance;
+		clone.setReleased(false);
 		clone.acceptabilityMap = new HashMap<String, Acceptability>();
 		if (this.acceptabilityMap != null) { 
 			clone.acceptabilityMap.putAll(this.acceptabilityMap);

@@ -138,7 +138,7 @@ public class TermServerClient {
 	public Concept createConcept(Concept c, String branchPath) throws TermServerClientException {
 		try {
 			Concept newConcept =  restTemplate.postForObject(getConceptBrowserPath(branchPath), new HttpEntity<>(c, headers), Concept.class);
-			logger.info("Created concept: " + newConcept);
+			logger.info("Created concept: " + newConcept + " with " + c.getDescriptions().size() + " descriptions.");
 			return newConcept;
 		} catch (Exception e) {
 			throw new TermServerClientException(e);
