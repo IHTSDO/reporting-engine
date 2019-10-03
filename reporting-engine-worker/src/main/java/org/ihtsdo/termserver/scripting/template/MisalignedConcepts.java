@@ -42,6 +42,7 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		try {
 			//app.includeComplexTemplates = true;
 			//app.safetyProtocols = false;
+			app.excludeSdMultiRG = true;
 			app.init(args);
 			//app.getArchiveManager().allowStaleData = true;  //Use when running offline
 			app.loadProjectSnapshot(false);  //Load all descriptions

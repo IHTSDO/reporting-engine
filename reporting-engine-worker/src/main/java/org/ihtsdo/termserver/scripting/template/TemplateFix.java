@@ -22,6 +22,7 @@ abstract public class TemplateFix extends BatchFix {
 	boolean includeComplexTemplates = false;
 	List<Concept> complexTemplateAttributes;
 	boolean includeDueTos = false;
+	boolean excludeSdMultiRG = false;
 	
 	String[] templateNames;
 	List<Template> templates = new ArrayList<>();
@@ -217,6 +218,25 @@ abstract public class TemplateFix extends BatchFix {
 				report (exclusionReport, c, "Hierarchial exclusion");
 			}
 			return true;
+		}
+		
+		//Are we excluding sufficiently defined concepts with more than one substantial role group?
+		if (excludeSdMultiRG && c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
+			boolean firstSubstantialRGDetected = false;
+			for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP)) {
+				if (g.size() > 1) {
+					if (firstSubstantialRGDetected) {
+						//So we're now on our 2nd one
+						if (exclusionReport != null) {
+							incrementSummaryInformation("Concepts excluded due to SD with multiple substantial role groups");
+							report (exclusionReport, c, "Multi-RG exclusion");
+						}
+						return true;
+					} else {
+						firstSubstantialRGDetected = true;
+					}
+				}
+			}
 		}
 		
 		if (gl.isOrphanetConcept(c)) {
