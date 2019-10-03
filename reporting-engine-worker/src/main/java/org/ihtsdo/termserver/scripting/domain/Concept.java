@@ -545,6 +545,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		if (replaceTripleMatch) {
 			r.setRelationshipId(null);
 		}
+		Relationship allowableDuplicate = null;
 		if (relationships.contains(r)) {
 			//Might match more than one if we have historical overlapping triples
 			
@@ -569,6 +570,16 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 					}
 				}
 			}
+			
+			//We may encounter the same active relationship from both stated (eek!) and an axiom
+			//Allow this situation to exist, so that we can detect this anomaly in the ReleaseIssuesReport
+			if (r.getCharacteristicType().equals(CharacteristicType.STATED_RELATIONSHIP) && r.isActive()) {
+				for (Relationship match : getRelationships(r)) {
+					if (match.isActive() && match.fromAxiom() != r.fromAxiom()) {
+						allowableDuplicate = match;
+					}
+				}
+			}
 			relationships.removeAll(Collections.singleton(r));
 		}
 		r.setRelationshipId(id);
@@ -576,6 +587,9 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		//Now we might need to remove a relationship with the same id if it also moved group
 		relationships.removeAll(Collections.singleton(r));
 		relationships.add(r);
+		if (allowableDuplicate != null) {
+			relationships.add(allowableDuplicate);
+		}
 		recalculateGroups();
 		return true;
 	}

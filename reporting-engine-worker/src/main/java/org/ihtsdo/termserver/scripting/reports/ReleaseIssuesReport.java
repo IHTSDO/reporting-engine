@@ -125,6 +125,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		
 		info("...axiom integrity");
 		axiomIntegrity();
+		noStatedRelationships();
 		
 		info("...Disease semantic tag rule");
 		diseaseIntegrity();
@@ -553,6 +554,28 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 						}
 					} catch (ConversionException e) {
 						error ("Failed to convert: " + a, e);
+					}
+				}
+			}
+		}
+	}
+	
+	/**
+	 * This will not spot many stated relationships because the axiom equivalents
+	 * will override these rows.
+	 * @throws TermServerScriptException
+	 */
+	private void noStatedRelationships() throws TermServerScriptException {
+		String issueStr = "Active stated relationship";
+		initialiseSummary(issueStr);
+		
+		//Check no active relationship is non-axiom
+		for (Concept c : gl.getAllConcepts()) {
+			if (c.isActive()) {
+				for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
+					String legacy = isLegacy(r);
+					if (!r.fromAxiom()) {
+						report(c, issueStr, legacy, isActive(c,r), r);
 					}
 				}
 			}
