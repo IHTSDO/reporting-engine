@@ -188,15 +188,15 @@ public class RelationshipGroup {
 		}
 	}
 
-	public void setFromAxiom(boolean fromAxiom) {
-		for (Relationship r : relationships) {
-			r.setFromAxiom(fromAxiom);
-		}
-	}
-
 	public void setModule(String moduleId) {
 		for (Relationship r : relationships) {
 			r.setModuleId(moduleId);
+		}
+	}
+
+	public void setAxiom(AxiomEntry axiomEntry) {
+		for (Relationship r : relationships) {
+			r.setAxiom(axiomEntry);
 		}
 	}
 }

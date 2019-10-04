@@ -188,7 +188,7 @@ public class GraphLoader implements RF2Constants {
 				Long conceptId = Long.parseLong(lineItems[REF_IDX_REFCOMPID]);
 				Concept c = getConcept(conceptId);
 
-/*				if (c.getConceptId().equals("769025004")) {
+/*				if (c.getConceptId().equals("714771003")) {
 					TermServerScript.debug("Debug Here");
 				}*/
 				
@@ -258,7 +258,7 @@ public class GraphLoader implements RF2Constants {
 			}
 			g.setActive(active);
 			g.setEffectiveTime(axiomEntry.getEffectiveTime());
-			g.setFromAxiom(true);
+			g.setAxiom(axiomEntry);
 			g.setModule(axiomEntry.getModuleId());
 		}
 	}
@@ -317,18 +317,6 @@ public class GraphLoader implements RF2Constants {
 	}
 	
 	public int addRelationshipToConcept(CharacteristicType charType, Relationship r, boolean isDelta) throws TermServerScriptException {
-		//Consider adding or removing parents if the relationship is ISA
-		//But only remove items if we're processing a delta
-		if (r.getType().equals(IS_A)) {
-			if (r.isActive()) {
-				r.getSource().addParent(r.getCharacteristicType(),r.getTarget());
-				r.getTarget().addChild(r.getCharacteristicType(),r.getSource());
-			} else if (isDelta) {
-				r.getSource().removeParent(r.getCharacteristicType(),r.getTarget());
-				r.getTarget().removeChild(r.getCharacteristicType(),r.getSource());
-			}
-		} 
-		
 		//In the case of importing an Inferred Delta, we could end up adding a relationship instead of replacing
 		//if it has a different SCTID.  We need to check for equality using triple, not SCTID in that case.
 		boolean successfullyAdded = r.getSource().addRelationship(r, isDelta);

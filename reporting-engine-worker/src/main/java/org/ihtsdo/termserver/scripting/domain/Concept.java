@@ -545,15 +545,22 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		if (replaceTripleMatch) {
 			r.setRelationshipId(null);
 		}
+		
+/*		if (r.getType().equals(IS_A) && (this.getConceptId().equals("43545006") || r.getTarget().getConceptId().equals("43545006"))) {
+			TermServerScript.debug("here");
+		}*/
 		Relationship allowableDuplicate = null;
 		if (relationships.contains(r)) {
 			//Might match more than one if we have historical overlapping triples
 			
 			//Special case were we receive conflicting rows for the same triple in a delta.
 			//keep the active row in that case.
+			//It might alternatively be that we have a 2nd axiom maintaining an is-a relationship
+			//avoid removing the parent/child link if we have another axiom with this rel
 			if (!r.isActive() && replaceTripleMatch && r.getEffectiveTime() == null) {
 				for (Relationship match : getRelationships(r)) {
-					if (match.isActive() && match.getEffectiveTime() == null) {
+					if (match.isActive() && 
+							(match.getEffectiveTime() == null || !match.fromSameAxiom(r))) {
 						//System.out.println ("Ignoring inactivation in " + this + " between already received active " + match + " and incoming inactive " + r);
 						return false;
 					}
@@ -565,7 +572,6 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 			if (r.getCharacteristicType().equals(CharacteristicType.STATED_RELATIONSHIP) && !r.isActive() && !r.fromAxiom()) {
 				for (Relationship match : getRelationships(r)) {
 					if (match.isActive() && match.fromAxiom()) {
-						//System.out.println ("Ignoring inactivation in " + this + " between already received active axiom " + match + " and inactive " + r);
 						return false;
 					}
 				}
@@ -583,6 +589,18 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 			relationships.removeAll(Collections.singleton(r));
 		}
 		r.setRelationshipId(id);
+		
+		//Consider adding or removing parents if the relationship is ISA
+		//But only remove items if we're processing a delta
+		if (r.getType().equals(IS_A)) {
+			if (r.isActive()) {
+				r.getSource().addParent(r.getCharacteristicType(),r.getTarget());
+				r.getTarget().addChild(r.getCharacteristicType(),r.getSource());
+			} else if (replaceTripleMatch) {
+				r.getSource().removeParent(r.getCharacteristicType(),r.getTarget());
+				r.getTarget().removeChild(r.getCharacteristicType(),r.getSource());
+			}
+		} 
 		
 		//Now we might need to remove a relationship with the same id if it also moved group
 		relationships.removeAll(Collections.singleton(r));

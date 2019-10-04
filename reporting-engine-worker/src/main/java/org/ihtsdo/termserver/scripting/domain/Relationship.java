@@ -4,6 +4,7 @@ package org.ihtsdo.termserver.scripting.domain;
 import org.apache.commons.lang.NotImplementedException;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.ihtsdo.termserver.scripting.util.StringUtils;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
@@ -50,7 +51,7 @@ public class Relationship extends Component implements IRelationshipTemplate, RF
 	
 	private boolean isDeleted = false;
 	
-	private boolean fromAxiom = false;
+	private AxiomEntry axiom;
 	
 	private String deletionEffectiveTime;
 	
@@ -93,7 +94,11 @@ public class Relationship extends Component implements IRelationshipTemplate, RF
 	}
 
 	public void setEffectiveTime(String effectiveTime) {
-		this.effectiveTime = effectiveTime;
+		if (StringUtils.isEmpty(effectiveTime)) {
+			this.effectiveTime = null;
+		} else {
+			this.effectiveTime = effectiveTime;
+		}
 	}
 
 	public String getModuleId() {
@@ -374,11 +379,26 @@ public class Relationship extends Component implements IRelationshipTemplate, RF
 	}
 	
 	public boolean fromAxiom() {
-		return fromAxiom;
+		return axiom != null;
 	}
 
-	public void setFromAxiom(boolean fromAxiom) {
-		this.fromAxiom = fromAxiom;
+	public AxiomEntry getAxiom() {
+		return axiom;
+	}
+
+	public void setAxiom(AxiomEntry axiom) {
+		this.axiom = axiom;
+	}
+
+	public boolean fromSameAxiom(Relationship r) {
+		//If neither relationship is from an axiom, that's effectively
+		//the pre-axiom condition ie yes the same axiom
+		if (this.getAxiom() == null && r.getAxiom() == null) {
+			return true;
+		} else if (this.getAxiom() != null & r.getAxiom() != null) {
+			return this.getAxiom().equals(r.getAxiom());
+		}
+		return false;
 	}
 
 }

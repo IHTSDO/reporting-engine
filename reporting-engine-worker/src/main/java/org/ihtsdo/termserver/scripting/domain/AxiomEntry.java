@@ -2,6 +2,8 @@ package org.ihtsdo.termserver.scripting.domain;
 
 import java.util.UUID;
 
+import org.ihtsdo.termserver.scripting.util.StringUtils;
+
 //id	effectiveTime	active	moduleId	refsetId	referencedComponentId	owlExpression
 public class AxiomEntry extends Component implements RF2Constants {
 
@@ -56,7 +58,12 @@ public class AxiomEntry extends Component implements RF2Constants {
 			//Are we resetting this component to mark a change?
 			dirty = true;
 		}
-		this.effectiveTime = effectiveTime;
+		
+		if (StringUtils.isEmpty(effectiveTime)) {
+			this.effectiveTime = null;
+		} else {
+			this.effectiveTime = effectiveTime;
+		}
 	}
 	public String getModuleId() {
 		return moduleId;
