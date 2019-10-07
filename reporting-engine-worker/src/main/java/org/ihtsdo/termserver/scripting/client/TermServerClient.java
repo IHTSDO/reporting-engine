@@ -175,20 +175,17 @@ public class TermServerClient {
 		}
 	}
 
-	public JSONResource getConcept(String sctid, String branchPath) throws TermServerClientException {
-		try {
-			return resty.json(getConceptBrowserPath(branchPath) + "/" + sctid);
-		} catch (IOException e) {
-			throw new TermServerClientException(e);
-		}
+	public Concept getConcept(String sctid, String branchPath) throws TermServerClientException {
+			String url = getConceptBrowserPath(branchPath) + "/" + sctid;
+			return restTemplate.getForObject(url, Concept.class);
 	}
 
 	public void deleteConcept(String sctId, String branchPath) throws TermServerClientException {
 		try {
-			resty.json(getConceptsPath(sctId, branchPath), Resty.delete());
+			restTemplate.delete(getConceptsPath(sctId, branchPath));
 			logger.info("Deleted concept " + sctId + " from " + branchPath);
 		} catch (Exception e) {
-			throw new TermServerClientException(e);
+			throw new TermServerClientException("Failed to delete concept: " + sctId, e);
 		}
 	}
 	

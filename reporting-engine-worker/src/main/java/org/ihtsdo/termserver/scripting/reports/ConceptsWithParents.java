@@ -50,10 +50,10 @@ public class ConceptsWithParents extends TermServerReport implements ReportClass
 				incrementSummaryInformation(WHITE_LISTED_COUNT);
 				continue;
 			}
-			List<Concept> statedParents = c.getParents(CharacteristicType.STATED_RELATIONSHIP);
+			Set<Concept> statedParents = c.getParents(CharacteristicType.STATED_RELATIONSHIP);
 			String statedParentsStr = statedParents.stream().map(p->p.toString())
 					.collect(Collectors.joining(",\n"));
-			List<Concept> parents = c.getParents(CharacteristicType.INFERRED_RELATIONSHIP);
+			Set<Concept> parents = c.getParents(CharacteristicType.INFERRED_RELATIONSHIP);
 			String parentsStr = parents.stream().map(p->p.toString())
 					.collect(Collectors.joining(",\n"));
 			String parentsParentsStr = parents.stream()

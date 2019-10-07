@@ -258,11 +258,11 @@ public class ProximatePrimitiveRemodeller extends BatchFix implements RF2Constan
 		
 		for (Concept thisConcept : allActiveFD) {
 			try {
-				List<Concept>parents = thisConcept.getParents(CharacteristicType.STATED_RELATIONSHIP); 
+				Set<Concept>parents = thisConcept.getParents(CharacteristicType.STATED_RELATIONSHIP); 
 				//If we have a single stated parent of disease, then we're modelled correctly
 				if (parents.isEmpty()) {
 					info (thisConcept + " says it has no parents!");
-				} else if (!parents.get(0).getConceptId().equals(subHierarchyStr)) {
+				} else if (!parents.iterator().next().getConceptId().equals(subHierarchyStr)) {
 					//See if ancestors up to subHierarchy start (remove outside of that) are all fully defined
 					Set<Concept> ancestors = thisConcept.getAncestors(NOT_SET, CharacteristicType.STATED_RELATIONSHIP, false);
 					ancestors.removeAll(outsideSubHierarchy);  //Remove everything above our subHierarchy

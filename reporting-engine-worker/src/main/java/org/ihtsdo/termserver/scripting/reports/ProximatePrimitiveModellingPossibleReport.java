@@ -60,9 +60,9 @@ public class ProximatePrimitiveModellingPossibleReport extends TermServerScript{
 				boolean fdToTop = false;
 				boolean immedPrimParent = false;
 				boolean notImmediatePrimitive = false;
-				List<Concept>parents = thisConcept.getParents(CharacteristicType.STATED_RELATIONSHIP); 
+				Set<Concept>parents = thisConcept.getParents(CharacteristicType.STATED_RELATIONSHIP); 
 				//If we have a single stated parent of disease, then we're modelled correctly
-				if (parents.size() == 1 && parents.get(0).getConceptId().equals(hiearchySCTID)) {
+				if (parents.size() == 1 && parents.iterator().next().getConceptId().equals(hiearchySCTID)) {
 					alreadyModelledCorrectlyCount++;
 					alreadyModelledCorrectly = true;
 				} else {

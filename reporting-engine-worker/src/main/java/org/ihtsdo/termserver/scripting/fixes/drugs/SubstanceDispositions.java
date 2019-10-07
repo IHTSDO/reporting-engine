@@ -80,8 +80,8 @@ public class SubstanceDispositions extends DrugBatchFix implements RF2Constants{
 		if (c.getParents(CharacteristicType.INFERRED_RELATIONSHIP).stream().anyMatch(topLevelSubstances.keySet()::contains)) {
 			//Case 2 - Next level.  Our parent is a top level substance, so we'll take the grandparent as a parent and infer the disposition substance
 			Concept topLevelSubstance = topLevelSubstances.inverse().get(disposition);
-			List<Concept> grandParents = getGrandparents(topLevelSubstance);
-			for (Concept grandParent : grandParents) {
+
+			for (Concept grandParent : getGrandparents(topLevelSubstance)) {
 				changes += replaceParent(t, c, topLevelSubstance, grandParent);
 			}
 		}
@@ -101,13 +101,13 @@ public class SubstanceDispositions extends DrugBatchFix implements RF2Constants{
 		return changes;
 	}
 
-	private List<Concept> getGrandparents(Concept topLevelSubstance) {
+	private Set<Concept> getGrandparents(Concept topLevelSubstance) {
 		boolean changesMade = false;
-		List<Concept> grandParents = topLevelSubstance.getParents(CharacteristicType.INFERRED_RELATIONSHIP);
+		Set<Concept> grandParents = topLevelSubstance.getParents(CharacteristicType.INFERRED_RELATIONSHIP);
 		//Check if any of those are top level substances themselves, take parents' parents if so.
 		do {
 			List<Concept> remove = new ArrayList<>();
-			List<Concept> replacements = new ArrayList<>();
+			Set<Concept> replacements = new HashSet<>();
 			changesMade = false;
 			for (Concept parent : grandParents) {
 				if (topLevelSubstances.containsKey(parent)) {

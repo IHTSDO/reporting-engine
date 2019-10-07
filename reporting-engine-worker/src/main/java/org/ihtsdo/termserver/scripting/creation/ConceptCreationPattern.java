@@ -99,11 +99,11 @@ public class ConceptCreationPattern {
 	}
 	private Concept getY(Concept x) throws TermServerScriptException {
 		if (strategyForY.equals(Strategy.ImmediateParentOfX)) {
-			List<Concept> parents = x.getParents(CharacteristicType.INFERRED_RELATIONSHIP);
+			Set<Concept> parents = x.getParents(CharacteristicType.INFERRED_RELATIONSHIP);
 			if (parents.size() == 0) {
 				throw new TermServerScriptException(x + " has no inferred parents (?!).  Can't determine Y");
 			} else if (parents.size() == 1) {
-				return parents.get(0);
+				return parents.iterator().next();
 			} else {
 				throw new TermServerScriptException(x + " has multiple parents.  Can't determine Y");
 			}

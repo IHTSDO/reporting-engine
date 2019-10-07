@@ -50,9 +50,9 @@ public class IncreasedProxPrimInferredComplexityReport extends TermServerScript{
 			info (hierarchy + " - " + allActiveFD.size() + "(FD) / " + allHierarchy.size() + "(Active)");
 			
 			for (Concept thisConcept : allActiveFD) {
-				List<Concept>parents = thisConcept.getParents(CharacteristicType.STATED_RELATIONSHIP); 
+				Set<Concept>parents = thisConcept.getParents(CharacteristicType.STATED_RELATIONSHIP); 
 				//If we have a single stated parent of disease, then we're modelled correctly
-				if (parents.size() == 1 && parents.get(0).getConceptId().equals(hiearchySCTID)) {
+				if (parents.size() == 1 && parents.iterator().next().getConceptId().equals(hiearchySCTID)) {
 					//How many groups do we have in the stated and inferred forms?
 					int statedGroups = countGroups(thisConcept, CharacteristicType.STATED_RELATIONSHIP);
 					int inferredGroups = countGroups(thisConcept, CharacteristicType.INFERRED_RELATIONSHIP);

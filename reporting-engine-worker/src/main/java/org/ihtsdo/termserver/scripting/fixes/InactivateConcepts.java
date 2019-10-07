@@ -66,7 +66,7 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 			throw new ValidationFailure(c, "Unable to inactivate without replacement");
 		}
 		
-		List<Concept> parents = c.getParents(CharacteristicType.STATED_RELATIONSHIP);
+		Set<Concept> parents = c.getParents(CharacteristicType.STATED_RELATIONSHIP);
 		
 		//Have we already inactivated this concept?
 		if (inactivations.containsKey(c)) {
@@ -147,7 +147,7 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 		return CHANGE_MADE;
 	}
 
-	private void rewireChildToGrandparents(Task t, Concept child, Concept parent, List<Concept> grandParents) throws TermServerScriptException {
+	private void rewireChildToGrandparents(Task t, Concept child, Concept parent, Set<Concept> grandParents) throws TermServerScriptException {
 		int changesMade = 0;
 		child = loadConcept(child, t.getBranchPath());
 		report(t, child, Severity.MEDIUM, ReportActionType.INFO, "Rewiring child of " + parent + " to grandparents");

@@ -21,7 +21,6 @@ import com.google.common.io.Files;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import us.monoid.web.JSONResource;
 import us.monoid.web.Resty;
 
 public abstract class TermServerScript implements RF2Constants {
@@ -543,31 +542,37 @@ public abstract class TermServerScript implements RF2Constants {
 		Concept concept =  gl.getConcept(sctId);
 		try {
 			debug ("Loading: " + concept + " from TS branch " + branchPath);
-			JSONResource response = client.getConcept(sctId, branchPath);
-			String json = response.toObject().toString();
-			Concept loadedConcept = gson.fromJson(json, Concept.class);
+			Concept loadedConcept = client.getConcept(sctId, branchPath);
 			loadedConcept.setLoaded(true);
 			convertAxiomsToRelationships(loadedConcept, loadedConcept.getClassAxioms());
 			convertAxiomsToRelationships(loadedConcept, loadedConcept.getAdditionalAxioms());
 			return loadedConcept;
 		} catch (Exception e) {
-			if (e.getMessage().contains("[404] Not Found")) {
+			e.printStackTrace();
+			if (e.getMessage() != null && e.getMessage().contains("[404] Not Found")) {
 				debug ("Unable to find " + concept + " on branch " + branchPath);
 				return null;
 			}
-			throw new TermServerScriptException("Failed to recover " + concept + " from TS due to " + e.getMessage(),e);
+			String msg =  e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+			throw new TermServerScriptException("Failed to recover " + concept + " from TS due to: " + msg,e);
 		}
 	}
 	
-	private void convertAxiomsToRelationships(Concept c, List<Axiom> axioms) {
-		if (axioms != null) {
-			for (Axiom axiom : axioms) {
-				if (axiom.isActive()) {
-					for (Relationship r : axiom.getRelationships()) {
-						c.addRelationship(r);
+	private void convertAxiomsToRelationships(Concept c, List<Axiom> axioms) throws TermServerScriptException {
+		try {
+			if (axioms != null) {
+				for (Axiom axiom : axioms) {
+					if (axiom.isActive()) {
+						for (Relationship r : axiom.getRelationships()) {
+							r.setSource(gl.getConcept(c.getConceptId()));
+							r.setTarget(gl.getConcept(r.getTarget().getConceptId()));
+							c.addRelationship(r);
+						}
 					}
 				}
 			}
+		} catch (Exception e) {
+			throw new TermServerScriptException ("Failed to convert axioms to relationships in " + c, e);
 		}
 	}
 

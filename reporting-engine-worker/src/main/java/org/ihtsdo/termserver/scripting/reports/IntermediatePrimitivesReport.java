@@ -91,8 +91,7 @@ public class IntermediatePrimitivesReport extends TermServerReport{
 	}
 
 	private boolean hasAllParentsSD(Concept c) {
-		List<Concept> parents = c.getParents(targetCharType);
-		for (Concept parent : parents) {
+		for (Concept parent : c.getParents(targetCharType)) {
 			if (parent.getDefinitionStatus().equals(DefinitionStatus.PRIMITIVE)) {
 				return false;
 			}
@@ -101,8 +100,7 @@ public class IntermediatePrimitivesReport extends TermServerReport{
 	}
 	
 	private boolean hasAllSDChildren(Concept c) {
-		List<Concept> children = c.getChildren(targetCharType);
-		for (Concept child : children) {
+		for (Concept child : c.getChildren(targetCharType)) {
 			if (child.getDefinitionStatus().equals(DefinitionStatus.PRIMITIVE)) {
 				return false;
 			}

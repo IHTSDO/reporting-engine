@@ -94,10 +94,10 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	List<AssociationEntry> associations;
 	List<AxiomEntry> axiomEntries;
 
-	List<Concept> statedParents = new ArrayList<Concept>();
-	List<Concept> inferredParents = new ArrayList<Concept>();
-	List<Concept> statedChildren = new ArrayList<Concept>();
-	List<Concept> inferredChildren = new ArrayList<Concept>();
+	Set<Concept> statedParents = new HashSet<>();
+	Set<Concept> inferredParents = new HashSet<>();
+	Set<Concept> statedChildren = new HashSet<>();
+	Set<Concept> inferredChildren = new HashSet<>();
 	
 	Collection<RelationshipGroup> statedRelationshipGroups;
 	Collection<RelationshipGroup> inferredRelationshipGroups;
@@ -108,10 +108,10 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		inferredRelationshipGroups = null;
 		descriptions = new ArrayList<Description>();
 		relationships = new ArrayList<Relationship>();
-		statedParents = new ArrayList<Concept>();
-		inferredParents = new ArrayList<Concept>();
-		statedChildren = new ArrayList<Concept>();
-		inferredChildren = new ArrayList<Concept>();
+		statedParents = new HashSet<>();
+		inferredParents = new HashSet<>();
+		statedChildren = new HashSet<>();
+		inferredChildren = new HashSet<>();
 	}
 	
 	public String getReviewer() {
@@ -546,7 +546,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 			r.setRelationshipId(null);
 		}
 		
-/*		if (r.getType().equals(IS_A) && (this.getConceptId().equals("43545006") || r.getTarget().getConceptId().equals("43545006"))) {
+/*		if (r.getType().equals(IS_A) && this.getConceptId().equals("277301002")) {
 			TermServerScript.debug("here");
 		}*/
 		Relationship allowableDuplicate = null;
@@ -590,18 +590,6 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		}
 		r.setRelationshipId(id);
 		
-		//Consider adding or removing parents if the relationship is ISA
-		//But only remove items if we're processing a delta
-		if (r.getType().equals(IS_A)) {
-			if (r.isActive()) {
-				r.getSource().addParent(r.getCharacteristicType(),r.getTarget());
-				r.getTarget().addChild(r.getCharacteristicType(),r.getSource());
-			} else if (replaceTripleMatch) {
-				r.getSource().removeParent(r.getCharacteristicType(),r.getTarget());
-				r.getTarget().removeChild(r.getCharacteristicType(),r.getSource());
-			}
-		} 
-		
 		//Now we might need to remove a relationship with the same id if it also moved group
 		relationships.removeAll(Collections.singleton(r));
 		relationships.add(r);
@@ -634,20 +622,6 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 
 	public void setConceptType(ConceptType conceptType) {
 		this.conceptType = conceptType;
-	}
-	
-	public void setConceptType(String conceptTypeStr) {
-		if (conceptTypeStr.contains("Strength")) {
-			this.setConceptType(ConceptType.PRODUCT_STRENGTH);
-		} else if (conceptTypeStr.contains("Entity")) {
-			this.setConceptType(ConceptType.MEDICINAL_ENTITY);
-		} else if (conceptTypeStr.contains("Form")) {
-			this.setConceptType(ConceptType.MEDICINAL_PRODUCT_FORM);
-		} else if (conceptTypeStr.contains("Grouper")) {
-			this.setConceptType(ConceptType.GROUPER);
-		} else {
-			this.setConceptType(ConceptType.UNKNOWN);
-		}
 	}
 	
 	public Set<Concept> getDescendents(int depth) throws TermServerScriptException {
@@ -700,7 +674,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	}
 	}
 	
-	public List<Concept> getChildren(CharacteristicType characteristicType) {
+	public Set<Concept> getChildren(CharacteristicType characteristicType) {
 		switch (characteristicType) {
 			case STATED_RELATIONSHIP : return statedChildren;
 			case INFERRED_RELATIONSHIP : return inferredChildren;
@@ -715,11 +689,11 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		List<Description> matchingDescriptions = new ArrayList<Description>();
 		for (Description thisDescription : getDescriptions(activeState)) {
 			//Is this description of the right type?
-			if ( descriptionType == null || thisDescription.getType().equals(descriptionType)) {
+			if (descriptionType == null || thisDescription.getType().equals(descriptionType)) {
 				//Are we working with JSON representation and acceptability map, or an RF2 representation
 				//with language refset entries?
 				if (thisDescription.getAcceptabilityMap() != null) {
-					if ( acceptability.equals(Acceptability.BOTH) || thisDescription.getAcceptabilityMap().containsValue(acceptability)) {
+					if (acceptability.equals(Acceptability.BOTH) || thisDescription.getAcceptabilityMap().containsValue(acceptability)) {
 						if (acceptability.equals(Acceptability.BOTH)) {
 							matchingDescriptions.add(thisDescription);
 						} else if (acceptability.equals(Acceptability.PREFERRED) || !thisDescription.getAcceptabilityMap().containsValue(Acceptability.PREFERRED)) {
@@ -810,9 +784,9 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		descriptions.remove(d);
 	}
 
-	public List<Concept> getParents(CharacteristicType characteristicType) {
+	public Set<Concept> getParents(CharacteristicType characteristicType) {
 		//Concepts loaded from TS would not get these arrays populated.  Populate.
-		List<Concept> parents = null;
+		Set<Concept> parents = null;
 		switch (characteristicType) {
 			case STATED_RELATIONSHIP : parents = statedParents;
 										break;
@@ -823,7 +797,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		
 		if (parents == null || parents.size() == 0) {
 			if (parents == null) {
-				parents = new ArrayList<>();
+				parents = new HashSet<>();
 				if (characteristicType.equals(CharacteristicType.STATED_RELATIONSHIP)) {
 					statedParents = parents;
 				} else {
@@ -835,7 +809,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		return parents;
 	}
 	
-	private void populateParents(List<Concept> parents, CharacteristicType characteristicType) {
+	private void populateParents(Set<Concept> parents, CharacteristicType characteristicType) {
 		parents.clear();
 		for (Relationship parentRel : getRelationships(characteristicType, IS_A, ActiveState.ACTIVE)) {
 			parents.add(parentRel.getTarget());
@@ -1175,7 +1149,8 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 			Relationship rClone = r.clone(keepIds?r.getRelationshipId():null);
 			rClone.setEffectiveTime(keepIds?r.getEffectiveTime():null);
 			rClone.setSourceId(null);
-			clone.addRelationship(rClone);
+			//We don't want any hierarchy modifications done, so just add the clone directly
+			clone.relationships.add(rClone);
 			if (populateUUIDs && r.getId() == null) {
 				rClone.setRelationshipId(UUID.randomUUID().toString());
 			}
@@ -1194,10 +1169,10 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		}
 		
 		//Copy Parent/Child arrays
-		clone.inferredChildren = inferredChildren == null? new ArrayList<>() : new ArrayList<>(inferredChildren);
-		clone.statedChildren = statedChildren == null? new ArrayList<>() : new ArrayList<>(statedChildren);
-		clone.inferredParents = inferredParents == null? new ArrayList<>() : new ArrayList<>(inferredParents);
-		clone.statedParents = statedParents == null? new ArrayList<>() : new ArrayList<>(statedParents);
+		clone.inferredChildren = inferredChildren == null? new HashSet<>() : new HashSet<>(inferredChildren);
+		clone.statedChildren = statedChildren == null? new HashSet<>() : new HashSet<>(statedChildren);
+		clone.inferredParents = inferredParents == null? new HashSet<>() : new HashSet<>(inferredParents);
+		clone.statedParents = statedParents == null? new HashSet<>() : new HashSet<>(statedParents);
 		
 		//If we're keeping IDs, copy any inactivation indicators and historical associations also.
 		if (keepIds) {

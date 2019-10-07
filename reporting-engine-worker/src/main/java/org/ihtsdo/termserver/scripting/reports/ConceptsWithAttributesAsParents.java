@@ -2,14 +2,12 @@ package org.ihtsdo.termserver.scripting.reports;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Relationship;
+import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 /**
@@ -59,7 +57,7 @@ public class ConceptsWithAttributesAsParents extends TermServerReport {
 	}
 
 	private boolean checkforAttributesAsParents(Concept c, CharacteristicType type) throws TermServerScriptException {
-		List<Concept> parents = c.getParents(type);
+		Set<Concept> parents = c.getParents(type);
 		boolean issueFound = false;
 		//Now work through the attribute values checking for parents
 		for (Relationship r : c.getRelationships(type, ActiveState.ACTIVE)) {

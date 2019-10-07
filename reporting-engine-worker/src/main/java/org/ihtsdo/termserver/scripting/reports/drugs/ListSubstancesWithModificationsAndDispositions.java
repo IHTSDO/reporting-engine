@@ -41,7 +41,7 @@ public class ListSubstancesWithModificationsAndDispositions extends TermServerRe
 		substancesUsedInProducts = DrugUtils.getSubstancesUsedInProducts();
 		for (Concept c : SUBSTANCE.getDescendents(NOT_SET)) {
 			//Get a list of parents
-			List<Concept> statedParents = c.getParents(CharacteristicType.STATED_RELATIONSHIP);
+			Set<Concept> statedParents = c.getParents(CharacteristicType.STATED_RELATIONSHIP);
 			if (statedParents.size() > maxParents) {
 				maxParents = statedParents.size();
 			}

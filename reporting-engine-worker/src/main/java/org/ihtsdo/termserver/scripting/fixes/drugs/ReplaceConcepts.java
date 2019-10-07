@@ -146,7 +146,7 @@ public class ReplaceConcepts extends DrugBatchFix implements RF2Constants{
 		List<Concept> parents = originalParents.get(c);
 		if (parents == null || parents.size() == 0) {
 			//Are the current parents still useful?
-			List<Concept> currentParents = c.getParents(CharacteristicType.STATED_RELATIONSHIP);
+			Set<Concept> currentParents = c.getParents(CharacteristicType.STATED_RELATIONSHIP);
 			if (currentParents.size() > 0) {
 				parentFind.parents.addAll(currentParents);
 			} else {

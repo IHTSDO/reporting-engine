@@ -120,7 +120,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 			
 			//DRUGS-296 
 			if (concept.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED) && 
-				concept.getParents(CharacteristicType.STATED_RELATIONSHIP).get(0).equals(MEDICINAL_PRODUCT)) {
+				concept.getParents(CharacteristicType.STATED_RELATIONSHIP).iterator().next().equals(MEDICINAL_PRODUCT)) {
 				validateStatedVsInferredAttributes(concept, HAS_ACTIVE_INGRED, allDrugTypes);
 				validateStatedVsInferredAttributes(concept, HAS_PRECISE_INGRED, allDrugTypes);
 				validateStatedVsInferredAttributes(concept, HAS_MANUFACTURED_DOSE_FORM, allDrugTypes);

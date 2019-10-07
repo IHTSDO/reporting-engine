@@ -74,7 +74,7 @@ public class ListAllDescriptions extends TermServerReport implements ReportClass
 	}
 
 	private String getParentsStr(Concept c) {
-		List<Concept> parents = c.getParents(CharacteristicType.INFERRED_RELATIONSHIP);
+		Set<Concept> parents = c.getParents(CharacteristicType.INFERRED_RELATIONSHIP);
 		return parents.stream().map(p->p.toString())
 				.collect(Collectors.joining(",\n"));
 	}

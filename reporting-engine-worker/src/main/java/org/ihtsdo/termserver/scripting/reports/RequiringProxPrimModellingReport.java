@@ -51,7 +51,7 @@ public class RequiringProxPrimModellingReport extends TermServerReport{
 			Set<Concept> allActiveFD = filterActiveFD(allHierarchy);
 			info (hierarchy + " - " + allActiveFD.size() + "(FD) / " + allHierarchy.size() + "(Active)");
 			for (Concept thisConcept : allActiveFD) {
-				List<Concept> parents = thisConcept.getParents(CharacteristicType.STATED_RELATIONSHIP);
+				Set<Concept> parents = thisConcept.getParents(CharacteristicType.STATED_RELATIONSHIP);
 				boolean hasFDParent = false;
 				boolean noDifferentia = false;
 				boolean multipleParents = false;

@@ -139,7 +139,7 @@ public class MoveConcepts extends BatchFix implements RF2Constants{
 		
 		if (reassignOrphans) {
 			//Now we need to work through all the stated children and reassign them to the grandparents.
-			List<Concept> statedChildren = gl.getConcept(c.getConceptId()).getChildren(CharacteristicType.STATED_RELATIONSHIP);
+			Set<Concept> statedChildren = gl.getConcept(c.getConceptId()).getChildren(CharacteristicType.STATED_RELATIONSHIP);
 			for (Concept child : statedChildren) {
 				//replaceParentWithGrandparents(task, child, loadedConcept, removedParentRels, modifiedConcepts);
 				replaceParents(t, child, c, newChildRel, modifiedConcepts);
