@@ -22,7 +22,7 @@ import java.util.TimeZone;
 
 @SpringBootApplication
 @ImportResource("classpath:services-context.xml")
-@ComponentScan(basePackages = {"org.ihtsdo.termserver.job", "org.ihtsdo.termserver.scripting"})
+@ComponentScan(basePackages = {"org.ihtsdo.termserver.job", "org.ihtsdo.termserver.scripting", "org.snomed.otf.scheduler.domain"})
 @EnableJms
 public class Application  {
 	
