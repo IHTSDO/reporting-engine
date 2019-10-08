@@ -236,5 +236,30 @@ public class StringUtils implements RF2Constants {
 		}
 		return str.trim();
 	}
+	
+	public static boolean containsSingleLetter(String term) {
+		for (int i=1; i<term.length(); i++) {
+			//Note that we're not going to count the s in "Smith's" as a single letter
+			if (Character.isLetter(term.charAt(i)) 
+					&& (!Character.isLetter(term.charAt(i-1)) && term.charAt(i-1) != '\'' )
+					&& (i == term.length() -1 || !Character.isLetter(term.charAt(i+1)))) {
+						return true;
+					}
+		}
+		return false;
+	}
+	
+	public static boolean containsSingleLowerCaseLetter(String term) {
+		for (int i=1; i<term.length(); i++) {
+			//Note that we're not going to count the s in "Smith's" as a single letter
+			if (Character.isLetter(term.charAt(i))
+					&& Character.isLowerCase(term.charAt(i)) 
+					&& (!Character.isLetter(term.charAt(i-1)) && term.charAt(i-1) != '\'' )
+					&& (i == term.length() -1 || !Character.isLetter(term.charAt(i+1)))) {
+						return true;
+					}
+		}
+		return false;
+	}
 
 }

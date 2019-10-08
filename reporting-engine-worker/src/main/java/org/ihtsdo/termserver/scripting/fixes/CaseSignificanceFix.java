@@ -147,7 +147,7 @@ public class CaseSignificanceFix extends BatchFix implements RF2Constants{
 				report (task, c, Severity.LOW, ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, d, caseSig + "-> CS" );
 				d.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
 				changesMade++;
-			} else if (!caseSig.equals(cI) && containsSingleLetter(d.getTerm())) {
+			} else if (!caseSig.equals(cI) && StringUtils.containsSingleLetter(d.getTerm())) {
 				if (caseSig.equals(CS)) {
 					//If we start with a small letter, single letter or a proper noun, that's fine
 					if (!firstLetter.equals(firstLetter.toLowerCase()) 
@@ -184,18 +184,6 @@ public class CaseSignificanceFix extends BatchFix implements RF2Constants{
 		return Character.isLetter(term.charAt(0)) && (term.length() == 1 || !Character.isLetter(term.charAt(1)));
 	}
 	
-	private boolean containsSingleLetter(String term) {
-		for (int i=1; i<term.length(); i++) {
-			//Note that we're not going to could X's as a single letter
-			if (Character.isLetter(term.charAt(i)) 
-					&& (!Character.isLetter(term.charAt(i-1)) && term.charAt(i-1) != '\'' )
-					&& (i == term.length() -1 || !Character.isLetter(term.charAt(i+1)))) {
-						return true;
-					}
-		}
-		return false;
-	}
-
 	private int fixGreekLetterIssues(Task t, Concept c) throws TermServerScriptException {
 		int changesMade = 0;
 		
