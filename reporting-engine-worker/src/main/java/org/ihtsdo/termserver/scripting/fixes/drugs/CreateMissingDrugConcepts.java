@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.AncestorsCache;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
@@ -11,9 +12,9 @@ import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
-import org.ihtsdo.termserver.scripting.util.DrugTermGenerator;
-import org.ihtsdo.termserver.scripting.util.DrugUtils;
-import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.ihtsdo.termserver.scripting.util.*;
+import org.snomed.otf.scheduler.domain.*;
+import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 
 /**
  * DRUGS-515 - Create MPF-containing concepts where required.  Identify missing MPFs
@@ -29,7 +30,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * 
  * DRUGS-814 Changes now that we're working with axioms.  Ingredients self grouped.
  */
-public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Constants{
+public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Constants, ReportClass {
 	
 	DrugTermGenerator termGenerator = new DrugTermGenerator(this);
 	
@@ -52,6 +53,10 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 	
 	Set<String> suppress = new HashSet<>();
 	
+	public CreateMissingDrugConcepts() {
+		super(null);
+	}
+	
 	protected CreateMissingDrugConcepts(BatchFix clone) {
 		super(clone);
 	}
@@ -71,6 +76,31 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 			fix.processFile();
 		} finally {
 			fix.finish();
+		}
+	}
+	
+	public void runJob() throws TermServerScriptException {
+		processFile();
+	}
+	
+	@Override
+	public Job getJob() {
+		return new Job(	new JobCategory(JobType.REPORT, JobCategory.DRUGS),
+						"Missing MP MPF concepts",
+						"This report lists MP/MPF concepts which should be there, but aren't.",
+						new JobParameters(), ProductionStatus.PROD_READY);
+	}
+	
+	protected void init(JobRun jobRun) throws TermServerScriptException {
+		ReportSheetManager.targetFolderId="1SQw8vYXeB-LYPfoVzWwyGFjGp1yre2cT";  //Content Reporting Artefacts/Drugs/CreateMissingDrugConcepts
+		populateEditPanel = true;
+		populateTaskDescription = true;
+		selfDetermining = true;
+		classifyTasks = false;
+		
+		//Have we been called via the reporting platform?
+		if (jobRun != null) {
+			super.init(jobRun);
 		}
 	}
 	
@@ -164,6 +194,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 				task.remove(concept);
 				report (task, required, Severity.LOW, ReportActionType.CONCEPT_ADDED, required);
 				addSummaryInformation("Concept created: " +required, "");
+				incrementSummaryInformation(ISSUE_COUNT);
 				report (task, required, Severity.LOW, ReportActionType.INFO, expression);
 			}
 			return CHANGE_MADE; 

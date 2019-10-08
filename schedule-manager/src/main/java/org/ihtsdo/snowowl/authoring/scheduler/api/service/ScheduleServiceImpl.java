@@ -313,6 +313,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 		if (job == null) {
 			throw new ResourceNotFoundException("Job unknown to Schedule Service: '" + jobName +"' If job exists and is active, re-run initialise.");
 		}
+		logger.info("Whitelisted {} concepts for job: {}", whiteList.size(), jobName);
 		job.setWhiteList(whiteList);
 		jobRepository.save(job);
 	}
