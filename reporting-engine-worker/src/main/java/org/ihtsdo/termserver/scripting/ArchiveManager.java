@@ -87,11 +87,12 @@ public class ArchiveManager implements RF2Constants {
 			//If metadata is empty, or missing previous release, recover parent
 			//But timestamp will remain a property of the branch
 			//But not if we're already on MAIN and it's STILL missing!
-			if (branch.getMetadata() == null || branch.getMetadata().getPreviousRelease() == null) {
+			while (branch.getMetadata() == null || branch.getMetadata().getPreviousRelease() == null) {
 				if (branchPath.equals("MAIN")) {
 					throw new TermServerScriptException("Metadata data missing in MAIN");
 				}
-				Branch parent = loadBranch(new Project().withBranchPath("MAIN"));
+				branchPath = getParentBranch(branchPath);
+				Branch parent = loadBranch(new Project().withBranchPath(branchPath));
 				branch.setMetadata(parent.getMetadata());
 			}
 			return branch;
@@ -104,6 +105,19 @@ public class ArchiveManager implements RF2Constants {
 		}
 	}
 	
+	private String getParentBranch(String branchPath) {
+		//Do we have a path?
+		int lastSlash = branchPath.lastIndexOf("/");
+		if (lastSlash == NOT_FOUND) {
+			if (branchPath.equals("MAIN")) {
+				return branchPath;
+			} else {
+				throw new IllegalStateException ("Root level branch is not MAIN: " + branchPath);
+			}
+		}
+		return branchPath.substring(0, lastSlash);
+	}
+
 	public String getPreviousPreviousBranch(Project project) throws TermServerScriptException {
 		Branch branch = loadBranch(project);
 		String previousRelease = branch.getMetadata().getPreviousRelease();
@@ -165,7 +179,7 @@ public class ArchiveManager implements RF2Constants {
 					info("Generating fresh snapshot because previous transative closure must be populated");
 				}
 				gl.reset();
-				generateSnapshot (ts.getProject(), branch);
+				generateSnapshot (ts.getProject());
 				releasedFlagPopulated=true;
 				//We don't need to load the snapshot if we've just generated it
 			} else {
@@ -185,7 +199,7 @@ public class ArchiveManager implements RF2Constants {
 					if (populateReleasedFlag && !releasedFlagPopulated) {
 						info("Generating fresh snapshot (despite having a non-stale on disk) because 'released' flag must be populated");
 						gl.reset();
-						generateSnapshot (ts.getProject(), branch);
+						generateSnapshot (ts.getProject());
 						releasedFlagPopulated=true;
 					} else {
 						info ("Loading snapshot archive contents into memory...");
@@ -234,12 +248,7 @@ public class ArchiveManager implements RF2Constants {
 		return branchHeadUTC.compareTo(snapshotCreationUTC) > 0;
 	}
 
-	private void generateSnapshot(Project project, Branch branch) throws TermServerScriptException, IOException, TermServerClientException {
-		//We need to know the previous release to base our snapshot on
-		if (branch == null) {
-			branch = loadBranch(project);
-		}
-		
+	private void generateSnapshot(Project project) throws TermServerScriptException, IOException, TermServerClientException {
 		File snapshot = getSnapshotPath();
 		//Delete the current snapshot if it exists - will be stale
 		if (snapshot.isDirectory()) {
@@ -248,7 +257,7 @@ public class ArchiveManager implements RF2Constants {
 			java.nio.file.Files.deleteIfExists(snapshot.toPath());
 		}
 	
-		File previous = new File (dataStoreRoot + "releases/"  + branch.getMetadata().getPreviousPackage());
+		File previous = new File (dataStoreRoot + "releases/"  + project.getMetadata().getPreviousPackage());
 		if (!previous.exists()) {
 			if (archiveDataLoader == null) {
 				archiveDataLoader = ArchiveDataLoader.create();
@@ -256,6 +265,20 @@ public class ArchiveManager implements RF2Constants {
 			archiveDataLoader.download(previous);
 		}
 		TermServerScript.info("Building snapshot release based on previous: " + previous);
+		
+		//In the case of managed service, we will also have a dependency package
+		File dependency = null;
+		if (project.getMetadata().getDependencyPackage() != null) {
+			dependency = new File (dataStoreRoot + "releases/"  + project.getMetadata().getDependencyPackage());
+			if (!dependency.exists()) {
+				if (archiveDataLoader == null) {
+					archiveDataLoader = ArchiveDataLoader.create();
+				}
+				archiveDataLoader.download(dependency);
+			}
+			TermServerScript.info("Building Extension snapshot release also based on dependency: " + dependency);
+		}
+		
 		//Now we need a recent delta to add to it
 		File delta = File.createTempFile("delta_export-", ".zip");
 		delta.deleteOnExit();
@@ -264,7 +287,7 @@ public class ArchiveManager implements RF2Constants {
 		snapshotGenerator.setProject(ts.getProject());
 		snapshotGenerator.leaveArchiveUncompressed();
 		snapshotGenerator.setOutputDirName(snapshot.getPath());
-		snapshotGenerator.generateSnapshot(previous, delta, snapshot);
+		snapshotGenerator.generateSnapshot(dependency, previous, delta, snapshot);
 	}
 
 	private File getSnapshotPath() {

@@ -45,6 +45,7 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
 		additionalReportColumns = "FSN, SemTag, Def Status, TermMatched, MatchedIn, Case, AttributeDetail, SubHierarchy, SubSubHierarchy";
+		runStandAlone = false; //We need a proper path lookup for MS projects
 		super.init(run);
 		getArchiveManager().populateHierarchyDepth = true;
 		textsToMatch = run.getMandatoryParamValue(WORDS).split(COMMA);

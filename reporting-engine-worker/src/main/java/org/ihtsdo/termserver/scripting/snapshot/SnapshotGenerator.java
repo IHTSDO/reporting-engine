@@ -63,9 +63,12 @@ public class SnapshotGenerator extends TermServerScript {
 		}
 	}
 	
-	public void generateSnapshot (File previousReleaseSnapshot, File delta, File newLocation) throws TermServerScriptException, TermServerClientException {
+	public void generateSnapshot (File dependencySnapshot, File previousReleaseSnapshot, File delta, File newLocation) throws TermServerScriptException, TermServerClientException {
 		setQuiet(true);
 		init(newLocation, false);
+		if (dependencySnapshot != null) {
+			loadArchive(dependencySnapshot, false, "Snapshot", true);
+		}
 		loadArchive(previousReleaseSnapshot, false, "Snapshot", true);
 		loadArchive(delta, false, "Delta", false);
 		//Writing to disk can be done asynchronously and complete at any time.  We have the in-memory copy to work with.

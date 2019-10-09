@@ -65,7 +65,6 @@ public abstract class TermServerScript implements RF2Constants {
 	protected String[] excludeHierarchies;
 	
 	protected Set<Concept> whiteListedConcepts = new HashSet<>();
-	
 	protected boolean reportConceptAsInteger = false;
 
 	protected GraphLoader gl = GraphLoader.getGraphLoader();
@@ -87,7 +86,6 @@ public abstract class TermServerScript implements RF2Constants {
 	public static String inputFileDelimiter = TSV_FIELD_DELIMITER;
 	protected String tsRoot = "MAIN/"; //"MAIN/2016-01-31/SNOMEDCT-DK/";
 	public static final String EXPECTED_PROTOCOL = "https://";
-	
 	
 	public static final String PROJECT = "Project";
 	protected static final String DRY_RUN = "DryRun";
@@ -144,7 +142,7 @@ public abstract class TermServerScript implements RF2Constants {
 															"https://dev-authoring.ihtsdotools.org/",
 															"https://uat-authoring.ihtsdotools.org/",
 															"https://prod-authoring.ihtsdotools.org/",
-															"https://dev-ms-authoring.ihtsdotools.org/",
+															"https://dev-bb18-ms-authoring.ihtsdotools.org/",
 															"https://dev-snowstorm.ihtsdotools.org/",
 															"https://uat-ms-authoring.ihtsdotools.org/",
 															"https://uat-snowstorm.ihtsdotools.org/",

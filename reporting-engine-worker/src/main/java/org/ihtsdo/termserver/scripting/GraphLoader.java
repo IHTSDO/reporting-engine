@@ -314,6 +314,10 @@ public class GraphLoader implements RF2Constants {
 			r.setReleased(isReleased);
 		}
 		
+/*		if (r.getType().equals(IS_A) && r.getSourceId().equals("555621000005106")) {
+			TermServerScript.debug("here");
+		}*/
+		
 		boolean relationshipAdded = addRelationshipToConcept(charType, r, isDelta);
 		
 		//Consider adding or removing parents if the relationship is ISA
@@ -516,8 +520,15 @@ public class GraphLoader implements RF2Constants {
 					if (existing.getEffectiveTime().compareTo(langRefsetEntry.getEffectiveTime()) > 1) {
 						clearToAdd = false;
 						issue = "Existing " + (existing.isActive()? "active":"inactive") +  " langrefset entry taking priority over incoming " + (langRefsetEntry.isActive()? "active":"inactive") + " as later : " + existing;
+					} else if (existing.getEffectiveTime().equals(langRefsetEntry.getEffectiveTime())) {
+						//As long as they have different UUIDs, it's OK to have the same effective time
+						//But we'll ignore the inactivation
+						if (!langRefsetEntry.isActive()) {
+							clearToAdd = false;
+							issue = "Ignoring inactive langrefset entry with same effective time as active : " + existing;
+						}
 					} else {
-						//New entry is later than one we already know about
+						//New entry is later or same effective time as one we already know about
 						d.getLangRefsetEntries().remove(existing);
 						issue = "Existing " + (existing.isActive()? "active":"inactive") + " langrefset entry being overwritten by subsequent " + (langRefsetEntry.isActive()? "active":"inactive") + " value " + existing;
 					}

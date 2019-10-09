@@ -2,10 +2,14 @@ package org.ihtsdo.termserver.scripting.client;
 
 import java.io.IOException;
 
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.Project;
 import org.ihtsdo.termserver.scripting.domain.Task;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.*;
+import org.springframework.http.client.ClientHttpRequestExecution;
+import org.springframework.http.client.ClientHttpRequestInterceptor;
+import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.http.converter.json.GsonHttpMessageConverter;
 import org.springframework.web.client.RestTemplate;
 
@@ -57,6 +61,15 @@ public class AuthoringServicesClient {
 				.additionalMessageConverters(new GsonHttpMessageConverter())
 				.errorHandler(new ExpressiveErrorHandler())
 				.build();
+		
+		//Add a ClientHttpRequestInterceptor to the RestTemplate to add cookies as required
+		restTemplate.getInterceptors().add(new ClientHttpRequestInterceptor(){
+			@Override
+			public ClientHttpResponse intercept(HttpRequest request, byte[] body, ClientHttpRequestExecution execution) throws IOException {
+				request.getHeaders().addAll(headers);
+				return execution.execute(request, body);
+			}
+		}); 
 	}
 
 	public String createTask(String projectKey, String summary, String description) throws Exception {
@@ -131,16 +144,16 @@ public class AuthoringServicesClient {
 	}
 
 	public Project getProject(String projectStr) throws TermServerClientException {
-		JSONResource response = null;
-		String json = null;
 		try {
-			String endPoint = serverUrl + apiRoot + "projects/" + projectStr;
-			response = resty.json(endPoint);
-			json = response.toObject().toString();
-			Project projectObj = gson.fromJson(json, Project.class);
-			return projectObj;
+			TermServerScript.debug("Recovering project " + projectStr + " from " + serverUrl);
+			String url = serverUrl + apiRoot + "projects/" + projectStr;
+			Project project = restTemplate.getForObject(url, Project.class);
+			if (project.getMetadata() == null || project.getMetadata().getPreviousPackage() == null) {
+				throw new IllegalStateException ("Metadata not populated on project " + project.getKey());
+			}
+			return project;
 		} catch (Exception e) {
-			throw new TermServerClientException("Unable to recover project " + projectStr +". Received: " + (json==null?"NULL" : json), e);
+			throw new TermServerClientException("Unable to recover project " + projectStr, e);
 		}
 	}
 	
