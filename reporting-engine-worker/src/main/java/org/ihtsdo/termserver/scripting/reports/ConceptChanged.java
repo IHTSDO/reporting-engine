@@ -45,7 +45,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 	
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
-				"Id, FSN, SemTag, Active, New, DefStatusChanged",
+				"Id, FSN, SemTag, Active, DefStatusChanged",
 				"Id, FSN, SemTag, Active, hasNewStatedRelationships, hasNewInferredRelationships, hasLostStatedRelationships, hasLostInferredRelationships",
 				"Id, FSN, SemTag, Active, hasNewDescriptions, hasChangedDescriptions, hasLostDescriptions",
 				"Id, FSN, SemTag, Active, hasChangedAssociations, hasChangedInactivationIndicators",
@@ -66,13 +66,14 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 				.build();
 		return new Job( new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION),
 						"Concepts Changed",
-						"This report lists all concepts changed in the current release cycle",
+						"This report lists all concepts changed in the current release cycle.  The issue count here is the total number of concepts featuring one change or another.",
 						params);
 	}
 	
 	public void runJob() throws TermServerScriptException {
 		examineConcepts();
 		reportConceptsChanged();
+		determineUniqueCount();
 		info ("Job complete");
 	}
 	
@@ -91,7 +92,8 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 			if (c.isReleased() == null) {
 				throw new IllegalStateException ("Malformed snapshot. Released status not populated at " + c);
 			} else if (!c.isReleased()) {
-				newConcepts.add(c);
+				//We will not report any changes on brand new concepts
+				continue;
 			} else if (c.getEffectiveTime() == null || c.getEffectiveTime().isEmpty()) {
 				//Only want to log def status change if the concept has not been made inactive
 				if (c.isActive()) {
@@ -164,7 +166,6 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		for (Concept c : sort(superSet)) {
 			report (c,
 				c.isActive()?"Y":"N",
-				newConcepts.contains(c)?"Y":"N",
 				defStatusChanged.contains(c)?"Y":"N");
 		}
 		superSet.clear();
@@ -220,6 +221,30 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 				wasTargetOfLostStatedRelationship.contains(c)?"Y":"N",
 				isTargetOfNewInferredRelationship.contains(c)?"Y":"N",
 				wasTargetOfLostInferredRelationship.contains(c)?"Y":"N");
+		}
+	}
+	
+	private void determineUniqueCount() {
+		debug ("Determining unique count");
+		HashSet<Concept> superSet = new HashSet<>();
+		superSet.addAll(newConcepts);
+		superSet.addAll(defStatusChanged);
+		superSet.addAll(hasNewStatedRelationships);
+		superSet.addAll(hasNewInferredRelationships);
+		superSet.addAll(hasLostStatedRelationships);
+		superSet.addAll(hasLostInferredRelationships);
+		superSet.addAll(hasNewDescriptions);
+		superSet.addAll(hasChangedDescriptions);
+		superSet.addAll(hasLostDescriptions);
+		superSet.addAll(hasChangedAssociations);
+		superSet.addAll(hasChangedInactivationIndicators);
+		superSet.addAll(isTargetOfNewStatedRelationship);
+		superSet.addAll(wasTargetOfLostStatedRelationship);
+		superSet.addAll(isTargetOfNewInferredRelationship);
+		superSet.addAll(wasTargetOfLostInferredRelationship);
+		
+		for (Concept c : superSet) {
+			countIssue(c);
 		}
 	}
 	
