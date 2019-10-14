@@ -15,6 +15,7 @@ import org.snomed.otf.scheduler.domain.*;
 public class ConceptChanged extends TermServerReport implements ReportClass {
 	
 	private Set<Concept> newConcepts = new HashSet<>();
+	private Set<Concept> inactivatedConcepts = new HashSet<>();
 	private Set<Concept> defStatusChanged = new HashSet<>();
 	private Set<Concept> hasNewStatedRelationships = new HashSet<>();
 	private Set<Concept> hasNewInferredRelationships = new HashSet<>();
@@ -98,6 +99,8 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 				//Only want to log def status change if the concept has not been made inactive
 				if (c.isActive()) {
 					defStatusChanged.add(c);
+				} else {
+					inactivatedConcepts.add(c);
 				}
 			}
 			
@@ -162,6 +165,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		
 		superSet.addAll(newConcepts);
 		superSet.addAll(defStatusChanged);
+		superSet.addAll(inactivatedConcepts);
 		debug ("Creating concept report for " + superSet.size() + " concepts");
 		for (Concept c : sort(superSet)) {
 			report (c,
@@ -228,6 +232,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		debug ("Determining unique count");
 		HashSet<Concept> superSet = new HashSet<>();
 		superSet.addAll(newConcepts);
+		superSet.addAll(inactivatedConcepts);
 		superSet.addAll(defStatusChanged);
 		superSet.addAll(hasNewStatedRelationships);
 		superSet.addAll(hasNewInferredRelationships);
