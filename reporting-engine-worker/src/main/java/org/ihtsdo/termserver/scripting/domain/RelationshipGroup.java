@@ -196,7 +196,7 @@ public class RelationshipGroup {
 
 	public void setAxiom(AxiomEntry axiomEntry) {
 		for (Relationship r : relationships) {
-			r.setAxiom(axiomEntry);
+			r.setAxiomEntry(axiomEntry);
 		}
 	}
 }

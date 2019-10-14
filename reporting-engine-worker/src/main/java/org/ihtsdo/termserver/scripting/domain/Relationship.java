@@ -51,7 +51,9 @@ public class Relationship extends Component implements IRelationshipTemplate, RF
 	
 	private boolean isDeleted = false;
 	
-	private AxiomEntry axiom;
+	private AxiomEntry axiomEntry;  //Used when loading from RF2
+	
+	private Axiom axiom; //Used when loading from TS
 	
 	private String deletionEffectiveTime;
 	
@@ -379,24 +381,32 @@ public class Relationship extends Component implements IRelationshipTemplate, RF
 	}
 	
 	public boolean fromAxiom() {
-		return axiom != null;
+		return axiomEntry != null || axiom != null;
 	}
 
-	public AxiomEntry getAxiom() {
+	public AxiomEntry getAxiomEntry() {
+		return axiomEntry;
+	}
+
+	public void setAxiomEntry(AxiomEntry axiom) {
+		this.axiomEntry = axiom;
+	}
+	
+	public Axiom getAxiom() {
 		return axiom;
 	}
 
-	public void setAxiom(AxiomEntry axiom) {
+	public void setAxiom(Axiom axiom) {
 		this.axiom = axiom;
 	}
 
 	public boolean fromSameAxiom(Relationship r) {
 		//If neither relationship is from an axiom, that's effectively
 		//the pre-axiom condition ie yes the same axiom
-		if (this.getAxiom() == null && r.getAxiom() == null) {
+		if (this.getAxiomEntry() == null && r.getAxiomEntry() == null) {
 			return true;
-		} else if (this.getAxiom() != null & r.getAxiom() != null) {
-			return this.getAxiom().equals(r.getAxiom());
+		} else if (this.getAxiomEntry() != null & r.getAxiomEntry() != null) {
+			return this.getAxiomEntry().equals(r.getAxiomEntry());
 		}
 		return false;
 	}

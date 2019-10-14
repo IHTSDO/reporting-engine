@@ -112,7 +112,8 @@ public abstract class TermServerScript implements RF2Constants {
 	
 	public enum ReportActionType {	API_ERROR, DEBUG_INFO, INFO, UNEXPECTED_CONDITION,
 									CONCEPT_CHANGE_MADE, CONCEPT_ADDED, CONCEPT_INACTIVATED, CONCEPT_DELETED,
-									DESCRIPTION_CHANGE_MADE, DESCRIPTION_ACCEPTABILIY_CHANGED, DESCRIPTION_ADDED, DESCRIPTION_INACTIVATED, DESCRIPTION_DELETED,
+									DESCRIPTION_CHANGE_MADE, DESCRIPTION_ACCEPTABILIY_CHANGED, DESCRIPTION_REACTIVATED,
+									DESCRIPTION_ADDED, DESCRIPTION_INACTIVATED, DESCRIPTION_DELETED,
 									CASE_SIGNIFICANCE_CHANGE_MADE, MODULE_CHANGE_MADE, 
 									RELATIONSHIP_ADDED, RELATIONSHIP_REPLACED, RELATIONSHIP_INACTIVATED, RELATIONSHIP_DELETED, RELATIONSHIP_MODIFIED, 
 									RELATIONSHIP_GROUP_ADDED,RELATIONSHIP_GROUP_REMOVED,
@@ -554,7 +555,7 @@ public abstract class TermServerScript implements RF2Constants {
 				return null;
 			}
 			String msg =  e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
-			throw new TermServerScriptException("Failed to recover " + concept + " from TS due to: " + msg,e);
+			throw new TermServerScriptException("Failed to recover " + concept + " from TS branch " + branchPath + ", due to: " + msg,e);
 		}
 	}
 	
@@ -564,6 +565,7 @@ public abstract class TermServerScript implements RF2Constants {
 				for (Axiom axiom : axioms) {
 					if (axiom.isActive()) {
 						for (Relationship r : axiom.getRelationships()) {
+							r.setAxiom(axiom);
 							r.setSource(gl.getConcept(c.getConceptId()));
 							r.setTarget(gl.getConcept(r.getTarget().getConceptId()));
 							c.addRelationship(r);
@@ -578,8 +580,6 @@ public abstract class TermServerScript implements RF2Constants {
 
 	protected Concept updateConcept(Task t, Concept c, String info) throws TermServerScriptException {
 		try {
-			//boolean updatedOK = false;
-			//int retries = 0;
 			if (!dryRun) {
 				convertStatedRelationshipsToAxioms(c);
 				if (validateConceptOnUpdate) {
@@ -588,28 +588,14 @@ public abstract class TermServerScript implements RF2Constants {
 				
 				debug ("Updating state of " + c + (info == null?"":info));
 				return tsClient.updateConcept(c, t.getBranchPath());
-				/*Concept savedConcept = c;
-				while (!updatedOK) {
-					try {
-						savedConcept = tsClient.updateConcept(c, t.getBranchPath());
-						ensureSaveEffective(c, savedConcept);
-						return savedConcept;
-					} catch (Exception e) {
-						retries++;
-						if (retries >= 3) {
-							throw e;
-						}
-						warn("Failed to update concept due to " + e.getLocalizedMessage() + " retrying...");
-						Thread.sleep(10*1000);
-					}
-				}*/
 			} else {
 				return c;
 			}
 		} catch (ValidationFailure e) {
 			throw e;
 		} catch (Exception e) {
-			String msg = "Failed to update " + c + " in TS due to " + e.getMessage();
+			String excpStr =  e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+			String msg = "Failed to update " + c + " in TS due to " + excpStr;
 			error (msg + " JSON = " + gson.toJson(c), e);
 			throw new TermServerScriptException(msg,e); 
 		}
@@ -623,11 +609,17 @@ public abstract class TermServerScript implements RF2Constants {
 		if (validations.length == 0) {
 			debug("Validation clear: " + c);
 		} else {
+			Set<String> warningsReported = new HashSet<>();
+			debug("Validation issues: " + validations.length);
 			for (DroolsResponse response : validations) {
 				if (response.getSeverity().equals(DroolsResponse.Severity.ERROR)) {
 					throw new ValidationFailure(t,  c, "Drools error: " + response.getMessage());
 				} else if (response.getSeverity().equals(DroolsResponse.Severity.WARNING)) {
-					report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Drools warning: " + response.getMessage());
+					//Only report a particular warning text once
+					if (!warningsReported.contains(response.getMessage())) {
+						report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Drools warning: " + response.getMessage());
+						warningsReported.add(response.getMessage());
+					}
 				} else {
 					throw new IllegalStateException("Unexpected drools response: " + response);
 				}
@@ -709,15 +701,46 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 
 	private void convertStatedRelationshipsToAxioms(Concept c) {
-		//Do we have an existing axiom?
+		for (Axiom a : c.getClassAxioms()) {
+			a.clearRelationships();
+		}
+		
+		//Do we have an existing axiom to use by default?
 		Axiom a = c.getFirstActiveClassAxiom();
 		a.setModuleId(c.getModuleId());
-		a.clearRelationships();
+
 		//We'll remove the stated relationships as they get converted to the axiom
-		List<Relationship> rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
+		List<Relationship> rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH);
 		for (Relationship rel : rels) {
-			a.getRelationships().add(rel);
+			//Did this relationship already come from an axiom?
+			//If not and it's inactive, leave it be
+			if (!rel.fromAxiom() && !rel.isActive()) {
+				continue;
+			}
+			//If so (or if active), put it back into one
+			Axiom thisAxiom = rel.getAxiom() == null ? a : rel.getAxiom();
+			
+			//Don't add an inactive relationship to an active axiom
+			if (thisAxiom.isActive() != rel.isActive()) {
+				if (!rel.isActive()) {
+					warn("Skipping axiomification of " + rel + " due to active axiom");
+				} else {
+					throw new IllegalStateException ("Active stated conflict between " + rel + " and " + thisAxiom);
+				}
+			}
+			thisAxiom.getRelationships().add(rel);
 			c.removeRelationship(rel);
+		}
+		
+		for (Axiom thisAxiom : new ArrayList<>(c.getClassAxioms())) {
+			if (thisAxiom.getRelationships().size() == 0) {
+				//Has this axiom been released?  Remove if not and if it's empty
+				if (StringUtils.isEmpty(thisAxiom.getId())) {
+					c.getClassAxioms().remove(thisAxiom);
+				} else {
+					throw new IllegalStateException ("Axiom left with no relationships in " + c + ": " + thisAxiom);
+				}
+			}
 		}
 	}
 
