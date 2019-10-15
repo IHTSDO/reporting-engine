@@ -170,9 +170,13 @@ public class GroupRemodel extends TemplateFix {
 		
 		subHierarchyECL = "<<  126765001 |Gastrointestinal obstruction (disorder)|"; //QI-303
 		templateNames = new String[] {	"templates/Gastrointestinal.json"};
-		*/
+		
 		subHierarchyECL = "<< 276654001 |Congenital malformation (disorder)|"; //QI-286
 		templateNames = new String[] {	"templates/Congenital Malformation.json"};
+		*/
+		subHierarchyECL = "<< 131148009|Bleeding|"; //QI-191
+		templateNames = new String[] { "templates/Bleeding - finding.json"};
+		inclusionWords.add("finding");
 		
 		super.init(args);
 		
@@ -361,6 +365,7 @@ public class GroupRemodel extends TemplateFix {
 		if (ignoreUngroupedMoves > 0) {
 			changesMade += applyRemodelledGroups(t,c,groups);
 			changesMade += removeRedundandGroups(t,c);
+			selfGroupAttributes(t,c);
 			String modifiedForm = SnomedUtils.getModel(c, CharacteristicType.STATED_RELATIONSHIP);
 			
 			//Now check that we've actually ended up making actual changes

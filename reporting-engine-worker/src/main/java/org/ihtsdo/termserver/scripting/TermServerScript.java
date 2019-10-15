@@ -122,6 +122,8 @@ public abstract class TermServerScript implements RF2Constants {
 									INACT_IND_ADDED, INACT_IND_MODIFIED, ASSOCIATION_REMOVED};
 									
 	public enum Severity { NONE, LOW, MEDIUM, HIGH, CRITICAL }; 
+	
+	public Concept[] selfGroupedAttributes = new Concept[] { FINDING_SITE, CAUSE_AGENT, ASSOC_MORPH };
 
 	public String getScriptName() {
 		return this.getClass().getSimpleName();
@@ -739,6 +741,20 @@ public abstract class TermServerScript implements RF2Constants {
 					c.getClassAxioms().remove(thisAxiom);
 				} else {
 					throw new IllegalStateException ("Axiom left with no relationships in " + c + ": " + thisAxiom);
+				}
+			}
+		}
+	}
+	
+
+	protected void selfGroupAttributes(Task t, Concept c) {
+		RelationshipGroup ungrouped = c.getRelationshipGroup(CharacteristicType.STATED_RELATIONSHIP, UNGROUPED);
+		if (ungrouped != null) {
+			for (Relationship r : ungrouped.getRelationships()) {
+				for (Concept selfGrouped : selfGroupedAttributes) {
+					if (r.getType().equals(selfGrouped)) {
+						r.setGroupId(SnomedUtils.getFirstFreeGroup(c));
+					}
 				}
 			}
 		}
