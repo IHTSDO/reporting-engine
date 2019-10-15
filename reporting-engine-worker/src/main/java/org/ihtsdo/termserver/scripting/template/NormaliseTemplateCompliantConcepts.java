@@ -252,8 +252,8 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		templateNames = new String[] {	"templates/Deformity - disorder.json"};
 		inclusionWords.add("disorder");
 		*/
-		//QI-373, QI-376, QI-400
-		subHierarchyECL = "<<362975008 |Degenerative disorder (disorder)|: 116676008 |Associated morphology (attribute)| = << 107670002 |Lysis AND/OR resorbed tissue (morphologic abnormality)| ";
+		//QI-373, QI-376, QI-400, QI-324
+		subHierarchyECL = "<<362975008 |Degenerative disorder (disorder)|: 116676008 |Associated morphology (attribute)| = << 13331008 |Atrophy (morphologic abnormality)| ";
 		templateNames = new String[] {	"templates/Degenerative disorder.json"};
 		includeComplexTemplates = true;
 		
