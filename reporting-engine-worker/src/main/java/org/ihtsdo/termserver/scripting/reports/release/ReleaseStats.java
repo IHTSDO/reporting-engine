@@ -12,6 +12,7 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
+import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 
 /**
  * Reports concepts that are intermediate primitives from point of view of some subhierarchy
@@ -27,11 +28,13 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 
 	@Override
 	public Job getJob() {
-		JobParameters params = new JobParameters();
-		return new Job(	new JobCategory(JobType.REPORT, JobCategory.RELEASE_STATS),
-						"Release Stats",
-						"This report measures a number of quality KPIs",
-						params);
+		return new Job()
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_STATS))
+				.withName("Release Stats")
+				.withDescription("This report measures a number of quality KPIs")
+				.withProductionStatus(ProductionStatus.PROD_READY)
+				.withTag(INT)
+				.build();
 	}
 
 	

@@ -82,12 +82,16 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 					.withMandatory()
 				.build();
 		
-		return new Job(	new JobCategory(JobType.REPORT, JobCategory.QI),
-						"Template Compliance",
-						"This report lists concepts which match the specified selection (either a subhierarchy OR an ECL expression) " +
-						"which DO NOT comply with the selected template. You can either select an existing published template, " + 
-								"or enter one yourself using template language or a known QI project internal path (eg /reporting-engine-worker/src/main/resources/templates/burn/Burn of body structure.json).",
-						params, ProductionStatus.PROD_READY);
+		return new Job()
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.QI))
+				.withName("Template Compliance")
+				.withDescription("This report lists concepts which match the specified selection (either a subhierarchy OR an ECL expression) "  + 
+									"which DO NOT comply with the selected template. You can either select an existing published template, "  + 
+									"or enter one yourself using template language or a known QI project internal path (eg /reporting-engine-worker/src/main/resources/templates/burn/Burn of body structure.json)")
+				.withProductionStatus(ProductionStatus.PROD_READY)
+				.withParameters(params)
+				.withTag(INT)
+				.build();
 	}
 	
 	protected void init(JobRun jobRun) throws TermServerScriptException {

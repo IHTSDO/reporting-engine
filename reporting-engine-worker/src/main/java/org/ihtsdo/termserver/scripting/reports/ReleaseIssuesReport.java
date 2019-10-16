@@ -16,6 +16,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.owltoolkit.conversion.ConversionException;
 import org.snomed.otf.owltoolkit.domain.AxiomRepresentation;
 import org.snomed.otf.scheduler.domain.*;
+import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.springframework.util.StringUtils;
 
 import com.google.common.base.Charsets;
@@ -95,12 +96,17 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 					.withType(JobParameter.Type.BOOLEAN)
 					.withDefaultValue(false)
 				.build();
-		return new Job( new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION),
-						"Release Issues Report",
-						"This report lists a range of potential issues identified in INFRA-2723. " + 
+
+		return new Job()
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION))
+				.withName("Release Issues Report")
+				.withDescription("This report lists a range of potential issues identified in INFRA-2723. " + 
 						"For example 1. Descriptions where the module id does not match the concept module id and, 2. Inactive concepts without an active Preferred Term. "  +
-						"Note that the 'Issues' count here refers to components added/modified in the current authoring cycle.",
-						params);
+						"Note that the 'Issues' count here refers to components added/modified in the current authoring cycle.")
+				.withProductionStatus(ProductionStatus.PROD_READY)
+				.withParameters(params)
+				.withTag(INT)
+				.build();
 	}
 
 	public void runJob() throws TermServerScriptException {

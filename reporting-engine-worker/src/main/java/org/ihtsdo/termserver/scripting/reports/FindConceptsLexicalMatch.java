@@ -49,10 +49,14 @@ public class FindConceptsLexicalMatch extends TermServerReport implements Report
 		JobParameters params = new JobParameters()
 				.add(SUB_HIERARCHY).withType(JobParameter.Type.CONCEPT).withDefaultValue(SUBSTANCE)
 				.build();
-		return new Job( new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES),
-						"Find concepts in list",
-						"This report lists all concepts that match the lexical terms specified in some file.",
-						params, ProductionStatus.HIDEME);
+		return new Job()
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.QI))
+				.withName("Find concepts in list")
+				.withDescription("This report lists all concepts that match the lexical terms specified in some file.")
+				.withProductionStatus(ProductionStatus.HIDEME)
+				.withParameters(params)
+				.withTag(INT)
+				.build();
 	}
 	
 	public void postInit() throws TermServerScriptException {

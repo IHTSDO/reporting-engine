@@ -13,6 +13,7 @@ import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.DrugUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
+import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 
 public class ValidateSubstanceModeling extends TermServerReport implements ReportClass {
 	
@@ -40,11 +41,13 @@ public class ValidateSubstanceModeling extends TermServerReport implements Repor
 
 	@Override
 	public Job getJob() {
-		JobParameters params = new JobParameters();
-		return new Job( new JobCategory(JobType.REPORT, JobCategory.DRUGS),
-						"Substances validation",
-						"This report checks for a number of potential inconsistencies in the Substances hierarchy.",
-						params);
+		return new Job()
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.DRUGS))
+				.withName("Substances validation")
+				.withDescription("This report checks for a number of potential inconsistencies in the Substances hierarchy.")
+				.withProductionStatus(ProductionStatus.PROD_READY)
+				.withTag(INT)
+				.build();
 	}
 	
 	public void runJob() throws TermServerScriptException {

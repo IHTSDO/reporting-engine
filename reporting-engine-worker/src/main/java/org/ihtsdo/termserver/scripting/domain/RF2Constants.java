@@ -20,7 +20,10 @@ public interface RF2Constants {
 	//quinary, senary, septenary, octonary, nonary, denary if you need more!
 	
 	static Concept IS_A =  new Concept ("116680003");  // | Is a (attribute) |
-	static Concept NULL_CONCEPT = new Concept ("-1");  
+	static Concept NULL_CONCEPT = new Concept ("-1");
+	
+	static final String INT = "INT";
+	static final String MS = "MS";
 	
 	//Top Level hierarchies
 	static Concept ORGANISM = new Concept ("410607006", "Organism (organism)");

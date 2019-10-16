@@ -58,10 +58,15 @@ public class HistoricComparison extends TermServerReport implements ReportClass 
 				.add(START_RELEASE).withType(JobParameter.Type.STRING).withMandatory().withDefaultValue(false)
 				.add(END_RELEASE).withType(JobParameter.Type.STRING)
 				.build();
-		return new Job( new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES),
-						"Find new clones",
-						"List all concepts with one semantic tag that have lexical equivalents in another tag, optionally ignoring some text",
-						params, ProductionStatus.HIDEME);
+		
+		return new Job()
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES))
+				.withName("Find new clone")
+				.withDescription("List all concepts with one semantic tag that have lexical equivalents in another tag, optionally ignoring some text")
+				.withProductionStatus(ProductionStatus.HIDEME)
+				.withParameters(params)
+				.withTag(INT)
+				.build();
 	}
 	
 	public void runJob() throws TermServerScriptException {

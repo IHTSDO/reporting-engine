@@ -14,6 +14,7 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.release.CrossoverUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
+import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 
 /**
  * RP-227 Pattern KPIs
@@ -65,10 +66,13 @@ public class ReleasePatternsReport extends TermServerReport implements ReportCla
 
 	@Override
 	public Job getJob() {
-		return new Job( new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION),
-						"Release Patterns Report",
-						"This report identifies a number of potentially problematic patters, many of which are tracked as KPIs ",
-						new JobParameters());
+		return new Job()
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION))
+				.withName("Release Patterns Report")
+				.withDescription("This report identifies a number of potentially problematic patters, many of which are tracked as KPIs ")
+				.withProductionStatus(ProductionStatus.PROD_READY)
+				.withTag(INT)
+				.build();
 	}
 
 	public void runJob() throws TermServerScriptException {

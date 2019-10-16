@@ -15,6 +15,7 @@ import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.template.TemplateUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
+import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -51,11 +52,15 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 					.withType(JobParameter.Type.HIDDEN)
 					.withMandatory()
 				.build();
-		return new Job( new JobCategory(JobType.REPORT, JobCategory.QI),
-						"All Templates Compliance Stats",
-						"For every domain which has one or more templates, determine how many concepts comply to that template(s).",
-						params,
-						Job.ProductionStatus.PROD_READY);
+
+		return new Job()
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.QI))
+				.withName("All Templates Compliance Stats")
+				.withDescription("For every domain which has one or more templates, determine how many concepts comply to that template(s).")
+				.withProductionStatus(ProductionStatus.PROD_READY)
+				.withParameters(params)
+				.withTag(INT)
+				.build();
 	}
 
 	

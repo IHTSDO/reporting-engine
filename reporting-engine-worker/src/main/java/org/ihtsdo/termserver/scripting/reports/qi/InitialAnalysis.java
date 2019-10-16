@@ -12,6 +12,7 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
+import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 
 /**
  * Reports concepts that are intermediate primitives from point of view of some subhierarchy
@@ -107,11 +108,15 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 					.withType(JobParameter.Type.ECL)
 				.build();
 		
-		return new Job(	new JobCategory(JobType.REPORT, JobCategory.QI),
-						"Initial Analysis",
-						"This report lists intermediate primitives and how often attribute types are used in the specified sub-hierarchy. " +
-						"Note that the 'Issues' count here refers to the number of intermediate primitives reported in the 2nd tab.",
-						params);
+		return new Job()
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.GENERAL_QA))
+				.withName("Initial Analysis")
+				.withDescription("This report lists intermediate primitives and how often attribute types are used in the specified sub-hierarchy. " +
+						"Note that the 'Issues' count here refers to the number of intermediate primitives reported in the 2nd tab.")
+				.withProductionStatus(ProductionStatus.PROD_READY)
+				.withParameters(params)
+				.withTag(INT)
+				.build();
 	}
 
 	

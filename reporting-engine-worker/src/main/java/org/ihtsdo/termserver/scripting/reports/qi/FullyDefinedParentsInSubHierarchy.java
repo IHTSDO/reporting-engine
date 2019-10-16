@@ -39,10 +39,14 @@ public class FullyDefinedParentsInSubHierarchy extends TermServerReport implemen
 		JobParameters params = new JobParameters()
 				.add(SUB_HIERARCHY).withType(JobParameter.Type.CONCEPT).withDefaultValue(ROOT_CONCEPT)
 				.build();
-		return new Job( new JobCategory(JobType.REPORT, JobCategory.GENERAL_QA),
-						"Check for FD Parents",
-						"This report lists all concepts in the specified subhierarchy which have one or more fully defined stated parents",
-						params, ProductionStatus.HIDEME);
+		return new Job()
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.GENERAL_QA))
+				.withName("Check for FD Parents")
+				.withDescription("This report lists all concepts in the specified subhierarchy which have one or more fully defined stated parents")
+				.withProductionStatus(ProductionStatus.HIDEME)
+				.withParameters(params)
+				.withTag(INT)
+				.build();
 	}
 	
 	public void runJob() throws TermServerScriptException {

@@ -12,6 +12,7 @@ import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
+import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
@@ -80,11 +81,14 @@ public class CaseSensitivity extends TermServerReport implements ReportClass {
 
 	@Override
 	public Job getJob() {
-		return new Job( new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION),
-						"Case Significance",
-						"This report validates the case significance of new and modified descriptions.  Note that the Substances and Organism hierarchies are excluded as they are taken to be a 'source of truth'. " +
-						"The 'Issues' count here reflects the number of rows in the report.", 
-						new JobParameters(new String[] { }));
+		return new Job()
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION))
+				.withName("Case Significance")
+				.withDescription("This report validates the case significance of new and modified descriptions.  Note that the Substances and Organism hierarchies are excluded as they are taken to be a 'source of truth'. " +
+									"The 'Issues' count here reflects the number of rows in the report.")
+				.withProductionStatus(ProductionStatus.PROD_READY)
+				.withTag(INT)
+				.build();
 	}
 
 	public void runJob() throws TermServerScriptException {

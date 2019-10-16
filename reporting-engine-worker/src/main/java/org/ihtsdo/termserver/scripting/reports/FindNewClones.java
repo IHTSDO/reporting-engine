@@ -46,10 +46,14 @@ public class FindNewClones extends TermServerReport implements ReportClass {
 	@Override
 	public Job getJob() {
 		String[] parameterNames = new String[] { TARGET_SEMTAG, SOURCE_SEMTAG, IGNORE_TEXT};
-		return new Job( new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES),
-						"Find new clones",
-						"List all concepts with one semantic tag that have lexical equivalents in another tag, optionally ignoring some text",
-						new JobParameters(parameterNames), ProductionStatus.HIDEME);
+		return new Job()
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES))
+				.withName("Find new clones")
+				.withDescription("List all concepts with one semantic tag that have lexical equivalents in another tag, optionally ignoring some text")
+				.withProductionStatus(ProductionStatus.HIDEME)
+				.withParameters(new JobParameters(parameterNames))
+				.withTag(INT)
+				.build();
 	}
 	
 	public void runJob() throws TermServerScriptException {

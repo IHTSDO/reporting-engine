@@ -11,6 +11,7 @@ import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
+import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 
 public class ConceptChanged extends TermServerReport implements ReportClass {
 	
@@ -65,10 +66,15 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		JobParameters params = new JobParameters()
 				.add(ECL).withType(JobParameter.Type.ECL).withDefaultValue("<< " + ROOT_CONCEPT)
 				.build();
-		return new Job( new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION),
-						"Concepts Changed",
-						"This report lists all concepts changed in the current release cycle.  The issue count here is the total number of concepts featuring one change or another.",
-						params);
+		return new Job()
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION))
+				.withName("Concepts Changed")
+				.withDescription("This report lists all concepts changed in the current release cycle.  The issue count here is the total number of concepts featuring one change or another.")
+				.withProductionStatus(ProductionStatus.PROD_READY)
+				.withParameters(params)
+				.withTag(INT)
+				.withTag(MS)
+				.build();
 	}
 	
 	public void runJob() throws TermServerScriptException {

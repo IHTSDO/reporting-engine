@@ -11,6 +11,7 @@ import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
+import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 
 public class ConceptsWithParents extends TermServerReport implements ReportClass {
 	
@@ -30,11 +31,16 @@ public class ConceptsWithParents extends TermServerReport implements ReportClass
 	public Job getJob() {
 		JobParameters params = new JobParameters()
 				.add(HIERARCHIES).withType(JobParameter.Type.CONCEPT_LIST).withMandatory().build();
-		return new Job( new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES),
-						"Concepts with Parents",
-						"This report lists all parents and grandparents of concepts in the specified hierarchies. " +
-						"Note that since this report is not listing any problems, the 'Issues' count will always be 0.",
-						params);
+
+		return new Job()
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES))
+				.withName("Concepts with Parents")
+				.withDescription("This report lists all parents and grandparents of concepts in the specified hierarchies. " +
+						"Note that since this report is not listing any problems, the 'Issues' count will always be 0.")
+				.withProductionStatus(ProductionStatus.PROD_READY)
+				.withParameters(params)
+				.withTag(INT)
+				.build();
 	}
 
 	public void runJob() throws TermServerScriptException {

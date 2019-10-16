@@ -12,6 +12,7 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
+import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 
 /**
  * See https://confluence.ihtsdotools.org/display/IAP/Quality+Improvements+2018
@@ -38,11 +39,15 @@ public class TemplateList extends AllKnownTemplates implements ReportClass {
 					.withType(JobParameter.Type.HIDDEN)
 					.withMandatory()
 				.build();
-		return new Job( new JobCategory(JobType.REPORT, JobCategory.QI),
-						"Template List",
-						"Lists all known templates",
-						params,
-						Job.ProductionStatus.PROD_READY);
+		
+		return new Job()
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.QI))
+				.withName("Template List")
+				.withDescription("Lists all known templates")
+				.withProductionStatus(ProductionStatus.PROD_READY)
+				.withParameters(params)
+				.withTag(INT)
+				.build();
 	}
 
 	
