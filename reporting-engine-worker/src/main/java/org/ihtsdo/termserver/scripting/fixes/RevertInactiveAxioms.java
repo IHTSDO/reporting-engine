@@ -93,6 +93,9 @@ public class RevertInactiveAxioms extends BatchFix implements RF2Constants{
 					if (!previousAxiom.equals(a.getOwlExpression())) {
 						debug ("Detected inactivated + modified axiom for " + c +  ": " + a.getId());
 						allAffected.add(c);
+						if (changeMap.containsKey(a.getId())) {
+							throw new TermServerScriptException("Duplicate UUID: " + a.getId());
+						}
 						changeMap.put(a.getId(), prevRefsetMember);
 					}
 					if (++checked % 100 == 0) {
