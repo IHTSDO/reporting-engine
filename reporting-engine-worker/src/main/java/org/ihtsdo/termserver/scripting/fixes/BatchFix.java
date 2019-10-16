@@ -8,7 +8,6 @@ import javax.mail.*;
 import javax.mail.internet.*;
 
 import org.apache.commons.lang.NotImplementedException;
-import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.*;
 import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -27,9 +26,9 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	protected int wiggleRoom = 5;
 	protected int failureCount = 0;
 	protected int validationCount = 0;
-	protected int taskThrottle = 30;
+	protected int taskThrottle = 10;
 	protected int restartFromTask = NOT_SET;
-	protected int conceptThrottle = 5;
+	protected int conceptThrottle = 2;
 	protected String targetAuthor;
 	protected String targetReviewer;
 	protected String[] author_reviewer;
@@ -734,7 +733,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		}
 		
 		//Are we deleting or inactivating this term?
-		if (reuseMe == null && d != null) {
+		if (d != null) {
 			removeDescription(t, c, d, newTerm, indicator);
 		}
 		return replacement == null ? reuseMe : replacement;  //WATCH THAT THE CALLING CODE IS RESPONSIBLE FOR CHECKING THE CASE SIGNIFICANCE - copied from original
@@ -742,16 +741,20 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	
 	protected void removeDescription(Task t, Concept c, Description d, String newTerm, InactivationIndicator indicator) throws TermServerScriptException {
 		String change = "";
+		ReportActionType action = null;
 		if (d.isReleased()) {
 			d.setActive(false);
 			d.setInactivationIndicator(indicator);
+			d.setAcceptabilityMap(new HashMap<>());
 			change = "Inactivated";
+			action = ReportActionType.DESCRIPTION_INACTIVATED;
 		} else {
 			c.removeDescription(d);
 			change = "Deleted";
+			action = ReportActionType.DESCRIPTION_DELETED;
 		}
 		String msg = change + " " + d + (newTerm == null? "" : " replaced with: " + newTerm);
-		report(t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, msg);
+		report(t, c, Severity.MEDIUM, action, msg);
 	}
 
 	protected int addRelationship(Task t, Concept c, Relationship r) throws TermServerScriptException {

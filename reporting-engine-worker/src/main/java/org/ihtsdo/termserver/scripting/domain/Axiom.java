@@ -7,7 +7,7 @@ import org.ihtsdo.termserver.scripting.*;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
-public class Axiom extends Component implements RF2Constants, Comparable<Axiom>  {
+public class Axiom extends Component implements RF2Constants {
 
 	@SerializedName(value="axiomId", alternate="id")
 	@Expose
@@ -88,9 +88,17 @@ public class Axiom extends Component implements RF2Constants, Comparable<Axiom> 
 	}
 	
 	@Override
-	public int compareTo(Axiom o) {
-		// TODO Auto-generated method stub
-		return 0;
+	public boolean equals(Object o) {
+		if (!(o instanceof Axiom)) {
+			return false;
+		}
+		//Can we compare ids?
+		Axiom other = (Axiom)o;
+		if (this.getId() != null || other.getId() != null) {
+			return this.getId().equals(other.getId());
+		}
+		//If neither has an Id, are they the same object?
+		return this == o;
 	}
 	@Override
 	public String getId() {

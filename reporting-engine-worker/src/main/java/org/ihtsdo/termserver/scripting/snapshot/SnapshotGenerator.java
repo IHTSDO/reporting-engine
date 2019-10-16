@@ -185,6 +185,11 @@ public class SnapshotGenerator extends TermServerScript {
 	}
 
 	protected void outputRF2(Relationship r) throws TermServerScriptException {
+		//Relationships that hail from an axiom will not be persisted as relationships
+		//We'll re-establish those on loading from the original axioms
+		if (r.fromAxiom()) {
+			return;
+		}
 		switch (r.getCharacteristicType()) {
 			case STATED_RELATIONSHIP : writeToRF2File(sRelSnapshotFilename, r.toRF2());
 			break;

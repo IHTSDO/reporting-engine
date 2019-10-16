@@ -3,6 +3,7 @@ package org.ihtsdo.termserver.scripting.fixes;
 import java.io.IOException;
 import java.util.*;
 
+import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
@@ -12,6 +13,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 /*
  * INFRA-3759 Modify CS settings per supplied spreadsheet
+ * INFRA-4166 Same deal, different format
  */
 public class CaseSignificanceFixDriven extends BatchFix implements RF2Constants{
 	
@@ -25,11 +27,12 @@ public class CaseSignificanceFixDriven extends BatchFix implements RF2Constants{
 		CaseSignificanceFixDriven fix = new CaseSignificanceFixDriven(null);
 		try {
 			ReportSheetManager.targetFolderId="1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"; //Ad-Hoc Batch Updates
-			fix.additionalReportColumns = "previously, new setting";
+			fix.additionalReportColumns = "change made, description now";
 			fix.inputFileHasHeaderRow = true;
 			fix.populateEditPanel = false;
 			fix.populateTaskDescription = false;
-			fix.reportNoChange = true;
+			fix.reportNoChange = false;  //We do that explicitly in the code
+			fix.expectNullConcepts = true; //File contains lines that specify no change
 			fix.init(args);
 			fix.loadProjectSnapshot(false);
 			fix.postInit();
@@ -53,16 +56,33 @@ public class CaseSignificanceFixDriven extends BatchFix implements RF2Constants{
 		int changesMade = 0;
 		//What changes are we making to this concept
 		Map<String, String> descChanges = csMap.get(c);
-		for (Description d : c.getDescriptions()) {
+		for (Description d : new ArrayList<>(c.getDescriptions())) {
 			if (descChanges.containsKey(d.getId())) {
-				String before = d.toString();
 				CaseSignificance newSetting = SnomedUtils.translateCaseSignificanceToEnum(descChanges.get(d.getId()));
-				if (d.getCaseSignificance().equals(newSetting)) {
-					report (t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "CaseSignificance was already set to " + newSetting);
-				} else {
-					d.setCaseSignificance(newSetting);
-					report (t, c, Severity.LOW, ReportActionType.DESCRIPTION_CHANGE_MADE, before, d);
+				String before = SnomedUtils.translateCaseSignificanceFromEnum(d.getCaseSignificance());
+				String after = SnomedUtils.translateCaseSignificanceFromEnum(newSetting);
+				String transition = before + " -> " + after;
+				
+				//INFRA-4166 Addition - replace "OR" with "or" in descriptions
+				if (d.getTerm().contains(" OR ")) {
+					String newTerm = d.getTerm().replaceAll(" OR ", " or ");
+					Description newDesc = replaceDescription(t, c, d, newTerm, InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
+					newDesc.setCaseSignificance(newSetting);
+					//Are we reusing an inactive description or adding a new one?
+					if (StringUtils.isNumeric(newDesc.getDescriptionId())) {
+						report (t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_REACTIVATED, transition, newDesc);
+					} else {
+						report (t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_ADDED, transition, newDesc);
+					}
 					changesMade++;
+				} else {
+					if (d.getCaseSignificance().equals(newSetting)) {
+						report (t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, transition, "CaseSignificance was already set to " + newSetting);
+					} else {
+						d.setCaseSignificance(newSetting);
+						report (t, c, Severity.LOW, ReportActionType.DESCRIPTION_CHANGE_MADE, transition, d);
+						changesMade++;
+					}
 				}
 			}
 		}
@@ -78,7 +98,11 @@ public class CaseSignificanceFixDriven extends BatchFix implements RF2Constants{
 			descChanges = new HashMap<>();
 			csMap.put(c, descChanges);
 		}
-		descChanges.put(lineItems[1], lineItems[2]);
-		return Collections.singletonList(c);
+		//Don't make changes where current setting == new setting
+		if (!lineItems[4].equals(lineItems[5])) {
+			descChanges.put(lineItems[2], lineItems[5]);
+			return Collections.singletonList(c);
+		}
+		return null;
 	}
 }

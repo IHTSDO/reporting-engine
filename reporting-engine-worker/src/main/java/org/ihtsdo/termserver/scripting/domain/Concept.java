@@ -1194,7 +1194,6 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 				return g;
 			}
 		}
-		if (true);
 		return null;
 	}
 	

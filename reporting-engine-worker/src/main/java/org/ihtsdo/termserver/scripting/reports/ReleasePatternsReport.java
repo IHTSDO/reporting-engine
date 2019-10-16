@@ -72,26 +72,30 @@ public class ReleasePatternsReport extends TermServerReport implements ReportCla
 	}
 
 	public void runJob() throws TermServerScriptException {
-		info("Checking for problematic patterns...");
 		
-		info("Checking for redundancies...");
-		checkRedundantlyStatedParents();
-		checkRedundantlyStatedUngroupedRoles();
-		checkRedundantlyStatedGroups();
-	
-		info ("Building current Transitive Closure");
-		tc = gl.generateTransativeClosure();
+		info ("Checking structural integrity");
+		if (checkStructuralIntegrity()) {
+			info("Checking for problematic patterns...");
+			
+			info("Checking for redundancies...");
+			checkRedundantlyStatedParents();
+			checkRedundantlyStatedUngroupedRoles();
+			checkRedundantlyStatedGroups();
 		
-		info("Checking for historical patterns");
-		checkCreatedButDuplicate();
-		checkPattern11();  //...a very specific situation
-		
-		info("Checking for crossovers");
-		checkForRoleGroupCrossovers();
-		checkForUngroupedCrossovers();
-		
-		checkForIPs();
-		
+			info ("Building current Transitive Closure");
+			tc = gl.generateTransativeClosure();
+			
+			info("Checking for historical patterns");
+			checkCreatedButDuplicate();
+			checkPattern11();  //...a very specific situation
+			
+			info("Checking for crossovers");
+			checkForRoleGroupCrossovers();
+			checkForUngroupedCrossovers();
+			
+			checkForIPs();
+		}
+			
 		info("Checks complete, creating summary tag");
 		populateSummaryTab();
 		
@@ -107,6 +111,29 @@ public class ReleasePatternsReport extends TermServerReport implements ReportCla
 				.map(e -> e.getValue())
 				.collect(Collectors.summingInt(Integer::intValue));
 		reportSafely (SECONDARY_REPORT, (Component)null, "TOTAL", total);
+	}
+	
+	private boolean checkStructuralIntegrity() throws TermServerScriptException {
+		String issueStr = "Concept referenced in axiom, but does not exist";
+		String issueStr2 = "Concept exists without an FSN";
+		initialiseSummary(issueStr);
+		initialiseSummary(issueStr2);
+		
+		boolean isOK = true;
+		for (Concept c : gl.getAllConcepts()) {
+			if (c.isReleased() == null) {
+				String detail = "";
+				if (c.getAxiomEntries() != null && c.getAxiomEntries().size() > 0) {
+					detail = c.getAxiomEntries().get(0).toString();
+				}
+				report (c, issueStr, detail);
+				isOK = false;
+			} else if (c.getFsn() == null || c.getFsn().isEmpty()) {
+				report (c, issueStr2);
+				isOK = false;
+			}
+		}
+		return isOK;
 	}
 	
 	private void checkRedundantlyStatedParents() throws TermServerScriptException {

@@ -140,11 +140,12 @@ public class EclCache {
 	private Set<Concept> recoverConceptsFromTS(String branch, String ecl, boolean expectLargeResults) throws TermServerScriptException {
 		Set<Concept> allConcepts = new HashSet<>();
 		boolean allRecovered = false;
-		//int offset = 0;
 		String searchAfter = null;
+		int totalRecovered = 0;
 		while (!allRecovered) {
 			try {
 					ConceptCollection collection = tsClient.getConcepts(ecl, branch, searchAfter, PAGING_LIMIT);
+					totalRecovered += collection.getItems().size();
 					if (searchAfter == null) {
 						//First time round, report how many we're receiving.
 						TermServerScript.debug ("Recovering " + collection.getTotal() + " concepts matching '" + ecl +"'");
@@ -163,15 +164,14 @@ public class EclCache {
 							.collect(Collectors.toList());
 					allConcepts.addAll(localCopies);
 					
-					//Debug - check for duplicates
-					/*Concept duplicate = gl.getConcept("1162864000");
-					if (localCopies.contains(duplicate)) {
-						TermServerScript.warn ("Duplicate found");
-					}*/
+					//If we've counted more concepts than we currently have, then some duplicates have been lost in the 
+					//add to the set
+					if (totalRecovered > allConcepts.size()) {
+						TermServerScript.warn ("Duplicates detected");
+					}
 					
 					//Did we get all the concepts that there are?
-					if (allConcepts.size() < collection.getTotal()) {
-						//offset = allConcepts.size();
+					if (totalRecovered < collection.getTotal()) {
 						searchAfter = collection.getSearchAfter();
 					} else {
 						allRecovered = true;
