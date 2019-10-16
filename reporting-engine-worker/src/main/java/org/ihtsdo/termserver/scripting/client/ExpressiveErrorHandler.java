@@ -34,7 +34,6 @@ public class ExpressiveErrorHandler extends DefaultResponseErrorHandler {
 		}
 
 		logger.info("Got REST client error {} - {}", statusCode, statusText);
-
 		throw new RestClientResponseException(errMsg, statusCode, statusText, null, null, null);
 	}
 }

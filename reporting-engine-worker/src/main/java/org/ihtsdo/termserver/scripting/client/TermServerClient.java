@@ -6,6 +6,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 import org.apache.commons.lang.StringUtils;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.slf4j.Logger;
@@ -483,14 +484,6 @@ public class TermServerClient {
 		return getRefsetMemberUrl(refSetMemberId, branch) + "?force=" + toForce;
 	}
 
-	public JSONResource getRefsetMemberById(String id, String branch) throws TermServerClientException {
-		try {
-			return resty.json(getRefsetMemberUrl(id, branch));
-		} catch (IOException e) {
-			throw new TermServerClientException(e);
-		}
-	}
-
 	public Refset loadRefsetEntries(String branchPath, String refsetId, String referencedComponentId) throws TermServerClientException {
 		try {
 			String endPoint = this.url + "/" + branchPath + "/members?referenceSet=" + refsetId + "&referencedComponentId=" + referencedComponentId;
@@ -544,6 +537,28 @@ public class TermServerClient {
 		String url = getConceptBrowserValidationPath(branchPath);
 		HttpEntity<Concept> request = new HttpEntity<>(c, headers); 
 		return restTemplate.postForObject(url, request, DroolsResponse[].class);
+	}
+
+	public RefsetMember getRefsetMember(String uuid, String branchPath) {
+		try {
+			String url = getRefsetMemberUrl(uuid, branchPath);
+			return restTemplate.getForObject(url, RefsetMember.class);
+		} catch (Exception e) {
+			if (e.getMessage().contains("Member not found")) {
+				return null;
+			}
+			throw e;
+		}
+	}
+	
+	public RefsetMember updateRefsetMember(RefsetMember rm, String branchPath) {
+		String url = getRefsetMemberUrl(rm.getMemberId(), branchPath);
+		ResponseEntity<RefsetMember> response = restTemplate.exchange(
+				url,
+				HttpMethod.PUT,
+				new HttpEntity<>(rm, headers),
+				RefsetMember.class);
+		return response.getBody();
 	}
 
 }

@@ -112,6 +112,7 @@ public abstract class TermServerScript implements RF2Constants {
 	
 	public enum ReportActionType {	API_ERROR, DEBUG_INFO, INFO, UNEXPECTED_CONDITION,
 									CONCEPT_CHANGE_MADE, CONCEPT_ADDED, CONCEPT_INACTIVATED, CONCEPT_DELETED,
+									AXIOM_CHANGE_MADE,
 									DESCRIPTION_CHANGE_MADE, DESCRIPTION_ACCEPTABILIY_CHANGED, DESCRIPTION_REACTIVATED,
 									DESCRIPTION_ADDED, DESCRIPTION_INACTIVATED, DESCRIPTION_DELETED,
 									CASE_SIGNIFICANCE_CHANGE_MADE, MODULE_CHANGE_MADE, 
@@ -558,6 +559,29 @@ public abstract class TermServerScript implements RF2Constants {
 			}
 			String msg =  e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
 			throw new TermServerScriptException("Failed to recover " + concept + " from TS branch " + branchPath + ", due to: " + msg,e);
+		}
+	}
+	
+	protected RefsetMember loadRefsetMember(String uuid) throws TermServerScriptException {
+		debug ("Loading refset member " + uuid + " from " + project.getBranchPath());
+		return tsClient.getRefsetMember(uuid, project.getBranchPath());
+	}
+	
+	protected RefsetMember loadPreviousRefsetMember(String uuid) throws TermServerScriptException {
+		if (project.getPreviousBranchPath() == null) {
+			String previousBranchPath = getArchiveManager().getPreviousBranch(project);
+			project.setPreviousBranchPath(previousBranchPath);
+		}
+		debug ("Loading refset member " + uuid + " from " + project.getPreviousBranchPath());
+		return tsClient.getRefsetMember(uuid, project.getPreviousBranchPath());
+	}
+	
+	protected RefsetMember updateRefsetMember(RefsetMember rm) throws TermServerScriptException {
+		debug((dryRun?"Dry run update of":"Updating") + " refset member " + rm.getMemberId());
+		if (dryRun) {
+			return rm;
+		} else {
+			return tsClient.updateRefsetMember(rm, project.getBranchPath());
 		}
 	}
 	

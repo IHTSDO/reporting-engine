@@ -26,9 +26,9 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	protected int wiggleRoom = 5;
 	protected int failureCount = 0;
 	protected int validationCount = 0;
-	protected int taskThrottle = 30;
+	protected int taskThrottle = 10;
 	protected int restartFromTask = NOT_SET;
-	protected int conceptThrottle = 5;
+	protected int conceptThrottle = 2;
 	protected String targetAuthor;
 	protected String targetReviewer;
 	protected String[] author_reviewer;

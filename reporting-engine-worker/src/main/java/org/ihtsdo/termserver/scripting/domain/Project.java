@@ -39,6 +39,8 @@ public class Project {
 	@SerializedName("metadata")
 	@Expose
 	private Metadata metadata;
+	
+	private transient String previousBranchPath;
 
 	/**
 	 * No args constructor for use in serialization
@@ -187,6 +189,14 @@ public class Project {
 			return this.getKey().equals(((Project)other).getKey());
 		}
 		return false;
+	}
+
+	public void setPreviousBranchPath(String previousBranchPath) {
+		this.previousBranchPath = previousBranchPath;
+	}
+
+	public String getPreviousBranchPath() {
+		return previousBranchPath;
 	}
 
 }
