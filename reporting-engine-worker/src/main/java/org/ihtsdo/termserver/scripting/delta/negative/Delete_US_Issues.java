@@ -8,7 +8,7 @@ import java.util.List;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.TermServerClient;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
@@ -24,7 +24,7 @@ public class Delete_US_Issues extends NegativeDeltaGenerator implements RF2Const
 	List<Concept> affectedConcepts = new ArrayList<Concept>();
 	GraphLoader gl = GraphLoader.getGraphLoader();
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		Delete_US_Issues delta = new Delete_US_Issues();
 		try {
 			delta.newIdsRequired = false; // We'll only be reactivating exisiting langrefset entries

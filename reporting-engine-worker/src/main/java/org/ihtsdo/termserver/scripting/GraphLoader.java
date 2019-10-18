@@ -7,7 +7,6 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipInputStream;
 
 import org.apache.commons.io.IOUtils;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.owltoolkit.conversion.AxiomRelationshipConversionService;
@@ -116,7 +115,7 @@ public class GraphLoader implements RF2Constants {
 	}
 	
 	public Set<Concept> loadRelationships(CharacteristicType characteristicType, InputStream relStream, boolean addRelationshipsToConcepts, boolean isDelta, Boolean isReleased) 
-			throws IOException, TermServerScriptException, TermServerClientException {
+			throws IOException, TermServerScriptException {
 		Set<Concept> concepts = new HashSet<Concept>();
 		BufferedReader br = new BufferedReader(new InputStreamReader(relStream, StandardCharsets.UTF_8));
 		String line;
@@ -159,7 +158,7 @@ public class GraphLoader implements RF2Constants {
 	}
 	
 	public void loadAxioms(InputStream axiomStream, boolean isDelta, Boolean isReleased) 
-			throws IOException, TermServerScriptException, TermServerClientException {
+			throws IOException, TermServerScriptException {
 		BufferedReader br = new BufferedReader(new InputStreamReader(axiomStream, StandardCharsets.UTF_8));
 		String line;
 		boolean isHeaderLine = true;
@@ -441,7 +440,7 @@ public class GraphLoader implements RF2Constants {
 		}
 	}
 	
-	public void loadDescriptionFile(InputStream descStream, boolean fsnOnly, Boolean isReleased) throws IOException, TermServerScriptException, TermServerClientException {
+	public void loadDescriptionFile(InputStream descStream, boolean fsnOnly, Boolean isReleased) throws IOException, TermServerScriptException {
 		//Not putting this in a try resource block otherwise it will close the stream on completion and we've got more to read!
 		BufferedReader br = new BufferedReader(new InputStreamReader(descStream, StandardCharsets.UTF_8));
 		String line;
@@ -479,16 +478,16 @@ public class GraphLoader implements RF2Constants {
 		}
 	}
 
-	public Set<Concept> loadRelationshipDelta(CharacteristicType characteristicType, InputStream relStream) throws IOException, TermServerScriptException, TermServerClientException {
+	public Set<Concept> loadRelationshipDelta(CharacteristicType characteristicType, InputStream relStream) throws IOException, TermServerScriptException {
 		return loadRelationships(characteristicType, relStream, true, true, false);
 	}
 
 	public Set<Concept> getModifiedConcepts(
-			CharacteristicType characteristicType, ZipInputStream relStream) throws IOException, TermServerScriptException, TermServerClientException {
+			CharacteristicType characteristicType, ZipInputStream relStream) throws IOException, TermServerScriptException {
 		return loadRelationships(characteristicType, relStream, false, false, false);
 	}
 
-	public void loadLanguageFile(InputStream is) throws IOException, TermServerScriptException, TermServerClientException {
+	public void loadLanguageFile(InputStream is) throws IOException, TermServerScriptException {
 		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 		boolean isHeaderLine = true;
 		String line;
@@ -577,7 +576,7 @@ public class GraphLoader implements RF2Constants {
 		}
 	}
 
-	public void loadInactivationIndicatorFile(InputStream is) throws IOException, TermServerScriptException, TermServerClientException {
+	public void loadInactivationIndicatorFile(InputStream is) throws IOException, TermServerScriptException {
 		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 		boolean isHeaderLine = true;
 		String line;
@@ -608,7 +607,7 @@ public class GraphLoader implements RF2Constants {
 		}
 	}
 	
-	public void loadHistoricalAssociationFile(InputStream is) throws IOException, TermServerScriptException, TermServerClientException {
+	public void loadHistoricalAssociationFile(InputStream is) throws IOException, TermServerScriptException {
 		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 		boolean isHeaderLine = true;
 		String line;
@@ -622,7 +621,7 @@ public class GraphLoader implements RF2Constants {
 				String referencedComponent = lineItems[INACT_IDX_REFCOMPID];
 				if (isConcept(referencedComponent)) {
 					Concept c = getConcept(referencedComponent);
-					AssociationEntry historicalAssociation = loadHistoricalAssociationLine(lineItems);
+					AssociationEntry historicalAssociation = AssociationEntry.fromRf2(lineItems);
 					//Remove first in case we're replacing
 					c.getAssociations().remove(historicalAssociation);
 					c.getAssociations().add(historicalAssociation);
@@ -679,23 +678,18 @@ public class GraphLoader implements RF2Constants {
 		return new ArrayList<AssociationEntry>();
 	}
 
-	private AssociationEntry loadHistoricalAssociationLine(String[] lineItems) {
-		AssociationEntry h = new AssociationEntry();
-		h.setId(lineItems[ASSOC_IDX_ID]);
-		h.setEffectiveTime(lineItems[ASSOC_IDX_EFFECTIVETIME]);
-		h.setActive(lineItems[ASSOC_IDX_ACTIVE].equals("1"));
-		h.setModuleId(lineItems[ASSOC_IDX_MODULID]);
-		h.setRefsetId(lineItems[ASSOC_IDX_REFSETID]);
-		h.setReferencedComponentId(lineItems[ASSOC_IDX_REFCOMPID]);
-		h.setTargetComponentId(lineItems[ASSOC_IDX_TARGET]);
-		return h;
-	}
-	
 	public Component getComponent(String id) {
 		if (allComponents == null) {
 			populateAllComponents();
 		}
 		return allComponents.get(id);
+	}
+	
+	public Map<String,Component> getComponentMap() {
+		if (allComponents == null) {
+			populateAllComponents();
+		}
+		return new HashMap<>(allComponents);
 	}
 	
 	public Concept getComponentOwner(String id) {
@@ -704,7 +698,7 @@ public class GraphLoader implements RF2Constants {
 	}
 
 	private void populateAllComponents() {
-		System.out.print("Populating map of all components...");
+		System.out.println("Populating map of all components...");
 		allComponents = new HashMap<String, Component>();
 		componentOwnerMap = new HashMap<Component, Concept>();
 		
@@ -720,7 +714,28 @@ public class GraphLoader implements RF2Constants {
 			}
 			
 			for (Relationship r : c.getRelationships()) {
-				allComponents.put(r.getRelationshipId(), r);
+				//A relationship with a null ID will have come from an axiom.
+				//We'll let the axiomEntry cover that.
+				if (r.fromAxiom()) {
+					continue;
+				}
+				
+				if (r.getRelationshipId() == null) {
+					throw new IllegalArgumentException ("Rel ID not expected to be null");
+				}
+				//Have we historically swapped ID from stated to inferred
+				if (allComponents.containsKey(r.getRelationshipId())) {
+					if (r.isActive()) {
+						System.out.println("CMap replacing '" + r.getRelationshipId() + "' " + allComponents.get(r.getRelationshipId()) + " with active " + r);
+						allComponents.put(r.getRelationshipId(), r);
+					} else if (allComponents.get(r.getRelationshipId()).isActive()) {
+						System.out.println("Ignoring inactive '" + r.getRelationshipId() + "' " + r + " due to already having " + allComponents.get(r.getRelationshipId()));
+					} else {
+						System.out.println("Two inactive components share the same id " + r);
+					}
+				} else {
+					allComponents.put(r.getRelationshipId(), r);
+				}
 			}
 
 			for (InactivationIndicatorEntry i : c.getInactivationIndicatorEntries()) {
@@ -731,6 +746,11 @@ public class GraphLoader implements RF2Constants {
 			for (AssociationEntry h : c.getAssociations()) {
 				allComponents.put(h.getId(), h);
 				componentOwnerMap.put(h,  c);
+			}
+			
+			for (AxiomEntry a : c.getAxiomEntries()) {
+				allComponents.put(a.getId(), a);
+				componentOwnerMap.put(a, c);
 			}
 		}
 		System.out.print("complete.");
@@ -810,7 +830,7 @@ public class GraphLoader implements RF2Constants {
 									return d;
 			case RELATIONSHIP: return createRelationshipFromRF2(CharacteristicType.INFERRED_RELATIONSHIP, lineItems);
 			case STATED_RELATIONSHIP : return createRelationshipFromRF2(CharacteristicType.STATED_RELATIONSHIP, lineItems);
-			case HISTORICAL_ASSOCIATION : return loadHistoricalAssociationLine(lineItems);
+			case HISTORICAL_ASSOCIATION : return AssociationEntry.fromRf2(lineItems);
 			case ATTRIBUTE_VALUE : return  InactivationIndicatorEntry.fromRf2(lineItems);
 			case LANGREFSET : return LangRefsetEntry.fromRf2(lineItems);
 		default: throw new TermServerScriptException("Unknown component Type: " + componentType);

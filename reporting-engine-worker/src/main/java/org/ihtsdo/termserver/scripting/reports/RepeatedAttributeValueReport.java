@@ -7,7 +7,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 
@@ -20,7 +20,7 @@ public class RepeatedAttributeValueReport extends TermServerReport {
 	String targetAttributeStr = "127489000"; // |Has active ingredient (attribute)|
 	String matchText = "+"; 
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		RepeatedAttributeValueReport report = new RepeatedAttributeValueReport();
 		try {
 			report.init(args);

@@ -6,7 +6,7 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -32,7 +32,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 	private Set<Concept> isTargetOfNewInferredRelationship = new HashSet<>();
 	private Set<Concept> wasTargetOfLostInferredRelationship = new HashSet<>();
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		TermServerReport.run(ConceptChanged.class, args, params);
 	}

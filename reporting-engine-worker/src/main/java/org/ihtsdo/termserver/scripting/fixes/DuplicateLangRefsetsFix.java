@@ -5,8 +5,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.TermServerClient;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 
 import us.monoid.json.JSONArray;
 import us.monoid.json.JSONException;
@@ -14,7 +15,7 @@ import us.monoid.json.JSONObject;
 
 public class DuplicateLangRefsetsFix {
 
-	public static void main(String[] args) throws TermServerClientException, JSONException, IOException {
+	public static void main(String[] args) throws JSONException, IOException, TermServerScriptException {
 		String url = "http://localhost:8080/";
 		//CONREQEXT-1715
 		String branch = "MAIN/CONREQEXT/CONREQEXT-1740";

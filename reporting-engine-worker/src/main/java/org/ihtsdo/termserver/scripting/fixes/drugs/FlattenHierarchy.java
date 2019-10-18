@@ -5,7 +5,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -36,7 +36,7 @@ public class FlattenHierarchy extends BatchFix implements RF2Constants{
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		FlattenHierarchy fix = new FlattenHierarchy(null);
 		try {
 			fix.inputFileHasHeaderRow = true;

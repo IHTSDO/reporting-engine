@@ -251,7 +251,8 @@ public class ArchiveManager implements RF2Constants {
 			currentlyHeldInMemory = ts.getProject();
 			allowStaleData = originalStateDataFlag;
 		} catch (Exception e) {
-			String msg = "Unable to load " + ts.getProject() + " due to " + e.getMessage();
+			String eMsg = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+			String msg = "Unable to load " + ts.getProject() + " due to " + eMsg;
 			throw new TermServerScriptException (msg, e);
 		}
 		info ("Snapshot loading complete");
@@ -270,7 +271,7 @@ public class ArchiveManager implements RF2Constants {
 		return branchHeadUTC.compareTo(snapshotCreationUTC) > 0;
 	}
 
-	private void generateSnapshot(Project project) throws TermServerScriptException, IOException, TermServerClientException {
+	private void generateSnapshot(Project project) throws TermServerScriptException, IOException {
 		File snapshot = getSnapshotPath();
 		//Delete the current snapshot if it exists - will be stale
 		if (snapshot.isDirectory()) {
@@ -329,7 +330,7 @@ public class ArchiveManager implements RF2Constants {
 		return StringUtils.isNumeric(releaseBranch) ? releaseBranch : null;
 	}
 
-	protected void loadArchive(File archive, boolean fsnOnly, String fileType, Boolean isReleased) throws TermServerScriptException, TermServerClientException {
+	protected void loadArchive(File archive, boolean fsnOnly, String fileType, Boolean isReleased) throws TermServerScriptException {
 		try {
 			boolean isDelta = (fileType.equals(DELTA));
 			//Are we loading an expanded or compressed archive?
@@ -369,7 +370,7 @@ public class ArchiveManager implements RF2Constants {
 		}
 	}
 
-	private void loadArchiveZip(File archive, boolean fsnOnly, String fileType, boolean isDelta, Boolean isReleased) throws IOException, TermServerScriptException, TermServerClientException {
+	private void loadArchiveZip(File archive, boolean fsnOnly, String fileType, boolean isDelta, Boolean isReleased) throws IOException, TermServerScriptException {
 		ZipInputStream zis = new ZipInputStream(new FileInputStream(archive));
 		ZipEntry ze = zis.getNextEntry();
 		try {
@@ -459,7 +460,7 @@ public class ArchiveManager implements RF2Constants {
 					gl.loadLanguageFile(is);
 				}
 			}
-		} catch (TermServerScriptException | IOException | TermServerClientException e) {
+		} catch (TermServerScriptException | IOException e) {
 			throw new IllegalStateException("Unable to load " + path + " due to " + e.getMessage(), e);
 		}
 	}

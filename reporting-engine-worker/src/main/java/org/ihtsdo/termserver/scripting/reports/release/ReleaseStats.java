@@ -6,7 +6,7 @@ import java.util.*;
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.AncestorsCache;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
@@ -20,7 +20,7 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
  * */
 public class ReleaseStats extends TermServerReport implements ReportClass {
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		//params.put(PROJECT, "20170731");
 		TermServerReport.run(ReleaseStats.class, args, params);

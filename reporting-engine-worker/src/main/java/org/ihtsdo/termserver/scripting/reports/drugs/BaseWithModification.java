@@ -5,7 +5,7 @@ import java.io.PrintStream;
 import java.util.*;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.DrugUtils;
@@ -18,7 +18,7 @@ public class BaseWithModification extends TermServerReport {
 	
 	Concept[] type = new Concept[] {IS_MODIFICATION_OF};
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		BaseWithModification report = new BaseWithModification();
 		try {
 			report.init(args);

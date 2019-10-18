@@ -6,7 +6,7 @@ import java.util.Collection;
 import java.util.List;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
@@ -19,7 +19,7 @@ public class ModifiedActiveIngredients extends TermServerReport {
 	
 	Concept subHierarchy;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		ModifiedActiveIngredients report = new ModifiedActiveIngredients();
 		try {
 			report.additionalReportColumns = "Ingredient, ModificationOf";

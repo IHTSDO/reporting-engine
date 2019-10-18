@@ -5,7 +5,7 @@ import java.util.*;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 
@@ -23,7 +23,7 @@ public class AnatomyRemodelling extends BatchFix implements RF2Constants{
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		AnatomyRemodelling fix = new AnatomyRemodelling(null);
 		try {
 			fix.init(args);

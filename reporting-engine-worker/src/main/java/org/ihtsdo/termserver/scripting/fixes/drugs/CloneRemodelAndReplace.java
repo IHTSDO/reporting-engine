@@ -6,7 +6,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
@@ -34,7 +34,7 @@ public class CloneRemodelAndReplace extends BatchFix implements RF2Constants{
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		CloneRemodelAndReplace fix = new CloneRemodelAndReplace(null);
 		try {
 			ReportSheetManager.targetFolderId="1NjajGe-IjjjNk0d8lT838L4iQq_6wXrw"; //Drugs/ConeAndReplace

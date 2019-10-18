@@ -9,7 +9,7 @@ import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.AxiomUtils;
 import org.ihtsdo.termserver.scripting.DescendentsCache;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -63,7 +63,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	DescendentsCache cache;
 	private Set<Concept> deprecatedHierarchies;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put(INCLUDE_ALL_LEGACY_ISSUES, "N");
 		TermServerReport.run(ReleaseIssuesReport.class, args, params);

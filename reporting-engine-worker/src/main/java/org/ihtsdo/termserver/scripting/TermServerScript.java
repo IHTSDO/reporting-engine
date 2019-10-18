@@ -278,7 +278,7 @@ public abstract class TermServerScript implements RF2Constants {
 			} else {
 				try {
 					project = scaClient.getProject(projectName);
-				} catch (TermServerClientException e) {
+				} catch (TermServerScriptException e) {
 					throw new TermServerScriptException("Unable to recover project: " + projectName,e);
 				}
 			}
@@ -289,7 +289,7 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 	}
 
-	protected void checkSettingsWithUser(JobRun jobRun) {
+	protected void checkSettingsWithUser(JobRun jobRun) throws TermServerScriptException {
 		int envChoice = NOT_SET;
 		if (headlessEnvironment != null) {
 			envChoice = headlessEnvironment;
@@ -336,6 +336,7 @@ public abstract class TermServerScript implements RF2Constants {
 				}
 			}
 		}
+		
 	}
 
 	protected void init (JobRun jobRun) throws TermServerScriptException {
@@ -360,6 +361,9 @@ public abstract class TermServerScript implements RF2Constants {
 		String inputFileName = jobRun.getParamValue(INPUT_FILE);
 		if (!StringUtils.isEmpty(inputFileName)) {
 			inputFile = new File(inputFileName);
+			if (!inputFile.canRead() || !inputFile.isFile()) {
+				throw new TermServerScriptException("Unable to read specified file: " + inputFile);
+			}
 		}
 		
 		if (jobRun.getWhiteList() != null) {
@@ -373,6 +377,12 @@ public abstract class TermServerScript implements RF2Constants {
 			throw new TermServerScriptException("Unable to proceed without an authenticated token/cookie");
 		}
 		init();
+		if (projectName.equals("MAIN")) {
+			//MAIN is not a project.  Recover Main metadata from branch
+			project.setMetadata(tsClient.getBranch("MAIN").getMetadata());
+		} else {
+			project = scaClient.getProject(projectName);
+		}
 	}
 	
 	private String getEnv(String terminologyServerUrl) throws TermServerScriptException {
@@ -492,13 +502,13 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 	}
 	
-	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerClientException, TermServerScriptException, InterruptedException, IOException {
+	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException, InterruptedException, IOException {
 		getArchiveManager().loadProjectSnapshot(fsnOnly);
 		//Reset the report name to null here as it will have been set by the Snapshot Generator
 		setReportName(null);
 	}
 	
-	protected void loadArchive(File archive, boolean fsnOnly, String fileType, Boolean isReleased) throws TermServerScriptException, TermServerClientException {
+	protected void loadArchive(File archive, boolean fsnOnly, String fileType, Boolean isReleased) throws TermServerScriptException  {
 		getArchiveManager().loadArchive(archive, fsnOnly, fileType, isReleased);
 	}
 	

@@ -1,10 +1,6 @@
 package org.ihtsdo.termserver.scripting;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -13,7 +9,6 @@ import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 
 public class FlatFileLoader implements RF2Constants {
@@ -28,7 +23,7 @@ public class FlatFileLoader implements RF2Constants {
 		return componentMap.get(id);
 	}
 
-	public void loadArchive(File archive) throws TermServerScriptException, TermServerClientException {
+	public void loadArchive(File archive) throws TermServerScriptException {
 		try {
 			ZipInputStream zis = new ZipInputStream(new FileInputStream(archive));
 			ZipEntry ze = zis.getNextEntry();
@@ -53,7 +48,7 @@ public class FlatFileLoader implements RF2Constants {
 		}
 	}
 	
-	public void loadFile(ZipInputStream zis) throws IOException, TermServerScriptException, TermServerClientException {
+	public void loadFile(ZipInputStream zis) throws IOException, TermServerScriptException {
 		BufferedReader br = new BufferedReader(new InputStreamReader(zis, StandardCharsets.UTF_8));
 		boolean isHeaderLine = true;
 		String line;

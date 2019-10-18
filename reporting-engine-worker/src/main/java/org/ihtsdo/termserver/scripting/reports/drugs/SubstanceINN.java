@@ -6,7 +6,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -20,7 +20,7 @@ public class SubstanceINN extends TermServerReport {
 	List<INNSet> allINN = new ArrayList<>();
 	Description BLANK = new Description (null);
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		SubstanceINN report = new SubstanceINN();
 		try {
 			report.additionalReportColumns = "SemTag, Description, Affected, Issue, Spreadsheet Term";

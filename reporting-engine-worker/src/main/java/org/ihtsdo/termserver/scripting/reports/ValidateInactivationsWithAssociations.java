@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -37,7 +37,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 	boolean newInactivationsOnly = false;
 	Set<Concept> namespaceConcepts;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put(SUB_HIERARCHY, ROOT_CONCEPT.toString());
 		params.put(NEW_INACTIVATIONS_ONLY, "false");

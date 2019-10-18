@@ -8,7 +8,7 @@ import org.apache.commons.io.IOUtils;
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.client.TemplateServiceClient;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -37,7 +37,7 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		super(clone);
 	}
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		MisalignedConcepts app = new MisalignedConcepts(null);
 		try {
 			//app.includeComplexTemplates = true;

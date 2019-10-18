@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
@@ -15,7 +15,7 @@ public class ConceptsUsingAttribute extends TermServerReport {
 	
 	Concept attributeType;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		ConceptsUsingAttribute report = new ConceptsUsingAttribute();
 		try {
 			report.additionalReportColumns = "Semtag, DefinitionStatus, Stated, Inferred";

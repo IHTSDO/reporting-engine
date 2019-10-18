@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang.ArrayUtils;
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.drugs.Ingredient;
@@ -41,7 +41,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 	
 	TermGenerator termGenerator = new DrugTermGenerator(this);
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		TermServerReport.run(ValidateDrugModeling.class, args, params);
 	}

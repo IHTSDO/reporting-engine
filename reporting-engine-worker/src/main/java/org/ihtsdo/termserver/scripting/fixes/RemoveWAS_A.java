@@ -7,7 +7,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.BrowserClient;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
@@ -22,7 +22,7 @@ public class RemoveWAS_A extends BatchFix implements RF2Constants{
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		RemoveWAS_A fix = new RemoveWAS_A(null);
 		try {
 			fix.reportNoChange = false;

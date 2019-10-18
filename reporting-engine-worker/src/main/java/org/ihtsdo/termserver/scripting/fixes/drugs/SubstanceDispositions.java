@@ -6,7 +6,7 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 
@@ -34,7 +34,7 @@ public class SubstanceDispositions extends DrugBatchFix implements RF2Constants{
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		SubstanceDispositions fix = new SubstanceDispositions(null);
 		try {
 			fix.groupByIssue = true;

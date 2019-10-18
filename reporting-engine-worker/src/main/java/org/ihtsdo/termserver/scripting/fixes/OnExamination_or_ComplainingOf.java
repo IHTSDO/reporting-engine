@@ -6,7 +6,7 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.BrowserClient;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
@@ -31,7 +31,7 @@ public class OnExamination_or_ComplainingOf extends BatchFix implements RF2Const
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		OnExamination_or_ComplainingOf fix = new OnExamination_or_ComplainingOf(null);
 		try {
 			fix.reportNoChange = true;

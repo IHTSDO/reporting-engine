@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.*;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -22,7 +22,7 @@ public class MissingInactivationIndicatorsFix extends BatchFix implements RF2Con
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		MissingInactivationIndicatorsFix fix = new MissingInactivationIndicatorsFix(null);
 		try {
 			fix.runStandAlone = false;  //Was causing issues with historical associations not being set

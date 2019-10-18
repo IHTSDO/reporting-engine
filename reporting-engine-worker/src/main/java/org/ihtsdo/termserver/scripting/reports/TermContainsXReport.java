@@ -6,7 +6,7 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -33,7 +33,7 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 	boolean startsWith = false;
 	boolean wholeWord = false;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put(STARTS_WITH, "N");
 		params.put(SUB_HIERARCHY, ROOT_CONCEPT.toString());

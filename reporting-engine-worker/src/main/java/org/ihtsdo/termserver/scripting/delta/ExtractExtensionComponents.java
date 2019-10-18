@@ -6,7 +6,7 @@ import java.util.*;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.TermServerClient;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
@@ -26,7 +26,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	//private static String secondaryCheckPath = "MAIN";
 	private static String secondaryCheckPath = "MAIN/2019-01-31";
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		ExtractExtensionComponents delta = new ExtractExtensionComponents();
 		try {
 			delta.runStandAlone = true;

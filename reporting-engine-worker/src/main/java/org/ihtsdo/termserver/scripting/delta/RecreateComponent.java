@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.AssociationEntry;
@@ -20,7 +20,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 public class RecreateComponent extends DeltaGenerator {
 	
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		RecreateComponent delta = new RecreateComponent();
 		try {
 			delta.runStandAlone=true;

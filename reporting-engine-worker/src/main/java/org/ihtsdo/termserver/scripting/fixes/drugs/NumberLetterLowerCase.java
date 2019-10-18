@@ -5,7 +5,7 @@ import java.util.*;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.reports.CaseSensitivity;
@@ -25,7 +25,7 @@ public class NumberLetterLowerCase extends DrugBatchFix implements RF2Constants{
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		NumberLetterLowerCase fix = new NumberLetterLowerCase(null);
 		try {
 			fix.selfDetermining = true;

@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
@@ -50,7 +50,7 @@ public class CreateLoincConcepts extends DeltaGenerator {
 		}
 	}
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		CreateLoincConcepts delta = new CreateLoincConcepts();
 		try {
 			delta.inputFileHasHeaderRow = true;

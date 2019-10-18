@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
@@ -29,7 +29,7 @@ public class SplitRoleGroupsWithRepeatedAttributes extends BatchFix implements R
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		SplitRoleGroupsWithRepeatedAttributes fix = new SplitRoleGroupsWithRepeatedAttributes(null);
 		try {
 			fix.inputFileHasHeaderRow = true;

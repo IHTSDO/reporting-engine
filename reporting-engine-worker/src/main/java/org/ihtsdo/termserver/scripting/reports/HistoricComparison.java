@@ -7,7 +7,7 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.snomed.otf.scheduler.domain.*;
@@ -28,7 +28,7 @@ public class HistoricComparison extends TermServerReport implements ReportClass 
 	Map<Long, HistoricData> histDataMap = new HashMap<>();
 	DecimalFormat df = new DecimalFormat("##.###%");
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put(START_RELEASE, "20170731");
 		//params.put(START_RELEASE, "20190131");

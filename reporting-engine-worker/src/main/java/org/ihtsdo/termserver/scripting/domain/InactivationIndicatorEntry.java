@@ -1,5 +1,7 @@
 package org.ihtsdo.termserver.scripting.domain;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 //id	effectiveTime	active	moduleId	refsetId	referencedComponentId	inactivationReasonId
@@ -183,5 +185,17 @@ public class InactivationIndicatorEntry extends Component implements RF2Constant
 			return this.getId().equals(((InactivationIndicatorEntry)o).getId());
 		}
 		return false;
+	}
+	
+	public List<String> fieldComparison(Component other) {
+		InactivationIndicatorEntry otherI = (InactivationIndicatorEntry)other;
+		List<String> differences = new ArrayList<>();
+		String name = this.getClass().getSimpleName(); 
+		commonFieldComparison(otherI, differences);
+		
+		if (!this.getInactivationReasonId().equals(otherI.getInactivationReasonId())) {
+			differences.add("InactivationReasonId is different in " + name + ": " + this.getInactivationReasonId() + " vs " + otherI.getInactivationReasonId());
+		}
+		return differences;
 	}
 }

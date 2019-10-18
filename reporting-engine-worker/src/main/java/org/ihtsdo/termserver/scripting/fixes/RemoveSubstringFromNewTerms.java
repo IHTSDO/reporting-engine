@@ -5,7 +5,7 @@ import java.util.*;
 
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.domain.*;
 
 /*
@@ -22,7 +22,7 @@ public class RemoveSubstringFromNewTerms extends BatchFix implements RF2Constant
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		RemoveSubstringFromNewTerms fix = new RemoveSubstringFromNewTerms(null);
 		try {
 			fix.selfDetermining = true;

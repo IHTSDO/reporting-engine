@@ -144,4 +144,11 @@ public class Axiom extends Component implements RF2Constants {
 		}
 		return clone;
 	}
+	
+	@Override
+	public List<String> fieldComparison(Component other) {
+		//Actually not expecting to see this called since an RF2 comparison
+		//Would examine axionEntry objects;
+		throw new IllegalStateException("Unexpected comparison of axiom");
+	}
 }

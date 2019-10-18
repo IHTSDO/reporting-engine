@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
@@ -32,7 +32,7 @@ public class ModelCongenitalAbnormality extends DeltaGenerator {
 	List<RelationshipTemplate> addRelationships = new ArrayList<RelationshipTemplate>();
 
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		ModelCongenitalAbnormality delta = new ModelCongenitalAbnormality();
 		try {
 			delta.runStandAlone = true;

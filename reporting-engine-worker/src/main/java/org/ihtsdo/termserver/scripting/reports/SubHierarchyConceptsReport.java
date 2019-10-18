@@ -6,7 +6,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.domain.*;
 /**
  * FD19947 Get all descendants for two concepts (de-duplicate
@@ -15,7 +15,7 @@ public class SubHierarchyConceptsReport extends TermServerReport{
 	
 	Concept[] subHierarchies;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		SubHierarchyConceptsReport report = new SubHierarchyConceptsReport();
 		try {
 			report.additionalReportColumns="Descriptions";

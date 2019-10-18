@@ -8,7 +8,7 @@ import java.util.List;
 
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 
@@ -17,7 +17,7 @@ public class MismatchedRelationships extends TermServerScript{
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	String targetAttributeType = "246075003"; // | Causative agent (attribute) |;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		MismatchedRelationships report = new MismatchedRelationships();
 		try {
 			report.additionalReportColumns = "Concept_Active, Concept_Modified, Stated_or_Inferred, Relationship_Active, GroupNum, Type, Target";

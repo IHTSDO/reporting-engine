@@ -6,7 +6,7 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
@@ -47,7 +47,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		CDRemodelling app = new CDRemodelling(null);
 		try {
 			ReportSheetManager.targetFolderId = "1gNnY3XAuopxi5yybh3Kv9P3V2vMMULB0";  // Drugs / Remodeling

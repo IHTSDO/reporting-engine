@@ -8,7 +8,7 @@ import java.util.List;
 
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
@@ -25,7 +25,7 @@ public class PreferredTermsFromFile extends TermServerScript{
 	String matchText = "+";
 	List<Concept> conceptFilter;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		PreferredTermsFromFile report = new PreferredTermsFromFile();
 		try {
 			report.additionalReportColumns = "Desc_SCTID, Term, USPref, GBPref";

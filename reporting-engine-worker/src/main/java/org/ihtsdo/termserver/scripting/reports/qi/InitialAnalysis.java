@@ -6,7 +6,7 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
@@ -38,7 +38,7 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 	}
 	
 	//QI-222  Multi-ecl report runner
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		//TermServerScript.runHeadless(3);
 		String[] morphologies = new String[] {
 			/*	"11889001|Abiotrophy (morphologic abnormality)|",
@@ -66,7 +66,7 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 		}
 	}
 	
-/*	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+/*	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		//params.put(ECL, "<< 46866001");	//       |Fracture of lower limb (disorder)|
 		//params.put(ECL, "<< 125605004");	// QI-2  |Fracture of bone (disorder)|

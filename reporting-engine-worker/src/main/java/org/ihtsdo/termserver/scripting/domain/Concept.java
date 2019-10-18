@@ -1353,4 +1353,20 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		return axiom;
 	}
 
+	@Override
+	public List<String> fieldComparison(Component other) {
+		if (!(other instanceof Concept)) {
+			throw new IllegalStateException("Comarison of " + other + " failed.  It's not a concept");
+		}
+		Concept otherConcept = (Concept)other;
+		List<String> differences = new ArrayList<>();
+		String name = this.getClass().getSimpleName(); 
+		commonFieldComparison(other, differences);
+		
+		if (!this.getDefinitionStatus().equals(otherConcept.getDefinitionStatus())) {
+			differences.add("Definition Status is different in " + name + ": " + this.getDefinitionStatus() + " vs " + otherConcept.getDefinitionStatus());
+		}
+		return differences;
+	}
+
 }

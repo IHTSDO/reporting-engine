@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.domain.Batch;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -25,7 +25,7 @@ public class ProximatePrimitiveRemodeller extends BatchFix implements RF2Constan
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		ProximatePrimitiveRemodeller fix = new ProximatePrimitiveRemodeller(null);
 		try {
 			fix.useAuthenticatedCookie = true;

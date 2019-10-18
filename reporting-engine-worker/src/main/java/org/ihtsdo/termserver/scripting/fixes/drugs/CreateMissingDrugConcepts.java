@@ -8,7 +8,7 @@ import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.AncestorsCache;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
@@ -61,7 +61,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		CreateMissingDrugConcepts fix = new CreateMissingDrugConcepts(null);
 		try {
 			ReportSheetManager.targetFolderId="1SQw8vYXeB-LYPfoVzWwyGFjGp1yre2cT";  //Content Reporting Artefacts/Drugs/CreateMissingDrugConcepts

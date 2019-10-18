@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.DescendentsCache;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.template.TemplateUtils;
@@ -31,7 +31,7 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 	Map<Concept, Integer> outOfScopeCache = new HashMap<>();
 	int totalTemplateMatches = 0;
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put(SERVER_URL, "https://authoring.ihtsdotools.org/template-service");
 		TermServerReport.run(AllTemplateCompliance.class, args, params);

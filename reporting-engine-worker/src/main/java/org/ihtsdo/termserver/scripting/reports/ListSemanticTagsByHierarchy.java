@@ -20,7 +20,7 @@ import com.google.common.collect.Multiset;
  */
 public class ListSemanticTagsByHierarchy extends TermServerReport implements ReportClass {
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put(SUB_HIERARCHY, BODY_STRUCTURE.toString());
 		TermServerReport.run(ListSemanticTagsByHierarchy.class, args);

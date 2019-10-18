@@ -7,7 +7,7 @@ import java.util.List;
 
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.ihtsdo.termserver.scripting.util.StringUtils;
@@ -19,7 +19,7 @@ public class CaseSignificanceFix extends DeltaGenerator implements RF2Constants 
 
 	private List<String> exceptions = new ArrayList<>();
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		CaseSignificanceFix delta = new CaseSignificanceFix();
 		try {
 			delta.newIdsRequired = false; // We'll only be modifying existing descriptions

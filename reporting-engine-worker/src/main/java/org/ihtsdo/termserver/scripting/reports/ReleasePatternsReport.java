@@ -8,7 +8,7 @@ import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.AncestorsCache;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.TransitiveClosure;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.release.CrossoverUtils;
@@ -36,7 +36,7 @@ public class ReleasePatternsReport extends TermServerReport implements ReportCla
 	String previousPreviousRelease;
 	TransitiveClosure tc;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		TermServerReport.run(ReleasePatternsReport.class, args, params);
 	}

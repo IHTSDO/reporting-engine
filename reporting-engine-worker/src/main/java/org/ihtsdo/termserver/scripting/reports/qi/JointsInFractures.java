@@ -6,7 +6,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
@@ -21,7 +21,7 @@ public class JointsInFractures extends TermServerReport {
 	Set<Concept> boneStructures;
 	Set<Concept> jointStructures;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		JointsInFractures report = new JointsInFractures();
 		try {
 			report.additionalReportColumns = "FSN, Joint Structures, Joint Also Bone Structure, Bone Structures, Other things";

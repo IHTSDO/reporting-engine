@@ -42,7 +42,7 @@ public class IdentifyProductsWithStrengthReport extends TermServerScript{
 	
 	Multiset<String> strengthUnitCombos = HashMultiset.create();
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		IdentifyProductsWithStrengthReport report = new IdentifyProductsWithStrengthReport();
 		try {
 			report.additionalReportColumns = "EffectiveTime, Definition_Status,lexicalMatch, authorIdentified";

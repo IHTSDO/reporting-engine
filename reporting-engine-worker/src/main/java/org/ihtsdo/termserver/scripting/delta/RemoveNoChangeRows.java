@@ -8,7 +8,7 @@ import java.util.*;
 import java.util.zip.*;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 /**
@@ -25,7 +25,7 @@ public class RemoveNoChangeRows extends DeltaGenerator {
 	Concept hierarchyOfInterest = BODY_STRUCTURE;
 	List<String> semTagsOfInterest; 
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		RemoveNoChangeRows app = new RemoveNoChangeRows();
 		try {
 			app.newIdsRequired = false;

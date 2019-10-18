@@ -3,6 +3,7 @@ package org.ihtsdo.termserver.scripting.client;
 import java.io.IOException;
 
 import org.ihtsdo.termserver.scripting.TermServerScript;
+import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Project;
 import org.ihtsdo.termserver.scripting.domain.Task;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -127,7 +128,7 @@ public class AuthoringServicesClient {
 		return taskKey;
 	}
 	
-	public void deleteTask(String project, String taskKey, boolean optional) throws TermServerClientException {
+	public void deleteTask(String project, String taskKey, boolean optional) throws TermServerScriptException {
 		String endPoint = serverUrl + apiRoot + "projects/" + project + "/tasks/" + taskKey;
 		try {
 			JSONObject requestJson = new JSONObject();
@@ -138,12 +139,12 @@ public class AuthoringServicesClient {
 			if (optional) {
 				System.out.println(errStr + ": " + e.getMessage());
 			} else {
-				throw new TermServerClientException (errStr, e);
+				throw new TermServerScriptException (errStr, e);
 			}
 		}
 	}
 
-	public Project getProject(String projectStr) throws TermServerClientException {
+	public Project getProject(String projectStr) throws TermServerScriptException {
 		try {
 			TermServerScript.debug("Recovering project " + projectStr + " from " + serverUrl);
 			String url = serverUrl + apiRoot + "projects/" + projectStr;
@@ -153,11 +154,11 @@ public class AuthoringServicesClient {
 			}
 			return project;
 		} catch (Exception e) {
-			throw new TermServerClientException("Unable to recover project " + projectStr, e);
+			throw new TermServerScriptException("Unable to recover project " + projectStr, e);
 		}
 	}
 	
-	public Task getTask(String taskKey) throws TermServerClientException {
+	public Task getTask(String taskKey) throws TermServerScriptException {
 		try {
 			String projectStr = taskKey.substring(0, taskKey.indexOf("-"));
 			String endPoint = serverUrl + apiRoot + "projects/" + projectStr + "/tasks/" + taskKey;
@@ -166,22 +167,22 @@ public class AuthoringServicesClient {
 			Task taskObj = gson.fromJson(json, Task.class);
 			return taskObj;
 		} catch (Exception e) {
-			throw new TermServerClientException("Unable to recover task " + taskKey, e);
+			throw new TermServerScriptException("Unable to recover task " + taskKey, e);
 		}
 	}
 
-	public Classification classify(String taskKey) throws TermServerClientException {
+	public Classification classify(String taskKey) throws TermServerScriptException {
 		try {
 			String projectStr = taskKey.substring(0, taskKey.indexOf("-"));
 			String endPoint = serverUrl + apiRoot + "projects/" + projectStr + "/tasks/" + taskKey + "/classifications";
 			HttpEntity<Object> requestEntity = new HttpEntity<Object>("", headers);
 			return restTemplate.postForObject(endPoint, requestEntity, Classification.class);
 		} catch (Exception e) {
-			throw new TermServerClientException("Unable to classify " + taskKey, e);
+			throw new TermServerScriptException("Unable to classify " + taskKey, e);
 		}
 	}
 	
-	public Status validate(String taskKey) throws TermServerClientException {
+	public Status validate(String taskKey) throws TermServerScriptException {
 		try {
 			String projectStr = taskKey.substring(0, taskKey.indexOf("-"));
 			String endPoint = serverUrl + apiRoot + "projects/" + projectStr + "/tasks/" + taskKey + "/validation";
@@ -190,7 +191,7 @@ public class AuthoringServicesClient {
 			Status status = gson.fromJson(json, Status.class);
 			return status;
 		} catch (Exception e) {
-			throw new TermServerClientException("Unable to initiate validation on " + taskKey, e);
+			throw new TermServerScriptException("Unable to initiate validation on " + taskKey, e);
 		}
 	}
 

@@ -6,7 +6,7 @@ import java.util.*;
 import org.apache.commons.lang.NotImplementedException;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 
@@ -20,7 +20,7 @@ public class DuplicateInactivationIndicatorsFix extends BatchFix implements RF2C
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		DuplicateInactivationIndicatorsFix fix = new DuplicateInactivationIndicatorsFix(null);
 		try {
 			fix.selfDetermining = true;
@@ -39,13 +39,13 @@ public class DuplicateInactivationIndicatorsFix extends BatchFix implements RF2C
 		int changesMade = 0;
 		try {
 			changesMade = fixDuplicateInactivationIndicators(task, concept, false);
-		} catch (TermServerClientException e) {
+		} catch (TermServerScriptException e) {
 			throw new TermServerScriptException ("Failed to remove duplicate inactivation indicator on " + concept, e);
 		}
 		return changesMade;
 	}
 
-	private int fixDuplicateInactivationIndicators(Task task, Concept c, boolean trialRun) throws TermServerScriptException, TermServerClientException {
+	private int fixDuplicateInactivationIndicators(Task task, Concept c, boolean trialRun) throws TermServerScriptException {
 		int changesMade = 0;
 			InactivationIndicatorEntry[] ciis = getDuplicateInactivationIndicators(c, c.getInactivationIndicatorEntries());
 			for (InactivationIndicatorEntry cii : ciis) {
