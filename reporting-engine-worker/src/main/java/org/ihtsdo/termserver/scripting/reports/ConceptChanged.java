@@ -100,8 +100,10 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 				throw new IllegalStateException ("Malformed snapshot. Released status not populated at " + c);
 			} else if (!c.isReleased()) {
 				//We will not report any changes on brand new concepts
+				//Or (in managed service) concepts from other modules
 				continue;
-			} else if (c.getEffectiveTime() == null || c.getEffectiveTime().isEmpty()) {
+			} else if (inScope(c) && 
+					(c.getEffectiveTime() == null || c.getEffectiveTime().isEmpty())) {
 				//Only want to log def status change if the concept has not been made inactive
 				if (c.isActive()) {
 					defStatusChanged.add(c);
@@ -111,49 +113,55 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 			}
 			
 			for (Description d : c.getDescriptions()) {
-				if (!d.isReleased()) {
-					hasNewDescriptions.add(c);
-				} else if (d.getEffectiveTime() == null || d.getEffectiveTime().isEmpty()) {
-					if (!d.isActive()) {
-						hasLostDescriptions.add(c);
-					} else {
-						hasChangedDescriptions.add(c);
+				if (inScope(d)) {
+					if (!d.isReleased()) {
+						hasNewDescriptions.add(c);
+					} else if (d.getEffectiveTime() == null || d.getEffectiveTime().isEmpty()) {
+						if (!d.isActive()) {
+							hasLostDescriptions.add(c);
+						} else {
+							hasChangedDescriptions.add(c);
+						}
 					}
 				}
 			}
 			
 			for (Relationship r : c.getRelationships()) {
-				if (r.getEffectiveTime() == null || r.getEffectiveTime().isEmpty()) {
-					boolean isStated = r.getCharacteristicType().equals(CharacteristicType.STATED_RELATIONSHIP);
-					if (r.isActive()) {
-						if (isStated) {
-							hasNewStatedRelationships.add(c);
-							isTargetOfNewStatedRelationship.add(r.getTarget());
+				if (inScope(r)) {
+					if (r.getEffectiveTime() == null || r.getEffectiveTime().isEmpty()) {
+						boolean isStated = r.getCharacteristicType().equals(CharacteristicType.STATED_RELATIONSHIP);
+						if (r.isActive()) {
+							if (isStated) {
+								hasNewStatedRelationships.add(c);
+								isTargetOfNewStatedRelationship.add(r.getTarget());
+							} else {
+								hasNewInferredRelationships.add(c);
+								isTargetOfNewInferredRelationship.add(r.getTarget());
+							}
 						} else {
-							hasNewInferredRelationships.add(c);
-							isTargetOfNewInferredRelationship.add(r.getTarget());
-						}
-					} else {
-						if (isStated) {
-							hasLostStatedRelationships.add(c);
-							wasTargetOfLostStatedRelationship.add(c);
-						} else {
-							hasLostInferredRelationships.add(c);
-							wasTargetOfLostInferredRelationship.add(c);
+							if (isStated) {
+								hasLostStatedRelationships.add(c);
+								wasTargetOfLostStatedRelationship.add(c);
+							} else {
+								hasLostInferredRelationships.add(c);
+								wasTargetOfLostInferredRelationship.add(c);
+							}
 						}
 					}
 				}
 			}
 			
-			for (InactivationIndicatorEntry i : c.getInactivationIndicatorEntries()) {
-				if (i.getEffectiveTime() == null || i.getEffectiveTime().isEmpty()) {
-					hasChangedInactivationIndicators.add(c);
+			if (inScope(c)) {
+				for (InactivationIndicatorEntry i : c.getInactivationIndicatorEntries()) {
+					if (i.getEffectiveTime() == null || i.getEffectiveTime().isEmpty()) {
+						hasChangedInactivationIndicators.add(c);
+					}
 				}
-			}
-			
-			for (AssociationEntry a : c.getAssociations()) {
-				if (a.getEffectiveTime() == null || a.getEffectiveTime().isEmpty()) {
-					hasChangedAssociations.add(c);
+				
+				for (AssociationEntry a : c.getAssociations()) {
+					if (a.getEffectiveTime() == null || a.getEffectiveTime().isEmpty()) {
+						hasChangedAssociations.add(c);
+					}
 				}
 			}
 			

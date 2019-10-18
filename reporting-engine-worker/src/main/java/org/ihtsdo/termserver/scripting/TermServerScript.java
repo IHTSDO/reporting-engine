@@ -1406,4 +1406,13 @@ public abstract class TermServerScript implements RF2Constants {
 	public static void runHeadless(Integer envNum) {
 		headlessEnvironment = envNum;
 	}
+	
+	protected boolean inScope(Component c) {
+		//Do we have a default module id ie for a managed service project?
+		if (project.getMetadata() != null && project.getMetadata().getDefaultModuleId() != null) {
+			return c.getModuleId().equals(project.getMetadata().getDefaultModuleId());
+		}
+		return true;
+	}
+	
 }
