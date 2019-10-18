@@ -10,6 +10,7 @@ import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.ihtsdo.termserver.scripting.util.StringUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 
@@ -94,6 +95,8 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 			conceptsOfInterest = gl.getAllConcepts();
 		}
 		
+//		conceptsOfInterest = Collections.singleton(gl.getConcept("324881002"));
+		
 		double lastPercentageReported = 0;
 		for (Concept c : conceptsOfInterest) {
 			if (c.isReleased() == null) {
@@ -128,7 +131,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 			
 			for (Relationship r : c.getRelationships()) {
 				if (inScope(r)) {
-					if (r.getEffectiveTime() == null || r.getEffectiveTime().isEmpty()) {
+					if (StringUtils.isEmpty(r.getEffectiveTime())) {
 						boolean isStated = r.getCharacteristicType().equals(CharacteristicType.STATED_RELATIONSHIP);
 						if (r.isActive()) {
 							if (isStated) {

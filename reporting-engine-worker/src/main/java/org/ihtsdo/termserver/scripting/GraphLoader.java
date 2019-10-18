@@ -131,7 +131,11 @@ public class GraphLoader implements RF2Constants {
 					continue;
 				}
 				
-/*				if (characteristicType.equals(CharacteristicType.STATED_RELATIONSHIP) && 
+/*				if (lineItems[REL_IDX_ID].equals("16101000172123")) {
+					TermServerScript.debug ("Debug Here");
+				}
+				
+				if (characteristicType.equals(CharacteristicType.STATED_RELATIONSHIP) && 
 						lineItems[REL_IDX_SOURCEID].equals("108554009") && 
 						lineItems[REL_IDX_TYPEID].equals("726542003")) {
 					TermServerScript.debug ("Debug Here");
@@ -294,9 +298,12 @@ public class GraphLoader implements RF2Constants {
 		r.setRelationshipId(lineItems[REL_IDX_ID].isEmpty()?null:lineItems[REL_IDX_ID]);
 		r.setCharacteristicType(charType);
 		r.setActive(lineItems[REL_IDX_ACTIVE].equals("1"));
-		r.setEffectiveTime(lineItems[REL_IDX_EFFECTIVETIME].isEmpty()?null:lineItems[REL_IDX_EFFECTIVETIME]);
 		r.setModifier(SnomedUtils.translateModifier(lineItems[REL_IDX_MODIFIERID]));
 		r.setModuleId(lineItems[REL_IDX_MODULEID]);
+		
+		//Set the effectiveTime last because changing the other fields from defaults causes it to null out
+		r.setEffectiveTime(lineItems[REL_IDX_EFFECTIVETIME].isEmpty()?null:lineItems[REL_IDX_EFFECTIVETIME]);
+		
 		//Changing those values after the defaults were set in the constructor will incorrectly mark dirty
 		r.setClean();
 		return r;

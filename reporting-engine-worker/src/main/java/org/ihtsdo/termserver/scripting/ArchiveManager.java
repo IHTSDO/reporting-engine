@@ -14,7 +14,6 @@ import java.util.stream.Stream;
 import java.util.zip.*;
 
 import org.apache.commons.io.FileUtils;
-import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.client.TermServerClient.*;
 import org.ihtsdo.termserver.scripting.dao.ArchiveDataLoader;
 import org.ihtsdo.termserver.scripting.domain.*;
