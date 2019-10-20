@@ -22,6 +22,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 	protected String relDeltaFilename;
 	protected String attribValDeltaFilename;
 	protected String assocDeltaFilename;
+	protected String owlDeltaFilename;
 	protected String sRelDeltaFilename;
 	protected String descDeltaFilename;
 	protected String textDfnDeltaFilename;
@@ -34,7 +35,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 	protected boolean newIdsRequired = true;
 	protected String moduleId="900000000000207008";
 	protected String nameSpace="0";
-	protected String[] langRefsetIds = new String[] { "900000000000508004",  //GB
+	protected String[] targetLangRefsetIds = new String[] { "900000000000508004",  //GB
 														"900000000000509007" }; //US
 
 	protected String[] conHeader = new String[] {"id","effectiveTime","active","moduleId","definitionStatusId"};
@@ -43,7 +44,8 @@ public abstract class DeltaGenerator extends TermServerScript {
 	protected String[] langHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","acceptabilityId"};
 	protected String[] attribValHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","valueId"};
 	protected String[] assocHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","targetComponentId"};
-
+	protected String[] owlHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","owlExpression"};
+	
 	protected IdGenerator conIdGenerator;
 	protected IdGenerator descIdGenerator;
 	protected IdGenerator relIdGenerator;
@@ -92,11 +94,11 @@ public abstract class DeltaGenerator extends TermServerScript {
 			languageCode = response;
 		}
 		
-		String langRefsetIdStr = StringUtils.join(langRefsetIds, ",");  
+		String langRefsetIdStr = StringUtils.join(targetLangRefsetIds, ",");  
 		print ("Targetting which language refset(s)? [" + langRefsetIdStr + "]: ");
 		response = STDIN.nextLine().trim();
 		if (!response.isEmpty()) {
-			langRefsetIds = response.split(COMMA);
+			targetLangRefsetIds = response.split(COMMA);
 		}
 		
 		print ("What's the Edition? [" + edition + "]: ");
@@ -105,7 +107,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 			edition = response;
 		}
 		
-		if (moduleId.isEmpty() || langRefsetIds  == null) {
+		if (moduleId.isEmpty() || targetLangRefsetIds  == null) {
 			String msg = "Require both moduleId and langRefset Id to be specified (-m -l parameters)";
 			throw new TermServerScriptException(msg);
 		}
@@ -172,6 +174,10 @@ public abstract class DeltaGenerator extends TermServerScript {
 		fileMap.put(ComponentType.TEXT_DEFINITION, textDfnDeltaFilename);
 		writeToRF2File(textDfnDeltaFilename, descHeader);
 		
+		owlDeltaFilename = termDir + "sRefset_OWLExpression_Delta_"+edition+"_" + today + ".txt";
+		fileMap.put(ComponentType.AXIOM, owlDeltaFilename);
+		writeToRF2File(owlDeltaFilename, owlHeader);
+		
 		langDeltaFilename = refDir + "Language/der2_cRefset_LanguageDelta-"+languageCode+"_"+edition+"_" + today + ".txt";
 		fileMap.put(ComponentType.LANGREFSET, langDeltaFilename);
 		writeToRF2File(langDeltaFilename, langHeader);
@@ -229,6 +235,12 @@ public abstract class DeltaGenerator extends TermServerScript {
 		}
 	}
 	
+	protected void outputRF2(AxiomEntry a) throws TermServerScriptException {
+		if (a.isDirty()) {
+			writeToRF2File(owlDeltaFilename, a.toRF2());
+		}
+	}
+	
 	protected void outputRF2(Concept c, boolean checkAllComponents) throws TermServerScriptException {
 		if (c.isDirty()) {
 			writeToRF2File(conDeltaFilename, c.toRF2());
@@ -240,7 +252,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 			outputRF2(d);  //Will output langrefset in turn
 		}
 		
-		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH)) {
+		for (Relationship r : c.getRelationships()) {
 			outputRF2(r);
 		}
 		
@@ -250,6 +262,10 @@ public abstract class DeltaGenerator extends TermServerScript {
 		
 		for (AssociationEntry h: c.getAssociations()) {
 			outputRF2(h);
+		}
+		
+		for (AxiomEntry a: c.getAxiomEntries()) {
+			outputRF2(a);
 		}
 	}
 

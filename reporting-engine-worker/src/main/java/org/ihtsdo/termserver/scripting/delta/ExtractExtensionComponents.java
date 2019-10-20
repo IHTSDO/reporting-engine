@@ -9,6 +9,8 @@ import org.ihtsdo.termserver.scripting.client.TermServerClient;
 
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.snomed.otf.owltoolkit.conversion.AxiomRelationshipConversionService;
+import org.snomed.otf.owltoolkit.domain.AxiomRepresentation;
 
 /**
  * Class form a delta of specified concepts from some edition and 
@@ -22,22 +24,23 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	private List<Component> allModifiedConcepts = new ArrayList<>();
 	private Map<String, Concept> loadedConcepts = new HashMap<>();
 	TermServerClient secondaryConnection;
-	private static Concept NULL_CONCEPT = new Concept("-1");
-	//private static String secondaryCheckPath = "MAIN";
-	private static String secondaryCheckPath = "MAIN/2019-01-31";
+	String targetModuleId = SCTID_CORE_MODULE;
+	private static String secondaryCheckPath = "MAIN";
+	//private static String secondaryCheckPath = "MAIN/2019-07-31";
+	private AxiomRelationshipConversionService axiomService = new AxiomRelationshipConversionService (null);
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		ExtractExtensionComponents delta = new ExtractExtensionComponents();
 		try {
 			delta.runStandAlone = true;
-			delta.moduleId = "731000124108";  //US Module
-			delta.additionalReportColumns = "ACTION_DETAIL, DEF_STATUS, PARENT";
-			
+			//delta.moduleId = "731000124108";  //US Module
+			delta.moduleId = "32506021000036107"; //AU Module
 			delta.init(args);
-			delta.getArchiveManager().loadExtension = true;
+			delta.getArchiveManager().loadEditionArchive = true;
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			delta.loadProjectSnapshot(false);  //Not just FSN, load all terms with lang refset also
 			//We won't incude the project export in our timings
+			delta.additionalReportColumns = "ACTION_DETAIL, DEF_STATUS, PARENT";
 			delta.postInit();
 			delta.startTimer();
 			delta.processFile();
@@ -64,7 +67,13 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		
 		print ("Please enter your authenticated cookie for connection to " + url + " : ");
 		String secondaryCookie = STDIN.nextLine().trim();
-		secondaryConnection = new TermServerClient(url + "snowowl/snomed-ct/v2", secondaryCookie);
+		secondaryConnection = createTSClient(url, secondaryCookie);
+		
+		print ("Specify source module id " + (moduleId==null?": ":"[" + moduleId + "]: "));
+		String response = STDIN.nextLine().trim();
+		if (!response.isEmpty()) {
+			moduleId = response;
+		}
 	}
 
 	protected List<Component> processFile() throws TermServerScriptException {
@@ -87,7 +96,10 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	}
 	
 	private void outputModifiedComponents() throws TermServerScriptException {
-		for (Component thisConcept : gl.getAllConcepts()) {
+		for (Concept thisConcept : gl.getAllConcepts()) {
+/*			if (thisConcept.getConceptId().equals("820511000168109")) {
+				debug ("Here");
+			}*/
 			try {
 				outputRF2((Concept)thisConcept, false);  //Don't check desc/rels if concept not modified.
 			} catch (TermServerScriptException e) {
@@ -103,7 +115,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			//Was this concept originally specified, or picked up as a dependency?
 			String parents = parentsToString(c);
 			
-			//It's possible that this concept has already been transferred by an earlier run if it was identified as a dependecy, so 
+			//It's possible that this concept has already been transferred by an earlier run if it was identified as a dependency, so 
 			//we have to check every concept.
 			Concept dependency = loadConcept(c);
 			if (!dependency.equals(NULL_CONCEPT)) {
@@ -116,12 +128,22 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			} else {
 				report (c, null, Severity.MEDIUM, ReportActionType.CONCEPT_CHANGE_MADE, "Dependency concept, module set to core", c.getDefinitionStatus().toString(), parents);
 			}
-			c.setModuleId(SCTID_CORE_MODULE);
+			c.setModuleId(targetModuleId);
 			allModifiedConcepts.add(c);
+			
+			//If we have no stated modelling, create an Axiom Entry from the inferred rels.
+			if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE).size() == 0) {
+				convertInferredRelsToAxiomEntry(c);
+			}
+			
 			incrementSummaryInformation("Concepts moved");
 		} else {
 			if (allIdentifiedConcepts.contains(c)) {
-				report (c, null, Severity.HIGH, ReportActionType.CONCEPT_CHANGE_MADE, "Specified concept in unexpected module: " + c.getModuleId());
+				if (c.getModuleId().equals(targetModuleId)) {
+					report (c, null, Severity.HIGH, ReportActionType.NO_CHANGE, "Specified concept already in target module: " + c.getModuleId());
+				} else {
+					report (c, null, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Specified concept in unexpected module: " + c.getModuleId());
+				}
 			}
 			return;
 		}
@@ -134,8 +156,34 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		
 		List<Relationship> activeRels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
 		for (Relationship r : activeRels) {
-			moveRelationshipToCore(r);
+			if (r.getModuleId().equals(moduleId)) {
+				moveRelationshipToCore(r);
+			}
 		}
+		
+		activeRels = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE);
+		for (Relationship r : activeRels) {
+			if (r.getModuleId().equals(moduleId)) {
+				moveRelationshipToCore(r);
+			}
+		}
+	}
+
+	private void convertInferredRelsToAxiomEntry(Concept c) {
+		AxiomRepresentation axiom = new AxiomRepresentation();
+		axiom.setLeftHandSideNamedConcept(Long.parseLong(c.getConceptId()));
+		axiom.setPrimitive(c.getDefinitionStatus().equals(DefinitionStatus.PRIMITIVE));
+		Map<Integer, List<org.snomed.otf.owltoolkit.domain.Relationship>> relationshipMap = new HashMap<>();
+		boolean includeIsA = true;
+		for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP, includeIsA)) {
+			relationshipMap.put(g.getGroupId(), g.getToolKitRelationships());
+		}
+		axiom.setRightHandSideRelationships(relationshipMap);
+		String axiomStr = axiomService.convertRelationshipsToAxiom(axiom);
+		AxiomEntry axiomEntry = AxiomEntry.withDefaults(c, axiomStr);
+		axiomEntry.setModuleId(targetModuleId);
+		axiomEntry.setDirty();
+		c.getAxiomEntries().add(axiomEntry);
 	}
 
 	private String parentsToString(Concept c) {
@@ -154,17 +202,17 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 
 	private void moveRelationshipToCore(Relationship r) throws TermServerScriptException {
 		//Switch the relationship.   Also switch both the type and the destination - will return if not needed
-		r.setModuleId(SCTID_CORE_MODULE);
+		r.setModuleId(targetModuleId);
 		switchModule(r.getType());
 		//Note that switching the target will also recursively work up the hierarchy as parents are also switched
 		//up the hierarchy until a concept owned by the core module is encountered.
 		
-		//Don't worry about the target if it's on our to-do list anyway.
 		Concept target = r.getTarget();
+		//Don't worry about the target if it's on our to-do list anyway.
 		if (!allIdentifiedConcepts.contains(target)) {
-			//If our dependecy is in the core module, then check - live - if it is active
+			//If our dependency is in the core module, then check - live - if it is active
 			//because if not, we can't take this relationship.  Check we haven't just moved it there.
-			if (target.getModuleId().equals(SCTID_CORE_MODULE) && ! allModifiedConcepts.contains(target)) {
+			if (target.getModuleId().equals(targetModuleId) && ! allModifiedConcepts.contains(target)) {
 				Concept loadedTarget = loadConcept(target);
 				//If this target is inactive, find an alternative target and create a replacement relationship
 				if (!loadedTarget.isActive()) {
@@ -183,7 +231,6 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			}
 			switchModule(target);
 		}
-		
 	}
 
 	private Concept getReplacement(Concept inactiveConcept) throws TermServerScriptException {
@@ -222,15 +269,29 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 
 	private void moveDescriptionToCore(Description d) throws TermServerScriptException {
 		//First swap the module id, then add in the GB refset 
-		d.setModuleId(SCTID_CORE_MODULE);
-		for (LangRefsetEntry usEntry : d.getLangRefsetEntries(ActiveState.ACTIVE)) {
-			usEntry.setModuleId(SCTID_CORE_MODULE);
-			if (!usEntry.getRefsetId().equals(US_ENG_LANG_REFSET)) {
-				throw new TermServerScriptException("Unexpected language refset entry for " + d + ": " + usEntry.getRefsetId());
+		d.setModuleId(targetModuleId);
+		
+		//AU for example doesn't give language refset entries for FSNs
+		if (d.getLangRefsetEntries(ActiveState.ACTIVE, targetLangRefsetIds).size() == 0) {
+			//The international edition however, does PREF for FSNs
+			String acceptability = SCTID_PREFERRED_TERM;
+			if (d.getType().equals(DescriptionType.SYNONYM) && !d.isPreferred()) {
+				acceptability = SCTID_ACCEPTABLE_TERM;
 			}
-			LangRefsetEntry gbEntry = usEntry.clone(d.getDescriptionId());
-			gbEntry.setRefsetId(GB_ENG_LANG_REFSET);
-			d.addAcceptability(gbEntry);
+			
+			for (String refsetId : targetLangRefsetIds) {
+				LangRefsetEntry entry = LangRefsetEntry.withDefaults(d, refsetId, acceptability);
+				entry.setModuleId(targetModuleId);
+				entry.setDirty();
+				d.addAcceptability(entry);
+			}
+		} else {
+			for (LangRefsetEntry usEntry : d.getLangRefsetEntries(ActiveState.ACTIVE, US_ENG_LANG_REFSET)) {
+				usEntry.setModuleId(targetModuleId);
+				LangRefsetEntry gbEntry = usEntry.clone(d.getDescriptionId());
+				gbEntry.setRefsetId(GB_ENG_LANG_REFSET);
+				d.addAcceptability(gbEntry);
+			}
 		}
 	}
 

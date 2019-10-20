@@ -378,15 +378,22 @@ public class Description extends Component implements RF2Constants {
 	}
 	
 	public List<LangRefsetEntry> getLangRefsetEntries(ActiveState activeState, String langRefsetId) {
-		return getLangRefsetEntries (activeState, langRefsetId, null); // Return all modules
+		return getLangRefsetEntries (activeState, new String[] {langRefsetId}, null); // Return all modules
 	}
 	
-	public List<LangRefsetEntry> getLangRefsetEntries(ActiveState activeState, String langRefsetId, String moduleId) {
+	public List<LangRefsetEntry> getLangRefsetEntries(ActiveState activeState, String[] langRefsetIds) {
+		return getLangRefsetEntries (activeState, langRefsetIds, null); // Return all modules
+	}
+	
+	public List<LangRefsetEntry> getLangRefsetEntries(ActiveState activeState, String[] langRefsetIds, String moduleId) {
 		List<LangRefsetEntry> result = new ArrayList<LangRefsetEntry>();
 		for (LangRefsetEntry thisLangRefSetEntry : getLangRefsetEntries(activeState)) {
-			if (thisLangRefSetEntry.getRefsetId().equals(langRefsetId)) {
-				if (moduleId == null || thisLangRefSetEntry.getModuleId().equals(moduleId)) {
-					result.add(thisLangRefSetEntry);
+			for (String langRefsetId : langRefsetIds) {
+				if (thisLangRefSetEntry.getRefsetId().equals(langRefsetId)) {
+					if (moduleId == null || thisLangRefSetEntry.getModuleId().equals(moduleId)) {
+						result.add(thisLangRefSetEntry);
+						break;
+					}
 				}
 			}
 		}

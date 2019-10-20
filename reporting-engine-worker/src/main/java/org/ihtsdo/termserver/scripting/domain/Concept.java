@@ -1206,15 +1206,18 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	}
 	
 	/**
-	 * Relationship groups will not include IS A relationships
+	 * Relationship groups will not include IS A relationships by default
 	 */
 	public Collection<RelationshipGroup> getRelationshipGroups(CharacteristicType characteristicType) {
+		return getRelationshipGroups(characteristicType, false);
+	}
+	public Collection<RelationshipGroup> getRelationshipGroups(CharacteristicType characteristicType, boolean includeIsA) {
 		Collection<RelationshipGroup> relationshipGroups = characteristicType.equals(CharacteristicType.STATED_RELATIONSHIP) ? statedRelationshipGroups : inferredRelationshipGroups;
 		if (relationshipGroups == null) {
 			Map<Integer, RelationshipGroup> groups = new HashMap<>();
 			//If we're including group 0, always add that in any event
 			for (Relationship r : getRelationships(characteristicType, ActiveState.ACTIVE)) {
-				if (r.getType().equals(IS_A)) {
+				if (!includeIsA && r.getType().equals(IS_A)) {
 					continue;
 				}
 				//Do we know about this Relationship Group yet?

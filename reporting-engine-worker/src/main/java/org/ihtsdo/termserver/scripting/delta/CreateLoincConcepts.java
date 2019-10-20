@@ -115,7 +115,7 @@ public class CreateLoincConcepts extends DeltaGenerator {
 	}
 
 	private void addLangRefsetEntry(Description d, String sctIdAcceptability) {
-		for (String langRefsetId : langRefsetIds) {
+		for (String langRefsetId : targetLangRefsetIds) {
 			LangRefsetEntry l = new LangRefsetEntry();
 			l.setId(UUID.randomUUID().toString());
 			l.setRefsetId(langRefsetId);

@@ -199,4 +199,17 @@ public class RelationshipGroup {
 			r.setAxiomEntry(axiomEntry);
 		}
 	}
+
+	public List<org.snomed.otf.owltoolkit.domain.Relationship> getToolKitRelationships() {
+		List<org.snomed.otf.owltoolkit.domain.Relationship> toolkitRels = new ArrayList<>();
+		for (Relationship r : getRelationships()) {
+			int groupId = r.getGroupId();
+			long type = Long.parseLong(r.getType().getConceptId());
+			long target = Long.parseLong(r.getTarget().getConceptId());
+			org.snomed.otf.owltoolkit.domain.Relationship toolKitRel = 
+					new org.snomed.otf.owltoolkit.domain.Relationship(groupId, type, target);
+			toolkitRels.add(toolKitRel);
+		}
+		return toolkitRels;
+	}
 }

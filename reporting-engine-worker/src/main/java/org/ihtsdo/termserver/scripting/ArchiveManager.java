@@ -36,7 +36,7 @@ public class ArchiveManager implements RF2Constants {
 	protected GraphLoader gl;
 	protected TermServerScript ts;
 	public boolean allowStaleData = false;
-	public boolean loadExtension = false;
+	public boolean loadEditionArchive = false;
 	public boolean populateHierarchyDepth = true;  //Term contains X needs this
 	public boolean populateReleasedFlag = false;
 	public boolean populatePreviousTransativeClosure = false;
@@ -172,8 +172,11 @@ public class ArchiveManager implements RF2Constants {
 			
 			boolean originalStateDataFlag = allowStaleData;
 			//If we're loading a particular release, it will be stale
-			if (loadExtension || StringUtils.isNumeric(ts.getProject().getKey())) {
+			if (loadEditionArchive || StringUtils.isNumeric(ts.getProject().getKey())) {
 				allowStaleData = true;
+				if (loadEditionArchive && !snapshot.exists()) {
+					throw new TermServerScriptException ("Could not find " + snapshot + " to import");
+				}
 			}
 			
 			Branch branch = null;
@@ -188,7 +191,7 @@ public class ArchiveManager implements RF2Constants {
 					TermServerScript.debug(ts.getProject() + " snapshot held locally is sufficiently recent");
 				}
 			}
-			
+			if (true);
 			if (!snapshot.exists() || 
 					(isStale && !allowStaleData) || 
 					(populateReleasedFlag && !releasedFlagPopulated) ||
@@ -313,14 +316,16 @@ public class ArchiveManager implements RF2Constants {
 	}
 
 	private File getSnapshotPath() {
-		//Do we have a release effective time as a project?  Or a branch release
-		String releaseBranch = detectReleaseBranch(ts.getProject().getKey());
-		if (releaseBranch != null) {
-			return new File (dataStoreRoot + "releases/" + releaseBranch + ".zip");
-		} else if (loadExtension || StringUtils.isNumeric(ts.getProject().getKey())) {
+		if (loadEditionArchive || StringUtils.isNumeric(ts.getProject().getKey())) {
 			return new File (dataStoreRoot + "releases/" + ts.getProject() + ".zip");
 		} else {
-			return new File (dataStoreRoot + "snapshots/" + ts.getProject() + "_" + ts.getEnv());
+			//Do we have a release effective time as a project?  Or a branch release
+			String releaseBranch = detectReleaseBranch(ts.getProject().getKey());
+			if (releaseBranch != null) {
+				return new File (dataStoreRoot + "releases/" + releaseBranch + ".zip");
+			} else  {
+				return new File (dataStoreRoot + "snapshots/" + ts.getProject() + "_" + ts.getEnv());
+			}
 		}
 	}
 

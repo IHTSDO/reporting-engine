@@ -36,7 +36,6 @@ public abstract class TermServerScript implements RF2Constants {
 	protected static int dryRunCounter = 0;
 	protected String env;
 	protected String url = environments[0];
-	protected boolean useAuthenticatedCookie = true;
 	protected boolean stateComponentType = true;
 	protected JobRun jobRun;
 	protected TermServerClient tsClient;
@@ -256,7 +255,7 @@ public abstract class TermServerScript implements RF2Constants {
 		//TODO Make calls through client objects rather than resty direct and remove this member 
 		resty.withHeader("Cookie", authenticatedCookie);  
 		scaClient = new AuthoringServicesClient(url, authenticatedCookie);
-		initialiseSnowOwlClient();
+		tsClient = createTSClient(this.url, authenticatedCookie);
 		boolean loadingRelease = false;
 		//Recover the full project path from authoring services, if not already fully specified
 		project = new Project();
@@ -487,19 +486,15 @@ public abstract class TermServerScript implements RF2Constants {
 		return jobRun;
 	}
 	
-	protected void initialiseSnowOwlClient() {
-		if (useAuthenticatedCookie) {
-			if (!authenticatedCookie.contains("ihtsdo=")) {
-				throw new IllegalArgumentException("Malformed cookie detected.  Expected <env>-ihtsdo=<token> instead received: " + authenticatedCookie);
-			}
-			String contextPath = "snowowl/snomed-ct/v2";
-			if (url.contains("storm")) {
-				contextPath = "snowstorm/snomed-ct/v2";
-			}
-			tsClient = new TermServerClient(url + contextPath, authenticatedCookie);
-		} else {
-			throw new IllegalArgumentException("Support for username/password access to SnowOwl has been removed");
+	protected TermServerClient createTSClient(String url, String authenticatedCookie) {
+		if (!authenticatedCookie.contains("ihtsdo=")) {
+			throw new IllegalArgumentException("Malformed cookie detected.  Expected <env>-ihtsdo=<token> instead received: " + authenticatedCookie);
 		}
+		String contextPath = "snowstorm/snomed-ct/v2";
+		if (url.contains("-ms")) {
+			contextPath = "snowowl/snomed-ct/v2";
+		}
+		return new TermServerClient(url + contextPath, authenticatedCookie);
 	}
 	
 	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException, InterruptedException, IOException {
@@ -560,11 +555,13 @@ public abstract class TermServerScript implements RF2Constants {
 			convertAxiomsToRelationships(loadedConcept, loadedConcept.getAdditionalAxioms());
 			return loadedConcept;
 		} catch (Exception e) {
-			e.printStackTrace();
-			if (e.getMessage() != null && e.getMessage().contains("[404] Not Found")) {
+			if (e.getMessage() != null && e.getMessage().contains("[404] Not Found") 
+					|| e.getMessage().contains("404 Not Found")
+					|| e.getMessage().contains("NOT_FOUND")) {
 				debug ("Unable to find " + concept + " on branch " + branchPath);
 				return null;
 			}
+			e.printStackTrace();
 			String msg =  e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
 			throw new TermServerScriptException("Failed to recover " + concept + " from TS branch " + branchPath + ", due to: " + msg,e);
 		}

@@ -1,18 +1,11 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
-import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 
-import org.ihtsdo.termserver.scripting.domain.Batch;
-import org.ihtsdo.termserver.scripting.domain.Component;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants;
-import org.ihtsdo.termserver.scripting.domain.Task;
+import org.ihtsdo.termserver.scripting.domain.*;
 
 /*
 Assertion Failure fix checks a number of known assertion issues and makes
@@ -32,7 +25,6 @@ public class FractureOfXTermRemodelling extends BatchFix implements RF2Constants
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		FractureOfXTermRemodelling fix = new FractureOfXTermRemodelling(null);
 		try {
-			fix.useAuthenticatedCookie = true;
 			fix.selfDetermining = true;
 			fix.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
@@ -66,7 +58,6 @@ public class FractureOfXTermRemodelling extends BatchFix implements RF2Constants
 
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		List<Component> processMe = new ArrayList<Component>();
-		GraphLoader gl = GraphLoader.getGraphLoader();
 		Concept subHierarchy = gl.getConcept(subHierarchyStr);
 		Set<Concept>allDescendants = subHierarchy.getDescendents(NOT_SET);
 		for (Concept thisConcept : allDescendants) {

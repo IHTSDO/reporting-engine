@@ -31,6 +31,16 @@ public class AxiomEntry extends Component implements RF2Constants {
 		return clone;
 	}
 	
+	public static AxiomEntry withDefaults (Concept c, String expression) {
+		AxiomEntry axiom = new AxiomEntry();
+		axiom.id = UUID.randomUUID().toString();
+		axiom.active = true;
+		axiom.refsetId = SCTID_OWL_AXIOM_REFSET;
+		axiom.referencedComponentId = c.getConceptId();
+		axiom.owlExpression = expression;
+		return axiom;
+	}
+	
 	public String toString() {
 		String activeIndicator = isActive()?"":"*";
 		return "[" + activeIndicator + "OWL]:" + id + " - " + refsetId + " : " + referencedComponentId + "->" + owlExpression;

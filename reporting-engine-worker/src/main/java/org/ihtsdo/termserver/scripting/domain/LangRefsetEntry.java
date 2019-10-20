@@ -205,4 +205,16 @@ public class LangRefsetEntry extends Component implements RF2Constants{
 		}
 		return differences;
 	}
+
+	public static LangRefsetEntry withDefaults(Description d, String refsetId, String acceptabilityId) {
+		LangRefsetEntry entry = new LangRefsetEntry();
+		entry.id = UUID.randomUUID().toString();
+		entry.effectiveTime = null;
+		entry.active = true;
+		entry.refsetId = refsetId;
+		entry.referencedComponentId = d.getDescriptionId();
+		entry.acceptabilityId = acceptabilityId;
+		entry.moduleId = SCTID_CORE_MODULE;
+		return entry;
+	}
 }
