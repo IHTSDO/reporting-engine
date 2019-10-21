@@ -175,8 +175,8 @@ public class GroupRemodel extends TemplateFix {
 		templateNames = new String[] {	"templates/Congenital Malformation.json"};
 		*/
 		subHierarchyECL = "<< 131148009|Bleeding|"; //QI-191
-		templateNames = new String[] { "templates/Bleeding - finding.json"};
-		inclusionWords.add("finding");
+		templateNames = new String[] { "templates/Bleeding - disorder.json"};
+		inclusionWords.add("disorder");
 		
 		super.init(args);
 		

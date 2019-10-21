@@ -281,6 +281,8 @@ public class ArchiveManager implements RF2Constants {
 		} else {
 			java.nio.file.Files.deleteIfExists(snapshot.toPath());
 		}
+		
+		ensureProjectMetadataPopulated(project);
 	
 		File previous = new File (dataStoreRoot + "releases/"  + project.getMetadata().getPreviousPackage());
 		if (!previous.exists()) {
@@ -313,6 +315,27 @@ public class ArchiveManager implements RF2Constants {
 		snapshotGenerator.leaveArchiveUncompressed();
 		snapshotGenerator.setOutputDirName(snapshot.getPath());
 		snapshotGenerator.generateSnapshot(dependency, previous, delta, snapshot);
+	}
+
+	private void ensureProjectMetadataPopulated(Project project) throws TermServerScriptException {
+		if (project.getMetadata() == null || project.getMetadata().getPreviousPackage() == null) {
+			boolean metadataPopulated = false;
+			String branchPath = project.getBranchPath();
+			while (!metadataPopulated) {
+				Branch branch = ts.getTSClient().getBranch(branchPath);
+				project.setMetadata(branch.getMetadata());
+				if (project.getMetadata() != null && project.getMetadata().getPreviousPackage() != null) {
+					metadataPopulated = true;
+				} else {
+					int cutPoint = branchPath.lastIndexOf("/");
+					if (cutPoint == NOT_FOUND) {
+						throw new TermServerScriptException("Insufficient metadata found for project " + project.getKey() + " including ancestors to " + branchPath);
+					} else {
+						branchPath = branchPath.substring(0, cutPoint);
+					}
+				}
+			}
+		}
 	}
 
 	private File getSnapshotPath() {
