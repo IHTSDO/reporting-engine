@@ -174,7 +174,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 		fileMap.put(ComponentType.TEXT_DEFINITION, textDfnDeltaFilename);
 		writeToRF2File(textDfnDeltaFilename, descHeader);
 		
-		owlDeltaFilename = termDir + "sRefset_OWLExpression_Delta_"+edition+"_" + today + ".txt";
+		owlDeltaFilename = termDir + "sct2_sRefset_OWLExpressionDelta_"+edition+"_" + today + ".txt";
 		fileMap.put(ComponentType.AXIOM, owlDeltaFilename);
 		writeToRF2File(owlDeltaFilename, owlHeader);
 		
@@ -253,7 +253,10 @@ public abstract class DeltaGenerator extends TermServerScript {
 		}
 		
 		for (Relationship r : c.getRelationships()) {
-			outputRF2(r);
+			//Don't output relationships that are part of an axiom
+			if (!r.fromAxiom()) {
+				outputRF2(r);
+			}
 		}
 		
 		for (InactivationIndicatorEntry i: c.getInactivationIndicatorEntries()) {

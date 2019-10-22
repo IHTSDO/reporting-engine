@@ -4,12 +4,14 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
+import org.ihtsdo.termserver.scripting.AxiomUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.TermServerClient;
 
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.owltoolkit.conversion.AxiomRelationshipConversionService;
+import org.snomed.otf.owltoolkit.conversion.ConversionException;
 import org.snomed.otf.owltoolkit.domain.AxiomRepresentation;
 
 /**
@@ -33,8 +35,8 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		ExtractExtensionComponents delta = new ExtractExtensionComponents();
 		try {
 			delta.runStandAlone = true;
-			//delta.moduleId = "731000124108";  //US Module
-			delta.moduleId = "32506021000036107"; //AU Module
+			delta.moduleId = "731000124108";  //US Module
+			//delta.moduleId = "32506021000036107"; //AU Module
 			delta.init(args);
 			delta.getArchiveManager().loadEditionArchive = true;
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
@@ -96,6 +98,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	}
 	
 	private void outputModifiedComponents() throws TermServerScriptException {
+		info ("Outputting to RF2...");
 		for (Concept thisConcept : gl.getAllConcepts()) {
 /*			if (thisConcept.getConceptId().equals("820511000168109")) {
 				debug ("Here");
@@ -131,7 +134,8 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			c.setModuleId(targetModuleId);
 			allModifiedConcepts.add(c);
 			
-			//If we have no stated modelling, create an Axiom Entry from the inferred rels.
+			//If we have no stated modelling (either stated relationships, or those extracted from an axiom, 
+			//create an Axiom Entry from the inferred rels.
 			if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE).size() == 0) {
 				convertInferredRelsToAxiomEntry(c);
 			}
@@ -150,21 +154,28 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		
 		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 			if (d.getModuleId().equals(moduleId)) {
-				moveDescriptionToCore(d);
+				moveDescriptionToTargetModule(d);
 			}
 		}
 		
-		List<Relationship> activeRels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
-		for (Relationship r : activeRels) {
+		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
 			if (r.getModuleId().equals(moduleId)) {
-				moveRelationshipToCore(r);
+				if (r.isActive() && !r.fromAxiom()) {
+					info ("Unexpected active stated relationship: "+ r);
+				}
+				moveRelationshipToTargetModule(r);
 			}
 		}
 		
-		activeRels = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE);
-		for (Relationship r : activeRels) {
+		for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
 			if (r.getModuleId().equals(moduleId)) {
-				moveRelationshipToCore(r);
+				moveRelationshipToTargetModule(r);
+			}
+		}
+		
+		for (AxiomEntry a : c.getAxiomEntries()) {
+			if (a.getModuleId().equals(moduleId)) {
+				moveAxiomToTargetModule(c,a);
 			}
 		}
 	}
@@ -199,8 +210,22 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		}
 		return parentsStr.toString();
 	}
+	
+	private void moveAxiomToTargetModule(Concept c, AxiomEntry a) throws TermServerScriptException {
+		try {
+			a.setModuleId(targetModuleId);
+			AxiomRepresentation axiomRepresentation = axiomService.convertAxiomToRelationships(a.getOwlExpression());
+			for (Relationship r : AxiomUtils.getRHSRelationships(c, axiomRepresentation)) {
+				//This is only needed to include dependencies. 
+				//The relationship itself is not attached to the concept
+				moveRelationshipToTargetModule(r);
+			}
+		} catch (ConversionException e) {
+			throw new TermServerScriptException("Failed to convert axiom for " + c , e);
+		}
+	}
 
-	private void moveRelationshipToCore(Relationship r) throws TermServerScriptException {
+	private void moveRelationshipToTargetModule(Relationship r) throws TermServerScriptException {
 		//Switch the relationship.   Also switch both the type and the destination - will return if not needed
 		r.setModuleId(targetModuleId);
 		switchModule(r.getType());
@@ -267,7 +292,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		return loadedConcept;
 	}
 
-	private void moveDescriptionToCore(Description d) throws TermServerScriptException {
+	private void moveDescriptionToTargetModule(Description d) throws TermServerScriptException {
 		//First swap the module id, then add in the GB refset 
 		d.setModuleId(targetModuleId);
 		

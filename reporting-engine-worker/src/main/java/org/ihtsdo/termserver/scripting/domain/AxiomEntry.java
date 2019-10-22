@@ -81,6 +81,10 @@ public class AxiomEntry extends Component implements RF2Constants {
 		return moduleId;
 	}
 	public void setModuleId(String moduleId) {
+		if (this.moduleId != null && !this.moduleId.equals(moduleId)) {
+			setDirty();
+			this.effectiveTime = null;
+		}
 		this.moduleId = moduleId;
 	}
 	public boolean isActive() {
