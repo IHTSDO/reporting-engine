@@ -1,6 +1,9 @@
 
 package org.ihtsdo.termserver.scripting.domain;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.commons.lang.NotImplementedException;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -409,6 +412,31 @@ public class Relationship extends Component implements IRelationshipTemplate, RF
 			return this.getAxiomEntry().equals(r.getAxiomEntry());
 		}
 		return false;
+	}
+	
+	@Override
+	public List<String> fieldComparison(Component other) {
+		Relationship otherR = (Relationship)other;
+		List<String> differences = new ArrayList<>();
+		String name = this.getClass().getSimpleName(); 
+		commonFieldComparison(otherR, differences);
+		
+		if (!this.getSource().equals(otherR.getSource())) {
+			differences.add("Source is different in " + name + ": " + this.getSource() + " vs " + otherR.getSource());
+		}
+		
+		if (!this.getType().equals(otherR.getType())) {
+			differences.add("Type is different in " + name + ": " + this.getType() + " vs " + otherR.getType());
+		}
+		
+		if (!this.getTarget().equals(otherR.getTarget())) {
+			differences.add("Target is different in " + name + ": " + this.getTarget() + " vs " + otherR.getTarget());
+		}
+		
+		if (!this.getCharacteristicType().equals(otherR.getCharacteristicType())) {
+			differences.add("CharacteristicType is different in " + name + ": " + this.getCharacteristicType() + " vs " + otherR.getCharacteristicType());
+		}
+		return differences;
 	}
 
 }

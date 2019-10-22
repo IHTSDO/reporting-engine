@@ -6,7 +6,6 @@ import java.util.*;
 
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
@@ -44,7 +43,7 @@ public class SnapshotGenerator extends TermServerScript {
 	protected String[] owlHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","owlExpression"};
 	
 	
-	public static void main (String[] args) throws IOException, TermServerScriptException, TermServerClientException, InterruptedException {
+	public static void main (String[] args) throws IOException, TermServerScriptException, InterruptedException {
 		SnapshotGenerator snapGen = new SnapshotGenerator();
 		try {
 			snapGen.runStandAlone = true;
@@ -63,9 +62,12 @@ public class SnapshotGenerator extends TermServerScript {
 		}
 	}
 	
-	public void generateSnapshot (File previousReleaseSnapshot, File delta, File newLocation) throws TermServerScriptException, TermServerClientException {
+	public void generateSnapshot (File dependencySnapshot, File previousReleaseSnapshot, File delta, File newLocation) throws TermServerScriptException {
 		setQuiet(true);
 		init(newLocation, false);
+		if (dependencySnapshot != null) {
+			loadArchive(dependencySnapshot, false, "Snapshot", true);
+		}
 		loadArchive(previousReleaseSnapshot, false, "Snapshot", true);
 		loadArchive(delta, false, "Delta", false);
 		//Writing to disk can be done asynchronously and complete at any time.  We have the in-memory copy to work with.

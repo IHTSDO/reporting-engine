@@ -6,7 +6,7 @@ import java.util.*;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.dao.ReportManager;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -37,7 +37,7 @@ public class FixReusedAssociations extends DeltaGenerator implements RF2Constant
 	enum IDX { ORIG_ID, NEW_ACTIVE, NEW_REFSETID, NEW_SCTID, NEW_TARGET, ORIG_EFFECTIVE_TIME,
 		ORIG_ACTIVE, ORIG_REFSETID, ORIG_TARGET }
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		FixReusedAssociations delta = new FixReusedAssociations();
 		try {
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m"; //Ad-Hoc Batch Updates

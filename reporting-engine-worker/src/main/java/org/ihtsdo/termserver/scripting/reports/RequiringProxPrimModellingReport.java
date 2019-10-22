@@ -24,7 +24,7 @@ public class RequiringProxPrimModellingReport extends TermServerReport{
 	//String[] hierarchies = {"404684003", "71388002", "243796009"};
 	String[] hierarchies = {"64572001"}; //Disease (disorder)
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		RequiringProxPrimModellingReport report = new RequiringProxPrimModellingReport();
 		try {
 			report.init(args);

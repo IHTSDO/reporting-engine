@@ -6,18 +6,19 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
+import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 /**
  * See FD#25496
  */
 public class ListAllDescriptions extends TermServerReport implements ReportClass {
 	Set<Concept> alreadyReported = new HashSet<>();
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		//params.put(SUB_HIERARCHY, "43959009 |Cataract of eye due to diabetes mellitus (disorder)|");
 		//params.put(SUB_HIERARCHY, "38199008 |Tooth structure (body structure)|");
@@ -35,11 +36,16 @@ public class ListAllDescriptions extends TermServerReport implements ReportClass
 	public Job getJob() {
 		JobParameters params = new JobParameters()
 				.add(SUB_HIERARCHY).withType(JobParameter.Type.CONCEPT).withMandatory().build();
-		return new Job( new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES),
-						"List all Descriptions",
-						"This report lists all descriptions in a given hierarchy." +
-						"The issues count will show the number of concepts reported.",
-						params);
+		
+		return new Job()
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES))
+				.withName("List all Descriptions")
+				.withDescription("This report lists all descriptions in a given hierarchy." +
+						"The issues count will show the number of concepts reported.")
+				.withProductionStatus(ProductionStatus.PROD_READY)
+				.withParameters(params)
+				.withTag(INT)
+				.build();
 	}
 
 	public void runJob() throws TermServerScriptException {

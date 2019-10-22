@@ -6,7 +6,7 @@ import java.util.List;
 
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
@@ -16,7 +16,9 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 @Deprecated
 public class ReactivateUSAcceptability extends DeltaGenerator implements RF2Constants {
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException, InterruptedException {
+	String[] refsets = new String[] {US_ENG_LANG_REFSET};
+	
+	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		ReactivateUSAcceptability delta = new ReactivateUSAcceptability();
 		try {
 			delta.newIdsRequired = false; // We'll only be reactivating exisiting langrefset entries
@@ -54,8 +56,8 @@ public class ReactivateUSAcceptability extends DeltaGenerator implements RF2Cons
 			List<LangRefsetEntry> langRefEntries = fsns.get(0).getLangRefsetEntries(ActiveState.BOTH, US_ENG_LANG_REFSET);
 			if (langRefEntries.size() != 1) {
 				if (langRefEntries.size() == 2) {
-					List<LangRefsetEntry> uslangRefEntries = fsns.get(0).getLangRefsetEntries(ActiveState.BOTH, US_ENG_LANG_REFSET, SCTID_US_MODULE);
-					List<LangRefsetEntry> corelangRefEntries = fsns.get(0).getLangRefsetEntries(ActiveState.BOTH, US_ENG_LANG_REFSET, SCTID_CORE_MODULE);
+					List<LangRefsetEntry> uslangRefEntries = fsns.get(0).getLangRefsetEntries(ActiveState.BOTH, refsets, SCTID_US_MODULE);
+					List<LangRefsetEntry> corelangRefEntries = fsns.get(0).getLangRefsetEntries(ActiveState.BOTH, refsets, SCTID_CORE_MODULE);
 					if (uslangRefEntries.size() > 1 || corelangRefEntries.size() >1) {
 						msg += "Two acceptabilities in the same module";
 						report(c, c.getFSNDescription(), Severity.HIGH, ReportActionType.VALIDATION_CHECK, msg);

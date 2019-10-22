@@ -7,11 +7,12 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
+import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 
 /**
  * See https://confluence.ihtsdotools.org/display/IAP/Quality+Improvements+2018
@@ -20,7 +21,7 @@ import org.snomed.otf.scheduler.domain.*;
 public class TemplateList extends AllKnownTemplates implements ReportClass {
 	final static String defaultTemplateServiceUrl = "https://authoring.ihtsdotools.org/template-service";
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put(SERVER_URL, defaultTemplateServiceUrl);
 		TermServerReport.run(TemplateList.class, args, params);
@@ -38,11 +39,15 @@ public class TemplateList extends AllKnownTemplates implements ReportClass {
 					.withType(JobParameter.Type.HIDDEN)
 					.withMandatory()
 				.build();
-		return new Job( new JobCategory(JobType.REPORT, JobCategory.QI),
-						"Template List",
-						"Lists all known templates",
-						params,
-						Job.ProductionStatus.PROD_READY);
+		
+		return new Job()
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.QI))
+				.withName("Template List")
+				.withDescription("Lists all known templates")
+				.withProductionStatus(ProductionStatus.PROD_READY)
+				.withParameters(params)
+				.withTag(INT)
+				.build();
 	}
 
 	

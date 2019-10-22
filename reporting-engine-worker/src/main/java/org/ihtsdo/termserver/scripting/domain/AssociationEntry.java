@@ -1,5 +1,7 @@
 package org.ihtsdo.termserver.scripting.domain;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import org.ihtsdo.termserver.scripting.GraphLoader;
@@ -50,6 +52,18 @@ public class AssociationEntry extends Component implements RF2Constants {
 		} catch (Exception e) {
 			throw new IllegalArgumentException("Unable to form association string",e);
 		}
+	}
+	
+	public static AssociationEntry fromRf2(String[] lineItems) {
+		AssociationEntry h = new AssociationEntry();
+		h.setId(lineItems[ASSOC_IDX_ID]);
+		h.setEffectiveTime(lineItems[ASSOC_IDX_EFFECTIVETIME]);
+		h.setActive(lineItems[ASSOC_IDX_ACTIVE].equals("1"));
+		h.setModuleId(lineItems[ASSOC_IDX_MODULID]);
+		h.setRefsetId(lineItems[ASSOC_IDX_REFSETID]);
+		h.setReferencedComponentId(lineItems[ASSOC_IDX_REFCOMPID]);
+		h.setTargetComponentId(lineItems[ASSOC_IDX_TARGET]);
+		return h;
 	}
 	
 	public String[] toRF2() {
@@ -166,5 +180,18 @@ public class AssociationEntry extends Component implements RF2Constants {
 			return this.getId().equals(((AssociationEntry)o).getId());
 		}
 		return false;
+	}
+
+	@Override
+	public List<String> fieldComparison(Component other) {
+		AssociationEntry otherA = (AssociationEntry)other;
+		List<String> differences = new ArrayList<>();
+		String name = this.getClass().getSimpleName(); 
+		commonFieldComparison(otherA, differences);
+		
+		if (!this.getTargetComponentId().equals(otherA.getTargetComponentId())) {
+			differences.add("TargetComponentId is different in " + name + ": " + this.getTargetComponentId() + " vs " + otherA.getTargetComponentId());
+		}
+		return differences;
 	}
 }

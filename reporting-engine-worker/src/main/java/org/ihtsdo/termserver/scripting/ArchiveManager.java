@@ -14,7 +14,6 @@ import java.util.stream.Stream;
 import java.util.zip.*;
 
 import org.apache.commons.io.FileUtils;
-import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.client.TermServerClient.*;
 import org.ihtsdo.termserver.scripting.dao.ArchiveDataLoader;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -37,7 +36,7 @@ public class ArchiveManager implements RF2Constants {
 	protected GraphLoader gl;
 	protected TermServerScript ts;
 	public boolean allowStaleData = false;
-	public boolean loadExtension = false;
+	public boolean loadEditionArchive = false;
 	public boolean populateHierarchyDepth = true;  //Term contains X needs this
 	public boolean populateReleasedFlag = false;
 	public boolean populatePreviousTransativeClosure = false;
@@ -87,11 +86,12 @@ public class ArchiveManager implements RF2Constants {
 			//If metadata is empty, or missing previous release, recover parent
 			//But timestamp will remain a property of the branch
 			//But not if we're already on MAIN and it's STILL missing!
-			if (branch.getMetadata() == null || branch.getMetadata().getPreviousRelease() == null) {
+			while (branch.getMetadata() == null || branch.getMetadata().getPreviousRelease() == null) {
 				if (branchPath.equals("MAIN")) {
 					throw new TermServerScriptException("Metadata data missing in MAIN");
 				}
-				Branch parent = loadBranch(new Project().withBranchPath("MAIN"));
+				branchPath = getParentBranch(branchPath);
+				Branch parent = loadBranch(new Project().withBranchPath(branchPath));
 				branch.setMetadata(parent.getMetadata());
 			}
 			return branch;
@@ -104,6 +104,19 @@ public class ArchiveManager implements RF2Constants {
 		}
 	}
 	
+	private String getParentBranch(String branchPath) {
+		//Do we have a path?
+		int lastSlash = branchPath.lastIndexOf("/");
+		if (lastSlash == NOT_FOUND) {
+			if (branchPath.equals("MAIN")) {
+				return branchPath;
+			} else {
+				throw new IllegalStateException ("Root level branch is not MAIN: " + branchPath);
+			}
+		}
+		return branchPath.substring(0, lastSlash);
+	}
+
 	public String getPreviousPreviousBranch(Project project) throws TermServerScriptException {
 		Branch branch = loadBranch(project);
 		String previousRelease = branch.getMetadata().getPreviousRelease();
@@ -159,8 +172,11 @@ public class ArchiveManager implements RF2Constants {
 			
 			boolean originalStateDataFlag = allowStaleData;
 			//If we're loading a particular release, it will be stale
-			if (loadExtension || StringUtils.isNumeric(ts.getProject().getKey())) {
+			if (loadEditionArchive || StringUtils.isNumeric(ts.getProject().getKey())) {
 				allowStaleData = true;
+				if (loadEditionArchive && !snapshot.exists()) {
+					throw new TermServerScriptException ("Could not find " + snapshot + " to import");
+				}
 			}
 			
 			Branch branch = null;
@@ -175,7 +191,7 @@ public class ArchiveManager implements RF2Constants {
 					TermServerScript.debug(ts.getProject() + " snapshot held locally is sufficiently recent");
 				}
 			}
-			
+			if (true);
 			if (!snapshot.exists() || 
 					(isStale && !allowStaleData) || 
 					(populateReleasedFlag && !releasedFlagPopulated) ||
@@ -187,7 +203,7 @@ public class ArchiveManager implements RF2Constants {
 					info("Generating fresh snapshot because previous transative closure must be populated");
 				}
 				gl.reset();
-				generateSnapshot (ts.getProject(), branch);
+				generateSnapshot (ts.getProject());
 				releasedFlagPopulated=true;
 				//We don't need to load the snapshot if we've just generated it
 			} else {
@@ -207,7 +223,7 @@ public class ArchiveManager implements RF2Constants {
 					if (populateReleasedFlag && !releasedFlagPopulated) {
 						info("Generating fresh snapshot (despite having a non-stale on disk) because 'released' flag must be populated");
 						gl.reset();
-						generateSnapshot (ts.getProject(), branch);
+						generateSnapshot (ts.getProject());
 						releasedFlagPopulated=true;
 					} else {
 						info ("Loading snapshot archive contents into memory...");
@@ -237,7 +253,8 @@ public class ArchiveManager implements RF2Constants {
 			currentlyHeldInMemory = ts.getProject();
 			allowStaleData = originalStateDataFlag;
 		} catch (Exception e) {
-			String msg = "Unable to load " + ts.getProject() + " due to " + e.getMessage();
+			String eMsg = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+			String msg = "Unable to load " + ts.getProject() + " due to " + eMsg;
 			throw new TermServerScriptException (msg, e);
 		}
 		info ("Snapshot loading complete");
@@ -256,12 +273,7 @@ public class ArchiveManager implements RF2Constants {
 		return branchHeadUTC.compareTo(snapshotCreationUTC) > 0;
 	}
 
-	private void generateSnapshot(Project project, Branch branch) throws TermServerScriptException, IOException, TermServerClientException {
-		//We need to know the previous release to base our snapshot on
-		if (branch == null) {
-			branch = loadBranch(project);
-		}
-		
+	private void generateSnapshot(Project project) throws TermServerScriptException, IOException {
 		File snapshot = getSnapshotPath();
 		//Delete the current snapshot if it exists - will be stale
 		if (snapshot.isDirectory()) {
@@ -269,8 +281,10 @@ public class ArchiveManager implements RF2Constants {
 		} else {
 			java.nio.file.Files.deleteIfExists(snapshot.toPath());
 		}
+		
+		ensureProjectMetadataPopulated(project);
 	
-		File previous = new File (dataStoreRoot + "releases/"  + branch.getMetadata().getPreviousPackage());
+		File previous = new File (dataStoreRoot + "releases/"  + project.getMetadata().getPreviousPackage());
 		if (!previous.exists()) {
 			if (archiveDataLoader == null) {
 				archiveDataLoader = ArchiveDataLoader.create();
@@ -278,6 +292,20 @@ public class ArchiveManager implements RF2Constants {
 			archiveDataLoader.download(previous);
 		}
 		TermServerScript.info("Building snapshot release based on previous: " + previous);
+		
+		//In the case of managed service, we will also have a dependency package
+		File dependency = null;
+		if (project.getMetadata().getDependencyPackage() != null) {
+			dependency = new File (dataStoreRoot + "releases/"  + project.getMetadata().getDependencyPackage());
+			if (!dependency.exists()) {
+				if (archiveDataLoader == null) {
+					archiveDataLoader = ArchiveDataLoader.create();
+				}
+				archiveDataLoader.download(dependency);
+			}
+			TermServerScript.info("Building Extension snapshot release also based on dependency: " + dependency);
+		}
+		
 		//Now we need a recent delta to add to it
 		File delta = File.createTempFile("delta_export-", ".zip");
 		delta.deleteOnExit();
@@ -286,18 +314,41 @@ public class ArchiveManager implements RF2Constants {
 		snapshotGenerator.setProject(ts.getProject());
 		snapshotGenerator.leaveArchiveUncompressed();
 		snapshotGenerator.setOutputDirName(snapshot.getPath());
-		snapshotGenerator.generateSnapshot(previous, delta, snapshot);
+		snapshotGenerator.generateSnapshot(dependency, previous, delta, snapshot);
+	}
+
+	private void ensureProjectMetadataPopulated(Project project) throws TermServerScriptException {
+		if (project.getMetadata() == null || project.getMetadata().getPreviousPackage() == null) {
+			boolean metadataPopulated = false;
+			String branchPath = project.getBranchPath();
+			while (!metadataPopulated) {
+				Branch branch = ts.getTSClient().getBranch(branchPath);
+				project.setMetadata(branch.getMetadata());
+				if (project.getMetadata() != null && project.getMetadata().getPreviousPackage() != null) {
+					metadataPopulated = true;
+				} else {
+					int cutPoint = branchPath.lastIndexOf("/");
+					if (cutPoint == NOT_FOUND) {
+						throw new TermServerScriptException("Insufficient metadata found for project " + project.getKey() + " including ancestors to " + branchPath);
+					} else {
+						branchPath = branchPath.substring(0, cutPoint);
+					}
+				}
+			}
+		}
 	}
 
 	private File getSnapshotPath() {
-		//Do we have a release effective time as a project?  Or a branch release
-		String releaseBranch = detectReleaseBranch(ts.getProject().getKey());
-		if (releaseBranch != null) {
-			return new File (dataStoreRoot + "releases/" + releaseBranch + ".zip");
-		} else if (loadExtension || StringUtils.isNumeric(ts.getProject().getKey())) {
+		if (loadEditionArchive || StringUtils.isNumeric(ts.getProject().getKey())) {
 			return new File (dataStoreRoot + "releases/" + ts.getProject() + ".zip");
 		} else {
-			return new File (dataStoreRoot + "snapshots/" + ts.getProject() + "_" + ts.getEnv());
+			//Do we have a release effective time as a project?  Or a branch release
+			String releaseBranch = detectReleaseBranch(ts.getProject().getKey());
+			if (releaseBranch != null) {
+				return new File (dataStoreRoot + "releases/" + releaseBranch + ".zip");
+			} else  {
+				return new File (dataStoreRoot + "snapshots/" + ts.getProject() + "_" + ts.getEnv());
+			}
 		}
 	}
 
@@ -306,7 +357,7 @@ public class ArchiveManager implements RF2Constants {
 		return StringUtils.isNumeric(releaseBranch) ? releaseBranch : null;
 	}
 
-	protected void loadArchive(File archive, boolean fsnOnly, String fileType, Boolean isReleased) throws TermServerScriptException, TermServerClientException {
+	protected void loadArchive(File archive, boolean fsnOnly, String fileType, Boolean isReleased) throws TermServerScriptException {
 		try {
 			boolean isDelta = (fileType.equals(DELTA));
 			//Are we loading an expanded or compressed archive?
@@ -346,7 +397,7 @@ public class ArchiveManager implements RF2Constants {
 		}
 	}
 
-	private void loadArchiveZip(File archive, boolean fsnOnly, String fileType, boolean isDelta, Boolean isReleased) throws IOException, TermServerScriptException, TermServerClientException {
+	private void loadArchiveZip(File archive, boolean fsnOnly, String fileType, boolean isDelta, Boolean isReleased) throws IOException, TermServerScriptException {
 		ZipInputStream zis = new ZipInputStream(new FileInputStream(archive));
 		ZipEntry ze = zis.getNextEntry();
 		try {
@@ -436,7 +487,7 @@ public class ArchiveManager implements RF2Constants {
 					gl.loadLanguageFile(is);
 				}
 			}
-		} catch (TermServerScriptException | IOException | TermServerClientException e) {
+		} catch (TermServerScriptException | IOException e) {
 			throw new IllegalStateException("Unable to load " + path + " due to " + e.getMessage(), e);
 		}
 	}

@@ -6,12 +6,13 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
+import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 
 /**
  * Reports concepts that are intermediate primitives from point of view of some subhierarchy
@@ -37,7 +38,7 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 	}
 	
 	//QI-222  Multi-ecl report runner
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		//TermServerScript.runHeadless(3);
 		String[] morphologies = new String[] {
 			/*	"11889001|Abiotrophy (morphologic abnormality)|",
@@ -65,7 +66,7 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 		}
 	}
 	
-/*	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+/*	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		//params.put(ECL, "<< 46866001");	//       |Fracture of lower limb (disorder)|
 		//params.put(ECL, "<< 125605004");	// QI-2  |Fracture of bone (disorder)|
@@ -107,11 +108,15 @@ public class InitialAnalysis extends TermServerReport implements ReportClass {
 					.withType(JobParameter.Type.ECL)
 				.build();
 		
-		return new Job(	new JobCategory(JobType.REPORT, JobCategory.QI),
-						"Initial Analysis",
-						"This report lists intermediate primitives and how often attribute types are used in the specified sub-hierarchy. " +
-						"Note that the 'Issues' count here refers to the number of intermediate primitives reported in the 2nd tab.",
-						params);
+		return new Job()
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.GENERAL_QA))
+				.withName("Initial Analysis")
+				.withDescription("This report lists intermediate primitives and how often attribute types are used in the specified sub-hierarchy. " +
+						"Note that the 'Issues' count here refers to the number of intermediate primitives reported in the 2nd tab.")
+				.withProductionStatus(ProductionStatus.PROD_READY)
+				.withParameters(params)
+				.withTag(INT)
+				.build();
 	}
 
 	

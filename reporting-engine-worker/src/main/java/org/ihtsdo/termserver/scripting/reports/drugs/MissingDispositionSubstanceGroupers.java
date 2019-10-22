@@ -6,7 +6,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -23,7 +23,7 @@ public class MissingDispositionSubstanceGroupers extends TermServerReport {
 	Map<Concept, Set<Concept>> dispositionSubstanceMap;
 	Map<Concept, Concept> dispositionGrouperMap;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		MissingDispositionSubstanceGroupers report = new MissingDispositionSubstanceGroupers();
 		try {
 			report.additionalReportColumns="FSN,Used by";

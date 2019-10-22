@@ -9,7 +9,7 @@ import java.util.List;
 
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
@@ -23,8 +23,9 @@ public class ValidateTaxonomyIntegrity extends TermServerScript{
 	
 	String transientEffectiveDate = new SimpleDateFormat("yyyyMMdd").format(new Date());
 	String matchText = "+"; 
+	String[] refsets = new String[] {US_ENG_LANG_REFSET};
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		ValidateTaxonomyIntegrity report = new ValidateTaxonomyIntegrity();
 		try {
 			report.init(args);
@@ -70,8 +71,8 @@ public class ValidateTaxonomyIntegrity extends TermServerScript{
 			List<LangRefsetEntry> langRefEntries = fsns.get(0).getLangRefsetEntries(ActiveState.BOTH, US_ENG_LANG_REFSET);
 			if (langRefEntries.size() != 1) {
 				if (langRefEntries.size() == 2) {
-					List<LangRefsetEntry> uslangRefEntries = fsns.get(0).getLangRefsetEntries(ActiveState.BOTH, US_ENG_LANG_REFSET, SCTID_US_MODULE);
-					List<LangRefsetEntry> corelangRefEntries = fsns.get(0).getLangRefsetEntries(ActiveState.BOTH, US_ENG_LANG_REFSET, SCTID_CORE_MODULE);
+					List<LangRefsetEntry> uslangRefEntries = fsns.get(0).getLangRefsetEntries(ActiveState.BOTH, refsets, SCTID_US_MODULE);
+					List<LangRefsetEntry> corelangRefEntries = fsns.get(0).getLangRefsetEntries(ActiveState.BOTH, refsets, SCTID_CORE_MODULE);
 					if (uslangRefEntries.size() > 1 || corelangRefEntries.size() >1) {
 						msg += "Two acceptabilities in the same module";
 						report (c, msg);

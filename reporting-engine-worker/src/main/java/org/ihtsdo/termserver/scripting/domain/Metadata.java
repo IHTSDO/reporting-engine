@@ -21,6 +21,9 @@ public class Metadata {
     @SerializedName("dependencyRelease")
     @Expose
     private String dependencyRelease;
+    @SerializedName("dependencyPackage")
+    @Expose
+    private String dependencyPackage;
     @SerializedName("codeSystemShortName")
     @Expose
     private String codeSystemShortName;
@@ -102,6 +105,14 @@ public class Metadata {
 
     public void setDependencyRelease(String dependencyRelease) {
         this.dependencyRelease = dependencyRelease;
+    }
+    
+    public String getDependencyPackage() {
+        return dependencyPackage;
+    }
+
+    public void setDependencyPackage(String dependencyPackage) {
+        this.dependencyPackage = dependencyPackage;
     }
 
     public String getCodeSystemShortName() {

@@ -5,7 +5,7 @@ import java.io.PrintStream;
 import java.util.*;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.DrugUtils;
@@ -21,7 +21,7 @@ public class OrganismsInSubstances extends TermServerReport {
 	Set<Concept> substancesUsedInProducts;
 	List<String> skipOrganisms;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		OrganismsInSubstances report = new OrganismsInSubstances();
 		try {
 			ReportSheetManager.targetFolderId = "1bwgl8BkUSdNDfXHoL__ENMPQy_EdEP7d";

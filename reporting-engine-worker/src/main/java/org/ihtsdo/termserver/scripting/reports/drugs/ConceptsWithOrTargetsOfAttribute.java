@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
@@ -36,7 +36,7 @@ public class ConceptsWithOrTargetsOfAttribute extends TermServerReport {
 	Map<Concept, List<Concept>> attributeSourceMap = new HashMap<>();
 	Map<Concept, List<Concept>> attributeTargetMap = new HashMap<>();
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		ConceptsWithOrTargetsOfAttribute report = new ConceptsWithOrTargetsOfAttribute();
 		try {
 			report.getReportManager().setNumberOfDistinctReports(2);

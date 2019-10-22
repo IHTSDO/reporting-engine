@@ -14,7 +14,7 @@ public class UnacceptableDescriptions extends TermServerReport{
 	
 	List<Concept> targetHierarchies = new ArrayList<Concept>();
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		UnacceptableDescriptions report = new UnacceptableDescriptions();
 		try {
 			report.init(args);

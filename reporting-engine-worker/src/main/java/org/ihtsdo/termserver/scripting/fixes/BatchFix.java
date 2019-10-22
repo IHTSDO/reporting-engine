@@ -235,7 +235,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		}
 	}
 
-	private void createTask(Task task) throws TermServerClientException, TermServerScriptException, InterruptedException {
+	private void createTask(Task task) throws TermServerScriptException, InterruptedException {
 		if (!dryRun) {
 			if (firstTaskCreated) {
 				debug ("Letting TS catch up - " + taskThrottle + "s nap.");

@@ -1,5 +1,7 @@
 package org.ihtsdo.termserver.scripting.domain;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -189,5 +191,30 @@ public class LangRefsetEntry extends Component implements RF2Constants{
 	@Override
 	public ComponentType getComponentType() {
 		return ComponentType.LANGREFSET;
+	}
+	
+	@Override
+	public List<String> fieldComparison(Component other) {
+		LangRefsetEntry otherL = (LangRefsetEntry)other;
+		List<String> differences = new ArrayList<>();
+		String name = this.getClass().getSimpleName(); 
+		commonFieldComparison(otherL, differences);
+		
+		if (!this.getAcceptabilityId().equals(otherL.getAcceptabilityId())) {
+			differences.add("InactivationReasonId is different in " + name + ": " + this.getAcceptabilityId() + " vs " + otherL.getAcceptabilityId());
+		}
+		return differences;
+	}
+
+	public static LangRefsetEntry withDefaults(Description d, String refsetId, String acceptabilityId) {
+		LangRefsetEntry entry = new LangRefsetEntry();
+		entry.id = UUID.randomUUID().toString();
+		entry.effectiveTime = null;
+		entry.active = true;
+		entry.refsetId = refsetId;
+		entry.referencedComponentId = d.getDescriptionId();
+		entry.acceptabilityId = acceptabilityId;
+		entry.moduleId = SCTID_CORE_MODULE;
+		return entry;
 	}
 }

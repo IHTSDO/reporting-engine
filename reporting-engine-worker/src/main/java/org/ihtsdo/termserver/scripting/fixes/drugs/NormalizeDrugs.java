@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.DrugTermGenerator;
@@ -25,7 +25,7 @@ public class NormalizeDrugs extends DrugBatchFix implements RF2Constants{
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		NormalizeDrugs fix = new NormalizeDrugs(null);
 		try {
 			fix.reportNoChange = true;

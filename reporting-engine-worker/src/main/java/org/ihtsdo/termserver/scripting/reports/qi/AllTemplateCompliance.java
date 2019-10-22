@@ -9,12 +9,13 @@ import java.util.stream.Collectors;
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.DescendentsCache;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.template.TemplateUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
+import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -30,7 +31,7 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 	Map<Concept, Integer> outOfScopeCache = new HashMap<>();
 	int totalTemplateMatches = 0;
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put(SERVER_URL, "https://authoring.ihtsdotools.org/template-service");
 		TermServerReport.run(AllTemplateCompliance.class, args, params);
@@ -51,11 +52,15 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 					.withType(JobParameter.Type.HIDDEN)
 					.withMandatory()
 				.build();
-		return new Job( new JobCategory(JobType.REPORT, JobCategory.QI),
-						"All Templates Compliance Stats",
-						"For every domain which has one or more templates, determine how many concepts comply to that template(s).",
-						params,
-						Job.ProductionStatus.PROD_READY);
+
+		return new Job()
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.QI))
+				.withName("All Templates Compliance Stats")
+				.withDescription("For every domain which has one or more templates, determine how many concepts comply to that template(s).")
+				.withProductionStatus(ProductionStatus.PROD_READY)
+				.withParameters(params)
+				.withTag(INT)
+				.build();
 	}
 
 	

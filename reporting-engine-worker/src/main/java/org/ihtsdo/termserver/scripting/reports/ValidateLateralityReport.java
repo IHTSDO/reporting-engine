@@ -16,7 +16,7 @@ import org.ihtsdo.termserver.scripting.domain.*;
  */
 public class ValidateLateralityReport extends TermServerScript{
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		ValidateLateralityReport report = new ValidateLateralityReport();
 		try {
 			report.additionalReportColumns = "EffectiveTime, Definition_Status,SemanticTag";

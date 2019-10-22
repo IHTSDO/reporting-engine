@@ -1,6 +1,8 @@
 
 package org.ihtsdo.termserver.scripting.domain;
 
+import java.util.List;
+
 import org.apache.commons.lang.NotImplementedException;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants.ComponentType;
@@ -162,6 +164,13 @@ public class RefsetEntry extends Component {
 	public ComponentType getComponentType() {
 		// TODO Auto-generated method stub
 		return null;
+	}
+	
+	@Override
+	public List<String> fieldComparison(Component other) {
+		//Actually not expecting to see this called since an RF2 comparison
+		//Would examine specific refset objects;
+		throw new IllegalStateException("Unexpected comparison of axiom");
 	}
 
 }

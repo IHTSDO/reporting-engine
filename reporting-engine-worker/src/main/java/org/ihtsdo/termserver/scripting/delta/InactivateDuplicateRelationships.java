@@ -7,7 +7,7 @@ import java.util.List;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.TermServerClient;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
@@ -18,7 +18,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  */
 public class InactivateDuplicateRelationships extends DeltaGenerator implements RF2Constants {
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		InactivateDuplicateRelationships delta = new InactivateDuplicateRelationships();
 		try {
 			delta.newIdsRequired = false; // We'll only be inactivating existing relationships

@@ -8,11 +8,12 @@ import java.util.Map;
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
+import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 
 /**
  * NB See also ValidationInactivationsWithAssociations report to run general cross field validadtion between 
@@ -29,7 +30,7 @@ public class InactivationAssocationReport extends TermServerScript implements Re
 	String[] targetAssocationRefsetIds = new String[] {SCTID_ASSOC_WAS_A_REFSETID};
 	boolean newInactivationsOnly = false;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put(SUB_HIERARCHY, ROOT_CONCEPT.toString());
 		params.put(NEW_INACTIVATIONS_ONLY, "Y");
@@ -46,11 +47,15 @@ public class InactivationAssocationReport extends TermServerScript implements Re
 	@Override
 	public Job getJob() {
 		String[] parameterNames = new String[] { "SubHierarchy" };
-		return new Job( new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION),
-						"List Inactivated Concepts",
-						"Lists all concepts for the specified inactivation reasons (TODO) along with the historical associations used.",
-						new JobParameters(parameterNames),
-						Job.ProductionStatus.HIDEME);
+		
+		return new Job()
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION))
+				.withName("List Inactivated Concepts")
+				.withDescription("Lists all concepts for the specified inactivation reasons (TODO) along with the historical associations used.")
+				.withProductionStatus(ProductionStatus.HIDEME)
+				.withParameters(new JobParameters(parameterNames))
+				.withTag(INT)
+				.build();
 	}
 
 	public void runJob() throws TermServerScriptException {

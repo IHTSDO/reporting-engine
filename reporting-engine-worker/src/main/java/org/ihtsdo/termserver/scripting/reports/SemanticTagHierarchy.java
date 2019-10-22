@@ -6,7 +6,7 @@ import java.util.*;
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -16,12 +16,13 @@ import org.snomed.otf.scheduler.domain.JobParameter;
 import org.snomed.otf.scheduler.domain.JobParameters;
 import org.snomed.otf.scheduler.domain.JobRun;
 import org.snomed.otf.scheduler.domain.JobType;
+import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 
 public class SemanticTagHierarchy extends TermServerReport implements ReportClass {
 	
 	Map<String, Map<String, Concept>> semanticTagHierarchy = new HashMap<>();
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put(SUB_HIERARCHY, BODY_STRUCTURE.toString());
 		TermServerReport.run(SemanticTagHierarchy.class, args);
@@ -38,11 +39,16 @@ public class SemanticTagHierarchy extends TermServerReport implements ReportClas
 	public Job getJob() {
 		JobParameters params = new JobParameters()
 				.add(SUB_HIERARCHY).withType(JobParameter.Type.CONCEPT).withMandatory().build();
-		return new Job( new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES),
-						"Semantic Tag Hierarchy",
-						"This report lists all semantic tags used in the specified subhierarchy. " +
-						"Note that since this report is not listing any problems, the 'Issues' count will always be 0.",
-						params);
+		
+		return new Job()
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES))
+				.withName("Semantic Tag Hierarchy")
+				.withDescription("This report lists all semantic tags used in the specified subhierarchy. " +
+						"Note that since this report is not listing any problems, the 'Issues' count will always be 0.")
+				.withProductionStatus(ProductionStatus.PROD_READY)
+				.withParameters(params)
+				.withTag(INT)
+				.build();
 	}
 
 	public void runJob() throws TermServerScriptException {

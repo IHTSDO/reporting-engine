@@ -6,7 +6,7 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
@@ -22,7 +22,7 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
  */
 public class FullyDefinedParentsInSubHierarchy extends TermServerReport implements ReportClass {
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put(SUB_HIERARCHY, "105590001"); // Substance
 		TermServerReport.run(FullyDefinedParentsInSubHierarchy.class, args, params);
@@ -39,10 +39,14 @@ public class FullyDefinedParentsInSubHierarchy extends TermServerReport implemen
 		JobParameters params = new JobParameters()
 				.add(SUB_HIERARCHY).withType(JobParameter.Type.CONCEPT).withDefaultValue(ROOT_CONCEPT)
 				.build();
-		return new Job( new JobCategory(JobType.REPORT, JobCategory.GENERAL_QA),
-						"Check for FD Parents",
-						"This report lists all concepts in the specified subhierarchy which have one or more fully defined stated parents",
-						params, ProductionStatus.HIDEME);
+		return new Job()
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.GENERAL_QA))
+				.withName("Check for FD Parents")
+				.withDescription("This report lists all concepts in the specified subhierarchy which have one or more fully defined stated parents")
+				.withProductionStatus(ProductionStatus.HIDEME)
+				.withParameters(params)
+				.withTag(INT)
+				.build();
 	}
 	
 	public void runJob() throws TermServerScriptException {

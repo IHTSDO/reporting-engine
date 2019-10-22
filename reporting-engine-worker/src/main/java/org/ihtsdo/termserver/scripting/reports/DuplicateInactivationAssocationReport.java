@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.springframework.util.StringUtils;
@@ -18,7 +18,7 @@ import org.springframework.util.StringUtils;
  */
 public class DuplicateInactivationAssocationReport extends TermServerReport {
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		DuplicateInactivationAssocationReport report = new DuplicateInactivationAssocationReport();
 		try {
 			ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ";  //Release QA

@@ -6,11 +6,12 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
+import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
@@ -32,7 +33,7 @@ public class ConceptsNotAccountedFor extends TermServerReport implements ReportC
 	
 	enum TemplateType {SIMPLE, PURE_CO, COMPLEX, COMPLEX_NO_MORPH, NONE};
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		TermServerReport.run(ConceptsNotAccountedFor.class, args);
 	}
 	
@@ -83,11 +84,14 @@ public class ConceptsNotAccountedFor extends TermServerReport implements ReportC
 	@Override
 	public Job getJob() {
 		String[] parameterNames = new String[] { "SubHierarchy" };
-		return new Job( new JobCategory(JobType.REPORT, JobCategory.QI),
-						"Concepts not accounted for",
-						"Given a number of sub-hierarchies, find the highest concepts not included",
-						new JobParameters(parameterNames), 
-						Job.ProductionStatus.HIDEME);
+		return new Job()
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.QI))
+				.withName("Concepts not accounted for")
+				.withDescription("Given a number of sub-hierarchies, find the highest concepts not included")
+				.withProductionStatus(ProductionStatus.HIDEME)
+				.withParameters(new JobParameters(parameterNames))
+				.withTag(INT)
+				.build();
 	}
 
 	public void runJob() throws TermServerScriptException {

@@ -1,22 +1,12 @@
 package org.ihtsdo.termserver.scripting.fixes;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
-import org.ihtsdo.termserver.scripting.domain.Batch;
-import org.ihtsdo.termserver.scripting.domain.Component;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Description;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants;
-import org.ihtsdo.termserver.scripting.domain.Task;
 
-import us.monoid.json.JSONObject;
+import org.ihtsdo.termserver.scripting.domain.*;
+
 
 /*
 Assertion Failure fix checks a number of known assertion issues and makes
@@ -28,10 +18,9 @@ public class AssertionFailureFix extends BatchFix implements RF2Constants{
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		AssertionFailureFix fix = new AssertionFailureFix(null);
 		try {
-			fix.useAuthenticatedCookie = true;  //MS Servers have been update to use personal logins
 			fix.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			fix.loadProjectSnapshot(true); //Load FSNs only

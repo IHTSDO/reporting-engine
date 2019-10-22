@@ -6,20 +6,21 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.DrugUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
+import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 
 public class ValidateSubstanceModeling extends TermServerReport implements ReportClass {
 	
 	private static final String[] badWords = new String[] { "preparation", "agent", "+"};
 	private Map<String, Integer> issueSummaryMap = new HashMap<>();
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		TermServerReport.run(ValidateSubstanceModeling.class, args, params);
 	}
@@ -40,11 +41,13 @@ public class ValidateSubstanceModeling extends TermServerReport implements Repor
 
 	@Override
 	public Job getJob() {
-		JobParameters params = new JobParameters();
-		return new Job( new JobCategory(JobType.REPORT, JobCategory.DRUGS),
-						"Substances validation",
-						"This report checks for a number of potential inconsistencies in the Substances hierarchy.",
-						params);
+		return new Job()
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.DRUGS))
+				.withName("Substances validation")
+				.withDescription("This report checks for a number of potential inconsistencies in the Substances hierarchy.")
+				.withProductionStatus(ProductionStatus.PROD_READY)
+				.withTag(INT)
+				.build();
 	}
 	
 	public void runJob() throws TermServerScriptException {

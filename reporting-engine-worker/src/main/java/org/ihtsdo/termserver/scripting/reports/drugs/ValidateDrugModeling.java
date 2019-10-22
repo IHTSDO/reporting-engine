@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang.ArrayUtils;
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.drugs.Ingredient;
@@ -20,6 +20,7 @@ import org.ihtsdo.termserver.scripting.util.DrugUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.ihtsdo.termserver.scripting.util.TermGenerator;
 import org.snomed.otf.scheduler.domain.*;
+import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
@@ -40,7 +41,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 	
 	TermGenerator termGenerator = new DrugTermGenerator(this);
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		TermServerReport.run(ValidateDrugModeling.class, args, params);
 	}
@@ -63,11 +64,13 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 
 	@Override
 	public Job getJob() {
-		JobParameters params = new JobParameters();
-		return new Job( new JobCategory(JobType.REPORT, JobCategory.DRUGS),
-						"Drugs validation",
-						"This report checks for a number of potential inconsistencies in the Medicinal Product hierarchy.",
-						params);
+		return new Job()
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.DRUGS))
+				.withName("Drugs validation")
+				.withDescription("This report checks for a number of potential inconsistencies in the Medicinal Product hierarchy.")
+				.withProductionStatus(ProductionStatus.PROD_READY)
+				.withTag(INT)
+				.build();
 	}
 	
 	public void runJob() throws TermServerScriptException {

@@ -5,7 +5,7 @@ import java.io.PrintStream;
 import java.util.Collection;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
@@ -21,7 +21,7 @@ public class FdParentsReport extends TermServerReport {
 	
 	String subHierarchy = "105590001"; // |Substance (substance)|
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		FdParentsReport report = new FdParentsReport();
 		try {
 			report.additionalReportColumns = "SemanticTag, DefinitionStatus, FdParent";

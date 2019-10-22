@@ -9,7 +9,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
@@ -26,7 +26,7 @@ public class MissingModifications extends TermServerReport {
 	Set<String> modificationPhrases = new HashSet<>();
 	Map<Concept, Concept> substancesProductMap = new HashMap<>();
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		MissingModifications report = new MissingModifications();
 		try {
 			report.additionalReportColumns = "Base, HasPhrasePrecedent, HasExistingModification, Example Product";

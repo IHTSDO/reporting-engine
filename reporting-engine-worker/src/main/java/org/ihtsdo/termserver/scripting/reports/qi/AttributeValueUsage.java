@@ -51,11 +51,15 @@ public class AttributeValueUsage extends TermServerReport implements ReportClass
 					.withMandatory()
 				.build();
 		
-		return new Job(new JobCategory(JobType.REPORT, JobCategory.QI),
-						"Attribute Value Usage",
-						"This report lists - for a given attribute type - how often each value is used, with cumulative hierarchial totals." +
-						"Note that the 'Issues' count here refers to the number of rows reported.",
-						params, ProductionStatus.HIDEME);
+		return new Job()
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.QI))
+				.withName("Attribute Value Usage")
+				.withDescription("This report lists - for a given attribute type - how often each value is used, with cumulative hierarchial totals." +
+									"Note that the 'Issues' count here refers to the number of rows reported.")
+				.withProductionStatus(ProductionStatus.HIDEME)
+				.withParameters(params)
+				.withTag(INT)
+				.build();
 	}
 
 	

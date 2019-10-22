@@ -6,7 +6,7 @@ import java.util.*;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.*;
@@ -30,7 +30,7 @@ public class NormalizeProductStrength extends DrugBatchFix implements RF2Constan
 		super(clone);
 	}
 
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException, InterruptedException {
+	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		NormalizeProductStrength fix = new NormalizeProductStrength(null);
 		try {
 			fix.additionalReportColumns = "Num/Den, Current Unit, New Strength, New Unit, Role Group";

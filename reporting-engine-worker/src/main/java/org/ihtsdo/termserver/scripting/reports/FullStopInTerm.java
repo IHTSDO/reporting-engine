@@ -5,7 +5,7 @@ import java.io.PrintStream;
 import java.util.Set;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -21,7 +21,7 @@ public class FullStopInTerm extends TermServerReport {
 	boolean reportConceptOnceOnly = true;
 	final static String FULL_STOP = ".";
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		FullStopInTerm report = new FullStopInTerm();
 		try {
 			report.additionalReportColumns = "FSN, MatchedIn, Case, SubHierarchy, SubSubHierarchy";

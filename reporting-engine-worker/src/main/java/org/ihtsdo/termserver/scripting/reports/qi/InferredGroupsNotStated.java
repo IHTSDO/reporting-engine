@@ -13,7 +13,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.RelationshipGroup;
@@ -32,7 +32,7 @@ public class InferredGroupsNotStated extends TermServerReport {
 	Map<Concept, Integer> instancesPerSubHierarchy = new HashMap<>();
 	public boolean includeParents = true;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		InferredGroupsNotStated report = new InferredGroupsNotStated();
 		try {
 			report.additionalReportColumns = "SemTag, DefnStatus, statedAttribs, infAttribs, UnstatedGroup, ReasonableAncestors";

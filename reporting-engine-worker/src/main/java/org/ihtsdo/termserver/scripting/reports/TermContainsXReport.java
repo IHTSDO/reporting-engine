@@ -6,11 +6,12 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
+import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 
 /**
  * FD19459 Reports all terms that contain the specified text
@@ -32,7 +33,7 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 	boolean startsWith = false;
 	boolean wholeWord = false;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put(STARTS_WITH, "N");
 		params.put(SUB_HIERARCHY, ROOT_CONCEPT.toString());
@@ -45,6 +46,7 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
 		additionalReportColumns = "FSN, SemTag, Def Status, TermMatched, MatchedIn, Case, AttributeDetail, SubHierarchy, SubSubHierarchy";
+		runStandAlone = false; //We need a proper path lookup for MS projects
 		super.init(run);
 		getArchiveManager().populateHierarchyDepth = true;
 		textsToMatch = run.getMandatoryParamValue(WORDS).split(COMMA);
@@ -67,10 +69,15 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 				.add(WORDS).withType(JobParameter.Type.STRING).withMandatory()
 				.add(ATTRIBUTE_TYPE).withType(JobParameter.Type.CONCEPT).withDescription("Optional. Will show the attribute values per concept for the specified attribute type.  For example in Substances, show me all concepts that are used as a target for 738774007 |Is modification of (attribute)| by specifying that attribute type in this field.")
 				.build();
-		return new Job( new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES),
-						"Term contains X",
-						"This report lists all concepts containing the specified words, with optional attribute details. ",
-						params);
+		
+		return new Job()
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES))
+				.withName("Term contains X")
+				.withDescription("This report lists all concepts containing the specified words, with optional attribute details.")
+				.withProductionStatus(ProductionStatus.PROD_READY)
+				.withParameters(params)
+				.withTag(INT)
+				.build();
 	}
 	
 	public void runJob() throws TermServerScriptException {

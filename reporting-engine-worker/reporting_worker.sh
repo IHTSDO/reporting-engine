@@ -1,8 +1,11 @@
 #!/bin/bash
 
 #Variables to be set by calling script: RPW_Environment, RPW_Version
+echo "****************************************"
 echo "Reporting Platform Worker installation for environment: $RPW_Environment and version: $RPW_Version"
 echo "Time is now: `date`"
+echo "****************************************"
+echo
 
 # Check that we're running as root
 if [[ $EUID -ne 0 ]]; then

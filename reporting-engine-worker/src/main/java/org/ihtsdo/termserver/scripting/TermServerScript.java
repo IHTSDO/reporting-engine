@@ -36,7 +36,6 @@ public abstract class TermServerScript implements RF2Constants {
 	protected static int dryRunCounter = 0;
 	protected String env;
 	protected String url = environments[0];
-	protected boolean useAuthenticatedCookie = true;
 	protected boolean stateComponentType = true;
 	protected JobRun jobRun;
 	protected TermServerClient tsClient;
@@ -65,7 +64,6 @@ public abstract class TermServerScript implements RF2Constants {
 	protected String[] excludeHierarchies;
 	
 	protected Set<Concept> whiteListedConcepts = new HashSet<>();
-	
 	protected boolean reportConceptAsInteger = false;
 
 	protected GraphLoader gl = GraphLoader.getGraphLoader();
@@ -87,7 +85,6 @@ public abstract class TermServerScript implements RF2Constants {
 	public static String inputFileDelimiter = TSV_FIELD_DELIMITER;
 	protected String tsRoot = "MAIN/"; //"MAIN/2016-01-31/SNOMEDCT-DK/";
 	public static final String EXPECTED_PROTOCOL = "https://";
-	
 	
 	public static final String PROJECT = "Project";
 	protected static final String DRY_RUN = "DryRun";
@@ -148,7 +145,7 @@ public abstract class TermServerScript implements RF2Constants {
 															"https://dev-authoring.ihtsdotools.org/",
 															"https://uat-authoring.ihtsdotools.org/",
 															"https://prod-authoring.ihtsdotools.org/",
-															"https://dev-ms-authoring.ihtsdotools.org/",
+															"https://dev-bb18-ms-authoring.ihtsdotools.org/",
 															"https://dev-snowstorm.ihtsdotools.org/",
 															"https://uat-ms-authoring.ihtsdotools.org/",
 															"https://uat-snowstorm.ihtsdotools.org/",
@@ -258,7 +255,7 @@ public abstract class TermServerScript implements RF2Constants {
 		//TODO Make calls through client objects rather than resty direct and remove this member 
 		resty.withHeader("Cookie", authenticatedCookie);  
 		scaClient = new AuthoringServicesClient(url, authenticatedCookie);
-		initialiseSnowOwlClient();
+		tsClient = createTSClient(this.url, authenticatedCookie);
 		boolean loadingRelease = false;
 		//Recover the full project path from authoring services, if not already fully specified
 		project = new Project();
@@ -280,7 +277,7 @@ public abstract class TermServerScript implements RF2Constants {
 			} else {
 				try {
 					project = scaClient.getProject(projectName);
-				} catch (TermServerClientException e) {
+				} catch (TermServerScriptException e) {
 					throw new TermServerScriptException("Unable to recover project: " + projectName,e);
 				}
 			}
@@ -291,7 +288,7 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 	}
 
-	protected void checkSettingsWithUser(JobRun jobRun) {
+	protected void checkSettingsWithUser(JobRun jobRun) throws TermServerScriptException {
 		int envChoice = NOT_SET;
 		if (headlessEnvironment != null) {
 			envChoice = headlessEnvironment;
@@ -338,6 +335,7 @@ public abstract class TermServerScript implements RF2Constants {
 				}
 			}
 		}
+		
 	}
 
 	protected void init (JobRun jobRun) throws TermServerScriptException {
@@ -362,6 +360,9 @@ public abstract class TermServerScript implements RF2Constants {
 		String inputFileName = jobRun.getParamValue(INPUT_FILE);
 		if (!StringUtils.isEmpty(inputFileName)) {
 			inputFile = new File(inputFileName);
+			if (!inputFile.canRead() || !inputFile.isFile()) {
+				throw new TermServerScriptException("Unable to read specified file: " + inputFile);
+			}
 		}
 		
 		if (jobRun.getWhiteList() != null) {
@@ -375,6 +376,12 @@ public abstract class TermServerScript implements RF2Constants {
 			throw new TermServerScriptException("Unable to proceed without an authenticated token/cookie");
 		}
 		init();
+		if (projectName.equals("MAIN")) {
+			//MAIN is not a project.  Recover Main metadata from branch
+			project.setMetadata(tsClient.getBranch("MAIN").getMetadata());
+		} else {
+			project = scaClient.getProject(projectName);
+		}
 	}
 	
 	private String getEnv(String terminologyServerUrl) throws TermServerScriptException {
@@ -479,28 +486,24 @@ public abstract class TermServerScript implements RF2Constants {
 		return jobRun;
 	}
 	
-	protected void initialiseSnowOwlClient() {
-		if (useAuthenticatedCookie) {
-			if (!authenticatedCookie.contains("ihtsdo=")) {
-				throw new IllegalArgumentException("Malformed cookie detected.  Expected <env>-ihtsdo=<token> instead received: " + authenticatedCookie);
-			}
-			String contextPath = "snowowl/snomed-ct/v2";
-			if (url.contains("storm")) {
-				contextPath = "snowstorm/snomed-ct/v2";
-			}
-			tsClient = new TermServerClient(url + contextPath, authenticatedCookie);
-		} else {
-			throw new IllegalArgumentException("Support for username/password access to SnowOwl has been removed");
+	protected TermServerClient createTSClient(String url, String authenticatedCookie) {
+		if (!authenticatedCookie.contains("ihtsdo=")) {
+			throw new IllegalArgumentException("Malformed cookie detected.  Expected <env>-ihtsdo=<token> instead received: " + authenticatedCookie);
 		}
+		String contextPath = "snowstorm/snomed-ct/v2";
+		if (url.contains("-ms")) {
+			contextPath = "snowowl/snomed-ct/v2";
+		}
+		return new TermServerClient(url + contextPath, authenticatedCookie);
 	}
 	
-	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerClientException, TermServerScriptException, InterruptedException, IOException {
+	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException, InterruptedException, IOException {
 		getArchiveManager().loadProjectSnapshot(fsnOnly);
 		//Reset the report name to null here as it will have been set by the Snapshot Generator
 		setReportName(null);
 	}
 	
-	protected void loadArchive(File archive, boolean fsnOnly, String fileType, Boolean isReleased) throws TermServerScriptException, TermServerClientException {
+	protected void loadArchive(File archive, boolean fsnOnly, String fileType, Boolean isReleased) throws TermServerScriptException  {
 		getArchiveManager().loadArchive(archive, fsnOnly, fileType, isReleased);
 	}
 	
@@ -552,11 +555,13 @@ public abstract class TermServerScript implements RF2Constants {
 			convertAxiomsToRelationships(loadedConcept, loadedConcept.getAdditionalAxioms());
 			return loadedConcept;
 		} catch (Exception e) {
-			e.printStackTrace();
-			if (e.getMessage() != null && e.getMessage().contains("[404] Not Found")) {
+			if (e.getMessage() != null && e.getMessage().contains("[404] Not Found") 
+					|| e.getMessage().contains("404 Not Found")
+					|| e.getMessage().contains("NOT_FOUND")) {
 				debug ("Unable to find " + concept + " on branch " + branchPath);
 				return null;
 			}
+			e.printStackTrace();
 			String msg =  e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
 			throw new TermServerScriptException("Failed to recover " + concept + " from TS branch " + branchPath + ", due to: " + msg,e);
 		}
@@ -1398,4 +1403,13 @@ public abstract class TermServerScript implements RF2Constants {
 	public static void runHeadless(Integer envNum) {
 		headlessEnvironment = envNum;
 	}
+	
+	protected boolean inScope(Component c) {
+		//Do we have a default module id ie for a managed service project?
+		if (project.getMetadata() != null && project.getMetadata().getDefaultModuleId() != null) {
+			return c.getModuleId().equals(project.getMetadata().getDefaultModuleId());
+		}
+		return true;
+	}
+	
 }

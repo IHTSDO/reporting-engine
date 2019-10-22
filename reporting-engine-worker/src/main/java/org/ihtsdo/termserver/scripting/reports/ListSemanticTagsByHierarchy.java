@@ -10,6 +10,7 @@ import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
+import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
@@ -19,7 +20,7 @@ import com.google.common.collect.Multiset;
  */
 public class ListSemanticTagsByHierarchy extends TermServerReport implements ReportClass {
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put(SUB_HIERARCHY, BODY_STRUCTURE.toString());
 		TermServerReport.run(ListSemanticTagsByHierarchy.class, args);
@@ -34,11 +35,14 @@ public class ListSemanticTagsByHierarchy extends TermServerReport implements Rep
 
 	@Override
 	public Job getJob() {
-		return new Job( new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES),
-						"List Semantic Tags By Hierarchy",
-						"This report lists all semantic tags used in each top level hierarchy. " +
-						"Note that since this report is not listing any problems, the 'Issues' count will always be 0.",
-						new JobParameters());
+		return new Job()
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES))
+				.withName("List Semantic Tags By Hierarchy")
+				.withDescription("This report lists all semantic tags used in each top level hierarchy. " + 
+								"Note that since this report is not listing any problems, the 'Issues' count will always be 0.")
+				.withProductionStatus(ProductionStatus.PROD_READY)
+				.withTag(INT)
+				.build();
 	}
 
 	public void runJob() throws TermServerScriptException {

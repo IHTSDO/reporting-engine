@@ -5,10 +5,11 @@ import java.util.*;
 
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.snomed.otf.scheduler.domain.*;
+import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 
 /**
  * Check for duplicate terms (PT only by default) within the same hierarchy.
@@ -19,7 +20,7 @@ public class DuplicateTermsInSubhierarchy extends TermServerReport implements Re
 	boolean newIssuesOnly = true;
 	boolean ptOnly = true;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put(SUB_HIERARCHY, ROOT_CONCEPT.toString());
 		params.put(NEW_ISSUES_ONLY, "Y");
@@ -87,11 +88,16 @@ public class DuplicateTermsInSubhierarchy extends TermServerReport implements Re
 				.add(SUB_HIERARCHY).withType(JobParameter.Type.CONCEPT).withDefaultValue(ROOT_CONCEPT)
 				.add(NEW_ISSUES_ONLY).withType(JobParameter.Type.BOOLEAN).withDefaultValue(true)
 				.add(PT_ONLY).withType(JobParameter.Type.BOOLEAN).withDefaultValue(true).build();
-		return new Job( new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION),
-						"Duplicate Terms",
-						"This report lists concepts that have the same preferred term (or optionally, synonyms) within the same sub-hierarchy. " +
-						"The 'Issues' count here reflects the number of rows in the report.", 
-						params);
+		
+		return new Job()
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION))
+				.withName("Duplicate Terms")
+				.withDescription("This report lists concepts that have the same preferred term (or optionally, synonyms) within the same sub-hierarchy. " +
+						"The 'Issues' count here reflects the number of rows in the report.")
+				.withProductionStatus(ProductionStatus.PROD_READY)
+				.withParameters(params)
+				.withTag(INT)
+				.build();
 	}
 
 	public void runJob() throws TermServerScriptException {

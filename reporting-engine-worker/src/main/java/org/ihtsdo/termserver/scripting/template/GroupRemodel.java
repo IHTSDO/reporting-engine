@@ -11,7 +11,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
@@ -39,7 +39,7 @@ public class GroupRemodel extends TemplateFix {
 		super(clone);
 	}
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		GroupRemodel app = new GroupRemodel(null);
 		try {
 			ReportSheetManager.targetFolderId = "15FSegsDC4Tz7vP5NPayGeG2Q4SB1wvnr"; //QI  / Group One Remodel
@@ -175,8 +175,8 @@ public class GroupRemodel extends TemplateFix {
 		templateNames = new String[] {	"templates/Congenital Malformation.json"};
 		*/
 		subHierarchyECL = "<< 131148009|Bleeding|"; //QI-191
-		templateNames = new String[] { "templates/Bleeding - finding.json"};
-		inclusionWords.add("finding");
+		templateNames = new String[] { "templates/Bleeding - disorder.json"};
+		inclusionWords.add("disorder");
 		
 		super.init(args);
 		

@@ -7,7 +7,7 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.snomed.otf.scheduler.domain.*;
@@ -28,7 +28,7 @@ public class HistoricComparison extends TermServerReport implements ReportClass 
 	Map<Long, HistoricData> histDataMap = new HashMap<>();
 	DecimalFormat df = new DecimalFormat("##.###%");
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put(START_RELEASE, "20170731");
 		//params.put(START_RELEASE, "20190131");
@@ -58,10 +58,15 @@ public class HistoricComparison extends TermServerReport implements ReportClass 
 				.add(START_RELEASE).withType(JobParameter.Type.STRING).withMandatory().withDefaultValue(false)
 				.add(END_RELEASE).withType(JobParameter.Type.STRING)
 				.build();
-		return new Job( new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES),
-						"Find new clones",
-						"List all concepts with one semantic tag that have lexical equivalents in another tag, optionally ignoring some text",
-						params, ProductionStatus.HIDEME);
+		
+		return new Job()
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES))
+				.withName("Find new clone")
+				.withDescription("List all concepts with one semantic tag that have lexical equivalents in another tag, optionally ignoring some text")
+				.withProductionStatus(ProductionStatus.HIDEME)
+				.withParameters(params)
+				.withTag(INT)
+				.build();
 	}
 	
 	public void runJob() throws TermServerScriptException {

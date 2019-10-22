@@ -8,11 +8,12 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
+import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.springframework.util.StringUtils;
 
 /**
@@ -36,7 +37,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 	boolean newInactivationsOnly = false;
 	Set<Concept> namespaceConcepts;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put(SUB_HIERARCHY, ROOT_CONCEPT.toString());
 		params.put(NEW_INACTIVATIONS_ONLY, "false");
@@ -59,11 +60,15 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 					.withDefaultValue(true)
 				.build();
 
-		return new Job( new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION),
-						"Validate Inactivations with Associations",
-						"This report ensures that inactive concepts have exactly one inactivation indicator, and appropriate historical associations. " +
-						"The 'Issues' count here reflects the number of rows in the report.", 
-						params);
+		return new Job()
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION))
+				.withName("Validate Inactivations with Associations")
+				.withDescription("This report ensures that inactive concepts have exactly one inactivation indicator, and appropriate historical associations. " +
+								"The 'Issues' count here reflects the number of rows in the report.")
+				.withProductionStatus(ProductionStatus.PROD_READY)
+				.withParameters(params)
+				.withTag(INT)
+				.build();
 	}
 
 	public void runJob() throws TermServerScriptException {

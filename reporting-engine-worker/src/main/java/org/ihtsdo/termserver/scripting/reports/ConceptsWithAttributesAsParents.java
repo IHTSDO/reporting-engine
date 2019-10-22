@@ -5,7 +5,7 @@ import java.io.PrintStream;
 import java.util.*;
 
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -21,7 +21,7 @@ public class ConceptsWithAttributesAsParents extends TermServerReport {
 	Concept attributeType;
 	List<Concept> ignoreTypes;
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		ConceptsWithAttributesAsParents report = new ConceptsWithAttributesAsParents();
 		try {
 			ReportSheetManager.targetFolderId = "1bwgl8BkUSdNDfXHoL__ENMPQy_EdEP7d";

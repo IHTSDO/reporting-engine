@@ -1,5 +1,7 @@
 package org.ihtsdo.termserver.scripting.domain;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import org.ihtsdo.termserver.scripting.util.StringUtils;
@@ -27,6 +29,16 @@ public class AxiomEntry extends Component implements RF2Constants {
 		clone.owlExpression = this.owlExpression;
 		clone.dirty = true; //New components need to be written to any delta
 		return clone;
+	}
+	
+	public static AxiomEntry withDefaults (Concept c, String expression) {
+		AxiomEntry axiom = new AxiomEntry();
+		axiom.id = UUID.randomUUID().toString();
+		axiom.active = true;
+		axiom.refsetId = SCTID_OWL_AXIOM_REFSET;
+		axiom.referencedComponentId = c.getConceptId();
+		axiom.owlExpression = expression;
+		return axiom;
 	}
 	
 	public String toString() {
@@ -69,6 +81,10 @@ public class AxiomEntry extends Component implements RF2Constants {
 		return moduleId;
 	}
 	public void setModuleId(String moduleId) {
+		if (this.moduleId != null && !this.moduleId.equals(moduleId)) {
+			setDirty();
+			this.effectiveTime = null;
+		}
 		this.moduleId = moduleId;
 	}
 	public boolean isActive() {
@@ -125,7 +141,7 @@ public class AxiomEntry extends Component implements RF2Constants {
 
 	@Override
 	public ComponentType getComponentType() {
-		return ComponentType.OWL;
+		return ComponentType.AXIOM;
 	}
 
 	@Override
@@ -144,5 +160,26 @@ public class AxiomEntry extends Component implements RF2Constants {
 			return this.getId().equals(((AxiomEntry)o).getId());
 		}
 		return false;
+	}
+	
+	@Override
+	public List<String> fieldComparison(Component other) {
+		AxiomEntry otherA = (AxiomEntry)other;
+		List<String> differences = new ArrayList<>();
+		String name = this.getClass().getSimpleName(); 
+		commonFieldComparison(other, differences);
+		
+		if (!this.getRefsetId().equals(otherA.getRefsetId())) {
+			differences.add("RefsetId is different in " + name + ": " + this.getRefsetId() + " vs " + otherA.getRefsetId());
+		}
+		
+		if (!this.getReferencedComponentId().equals(otherA.getReferencedComponentId())) {
+			differences.add("RefCompId is different in " + name + ": " + this.getReferencedComponentId() + " vs " + otherA.getReferencedComponentId());
+		}
+		
+		if (!this.getOwlExpression().equals(otherA.getOwlExpression())) {
+			differences.add("OwlExpression is different in " + name + ": " + this.getOwlExpression() + " vs " + otherA.getOwlExpression());
+		}
+		return differences;
 	}
 }

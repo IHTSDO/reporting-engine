@@ -6,11 +6,13 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.ihtsdo.termserver.scripting.util.StringUtils;
 import org.snomed.otf.scheduler.domain.*;
+import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 
 public class ConceptChanged extends TermServerReport implements ReportClass {
 	
@@ -31,7 +33,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 	private Set<Concept> isTargetOfNewInferredRelationship = new HashSet<>();
 	private Set<Concept> wasTargetOfLostInferredRelationship = new HashSet<>();
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		TermServerReport.run(ConceptChanged.class, args, params);
 	}
@@ -65,10 +67,15 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		JobParameters params = new JobParameters()
 				.add(ECL).withType(JobParameter.Type.ECL).withDefaultValue("<< " + ROOT_CONCEPT)
 				.build();
-		return new Job( new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION),
-						"Concepts Changed",
-						"This report lists all concepts changed in the current release cycle.  The issue count here is the total number of concepts featuring one change or another.",
-						params);
+		return new Job()
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION))
+				.withName("Concepts Changed")
+				.withDescription("This report lists all concepts changed in the current release cycle.  The issue count here is the total number of concepts featuring one change or another.")
+				.withProductionStatus(ProductionStatus.PROD_READY)
+				.withParameters(params)
+				.withTag(INT)
+				.withTag(MS)
+				.build();
 	}
 	
 	public void runJob() throws TermServerScriptException {
@@ -88,14 +95,18 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 			conceptsOfInterest = gl.getAllConcepts();
 		}
 		
+//		conceptsOfInterest = Collections.singleton(gl.getConcept("324881002"));
+		
 		double lastPercentageReported = 0;
 		for (Concept c : conceptsOfInterest) {
 			if (c.isReleased() == null) {
 				throw new IllegalStateException ("Malformed snapshot. Released status not populated at " + c);
 			} else if (!c.isReleased()) {
 				//We will not report any changes on brand new concepts
+				//Or (in managed service) concepts from other modules
 				continue;
-			} else if (c.getEffectiveTime() == null || c.getEffectiveTime().isEmpty()) {
+			} else if (inScope(c) && 
+					(c.getEffectiveTime() == null || c.getEffectiveTime().isEmpty())) {
 				//Only want to log def status change if the concept has not been made inactive
 				if (c.isActive()) {
 					defStatusChanged.add(c);
@@ -105,49 +116,55 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 			}
 			
 			for (Description d : c.getDescriptions()) {
-				if (!d.isReleased()) {
-					hasNewDescriptions.add(c);
-				} else if (d.getEffectiveTime() == null || d.getEffectiveTime().isEmpty()) {
-					if (!d.isActive()) {
-						hasLostDescriptions.add(c);
-					} else {
-						hasChangedDescriptions.add(c);
+				if (inScope(d)) {
+					if (!d.isReleased()) {
+						hasNewDescriptions.add(c);
+					} else if (d.getEffectiveTime() == null || d.getEffectiveTime().isEmpty()) {
+						if (!d.isActive()) {
+							hasLostDescriptions.add(c);
+						} else {
+							hasChangedDescriptions.add(c);
+						}
 					}
 				}
 			}
 			
 			for (Relationship r : c.getRelationships()) {
-				if (r.getEffectiveTime() == null || r.getEffectiveTime().isEmpty()) {
-					boolean isStated = r.getCharacteristicType().equals(CharacteristicType.STATED_RELATIONSHIP);
-					if (r.isActive()) {
-						if (isStated) {
-							hasNewStatedRelationships.add(c);
-							isTargetOfNewStatedRelationship.add(r.getTarget());
+				if (inScope(r)) {
+					if (StringUtils.isEmpty(r.getEffectiveTime())) {
+						boolean isStated = r.getCharacteristicType().equals(CharacteristicType.STATED_RELATIONSHIP);
+						if (r.isActive()) {
+							if (isStated) {
+								hasNewStatedRelationships.add(c);
+								isTargetOfNewStatedRelationship.add(r.getTarget());
+							} else {
+								hasNewInferredRelationships.add(c);
+								isTargetOfNewInferredRelationship.add(r.getTarget());
+							}
 						} else {
-							hasNewInferredRelationships.add(c);
-							isTargetOfNewInferredRelationship.add(r.getTarget());
-						}
-					} else {
-						if (isStated) {
-							hasLostStatedRelationships.add(c);
-							wasTargetOfLostStatedRelationship.add(c);
-						} else {
-							hasLostInferredRelationships.add(c);
-							wasTargetOfLostInferredRelationship.add(c);
+							if (isStated) {
+								hasLostStatedRelationships.add(c);
+								wasTargetOfLostStatedRelationship.add(c);
+							} else {
+								hasLostInferredRelationships.add(c);
+								wasTargetOfLostInferredRelationship.add(c);
+							}
 						}
 					}
 				}
 			}
 			
-			for (InactivationIndicatorEntry i : c.getInactivationIndicatorEntries()) {
-				if (i.getEffectiveTime() == null || i.getEffectiveTime().isEmpty()) {
-					hasChangedInactivationIndicators.add(c);
+			if (inScope(c)) {
+				for (InactivationIndicatorEntry i : c.getInactivationIndicatorEntries()) {
+					if (i.getEffectiveTime() == null || i.getEffectiveTime().isEmpty()) {
+						hasChangedInactivationIndicators.add(c);
+					}
 				}
-			}
-			
-			for (AssociationEntry a : c.getAssociations()) {
-				if (a.getEffectiveTime() == null || a.getEffectiveTime().isEmpty()) {
-					hasChangedAssociations.add(c);
+				
+				for (AssociationEntry a : c.getAssociations()) {
+					if (a.getEffectiveTime() == null || a.getEffectiveTime().isEmpty()) {
+						hasChangedAssociations.add(c);
+					}
 				}
 			}
 			

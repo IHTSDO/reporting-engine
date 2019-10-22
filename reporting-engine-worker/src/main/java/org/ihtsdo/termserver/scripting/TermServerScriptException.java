@@ -11,4 +11,8 @@ public class TermServerScriptException extends Exception {
 	public TermServerScriptException(String msg) {
 		super(msg);
 	}
+
+	public TermServerScriptException(Throwable t) {
+		super(t);
+	}
 }

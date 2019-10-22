@@ -6,7 +6,7 @@ import java.util.*;
 
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.TermServerClientException;
+
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -23,7 +23,7 @@ public class UnitConsistency extends TermServerReport {
 	CharacteristicType cType = CharacteristicType.INFERRED_RELATIONSHIP;
 	Concept[] unit_types = new Concept[] { HAS_PRES_STRENGTH_UNIT, HAS_CONC_STRENGTH_UNIT };
 	
-	public static void main(String[] args) throws TermServerScriptException, IOException, TermServerClientException {
+	public static void main(String[] args) throws TermServerScriptException, IOException {
 		UnitConsistency report = new UnitConsistency();
 		try {
 			report.additionalReportColumns = "Using Ingredient, With Unit, Among, Compared to, instances, For Example";
