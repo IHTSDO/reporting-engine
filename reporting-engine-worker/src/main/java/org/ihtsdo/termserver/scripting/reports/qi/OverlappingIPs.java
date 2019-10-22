@@ -1,14 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports.qi;
 
-import java.io.IOException;
-import java.io.PrintStream;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import org.ihtsdo.termserver.scripting.TermServerScriptException;
-
-import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
-import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 
 /**

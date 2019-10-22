@@ -11,13 +11,12 @@ import org.ihtsdo.termserver.scripting.TransitiveClosure;
 
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.reports.release.CrossoverUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 
 /**
- * RP-227 Pattern KPIs
+ * RP-227 Pattern KPIs (RP-273 Splits this into KPI and QI Patterns reports)
  * --------------------
  * RP-228 Redundant ungrouped roles
  * RP-229 Redundant stated groups
@@ -25,11 +24,8 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
  * RP-231 Newly inactivatated duplicate created in prior release
  * RP-230 Existing sufficiently defined concepts that 
  * gained a stated intermediate primitive parent and lost active inferred descendant(s)
- * RP-233 Role group crossovers
- * RP-234 Ungrouped crossovers
- * RP-235 Intermediate primitive concepts that have sufficiently defined supertypes and subtypes.
  */
-public class ReleasePatternsReport extends TermServerReport implements ReportClass {
+public class KPIPatternsReport extends TermServerReport implements ReportClass {
 	
 	private Map<String, Integer> issueSummaryMap = new HashMap<>();
 	AncestorsCache cache;
@@ -38,7 +34,7 @@ public class ReleasePatternsReport extends TermServerReport implements ReportCla
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		TermServerReport.run(ReleasePatternsReport.class, args, params);
+		TermServerReport.run(KPIPatternsReport.class, args, params);
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
@@ -68,7 +64,7 @@ public class ReleasePatternsReport extends TermServerReport implements ReportCla
 	public Job getJob() {
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION))
-				.withName("Release Patterns Report")
+				.withName("KPI Patterns Report")
 				.withDescription("This report identifies a number of potentially problematic patters, many of which are tracked as KPIs ")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withTag(INT)
@@ -93,13 +89,7 @@ public class ReleasePatternsReport extends TermServerReport implements ReportCla
 			checkCreatedButDuplicate();
 			checkPattern11();  //...a very specific situation
 			
-			info("Checking for crossovers");
-			checkForRoleGroupCrossovers();
-			checkForUngroupedCrossovers();
-			
-			checkForIPs();
 		}
-			
 		info("Checks complete, creating summary tag");
 		populateSummaryTab();
 		
@@ -270,80 +260,7 @@ public class ReleasePatternsReport extends TermServerReport implements ReportCla
 		}
 	}
 
-	private void checkForRoleGroupCrossovers() throws TermServerScriptException {
-		String issueStr = "Pattern 4: Role group crossover";
-		initialiseSummary(issueStr);
-		Set<GroupPair> processedPairs = new HashSet<>();
-		for (Concept c : gl.getAllConcepts()) {
-			/*if (c.getConceptId().equals("10311005")) {
-				debug("here");
-			}*/
-			Collection<RelationshipGroup> groups = c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP);
-			//We only need to worry about concepts with >1 role group
-			if (c.isActive() && groups.size() > 1) {
-				processedPairs.clear();
-				//Test every group against every other group
-				for (RelationshipGroup left : groups) {
-					if (!left.isGrouped()) {
-						continue;
-					}
-					for (RelationshipGroup right : groups) {
-						if (left.getGroupId()==right.getGroupId() || !right.isGrouped()) {
-							continue;
-						}
-						//Have we already processed this combination in the opposite order?
-						if (processedPairs.contains(new GroupPair(right, left))) {
-							continue;
-						}
-						switch (CrossoverUtils.subsumptionRoleGroupTest(left, right)) {
-							case ROLEGROUPS_CROSSOVER :
-							case ROLES_CROSSOVER:
-									report (c, issueStr, left, right);
-									break;
-							default:
-						}
-						processedPairs.add(new GroupPair(left, right));
-					}
-				}
-			}
-		}
-	}
-	
-	private void checkForUngroupedCrossovers() throws TermServerScriptException {
-		String issueStr = "Pattern 5: Role and role group anomaly - more specific";
-		initialiseSummary(issueStr);
-		String issue2Str = "Pattern 5: Role and role group anomaly - inconsistent";
-		initialiseSummary(issue2Str);
-		for (Concept c : gl.getAllConcepts()) {
-			if (!c.isActive() || c.getRelationshipGroup(CharacteristicType.INFERRED_RELATIONSHIP, UNGROUPED) == null) {
-				continue;
-			}
-			List<Relationship> ungroupedRels = c.getRelationshipGroup(CharacteristicType.INFERRED_RELATIONSHIP, UNGROUPED).getRelationships();
-			for (Relationship ungroupedRel : ungroupedRels) {
-				//Is our ungrouped relationship more specific than any grouped relationship?
-				for (RelationshipGroup group : c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP)) {
-					if (!group.isGrouped()) {
-						continue;
-					}
-					for (Relationship groupedRel : group.getRelationships()) {
-						if (SnomedUtils.isMoreSpecific(ungroupedRel, groupedRel, cache)) {
-							report (c, issueStr, ungroupedRel, groupedRel);
-						} else if (SnomedUtils.inconsistentSubsumption(ungroupedRel, groupedRel, cache)) {
-							report (c, issue2Str, ungroupedRel, groupedRel);
-						}
-					}
-				}
-			}
-		}
-	}
-	
-	private void checkForIPs() throws TermServerScriptException {
-		String issueStr = "Pattern 7: Intermediate primitive";
-		initialiseSummary(issueStr);
-		for (Concept c : identifyIntermediatePrimitives(gl.getAllConcepts(), CharacteristicType.INFERRED_RELATIONSHIP)) {
-			report(c, issueStr);
-		}
-	}
+
 
 	private String toString(List<Concept> concepts) {
 		return concepts.stream()
