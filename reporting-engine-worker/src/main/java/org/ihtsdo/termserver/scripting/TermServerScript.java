@@ -528,7 +528,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected Concept loadConcept(Concept concept, String branchPath) throws TermServerScriptException {
 		Concept loadedConcept = loadConcept(concept.getConceptId(), branchPath);
 		//Detect attempt to load a deleted concept
-		if (StringUtils.isEmpty(loadedConcept.getConceptId())) {
+		if (loadedConcept == null || StringUtils.isEmpty(loadedConcept.getConceptId())) {
 			return null;
 		}
 		loadedConcept.setConceptType(concept.getConceptType());
