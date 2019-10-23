@@ -117,29 +117,32 @@ public class ReconcileSnapshot extends TermServerReport implements ReportClass {
 			String fileName = path.getFileName().toString();
 			if (fileName.contains(fileType)) {
 				if (fileName.contains("sct2_Concept_" )) {
-					info("Validating Concept " + fileType + " file.");
+					info("Validating Concept " + fileType + " file: " + fileName);
 					validateComponentFile(is, ComponentType.CONCEPT);
+/*				} else if (fileName.contains("StatedRelationship_" )) {
+					info("Validating " + fileName);
+					validateComponentFile(is, ComponentType.STATED_RELATIONSHIP);
 				} else if (fileName.contains("Relationship_" )) {
 					info("Validating " + fileName);
-					validateComponentFile(is, ComponentType.RELATIONSHIP);
+					validateComponentFile(is, ComponentType.INFERRED_RELATIONSHIP); */
 				} else if (fileName.contains("sct2_sRefset_OWLExpression" ) ||
 						   fileName.contains("sct2_sRefset_OWLAxiom" )) {
-					info("Validating Axiom " + fileType + " refset file.");
+					info("Validating Axiom " + fileType + " refset file: " + fileName);
 					validateComponentFile(is, ComponentType.AXIOM);
 				} else if (fileName.contains("sct2_Description_" )) {
-					info("Validating Description " + fileType + " file.");
+					info("Validating Description " + fileType + " file: " + fileName);
 					validateComponentFile(is, ComponentType.DESCRIPTION);
 				} else if (fileName.contains("sct2_TextDefinition_" )) {
-					info("Validating Text Definition " + fileType + " file.");
+					info("Validating Text Definition " + fileType + " file: " + fileName);
 					validateComponentFile(is, ComponentType.TEXT_DEFINITION);
 				} else if (fileName.contains("der2_cRefset_ConceptInactivationIndicatorReferenceSet" )) {
-					info("Validating Concept Inactivation Indicator " + fileType + " file.");
+					info("Validating Concept Inactivation Indicator " + fileType + " file: " + fileName);
 					validateComponentFile(is, ComponentType.ATTRIBUTE_VALUE);
 				} else if (fileName.contains("der2_cRefset_DescriptionInactivationIndicatorReferenceSet" )) {
-					info("Validating Description Inactivation Indicator " + fileType + " file.");
+					info("Validating Description Inactivation Indicator " + fileType + " file: " + fileName);
 					validateComponentFile(is, ComponentType.ATTRIBUTE_VALUE);
 				} else if (fileName.contains("der2_cRefset_AttributeValue" )) {
-					info("Validating Concept/Description Inactivation Indicators " + fileType + " file.");
+					info("Validating Concept/Description Inactivation Indicators " + fileType + " file: " + fileName);
 					validateComponentFile(is, ComponentType.ATTRIBUTE_VALUE);
 				} else if (fileName.contains("Association" ) || fileName.contains("AssociationReferenceSet" )) {
 					info("Validating Historical Association File: " + fileName);
@@ -178,7 +181,16 @@ public class ReconcileSnapshot extends TermServerReport implements ReportClass {
 	private int validate(Component c) throws TermServerScriptException {
 		//What does our generated snapshot hold for this component?
 		Component other = gl.getComponent(c.getId());
+		
 		if (other == null) {
+			if (!c.isActive() && 
+					(c.getComponentType().equals(ComponentType.STATED_RELATIONSHIP) ||
+					c.getComponentType().equals(ComponentType.INFERRED_RELATIONSHIP))) {
+				//TODO Investigate here. I think we're replacing duplicate triples when importing
+				//perhaps we can stop doing that.
+				return NO_CHANGES_MADE;
+			}
+				
 			report (null, c.getId(), c.isActive(), "Component from export not present in generated snapshot", c);
 			countIssue(null);
 			return 1;
@@ -212,7 +224,7 @@ public class ReconcileSnapshot extends TermServerReport implements ReportClass {
 			case TEXT_DEFINITION :	Description d = new Description(lineItems[IDX_ID]);
 									Description.fillFromRf2(d,lineItems);
 									return d;
-			case RELATIONSHIP: return createRelationshipFromRF2(lineItems);
+			case INFERRED_RELATIONSHIP: return createRelationshipFromRF2(lineItems);
 			case HISTORICAL_ASSOCIATION : return AssociationEntry.fromRf2(lineItems);
 			case ATTRIBUTE_VALUE : return  InactivationIndicatorEntry.fromRf2(lineItems);
 			case LANGREFSET : return LangRefsetEntry.fromRf2(lineItems);

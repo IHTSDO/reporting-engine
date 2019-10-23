@@ -159,7 +159,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 		writeToRF2File(conDeltaFilename, conHeader);
 		
 		relDeltaFilename = termDir + "sct2_Relationship_Delta_"+edition+"_" + today + ".txt";
-		fileMap.put(ComponentType.RELATIONSHIP, relDeltaFilename);
+		fileMap.put(ComponentType.INFERRED_RELATIONSHIP, relDeltaFilename);
 		writeToRF2File(relDeltaFilename, relHeader);
 
 		sRelDeltaFilename = termDir + "sct2_StatedRelationship_Delta_"+edition+"_" + today + ".txt";

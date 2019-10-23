@@ -1131,7 +1131,7 @@ public class SnomedUtils implements RF2Constants {
 		switch (penultimate) {
 			case "0" : return ComponentType.CONCEPT;
 			case "1" : return ComponentType.DESCRIPTION;
-			case "2" : return ComponentType.RELATIONSHIP;
+			case "2" : return ComponentType.INFERRED_RELATIONSHIP;
 			default : throw new TermServerScriptException("Unable to determine component type of: " + sctId);
 		}
 	}

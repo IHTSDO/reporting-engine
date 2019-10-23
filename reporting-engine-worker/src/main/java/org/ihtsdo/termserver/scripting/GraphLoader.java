@@ -810,7 +810,7 @@ public class GraphLoader implements RF2Constants {
 							return (Concept)c;
 			case DESCRIPTION :
 			case TEXT_DEFINITION : return getConcept(((Description)c).getConceptId());
-			case RELATIONSHIP:
+			case INFERRED_RELATIONSHIP:
 			case STATED_RELATIONSHIP : return getConcept(((Relationship)c).getSourceId());
 			case HISTORICAL_ASSOCIATION : String referencedComponentId = ((AssociationEntry)c).getReferencedComponentId();
 											ComponentType referencedType = SnomedUtils.getComponentType(referencedComponentId);
@@ -835,7 +835,7 @@ public class GraphLoader implements RF2Constants {
 			case TEXT_DEFINITION :	Description d = getDescription (lineItems[DES_IDX_ID]);
 									Description.fillFromRf2(d,lineItems);
 									return d;
-			case RELATIONSHIP: return createRelationshipFromRF2(CharacteristicType.INFERRED_RELATIONSHIP, lineItems);
+			case INFERRED_RELATIONSHIP: return createRelationshipFromRF2(CharacteristicType.INFERRED_RELATIONSHIP, lineItems);
 			case STATED_RELATIONSHIP : return createRelationshipFromRF2(CharacteristicType.STATED_RELATIONSHIP, lineItems);
 			case HISTORICAL_ASSOCIATION : return AssociationEntry.fromRf2(lineItems);
 			case ATTRIBUTE_VALUE : return  InactivationIndicatorEntry.fromRf2(lineItems);

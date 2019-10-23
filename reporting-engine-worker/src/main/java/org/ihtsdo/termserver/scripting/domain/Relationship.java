@@ -351,7 +351,7 @@ public class Relationship extends Component implements IRelationshipTemplate, RF
 	public ComponentType getComponentType() {
 		switch (characteristicType) {
 			case STATED_RELATIONSHIP : return ComponentType.STATED_RELATIONSHIP;
-			case INFERRED_RELATIONSHIP : return ComponentType.RELATIONSHIP;
+			case INFERRED_RELATIONSHIP : return ComponentType.INFERRED_RELATIONSHIP;
 		default:
 			throw new NotImplementedException();
 		}

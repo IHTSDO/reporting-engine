@@ -153,7 +153,7 @@ public class RemoveNoChangeRows extends DeltaGenerator {
 		}
 		
 		//If it's an inferred relationship, we're only interested in inactivations to avoid validation errors due to inactive concepts
-		if (componentType.equals(ComponentType.RELATIONSHIP) && lineItems[IDX_ACTIVE].equals(ACTIVE_FLAG)) {
+		if (componentType.equals(ComponentType.INFERRED_RELATIONSHIP) && lineItems[IDX_ACTIVE].equals(ACTIVE_FLAG)) {
 			incrementSummaryInformation("Filtered active inferred relationship");
 			return true;
 		}

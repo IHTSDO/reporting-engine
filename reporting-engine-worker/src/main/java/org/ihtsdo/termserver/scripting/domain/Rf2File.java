@@ -33,7 +33,7 @@ public class Rf2File implements RF2Constants {
 		snomedRf2Files.put(ComponentType.LANGREFSET, new Rf2File("der2_cRefset_LanguageTYPE", 
 				refDir + "Language/der2_cRefset_LanguageTYPE-LNG_EDITION_DATE.txt",
 				"id\teffectiveTime\tactive\tmoduleId\trefsetId\treferencedComponentId\tacceptabilityId")); 
-		snomedRf2Files.put(ComponentType.RELATIONSHIP, new Rf2File("sct2_Relationship_TYPE",
+		snomedRf2Files.put(ComponentType.INFERRED_RELATIONSHIP, new Rf2File("sct2_Relationship_TYPE",
 				termDir + "sct2_Relationship_TYPE_EDITION_DATE.txt",
 				"id\teffectiveTime\tactive\tmoduleId\tsourceId\tdestinationId\trelationshipGroup\ttypeId\tcharacteristicTypeId\tmodifierId"));
 		snomedRf2Files.put(ComponentType.STATED_RELATIONSHIP, new Rf2File("sct2_StatedRelationship_TYPE", 

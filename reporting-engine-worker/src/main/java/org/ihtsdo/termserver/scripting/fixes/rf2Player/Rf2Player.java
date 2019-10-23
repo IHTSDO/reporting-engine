@@ -128,7 +128,7 @@ public class Rf2Player extends BatchFix {
 							break;
 						case LANGREFSET : processLangrefset(lineItems);
 							break;
-						case RELATIONSHIP : processRelationship(lineItems, false);
+						case INFERRED_RELATIONSHIP : processRelationship(lineItems, false);
 							break;
 						case ATTRIBUTE_VALUE : processInactivation(lineItems);
 						default:

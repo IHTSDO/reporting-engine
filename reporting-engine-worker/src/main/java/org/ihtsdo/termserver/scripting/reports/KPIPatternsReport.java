@@ -110,6 +110,7 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 	private boolean checkStructuralIntegrity() throws TermServerScriptException {
 		String issueStr = "Concept referenced in axiom, but does not exist";
 		String issueStr2 = "Concept exists without an FSN";
+		String issueStr3 = "Active concept does not have any axioms";
 		//Don't initialise, we won't mention the check if there's no problem.
 		boolean isOK = true;
 		for (Concept c : gl.getAllConcepts()) {
@@ -128,6 +129,9 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 				isOK = false;
 			} else if (c.getFsn() == null || c.getFsn().isEmpty()) {
 				report (c, issueStr2);
+				isOK = false;
+			} else if (c.isActive() && c.getAxiomEntries().size() == 0) {
+				report (c, issueStr3);
 				isOK = false;
 			}
 		}
@@ -226,8 +230,8 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 					}
 				} catch (Exception e) {
 					report (c, "API ERROR", "Failed to check previous previous release due to " + e.getMessage());
-					if (++errorCount > 5) {
-						report (c, "API ERROR", "Maximum failures reached, giving up on Pattern 11");
+					if (++errorCount == 5) {
+						report (c, "API ERROR", "Maximum failures reached, giving up on Pattern 21");
 						break;
 					}
 				}
@@ -278,8 +282,6 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 		}
 	}
 
-
-
 	private String toString(List<Concept> concepts) {
 		return concepts.stream()
 				.map(c -> c.toString())
@@ -329,5 +331,4 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 			return hash;
 		}
 	}
-
 }
