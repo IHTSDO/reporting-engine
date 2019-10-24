@@ -173,6 +173,7 @@ public class ArchiveManager implements RF2Constants {
 			boolean originalStateDataFlag = allowStaleData;
 			//If we're loading a particular release, it will be stale
 			if (loadEditionArchive || StringUtils.isNumeric(ts.getProject().getKey())) {
+				loadEditionArchive = true;
 				allowStaleData = true;
 				if (loadEditionArchive && !snapshot.exists()) {
 					throw new TermServerScriptException ("Could not find " + snapshot + " to import");
@@ -194,10 +195,10 @@ public class ArchiveManager implements RF2Constants {
 			if (true);
 			if (!snapshot.exists() || 
 					(isStale && !allowStaleData) || 
-					(populateReleasedFlag && !releasedFlagPopulated) ||
+					(populateReleasedFlag && !releasedFlagPopulated && !loadEditionArchive) ||
 					(populatePreviousTransativeClosure && gl.getPreviousTC() == null)) {
 				
-				if (populateReleasedFlag && !releasedFlagPopulated) {
+				if (populateReleasedFlag && !releasedFlagPopulated && !loadEditionArchive) {
 					info("Generating fresh snapshot because 'released' flag must be populated");
 				} else if (populatePreviousTransativeClosure && gl.getPreviousTC() == null) {
 					info("Generating fresh snapshot because previous transative closure must be populated");
@@ -220,7 +221,8 @@ public class ArchiveManager implements RF2Constants {
 						releasedFlagPopulated = false;
 					}
 					//Do we also need a fresh snapshot here so we can have the 'released' flag?
-					if (populateReleasedFlag && !releasedFlagPopulated) {
+					//If we're loading an edition archive then that is - by definition all released.
+					if (populateReleasedFlag && !releasedFlagPopulated && !loadEditionArchive) {
 						info("Generating fresh snapshot (despite having a non-stale on disk) because 'released' flag must be populated");
 						gl.reset();
 						generateSnapshot (ts.getProject());
@@ -229,8 +231,11 @@ public class ArchiveManager implements RF2Constants {
 						info ("Loading snapshot archive contents into memory...");
 						try {
 							//This archive is 'current state' so we can't know what is released or not
-							releasedFlagPopulated = false;
-							loadArchive(snapshot, fsnOnly, "Snapshot", null);
+							//Unless it's an edition archive
+							releasedFlagPopulated = loadEditionArchive;
+							//We only know if the components are released when loading an edition archive
+							Boolean isReleased = loadEditionArchive ? true : null;
+							loadArchive(snapshot, fsnOnly, "Snapshot", isReleased);
 						} catch (Exception e) {
 							TermServerScript.error ("Non-viable snapshot encountered (Exception: " + e.getMessage()  +").  Deleting " + snapshot + "...", e);
 							try {

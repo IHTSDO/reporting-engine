@@ -380,7 +380,10 @@ public abstract class TermServerScript implements RF2Constants {
 			//MAIN is not a project.  Recover Main metadata from branch
 			project.setMetadata(tsClient.getBranch("MAIN").getMetadata());
 		} else {
-			project = scaClient.getProject(projectName);
+			//Not if we're loading a release or extension
+			if (!StringUtils.isNumeric(projectName)) {
+				project = scaClient.getProject(projectName);
+			}
 		}
 	}
 	

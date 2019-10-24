@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting.reports.release;
 
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.util.*;
 
 import org.ihtsdo.termserver.job.ReportClass;
@@ -22,7 +23,6 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		//params.put(PROJECT, "20170731");
 		TermServerReport.run(ReleaseStats.class, args, params);
 	}
 
@@ -51,7 +51,12 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 		
 		info("Checking for Stated Intermediate Primitives");
 		countIPs(CharacteristicType.STATED_RELATIONSHIP, QUINARY_REPORT);
+		
+		info("Calculating Fully Defined %");
+		countSD(CharacteristicType.STATED_RELATIONSHIP, QUINARY_REPORT);
 	}
+
+
 
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA
@@ -59,7 +64,7 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 	}
 	
 	public void postInit() throws TermServerScriptException {
-		String[] columnHeadings = new String[] {",KPI, count", 
+		String[] columnHeadings = new String[] {",,,KPI, count, of which Orphanet", 
 												"SCTID, FSN, SemTag, Crossover",
 												"SCTID, FSN, SemTag, Crossover",
 												"SCTID, FSN, SemTag",
@@ -157,8 +162,26 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 			}
 		}
 		String statedIndicator = charType.equals(CharacteristicType.STATED_RELATIONSHIP)?" stated":"";
-		report (PRIMARY_REPORT, null, "Number of" + statedIndicator + " Intermediate Primitives", ipCount);
-		report (PRIMARY_REPORT, null, "Of which Orphanet", orphanetIPs);
+		report (PRIMARY_REPORT, null, "Number of" + statedIndicator + " Intermediate Primitives", ipCount, orphanetIPs);
+	}
+	
+	private void countSD(CharacteristicType statedRelationship, int quinaryReport) throws TermServerScriptException {
+		double activeConcepts = 0;
+		double sufficientlyDefinedConcepts = 0;
+		for (Concept c : gl.getAllConcepts()) {
+			if (c.isActive()) {
+				activeConcepts++;
+				if (c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
+					sufficientlyDefinedConcepts++;
+				}
+			}
+		}
+		
+		DecimalFormat df = new DecimalFormat("##.#%");
+		double percent = (sufficientlyDefinedConcepts / activeConcepts);
+		String formattedPercent = df.format(percent);
+		report (PRIMARY_REPORT, null, "% Sufficiently Defined", formattedPercent);
+
 	}
 	
 	class GroupPair {

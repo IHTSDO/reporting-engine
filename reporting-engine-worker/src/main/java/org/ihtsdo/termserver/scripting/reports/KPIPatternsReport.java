@@ -12,6 +12,7 @@ import org.ihtsdo.termserver.scripting.TransitiveClosure;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.ihtsdo.termserver.scripting.util.StringUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 
@@ -42,12 +43,14 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 		super.init(run);
 		runStandAlone = false; //We need to load previous previous for real
 		getArchiveManager().populateReleasedFlag = true;
-		getArchiveManager().populatePreviousTransativeClosure = true;
-		try {
-			previousPreviousRelease = getArchiveManager().getPreviousPreviousBranch(project);
-		} catch (Exception e) {
-			error ("Failed to recover previous branch, falling back to hard coded 20190131", e);
-			previousPreviousRelease = "MAIN/2019-01-31";
+		if (!StringUtils.isNumeric(project.getKey())) {
+			getArchiveManager().populatePreviousTransativeClosure = true;
+			try {
+				previousPreviousRelease = getArchiveManager().getPreviousPreviousBranch(project);
+			} catch (Exception e) {
+				error ("Failed to recover previous branch, falling back to hard coded 20190131", e);
+				previousPreviousRelease = "MAIN/2019-01-31";
+			}
 		}
 	}
 	
@@ -86,8 +89,12 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 			tc = gl.generateTransativeClosure();
 			
 			info("Checking for historical patterns");
-			checkCreatedButDuplicate();
-			checkPattern11();  //...a very specific situation
+			if (previousPreviousRelease == null) {
+				checkCreatedButDuplicate();
+				checkPattern11();  //...a very specific situation
+			} else {
+				report (null, "Skipping Pattern 11", "No previous previous release available");
+			}
 			
 		}
 		info("Checks complete, creating summary tag");
