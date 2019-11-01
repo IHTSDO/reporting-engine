@@ -106,6 +106,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(INT)
+				.withTag(MS)
 				.build();
 	}
 
@@ -137,7 +138,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		diseaseIntegrity();
 		
 		info("...Text definition dialect checks");
-		textDefinitionDialectChecks();
+		if (!isMS()) {
+			textDefinitionDialectChecks();
+		}
 		
 		info("...Nested brackets check");
 		nestedBracketCheck();
@@ -169,9 +172,12 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	}
 
 	//ISRS-286 Ensure Parents in same module.
-	//TODO To avoid issues with LOINC and ManagedService, only check core and model module
-	//concepts
+	//This check does not apply to MS
 	private void parentsInSameModule() throws TermServerScriptException {
+		if (isMS()) {
+			return;
+		}
+		
 		String issueStr = "Mismatching parent moduleId";
 		initialiseSummary(issueStr);
 		for (Concept c : gl.getAllConcepts()) {
@@ -204,7 +210,12 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	
 
 	//ISRS-391 Descriptions whose module id does not match that of the component
+	//It's OK to add translations to core concepts, so does not apply to MS
 	private void unexpectedDescriptionModules() throws TermServerScriptException {
+		if (isMS()) {
+			return;
+		}
+		
 		String issueStr ="Unexpected Description Module";
 		initialiseSummary(issueStr);
 		for (Concept c : gl.getAllConcepts()) {
@@ -223,8 +234,12 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	}
 	
 	//ISRS-392 Part II Stated Relationships whose module id does not match that of the component
+	//In Managed Service, I think we want to flag this up as a warning
 	private void unexpectedRelationshipModules() throws TermServerScriptException {
 		String issueStr = "Unexpected Stated Rel Module";
+		if (isMS()) {
+			issueStr = "Extension added Relationship to core concept";
+		}
 		initialiseSummary(issueStr);
 		for (Concept c : gl.getAllConcepts()) {
 			for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH)) {
@@ -255,21 +270,25 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			//Unless we're interested in legacy issues
 			if (c.isActive() && (includeLegacyIssues || SnomedUtils.hasNewChanges(c))) {
 				for (Description d : c.getDescriptions(Acceptability.BOTH, DescriptionType.SYNONYM, ActiveState.ACTIVE)) {
-					if (d.getTerm().endsWith(FULL_STOP) && d.getTerm().length() > MIN_TEXT_DEFN_LENGTH) {
-						report(c, issueStr, isLegacy(d), isActive(c,d), d);
-						if (isLegacy(d).equals("Y")) {
-							incrementSummaryInformation("Legacy Issues Reported");
-						}	else {
-							incrementSummaryInformation("Fresh Issues Reported");
+					if (inScope(d)) {
+						if (d.getTerm().endsWith(FULL_STOP) && d.getTerm().length() > MIN_TEXT_DEFN_LENGTH) {
+							report(c, issueStr, isLegacy(d), isActive(c,d), d);
+							if (isLegacy(d).equals("Y")) {
+								incrementSummaryInformation("Legacy Issues Reported");
+							}	else {
+								incrementSummaryInformation("Fresh Issues Reported");
+							}
 						}
 					}
 				}
 				
-				//Check we've only got max 1 Text Defn for each dialect
-				if (c.getDescriptions(US_ENG_LANG_REFSET, Acceptability.BOTH, DescriptionType.TEXT_DEFINITION, ActiveState.ACTIVE).size() > 1 ||
-					c.getDescriptions(GB_ENG_LANG_REFSET, Acceptability.BOTH, DescriptionType.TEXT_DEFINITION, ActiveState.ACTIVE).size() > 1 ) {
-					report(c, issue2Str,"N", "Y");
-					incrementSummaryInformation("Fresh Issues Reported");
+				if (inScope(c)) {
+					//Check we've only got max 1 Text Defn for each dialect
+					if (c.getDescriptions(US_ENG_LANG_REFSET, Acceptability.BOTH, DescriptionType.TEXT_DEFINITION, ActiveState.ACTIVE).size() > 1 ||
+						c.getDescriptions(GB_ENG_LANG_REFSET, Acceptability.BOTH, DescriptionType.TEXT_DEFINITION, ActiveState.ACTIVE).size() > 1 ) {
+						report(c, issue2Str,"N", "Y");
+						incrementSummaryInformation("Fresh Issues Reported");
+					}
 				}
 			}
 		}
@@ -284,7 +303,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		initialiseSummary(issue2Str);
 		initialiseSummary(issue3Str);
 		for (Concept c : gl.getAllConcepts()) {
-			if (!c.isActive()) {
+			if (!c.isActive() && inScope(c)) {
 				boolean reported = false;
 				if (c.getFSNDescription() == null || !c.getFSNDescription().isActive()) {
 					report(c, issueStr, isLegacy(c), isActive(c,null));
@@ -350,6 +369,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		//Second pass to see if we have any of these remaining once
 		//the real semantic tag (last set of brackets) has been removed
 		for (Concept c : gl.getAllConcepts()) {
+			if (!inScope(c)) {
+				continue;
+			}
 			if (whiteList.contains(c.getId())) {
 				continue;
 			}
@@ -397,17 +419,19 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			
 			for (Concept c : gl.getAllConcepts()) {
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-					if (d.getTerm().indexOf(unwantedChar[0]) != NOT_SET && !allowableException(c, unwantedChar[0], d.getTerm())) {
-						String legacy = isLegacy(d);
-						String msg = "At position: " + d.getTerm().indexOf(unwantedChar[0]);
-						report(c, issueStr, legacy, isActive(c,d),msg, d);
-						if (legacy.equals("Y")) {
-							incrementSummaryInformation("Legacy Issues Reported");
-						}	else {
-							incrementSummaryInformation("Fresh Issues Reported");
+					if (inScope(d)) {
+						if (d.getTerm().indexOf(unwantedChar[0]) != NOT_SET && !allowableException(c, unwantedChar[0], d.getTerm())) {
+							String legacy = isLegacy(d);
+							String msg = "At position: " + d.getTerm().indexOf(unwantedChar[0]);
+							report(c, issueStr, legacy, isActive(c,d),msg, d);
+							if (legacy.equals("Y")) {
+								incrementSummaryInformation("Legacy Issues Reported");
+							}	else {
+								incrementSummaryInformation("Fresh Issues Reported");
+							}
+							//Only report the first violation for each concept
+							break;
 						}
-						//Only report the first violation for each concept
-						break;
 					}
 				}
 			}
@@ -441,9 +465,11 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		for (Concept c : gl.getAllConcepts()) {
 			if (c.isActive() || includeLegacyIssues) {
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-					if (d.getTerm().contains("( ") || d.getTerm().contains(" )")) {
-						report(c, issueStr, isLegacy(d), isActive(c,d), d);
-						continue nextConcept;
+					if (inScope(d)) {
+						if (d.getTerm().contains("( ") || d.getTerm().contains(" )")) {
+							report(c, issueStr, isLegacy(d), isActive(c,d), d);
+							continue nextConcept;
+						}
 					}
 				}
 			}
@@ -462,6 +488,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				
 		nextConcept:
 		for (Concept c : gl.getAllConcepts()) {
+			if (!inScope(c)) {
+				continue;
+			}
 			if (whiteListedConcepts.contains(c)) {
 				incrementSummaryInformation(WHITE_LISTED_COUNT);
 				continue;
@@ -528,7 +557,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		
 		//Check all concepts referenced in relationships are valid
 		for (Concept c : gl.getAllConcepts()) {
-			if (c.isActive()) {
+			if (c.isActive() && inScope(c)) {
 				//Check all RHS relationships are active
 				for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
 					String legacy = isLegacy(r);
@@ -577,7 +606,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		
 		//Check no active relationship is non-axiom
 		for (Concept c : gl.getAllConcepts()) {
-			if (c.isActive()) {
+			if (c.isActive() && inScope(c)) {
 				for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
 					String legacy = isLegacy(r);
 					if (!r.fromAxiom()) {
@@ -599,9 +628,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		//Rule 2 All (disorder) concepts must be a descendant of 64572001|Disease (disorder)| 
 		Set<Concept> diseases = DISEASE.getDescendents(NOT_SET);
 		for (Concept c : CLINICAL_FINDING.getDescendents(NOT_SET)) {
-			/*if (c.getConceptId().equals("300097006")) {
-				debug("debug here");
-			}*/
+			if (!inScope(c)) {
+				continue;
+			}
 			String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
 			if (semTag.equals("(finding)")) {
 				checkForAncestorSemTag(c, "(disorder)", issueStr);
@@ -713,10 +742,12 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		for (Concept c : gl.getAllConcepts()) {
 			if (!c.isActive()) {
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-					for (Character[] bracketPair : bracketPairs) {
-						if (containsNestedBracket(c, d, bracketPair)) {
-							report (c, issueStr, isLegacy(c), isActive(c,d), d);
-							continue nextConcept;
+					if (inScope(d)) {
+						for (Character[] bracketPair : bracketPairs) {
+							if (containsNestedBracket(c, d, bracketPair)) {
+								report (c, issueStr, isLegacy(c), isActive(c,d), d);
+								continue nextConcept;
+							}
 						}
 					}
 				}
@@ -752,7 +783,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		Concept subHierarchy = gl.getConcept("387713003 |Surgical procedure (procedure)|");
 		Set<Concept> subHierarchyList = cache.getDescendentsOrSelf(subHierarchy);
 		for (Concept c : gl.getAllConcepts()) {
-			if (c.isActive()) {
+			if (c.isActive() && inScope(c)) {
 				validateTypeUsedInDomain(c, type, subHierarchyList, issueStr);
 			}
 		}
@@ -783,7 +814,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		Set<Concept> invalidValues = cache.getDescendentsOrSelf(gl.getConcept("116007004 |Combined site (body structure)|"));
 		
 		for (Concept c : gl.getAllConcepts()) {
-			if (c.isActive()) {
+			if (c.isActive() && inScope(c)) {
 				for (Concept type : typesOfInterest) {
 					validateTypeValueCombo(c, type, invalidValues, issueStr, false);
 				}
@@ -798,7 +829,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		//RP-181 No new combined bodysite concepts should be created
 		for (Concept deprecatedHierarchy : deprecatedHierarchies) {
 			for (Concept c : deprecatedHierarchy.getDescendents(NOT_SET)) {
-				if (!c.isReleased()) {
+				if (!c.isReleased() && inScope(c)) {
 					report (c, issueStr, isLegacy(c), isActive(c, null), deprecatedHierarchy);
 				}
 			}
@@ -835,7 +866,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			String issueStr = "Attributes " + neverTogether[0].toStringPref() + " and " + neverTogether[1].toStringPref() + " must not appear in same group";
 			initialiseSummary(issueStr);
 			for (Concept c : gl.getAllConcepts()) {
-				if (c.isActive()) {
+				if (c.isActive() && inScope(c)) {
 					if (appearInSameGroup(c, neverTogether[0], neverTogether[1])) {
 						report (c, issueStr, isLegacy(c), isActive(c, null));
 					}
@@ -855,7 +886,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			String issueStr = "Domain " + domainType[0] + " should not use attribute type: " + domainType[1];
 			initialiseSummary(issueStr);
 			for (Concept c : domainType[0].getDescendents(NOT_SET)) {
-				if (c.isActive()) {
+				if (c.isActive() && inScope(c)) {
 					if (SnomedUtils.hasType(CharacteristicType.INFERRED_RELATIONSHIP, c, domainType[1])) {
 						report (c, issueStr, isLegacy(c), isActive(c, null));
 					}
