@@ -11,6 +11,7 @@ import org.apache.commons.lang.time.DurationFormatUtils;
 import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.dao.RF2Manager;
 import org.ihtsdo.termserver.scripting.dao.ReportManager;
+import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.ihtsdo.termserver.scripting.util.StringUtils;
@@ -33,6 +34,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected boolean validateConceptOnUpdate = true;
 	protected boolean offlineMode = false;
 	protected boolean quiet = false; 
+	protected boolean suppressOutput = false;
 	protected static int dryRunCounter = 0;
 	protected String env;
 	protected String url = environments[0];
@@ -122,6 +124,8 @@ public abstract class TermServerScript implements RF2Constants {
 	public enum Severity { NONE, LOW, MEDIUM, HIGH, CRITICAL }; 
 	
 	public Concept[] selfGroupedAttributes = new Concept[] { FINDING_SITE, CAUSE_AGENT, ASSOC_MORPH };
+
+	protected boolean wideOutput = false;
 
 	public String getScriptName() {
 		return this.getClass().getSimpleName();
@@ -416,17 +420,22 @@ public abstract class TermServerScript implements RF2Constants {
 			//RP-4 And post that back in, so the FSN is always populated
 			jobRun.setParameter(SUB_HIERARCHY, subHierarchy.toString());
 		}
-		debug ("Initialising Report Manager");
-		reportManager = ReportManager.create(this);
-		if (tabNames != null) {
-			reportManager.setTabNames(tabNames);
+		if (!suppressOutput) {
+			debug ("Initialising Report Manager");
+			reportManager = ReportManager.create(this);
+			if (tabNames != null) {
+				reportManager.setTabNames(tabNames);
+			}
+			if (csvOutput) {
+				reportManager.setWriteToFile(true);
+				reportManager.setWriteToSheet(false);
+			}
+			if (this.wideOutput ) {
+				ReportSheetManager.setMaxColumns(25);
+			}
+			getReportManager().initialiseReportFiles(columnHeadings);
+			debug ("Report Manager initialisation complete");
 		}
-		if (csvOutput) {
-			reportManager.setWriteToFile(true);
-			reportManager.setWriteToSheet(false);
-		}
-		getReportManager().initialiseReportFiles(columnHeadings);
-		debug ("Report Manager initialisation complete");
 	}
 	
 	public void instantiate(JobRun jobRun) {
@@ -435,16 +444,20 @@ public abstract class TermServerScript implements RF2Constants {
 			init(jobRun);
 			loadProjectSnapshot(false);  //Load all descriptions
 			postInit();
-			jobRun.setResultUrl(getReportManager().getUrl());
-			runJob();
-			flushFilesWithWait(false);  //Make sure we successfully write the last of the data before considering ourselves "Complete"
-			jobRun.setStatus(JobStatus.Complete);
-			Object issueCountObj = summaryDetails.get(ISSUE_COUNT);
-			int issueCount = 0;
-			if (issueCountObj != null && StringUtils.isNumeric(issueCountObj.toString())) {
-				issueCount = Integer.parseInt(issueCountObj.toString());
+			if (!suppressOutput) {
+				jobRun.setResultUrl(getReportManager().getUrl());
 			}
-			jobRun.setIssuesReported(issueCount);
+			runJob();
+			if (!suppressOutput) {
+				flushFilesWithWait(false);  //Make sure we successfully write the last of the data before considering ourselves "Complete"
+				jobRun.setStatus(JobStatus.Complete);
+				Object issueCountObj = summaryDetails.get(ISSUE_COUNT);
+				int issueCount = 0;
+				if (issueCountObj != null && StringUtils.isNumeric(issueCountObj.toString())) {
+					issueCount = Integer.parseInt(issueCountObj.toString());
+				}
+				jobRun.setIssuesReported(issueCount);
+			}
 		} catch (Exception e) {
 			String reason = e.getMessage();
 			if (reason == null) {

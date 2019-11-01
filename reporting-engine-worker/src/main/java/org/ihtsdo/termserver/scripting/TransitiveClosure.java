@@ -38,10 +38,18 @@ public class TransitiveClosure implements RF2Constants {
 	}
 	
 	public Set<Long> getAncestors (Concept c) {
-		return ancestorMap.get(Long.parseLong(c.getConceptId()));
+		long id = Long.parseLong(c.getConceptId());
+		if (!ancestorMap.containsKey(id)) {
+			return new HashSet<>();
+		}
+		return ancestorMap.get(id);
 	}
 	
 	public Set<Long> getDescendants (Concept c) {
-		return descendantMap.get(Long.parseLong(c.getConceptId()));
+		long id = Long.parseLong(c.getConceptId());
+		if (!descendantMap.containsKey(id)) {
+			return new HashSet<>();
+		}
+		return descendantMap.get(id);
 	}
 }
