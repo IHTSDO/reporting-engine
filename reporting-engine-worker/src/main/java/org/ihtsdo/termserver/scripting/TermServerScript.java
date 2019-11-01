@@ -1431,7 +1431,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected boolean isMS() {
 		//Do we have a default module id ie for a managed service project?
 		if (project.getMetadata() != null && project.getMetadata().getDefaultModuleId() != null) {
-			return project.getMetadata().getDefaultModuleId().equals(SCTID_CORE_MODULE);
+			return !project.getMetadata().getDefaultModuleId().equals(SCTID_CORE_MODULE);
 		}
 		return false;
 	}

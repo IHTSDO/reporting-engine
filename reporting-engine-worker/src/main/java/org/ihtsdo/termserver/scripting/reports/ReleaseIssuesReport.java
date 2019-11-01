@@ -62,6 +62,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	private Map<String, Integer> issueSummaryMap = new HashMap<>();
 	DescendentsCache cache;
 	private Set<Concept> deprecatedHierarchies;
+	private String defaultModule = SCTID_CORE_MODULE;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
@@ -87,6 +88,10 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		super.postInit(tabNames, columnHeadings, false);
 		deprecatedHierarchies = new HashSet<>();
 		deprecatedHierarchies.add(gl.getConcept("116007004|Combined site (body structure)|"));
+	
+		if (isMS()) {
+			defaultModule = project.getMetadata().getDefaultModuleId();
+		}
 	}
 
 	@Override
@@ -115,8 +120,13 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		
 		info("...modules are appropriate (~10 seconds)");
 		parentsInSameModule();
-		unexpectedDescriptionModules();
-		unexpectedRelationshipModules();
+		if (isMS()) {
+			unexpectedDescriptionModulesMS();
+			unexpectedRelationshipModulesMS();
+		} else {
+			unexpectedDescriptionModules();
+			unexpectedRelationshipModules();
+		}
 		
 		info("...description rules");
 		fullStopInSynonym();
@@ -212,10 +222,6 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	//ISRS-391 Descriptions whose module id does not match that of the component
 	//It's OK to add translations to core concepts, so does not apply to MS
 	private void unexpectedDescriptionModules() throws TermServerScriptException {
-		if (isMS()) {
-			return;
-		}
-		
 		String issueStr ="Unexpected Description Module";
 		initialiseSummary(issueStr);
 		for (Concept c : gl.getAllConcepts()) {
@@ -233,18 +239,53 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		}
 	}
 	
+	/* Since and extension is based on a release, any modified description should
+	 * belong to the default module
+	 */
+	private void unexpectedDescriptionModulesMS() throws TermServerScriptException {
+		String issueStr ="Unexpected extension description module";
+		initialiseSummary(issueStr);
+		for (Concept c : gl.getAllConcepts()) {
+			for (Description d : c.getDescriptions()) {
+				if (StringUtils.isEmpty(d.getEffectiveTime()) && !d.getModuleId().equals(defaultModule)) {
+					String msg = "Default module " + defaultModule + " vs Desc module " + d.getModuleId();
+					report(c, issueStr, isLegacy(d), isActive(c,d), msg, d);
+					if (isLegacy(d).equals("Y")) {
+						incrementSummaryInformation("Legacy Issues Reported");
+					}	else {
+						incrementSummaryInformation("Fresh Issues Reported");
+					}
+				}
+			}
+		}
+	}
+	
 	//ISRS-392 Part II Stated Relationships whose module id does not match that of the component
-	//In Managed Service, I think we want to flag this up as a warning
 	private void unexpectedRelationshipModules() throws TermServerScriptException {
 		String issueStr = "Unexpected Stated Rel Module";
-		if (isMS()) {
-			issueStr = "Extension added Relationship to core concept";
-		}
 		initialiseSummary(issueStr);
 		for (Concept c : gl.getAllConcepts()) {
 			for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH)) {
 				if (!r.getModuleId().equals(c.getModuleId())) {
 					String msg = "Concept module " + c.getModuleId() + " vs Rel module " + r.getModuleId();
+					report(c, issueStr, isLegacy(r), isActive(c,r), msg, r);
+					if (isLegacy(r).equals("Y")) {
+						incrementSummaryInformation("Legacy Issues Reported");
+					}	else {
+						incrementSummaryInformation("Fresh Issues Reported");
+					}
+				}
+			}
+		}
+	}
+	
+	private void unexpectedRelationshipModulesMS() throws TermServerScriptException {
+		String issueStr = "Unexpected extension stated rel module";
+		initialiseSummary(issueStr);
+		for (Concept c : gl.getAllConcepts()) {
+			for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH)) {
+				if (StringUtils.isEmpty(r.getEffectiveTime()) && !r.getModuleId().equals(defaultModule)) {
+					String msg = "Default module " + defaultModule + " vs Rel module " + r.getModuleId();
 					report(c, issueStr, isLegacy(r), isActive(c,r), msg, r);
 					if (isLegacy(r).equals("Y")) {
 						incrementSummaryInformation("Legacy Issues Reported");
