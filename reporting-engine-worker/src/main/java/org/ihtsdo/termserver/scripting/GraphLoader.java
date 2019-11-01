@@ -260,9 +260,10 @@ public class GraphLoader implements RF2Constants {
 				}
 			}
 			g.setActive(active);
-			g.setEffectiveTime(axiomEntry.getEffectiveTime());
 			g.setAxiom(axiomEntry);
 			g.setModule(axiomEntry.getModuleId());
+			//Set the effectiveTime last as changing the other attributes will blank it
+			g.setEffectiveTime(axiomEntry.getEffectiveTime());
 		}
 	}
 
