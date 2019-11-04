@@ -171,6 +171,11 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 			
 			//RP-175
 			validateAttributeRules(concept);
+			
+			//RP-188
+			if (isCD(concept)) {
+				checkCdUnitConsistency(concept);
+			}
 		}
 		info ("Drugs validation complete");
 	}
@@ -772,6 +777,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		}
 		
 		issueStr = "Each rolegroup in a CD must feature four presentation or concentration attributes";
+		initialiseSummary(issueStr);
 		if (isCD(c)) {
 			for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
 				Set<Concept> thesePresAttributes = new HashSet<>(presAttributes);
@@ -809,6 +815,35 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		return concAttributes.contains(type);
 	}
 	
+	
+	private void checkCdUnitConsistency(Concept c) throws TermServerScriptException {
+		String issueStr1 = "CD has > 1 unit of presentation";
+		String issueStr2 = "CD has incorrect presentation denominator strength unit count";
+		String issueStr3 = "CD has inconsistent presentation units";
+		initialiseSummary(issueStr1);
+		initialiseSummary(issueStr2);
+		initialiseSummary(issueStr3);
+		
+		//Do we have a unit of presentation?
+		List<Relationship> unitsOfPres = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_UNIT_OF_PRESENTATION, ActiveState.ACTIVE);
+		if (unitsOfPres.size() > 1) {
+			report (c, issueStr1);
+		} else if (unitsOfPres.size() == 1) {
+			Concept unitOfPres = unitsOfPres.get(0).getTarget();
+			for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
+				if (!g.isGrouped() || g.size() == 1) {
+					continue;
+				}
+				List<Relationship> presDenomUnits = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_PRES_STRENGTH_DENOM_UNIT, g.getGroupId());
+				if (presDenomUnits.size() != 1) {
+					report (c, issueStr2, g);
+				} else if (!unitOfPres.equals(presDenomUnits.get(0).getTarget())) {
+					report (c, issueStr3, unitOfPres, g);
+				}
+				incrementSummaryInformation("CD groups checked for presentation unit consistency");
+			}
+		}
+	}
 
 	private int getTagLevel(Concept c) throws TermServerScriptException {
 		String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
