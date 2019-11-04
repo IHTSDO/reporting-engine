@@ -39,6 +39,12 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 	private Map<String, Integer> issueSummaryMap = new HashMap<>();
 	private Map<Concept,Concept> grouperSubstanceUsage = new HashMap<>();
 	
+	Concept[] mpValidAttributes = new Concept[] { IS_A, HAS_ACTIVE_INGRED, COUNT_BASE_ACTIVE_INGREDIENT, PLAYS_ROLE };
+	Concept[] mpfValidAttributes = new Concept[] { IS_A, HAS_ACTIVE_INGRED, HAS_MANUFACTURED_DOSE_FORM, COUNT_BASE_ACTIVE_INGREDIENT, PLAYS_ROLE };
+	
+	Set<Concept> presAttributes = new HashSet<>();
+	Set<Concept> concAttributes = new HashSet<>();
+	
 	TermGenerator termGenerator = new DrugTermGenerator(this);
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
@@ -60,6 +66,16 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		populateAcceptableDoseFormMaps();
 		populateGrouperSubstances();
 		super.postInit(tabNames, columnHeadings, false);
+		
+		presAttributes.add(HAS_PRES_STRENGTH_VALUE);
+		presAttributes.add(HAS_PRES_STRENGTH_UNIT);
+		presAttributes.add(HAS_PRES_STRENGTH_DENOM_UNIT);
+		presAttributes.add(HAS_PRES_STRENGTH_DENOM_VALUE);
+		
+		concAttributes.add(HAS_CONC_STRENGTH_VALUE);
+		concAttributes.add(HAS_CONC_STRENGTH_UNIT);
+		concAttributes.add(HAS_CONC_STRENGTH_DENOM_UNIT);
+		concAttributes.add(HAS_CONC_STRENGTH_DENOM_VALUE);
 	}
 
 	@Override
@@ -152,6 +168,9 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 			
 			//DRUGS-629
 			checkForSemTagViolations(concept);
+			
+			//RP-175
+			validateAttributeRules(concept);
 		}
 		info ("Drugs validation complete");
 	}
@@ -164,6 +183,10 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 	private boolean isMPF(Concept concept) {
 		return concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM) || 
 				concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM_ONLY);
+	}
+	
+	private boolean isCD(Concept concept) {
+		return concept.getConceptType().equals(ConceptType.CLINICAL_DRUG);
 	}
 
 	private void populateGrouperSubstances() throws TermServerScriptException {
@@ -668,6 +691,124 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 			}
 		}
 	}
+
+	private void validateAttributeRules(Concept c) throws TermServerScriptException {
+		String issueStr =  "MP/MPF must have one or more 'Has active ingredient' attributes";
+		initialiseSummary(issueStr);
+		if ((isMP(c) || isMPF(c)) && 
+				c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE).size() < 1) {
+			report(c, issueStr);
+		}
+		
+		issueStr =  "CD must have one or more 'Has precise active ingredient' attributes";
+		initialiseSummary(issueStr);
+		if (isCD(c) && c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_PRECISE_INGRED, ActiveState.ACTIVE).size() < 1) {
+			report(c, issueStr);
+		}
+		
+		issueStr =  "MP/MPF must not feature any role groups";
+		//We mean traditional role groups here, so filter out self grouped
+		initialiseSummary(issueStr);
+		if ((isMP(c) || isMPF(c))) {
+			for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
+				if (g.getGroupId() == UNGROUPED) {
+					continue;
+				}
+				if (g.size() == 1 && g.getRelationships().get(0).getType().equals(HAS_ACTIVE_INGRED)) {
+					continue;
+				}
+				report(c, issueStr, g);
+			}
+		}
+		
+		issueStr =  "CD/MPF must feature exactly 1 dose form";
+		initialiseSummary(issueStr);
+		if ((isMPF(c) || isCD(c)) && 
+				c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_MANUFACTURED_DOSE_FORM, ActiveState.ACTIVE).size() != 1) {
+			report(c, issueStr);
+		}
+		
+		issueStr = "Unexpected attribute type used";
+		if (isMP(c) || isMPF(c)) {
+			Concept[] allowedAttributes = isMP(c) ? mpValidAttributes : mpfValidAttributes;
+			for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
+				//Is this relationship type allowed?
+				boolean allowed = false;
+				for (Concept allowedType : allowedAttributes) {
+					if (allowedType.equals(r.getType())) {
+						allowed = true;
+					}
+				}
+				if (!allowed) {
+					report (c, issueStr, r);
+				}
+			}
+		}
+		
+		issueStr =  "MP/MPF must feature 'containing' or 'only' in the FSN and PT";
+		initialiseSummary(issueStr);
+		if (isMP(c) || isMPF(c)) { 
+			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+				if (d.isPreferred()) {
+					if (!d.getTerm().contains("containing") && !d.getTerm().contains("only")) {
+						report (c, issueStr, d);
+					}
+				}
+			}
+		}
+		
+		issueStr =  "CD must feature 'precisely' in the FSN";
+		initialiseSummary(issueStr);
+		if (isCD(c) && !c.getFsn().contains("precisely")) { 
+			report (c, issueStr);
+		}
+		
+		issueStr = "Precise MP/MPF must feature exactly one count of base";
+		initialiseSummary(issueStr);
+		if ((c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_ONLY) || 
+				c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM_ONLY))
+			&& c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, COUNT_BASE_ACTIVE_INGREDIENT, ActiveState.ACTIVE).size() != 1) { 
+			report (c, issueStr);
+		}
+		
+		issueStr = "Each rolegroup in a CD must feature four presentation or concentration attributes";
+		if (isCD(c)) {
+			for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
+				Set<Concept> thesePresAttributes = new HashSet<>(presAttributes);
+				Set<Concept> theseConcAttributes = new HashSet<>(concAttributes);
+				
+				//We'll remove attributes from our local copy of these arrays until there are none left
+				for (Relationship r : g.getRelationships()) {
+					if (isPresAttribute(r.getType()) || isConcAttribute(r.getType())) {
+						Set<Concept> attributeSet = isPresAttribute(r.getType()) ? thesePresAttributes : theseConcAttributes;
+						if (attributeSet.contains(r.getType())) {
+							attributeSet.remove(r.getType());
+						} else {
+							report (c, issueStr, r);
+						}
+					}
+				}
+				
+				if (thesePresAttributes.size() != 4 && !thesePresAttributes.isEmpty()) {
+					report(c, issueStr, g);
+				}
+				
+				if (theseConcAttributes.size() != 4 && !theseConcAttributes.isEmpty()) {
+					report(c, issueStr, g);
+				}
+			}
+		}
+		
+	}
+		
+	boolean isPresAttribute(Concept type) {
+		return presAttributes.contains(type);
+	}
+	
+	boolean isConcAttribute(Concept type) {
+		return concAttributes.contains(type);
+	}
+	
 
 	private int getTagLevel(Concept c) throws TermServerScriptException {
 		String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
