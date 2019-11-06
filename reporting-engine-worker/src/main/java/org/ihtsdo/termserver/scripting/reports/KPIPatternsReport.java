@@ -89,11 +89,11 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 			tc = gl.generateTransativeClosure();
 			
 			info("Checking for historical patterns");
-			if (previousPreviousRelease == null) {
+			if (previousPreviousRelease != null) {
 				checkCreatedButDuplicate();
 				checkPattern11();  //...a very specific situation
 			} else {
-				report (null, "Skipping Pattern 11", "No previous previous release available");
+				report (null, "Skipping Patterns 11 & 21", "No previous previous release available");
 			}
 			
 		}
@@ -138,8 +138,11 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 				report (c, issueStr2);
 				isOK = false;
 			} else if (c.isActive() && c.getAxiomEntries().size() == 0) {
-				report (c, issueStr3);
-				isOK = false;
+				//The Root concept can get away with this
+				if (!c.equals(ROOT_CONCEPT)) {
+					report (c, issueStr3);
+					isOK = false;
+				} 
 			}
 		}
 		return isOK;
