@@ -686,7 +686,6 @@ thalassemia	thalassaemia
 theater	theatre
 thrombocythemia	thrombocythaemia
 titer	titre
-torticollis	torticolis
 toxemia	toxaemia
 tracheoesophageal	tracheooesophageal
 tranquilizer	tranquiliser

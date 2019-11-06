@@ -4,8 +4,11 @@ import java.io.*;
 
 import org.apache.commons.io.IOUtils;
 import org.ihtsdo.otf.resourcemanager.ResourceManager;
+import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -13,16 +16,23 @@ import org.springframework.cloud.aws.core.io.s3.SimpleStorageResourceLoader;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
-import com.amazonaws.auth.*;
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.AnonymousAWSCredentials;
+import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.EC2ContainerCredentialsProviderWrapper;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 
 @Service
-public class ArchiveDataLoader {
+public class ResourceDataLoader {
+	private static final String[] fileNames = new String[] { 	"cs_words.tsv",
+																"acceptable_dose_forms.tsv",
+																"us-to-gb-terms-map.txt" };
 	
 	@Autowired
-	private ArchiveLoaderConfig archiveLoaderConfig;
+	private ResourceLoaderConfig resourceConfig;
 	
 	@Value("${cloud.aws.region.static}")
 	private String region;
@@ -33,24 +43,12 @@ public class ArchiveDataLoader {
 	@Value("${aws.secretKey}")
 	private String awsSecretKey;
 	
+	private static final Logger LOGGER = LoggerFactory.getLogger(ResourceDataLoader.class);
+
 	@EventListener(ApplicationReadyEvent.class)
-	public void init() {
-		TermServerScript.info("ArchiveDataLoader initialised - SpringBoot configuration");
-		if (awsKey == null) {
-			TermServerScript.info("ArchiveDataLoader - AWS Key missing?");
-		} else if (awsKey.isEmpty()) {
-			TermServerScript.info("ArchiveDataLoader - AWS Key configured through EC2 instance");
-		} else {
-			TermServerScript.info("ArchiveDataLoader using AWS Key: " + awsKey);
-		}
-	}
-	
-	public void download (File archive) throws TermServerScriptException {
+	private void init() throws BusinessServiceException {
 		try {
-			if (archiveLoaderConfig == null) {
-				archiveLoaderConfig = new ArchiveLoaderConfig();
-				archiveLoaderConfig.init("archives");
-			}
+			
 			AWSCredentialsProvider awsCredProv;
 			if (awsKey == null || awsKey.isEmpty()) {
 				awsCredProv = new EC2ContainerCredentialsProviderWrapper();
@@ -65,26 +63,31 @@ public class ArchiveDataLoader {
 									.withCredentials(awsCredProv)
 									.withRegion(region)
 									.build();
-			ResourceManager resourceManager = new ResourceManager(archiveLoaderConfig, new SimpleStorageResourceLoader(s3Client));
-			try (InputStream input = resourceManager.readResourceStream(archive.getName());
-				OutputStream out = new FileOutputStream(archive);) {
-				TermServerScript.info("Downloading " + archive.getName() + " from S3");
-				IOUtils.copy(input, out);
-				TermServerScript.info("Download complete");
+			ResourceManager resourceManager = new ResourceManager(resourceConfig, new SimpleStorageResourceLoader(s3Client));
+			for (String fileName : fileNames) {
+				File localFile = new File ("resources/" + fileName);
+				TermServerScript.info ("Downloading " + fileName + " from S3");
+				try (InputStream input = resourceManager.readResourceStreamOrNullIfNotExists(fileName);
+						OutputStream out = new FileOutputStream(localFile);) {
+					if (input != null) {
+						IOUtils.copy(input, out);
+					}
+				} catch (Exception e) {
+					throw new TermServerScriptException ("Unable to load " + fileName + " from S3", e);
+				}
 			}
 		} catch (Throwable  t) {
-			final String msg = "Error when trying to download " + archive.getName() + " from S3 via :" +  archiveLoaderConfig;
-			throw new TermServerScriptException(msg, t);
+			final String errorMsg = "Error when trying to download the us-to-gb-terms-map.txt file from S3 via :" +  resourceConfig;
+			LOGGER.error(errorMsg, t);
 		} 
 	}
-
-	public static ArchiveDataLoader create() throws TermServerScriptException {
-		ArchiveDataLoader loader = new ArchiveDataLoader();
+	
+	public static ResourceDataLoader create() throws TermServerScriptException {
+		ResourceDataLoader loader = new ResourceDataLoader();
 		LocalProperties properties = new LocalProperties(null);
 		loader.region = properties.getProperty("cloud.aws.region.static");
 		loader.awsKey = properties.getProperty("aws.key");
 		loader.awsSecretKey = properties.getProperty("aws.secretKey");
 		return loader;
 	}
-	
 }
