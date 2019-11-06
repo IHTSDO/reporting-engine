@@ -19,6 +19,7 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
  * check for any concepts that still have immediate fully defined parents.
  * 
  * SUBST-153 Also uses this report.
+ * RP-240 Make available in Reporting Platform
  */
 public class FullyDefinedParentsInSubHierarchy extends TermServerReport implements ReportClass {
 	
@@ -43,7 +44,7 @@ public class FullyDefinedParentsInSubHierarchy extends TermServerReport implemen
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.GENERAL_QA))
 				.withName("Check for FD Parents")
 				.withDescription("This report lists all concepts in the specified subhierarchy which have one or more fully defined stated parents")
-				.withProductionStatus(ProductionStatus.HIDEME)
+				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(INT)
 				.build();
