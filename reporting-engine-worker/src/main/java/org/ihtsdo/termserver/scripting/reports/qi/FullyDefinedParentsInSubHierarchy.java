@@ -42,8 +42,8 @@ public class FullyDefinedParentsInSubHierarchy extends TermServerReport implemen
 				.build();
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.GENERAL_QA))
-				.withName("Check for FD Parents")
-				.withDescription("This report lists all concepts in the specified subhierarchy which have one or more fully defined stated parents")
+				.withName("Check for Fully Defined Parents")
+				.withDescription("This report lists all concepts in the specified subhierarchy which have one or more fully defined stated parents.  The issues count displays the number of concepts found.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(INT)
