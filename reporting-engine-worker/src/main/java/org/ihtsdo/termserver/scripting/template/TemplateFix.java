@@ -171,7 +171,7 @@ abstract public class TemplateFix extends BatchFix {
 		}
 	}
 	
-	protected Set<Concept> findTemplateMatches(Template t, Collection<Concept> concepts, Integer exclusionReport) throws TermServerScriptException {
+	protected Set<Concept> findTemplateMatches(Template t, Collection<Concept> concepts, Set<Concept> misalignedConcepts, Integer exclusionReport) throws TermServerScriptException {
 		Set<Concept> matches = new HashSet<Concept>();
 		info ("Examining " + concepts.size() + " concepts against template " + t);
 		int conceptsExamined = 0;
@@ -193,7 +193,11 @@ abstract public class TemplateFix extends BatchFix {
 						conceptToTemplateMap.put(c, t);
 					}
 					matches.add(c);
-				} 
+				} else {
+					if (misalignedConcepts != null) {
+						misalignedConcepts.add(c);
+					}
+				}
 			} else {
 				//Only count exclusions for the first pass
 				if (t.getId() == 'A') {

@@ -401,12 +401,12 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		
 		//Start with the whole subHierarchy and remove concepts that match each of our templates
-		Collection<Concept> unalignedConcepts = findConcepts(subHierarchyECL);
+		Collection<Concept> potentiallyMisaligned = findConcepts(subHierarchyECL);
 		//Set<Concept> unalignedConcepts = Collections.singleton(gl.getConcept("58660009"));
 		Set<Concept> ignoredConcepts = new HashSet<>();
 		
 		//Remove all exclusions before we look for matches
-		for (Concept c : unalignedConcepts) {
+		for (Concept c : potentiallyMisaligned) {
 			if (whiteListedConcepts.contains(c)) {
 				incrementSummaryInformation(WHITE_LISTED_COUNT);
 				report (TERTIARY_REPORT, c, "White listed");
@@ -425,24 +425,24 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 				ignoredConcepts.add(c);
 			}
 		}
-		unalignedConcepts.removeAll(ignoredConcepts);
+		potentiallyMisaligned.removeAll(ignoredConcepts);
 		
 		//Find matches against all templates
 		for (Template template : templates) {
-			Set<Concept> matches = findTemplateMatches(template, unalignedConcepts, TERTIARY_REPORT);
+			Set<Concept> matches = findTemplateMatches(template, potentiallyMisaligned, null, TERTIARY_REPORT);
 			incrementSummaryInformation("Matched templates",matches.size());
 			for (Concept match : matches) {
 				report (QUATERNARY_REPORT, match);
 			}
-			unalignedConcepts.removeAll(matches);
-			int beforeCount = unalignedConcepts.size();
-			unalignedConcepts.removeAll(exclusions);
-			int afterCount = unalignedConcepts.size();
+			potentiallyMisaligned.removeAll(matches);
+			int beforeCount = potentiallyMisaligned.size();
+			potentiallyMisaligned.removeAll(exclusions);
+			int afterCount = potentiallyMisaligned.size();
 			addSummaryInformation("Excluded due to subHierarchy rules", (beforeCount - afterCount));
 		}
 		
 		//Record diagnostics for all concepts that failed to align to a template
-		for (Concept c : unalignedConcepts) {
+		for (Concept c : potentiallyMisaligned) {
 			List<String> diagnostics = new ArrayList<String>();
 			conceptDiagnostics.put(c, diagnostics);
 			String msg = "Cardinality mismatch: " +  (StringUtils.isEmpty(c.getIssues())?" N/A" : c.getIssues());
@@ -457,7 +457,7 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 			incrementSummaryInformation("Concepts identified as not matching any template");
 			countIssue(c);
 		}
-		return asComponents(unalignedConcepts);
+		return asComponents(potentiallyMisaligned);
 	}
 
 	//return true if this inferred group does not have a stated counterpart

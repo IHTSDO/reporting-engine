@@ -274,10 +274,13 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 	
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {"TASK_KEY, TASK_DESC, SCTID, FSN, ConceptType, Severity, ActionType, CharacteristicType, MatchedTemplate, Detail",
-				"Report Metadata", "SCTID, FSN, SemTag, Reason"};
+				"Report Metadata", 
+				"SCTID, FSN, SemTag, Reason",
+				"SCTID, FSN, SemTag"};
 		String[] tabNames = new String[] {	"Normalization Processing",
 				"Metadata",
-				"Excluded Concepts"};
+				"Excluded Concepts",
+				"Misaligned Concepts"};
 		super.postInit(tabNames, columnHeadings, false);
 		outputMetaData();
 	}
@@ -399,16 +402,23 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		Collection<Concept> potentialMatches = findConcepts(subHierarchyECL);
 		//Collection<Concept> potentialMatches = Collections.singleton(gl.getConcept("7890003 |Contracture of Joint|"));
 		addSummaryInformation("Concepts matching ECL", potentialMatches.size());
+		Set<Concept> misalignedConcepts = new HashSet<>();
 		
 		info ("Identifying concepts aligned to template");
 		for (Template template : templates) {
-			alignedConcepts.addAll(findTemplateMatches(template, potentialMatches, TERTIARY_REPORT));
+			alignedConcepts.addAll(findTemplateMatches(template, potentialMatches, misalignedConcepts, TERTIARY_REPORT));
 		}
 		
 		//So how many did NOT align? Total rejections minus those excluded for other reasons
 		int rejected = potentialMatches.size() - alignedConcepts.size();
 		int misalignedCount = rejected - getSummaryInformationInt("Concepts excluded");
 		addSummaryInformation("Concepts misaligned ", misalignedCount);
+		addSummaryInformation("Concepts misaligned (verification check)", misalignedConcepts.size());
+		
+		//RP-242 Report the concepts that are misaligned in a new tab
+		for (Concept misaligned : misalignedConcepts) {
+			report (QUATERNARY_REPORT, misaligned);
+		}
 		
 		//Now first pass attempt to remodel because we don't want to batch anything that results 
 		//in no changes being made.
