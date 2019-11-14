@@ -34,9 +34,10 @@ public class ListAllAttributes extends TermServerReport implements ReportClass {
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		//params.put(ECL, "<<  " + SUBSTANCE);
-		params.put(ECL, "<< 778317004 |Product containing only amoxicillin in oral dose form (medicinal product form)|");
+		//params.put(ECL, "<< 419199007 |Allergy to substance (finding)|");
+		params.put(ECL, "<< 282100009 |Adverse reaction caused by substance (disorder)|");
 		params.put(COMPACT, "false");
-		params.put(INCLUDE_IS_A, "true");
+		params.put(INCLUDE_IS_A, "false");
 		params.put(TARGET_VALUE_PROPERTY, IS_MODIFICATION_OF.toString());
 		TermServerReport.run(ListAllAttributes.class, args, params);
 	}
@@ -51,9 +52,9 @@ public class ListAllAttributes extends TermServerReport implements ReportClass {
 			targetValueProperty = gl.getConcept(targetValuePropertyStr);
 		}
 		if (compactReport) {
-			additionalReportColumns = "FSN, SemTag, SCT Expression, Target Property Present";
+			additionalReportColumns = "FSN,SemTag,DefStatus,SCT Expression,Target Property Present";
 		} else {
-			additionalReportColumns = "FSN, SemTag, RelType, Target Property Present, Value SCTID, Value FSN, Value SemTag";
+			additionalReportColumns = "FSN,SemTag,DefStatus,RelType,Target Property Present,Stated/Inferred,Value SCTID,Value FSN,Value SemTag";
 		}
 		super.init(run);
 	}
@@ -73,7 +74,7 @@ public class ListAllAttributes extends TermServerReport implements ReportClass {
 				.withDescription("This report lists all concepts matching the specified ECL, along with their attributes" + 
 				" in a compact or verbose report format.  The target value property can be specified to determine something additional " +
 				" about the target value - the primary use case for this is detecting the presence of the modification attribute on a substance " +
-				" used as a product ingredient")
+				" used as a product ingredient or causative agent. The issue count shows the number of data rows in the report")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(INT)
@@ -81,15 +82,15 @@ public class ListAllAttributes extends TermServerReport implements ReportClass {
 	}
 	
 	public void runJob() throws TermServerScriptException {
-		for (Concept c : findConcepts(subHierarchyECL)) {
+		ArrayList<Concept> subset = new ArrayList<>(findConcepts(subHierarchyECL));
+		subset.sort(Comparator.comparing(Concept::getFsn));
+		for (Concept c : subset) {
 			if (!includeIsA && countAttributes(c, CharacteristicType.INFERRED_RELATIONSHIP) == 0) {
 				continue;
 			}
 			
-			if (c.getFsn().contains("anhydrous")) {
-				debug("Here");
-			}
 			boolean targetValuePropertyPresent = false;
+			String defStatus = SnomedUtils.translateDefnStatus(c.getDefinitionStatus());
 			//Are we working in verbose or compact mode?
 			if (compactReport) {
 				String expression = c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP);
@@ -99,20 +100,39 @@ public class ListAllAttributes extends TermServerReport implements ReportClass {
 									.filter (b -> (b == true))
 									.count() > 0;
 				}
-				report (c, expression, targetValuePropertyPresent?"Y":"N");
+				report (c, defStatus, expression, targetValuePropertyPresent?"Y":"N");
 			} else {
+				String characteristicStr = "";
 				for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
 					if (!includeIsA && r.getType().equals(IS_A)) {
 						continue;
 					}
-					String targetAttribPresent = checkTargetValuePropertyPresent(r.getTarget())?"Y":"N";
-					String typePT = r.getType().getPreferredSynonym();
-					String fsn = r.getTarget().getFsn();
-					String semTag = SnomedUtils.deconstructFSN(fsn)[1];
-					report (c, typePT, targetAttribPresent, r.getTarget().getConceptId(), fsn, semTag);
+					characteristicStr = "I";
+					if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, r.getType(), r.getTarget(), ActiveState.ACTIVE).size() > 0) {
+						characteristicStr += " + S";
+					}
+					report (c, r, defStatus, characteristicStr);
+				}
+				//Are there any relationships which are only stated?
+				for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
+					if (!includeIsA && r.getType().equals(IS_A)) {
+						continue;
+					}
+					if (c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, r.getType(), r.getTarget(), ActiveState.ACTIVE).size() == 0) {
+						report (c, r, defStatus, "S");
+					}
 				}
 			}
 		}
+	}
+	
+	private void report (Concept c, Relationship r, String defStatus, String characteristicStr) throws TermServerScriptException {
+		String targetAttribPresent = checkTargetValuePropertyPresent(r.getTarget())?"Y":"N";
+		String typePT = r.getType().getPreferredSynonym();
+		String fsn = r.getTarget().getFsn();
+		String semTag = SnomedUtils.deconstructFSN(fsn)[1];
+		report (c, defStatus, typePT, targetAttribPresent, characteristicStr, r.getTarget().getConceptId(), fsn, semTag);
+		countIssue(c);
 	}
 
 	private boolean checkTargetValuePropertyPresent(Concept v) {
