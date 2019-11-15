@@ -101,6 +101,7 @@ public class ListAllAttributes extends TermServerReport implements ReportClass {
 									.count() > 0;
 				}
 				report (c, defStatus, expression, targetValuePropertyPresent?"Y":"N");
+				countIssue(c);
 			} else {
 				String characteristicStr = "";
 				for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
