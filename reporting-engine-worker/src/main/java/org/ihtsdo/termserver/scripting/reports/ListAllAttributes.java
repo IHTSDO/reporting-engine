@@ -74,7 +74,7 @@ public class ListAllAttributes extends TermServerReport implements ReportClass {
 				.withDescription("This report lists all concepts matching the specified ECL, along with their attributes" + 
 				" in a compact or verbose report format.  The target value property can be specified to determine something additional " +
 				" about the target value - the primary use case for this is detecting the presence of the modification attribute on a substance " +
-				" used as a product ingredient or causative agent. The issue count shows the number of data rows in the report")
+				" used as a product ingredient or causative agent. The issue count shows the number of data rows in the report.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(INT)
