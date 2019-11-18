@@ -72,7 +72,7 @@ public class ListAllAttributes extends TermServerReport implements ReportClass {
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES))
 				.withName("List all Attributes")
 				.withDescription("This report lists all concepts matching the specified ECL, along with their attributes" + 
-				" in a compact or verbose report format.  The target value property can be specified to determine something additional " +
+				" in a compact or expanded report format. The target value property can be specified to determine something additional " +
 				" about the target value - the primary use case for this is detecting the presence of the modification attribute on a substance " +
 				" used as a product ingredient or causative agent. The issue count shows the number of data rows in the report.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
