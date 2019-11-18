@@ -506,7 +506,7 @@ public abstract class TermServerScript implements RF2Constants {
 		if (!authenticatedCookie.contains("ihtsdo=")) {
 			throw new IllegalArgumentException("Malformed cookie detected.  Expected <env>-ihtsdo=<token> instead received: " + authenticatedCookie);
 		}
-		String contextPath = "snowstorm/snomed-ct/v2";
+		String contextPath = "snowstorm/snomed-ct";
 		if (url.contains("-ms")) {
 			contextPath = "snowowl/snomed-ct/v2";
 		}
