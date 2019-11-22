@@ -2,6 +2,8 @@ package org.ihtsdo.termserver.scripting.client;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -185,10 +187,15 @@ public class TermServerClient {
 		}
 	}
 	
-	public ConceptCollection getConcepts(String ecl, String branchPath, String searchAfter, int limit) {
+	public ConceptCollection getConcepts(String ecl, String branchPath, String searchAfter, int limit) throws TermServerScriptException {
 		String url = getConceptsPath(branchPath) + "?active=true&limit=" + limit + "&ecl=" + ecl;
 		if (!StringUtils.isEmpty(searchAfter)) {
 			url += "&searchAfter=" + searchAfter;
+		}
+		try {
+			url = URLEncoder.encode(url, "UTF-8");
+		} catch (UnsupportedEncodingException e) {
+			throw new TermServerScriptException("Failed to url encode " + url, e);
 		}
 		System.out.println("Calling " + url);
 		return restTemplate.getForObject(url, ConceptCollection.class);
