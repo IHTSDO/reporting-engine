@@ -188,12 +188,13 @@ public class TermServerClient {
 	}
 	
 	public ConceptCollection getConcepts(String ecl, String branchPath, String searchAfter, int limit) throws TermServerScriptException {
-		String url = getConceptsPath(branchPath) + "?active=true&limit=" + limit + "&ecl=" + ecl;
+		String url = getConceptsPath(branchPath) + "?active=true&limit=" + limit;
 		if (!StringUtils.isEmpty(searchAfter)) {
 			url += "&searchAfter=" + searchAfter;
 		}
 		try {
-			url = URLEncoder.encode(url, "UTF-8");
+			ecl = URLEncoder.encode(ecl, "UTF-8");
+			url += "&ecl=" + ecl;
 		} catch (UnsupportedEncodingException e) {
 			throw new TermServerScriptException("Failed to url encode " + url, e);
 		}
