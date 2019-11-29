@@ -17,7 +17,9 @@ import com.google.common.util.concurrent.AtomicLongMap;
 /**
  * Reports concepts that are intermediate primitives from point of view of some subhierarchy
  * Update: Adding a 2nd report to determine how many sufficiently defined concepts are affected by an IP
+ * Update: Didn't seem to work last time I ran this.  use AttributeValueCount instead - more flexible
  * */
+@Deprecated 
 public class AttributeValueUsage extends TermServerReport implements ReportClass {
 	
 	AtomicLongMap<Concept> attributeValueMap = AtomicLongMap.create();

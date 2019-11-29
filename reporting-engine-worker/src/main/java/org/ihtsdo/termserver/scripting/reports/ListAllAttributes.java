@@ -35,7 +35,8 @@ public class ListAllAttributes extends TermServerReport implements ReportClass {
 		Map<String, String> params = new HashMap<>();
 		//params.put(ECL, "<<  " + SUBSTANCE);
 		//params.put(ECL, "<< 419199007 |Allergy to substance (finding)|");
-		params.put(ECL, "<< 282100009 |Adverse reaction caused by substance (disorder)|");
+		//params.put(ECL, "<< 282100009 |Adverse reaction caused by substance (disorder)|");
+		params.put(ECL, "< 404684003 |Clinical finding| : { 363698007 |Finding site| = << 39057004 |Pulmonary valve structure| , 116676008 |Associated morphology| = << 415582006 |Stenosis| }");
 		params.put(COMPACT, "false");
 		params.put(INCLUDE_IS_A, "false");
 		params.put(TARGET_VALUE_PROPERTY, IS_MODIFICATION_OF.toString());
