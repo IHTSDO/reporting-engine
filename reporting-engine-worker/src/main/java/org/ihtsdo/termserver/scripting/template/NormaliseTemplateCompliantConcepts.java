@@ -251,16 +251,21 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		subHierarchyECL = "<< 417893002|Deformity|"; //QI-279
 		templateNames = new String[] {	"templates/Deformity - disorder.json"};
 		inclusionWords.add("disorder");
-		*/
+		
 		//QI-373, QI-376, QI-400, QI-324
 		subHierarchyECL = "<<362975008 |Degenerative disorder (disorder)|: 116676008 |Associated morphology (attribute)| = << 13331008 |Atrophy (morphologic abnormality)| ";
 		templateNames = new String[] {	"templates/Degenerative disorder.json"};
 		includeComplexTemplates = true;
 		
-		/*
 		subHierarchyECL = "<< 276654001 |Congenital malformation (disorder)|"; //QI-287
 		templateNames = new String[] {	"templates/Congenital Malformation.json"};
 		*/
+		
+		subHierarchyECL = "<< 131148009|Bleeding|"; //QI-319
+		//templateNames = new String[] { "templates/Bleeding - disorder.json"};
+		//inclusionWords.add("disorder");
+		templateNames = new String[] { "templates/Bleeding - finding.json"};
+		inclusionWords.add("finding");
 		
 		super.init(args);
 		

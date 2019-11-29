@@ -356,10 +356,17 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		subHierarchyECL = "<< 417893002|Deformity|"; //QI-278
 		templateNames = new String[] {	"templates/Deformity - disorder.json",
 				"templates/Deformity - finding.json"};
-		*/
+		
 		subHierarchyECL = "< 128139000 |Inflammatory disorder (disorder)|"; //QI-370
 		templateNames = new String[] {	"templates/Inflammatory Disorder.json",
 					"templates/Infectious Inflammatory Disorder.json"};
+		*/
+		
+		subHierarchyECL = "<< 131148009|Bleeding|"; //QI-319
+		//templateNames = new String[] { "templates/Bleeding - disorder.json"};
+		//inclusionWords.add("disorder");
+		templateNames = new String[] { "templates/Bleeding - finding.json"};
+		inclusionWords.add("finding");
 		
 		super.init(args);
 	
