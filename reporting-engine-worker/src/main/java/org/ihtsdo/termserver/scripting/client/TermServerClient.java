@@ -2,14 +2,13 @@ package org.ihtsdo.termserver.scripting.client;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -192,14 +191,12 @@ public class TermServerClient {
 		if (!StringUtils.isEmpty(searchAfter)) {
 			url += "&searchAfter=" + searchAfter;
 		}
-		try {
-			ecl = URLEncoder.encode(ecl, "UTF-8");
-			url += "&ecl=" + ecl;
-		} catch (UnsupportedEncodingException e) {
-			throw new TermServerScriptException("Failed to url encode " + url, e);
-		}
-		System.out.println("Calling " + url);
-		return restTemplate.getForObject(url, ConceptCollection.class);
+		ecl = SnomedUtils.makeMachineReadable(ecl);
+		//RestTemplate will attempt to expand out any curly braces, and we can't URLEncode
+		//because RestTemplate does that for us.  So use curly braces to substitute in our ecl
+		url += "&ecl={ecl}";
+		System.out.println("Calling " + url + ecl);
+		return restTemplate.getForObject(url, ConceptCollection.class, ecl);
 	}
 
 	private String getBranchesPath(String branchPath) {
