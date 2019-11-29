@@ -39,4 +39,6 @@ public interface ScheduleService {
 
 	public void setWhiteList(String typeName, String jobName, Set<WhiteListedConcept> whiteList);
 
+	public List<JobRun> listJobsRun(JobRunListRequest listRequest);
+
 }

@@ -95,6 +95,12 @@ public class ScheduleServiceImpl implements ScheduleService {
 			return jobRunRepository.findByJobNameOrderByRequestTimeDesc(jobName);
 		}
 	}
+	
+
+	@Override
+	public List<JobRun> listJobsRun(JobRunListRequest listRequest) {
+		return jobRunRepository.findByJobNameOrderByRequestTimeDesc(listRequest.getJobName());
+	}
 
 	@Override
 	public JobRun runJob(String jobType, String jobName, JobRun jobRun) throws BusinessServiceException {
