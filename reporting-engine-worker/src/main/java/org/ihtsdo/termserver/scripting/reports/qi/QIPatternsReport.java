@@ -95,24 +95,49 @@ public class QIPatternsReport extends TermServerReport implements ReportClass {
 	private boolean checkStructuralIntegrity() throws TermServerScriptException {
 		String issueStr = "Concept referenced in axiom, but does not exist";
 		String issueStr2 = "Concept exists without an FSN";
-		initialiseSummary(issueStr);
-		initialiseSummary(issueStr2);
-		
+		String issueStr3 = "Active concept does not have any axioms";
+		//Don't initialise, we won't mention the check if there's no problem.
 		boolean isOK = true;
 		for (Concept c : gl.getAllConcepts()) {
 			if (c.isReleased() == null) {
 				String detail = "";
 				if (c.getAxiomEntries() != null && c.getAxiomEntries().size() > 0) {
 					detail = c.getAxiomEntries().get(0).toString();
+				} else {
+					//We'll have to work through all axioms to find where this came from
+					List<AxiomEntry> axiomsContaining = findAxiomsContaining(c);
+					if (axiomsContaining.size() > 0) {
+						detail = "In " + axiomsContaining.size() + " axioms eg " + axiomsContaining.get(0);
+					}
 				}
 				report (c, issueStr, detail);
 				isOK = false;
 			} else if (c.getFsn() == null || c.getFsn().isEmpty()) {
 				report (c, issueStr2);
 				isOK = false;
+			} else if (c.isActive() && c.getAxiomEntries().size() == 0) {
+				//The Root concept can get away with this
+				if (!c.equals(ROOT_CONCEPT)) {
+					report (c, issueStr3);
+					isOK = false;
+				} 
 			}
 		}
 		return isOK;
+	}
+	
+	private List<AxiomEntry> findAxiomsContaining(Concept findme) {
+		List<AxiomEntry> matches = new ArrayList<>();
+		for (Concept c : gl.getAllConcepts()) {
+			for (AxiomEntry a : c.getAxiomEntries()) {
+				//TODO Isn't great - we may match SCTIDs which are a subtring of another
+				//Split the axiom into constituent parts if this proves to be a problem
+				if (a.getOwlExpression().contains(findme.getConceptId())) {
+					matches.add(a);
+				}
+			}
+		}
+		return matches;
 	}
 
 	private void checkForRoleGroupCrossovers() throws TermServerScriptException {
