@@ -260,13 +260,17 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		subHierarchyECL = "<< 276654001 |Congenital malformation (disorder)|"; //QI-287
 		templateNames = new String[] {	"templates/Congenital Malformation.json"};
 		*/
-		
 		subHierarchyECL = "<< 131148009|Bleeding|"; //QI-319
 		//templateNames = new String[] { "templates/Bleeding - disorder.json"};
 		//inclusionWords.add("disorder");
 		templateNames = new String[] { "templates/Bleeding - finding.json"};
 		inclusionWords.add("finding");
 		
+		/*
+		subHierarchyECL = "<< 74627003 | Diabetic complication (disorder) |"; //QI-426
+		templateNames = new String[] {	"templates/Complication due to Diabetes Melitus.json"};
+		includeComplexTemplates = true;
+		*/
 		super.init(args);
 		
 		//Ensure our ECL matches more than 0 concepts.  This will also cache the result
@@ -411,6 +415,8 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		
 		info ("Identifying concepts aligned to template");
 		for (Template template : templates) {
+			//Only concepts that are misaligned against *all* templates should be counted
+			//But in the case of Normalise, we only use a single template
 			alignedConcepts.addAll(findTemplateMatches(template, potentialMatches, misalignedConcepts, TERTIARY_REPORT));
 		}
 		
@@ -433,12 +439,6 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		
 		//for (Concept alignedConcept : Collections.singletonList(gl.getConcept("48008009"))) {
 		for (Concept alignedConcept : alignedConcepts) {
-			if (inclusionWords.size() > 0) {
-				if (!containsInclusionWord(alignedConcept)) {
-					incrementSummaryInformation("Skipped as doesn't contain inclusion word");
-					continue;
-				}
-			}
 			//Make changes to a clone of the concept so we don't affect our local copy
 			Concept alignedClone = alignedConcept.cloneWithIds();
 			int changesMade = normaliseConceptToTemplate(null, alignedClone, conceptToTemplateMap.get(alignedConcept));

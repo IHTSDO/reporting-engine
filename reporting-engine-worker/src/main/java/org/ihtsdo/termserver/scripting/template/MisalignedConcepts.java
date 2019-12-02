@@ -356,18 +356,18 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		subHierarchyECL = "<< 417893002|Deformity|"; //QI-278
 		templateNames = new String[] {	"templates/Deformity - disorder.json",
 				"templates/Deformity - finding.json"};
-		
-		subHierarchyECL = "< 128139000 |Inflammatory disorder (disorder)|"; //QI-370
+		*/
+		subHierarchyECL = "< 128139000 |Inflammatory disorder (disorder)| : [0..0] 370135005 |Pathological process (attribute)| = << 472963003 |Hypersensitivity process (qualifier value)|"; //QI-370
 		templateNames = new String[] {	"templates/Inflammatory Disorder.json",
 					"templates/Infectious Inflammatory Disorder.json"};
-		*/
+		/*
 		
 		subHierarchyECL = "<< 131148009|Bleeding|"; //QI-319
 		//templateNames = new String[] { "templates/Bleeding - disorder.json"};
 		//inclusionWords.add("disorder");
 		templateNames = new String[] { "templates/Bleeding - finding.json"};
 		inclusionWords.add("finding");
-		
+		*/
 		super.init(args);
 	
 		//Ensure our ECL matches more than 0 concepts before we import SNOMED - expensive!
@@ -419,14 +419,6 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 				report (TERTIARY_REPORT, c, "White listed");
 				ignoredConcepts.add(c);
 				continue;
-			}
-			if (inclusionWords.size() > 0) {
-				if (!containsInclusionWord(c)) {
-					ignoredConcepts.add(c);
-					report (TERTIARY_REPORT, c, "Did not include inclusion word");
-					incrementSummaryInformation("Skipped as doesn't contain inclusion word");
-					continue;
-				}
 			}
 			if (isExcluded(c, TERTIARY_REPORT)) {
 				ignoredConcepts.add(c);

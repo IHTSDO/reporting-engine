@@ -265,11 +265,18 @@ abstract public class TemplateFix extends BatchFix {
 			//word = " " + word + " ";
 			if (fsn.contains(word)) {
 				if (exclusionReport != null) {
-					incrementSummaryInformation("Concepts excluded due to lexical match");
+					incrementSummaryInformation("Concepts excluded due to lexical match ");
+					incrementSummaryInformation("Concepts excluded due to lexical match (" + word + ")");
 					report (exclusionReport, c, "Lexical exclusion", word);
 				}
 				return true;
 			}
+		}
+		
+		if (inclusionWords.size() > 0 && !containsInclusionWord(c)) {
+			incrementSummaryInformation("Concepts excluded due to lexical match failure");
+			report (exclusionReport, c, "Lexical inclusion failure");
+			return true;
 		}
 		
 		//We're excluding complex templates that have a due to, or "after" attribute
