@@ -58,15 +58,6 @@ public class SchedulerController {
 		return scheduleService.listJobsRun(typeName, jobName, user);
 	}
 	
-	@ApiOperation(value="List jobs run")
-	@ApiResponses({
-			@ApiResponse(code = 200, message = "OK")
-	})
-	@RequestMapping(value="/jobs/runs", method= RequestMethod.POST)
-	public List<JobRun> listVisibleJobsRun(@RequestBody JobRunListRequest listRequest) throws BusinessServiceException {
-		return scheduleService.listJobsRun(listRequest);
-	}
-	
 	@ApiOperation(value="Run job")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
