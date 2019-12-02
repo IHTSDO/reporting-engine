@@ -3,7 +3,8 @@ package org.ihtsdo.termserver.scripting.domain;
 
 import java.util.*;
 
-import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.util.AcceptabilityMode;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 

@@ -8,6 +8,12 @@ import org.slf4j.*;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.lang.time.DurationFormatUtils;
+import org.ihtsdo.otf.rest.client.RestClientException;
+import org.ihtsdo.otf.rest.client.authoringservices.AuthoringServicesClient;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Project;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
+import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.dao.RF2Manager;
 import org.ihtsdo.termserver.scripting.dao.ReportManager;
@@ -281,7 +287,7 @@ public abstract class TermServerScript implements RF2Constants {
 			} else {
 				try {
 					project = scaClient.getProject(projectName);
-				} catch (TermServerScriptException e) {
+				} catch (RestClientException e) {
 					throw new TermServerScriptException("Unable to recover project: " + projectName,e);
 				}
 			}
@@ -386,7 +392,11 @@ public abstract class TermServerScript implements RF2Constants {
 		} else {
 			//Not if we're loading a release or extension
 			if (!StringUtils.isNumeric(projectName)) {
-				project = scaClient.getProject(projectName);
+				try {
+					project = scaClient.getProject(projectName);
+				} catch (RestClientException e) {
+					throw new TermServerScriptException("Failed to recover project " + projectName, e);
+				}
 			}
 		}
 	}

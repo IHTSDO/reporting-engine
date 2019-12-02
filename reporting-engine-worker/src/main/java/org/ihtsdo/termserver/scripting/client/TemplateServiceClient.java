@@ -4,7 +4,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
-import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.otf.rest.client.ExpressiveErrorHandler;
+import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.authoringtemplate.domain.*;

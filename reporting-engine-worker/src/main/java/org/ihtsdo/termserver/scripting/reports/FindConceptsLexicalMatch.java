@@ -7,9 +7,8 @@ import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 import org.apache.commons.lang.StringUtils;
+import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.job.ReportClass;
-import org.ihtsdo.termserver.scripting.TermServerScriptException;
-
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.snomed.otf.scheduler.domain.*;

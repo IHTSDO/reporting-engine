@@ -7,7 +7,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.spec.InvalidKeySpecException;
 
-import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.otf.exception.TermServerScriptException;
 
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonReader;

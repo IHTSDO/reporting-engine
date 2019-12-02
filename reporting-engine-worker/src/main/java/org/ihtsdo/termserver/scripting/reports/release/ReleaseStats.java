@@ -4,10 +4,9 @@ import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.*;
 
+import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.AncestorsCache;
-import org.ihtsdo.termserver.scripting.TermServerScriptException;
-
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;

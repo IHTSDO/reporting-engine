@@ -13,10 +13,11 @@ import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component.ComponentType;
+import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScript;
-import org.ihtsdo.termserver.scripting.TermServerScriptException;
-
 import org.ihtsdo.termserver.scripting.client.TermServerClient.ExportType;
 import org.ihtsdo.termserver.scripting.client.TermServerClient.ExtractType;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;

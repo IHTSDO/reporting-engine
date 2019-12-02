@@ -5,8 +5,7 @@ import java.io.PrintStream;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.ihtsdo.termserver.scripting.TermServerScriptException;
-
+import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
 /**
  * FD19947 Get all descendants for two concepts (de-duplicate

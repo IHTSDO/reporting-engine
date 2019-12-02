@@ -6,10 +6,9 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
+import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.DescendentsCache;
-import org.ihtsdo.termserver.scripting.TermServerScriptException;
-
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.template.TemplateUtils;

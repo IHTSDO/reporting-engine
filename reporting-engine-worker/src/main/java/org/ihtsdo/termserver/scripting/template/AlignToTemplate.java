@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.List;
 
-import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
+import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.snomed.authoringtemplate.domain.logical.*;
 

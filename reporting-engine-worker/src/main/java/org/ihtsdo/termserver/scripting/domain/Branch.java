@@ -1,6 +1,8 @@
 
 package org.ihtsdo.termserver.scripting.domain;
 
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Metadata;
+
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 

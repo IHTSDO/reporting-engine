@@ -1,6 +1,6 @@
 package org.ihtsdo.termserver.job;
 
-import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.dao.ReportManager;
 
 public interface ReportClass extends JobClass {

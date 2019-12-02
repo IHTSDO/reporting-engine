@@ -1,6 +1,6 @@
 package org.ihtsdo.termserver.job;
 
-import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.snomed.otf.scheduler.domain.Job;
 import org.snomed.otf.scheduler.domain.JobRun;
 

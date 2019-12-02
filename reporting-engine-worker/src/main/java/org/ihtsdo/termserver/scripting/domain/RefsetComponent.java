@@ -2,6 +2,8 @@ package org.ihtsdo.termserver.scripting.domain;
 
 import java.util.List;
 
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+
 public abstract class RefsetComponent extends Component {
 	
 	public abstract String getRefsetId();

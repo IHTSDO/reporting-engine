@@ -14,6 +14,8 @@ import java.util.stream.Stream;
 import java.util.zip.*;
 
 import org.apache.commons.io.FileUtils;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Project;
+import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.TermServerClient.*;
 import org.ihtsdo.termserver.scripting.dao.ArchiveDataLoader;
 import org.ihtsdo.termserver.scripting.domain.*;

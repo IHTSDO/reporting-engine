@@ -3,7 +3,7 @@ package org.ihtsdo.termserver.scripting.reports;
 import java.io.IOException;
 import java.util.*;
 
-import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.domain.*;
 

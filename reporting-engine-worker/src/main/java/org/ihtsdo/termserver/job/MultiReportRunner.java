@@ -5,7 +5,7 @@ import java.io.PrintStream;
 import java.util.*;
 
 import org.apache.commons.lang.ArrayUtils;
-import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.JiraHelper;
 
 import org.ihtsdo.termserver.scripting.domain.Concept;

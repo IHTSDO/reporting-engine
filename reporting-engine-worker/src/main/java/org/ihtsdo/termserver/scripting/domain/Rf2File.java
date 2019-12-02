@@ -12,7 +12,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component.ComponentType;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 public class Rf2File implements RF2Constants {

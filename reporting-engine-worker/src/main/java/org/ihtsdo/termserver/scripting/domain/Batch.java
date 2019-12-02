@@ -9,11 +9,14 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.IBatch;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
+import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.GraphLoader;
-import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
 
-public class Batch {
+public class Batch implements IBatch {
 	String batchName;
 	GraphLoader gl;
 	List<Task> tasks = new ArrayList<Task>();
@@ -114,7 +117,7 @@ public class Batch {
 			nextCandidate:
 			for (Task candidateForMerge : tasks) {
 				if (candidateForMerge.equals(smallTask) || 
-					candidateForMerge.components.size() + smallTask.components.size() > taskSize + wiggleRoom) {
+					candidateForMerge.getComponents().size() + smallTask.getComponents().size() > taskSize + wiggleRoom) {
 					continue nextCandidate;
 				}
 				if (smallTask.getTaskInfo().equals(candidateForMerge.getTaskInfo())) {
@@ -127,7 +130,7 @@ public class Batch {
 			nextCandidate:
 			for (Task candidateForMerge : tasks) {
 				if (candidateForMerge.equals(smallTask) || 
-					candidateForMerge.components.size() + smallTask.components.size() > taskSize + wiggleRoom) {
+					candidateForMerge.getComponents().size() + smallTask.getComponents().size() > taskSize + wiggleRoom) {
 					continue nextCandidate;
 				}
 				if (candidateForMerge.getTaskInfo().contains(smallTask.getTaskInfo()) || 
@@ -161,7 +164,7 @@ public class Batch {
 						continue candidate;
 					}
 				}
-				if (candidateForMerge.components.size() > taskSize + wiggleRoom) {
+				if (candidateForMerge.getComponents().size() > taskSize + wiggleRoom) {
 					continue candidate;
 				}
 				merge (candidateForMerge, smallTask);

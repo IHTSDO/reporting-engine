@@ -3,8 +3,10 @@ package org.ihtsdo.termserver.scripting.fixes.organism;
 import java.io.IOException;
 import java.util.*;
 
-import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.client.AuthoringServicesClient;
+import org.ihtsdo.otf.rest.client.authoringservices.AuthoringServicesClient;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
+import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;

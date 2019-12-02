@@ -1,7 +1,7 @@
 package org.ihtsdo.termserver.scripting.dao;
 
 import org.ihtsdo.otf.resourcemanager.ResourceConfiguration;
-import org.ihtsdo.termserver.scripting.TermServerScriptException;
+import org.ihtsdo.otf.exception.TermServerScriptException;
 
 /**
  * This is needed when we're not running as a Spring Boot application and don't 

@@ -5,8 +5,10 @@ import java.io.PrintStream;
 import java.util.*;
 
 import org.apache.commons.io.IOUtils;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
+import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.job.ReportClass;
-import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 
 import org.ihtsdo.termserver.scripting.client.TemplateServiceClient;

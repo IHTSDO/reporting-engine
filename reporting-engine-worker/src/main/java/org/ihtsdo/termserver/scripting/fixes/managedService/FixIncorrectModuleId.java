@@ -3,8 +3,10 @@ package org.ihtsdo.termserver.scripting.fixes.managedService;
 import java.io.IOException;
 import java.util.*;
 
-import org.ihtsdo.termserver.scripting.TermServerScriptException;
-
+import org.ihtsdo.otf.rest.client.RestClientException;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
+import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 
@@ -92,7 +94,11 @@ public class FixIncorrectModuleId extends BatchFix implements RF2Constants{
 			String conceptStr = taskConcept[1];
 			Task task= knownTasks.get(taskStr);
 			if (task == null) {
-				task = scaClient.getTask(taskStr);
+				try {
+					task = scaClient.getTask(taskStr);
+				} catch (RestClientException e) {
+					throw new TermServerScriptException("Failed to recover task " + taskStr, e);
+				}
 				knownTasks.put(taskStr, task);
 			}
 			processMe.add(new TaskConcept(task, gl.getConcept(conceptStr)));

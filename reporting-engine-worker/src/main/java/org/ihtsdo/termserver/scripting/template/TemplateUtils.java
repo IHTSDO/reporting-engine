@@ -6,9 +6,9 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.snomed.authoringtemplate.domain.logical.*;
+import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
-import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.StringUtils;
 

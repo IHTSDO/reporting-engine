@@ -5,14 +5,13 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
-import org.ihtsdo.termserver.scripting.TermServerScriptException;
-
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
+import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.AssociationTargets;
-import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.AssociationEntry;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
-import org.ihtsdo.termserver.scripting.domain.Task;
 
 import us.monoid.json.JSONObject;
 

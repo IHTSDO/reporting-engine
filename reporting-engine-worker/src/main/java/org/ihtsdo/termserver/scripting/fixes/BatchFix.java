@@ -8,6 +8,11 @@ import javax.mail.*;
 import javax.mail.internet.*;
 
 import org.apache.commons.lang.NotImplementedException;
+import org.ihtsdo.otf.rest.client.Status;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Classification;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
+import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.*;
 import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.domain.*;

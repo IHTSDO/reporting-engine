@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting;
 
 import java.util.*;
 
+import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
 
 import com.google.common.collect.ImmutableSet;

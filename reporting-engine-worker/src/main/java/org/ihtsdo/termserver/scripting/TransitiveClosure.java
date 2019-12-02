@@ -3,6 +3,7 @@ package org.ihtsdo.termserver.scripting;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 

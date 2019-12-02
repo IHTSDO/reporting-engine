@@ -2,9 +2,9 @@ package org.ihtsdo.termserver.scripting.creation;
 
 import java.util.List;
 
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.TermServerScript;
-import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.domain.Component;
 
 public class DummyScript extends TermServerScript {
 

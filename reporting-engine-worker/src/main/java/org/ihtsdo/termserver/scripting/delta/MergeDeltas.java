@@ -15,11 +15,11 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import org.apache.commons.lang.StringUtils;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component.ComponentType;
+import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.FlatFileLoader;
-import org.ihtsdo.termserver.scripting.TermServerScriptException;
-
 import org.ihtsdo.termserver.scripting.domain.Rf2File;
-import org.ihtsdo.termserver.scripting.domain.Component;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 /**
@@ -155,7 +155,11 @@ public class MergeDeltas extends DeltaGenerator {
 			//This is a new component since the release
 			alphaFields = new String[fixLineItems.length];
 		} else {
-			alphaFields = alphaComponent.toRF2();
+			try {
+				alphaFields = alphaComponent.toRF2();
+			} catch (Exception e) {
+				throw new TermServerScriptException("Unable to express alphaComponent in RF2",e);
+			}
 		}
 		
 		//Check each field to see if it has changed since versioning.

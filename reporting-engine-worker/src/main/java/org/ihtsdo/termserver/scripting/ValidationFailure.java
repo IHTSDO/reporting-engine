@@ -1,9 +1,10 @@
 package org.ihtsdo.termserver.scripting;
 
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
+import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.TermServerScript.ReportActionType;
 import org.ihtsdo.termserver.scripting.TermServerScript.Severity;
 import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Task;
 
 public class ValidationFailure extends TermServerScriptException {
 

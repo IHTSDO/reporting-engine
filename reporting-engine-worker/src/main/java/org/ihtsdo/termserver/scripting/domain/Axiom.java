@@ -2,6 +2,8 @@ package org.ihtsdo.termserver.scripting.domain;
 
 import java.util.*;
 
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.*;
 
 import com.google.gson.annotations.Expose;

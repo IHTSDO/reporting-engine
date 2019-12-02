@@ -4,8 +4,8 @@ package org.ihtsdo.termserver.scripting.domain;
 import java.util.List;
 
 import org.apache.commons.lang.NotImplementedException;
-import org.ihtsdo.termserver.scripting.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.ComponentType;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.exception.TermServerScriptException;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;

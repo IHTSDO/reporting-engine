@@ -14,9 +14,9 @@ package org.ihtsdo.termserver.scripting.reports.release;
 
 import java.util.*;
 
+import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.AncestorsCache;
 import org.ihtsdo.termserver.scripting.GraphLoader;
-import org.ihtsdo.termserver.scripting.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
 
 public class CrossoverUtils implements RF2Constants {

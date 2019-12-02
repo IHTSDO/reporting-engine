@@ -5,6 +5,7 @@ import java.util.Map.Entry;
 
 //import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.snomed.otf.owltoolkit.domain.Relationship;
+import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.snomed.otf.owltoolkit.domain.AxiomRepresentation;
 

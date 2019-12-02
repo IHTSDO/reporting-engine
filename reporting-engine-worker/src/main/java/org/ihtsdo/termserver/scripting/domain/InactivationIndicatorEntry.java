@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+
 //id	effectiveTime	active	moduleId	refsetId	referencedComponentId	inactivationReasonId
 public class InactivationIndicatorEntry extends Component implements RF2Constants {
 

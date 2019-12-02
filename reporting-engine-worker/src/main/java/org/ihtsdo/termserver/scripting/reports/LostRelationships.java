@@ -4,9 +4,9 @@ import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.TermServerScript;
-import org.ihtsdo.termserver.scripting.TermServerScriptException;
-
 import org.ihtsdo.termserver.scripting.domain.*;
 
 public class LostRelationships extends TermServerScript{
