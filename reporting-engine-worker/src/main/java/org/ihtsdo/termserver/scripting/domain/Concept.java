@@ -136,6 +136,10 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		this.fsn = fsn;
 	}
 	
+	public Concept(Long conceptId) {
+		this(conceptId.toString());
+	}
+	
 	public Concept(Concept c) {
 		this(c.getConceptId());
 		this.fsn = c.getFsn();

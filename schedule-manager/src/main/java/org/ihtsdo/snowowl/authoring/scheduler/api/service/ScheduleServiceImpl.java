@@ -88,11 +88,11 @@ public class ScheduleServiceImpl implements ScheduleService {
 	}
 
 	@Override
-	public List<JobRun> listJobsRun(String typeName, String jobName, String user) {
+	public List<JobRun> listJobsRun(String typeName, String jobName, String user, Set<String> projects) {
 		if (user != null && !user.isEmpty()) {
-			return jobRunRepository.findByJobNameAndUser(jobName, user);
+			return jobRunRepository.findByJobNameAndUserAndProjectIn(jobName, user, projects);
 		} else {
-			return jobRunRepository.findByJobNameOrderByRequestTimeDesc(jobName);
+			return jobRunRepository.findByJobNameAndProjectInOrderByRequestTimeDesc(jobName, projects);
 		}
 	}
 
@@ -120,7 +120,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 		populateAuthenticationDetails(jobRun);
 		
 		//We protect the json from having parent links and redundant keys, 
-		//but these are needed  when saving to the database
+		//but these are needed when saving to the database
 		//Also reinforce the display order that is specified by the job
 		for (String parameterKey : jobRun.getParameters().keySet()) {
 			jobRun.getParameters().get(parameterKey).setParentParams(jobRun.getParameters());
@@ -129,6 +129,10 @@ public class ScheduleServiceImpl implements ScheduleService {
 			if (jobParam == null) {
 				throw new BusinessServiceException(jobRun.getJobName() + " didn't expect user supplied parameter: '" + parameterKey + "'");
 			} else {
+				if (parameterKey.equals("project")) {
+					jobRun.setProject(jobParam.getValue());
+				}
+				
 				Integer displayOrder = job.getParameters().get(parameterKey).getDisplayOrder();
 				if (displayOrder == null) {
 					logger.warn(jobRun.getJobName() + " parameter " + parameterKey + " does not specify a display order");

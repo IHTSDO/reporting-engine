@@ -2,11 +2,18 @@ package org.ihtsdo.snowowl.authoring.scheduler.api.rest;
 
 import io.swagger.annotations.*;
 
+import org.apache.catalina.servlet4preview.http.HttpServletRequest;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
+import org.ihtsdo.snowowl.authoring.scheduler.api.configuration.WebSecurityConfig;
+import org.ihtsdo.snowowl.authoring.scheduler.api.service.AccessControlService;
 import org.ihtsdo.snowowl.authoring.scheduler.api.service.ScheduleService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -18,6 +25,20 @@ public class SchedulerController {
 	
 	@Autowired
 	private ScheduleService scheduleService;
+	
+	@Autowired
+	AccessControlService accessControlService;
+	
+	@Autowired
+	WebSecurityConfig config;
+	
+	@Value("${schedule.manager.terminoloy.server.uri}")
+	String terminologyServerUrl;
+	
+	protected Logger logger = LoggerFactory.getLogger(this.getClass());
+	
+	private static final String X_AUTH_TOK = "X-AUTH-token";
+	private static final String X_AUTH_USER = "X-AUTH-username";
 
 	@ApiOperation(value="List Job Types")
 	@ApiResponses({
@@ -52,12 +73,33 @@ public class SchedulerController {
 			@ApiResponse(code = 200, message = "OK")
 	})
 	@RequestMapping(value="/jobs/{typeName}/{jobName}/runs", method= RequestMethod.GET)
-	public List<JobRun> listJobsRun(@PathVariable final String typeName,
+	public List<JobRun> listJobsRun(HttpServletRequest request,
+			@PathVariable final String typeName,
 			@PathVariable final String jobName,
 			@RequestParam(required=false) final String user) throws BusinessServiceException {
-		return scheduleService.listJobsRun(typeName, jobName, user);
+		
+		return scheduleService.listJobsRun(typeName, jobName, user, getVisibleProjects(request));
 	}
 	
+	private Set<String> getVisibleProjects(HttpServletRequest request) throws BusinessServiceException {
+		String authToken = request.getHeader(X_AUTH_TOK);
+		String username = request.getHeader(X_AUTH_USER);
+		//Note that this user is the currently logged in user.  It's also possible to specify
+		//a user to the listJobsRun server to filter it down to the user who originally ran the reprot
+		
+		if (StringUtils.isEmpty(authToken) || StringUtils.isEmpty(username)) {
+			//Are local override values available?
+			authToken = config.getOverrideToken();
+			username = config.getOverrideUsername();
+			if (StringUtils.isEmpty(authToken) || StringUtils.isEmpty(username)) {
+				throw new BusinessServiceException("Failed to recover authentication details from HTTP headers");
+			} else {
+				logger.warn("Auth token not recovered from headers, using locally supplied override for user: {}", username);
+			}
+		}
+		return accessControlService.getProjects(username, terminologyServerUrl, authToken);
+	}
+
 	@ApiOperation(value="Run job")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")

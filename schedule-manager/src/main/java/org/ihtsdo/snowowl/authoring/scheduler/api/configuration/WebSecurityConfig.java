@@ -55,5 +55,9 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 	public String getOverrideToken() {
 		return overrideToken;
 	}
+	
+	public String getOverrideUsername() {
+		return overrideUsername;
+	}
 
 }

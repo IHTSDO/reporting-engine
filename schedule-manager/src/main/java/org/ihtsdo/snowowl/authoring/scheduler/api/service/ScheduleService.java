@@ -15,7 +15,7 @@ public interface ScheduleService {
 
 	public Job getJob(String jobName);
 	
-	public List<JobRun> listJobsRun(String typeName, String jobName, String user);
+	List<JobRun> listJobsRun(String typeName, String jobName, String user, Set<String> projects);
 
 	public JobRun runJob(String jobType, String jobName, JobRun jobRun) throws BusinessServiceException;
 
