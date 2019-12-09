@@ -379,6 +379,10 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		if (findConcepts(subHierarchyECL, false, expectLargeResults, useLocalStoreIfSimple).size() == 0) {
 			throw new TermServerScriptException(subHierarchyECL + " returned 0 rows");
 		}
+		
+		if (findConcepts(subHierarchyECL).contains(new Concept(318316003L))) {
+			debug ("Unexpected occurrence of 318316003 |Vernal conjunctivitis (disorder)|");
+		}
 	}
 	
 	public void postInit() throws TermServerScriptException {

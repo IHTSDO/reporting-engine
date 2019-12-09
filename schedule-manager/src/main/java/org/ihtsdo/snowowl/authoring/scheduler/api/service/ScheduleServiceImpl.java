@@ -144,6 +144,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 		}
 		if (StringUtils.isEmpty(jobRun.getProject())) {
 			jobRun.setProject("MAIN");
+			logger.warn("Failed to find Project parameter, defaulting to MAIN");
 		}
 		
 		jobRun = jobRunRepository.save(jobRun);

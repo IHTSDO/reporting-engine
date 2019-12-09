@@ -9,9 +9,7 @@ import javax.mail.internet.*;
 
 import org.apache.commons.lang.NotImplementedException;
 import org.ihtsdo.otf.rest.client.Status;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Classification;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.*;
 import org.ihtsdo.termserver.scripting.client.*;
@@ -51,6 +49,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	protected List<Component> priorityComponents = new ArrayList<>();
 	protected int priorityBatchSize = 10;
 	private boolean firstTaskCreated = false;
+	public static String DEFAULT_TASK_DESCRIPTION = "Batch Updates - see spreadsheet for details";
 	
 	protected BatchFix (BatchFix clone) {
 		if (clone != null) {
@@ -253,7 +252,15 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			while (!taskCreated) {
 				try{
 					debug ("Creating jira task on project: " + project);
-					String taskDescription = populateTaskDescription ? task.getDescriptionHTML() : "Batch Updates - see spreadsheet for details";
+					String taskDescription;
+					if (populateTaskDescription && task.size() <= 150) {
+						taskDescription = task.getDescriptionHTML();
+					} else {
+						taskDescription = DEFAULT_TASK_DESCRIPTION;
+						if (task.size() > 150) {
+							warn ("Task size " + task.size() + ", cannot populate Jira ticket description, even though populateTaskDescription flag set to true.");
+						}
+					}
 					task.setKey(scaClient.createTask(project.getKey(), task.getSummary(), taskDescription));
 					debug ("Creating task branch in terminology server: " + task);
 					task.setBranchPath(tsClient.createBranch(project.getBranchPath(), task.getKey()));

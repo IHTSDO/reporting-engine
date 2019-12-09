@@ -261,18 +261,22 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		
 		subHierarchyECL = "<< 276654001 |Congenital malformation (disorder)|"; //QI-287
 		templateNames = new String[] {	"templates/Congenital Malformation.json"};
-		*/
+		
+
 		subHierarchyECL = "<< 131148009|Bleeding|"; //QI-319
 		//templateNames = new String[] { "templates/Bleeding - disorder.json"};
 		//inclusionWords.add("disorder");
 		templateNames = new String[] { "templates/Bleeding - finding.json"};
 		inclusionWords.add("finding");
 		
-		/*
 		subHierarchyECL = "<< 74627003 | Diabetic complication (disorder) |"; //QI-426
 		templateNames = new String[] {	"templates/Complication due to Diabetes Melitus.json"};
 		includeComplexTemplates = true;
 		*/
+		
+		subHierarchyECL = "<<  282100009 |Adverse reaction caused by substance (disorder)|"; //QI-406
+		templateNames = new String[] {	"templates/Adverse Reaction.json"};
+		includeComplexTemplates = true;
 		super.init(args);
 		
 		//Ensure our ECL matches more than 0 concepts.  This will also cache the result
