@@ -122,6 +122,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 		//We protect the json from having parent links and redundant keys, 
 		//but these are needed when saving to the database
 		//Also reinforce the display order that is specified by the job
+		boolean populateProject = StringUtils.isEmpty(jobRun.getProject());
 		for (String parameterKey : jobRun.getParameters().keySet()) {
 			jobRun.getParameters().get(parameterKey).setParentParams(jobRun.getParameters());
 			jobRun.getParameters().get(parameterKey).setParamKey(parameterKey);
@@ -129,7 +130,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 			if (jobParam == null) {
 				throw new BusinessServiceException(jobRun.getJobName() + " didn't expect user supplied parameter: '" + parameterKey + "'");
 			} else {
-				if (parameterKey.equals("project")) {
+				if (populateProject && parameterKey.toLowerCase().equals("project")) {
 					jobRun.setProject(jobParam.getValue());
 				}
 				
@@ -140,6 +141,9 @@ public class ScheduleServiceImpl implements ScheduleService {
 				}
 				jobRun.getParameters().get(parameterKey).setDisplayOrder(displayOrder);
 			}
+		}
+		if (StringUtils.isEmpty(jobRun.getProject())) {
+			jobRun.setProject("MAIN");
 		}
 		
 		jobRun = jobRunRepository.save(jobRun);
