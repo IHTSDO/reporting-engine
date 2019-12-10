@@ -5,8 +5,7 @@ import java.io.PrintStream;
 import java.util.*;
 
 import org.apache.commons.io.IOUtils;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
@@ -358,18 +357,18 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		subHierarchyECL = "<< 417893002|Deformity|"; //QI-278
 		templateNames = new String[] {	"templates/Deformity - disorder.json",
 				"templates/Deformity - finding.json"};
-		*/
+		
 		subHierarchyECL = "< 128139000 |Inflammatory disorder (disorder)| : [0..0] 370135005 |Pathological process (attribute)| = << 472963003 |Hypersensitivity process (qualifier value)|"; //QI-370
 		templateNames = new String[] {	"templates/Inflammatory Disorder.json",
 					"templates/Infectious Inflammatory Disorder.json"};
-		/*
+		*/
 		
 		subHierarchyECL = "<< 131148009|Bleeding|"; //QI-319
 		//templateNames = new String[] { "templates/Bleeding - disorder.json"};
 		//inclusionWords.add("disorder");
 		templateNames = new String[] { "templates/Bleeding - finding.json"};
 		inclusionWords.add("finding");
-		*/
+		
 		super.init(args);
 	
 		//Ensure our ECL matches more than 0 concepts before we import SNOMED - expensive!

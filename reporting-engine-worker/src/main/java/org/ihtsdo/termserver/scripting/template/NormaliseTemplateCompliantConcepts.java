@@ -254,29 +254,29 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		templateNames = new String[] {	"templates/Deformity - disorder.json"};
 		inclusionWords.add("disorder");
 		
-		//QI-373, QI-376, QI-400, QI-324
-		subHierarchyECL = "<<362975008 |Degenerative disorder (disorder)|: 116676008 |Associated morphology (attribute)| = << 13331008 |Atrophy (morphologic abnormality)| ";
+		//QI-373, QI-376, QI-400, QI-324, QI-337
+		subHierarchyECL = "<<362975008 |Degenerative disorder (disorder)|: 116676008 |Associated morphology (attribute)| = << 46595003 |Deposition (morphologic abnormality)| ";
 		templateNames = new String[] {	"templates/Degenerative disorder.json"};
 		includeComplexTemplates = true;
 		
 		subHierarchyECL = "<< 276654001 |Congenital malformation (disorder)|"; //QI-287
 		templateNames = new String[] {	"templates/Congenital Malformation.json"};
 		
-
-		subHierarchyECL = "<< 131148009|Bleeding|"; //QI-319
-		//templateNames = new String[] { "templates/Bleeding - disorder.json"};
-		//inclusionWords.add("disorder");
-		templateNames = new String[] { "templates/Bleeding - finding.json"};
-		inclusionWords.add("finding");
 		
+		subHierarchyECL = "<< 131148009|Bleeding|"; //QI-319
+		templateNames = new String[] { "templates/Bleeding - disorder.json"};
+		inclusionWords.add("disorder");
+		//templateNames = new String[] { "templates/Bleeding - finding.json"};
+		//inclusionWords.add("finding");
+		*/
 		subHierarchyECL = "<< 74627003 | Diabetic complication (disorder) |"; //QI-426
 		templateNames = new String[] {	"templates/Complication due to Diabetes Melitus.json"};
 		includeComplexTemplates = true;
-		*/
-		
+		/*
 		subHierarchyECL = "<<  282100009 |Adverse reaction caused by substance (disorder)|"; //QI-406
 		templateNames = new String[] {	"templates/Adverse Reaction.json"};
 		includeComplexTemplates = true;
+		*/
 		super.init(args);
 		
 		//Ensure our ECL matches more than 0 concepts.  This will also cache the result
