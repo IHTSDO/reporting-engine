@@ -44,7 +44,8 @@ public class AttributeValueCounts extends TermServerReport implements ReportClas
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		params.put(ECL, "<< 64572001 |Disease (disorder)|");
+		//params.put(ECL, "<< 64572001 |Disease (disorder)|");
+		params.put(ECL, "<< 404684003 |Clinical finding (finding)|");
 		params.put(ATTRIBUTE_TYPE, ASSOC_MORPH.toString());
 		params.put(IGNORE_ECL, qiProjectAlreadyProcessed);
 		TermServerReport.run(AttributeValueCounts.class, args, params);
@@ -52,7 +53,7 @@ public class AttributeValueCounts extends TermServerReport implements ReportClas
 	
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
-		additionalReportColumns = "FSN, SemTag, Depth, Raw Concept Count, Adjusted Concept Count, Parents, GrandParents";
+		additionalReportColumns = "FSN, SemTag, Depth, Raw Concept Count, Adjusted Concept Count, Not-Including Descendants, Adjusted Not-Including Descendants, Parents, GrandParents";
 		getArchiveManager().populateHierarchyDepth = true;
 		super.init(run);
 		
@@ -130,8 +131,10 @@ public class AttributeValueCounts extends TermServerReport implements ReportClas
 					.collect(Collectors.joining(",\n"));
 			int count = getDescendantAndSelfCount(c, targets, false);
 			int countFiltered = getDescendantAndSelfCount(c, targets, true);
+			int countNotIncludingDescendants = (int)valueCounts.get(c);
+			int countNotIncludingDescendantsFiltered = (int)valueCountsFiltered.get(c);
 			if (countFiltered > minimumSizeOfInterest) {
-				report(c, getDepthIndicator(c), count, countFiltered, parentsStr, parentsParentsStr);
+				report(c, getDepthIndicator(c), count, countFiltered, countNotIncludingDescendants, countNotIncludingDescendantsFiltered, parentsStr, parentsParentsStr);
 			}
 		}	
 			
