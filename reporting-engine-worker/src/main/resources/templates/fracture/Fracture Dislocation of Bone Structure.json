@@ -1,6 +1,6 @@
 {
   "name": "Fracture Dislocation of Bone Structure",
-  "documentation": "https://confluence.ihtsdotools.org/pages/viewpage.action?pageId=57813204",
+  "documentation": "https://confluence.ihtsdotools.org/display/SCTEMPLATES/Fracture+dislocation+of+%5Bbody+structure%5D+%28disorder%29+-+Ready+for+implementation",
   "version": 1,
-  "logicalTemplate": "64572001 |Disease (disorder)|:\n\t [[~1..*]]{\n\t\t116676008 |Associated morphology (attribute)| = [[+id(<< 72704001 |Fracture (morphologic abnormality)|) @fracture]],\n\t\t363698007 |Finding site (attribute)|  =  [[+id(<< 272673000 |Bone structure (body structure)|) @bone]]\n\t}, [[~1..*]]{\n\t\t116676008 |Associated morphology (attribute)| = [[+id(<< 125673005 |Traumatic dislocation (morphologic abnormality)|) @dislocation]],\n\t\t363698007 |Finding site (attribute)|  =  [[+id(<< 39352004 |Joint structure (body structure)|) @joint]]\n\t}\n"
+  "logicalTemplate": "64572001 |Disease (disorder)| : [[~1..1]] {42752001 |Due to (attribute)| = [[ +id( <<773760007 |Traumatic event (event)| ) @due]] } , [[~1..*]] { 116676008 |Associated morphology (attribute)| = [[ +id( <<72704001 |Fracture (morphologic abnormality)| ) @morph1]], 363698007 |Finding site (attribute)| = [[ +id( <<272673000 |Bone structure (body structure)| ) @site1]]} , [[~1..*]] { 116676008 |Associated morphology (attribute)| = [[ +id( <<87642003 |Dislocation (morphologic abnormality)| ) @morph2]], 363698007 |Finding site (attribute)| = [[ +id( <<39352004 |Joint structure (body structure)| ) @site2 ]]}"
 }

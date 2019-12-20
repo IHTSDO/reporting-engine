@@ -43,7 +43,7 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		try {
 			//app.includeComplexTemplates = true;
 			//app.safetyProtocols = false;
-			app.excludeSdMultiRG = true;
+			//app.excludeSdMultiRG = true;
 			app.init(args);
 			//app.getArchiveManager().allowStaleData = true;  //Use when running offline
 			app.loadProjectSnapshot(false);  //Load all descriptions
@@ -361,14 +361,17 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		subHierarchyECL = "< 128139000 |Inflammatory disorder (disorder)| : [0..0] 370135005 |Pathological process (attribute)| = << 472963003 |Hypersensitivity process (qualifier value)|"; //QI-370
 		templateNames = new String[] {	"templates/Inflammatory Disorder.json",
 					"templates/Infectious Inflammatory Disorder.json"};
-		*/
 		
 		subHierarchyECL = "<< 131148009|Bleeding|"; //QI-319
 		//templateNames = new String[] { "templates/Bleeding - disorder.json"};
 		//inclusionWords.add("disorder");
 		templateNames = new String[] { "templates/Bleeding - finding.json"};
 		inclusionWords.add("finding");
-		
+		*/
+		subHierarchyECL = "<<  129156001 |Traumatic dislocation of joint (disorder)|";
+		templateNames = new String[] { "templates/Traumatic dislocation of joint.json",
+				"templates/fracture/Fracture Dislocation of Bone Structure.json"};
+		includeComplexTemplates = true;
 		super.init(args);
 	
 		//Ensure our ECL matches more than 0 concepts before we import SNOMED - expensive!

@@ -175,10 +175,14 @@ public class GroupRemodel extends TemplateFix {
 		
 		subHierarchyECL = "<< 276654001 |Congenital malformation (disorder)|"; //QI-286
 		templateNames = new String[] {	"templates/Congenital Malformation.json"};
-		*/
+		
 		subHierarchyECL = "<< 131148009|Bleeding|"; //QI-191
 		templateNames = new String[] { "templates/Bleeding - disorder.json"};
 		inclusionWords.add("disorder");
+		*/
+		subHierarchyECL = "<<362975008 |Degenerative disorder (disorder)|: 116676008 |Associated morphology (attribute)| = << 46595003 |Deposition (morphologic abnormality)| ";
+		templateNames = new String[] {	"templates/Degenerative disorder.json"};
+		includeComplexTemplates = true;
 		
 		super.init(args);
 		

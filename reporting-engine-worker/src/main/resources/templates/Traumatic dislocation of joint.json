@@ -1,0 +1,6 @@
+{
+  "name": "Traumatic dislocation of Joint",
+  "documentation": "https://confluence.ihtsdotools.org/display/SCTEMPLATES/Traumatic+dislocation+of+%5Bjoint+structure%5D+%28disorder%29+-+Ready+to+review",
+  "version": 1,
+  "logicalTemplate": "64572001 |Disease (disorder)| : [[~1..1]] {42752001 |Due to (attribute)| = [[ +id( <<773760007 |Traumatic event (event)| ) @due]] } , [[~1..*]] {  [[~1..*]] 116676008 |Associated morphology (attribute)| = [[ +id( <<87642003 |Dislocation (morphologic abnormality)| ) @morph]],  [[~1..*]] 363698007 |Finding site (attribute)| = [[ +id( <<39352004 |Joint structure (body structure)| ) @site ]]}"
+}
