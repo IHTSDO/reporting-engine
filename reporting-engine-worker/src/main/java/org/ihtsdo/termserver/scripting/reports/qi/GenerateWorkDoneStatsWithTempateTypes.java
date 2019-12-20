@@ -20,9 +20,12 @@ import com.google.common.io.Files;
 public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 	
 	List<Concept> subHierarchies;
+	List<Concept> targetValues;
+	Concept targetType = ASSOC_MORPH;
 	Map<Concept, List<Concept>> exclusionMap = new HashMap<>();
 	InitialAnalysis ipReport;
 	int modifiedSince = 20180131;
+	boolean workWithTargetValues = true;
 	
 	String [] co_occurrantWords = new String[] { " and ", " with ", " in ", " or " };
 	String [] complexWords = new String[] { "complication", "sequela", "late effect", "secondary" };
@@ -30,6 +33,14 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 	Concept[] complexTypeAttrbs;
 	
 	enum TemplateType {SIMPLE, PURE_CO, COMPLEX, COMPLEX_NO_MORPH, NONE};
+	Set<Concept> ignoreConcepts = new HashSet<>();
+	static String ignoreConceptsECL = "<<2775001 OR <<3218000 OR <<3723001 OR <<5294002 OR <<7890003 OR <<8098009 OR <<17322007 " +
+	" OR <<20376005 OR <<34014006 OR <<40733004 OR <<52515009 OR <<85828009 OR <<87628006 OR <<95896000 OR <<109355002 OR <<118616009 " + 
+	"OR <<125605004 OR <<125643001 OR <<125666000 OR <<125667009 OR <<125670008 OR <<126537000 OR <<128139000 OR <<128294001 " + 
+	"OR <<128477000 OR <<128482007 OR <<131148009 OR <<193570009 OR <<233776003 OR <<247441003 OR <<276654001 OR <<283682007 " +
+	"OR <<298180004 OR <<307824009 OR <<312608009 OR <<362975008 OR <<399963005 OR <<399981008 OR <<400006008 OR <<400178008 " + 
+	"OR <<416462003 OR <<416886008 OR <<417893002 OR <<419199007 OR <<428794004 OR <<429040005 OR <<432119003 OR <<441457006 " +
+	"OR <<419199007 OR <<282100009 OR <<55342001 OR <<128462008 OR <<363346000 OR <<372087000 ";
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		GenerateWorkDoneStatsWithTempateTypes report = new GenerateWorkDoneStatsWithTempateTypes();
@@ -51,7 +62,9 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 
 	private void postLoadInit() throws TermServerScriptException, IOException {
 		subHierarchies = new ArrayList<>();
+		targetValues = new ArrayList<>();
 		reportConceptAsInteger = true;
+		safetyProtocols = false;
 		
 		info ("Loading " + inputFile);
 		if (!inputFile.canRead()) {
@@ -63,7 +76,11 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 			if (!line.trim().isEmpty()) {
 				String[] concepts = line.split(COMMA);
 				Concept concept = gl.getConcept(concepts[0]);
-				subHierarchies.add(concept);
+				if (workWithTargetValues) {
+					targetValues.add(concept);
+				} else {
+					subHierarchies.add(concept);
+				}
 				
 				if (concepts.length > 1) {
 					List<Concept> exclusions = new ArrayList<Concept>();
@@ -74,8 +91,6 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 				}
 			}
 		} 
-		//subHierarchies.addAll(ROOT_CONCEPT.getDescendents(IMMEDIATE_CHILD));
-		//subHierarchies.add(CLINICAL_FINDING);
 		co_occurrantTypeAttrb =  new Concept[] {
 				gl.getConcept("47429007") //|Associated with (attribute)|
 		};
@@ -92,27 +107,37 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 		};
 		postInit();
 		ipReport = new InitialAnalysis(this);
+		ignoreConcepts = new HashSet<>(findConcepts(ignoreConceptsECL));
 	}
 
 	private void generateWorkDoneStats() throws TermServerScriptException {
 		ipReport.setQuiet(true);
 		Set<Concept> alreadyAccountedFor = new HashSet<>();
-		for (Concept subHierarchyStart : subHierarchies) {
+		List<Concept> defnList = workWithTargetValues ? targetValues : subHierarchies;
+		for (Concept subsetDefn : defnList) {
 			int[] templateTypeTotal = new int[TemplateType.values().length];
-			int[] templateTypeModified = new int[TemplateType.values().length];
-			debug ("Analysing subHierarchy: " + subHierarchyStart);
-			Set<Concept> subHierarchy = new HashSet<>(gl.getDescendantsCache().getDescendentsOrSelf(subHierarchyStart)); //
-			removeExclusions(subHierarchyStart, subHierarchy);
-			int orphanetCount = subHierarchy.size();
-			subHierarchy.removeAll(gl.getOrphanetConcepts());
-			int total = subHierarchy.size();
+			//int[] templateTypeModified = new int[TemplateType.values().length];
+			debug ("Analysing subset defined via : " + subsetDefn);
+			Collection<Concept> subset;
+			if (workWithTargetValues) {
+				String ecl = "<< 64572001 |Disease (disorder)| : " + targetType + " = << " + subsetDefn;
+				subset = findConcepts(ecl);
+			} else {
+				subset = new HashSet<>(gl.getDescendantsCache().getDescendentsOrSelf(subsetDefn)); //
+				removeExclusions(subsetDefn, subset);
+			}
+			
+			int orphanetCount = subset.size();
+			subset.removeAll(gl.getOrphanetConcepts());
+			int total = subset.size();
 			orphanetCount = orphanetCount - total;
 			
-			subHierarchy.removeAll(alreadyAccountedFor);
-			int withRemovals = subHierarchy.size();
+			subset.removeAll(alreadyAccountedFor);
+			subset.removeAll(ignoreConcepts);
+			int withRemovals = subset.size();
 			int countedElsewhere = total - withRemovals;
 			
-			for (Concept c : subHierarchy) {
+			for (Concept c : subset) {
 				if (gl.isOrphanetConcept(c)) {
 					incrementSummaryInformation("Orphanet concepts excluded");
 					continue;
@@ -125,23 +150,23 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 				}*/
 			}
 			
-			report (subHierarchyStart, subHierarchyStart.getDepth(),
+			report (subsetDefn, subsetDefn.getDepth(),
 					countedElsewhere, 
 					templateTypeTotal[0] + templateTypeTotal[1],
 					templateTypeTotal[2] + templateTypeTotal[3],
 					templateTypeTotal[4],
 					total, orphanetCount);
-			alreadyAccountedFor.addAll(subHierarchy);
+			alreadyAccountedFor.addAll(subset);
 		}
 	}
 
-	private void removeExclusions(Concept subHierarchyStart, Set<Concept> subHierarchy) throws TermServerScriptException {
+	private void removeExclusions(Concept subHierarchyStart, Collection<Concept> subSet) throws TermServerScriptException {
 		//Do we have exclusions for this subHierarchy?
 		List<Concept> theseExclusions = exclusionMap.get(subHierarchyStart);
 		if (theseExclusions != null) {
 			for (Concept thisExclusion : theseExclusions) {
 				info ("For " + subHierarchyStart + " removing " + thisExclusion);
-				subHierarchy.removeAll(gl.getDescendantsCache().getDescendentsOrSelf(thisExclusion));
+				subSet.removeAll(gl.getDescendantsCache().getDescendentsOrSelf(thisExclusion));
 			}
 		}
 	}
@@ -185,7 +210,7 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 		return TemplateType.SIMPLE;
 	}
 
-	private boolean isModified(Concept c, CharacteristicType charType) throws TermServerScriptException {
+	/*private boolean isModified(Concept c, CharacteristicType charType) throws TermServerScriptException {
 		for (Relationship r : c.getRelationships(charType, ActiveState.BOTH)) {
 			//Exclude IS_A relationships
 			if (r.getType().equals(IS_A)) {
@@ -197,6 +222,6 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 			}
 		}
 		return false;
-	}
+	}*/
 	
 }
