@@ -74,13 +74,14 @@ public class DrugTermGenerator extends TermGenerator {
 		//Do allow duplicates when checking variance as splitting US/GB into two will temporarily have same term
 		validateUsGbVariance(t,c, charType, true);
 
-		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-			try { 
+		try { 
+			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 				changesMade += ensureDrugTermConforms(t, c, d, charType);
-			} catch (Exception e) {
-				String stack = ExceptionUtils.getStackTrace(e);
-				report (t, c, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to conform description " + d, stack);
 			}
+		} catch (Exception e) {
+			String stack = ExceptionUtils.getStackTrace(e);
+			report (t, c, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to ensure terms conform", stack);
+			return NO_CHANGES_MADE;
 		}
 		//Now that the FSN is resolved, remove any redundant terms
 		if (!ptOnly) {
@@ -176,9 +177,9 @@ public class DrugTermGenerator extends TermGenerator {
 		if (StringUtils.initialLetterLowerCase(d.getTerm())) {
 			return modifyIfRequired(d, CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
 			//For the other settings, we need to check further rules below as lower case letters might not look case sensitive.
-		} else if (StringUtils.isCaseSensitive(d.getTerm())) {
+		} else if (StringUtils.isCaseSensitive(d.getTerm()) && !d.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE)) {
 			d.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
-		} else if (!StringUtils.isCaseSensitive(d.getTerm())) {
+		} else if (!StringUtils.isCaseSensitive(d.getTerm()) && !d.getCaseSignificance().equals(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE)) {
 			d.setCaseSignificance(CaseSignificance.CASE_INSENSITIVE);
 		}
 		
@@ -198,29 +199,29 @@ public class DrugTermGenerator extends TermGenerator {
 				if (ingredDesc.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE)) {
 					//For the FSN, a CS ingredient will cause us to go to cI due to the "Product containing" prefix
 					if (isFSN) {
-						report (t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Set term to cI in FSN due to CS present in ingredient term", ingredDesc);
+						report (t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Set term to cI (from ci) in FSN due to CS present in ingredient term", ingredDesc);
 						d.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
 					} else {
 						if (isFirstIngred) {
-							report (t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Set term to CS due to CS present in first ingredient term", ingredDesc);
+							report (t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Set term to CS (from ci) due to CS present in first ingredient term", ingredDesc);
 							d.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
 							break;  // Don't let subsequent ingredients undo this
 						} else {
-							report (t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Set term to cI due to CS present in (not first) ingredient term", ingredDesc);
+							report (t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Set term to cI (from ci) due to CS present in (not first) ingredient term", ingredDesc);
 							d.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
 						}
 					}
 					changesMade++;
 				} else if (ingredDesc.getCaseSignificance().equals(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE)) {
 					//For the FSN, a cI ingredient will cause us to go to cI in the product
-					report (t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Set term to cI due to cI present in ingredient term", ingredDesc);
+					report (t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Set term to cI (from ci) due to cI present in ingredient term", ingredDesc);
 					d.setCaseSignificance(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE);
 					changesMade++;
 				}
 			} else if (d.getCaseSignificance().equals(CaseSignificance.INITIAL_CHARACTER_CASE_INSENSITIVE)) {
 				//If this is the PT and the FIRST ingredient is CS, then the term becomes CS
 				if (!isFSN && isFirstIngred && ingredDesc.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE)) {
-					report (t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Set PT to CS due to CS present in (first) ingredient term", ingredDesc);
+					report (t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Set PT to CS (from cI) due to CS present in (first) ingredient term", ingredDesc);
 					d.setCaseSignificance(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
 					changesMade++;
 				}
@@ -337,8 +338,13 @@ public class DrugTermGenerator extends TermGenerator {
 		return proposedTerm;
 	}
 
-	private boolean firstIngredientCS(Concept c, String langRefset, CharacteristicType charType) {
-		return getOrderedIngredientDescriptions(c, langRefset, charType).get(0)
+	private boolean firstIngredientCS(Concept c, String langRefset, CharacteristicType charType) throws TermServerScriptException {
+		
+		List<Description> ingredDescs = getOrderedIngredientDescriptions(c, langRefset, charType);
+		if (ingredDescs.size() == 0) {
+			throw new TermServerScriptException("Failed to find ingredient description for " + c);
+		}
+		return ingredDescs.get(0)
 				.getCaseSignificance().equals(CaseSignificance.ENTIRE_TERM_CASE_SENSITIVE);
 	}
 

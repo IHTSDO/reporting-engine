@@ -9,6 +9,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 //import org.ihtsdo.termserver.scripting.delta.CaseSignificanceFixAll;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.ConceptType;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.DrugTermGenerator;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -28,7 +29,7 @@ public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants {
 	
 	String subHierarchyStr = "373873005"; // |Pharmaceutical / biologic product (product)|
 	//static Map<String, String> replacementMap = new HashMap<String, String>();
-	//private List<String> exceptions = new ArrayList<>();
+	private List<String> exceptions = new ArrayList<>();
 	//CaseSignificanceFixAll csFixer;
 	TermGenerator termGenerator = new DrugTermGenerator(this);
 	
@@ -42,7 +43,7 @@ public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants {
 			ReportSheetManager.targetFolderId="1E6kDgFExNA9CRd25yZk_Y7l-KWRf8k6B"; //Drugs/Normalize Terming
 			fix.populateEditPanel = true;
 			fix.populateTaskDescription = true;
-			//fix.selfDetermining = true;
+			fix.selfDetermining = true;
 			fix.init(args);
 			fix.loadProjectSnapshot(false); //Load all descriptions
 			fix.postInit();
@@ -103,32 +104,28 @@ public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants {
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		return Collections.singletonList(gl.getConcept("446322005"));
 	}
-	
+	*/
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		debug("Identifying concepts to process");
 		termGenerator.setQuiet(true);
-		termGenerator.setPtOnly(false);
 		
 		List<Concept> allAffected = new ArrayList<Concept>(); 
-		for (Concept c : gl.getConcept(subHierarchyStr).getDescendents(NOT_SET)) {
-		//	if (!c.getConceptId().equals("346751008")) {
-		//		continue;
-		//	} 
+		Set<Concept> selection = gl.getConcept(subHierarchyStr).getDescendents(NOT_SET);
+		//Set<Concept> selection = Collections.singleton(gl.getConcept("785386009"));
+		for (Concept c : selection) {
 			SnomedUtils.populateConceptType(c);
 			//Clone the concept so we're not modifying our local copy
 			c = c.cloneWithIds();  //Exact copy - keep Ids
-			//if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM)) {
-			//if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT)) {
-			//if (c.getConceptType().equals(ConceptType.CLINICAL_DRUG)) {
-			if (c.getConceptType().equals(ConceptType.STRUCTURAL_GROUPER) 
+			if (isMP(c) || isMPF(c) || isCD(c)) {
+			/*if (c.getConceptType().equals(ConceptType.STRUCTURAL_GROUPER) 
 				|| c.getConceptType().equals(ConceptType.DISPOSITION_GROUPER)
-				|| c.getConceptType().equals(ConceptType.STRUCTURE_AND_DISPOSITION_GROUPER)) {
+				|| c.getConceptType().equals(ConceptType.STRUCTURE_AND_DISPOSITION_GROUPER)) { */
 				if (exceptions.contains(c.getId())) {
-					report (null, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Concept manually listed as an exception");
+					report ((Task)null, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Concept manually listed as an exception");
 				} else {
 					//See if the modifying the term makes any changes
 					//if (termGenerator.ensureDrugTermsConform(null, c, CharacteristicType.STATED_RELATIONSHIP) > 0) {
-					if (termGenerator.ensureDrugTermsConform(null, c, CharacteristicType.INFERRED_RELATIONSHIP) > 0) {
+					if (termGenerator.ensureTermsConform(null, c, CharacteristicType.INFERRED_RELATIONSHIP) > 0) {
 						allAffected.add(c);
 					}
 				}
@@ -138,10 +135,25 @@ public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants {
 		termGenerator.setQuiet(false);
 		allAffected.sort(Comparator.comparing(Concept::getFsn));
 		return new ArrayList<Component>(allAffected);
-	} */
-
+	}
+/*
 	@Override
 	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
 		return Collections.singletonList(gl.getConcept(lineItems[0]));
+	}
+	*/
+	
+	private boolean isMP(Concept concept) {
+		return concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT) || 
+				concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_ONLY);
+	}
+	
+	private boolean isMPF(Concept concept) {
+		return concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM) || 
+				concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM_ONLY);
+	}
+	
+	private boolean isCD(Concept concept) {
+		return concept.getConceptType().equals(ConceptType.CLINICAL_DRUG);
 	}
 }
