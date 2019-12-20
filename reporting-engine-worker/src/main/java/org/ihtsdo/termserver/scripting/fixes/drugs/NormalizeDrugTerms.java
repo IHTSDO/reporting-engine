@@ -27,7 +27,7 @@ import org.ihtsdo.termserver.scripting.util.TermGenerator;
  */
 public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants {
 	
-	String subHierarchyStr = "373873005"; // |Pharmaceutical / biologic product (product)|
+	String subHierarchyStr = MEDICINAL_PRODUCT.getConceptId();
 	//static Map<String, String> replacementMap = new HashMap<String, String>();
 	private List<String> exceptions = new ArrayList<>();
 	//CaseSignificanceFixAll csFixer;
