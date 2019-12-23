@@ -65,14 +65,14 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 				.add(SUB_HIERARCHY).withType(JobParameter.Type.CONCEPT).withDefaultValue(ROOT_CONCEPT)
 				.add(STARTS_WITH).withType(JobParameter.Type.BOOLEAN).withMandatory().withDefaultValue(false)
 				.add(WHOLE_WORD).withType(JobParameter.Type.BOOLEAN).withMandatory().withDefaultValue(false)
-				.add(WORDS).withType(JobParameter.Type.STRING).withMandatory()
+				.add(WORDS).withType(JobParameter.Type.STRING).withMandatory().withDescription("Use a comma to separate multiple words in an 'or' search")
 				.add(ATTRIBUTE_TYPE).withType(JobParameter.Type.CONCEPT).withDescription("Optional. Will show the attribute values per concept for the specified attribute type.  For example in Substances, show me all concepts that are used as a target for 738774007 |Is modification of (attribute)| by specifying that attribute type in this field.")
 				.build();
 		
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES))
 				.withName("Term contains X")
-				.withDescription("This report lists all concepts containing the specified words, with optional attribute details.")
+				.withDescription("This report lists all concepts containing the specified words, with optional attribute details.  Search for multiple words (in an either/or fashion) using a comma to separate.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(INT)
