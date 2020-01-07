@@ -100,23 +100,6 @@ public abstract class TermServerReport extends TermServerScript {
 		run(reportClass, args, null);
 	}
 	
-	public static void run(Class<? extends ReportClass> reportClass, String[] args, Map<String, String> parameters) throws TermServerScriptException {
-		JobRun jobRun = createJobRunFromArgs(reportClass.getSimpleName(), args);
-		if (parameters != null) {
-			for (Map.Entry<String, String> entry : parameters.entrySet()) {
-				jobRun.setParameter(entry.getKey(), entry.getValue());
-			}
-		}
-		ReportClass report = null;
-		try {
-			report = reportClass.newInstance();
-			((TermServerReport)report).checkSettingsWithUser(jobRun);
-		} catch ( InstantiationException | IllegalAccessException e) {
-			throw new TermServerScriptException("Unable to instantiate " + reportClass.getSimpleName(), e);
-		}
-		report.instantiate(jobRun);
-	}
-	
 	protected Set<Concept> identifyIntermediatePrimitives(Collection<Concept> concepts) throws TermServerScriptException {
 		return identifyIntermediatePrimitives(concepts, CharacteristicType.INFERRED_RELATIONSHIP);
 	}

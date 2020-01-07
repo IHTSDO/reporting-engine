@@ -57,10 +57,6 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		}
 	}
 	
-	public void runJob() throws TermServerScriptException {
-		processFile();
-	}
-	
 	@Override
 	public Job getJob() {
 		JobParameters params = new JobParameters()

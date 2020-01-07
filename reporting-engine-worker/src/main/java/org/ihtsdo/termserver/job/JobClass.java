@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.job;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.dao.ReportManager;
 import org.snomed.otf.scheduler.domain.Job;
 import org.snomed.otf.scheduler.domain.JobRun;
 
@@ -16,4 +17,10 @@ public interface JobClass {
 	public void instantiate(JobRun jobRun);
 	
 	public void runJob() throws TermServerScriptException;
+	
+	public String getReportName();
+
+	public void setExclusions(String[] exclusions) throws TermServerScriptException;
+
+	public void setReportManager(ReportManager reportManager);
 }

@@ -148,8 +148,8 @@ public class SUBST11_RNA_Renaming extends BatchFix {
 						replacement = replaceDescription(t, c, d, usPT, InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
 						replacement.setAcceptabilityMap(SnomedUtils.createPreferredAcceptableMap(US_ENG_LANG_REFSET, GB_ENG_LANG_REFSET));
 						
-						Description replacementGb = Description.withDefaults(gbPT, DescriptionType.SYNONYM, null);
-						replacementGb.setAcceptabilityMap(SnomedUtils.createPreferredAcceptableMap(GB_ENG_LANG_REFSET, US_ENG_LANG_REFSET));
+						Map<String, Acceptability> acceptablity = SnomedUtils.createPreferredAcceptableMap(GB_ENG_LANG_REFSET, US_ENG_LANG_REFSET);
+						Description replacementGb = Description.withDefaults(gbPT, DescriptionType.SYNONYM, acceptablity);
 						addDescription(t, c, replacementGb);
 						changesMade++;
 					}

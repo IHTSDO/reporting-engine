@@ -12,9 +12,9 @@ import org.ihtsdo.otf.rest.client.Status;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.*;
-import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.snomed.otf.scheduler.domain.JobParameters;
 import org.snomed.otf.scheduler.domain.JobRun;
 
 import us.monoid.json.*;
@@ -60,6 +60,10 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			this.scaClient = clone.scaClient;
 		}
 		this.headers = "TASK_KEY, TASK_DESC, SCTID, FSN, CONCEPT_TYPE, SEVERITY, ACTION_TYPE, ";
+	}
+	
+	public void runJob() throws TermServerScriptException {
+		processFile();
 	}
 	
 	protected List<Component> processFile() throws TermServerScriptException {
@@ -366,6 +370,8 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	
 	protected void init (JobRun jobRun) throws TermServerScriptException {
 		super.init(jobRun);
+		TermServerScript.dryRun = !jobRun.getParamValue(DRY_RUN).equals("N");
+		taskSize = Integer.parseInt(jobRun.getMandatoryParamValue(CONCEPTS_PER_TASK));
 		author_reviewer = new String[] { jobRun.getUser() };
 	}
 
@@ -423,6 +429,15 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			}
 		}
 		
+		try {
+			super.init(args);
+		} catch (Exception e) {
+			throw new TermServerScriptException("Unable to initialise batch fix",e);
+		}
+	}
+	
+	protected void checkSettingsWithUser(JobRun jobRun) throws TermServerScriptException {
+		super.checkSettingsWithUser(jobRun);
 		print ("Number of concepts per task [" + taskSize + "]: ");
 		String response = STDIN.nextLine().trim();
 		if (!response.isEmpty()) {
@@ -446,18 +461,20 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			}
 		}
 
-		try {
-			super.init(args);
-		} catch (Exception e) {
-			throw new TermServerScriptException("Unable to initialise batch fix",e);
-		}
-		
 		if (!selfDetermining && inputFile == null) {
-			throw new TermServerScriptException("No valid batch import file detected in command line arguments");
+			if (jobRun.getParamValue(INPUT_FILE) != null) {
+				inputFile = new File(jobRun.getParamValue(INPUT_FILE));
+			} else {
+				throw new TermServerScriptException("No valid batch import file detected in command line arguments");
+			}
 		}
 		
 		if (targetAuthor == null) {
-			throw new TermServerScriptException("No target author detected in command line arguments");
+			if (jobRun.getParamValue(AUTHOR) != null) {
+				targetAuthor = jobRun.getParamValue(AUTHOR);
+			} else {
+				throw new TermServerScriptException("No target author detected in command line arguments");
+			}
 		} else {
 			if (targetReviewer != null) {
 				author_reviewer = new String[] { targetAuthor, targetReviewer };
@@ -1243,6 +1260,14 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	protected List<Component> loadLine(String[] lineItems)
 			throws TermServerScriptException {
 		throw new NotImplementedException("This class self determines concepts to process");
+	}
+	
+	public void setStandardParameters(JobParameters param) {
+		
+	}
+	
+	public void recoverStandardParameter(JobRun run) {
+		
 	}
 
 }

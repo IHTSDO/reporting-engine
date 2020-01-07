@@ -821,6 +821,22 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 			parents.add(parentRel.getTarget());
 		}
 	}
+	
+	public boolean hasParent(Concept parent) {
+		return hasParent(parent, CharacteristicType.STATED_RELATIONSHIP);
+	}
+	
+	public boolean hasParent(Concept parent, CharacteristicType charType) {
+		return getParents(charType).contains(parent);
+	}
+	
+	public Concept getFirstParent() {
+		Iterator<Concept> i = getParents(CharacteristicType.STATED_RELATIONSHIP).iterator();
+		if (i.hasNext()) {
+			return getParents(CharacteristicType.STATED_RELATIONSHIP).iterator().next();
+		}
+		return null;
+	}
 
 	public List<String>getAssertionFailures() {
 		return assertionFailures;

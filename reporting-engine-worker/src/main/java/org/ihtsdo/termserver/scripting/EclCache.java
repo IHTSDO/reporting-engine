@@ -6,6 +6,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.TermServerClient;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.ConceptCollection;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.springframework.util.StringUtils;
 
 import com.google.gson.Gson;
@@ -54,7 +55,7 @@ public class EclCache {
 	
 	protected Collection<Concept> findConcepts(String branch, String ecl, boolean expectLargeResults, boolean useLocalStoreIfSimple) throws TermServerScriptException {
 		ecl = ecl.trim();
-		String machineEcl = org.ihtsdo.termserver.scripting.util.StringUtils.makeMachineReadable(ecl);
+		String machineEcl = SnomedUtils.makeMachineReadable(ecl);
 		Collection<Concept> allConcepts;
 		
 		//Have we already recovered this ECL?
@@ -121,7 +122,7 @@ public class EclCache {
 			isSimple = false;
 		} else {
 			//Need to strip out all FSNs that might contain odd characters
-			ecl = org.ihtsdo.termserver.scripting.util.StringUtils.makeMachineReadable(ecl);
+			ecl = SnomedUtils.makeMachineReadable(ecl);
 			if (ecl.contains("{") || ecl.contains(",") || ecl.contains("^") || ecl.contains("(") ||
 					ecl.contains(" AND ") || ecl.contains(":")) {
 				isSimple = false;

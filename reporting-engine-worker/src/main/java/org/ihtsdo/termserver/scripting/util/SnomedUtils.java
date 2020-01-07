@@ -91,6 +91,21 @@ public class SnomedUtils implements RF2Constants {
 		throw new TermServerScriptException("Unable to translate Acceptability " + a);
 	}
 	
+	public static Acceptability translateAcceptabilityFromChar (char a) throws TermServerScriptException {
+		if (a == 'P') {
+			return Acceptability.PREFERRED;
+		}
+		
+		if (a == 'A') {
+			return Acceptability.ACCEPTABLE;
+		}
+		
+		if (a == 'N') {
+			return null;
+		}
+		throw new TermServerScriptException("Unable to translate Acceptability " + a);
+	}
+	
 	public static Acceptability translateAcceptability(String sctid) throws TermServerScriptException {
 		if (sctid.equals(SCTID_ACCEPTABLE_TERM)) {
 			return Acceptability.ACCEPTABLE;
@@ -1323,10 +1338,12 @@ public class SnomedUtils implements RF2Constants {
 		return true;
 	}
 	
-	public static String makeMachineReadable (String str) {
-		StringBuffer sb = new StringBuffer(str);
-		makeMachineReadable(sb);
-		return sb.toString();
+	public static String makeMachineReadable (String exp) {
+		StringBuffer hrExp = new StringBuffer(exp);
+		makeMachineReadable(hrExp);
+		exp = hrExp.toString();
+		exp = exp.replaceAll("OR", " OR ").replaceAll("AND", " AND ");
+		return exp;
 	}
 	
 	public static void makeMachineReadable (StringBuffer hrExp) {

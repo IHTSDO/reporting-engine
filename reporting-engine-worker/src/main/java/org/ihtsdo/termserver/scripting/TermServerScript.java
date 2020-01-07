@@ -10,10 +10,9 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.lang.time.DurationFormatUtils;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.client.authoringservices.AuthoringServicesClient;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Project;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.termserver.job.JobClass;
 import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.dao.RF2Manager;
 import org.ihtsdo.termserver.scripting.dao.ReportManager;
@@ -51,7 +50,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected String authenticatedCookie;
 	protected Resty resty = new Resty();
 	protected Project project;
-	public static final int maxFailures = 5;
+	protected int maxFailures = 5;
 	protected int restartPosition = NOT_SET;
 	protected int processingLimit = NOT_SET;
 	private Date startTime;
@@ -94,8 +93,13 @@ public abstract class TermServerScript implements RF2Constants {
 	protected String tsRoot = "MAIN/"; //"MAIN/2016-01-31/SNOMEDCT-DK/";
 	public static final String EXPECTED_PROTOCOL = "https://";
 	
+	
+	protected static final String AUTHOR = "Author";
+	public static final String Reviewer = "Reviewer";
+	public static final String CONCEPTS_PER_TASK = "Concepts per task";
+	public static final String FILE = "File";
 	public static final String PROJECT = "Project";
-	protected static final String DRY_RUN = "DryRun";
+	protected static final String DRY_RUN = "Dry Run";
 	protected static final String INPUT_FILE = "InputFile";
 	protected static final String SUB_HIERARCHY = "Subhierarchy";
 	protected static final String ATTRIBUTE_TYPE = "Attribute Type";
@@ -483,7 +487,6 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	protected void runJob () throws TermServerScriptException {
-		//TODO Make this abstract so that all classes pick it up
 		throw new TermServerScriptException("Override this method in concrete class");
 	}
 	
@@ -504,6 +507,11 @@ public abstract class TermServerScript implements RF2Constants {
 				jobRun.setParameter(DRY_RUN, args[i+1]);
 			} else if (args[i].equals("-f")) {
 				jobRun.setParameter(INPUT_FILE, args[i+1]);
+			} else if (args[i].equals("-a")) {
+				jobRun.setParameter(AUTHOR, args[i+1]);
+				jobRun.setUser(args[i+1]);
+			} else if (args[i].equals("-n")) {
+				jobRun.setParameter(CONCEPTS_PER_TASK, args[i+1]);
 			} else if (args[i].equals("-c")) {
 				jobRun.setAuthToken(args[i+1]);
 			}
@@ -729,14 +737,14 @@ public abstract class TermServerScript implements RF2Constants {
 			} catch (Exception e) {
 				attempt++;
 				String msg = "Failed to create " + c + " in TS due to " + e.getMessage();
-				if (attempt < 2) {
+				if (attempt <= 2) {
 					incrementSummaryInformation("Concepts creation exceptions");
 					warn (msg + " retrying...");
-					try {
-						Thread.sleep(30 * 1000);
+					/*try {
+						//Thread.sleep(30 * 1000);
 					} catch(InterruptedException ie) {
 						throw new TermServerScriptException("Interruption during recovery of :" + msg ,e);
-					}
+					}*/
 				} else {
 					throw new TermServerScriptException(msg ,e);
 				}
@@ -758,6 +766,11 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 
 	private void convertStatedRelationshipsToAxioms(Concept c) {
+		//We might have already done this if an error condition has occurred.
+		//Skip if there are not stated relationships
+		if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE).size() == 0) {
+			return;
+		}
 		for (Axiom a : c.getClassAxioms()) {
 			a.clearRelationships();
 		}
@@ -1102,12 +1115,16 @@ public abstract class TermServerScript implements RF2Constants {
 	
 	private synchronized void recordSummaryText(String msg) {
 		info (msg);
-		if (includeSummaryTab) {
-			try {
-				writeToReportFile (SECONDARY_REPORT, msg);
-			} catch (Exception e) {
-				error ("Failed to write summary info: " + msg, e);
+		if (getReportManager() != null) {
+			if (includeSummaryTab) {
+				try {
+					writeToReportFile (SECONDARY_REPORT, msg);
+				} catch (Exception e) {
+					error ("Failed to write summary info: " + msg, e);
+				}
 			}
+		} else {
+			info ("Unable to report: " + msg);
 		}
 	}
 	
@@ -1444,6 +1461,23 @@ public abstract class TermServerScript implements RF2Constants {
 			return !project.getMetadata().getDefaultModuleId().equals(SCTID_CORE_MODULE);
 		}
 		return false;
+	}
+	
+	public static void run(Class<? extends JobClass> jobClazz, String[] args, Map<String, String> parameters) throws TermServerScriptException {
+		JobRun jobRun = createJobRunFromArgs(jobClazz.getSimpleName(), args);
+		if (parameters != null) {
+			for (Map.Entry<String, String> entry : parameters.entrySet()) {
+				jobRun.setParameter(entry.getKey(), entry.getValue());
+			}
+		}
+		JobClass job = null;
+		try {
+			job = jobClazz.newInstance();
+			((TermServerScript)job).checkSettingsWithUser(jobRun);
+		} catch ( InstantiationException | IllegalAccessException e) {
+			throw new TermServerScriptException("Unable to instantiate " + jobClazz.getSimpleName(), e);
+		}
+		job.instantiate(jobRun);
 	}
 	
 }
