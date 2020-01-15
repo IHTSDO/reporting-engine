@@ -57,9 +57,11 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 	
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] { "SCTID, FSN, Semtag, Issue, Details",
-				"Issue, Count"};
+				"Issue, Count",
+				"SCTID, FSN, Semtag, Lost Concepts"};
 		String[] tabNames = new String[] {	"Issues",
-				"Summary"};
+				"Summary",
+				"Pattern 11 Detail"};
 		cache = gl.getAncestorsCache();
 		super.postInit(tabNames, columnHeadings, false);
 	}
@@ -287,6 +289,10 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 						String stats = previousCount + " -> " + newCount + " (-" + lostActive.size() + ")";
 						report (c, issueStr, toString(newPrimitiveParents), "inferred descendants", 
 								stats, "eg", lostActive.get(0));
+						String lostConceptsStr = lostActive.stream()
+								.map(l -> l.toString())
+								.collect(Collectors.joining(",\n"));
+						report(TERTIARY_REPORT, c, lostConceptsStr);
 					}
 				}
 			}
