@@ -289,10 +289,9 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 						String stats = previousCount + " -> " + newCount + " (-" + lostActive.size() + ")";
 						report (c, issueStr, toString(newPrimitiveParents), "inferred descendants", 
 								stats, "eg", lostActive.get(0));
-						String lostConceptsStr = lostActive.stream()
-								.map(l -> l.toString())
-								.collect(Collectors.joining(",\n"));
-						report(TERTIARY_REPORT, c, lostConceptsStr);
+						for (Concept lostConcept : lostActive) {
+							report(TERTIARY_REPORT, c, lostConcept);
+						}
 					}
 				}
 			}
