@@ -58,7 +58,7 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] { "SCTID, FSN, Semtag, Issue, Details",
 				"Issue, Count",
-				"SCTID, FSN, Semtag, Lost Concepts"};
+				"SCTID, FSN, Semtag, Lost Concept Id, Lost Concept FSN"};
 		String[] tabNames = new String[] {	"Issues",
 				"Summary",
 				"Pattern 11 Detail"};
@@ -290,7 +290,7 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 						report (c, issueStr, toString(newPrimitiveParents), "inferred descendants", 
 								stats, "eg", lostActive.get(0));
 						for (Concept lostConcept : lostActive) {
-							report(TERTIARY_REPORT, c, lostConcept);
+							report(TERTIARY_REPORT, c, lostConcept.getConceptId(), lostConcept.getFsn());
 						}
 					}
 				}
