@@ -1,0 +1,7 @@
+{
+  "name": "Secondary malignant neoplasm",
+  "documentation": "https://confluence.ihtsdotools.org/display/SCTEMPLATES/Secondary+malignant+neoplasm+of+%5Bbody+structure%5D+-+Ready+for+implementation",
+  "version": 1,
+  "domain": "<<128462008 |Secondary malignant neoplastic disease (disorder)|",
+  "logicalTemplate": "64572001|Disease (disorder)| : [[~0..1]] { [[~0..1]]  263502005 |Clinical course (attribute)| = [[ +id (< 288524001 |Courses (qualifier value)|) @course]] }, [[~1..1]]{ [[~1..1]] 116676008 |Associated morphology(attribute)| = [[+id(<< 14799000 |Neoplasm, metastatic (morphologic abnormality)| ) @morphology ]], [[~0..1]] 363698007 |Finding site (attribute)| = [[+id(< 123037004 |Body structure (body structure)|)]], [[~0..1]] 246454002 |Occurrence (attribute)| = [[ +id(< 282032007 |Periods of life (qualifier value)|) @occur]] }"
+}
