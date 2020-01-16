@@ -370,8 +370,12 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	
 	protected void init (JobRun jobRun) throws TermServerScriptException {
 		super.init(jobRun);
-		TermServerScript.dryRun = !jobRun.getParamValue(DRY_RUN).equals("N");
-		taskSize = Integer.parseInt(jobRun.getMandatoryParamValue(CONCEPTS_PER_TASK));
+		if (jobRun.getParamValue(DRY_RUN) != null) {
+			TermServerScript.dryRun = !jobRun.getParamValue(DRY_RUN).equals("N");
+		}
+		if (jobRun.getParamValue(CONCEPTS_PER_TASK) != null) {
+			taskSize = Integer.parseInt(jobRun.getParamValue(CONCEPTS_PER_TASK));
+		}
 		author_reviewer = new String[] { jobRun.getUser() };
 	}
 
@@ -1152,16 +1156,37 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	}
 	
 	protected int checkAndSetProximalPrimitiveParent(Task t, Concept c, Concept newPPP) throws TermServerScriptException {
+		return checkAndSetProximalPrimitiveParent(t, c, newPPP, false);
+	}
+	
+	protected int checkAndSetProximalPrimitiveParent(Task t, Concept c, Concept newPPP, boolean checkOnly) throws TermServerScriptException {
 		int changesMade = 0;
+		
+		//Do we in fact need to make any changes here?
+		Set<Concept> existingParents = c.getParents(CharacteristicType.STATED_RELATIONSHIP);
+		if (existingParents.size() == 1 && existingParents.contains(newPPP)) {
+			if (checkOnly) {
+				report (t, c, Severity.NONE, ReportActionType.NO_CHANGE, "Single stated parent is already as required - " + newPPP);
+			}
+			return NO_CHANGES_MADE;
+		}
+		
 		List<Concept> ppps = determineProximalPrimitiveParents(c);
-
 		if (ppps.size() != 1) {
-			report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept found to have " + ppps.size() + " proximal primitive parents.  Cannot state parent as: " + newPPP);
+			String pppsStr = ppps.stream()
+					.map(p -> p.toString())
+					.collect(Collectors.joining(",\n"));
+			report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept found to have " + ppps.size() + " proximal primitive parents.  Cannot state parent as: " + newPPP, pppsStr);
 		} else {
 			Concept ppp = ppps.get(0);
 			//We need to either calculate the ppp as the intended one, or higher than it eg calculated PPP of Disease is OK if we're setting the more specific "Complication"
 			if (ppp.equals(newPPP) || gl.getAncestorsCache().getAncestors(newPPP).contains(ppp)) {
-				changesMade += setProximalPrimitiveParent(t, c, newPPP);
+				if (!checkOnly) {
+					changesMade += setProximalPrimitiveParent(t, c, newPPP);
+				} else {
+					//If we're just checking, then yes we think we'd have made changes here
+					return CHANGE_MADE;
+				}
 			} else {
 				report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Calculated PPP " + ppp + " does not match that suggested by template: " + newPPP + ", cannot remodel.");
 			}
