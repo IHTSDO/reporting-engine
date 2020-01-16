@@ -473,11 +473,7 @@ public abstract class TermServerScript implements RF2Constants {
 				jobRun.setIssuesReported(issueCount);
 			}
 		} catch (Exception e) {
-			String reason = e.getMessage();
-			if (reason == null) {
-				reason = e.getClass().getSimpleName();
-			}
-			String msg = "Failed to complete " + jobRun.getJobName() + " due to: " + reason;
+			String msg = "Failed to complete " + jobRun.getJobName() + getExceptionCause("", e);
 			jobRun.setStatus(JobStatus.Failed);
 			jobRun.setDebugInfo(msg);
 			error(msg, e);
@@ -486,6 +482,19 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 	}
 	
+	private String getExceptionCause(String msg, Throwable t) {
+		msg += " due to: ";
+		String reason = t.getMessage();
+		if (reason == null) {
+			reason = t.getClass().getSimpleName();
+		}
+		msg += reason;
+		if (t.getCause() != null) {
+			msg = getExceptionCause(msg, t.getCause());
+		}
+		return msg;
+	}
+
 	protected void runJob () throws TermServerScriptException {
 		throw new TermServerScriptException("Override this method in concrete class");
 	}
@@ -978,6 +987,10 @@ public abstract class TermServerScript implements RF2Constants {
 
 	public Project getProject() {
 		return project;
+	}
+	
+	public void setProject(Project project) {
+		this.project = project;
 	}
 
 	public void startTimer() {
