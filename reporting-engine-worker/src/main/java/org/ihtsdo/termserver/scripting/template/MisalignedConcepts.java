@@ -363,11 +363,15 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		//inclusionWords.add("disorder");
 		templateNames = new String[] { "templates/Bleeding - finding.json"};
 		inclusionWords.add("finding");
-		*/
+		
 		subHierarchyECL = "<<  129156001 |Traumatic dislocation of joint (disorder)|";
 		templateNames = new String[] { "templates/Traumatic dislocation of joint.json",
 				"templates/fracture/Fracture Dislocation of Bone Structure.json"};
 		includeComplexTemplates = true;
+		*/
+		subHierarchyECL = "<< 5294002 |Developmental disorder (disorder)| MINUS << 276654001 |Congenital malformation (disorder)|";
+		templateNames = new String[] { "templates/Developmental disorder.json"};
+		
 		super.init(args);
 	
 		//Ensure our ECL matches more than 0 concepts before we import SNOMED - expensive!
