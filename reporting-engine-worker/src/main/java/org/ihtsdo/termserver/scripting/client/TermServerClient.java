@@ -412,13 +412,16 @@ public class TermServerClient {
 			JSONResource jsonResponse = resty.json(url + "/exports", RestyHelper.content(jsonObj, SNOWOWL_CONTENT_TYPE));
 			Object exportLocationURLObj = jsonResponse.getUrlConnection().getHeaderField("Location");
 			if (exportLocationURLObj == null) {
-				throw new TermServerScriptException("Failed to obtain location of export:");
+				String actualResponse = "Unable to parse response";
+				try {
+					actualResponse = jsonResponse.toObject().toString();
+				} catch (Exception e) {}
+				throw new TermServerScriptException("Failed to obtain location of export.  Instead received: " + actualResponse);
 			} else {
 				logger.info ("Export location recovered: {}",exportLocationURLObj.toString());
 			}
 			return exportLocationURLObj.toString() + "/archive";
 		} catch (Exception e) {
-			// TODO Change this to catch JSONException once Resty no longer throws Exceptions
 			throw new TermServerScriptException("Failed to initiate export", e);
 		}
 	}
