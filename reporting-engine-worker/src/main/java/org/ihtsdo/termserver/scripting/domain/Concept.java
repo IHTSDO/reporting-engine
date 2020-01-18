@@ -1394,4 +1394,15 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		return differences;
 	}
 
+/*	public List<Axiom> getAllAxioms() {
+		List<Axiom> axioms = getClassAxioms();
+		if (gciAxioms != null) {
+			axioms.addAll(getGciAxioms());
+		}
+		if (additionalAxioms != null) {
+			axioms.addAll(getAdditionalAxioms());
+		}
+		return axioms;
+	}*/
+
 }

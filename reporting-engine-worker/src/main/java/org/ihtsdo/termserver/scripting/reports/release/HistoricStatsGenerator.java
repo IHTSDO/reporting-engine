@@ -4,9 +4,11 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.job.ReportClass;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TransitiveClosure;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
@@ -28,6 +30,10 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
   * */
 public class HistoricStatsGenerator extends TermServerReport implements ReportClass {
 	
+	public HistoricStatsGenerator(TermServerScript ts) {
+		project = ts.getProject();
+	}
+
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		TermServerReport.run(HistoricStatsGenerator.class, args, params);
@@ -61,7 +67,7 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 			debug ("Determining all IPs");
 			Set<Concept> IPs = identifyIntermediatePrimitives(gl.getAllConcepts(), CharacteristicType.INFERRED_RELATIONSHIP);
 		
-			debug ("Outputting Data");
+			debug ("Outputting Data to " + f.getAbsolutePath());
 			for (Concept c : gl.getAllConcepts()) {
 				String active = c.isActive() ? "Y" : "N";
 				String defStatus = SnomedUtils.translateDefnStatus(c.getDefinitionStatus());
@@ -69,7 +75,13 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 				String IP = IPs.contains(c) ? "Y" : "N";
 				String sdDescendant = hasSdDescendant(tc, c);
 				String sdAncestor = hasSdAncestor(tc, c);
-				ouput(fw, c.getConceptId(), active, defStatus, hierarchy, IP, sdDescendant, sdAncestor);
+				String relIds = getRelIds(c);
+				String descIds = getDescIds(c);
+				String axiomIds = getAxiomIds(c);
+				String langRefSetIds = getLangRefsetIds(c);
+				String inactivationIds = getInactivationIds(c);
+				String histAssocIds = getHistAssocIds(c);
+				ouput(fw, c.getConceptId(), active, defStatus, hierarchy, IP, sdDescendant, sdAncestor, relIds, descIds, axiomIds, langRefSetIds, inactivationIds, histAssocIds);
 			}
 		} catch (Exception e) {
 			throw new TermServerScriptException(e);
@@ -80,6 +92,51 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 				e.printStackTrace();
 			}
 		}
+	}
+
+	private String getRelIds(Concept c) {
+		return c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)
+		.stream()
+		.map(r -> r.getId())
+		.collect(Collectors.joining(","));
+	}
+	
+	private String getDescIds(Concept c) {
+		return c.getDescriptions(ActiveState.ACTIVE)
+		.stream()
+		.map(d -> d.getId())
+		.collect(Collectors.joining(","));
+	}
+	
+	private String getAxiomIds(Concept c) {
+		return c.getAxiomEntries().stream()
+		.filter(a -> a.isActive())
+		.map(d -> d.getId())
+		.collect(Collectors.joining(","));
+	}
+	
+	private String getLangRefsetIds(Concept c) {
+		List<String> langRefsetIds = new ArrayList<>();
+		for (Description d : c.getDescriptions()) {
+			for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.ACTIVE)) {
+				langRefsetIds.add(l.getId());
+			}
+		}
+		return String.join(",", langRefsetIds);
+	}
+	
+	private String getInactivationIds(Concept c) {
+		return c.getInactivationIndicatorEntries(ActiveState.ACTIVE)
+		.stream()
+		.map(i -> i.getId())
+		.collect(Collectors.joining(","));
+	}
+	
+	private String getHistAssocIds(Concept c) {
+		return c.getAssociations(ActiveState.ACTIVE)
+		.stream()
+		.map(h -> h.getId())
+		.collect(Collectors.joining(","));
 	}
 
 	private String getHierarchy(TransitiveClosure tc, Concept c) throws TermServerScriptException {

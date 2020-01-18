@@ -55,6 +55,9 @@ public class ReportSheetManager implements RF2Constants {
 		if (!this.owner.getScript().safetyProtocolsEnabled()) {
 			MAX_ROWS = 99999;
 			setMaxColumns(11);
+		} else if (this.owner.getScript().getManyTabOutput()) {
+			MAX_ROWS = 9999;
+			setMaxColumns(DEFAULT_MAX_COLUMNS);
 		} else {
 			MAX_ROWS = DEFAULT_MAX_ROWS;
 			setMaxColumns(DEFAULT_MAX_COLUMNS);

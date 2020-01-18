@@ -5,7 +5,6 @@ import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.job.ReportClass;
-import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.StringUtils;
@@ -114,7 +113,7 @@ public class HistoricStatsAnalyzer extends TermServerReport implements ReportCla
 						datum.hierarchy = "54690008 |Unknown (origin) (qualifier value)|";
 					}
 					
-					//Have we seen this hierarhcy before?
+					//Have we seen this hierarchy before?
 					Map<Long, Datum> thisHierarchy = thisData.get(datum.hierarchy);
 					if (thisHierarchy == null) {
 						thisHierarchy = new HashMap<>();

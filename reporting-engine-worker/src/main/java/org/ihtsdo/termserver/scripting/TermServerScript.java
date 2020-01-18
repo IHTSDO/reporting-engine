@@ -62,6 +62,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected String projectName;
 	private String reportName;
 	protected boolean safetyProtocols = true;  //Switch off to bypass all limits
+	protected boolean manyTabOutput = false;
 	protected boolean includeSummaryTab = false;
 	protected boolean reportNullConcept = true;
 	
@@ -1322,8 +1323,8 @@ public abstract class TermServerScript implements RF2Constants {
 		boolean isFirst = true;
 		for (Object detail : details) {
 			String prefix = isFirst ? QUOTE : COMMA_QUOTE;
-			isFirst = false;
 			if (detail instanceof String[]) {
+				isFirst = false;
 				boolean isNestedFirst = true;
 				String[] arr = (String[]) detail;
 				for (String str : arr) {
@@ -1331,6 +1332,17 @@ public abstract class TermServerScript implements RF2Constants {
 					sb.append(prefix + str + QUOTE);
 					isNestedFirst = false;
 				}
+			} else if (detail instanceof int[]) {
+				prefix = isFirst ? "" : COMMA;
+				isFirst = false;
+				boolean isNestedFirst = true;
+				int[] arr = (int[]) detail;
+				for (int i : arr) {
+					sb.append(isNestedFirst?"":COMMA);
+					sb.append(prefix + i );
+					isNestedFirst = false;
+				}
+				
 			} else {
 				sb.append(prefix + detail + QUOTE);
 			}
@@ -1491,6 +1503,10 @@ public abstract class TermServerScript implements RF2Constants {
 			throw new TermServerScriptException("Unable to instantiate " + jobClazz.getSimpleName(), e);
 		}
 		job.instantiate(jobRun);
+	}
+
+	public boolean getManyTabOutput() {
+		return manyTabOutput;
 	}
 	
 }

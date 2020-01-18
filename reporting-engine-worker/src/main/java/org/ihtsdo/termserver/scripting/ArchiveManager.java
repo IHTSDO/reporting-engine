@@ -314,14 +314,19 @@ public class ArchiveManager implements RF2Constants {
 		}
 		
 		//Now we need a recent delta to add to it
-		File delta = File.createTempFile("delta_export-", ".zip");
-		delta.deleteOnExit();
-		ts.getTSClient().export(project.getBranchPath(), null, ExportType.UNPUBLISHED, ExtractType.DELTA, delta);
+		File delta = generateDelta(project);
 		SnapshotGenerator snapshotGenerator = new SnapshotGenerator();
 		snapshotGenerator.setProject(ts.getProject());
 		snapshotGenerator.leaveArchiveUncompressed();
 		snapshotGenerator.setOutputDirName(snapshot.getPath());
 		snapshotGenerator.generateSnapshot(dependency, previous, delta, snapshot);
+	}
+	
+	public File generateDelta(Project project) throws IOException, TermServerScriptException {
+		File delta = File.createTempFile("delta_export-", ".zip");
+		delta.deleteOnExit();
+		ts.getTSClient().export(project.getBranchPath(), null, ExportType.UNPUBLISHED, ExtractType.DELTA, delta);
+		return delta;
 	}
 
 	private void ensureProjectMetadataPopulated(Project project) throws TermServerScriptException {
@@ -347,7 +352,11 @@ public class ArchiveManager implements RF2Constants {
 
 	private File getSnapshotPath() {
 		if (loadEditionArchive || StringUtils.isNumeric(ts.getProject().getKey())) {
-			return new File (dataStoreRoot + "releases/" + ts.getProject() + ".zip");
+			String fileExt = ".zip";
+			if (ts.getProject().getKey().endsWith(fileExt)) {
+				fileExt = "";
+			}
+			return new File (dataStoreRoot + "releases/" + ts.getProject() + fileExt);
 		} else {
 			//Do we have a release effective time as a project?  Or a branch release
 			String releaseBranch = detectReleaseBranch(ts.getProject().getKey());
