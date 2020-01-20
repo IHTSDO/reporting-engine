@@ -1324,7 +1324,6 @@ public abstract class TermServerScript implements RF2Constants {
 		for (Object detail : details) {
 			String prefix = isFirst ? QUOTE : COMMA_QUOTE;
 			if (detail instanceof String[]) {
-				isFirst = false;
 				boolean isNestedFirst = true;
 				String[] arr = (String[]) detail;
 				for (String str : arr) {
@@ -1334,7 +1333,6 @@ public abstract class TermServerScript implements RF2Constants {
 				}
 			} else if (detail instanceof int[]) {
 				prefix = isFirst ? "" : COMMA;
-				isFirst = false;
 				boolean isNestedFirst = true;
 				int[] arr = (int[]) detail;
 				for (int i : arr) {
@@ -1346,6 +1344,7 @@ public abstract class TermServerScript implements RF2Constants {
 			} else {
 				sb.append(prefix + detail + QUOTE);
 			}
+			isFirst = false;
 		}
 		
 		//Have we whiteListed this concept?

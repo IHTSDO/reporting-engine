@@ -7,7 +7,7 @@ import java.util.stream.Collectors;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.AncestorsCache;
-import org.ihtsdo.termserver.scripting.DescendentsCache;
+import org.ihtsdo.termserver.scripting.DescendantsCache;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
@@ -27,7 +27,7 @@ public class AttributeValueCounts extends TermServerReport implements ReportClas
 	Concept targetAttributeType;
 	String ignoreConceptsECL;
 	AncestorsCache ancestorCache;
-	DescendentsCache descendentCache;
+	DescendantsCache descendentCache;
 	AtomicLongMap<Concept> valueCounts = AtomicLongMap.create();
 	AtomicLongMap<Concept> valueCountsFiltered = AtomicLongMap.create();
 	Set<Concept> alreadyReported = new HashSet<>();

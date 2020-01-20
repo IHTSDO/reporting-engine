@@ -4,6 +4,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -317,7 +318,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		List<Relationship> rels = getRelationships(r.getCharacteristicType(), r.getType(), r.getTarget(), groupId, ActiveState.ACTIVE);
 		if (rels == null || rels.size() == 0) {
 			return null;
-		} else if (rels.size() > 1) {
+		} else if (groupId != NOT_SET && rels.size() > 1) {
 			throw new IllegalArgumentException(this + " group " + groupId + " contained > 1 " + r);
 		}
 		return rels.get(0);
@@ -335,7 +336,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		List<Relationship> potentialMatches = getRelationships(characteristicType, activeState);
 		List<Relationship> matches = new ArrayList<Relationship>();
 		for (Relationship r : potentialMatches) {
-			if (r.getType().equals(type)) {
+			if (type == null || r.getType().equals(type)) {
 				matches.add(r);
 			}
 		}
@@ -345,7 +346,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	public List<Relationship> getRelationships(CharacteristicType charType, Concept[] targets, ActiveState state) {
 		List<Relationship> matchingRels = new ArrayList<>();
 		for (Concept target : targets) {
-			matchingRels.addAll(getRelationships(charType, target, state));
+			matchingRels.addAll(getRelationships(charType, null, target, state));
 		}
 		return matchingRels;
 	}
@@ -354,7 +355,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		List<Relationship> potentialMatches = getRelationships(characteristicType, type, activeState);
 		List<Relationship> matches = new ArrayList<Relationship>();
 		for (Relationship r : potentialMatches) {
-			if (r.getTarget().equals(target)) {
+			if (target == null || r.getTarget().equals(target)) {
 				matches.add(r);
 			}
 		}
@@ -365,7 +366,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		List<Relationship> potentialMatches = getRelationships(characteristicType, type, target, activeState);
 		List<Relationship> matches = new ArrayList<Relationship>();
 		for (Relationship r : potentialMatches) {
-			if (r.getGroupId() == groupId) {
+			if (groupId == NOT_SET || r.getGroupId() == groupId) {
 				matches.add(r);
 			}
 		}
@@ -1392,6 +1393,18 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 			differences.add("Definition Status is different in " + name + ": " + this.getDefinitionStatus() + " vs " + otherConcept.getDefinitionStatus());
 		}
 		return differences;
+	}
+	
+	public List<Description> findDescriptionsContaining(String targetWord) {
+		return findDescriptionsContaining(Collections.singletonList(targetWord));
+	}
+
+	public List<Description> findDescriptionsContaining(List<String> targetWords) {
+		return descriptions.stream()
+				.filter(d -> d.isActive())
+				.filter(d -> targetWords.stream()
+						.anyMatch(w -> StringUtils.containsIgnoreCase(d.getTerm(), w)))
+				.collect(Collectors.toList());
 	}
 
 /*	public List<Axiom> getAllAxioms() {

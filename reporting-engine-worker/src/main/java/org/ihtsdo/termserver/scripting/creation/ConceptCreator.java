@@ -3,7 +3,7 @@ package org.ihtsdo.termserver.scripting.creation;
 import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.DescendentsCache;
+import org.ihtsdo.termserver.scripting.DescendantsCache;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
@@ -13,7 +13,7 @@ public abstract class ConceptCreator implements RF2Constants {
 	ConceptCreationPattern conceptPattern;
 	List<String> inspirations = new ArrayList<>();
 	GraphLoader gl = GraphLoader.getGraphLoader();
-	DescendentsCache cache = DescendentsCache.getDescendentsCache();
+	DescendantsCache cache = DescendantsCache.getDescendentsCache();
 	private Map<String, Concept> anatomyMap = null;
 	
 	static final String SEMTAG_BODY = "(body structure)";

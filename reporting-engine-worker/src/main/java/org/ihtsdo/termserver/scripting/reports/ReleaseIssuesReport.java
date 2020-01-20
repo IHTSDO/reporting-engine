@@ -9,7 +9,7 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.AxiomUtils;
-import org.ihtsdo.termserver.scripting.DescendentsCache;
+import org.ihtsdo.termserver.scripting.DescendantsCache;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -60,7 +60,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	boolean includeLegacyIssues = false;
 	private static final int MIN_TEXT_DEFN_LENGTH = 12;
 	private Map<String, Integer> issueSummaryMap = new HashMap<>();
-	DescendentsCache cache;
+	DescendantsCache cache;
 	private Set<Concept> deprecatedHierarchies;
 	private String defaultModule = SCTID_CORE_MODULE;
 	

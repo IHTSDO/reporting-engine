@@ -9,20 +9,20 @@ import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
-public class DescendentsCache implements RF2Constants {
+public class DescendantsCache implements RF2Constants {
 
-	private static DescendentsCache singleton = null;
+	private static DescendantsCache singleton = null;
 	
 	Map<Concept, Set<Concept>> descendentCache = new HashMap<>();
 	
-	public static DescendentsCache getDescendentsCache() {
+	public static DescendantsCache getDescendentsCache() {
 		if (singleton == null) {
-			singleton = new DescendentsCache();
+			singleton = new DescendantsCache();
 		}
 		return singleton;
 	}
 	
-	private DescendentsCache() {
+	private DescendantsCache() {
 		//Force use of singleton;
 	}
 	

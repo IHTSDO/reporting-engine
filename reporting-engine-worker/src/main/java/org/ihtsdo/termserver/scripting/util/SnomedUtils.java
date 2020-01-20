@@ -1109,7 +1109,7 @@ public class SnomedUtils implements RF2Constants {
 	
 	public static void removeRedundancies(Set<Concept> concepts) throws TermServerScriptException {
 		Set<Concept> redundant = new HashSet<>();
-		DescendentsCache cache = GraphLoader.getGraphLoader().getDescendantsCache();
+		DescendantsCache cache = GraphLoader.getGraphLoader().getDescendantsCache();
 		//For each concept, it is redundant if any of it's descendants are also present
 		for (Concept concept : concepts) {
 			Set<Concept> descendants = new HashSet<>(cache.getDescendents(concept));
@@ -1394,6 +1394,17 @@ public class SnomedUtils implements RF2Constants {
 			}
 		}
 		return -1;
+	}
+
+	public static boolean containsAttributeOrMoreSpecific(Concept c, RelationshipTemplate targetAttribute, DescendantsCache cache) throws TermServerScriptException {
+		Set<Concept> values = cache.getDescendentsOrSelf(targetAttribute.getTarget());
+		Set<Concept> types = cache.getDescendentsOrSelf(targetAttribute.getType());
+		return c.getRelationships().stream()
+			.filter(r -> r.isActive())
+			.filter(r -> r.getCharacteristicType().equals(targetAttribute.getCharacteristicType()))
+			.filter(r -> r.getTarget() == null || values.contains(r.getTarget()))
+			.filter(r -> r.getType() == null || types.contains(r.getType()))
+			.collect(Collectors.toList()).size() > 0;
 	}
 
 }

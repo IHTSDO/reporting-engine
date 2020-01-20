@@ -6,12 +6,13 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.TermServerClient;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.ConceptCollection;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.springframework.util.StringUtils;
 
 import com.google.gson.Gson;
 
-public class EclCache {
+public class EclCache implements RF2Constants {
 	private static Map <String, EclCache> branchCaches;
 	private static int PAGING_LIMIT = 1000;
 	private static int MAX_RESULTS = 9999;
@@ -55,6 +56,10 @@ public class EclCache {
 	
 	protected Collection<Concept> findConcepts(String branch, String ecl, boolean expectLargeResults, boolean useLocalStoreIfSimple) throws TermServerScriptException {
 		ecl = ecl.trim();
+		//Have we been passed some partial ecl that begins and ends with a bracket?
+		if (ecl.startsWith("(") && ecl.endsWith(")")) {
+			ecl = ecl.substring(1, ecl.length() -1);
+		}
 		String machineEcl = SnomedUtils.makeMachineReadable(ecl);
 		Collection<Concept> allConcepts;
 		
@@ -73,16 +78,32 @@ public class EclCache {
 				TermServerScript.debug ("Recovering cached " + cached.size() + " concepts matching '" + ecl +"'");
 			}
 			return cached;
-		} else if (ecl.contains(" OR ") && !machineEcl.contains("(") && !machineEcl.contains(" AND ")) {
+		} else if (ecl.contains(" MINUS ") || (ecl.contains(" OR ") && !machineEcl.contains("(") && !machineEcl.contains(" AND "))) {
 			//Can this ecl be broken down into cheaper, requestable chunks?  
-			//TODO Create class that holds these collections and can 
-			//iterate through them without copying the objects
-			Collection<Concept> combinedSet = new HashSet<>();
-			for (String eclFragment : ecl.split(" OR ")) {
-				TermServerScript.debug("Combining request for: " + eclFragment);
-				combinedSet.addAll(findConcepts(branch, eclFragment, expectLargeResults, useLocalStoreIfSimple));
+			if (ecl.contains(" MINUS ")) {
+				String[] minusStatements = ecl.split(" MINUS ");
+				//The first one we taken and the all subsequent calls are subtracted
+				allConcepts = new ArrayList<>();
+				boolean isFirst = true;
+				for (String eclPart : minusStatements) {
+					if (isFirst) {
+						//We need a copy of the list here because we're going to remove items from it!
+						allConcepts = new ArrayList<>(findConcepts(branch, eclPart, expectLargeResults, useLocalStoreIfSimple));
+						isFirst = false;
+					} else {
+						allConcepts.removeAll(findConcepts(branch, eclPart, expectLargeResults, useLocalStoreIfSimple));
+					}
+				}
+			} else {
+				//TODO Create class that holds these collections and can 
+				//iterate through them without copying the objects
+				Collection<Concept> combinedSet = new HashSet<>();
+				for (String eclFragment : ecl.split(" OR ")) {
+					TermServerScript.debug("Combining request for: " + eclFragment);
+					combinedSet.addAll(findConcepts(branch, eclFragment, expectLargeResults, useLocalStoreIfSimple));
+				}
+				allConcepts = combinedSet;
 			}
-			allConcepts = combinedSet;
 		} else {
 			if (useLocalStoreIfSimple && ecl.equals("*")) {
 				allConcepts = gl.getAllConcepts();
@@ -90,7 +111,11 @@ public class EclCache {
 				//We might want to modify these sets, so request mutable copies
 				if (ecl.startsWith("<<")) {
 					Concept subhierarchy = gl.getConcept(ecl.substring(2).trim());
-					allConcepts = gl.getDescendantsCache().getDescendentsOrSelf(subhierarchy, true);
+					if (subhierarchy.equals(ROOT_CONCEPT)) {
+						allConcepts = gl.getAllConcepts();
+					} else {
+						allConcepts = gl.getDescendantsCache().getDescendentsOrSelf(subhierarchy, true);
+					}
 				} else if (ecl.startsWith("<")) {
 					Concept subhierarchy = gl.getConcept(ecl.substring(1).trim());
 					allConcepts = gl.getDescendantsCache().getDescendents(subhierarchy, true);

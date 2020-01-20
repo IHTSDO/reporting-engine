@@ -30,7 +30,7 @@ public class GraphLoader implements RF2Constants {
 	private Set<Concept> orphanetConcepts;
 	private AxiomRelationshipConversionService axiomService;
 	
-	private DescendentsCache descendantsCache = DescendentsCache.getDescendentsCache();
+	private DescendantsCache descendantsCache = DescendantsCache.getDescendentsCache();
 	private AncestorsCache ancestorsCache = AncestorsCache.getAncestorsCache();
 	private AncestorsCache statedAncestorsCache = AncestorsCache.getStatedAncestorsCache();
 	
@@ -792,7 +792,7 @@ public class GraphLoader implements RF2Constants {
 		concepts.put(concept.getConceptId(), concept);
 	}
 
-	public DescendentsCache getDescendantsCache() {
+	public DescendantsCache getDescendantsCache() {
 		return descendantsCache;
 	}
 

@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.job.ReportClass;
-import org.ihtsdo.termserver.scripting.DescendentsCache;
+import org.ihtsdo.termserver.scripting.DescendantsCache;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.template.TemplateUtils;
@@ -159,7 +159,7 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 	}
 
 	private void examineDomain(Concept domain, List<Template> templates) throws TermServerScriptException {
-		DescendentsCache cache = gl.getDescendantsCache();
+		DescendantsCache cache = gl.getDescendantsCache();
 		
 		if (domain.getConceptId().equals("34014006")) {
 			//debug ("Debug here");
