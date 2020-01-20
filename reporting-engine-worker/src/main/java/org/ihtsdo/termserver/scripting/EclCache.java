@@ -58,7 +58,7 @@ public class EclCache implements RF2Constants {
 		ecl = ecl.trim();
 		//Have we been passed some partial ecl that begins and ends with a bracket?
 		if (ecl.startsWith("(") && ecl.endsWith(")")) {
-			ecl = ecl.substring(1, ecl.length() -1);
+			ecl = ecl.substring(1, ecl.length() -1).trim();
 		}
 		String machineEcl = SnomedUtils.makeMachineReadable(ecl);
 		Collection<Concept> allConcepts;
