@@ -20,9 +20,11 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 public class LexicalModellingMismatch extends TermServerReport implements ReportClass {
 	
 	public static final String WORDS = "Words";
+	public static final String NOT_WORDS = "Not Words";
 	public static final String ATTRIBUTE_TYPE = "Attribute Type";
 	public static final String ATTRIBUTE_VALUE = "Attribute Value";
 	List<String> targetWords;
+	List<String> notWords;
 	RelationshipTemplate targetAttribute = new RelationshipTemplate(CharacteristicType.INFERRED_RELATIONSHIP);
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
@@ -30,6 +32,7 @@ public class LexicalModellingMismatch extends TermServerReport implements Report
 		params.put(ATTRIBUTE_TYPE, "263502005 |Clinical course (attribute)|");
 		params.put(ATTRIBUTE_VALUE, "424124008 |Sudden onset AND/OR short duration (qualifier value)|");
 		params.put(WORDS, "acute,transient,transitory");
+		params.put(NOT_WORDS, "subacute,subtransient");
 		params.put(ECL, "<< 138875005 |SNOMED CT Concept (SNOMED RT+CTV3)| MINUS ( <<410607006 |Organism (organism)|)");
 		TermServerReport.run(LexicalModellingMismatch.class, args, params);
 	}
@@ -40,6 +43,12 @@ public class LexicalModellingMismatch extends TermServerReport implements Report
 		
 		String targetWordsStr = run.getMandatoryParamValue(WORDS).toLowerCase().trim();
 		targetWords = Arrays.asList(targetWordsStr.split(COMMA)).stream().map(word -> word.trim()).collect(Collectors.toList());
+		
+		if (run.getParamValue(NOT_WORDS) != null) {
+			String notWordsStr = run.getParamValue(NOT_WORDS).toLowerCase().trim();
+			notWords = Arrays.asList(notWordsStr.split(COMMA)).stream().map(word -> word.trim()).collect(Collectors.toList());
+		}
+		
 		subHierarchyECL = run.getMandatoryParamValue(ECL);
 		String attribStr = run.getParamValue(ATTRIBUTE_TYPE);
 		if (attribStr != null && !attribStr.isEmpty()) {
@@ -64,6 +73,7 @@ public class LexicalModellingMismatch extends TermServerReport implements Report
 		JobParameters params = new JobParameters()
 				.add(ECL).withType(JobParameter.Type.ECL)
 				.add(WORDS).withType(JobParameter.Type.STRING).withMandatory()
+				.add(NOT_WORDS).withType(JobParameter.Type.STRING)
 				.add(ATTRIBUTE_TYPE).withType(JobParameter.Type.CONCEPT)
 				.add(ATTRIBUTE_VALUE).withType(JobParameter.Type.CONCEPT)
 				.build();
@@ -86,6 +96,10 @@ public class LexicalModellingMismatch extends TermServerReport implements Report
 			boolean containsWord = false;
 			boolean containsAttribute = false;
 			if (c.isActive()) {
+				if (c.findDescriptionsContaining(notWords, true).size() > 0) {
+					containsWord = true;
+				}
+				
 				if (c.findDescriptionsContaining(targetWords).size() > 0) {
 					containsWord = true;
 				}

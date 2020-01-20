@@ -1399,10 +1399,19 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		return findDescriptionsContaining(Collections.singletonList(targetWord));
 	}
 
-	public List<Description> findDescriptionsContaining(List<String> targetWords) {
+	public List<Description> findDescriptionsContaining(List<String> words) {
+		return findDescriptionsContaining(words, false);
+	}
+
+	public List<Description> findDescriptionsContaining(List<String> words, boolean onlyPref) {
+		if (words == null || words.size() == 0) {
+			return new ArrayList<>();
+		}
+		
 		return descriptions.stream()
 				.filter(d -> d.isActive())
-				.filter(d -> targetWords.stream()
+				.filter(d -> onlyPref == false || d.isPreferred())
+				.filter(d -> words.stream()
 						.anyMatch(w -> StringUtils.containsIgnoreCase(d.getTerm(), w)))
 				.collect(Collectors.toList());
 	}
