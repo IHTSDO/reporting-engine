@@ -30,7 +30,7 @@ public class LexicalModellingMismatch extends TermServerReport implements Report
 		params.put(ATTRIBUTE_TYPE, "263502005 |Clinical course (attribute)|");
 		params.put(ATTRIBUTE_VALUE, "424124008 |Sudden onset AND/OR short duration (qualifier value)|");
 		params.put(WORDS, "acute,transient,transitory");
-		params.put(ECL, "<<" + ROOT_CONCEPT.getConceptId() + " MINUS (<<410607006 |Organism (organism)|)");
+		params.put(ECL, "<< 138875005 |SNOMED CT Concept (SNOMED RT+CTV3)| MINUS ( <<410607006 |Organism (organism)|)");
 		TermServerReport.run(LexicalModellingMismatch.class, args, params);
 	}
 	
@@ -95,8 +95,10 @@ public class LexicalModellingMismatch extends TermServerReport implements Report
 							.map(d -> d.getTerm().toString())
 							.collect(Collectors.joining(",\n"));
 					report (PRIMARY_REPORT, c, descriptions, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+					countIssue(c);
 				} else if (!containsWord && containsAttribute) {
 					report (SECONDARY_REPORT, c, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+					countIssue(c);
 				}
 			}
 		}
