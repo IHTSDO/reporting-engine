@@ -70,6 +70,8 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 					.withDefaultValue(false)
 				.add(TEMPLATE)
 					.withType(JobParameter.Type.TEMPLATE)
+				.add(TEMPLATE2)
+					.withType(JobParameter.Type.TEMPLATE)
 				.add(TEMPLATE_NAME)
 					.withType(JobParameter.Type.TEMPLATE_NAME)
 				.add(SERVER_URL)
@@ -120,6 +122,7 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 			//Do we have a template name to load, or some actual template language?
 			String templateName = jobRun.getParamValue(TEMPLATE_NAME);
 			String template = jobRun.getParamValue(TEMPLATE);
+			String template2 = jobRun.getParamValue(TEMPLATE2);
 			if (!StringUtils.isEmpty(templateName) && !StringUtils.isEmpty(template)) {
 				throw new TermServerScriptException("Both published template name and template code were specified");
 			} else if (StringUtils.isEmpty(templateName) && StringUtils.isEmpty(template)) {
@@ -136,6 +139,9 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 				}
 			} else {
 				loadUserSpecifiedTemplate(template);
+				if (template2 != null) {
+					loadUserSpecifiedTemplate(template2);
+				}
 			}
 			
 			//Ensure our ECL matches more than 0 concepts before we import SNOMED - expensive!
@@ -164,8 +170,8 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 				logicalTemplate = tsc.parseLogicalTemplate(template);
 				templateName = "User supplied template";
 			} 
-			
-			templates.add(new Template ('A', logicalTemplate, templateName));
+			char templateId = (char)('A' + templates.size());
+			templates.add(new Template (templateId, logicalTemplate, templateName));
 		} catch (Exception e) {
 			throw new TermServerScriptException("Failed to load tempate '" + template + "'", e);
 		}

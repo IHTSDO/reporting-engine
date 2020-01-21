@@ -108,6 +108,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected static final String INCLUDE_ALL_LEGACY_ISSUES = "Include All Legacy Issues";
 	protected static final String ECL = "ECL";
 	protected static final String TEMPLATE = "Template";
+	protected static final String TEMPLATE2 = "Template 2";
 	protected static final String TEMPLATE_NAME = "TemplateName";
 	protected static final String SERVER_URL = "ServerUrl";
 
