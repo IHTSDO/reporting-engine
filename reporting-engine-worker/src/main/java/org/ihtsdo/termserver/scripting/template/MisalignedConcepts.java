@@ -60,8 +60,6 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 	@Override
 	public Job getJob() {
 		JobParameters params = new JobParameters()
-				.add(SUB_HIERARCHY)
-					.withType(JobParameter.Type.CONCEPT)
 				.add(ECL)
 					.withType(JobParameter.Type.ECL)
 				.add(INCLUDE_COMPLEX)
