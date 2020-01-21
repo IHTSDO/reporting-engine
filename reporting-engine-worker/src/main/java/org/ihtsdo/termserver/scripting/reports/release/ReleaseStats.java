@@ -63,7 +63,7 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 	}
 	
 	public void postInit() throws TermServerScriptException {
-		String[] columnHeadings = new String[] {",,,KPI, count, of which Orphanet", 
+		String[] columnHeadings = new String[] {"KPI, count, of which Orphanet", 
 												"SCTID, FSN, SemTag, Crossover",
 												"SCTID, FSN, SemTag, Crossover",
 												"SCTID, FSN, SemTag",
@@ -113,7 +113,6 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 			}
 		}
 		report (PRIMARY_REPORT, null, "Role group crossovers", roleGroupCrossOvers);
-
 	}
 	
 	//Report cases where an ungrouped attribute also appears in a more general 

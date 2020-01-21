@@ -72,7 +72,6 @@ public abstract class TermServerScript implements RF2Constants {
 	protected String[] excludeHierarchies;
 	
 	protected Set<Concept> whiteListedConcepts = new HashSet<>();
-	protected boolean reportConceptAsInteger = false;
 
 	protected GraphLoader gl = GraphLoader.getGraphLoader();
 	private ReportManager reportManager;
@@ -1294,31 +1293,42 @@ public abstract class TermServerScript implements RF2Constants {
 	protected void report (Concept c, Object...details) throws TermServerScriptException {
 		report (PRIMARY_REPORT, c, details);
 	}
+	
 	protected void report (int reportIdx, Concept c, Object...details) throws TermServerScriptException {
-		StringBuffer sb = new StringBuffer();
-		
-		if (reportNullConcept || c != null) {
-			sb.append (reportConceptAsInteger?"":QUOTE)
-			.append(c==null?"":c.getConceptId())
-			.append(reportConceptAsInteger?COMMA_QUOTE:QUOTE_COMMA_QUOTE)
-			.append(c==null?"":c.getFsn())
-			.append(QUOTE_COMMA_QUOTE);
-			
-			if (c != null && !StringUtils.isEmpty(c.getFsn())) {
-				sb.append(SnomedUtils.deconstructFSN(c.getFsn())[1]);
+		//Have we whiteListed this concept?
+		if (whiteListedConcepts.contains(c)) {
+			String detailsStr = Arrays.asList(details).stream().map(o -> o.toString()).collect(Collectors.joining(", "));
+			warn ("Ignoring whiteListed concept: " + c + " :  " + detailsStr);
+			incrementSummaryInformation(WHITE_LISTED_COUNT);
+		} else {
+			String[] conceptFields = new String[3];
+			if (reportNullConcept || c != null) {
+				conceptFields[0] = c == null?"": QUOTE + c.getConceptId() + QUOTE;
+				conceptFields[1] = c == null?"":c.getFsn();
+				
+				if (c != null && !StringUtils.isEmpty(c.getFsn())) {
+					conceptFields[2] = SnomedUtils.deconstructFSN(c.getFsn())[1];
+				}
 			}
-			sb.append(QUOTE_COMMA);
+			report (reportIdx, conceptFields, details);
 		}
-		
+	}
+	
+	protected void report (int reportIdx, Object...details) throws TermServerScriptException {
+		StringBuffer sb = new StringBuffer();
 		boolean isFirst = true;
 		for (Object detail : details) {
+			boolean isNumeric = StringUtils.isNumeric(detail.toString()) || detail.toString().startsWith(QUOTE);
 			String prefix = isFirst ? QUOTE : COMMA_QUOTE;
+			if (isNumeric) {
+				prefix = isFirst ? "" : COMMA;
+			}
 			if (detail instanceof String[]) {
 				boolean isNestedFirst = true;
 				String[] arr = (String[]) detail;
 				for (String str : arr) {
 					sb.append(isNestedFirst?"":COMMA);
-					sb.append(prefix + str + QUOTE);
+					sb.append(prefix + str + (isNumeric?"":QUOTE));
 					isNestedFirst = false;
 				}
 			} else if (detail instanceof int[]) {
@@ -1332,19 +1342,13 @@ public abstract class TermServerScript implements RF2Constants {
 				}
 				
 			} else {
-				sb.append(prefix + detail + QUOTE);
+				sb.append(prefix + detail + (isNumeric?"":QUOTE));
 			}
 			isFirst = false;
 		}
 		
-		//Have we whiteListed this concept?
-		if (whiteListedConcepts.contains(c)) {
-			warn ("Ignoring whiteListed concept: " + sb);
-			incrementSummaryInformation(WHITE_LISTED_COUNT);
-		} else {
-			writeToReportFile (reportIdx, sb.toString());
-			incrementSummaryInformation("Report lines written");
-		}
+		writeToReportFile (reportIdx, sb.toString());
+		incrementSummaryInformation("Report lines written");
 	}
 	
 	protected void countIssue(Concept c) {
