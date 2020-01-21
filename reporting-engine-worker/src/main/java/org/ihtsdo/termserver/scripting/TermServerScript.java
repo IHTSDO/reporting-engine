@@ -1037,17 +1037,6 @@ public abstract class TermServerScript implements RF2Constants {
 		summaryDetails.put(key, newValue);
 	}
 	
-	public void storeRemainder(String start, String remove1, String remove2, String storeAs) {
-		Collection<?> differences = new ArrayList((Collection<?>)summaryDetails.get(start));
-		Collection<?> removeList = (Collection<?>)summaryDetails.get(remove1);
-		differences.removeAll(removeList);
-		if (remove2 != null && !remove2.isEmpty()) {
-			removeList = (Collection<?>)summaryDetails.get(remove2);
-			differences.removeAll(removeList);
-		}
-		summaryDetails.put(storeAs, differences.toString());
-	}
-	
 	public void flushFilesSoft() throws TermServerScriptException {
 		getReportManager().flushFilesSoft();
 	}

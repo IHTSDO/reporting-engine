@@ -3,11 +3,9 @@ package org.ihtsdo.termserver.scripting.fixes;
 import java.io.IOException;
 import java.util.*;
 
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
-
 
 /*
 Assertion Failure fix checks a number of known assertion issues and makes
@@ -75,67 +73,6 @@ public class AssertionFailureFix extends BatchFix implements RF2Constants{
 			}
 		}
 		return changesMade;
-	}
-
-	@Override
-	protected Batch formIntoBatch(List<Component> conceptsInFile) throws TermServerScriptException {
-		Batch batch = new Batch(getScriptName());
-		List<Component> allConceptsBeingProcessed = new ArrayList<Component>();
-		//Sort the concepts into groups per assigned Author
-		for (Map.Entry<String, List<Concept>> thisEntry : groupByAuthor(conceptsInFile).entrySet()) {
-			String[] author_reviewer = thisEntry.getKey().split("_");
-			Task task = batch.addNewTask(author_reviewer);
-
-			for (Concept thisConcept : thisEntry.getValue()) {
-				if (task.size() >= taskSize) {
-					task = batch.addNewTask(author_reviewer);
-				}
-				task.add(thisConcept);
-				allConceptsBeingProcessed.add(thisConcept);
-			}
-		}
-		addSummaryInformation("Tasks scheduled", batch.getTasks().size());
-		addSummaryInformation(CONCEPTS_TO_PROCESS, allConceptsBeingProcessed);
-		List <Component> reportedNotProcessed = validateAllInputConceptsBatched (conceptsInFile, allConceptsBeingProcessed);
-		addSummaryInformation(REPORTED_NOT_PROCESSED, reportedNotProcessed);
-		storeRemainder(CONCEPTS_IN_FILE, CONCEPTS_TO_PROCESS, REPORTED_NOT_PROCESSED, "Gone Missing");
-		return batch;
-	}
-
-	/**Actually we're going to group by both Author and Reviewer **/
-	private Map<String, List<Concept>> groupByAuthor(List<Component> conceptsInFile) {
-		Map<String, List<Concept>> groupedByAuthor = new HashMap<String,List<Concept>>();
-		for (Component thisComponent : conceptsInFile) {
-			Concept thisConcept = (Concept)thisComponent;
-			String author_reviewer = thisConcept.getAssignedAuthor() + "_" + thisConcept.getReviewer();
-			List<Concept> thisAuthorsConcepts = groupedByAuthor.get(author_reviewer);
-			if (thisAuthorsConcepts == null) {
-				thisAuthorsConcepts = new ArrayList<Concept>();
-				groupedByAuthor.put(author_reviewer, thisAuthorsConcepts);
-			}
-			thisAuthorsConcepts.add(thisConcept);
-		}
-		return groupedByAuthor;
-	}
-
-	private List<Component> validateAllInputConceptsBatched(List<Component> concepts,
-			List<Component> allConceptsToBeProcessed) throws TermServerScriptException {
-		List<Component> reportedNotProcessed = new ArrayList<Component>();
-		//Ensure that all concepts we got given to process were captured in one batch or another
-		for (Component thisConcept : concepts) {
-			if (!allConceptsToBeProcessed.contains(thisConcept)) {
-				reportedNotProcessed.add(thisConcept);
-				String msg = thisConcept + " was given in input file but did not get included in a batch.";
-				report((Task)null, thisConcept, Severity.CRITICAL, ReportActionType.UNEXPECTED_CONDITION, msg);
-			}
-		}
-		info("Processing " + allConceptsToBeProcessed.size() + " concepts.");
-		return reportedNotProcessed;
-	}
-
-	@Override
-	public String getScriptName() {
-		return "AssertionFailureFix";
 	}
 
 	@Override
