@@ -145,10 +145,8 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 			}
 			
 			//Ensure our ECL matches more than 0 concepts before we import SNOMED - expensive!
-			//This will also cache the result
-			if (findConcepts(subHierarchyECL).size() == 0) {
-				throw new TermServerScriptException(subHierarchyECL + " returned 0 rows");
-			}
+			//TODO Now that we're working with morphologies this is getting expensive.
+			//Query just for the count if 0 concepts resurfaces as an issue.
 		}
 	}
 
