@@ -351,7 +351,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		initialiseSummary(issue2Str);
 		initialiseSummary(issue3Str);
 		for (Concept c : gl.getAllConcepts()) {
-			if (!c.isActive() && inScope(c)) {
+			if (!c.isActive() && inScope(c) && isInternational(c)) {
 				boolean reported = false;
 				if (c.getFSNDescription() == null || !c.getFSNDescription().isActive()) {
 					report(c, issueStr, isLegacy(c), isActive(c,null));
@@ -381,6 +381,10 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		}
 	}
 	
+	private boolean isInternational(Concept c) {
+		return c.getModuleId().equals(SCTID_CORE_MODULE) || c.getModuleId().equals(SCTID_MODEL_MODULE);
+	}
+
 	//ATF-1550 Check that concept has only one semantic tag – new and released content
 	private void duplicateSemanticTags() throws TermServerScriptException {
 		String issueStr = "FSN missing semantic tag";
