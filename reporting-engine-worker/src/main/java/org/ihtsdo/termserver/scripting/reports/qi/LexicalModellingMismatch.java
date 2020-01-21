@@ -79,7 +79,7 @@ public class LexicalModellingMismatch extends TermServerReport implements Report
 				.build();
 		
 		return new Job()
-				.withCategory(new JobCategory(JobType.REPORT, JobCategory.QI))
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.GENERAL_QA))
 				.withName("Lexical Modelling Mismatch")
 				.withDescription("This report lists all concepts which either a) feature the target word in the FSN but not the specified attribute or b) feature the specified attribute, but not the word.  Note that target attributes more specific than the one specified will be included in the selection.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
