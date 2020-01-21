@@ -84,7 +84,6 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 			//We only need to worry about concepts with >1 role group
 			if (c.isActive() && groups.size() > 1) {
 				processedPairs.clear();
-				String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
 				//Test every group against every other group
 				for (RelationshipGroup left : groups) {
 					if (!left.isGrouped()) {
@@ -103,7 +102,7 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 							case ROLES_CROSSOVER:	
 												roleGroupCrossOvers++;
 												String msg = "Crossover between groups #" + left.getGroupId() + " and #" + right.getGroupId();
-												report (SECONDARY_REPORT, c, semTag, msg);
+												report (SECONDARY_REPORT, c, msg);
 												break;
 							default:
 						}
@@ -124,7 +123,6 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 			if (!c.isActive() || c.getRelationshipGroup(CharacteristicType.INFERRED_RELATIONSHIP, UNGROUPED) == null) {
 				continue;
 			}
-			String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
 			List<Relationship> ungroupedRels = c.getRelationshipGroup(CharacteristicType.INFERRED_RELATIONSHIP, UNGROUPED).getRelationships();
 			for (Relationship ungroupedRel : ungroupedRels) {
 				//Is our ungrouped relationship more specific than any grouped relationship?
@@ -134,10 +132,10 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 					}
 					for (Relationship groupedRel : group.getRelationships()) {
 						if (SnomedUtils.isMoreSpecific(ungroupedRel, groupedRel, cache)) {
-							report (TERTIARY_REPORT, c, semTag, "More Specific", ungroupedRel, groupedRel);
+							report (TERTIARY_REPORT, c, "More Specific", ungroupedRel, groupedRel);
 							ungroupedCrossovers++;
 						} else if (SnomedUtils.inconsistentSubsumption(ungroupedRel, groupedRel, cache)) {
-							report (TERTIARY_REPORT, c, semTag, "Inconsistent", ungroupedRel, groupedRel);
+							report (TERTIARY_REPORT, c, "Inconsistent", ungroupedRel, groupedRel);
 							ungroupedCrossovers++;
 						}
 					}
@@ -154,7 +152,7 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 		gl.getOrphanetConcepts();
 		for (Concept c : identifyIntermediatePrimitives(gl.getAllConcepts(), charType)) {
 			ipCount++;
-			report(reportIdx, c, SnomedUtils.deconstructFSN(c.getFsn())[1]);
+			report(reportIdx, c);
 			if (gl.isOrphanetConcept(c)) {
 				orphanetIPs++;
 			}
