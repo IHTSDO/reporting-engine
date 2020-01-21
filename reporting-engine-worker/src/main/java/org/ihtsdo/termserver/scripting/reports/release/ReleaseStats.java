@@ -112,7 +112,7 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 				}
 			}
 		}
-		report (PRIMARY_REPORT, null, "Role group crossovers", roleGroupCrossOvers);
+		report (PRIMARY_REPORT, "Role group crossovers", roleGroupCrossOvers);
 	}
 	
 	//Report cases where an ungrouped attribute also appears in a more general 
@@ -144,7 +144,7 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 				}
 			}
 		}
-		report (PRIMARY_REPORT, null, "Role group ungrouped inconsistencies", ungroupedCrossovers);
+		report (PRIMARY_REPORT, "Role group ungrouped inconsistencies", ungroupedCrossovers);
 	}
 
 	public void countIPs (CharacteristicType charType, int reportIdx) throws TermServerScriptException {
@@ -160,7 +160,7 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 			}
 		}
 		String statedIndicator = charType.equals(CharacteristicType.STATED_RELATIONSHIP)?" stated":"";
-		report (PRIMARY_REPORT, null, "Number of" + statedIndicator + " Intermediate Primitives", ipCount, orphanetIPs);
+		report (PRIMARY_REPORT, "Number of" + statedIndicator + " Intermediate Primitives", ipCount, orphanetIPs);
 	}
 	
 	private void countSD(CharacteristicType statedRelationship, int quinaryReport) throws TermServerScriptException {
@@ -178,7 +178,7 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 		DecimalFormat df = new DecimalFormat("##.#%");
 		double percent = (sufficientlyDefinedConcepts / activeConcepts);
 		String formattedPercent = df.format(percent);
-		report (PRIMARY_REPORT, null, "% Sufficiently Defined", formattedPercent);
+		report (PRIMARY_REPORT, "% Sufficiently Defined", formattedPercent);
 
 	}
 	
