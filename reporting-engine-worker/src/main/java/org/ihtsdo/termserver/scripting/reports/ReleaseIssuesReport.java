@@ -57,6 +57,13 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	char NBSP = 255;
 	String NBSPSTR = "\u00A0";
 	String LONG_DASH = "—";
+	String RIGHT_APOS = "\u2019";
+	String LEFT_APOS = "\u2018";
+	String RIGHT_QUOTE = "\u201D";
+	String LEFT_QUOTE = "\u201C";
+	String GRAVE_ACCENT = "\u0060";
+	String ACCUTE_ACCENT = "\u00B4";
+	
 	boolean includeLegacyIssues = false;
 	private static final int MIN_TEXT_DEFN_LENGTH = 12;
 	private Map<String, Integer> issueSummaryMap = new HashMap<>();
@@ -451,7 +458,13 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		String [][] unwantedChars = new String[][] {
 			{ NBSPSTR , "Non-breaking space" },
 			{ LONG_DASH , "MsWord style dash" },
-			{ "--" , "Double dash" }
+			{ "--" , "Double dash" },
+			{ RIGHT_APOS , "Right apostrophe" },
+			{ LEFT_APOS , "Left apostrophe" },
+			{ RIGHT_QUOTE , "Right quote" },
+			{ LEFT_QUOTE , "Left quote" },
+			{ GRAVE_ACCENT , "Grave accent" },
+			{ ACCUTE_ACCENT , "Accute accent" }
 		};
 		
 		for (String unwantedChar[] : unwantedChars) {
