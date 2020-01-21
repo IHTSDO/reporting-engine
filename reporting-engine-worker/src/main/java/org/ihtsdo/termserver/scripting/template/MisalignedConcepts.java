@@ -377,23 +377,11 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		templateNames = new String[] { "templates/Developmental disorder.json"};
 		
 		super.init(args);
-	
-		//Ensure our ECL matches more than 0 concepts before we import SNOMED - expensive!
-		//This will also cache the result.  Don't use the local store - hasn't been initialised yet!
-		boolean expectLargeResults = !safetyProtocols;
-		boolean useLocalStoreIfSimple = false;
-		if (findConcepts(subHierarchyECL, false, expectLargeResults, useLocalStoreIfSimple).size() == 0) {
-			throw new TermServerScriptException(subHierarchyECL + " returned 0 rows");
-		}
-		
-		if (findConcepts(subHierarchyECL).contains(new Concept(318316003L))) {
-			debug ("Unexpected occurrence of 318316003 |Vernal conjunctivitis (disorder)|");
-		}
 	}
 	
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {"TASK_KEY, TASK_DESC, SCTID, FSN, CONCEPT_TYPE, SEVERITY, ACTION_TYP, CharacteristicType, MatchedTemplate, Template Diagnostic",
-				"Report Metadata", "SCTID, FSN, SemTag, Reason", "SCTID, FSN, SemTag"};
+				"Report Metadata", "SCTID, FSN, SemTag, Reason", "SCTID, FSN, SemTag, Template Aligned"};
 		String[] tabNames = new String[] {	"Misaligned Concepts",
 				"Metadata",
 				"Excluded Concepts",
@@ -443,7 +431,9 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 			Set<Concept> matches = findTemplateMatches(template, potentiallyMisaligned, null, TERTIARY_REPORT);
 			incrementSummaryInformation("Matched templates",matches.size());
 			for (Concept match : matches) {
-				report (QUATERNARY_REPORT, match);
+				//Which template did we match?
+				char templateId = conceptToTemplateMap.get(match).getId();
+				report (QUATERNARY_REPORT, match, templateId);
 			}
 			potentiallyMisaligned.removeAll(matches);
 			int beforeCount = potentiallyMisaligned.size();
