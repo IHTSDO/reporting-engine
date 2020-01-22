@@ -112,11 +112,7 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 			super.init(jobRun);
 			includeComplexTemplates = jobRun.getParameters().getMandatoryBoolean(INCLUDE_COMPLEX);
 			safetyProtocols = !jobRun.getParameters().getMandatoryBoolean(ALLOW_LARGE_RESULTS);
-		
-			subHierarchyECL = jobRun.getParamValue(ECL);
-			if (StringUtils.isEmpty(subHierarchyECL)) {
-				subHierarchyECL = "<< " + jobRun.getMandatoryParamValue(SUB_HIERARCHY);
-			}
+			subHierarchyECL = jobRun.getMandatoryParamValue(ECL);
 
 			String templateServerUrl = jobRun.getMandatoryParamValue(SERVER_URL);
 			//Do we have a template name to load, or some actual template language?
