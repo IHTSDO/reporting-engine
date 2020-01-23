@@ -30,6 +30,9 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
   * */
 public class HistoricStatsGenerator extends TermServerReport implements ReportClass {
 	
+	public HistoricStatsGenerator() {
+	}
+	
 	public HistoricStatsGenerator(TermServerScript ts) {
 		project = ts.getProject();
 	}
