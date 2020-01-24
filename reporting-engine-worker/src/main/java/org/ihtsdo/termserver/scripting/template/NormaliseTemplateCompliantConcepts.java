@@ -283,10 +283,12 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		subHierarchyECL = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 125671007 |Rupture (morphologic abnormality)|"; //QI-498
 		templateNames = new String[] {	"templates/Traumatic rupture of joint.json"};
 		includeComplexTemplates = true;
-		*/
+		
 		subHierarchyECL = "<<  64572001 |Disease (disorder)|  :  116676008 |Associated morphology (attribute)|  = <<  708528005 |Narrowing (morphologic abnormality)|"; //QI-507
 		templateNames = new String[] {	"templates/Narrowing.json"};
-		
+		*/
+		subHierarchyECL = "<<  64572001 |Disease (disorder)|  :  116676008 |Associated morphology (attribute)|  = <<  79644001 |Pigment alteration (morphologic abnormality)|"; //QI-518
+		templateNames = new String[] {	"templates/Pigmentation.json"};
 		super.init(args);
 		
 		//Ensure our ECL matches more than 0 concepts.  This will also cache the result
