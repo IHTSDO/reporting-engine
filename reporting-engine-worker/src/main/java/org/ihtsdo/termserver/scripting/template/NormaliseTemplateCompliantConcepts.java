@@ -279,10 +279,13 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		
 		subHierarchyECL = "<< 128462008 |Secondary malignant neoplastic disease (disorder)|"; //QI-382
 		templateNames = new String[] {	"templates/Secondary malignant neoplasm.json"};
-		*/
+		
 		subHierarchyECL = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 125671007 |Rupture (morphologic abnormality)|"; //QI-498
 		templateNames = new String[] {	"templates/Traumatic rupture of joint.json"};
 		includeComplexTemplates = true;
+		*/
+		subHierarchyECL = "<<  64572001 |Disease (disorder)|  :  116676008 |Associated morphology (attribute)|  = <<  708528005 |Narrowing (morphologic abnormality)|"; //QI-507
+		templateNames = new String[] {	"templates/Narrowing.json"};
 		
 		super.init(args);
 		
