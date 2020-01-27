@@ -74,7 +74,7 @@ public class LexicalModellingMismatch extends TermServerReport implements Report
 				.add(ECL).withType(JobParameter.Type.ECL)
 				.add(WORDS).withType(JobParameter.Type.STRING).withMandatory()
 				.add(NOT_WORDS).withType(JobParameter.Type.STRING)
-				.add(ATTRIBUTE_TYPE).withType(JobParameter.Type.CONCEPT)
+				.add(ATTRIBUTE_TYPE).withType(JobParameter.Type.CONCEPT).withMandatory()
 				.add(ATTRIBUTE_VALUE).withType(JobParameter.Type.CONCEPT)
 				.build();
 		
