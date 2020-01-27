@@ -57,6 +57,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(INT)
+				.withProductionStatus(ProductionStatus.HIDEME)
 				.build();
 	}
 	
