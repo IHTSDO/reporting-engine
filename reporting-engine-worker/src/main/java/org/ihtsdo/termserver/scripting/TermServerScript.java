@@ -1335,7 +1335,8 @@ public abstract class TermServerScript implements RF2Constants {
 			} else if (detail instanceof Object []) {
 				Object[] arr = (Object[]) detail;
 				for (Object obj : arr) {
-					sb.append(prefix + obj.toString() + (isNumeric?"":QUOTE));
+					String data = (obj==null?"":obj.toString());
+					sb.append(prefix + data + (isNumeric?"":QUOTE));
 					prefix = COMMA_QUOTE;
 				}
 			} else if (detail instanceof int[]) {
