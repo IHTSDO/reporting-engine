@@ -80,7 +80,7 @@ public class RelationshipGroup {
 	@Override
 	public String toString() {
 		return indicators + "{ " + relationships.stream()
-				.sorted((r1, r2) -> r1.getType().getFsn().compareTo(r2.getType().getFsn()))
+				.sorted((r1, r2) -> r1.getType().getFsnSafely().compareTo(r2.getType().getFsnSafely()))
 				.map(i -> i.toString())
 				.collect (Collectors.joining(", ")) + " }";
 	}

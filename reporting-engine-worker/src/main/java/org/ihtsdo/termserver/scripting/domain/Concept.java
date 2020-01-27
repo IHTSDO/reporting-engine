@@ -214,8 +214,15 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 			}else {
 				return fsn.toString();
 			}
-		
 		return null;
+	}
+	
+
+	public String getFsnSafely() {
+		if (fsn == null) {
+			return "";
+		}
+		return getFsn();
 	}
 
 	public void setFsn(String fsn) {
@@ -1415,6 +1422,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 						.anyMatch(w -> StringUtils.containsIgnoreCase(d.getTerm(), w)))
 				.collect(Collectors.toList());
 	}
+
 
 /*	public List<Axiom> getAllAxioms() {
 		List<Axiom> axioms = getClassAxioms();

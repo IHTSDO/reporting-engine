@@ -55,7 +55,7 @@ public class BatchImport extends BatchFix implements BatchJobClass {
 	}
 	
 	protected void init(JobRun jobRun) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1bO3v1PApVCEc3BWWrKwc525vla7ZMPoE"; // Bactch Import
+		ReportSheetManager.targetFolderId = "1bO3v1PApVCEc3BWWrKwc525vla7ZMPoE"; // Batch Import
 		selfDetermining = true;
 		populateEditPanel = true;
 		populateTaskDescription = true;
@@ -171,12 +171,16 @@ public class BatchImport extends BatchFix implements BatchJobClass {
 
 	protected int doFix(Task t, Concept c, String info) throws TermServerScriptException {
 		BatchImportConcept concept = (BatchImportConcept)c;
+		String statedForm = SnomedUtils.getModel(concept, CharacteristicType.STATED_RELATIONSHIP);
 		try{
 			validateConcept(t, c);
 			removeTemporaryIds(c);
 			Concept createdConcept = createConcept(t, c, null);
-			String statedForm = SnomedUtils.getModel(createdConcept, CharacteristicType.STATED_RELATIONSHIP);
-			report (t, createdConcept, Severity.NONE, ReportActionType.CONCEPT_ADDED, statedForm);
+			String origRef = "";
+			if (format.getIndex(BatchImportFormat.FIELD.ORIG_REF) != BatchImportFormat.FIELD_NOT_FOUND) {
+				origRef = concept.get(format.getIndex(BatchImportFormat.FIELD.ORIG_REF));
+			}
+			report (t, createdConcept, Severity.NONE, ReportActionType.CONCEPT_ADDED, origRef, statedForm);
 			conceptsLoaded.put(c.getId(),createdConcept);
 			countIssue(createdConcept);
 		} catch (Exception e) {
