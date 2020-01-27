@@ -1333,12 +1333,10 @@ public abstract class TermServerScript implements RF2Constants {
 					isNestedFirst = false;
 				}
 			} else if (detail instanceof Object []) {
-				boolean isNestedFirst = true;
 				Object[] arr = (Object[]) detail;
 				for (Object obj : arr) {
-					sb.append(isNestedFirst?"":COMMA);
 					sb.append(prefix + obj.toString() + (isNumeric?"":QUOTE));
-					isNestedFirst = false;
+					prefix = COMMA_QUOTE;
 				}
 			} else if (detail instanceof int[]) {
 				prefix = isFirst ? "" : COMMA;
