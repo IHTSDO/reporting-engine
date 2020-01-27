@@ -62,7 +62,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	String RIGHT_QUOTE = "\u201D";
 	String LEFT_QUOTE = "\u201C";
 	String GRAVE_ACCENT = "\u0060";
-	String ACCUTE_ACCENT = "\u00B4";
+	String ACUTE_ACCENT = "\u00B4";
 	
 	boolean includeLegacyIssues = false;
 	private static final int MIN_TEXT_DEFN_LENGTH = 12;
@@ -468,7 +468,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			{ RIGHT_QUOTE , "Right quote" },
 			{ LEFT_QUOTE , "Left quote" },
 			{ GRAVE_ACCENT , "Grave accent" },
-			{ ACCUTE_ACCENT , "Accute accent" }
+			{ ACUTE_ACCENT , "Acute accent" }
 		};
 		
 		for (String unwantedChar[] : unwantedChars) {
