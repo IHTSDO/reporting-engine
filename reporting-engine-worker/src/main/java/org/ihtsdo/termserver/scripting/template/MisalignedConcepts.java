@@ -62,6 +62,7 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		JobParameters params = new JobParameters()
 				.add(ECL)
 					.withType(JobParameter.Type.ECL)
+					.withMandatory()
 				.add(INCLUDE_COMPLEX)
 					.withType(JobParameter.Type.BOOLEAN)
 					.withDefaultValue(false)
