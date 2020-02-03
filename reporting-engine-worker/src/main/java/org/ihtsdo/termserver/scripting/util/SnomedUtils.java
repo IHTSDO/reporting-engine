@@ -1397,13 +1397,14 @@ public class SnomedUtils implements RF2Constants {
 	}
 
 	public static boolean containsAttributeOrMoreSpecific(Concept c, RelationshipTemplate targetAttribute, DescendantsCache cache) throws TermServerScriptException {
-		Set<Concept> values = cache.getDescendentsOrSelf(targetAttribute.getTarget());
 		Set<Concept> types = cache.getDescendentsOrSelf(targetAttribute.getType());
+		//If there's no attribute value specified, we'll match on just the target type
+		Set<Concept> values = targetAttribute.getTarget() == null ? null : cache.getDescendentsOrSelf(targetAttribute.getTarget());
 		return c.getRelationships().stream()
 			.filter(r -> r.isActive())
 			.filter(r -> r.getCharacteristicType().equals(targetAttribute.getCharacteristicType()))
-			.filter(r -> r.getTarget() == null || values.contains(r.getTarget()))
-			.filter(r -> r.getType() == null || types.contains(r.getType()))
+			.filter(r -> types.contains(r.getType()))
+			.filter(r -> values == null || values.contains(r.getTarget()))
 			.collect(Collectors.toList()).size() > 0;
 	}
 
