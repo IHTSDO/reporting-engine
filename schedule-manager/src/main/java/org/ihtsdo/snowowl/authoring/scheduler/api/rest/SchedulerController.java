@@ -169,20 +169,24 @@ public class SchedulerController {
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
 	})
-	@RequestMapping(value="/jobs/{typeName}/{jobName}/whitelist", method= RequestMethod.GET)
-	public Set<WhiteListedConcept> getWhiteList(@PathVariable final String typeName,
+	@RequestMapping(value="/jobs/{typeName}/{jobName}/{codeSystemShortname}/whitelist", method= RequestMethod.GET)
+	public Set<WhiteListedConcept> getWhiteList(
+			@PathVariable final String typeName,
+			@PathVariable final String codeSystemShortname,
 			@PathVariable final String jobName) throws BusinessServiceException {
-		return scheduleService.getWhiteList(typeName, jobName);
+		return scheduleService.getWhiteList(typeName, codeSystemShortname, jobName);
 	}
 	
 	@ApiOperation(value="Set whitelisted concept for the given job")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
 	})
-	@RequestMapping(value="/jobs/{typeName}/{jobName}/whitelist", method= RequestMethod.POST)
-	public void setWhiteList(@PathVariable final String typeName, 
+	@RequestMapping(value="/jobs/{typeName}/{jobName}/{codeSystemShortname}/whitelist", method= RequestMethod.POST)
+	public void setWhiteList(
+			@PathVariable final String typeName, 
 			@PathVariable final String jobName,
+			@PathVariable final String codeSystemShortname,
 			@RequestBody Set<WhiteListedConcept> whiteList) throws BusinessServiceException {
-		scheduleService.setWhiteList(typeName, jobName, whiteList);
+		scheduleService.setWhiteList(typeName, jobName, codeSystemShortname, whiteList);
 	}
 }

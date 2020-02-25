@@ -116,7 +116,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 		jobRun.setRequestTime(new Date());
 		jobRun.setStatus(JobStatus.Scheduled);
 		jobRun.setTerminologyServerUrl(terminologyServerUrl);
-		jobRun.setWhiteList(job.getWhiteList());
+		jobRun.setWhiteList(job.getWhiteList(jobRun.getcodeSystemShortname()));
 		populateAuthenticationDetails(jobRun);
 		
 		//We protect the json from having parent links and redundant keys, 
@@ -262,7 +262,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 						} else {
 							job.setId(knownJob.getId());
 							//Whitelists are maintained by schedule manager, so retain
-							job.replaceWhiteList(knownJob.getWhiteList());
+							job.setWhiteListMap(knownJob.getWhiteListMap());
 							logger.info("Updating job: " + job);
 						}
 						
@@ -306,24 +306,24 @@ public class ScheduleServiceImpl implements ScheduleService {
 	}
 
 	@Override
-	public Set<WhiteListedConcept> getWhiteList(String typeName, String jobName) throws ResourceNotFoundException {
+	public Set<WhiteListedConcept> getWhiteList(String typeName, String codeSystemShortname, String jobName) throws ResourceNotFoundException {
 		//Do we know about this job?
 		Job job = getJob(jobName);
 		if (job == null) {
 			throw new ResourceNotFoundException("Job unknown to Schedule Service: '" + jobName+"' If job exists and is active, re-run initialise.");
 		}
-		return job.getWhiteList();
+		return job.getWhiteList(codeSystemShortname);
 	}
 
 	@Override
-	public void setWhiteList(String typeName, String jobName, Set<WhiteListedConcept> whiteList) throws ResourceNotFoundException {
+	public void setWhiteList(String typeName, String jobName, String codeSystemShortname, Set<WhiteListedConcept> whiteList) throws ResourceNotFoundException {
 		//Do we know about this job?
 		Job job = getJob(jobName);
 		if (job == null) {
 			throw new ResourceNotFoundException("Job unknown to Schedule Service: '" + jobName +"' If job exists and is active, re-run initialise.");
 		}
 		logger.info("Whitelisted {} concepts for job: {}", whiteList.size(), jobName);
-		job.setWhiteList(whiteList);
+		job.setWhiteList(codeSystemShortname, whiteList);
 		jobRepository.save(job);
 	}
 	

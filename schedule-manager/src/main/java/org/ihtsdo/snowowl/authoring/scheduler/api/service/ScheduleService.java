@@ -35,8 +35,8 @@ public interface ScheduleService {
 
 	public boolean deleteJobRun(String typeName, String jobName, UUID runId);
 
-	public Set<WhiteListedConcept> getWhiteList(String typeName, String jobName);
+	public Set<WhiteListedConcept> getWhiteList(String typeName, String platformIdentifier, String jobName);
 
-	public void setWhiteList(String typeName, String jobName, Set<WhiteListedConcept> whiteList);
+	public void setWhiteList(String typeName, String jobName, String platformIdentifier, Set<WhiteListedConcept> whiteList);
 
 }
