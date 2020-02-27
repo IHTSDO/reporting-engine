@@ -98,10 +98,11 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 	
 	public void runJob() throws TermServerScriptException {
 		validateDrugsModeling();
+		valiadteTherapeuticRole();
 		populateSummaryTab();
 		info("Summary tab complete, all done.");
 	}
-	
+
 	private void validateDrugsModeling() throws TermServerScriptException {
 		Set<Concept> subHierarchy = gl.getDescendantsCache().getDescendents(MEDICINAL_PRODUCT);
 		ConceptType[] allDrugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT, ConceptType.MEDICINAL_PRODUCT_ONLY, ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.MEDICINAL_PRODUCT_FORM_ONLY, ConceptType.CLINICAL_DRUG };
@@ -1116,6 +1117,22 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 	
 	private boolean isCD(Concept concept) {
 		return concept.getConceptType().equals(ConceptType.CLINICAL_DRUG);
+	}
+	
+	//RP-198
+	private void valiadteTherapeuticRole() throws TermServerScriptException {
+		String issueStr = "Descendant of therapeutic role should not be 'agent'";
+		initialiseSummary(issueStr);
+		Concept theraputicRole = gl.getConcept("766941000 |Therapeutic role (role)|");
+		nextConcept:
+		for (Concept c : theraputicRole.getDescendents(NOT_SET)) {
+			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+				if (d.getTerm().toLowerCase().contains("agent")) {
+					report(c, issueStr, d);
+					continue nextConcept;
+				}
+			}
+		}
 	}
 	
 }
