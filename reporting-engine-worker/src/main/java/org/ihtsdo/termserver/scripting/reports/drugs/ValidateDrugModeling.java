@@ -173,9 +173,12 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 				validateStrengthNormalization(c);
 			}
 			
-			//RP-191
 			if (SnomedUtils.isConceptType(c, allDrugTypes)) {
+				//RP-191
 				ensureStatedInferredAttributesEqual(c);
+				
+				//RP-194
+				checkForPrimitives(c);
 			}
 			
 			//DRUGS-288
@@ -196,6 +199,15 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 			}
 		}
 		info ("Drugs validation complete");
+	}
+
+	private void checkForPrimitives(Concept c) throws TermServerScriptException {
+		String issueStr = "Primitive concept where FSN starts with 'Product'";
+		initialiseSummary(issueStr);
+		if (c.getDefinitionStatus().equals(DefinitionStatus.PRIMITIVE) &&
+				c.getFsn().startsWith("Product")) {
+			report(c, issueStr);
+		}
 	}
 
 	private void ensureStatedInferredAttributesEqual(Concept c) throws TermServerScriptException {
