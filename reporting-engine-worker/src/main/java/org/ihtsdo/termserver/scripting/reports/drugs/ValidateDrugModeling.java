@@ -120,9 +120,13 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 				continue;
 			}
 			
-			//DRUGS-585
+			
 			if (isMP(c) || isMPF(c)) {
+				//DRUGS-585
 				validateNoModifiedSubstances(c);
+				
+				//RP-199
+				checkForRedundantConcept(c);
 			}
 			
 			//DRUGS-784
@@ -200,6 +204,15 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 			}
 		}
 		info ("Drugs validation complete");
+	}
+
+	private void checkForRedundantConcept(Concept c) throws TermServerScriptException {
+		//MP / MP with no inferred descendants are not required
+		String issueStr = "MP/MPF concept is redundant - no inferred descendants";
+		initialiseSummary(issueStr);
+		if (c.getDescendents(NOT_SET).size() == 0) {
+			report (c, issueStr);
+		}
 	}
 
 	private void checkForPrimitives(Concept c) throws TermServerScriptException {
