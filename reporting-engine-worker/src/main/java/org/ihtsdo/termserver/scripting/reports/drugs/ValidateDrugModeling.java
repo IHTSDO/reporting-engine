@@ -170,6 +170,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 			//DRUGS-51?
 			if (isCD(c)) {
 				validateConcentrationStrength(c);
+				validateStrengthNormalization(c);
 			}
 			
 			//RP-191
@@ -487,6 +488,40 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		return factor;
 	}
 	
+	private void validateStrengthNormalization(Concept c) throws TermServerScriptException {
+		//For each group, validate any relevant units
+		for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
+			Ingredient i = DrugUtils.getIngredientDetails(c, g.getGroupId(), CharacteristicType.STATED_RELATIONSHIP);
+			if (i.presStrength != null) {
+				validateStrengthNormalization(c, i.presNumeratorUnit, i.presStrength);
+				validateStrengthNormalization(c, i.presDenomUnit, i.presDenomQuantity);
+			}
+		
+			if(i.concStrength != null) {
+				validateStrengthNormalization(c, i.concNumeratorUnit, i.concStrength);
+				validateStrengthNormalization(c, i.concDenomUnit, i.concDenomQuantity);
+			}
+		}
+	}
+	
+
+	private void validateStrengthNormalization(Concept c, Concept unit, Concept strengthConcept) throws TermServerScriptException {
+		String issueStr = "Strength Normalization Issue";
+		initialiseSummary(issueStr);
+		//Are we working with a known solid or liquid unit?
+		int unitIdx = ArrayUtils.indexOf(solidUnits, unit);
+		if (unitIdx == -1) { //Try liquid
+			unitIdx = ArrayUtils.indexOf(liquidUnits, unit);
+		}
+		
+		if (unitIdx != -1) {
+			Double strength = DrugUtils.getConceptAsNumber(strengthConcept);
+			if (strength > 1000 || strength < 1) {
+				report(c, issueStr, strength + unit.getPreferredSynonym());
+			}
+		}
+	}
+
 	/*
 	Need to identify and update:
 		FSN beginning with "Product containing" that includes any of the following in any active description:
