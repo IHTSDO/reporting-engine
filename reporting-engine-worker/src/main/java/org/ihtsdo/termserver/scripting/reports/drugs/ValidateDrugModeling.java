@@ -38,6 +38,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 	private Map<Concept, Boolean> acceptableCdDoseForms = new HashMap<>();	
 	private Map<String, Integer> issueSummaryMap = new HashMap<>();
 	private Map<Concept,Concept> grouperSubstanceUsage = new HashMap<>();
+	private List<Concept> bannedMpParents;
 	
 	Concept[] mpValidAttributes = new Concept[] { IS_A, HAS_ACTIVE_INGRED, COUNT_BASE_ACTIVE_INGREDIENT, PLAYS_ROLE };
 	Concept[] mpfValidAttributes = new Concept[] { IS_A, HAS_ACTIVE_INGRED, HAS_MANUFACTURED_DOSE_FORM, COUNT_BASE_ACTIVE_INGREDIENT, PLAYS_ROLE };
@@ -76,6 +77,12 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		concAttributes.add(HAS_CONC_STRENGTH_UNIT);
 		concAttributes.add(HAS_CONC_STRENGTH_DENOM_UNIT);
 		concAttributes.add(HAS_CONC_STRENGTH_DENOM_VALUE);
+		
+		bannedMpParents = new ArrayList<>();
+		bannedMpParents.add(gl.getConcept("763158003 |Medicinal product (product)|"));
+		bannedMpParents.add(gl.getConcept("766779001 |Medicinal product categorized by disposition (product)|"));
+		bannedMpParents.add(gl.getConcept("763760008 |Medicinal product categorized by structure (product)|"));
+		bannedMpParents.add(gl.getConcept("763087004 |Medicinal product categorized by therapeutic role (product)|"));
 	}
 
 	@Override
@@ -167,7 +174,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 			//DRUGS-93, DRUGS-759
 			checkForBadWords(concept);  
 			
-			//DRUGS-629
+			//DRUGS-629, RP-187
 			checkForSemTagViolations(concept);
 			
 			//RP-175
@@ -184,6 +191,14 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 	private boolean isMP(Concept concept) {
 		return concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT) || 
 				concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_ONLY);
+	}
+	
+	private boolean isMPOnly(Concept concept) {
+		return concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_ONLY);
+	}
+	
+	private boolean isMPFOnly(Concept concept) {
+		return concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM_ONLY);
 	}
 	
 	private boolean isMPF(Concept concept) {
@@ -324,11 +339,14 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		}
 		
 		if (c.getParents(CharacteristicType.INFERRED_RELATIONSHIP).size() > 1) {
-			String parentsJoined = c.getParents(CharacteristicType.INFERRED_RELATIONSHIP).stream()
-					.map(p -> p.getPreferredSynonym())
-					.collect(Collectors.joining(", "));
-			report (c, issue4Str, parentsJoined);
+			report (c, issue4Str, getParentsJoinedStr(c));
 		}
+	}
+
+	private String getParentsJoinedStr(Concept c) {
+		return c.getParents(CharacteristicType.INFERRED_RELATIONSHIP).stream()
+				.map(p -> p.getFsn())
+				.collect(Collectors.joining(", \n"));
 	}
 
 	private void validateNoModifiedSubstances(Concept c) throws TermServerScriptException {
@@ -696,7 +714,19 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 	
 	private void checkForSemTagViolations(Concept c) throws TermServerScriptException {
 		String issueStr =  "Has higher level semantic tag than parent";
+		String issueStr2 = "Has semantic tag incompatible with that of parent";
+		String issueStr3 = "Has prohibited parent";
+		String issueStr4 = "Has parent with an incompatible semantic tag incompatible with that of parent";
+		String issueStr5 = "Has invalid parent / semantic tag combination";
+		String issueStr6 = "MPF-Only expected to have MPF (not only) and MP-Only as parents";
+		
 		initialiseSummary(issueStr);
+		initialiseSummary(issueStr2);
+		initialiseSummary(issueStr3);
+		initialiseSummary(issueStr4);
+		initialiseSummary(issueStr5);
+		initialiseSummary(issueStr6);
+		
 		//Ensure that the hierarchical level of this semantic tag is the same or deeper than those of the parent
 		int tagLevel = getTagLevel(c);
 		for (Concept p : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
@@ -705,8 +735,71 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 				report (c, issueStr, p);
 			}
 		}
+		
+		if (isCD(c)) {
+			validateParentSemTags(c, "(medicinal product form)", issueStr2);
+		} else if (isMPOnly(c)) {
+			validateParentSemTags(c, "(medicinal product)", issueStr2);
+		} else if (isMPFOnly(c)) {
+			//Complex one this.   An MPF-Only should have at least one parent which is an MPF (not only)
+			//and at least one which is MP-Only. And no other parents.
+			boolean hasMpfNotOnly = false;
+			boolean hasMpOnly = false;
+			for (Concept parent : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
+				if (isMPF(parent) && !isMPFOnly(parent)) {
+					hasMpfNotOnly = true;
+				} else if (isMPOnly(parent)) {
+					hasMpOnly = true;
+				} else {
+					report (c, issueStr6, parent);
+					break;
+				}
+			}
+			if (!hasMpfNotOnly && !hasMpOnly) {
+				report (c, issueStr6, getParentsJoinedStr(c));
+			}
+		} 
+		
+		if (isMP(c)) {
+			checkForBannedParents(c, issueStr3);
+			if (c.getFsn().contains("contains")) {
+				validateParentSemTags(c, "(product)", issueStr4);
+			}
+		}
+		
+		validateParentTagCombo(c, gl.getConcept("766779001 |Medicinal product categorized by disposition (product)|"), "(product)", issueStr5);
+		validateParentTagCombo(c, gl.getConcept("763760008 |Medicinal product categorized by structure (product)| "), "(product)", issueStr5);
 	}
 
+	private void validateParentTagCombo(Concept c, Concept targetParent, 
+			String targetSemtag, String issueStr) throws TermServerScriptException {
+		String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
+		for (Concept parent : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
+			if (parent.equals(targetParent) && !semTag.equals(targetSemtag)) {
+				report (c, issueStr, "Has parent " + targetParent, "but not expected semtag " + targetSemtag);
+			}
+		}
+	}
+
+	private void validateParentSemTags(Concept c, String requiredTag, String issueStr) throws TermServerScriptException {
+		for (Concept parent : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
+			String semTag = SnomedUtils.deconstructFSN(parent.getFsn())[1];
+			if (!semTag.equals(requiredTag)) {
+				report (c, issueStr, "parent", parent.getFsn(), " expected tag", requiredTag);
+			}
+		}
+	}
+	
+	private void checkForBannedParents(Concept c, String issueStr) throws TermServerScriptException {
+		for (Concept parent : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
+			for (Concept bannedParent : bannedMpParents) {
+				if (parent.equals(bannedParent)) {
+					report (c, issueStr, parent);
+				}
+			}
+		}
+	}
+		
 	private void validateAttributeRules(Concept c) throws TermServerScriptException {
 		String issueStr =  "MP/MPF must have one or more 'Has active ingredient' attributes";
 		initialiseSummary(issueStr);
