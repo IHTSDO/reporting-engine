@@ -1294,7 +1294,7 @@ public abstract class TermServerScript implements RF2Constants {
 		report (PRIMARY_REPORT, c, details);
 	}
 	
-	protected void report (int reportIdx, Concept c, Object...details) throws TermServerScriptException {
+	public void report (int reportIdx, Concept c, Object...details) throws TermServerScriptException {
 		//Have we whiteListed this concept?
 		if (whiteListedConcepts.contains(c)) {
 			String detailsStr = Arrays.asList(details).stream().map(o -> o.toString()).collect(Collectors.joining(", "));
@@ -1324,24 +1324,17 @@ public abstract class TermServerScript implements RF2Constants {
 				prefix = isFirst ? "" : COMMA;
 			}
 			if (detail instanceof String[]) {
-				boolean isNestedFirst = true;
 				String[] arr = (String[]) detail;
 				for (String str : arr) {
 					boolean isNestedNumeric = false;
 					if (str != null) {
 						isNestedNumeric = StringUtils.isNumeric(str) || str.startsWith(QUOTE);
 					}
-					sb.append(isNestedFirst?"":COMMA);
 					sb.append((isNestedNumeric?"":prefix) + str + (isNestedNumeric?"":QUOTE));
-					isNestedFirst = false;
-				}
-			} else if (detail instanceof Object []) {
-				Object[] arr = (Object[]) detail;
-				for (Object obj : arr) {
-					String data = (obj==null?"":obj.toString());
-					sb.append(prefix + data + (isNumeric?"":QUOTE));
 					prefix = COMMA_QUOTE;
 				}
+			} else if (detail instanceof Object []) {
+				addObjectArray(sb,detail, prefix, isNumeric);
 			} else if (detail instanceof int[]) {
 				prefix = isFirst ? "" : COMMA;
 				boolean isNestedFirst = true;
@@ -1362,6 +1355,19 @@ public abstract class TermServerScript implements RF2Constants {
 		incrementSummaryInformation("Report lines written");
 	}
 	
+	private void addObjectArray(StringBuffer sb, Object detail, String prefix, boolean isNumeric) {
+		Object[] arr = (Object[]) detail;
+		for (Object obj : arr) {
+			if (obj instanceof String[]) {
+				addObjectArray(sb,obj, prefix, isNumeric);
+			} else {
+				String data = (obj==null?"":obj.toString());
+				sb.append(prefix + data + (isNumeric?"":QUOTE));
+				prefix = COMMA_QUOTE;
+			}
+		}
+	}
+
 	protected void countIssue(Concept c) {
 		if (c==null || !whiteListedConcepts.contains(c)) {
 			incrementSummaryInformation(ISSUE_COUNT);
