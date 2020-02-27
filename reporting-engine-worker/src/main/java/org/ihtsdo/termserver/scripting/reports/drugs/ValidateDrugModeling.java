@@ -158,6 +158,11 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 				validateCdModellingRules(concept);
 			}
 			
+			//RP-189
+			if (concept.getConceptType().equals(ConceptType.PRODUCT)) {
+				validateProductModellingRules(concept);
+			}
+			
 			//DRUGS-518
 			if (SnomedUtils.isConceptType(concept, cds)) {
 				checkForInferredGroupsNotStated(concept);
@@ -362,6 +367,21 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 					}
 				}
 			}
+		}
+	}
+	
+
+	private void validateProductModellingRules(Concept c) throws TermServerScriptException {
+		String issueStr = "Product has more than one manufactured dose form attribute in Inferred Form";
+		String issueStr2 = "Product has more than one manufactured dose form attribute in Stated Form";
+		initialiseSummary(issueStr);
+		initialiseSummary(issueStr2);
+		Concept targetType = gl.getConcept("411116001 |Has manufactured dose form (attribute)|");
+		if (c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, targetType, ActiveState.ACTIVE).size() > 1) {
+			report (c, issueStr);
+		}
+		if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, targetType, ActiveState.ACTIVE).size() > 1) {
+			report (c, issueStr2);
 		}
 	}
 
