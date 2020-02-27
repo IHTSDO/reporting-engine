@@ -172,6 +172,11 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 				validateConcentrationStrength(c);
 			}
 			
+			//RP-191
+			if (SnomedUtils.isConceptType(c, allDrugTypes)) {
+				ensureStatedInferredAttributesEqual(c);
+			}
+			
 			//DRUGS-288
 			validateAttributeValueCardinality(c, HAS_ACTIVE_INGRED);
 			
@@ -192,7 +197,50 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		info ("Drugs validation complete");
 	}
 
+	private void ensureStatedInferredAttributesEqual(Concept c) throws TermServerScriptException {
+		//Get all stated and inferred relationships and remove ISA and PlaysRole
+		//Before checking for equivalence
+		String issueStr = "Stated attributes not identical to inferred";
+		initialiseSummary(issueStr);
+		List<Relationship> statedAttribs = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
+		List<Relationship> inferredAttribs = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE);
+		
+		Relationship isA = new Relationship(IS_A, null);
+		removeRels(isA, statedAttribs, true); //remove all instances
+		removeRels(isA, inferredAttribs, true);
+		
+		Relationship playsRole = new Relationship(PLAYS_ROLE, null);
+		removeRels(playsRole, statedAttribs, true); //remove all instances
+		removeRels(playsRole, inferredAttribs, true);
+		
+		//Now loop through all the stated relationship and remove them from inferred.
+		//The should all successfully remove, and the inferred rels should be empty at the end.
+		for (Relationship r : statedAttribs) {
+			boolean success = removeRels(r, inferredAttribs, false); //Just remove one
+			if (!success) {
+				report(c, issueStr, r);
+			}
+		}
+		
+		if (inferredAttribs.size() > 0) {
+			report(c, issueStr, inferredAttribs.get(0));
+		}
+	}
 
+	private boolean removeRels(Relationship removeMe, List<Relationship> rels, boolean removeAll) {
+		Set<Relationship> forRemoval = new HashSet<>();
+		for (Relationship r : rels) {
+			if (r.getType().equals(removeMe.getType()) &&
+				(removeMe.getTarget() == null || r.getTarget().equals(removeMe.getTarget()))){
+				forRemoval.add(r);
+				if (!removeAll) {
+					break;
+				}
+			}
+		}
+		rels.removeAll(forRemoval);
+		return forRemoval.size() > 0;
+	}
 
 	private void populateGrouperSubstances() throws TermServerScriptException {
 		//DRUGS-793 Ingredients of "(product)" Medicinal products will be
