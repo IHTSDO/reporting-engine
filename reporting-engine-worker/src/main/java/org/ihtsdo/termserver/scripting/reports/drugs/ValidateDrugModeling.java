@@ -108,112 +108,91 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		ConceptType[] cds = new ConceptType[] { ConceptType.CLINICAL_DRUG };  //DRUGS-267
 		
 		//for (Concept concept : Collections.singleton(gl.getConcept("778271007"))) {
-		for (Concept concept : subHierarchy) {
-			DrugUtils.setConceptType(concept);
+		for (Concept c : subHierarchy) {
+			DrugUtils.setConceptType(c);
 			
 			//INFRA-4159 Seeing impossible situation of no stated parents
-			if (concept.getParents(CharacteristicType.STATED_RELATIONSHIP).size() == 0) {
+			if (c.getParents(CharacteristicType.STATED_RELATIONSHIP).size() == 0) {
 				String issueStr = "Concept appears to have no stated parents";
 				initialiseSummaryInformation(issueStr);
-				report (concept, issueStr);
+				report (c, issueStr);
 				continue;
 			}
 			
 			//DRUGS-585
-			if (isMP(concept) || isMPF(concept)) {
-				validateNoModifiedSubstances(concept);
+			if (isMP(c) || isMPF(c)) {
+				validateNoModifiedSubstances(c);
 			}
 			
 			//DRUGS-784
-			if (concept.getConceptType().equals(ConceptType.CLINICAL_DRUG) || 
-					isMPF(concept)) {
-				validateAcceptableDoseForm(concept);
+			if (isCD(c) || isMPF(c)) {
+				validateAcceptableDoseForm(c);
 			}
 			
 			// DRUGS-281, DRUGS-282, DRUGS-269
-			if (!concept.getConceptType().equals(ConceptType.PRODUCT)) {
-				validateTerming(concept, allDrugTypes);  
+			if (!c.getConceptType().equals(ConceptType.PRODUCT)) {
+				validateTerming(c, allDrugTypes);  
 			}
 			
 			//DRUGS-267
-			validateIngredientsAgainstBoSS(concept);
+			validateIngredientsAgainstBoSS(c);
 			
 			//DRUGS-793
-			if (!concept.getConceptType().equals(ConceptType.PRODUCT)) {
-				checkForBossGroupers(concept);
-				checkForPaiGroupers(concept);
+			if (!c.getConceptType().equals(ConceptType.PRODUCT)) {
+				checkForBossGroupers(c);
+				checkForPaiGroupers(c);
 			}
 			
 			//DRUGS-296 
-			if (concept.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED) && 
-				concept.getParents(CharacteristicType.STATED_RELATIONSHIP).iterator().next().equals(MEDICINAL_PRODUCT)) {
-				validateStatedVsInferredAttributes(concept, HAS_ACTIVE_INGRED, allDrugTypes);
-				validateStatedVsInferredAttributes(concept, HAS_PRECISE_INGRED, allDrugTypes);
-				validateStatedVsInferredAttributes(concept, HAS_MANUFACTURED_DOSE_FORM, allDrugTypes);
+			if (c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED) && 
+				c.getParents(CharacteristicType.STATED_RELATIONSHIP).iterator().next().equals(MEDICINAL_PRODUCT)) {
+				validateStatedVsInferredAttributes(c, HAS_ACTIVE_INGRED, allDrugTypes);
+				validateStatedVsInferredAttributes(c, HAS_PRECISE_INGRED, allDrugTypes);
+				validateStatedVsInferredAttributes(c, HAS_MANUFACTURED_DOSE_FORM, allDrugTypes);
 			}
 			
 			//DRUGS-603: DRUGS-686 - Various modelling rules
 			//RP-186
-			if (concept.getConceptType().equals(ConceptType.CLINICAL_DRUG)) {
-				validateCdModellingRules(concept);
+			if (isCD(c)) {
+				validateCdModellingRules(c);
 			}
 			
 			//RP-189
-			if (concept.getConceptType().equals(ConceptType.PRODUCT)) {
-				validateProductModellingRules(concept);
+			if (c.getConceptType().equals(ConceptType.PRODUCT)) {
+				validateProductModellingRules(c);
 			}
 			
 			//DRUGS-518
-			if (SnomedUtils.isConceptType(concept, cds)) {
-				checkForInferredGroupsNotStated(concept);
+			if (SnomedUtils.isConceptType(c, cds)) {
+				checkForInferredGroupsNotStated(c);
 			}
 			
 			//DRUGS-51?
-			if (concept.getConceptType().equals(ConceptType.CLINICAL_DRUG)) {
-				validateConcentrationStrength(concept);
+			if (isCD(c)) {
+				validateConcentrationStrength(c);
 			}
 			
 			//DRUGS-288
-			validateAttributeValueCardinality(concept, HAS_ACTIVE_INGRED);
+			validateAttributeValueCardinality(c, HAS_ACTIVE_INGRED);
 			
 			//DRUGS-93, DRUGS-759
-			checkForBadWords(concept);  
+			checkForBadWords(c);  
 			
 			//DRUGS-629, RP-187
-			checkForSemTagViolations(concept);
+			checkForSemTagViolations(c);
 			
 			//RP-175
-			validateAttributeRules(concept);
+			validateAttributeRules(c);
 			
 			//RP-188
-			if (isCD(concept)) {
-				checkCdUnitConsistency(concept);
+			if (isCD(c)) {
+				checkCdUnitConsistency(c);
 			}
 		}
 		info ("Drugs validation complete");
 	}
 
-	private boolean isMP(Concept concept) {
-		return concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT) || 
-				concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_ONLY);
-	}
-	
-	private boolean isMPOnly(Concept concept) {
-		return concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_ONLY);
-	}
-	
-	private boolean isMPFOnly(Concept concept) {
-		return concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM_ONLY);
-	}
-	
-	private boolean isMPF(Concept concept) {
-		return concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM) || 
-				concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM_ONLY);
-	}
-	
-	private boolean isCD(Concept concept) {
-		return concept.getConceptType().equals(ConceptType.CLINICAL_DRUG);
-	}
+
 
 	private void populateGrouperSubstances() throws TermServerScriptException {
 		//DRUGS-793 Ingredients of "(product)" Medicinal products will be
@@ -459,7 +438,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		}
 		return factor;
 	}
-
+	
 	/*
 	Need to identify and update:
 		FSN beginning with "Product containing" that includes any of the following in any active description:
@@ -893,10 +872,19 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		
 		issueStr = "Precise MP/MPF must feature exactly one count of base";
 		initialiseSummary(issueStr);
-		if ((c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_ONLY) || 
-				c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM_ONLY))
+		if ((isMPOnly(c) || isMPFOnly(c))
 			&& c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, COUNT_BASE_ACTIVE_INGREDIENT, ActiveState.ACTIVE).size() != 1) { 
 			report (c, issueStr);
+		}
+		
+		issueStr = "'Only' and 'precisely' must have a count of base";
+		initialiseSummary(issueStr);
+		if (isCD(c) || isMPOnly(c) || isMPFOnly(c)) {
+			if (!c.getFsn().contains("only") && !c.getFsn().contains("precisely")) {
+				report (c, "UNEXPECTED CONCEPT TYPE - missing 'only' or 'precisely'");
+			} else if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, COUNT_BASE_ACTIVE_INGREDIENT, ActiveState.ACTIVE).size() != 1) { 
+				report (c, issueStr);
+			}
 		}
 		
 		issueStr = "Each rolegroup in a CD must feature four presentation or concentration attributes";
@@ -1010,6 +998,29 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		} catch (IOException e) {
 			throw new TermServerScriptException("Unable to read " + fileName, e);
 		}
+	}
+	
+
+	private boolean isMP(Concept concept) {
+		return concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT) || 
+				concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_ONLY);
+	}
+	
+	private boolean isMPOnly(Concept concept) {
+		return concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_ONLY);
+	}
+	
+	private boolean isMPFOnly(Concept concept) {
+		return concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM_ONLY);
+	}
+	
+	private boolean isMPF(Concept concept) {
+		return concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM) || 
+				concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM_ONLY);
+	}
+	
+	private boolean isCD(Concept concept) {
+		return concept.getConceptType().equals(ConceptType.CLINICAL_DRUG);
 	}
 	
 }
