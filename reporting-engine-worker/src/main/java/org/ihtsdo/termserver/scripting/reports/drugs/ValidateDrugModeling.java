@@ -146,6 +146,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 			}
 			
 			//DRUGS-603: DRUGS-686 - Various modelling rules
+			//RP-186
 			if (concept.getConceptType().equals(ConceptType.CLINICAL_DRUG)) {
 				validateCdModellingRules(concept);
 			}
@@ -279,9 +280,11 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		String issueStr = "Group contains > 1 presentation/concentration strength";
 		String issue2Str = "Group contains > 1 presentation/concentration strength";
 		String issue3Str = "Invalid drugs model";
+		String issue4Str = "CD with multiple inferred parents";
 		initialiseSummary(issueStr);
 		initialiseSummary(issue2Str);
 		initialiseSummary(issue3Str);
+		initialiseSummary(issue4Str);
 		
 		for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP)) {
 			if (g.isGrouped()) {
@@ -318,6 +321,13 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 					report (c, issue3Str, csdu.get(0));
 				}
 			}
+		}
+		
+		if (c.getParents(CharacteristicType.INFERRED_RELATIONSHIP).size() > 1) {
+			String parentsJoined = c.getParents(CharacteristicType.INFERRED_RELATIONSHIP).stream()
+					.map(p -> p.getPreferredSynonym())
+					.collect(Collectors.joining(", "));
+			report (c, issue4Str, parentsJoined);
 		}
 	}
 
