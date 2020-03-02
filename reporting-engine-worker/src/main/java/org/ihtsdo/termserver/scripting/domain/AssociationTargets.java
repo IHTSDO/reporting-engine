@@ -1,7 +1,10 @@
 package org.ihtsdo.termserver.scripting.domain;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
@@ -61,9 +64,15 @@ public class AssociationTargets {
 	}
 
 	public static AssociationTargets possEquivTo(Concept c) {
+		return possEquivTo(Collections.singleton(c));
+	}
+	
+
+	public static AssociationTargets possEquivTo(Set<Concept> replacements) {
 		AssociationTargets targets = new AssociationTargets();
-		List<String> targetList = new ArrayList<>();
-		targetList.add(c.getId());
+		List<String> targetList = replacements.stream()
+				.map(c -> c.getId())
+				.collect(Collectors.toList());
 		targets.setPossEquivTo(targetList);
 		return targets;
 	}
@@ -125,5 +134,6 @@ public class AssociationTargets {
 		int afterCount = replacedBy.size() + possEquivTo.size() + sameAs.size() + wasA.size();
 		return beforeCount - afterCount;
 	}
+
 
 }

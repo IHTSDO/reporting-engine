@@ -22,7 +22,7 @@ public class Axiom extends Component implements RF2Constants {
 	private String moduleId;
 	@SerializedName("active")
 	@Expose
-	private boolean active = true;
+	private Boolean active;
 	@SerializedName("released")
 	@Expose
 	private Boolean released;
@@ -35,6 +35,8 @@ public class Axiom extends Component implements RF2Constants {
 	@SerializedName("namedConceptOnLeft")
 	@Expose
 	private Boolean namedConceptOnLeft;
+	
+	private boolean dirty = false;
 
 
 	public Axiom(Concept c) {
@@ -85,8 +87,12 @@ public class Axiom extends Component implements RF2Constants {
 	public void setEffectiveTime(String effectiveTime) {
 		this.effectiveTime = effectiveTime;
 	}
-	public void setActive(boolean active) {
-		this.active = active;
+	public void setActive(boolean newActiveState) {
+		if (this.active != null && !this.active == newActiveState) {
+			this.effectiveTime = null;
+			setDirty();
+		}
+		this.active = newActiveState;
 	}
 	
 	@Override
@@ -135,10 +141,23 @@ public class Axiom extends Component implements RF2Constants {
 	public void clearRelationships() {
 		relationships = new ArrayList<>();
 	}
+	
+	public boolean isDirty() {
+		return dirty;
+	}
+	
+	public void setDirty() {
+		dirty = true;
+	}
+	
+	public void setClean() {
+		dirty = false;
+	}
 
 	public Axiom clone(String id, Concept c) {
 		Axiom clone = new Axiom(c);
 		clone.setModuleId(this.getModuleId());
+		clone.setActive(this.isActive());
 		for (Relationship r : this.getRelationships()) {
 			Relationship rClone = r.clone();
 			rClone.setSource(c);

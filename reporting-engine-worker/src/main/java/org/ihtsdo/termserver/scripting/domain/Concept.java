@@ -1154,6 +1154,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		clone.setModuleId(getModuleId());
 		clone.setConceptType(conceptType);
 		clone.setInactivationIndicator(inactivationIndicator);
+		clone.setReleased(released);
 		
 		//Copy all descriptions
 		ActiveState activeState = includeInactiveComponents ? ActiveState.BOTH : ActiveState.ACTIVE;
