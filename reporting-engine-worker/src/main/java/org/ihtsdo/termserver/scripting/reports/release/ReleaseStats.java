@@ -9,6 +9,7 @@ import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.AncestorsCache;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.ActiveState;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
@@ -39,6 +40,9 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 	
 	public void runJob() throws TermServerScriptException {
 		
+		info("Reporting General Release Stats");
+		reportGeneralReleaseStats();
+		
 		info("Checking for role group crossovers");
 		reportRoleGroupCrossovers();
 		
@@ -46,10 +50,10 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 		reportUngroupedCrossovers();
 		
 		info("Checking for Intermediate Primitives");
-		countIPs(CharacteristicType.INFERRED_RELATIONSHIP, QUATERNARY_REPORT);
+		countIPs(CharacteristicType.INFERRED_RELATIONSHIP, QUINARY_REPORT);
 		
 		info("Checking for Stated Intermediate Primitives");
-		countIPs(CharacteristicType.STATED_RELATIONSHIP, QUINARY_REPORT);
+		countIPs(CharacteristicType.STATED_RELATIONSHIP, SENARY_REPORT);
 		
 		info("Calculating Fully Defined %");
 		countSD(CharacteristicType.STATED_RELATIONSHIP, QUINARY_REPORT);
@@ -57,18 +61,46 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 
 
 
+	private void reportGeneralReleaseStats() throws TermServerScriptException {
+		/* Double check these with SQL:
+		 * 
+		 */
+		int allConcepts = 0, activeConcepts = 0, sd = 0, p = 0, activeDesc = 0, activeInf = 0;
+		for (Concept c : gl.getAllConcepts()) {
+			allConcepts++;
+			if (c.isActive()) {
+				activeConcepts++;
+			}
+			if (c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
+				sd++;
+			} else {
+				p++;
+			}
+			activeDesc += c.getDescriptions(ActiveState.ACTIVE).size();
+			activeInf += c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE).size();
+		}
+		report (PRIMARY_REPORT, "All Concepts", allConcepts);
+		report (PRIMARY_REPORT, "Active Concepts", activeConcepts);
+		report (PRIMARY_REPORT, "Sufficiently Defined", sd);
+		report (PRIMARY_REPORT, "Primitive", p);
+		report (PRIMARY_REPORT, "Active Descriptions + TextDefn", activeDesc);
+		report (PRIMARY_REPORT, "Active Relationships", activeInf);
+	}
+
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA
 		super.init(run);
 	}
 	
 	public void postInit() throws TermServerScriptException {
-		String[] columnHeadings = new String[] {"KPI, count, of which Orphanet", 
+		String[] columnHeadings = new String[] {"Stat, count",
+												"KPI, count, of which Orphanet", 
 												"SCTID, FSN, SemTag, Crossover",
 												"SCTID, FSN, SemTag, Crossover",
 												"SCTID, FSN, SemTag",
 												"SCTID, FSN, SemTag"};
-		String[] tabNames = new String[] {	"Summary Counts", 
+		String[] tabNames = new String[] {	"Summary Release Stats",
+											"Summary KPI Counts", 
 											"Role group crossovers",
 											"Ungrouped crossovers",
 											"Intermediate Primitives",
@@ -102,7 +134,7 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 							case ROLES_CROSSOVER:	
 												roleGroupCrossOvers++;
 												String msg = "Crossover between groups #" + left.getGroupId() + " and #" + right.getGroupId();
-												report (SECONDARY_REPORT, c, msg);
+												report (TERTIARY_REPORT, c, msg);
 												break;
 							default:
 						}
@@ -111,7 +143,7 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 				}
 			}
 		}
-		report (PRIMARY_REPORT, "Role group crossovers", roleGroupCrossOvers);
+		report (SECONDARY_REPORT, "Role group crossovers", roleGroupCrossOvers);
 	}
 	
 	//Report cases where an ungrouped attribute also appears in a more general 
@@ -132,17 +164,17 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 					}
 					for (Relationship groupedRel : group.getRelationships()) {
 						if (SnomedUtils.isMoreSpecific(ungroupedRel, groupedRel, cache)) {
-							report (TERTIARY_REPORT, c, "More Specific", ungroupedRel, groupedRel);
+							report (QUATERNARY_REPORT, c, "More Specific", ungroupedRel, groupedRel);
 							ungroupedCrossovers++;
 						} else if (SnomedUtils.inconsistentSubsumption(ungroupedRel, groupedRel, cache)) {
-							report (TERTIARY_REPORT, c, "Inconsistent", ungroupedRel, groupedRel);
+							report (QUATERNARY_REPORT, c, "Inconsistent", ungroupedRel, groupedRel);
 							ungroupedCrossovers++;
 						}
 					}
 				}
 			}
 		}
-		report (PRIMARY_REPORT, "Role group ungrouped inconsistencies", ungroupedCrossovers);
+		report (SECONDARY_REPORT, "Role group ungrouped inconsistencies", ungroupedCrossovers);
 	}
 
 	public void countIPs (CharacteristicType charType, int reportIdx) throws TermServerScriptException {
@@ -158,7 +190,7 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 			}
 		}
 		String statedIndicator = charType.equals(CharacteristicType.STATED_RELATIONSHIP)?" stated":"";
-		report (PRIMARY_REPORT, "Number of" + statedIndicator + " Intermediate Primitives", ipCount, orphanetIPs);
+		report (SECONDARY_REPORT, "Number of" + statedIndicator + " Intermediate Primitives", ipCount, orphanetIPs);
 	}
 	
 	private void countSD(CharacteristicType statedRelationship, int quinaryReport) throws TermServerScriptException {
@@ -176,7 +208,7 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 		DecimalFormat df = new DecimalFormat("##.#%");
 		double percent = (sufficientlyDefinedConcepts / activeConcepts);
 		String formattedPercent = df.format(percent);
-		report (PRIMARY_REPORT, "% Sufficiently Defined", formattedPercent);
+		report (SECONDARY_REPORT, "% Sufficiently Defined", formattedPercent);
 
 	}
 	

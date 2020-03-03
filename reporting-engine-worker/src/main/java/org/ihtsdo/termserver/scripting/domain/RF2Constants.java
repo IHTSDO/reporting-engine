@@ -17,7 +17,8 @@ public interface RF2Constants {
 	final int TERTIARY_REPORT = 2;
 	final int QUATERNARY_REPORT = 3;
 	final int QUINARY_REPORT = 4;
-	//quinary, senary, septenary, octonary, nonary, denary if you need more!
+	final int SENARY_REPORT = 5;  //One of the few times I'd prefer 1 based indexing!
+	//septenary, octonary, nonary, denary if you need more
 	
 	static Concept IS_A =  new Concept ("116680003");  // | Is a (attribute) |
 	static Concept NULL_CONCEPT = new Concept ("-1");
