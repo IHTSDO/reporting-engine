@@ -38,6 +38,9 @@ public class ScheduleServiceImpl implements ScheduleService {
 	JobScheduleRepository jobScheduleRepository;
 	
 	@Autowired
+	WhiteListRepository whiteListRepository;
+	
+	@Autowired
 	TaskScheduler engineScheduler;
 	
 	@Autowired
@@ -116,7 +119,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 		jobRun.setRequestTime(new Date());
 		jobRun.setStatus(JobStatus.Scheduled);
 		jobRun.setTerminologyServerUrl(terminologyServerUrl);
-		jobRun.setWhiteList(job.getWhiteList(jobRun.getcodeSystemShortname()));
+		jobRun.setWhiteList(job.getWhiteListConcepts(jobRun.getcodeSystemShortname()));
 		populateAuthenticationDetails(jobRun);
 		
 		//We protect the json from having parent links and redundant keys, 
@@ -312,17 +315,39 @@ public class ScheduleServiceImpl implements ScheduleService {
 		if (job == null) {
 			throw new ResourceNotFoundException("Job unknown to Schedule Service: '" + jobName+"' If job exists and is active, re-run initialise.");
 		}
-		return job.getWhiteList(codeSystemShortname);
+		return job.getWhiteListConcepts(codeSystemShortname);
 	}
 
 	@Override
-	public void setWhiteList(String typeName, String jobName, String codeSystemShortname, Set<WhiteListedConcept> whiteList) throws ResourceNotFoundException {
+	public void setWhiteList(String typeName, String jobName, String codeSystemShortname, Set<WhiteListedConcept> whiteListConcepts) throws ResourceNotFoundException {
 		//Do we know about this job?
 		Job job = getJob(jobName);
 		if (job == null) {
 			throw new ResourceNotFoundException("Job unknown to Schedule Service: '" + jobName +"' If job exists and is active, re-run initialise.");
 		}
-		logger.info("Whitelisted {} concepts for job: {}", whiteList.size(), jobName);
+		
+		WhiteList whiteList = null;
+		if (whiteListConcepts == null || whiteListConcepts.size() == 0) {
+			logger.info("Removing all whitelisted concepts for job: {}", jobName);
+		} else {
+			logger.info("Whitelisting {} concepts for job: {}", whiteListConcepts.size(), jobName);
+			//If this job doesn't have a whitelist for this code system then we'll need to save it first so
+			//that it has an identifier - TODO I'm sure this can be improved, hibernate should take care of this
+			whiteList = job.getWhiteList(codeSystemShortname);
+			if (whiteList == null) {
+				whiteList = new WhiteList(codeSystemShortname, null);
+				whiteList = whiteListRepository.save(whiteList);
+				logger.info("Provisional save of whitelist {}", whiteList.getId());
+				whiteList.setConcepts(whiteListConcepts);
+			} else {
+				whiteList.getConcepts().retainAll(whiteListConcepts);
+				whiteList.getConcepts().addAll(whiteListConcepts);
+			} 
+			//To keep hibernate happy, we need to tell each concept in this list about its parent
+			for (WhiteListedConcept whiteListedConcept : whiteListConcepts) {
+				whiteListedConcept.setWhiteList(whiteList);
+			}
+		}
 		job.setWhiteList(codeSystemShortname, whiteList);
 		jobRepository.save(job);
 	}

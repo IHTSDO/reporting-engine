@@ -165,7 +165,7 @@ public class SchedulerController {
 		scheduleService.initialise();
 	}
 
-	@ApiOperation(value="List whitelisted concepts for the given job")
+	@ApiOperation(value="List whitelisted concepts for the given job & code system")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
 	})
@@ -177,7 +177,7 @@ public class SchedulerController {
 		return scheduleService.getWhiteList(typeName, codeSystemShortname, jobName);
 	}
 	
-	@ApiOperation(value="Set whitelisted concept for the given job")
+	@ApiOperation(value="Set whitelisted concept for the given job & code system")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK")
 	})
