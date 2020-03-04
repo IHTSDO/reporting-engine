@@ -40,7 +40,7 @@ public class NewConcepts extends TermServerReport implements ReportClass {
 				.add(SUB_HIERARCHY).withType(JobParameter.Type.CONCEPT).withDefaultValue(ROOT_CONCEPT)
 				.build();
 		return new Job()
-				.withCategory(new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES))
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION))
 				.withName("List new concepts")
 				.withDescription("This report lists all concepts (optionally in the given subhierarchy) created in the current authoring cycle")
 				.withProductionStatus(ProductionStatus.PROD_READY)
