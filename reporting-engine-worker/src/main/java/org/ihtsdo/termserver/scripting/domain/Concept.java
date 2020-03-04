@@ -12,7 +12,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
-public class Concept extends Component implements RF2Constants, Comparable<Concept>  {
+public class Concept extends Component implements RF2Constants, Comparable<Concept>, Expressable  {
 
 	@SerializedName("effectiveTime")
 	@Expose
@@ -1018,6 +1018,21 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		return axiomEntries;
 	}
 	
+	public List<AxiomEntry> getAxiomEntries(ActiveState activeState, boolean includeGCIs) {
+		switch (activeState) {
+			case BOTH: return getAxiomEntries();
+			case ACTIVE: return getAxiomEntries().stream()
+					.filter(a -> a.isActive())
+					.filter(a -> includeGCIs || !a.isGCI())
+					.collect(Collectors.toList());
+			case INACTIVE: return getAxiomEntries().stream()
+					.filter(a -> !a.isActive())
+					.filter(a -> includeGCIs || !a.isGCI())
+					.collect(Collectors.toList());
+			default: throw new IllegalStateException("Unknown state " + activeState);
+		}
+	}
+	
 	//id	effectiveTime	active	moduleId	definitionStatusId
 	public String[] toRF2() throws TermServerScriptException {
 		return new String[] {conceptId, 
@@ -1247,6 +1262,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	public Collection<RelationshipGroup> getRelationshipGroups(CharacteristicType characteristicType) {
 		return getRelationshipGroups(characteristicType, false);
 	}
+	
 	public Collection<RelationshipGroup> getRelationshipGroups(CharacteristicType characteristicType, boolean includeIsA) {
 		Collection<RelationshipGroup> relationshipGroups = characteristicType.equals(CharacteristicType.STATED_RELATIONSHIP) ? statedRelationshipGroups : inferredRelationshipGroups;
 		if (relationshipGroups == null) {
@@ -1335,6 +1351,9 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	}
 
 	public List<Axiom> getAdditionalAxioms() {
+		if (additionalAxioms == null) {
+			additionalAxioms = new ArrayList<>();
+		}
 		return additionalAxioms;
 	}
 
@@ -1343,6 +1362,9 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	}
 
 	public List<Axiom> getGciAxioms() {
+		if (gciAxioms == null) {
+			gciAxioms = new ArrayList<>();
+		}
 		return gciAxioms;
 	}
 

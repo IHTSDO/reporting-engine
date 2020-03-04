@@ -839,11 +839,11 @@ public class SnomedUtils implements RF2Constants {
 		return targets;
 	}
 	
-	public static String getModel(Concept c, CharacteristicType charType) {
+	public static String getModel(Expressable c, CharacteristicType charType) {
 		return getModel(c, charType, false);
 	}
 	
-	public static String getModel(Concept c, CharacteristicType charType, boolean includeParents) {
+	public static String getModel(Expressable c, CharacteristicType charType, boolean includeParents) {
 		String model = "";
 		
 		if (includeParents) {
@@ -869,7 +869,7 @@ public class SnomedUtils implements RF2Constants {
 		return model;
 	}
 	
-	public static Integer countAttributes(Concept c, CharacteristicType charType) {
+	public static Integer countAttributes(Expressable c, CharacteristicType charType) {
 		int attributeCount = 0;
 		for (Relationship r : c.getRelationships(charType, ActiveState.ACTIVE)) {
 			if (!r.getType().equals(IS_A)) {
