@@ -1330,6 +1330,9 @@ public abstract class TermServerScript implements RF2Constants {
 		StringBuffer sb = new StringBuffer();
 		boolean isFirst = true;
 		for (Object detail : details) {
+			if (detail == null) {
+				detail = "";
+			}
 			boolean isNumeric = StringUtils.isNumeric(detail.toString()) || detail.toString().startsWith(QUOTE);
 			String prefix = isFirst ? QUOTE : COMMA_QUOTE;
 			if (isNumeric) {

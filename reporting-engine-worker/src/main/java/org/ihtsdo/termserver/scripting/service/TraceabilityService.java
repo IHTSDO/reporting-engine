@@ -8,12 +8,16 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.traceability.TraceabilityServiceClient;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.JobRun;
 import org.snomed.otf.traceability.domain.Activity;
 import org.snomed.otf.traceability.domain.ActivityType;
 import org.snomed.otf.traceability.domain.ConceptChange;
 
 public class TraceabilityService {
+	
+	static Logger logger = LoggerFactory.getLogger(TraceabilityService.class);
 
 	TraceabilityServiceClient client;
 	TermServerScript ts;
@@ -47,6 +51,9 @@ public class TraceabilityService {
 				.map(r -> Long.parseLong(r.c.getConceptId()))
 				.collect(Collectors.toList());
 		List<Activity> traceabilityInfo = client.getConceptActivity(conceptIds, areaOfInterest, ActivityType.CONTENT_CHANGE);
+		if (traceabilityInfo.size() == 0) {
+			logger.warn("Failed to recover any traceability information for {} concepts", conceptIds.size());
+		}
 		for (Activity activity : traceabilityInfo) {
 			String[] info = new String[3];
 			info[0] = activity.getUser().getUsername();
