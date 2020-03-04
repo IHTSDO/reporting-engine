@@ -7,6 +7,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.service.TraceabilityService;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 
@@ -27,8 +28,8 @@ public class LoincReport extends TermServerReport implements ReportClass {
 	}
 	
 	public void postInit() throws TermServerScriptException {
-		String[] columnHeadings = new String[] { "SCTID, FSN, SemTag",
-				"SCTID, FSN, SemTag"};
+		String[] columnHeadings = new String[] { "SCTID, FSN, SemTag, Author, Task, Creation Date",
+				"SCTID, FSN, SemTag, Author, Task, Creation Date"};
 		String[] tabNames = new String[] {	"New Observable Entities",
 				"New Evaluation Procedures"};
 		
@@ -47,18 +48,21 @@ public class LoincReport extends TermServerReport implements ReportClass {
 	}
 	
 	public void runJob() throws TermServerScriptException {
+		TraceabilityService traceability = new TraceabilityService(jobRun, this, "reating concept");
+		
 		for (Concept c : gl.getConcept("363787002 | Observable entity (observable entity)").getDescendents(NOT_SET)) {
 			if (!c.isReleased()) {
-				report (PRIMARY_REPORT, c);
+				traceability.populateTraceabilityAndReport(PRIMARY_REPORT, c);
 				countIssue(c);
 			}
 		}
 		
 		for (Concept c : gl.getConcept("386053000 | Evaluation procedure (procedure)").getDescendents(NOT_SET)) {
 			if (!c.isReleased()) {
-				report (SECONDARY_REPORT, c);
+				traceability.populateTraceabilityAndReport (SECONDARY_REPORT, c);
 				countIssue(c);
 			}
 		}
+		traceability.flush();
 	}
 }
