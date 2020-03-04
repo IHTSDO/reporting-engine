@@ -42,6 +42,7 @@ public class Axiom extends Component implements RF2Constants {
 	public Axiom(Concept c) {
 		moduleId = c.getConceptId();
 		definitionStatus = c.getDefinitionStatus();
+		active = true;
 	}
 	
 	public String getModuleId() {

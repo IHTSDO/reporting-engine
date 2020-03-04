@@ -840,7 +840,23 @@ public class SnomedUtils implements RF2Constants {
 	}
 	
 	public static String getModel(Concept c, CharacteristicType charType) {
+		return getModel(c, charType, false);
+	}
+	
+	public static String getModel(Concept c, CharacteristicType charType, boolean includeParents) {
 		String model = "";
+		
+		if (includeParents) {
+			model = c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED) ? "=== " : "<<< ";
+			String parentStr = c.getParents(charType).stream()
+					.map(p -> p.getFsn())
+					.collect(Collectors.joining(" + "));
+			model += parentStr;
+			if (SnomedUtils.countAttributes(c, charType) > 0) {
+				model +=" : ";
+			}
+			model += "\n";
+		}
 		boolean isFirst = true;
 		for (RelationshipGroup g : c.getRelationshipGroups(charType)) {
 			if (!isFirst) {
