@@ -8,6 +8,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.job.ReportClass;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.service.TraceabilityService;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.ihtsdo.termserver.scripting.util.StringUtils;
 import org.snomed.otf.scheduler.domain.*;
@@ -32,6 +33,8 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 	private Set<Concept> isTargetOfNewInferredRelationship = new HashSet<>();
 	private Set<Concept> wasTargetOfLostInferredRelationship = new HashSet<>();
 	
+	TraceabilityService traceability;
+	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		TermServerReport.run(ConceptChanged.class, args, params);
@@ -47,11 +50,11 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 	
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
-				"Id, FSN, SemTag, Active, DefStatusChanged",
-				"Id, FSN, SemTag, Active, hasNewStatedRelationships, hasNewInferredRelationships, hasLostStatedRelationships, hasLostInferredRelationships",
-				"Id, FSN, SemTag, Active, hasNewDescriptions, hasChangedDescriptions, hasLostDescriptions",
-				"Id, FSN, SemTag, Active, hasChangedAssociations, hasChangedInactivationIndicators",
-				"Id, FSN, SemTag, Active,isTargetOfNewStatedRelationship, isTargetOfNewInferredRelationship, wasTargetOfLostStatedRelationship, wasTargetOfLostInferredRelationship"};
+				"Id, FSN, SemTag, Active, DefStatusChanged, Author, Task, Creation Date",
+				"Id, FSN, SemTag, Active, hasNewStatedRelationships, hasNewInferredRelationships, hasLostStatedRelationships, hasLostInferredRelationships, Author, Task, Creation Date",
+				"Id, FSN, SemTag, Active, hasNewDescriptions, hasChangedDescriptions, hasLostDescriptions, Author, Task, Creation Date",
+				"Id, FSN, SemTag, Active, hasChangedAssociations, hasChangedInactivationIndicators, Author, Task, Creation Date",
+				"Id, FSN, SemTag, Active,isTargetOfNewStatedRelationship, isTargetOfNewInferredRelationship, wasTargetOfLostStatedRelationship, wasTargetOfLostInferredRelationship, Author, Task, Creation Date"};
 		String[] tabNames = new String[] {	
 				"Concept Changes",
 				"Relationship Changes",
@@ -59,6 +62,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 				"Association Changes",
 				"Incoming Relationship Changes"};
 		super.postInit(tabNames, columnHeadings, false);
+		traceability = new TraceabilityService(jobRun, this, "update");
 	}
 	
 	@Override
@@ -69,7 +73,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION))
 				.withName("Concepts Changed")
-				.withDescription("This report lists all concepts changed in the current release cycle.  The issue count here is the total number of concepts featuring one change or another.")
+				.withDescription("This service.populateTraceabilityAndReport lists all concepts changed in the current release cycle.  The issue count here is the total number of concepts featuring one change or another.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(INT)
@@ -80,7 +84,8 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 	public void runJob() throws TermServerScriptException {
 		examineConcepts();
 		reportConceptsChanged();
-		determineUniqueCount();
+		determineUniqueCountAndTraceability();
+		traceability.flush();
 		info ("Job complete");
 	}
 	
@@ -101,7 +106,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 			if (c.isReleased() == null) {
 				throw new IllegalStateException ("Malformed snapshot. Released status not populated at " + c);
 			} else if (!c.isReleased()) {
-				//We will not report any changes on brand new concepts
+				//We will not service.populateTraceabilityAndReport any changes on brand new concepts
 				//Or (in managed service) concepts from other modules
 				continue;
 			} else if (inScope(c) && 
@@ -178,16 +183,16 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 	
 	private void reportConceptsChanged() throws TermServerScriptException {
 		HashSet<Concept> superSet = new HashSet<>();
-		
 		superSet.addAll(newConcepts);
 		superSet.addAll(defStatusChanged);
 		superSet.addAll(inactivatedConcepts);
 		debug ("Creating concept report for " + superSet.size() + " concepts");
 		for (Concept c : sort(superSet)) {
-			report (c,
+			traceability.populateTraceabilityAndReport (PRIMARY_REPORT, c,
 				c.isActive()?"Y":"N",
 				defStatusChanged.contains(c)?"Y":"N");
 		}
+		traceability.flush();
 		superSet.clear();
 		
 		superSet.addAll(hasNewStatedRelationships);
@@ -196,7 +201,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		superSet.addAll(hasLostInferredRelationships);
 		debug ("Creating relationship report for " + superSet.size() + " concepts");
 		for (Concept c : sort(superSet)) {
-			report (SECONDARY_REPORT, c,
+			traceability.populateTraceabilityAndReport (SECONDARY_REPORT, c,
 				c.isActive()?"Y":"N",
 				hasNewStatedRelationships.contains(c)?"Y":"N",
 				hasNewInferredRelationships.contains(c)?"Y":"N",
@@ -210,7 +215,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		superSet.addAll(hasLostDescriptions);
 		debug ("Creating description report for " + superSet.size() + " concepts");
 		for (Concept c : sort(superSet)) {
-			report (TERTIARY_REPORT, c,
+			traceability.populateTraceabilityAndReport (TERTIARY_REPORT, c,
 				c.isActive()?"Y":"N",
 				hasNewDescriptions.contains(c)?"Y":"N",
 				hasChangedDescriptions.contains(c)?"Y":"N",
@@ -222,7 +227,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		superSet.addAll(hasChangedInactivationIndicators);
 		debug ("Creating association report for " + superSet.size() + " concepts");
 		for (Concept c : sort(superSet)) {
-			report (QUATERNARY_REPORT, c,
+			traceability.populateTraceabilityAndReport (QUATERNARY_REPORT, c,
 				c.isActive()?"Y":"N",
 				hasChangedAssociations.contains(c)?"Y":"N",
 				hasChangedInactivationIndicators.contains(c)?"Y":"N");
@@ -235,7 +240,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		superSet.addAll(wasTargetOfLostInferredRelationship);
 		debug ("Creating incoming relatonshiip report for " + superSet.size() + " concepts");
 		for (Concept c : sort(superSet)) {
-			report (QUINARY_REPORT, c,
+			traceability.populateTraceabilityAndReport (QUINARY_REPORT, c,
 				c.isActive()?"Y":"N",
 				isTargetOfNewStatedRelationship.contains(c)?"Y":"N",
 				wasTargetOfLostStatedRelationship.contains(c)?"Y":"N",
@@ -244,7 +249,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		}
 	}
 	
-	private void determineUniqueCount() {
+	private void determineUniqueCountAndTraceability() {
 		debug ("Determining unique count");
 		HashSet<Concept> superSet = new HashSet<>();
 		superSet.addAll(newConcepts);
@@ -267,6 +272,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		for (Concept c : superSet) {
 			countIssue(c);
 		}
+		
 	}
 	
 	private List<Concept> sort(Set<Concept> superSet) {

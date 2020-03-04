@@ -1373,7 +1373,7 @@ public abstract class TermServerScript implements RF2Constants {
 	private void addObjectArray(StringBuffer sb, Object detail, String prefix, boolean isNumeric) {
 		Object[] arr = (Object[]) detail;
 		for (Object obj : arr) {
-			if (obj instanceof String[]) {
+			if (obj instanceof String[] || obj instanceof Object[]) {
 				addObjectArray(sb,obj, prefix, isNumeric);
 			} else {
 				String data = (obj==null?"":obj.toString());

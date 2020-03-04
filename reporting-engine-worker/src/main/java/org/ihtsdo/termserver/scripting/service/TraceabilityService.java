@@ -60,13 +60,19 @@ public class TraceabilityService {
 			info[1] = activity.getBranch().getBranchPath();
 			info[2] = activity.getCommitDate().toInstant().atZone(ZoneId.systemDefault()).toString();
 			//TODO Check for multiple rows for single concept
-			batchedReportRowMap.get(getConceptId(activity)).traceabilityInfo = info;
+			batchedReportRowMap.get(getConceptId(activity, conceptIds)).traceabilityInfo = info;
 		}
 	}
 	
-	private Long getConceptId(Activity activity) {
-		ConceptChange change = activity.getConceptChanges().iterator().next();
-		return change.getConceptId();
+	private Long getConceptId(Activity activity, List<Long> conceptsOfInterest) {
+		Long conceptId = null;
+		for (ConceptChange change : activity.getConceptChanges()) {
+			//If the data coming back wasn't about a concept we're interested in, ignore it
+			if (change.getConceptId() != null && conceptsOfInterest.contains(change.getConceptId())) {
+				conceptId = change.getConceptId(); 
+			}
+		}
+		return conceptId;
 	}
 
 	private void report() throws TermServerScriptException {
