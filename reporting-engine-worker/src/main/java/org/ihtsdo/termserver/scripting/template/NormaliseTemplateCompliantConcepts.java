@@ -276,10 +276,10 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		subHierarchyECL = "<<  282100009 |Adverse reaction caused by substance (disorder)|"; //QI-406
 		templateNames = new String[] {	"templates/Adverse Reaction.json"};
 		includeComplexTemplates = true;
-		*/
+		
 		subHierarchyECL = "<< 128462008 |Secondary malignant neoplastic disease (disorder)|"; //QI-382
 		templateNames = new String[] {	"templates/Secondary malignant neoplasm.json"};
-		/*
+		
 		subHierarchyECL = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 125671007 |Rupture (morphologic abnormality)|"; //QI-498
 		templateNames = new String[] {	"templates/Traumatic rupture of joint.json"};
 		includeComplexTemplates = true;
@@ -293,6 +293,10 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		subHierarchyECL = "<<  64572001 |Disease (disorder)|  :  116676008 |Associated morphology (attribute)|  = <<  68790008 |Amyloid deposition (morphologic abnormality)|"; //QI-225
 		templateNames = new String[] {	"templates/Amyloid.json"};
 		*/
+		
+		subHierarchyECL = "<<  64572001 |Disease (disorder)|  :  116676008 |Associated morphology (attribute)|  = <<  6574001 |Necrosis (morphologic abnormality)|"; //QI-530
+		templateNames = new String[] {	"templates/Necrosis.json"};
+		includeComplexTemplates=true;
 		super.init(args);
 		
 		//Ensure our ECL matches more than 0 concepts.  This will also cache the result
