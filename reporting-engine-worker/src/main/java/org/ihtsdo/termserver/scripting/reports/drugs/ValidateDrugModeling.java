@@ -163,9 +163,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 			}
 			
 			//RP-189
-			if (c.getConceptType().equals(ConceptType.PRODUCT)) {
-				validateProductModellingRules(c);
-			}
+			validateProductModellingRules(c);
 			
 			//DRUGS-518
 			if (SnomedUtils.isConceptType(c, cds)) {
