@@ -62,7 +62,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 				"Association Changes",
 				"Incoming Relationship Changes"};
 		super.postInit(tabNames, columnHeadings, false);
-		traceability = new TraceabilityService(jobRun, this, "update");
+		traceability = new TraceabilityService(jobRun, this, "pdat");  //Matching Updating and updated
 	}
 	
 	@Override
