@@ -995,7 +995,8 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 				report (c, issueStr);
 			}
 		} else if ((isMP(c) || isMPF(c)) && 
-				(c.getFsn().contains("only") || c.getFsn().contains("precisely"))) {
+				(c.getFsn().contains("only") || c.getFsn().contains("precisely")) &&
+				c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, COUNT_BASE_ACTIVE_INGREDIENT, ActiveState.ACTIVE).size() != 1) {
 			report (c, issueStr);
 		}
 		
