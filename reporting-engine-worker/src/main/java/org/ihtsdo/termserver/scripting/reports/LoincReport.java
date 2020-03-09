@@ -41,7 +41,7 @@ public class LoincReport extends TermServerReport implements ReportClass {
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES))
 				.withName("LOINC Report")
-				.withDescription("This report lists new concepts relevant to legal agreements relating to LOINC, specifically all new concepts in << 363787002 | Observable entity (observable entity) and << 386053000 | Evaluation procedure (procedure)")
+				.withDescription("This report lists new concepts in the core module relevant to legal agreements relating to LOINC, specifically all new concepts in << 363787002 | Observable entity (observable entity) and << 386053000 | Evaluation procedure (procedure)")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withTag(INT)
 				.build();
