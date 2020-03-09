@@ -984,14 +984,19 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 			report (c, issueStr);
 		}
 		
+		//In the case of a missing count of base, we will not have detected that this concept is MP/MPF Only
+		//So we must fall back to using fsn lexical search
 		issueStr = "'Only' and 'precisely' must have a count of base";
 		initialiseSummary(issueStr);
-		if (isCD(c) || isMPOnly(c) || isMPFOnly(c)) {
+		if (isCD(c)) {
 			if (!c.getFsn().contains("only") && !c.getFsn().contains("precisely")) {
 				report (c, "UNEXPECTED CONCEPT TYPE - missing 'only' or 'precisely'");
 			} else if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, COUNT_BASE_ACTIVE_INGREDIENT, ActiveState.ACTIVE).size() != 1) { 
 				report (c, issueStr);
 			}
+		} else if ((isMP(c) || isMPF(c)) && 
+				(c.getFsn().contains("only") || c.getFsn().contains("precisely"))) {
+			report (c, issueStr);
 		}
 		
 		issueStr = "Each rolegroup in a CD must feature four presentation or concentration attributes";
