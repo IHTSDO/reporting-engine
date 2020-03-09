@@ -67,7 +67,7 @@ public class AttributeDetails extends TermServerReport implements ReportClass {
 				.withName("Attribute Detail")
 				.withDescription("This report lists all concepts matching the specified ECL - filtered based on term - along with their attributes" + 
 				" in a compact or expanded report format.  Note that concepts with no attributes will not be listed")
-				.withProductionStatus(ProductionStatus.PROD_READY)
+				.withProductionStatus(ProductionStatus.HIDEME)
 				.withParameters(params)
 				.withTag(INT)
 				.build();
