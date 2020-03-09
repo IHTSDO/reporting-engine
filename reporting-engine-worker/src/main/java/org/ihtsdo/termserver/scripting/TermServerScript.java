@@ -1309,7 +1309,7 @@ public abstract class TermServerScript implements RF2Constants {
 	public void report (int reportIdx, Concept c, Object...details) throws TermServerScriptException {
 		//Have we whiteListed this concept?
 		if (whiteListedConcepts.contains(c)) {
-			String detailsStr = Arrays.asList(details).stream().map(o -> o.toString()).collect(Collectors.joining(", "));
+			String detailsStr = details == null ? "No Details" : Arrays.asList(details).stream().map(o -> o.toString()).collect(Collectors.joining(", "));
 			warn ("Ignoring whiteListed concept: " + c + " :  " + detailsStr);
 			incrementSummaryInformation(WHITE_LISTED_COUNT);
 		} else {
