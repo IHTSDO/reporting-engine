@@ -120,6 +120,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 		jobRun.setStatus(JobStatus.Scheduled);
 		jobRun.setTerminologyServerUrl(terminologyServerUrl);
 		jobRun.setWhiteList(job.getWhiteListConcepts(jobRun.getcodeSystemShortname()));
+		logger.info("Whitelisting {} concepts for {} in codeSystem", jobRun.getWhiteList().size(), jobRun.getJobName(), jobRun.getcodeSystemShortname());
 		populateAuthenticationDetails(jobRun);
 		
 		//We protect the json from having parent links and redundant keys, 
@@ -134,7 +135,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 				throw new BusinessServiceException(jobRun.getJobName() + " didn't expect user supplied parameter: '" + parameterKey + "'");
 			} else {
 				if (populateProject && parameterKey.toLowerCase().equals("project")) {
-					jobRun.setProject(jobParam.getValue());
+					jobRun.setProject(jobRun.getParameters().get(parameterKey).getValue());
 				}
 				
 				Integer displayOrder = job.getParameters().get(parameterKey).getDisplayOrder();
