@@ -4,6 +4,7 @@ import java.util.*;
 
 import org.apache.commons.csv.CSVRecord;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.*;
@@ -235,10 +236,13 @@ public class BatchImportFormat implements RF2Constants {
 		if (expression.getFocusConcepts() == null || expression.getFocusConcepts().size() < 1) {
 			throw new TermServerScriptException("Unable to determine a parent for concept from expression");
 		} 
+		GraphLoader gl = GraphLoader.getGraphLoader();
 		List<Relationship> relationships = new ArrayList<>();
 		for (String parentId : expression.getFocusConcepts()) {
-			SnomedUtils.isValid(parentId, PartitionIdentifier.CONCEPT, true);
-			Concept parent = new Concept(parentId);
+			//SnomedUtils.isValid(parentId, PartitionIdentifier.CONCEPT, true);
+			//Concept parent = new Concept(parentId);
+			//Do not create parent, validate that it exists
+			Concept parent = gl.getConcept(parentId, false, true);
 			source.addParent(CharacteristicType.STATED_RELATIONSHIP, parent);
 			Relationship isA = new Relationship(source, IS_A, parent, UNGROUPED);
 			relationships.add(isA);
@@ -247,8 +251,20 @@ public class BatchImportFormat implements RF2Constants {
 		for (RelationshipGroup group : expression.getAttributeGroups()) {
 			relationships.addAll(group.getRelationships());
 		}
+		
 		for (Relationship r : relationships) {
 			r.setModuleId(moduleId);
+			r.setActive(true);
+			//Lets get the actual type / target so we can see the FSNs
+			Concept type = gl.getConcept(r.getType().getConceptId(), false, false);
+			if (type != null) {
+				r.setType(type);
+			}
+			
+			Concept target = gl.getConcept(r.getTarget().getConceptId(), false, false);
+			if (target != null) {
+				r.setTarget(target);
+			}
 		}
 		source.setRelationships(relationships);
 	}

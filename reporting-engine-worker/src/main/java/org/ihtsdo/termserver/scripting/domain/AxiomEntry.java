@@ -18,6 +18,7 @@ public class AxiomEntry extends Component implements RF2Constants {
 	private String referencedComponentId;
 	private String owlExpression;
 	private boolean dirty = false;
+	private boolean isGCI = false;
 	
 	public AxiomEntry clone(String newComponentSctId) {
 		AxiomEntry clone = new AxiomEntry();
@@ -182,5 +183,13 @@ public class AxiomEntry extends Component implements RF2Constants {
 			differences.add("OwlExpression is different in " + name + ": " + this.getOwlExpression() + " vs " + otherA.getOwlExpression());
 		}
 		return differences;
+	}
+
+	public boolean isGCI() {
+		return isGCI;
+	}
+
+	public void setGCI(boolean isGCI) {
+		this.isGCI = isGCI;
 	}
 }

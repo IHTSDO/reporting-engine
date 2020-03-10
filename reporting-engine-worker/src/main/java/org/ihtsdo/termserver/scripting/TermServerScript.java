@@ -778,49 +778,61 @@ public abstract class TermServerScript implements RF2Constants {
 	private void convertStatedRelationshipsToAxioms(Concept c) {
 		//We might have already done this if an error condition has occurred.
 		//Skip if there are not stated relationships
-		if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE).size() == 0) {
+		if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH).size() == 0) {
 			return;
 		}
-		for (Axiom a : c.getClassAxioms()) {
-			a.clearRelationships();
-		}
-		
-		//Do we have an existing axiom to use by default?
-		Axiom a = c.getFirstActiveClassAxiom();
-		a.setModuleId(c.getModuleId());
-
-		//We'll remove the stated relationships as they get converted to the axiom
-		List<Relationship> rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH);
-		for (Relationship rel : rels) {
-			//Did this relationship already come from an axiom?
-			//If not and it's inactive, leave it be
-			if (!rel.fromAxiom() && !rel.isActive()) {
-				continue;
+		//In the case of an inactive concept, we'll inactivate any axioms
+		if (c.isActive()) {
+			for (Axiom a : c.getClassAxioms()) {
+				a.clearRelationships();
 			}
-			//If so (or if active), put it back into one
-			Axiom thisAxiom = rel.getAxiom() == null ? a : rel.getAxiom();
 			
-			//Don't add an inactive relationship to an active axiom
-			if (thisAxiom.isActive() != rel.isActive()) {
-				if (!rel.isActive()) {
-					warn("Skipping axiomification of " + rel + " due to active axiom");
-				} else {
-					throw new IllegalStateException ("Active stated conflict between " + rel + " and " + thisAxiom);
+			//Do we have an existing axiom to use by default?
+			Axiom a = c.getFirstActiveClassAxiom();
+			a.setModuleId(c.getModuleId());
+	
+			//We'll remove the stated relationships as they get converted to the axiom
+			List<Relationship> rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH);
+			for (Relationship rel : rels) {
+				//Did this relationship already come from an axiom?
+				//If not and it's inactive, leave it be
+				if (!rel.fromAxiom() && !rel.isActive()) {
+					continue;
+				}
+				//If so (or if active), put it back into one
+				Axiom thisAxiom = rel.getAxiom() == null ? a : rel.getAxiom();
+				
+				//Don't add an inactive relationship to an active axiom
+				if (thisAxiom.isActive() != rel.isActive()) {
+					if (!rel.isActive()) {
+						warn("Skipping axiomification of " + rel + " due to active axiom");
+					} else {
+						throw new IllegalStateException ("Active stated conflict between " + rel + " and " + thisAxiom);
+					}
+				}
+				thisAxiom.getRelationships().add(rel);
+				c.removeRelationship(rel);
+			}
+			
+			for (Axiom thisAxiom : new ArrayList<>(c.getClassAxioms())) {
+				if (thisAxiom.getRelationships().size() == 0) {
+					//Has this axiom been released?  Remove if not and if it's empty
+					if (StringUtils.isEmpty(thisAxiom.getId())) {
+						c.getClassAxioms().remove(thisAxiom);
+					} else {
+						throw new IllegalStateException ("Axiom left with no relationships in " + c + ": " + thisAxiom);
+					}
 				}
 			}
-			thisAxiom.getRelationships().add(rel);
-			c.removeRelationship(rel);
-		}
-		
-		for (Axiom thisAxiom : new ArrayList<>(c.getClassAxioms())) {
-			if (thisAxiom.getRelationships().size() == 0) {
-				//Has this axiom been released?  Remove if not and if it's empty
-				if (StringUtils.isEmpty(thisAxiom.getId())) {
-					c.getClassAxioms().remove(thisAxiom);
-				} else {
-					throw new IllegalStateException ("Axiom left with no relationships in " + c + ": " + thisAxiom);
-				}
+		} else {
+			//Inactive concept, inactivate any axioms
+			for (Axiom thisAxiom : c.getClassAxioms()) {
+				thisAxiom.setActive(false);
 			}
+			//And remove relationships that have come from an axiom
+			c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH)
+				.stream()
+				.forEach(r -> c.removeRelationship(r));
 		}
 	}
 	
@@ -1294,10 +1306,10 @@ public abstract class TermServerScript implements RF2Constants {
 		report (PRIMARY_REPORT, c, details);
 	}
 	
-	protected void report (int reportIdx, Concept c, Object...details) throws TermServerScriptException {
+	public void report (int reportIdx, Concept c, Object...details) throws TermServerScriptException {
 		//Have we whiteListed this concept?
 		if (whiteListedConcepts.contains(c)) {
-			String detailsStr = Arrays.asList(details).stream().map(o -> o.toString()).collect(Collectors.joining(", "));
+			String detailsStr = details == null ? "No Details" : Arrays.asList(details).stream().map(o -> o.toString()).collect(Collectors.joining(", "));
 			warn ("Ignoring whiteListed concept: " + c + " :  " + detailsStr);
 			incrementSummaryInformation(WHITE_LISTED_COUNT);
 		} else {
@@ -1318,30 +1330,26 @@ public abstract class TermServerScript implements RF2Constants {
 		StringBuffer sb = new StringBuffer();
 		boolean isFirst = true;
 		for (Object detail : details) {
+			if (detail == null) {
+				detail = "";
+			}
 			boolean isNumeric = StringUtils.isNumeric(detail.toString()) || detail.toString().startsWith(QUOTE);
 			String prefix = isFirst ? QUOTE : COMMA_QUOTE;
 			if (isNumeric) {
 				prefix = isFirst ? "" : COMMA;
 			}
 			if (detail instanceof String[]) {
-				boolean isNestedFirst = true;
 				String[] arr = (String[]) detail;
 				for (String str : arr) {
 					boolean isNestedNumeric = false;
 					if (str != null) {
 						isNestedNumeric = StringUtils.isNumeric(str) || str.startsWith(QUOTE);
 					}
-					sb.append(isNestedFirst?"":COMMA);
 					sb.append((isNestedNumeric?"":prefix) + str + (isNestedNumeric?"":QUOTE));
-					isNestedFirst = false;
-				}
-			} else if (detail instanceof Object []) {
-				Object[] arr = (Object[]) detail;
-				for (Object obj : arr) {
-					String data = (obj==null?"":obj.toString());
-					sb.append(prefix + data + (isNumeric?"":QUOTE));
 					prefix = COMMA_QUOTE;
 				}
+			} else if (detail instanceof Object []) {
+				addObjectArray(sb,detail, prefix, isNumeric);
 			} else if (detail instanceof int[]) {
 				prefix = isFirst ? "" : COMMA;
 				boolean isNestedFirst = true;
@@ -1362,6 +1370,19 @@ public abstract class TermServerScript implements RF2Constants {
 		incrementSummaryInformation("Report lines written");
 	}
 	
+	private void addObjectArray(StringBuffer sb, Object detail, String prefix, boolean isNumeric) {
+		Object[] arr = (Object[]) detail;
+		for (Object obj : arr) {
+			if (obj instanceof String[] || obj instanceof Object[]) {
+				addObjectArray(sb,obj, prefix, isNumeric);
+			} else {
+				String data = (obj==null?"":obj.toString());
+				sb.append(prefix + data + (isNumeric?"":QUOTE));
+				prefix = COMMA_QUOTE;
+			}
+		}
+	}
+
 	protected void countIssue(Concept c) {
 		if (c==null || !whiteListedConcepts.contains(c)) {
 			incrementSummaryInformation(ISSUE_COUNT);

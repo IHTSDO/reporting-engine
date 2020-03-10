@@ -23,8 +23,6 @@ import com.fasterxml.jackson.databind.*;
 
 /**
  * Client can either load a template from the template service, or from a local resource
- * @author Peter
- *
  */
 public class TemplateServiceClient {
 	

@@ -8,11 +8,16 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.ConceptCollection;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 
 import com.google.gson.Gson;
 
 public class EclCache implements RF2Constants {
+	
+	static Logger logger = LoggerFactory.getLogger(EclCache.class);
+	
 	private static Map <String, EclCache> branchCaches;
 	private static int PAGING_LIMIT = 1000;
 	private static int MAX_RESULTS = 9999;
@@ -120,7 +125,14 @@ public class EclCache implements RF2Constants {
 					Concept subhierarchy = gl.getConcept(ecl.substring(1).trim());
 					allConcepts = gl.getDescendantsCache().getDescendents(subhierarchy, true);
 				} else {
-					throw new IllegalStateException("ECL is not simple: " + ecl);
+					//Could this be a single concept?
+					try {
+						//Try to recover from Graph.  Do not create, validate it exists
+						allConcepts = Collections.singleton(gl.getConcept(ecl, false, true));
+						logger.warn("Possible single concept used where set expected in template slot? {}", gl.getConcept(ecl));
+					}catch (Exception e) {
+						throw new IllegalStateException("ECL is not simple: " + ecl);
+					}
 				}
 				TermServerScript.debug("Recovered " + allConcepts.size() + " concepts for simple ecl from local memory: " + ecl);
 			} else {

@@ -1,9 +1,6 @@
 package org.ihtsdo.termserver.scripting.dao;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.Properties;
 
 import org.ihtsdo.otf.resourcemanager.ResourceConfiguration;

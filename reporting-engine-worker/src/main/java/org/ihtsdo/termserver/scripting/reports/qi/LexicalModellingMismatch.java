@@ -71,7 +71,7 @@ public class LexicalModellingMismatch extends TermServerReport implements Report
 	@Override
 	public Job getJob() {
 		JobParameters params = new JobParameters()
-				.add(ECL).withType(JobParameter.Type.ECL)
+				.add(ECL).withType(JobParameter.Type.ECL).withMandatory()
 				.add(WORDS).withType(JobParameter.Type.STRING).withMandatory()
 				.add(NOT_WORDS).withType(JobParameter.Type.STRING)
 				.add(ATTRIBUTE_TYPE).withType(JobParameter.Type.CONCEPT).withMandatory()

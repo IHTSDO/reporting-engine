@@ -38,6 +38,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 	private Map<Concept, Boolean> acceptableCdDoseForms = new HashMap<>();	
 	private Map<String, Integer> issueSummaryMap = new HashMap<>();
 	private Map<Concept,Concept> grouperSubstanceUsage = new HashMap<>();
+	private List<Concept> bannedMpParents;
 	
 	Concept[] mpValidAttributes = new Concept[] { IS_A, HAS_ACTIVE_INGRED, COUNT_BASE_ACTIVE_INGREDIENT, PLAYS_ROLE };
 	Concept[] mpfValidAttributes = new Concept[] { IS_A, HAS_ACTIVE_INGRED, HAS_MANUFACTURED_DOSE_FORM, COUNT_BASE_ACTIVE_INGREDIENT, PLAYS_ROLE };
@@ -76,6 +77,12 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		concAttributes.add(HAS_CONC_STRENGTH_UNIT);
 		concAttributes.add(HAS_CONC_STRENGTH_DENOM_UNIT);
 		concAttributes.add(HAS_CONC_STRENGTH_DENOM_VALUE);
+		
+		bannedMpParents = new ArrayList<>();
+		bannedMpParents.add(gl.getConcept("763158003 |Medicinal product (product)|"));
+		bannedMpParents.add(gl.getConcept("766779001 |Medicinal product categorized by disposition (product)|"));
+		bannedMpParents.add(gl.getConcept("763760008 |Medicinal product categorized by structure (product)|"));
+		bannedMpParents.add(gl.getConcept("763087004 |Medicinal product categorized by therapeutic role (product)|"));
 	}
 
 	@Override
@@ -91,107 +98,173 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 	
 	public void runJob() throws TermServerScriptException {
 		validateDrugsModeling();
+		valiadteTherapeuticRole();
 		populateSummaryTab();
 		info("Summary tab complete, all done.");
 	}
-	
+
 	private void validateDrugsModeling() throws TermServerScriptException {
 		Set<Concept> subHierarchy = gl.getDescendantsCache().getDescendents(MEDICINAL_PRODUCT);
 		ConceptType[] allDrugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT, ConceptType.MEDICINAL_PRODUCT_ONLY, ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.MEDICINAL_PRODUCT_FORM_ONLY, ConceptType.CLINICAL_DRUG };
 		ConceptType[] cds = new ConceptType[] { ConceptType.CLINICAL_DRUG };  //DRUGS-267
 		
 		//for (Concept concept : Collections.singleton(gl.getConcept("778271007"))) {
-		for (Concept concept : subHierarchy) {
-			DrugUtils.setConceptType(concept);
+		for (Concept c : subHierarchy) {
+			DrugUtils.setConceptType(c);
 			
 			//INFRA-4159 Seeing impossible situation of no stated parents
-			if (concept.getParents(CharacteristicType.STATED_RELATIONSHIP).size() == 0) {
+			if (c.getParents(CharacteristicType.STATED_RELATIONSHIP).size() == 0) {
 				String issueStr = "Concept appears to have no stated parents";
 				initialiseSummaryInformation(issueStr);
-				report (concept, issueStr);
+				report (c, issueStr);
 				continue;
 			}
 			
-			//DRUGS-585
-			if (isMP(concept) || isMPF(concept)) {
-				validateNoModifiedSubstances(concept);
+			
+			if (isMP(c) || isMPF(c)) {
+				//DRUGS-585
+				validateNoModifiedSubstances(c);
+				
+				//RP-199
+				checkForRedundantConcept(c);
 			}
 			
 			//DRUGS-784
-			if (concept.getConceptType().equals(ConceptType.CLINICAL_DRUG) || 
-					isMPF(concept)) {
-				validateAcceptableDoseForm(concept);
+			if (isCD(c) || isMPF(c)) {
+				validateAcceptableDoseForm(c);
 			}
 			
 			// DRUGS-281, DRUGS-282, DRUGS-269
-			if (!concept.getConceptType().equals(ConceptType.PRODUCT)) {
-				validateTerming(concept, allDrugTypes);  
+			if (!c.getConceptType().equals(ConceptType.PRODUCT)) {
+				validateTerming(c, allDrugTypes);  
 			}
 			
 			//DRUGS-267
-			validateIngredientsAgainstBoSS(concept);
+			validateIngredientsAgainstBoSS(c);
 			
 			//DRUGS-793
-			if (!concept.getConceptType().equals(ConceptType.PRODUCT)) {
-				checkForBossGroupers(concept);
-				checkForPaiGroupers(concept);
+			if (!c.getConceptType().equals(ConceptType.PRODUCT)) {
+				checkForBossGroupers(c);
+				checkForPaiGroupers(c);
 			}
 			
 			//DRUGS-296 
-			if (concept.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED) && 
-				concept.getParents(CharacteristicType.STATED_RELATIONSHIP).iterator().next().equals(MEDICINAL_PRODUCT)) {
-				validateStatedVsInferredAttributes(concept, HAS_ACTIVE_INGRED, allDrugTypes);
-				validateStatedVsInferredAttributes(concept, HAS_PRECISE_INGRED, allDrugTypes);
-				validateStatedVsInferredAttributes(concept, HAS_MANUFACTURED_DOSE_FORM, allDrugTypes);
+			if (c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED) && 
+				c.getParents(CharacteristicType.STATED_RELATIONSHIP).iterator().next().equals(MEDICINAL_PRODUCT)) {
+				validateStatedVsInferredAttributes(c, HAS_ACTIVE_INGRED, allDrugTypes);
+				validateStatedVsInferredAttributes(c, HAS_PRECISE_INGRED, allDrugTypes);
+				validateStatedVsInferredAttributes(c, HAS_MANUFACTURED_DOSE_FORM, allDrugTypes);
 			}
 			
 			//DRUGS-603: DRUGS-686 - Various modelling rules
-			if (concept.getConceptType().equals(ConceptType.CLINICAL_DRUG)) {
-				validateCdModellingRules(concept);
+			//RP-186
+			if (isCD(c)) {
+				validateCdModellingRules(c);
 			}
 			
+			//RP-189
+			validateProductModellingRules(c);
+			
 			//DRUGS-518
-			if (SnomedUtils.isConceptType(concept, cds)) {
-				checkForInferredGroupsNotStated(concept);
+			if (SnomedUtils.isConceptType(c, cds)) {
+				checkForInferredGroupsNotStated(c);
 			}
 			
 			//DRUGS-51?
-			if (concept.getConceptType().equals(ConceptType.CLINICAL_DRUG)) {
-				validateConcentrationStrength(concept);
+			if (isCD(c)) {
+				validateConcentrationStrength(c);
+				validateStrengthNormalization(c);
+			}
+			
+			if (SnomedUtils.isConceptType(c, allDrugTypes)) {
+				//RP-191
+				ensureStatedInferredAttributesEqual(c);
+				
+				//RP-194
+				checkForPrimitives(c);
 			}
 			
 			//DRUGS-288
-			validateAttributeValueCardinality(concept, HAS_ACTIVE_INGRED);
+			validateAttributeValueCardinality(c, HAS_ACTIVE_INGRED);
 			
 			//DRUGS-93, DRUGS-759
-			checkForBadWords(concept);  
+			checkForBadWords(c);  
 			
-			//DRUGS-629
-			checkForSemTagViolations(concept);
+			//DRUGS-629, RP-187
+			checkForSemTagViolations(c);
 			
 			//RP-175
-			validateAttributeRules(concept);
+			validateAttributeRules(c);
 			
 			//RP-188
-			if (isCD(concept)) {
-				checkCdUnitConsistency(concept);
+			if (isCD(c)) {
+				checkCdUnitConsistency(c);
 			}
 		}
 		info ("Drugs validation complete");
 	}
 
-	private boolean isMP(Concept concept) {
-		return concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT) || 
-				concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_ONLY);
+	private void checkForRedundantConcept(Concept c) throws TermServerScriptException {
+		//MP / MP with no inferred descendants are not required
+		String issueStr = "MP/MPF concept is redundant - no inferred descendants";
+		initialiseSummary(issueStr);
+		if (c.getDescendents(NOT_SET).size() == 0) {
+			report (c, issueStr);
+		}
 	}
-	
-	private boolean isMPF(Concept concept) {
-		return concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM) || 
-				concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM_ONLY);
+
+	private void checkForPrimitives(Concept c) throws TermServerScriptException {
+		String issueStr = "Primitive concept where FSN starts with 'Product'";
+		initialiseSummary(issueStr);
+		if (c.getDefinitionStatus().equals(DefinitionStatus.PRIMITIVE) &&
+				c.getFsn().startsWith("Product")) {
+			report(c, issueStr);
+		}
 	}
-	
-	private boolean isCD(Concept concept) {
-		return concept.getConceptType().equals(ConceptType.CLINICAL_DRUG);
+
+	private void ensureStatedInferredAttributesEqual(Concept c) throws TermServerScriptException {
+		//Get all stated and inferred relationships and remove ISA and PlaysRole
+		//Before checking for equivalence
+		String issueStr = "Stated attributes not identical to inferred";
+		initialiseSummary(issueStr);
+		List<Relationship> statedAttribs = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
+		List<Relationship> inferredAttribs = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE);
+		
+		Relationship isA = new Relationship(IS_A, null);
+		removeRels(isA, statedAttribs, true); //remove all instances
+		removeRels(isA, inferredAttribs, true);
+		
+		Relationship playsRole = new Relationship(PLAYS_ROLE, null);
+		removeRels(playsRole, statedAttribs, true); //remove all instances
+		removeRels(playsRole, inferredAttribs, true);
+		
+		//Now loop through all the stated relationship and remove them from inferred.
+		//The should all successfully remove, and the inferred rels should be empty at the end.
+		for (Relationship r : statedAttribs) {
+			boolean success = removeRels(r, inferredAttribs, false); //Just remove one
+			if (!success) {
+				report(c, issueStr, r);
+			}
+		}
+		
+		if (inferredAttribs.size() > 0) {
+			report(c, issueStr, inferredAttribs.get(0));
+		}
+	}
+
+	private boolean removeRels(Relationship removeMe, List<Relationship> rels, boolean removeAll) {
+		Set<Relationship> forRemoval = new HashSet<>();
+		for (Relationship r : rels) {
+			if (r.getType().equals(removeMe.getType()) &&
+				(removeMe.getTarget() == null || r.getTarget().equals(removeMe.getTarget()))){
+				forRemoval.add(r);
+				if (!removeAll) {
+					break;
+				}
+			}
+		}
+		rels.removeAll(forRemoval);
+		return forRemoval.size() > 0;
 	}
 
 	private void populateGrouperSubstances() throws TermServerScriptException {
@@ -279,9 +352,11 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		String issueStr = "Group contains > 1 presentation/concentration strength";
 		String issue2Str = "Group contains > 1 presentation/concentration strength";
 		String issue3Str = "Invalid drugs model";
+		String issue4Str = "CD with multiple inferred parents";
 		initialiseSummary(issueStr);
 		initialiseSummary(issue2Str);
 		initialiseSummary(issue3Str);
+		initialiseSummary(issue4Str);
 		
 		for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP)) {
 			if (g.isGrouped()) {
@@ -319,6 +394,16 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 				}
 			}
 		}
+		
+		if (c.getParents(CharacteristicType.INFERRED_RELATIONSHIP).size() > 1) {
+			report (c, issue4Str, getParentsJoinedStr(c));
+		}
+	}
+
+	private String getParentsJoinedStr(Concept c) {
+		return c.getParents(CharacteristicType.INFERRED_RELATIONSHIP).stream()
+				.map(p -> p.getFsn())
+				.collect(Collectors.joining(", \n"));
 	}
 
 	private void validateNoModifiedSubstances(Concept c) throws TermServerScriptException {
@@ -334,6 +419,21 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 					}
 				}
 			}
+		}
+	}
+	
+
+	private void validateProductModellingRules(Concept c) throws TermServerScriptException {
+		String issueStr = "Product has more than one manufactured dose form attribute in Inferred Form";
+		String issueStr2 = "Product has more than one manufactured dose form attribute in Stated Form";
+		initialiseSummary(issueStr);
+		initialiseSummary(issueStr2);
+		Concept targetType = gl.getConcept("411116001 |Has manufactured dose form (attribute)|");
+		if (c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, targetType, ActiveState.ACTIVE).size() > 1) {
+			report (c, issueStr);
+		}
+		if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, targetType, ActiveState.ACTIVE).size() > 1) {
+			report (c, issueStr2);
 		}
 	}
 
@@ -410,6 +510,40 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 			factor = unit1Idx > unit2Idx ? new BigDecimal(0.001D) : new BigDecimal(1000) ; 
 		}
 		return factor;
+	}
+	
+	private void validateStrengthNormalization(Concept c) throws TermServerScriptException {
+		//For each group, validate any relevant units
+		for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
+			Ingredient i = DrugUtils.getIngredientDetails(c, g.getGroupId(), CharacteristicType.STATED_RELATIONSHIP);
+			if (i.presStrength != null) {
+				validateStrengthNormalization(c, i.presNumeratorUnit, i.presStrength);
+				validateStrengthNormalization(c, i.presDenomUnit, i.presDenomQuantity);
+			}
+		
+			if(i.concStrength != null) {
+				validateStrengthNormalization(c, i.concNumeratorUnit, i.concStrength);
+				validateStrengthNormalization(c, i.concDenomUnit, i.concDenomQuantity);
+			}
+		}
+	}
+	
+
+	private void validateStrengthNormalization(Concept c, Concept unit, Concept strengthConcept) throws TermServerScriptException {
+		String issueStr = "Strength Normalization Issue";
+		initialiseSummary(issueStr);
+		//Are we working with a known solid or liquid unit?
+		int unitIdx = ArrayUtils.indexOf(solidUnits, unit);
+		if (unitIdx == -1) { //Try liquid
+			unitIdx = ArrayUtils.indexOf(liquidUnits, unit);
+		}
+		
+		if (unitIdx != -1) {
+			Double strength = DrugUtils.getConceptAsNumber(strengthConcept);
+			if (strength > 1000 || strength < 1) {
+				report(c, issueStr, strength + unit.getPreferredSynonym());
+			}
+		}
 	}
 
 	/*
@@ -686,7 +820,19 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 	
 	private void checkForSemTagViolations(Concept c) throws TermServerScriptException {
 		String issueStr =  "Has higher level semantic tag than parent";
+		String issueStr2 = "Has semantic tag incompatible with that of parent";
+		String issueStr3 = "Has prohibited parent";
+		String issueStr4 = "Has parent with an incompatible semantic tag incompatible with that of parent";
+		String issueStr5 = "Has invalid parent / semantic tag combination";
+		String issueStr6 = "MPF-Only expected to have MPF (not only) and MP-Only as parents";
+		
 		initialiseSummary(issueStr);
+		initialiseSummary(issueStr2);
+		initialiseSummary(issueStr3);
+		initialiseSummary(issueStr4);
+		initialiseSummary(issueStr5);
+		initialiseSummary(issueStr6);
+		
 		//Ensure that the hierarchical level of this semantic tag is the same or deeper than those of the parent
 		int tagLevel = getTagLevel(c);
 		for (Concept p : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
@@ -695,8 +841,71 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 				report (c, issueStr, p);
 			}
 		}
+		
+		if (isCD(c)) {
+			validateParentSemTags(c, "(medicinal product form)", issueStr2);
+		} else if (isMPOnly(c)) {
+			validateParentSemTags(c, "(medicinal product)", issueStr2);
+		} else if (isMPFOnly(c)) {
+			//Complex one this.   An MPF-Only should have at least one parent which is an MPF (not only)
+			//and at least one which is MP-Only. And no other parents.
+			boolean hasMpfNotOnly = false;
+			boolean hasMpOnly = false;
+			for (Concept parent : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
+				if (isMPF(parent) && !isMPFOnly(parent)) {
+					hasMpfNotOnly = true;
+				} else if (isMPOnly(parent)) {
+					hasMpOnly = true;
+				} else {
+					report (c, issueStr6, parent);
+					break;
+				}
+			}
+			if (!hasMpfNotOnly && !hasMpOnly) {
+				report (c, issueStr6, getParentsJoinedStr(c));
+			}
+		} 
+		
+		if (isMP(c)) {
+			checkForBannedParents(c, issueStr3);
+			if (c.getFsn().contains("contains")) {
+				validateParentSemTags(c, "(product)", issueStr4);
+			}
+		}
+		
+		validateParentTagCombo(c, gl.getConcept("766779001 |Medicinal product categorized by disposition (product)|"), "(product)", issueStr5);
+		validateParentTagCombo(c, gl.getConcept("763760008 |Medicinal product categorized by structure (product)| "), "(product)", issueStr5);
 	}
 
+	private void validateParentTagCombo(Concept c, Concept targetParent, 
+			String targetSemtag, String issueStr) throws TermServerScriptException {
+		String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
+		for (Concept parent : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
+			if (parent.equals(targetParent) && !semTag.equals(targetSemtag)) {
+				report (c, issueStr, "Has parent " + targetParent, "but not expected semtag " + targetSemtag);
+			}
+		}
+	}
+
+	private void validateParentSemTags(Concept c, String requiredTag, String issueStr) throws TermServerScriptException {
+		for (Concept parent : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
+			String semTag = SnomedUtils.deconstructFSN(parent.getFsn())[1];
+			if (!semTag.equals(requiredTag)) {
+				report (c, issueStr, "parent", parent.getFsn(), " expected tag", requiredTag);
+			}
+		}
+	}
+	
+	private void checkForBannedParents(Concept c, String issueStr) throws TermServerScriptException {
+		for (Concept parent : c.getParents(CharacteristicType.INFERRED_RELATIONSHIP)) {
+			for (Concept bannedParent : bannedMpParents) {
+				if (parent.equals(bannedParent)) {
+					report (c, issueStr, parent);
+				}
+			}
+		}
+	}
+		
 	private void validateAttributeRules(Concept c) throws TermServerScriptException {
 		String issueStr =  "MP/MPF must have one or more 'Has active ingredient' attributes";
 		initialiseSummary(issueStr);
@@ -770,9 +979,24 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		
 		issueStr = "Precise MP/MPF must feature exactly one count of base";
 		initialiseSummary(issueStr);
-		if ((c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_ONLY) || 
-				c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM_ONLY))
+		if ((isMPOnly(c) || isMPFOnly(c))
 			&& c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, COUNT_BASE_ACTIVE_INGREDIENT, ActiveState.ACTIVE).size() != 1) { 
+			report (c, issueStr);
+		}
+		
+		//In the case of a missing count of base, we will not have detected that this concept is MP/MPF Only
+		//So we must fall back to using fsn lexical search
+		issueStr = "'Only' and 'precisely' must have a count of base";
+		initialiseSummary(issueStr);
+		if (isCD(c)) {
+			if (!c.getFsn().contains("only") && !c.getFsn().contains("precisely")) {
+				report (c, "UNEXPECTED CONCEPT TYPE - missing 'only' or 'precisely'");
+			} else if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, COUNT_BASE_ACTIVE_INGREDIENT, ActiveState.ACTIVE).size() != 1) { 
+				report (c, issueStr);
+			}
+		} else if ((isMP(c) || isMPF(c)) && 
+				(c.getFsn().contains("only") || c.getFsn().contains("precisely")) &&
+				c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, COUNT_BASE_ACTIVE_INGREDIENT, ActiveState.ACTIVE).size() != 1) {
 			report (c, issueStr);
 		}
 		
@@ -886,6 +1110,45 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 			}
 		} catch (IOException e) {
 			throw new TermServerScriptException("Unable to read " + fileName, e);
+		}
+	}
+	
+
+	private boolean isMP(Concept concept) {
+		return concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT) || 
+				concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_ONLY);
+	}
+	
+	private boolean isMPOnly(Concept concept) {
+		return concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_ONLY);
+	}
+	
+	private boolean isMPFOnly(Concept concept) {
+		return concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM_ONLY);
+	}
+	
+	private boolean isMPF(Concept concept) {
+		return concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM) || 
+				concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM_ONLY);
+	}
+	
+	private boolean isCD(Concept concept) {
+		return concept.getConceptType().equals(ConceptType.CLINICAL_DRUG);
+	}
+	
+	//RP-198
+	private void valiadteTherapeuticRole() throws TermServerScriptException {
+		String issueStr = "Descendant of therapeutic role should not be 'agent'";
+		initialiseSummary(issueStr);
+		Concept theraputicRole = gl.getConcept("766941000 |Therapeutic role (role)|");
+		nextConcept:
+		for (Concept c : theraputicRole.getDescendents(NOT_SET)) {
+			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+				if (d.getTerm().toLowerCase().contains("agent")) {
+					report(c, issueStr, d);
+					continue nextConcept;
+				}
+			}
 		}
 	}
 	

@@ -839,8 +839,24 @@ public class SnomedUtils implements RF2Constants {
 		return targets;
 	}
 	
-	public static String getModel(Concept c, CharacteristicType charType) {
+	public static String getModel(Expressable c, CharacteristicType charType) {
+		return getModel(c, charType, false);
+	}
+	
+	public static String getModel(Expressable c, CharacteristicType charType, boolean includeParents) {
 		String model = "";
+		
+		if (includeParents) {
+			model = c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED) ? "=== " : "<<< ";
+			String parentStr = c.getParents(charType).stream()
+					.map(p -> p.getFsn())
+					.collect(Collectors.joining(" + "));
+			model += parentStr;
+			if (SnomedUtils.countAttributes(c, charType) > 0) {
+				model +=" : ";
+			}
+			model += "\n";
+		}
 		boolean isFirst = true;
 		for (RelationshipGroup g : c.getRelationshipGroups(charType)) {
 			if (!isFirst) {
@@ -853,7 +869,7 @@ public class SnomedUtils implements RF2Constants {
 		return model;
 	}
 	
-	public static Integer countAttributes(Concept c, CharacteristicType charType) {
+	public static Integer countAttributes(Expressable c, CharacteristicType charType) {
 		int attributeCount = 0;
 		for (Relationship r : c.getRelationships(charType, ActiveState.ACTIVE)) {
 			if (!r.getType().equals(IS_A)) {
@@ -1397,13 +1413,14 @@ public class SnomedUtils implements RF2Constants {
 	}
 
 	public static boolean containsAttributeOrMoreSpecific(Concept c, RelationshipTemplate targetAttribute, DescendantsCache cache) throws TermServerScriptException {
-		Set<Concept> values = cache.getDescendentsOrSelf(targetAttribute.getTarget());
 		Set<Concept> types = cache.getDescendentsOrSelf(targetAttribute.getType());
+		//If there's no attribute value specified, we'll match on just the target type
+		Set<Concept> values = targetAttribute.getTarget() == null ? null : cache.getDescendentsOrSelf(targetAttribute.getTarget());
 		return c.getRelationships().stream()
 			.filter(r -> r.isActive())
 			.filter(r -> r.getCharacteristicType().equals(targetAttribute.getCharacteristicType()))
-			.filter(r -> r.getTarget() == null || values.contains(r.getTarget()))
-			.filter(r -> r.getType() == null || types.contains(r.getType()))
+			.filter(r -> types.contains(r.getType()))
+			.filter(r -> values == null || values.contains(r.getTarget()))
 			.collect(Collectors.toList()).size() > 0;
 	}
 

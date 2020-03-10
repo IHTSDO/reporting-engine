@@ -199,6 +199,7 @@ public class GraphLoader implements RF2Constants {
 				}*/
 				
 				try {
+					boolean isAdditionalAxiom = false;
 					//Also save data in RF2 form so we can build Snapshot
 					AxiomEntry axiomEntry = AxiomEntry.fromRf2(lineItems);
 					//Are we overwriting an existing axiom?
@@ -212,6 +213,8 @@ public class GraphLoader implements RF2Constants {
 						for (Relationship r : replacedRelationships) {
 							addRelationshipToConcept(CharacteristicType.STATED_RELATIONSHIP, r, isDelta);
 						}
+					} else if (c.getAxiomEntries(ActiveState.ACTIVE, false).size() > 0) {
+						isAdditionalAxiom = true;
 					}
 					c.getAxiomEntries().add(axiomEntry);
 				
@@ -219,17 +222,32 @@ public class GraphLoader implements RF2Constants {
 					//Filter out any additional statements such as TransitiveObjectProperty(:123005000)]
 					if (axiom != null) {
 						Long LHS = axiom.getLeftHandSideNamedConcept();
-						if (LHS != null && !conceptId.equals(LHS)) {
+						if (LHS == null) {
+							//Is this a CGI?
+							Long RHS = axiom.getRightHandSideNamedConcept();
+							if (!conceptId.equals(RHS)) {
+								throw new IllegalArgumentException("GCI Axiom RHS != RefCompId: " + line);
+							}
+							c.getGciAxioms().add(AxiomUtils.toAxiom(c, axiomEntry, axiom));
+							isAdditionalAxiom = false;
+							axiomEntry.setGCI(true);
+						} else if (!conceptId.equals(LHS)) {
 							throw new IllegalArgumentException("Axiom LHS != RefCompId: " + line);
 						}
 						
 						List<Relationship> relationships = AxiomUtils.getRHSRelationships(c, axiom);
-						
+						if (relationships.size() == 0) {
+							log.append("Checkhere");
+						}
 						//Now we might need to adjust the active flag if the axiom is being inactivated
 						//Or juggle the groupId, since individual axioms don't know about each other's existence
 						alignAxiomRelationships(c, relationships, axiomEntry, axiomEntry.isActive());
 						for (Relationship r : relationships) {
 							addRelationshipToConcept(CharacteristicType.STATED_RELATIONSHIP, r, isDelta);
+						}
+						
+						if (isAdditionalAxiom) {
+							c.getAdditionalAxioms().add(AxiomUtils.toAxiom(c, axiomEntry, axiom));
 						}
 					}
 				} catch (ConversionException e) {
