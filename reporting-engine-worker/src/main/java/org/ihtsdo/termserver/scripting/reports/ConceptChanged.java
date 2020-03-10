@@ -73,7 +73,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION))
 				.withName("Concepts Changed")
-				.withDescription("This service.populateTraceabilityAndReport lists all concepts changed in the current release cycle.  The issue count here is the total number of concepts featuring one change or another.")
+				.withDescription("This report lists all concepts changed in the current release cycle.  The issue count here is the total number of concepts featuring one change or another.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(INT)
