@@ -286,6 +286,12 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		String[] fsnSemTag1 = SnomedUtils.deconstructFSN(c1.getFsn());
 		String[] fsnSemTag2 = SnomedUtils.deconstructFSN(c2.getFsn());
 		
+		if (fsnSemTag1[1] == null) {
+			throw new IllegalArgumentException("FSN Encountered without semtag: " + c1);
+		} else if (fsnSemTag2[1] == null) {
+			throw new IllegalArgumentException("FSN Encountered without semtag: " + c2);
+		}
+		
 		if (fsnSemTag1[1].equals(fsnSemTag2[1])) {
 			return fsnSemTag1[0].compareTo(fsnSemTag2[0]);
 		}
