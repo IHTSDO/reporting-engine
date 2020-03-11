@@ -14,6 +14,7 @@ import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.JobParameter.Type;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.info.BuildProperties;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -34,6 +35,8 @@ public class JobManager {
 	@Autowired
 	Transmitter transmitter;
 	
+	@Autowired 
+	private ApplicationContext applicationContext;
 
 	@PostConstruct
 	public void init(){
@@ -100,7 +103,7 @@ public class JobManager {
 							JobClass thisJob = jobClass.newInstance();
 							jobRun.setStatus(JobStatus.Running);
 							transmitter.send(jobRun);
-							thisJob.instantiate(jobRun);
+							thisJob.instantiate(jobRun, applicationContext);
 						} else {
 							jobRun.setStatus(JobStatus.Failed);
 						}

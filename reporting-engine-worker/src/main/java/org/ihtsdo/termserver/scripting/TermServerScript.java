@@ -22,6 +22,8 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.ihtsdo.termserver.scripting.util.StringUtils;
 import org.snomed.otf.scheduler.domain.*;
 
+import org.springframework.context.ApplicationContext;
+
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 import com.google.gson.Gson;
@@ -76,6 +78,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected GraphLoader gl = GraphLoader.getGraphLoader();
 	private ReportManager reportManager;
 	private RF2Manager rf2Manager;
+	protected ApplicationContext appContext;
 	protected String headers = "Concept SCTID,";
 	protected String additionalReportColumns = "ActionDetail";
 	protected String secondaryReportColumns = "ActionDetail";
@@ -453,7 +456,7 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 	}
 	
-	public void instantiate(JobRun jobRun) {
+	public void instantiate(JobRun jobRun, ApplicationContext appContext) {
 		try {
 			debug ("Instantiating " + this.getClass().getName() + " to process request for " + jobRun.getJobName());
 			init(jobRun);
@@ -1430,7 +1433,7 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 
 	public ArchiveManager getArchiveManager() {
-		return ArchiveManager.getArchiveManager(this);
+		return ArchiveManager.getArchiveManager(this, appContext);
 	}
 
 	public File getInputFile() {
@@ -1527,7 +1530,7 @@ public abstract class TermServerScript implements RF2Constants {
 		} catch ( InstantiationException | IllegalAccessException e) {
 			throw new TermServerScriptException("Unable to instantiate " + jobClazz.getSimpleName(), e);
 		}
-		job.instantiate(jobRun);
+		job.instantiate(jobRun, (ApplicationContext)null);
 	}
 
 	public boolean getManyTabOutput() {
