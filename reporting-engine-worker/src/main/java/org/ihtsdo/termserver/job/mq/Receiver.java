@@ -6,9 +6,9 @@ import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.JobRun;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.annotation.JmsListener;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
-@Component
+@Service
 public class Receiver {
 	
 	@Autowired
