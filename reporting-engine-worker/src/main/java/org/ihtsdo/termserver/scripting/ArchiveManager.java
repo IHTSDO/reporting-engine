@@ -23,20 +23,22 @@ import org.ihtsdo.termserver.scripting.snapshot.SnapshotGenerator;
 import org.ihtsdo.termserver.scripting.util.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.event.EventListener;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
-@Component
+@Service
 public class ArchiveManager implements RF2Constants {
 	
 	static ArchiveManager singleton;
 	
 	@Autowired
-	ArchiveDataLoader archiveDataLoader;
+	private ArchiveDataLoader archiveDataLoader;
 	
 	protected String dataStoreRoot = "";
 	protected GraphLoader gl;
 	protected TermServerScript ts;
+	protected ApplicationContext appContext;
 	public boolean allowStaleData = false;
 	public boolean loadEditionArchive = false;
 	public boolean populateHierarchyDepth = true;  //Term contains X needs this
@@ -48,9 +50,10 @@ public class ArchiveManager implements RF2Constants {
 	ZoneId utcZoneID= ZoneId.of("Etc/UTC");
 	SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 	
-	public static ArchiveManager getArchiveManager(TermServerScript ts) {
+	public static ArchiveManager getArchiveManager(TermServerScript ts, ApplicationContext appContext) {
 		if (singleton == null) {
 			singleton = new ArchiveManager();
+			singleton.appContext = appContext;
 		}
 		singleton.ts = ts;
 		singleton.gl = ts.getGraphLoader();
@@ -293,10 +296,7 @@ public class ArchiveManager implements RF2Constants {
 	
 		File previous = new File (dataStoreRoot + "releases/"  + project.getMetadata().getPreviousPackage());
 		if (!previous.exists()) {
-			if (archiveDataLoader == null) {
-				archiveDataLoader = ArchiveDataLoader.create();
-			}
-			archiveDataLoader.download(previous);
+			getArchiveDataLoader().download(previous);
 		}
 		TermServerScript.info("Building snapshot release based on previous: " + previous);
 		
@@ -305,10 +305,7 @@ public class ArchiveManager implements RF2Constants {
 		if (project.getMetadata().getDependencyPackage() != null) {
 			dependency = new File (dataStoreRoot + "releases/"  + project.getMetadata().getDependencyPackage());
 			if (!dependency.exists()) {
-				if (archiveDataLoader == null) {
-					archiveDataLoader = ArchiveDataLoader.create();
-				}
-				archiveDataLoader.download(dependency);
+				getArchiveDataLoader().download(dependency);
 			}
 			TermServerScript.info("Building Extension snapshot release also based on dependency: " + dependency);
 		}
@@ -322,6 +319,18 @@ public class ArchiveManager implements RF2Constants {
 		snapshotGenerator.generateSnapshot(dependency, previous, delta, snapshot);
 	}
 	
+	private ArchiveDataLoader getArchiveDataLoader() throws TermServerScriptException {
+		if (archiveDataLoader == null) {
+			if (appContext == null) {
+				TermServerScript.info("No ArchiveData loader configured, creating one locally...");
+				archiveDataLoader = ArchiveDataLoader.create();
+			} else {
+				archiveDataLoader = appContext.getBean(ArchiveDataLoader.class);
+			}
+		}
+		return archiveDataLoader;
+	}
+
 	public File generateDelta(Project project) throws IOException, TermServerScriptException {
 		File delta = File.createTempFile("delta_export-", ".zip");
 		delta.deleteOnExit();

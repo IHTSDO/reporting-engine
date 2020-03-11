@@ -62,11 +62,11 @@ public class ResourceDataLoader {
 				AWSCredentialsProvider awsCredProv;
 				if (awsKey == null || awsKey.isEmpty()) {
 					awsCredProv = new EC2ContainerCredentialsProviderWrapper();
-					TermServerScript.info("Connecting to S3 with EC2 environment configured credentials");
+					TermServerScript.info("Connecting to S3 with EC2 environment configured credentials for resources");
 				} else {
 					AWSCredentials awsCreds = new BasicAWSCredentials(awsKey, awsSecretKey);
 					awsCredProv = new AWSStaticCredentialsProvider(awsCreds);
-					TermServerScript.info("Connecting to S3 with locally specified account: " + awsKey);
+					TermServerScript.info("Connecting to S3 for resources with locally specified account: " + awsKey);
 				}
 	
 				AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
