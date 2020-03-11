@@ -20,6 +20,7 @@ import org.ihtsdo.termserver.scripting.client.TermServerClient.*;
 import org.ihtsdo.termserver.scripting.dao.ArchiveDataLoader;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.snapshot.SnapshotGenerator;
+import org.ihtsdo.termserver.scripting.util.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.util.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -263,8 +264,8 @@ public class ArchiveManager implements RF2Constants {
 			currentlyHeldInMemory = ts.getProject();
 			allowStaleData = originalStateDataFlag;
 		} catch (Exception e) {
-			String eMsg = e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
-			String msg = "Unable to load " + ts.getProject() + " due to " + eMsg;
+			String msg = "Unable to load " + ts.getProject();
+			msg += ExceptionUtils.getExceptionCause(msg, e);
 			throw new TermServerScriptException (msg, e);
 		}
 		info ("Snapshot loading complete");

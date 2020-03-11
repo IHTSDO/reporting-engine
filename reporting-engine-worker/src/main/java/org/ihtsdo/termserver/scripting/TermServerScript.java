@@ -6,7 +6,6 @@ import java.util.stream.Collectors;
 
 import org.slf4j.*;
 
-import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.lang.time.DurationFormatUtils;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.client.authoringservices.AuthoringServicesClient;
@@ -18,6 +17,7 @@ import org.ihtsdo.termserver.scripting.dao.RF2Manager;
 import org.ihtsdo.termserver.scripting.dao.ReportManager;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.util.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.ihtsdo.termserver.scripting.util.StringUtils;
 import org.snomed.otf.scheduler.domain.*;
@@ -186,7 +186,7 @@ public abstract class TermServerScript implements RF2Constants {
 	public static void error (Object obj, Exception e) {
 		System.err.println ("*** " + (obj==null?"NULL":obj.toString()));
 		if (e != null) 
-			logger.error(ExceptionUtils.getStackTrace(e));
+			logger.error(org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(e));
 	}
 	
 	public static void print (Object msg) {
@@ -479,7 +479,7 @@ public abstract class TermServerScript implements RF2Constants {
 				jobRun.setIssuesReported(issueCount);
 			}
 		} catch (Exception e) {
-			String msg = "Failed to complete " + jobRun.getJobName() + getExceptionCause("", e);
+			String msg = "Failed to complete " + jobRun.getJobName() + ExceptionUtils.getExceptionCause("", e);
 			jobRun.setStatus(JobStatus.Failed);
 			jobRun.setDebugInfo(msg);
 			error(msg, e);
@@ -488,19 +488,6 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 	}
 	
-	private String getExceptionCause(String msg, Throwable t) {
-		msg += " due to: ";
-		String reason = t.getMessage();
-		if (reason == null) {
-			reason = t.getClass().getSimpleName();
-		}
-		msg += reason;
-		if (t.getCause() != null) {
-			msg = getExceptionCause(msg, t.getCause());
-		}
-		return msg;
-	}
-
 	protected void runJob () throws TermServerScriptException {
 		throw new TermServerScriptException("Override this method in concrete class");
 	}

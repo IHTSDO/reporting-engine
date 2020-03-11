@@ -208,10 +208,13 @@ public class GraphLoader implements RF2Constants {
 						c.getAxiomEntries().remove(axiomEntry);
 						//We'll inactivate all these relationships and allow them to be replaced
 						AxiomRepresentation replacedAxiom = axiomService.convertAxiomToRelationships(conceptId, replacedAxiomEntry.getOwlExpression());
-						List<Relationship> replacedRelationships = AxiomUtils.getRHSRelationships(c, replacedAxiom);
-						alignAxiomRelationships(c, replacedRelationships, replacedAxiomEntry, false);
-						for (Relationship r : replacedRelationships) {
-							addRelationshipToConcept(CharacteristicType.STATED_RELATIONSHIP, r, isDelta);
+						//Filter out any additional statements such as TransitiveObjectProperty(:123005000)]
+						if (replacedAxiom != null) {
+							List<Relationship> replacedRelationships = AxiomUtils.getRHSRelationships(c, replacedAxiom);
+							alignAxiomRelationships(c, replacedRelationships, replacedAxiomEntry, false);
+							for (Relationship r : replacedRelationships) {
+								addRelationshipToConcept(CharacteristicType.STATED_RELATIONSHIP, r, isDelta);
+							}
 						}
 					} else if (c.getAxiomEntries(ActiveState.ACTIVE, false).size() > 0) {
 						isAdditionalAxiom = true;
