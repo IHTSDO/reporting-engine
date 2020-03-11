@@ -94,7 +94,10 @@ public class JobManager {
 			} else {
 				//Do I know about this job?
 				Class<? extends JobClass> jobClass = knownJobs.get(jobRun.getJobName());
-				if (jobClass == null) {
+				if (applicationContext == null) {
+					jobRun.setStatus(JobStatus.Failed);
+					jobRun.setDebugInfo("Reporting engine worker not yet initialised");
+				} else if (jobClass == null) {
 					jobRun.setStatus(JobStatus.Failed);
 					jobRun.setDebugInfo("Job '" + jobRun.getJobName() + "' not known to Reporting Engine Worker - " + buildVersion);
 				} else {
