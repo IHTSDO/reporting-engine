@@ -60,6 +60,11 @@ public class EclCache implements RF2Constants {
 	}
 	
 	protected Collection<Concept> findConcepts(String branch, String ecl, boolean expectLargeResults, boolean useLocalStoreIfSimple) throws TermServerScriptException {
+		if (StringUtils.isEmpty(ecl)) {
+			TermServerScript.warn("EclCache asked to find concepts but not ecl specified.  Returning empty set");
+			return new ArrayList<>();
+		}
+		
 		ecl = ecl.trim();
 		//Have we been passed some partial ecl that begins and ends with a bracket?
 		if (ecl.startsWith("(") && ecl.endsWith(")")) {
