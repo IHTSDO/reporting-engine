@@ -1,0 +1,7 @@
+{
+  "name": "Primary Malignant Neoplasm",
+  "documentation": "https://jira.ihtsdotools.org/browse/QI-91",
+  "version": 1,
+  "domain":"<< 372087000 |Primary malignant neoplasm (disorder)|",
+  "logicalTemplate": "64572001 |Disease (disorder)|: [[~0..1]] { [[~0..1]] 263502005 |Clinical course (attribute)| = [[+id(< 288524001 |Courses (qualifier value)|) @course]] }[[~1..1]] { [[~1..1]] 116676008 |Associated morphology (attribute)| = [[+id(<< 86049000 |Malignant neoplasm, primary (morphologic abnormality)|) @morphology]], [[~0..1]] 363698007 |Finding site (attribute)| = [[+id(< 123037004 |Body structure (body structure)|) @null]], [[~0..1]] 246454002 |Occurrence (attribute)| = [[+id(< 282032007 |Periods of life (qualifier value)|) @occur]] }"
+  }
