@@ -69,7 +69,7 @@ public class AttributeValueCounts extends TermServerReport implements ReportClas
 	@Override
 	public Job getJob() {
 		JobParameters params = new JobParameters()
-				.add(ECL).withType(JobParameter.Type.ECL)
+				.add(ECL).withType(JobParameter.Type.ECL).withMandatory()
 				.add(ATTRIBUTE_TYPE).withType(JobParameter.Type.CONCEPT)
 				//TODO Add the characteristic type dropdown
 				.build();
