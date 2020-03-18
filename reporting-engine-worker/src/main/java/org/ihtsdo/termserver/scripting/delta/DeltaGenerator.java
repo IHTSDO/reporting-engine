@@ -84,7 +84,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 			nameSpace = response;
 		}
 		
-		print ("Targetting which moduleId? [" + moduleId + "]: ");
+		print ("Considering which moduleId(s)? [" + moduleId + "]: ");
 		response = STDIN.nextLine().trim();
 		if (!response.isEmpty()) {
 			moduleId = response;

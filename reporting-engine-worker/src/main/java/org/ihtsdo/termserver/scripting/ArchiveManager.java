@@ -264,8 +264,7 @@ public class ArchiveManager implements RF2Constants {
 			currentlyHeldInMemory = ts.getProject();
 			allowStaleData = originalStateDataFlag;
 		} catch (Exception e) {
-			String msg = "Unable to load " + ts.getProject();
-			msg += ExceptionUtils.getExceptionCause(msg, e);
+			String msg = ExceptionUtils.getExceptionCause("Unable to load " + ts.getProject(), e);
 			throw new TermServerScriptException (msg, e);
 		}
 		info ("Snapshot loading complete");

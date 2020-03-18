@@ -36,6 +36,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		ExtractExtensionComponents delta = new ExtractExtensionComponents();
 		try {
 			delta.runStandAlone = true;
+			//delta.moduleId = "911754081000004104"; //Nebraska Lexicon Pathology Synoptic module
 			delta.moduleId = "731000124108";  //US Module
 			//delta.moduleId = "32506021000036107"; //AU Module
 			delta.init(args);
@@ -85,6 +86,13 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		info ("Extracting specified concepts");
 		for (Component thisComponent : allIdentifiedConcepts) {
 			Concept thisConcept = (Concept)thisComponent;
+			
+			//If we don't have a module id for this identified concept, then it doesn't properly exist in this release
+			if (thisConcept.getModuleId() == null) {
+				report (thisConcept, null, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Concept specified for extract not found in input Snapshot");
+				continue;
+			}
+			
 			if (!thisConcept.isActive()) {
 				report (thisConcept, null, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Concept is inactive, skipping");
 				continue;
@@ -113,9 +121,16 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	}
 
 	private void switchModule(Concept c) throws TermServerScriptException {
-		
+		if (c.getModuleId() ==  null) {
+			report (c, null, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Concept does not specify a module!  Unable to switch.");
+			return;
+		}
 		//Switch the module of this concept, then all active descriptions and relationships
-		if (c.getModuleId().equals(moduleId)) {
+		//As long as the current module is not equal to the target module, we'll switch it
+		if (!c.getModuleId().equals(targetModuleId) && !c.getModuleId().equals(SCTID_MODEL_MODULE)) {
+			if (!c.getModuleId().equals(moduleId)) {
+				report (c, null, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Specified concept in unexpected module, switching anyway", c.getModuleId());
+			}
 			//Was this concept originally specified, or picked up as a dependency?
 			String parents = parentsToString(c);
 			
@@ -147,7 +162,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 				if (c.getModuleId().equals(targetModuleId)) {
 					report (c, null, Severity.HIGH, ReportActionType.NO_CHANGE, "Specified concept already in target module: " + c.getModuleId());
 				} else {
-					report (c, null, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Specified concept in unexpected module: " + c.getModuleId());
+					throw new IllegalStateException("This should have been picked up in the block above");
 				}
 			}
 			return;
@@ -241,6 +256,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			if (target.getModuleId().equals(targetModuleId) && ! allModifiedConcepts.contains(target)) {
 				Concept loadedTarget = loadConcept(target);
 				//If this target is inactive, find an alternative target and create a replacement relationship
+				//TODO in the stated form, we'll need to re-write the axiom if we see this!
 				if (!loadedTarget.isActive()) {
 					String reason = loadedTarget.getInactivationIndicator().toString();
 					Concept replacement = getReplacement(loadedTarget);

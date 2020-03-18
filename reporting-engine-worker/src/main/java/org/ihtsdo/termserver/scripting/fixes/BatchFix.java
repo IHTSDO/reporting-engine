@@ -474,7 +474,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		}
 		
 		if (targetAuthor == null) {
-			if (jobRun.getParamValue(AUTHOR) != null) {
+			if (jobRun != null && jobRun.getParamValue(AUTHOR) != null) {
 				targetAuthor = jobRun.getParamValue(AUTHOR);
 			} else {
 				throw new TermServerScriptException("No target author detected in command line arguments");
