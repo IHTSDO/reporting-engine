@@ -96,6 +96,8 @@ public interface RF2Constants {
 	static Concept ANAT_OR_ACQ_BODY_STRUCT = new Concept("442083009", "Anatomical or acquired body structure (body structure)");
 	static Concept NAMESPACE_CONCEPT = new Concept("370136006", "Namespace concept (nameespace concept)");
 	static Concept SPECIAL_CONCEPT = new Concept("370115009", "Special concept (special concept)");
+	static Concept HAS_DEVICE_CHARAC = new Concept("840562008", "Has device characteristic (attribute)");
+	//
 	
 	//Drug Terms
 	static String ACETAMINOPHEN = "acetaminophen";
@@ -203,6 +205,7 @@ public interface RF2Constants {
 	public static String SCTID_FULLY_DEFINED = "900000000000073002";
 	
 	public static int UNGROUPED = 0;
+	public static int SELFGROUPED = -1;
 	public enum Modifier { EXISTENTIAL, UNIVERSAL};
 	public static String SCTID_EXISTENTIAL_MODIFIER = "900000000000451002";
 	public static String SCTID_UNIVERSAL_MODIFIER = "900000000000450001";

@@ -811,26 +811,41 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			}
 			return NO_CHANGES_MADE;
 		}
-		//Do we already have this relationship active in the target group?
-		List<Relationship> rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
-													type,
-													value,
-													groupId,
-													ActiveState.ACTIVE);
+		//Do we already have this relationship active in the target group (or at all if self grouped)?
+		List<Relationship> rels;
+		if (groupId == SELFGROUPED) {
+			rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
+					type,
+					value,
+					ActiveState.ACTIVE);
+		} else {
+			rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
+														type,
+														value,
+														groupId,
+														ActiveState.ACTIVE);
+		}
 		if (rels.size() > 1) {
 			report (t, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Found two active relationships for " + type + " -> " + value);
 			return NO_CHANGES_MADE;
 		} else if (rels.size() == 1) {
-			report (t, c, Severity.LOW, ReportActionType.NO_CHANGE, "Active relationship already exists: " + type + " -> " + value);
+			report (t, c, Severity.LOW, ReportActionType.NO_CHANGE, "Active relationship already exists ", rels.get(0));
 			return NO_CHANGES_MADE;
 		}
 		
 		//Do we have it inactive?
-		rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
-				type,
-				value,
-				groupId,
-				ActiveState.INACTIVE);
+		if (groupId == SELFGROUPED) {
+			rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
+					type,
+					value,
+					ActiveState.INACTIVE);
+		} else {
+			rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
+														type,
+														value,
+														groupId,
+														ActiveState.INACTIVE);
+		}
 		if (rels.size() >= 1) {
 			Relationship rel = rels.get(0);
 			report (t, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_REACTIVATED, rel);
@@ -855,11 +870,13 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		}
 		
 		//Add the new relationship
+		if (groupId == SELFGROUPED) {
+			groupId = SnomedUtils.getFirstFreeGroup(c);
+		}
 		Relationship newRel = new Relationship (c, type, value, groupId);
 		report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, newRel);
 		c.addRelationship(newRel);
 		changesMade++;
-		
 		return changesMade;
 	}
 	
