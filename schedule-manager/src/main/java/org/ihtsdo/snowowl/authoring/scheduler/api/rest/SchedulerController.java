@@ -2,7 +2,6 @@ package org.ihtsdo.snowowl.authoring.scheduler.api.rest;
 
 import io.swagger.annotations.*;
 
-import org.apache.catalina.servlet4preview.http.HttpServletRequest;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.snowowl.authoring.scheduler.api.configuration.WebSecurityConfig;
 import org.ihtsdo.snowowl.authoring.scheduler.api.service.AccessControlService;
@@ -17,6 +16,8 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
+
+import javax.servlet.http.HttpServletRequest;
 
 @Api("Authoring Projects")
 @RestController

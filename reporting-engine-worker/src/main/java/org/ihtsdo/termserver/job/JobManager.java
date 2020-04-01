@@ -6,6 +6,7 @@ import javax.annotation.PostConstruct;
 
 //import org.ihtsdo.otf.resourcemanager.*;
 import org.ihtsdo.termserver.job.mq.Transmitter;
+import org.ihtsdo.termserver.scripting.JobClass;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.reflections.Reflections;
 import org.slf4j.Logger;
