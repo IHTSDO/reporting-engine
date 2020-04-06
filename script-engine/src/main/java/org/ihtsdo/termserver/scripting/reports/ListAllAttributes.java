@@ -62,7 +62,7 @@ public class ListAllAttributes extends TermServerReport implements ReportClass {
 	@Override
 	public Job getJob() {
 		JobParameters params = new JobParameters()
-				.add(ECL).withType(JobParameter.Type.ECL)
+				.add(ECL).withType(JobParameter.Type.ECL).withMandatory()
 				.add(COMPACT).withType(JobParameter.Type.BOOLEAN).withMandatory().withDefaultValue(true)
 				.add(INCLUDE_IS_A).withType(JobParameter.Type.BOOLEAN).withMandatory().withDefaultValue(false)
 				.add(TARGET_VALUE_PROPERTY).withType(JobParameter.Type.CONCEPT)

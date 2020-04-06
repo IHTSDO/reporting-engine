@@ -73,7 +73,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION))
 				.withName("Concepts Changed")
-				.withDescription("This report lists all concepts changed in the current release cycle.  The issue count here is the total number of concepts featuring one change or another.")
+				.withDescription("This report lists all concepts changed in the current release cycle, optionally restricted to a subset defined by an ECL expression.  The issue count here is the total number of concepts featuring one change or another.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(INT)
@@ -287,9 +287,11 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		String[] fsnSemTag2 = SnomedUtils.deconstructFSN(c2.getFsn());
 		
 		if (fsnSemTag1[1] == null) {
-			throw new IllegalArgumentException("FSN Encountered without semtag: " + c1);
+			System.out.println("FSN Encountered without semtag: " + c1);
+			return 1;
 		} else if (fsnSemTag2[1] == null) {
-			throw new IllegalArgumentException("FSN Encountered without semtag: " + c2);
+			System.out.println("FSN Encountered without semtag: " + c2);
+			return -1;
 		}
 		
 		if (fsnSemTag1[1].equals(fsnSemTag2[1])) {
