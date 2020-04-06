@@ -54,13 +54,15 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 				"Id, FSN, SemTag, Active, hasNewStatedRelationships, hasNewInferredRelationships, hasLostStatedRelationships, hasLostInferredRelationships, Author, Task, Creation Date",
 				"Id, FSN, SemTag, Active, hasNewDescriptions, hasChangedDescriptions, hasLostDescriptions, Author, Task, Creation Date",
 				"Id, FSN, SemTag, Active, hasChangedAssociations, hasChangedInactivationIndicators, Author, Task, Creation Date",
-				"Id, FSN, SemTag, Active,isTargetOfNewStatedRelationship, isTargetOfNewInferredRelationship, wasTargetOfLostStatedRelationship, wasTargetOfLostInferredRelationship, Author, Task, Creation Date"};
+				"Id, FSN, SemTag, Active, isTargetOfNewStatedRelationship, isTargetOfNewInferredRelationship, wasTargetOfLostStatedRelationship, wasTargetOfLostInferredRelationship, Author, Task, Creation Date",
+				"Id, FSN, SemTag, Description, isNew, isChanged, wasInactivated"};
 		String[] tabNames = new String[] {	
 				"Concept Changes",
 				"Relationship Changes",
 				"Description Changes",
 				"Association Changes",
-				"Incoming Relationship Changes"};
+				"Incoming Relationship Changes",
+				"Description Change Details"};
 		super.postInit(tabNames, columnHeadings, false);
 		traceability = new TraceabilityService(jobRun, this, "pdat");  //Matching Updating and updated
 	}
@@ -99,8 +101,6 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 			conceptsOfInterest = gl.getAllConcepts();
 		}
 		
-//		conceptsOfInterest = Collections.singleton(gl.getConcept("324881002"));
-		
 		double lastPercentageReported = 0;
 		for (Concept c : conceptsOfInterest) {
 			if (c.isReleased() == null) {
@@ -120,16 +120,26 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 			}
 			
 			for (Description d : c.getDescriptions()) {
+				boolean isNew = false;
+				boolean isChanged = false;
+				boolean wasInactivated = false;
 				if (inScope(d)) {
 					if (!d.isReleased()) {
 						hasNewDescriptions.add(c);
+						isNew = true;
 					} else if (d.getEffectiveTime() == null || d.getEffectiveTime().isEmpty()) {
 						if (!d.isActive()) {
 							hasLostDescriptions.add(c);
+							wasInactivated = true;
 						} else {
 							hasChangedDescriptions.add(c);
+							isChanged = true;
 						}
 					}
+				}
+				
+				if (isNew || isChanged || wasInactivated) {
+					report (SENARY_REPORT, c, d, isNew, isChanged, wasInactivated);
 				}
 			}
 			
