@@ -100,7 +100,7 @@ public abstract class TermServerScript implements RF2Constants {
 	public static final String Reviewer = "Reviewer";
 	public static final String CONCEPTS_PER_TASK = "Concepts per task";
 	public static final String FILE = "File";
-	public static final String PROJECT = "Project";
+	//public static final String PROJECT = "Project";
 	protected static final String DRY_RUN = "Dry Run";
 	protected static final String INPUT_FILE = "InputFile";
 	protected static final String SUB_HIERARCHY = "Subhierarchy";
@@ -333,8 +333,8 @@ public abstract class TermServerScript implements RF2Constants {
 			authenticatedCookie = STDIN.nextLine().trim();
 		}
 		
-		if (jobRun != null && !jobRun.getParamValue(PROJECT).isEmpty()) {
-			projectName = jobRun.getMandatoryParamValue(PROJECT);
+		if (jobRun != null && !StringUtils.isEmpty(jobRun.getProject())) {
+			projectName = jobRun.getProject();
 		}
 		
 		if (headlessEnvironment == null) {
@@ -363,12 +363,8 @@ public abstract class TermServerScript implements RF2Constants {
 		authenticatedCookie = jobRun.getAuthToken();
 		
 		if (projectName == null) {
-			if (StringUtils.isEmpty(jobRun.getParamValue(PROJECT))) {
-				warn("No project specified, running against MAIN");
-				projectName = "MAIN";
-			} else {
-				projectName = jobRun.getMandatoryParamValue(PROJECT);
-			}
+			warn("No project specified, running against MAIN");
+			projectName = "MAIN";
 		}
 		
 		if (StringUtils.isEmpty(jobRun.getParamValue(SUB_HIERARCHY))) {
@@ -501,7 +497,7 @@ public abstract class TermServerScript implements RF2Constants {
 		
 		for (int i=0; i<args.length; i++) {
 			if (args[i].equals("-p")) {
-				jobRun.setParameter(PROJECT, args[i+1]);
+				jobRun.setProject(args[i+1]);
 			} else if (args[i].equals("-c")) {
 				jobRun.setAuthToken(args[i+1]);
 			} else if (args[i].equals("-d")) {

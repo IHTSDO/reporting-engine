@@ -51,7 +51,6 @@ public class Transmitter {
 		Job job = jobManager.getJob(run.getJobName());
 		if (run.getParameters() != null && job != null) {
 			//Ensure all jobs allow the project to be chosen
-			job.getParameters().addFirst(TermServerScript.PROJECT);
 			Set<String> paramKeys = new HashSet<>(run.getParameters().keySet());
 			for (String key : paramKeys) {
 				if (job.getParameters().get(key) == null) {
