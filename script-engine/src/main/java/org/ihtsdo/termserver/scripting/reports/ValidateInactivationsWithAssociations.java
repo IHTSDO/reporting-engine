@@ -30,23 +30,24 @@ import org.springframework.util.StringUtils;
  * Update: as pointed out by Jeremy Rogers (thanks Jeremy!) we have a small number of hist
  * assocs which are NOT "MovedTo", but are pointing to some namespace concept.  This is obviously wrong.
  * 
+ * A legacy issue is defined as one that existed in the previous release
+ * So if EITHER the concept or the inactivation indicator OR the target has changed in this
+ * release, then it's a new issue (we're saying).
  */
 public class ValidateInactivationsWithAssociations extends TermServerReport implements ReportClass {
 	
-	public static String NEW_INACTIVATIONS_ONLY = "New Inactivations Only";
-	boolean newInactivationsOnly = false;
+	boolean includeLegacyIssues = false;
 	Set<Concept> namespaceConcepts;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put(SUB_HIERARCHY, ROOT_CONCEPT.toString());
-		params.put(NEW_INACTIVATIONS_ONLY, "false");
+		params.put(INCLUDE_ALL_LEGACY_ISSUES, "Y");
 		TermServerReport.run(ValidateInactivationsWithAssociations.class, args, params);
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
-		String defaultValue = getJob().getParameters().getDefaultValue(NEW_INACTIVATIONS_ONLY);
-		newInactivationsOnly = run.getParamValue(NEW_INACTIVATIONS_ONLY, defaultValue).equals("Y");
+		includeLegacyIssues = run.getParamValue(INCLUDE_ALL_LEGACY_ISSUES).equals("Y");
 		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA
 		additionalReportColumns="FSN, SemTag, Concept EffectiveTime, Issue, isLegacy (C/D), Data";
 		super.init(run);
@@ -55,7 +56,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 	@Override
 	public Job getJob() {
 		JobParameters params = new JobParameters()
-				.add(NEW_INACTIVATIONS_ONLY)
+				.add(INCLUDE_ALL_LEGACY_ISSUES)
 					.withType(JobParameter.Type.BOOLEAN)
 					.withDefaultValue(true)
 				.build();
@@ -79,15 +80,23 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 				continue;
 			}
 			
-			String isLegacy = isLegacy(c);
+			boolean isLegacy = isLegacy(c);
 			if (!c.isActive()) {
 				//Are we only interested in concepts that have any new inactivation indicator?
-				if (newInactivationsOnly) {
-					if (c.getInactivationIndicatorEntries(ActiveState.ACTIVE).stream()
-							.filter(i -> StringUtils.isEmpty(i.getEffectiveTime()))
-							.collect(Collectors.toList())
-							.size() == 0) {
-						continue;
+				if (!includeLegacyIssues && isLegacy) {
+					continue;
+				}
+				
+				//Ensure that association target is active.   To ignore legacy issues, both the 
+				//concept AND the target must be legacy
+				for (AssociationEntry a : c.getAssociations(ActiveState.ACTIVE, true)) {
+					Concept target = gl.getConcept(a.getTargetComponentId(), false, false);
+					if (target == null) {
+						incrementSummaryInformation("Inactive concept association target not a concept");
+					} else if (!target.isActive()) {
+						incrementSummaryInformation("Inactive concept association target is inactive");
+						report (c, c.getEffectiveTime(), "Concept has inactive association target", isLegacy, target, a);
+						countIssue(c);
 					}
 				}
 				
@@ -98,7 +107,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 					String data = c.getInactivationIndicatorEntries(ActiveState.ACTIVE).stream()
 							.map(i->i.toString())
 							.collect(Collectors.joining(",\n"));
-					report (c, c.getEffectiveTime(), null, "Concept has multiple inactivation indicators", isLegacy, data);
+					report (c, c.getEffectiveTime(), "Concept has multiple inactivation indicators", isLegacy, data);
 					countIssue(c);
 				} else {
 					InactivationIndicatorEntry i = c.getInactivationIndicatorEntries(ActiveState.ACTIVE).get(0); 
@@ -135,7 +144,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 			
 			nextDescription:
 			for (Description d : c.getDescriptions()) {
-				String cdLegacy = isLegacy + "/" + isLegacy(d); 
+				String cdLegacy = (isLegacy?"Y":"N") + "/" + (isLegacy(d)?"Y":"N"); 
 				//What are we looking at here?
 				String data = c.getInactivationIndicatorEntries(ActiveState.ACTIVE).stream()
 						.map(i->i.toString())
@@ -188,7 +197,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 		}
 	}
 
-	private void validate(Concept c, InactivationIndicatorEntry i, String cardinality, String requiredAssociation, String legacy) throws TermServerScriptException {
+	private void validate(Concept c, InactivationIndicatorEntry i, String cardinality, String requiredAssociation, Boolean legacy) throws TermServerScriptException {
 		int minAssocs = Character.getNumericValue(cardinality.charAt(0));
 		char maxStr = cardinality.charAt(cardinality.length() - 1);
 		int maxAssocs = maxStr == '*' ? Integer.MAX_VALUE : Character.getNumericValue(maxStr);
@@ -247,7 +256,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 		}
 	}
 	
-	private void validateTargetAppropriate(Concept c, String assocStr, Concept target, AssociationEntry h) throws TermServerScriptException {
+/*	private void validateTargetAppropriate(Concept c, String assocStr, Concept target, AssociationEntry h) throws TermServerScriptException {
 		//What did this concept used to be?
 		Concept wasA = SnomedUtils.getHistoricalParent(c);
 		if (wasA != null) {
@@ -267,14 +276,13 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 				warn ("Unable to determine histroical parent of " + c);
 			}
 		}
-		
-	}
-
-	private String isLegacy(Component c) {
+	}*/
+	
+	private boolean isLegacy(Component c) throws TermServerScriptException {
 		//If any relationship, description or historical association
 		//has been modified, then this is not a legacy issue
 		if (StringUtils.isEmpty(c.getEffectiveTime())) {
-			return "N";
+			return false;
 		}
 		
 		if (c instanceof Concept) {
@@ -282,29 +290,34 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 		
 			for (Description d : concept.getDescriptions()) {
 				if (StringUtils.isEmpty(d.getEffectiveTime())) {
-					return "N";
+					return false;
 				}
 			}
 			
 			for (Relationship r : concept.getRelationships()) {
 				if (StringUtils.isEmpty(r.getEffectiveTime())) {
-					return "N";
+					return false;
 				}
 			}
 			
 			for (AssociationEntry a : concept.getAssociations()) {
 				if (StringUtils.isEmpty(a.getEffectiveTime())) {
-					return "N";
+					return false;
+				}
+				//Also look up the target of the association because it might have changed
+				Concept target = gl.getConcept(a.getTargetComponentId(), false, false);
+				if (target != null && StringUtils.isEmpty(target.getEffectiveTime())) {
+					return false;
 				}
 			}
 			
 			for (InactivationIndicatorEntry i : concept.getInactivationIndicatorEntries()) {
 				if (StringUtils.isEmpty(i.getEffectiveTime())) {
-					return "N";
+					return false;
 				}
 			}
 		}
-		return "Y";
+		return true;
 	}
 
 }

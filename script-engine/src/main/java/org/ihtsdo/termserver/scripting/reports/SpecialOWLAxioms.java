@@ -40,7 +40,7 @@ public class SpecialOWLAxioms extends TermServerReport implements ReportClass {
 				.withName("Object Property Axioms")
 				.withDescription("This report lists all concepts which have special OWL axioms like GCIs")
 				.withProductionStatus(ProductionStatus.PROD_READY)
-				.withParameters( new JobParameters())
+				.withParameters(new JobParameters())
 				.withTag(INT)
 				.build();
 	}

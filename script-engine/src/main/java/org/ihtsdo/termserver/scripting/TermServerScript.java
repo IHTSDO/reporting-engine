@@ -1323,6 +1323,9 @@ public abstract class TermServerScript implements RF2Constants {
 			if (detail == null) {
 				detail = "";
 			}
+			if (detail instanceof Boolean) {
+				detail = ((Boolean)detail)?"Y":"N";
+			}
 			boolean isNumeric = StringUtils.isNumeric(detail.toString()) || detail.toString().startsWith(QUOTE);
 			String prefix = isFirst ? QUOTE : COMMA_QUOTE;
 			if (isNumeric) {
@@ -1366,6 +1369,9 @@ public abstract class TermServerScript implements RF2Constants {
 			if (obj instanceof String[] || obj instanceof Object[]) {
 				addObjectArray(sb,obj, prefix, isNumeric);
 			} else {
+				if (obj instanceof Boolean) {
+					obj = ((Boolean)obj)?"Y":"N";
+				}
 				String data = (obj==null?"":obj.toString());
 				sb.append(prefix + data + (isNumeric?"":QUOTE));
 				prefix = COMMA_QUOTE;
