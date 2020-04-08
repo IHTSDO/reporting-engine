@@ -1,4 +1,6 @@
+
 secure/*
 *application-local.properties
 historic-data/
 resources/*
+snapshots
