@@ -15,7 +15,6 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.owltoolkit.conversion.AxiomRelationshipConversionService;
 import org.snomed.otf.owltoolkit.conversion.ConversionException;
 import org.snomed.otf.owltoolkit.domain.AxiomRepresentation;
-import org.snomed.otf.owltoolkit.domain.ObjectPropertyAxiomRepresentation;
 import org.springframework.util.StringUtils;
 
 public class GraphLoader implements RF2Constants {
@@ -26,7 +25,7 @@ public class GraphLoader implements RF2Constants {
 	private Map<String, Component> allComponents = null;
 	private Map<Component, Concept> componentOwnerMap = null;
 	private Map<String, Concept> fsnMap = null;
-	private String excludeModule = SCTID_LOINC_MODULE;
+	private Set<String> excludedModules;
 	public static int MAX_DEPTH = 1000;
 	private Set<Concept> orphanetConcepts;
 	private AxiomRelationshipConversionService axiomService;
@@ -45,6 +44,8 @@ public class GraphLoader implements RF2Constants {
 		if (singleton == null) {
 			singleton = new GraphLoader();
 			singleton.axiomService = new AxiomRelationshipConversionService (null);
+			singleton.excludedModules = new HashSet<>();
+			singleton.excludedModules.add(SCTID_LOINC_MODULE);
 			populateKnownConcepts();
 		}
 		return singleton;
@@ -130,7 +131,7 @@ public class GraphLoader implements RF2Constants {
 				String[] lineItems = line.split(FIELD_DELIMITER);
 				
 				//Exclude LOINC
-				if (lineItems[IDX_MODULEID].equals(excludeModule)) {
+				if (isExcluded(lineItems[IDX_MODULEID])) {
 					continue;
 				}
 				
@@ -164,6 +165,10 @@ public class GraphLoader implements RF2Constants {
 		return concepts;
 	}
 	
+	private boolean isExcluded(String moduleId) {
+		return excludedModules.contains(moduleId);
+	}
+
 	public void loadAxioms(InputStream axiomStream, boolean isDelta, Boolean isReleased) 
 			throws IOException, TermServerScriptException {
 		BufferedReader br = new BufferedReader(new InputStreamReader(axiomStream, StandardCharsets.UTF_8));
@@ -449,11 +454,11 @@ public class GraphLoader implements RF2Constants {
 			if (!isHeaderLine) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
 				//Exclude LOINC
-				if (lineItems[IDX_MODULEID].equals(excludeModule)) {
+				if (isExcluded(lineItems[IDX_MODULEID])) {
 					continue;
 				}
 				
-				/*if (lineItems[IDX_ID].equals("296813001")) {
+			/*	if (lineItems[IDX_ID].equals("277636009")) {
 					TermServerScript.debug("here");
 				}*/
 				//We might already have received some details about this concept
@@ -482,7 +487,7 @@ public class GraphLoader implements RF2Constants {
 			if (!isHeader) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
 				//Exclude LOINC
-				if (lineItems[IDX_MODULEID].equals(excludeModule)) {
+				if (isExcluded(lineItems[IDX_MODULEID])) {
 					continue;
 				}
 				
@@ -528,7 +533,7 @@ public class GraphLoader implements RF2Constants {
 			if (!isHeaderLine) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
 				//Exclude LOINC
-				if (lineItems[IDX_MODULEID].equals(excludeModule)) {
+				if (isExcluded(lineItems[IDX_MODULEID])) {
 					continue;
 				}
 				Description d = getDescription(lineItems[LANG_IDX_REFCOMPID]);
@@ -617,7 +622,7 @@ public class GraphLoader implements RF2Constants {
 			if (!isHeaderLine) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
 				//Exclude LOINC
-				if (lineItems[IDX_MODULEID].equals(excludeModule)) {
+				if (isExcluded(lineItems[IDX_MODULEID])) {
 					continue;
 				}
 				InactivationIndicatorEntry inactivation = InactivationIndicatorEntry.fromRf2(lineItems);
@@ -648,7 +653,7 @@ public class GraphLoader implements RF2Constants {
 			if (!isHeaderLine) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
 				//Exclude LOINC
-				if (lineItems[IDX_MODULEID].equals(excludeModule)) {
+				if (isExcluded(lineItems[IDX_MODULEID])) {
 					continue;
 				}
 				String referencedComponent = lineItems[INACT_IDX_REFCOMPID];
@@ -928,5 +933,9 @@ public class GraphLoader implements RF2Constants {
 
 	public TransitiveClosure getPreviousTC() {
 		return previousTransativeClosure;
+	}
+
+	public void setExcludedModules(HashSet<String> excludedModules) {
+		this.excludedModules = excludedModules;
 	}
 }
