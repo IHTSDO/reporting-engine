@@ -50,6 +50,8 @@ public class LoincMatchingAttributes extends TermServerScript{
 				}
 				if (!attributeTypeDetected) {
 					noAttributeTypeDetected++;
+					report (c, "Does not feature " + targetType, c.toExpression(CharacteristicType.STATED_RELATIONSHIP));
+					
 				}
 			} else if (c.getModuleId().equals(SCTID_LOINC_MODULE)) {
 				loincInactive++;
