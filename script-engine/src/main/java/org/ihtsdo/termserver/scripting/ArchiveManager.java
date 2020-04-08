@@ -168,7 +168,13 @@ public class ArchiveManager implements RF2Constants {
 	}
 
 	public void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException {
-		try {	
+		try {
+			//If the project specifies its a .zip file, that's another way to know we're loading an edition
+			String fileExt = ".zip";
+			if (ts.getProject().getKey().endsWith(fileExt)) {
+				loadEditionArchive = true;
+			}
+			
 			//Look for an expanded directory by preference
 			File snapshot = getSnapshotPath();
 			if (!snapshot.exists()) {
@@ -360,19 +366,23 @@ public class ArchiveManager implements RF2Constants {
 	}
 
 	private File getSnapshotPath() {
-		if (loadEditionArchive || StringUtils.isNumeric(ts.getProject().getKey())) {
-			String fileExt = ".zip";
-			if (ts.getProject().getKey().endsWith(fileExt)) {
+		//If the project specifies its a .zip file, that's another way to know we're loading an edition
+		String fileExt = ".zip";
+		String projectKey = ts.getProject().getKey();
+		if (loadEditionArchive || 
+				StringUtils.isNumeric(projectKey) ||
+				projectKey.endsWith(fileExt)) {
+			if (projectKey.endsWith(fileExt)) {
 				fileExt = "";
 			}
-			return new File (dataStoreRoot + "releases/" + ts.getProject() + fileExt);
+			return new File (dataStoreRoot + "releases/" + projectKey + fileExt);
 		} else {
 			//Do we have a release effective time as a project?  Or a branch release
-			String releaseBranch = detectReleaseBranch(ts.getProject().getKey());
+			String releaseBranch = detectReleaseBranch(projectKey);
 			if (releaseBranch != null) {
 				return new File (dataStoreRoot + "releases/" + releaseBranch + ".zip");
 			} else  {
-				return new File (dataStoreRoot + "snapshots/" + ts.getProject() + "_" + ts.getEnv());
+				return new File (dataStoreRoot + "snapshots/" + projectKey + "_" + ts.getEnv());
 			}
 		}
 	}

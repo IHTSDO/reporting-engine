@@ -31,6 +31,7 @@ public class ReportSheetManager implements RF2Constants {
 	private static final String CLIENT_SECRET_DIR = "secure/google-api-secret.json";
 	private static int DEFAULT_MAX_ROWS = 42000;
 	private static int DEFAULT_MAX_COLUMNS = 19;
+	private static int REDUCED_MAX_COLUMNS = 9;
 	private static int MAX_ROWS = DEFAULT_MAX_ROWS;
 	private static int MAX_COLUMNS = DEFAULT_MAX_COLUMNS;
 	private static String MAX_COLUMN_STR = Character.toString((char)('A' + MAX_COLUMNS));
@@ -51,13 +52,16 @@ public class ReportSheetManager implements RF2Constants {
 	Map<Integer, Integer> linesWrittenPerTab = new HashMap<>();
 	
 	public ReportSheetManager(ReportManager owner) {
+		if (!owner.getScript().safetyProtocolsEnabled() && owner.getScript().getManyTabOutput()) {
+			throw new IllegalArgumentException("Can't specify safety disabled and manyTabs - one is saying more rows, and the other is saying less");
+		}
 		this.owner = owner;
 		if (!this.owner.getScript().safetyProtocolsEnabled()) {
 			MAX_ROWS = 99999;
-			setMaxColumns(11);
+			setMaxColumns(REDUCED_MAX_COLUMNS);
 		} else if (this.owner.getScript().getManyTabOutput()) {
 			MAX_ROWS = 9999;
-			setMaxColumns(DEFAULT_MAX_COLUMNS);
+			setMaxColumns(REDUCED_MAX_COLUMNS);
 		} else {
 			MAX_ROWS = DEFAULT_MAX_ROWS;
 			setMaxColumns(DEFAULT_MAX_COLUMNS);
@@ -217,7 +221,7 @@ public class ReportSheetManager implements RF2Constants {
 		//Do we have a total count for this tab?
 		linesWrittenPerTab.merge(tabIdx, 1, Integer::sum);
 		if (linesWrittenPerTab.get(tabIdx).intValue() > MAX_ROWS) {
-			throw new TermServerScriptException("Number of rows written to tab " + tabIdx + " hit limit of " + MAX_ROWS);
+			throw new TermServerScriptException("Number of rows written to tab idx " + tabIdx + " hit limit of " + MAX_ROWS);
 		}
 		
 		if (!delayWrite) {

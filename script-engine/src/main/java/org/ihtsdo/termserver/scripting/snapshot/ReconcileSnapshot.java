@@ -42,8 +42,23 @@ public class ReconcileSnapshot extends TermServerReport implements ReportClass {
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
+		//safetyProtocols = false;   
+		manyTabOutput = true;
 		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA
 		super.init(run);
+	}
+	
+	@Override
+	public void postInit() throws TermServerScriptException {
+		
+		String[] tabNames = new String[] {	"Concept", "Desc", "Stated", 
+				"Inferred", "Lang", "InactInd", "HistAssoc",
+				"TDefn", "Axioms"};
+		String[] columnHeadings = new String[tabNames.length];
+		for (int i=0; i< tabNames.length; i++) {
+			columnHeadings[i] = "Concept, FSN, SemTag, Affected Component, Component Active, Snapshot vs Generated";
+		}
+		super.postInit(tabNames, columnHeadings, false);
 	}
 	
 	@Override
@@ -52,8 +67,9 @@ public class ReconcileSnapshot extends TermServerReport implements ReportClass {
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION))
 				.withName("Snapshot Reconciliation")
 				.withDescription("This report validates all components in a generated snapshot (formed by " + 
-				"adding a delta to the previous release) against an exported snapshot")
-				.withProductionStatus(ProductionStatus.HIDEME)
+				"adding a delta to the previous release) against an exported snapshot.  Be aware that the " +
+				"snapshot export performed by this report will lock the relevant project for 15 minutes")
+				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withTag(INT)
 				.build();
 	}
@@ -81,7 +97,8 @@ public class ReconcileSnapshot extends TermServerReport implements ReportClass {
 		File snapshot = null;
 		try {
 			snapshot = File.createTempFile("snapshot_export-", ".zip");
-			snapshot.deleteOnExit();
+			//snapshot.deleteOnExit();
+			warn("Downloading Snapshot to: " + snapshot.getCanonicalPath());
 			getTSClient().export(project.getBranchPath(), null, ExportType.UNPUBLISHED, ExtractType.SNAPSHOT, snapshot);
 		} catch (TermServerScriptException |IOException e) {
 			throw new TermServerScriptException("Unable to obtain " + project.getKey() + " snapshot",e);
@@ -153,6 +170,7 @@ public class ReconcileSnapshot extends TermServerReport implements ReportClass {
 					validateComponentFile(is, ComponentType.LANGREFSET);
 				}
 			}
+			flushFilesWithWait(false);
 		} catch (TermServerScriptException | IOException  e) {
 			throw new IllegalStateException("Unable to validate " + path + " due to " + e.getMessage(), e);
 		}
@@ -164,10 +182,11 @@ public class ReconcileSnapshot extends TermServerReport implements ReportClass {
 		String line;
 		boolean isHeaderLine = true;
 		int issueCount = 0;
+		int reportTabIdx = componentType.ordinal();
 		while ((line = br.readLine()) != null) {
 			if (!isHeaderLine) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
-				issueCount += validate(createComponent(componentType, lineItems));
+				issueCount += validate(reportTabIdx, createComponent(componentType, lineItems));
 				if (++componentsChecked % 100000 == 0) {
 					debug("Checked " + componentsChecked + " / " + totalToCheck);
 				}
@@ -179,10 +198,9 @@ public class ReconcileSnapshot extends TermServerReport implements ReportClass {
 		flushFilesSoft();
 	}
 	
-	private int validate(Component c) throws TermServerScriptException {
+	private int validate(int reportTabIdx, Component c) throws TermServerScriptException {
 		//What does our generated snapshot hold for this component?
 		Component other = gl.getComponent(c.getId());
-		
 		if (other == null) {
 			if (!c.isActive() && 
 					(c.getComponentType().equals(ComponentType.STATED_RELATIONSHIP) ||
@@ -191,8 +209,8 @@ public class ReconcileSnapshot extends TermServerReport implements ReportClass {
 				//perhaps we can stop doing that.
 				return NO_CHANGES_MADE;
 			}
-				
-			report (null, c.getId(), c.isActive(), "Component from export not present in generated snapshot", c);
+			Concept owner = gl.getComponentOwner(c.getId());	
+			report (reportTabIdx, owner, c.getId(), c.isActive(), c.getComponentType() + " from export not present in generated snapshot", c);
 			countIssue(null);
 			return 1;
 		}
@@ -200,7 +218,7 @@ public class ReconcileSnapshot extends TermServerReport implements ReportClass {
 		Concept owner = gl.getComponentOwner(c.getId());
 		for (String issue : issues) {
 			countIssue(owner);
-			report (owner, c.getId(), c.isActive(), issue);
+			report (reportTabIdx, owner, c.getId(), c.isActive(), issue);
 		}
 		remainingComponents.remove(c.getId());
 		return issues.size();
@@ -209,8 +227,9 @@ public class ReconcileSnapshot extends TermServerReport implements ReportClass {
 	
 	private void reportRemainder() throws TermServerScriptException {
 		for (Map.Entry<String, Component> entry : remainingComponents.entrySet()) {
-			Concept owner = gl.getComponentOwner(entry.getKey());
-			report (owner, entry.getKey(), "Component from generated snapshot not present in export", entry.getValue());
+			Concept owner = gl.getComponentOwner(entry.getValue().getId());
+			int reportTabIdx = entry.getValue().getComponentType().ordinal();
+			report (reportTabIdx, owner, entry.getKey(), "Component from generated snapshot not present in export", entry.getValue());
 		}
 		
 	}
