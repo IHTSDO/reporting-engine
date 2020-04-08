@@ -30,6 +30,10 @@ public class AssociationTargets {
 	@SerializedName("WAS_A")
 	@Expose
 	private List<String> wasA = new ArrayList<>();
+	
+	@SerializedName("MOVED_TO")
+	@Expose
+	private List<String> movedTo = new ArrayList<>();
 
 	public List<String> getReplacedBy() {
 		return replacedBy;
@@ -61,6 +65,10 @@ public class AssociationTargets {
 
 	public void setWasA(List<String> wasA) {
 		this.wasA = wasA;
+	}
+	
+	public void setMovedTo(List<String> movedTo) {
+		this.movedTo = movedTo;
 	}
 
 	public static AssociationTargets possEquivTo(Concept c) {
@@ -101,6 +109,14 @@ public class AssociationTargets {
 		return targets;
 	}
 	
+	public static AssociationTargets movedTo(Concept c) {
+		AssociationTargets targets = new AssociationTargets();
+		List<String> targetList = new ArrayList<>();
+		targetList.add(c.getId());
+		targets.setMovedTo(targetList);
+		return targets;
+	}
+	
 	public int size() {
 		int total = 0;
 		
@@ -119,6 +135,10 @@ public class AssociationTargets {
 		if (wasA != null) {
 			total += wasA.size();
 		}
+		
+		if (movedTo != null) {
+			total += movedTo.size();
+		}
 		return total;
 	}
 
@@ -126,12 +146,13 @@ public class AssociationTargets {
 	 * @return the number of associations successfully removed
 	 */
 	public int remove(String conceptId) {
-		int beforeCount = replacedBy.size() + possEquivTo.size() + sameAs.size() + wasA.size();
+		int beforeCount = size();
 		replacedBy.remove(conceptId);
 		possEquivTo.remove(conceptId);
 		sameAs.remove(conceptId);
 		wasA.remove(conceptId);
-		int afterCount = replacedBy.size() + possEquivTo.size() + sameAs.size() + wasA.size();
+		movedTo.remove(conceptId);
+		int afterCount = size();
 		return beforeCount - afterCount;
 	}
 

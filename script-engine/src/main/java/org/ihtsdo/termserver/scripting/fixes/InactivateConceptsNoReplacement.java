@@ -15,10 +15,17 @@ import org.ihtsdo.termserver.scripting.domain.*;
  * INFRA-4695
  * Inactivate concepts where a replacement does not exist, based on some critera
  * We will point the "MAY BE A" to the parent
+ * 
+ * INFRA-4865 Hist assoc will be MOVED TO -> UK
  */
 public class InactivateConceptsNoReplacement extends BatchFix implements RF2Constants {
 	
-	InactivationIndicator inactivationIndicator = InactivationIndicator.AMBIGUOUS;
+	//InactivationIndicator inactivationIndicator = InactivationIndicator.AMBIGUOUS;
+	InactivationIndicator inactivationIndicator = InactivationIndicator.MOVED_ELSEWHERE;
+	
+	Set<String> searchTerms = new HashSet<>();
+	Set<Concept> targetHierarchies = new HashSet<>();
+	
 	protected InactivateConceptsNoReplacement(BatchFix clone) {
 		super(clone);
 	}
@@ -29,13 +36,23 @@ public class InactivateConceptsNoReplacement extends BatchFix implements RF2Cons
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
 			fix.selfDetermining = true;
 			fix.init(args);
-			fix.getArchiveManager().populateReleasedFlag = true;
+			//fix.getArchiveManager().populateReleasedFlag = true;
 			fix.loadProjectSnapshot(true);
 			fix.postInit();
 			fix.processFile();
 		} finally {
 			fix.finish();
 		}
+	}
+	
+	public void postInit() throws TermServerScriptException {
+		//INFRA-4865
+		searchTerms.add("on examination");
+		searchTerms.add("complaining of");
+		targetHierarchies.add(CLINICAL_FINDING);
+		targetHierarchies.add(SITN_WITH_EXP_CONTXT);
+		
+		super.postInit();
 	}
 
 	@Override
@@ -56,9 +73,9 @@ public class InactivateConceptsNoReplacement extends BatchFix implements RF2Cons
 	}
 	
 	private int inactivateConcept(Task t, Concept c) throws TermServerScriptException {
-		
-		Set<Concept> replacements = c.getParents(CharacteristicType.STATED_RELATIONSHIP);
-		
+		//Set<Concept> replacements = c.getParents(CharacteristicType.STATED_RELATIONSHIP);
+		Concept replacement = gl.getConcept("370137002|Extension Namespace {1000000} (namespace concept)|");
+		Set<Concept> replacements = Collections.singleton(replacement);
 		//Check for this concept being the target of any historical associations and rewire them to the replacement
 		//With the same inactivation reasons
 		checkAndInactivatateIncomingAssociations(t, c, inactivationIndicator, replacements);
@@ -77,12 +94,15 @@ public class InactivateConceptsNoReplacement extends BatchFix implements RF2Cons
 		c.setActive(false);  //Function also inactivates all relationships
 		c.setEffectiveTime(null);
 		c.setInactivationIndicator(inactivationIndicator);
-		c.setAssociationTargets(AssociationTargets.possEquivTo(replacements));
 		
-		String histAssocType = " possibly equiv to ";
-		for (Concept replacement : replacements) {
+		//c.setAssociationTargets(AssociationTargets.possEquivTo(replacements));
+		c.setAssociationTargets(AssociationTargets.movedTo(replacement));
+		
+		//String histAssocType = " possibly equiv to ";
+		//for (Concept replacement : replacements) {
+		String histAssocType = " moved to ";
 			report(t, c, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept inactivated as " + inactivationIndicator + histAssocType + (replacement.equals(NULL_CONCEPT)?"":replacement));
-		}
+		//}
 		return CHANGE_MADE;
 	}
 
@@ -96,12 +116,15 @@ public class InactivateConceptsNoReplacement extends BatchFix implements RF2Cons
 	}
 
 	private void checkAndInactivatateIncomingAssociations(Task task, Concept c, InactivationIndicator reason, Set<Concept> replacements) throws TermServerScriptException {
-		if (gl.usedAsHistoricalAssociationTarget(c) == null) {
+		if (gl.usedAsHistoricalAssociationTarget(c).isEmpty()) {
 			return;
 		}
-		for (AssociationEntry assoc : gl.usedAsHistoricalAssociationTarget(c)) {
+		
+		throw new TermServerScriptException (c + " is the target of incoming association(s) from: " + gl.usedAsHistoricalAssociationTarget(c) );
+		
+		/*for (AssociationEntry assoc : gl.usedAsHistoricalAssociationTarget(c)) {
 			inactivateHistoricalAssociation (task, assoc, reason, replacements);
-		}
+		}*/
 	}
 
 	private void inactivateHistoricalAssociation(Task task, AssociationEntry assoc, InactivationIndicator reason, Set<Concept> replacements) throws TermServerScriptException {
@@ -136,25 +159,35 @@ public class InactivateConceptsNoReplacement extends BatchFix implements RF2Cons
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		info ("Identifying concepts to process");
 		List<Concept> processMe = new ArrayList<>();
-		Concept occupation = gl.getConcept("14679004 |Occupation (occupation)|");
-		nextConcept:
-		for (Concept c : occupation.getDescendents(NOT_SET)) {
-		//for (Concept c : Collections.singleton(gl.getConcept("347118002"))) {
-			if (c.isActive() && c.getFsn().startsWith("Other")) {
-				//Any children of that concept must also require inactivating, or we have to 
-				//do more work to re-point them (see grandchildren rewiring in sibling class)
-				for (Concept child : c.getChildren(CharacteristicType.INFERRED_RELATIONSHIP)) {
-					if (!child.getFsn().startsWith("Other")) {
-						//throw new TermServerScriptException ( c + " has child not scheduled for deletion");
-						report ((Task)null, c, Severity.HIGH, ReportActionType.INFO, "Concept has children not being inactived. Process manually.");
-						continue nextConcept;
+		
+		for (Concept hierarchy : targetHierarchies) {
+			nextConcept:
+			for (Concept c : hierarchy.getDescendents(NOT_SET)) {
+				if (c.isActive() && containsSearchTerm(c)) {
+					//Any children of that concept must also require inactivating, or we have to 
+					//do more work to re-point them (see grandchildren rewiring in sibling class)
+					for (Concept child : c.getChildren(CharacteristicType.INFERRED_RELATIONSHIP)) {
+						if (!containsSearchTerm(child)) {
+							report ((Task)null, c, Severity.HIGH, ReportActionType.INFO, "Concept has children not being inactived. Process manually.");
+							continue nextConcept;
+						}
 					}
+					processMe.add(c);
 				}
-				processMe.add(c);
 			}
 		}
 		info ("Identified " + processMe.size() + " concepts to process");
 		processMe.sort(Comparator.comparing(Concept::getFsn));
 		return new ArrayList<Component>(processMe);
+	}
+
+	private boolean containsSearchTerm(Concept c) {
+		String term = c.getFsn().toLowerCase();
+		for (String searchTerm : searchTerms) {
+			if (term.contains(searchTerm)) {
+				return true;
+			}
+		}
+		return false;
 	}
 }
