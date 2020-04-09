@@ -264,6 +264,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		}
 		int[] dataSubset = Arrays.copyOfRange(data, 0, dataWidth);
 		super.report(idxTab, c, dataSubset);
+		countIssue(c);
 	}
 
 	private void loadData(String release) throws TermServerScriptException {
