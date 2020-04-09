@@ -18,6 +18,12 @@ import org.springframework.util.StringUtils;
 
 /**
  * RP-288 
+ * 
+ * TODO As it stands, the report will double count concepts that exist in two top level hierarchies.  
+ * I'm looking at you, drug eluting stents.
+ * To fix this, the analyze function has to be told what component idx it's looking at, and a Set maintained
+ * of components that have contributed to the total, and this checked before the total is added to - during
+ * analysis, not during report output as we currently have.
  * */
 public class SummaryComponentStats extends TermServerReport implements ReportClass {
 	
@@ -33,8 +39,8 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 	static final int IDX_CONCEPTS = 0, IDX_DESCS = 1, IDX_RELS = 2, IDX_AXIOMS = 3,
 			IDX_LANG = 4, IDX_INACT_IND = 5, IDX_HIST = 6;
 	static final int COMPONENT_COUNT = 7;
-	static final int DATA_WIDTH = 5;  //New, Changed, Inactivated, extra1, extra2
-	static final int IDX_NEW = 0, IDX_CHANGED = 1, IDX_INACT = 2, IDX_NEW_P = 3, IDX_NEW_SD = 4;
+	static final int DATA_WIDTH = 6;  //New, Changed, Inactivated, New with New Concept, extra1, extra2
+	static final int IDX_NEW = 0, IDX_CHANGED = 1, IDX_INACT = 2, IDX_NEW_NEW = 3, IDX_NEW_P = 4, IDX_NEW_SD = 5;
 	List<Concept> topLevelHierarchies; 
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
@@ -53,11 +59,12 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_STATS))
 				.withName("Summary Component Stats")
-				.withDescription("This report lists component changes per major hierarchy")
-				.withProductionStatus(ProductionStatus.PROD_READY)
+				.withDescription("This report lists component changes per major hierarchy.   You can either specify two releases to compare as archives stored in S3 " + 
+				"(eg SnomedCT_InternationalRF2_PRODUCTION_20190731T120000Z.zip) or leave them blank to compare the current delta to the previous release as specified" +
+				"by that branch.")
 				.withParameters(params)
 				.withTag(INT)
-				.withProductionStatus(ProductionStatus.HIDEME)
+				.withProductionStatus(ProductionStatus.PROD_READY)
 				.build();
 	}
 	
@@ -105,13 +112,13 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 	};
 	
 	public void postInit() throws TermServerScriptException {
-		String[] columnHeadings = new String[] {"Sctid, Hierarchy, SemTag, New, New SD, New P, Changed DefnStatus, Inactivated", 
-												"Sctid, Hierarchy, SemTag, New / Reactivated, Changed, Inactivated",
-												"Sctid, Hierarchy, SemTag, New Axioms, Changed Axioms, Inactivated Axioms",
-												"Sctid, Hierarchy, SemTag, New Inferred Rels, Changed Inferred Rels, Inactivated Inferred Rels",
-												"Sctid, Hierarchy, SemTag, New / Reactivated, Changed, Inactivated",
-												"Sctid, Hierarchy, SemTag, Inactivations New / Reactivated, Changed, Inactivations Inactivated",
-												"Sctid, Hierarchy, SemTag, Assoc New / Reactivated, Changed, Assoc Inactivated"
+		String[] columnHeadings = new String[] {"Sctid, Hierarchy, SemTag, New, Changed DefnStatus, Inactivated, New with New Concept, New SD, New P", 
+												"Sctid, Hierarchy, SemTag, New / Reactivated, Changed, Inactivated, New with New Concept",
+												"Sctid, Hierarchy, SemTag, New Axioms, Changed Axioms, Inactivated Axioms, New with New Concept",
+												"Sctid, Hierarchy, SemTag, New Inferred Rels, Changed Inferred Rels, Inactivated Inferred Rels, New with New Concept",
+												"Sctid, Hierarchy, SemTag, New / Reactivated, Changed, Inactivated, New with New Concept",
+												"Sctid, Hierarchy, SemTag, Inactivations New / Reactivated, Changed, Inactivations Inactivated, New with New Concept",
+												"Sctid, Hierarchy, SemTag, Assoc New / Reactivated, Changed, Assoc Inactivated, New with New Concept"
 };
 		String[] tabNames = new String[] {	"Concepts", 
 											"Descriptions",
@@ -156,17 +163,18 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 			}
 			
 			Datum datum = prevData.get(c.getConceptId());
+			boolean isNewConcept = datum==null;
 			analyzeConcept(c, datum==null?null:datum.isSD, summaryData[IDX_CONCEPTS]);
 			//Component changes
-			analyzeComponents(datum==null?null:datum.descIds, summaryData[IDX_DESCS], c.getDescriptions());
-			analyzeComponents(datum==null?null:datum.relIds, summaryData[IDX_RELS], c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.BOTH));
-			analyzeComponents(datum==null?null:datum.axiomIds, summaryData[IDX_AXIOMS], c.getAxiomEntries());
-			analyzeComponents(datum==null?null:datum.inactivationIds, summaryData[IDX_INACT_IND], c.getInactivationIndicatorEntries());
-			analyzeComponents(datum==null?null:datum.histAssocIds, summaryData[IDX_HIST], c.getAssociations());
+			analyzeComponents(isNewConcept, (datum==null?null:datum.descIds), summaryData[IDX_DESCS], c.getDescriptions());
+			analyzeComponents(isNewConcept, (datum==null?null:datum.relIds), summaryData[IDX_RELS], c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.BOTH));
+			analyzeComponents(isNewConcept, (datum==null?null:datum.axiomIds), summaryData[IDX_AXIOMS], c.getAxiomEntries());
+			analyzeComponents(isNewConcept, (datum==null?null:datum.inactivationIds), summaryData[IDX_INACT_IND], c.getInactivationIndicatorEntries());
+			analyzeComponents(isNewConcept, (datum==null?null:datum.histAssocIds), summaryData[IDX_HIST], c.getAssociations());
 			List<LangRefsetEntry> langRefsetEntries = c.getDescriptions().stream()
 					.flatMap(d -> d.getLangRefsetEntries().stream())
 					.collect(Collectors.toList());
-			analyzeComponents(datum==null?null:datum.langRefsetIds, summaryData[IDX_LANG], langRefsetEntries);
+			analyzeComponents(isNewConcept, (datum==null?null:datum.langRefsetIds), summaryData[IDX_LANG], langRefsetEntries);
 		}
 	}
 	
@@ -183,6 +191,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 					counts[IDX_NEW_P]++;
 				}
 				counts[IDX_NEW]++;
+				counts[IDX_NEW_NEW]++;
 			} else {
 				//If the concept is active but not new, has it changed?
 				if (isSD != wasSD) {
@@ -198,7 +207,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		
 	}
 
-	private void analyzeComponents(List<String> ids, int[] counts, List<? extends Component> components) {
+	private void analyzeComponents(boolean isNewConcept, List<String> ids, int[] counts, List<? extends Component> components) {
 		//If we have no previous data, then the concept is new
 		boolean conceptIsNew = (ids == null);
 		for (Component c : components) {
@@ -210,6 +219,12 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 			if (c.isActive()) {
 				if (!existedPreviously) {
 					counts[IDX_NEW]++;
+					if (isNewConcept) {
+						//This component is new because it was created as part of a new concept
+						//so it's not been 'added' as such.  Well, we might want to count additions
+						//to existing concepts separately.
+						counts[IDX_NEW_NEW]++;
+					}
 				} else if (StringUtils.isEmpty(c.getEffectiveTime()) || c.getEffectiveTime().equals(thisEffectiveTime)) {
 					//Did it change in this release?
 					counts[IDX_CHANGED]++;
@@ -223,6 +238,8 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 	}
 
 	private void outputResults() throws TermServerScriptException {
+		Concept totalConcept = new Concept("","Total");
+		
 		int[][] totals = new int[COMPONENT_COUNT][DATA_WIDTH];
 		for (Concept hierarchy : topLevelHierarchies) {
 			int[][] summaryData = summaryDataMap.get(hierarchy);
@@ -235,14 +252,14 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		}
 		
 		for (int idxTab = 0; idxTab < COMPONENT_COUNT; idxTab++) {
-			report (idxTab, ROOT_CONCEPT, totals[idxTab]);
+			report (idxTab, totalConcept, totals[idxTab]);
 		}
 	}
 	
 	protected void report (int idxTab, Concept c, int[] data) throws TermServerScriptException {
-		int dataWidth = 3;
+		int dataWidth = DATA_WIDTH - 2;  //Just concepts have those two extra fields.
 		if (idxTab == IDX_CONCEPTS) {
-			dataWidth = 5;
+			dataWidth = DATA_WIDTH;
 		}
 		int[] dataSubset = Arrays.copyOfRange(data, 0, dataWidth);
 		super.report(idxTab, c, dataSubset);

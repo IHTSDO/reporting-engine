@@ -30,6 +30,8 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
   * */
 public class HistoricStatsGenerator extends TermServerReport implements ReportClass {
 	
+	private static final String dataDir = "historic-data/";
+	
 	public HistoricStatsGenerator() {
 	}
 	
@@ -61,7 +63,13 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 	public void runJob() throws TermServerScriptException {
 		FileWriter fw = null;
 		try {
-			File f = new File("historic-data/" + project.getKey() + ".tsv");
+			//Create the historic-data directory if required
+			File dataDirFile = new File(dataDir);
+			if (!dataDirFile.exists()) {
+				info("Creating directory to store historic data analysis: " + dataDir);
+				dataDirFile.mkdir();
+			}
+			File f = new File(dataDir + project.getKey() + ".tsv");
 			f.createNewFile();
 			fw = new FileWriter(f);
 			

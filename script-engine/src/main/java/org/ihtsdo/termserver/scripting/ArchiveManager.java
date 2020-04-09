@@ -177,9 +177,14 @@ public class ArchiveManager implements RF2Constants {
 			
 			//Look for an expanded directory by preference
 			File snapshot = getSnapshotPath();
-			if (!snapshot.exists()) {
+			if (!snapshot.exists() && !snapshot.getName().endsWith(fileExt)) {
 				//Otherwise, do we have a zip file to play with?
-				snapshot = new File (snapshot.getPath() + ".zip");
+				snapshot = new File (snapshot.getPath() + fileExt);
+			}
+			
+			//If it doesn't exist as a zip file locally either, we can try downloading it from S3
+			if (!snapshot.exists()) {
+				getArchiveDataLoader().download(snapshot);
 			}
 			
 			boolean originalStateDataFlag = allowStaleData;

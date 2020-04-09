@@ -1310,7 +1310,10 @@ public abstract class TermServerScript implements RF2Constants {
 				
 				if (c != null && !StringUtils.isEmpty(c.getFsn())) {
 					conceptFields[2] = SnomedUtils.deconstructFSN(c.getFsn())[1];
-				}
+					if (conceptFields[2] == null) {
+						conceptFields[2] = " ";
+					}
+				} 
 			}
 			report (reportIdx, conceptFields, details);
 		}
@@ -1368,6 +1371,10 @@ public abstract class TermServerScript implements RF2Constants {
 		for (Object obj : arr) {
 			if (obj instanceof String[] || obj instanceof Object[]) {
 				addObjectArray(sb,obj, prefix, isNumeric);
+			} else if (obj instanceof int[]) {
+				for (int data : ((int[])obj)) {
+					sb.append(COMMA + data);
+				}
 			} else {
 				if (obj instanceof Boolean) {
 					obj = ((Boolean)obj)?"Y":"N";

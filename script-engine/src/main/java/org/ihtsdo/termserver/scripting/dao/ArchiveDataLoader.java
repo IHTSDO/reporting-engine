@@ -100,11 +100,15 @@ public class ArchiveDataLoader {
 	public static ArchiveDataLoader create() throws TermServerScriptException {
 		LOGGER.info("Creating ArchiveDataLoader based on local properties");
 		ArchiveDataLoader loader = new ArchiveDataLoader();
-		LocalProperties properties = new LocalProperties(null);
-		loader.region = properties.getProperty("cloud.aws.region.static");
-		loader.awsKey = properties.getProperty("aws.key");
-		loader.awsSecretKey = properties.getProperty("aws.secretKey");
-		loader.useCloudStr = properties.getProperty("archives.useCloud");
+		try {
+			LocalProperties properties = new LocalProperties(null);
+			loader.region = properties.getProperty("cloud.aws.region.static");
+			loader.awsKey = properties.getProperty("aws.key");
+			loader.awsSecretKey = properties.getProperty("aws.secretKey");
+			loader.useCloudStr = properties.getProperty("archives.useCloud");
+		} catch (Exception e) {
+			throw new TermServerScriptException ("Unable to create ArchiveDataLoader using local configuration.  Check availability of application-local.properties",e);
+		}
 		return loader;
 	}
 	
