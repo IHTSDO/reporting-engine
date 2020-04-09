@@ -42,12 +42,12 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put(SUB_HIERARCHY, ROOT_CONCEPT.toString());
-		params.put(INCLUDE_ALL_LEGACY_ISSUES, "Y");
+		params.put(INCLUDE_ALL_LEGACY_ISSUES, "true");
 		TermServerReport.run(ValidateInactivationsWithAssociations.class, args, params);
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
-		includeLegacyIssues = run.getParamValue(INCLUDE_ALL_LEGACY_ISSUES).equals("Y");
+		includeLegacyIssues = run.getParameters().getMandatoryBoolean(INCLUDE_ALL_LEGACY_ISSUES);
 		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA
 		additionalReportColumns="FSN, SemTag, Concept EffectiveTime, Issue, isLegacy (C/D), Data";
 		super.init(run);
