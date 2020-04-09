@@ -69,7 +69,9 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 				info("Creating directory to store historic data analysis: " + dataDir);
 				dataDirFile.mkdir();
 			}
+			
 			File f = new File(dataDir + project.getKey() + ".tsv");
+			info("Creating dataFile: " + f.getAbsolutePath());
 			f.createNewFile();
 			fw = new FileWriter(f);
 			
