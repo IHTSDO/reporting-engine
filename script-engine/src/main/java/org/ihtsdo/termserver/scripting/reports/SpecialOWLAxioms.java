@@ -57,10 +57,12 @@ public class SpecialOWLAxioms extends TermServerReport implements ReportClass {
 		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
 			for (Axiom a : c.getAdditionalAxioms()) {
 				report (c, "Additional Axiom", a);
+				countIssue(c);
 			}
 			
 			for (Axiom a : c.getGciAxioms()) {
 				report (c, "GCI Axiom", a);
+				countIssue(c);
 			}
 			
 			if (c.getObjectPropertyAxiomRepresentation() != null) {
@@ -71,6 +73,7 @@ public class SpecialOWLAxioms extends TermServerReport implements ReportClass {
 						axiom.isReflexive(),
 						axiom.isPropertyChain(),
 						axiom.getOwl());
+				countIssue(c);
 			}
 		}
 	}
