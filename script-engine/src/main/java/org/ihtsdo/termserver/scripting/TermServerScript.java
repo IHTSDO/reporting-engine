@@ -362,7 +362,10 @@ public abstract class TermServerScript implements RF2Constants {
 		EclCache.reset();
 		authenticatedCookie = jobRun.getAuthToken();
 		
-		if (projectName == null) {
+		if (jobRun != null && !StringUtils.isEmpty(jobRun.getProject())) {
+			projectName = jobRun.getProject();
+		} else if ((jobRun == null && projectName == null) || 
+				(jobRun != null && StringUtils.isEmpty(jobRun.getProject()))) {
 			warn("No project specified, running against MAIN");
 			projectName = "MAIN";
 		}
@@ -370,6 +373,8 @@ public abstract class TermServerScript implements RF2Constants {
 		if (StringUtils.isEmpty(jobRun.getParamValue(SUB_HIERARCHY))) {
 			jobRun.setParameter(SUB_HIERARCHY, ROOT_CONCEPT.toString());
 		}
+		subHierarchy = gl.getConcept(jobRun.getParamValue(SUB_HIERARCHY));
+		
 		String inputFileName = jobRun.getParamValue(INPUT_FILE);
 		if (!StringUtils.isEmpty(inputFileName)) {
 			inputFile = new File(inputFileName);
@@ -384,22 +389,21 @@ public abstract class TermServerScript implements RF2Constants {
 					.collect(Collectors.toSet());
 		}
 		
-		subHierarchy = gl.getConcept(jobRun.getParamValue(SUB_HIERARCHY));
 		if (authenticatedCookie == null || authenticatedCookie.trim().isEmpty()) {
 			throw new TermServerScriptException("Unable to proceed without an authenticated token/cookie");
 		}
+		
 		init();
+		
 		if (projectName.equals("MAIN")) {
 			//MAIN is not a project.  Recover Main metadata from branch
 			project.setMetadata(tsClient.getBranch("MAIN").getMetadata());
-		} else {
+		} else if (!StringUtils.isNumeric(projectName)) {
 			//Not if we're loading a release or extension
-			if (!StringUtils.isNumeric(projectName)) {
-				try {
-					project = scaClient.getProject(projectName);
-				} catch (RestClientException e) {
-					throw new TermServerScriptException("Failed to recover project " + projectName, e);
-				}
+			try {
+				project = scaClient.getProject(projectName);
+			} catch (RestClientException e) {
+				throw new TermServerScriptException("Failed to recover project " + projectName, e);
 			}
 		}
 	}

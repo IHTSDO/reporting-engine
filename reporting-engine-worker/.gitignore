@@ -4,3 +4,5 @@ secure/*
 historic-data/
 resources/*
 snapshots
+releases
+releases/
