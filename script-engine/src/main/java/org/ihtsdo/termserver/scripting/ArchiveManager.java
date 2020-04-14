@@ -184,7 +184,12 @@ public class ArchiveManager implements RF2Constants {
 			
 			//If it doesn't exist as a zip file locally either, we can try downloading it from S3
 			if (!snapshot.exists()) {
-				getArchiveDataLoader().download(snapshot);
+				try {
+					getArchiveDataLoader().download(snapshot);
+				} catch (TermServerScriptException e) {
+					// could not find from S3
+					info("Could not find from S3");
+				}
 			}
 			
 			boolean originalStateDataFlag = allowStaleData;
