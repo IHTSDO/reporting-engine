@@ -61,7 +61,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_STATS))
 				.withName("Summary Component Stats")
 				.withDescription("This report lists component changes per major hierarchy.   You can either specify two releases to compare as archives stored in S3 " + 
-				"(eg SnomedCT_InternationalRF2_PRODUCTION_20190731T120000Z.zip) or leave them blank to compare the current delta to the previous release as specified" +
+				"(eg SnomedCT_InternationalRF2_PRODUCTION_20190731T120000Z.zip) or leave them blank to compare the current delta to the previous release as specified " +
 				"by that branch.")
 				.withParameters(params)
 				.withTag(INT)
