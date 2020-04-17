@@ -32,7 +32,7 @@ import org.springframework.stereotype.Service;
 public class ArchiveManager implements RF2Constants {
 	
 	static ArchiveManager singleton;
-	
+
 	@Autowired
 	private ArchiveDataLoader archiveDataLoader;
 	
@@ -41,6 +41,7 @@ public class ArchiveManager implements RF2Constants {
 	protected TermServerScript ts;
 	protected ApplicationContext appContext;
 	public boolean allowStaleData = false;
+	public boolean loadDependencyPlusExtensionArchive = false;
 	public boolean loadEditionArchive = false;
 	public boolean populateHierarchyDepth = true;  //Term contains X needs this
 	public boolean populateReleasedFlag = false;
@@ -169,6 +170,21 @@ public class ArchiveManager implements RF2Constants {
 
 	public void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException {
 		try {
+			if (loadDependencyPlusExtensionArchive) {
+				if (StringUtils.isEmpty(ts.getDependencyArchive())) {
+					throw new TermServerScriptException("Told to load dependency + extension but no dependency package specified");
+				} else {
+					File dependency = new File ("releases/" + ts.getDependencyArchive());
+					if (dependency.exists()) {
+						loadArchive(dependency, fsnOnly, "Snapshot", true);
+					} else {
+						throw new TermServerScriptException("Dependency Package " + dependency.getAbsolutePath() + " does not exist");
+					}
+				}
+				
+			}
+			
+			
 			//If the project specifies its a .zip file, that's another way to know we're loading an edition
 			String fileExt = ".zip";
 			if (ts.getProject().getKey().endsWith(fileExt)) {
@@ -182,8 +198,8 @@ public class ArchiveManager implements RF2Constants {
 				snapshot = new File (snapshot.getPath() + fileExt);
 			}
 			
-			//If it doesn't exist as a zip file locally either, we can try downloading it from S3
 			if (!snapshot.exists()) {
+				//If it doesn't exist as a zip file locally either, we can try downloading it from S3
 				try {
 					String cwd = new File("").getAbsolutePath();
 					TermServerScript.info(snapshot + " not found locally in " + cwd + ", attempting to download from S3.");
@@ -260,24 +276,29 @@ public class ArchiveManager implements RF2Constants {
 							Boolean isReleased = loadEditionArchive ? true : null;
 							loadArchive(snapshot, fsnOnly, "Snapshot", isReleased);
 						} catch (Exception e) {
-							TermServerScript.error ("Non-viable snapshot encountered (Exception: " + e.getMessage()  +").  Deleting " + snapshot + "...", e);
-							try {
-								if (snapshot.isFile()) {
-									snapshot.delete();
-								} else if (snapshot.isDirectory()) {
-									FileUtils.deleteDirectory(snapshot);
-								} else {
-									throw new TermServerScriptException (snapshot + " is neither file nor directory.");
+							TermServerScript.error ("Non-viable snapshot encountered (Exception: " + e.getMessage()  +").", e);
+							if (!snapshot.getName().startsWith("releases/")) {
+								TermServerScript.info ("Deleting " + snapshot);
+								try {
+									if (snapshot.isFile()) {
+										snapshot.delete();
+									} else if (snapshot.isDirectory()) {
+										FileUtils.deleteDirectory(snapshot);
+									} else {
+										throw new TermServerScriptException (snapshot + " is neither file nor directory.");
+									}
+								} catch (Exception e2) {
+									TermServerScript.warn("Failed to delete snapshot " + snapshot + " due to " + e2);
 								}
-							} catch (Exception e2) {
-								throw new TermServerScriptException ("Failed to delete snapshot " + snapshot, e2);
+							} else {
+								TermServerScript.info ("Not deleting " + snapshot + " as it's a release.");
 							}
 							//We were trying to load the archive from disk.  If it's been created from a delta, we can try that again
 							//Next time round the snapshot on disk won't be detected and we'll take a different code path
 							if (!loadEditionArchive) {
 								TermServerScript.warn("Attempting to regenerate...");
 								loadProjectSnapshot(fsnOnly);
-							}
+							} 
 						}
 					}
 				}

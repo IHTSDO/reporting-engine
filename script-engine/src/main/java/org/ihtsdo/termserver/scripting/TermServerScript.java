@@ -62,6 +62,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected boolean runStandAlone = true; //Set to true to avoid loading concepts from Termserver.  Should be used with Dry Run only.
 	protected File inputFile;
 	protected File inputFile2;
+	protected String dependencyArchive;
 	protected String projectName;
 	private String reportName;
 	protected boolean safetyProtocols = true;  //Switch off to bypass all limits
@@ -1570,6 +1571,10 @@ public abstract class TermServerScript implements RF2Constants {
 
 	public boolean getManyTabOutput() {
 		return manyTabOutput;
+	}
+
+	protected  String getDependencyArchive() {
+		return dependencyArchive;
 	}
 	
 }
