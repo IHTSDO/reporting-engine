@@ -1115,6 +1115,7 @@ public abstract class TermServerScript implements RF2Constants {
 			for (String thisCriticalIssue : criticalIssues) {
 				recordSummaryText(thisCriticalIssue);
 			}
+			recordSummaryText("Total Critical Issues Encountered: " + criticalIssues.size());
 		}
 		flushFilesSafely(true);
 	}
