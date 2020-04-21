@@ -186,7 +186,7 @@ public class ArchiveManager implements RF2Constants {
 			if (!snapshot.exists()) {
 				try {
 					String cwd = new File("").getAbsolutePath();
-					TermServerScript.info(snapshot + " not found locally in " + cwd + ", attempting to downlod from S3.");
+					TermServerScript.info(snapshot + " not found locally in " + cwd + ", attempting to download from S3.");
 					getArchiveDataLoader().download(snapshot);
 				} catch (TermServerScriptException e) {
 					info("Could not find " + snapshot.getName() + " in S3.");
@@ -270,10 +270,14 @@ public class ArchiveManager implements RF2Constants {
 									throw new TermServerScriptException (snapshot + " is neither file nor directory.");
 								}
 							} catch (Exception e2) {
-								TermServerScript.warn("Failed to delete snapshot " + snapshot + " due to " + e2);
+								throw new TermServerScriptException ("Failed to delete snapshot " + snapshot, e2);
 							}
-							releasedFlagPopulated = false;
-							throw new TermServerScriptException("Non-viable snapshot detected",e);
+							//We were trying to load the archive from disk.  If it's been created from a delta, we can try that again
+							//Next time round the snapshot on disk won't be detected and we'll take a different code path
+							if (!loadEditionArchive) {
+								TermServerScript.warn("Attempting to regenerate...");
+								loadProjectSnapshot(fsnOnly);
+							}
 						}
 					}
 				}
@@ -416,13 +420,14 @@ public class ArchiveManager implements RF2Constants {
 				throw new TermServerScriptException("Unrecognised archive : " + archive);
 			}
 			
+			if (gl.getAllConcepts().size() < 300000) {
+				throw new TermServerScriptException("Insufficient number of concepts loaded " + gl.getAllConcepts().size() + " - Snapshot archive damaged?");
+			}
+			
 			if (!fsnOnly) {  
 				//Check that we've got some descriptions to be sure we've not been given
 				//a malformed, or classification style archive.
 				debug("Checking first 100 concepts for integrity");
-				if (gl.getAllConcepts().size() < 300000) {
-					throw new TermServerScriptException("Insufficient number of concepts loaded " + gl.getAllConcepts().size() + " - Snapshot archive damaged?");
-				}
 				List<Description> first100Descriptions = gl.getAllConcepts()
 						.stream()
 						.limit(100)
