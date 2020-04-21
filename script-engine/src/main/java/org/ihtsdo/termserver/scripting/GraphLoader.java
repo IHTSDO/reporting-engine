@@ -95,6 +95,9 @@ public class GraphLoader implements RF2Constants {
 		
 		DISEASE.reset();
 		singleton.concepts.put(DISEASE.getConceptId(), DISEASE);
+		
+		DEVICE.reset();
+		singleton.concepts.put(DEVICE.getConceptId(), DEVICE);
 	}
 
 	public Collection <Concept> getAllConcepts() {
@@ -309,6 +312,7 @@ public class GraphLoader implements RF2Constants {
 				fsnMap.put(c.getFsn(), c);
 			}
 		}
+		fsn = fsn.trim().replaceAll(ESCAPED_PIPE, "");
 		return fsnMap.get(fsn);
 	}
 	
@@ -406,11 +410,15 @@ public class GraphLoader implements RF2Constants {
 		if (identifier.contains(PIPE)) {
 			identifier = identifier.split(ESCAPED_PIPE)[0].trim();
 		}
-		String sctId = identifier;
+		String sctId = identifier.trim();
 		
 		//Make sure we're actually being asked for a concept
 		if (sctId.length() < 6 || !isConcept(sctId)) {
-			throw new IllegalArgumentException("Request made for non concept sctid: '" + sctId + "'");
+			if (!createIfRequired && !validateExists && sctId.length() == 0) {
+				return null;
+			} else {
+				throw new IllegalArgumentException("Request made for non concept sctid: '" + sctId + "'");
+			}
 		}
 		Concept c = concepts.get(sctId);
 		if (c == null) {

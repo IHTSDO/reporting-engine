@@ -21,10 +21,19 @@ public class SnomedUtils implements RF2Constants {
 	
 	public static String isValid(String sctId, PartitionIdentifier partitionIdentifier) {
 		String errorMsg=null;
-		int partitionNumber = Integer.valueOf("" + sctId.charAt(sctId.length() -2));
-		if ( partitionNumber != partitionIdentifier.ordinal()) {
-			errorMsg = sctId + " does not exist in partition " + partitionIdentifier.toString();
+		
+		if (!StringUtils.isNumeric(sctId)) {
+			return "SCTID is not entirely numeric";
 		}
+		
+		//Are we checking a specific partition?
+		if (partitionIdentifier != null) {
+			int partitionNumber = Integer.valueOf("" + sctId.charAt(sctId.length() -2));
+			if (partitionNumber != partitionIdentifier.ordinal()) {
+				errorMsg = sctId + " does not exist in partition " + partitionIdentifier.toString();
+			}
+		}
+		
 		if (!verhoeffCheck.isValid(sctId)) {
 			errorMsg = sctId + " does not exhibit a valid check digit";
 		}
@@ -900,6 +909,18 @@ public class SnomedUtils implements RF2Constants {
 	}
 	
 	/**
+	 * @return true if the concept has one of the specified types as an attribute
+	 */
+	public static boolean hasType(CharacteristicType charType, Concept c, Set<Concept> types) {
+		for (Concept type : types) {
+			if (hasType(charType, c, type)) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	/**
 	 * @return true if the concept has the specified attributeValue
 	 */
 	public static boolean hasValue(CharacteristicType charType, Concept c, Concept value) {
@@ -1430,6 +1451,14 @@ public class SnomedUtils implements RF2Constants {
 			.filter(r -> types.contains(r.getType()))
 			.filter(r -> values == null || values.contains(r.getTarget()))
 			.collect(Collectors.toList()).size() > 0;
+	}
+
+	public static boolean startsWithSCTID(String str) {
+		//Can we find an SCTID in this string?
+		str = str.trim().replaceAll(ESCAPED_PIPE, " ");
+		String[] parts = str.split(SPACE);
+		String errMsg = isValid(parts[0], null);
+		return errMsg == null;
 	}
 
 }
