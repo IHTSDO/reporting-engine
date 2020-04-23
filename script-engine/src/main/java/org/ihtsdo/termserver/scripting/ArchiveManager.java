@@ -535,7 +535,7 @@ public class ArchiveManager implements RF2Constants {
 				//If we're loading all terms, load the language refset as well
 				if (!fsnOnly && (fileName.contains("English" ) || fileName.contains("Language"))) {
 					info("Loading " + fileType + " Language Reference Set File - " + fileName);
-					gl.loadLanguageFile(is);
+					gl.loadLanguageFile(is, isReleased);
 				}
 			}
 		} catch (TermServerScriptException | IOException e) {
