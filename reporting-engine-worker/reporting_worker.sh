@@ -37,6 +37,9 @@ fi
 	echo "Failure detected installing reporting-worker"
 }
 
+# stop the worker again as the install will have started it
+supervisorctl stop reporting-engine-worker || true;
+
 rp_config="/opt/reporting-engine-worker/application.properties"
 echo "Configuring $rp_config"
 if [ -e  $rp_config ];then
