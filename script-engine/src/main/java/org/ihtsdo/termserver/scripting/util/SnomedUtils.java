@@ -441,6 +441,15 @@ public class SnomedUtils implements RF2Constants {
 		return null;
 	}
 	
+	public static DefinitionStatus translateDefnStatusStr(String defnStr) throws TermServerScriptException {
+		switch (defnStr) {
+			case "P": return DefinitionStatus.PRIMITIVE;
+			case "FD":
+			case "SD": return DefinitionStatus.FULLY_DEFINED;
+			default: throw new TermServerScriptException("Unrecognised definition status :" + defnStr);
+		}
+	}
+	
 
 	public static boolean translateActive(ActiveState active) throws TermServerScriptException {
 		switch (active) {
