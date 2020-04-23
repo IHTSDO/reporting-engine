@@ -48,22 +48,24 @@ public class SpecialOWLAxioms extends TermServerReport implements ReportClass {
 	public void postInit() throws TermServerScriptException {
 
 		String[] columnHeadings = new String[] {"Concept, FSN, SemTag, ConceptActive, isTransitive, isReflexive, isRoleChain, OWL",
-				"Concept, Type, OWL"};
+				"Concept, Type, OWL, Axiom",
+				"Concept, Type, OWL, Axiom"};
 
-		String[] tabNames = new String[] {"Special Axioms" ,
-				"Additional + GCIs"};
+		String[] tabNames = new String[] {"Special Axioms",
+				"Additional Axioms",
+				"GCIs Axioms"};
 		super.postInit(tabNames, columnHeadings, false);
 	}
 	
 	public void runJob() throws TermServerScriptException {
 		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
 			for (Axiom a : c.getAdditionalAxioms()) {
-				report (SECONDARY_REPORT, c, "Additional Axiom", a);
+				report (SECONDARY_REPORT, c, a);
 				countIssue(c);
 			}
 			
 			for (Axiom a : c.getGciAxioms()) {
-				report (SECONDARY_REPORT, c, "GCI Axiom", a);
+				report (TERTIARY_REPORT, c, a);
 				countIssue(c);
 			}
 			
