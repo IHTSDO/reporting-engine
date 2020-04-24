@@ -53,7 +53,7 @@ public class SpecialOWLAxioms extends TermServerReport implements ReportClass {
 
 		String[] tabNames = new String[] {"Special Axioms",
 				"Additional Axioms",
-				"GCIs Axioms"};
+				"GCIs"};
 		super.postInit(tabNames, columnHeadings, false);
 	}
 	
