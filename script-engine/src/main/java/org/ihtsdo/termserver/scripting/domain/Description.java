@@ -406,6 +406,16 @@ public class Description extends Component implements RF2Constants {
 		}
 		return result;
 	}
+	
+
+	public LangRefsetEntry getLangRefsetEntry(String memberId) {
+		for (LangRefsetEntry l : getLangRefsetEntries()) {
+			if (l.getId().equals(memberId)) {
+				return l;
+			}
+		}
+		return null;
+	}
 
 	public boolean isDirty() {
 		return dirty;
@@ -487,7 +497,9 @@ public class Description extends Component implements RF2Constants {
 	
 	public static void fillFromRf2(Description d, String[] lineItems) throws TermServerScriptException {
 		d.setDescriptionId(lineItems[DES_IDX_ID]);
-		d.setActive(lineItems[DES_IDX_ACTIVE].equals("1"));
+		//d.setActive(lineItems[DES_IDX_ACTIVE].equals("1"));  //Set this directly when loading RF2
+		//Otherwise we'll inactivate the language refset entries prematurely
+		d.active=lineItems[DES_IDX_ACTIVE].equals("1");
 		//Set effective time after active, since changing activate state resets effectiveTime
 		d.setEffectiveTime(lineItems[DES_IDX_EFFECTIVETIME].isEmpty()?null:lineItems[DES_IDX_EFFECTIVETIME]);
 		if (d.getEffectiveTime() != null) {

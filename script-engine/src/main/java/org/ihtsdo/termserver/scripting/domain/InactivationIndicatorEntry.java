@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 
+//TODO Make this extend RefsetEntry
 //id	effectiveTime	active	moduleId	refsetId	referencedComponentId	inactivationReasonId
 public class InactivationIndicatorEntry extends Component implements RF2Constants {
 
@@ -164,6 +165,17 @@ public class InactivationIndicatorEntry extends Component implements RF2Constant
 		i.setReferencedComponentId(lineItems[INACT_IDX_REFCOMPID]);
 		i.setInactivationReasonId(lineItems[INACT_IDX_REASON_ID]);
 		return i;
+	}
+	
+	public RefsetEntry toRefsetEntry() {
+		RefsetEntry re = new RefsetEntry();
+		re.setId(id);
+		re.setModuleId(moduleId);
+		re.setRefsetId(refsetId);
+		re.setActive(active);
+		re.setReferencedComponentId(referencedComponentId);
+		re.setValueId(inactivationReasonId);
+		return re;
 	}
 
 	@Override

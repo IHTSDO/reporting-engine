@@ -850,7 +850,7 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 	}
 	
-	protected int deleteReferenceSetMember(Task t, String uuid) throws TermServerScriptException {
+	protected int deleteRefsetMember(Task t, String uuid) throws TermServerScriptException {
 		try {
 			debug ((dryRun ?"Dry run deleting ":"Deleting ") + uuid );
 			if (!dryRun) {
@@ -863,14 +863,10 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 	}
 	
-	protected int inactivateRefsetMember(Task t, Concept c, Component i, String info) throws JSONException, TermServerScriptException {
-		JSONObject inactivationJson = new JSONObject();
-		inactivationJson.put("id", i.getId());
-		inactivationJson.put("active", false);
-		inactivationJson.put("commitComment", "PWI Duplicate Refset Member fix");
-		debug ( (dryRun? "Dry run ":"") + "Updating state of " + c + info);
+	protected int inactivateRefsetMember(Task t, Concept c, RefsetEntry r, String info) throws JSONException, TermServerScriptException {
+		debug ( (dryRun? "Dry run ":"") + "Updating state of " + r + info);
 		if (!dryRun) {
-			tsClient.updateRefsetMember(inactivationJson,  t.getBranchPath(), false); //Don't force delete
+			tsClient.updateRefsetMember(t.getBranchPath(), r, false); //Don't force delete
 		}
 		return CHANGE_MADE;
 	}

@@ -10,6 +10,7 @@ import org.ihtsdo.otf.rest.client.ExpressiveErrorHandler;
 import org.ihtsdo.otf.rest.client.Status;
 import org.ihtsdo.otf.rest.client.authoringservices.RestyOverrideAccept;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Classification;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -464,24 +465,8 @@ public class TermServerClient {
 	}
 
 	public void deleteRefsetMember(String refsetMemberId, String branch, boolean toForce) throws TermServerScriptException {
-		
-		try {
-			resty.json(getRefsetMemberUpdateUrl(refsetMemberId, branch, toForce), Resty.delete());
-			logger.info("deleted refset member id:" + refsetMemberId);
-		} catch (IOException e) {
-			throw new TermServerScriptException(e);
-		}
-	}
-
-	public JSONResource updateRefsetMember(JSONObject refsetUpdate, String branch, boolean toForce) throws TermServerScriptException {
-		try {
-			final String id = refsetUpdate.getString("id");
-			Preconditions.checkNotNull(id);
-			logger.info("Updating refset member " + id);
-			return resty.json(getRefsetMemberUpdateUrl(id, branch, toForce), Resty.put(RestyHelper.content(refsetUpdate, SNOWOWL_CONTENT_TYPE)));
-		} catch (Exception e) {
-			throw new TermServerScriptException(e);
-		}
+			restTemplate.delete(getRefsetMemberUpdateUrl(refsetMemberId, branch, toForce));
+			logger.info("Deleted refset member id:" + refsetMemberId);
 	}
 	
 	private String getRefsetMemberUrl(String refSetMemberId, String branch) {
@@ -506,13 +491,14 @@ public class TermServerClient {
 
 	public void updateRefsetMember(String branchPath, RefsetEntry refsetEntry, boolean forceUpdate) throws TermServerScriptException {
 		try {
-			String endPoint = this.url + "/" + branchPath + "/members/" + refsetEntry.getId();
-			if (forceUpdate) {
-				endPoint += "?force=true";
-			}
-			String json = gson.toJson(refsetEntry);
-			AbstractContent content = Resty.put(RestyHelper.content(new JSONObject(json), SNOWOWL_CONTENT_TYPE));
-			resty.json(endPoint, content);
+			ResponseEntity<RefsetEntry> response = restTemplate.exchange(
+					getRefsetMemberUpdateUrl(refsetEntry.getId(), branchPath, forceUpdate),
+					HttpMethod.PUT,
+					new HttpEntity<>(refsetEntry, headers),
+					RefsetEntry.class);
+			RefsetEntry updatedEntry = response.getBody();
+			Preconditions.checkNotNull(updatedEntry);
+			logger.info("Updated refset member " + refsetEntry.getId());
 		} catch (Exception e) {
 			throw new TermServerScriptException("Unable to update refset entry " + refsetEntry + " due to " + e.getMessage(), e);
 		}

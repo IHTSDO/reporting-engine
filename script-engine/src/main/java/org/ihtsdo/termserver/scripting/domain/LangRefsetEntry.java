@@ -7,7 +7,7 @@ import java.util.UUID;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
-
+//TODO Make this extend RefsetEntry
 //id	effectiveTime	active	moduleId	refsetId	referencedComponentId	acceptabilityId
 public class LangRefsetEntry extends Component implements RF2Constants{
 
@@ -147,6 +147,17 @@ public class LangRefsetEntry extends Component implements RF2Constants{
 		l.setAcceptabilityId(lineItems[LANG_IDX_ACCEPTABILITY_ID]);
 		l.setClean();
 		return l;
+	}
+	
+	public RefsetEntry toRefsetEntry() {
+		RefsetEntry re = new RefsetEntry();
+		re.setId(id);
+		re.setModuleId(moduleId);
+		re.setRefsetId(refsetId);
+		re.setActive(active);
+		re.setReferencedComponentId(referencedComponentId);
+		re.setValueId(acceptabilityId);
+		return re;
 	}
 	
 	@Override

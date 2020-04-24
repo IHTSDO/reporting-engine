@@ -4,15 +4,13 @@ import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
-import org.ihtsdo.termserver.scripting.ValidationFailure;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.termserver.scripting.GraphLoader.DuplicatePair;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.LangRefsetEntry;
+import org.springframework.util.StringUtils;
 
-import us.monoid.json.JSONException;
 
 public class DuplicateLangRefsetsFix extends BatchFix {
 	
@@ -48,7 +46,12 @@ public class DuplicateLangRefsetsFix extends BatchFix {
 				LangRefsetEntry l2 = (LangRefsetEntry)dups.getInactivate();
 				report (t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, l2.toString(true));
 				report (t, c, Severity.LOW, ReportActionType.NO_CHANGE, l1.toString(true));
-				changesMade += inactivateRefsetMember(t, c, l2, info);
+				if (StringUtils.isEmpty(l2.getEffectiveTime())) {
+					changesMade += deleteRefsetMember(t, l2.getId());
+				} else {
+					l2.setActive(false);
+					changesMade += inactivateRefsetMember(t, c, l2.toRefsetEntry(), info);
+				}
 			}
 		} catch (Exception e) {
 			throw new TermServerScriptException("Failed to update refset entry for " + c, e);

@@ -38,6 +38,7 @@ public class GraphLoader implements RF2Constants {
 	private Map<Concept, List<AssociationEntry>> historicalAssociations =  new HashMap<Concept, List<AssociationEntry>>();
 	private TransitiveClosure previousTransativeClosure;
 	private Map<Concept, Set<DuplicatePair>> duplicateLangRefsetEntriesMap;
+	private Set<LangRefsetEntry> duplicateLangRefsetIdsReported;
 
 	public StringBuffer log = new StringBuffer();
 	
@@ -551,15 +552,36 @@ public class GraphLoader implements RF2Constants {
 				Description d = getDescription(lineItems[LANG_IDX_REFCOMPID]);
 				LangRefsetEntry langRefsetEntry = LangRefsetEntry.fromRf2(lineItems);
 				
+				if (langRefsetEntry.getId().equals("1ee09ebd-f9cc-57f6-9850-ceea87310e68")) {
+					TermServerScript.debug("here");
+				}
+				
 				//Are we adding or replacing this entry?
 				if (d.getLangRefsetEntries().contains(langRefsetEntry)) {
+					LangRefsetEntry original = d.getLangRefsetEntry(langRefsetEntry.getId());
+					
+					//If we're working with not-released data and we already have a not-released entry
+					//then there's two copies of this langrefset entry in a delta
+					if (!isReleased && StringUtils.isEmpty(original.getEffectiveTime())) {
+						//Have we already reported this duplicate?
+						if (duplicateLangRefsetIdsReported == null ) {
+							duplicateLangRefsetIdsReported = new HashSet<>();
+						}
+						
+						if (duplicateLangRefsetIdsReported.contains(original)) {
+							TermServerScript.warn("Seeing additional duplication for " + original.getId());
+						} else {
+							TermServerScript.warn("Seeing duplicate langrefset entry in a delta: \n" + original.toString(true) + "\n" + langRefsetEntry.toString(true));
+							duplicateLangRefsetIdsReported.add(original);
+						}
+					}
 					d.getLangRefsetEntries().remove(langRefsetEntry);
 				}
 				
 				//Complexity here that we've historically had language refset entries
 				//for the same description which attempt to cancel each other out using
 				//different UUIDs.  Therefore if we get a later entry inactivating a given
-				//dialect, then allow that to overwrite an earlier value with a different UUUID
+				//dialect, then allow that to overwrte an earlier value with a different UUUID
 				
 				//Do we have an existing entry for this description & dialect that is later and inactive?
 				boolean clearToAdd = true;
@@ -590,7 +612,7 @@ public class GraphLoader implements RF2Constants {
 				}
 				
 				if (!issue.isEmpty()) {
-					TermServerScript.debug("**Warning: " + issue);
+					TermServerScript.warn(issue);
 				}
 				
 				if (clearToAdd) {
