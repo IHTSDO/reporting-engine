@@ -7,4 +7,3 @@ echo $*
 APP_NAME=[[packageName]]
 
 supervisorctl update $APP_NAME || true
-supervisorctl start $APP_NAME || true

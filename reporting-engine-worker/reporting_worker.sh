@@ -35,6 +35,9 @@ fi
 	fi
 } || { # catch
 	echo "Failure detected installing reporting-worker"
+	echo "Failure installing/updating to the latest package of reporting-engine-worker. The reporting-worker will not be started."
+	echo "Manual intervention required!"
+	exit 1
 }
 
 # stop the worker again as the install will have started it
