@@ -83,7 +83,7 @@ public class ListAllAttributes extends TermServerReport implements ReportClass {
 	
 	public void runJob() throws TermServerScriptException {
 		ArrayList<Concept> subset = new ArrayList<>(findConcepts(subHierarchyECL));
-		subset.sort(Comparator.comparing(Concept::getFsn));
+		subset.sort(Comparator.comparing(Concept::getFsnSafely));
 		for (Concept c : subset) {
 			if (!includeIsA && countAttributes(c, CharacteristicType.INFERRED_RELATIONSHIP) == 0) {
 				continue;
