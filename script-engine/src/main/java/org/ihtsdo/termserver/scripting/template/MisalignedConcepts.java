@@ -1,5 +1,6 @@
 package org.ihtsdo.termserver.scripting.template;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.*;
@@ -20,13 +21,16 @@ import org.snomed.authoringtemplate.domain.logical.LogicalTemplate;
 import org.snomed.otf.scheduler.domain.*;
 import org.springframework.util.StringUtils;
 
+import com.google.common.base.Charsets;
+import com.google.common.io.Files;
+
 /**
  * See https://confluence.ihtsdotools.org/display/IAP/Quality+Improvements+2018
  * Update: https://confluence.ihtsdotools.org/pages/viewpage.action?pageId=61155633
  */
 public class MisalignedConcepts extends TemplateFix implements ReportClass {
 	
-	Map<Concept, List<String>> conceptDiagnostics = new HashMap<>();
+	private Map<Concept, List<String>> conceptDiagnostics = new HashMap<>();
 	public static final String INCLUDE_COMPLEX = "Include complex cases";
 	public static final String ALLOW_LARGE_RESULTS= "Allow large results";
 	
@@ -356,6 +360,8 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		subHierarchyECL = "< 128139000 |Inflammatory disorder (disorder)| : [0..0] 370135005 |Pathological process (attribute)| = << 472963003 |Hypersensitivity process (qualifier value)|"; //QI-370
 		templateNames = new String[] {	"templates/Inflammatory Disorder.json",
 					"templates/Infectious Inflammatory Disorder.json"};
+		inputFile = new File ("resources/inflammatory_exclusions.txt");
+		excludeSdMultiRG = true;
 		/*
 		subHierarchyECL = "<< 131148009|Bleeding|"; //QI-319
 		//templateNames = new String[] { "templates/Bleeding - disorder.json"};

@@ -5,6 +5,10 @@ import java.util.*;
 
 import org.snomed.authoringtemplate.domain.ConceptTemplate;
 import org.snomed.authoringtemplate.domain.logical.*;
+
+import com.google.common.base.Charsets;
+import com.google.common.io.Files;
+
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -18,13 +22,14 @@ import org.ihtsdo.termserver.scripting.util.StringUtils;
 
 abstract public class TemplateFix extends BatchFix {
 	
-	Set<Concept> exclusions;
-	List<String> exclusionWords;
-	List<String> inclusionWords;
-	boolean includeComplexTemplates = false;
-	List<Concept> complexTemplateAttributes;
-	boolean includeDueTos = false;
-	boolean excludeSdMultiRG = false;
+	protected Set<Concept> exclusions;
+	protected List<String> exclusionWords;
+	protected List<String> inclusionWords;
+	protected boolean includeComplexTemplates = false;
+	protected List<Concept> complexTemplateAttributes;
+	protected boolean includeDueTos = false;
+	protected boolean excludeSdMultiRG = false;
+	protected Set<Concept> explicitExclusions;
 	
 	String[] templateNames;
 	List<Template> templates = new ArrayList<>();
@@ -52,6 +57,27 @@ abstract public class TemplateFix extends BatchFix {
 		initTemplatesAndExclusions();
 		super.postInit(tabNames, columnHeadings, csvOutput);
 		info ("Post initialisation complete, with multiple tabs");
+	}
+	
+	private void importExplicitExclusions() throws TermServerScriptException {
+		explicitExclusions = new HashSet<>();
+		print("Loading Explicit Exclusions " + inputFile + "...");
+		if (!inputFile.canRead()) {
+			throw new TermServerScriptException("Cannot read: " + inputFile);
+		}
+		List<String> lines;
+		try {
+			lines = Files.readLines(inputFile, Charsets.UTF_8);
+		} catch (IOException e) {
+			throw new TermServerScriptException("Failure while reading: " + inputFile, e);
+		}
+		debug("Processing Explicit Exclusions File");
+		for (String line : lines) {
+			String sctId = line.split(TAB)[0];
+			Concept excluded = gl.getConcept(sctId, false, true);  //Validate concept exists
+			explicitExclusions.add(excluded);
+		}
+		addSummaryInformation("Explicitly excluded concepts specified", explicitExclusions.size());
 	}
 
 	public void postInit() throws TermServerScriptException {
@@ -93,6 +119,10 @@ abstract public class TemplateFix extends BatchFix {
 		//Note add words as lower case as we do all lower case matching
 		if (exclusionWords == null) {
 			exclusionWords = new ArrayList<>();
+		}
+		
+		if (inputFile != null) {
+			importExplicitExclusions();
 		}
 		
 		if (!includeComplexTemplates) {
