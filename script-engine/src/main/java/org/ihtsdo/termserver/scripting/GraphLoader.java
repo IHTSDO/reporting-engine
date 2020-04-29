@@ -40,6 +40,8 @@ public class GraphLoader implements RF2Constants {
 	private Map<Concept, Set<DuplicatePair>> duplicateLangRefsetEntriesMap;
 	private Set<LangRefsetEntry> duplicateLangRefsetIdsReported;
 
+	private boolean detectNoChangeDelta = false;
+	
 	public StringBuffer log = new StringBuffer();
 	
 	public static GraphLoader getGraphLoader() {
@@ -211,6 +213,9 @@ public class GraphLoader implements RF2Constants {
 					//Are we overwriting an existing axiom?
 					if (c.getAxiomEntries().contains(axiomEntry)) {
 						AxiomEntry replacedAxiomEntry = c.getAxiom(axiomEntry.getId());
+						if (detectNoChangeDelta && !isReleased) {
+							detectNoChangeDelta(c, replacedAxiomEntry, lineItems);
+						}
 						c.getAxiomEntries().remove(axiomEntry);
 						//We'll inactivate all these relationships and allow them to be replaced
 						AxiomRepresentation replacedAxiom = axiomService.convertAxiomToRelationships(replacedAxiomEntry.getOwlExpression());
@@ -471,17 +476,30 @@ public class GraphLoader implements RF2Constants {
 					continue;
 				}
 				
-			/*	if (lineItems[IDX_ID].equals("277636009")) {
+				/*if (lineItems[IDX_ID].equals("59748008")) {
 					TermServerScript.debug("here");
 				}*/
+
 				//We might already have received some details about this concept
 				Concept c = getConcept(lineItems[IDX_ID]);
+				
+				//If the concept's module isn't known, then it wasn't loaded in the snapshot
+				String revertEffectiveTime = null;
+				if (detectNoChangeDelta && !isReleased && c.getModuleId() != null) {
+					revertEffectiveTime = detectNoChangeDelta(c, c, lineItems);
+				}
+
 				Concept.fillFromRf2(c, lineItems);
+				
+				if (revertEffectiveTime != null) {
+					c.setEffectiveTime(revertEffectiveTime);
+				}
 				
 				//Only set the released flag if it's not set already
 				if (c.isReleased() == null) {
 					c.setReleased(isReleased);
 				}
+				
 				if (c.getDefinitionStatus() == null) {
 					throw new TermServerScriptException("Concept " + c + " did not define definition status");
 				}
@@ -516,11 +534,23 @@ public class GraphLoader implements RF2Constants {
 				if (!fsnOnly) {
 					//We might already have information about this description, eg langrefset entries
 					Description d = getDescription (lineItems[DES_IDX_ID]);
+					
+					//But if the module is not known, it's new
+					String revertEffectiveTime = null;
+					if (detectNoChangeDelta && !isReleased && d.getModuleId() != null) {
+						revertEffectiveTime = detectNoChangeDelta(c, d, lineItems);
+					}
 					Description.fillFromRf2(d,lineItems);
+					
+					if (revertEffectiveTime != null) {
+						d.setEffectiveTime(revertEffectiveTime);
+					}
+					
 					//Only set the released flag if it's not set already
 					if (d.isReleased() == null) {
 						d.setReleased(isReleased);
 					}
+					
 					c.addDescription(d);
 				}
 			} else {
@@ -1003,6 +1033,43 @@ public class GraphLoader implements RF2Constants {
 	public Map<Concept, Set<DuplicatePair>> getDuplicateLangRefsetEntriesMap() {
 		return duplicateLangRefsetEntriesMap;
 	}
+
+	public void setDetectNoChangeDelta(boolean detectNoChangeDelta) {
+		this.detectNoChangeDelta = detectNoChangeDelta;
+	}
+	
+	/**
+	 * @return the effective time to revert back to if a no change delta is detected
+	 * @throws TermServerScriptException
+	 */
+	private String detectNoChangeDelta(Concept parent, Component c, String[] lineItems) throws TermServerScriptException {
+		try {
+			//If the parent or the component itself was not previously known, 
+			//then it's brand new, so not a no-change delta
+			if (parent == null || c == null) {
+				return null;
+			}
+			//Is the component in it's original state any different to the new rows?
+			if (!differsOtherThanEffectiveTime(c.toRF2(), lineItems)) {
+				TermServerScript.warn("No change delta detected for " + c + " reverting effective time");
+				c.setDirty();
+				return c.getEffectiveTime();
+			}
+		} catch (Exception e) {
+			throw new TermServerScriptException("Unable to check delta change", e);
+		}
+		return null;
+	}
+	
+	public static boolean differsOtherThanEffectiveTime(String[] a, String[] b) {
+		//Return true if a field other than effectiveTime is different
+		for (int i=0; i<a.length; i++) {
+			if (i!=IDX_EFFECTIVETIME && !a[i].equals(b[i])) {
+				return true;
+			}
+		}
+		return false;
+	}
 	
 	public class DuplicatePair {
 		private Component keep;
@@ -1019,6 +1086,6 @@ public class GraphLoader implements RF2Constants {
 		public Component getInactivate() {
 			return inactivate;
 		}
-
 	}
+
 }

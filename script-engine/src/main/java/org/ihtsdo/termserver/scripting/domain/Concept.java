@@ -89,7 +89,6 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	private String deletionEffectiveTime;
 	private boolean isDeleted = false;
 	private int depth = NOT_SET;
-	private boolean isDirty = false;
 	private Long statedRelSum = null;  //Allows cached quick comparison of relationships
 	
 	//Note that these values are used when loading from RF2 where multiple entries can exist.
@@ -1127,14 +1126,6 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	@Override
 	public String getReportedType() {
 		return conceptType==null?"": conceptType.toString();
-	}
-
-	public boolean isDirty() {
-		return isDirty;
-	}
-
-	public void setDirty() {
-		this.isDirty = true;
 	}
 
 	public void addInactivationIndicator(InactivationIndicatorEntry i) {

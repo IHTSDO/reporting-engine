@@ -13,6 +13,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.IdGenerator;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.JobRun;
 
 public abstract class DeltaGenerator extends TermServerScript {
@@ -137,8 +138,8 @@ public abstract class DeltaGenerator extends TermServerScript {
 		}
 		
 		boolean dependencySpecified = (dependencyArchive != null);
-		String choice = "Y";
-		if (!dependencySpecified) {
+		String choice = (project != null) ? "Y":"N";
+		if (!dependencySpecified && project != null) {
 			info ("Is " + project + " an extension that requires a dependant edition to be loaded first?");
 			print ("Choice Y/N: ");
 			choice = STDIN.nextLine().trim();
@@ -213,6 +214,17 @@ public abstract class DeltaGenerator extends TermServerScript {
 		assocDeltaFilename = refDir + "Content/der2_cRefset_AssociationDelta_"+edition+"_" + today + ".txt";
 		fileMap.put(ComponentType.HISTORICAL_ASSOCIATION, assocDeltaFilename);
 		writeToRF2File(assocDeltaFilename, assocHeader);
+	}
+	
+	protected void outputModifiedComponents(boolean alwaysCheckSubComponents) throws TermServerScriptException {
+		info ("Outputting to RF2...");
+		for (Concept thisConcept : gl.getAllConcepts()) {
+			try {
+				outputRF2((Concept)thisConcept, alwaysCheckSubComponents);  //Don't check desc/rels if concept not modified.
+			} catch (TermServerScriptException e) {
+				report ((Concept)thisConcept, null, Severity.CRITICAL, ReportActionType.API_ERROR, "Exception while processing: " + e.getMessage() + " : " + SnomedUtils.getStackTrace(e));
+			}
+		}
 	}
 	
 	protected void outputRF2(ComponentType componentType, String[] columns) throws TermServerScriptException {

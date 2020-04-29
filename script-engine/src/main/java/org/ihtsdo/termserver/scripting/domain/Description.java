@@ -63,7 +63,6 @@ public class Description extends Component implements RF2Constants {
 	@Expose
 	private InactivationIndicator inactivationIndicator;
 	private transient List<LangRefsetEntry> langRefsetEntries;
-	private transient boolean dirty = false;
 	private transient boolean isDeleted = false;
 	private transient String deletionEffectiveTime;
 	
@@ -217,7 +216,7 @@ public class Description extends Component implements RF2Constants {
 	public void setTerm(String term) {
 		//Are we changing the term?
 		if (this.term != null && !this.term.equalsIgnoreCase(term)) {
-			dirty = true;
+			isDirty = true;
 		}
 		
 		if (padTerm) {
@@ -406,7 +405,6 @@ public class Description extends Component implements RF2Constants {
 		}
 		return result;
 	}
-	
 
 	public LangRefsetEntry getLangRefsetEntry(String memberId) {
 		for (LangRefsetEntry l : getLangRefsetEntries()) {
@@ -417,10 +415,6 @@ public class Description extends Component implements RF2Constants {
 		return null;
 	}
 
-	public boolean isDirty() {
-		return dirty;
-	}
-	
 	/**
 	 * @return true if this description is preferred in any dialect.
 	 */
@@ -475,10 +469,6 @@ public class Description extends Component implements RF2Constants {
 		}
 		
 		return false;
-	}
-	
-	public void setDirty() {
-		dirty = true;
 	}
 	
 	public void inactivateDescription(InactivationIndicator indicator) {

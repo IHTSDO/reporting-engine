@@ -257,6 +257,8 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 				isTargetOfNewInferredRelationship.contains(c)?"Y":"N",
 				wasTargetOfLostInferredRelationship.contains(c)?"Y":"N");
 		}
+		
+		traceability.flush();
 	}
 	
 	private void determineUniqueCountAndTraceability() {

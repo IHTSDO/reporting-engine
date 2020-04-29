@@ -47,7 +47,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			delta.postInit();
 			delta.startTimer();
 			delta.processFile();
-			delta.outputModifiedComponents();
+			delta.outputModifiedComponents(true);
 			delta.flushFiles(false, true); //Need to flush files before zipping
 			SnomedUtils.createArchive(new File(delta.outputDirName));
 		} finally {
@@ -107,17 +107,6 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		return allIdentifiedConcepts;
 	}
 	
-	private void outputModifiedComponents() throws TermServerScriptException {
-		info ("Outputting to RF2...");
-		for (Concept thisConcept : gl.getAllConcepts()) {
-			try {
-				outputRF2((Concept)thisConcept, true);  //Do check desc/rels if concept not modified.
-			} catch (TermServerScriptException e) {
-				report ((Concept)thisConcept, Severity.CRITICAL, ReportActionType.API_ERROR, "Exception while processing: " + e.getMessage() + " : " + SnomedUtils.getStackTrace(e));
-			}
-		}
-	}
-
 	private boolean switchModule(Concept c) throws TermServerScriptException {
 		boolean conceptAlreadyTransferred = false;
 		if (c.getModuleId() ==  null) {

@@ -10,6 +10,7 @@ import java.util.zip.*;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component.ComponentType;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 /**
@@ -142,7 +143,7 @@ public class RemoveNoChangeRows extends DeltaGenerator {
 		} catch (Exception e) {
 			throw new TermServerScriptException("Unable to express existing component in RF2",e);
 		}
-		if (!differsOtherThanEffectiveTime(releasedFields, lineItems)) {
+		if (!GraphLoader.differsOtherThanEffectiveTime(releasedFields, lineItems)) {
 			incrementSummaryInformation("Filtered no change - " + componentType);
 			return null;
 		}
@@ -209,13 +210,4 @@ public class RemoveNoChangeRows extends DeltaGenerator {
 		return false;
 	}
 
-	private boolean differsOtherThanEffectiveTime(String[] a, String[] b) {
-		//Return true if a field other than effectiveTime is different
-		for (int i=0; i<a.length; i++) {
-			if (i!=IDX_EFFECTIVETIME && !a[i].equals(b[i])) {
-				return true;
-			}
-		}
-		return false;
-	}
 }
