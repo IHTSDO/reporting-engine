@@ -57,6 +57,16 @@ public class ArchiveManager implements RF2Constants {
 			singleton = new ArchiveManager();
 			singleton.appContext = appContext;
 		}
+		
+		//If we're being used by a different ts object, then we need to reset a couple of things
+		//TODO The warning debug here is temporary while we track down a "MAIN.zip" bug
+		if (singleton.ts != ts) {
+			TermServerScript.info("Archive manager under new ownership: " + ts.getReportName() + ".  Resetting load flags");
+			singleton.loadEditionArchive = false;
+			singleton.loadDependencyPlusExtensionArchive = false;
+		} else {
+			TermServerScript.info("Archive manager being reused in: " + ts.getReportName());
+		}
 		singleton.ts = ts;
 		singleton.gl = ts.getGraphLoader();
 		return singleton;
