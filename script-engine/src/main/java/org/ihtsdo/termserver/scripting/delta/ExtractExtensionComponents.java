@@ -19,7 +19,7 @@ import org.snomed.otf.owltoolkit.domain.AxiomRepresentation;
  * Class form a delta of specified concepts from some edition and 
  * promote those (along with attribute values and necessary ancestors)
  * into the core module.
- * 
+ * TODO Load in the MRCM and properly populate the Never Group attributes
  */
 public class ExtractExtensionComponents extends DeltaGenerator {
 	
@@ -30,7 +30,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	String targetModuleId = SCTID_CORE_MODULE;
 	private static String secondaryCheckPath = "MAIN";
 	//private static String secondaryCheckPath = "MAIN/2019-07-31";
-	private AxiomRelationshipConversionService axiomService = new AxiomRelationshipConversionService (null);
+	private AxiomRelationshipConversionService axiomService = new AxiomRelationshipConversionService (new HashSet<Long>());
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		ExtractExtensionComponents delta = new ExtractExtensionComponents();
@@ -60,7 +60,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		additionalReportColumns = "FSN, Semtag, Severity, Action, Info, Details";
 		info ("Select an environment for live secondary checking ");
 		for (int i=0; i < environments.length; i++) {
-			info ("  " + i + ": " + environments[i]);
+			println ("  " + i + ": " + environments[i]);
 		}
 		print ("Choice: ");
 		String choice = STDIN.nextLine().trim();
@@ -85,6 +85,10 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		for (Component thisComponent : allIdentifiedConcepts) {
 			Concept thisConcept = (Concept)thisComponent;
 			
+			if (thisConcept.getConceptId().equals("2301000004107")) {
+				debug("Here");
+			}
+			
 			//If we don't have a module id for this identified concept, then it doesn't properly exist in this release
 			if (thisConcept.getModuleId() == null) {
 				report (thisConcept, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Concept specified for extract not found in input Snapshot");
@@ -99,6 +103,10 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 				if (!switchModule(thisConcept)) {
 					addSummaryInformation("Specified but no movement: " + thisConcept, null);
 					incrementSummaryInformation("Concepts no movement required");
+				} else if (thisConcept.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED) &&
+							SnomedUtils.countAttributes(thisConcept, CharacteristicType.STATED_RELATIONSHIP) == 0) {
+					//Check we're not ending up with a Fully Defined concept with only ISAs
+					report (thisConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Concept FD with only ISAs ", thisConcept.toExpression(CharacteristicType.STATED_RELATIONSHIP));
 				}
 			} catch (TermServerScriptException e) {
 				report (thisConcept, Severity.CRITICAL, ReportActionType.API_ERROR, "Exception while processing: " + e.getMessage() + " : " + SnomedUtils.getStackTrace(e));
@@ -165,15 +173,25 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			}
 		}
 		
+		boolean relationshipMoved = false;
+		boolean relationshipAlreadyMoved = false;
 		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
-			if (!r.getModuleId().equals(targetModuleId) && !r.getModuleId().equals(SCTID_MODEL_MODULE)) {
+			if (r.getModuleId().equals(targetModuleId)) {
+				relationshipAlreadyMoved = true;
+			} else if (!r.getModuleId().equals(targetModuleId) && !r.getModuleId().equals(SCTID_MODEL_MODULE)) {
 				if (r.isActive() && !r.fromAxiom()) {
 					info ("Unexpected active stated relationship: "+ r);
 				}
 				if (moveRelationshipToTargetModule(r, conceptAlreadyTransferred)) {
 					subComponentsMoved = true;
+					relationshipMoved = true;
 				}
 			}
+		}
+		
+		//Did we move some of the modeling but not all of it?  Warn about that if so
+		if (relationshipMoved && relationshipAlreadyMoved) {
+			report (c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Partial move on the modeling.  Exported axiom may be incomplete.");
 		}
 		
 		/* Policy is not to moved inferred modeling
@@ -279,6 +297,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 					report (r.getSource(), Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, msg);
 					target = replacement;
 					Relationship newRel = new Relationship(r.getSource(),r.getType(), replacement, r.getGroupId());
+					newRel.setModuleId(targetModuleId);
 					newRel.setDirty();
 					newRel.setRelationshipId(relIdGenerator.getSCTID());
 					r.getSource().removeRelationship(r);

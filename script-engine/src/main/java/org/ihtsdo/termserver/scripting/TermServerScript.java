@@ -29,7 +29,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import us.monoid.json.JSONException;
-import us.monoid.json.JSONObject;
 import us.monoid.web.Resty;
 
 public abstract class TermServerScript implements RF2Constants {
@@ -629,7 +628,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected Concept updateConcept(Task t, Concept c, String info) throws TermServerScriptException {
 		try {
 			if (!dryRun) {
-				convertStatedRelationshipsToAxioms(c);
+				convertStatedRelationshipsToAxioms(c, false);
 				if (validateConceptOnUpdate) {
 					validateConcept(t, c);
 				}
@@ -737,7 +736,7 @@ public abstract class TermServerScript implements RF2Constants {
 	
 	private Concept attemptConceptCreation(Task t, Concept c, String info) throws Exception {
 		debug ((dryRun ?"Dry run creating ":"Creating ") + c + info);
-		convertStatedRelationshipsToAxioms(c);
+		convertStatedRelationshipsToAxioms(c, false);
 		if (!dryRun) {
 			validateConcept(t, c);
 			c = tsClient.createConcept(c, t.getBranchPath());
@@ -748,12 +747,17 @@ public abstract class TermServerScript implements RF2Constants {
 		return c;
 	}
 
-	private void convertStatedRelationshipsToAxioms(Concept c) {
+	protected void convertStatedRelationshipsToAxioms(Concept c, boolean mergeExistingAxioms) {
 		//We might have already done this if an error condition has occurred.
 		//Skip if there are not stated relationships
 		if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH).size() == 0) {
 			return;
 		}
+		
+		if (c.getConceptId().equals("2301000004107")) {
+			debug("Here");
+		}
+		
 		//In the case of an inactive concept, we'll inactivate any axioms
 		if (c.isActive()) {
 			for (Axiom a : c.getClassAxioms()) {
@@ -763,17 +767,26 @@ public abstract class TermServerScript implements RF2Constants {
 			//Do we have an existing axiom to use by default?
 			Axiom a = c.getFirstActiveClassAxiom();
 			a.setModuleId(c.getModuleId());
+			
+			//If we're merging with existing axioms, remove any Axiom Entries
+			//and pinch the UUID
+			if (a.getId() == null && c.getAxiomEntries().size() > 0 && mergeExistingAxioms) {
+				a.setAxiomId(c.getAxiomEntries().get(0).getId());
+				c.getAxiomEntries().clear();
+			}
 	
 			//We'll remove the stated relationships as they get converted to the axiom
 			List<Relationship> rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH);
 			for (Relationship rel : rels) {
-				//Did this relationship already come from an axiom?
-				//If not and it's inactive, leave it be
-				if (!rel.fromAxiom() && !rel.isActive()) {
+				//Ignore inactive rels
+				if (!rel.isActive()) {
 					continue;
 				}
-				//If so (or if active), put it back into one
-				Axiom thisAxiom = rel.getAxiom() == null ? a : rel.getAxiom();
+
+				Axiom thisAxiom  = a; 
+				if (!mergeExistingAxioms) {
+					thisAxiom = rel.getAxiom() == null ? a : rel.getAxiom();
+				}
 				
 				//The definition status of the axiom needs to match that of the concept
 				thisAxiom.setDefinitionStatus(c.getDefinitionStatus());
@@ -787,7 +800,7 @@ public abstract class TermServerScript implements RF2Constants {
 					}
 				}
 				thisAxiom.getRelationships().add(rel);
-				c.removeRelationship(rel);
+				c.removeRelationship(rel, true);  //Safe to remove it even if published - will exist in axiom
 			}
 			
 			for (Axiom thisAxiom : new ArrayList<>(c.getClassAxioms())) {

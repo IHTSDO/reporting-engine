@@ -51,8 +51,6 @@ public class Relationship extends Component implements IRelationshipTemplate, RF
 	
 	private Concept source;
 	
-	private boolean dirty = false;
-	
 	private boolean isDeleted = false;
 	
 	private AxiomEntry axiomEntry;  //Used when loading from RF2
@@ -254,7 +252,7 @@ public class Relationship extends Component implements IRelationshipTemplate, RF
 		clone.sourceId = this.sourceId;
 		clone.source = this.source;
 		clone.characteristicType = this.characteristicType;
-		clone.dirty = true;
+		clone.isDirty = true;
 		return clone;
 	}
 	
@@ -308,19 +306,6 @@ public class Relationship extends Component implements IRelationshipTemplate, RF
 							Long.toString(groupId), type.getConceptId(), 
 							SnomedUtils.translateCharacteristicType(characteristicType), 
 							SnomedUtils.translateModifier(modifier)};
-	}
-
-
-	public boolean isDirty() {
-		return dirty;
-	}
-	
-	public void setDirty() {
-		dirty = true;
-	}
-	
-	public void setClean() {
-		dirty = false;
 	}
 
 	public Concept getSource() {
