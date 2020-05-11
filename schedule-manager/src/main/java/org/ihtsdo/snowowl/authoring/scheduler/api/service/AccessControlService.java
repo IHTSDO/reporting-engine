@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 @Service	
 public class AccessControlService {
 	
+	private static int cacheTimeoutMins = 30;
+	
 	private Map<String, UserProjects> cache = new HashMap<>();
 	
 	AuthoringServicesClient authoringServices;
@@ -24,6 +26,12 @@ public class AccessControlService {
 			UserProjects userProjects = getUserProjects(username, serverUrl, authToken);
 			logger.info("Caching {}'s access to projects {}", username, userProjects.getProjects());
 			cache.put(username, userProjects);
+			//If the list of projects is only 1 long (ie MAIN) then we've probably a problem with 
+			//configuration for that user.  Force expiry of the visible project list in this case
+			if (userProjects.size() <= 1) {
+				logger.info("User has access to {} projects.  Suspected configuration issue.  Expiring cache.", userProjects.size());
+				userProjects.expire();
+			}
 		}
 		UserProjects userProjects = cache.get(username);
 		return userProjects.getProjects();
@@ -51,15 +59,26 @@ public class AccessControlService {
 	private class UserProjects {
 		Date created;
 		Set<String> projects;
+		
 		public UserProjects(Set<String> projects) {
 			this.projects = projects;
 			created = new Date();
 		}
+		
+		public int size() {
+			return projects == null ? 0 : projects.size();
+		}
+		
 		public Set<String> getProjects() {
 			return projects;
 		}
+		
 		public boolean isExpired() {
-			return DateUtils.addMinutes(created, 30).before(new Date());
+			return DateUtils.addMinutes(created, cacheTimeoutMins).before(new Date());
+		}
+		
+		public void expire() {
+			created = DateUtils.addMinutes(created, (-1 * cacheTimeoutMins));
 		}
 	}
 }
