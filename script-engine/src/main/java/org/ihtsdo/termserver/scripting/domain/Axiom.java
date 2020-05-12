@@ -4,8 +4,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.ActiveState;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 
@@ -38,9 +36,6 @@ public class Axiom extends Component implements RF2Constants, Expressable {
 	@SerializedName("namedConceptOnLeft")
 	@Expose
 	private Boolean namedConceptOnLeft;
-	
-	private boolean dirty = false;
-
 
 	public Axiom(Concept c) {
 		moduleId = c.getConceptId();
@@ -144,18 +139,6 @@ public class Axiom extends Component implements RF2Constants, Expressable {
 
 	public void clearRelationships() {
 		relationships = new ArrayList<>();
-	}
-	
-	public boolean isDirty() {
-		return dirty;
-	}
-	
-	public void setDirty() {
-		dirty = true;
-	}
-	
-	public void setClean() {
-		dirty = false;
 	}
 	
 	public String toString() {
