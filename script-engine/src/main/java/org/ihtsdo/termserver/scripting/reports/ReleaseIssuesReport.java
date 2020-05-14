@@ -75,6 +75,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put(INCLUDE_ALL_LEGACY_ISSUES, "N");
+		/*params.put(REPORT_OUTPUT_TYPES, ReportConfiguration.ReportOutputType.S3.toString());
+		params.put(REPORT_FORMAT_TYPE, ReportConfiguration.ReportFormatType.JSON.toString());
+		params.put(REPORT_TYPE, ReportConfiguration.ReportType.USER.toString());*/
 		TermServerReport.run(ReleaseIssuesReport.class, args, params);
 	}
 	
@@ -111,6 +114,12 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		JobParameters params = new JobParameters()
 				.add(INCLUDE_ALL_LEGACY_ISSUES)
 					.withType(JobParameter.Type.BOOLEAN)
+					.withDefaultValue(false)
+				.add(REPORT_OUTPUT_TYPES)
+					.withType(JobParameter.Type.HIDDEN)
+					.withDefaultValue(false)
+				.add(REPORT_FORMAT_TYPE)
+					.withType(JobParameter.Type.HIDDEN)
 					.withDefaultValue(false)
 				.build();
 

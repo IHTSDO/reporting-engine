@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.dao.ReportConfiguration;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -39,6 +40,9 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 		params.put(WORDS, "Located");
 		params.put(WHOLE_WORD, "true");
 		params.put(ATTRIBUTE_TYPE, null);
+		//params.put(REPORT_OUTPUT_TYPES, ReportManager.ReportOutputType.GOOGLE_SHEET + "|" + ReportManager.ReportOutputType.S3);
+		params.put(REPORT_OUTPUT_TYPES, ReportConfiguration.ReportOutputType.S3.toString());
+		params.put(REPORT_FORMAT_TYPE, ReportConfiguration.ReportFormatType.JSON.toString());
 		TermServerReport.run(TermContainsXReport.class, args, params);
 	}
 	

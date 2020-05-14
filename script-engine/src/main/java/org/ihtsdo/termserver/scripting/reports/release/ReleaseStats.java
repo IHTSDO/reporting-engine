@@ -7,9 +7,9 @@ import java.util.*;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.AncestorsCache;
+import org.ihtsdo.termserver.scripting.dao.ReportConfiguration;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.ActiveState;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
@@ -23,16 +23,24 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
+		params.put(REPORT_OUTPUT_TYPES, ReportConfiguration.ReportOutputType.S3.toString());
+		params.put(REPORT_FORMAT_TYPE, ReportConfiguration.ReportFormatType.JSON.toString());
 		TermServerReport.run(ReleaseStats.class, args, params);
 	}
 
 	@Override
 	public Job getJob() {
+		JobParameters params = new JobParameters()
+				.add(REPORT_OUTPUT_TYPES).withType(JobParameter.Type.HIDDEN)
+				.add(REPORT_FORMAT_TYPE).withType(JobParameter.Type.HIDDEN)
+				.build();
+
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_STATS))
 				.withName("Release Stats")
 				.withDescription("This report measures a number of quality KPIs")
 				.withProductionStatus(ProductionStatus.PROD_READY)
+				.withParameters(params)
 				.withTag(INT)
 				.build();
 	}

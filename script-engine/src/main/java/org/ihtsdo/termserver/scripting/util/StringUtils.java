@@ -159,6 +159,9 @@ public class StringUtils implements RF2Constants {
 			} else {
 				item = "";
 			}
+			// This is required as valid CSV will have "" for a quote
+			// i.e "F1", "F2", "F-""sometect""-END"
+			item = item.replaceAll("\"\"", "\"");
 			list.add(item);
 		}
 		return list;

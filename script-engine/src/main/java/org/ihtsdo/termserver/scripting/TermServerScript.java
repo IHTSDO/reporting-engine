@@ -4,6 +4,8 @@ import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import org.ihtsdo.termserver.scripting.dao.ReportConfiguration;
+import org.ihtsdo.termserver.scripting.dao.ReportDataUploader;
 import org.slf4j.*;
 
 import org.apache.commons.lang.time.DurationFormatUtils;
@@ -21,6 +23,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.ihtsdo.termserver.scripting.util.StringUtils;
 import org.snomed.otf.scheduler.domain.*;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 
 import com.google.common.base.Charsets;
@@ -114,6 +117,13 @@ public abstract class TermServerScript implements RF2Constants {
 	protected static final String TEMPLATE2 = "Template 2";
 	protected static final String TEMPLATE_NAME = "TemplateName";
 	protected static final String SERVER_URL = "ServerUrl";
+
+	@Autowired
+	protected ReportDataUploader reportDataUploader;
+	protected static final String REPORT_OUTPUT_TYPES = "ReportOutputTypes";
+	protected static final String REPORT_FORMAT_TYPE = "ReportFormatType";
+	protected ReportConfiguration reportConfiguration;
+
 
 	public static Gson gson;
 	static {
@@ -387,6 +397,9 @@ public abstract class TermServerScript implements RF2Constants {
 				throw new TermServerScriptException("Failed to recover project " + projectName, e);
 			}
 		}
+
+		// The type of targeted output.
+		initialiseReportConfiguration();
 	}
 	
 	private String getEnv(String terminologyServerUrl) throws TermServerScriptException {
@@ -427,6 +440,7 @@ public abstract class TermServerScript implements RF2Constants {
 			if (csvOutput) {
 				reportManager.setWriteToFile(true);
 				reportManager.setWriteToSheet(false);
+				reportManager.setWriteToS3(false);
 			}
 			if (this.wideOutput ) {
 				ReportSheetManager.setMaxColumns(25);
@@ -444,12 +458,12 @@ public abstract class TermServerScript implements RF2Constants {
 			init(jobRun);
 			loadProjectSnapshot(false);  //Load all descriptions
 			postInit();
+			runJob();
+			flushFilesWithWait(false);
+			finish();
+
 			if (!suppressOutput) {
 				jobRun.setResultUrl(getReportManager().getUrl());
-			}
-			runJob();
-			if (!suppressOutput) {
-				flushFilesWithWait(false);  //Make sure we successfully write the last of the data before considering ourselves "Complete"
 				jobRun.setStatus(JobStatus.Complete);
 				Object issueCountObj = summaryDetails.get(ISSUE_COUNT);
 				int issueCount = 0;
@@ -463,15 +477,13 @@ public abstract class TermServerScript implements RF2Constants {
 			jobRun.setStatus(JobStatus.Failed);
 			jobRun.setDebugInfo(msg);
 			error(msg, e);
-		} finally {
-			finish();
 		}
 	}
 	
 	protected void runJob () throws TermServerScriptException {
 		throw new TermServerScriptException("Override this method in concrete class");
 	}
-	
+
 	protected static JobRun createJobRunFromArgs(String jobName, String[] args) {
 		JobRun jobRun = JobRun.create(jobName, null);
 		if (args.length < 3) {
@@ -1090,7 +1102,9 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 	}
 	
-	public void finish() {
+	public void finish() throws TermServerScriptException {
+		flushFiles(true, false);
+
 		info (BREAK);
 
 		Date endTime = new Date();
@@ -1136,7 +1150,6 @@ public abstract class TermServerScript implements RF2Constants {
 			}
 			recordSummaryText("Total Critical Issues Encountered: " + criticalIssues.size());
 		}
-		flushFilesSafely(true);
 	}
 	
 	private synchronized void recordSummaryText(String msg) {
@@ -1364,6 +1377,7 @@ public abstract class TermServerScript implements RF2Constants {
 					boolean isNestedNumeric = false;
 					if (str != null) {
 						isNestedNumeric = StringUtils.isNumeric(str) || str.startsWith(QUOTE);
+						str = isNestedNumeric ? str : str.replaceAll("\"", "\"\"");
 					}
 					sb.append((isNestedNumeric?"":prefix) + str + (isNestedNumeric?"":QUOTE));
 					prefix = COMMA_QUOTE;
@@ -1379,13 +1393,16 @@ public abstract class TermServerScript implements RF2Constants {
 					sb.append(prefix + i );
 					isNestedFirst = false;
 				}
-				
+			} else if (detail instanceof String) {
+				String str = (String) detail;
+				str = isNumeric ? str : str.replaceAll("\"", "\"\"");
+				sb.append(prefix + str + (isNumeric?"":QUOTE));
 			} else {
 				sb.append(prefix + detail + (isNumeric?"":QUOTE));
 			}
 			isFirst = false;
 		}
-		
+
 		writeToReportFile (reportIdx, sb.toString());
 		incrementSummaryInformation("Report lines written");
 	}
@@ -1404,6 +1421,7 @@ public abstract class TermServerScript implements RF2Constants {
 					obj = ((Boolean)obj)?"Y":"N";
 				}
 				String data = (obj==null?"":obj.toString());
+				data = isNumeric ? data : data.replaceAll("\"", "\"\"");
 				sb.append(prefix + data + (isNumeric?"":QUOTE));
 				prefix = COMMA_QUOTE;
 			}
@@ -1564,5 +1582,33 @@ public abstract class TermServerScript implements RF2Constants {
 	protected  String getDependencyArchive() {
 		return dependencyArchive;
 	}
-	
+
+	private void initialiseReportConfiguration() {
+		reportConfiguration = new ReportConfiguration(
+				jobRun.getParamValue(REPORT_OUTPUT_TYPES),
+				jobRun.getParamValue(REPORT_FORMAT_TYPE));
+
+		// if it's not valid default to the the current mode of operation
+		if (!reportConfiguration.isValid()) {
+			reportConfiguration = new ReportConfiguration(
+					ReportConfiguration.ReportOutputType.GOOGLE,
+					ReportConfiguration.ReportFormatType.CSV);
+		}
+	}
+
+	public ReportDataUploader getReportDataUploader() throws TermServerScriptException {
+		if (reportDataUploader == null) {
+			if (appContext == null) {
+				TermServerScript.info("No ReportDataUploader loader configured, creating one locally...");
+				reportDataUploader = ReportDataUploader.create();
+			} else {
+				reportDataUploader = appContext.getBean(ReportDataUploader.class);
+			}
+		}
+		return reportDataUploader;
+	}
+
+	public ReportConfiguration getReportConfiguration() {
+		return reportConfiguration;
+	}
 }
