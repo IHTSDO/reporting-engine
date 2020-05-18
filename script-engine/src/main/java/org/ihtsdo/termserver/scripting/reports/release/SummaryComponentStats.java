@@ -47,6 +47,8 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		Map<String, String> params = new HashMap<>();
 		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20190731T120000Z.zip");
 		params.put(THIS_RELEASE, "prod_main_20200131_20191122101800.zip");
+		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20190131T120000Z.zip");
+		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20190731T120000Z.zip");
 		TermServerReport.run(SummaryComponentStats.class, args, params);
 	}
 
@@ -55,6 +57,8 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		JobParameters params = new JobParameters()
 				.add(PREV_RELEASE).withType(JobParameter.Type.STRING)
 				.add(THIS_RELEASE).withType(JobParameter.Type.STRING)
+				.add(REPORT_OUTPUT_TYPES).withType(JobParameter.Type.HIDDEN)
+				.add(REPORT_FORMAT_TYPE).withType(JobParameter.Type.HIDDEN)
 				.build();
 		
 		return new Job()

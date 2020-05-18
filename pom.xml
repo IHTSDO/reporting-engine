@@ -28,7 +28,7 @@
 		<snomed-template-parser.version>1.2.2</snomed-template-parser.version>
 		<spring.activeMQ.version>5.15.0</spring.activeMQ.version>
 		<springfox-swagger.version>2.7.0</springfox-swagger.version>
-		<maven.test.skip>true</maven.test.skip>
+		<maven.test.skip>false</maven.test.skip>
 	</properties>
 
 	<repositories>

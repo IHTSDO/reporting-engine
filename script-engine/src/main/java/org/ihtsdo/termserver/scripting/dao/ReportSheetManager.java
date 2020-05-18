@@ -22,7 +22,7 @@ import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.util.StringUtils;
 
-public class ReportSheetManager implements RF2Constants {
+public class ReportSheetManager implements RF2Constants, ReportProcessor {
 
 	private static final String DOMAIN = "ihtsdo.org";
 	private static final String RAW = "RAW";
@@ -95,7 +95,7 @@ public class ReportSheetManager implements RF2Constants {
 	public static void main(String... args) throws Exception {
 		ReportManager rm = ReportManager.create(null);
 		rm.setTabNames(new String[] {"first tab", "second tab", "third tab"});
-		ReportSheetManager rsm = new ReportSheetManager(rm);
+		ReportProcessor rsm = new ReportSheetManager(rm);
 		rsm.initialiseReportFiles(new String[] { "foo, bar" , "bar, boo", "tim ,tum"});
 	}
 	
@@ -153,6 +153,7 @@ public class ReportSheetManager implements RF2Constants {
 		
 	}
 
+	@Override
 	public void initialiseReportFiles(String[] columnHeaders) throws TermServerScriptException {
 		tabLineCount = new HashMap<>();
 		init();
@@ -199,6 +200,7 @@ public class ReportSheetManager implements RF2Constants {
 		}
 	}
 
+	@Override
 	public void writeToReportFile(int tabIdx, String line, boolean delayWrite) throws TermServerScriptException {
 		if (lastWriteTime == null) {
 			lastWriteTime = new Date();
@@ -314,5 +316,4 @@ public class ReportSheetManager implements RF2Constants {
 	public String getUrl() {
 		return sheet == null ? null : sheet.getSpreadsheetUrl();
 	}
-
 }

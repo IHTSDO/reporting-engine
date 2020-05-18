@@ -240,7 +240,7 @@ public class ArchiveManager implements RF2Constants {
 					TermServerScript.debug(ts.getProject() + " snapshot held locally is sufficiently recent");
 				}
 			}
-			if (true);
+
 			if (!snapshot.exists() || 
 					(isStale && !allowStaleData) || 
 					(populateReleasedFlag && !releasedFlagPopulated && !loadEditionArchive) ||

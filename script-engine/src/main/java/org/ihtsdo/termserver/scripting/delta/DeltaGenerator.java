@@ -161,7 +161,11 @@ public abstract class DeltaGenerator extends TermServerScript {
 	}
 	
 	public void finish() {
-		super.finish();
+		try {
+			super.finish();
+		} catch (Exception e) {
+			error("Failed to flush files.", e);
+		}
 		try {
 			if (conIdGenerator != null) {
 				info(conIdGenerator.finish());

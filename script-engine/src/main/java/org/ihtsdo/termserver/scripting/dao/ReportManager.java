@@ -6,15 +6,22 @@ import java.util.*;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
+import org.ihtsdo.termserver.scripting.transformer.CSVToJSONDataTransformer;
+
+import static org.ihtsdo.termserver.scripting.dao.ReportConfiguration.ReportOutputType;
+import static org.ihtsdo.termserver.scripting.dao.ReportConfiguration.ReportFormatType;
 
 public class ReportManager implements RF2Constants {
-	
+
 	public static final String STANDARD_HEADERS = "Concept SCTID, Detail";
 	boolean writeToFile = false;
 	ReportFileManager reportFileManager;
 	
-	boolean writeToSheet = true;
+	boolean writeToSheet = false;
 	ReportSheetManager reportSheetManager;
+
+	boolean writeToS3 = false;
+	ReportS3FileManager reportS3FileManager;
 	
 	protected int numberOfDistinctReports = 1;
 	protected TermServerScript ts;
@@ -35,25 +42,44 @@ public class ReportManager implements RF2Constants {
 			this.ts = ts;
 		}
 		reportFileManager = new ReportFileManager(this);
-		if (this.ts.isOffline()) {
+		ReportConfiguration reportConfiguration = ts.getReportConfiguration();
+		Set<ReportOutputType> reportOutputTypes = reportConfiguration.getReportOutputTypes();
+		Set<ReportConfiguration.ReportFormatType> reportFormatTypes = reportConfiguration.getReportFormatTypes();
+
+		if (this.ts.isOffline() || reportOutputTypes.contains(ReportOutputType.LOCAL_FILE) ) {
 			TermServerScript.info("Running in offline mode. Outputting to file rather than google sheets");
 			writeToSheet = false;
+			writeToS3 = false;
 			writeToFile = true;
 		} else {
-			reportSheetManager = new ReportSheetManager(this);
-			writeToSheet = true;
-			writeToFile = false;
+			if (reportOutputTypes.contains(ReportOutputType.GOOGLE) && reportFormatTypes.contains(ReportFormatType.CSV)) {
+				reportSheetManager = new ReportSheetManager(this);
+				writeToSheet = true;
+			}
+			if (reportOutputTypes.contains(ReportOutputType.S3) && reportFormatTypes.contains(ReportFormatType.JSON)) {
+				try {
+					reportS3FileManager = new ReportS3FileManager(this,
+							ts.getReportDataUploader(), new CSVToJSONDataTransformer());
+					writeToS3 = true;
+				} catch (TermServerScriptException e) {
+					TermServerScript.error("Failed to create the reportS3FileManager: ", e);
+				}
+			}
 		}
 		tabNames = Arrays.asList(new String[] {"Sheet1"});
 	}
 	
 	public void writeToReportFile(int reportIdx, String line) throws TermServerScriptException {
 		if (writeToFile) {
-			reportFileManager.writeToReportFile(reportIdx, line);
+			reportFileManager.writeToReportFile(reportIdx, line, false);
 		}
 		
 		if (writeToSheet) {
 			reportSheetManager.writeToReportFile(reportIdx, line, false);
+		}
+
+		if (writeToS3) {
+			reportS3FileManager.writeToReportFile(reportIdx, line, false);
 		}
 	}
 	
@@ -63,12 +89,25 @@ public class ReportManager implements RF2Constants {
 
 	public void flushFiles(boolean andClose, boolean withWait) throws TermServerScriptException {
 		//Watch that we might have written to RF2 files, even if writeToFile is set to false
-		reportFileManager.flushFiles(andClose);
+		if (writeToFile) {
+			reportFileManager.flushFiles(andClose);
+		}
 		
 		if (writeToSheet) {
 			reportSheetManager.flushWithWait();
 			if (andClose) {
 				System.out.println("See Google Sheet: " + reportSheetManager.getUrl());
+			}
+		}
+
+		if (writeToS3) {
+			reportS3FileManager.flushFiles(andClose);
+			if (andClose) {
+				try {
+					reportS3FileManager.postProcess();
+				} catch (Exception e) {
+					throw new TermServerScriptException(e);
+				}
 			}
 		}
 	}
@@ -81,6 +120,10 @@ public class ReportManager implements RF2Constants {
 		if (writeToSheet) {
 			reportSheetManager.flushSoft();
 		}
+
+		if (writeToS3) {
+			reportS3FileManager.flushFiles(false);
+		}
 	}
 	
 	public void initialiseReportFiles(String[] columnHeaders) throws TermServerScriptException {
@@ -90,6 +133,10 @@ public class ReportManager implements RF2Constants {
 			
 			if (writeToSheet) {
 				reportSheetManager.initialiseReportFiles(columnHeaders);
+			}
+
+			if (writeToS3) {
+				reportS3FileManager.initialiseReportFiles(columnHeaders);
 			}
 	}
 	
@@ -137,6 +184,8 @@ public class ReportManager implements RF2Constants {
 	public String getUrl() {
 		if (writeToSheet) {
 			return reportSheetManager.getUrl();
+		} else if (writeToS3) {
+			return reportS3FileManager.getURL();
 		} else {
 			return reportFileManager.getFileName();
 		}
@@ -149,7 +198,11 @@ public class ReportManager implements RF2Constants {
 	public void setWriteToSheet(boolean flag) {
 		writeToSheet = flag;
 	}
-	
+
+	public void setWriteToS3(boolean flag) {
+		this.writeToS3 = writeToS3;
+	}
+
 	public boolean isWriteToSheet() {
 		return writeToSheet;
 	}
