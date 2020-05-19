@@ -291,9 +291,13 @@ public abstract class TermServerScript implements RF2Constants {
 			}
 			project.setKey(projectName);
 		}
+		
 		if (!loadingRelease) {
 			info("Full path for projected determined to be: " + project.getBranchPath());
 		}
+		
+		// Configure the type(s) and locations(s) for processing report output.
+		initialiseReportConfiguration();
 	}
 
 	protected void checkSettingsWithUser(JobRun jobRun) throws TermServerScriptException {
@@ -398,8 +402,6 @@ public abstract class TermServerScript implements RF2Constants {
 			}
 		}
 
-		// The type of targeted output.
-		initialiseReportConfiguration();
 	}
 	
 	private String getEnv(String terminologyServerUrl) throws TermServerScriptException {

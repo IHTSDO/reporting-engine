@@ -305,10 +305,13 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		
 		subHierarchyECL = "<<  282100009 |Adverse reaction caused by substance (disorder)|";
 		templateNames = new String[] {	"templates/Adverse Reaction.json"};
-		*/
 		
 		subHierarchyECL = "<<  419199007 |Allergy to substance (disorder)|";  //QI-609
 		templateNames = new String[] {	"templates/Allergy to Substance.json"};
+		*/
+		
+		subHierarchyECL = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 449735000 |Structural change due to ischemia (morphologic abnormality)|"; //QI-544
+		templateNames = new String[] {	"templates/Structural Change.json"};
 		
 		super.init(args);
 		//Ensure our ECL matches more than 0 concepts.  This will also cache the result
