@@ -1584,12 +1584,17 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 
 	private void initialiseReportConfiguration() {
-		reportConfiguration = new ReportConfiguration(
-				jobRun.getParamValue(REPORT_OUTPUT_TYPES),
-				jobRun.getParamValue(REPORT_FORMAT_TYPE));
+		try {
+			reportConfiguration = new ReportConfiguration(
+					jobRun.getParamValue(REPORT_OUTPUT_TYPES),
+					jobRun.getParamValue(REPORT_FORMAT_TYPE));
+		} catch (Exception e) {
+			// In case of any error we don't care as this is not default for the reports.
+		}
 
 		// if it's not valid default to the the current mode of operation
-		if (!reportConfiguration.isValid()) {
+		if (reportConfiguration == null || !reportConfiguration.isValid()) {
+			TermServerScript.info("Using default ReportConfiguration (Google/Sheet)...");
 			reportConfiguration = new ReportConfiguration(
 					ReportConfiguration.ReportOutputType.GOOGLE,
 					ReportConfiguration.ReportFormatType.CSV);

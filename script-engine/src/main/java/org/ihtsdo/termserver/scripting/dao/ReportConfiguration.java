@@ -22,8 +22,10 @@ public class ReportConfiguration {
 
     public ReportConfiguration(Set<ReportOutputType> reportOutputTypes,
                                Set<ReportFormatType> reportFormatTypes) {
-        this.reportOutputTypes = reportOutputTypes;
-        this.reportFormatTypes = reportFormatTypes;
+        try {
+            this.reportOutputTypes = reportOutputTypes;
+            this.reportFormatTypes = reportFormatTypes;
+        } catch (Exception e) {}
     }
 
     public ReportConfiguration(ReportOutputType reportOutputType,
@@ -33,8 +35,10 @@ public class ReportConfiguration {
 
     public ReportConfiguration(String reportOutputTypes,
                                String reportFormatTypes) {
-        this.reportOutputTypes = getEnumSet(reportOutputTypes, ReportOutputType.class);
-        this.reportFormatTypes = getEnumSet(reportFormatTypes, ReportFormatType.class);
+        try {
+            this.reportOutputTypes = getEnumSet(reportOutputTypes, ReportOutputType.class);
+            this.reportFormatTypes = getEnumSet(reportFormatTypes, ReportFormatType.class);
+        } catch (Exception e) {}
     }
 
     protected <T extends Enum<T>> Set<T> getEnumSet(String configuration, Class<T> enumClass) {

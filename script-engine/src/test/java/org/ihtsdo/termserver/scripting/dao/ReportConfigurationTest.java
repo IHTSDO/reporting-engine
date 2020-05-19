@@ -62,15 +62,22 @@ public class ReportConfigurationTest {
         assertFalse(reportConfiguration.isValid());
     }
 
-    @Test(expected=java.lang.IllegalArgumentException.class)
+    @Test
     public void testInvalidEnumValue() {
         ReportConfiguration reportConfiguration =
                 new ReportConfiguration("S3|GOOGLE", "CSV_INVALID");
 
         Set<ReportConfiguration.ReportFormatType> expectedReportFormatTypes = new HashSet<>();
         expectedReportFormatTypes.add(ReportConfiguration.ReportFormatType.CSV);
-
-        assertEquals(reportConfiguration.getReportFormatTypes(), expectedReportFormatTypes);
         assertFalse(reportConfiguration.isValid());
+    }
+
+    @Test
+    public void testConstructionWithEnumsDirectly() {
+        ReportConfiguration reportConfiguration = new ReportConfiguration(
+                ReportConfiguration.ReportOutputType.GOOGLE,
+                ReportConfiguration.ReportFormatType.CSV);
+
+        assertTrue(reportConfiguration.isValid());
     }
 }
