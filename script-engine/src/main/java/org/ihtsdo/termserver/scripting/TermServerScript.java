@@ -666,6 +666,15 @@ public abstract class TermServerScript implements RF2Constants {
 		//We need to populate new components with UUIDs for validation
 		Concept uuidClone = c.cloneWithUUIDs();
 		debug("Validating " + c);
+		
+		//We should not be modifying any stated relationships
+		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH)) {
+			if (StringUtils.isEmpty(r.getEffectiveTime())) {
+				throw new IllegalStateException("Stated Relationship Updated");
+			}
+		}
+		
+		
 		DroolsResponse[] validations = tsClient.validateConcept(uuidClone, t.getBranchPath());
 		if (validations.length == 0) {
 			debug("Validation clear: " + c);

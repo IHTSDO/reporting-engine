@@ -437,7 +437,7 @@ abstract public class TemplateFix extends BatchFix {
 						List<Relationship> existingInactives = c.getRelationships(moved, ActiveState.INACTIVE);
 						if (existingInactives.size() > 0) {
 							group.removeRelationship(moved);
-							c.removeRelationship(moved);
+							c.removeRelationship(moved, true);  //It's OK to force removal, the axiom will still exist.
 							Relationship reuse = existingInactives.get(0);
 							reuse.setActive(true);
 							group.addRelationship(reuse);
