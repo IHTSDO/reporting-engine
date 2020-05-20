@@ -317,9 +317,14 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		
 		subHierarchyECL = "< 128139000 |Inflammatory disorder (disorder)| "; //QI-619
 		templateNames = new String[] {	"templates/inflammatory/General Inflammatory Disorder.json" };
-		 */
-		subHierarchyECL = "<<  363346000 |Malignant neoplastic disease (disorder)|  MINUS (<<  372087000 |Primary malignant neoplasm (disorder)|  OR <<  128462008 |Secondary malignant neoplastic disease (disorder)| ) "; //QI-387
+		 
+		subHierarchyECL = "<< 363346000 |Malignant neoplastic disease (disorder)|  MINUS (<< 372087000 |Primary malignant neoplasm (disorder)|  OR <<  128462008 |Secondary malignant neoplastic disease (disorder)| ) "; //QI-387
 		templateNames = new String[] {	"templates/neoplasm/Malignant Neoplasm.json" };
+		*/
+		subHierarchyECL = "<< 64229006 |Traumatic lesion during delivery (disorder)| "; //QI-631
+		templateNames = new String[] {	"templates/Traumatic lesion.json" };
+		includeComplexTemplates = true;
+		
 		
 		super.init(args);
 		//Ensure our ECL matches more than 0 concepts.  This will also cache the result
