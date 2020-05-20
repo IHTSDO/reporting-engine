@@ -321,3 +321,5 @@ id	fsn	MPF	CD
 761845009	Transdermal dose form (dose form)	yes	no
 740548000	Urethral dose form (dose form)	yes	no
 385292009	Vaginal dose form (dose form)	yes	no
+840614006	Conventional release intraarticular implant (dose form)	no	yes
+840651000	Conventional release chewable capsule (dose form)	no	yes
