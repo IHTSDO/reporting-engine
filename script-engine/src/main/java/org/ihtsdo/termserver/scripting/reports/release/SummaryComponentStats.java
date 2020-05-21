@@ -10,6 +10,8 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Project;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.TransitiveClosure;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
+import org.ihtsdo.termserver.scripting.dao.ReportConfiguration.ReportFormatType;
+import org.ihtsdo.termserver.scripting.dao.ReportConfiguration.ReportOutputType;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.snomed.otf.scheduler.domain.*;
@@ -41,14 +43,16 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 	static final int COMPONENT_COUNT = 7;
 	static final int DATA_WIDTH = 6;  //New, Changed, Inactivated, New with New Concept, extra1, extra2
 	static final int IDX_NEW = 0, IDX_CHANGED = 1, IDX_INACT = 2, IDX_NEW_NEW = 3, IDX_NEW_P = 4, IDX_NEW_SD = 5;
-	List<Concept> topLevelHierarchies; 
+	List<Concept> topLevelHierarchies;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20190731T120000Z.zip");
-		params.put(THIS_RELEASE, "prod_main_20200131_20191122101800.zip");
-		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20190131T120000Z.zip");
-		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20190731T120000Z.zip");
+		//params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20190731T120000Z.zip");
+		//params.put(THIS_RELEASE, "prod_main_20200131_20191122101800.zip");
+		//params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20200131T120000Z.zip");
+		//params.put(THIS_RELEASE, "dev_xSnomedCT_InternationalRF2_PREALPHA_20200731T120000Z.zip");
+		params.put(REPORT_OUTPUT_TYPES, ReportOutputType.GOOGLE.name());
+		params.put(REPORT_FORMAT_TYPE, ReportFormatType.CSV.name());
 		TermServerReport.run(SummaryComponentStats.class, args, params);
 	}
 
@@ -57,8 +61,8 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		JobParameters params = new JobParameters()
 				.add(PREV_RELEASE).withType(JobParameter.Type.STRING)
 				.add(THIS_RELEASE).withType(JobParameter.Type.STRING)
-				.add(REPORT_OUTPUT_TYPES).withType(JobParameter.Type.HIDDEN)
-				.add(REPORT_FORMAT_TYPE).withType(JobParameter.Type.HIDDEN)
+				.add(REPORT_OUTPUT_TYPES).withType(JobParameter.Type.HIDDEN).withDefaultValue(ReportOutputType.GOOGLE.name())
+				.add(REPORT_FORMAT_TYPE).withType(JobParameter.Type.HIDDEN).withDefaultValue(ReportFormatType.CSV.name())
 				.build();
 		
 		return new Job()
@@ -119,16 +123,16 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {"Sctid, Hierarchy, SemTag, New, Changed DefnStatus, Inactivated, New with New Concept, New SD, New P", 
 												"Sctid, Hierarchy, SemTag, New / Reactivated, Changed, Inactivated, New with New Concept",
-												"Sctid, Hierarchy, SemTag, New Axioms, Changed Axioms, Inactivated Axioms, New with New Concept",
 												"Sctid, Hierarchy, SemTag, New Inferred Rels, Changed Inferred Rels, Inactivated Inferred Rels, New with New Concept",
+												"Sctid, Hierarchy, SemTag, New Axioms, Changed Axioms, Inactivated Axioms, New with New Concept",
 												"Sctid, Hierarchy, SemTag, New / Reactivated, Changed, Inactivated, New with New Concept",
 												"Sctid, Hierarchy, SemTag, Inactivations New / Reactivated, Changed, Inactivations Inactivated, New with New Concept",
 												"Sctid, Hierarchy, SemTag, Assoc New / Reactivated, Changed, Assoc Inactivated, New with New Concept"
 };
 		String[] tabNames = new String[] {	"Concepts", 
 											"Descriptions",
-											"Axioms",
 											"Relationships",
+											"Axioms",
 											"LangRefSet",
 											"Inactivations",
 											"Hist Assoc" };
@@ -147,8 +151,8 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 
 	private void analyzeConcepts() throws TermServerScriptException {
 		TransitiveClosure tc = gl.generateTransativeClosure();
+		Concept topLevel;
 		for (Concept c : gl.getAllConcepts()) {
-			Concept topLevel;
 			if (c.isActive()) {	
 				topLevel = getHierarchy(tc, c);
 			} else {
@@ -234,17 +238,14 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 					//Did it change in this release?
 					counts[IDX_CHANGED]++;
 				}
-			} else {
-				if (existedPreviously) {
-					counts[IDX_INACT]++;
-				}
+			} else if (existedPreviously) {
+				counts[IDX_INACT]++;
 			}
 		}
 	}
 
 	private void outputResults() throws TermServerScriptException {
 		Concept totalConcept = new Concept("","Total");
-		
 		int[][] totals = new int[COMPONENT_COUNT][DATA_WIDTH];
 		for (Concept hierarchy : topLevelHierarchies) {
 			int[][] summaryData = summaryDataMap.get(hierarchy);

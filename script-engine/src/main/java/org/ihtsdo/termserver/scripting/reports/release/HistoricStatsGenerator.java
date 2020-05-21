@@ -129,7 +129,7 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 	private String getAxiomIds(Concept c) {
 		return c.getAxiomEntries().stream()
 		.filter(a -> a.isActive())
-		.map(d -> d.getId())
+		.map(a -> a.getId())
 		.collect(Collectors.joining(","));
 	}
 	
