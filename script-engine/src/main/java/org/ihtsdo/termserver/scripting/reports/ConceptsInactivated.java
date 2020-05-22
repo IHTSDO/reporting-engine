@@ -47,7 +47,7 @@ public class ConceptsInactivated extends TermServerReport implements ReportClass
 				.add(RELEASE).withType(Type.STRING)
 				.build();
 		return new Job()
-				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION))
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.GENERAL_QA))
 				.withName("Inactivated Concepts")
 				.withDescription("This report lists all concepts inactivated in the current release cycle along with the reason and historical association, optionally restricted to a subset defined by an ECL expression.  The issue count here is the total number of concepts inactivated.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
