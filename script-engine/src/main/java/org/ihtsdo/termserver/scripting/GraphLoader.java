@@ -1096,4 +1096,14 @@ public class GraphLoader implements RF2Constants {
 		}
 	}
 
+	public String getCurrentEffectiveTime() {
+		//Quick way is to find the description on the root concept that has 'version' in it.
+		for (Description d : ROOT_CONCEPT.getDescriptions(ActiveState.ACTIVE)) {
+			if (d.getTerm().contains("version")) {
+				return d.getEffectiveTime();
+			}
+		}
+		return "UNKNOWN";
+	}
+
 }

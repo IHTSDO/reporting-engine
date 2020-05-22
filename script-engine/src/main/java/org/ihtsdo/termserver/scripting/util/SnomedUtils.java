@@ -1470,4 +1470,9 @@ public class SnomedUtils implements RF2Constants {
 		return errMsg == null;
 	}
 
+	public static String getAssociationType(AssociationEntry a) throws TermServerScriptException {
+		Concept assocType = GraphLoader.getGraphLoader().getConcept(a.getRefsetId());
+		return assocType.getPreferredSynonym().replace(" association reference set", "");
+	}
+
 }

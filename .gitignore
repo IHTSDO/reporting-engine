@@ -2,7 +2,6 @@ temp/
 output/
 releases/
 snapshots/
-reports/
 secure/*.*
 target
 bin
