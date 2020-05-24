@@ -149,7 +149,7 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 		.map(i -> i.getId())
 		.collect(Collectors.joining(","));
 	}
-	
+
 	private String getHistAssocIds(Concept c) {
 		return c.getAssociations(ActiveState.ACTIVE)
 		.stream()

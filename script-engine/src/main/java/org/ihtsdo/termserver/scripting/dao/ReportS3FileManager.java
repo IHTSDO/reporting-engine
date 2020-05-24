@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting.dao;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Project;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.transformer.DataTransformer;
 import org.ihtsdo.termserver.scripting.util.ExceptionUtils;
@@ -66,7 +67,7 @@ public class ReportS3FileManager extends ReportFileManager {
     }
 
     private void mapReportsFilesToS3() {
-        String branchPath = owner.getScript().getProject().getBranchPath().replace("/", "|");
+        String branchPath = getBranchPath();
         String reportName = getReportName();
 
         String baseSheetName = S3_DIRECTORY
@@ -133,6 +134,18 @@ public class ReportS3FileManager extends ReportFileManager {
             TermServerScript.info("Deleting local transformed report file...");
             deleteFiles(localReportsToTransformedReports.values().stream().toArray(File[]::new));
         }
+    }
+
+    private String getBranchPath() {
+        String branchPath = "";
+        Project project = owner.getScript().getProject();
+        if (project.getBranchPath() == null) {
+            // we do not have branch so use whatever complex name the report says
+            branchPath = owner.getScript().getReportComplexName();
+        } else {
+            branchPath = project.getBranchPath().replace("/", "|");
+        }
+        return branchPath;
     }
 
     protected void deleteFiles(File[] files) {

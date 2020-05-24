@@ -30,8 +30,8 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 	private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
 	private static final String CLIENT_SECRET_DIR = "secure/google-api-secret.json";
 	private static int DEFAULT_MAX_ROWS = 42000;
-	private static int DEFAULT_MAX_COLUMNS = 19;
-	private static int REDUCED_MAX_COLUMNS = 9;
+	private static int DEFAULT_MAX_COLUMNS = 30;
+	private static int REDUCED_MAX_COLUMNS = 20;
 	private static int MAX_ROWS = DEFAULT_MAX_ROWS;
 	private static int MAX_COLUMNS = DEFAULT_MAX_COLUMNS;
 	private static String MAX_COLUMN_STR = Character.toString((char)('A' + MAX_COLUMNS));

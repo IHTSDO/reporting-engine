@@ -1624,6 +1624,14 @@ public abstract class TermServerScript implements RF2Constants {
 		return reportDataUploader;
 	}
 
+	// This is used for reports that might want to return a complex name
+	// i.e say two released so r1-r2 (so we have projects/branches and now a complex name)
+	// It is only used Summary Component as we are not dealing with just a simple name (different releases)
+	public String getReportComplexName() {
+		// default is nothing.
+		return "";
+	}
+
 	public ReportConfiguration getReportConfiguration() {
 		return reportConfiguration;
 	}

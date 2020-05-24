@@ -33,17 +33,25 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 	public static final String THIS_RELEASE = "This Release";
 	
 	String prevRelease;
+	String projectKey;
 	Map<String, Datum> prevData;
 	//2D data structure Concepts, Descriptions, Relationships, Axioms, LangRefset, Inactivation Indicators, Historical Associations
 	Map<Concept, int[][]> summaryDataMap;
 	String thisEffectiveTime;
 	int topLevelHierarchyCount = 0;
-	static final int IDX_CONCEPTS = 0, IDX_DESCS = 1, IDX_RELS = 2, IDX_AXIOMS = 3,
+	String complexName;
+	static final int IDX_CONCEPTS = 0, IDX_DESCS = 1, IDX_AXIOMS = 2, IDX_RELS = 3,
 			IDX_LANG = 4, IDX_INACT_IND = 5, IDX_HIST = 6;
 	static final int COMPONENT_COUNT = 7;
-	static final int DATA_WIDTH = 6;  //New, Changed, Inactivated, New with New Concept, extra1, extra2
-	static final int IDX_NEW = 0, IDX_CHANGED = 1, IDX_INACT = 2, IDX_NEW_NEW = 3, IDX_NEW_P = 4, IDX_NEW_SD = 5;
-	List<Concept> topLevelHierarchies;
+	static final int DATA_WIDTH = 19;  //New, Changed, Inactivated, New with New Concept, extra1, extra2, Total, next 11 fields are the inactivation reason, concept affected
+	static final int IDX_NEW = 0, IDX_CHANGED = 1, IDX_INACT = 2, IDX_NEW_NEW = 3, IDX_NEW_P = 4, IDX_NEW_SD = 5,
+			IDX_TOTAL = 6, IDX_INACT_AMBIGUOUS = 7,  IDX_INACT_MOVED_ELSEWHERE  = 8, IDX_INACT_CONCEPT_NON_CURRENT = 9,
+			IDX_INACT_DUPLICATE  = 10, IDX_INACT_ERRONEOUS  = 11, IDX_INACT_INAPPROPRIATE  = 12, IDX_INACT_LIMITED  = 13,
+			IDX_INACT_OUTDATED  = 14, IDX_INACT_PENDING_MOVE  = 15, IDX_INACT_NON_CONFORMANCE  = 16,
+			IDX_INACT_NOT_EQUIVALENT = 17, IDX_CONCEPTS_AFFECTED = 18;
+	static Map<Integer, List<Integer>> sheetFieldsByIndex = getSheetFieldsMap();
+
+	List<Concept> topLevelHierarchies; 
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
@@ -88,7 +96,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 	@Override
 	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException, InterruptedException, IOException {
 		boolean compareTwoSnapshots = false; 
-		String projectKey = getProject().getKey();
+		projectKey = getProject().getKey();
 		prevRelease = getJobRun().getParamValue(PREV_RELEASE);
 		if (prevRelease == null) {
 			prevRelease = getProject().getMetadata().getPreviousPackage();
@@ -121,15 +129,15 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 	};
 	
 	public void postInit() throws TermServerScriptException {
-		String[] columnHeadings = new String[] {"Sctid, Hierarchy, SemTag, New, Changed DefnStatus, Inactivated, New with New Concept, New SD, New P", 
-												"Sctid, Hierarchy, SemTag, New / Reactivated, Changed, Inactivated, New with New Concept",
-												"Sctid, Hierarchy, SemTag, New Inferred Rels, Changed Inferred Rels, Inactivated Inferred Rels, New with New Concept",
-												"Sctid, Hierarchy, SemTag, New Axioms, Changed Axioms, Inactivated Axioms, New with New Concept",
-												"Sctid, Hierarchy, SemTag, New / Reactivated, Changed, Inactivated, New with New Concept",
-												"Sctid, Hierarchy, SemTag, Inactivations New / Reactivated, Changed, Inactivations Inactivated, New with New Concept",
-												"Sctid, Hierarchy, SemTag, Assoc New / Reactivated, Changed, Assoc Inactivated, New with New Concept"
+		String[] columnHeadings = new String[] {"Sctid, Hierarchy, SemTag, New, Changed DefnStatus, Inactivated, New with New Concept, New SD, New P, Total",
+												"Sctid, Hierarchy, SemTag, New / Reactivated, Changed, Inactivated, New with New Concept, Total, Concepts Affected",
+												"Sctid, Hierarchy, SemTag, New Inferred Rels, Changed Inferred Rels, Inactivated Inferred Rels, New with New Concept, Total, Concepts Affected",
+												"Sctid, Hierarchy, SemTag, New Axioms, Changed Axioms, Inactivated Axioms, New with New Concept, Total, Concepts Affected",
+												"Sctid, Hierarchy, SemTag, New / Reactivated, Changed, Inactivated, New with New Concept, Concepts Affected",
+												"Sctid, Hierarchy, SemTag, Inactivations New / Reactivated, Changed, Inactivations Inactivated, New with New Concept, Ambiguous, Moved Elsewhere, Concept Non Current, Duplicate, Erroneous, Inappropriate, Limited, Outdated, Pending Move, Non Conformance, Not Equivalent, Concepts Affected",
+												"Sctid, Hierarchy, SemTag, Assoc New / Reactivated, Changed, Assoc Inactivated, New with New Concept, Concepts Affected"
 };
-		String[] tabNames = new String[] {	"Concepts", 
+		String[] tabNames = new String[] {	"Concepts",
 											"Descriptions",
 											"Relationships",
 											"Axioms",
@@ -147,6 +155,17 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		analyzeConcepts();
 		info ("Outputting Results");
 		outputResults();
+	}
+
+	@Override
+	public String getReportComplexName() {
+		if (projectKey != null && prevRelease != null) {
+			complexName = projectKey + "---" + prevRelease;
+			complexName = complexName.replaceAll("\\.zip", ""); // remove the zip extension
+		} else {
+			complexName = super.getReportComplexName();
+		}
+		return complexName;
 	}
 
 	private void analyzeConcepts() throws TermServerScriptException {
@@ -213,12 +232,13 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 				counts[IDX_INACT]++;
 			}
 		}
-		
+		counts[IDX_TOTAL]++;
 	}
 
 	private void analyzeComponents(boolean isNewConcept, List<String> ids, int[] counts, List<? extends Component> components) {
 		//If we have no previous data, then the concept is new
 		boolean conceptIsNew = (ids == null);
+		boolean conceptAffected = false;
 		for (Component c : components) {
 			//Was the description present in the previous data?
 			boolean existedPreviously = false;
@@ -228,6 +248,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 			if (c.isActive()) {
 				if (!existedPreviously) {
 					counts[IDX_NEW]++;
+					conceptAffected = true;
 					if (isNewConcept) {
 						//This component is new because it was created as part of a new concept
 						//so it's not been 'added' as such.  Well, we might want to count additions
@@ -237,10 +258,59 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 				} else if (StringUtils.isEmpty(c.getEffectiveTime()) || c.getEffectiveTime().equals(thisEffectiveTime)) {
 					//Did it change in this release?
 					counts[IDX_CHANGED]++;
+					conceptAffected = true;
 				}
 			} else if (existedPreviously) {
 				counts[IDX_INACT]++;
+				conceptAffected = true;
+				// find out the reason
+				if (c instanceof InactivationIndicatorEntry) {
+					InactivationIndicatorEntry inactivationIndicatorEntry = (InactivationIndicatorEntry) c;
+					incrementInactivationReason (counts, inactivationIndicatorEntry.getInactivationReasonId());
+				}
 			}
+			counts[IDX_TOTAL]++;
+		}
+		if (conceptAffected) {
+			counts[IDX_CONCEPTS_AFFECTED]++;
+		}
+	}
+
+	private void incrementInactivationReason(int[] counts, String reasonId) {
+		switch (reasonId) {
+			case SCTID_INACT_AMBIGUOUS:
+				counts[IDX_INACT_AMBIGUOUS]++;
+				break;
+			case SCTID_INACT_MOVED_ELSEWHERE:
+				counts[IDX_INACT_MOVED_ELSEWHERE]++;
+				break;
+			case SCTID_INACT_CONCEPT_NON_CURRENT:
+				counts[IDX_INACT_CONCEPT_NON_CURRENT]++;
+				break;
+			case SCTID_INACT_DUPLICATE:
+				counts[IDX_INACT_DUPLICATE]++;
+				break;
+			case SCTID_INACT_ERRONEOUS:
+				counts[IDX_INACT_ERRONEOUS]++;
+				break;
+			case SCTID_INACT_INAPPROPRIATE:
+				counts[IDX_INACT_INAPPROPRIATE]++;
+				break;
+			case SCTID_INACT_LIMITED:
+				counts[IDX_INACT_LIMITED]++;
+				break;
+			case SCTID_INACT_OUTDATED:
+				counts[IDX_INACT_OUTDATED]++;
+				break;
+			case SCTID_INACT_PENDING_MOVE:
+				counts[IDX_INACT_PENDING_MOVE]++;
+				break;
+			case SCTID_INACT_NON_CONFORMANCE:
+				counts[IDX_INACT_NON_CONFORMANCE]++;
+				break;
+			case SCTID_INACT_NOT_EQUIVALENT:
+				counts[IDX_INACT_NOT_EQUIVALENT]++;
+				break;
 		}
 	}
 
@@ -263,13 +333,45 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 	}
 	
 	protected void report (int idxTab, Concept c, int[] data) throws TermServerScriptException {
-		int dataWidth = DATA_WIDTH - 2;  //Just concepts have those two extra fields.
-		if (idxTab == IDX_CONCEPTS) {
-			dataWidth = DATA_WIDTH;
-		}
-		int[] dataSubset = Arrays.copyOfRange(data, 0, dataWidth);
-		super.report(idxTab, c, dataSubset);
+		super.report(idxTab, c, getReportData(idxTab, data));
 		countIssue(c);
+	}
+
+	private static Map<Integer, List<Integer>> getSheetFieldsMap() {
+		// set up the report sheets and the fields they contain
+		final Map<Integer, List<Integer>> sheetFieldsByIndex = new HashMap<>();
+
+		sheetFieldsByIndex.put(IDX_CONCEPTS, new LinkedList(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_NEW_NEW, IDX_NEW_P, IDX_NEW_SD, IDX_TOTAL)));
+
+		Arrays.asList(IDX_DESCS, IDX_AXIOMS, IDX_RELS).stream().forEach(index -> {
+			sheetFieldsByIndex.put(index, new LinkedList(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_NEW_NEW, IDX_TOTAL, IDX_CONCEPTS_AFFECTED)));
+		});
+
+		sheetFieldsByIndex.put(IDX_INACT_IND, new LinkedList(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_NEW_NEW, IDX_INACT_AMBIGUOUS,
+				IDX_INACT_MOVED_ELSEWHERE, IDX_INACT_CONCEPT_NON_CURRENT, IDX_INACT_DUPLICATE, IDX_INACT_ERRONEOUS,
+				IDX_INACT_INAPPROPRIATE, IDX_INACT_LIMITED, IDX_INACT_OUTDATED, IDX_INACT_PENDING_MOVE, IDX_INACT_NON_CONFORMANCE,
+				IDX_INACT_NOT_EQUIVALENT, IDX_CONCEPTS_AFFECTED)));
+
+		Arrays.asList(IDX_LANG, IDX_HIST).stream().forEach(index -> {
+			sheetFieldsByIndex.put(index, new LinkedList((Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_NEW_NEW, IDX_CONCEPTS_AFFECTED))));
+		});
+
+		return sheetFieldsByIndex;
+	}
+
+	private int[] getReportData(int idxTab, int[] allData) {
+		// we are collected different fields of data so now work out with ones we need
+		// You can change the order here
+		List<Integer> dataFieldsRequired = sheetFieldsByIndex.get(idxTab);
+
+		// now get the data for the sheet that we need (compact)
+		int[] data = new int[dataFieldsRequired.size()];
+		int currentIndex = 0;
+		for (int dataFieldRequiredIndex: dataFieldsRequired) {
+			data[currentIndex] = allData[dataFieldRequiredIndex];
+			currentIndex++;
+		}
+		return data;
 	}
 
 	private void loadData(String release) throws TermServerScriptException {
@@ -367,7 +469,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		datum.descIds = Arrays.asList(lineItems[8].split(","));
 		datum.axiomIds = Arrays.asList(lineItems[9].split(","));
 		datum.langRefsetIds = Arrays.asList(lineItems[10].split(","));
-		datum.inactivationIds= Arrays.asList(lineItems[11].split(","));
+		datum.inactivationIds = Arrays.asList(lineItems[11].split(","));
 		datum.histAssocIds = Arrays.asList(lineItems[12].split(","));
 		return datum;
 	}
