@@ -69,6 +69,7 @@ public abstract class TermServerScript implements RF2Constants {
 	private String reportName;
 	protected boolean safetyProtocols = true;  //Switch off to bypass all limits
 	protected boolean manyTabOutput = false;
+	protected boolean manyTabWideOutput = false;
 	protected boolean includeSummaryTab = false;
 	protected boolean reportNullConcept = true;
 	
@@ -1594,6 +1595,10 @@ public abstract class TermServerScript implements RF2Constants {
 
 	public boolean getManyTabOutput() {
 		return manyTabOutput;
+	}
+
+	public boolean getManyTabWideOutput() {
+		return manyTabWideOutput;
 	}
 
 	protected  String getDependencyArchive() {

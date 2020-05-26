@@ -89,7 +89,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA
 		prevData = new HashMap<>();
 		summaryDataMap = new HashMap<>();
-		manyTabOutput = true;
+		manyTabWideOutput = true;
 		super.init(run);
 	}
 

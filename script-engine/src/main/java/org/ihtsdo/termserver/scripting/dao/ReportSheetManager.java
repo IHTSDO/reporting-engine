@@ -32,6 +32,7 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 	private static int DEFAULT_MAX_ROWS = 42000;
 	private static int DEFAULT_MAX_COLUMNS = 19;
 	private static int REDUCED_MAX_COLUMNS = 9;
+	private static int WIDE_MAX_COLUMNS = 20;
 	private static int MAX_ROWS = DEFAULT_MAX_ROWS;
 	private static int MAX_COLUMNS = DEFAULT_MAX_COLUMNS;
 	private static String MAX_COLUMN_STR = Character.toString((char)('A' + MAX_COLUMNS));
@@ -52,13 +53,17 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 	Map<Integer, Integer> linesWrittenPerTab = new HashMap<>();
 	
 	public ReportSheetManager(ReportManager owner) {
-		if (!owner.getScript().safetyProtocolsEnabled() && owner.getScript().getManyTabOutput()) {
+		if (!owner.getScript().safetyProtocolsEnabled() && owner.getScript().getManyTabOutput() ||
+				!owner.getScript().safetyProtocolsEnabled() && owner.getScript().getManyTabWideOutput()) {
 			throw new IllegalArgumentException("Can't specify safety disabled and manyTabs - one is saying more rows, and the other is saying less");
 		}
 		this.owner = owner;
 		if (!this.owner.getScript().safetyProtocolsEnabled()) {
 			MAX_ROWS = 99999;
 			setMaxColumns(REDUCED_MAX_COLUMNS);
+		} else if (this.owner.getScript().getManyTabWideOutput()) {
+			MAX_ROWS = 999;
+			setMaxColumns(WIDE_MAX_COLUMNS);
 		} else if (this.owner.getScript().getManyTabOutput()) {
 			MAX_ROWS = 9999;
 			setMaxColumns(REDUCED_MAX_COLUMNS);
