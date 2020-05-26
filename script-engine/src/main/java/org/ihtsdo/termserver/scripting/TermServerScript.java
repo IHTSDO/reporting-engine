@@ -1554,6 +1554,12 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	protected boolean inScope(Component c) {
+		//RP-349 Allow MS customers to run reports against MAIN.
+		//In this case all concepts are "in scope" to allow MS customers to see
+		//what changes to international concepts might affect them
+		if (project.getKey().equals("MAIN")) {
+			return true;
+		}
 		//Do we have a default module id ie for a managed service project?
 		if (project.getMetadata() != null && project.getMetadata().getDefaultModuleId() != null) {
 			return c.getModuleId().equals(project.getMetadata().getDefaultModuleId());
