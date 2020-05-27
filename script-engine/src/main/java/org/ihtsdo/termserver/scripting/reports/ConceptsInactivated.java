@@ -27,7 +27,7 @@ public class ConceptsInactivated extends TermServerReport implements ReportClass
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1PWtDYFfqLoUwk17HlFgNK648Mmra-1GA"; //General QA Reports
+		ReportSheetManager.targetFolderId = "1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"; //Release Stats
 		subHierarchyECL = run.getParamValue(ECL);
 		super.init(run);
 	}
@@ -47,9 +47,11 @@ public class ConceptsInactivated extends TermServerReport implements ReportClass
 				.add(RELEASE).withType(Type.STRING)
 				.build();
 		return new Job()
-				.withCategory(new JobCategory(JobType.REPORT, JobCategory.GENERAL_QA))
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_STATS))
 				.withName("Inactivated Concepts")
-				.withDescription("This report lists all concepts inactivated in the current release cycle along with the reason and historical association, optionally restricted to a subset defined by an ECL expression.  The issue count here is the total number of concepts inactivated.")
+				.withDescription("This report lists all concepts inactivated in the current release cycle along with the reason and historical association, " + 
+				"optionally restricted to a subset defined by an ECL expression.  The issue count here is the total number of concepts inactivated." +
+						" Also optional is specifying a previously published release package to run against.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(INT)
