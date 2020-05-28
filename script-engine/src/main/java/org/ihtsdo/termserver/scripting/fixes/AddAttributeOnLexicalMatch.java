@@ -64,8 +64,14 @@ public class AddAttributeOnLexicalMatch extends BatchFix {
 		searchTermAttributeMap.put("absorbable", new RelationshipTemplate(HAS_DEVICE_CHARAC, gl.getConcept("863966007 |Absorbable (qualifier value)")));
 		*/
 		
-		//DEVICES-115
+		/*DEVICES-115
 		searchTermAttributeMap.put("custom-made", new RelationshipTemplate(HAS_DEVICE_CHARAC, gl.getConcept("860573009 |Custom-made (qualifier value)| ")));
+		*/
+		
+		//DEVICES-122
+		searchTermAttributeMap.put("uncoated", new RelationshipTemplate(HAS_DEVICE_CHARAC, gl.getConcept("860575002 |Not coated with material (qualifier value)|")));
+		searchTermAttributeMap.put("coated", new RelationshipTemplate(HAS_DEVICE_CHARAC, gl.getConcept("866168000 |Coated with material (qualifier value)|")));
+		searchTermAttributeMap.put("-on-", new RelationshipTemplate(HAS_DEVICE_CHARAC, gl.getConcept("866168000 |Coated with material (qualifier value)|")));
 		
 		super.postInit();
 	}
@@ -134,9 +140,10 @@ public class AddAttributeOnLexicalMatch extends BatchFix {
 		List<Component> processMe = new ArrayList<>();
 		for (Concept c : subHierarchy.getDescendents(NOT_SET)) {
 			for (String searchTerm : searchTermAttributeMap.keySet()) {
-				if (c.getFsn().toLowerCase().contains(searchTerm) || 
-						c.getFsn().toLowerCase().contains(searchTerm.replaceAll("-", " ")) ||
-						c.getFsn().toLowerCase().contains(searchTerm.replaceAll("-", ""))) {
+				if (c.getFsn().toLowerCase().contains(searchTerm) //|| 
+						//c.getFsn().toLowerCase().contains(searchTerm.replaceAll("-", " ")) ||
+						//c.getFsn().toLowerCase().contains(searchTerm.replaceAll("-", ""))
+						) {
 					processMe.add(c);
 					break;
 				}
