@@ -1115,8 +1115,6 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	public void finish() throws TermServerScriptException {
-		flushFiles(true, false);
-
 		info (BREAK);
 
 		Date endTime = new Date();
@@ -1162,6 +1160,10 @@ public abstract class TermServerScript implements RF2Constants {
 			}
 			recordSummaryText("Total Critical Issues Encountered: " + criticalIssues.size());
 		}
+		
+		info(BREAK);
+		
+		flushFiles(true, false);
 	}
 	
 	private synchronized void recordSummaryText(String msg) {
