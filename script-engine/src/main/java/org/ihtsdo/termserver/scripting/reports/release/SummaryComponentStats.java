@@ -35,8 +35,8 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 	int topLevelHierarchyCount = 0;
 	String complexName;
 	static final int TAB_CONCEPTS = 0, TAB_DESCS = 1, TAB_AXIOMS = 2, TAB_RELS = 3,
-			TAB_LANG = 4, TAB_INACT_IND = 5, TAB_HIST = 6, TAB_TEXT_DEFN = 7, TAB_RECONCILE = 8;
-	static final int COMPONENT_COUNT = 8;
+			TAB_LANG = 4, TAB_INACT_IND = 5, TAB_HIST = 6, TAB_TEXT_DEFN = 7;
+	static final int COMPONENT_COUNT = 7;
 	static final int DATA_WIDTH = 20;  //New, Changed, Inactivated, Reactivated, New with New Concept, extra1, extra2, Total, next 11 fields are the inactivation reason, concept affected
 	static final int IDX_NEW = 0, IDX_CHANGED = 1, IDX_INACT = 2, IDX_REACTIVATED = 3, IDX_NEW_NEW = 4, IDX_NEW_P = 5, IDX_NEW_SD = 6,
 			IDX_TOTAL = 7, IDX_INACT_AMBIGUOUS = 8,  IDX_INACT_MOVED_ELSEWHERE = 9, IDX_INACT_CONCEPT_NON_CURRENT = 10,
@@ -128,9 +128,8 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 												"Sctid, Hierarchy, SemTag, New / Reactivated, Changed, Inactivated, New with New Concept, Concepts Affected",
 												"Sctid, Hierarchy, SemTag, Inactivations New / Reactivated, Changed, Inactivations Inactivated, New with New Concept, Ambiguous, Moved Elsewhere, Concept Non Current, Duplicate, Erroneous, Inappropriate, Limited, Outdated, Pending Move, Non Conformance, Not Equivalent, Concepts Affected",
 												"Sctid, Hierarchy, SemTag, Assoc New / Reactivated, Changed, Assoc Inactivated, New with New Concept, Concepts Affected",
-												"Sctid, Hierarchy, SemTag, New / Reactivated, Changed, Inactivated, New with New Concept, Total, Concepts Affected",
-												"Sctid, Count Type"
-};
+												"Sctid, Hierarchy, SemTag, New / Reactivated, Changed, Inactivated, New with New Concept, Total, Concepts Affected"
+												};
 		String[] tabNames = new String[] {	"Concepts",
 											"Descriptions",
 											"Relationships",
@@ -225,7 +224,6 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 				} else if (isSD != wasSD) {
 					//Active now and not new, and previously new, we must have changed Definition Status
 					counts[IDX_CHANGED]++;
-					report (TAB_RECONCILE, c, c.getEffectiveTime(), "DefStat Changed");
 				}
 			}
 		} else if (prevData.containsKey(c.getConceptId()) && prevData.get(c.getConceptId()).isActive) {
