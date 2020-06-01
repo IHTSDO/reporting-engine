@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.reports;
+package org.ihtsdo.termserver.scripting.reports.managedService;
 
 import java.io.IOException;
 import java.util.*;
@@ -8,6 +8,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
@@ -16,13 +17,17 @@ import org.springframework.util.StringUtils;
 public class ConceptsTranslatedInactivated extends TermServerReport implements ReportClass {
 	
 	private String intEffectiveTime;
+	boolean includeLegacyIssues = false;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
-		TermServerReport.run(ConceptsTranslatedInactivated.class, args, new HashMap<>());
+		Map<String, String> params = new HashMap<>();
+		params.put(INCLUDE_ALL_LEGACY_ISSUES, "N");
+		TermServerReport.run(ConceptsTranslatedInactivated.class, args, params);
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA Reports
+		includeLegacyIssues = run.getParameters().getMandatoryBoolean(INCLUDE_ALL_LEGACY_ISSUES);
 		subHierarchyECL = run.getParamValue(ECL);
 		super.init(run);
 		if (project.getKey().equals("MAIN")) {
@@ -47,12 +52,17 @@ public class ConceptsTranslatedInactivated extends TermServerReport implements R
 	
 	@Override
 	public Job getJob() {
+		JobParameters params = new JobParameters()
+				.add(INCLUDE_ALL_LEGACY_ISSUES)
+					.withType(JobParameter.Type.BOOLEAN)
+					.withDefaultValue(false)
+				.build();
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION))
 				.withName("Inactivated Translated Concepts")
 				.withDescription("This report lists translated International concepts which have been inactivated in the latest release along with historically associated replacements which may or may not hold translations.  The issue count here is the total number of concepts inactivated where the replacements require a translation.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
-				.withParameters(new JobParameters())
+				.withParameters(params)
 				.withTag(MS)
 				.build();
 	}
@@ -90,11 +100,9 @@ public class ConceptsTranslatedInactivated extends TermServerReport implements R
 	private boolean inScope(Concept c) {
 		//For this report we're interested in International Concepts inactivated
 		//in the last (dependency) release which have translations in the target module
-		if (!c.isActive() && c.getEffectiveTime().equals(intEffectiveTime) 
-			&& hasTranslation(c)) {
-			return true;
-		}
-		return false;
+		return (!c.isActive() 
+			&& (c.getEffectiveTime().equals(intEffectiveTime) || includeLegacyIssues)
+			&& hasTranslation(c));
 	}
 	
 	private boolean hasTranslation(Concept c) {
