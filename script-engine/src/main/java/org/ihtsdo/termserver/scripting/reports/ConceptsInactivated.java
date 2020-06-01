@@ -17,8 +17,10 @@ import org.springframework.util.StringUtils;
 public class ConceptsInactivated extends TermServerReport implements ReportClass {
 	
 	static final String RELEASE = "Release Package";
+	static final String SEMTAG_FILTER_PARAM = "Filter for SemTag";
 	private String prevRelease;
 	private String thisEffectiveTime;
+	private String semtagFilter;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
@@ -28,7 +30,7 @@ public class ConceptsInactivated extends TermServerReport implements ReportClass
 	
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"; //Release Stats
-		subHierarchyECL = run.getParamValue(ECL);
+		semtagFilter = run.getParamValue(SEMTAG_FILTER_PARAM);
 		super.init(run);
 	}
 	
@@ -43,14 +45,14 @@ public class ConceptsInactivated extends TermServerReport implements ReportClass
 	@Override
 	public Job getJob() {
 		JobParameters params = new JobParameters()
-				.add(ECL).withType(JobParameter.Type.ECL).withDefaultValue("<< " + ROOT_CONCEPT)
+				.add(SEMTAG_FILTER_PARAM).withType(Type.STRING)
 				.add(RELEASE).withType(Type.STRING)
 				.build();
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_STATS))
 				.withName("Inactivated Concepts")
 				.withDescription("This report lists all concepts inactivated in the current release cycle along with the reason and historical association, " + 
-				"optionally restricted to a subset defined by an ECL expression.  The issue count here is the total number of concepts inactivated." +
+				"optionally restricted to a particular semantic tag.  The issue count here is the total number of concepts inactivated." +
 						" Also optional is specifying a previously published release package to run against.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
@@ -59,14 +61,7 @@ public class ConceptsInactivated extends TermServerReport implements ReportClass
 	}
 	
 	public void runJob() throws TermServerScriptException {
-		Collection<Concept> conceptsOfInterest;
-		if (subHierarchyECL != null && !subHierarchyECL.isEmpty()) {
-			conceptsOfInterest = findConcepts(subHierarchyECL);
-		} else {
-			conceptsOfInterest = gl.getAllConcepts();
-		}
-		
-		for (Concept c : scopeAndSort(conceptsOfInterest)) {
+		for (Concept c : scopeAndSort(gl.getAllConcepts())) {
 			boolean reported = false;
 			InactivationIndicator i = c.getInactivationIndicator();
 			for (AssociationEntry a : c.getAssociations(ActiveState.ACTIVE, true)) {
@@ -85,10 +80,25 @@ public class ConceptsInactivated extends TermServerReport implements ReportClass
 	private boolean inScope(Concept c) {
 		//We want inactive concepts modified either in the current release cycle or in the 
 		//latest release if we're looking at a particular release package
-		return !c.isActive() && ( (thisEffectiveTime == null && StringUtils.isEmpty(c.getEffectiveTime()) ||
-				(thisEffectiveTime != null && thisEffectiveTime.equals(c.getEffectiveTime()))));
+		//Optionally for a specific semantic tag
+		return !c.isActive() 
+				&& hasRequiredSemTag(c)
+				&& ( 
+					(thisEffectiveTime == null && StringUtils.isEmpty(c.getEffectiveTime()) ||
+					(thisEffectiveTime != null && thisEffectiveTime.equals(c.getEffectiveTime())))
+				);
 	}
 	
+	private boolean hasRequiredSemTag(Concept c) {
+		//If we didn't specify a filter, then it's in
+		if (StringUtils.isEmpty(semtagFilter)) {
+			return true;
+		}
+		
+		String semTag = SnomedUtils.deconstructFSN(c.getFsn(), true)[1];
+		return semTag != null && semTag.contains(semtagFilter);
+	}
+
 	@Override
 	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException, InterruptedException, IOException {
 		prevRelease = getJobRun().getParamValue(RELEASE);
