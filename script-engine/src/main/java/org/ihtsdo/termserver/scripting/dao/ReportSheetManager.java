@@ -30,6 +30,7 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 	private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
 	private static final String CLIENT_SECRET_DIR = "secure/google-api-secret.json";
 	private static int DEFAULT_MAX_ROWS = 42000;
+	private static int REDUCED_MAX_ROWS = 5000;
 	private static int DEFAULT_MAX_COLUMNS = 19;
 	private static int REDUCED_MAX_COLUMNS = 9;
 	private static int WIDE_MAX_COLUMNS = 20;
@@ -62,7 +63,7 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 			MAX_ROWS = 99999;
 			setMaxColumns(REDUCED_MAX_COLUMNS);
 		} else if (this.owner.getScript().getManyTabWideOutput()) {
-			MAX_ROWS = 999;
+			MAX_ROWS = REDUCED_MAX_ROWS;
 			setMaxColumns(WIDE_MAX_COLUMNS);
 		} else if (this.owner.getScript().getManyTabOutput()) {
 			MAX_ROWS = 9999;
@@ -227,7 +228,9 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 		
 		//Do we have a total count for this tab?
 		linesWrittenPerTab.merge(tabIdx, 1, Integer::sum);
-		if (linesWrittenPerTab.get(tabIdx).intValue() > MAX_ROWS) {
+		if (linesWrittenPerTab.get(tabIdx).intValue() >= MAX_ROWS) {
+			//Try to finish off what we've received so far
+			flushWithWait();
 			throw new TermServerScriptException("Number of rows written to tab idx " + tabIdx + " hit limit of " + MAX_ROWS);
 		}
 		
