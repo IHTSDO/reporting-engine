@@ -102,6 +102,7 @@ public class ConceptsInactivated extends TermServerReport implements ReportClass
 	@Override
 	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException, InterruptedException, IOException {
 		prevRelease = getJobRun().getParamValue(RELEASE);
+		info ("Loading previously published package " + prevRelease);
 		if (prevRelease != null) {
 			getProject().setKey(prevRelease);
 			super.loadProjectSnapshot(fsnOnly);
