@@ -11,10 +11,10 @@ import static org.junit.Assert.assertEquals;
 
 public class CSVToJSONDataTransformerTest {
 
-    DataTransformer dataTransformer = new CSVToJSONDataTransformer();
-
     @Test
     public void testSingleValidTransformation () throws Exception {
+        DataTransformer dataTransformer = new CSVToJSONDataTransformer();
+
         File input = new File(
                 URLDecoder.decode(
                         this.getClass().getClassLoader().getResource("testInputReport1.csv").getFile(), "UTF-8"));
@@ -26,10 +26,30 @@ public class CSVToJSONDataTransformerTest {
 
         dataTransformer.transform(input, output);
 
-        String outputContent = new String(Files.readAllBytes(Paths.get(output.getAbsolutePath())));
+        String outputContent = new String(Files.readAllBytes(Paths.get(output.getAbsolutePath()))).replace("\n", "");
         String expectedOutputContent = new String(Files.readAllBytes(Paths.get(expectedOutput.getAbsolutePath()))).replace("\n", "");
 
         assertEquals(expectedOutputContent, outputContent);
     }
-    // TODO Add more tests
+
+    @Test
+    public void testSingleValidTransformationExcludeLsstRow () throws Exception {
+        DataTransformer dataTransformer = new CSVToJSONDataTransformer(true);
+
+        File input = new File(
+                URLDecoder.decode(
+                        this.getClass().getClassLoader().getResource("testInputReport2.csv").getFile(), "UTF-8"));
+        File expectedOutput = new File(
+                URLDecoder.decode(
+                        this.getClass().getClassLoader().getResource("testOutput-expected-single-exclude-last-row.json").getFile(), "UTF-8"));
+
+        File output = File.createTempFile("reportsOutput", ".json");
+
+        dataTransformer.transform(input, output);
+
+        String outputContent = new String(Files.readAllBytes(Paths.get(output.getAbsolutePath()))).replace("\n", "");
+        String expectedOutputContent = new String(Files.readAllBytes(Paths.get(expectedOutput.getAbsolutePath()))).replace("\n", "");
+
+        assertEquals(expectedOutputContent, outputContent);
+    }
 }

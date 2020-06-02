@@ -58,8 +58,12 @@ public class ReportManager implements RF2Constants {
 			}
 			if (reportOutputTypes.contains(ReportOutputType.S3) && reportFormatTypes.contains(ReportFormatType.JSON)) {
 				try {
+					// NOTE: This will exclude the last row(totals). As this is only used for
+					// SummaryComponentStats and isn't generic this is fine. If this changes
+					// in the future extra work is required to know if the last row in whichever
+					// report is indeed a total row. For now this is fine.
 					reportS3FileManager = new ReportS3FileManager(this,
-							ts.getReportDataUploader(), new CSVToJSONDataTransformer());
+							ts.getReportDataUploader(), new CSVToJSONDataTransformer(true));
 					writeToS3 = true;
 				} catch (TermServerScriptException e) {
 					TermServerScript.error("Failed to create the reportS3FileManager: ", e);

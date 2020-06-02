@@ -49,8 +49,8 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20200309T120000Z.zip");
-		params.put(THIS_RELEASE, "xSnomedCT_InternationalRF2_ALPHA_20200731T120000Z.zip");
+		//params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20200309T120000Z.zip");
+		//params.put(THIS_RELEASE, "xSnomedCT_InternationalRF2_ALPHA_20200731T120000Z.zip");
 		params.put(REPORT_OUTPUT_TYPES, ReportOutputType.GOOGLE.name());
 		params.put(REPORT_FORMAT_TYPE, ReportFormatType.CSV.name());
 		TermServerReport.run(SummaryComponentStats.class, args, params);
@@ -127,8 +127,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 												"Sctid, Hierarchy, SemTag, New Axioms, Changed Axioms, Inactivated Axioms, New with New Concept, Total, Concepts Affected",
 												"Sctid, Hierarchy, SemTag, New / Reactivated, Changed, Inactivated, New with New Concept, Concepts Affected",
 												"Sctid, Hierarchy, SemTag, Inactivations New / Reactivated, Changed, Inactivations Inactivated, New with New Concept, Ambiguous, Moved Elsewhere, Concept Non Current, Duplicate, Erroneous, Inappropriate, Limited, Outdated, Pending Move, Non Conformance, Not Equivalent, Concepts Affected",
-												"Sctid, Hierarchy, SemTag, Assoc New / Reactivated, Changed, Assoc Inactivated, New with New Concept, Concepts Affected",
-												"Sctid, Hierarchy, SemTag, New / Reactivated, Changed, Inactivated, New with New Concept, Total, Concepts Affected"
+												"Sctid, Hierarchy, SemTag, Assoc New / Reactivated, Changed, Assoc Inactivated, New with New Concept, Concepts Affected"
 												};
 		String[] tabNames = new String[] {	"Concepts",
 											"Descriptions",
@@ -136,9 +135,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 											"Axioms",
 											"LangRefSet",
 											"Inactivations",
-											"Hist Assoc",
-											"Text Defn",
-											"Reconciliation"};
+											"Hist Assoc"};
 		topLevelHierarchies = new ArrayList<Concept>(ROOT_CONCEPT.getChildren(CharacteristicType.INFERRED_RELATIONSHIP));
 		topLevelHierarchies.sort(Comparator.comparing(Concept::getFsn));
 		super.postInit(tabNames, columnHeadings, false);
