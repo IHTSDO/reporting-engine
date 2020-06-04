@@ -17,9 +17,9 @@ import org.ihtsdo.termserver.scripting.fixes.BatchFix;
  */
 public class AddAttributeOnLexicalMatch extends BatchFix {
 	
-	Concept subHierarchy;
-	Map<String, RelationshipTemplate> searchTermAttributeMap;
-	Set<String> exclusions;
+	private Concept subHierarchy;
+	private Map<String, RelationshipTemplate> searchTermAttributeMap;
+	private Set<String> exclusions;
 
 	protected AddAttributeOnLexicalMatch(BatchFix clone) {
 		super(clone);
