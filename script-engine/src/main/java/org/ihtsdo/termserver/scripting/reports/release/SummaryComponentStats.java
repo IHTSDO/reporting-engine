@@ -250,6 +250,11 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 						//to existing concepts separately.
 						counts[IDX_NEW_NEW]++;
 					}
+					// find out the reason
+					if (c instanceof InactivationIndicatorEntry) {
+						InactivationIndicatorEntry inactivationIndicatorEntry = (InactivationIndicatorEntry) c;
+						incrementInactivationReason (counts, inactivationIndicatorEntry.getInactivationReasonId());
+					}
 				} else if (StringUtils.isEmpty(c.getEffectiveTime()) || c.getEffectiveTime().equals(thisEffectiveTime)) {
 					//Did it change in this release?
 					counts[IDX_CHANGED]++;
@@ -258,11 +263,6 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 			} else if (existedPreviously) {
 				counts[IDX_INACT]++;
 				conceptAffected = true;
-				// find out the reason
-				if (c instanceof InactivationIndicatorEntry) {
-					InactivationIndicatorEntry inactivationIndicatorEntry = (InactivationIndicatorEntry) c;
-					incrementInactivationReason (counts, inactivationIndicatorEntry.getInactivationReasonId());
-				}
 			}
 			counts[IDX_TOTAL]++;
 		}
