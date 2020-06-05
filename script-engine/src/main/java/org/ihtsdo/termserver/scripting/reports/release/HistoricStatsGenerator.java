@@ -158,10 +158,19 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 	}
 
 	private String getHierarchy(TransitiveClosure tc, Concept c) throws TermServerScriptException {
-		if (!c.isActive() || c.equals(ROOT_CONCEPT) || c.getDepth() == NOT_SET) {
+
+		if (c.equals(ROOT_CONCEPT)) {
+			return  "";
+		}
+
+		if (!c.isActive() || c.getDepth() == NOT_SET) {
+			Concept parent = getParentByISARelationships(c);
+			if (parent != null) {
+				return getHierarchy(tc, parent);
+			}
 			return "";  //Hopefully the previous release will know
-		} 
-		
+		}
+
 		if (c.getDepth() == 1) {
 			return c.getConceptId();
 		} 
@@ -173,6 +182,35 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 			}
 		}
 		throw new TermServerScriptException("Unable to determine hierarchy for " + c);
+	}
+
+	private Concept getParentByISARelationships(Concept concept) throws TermServerScriptException {
+		Concept parent = null;
+
+		List<Relationship> relationships = gl.getConcept(concept.getId()).getRelationships();
+
+		// look for the ISA relationships
+		for (Relationship relationship : relationships) {
+			Concept relationshipType = relationship.getType();
+			if (relationshipType.equals(IS_A)) {
+				if (parent == null) {
+					parent = relationship.getTarget();
+				} else {
+					Concept nextParent = relationship.getTarget();
+					// Prefer active before considering the effective date
+					if ((!parent.isActive() && nextParent.isActive())) {
+						parent = nextParent;
+					} else if (parent.isActive() && nextParent.isActive() || !parent.isActive() && !nextParent.isActive()) {
+						Integer comparison = SnomedUtils.compareEffectiveDate(parent.getEffectiveTime(),
+								nextParent.getEffectiveTime());
+						if (comparison != null && comparison == -1) {
+							parent = nextParent;
+						}
+					}
+				}
+			}
+		}
+		return parent;
 	}
 
 	private void ouput(FileWriter fw, String... fields) throws IOException {
