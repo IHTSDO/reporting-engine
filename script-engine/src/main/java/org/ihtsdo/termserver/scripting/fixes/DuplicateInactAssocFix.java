@@ -17,6 +17,7 @@ import org.springframework.util.StringUtils;
  * INFRA-2480 Finding concept and description inactivation indicators that are duplicated
  * and remove the unpublished version
  * INFRA-5156 Add ability to delete duplicated historic associations at the same time
+ * Also we'll add/re-active any missing concept inactivation indicators on active descriptions
 */
 public class DuplicateInactAssocFix extends BatchFix {
 	
@@ -77,6 +78,12 @@ public class DuplicateInactAssocFix extends BatchFix {
 			changesMade++;
 		}
 		
+		//Do we need to load and save the concept?
+		Concept loaded = null;
+		if (!c.isActive() && hasMissingConceptInactiveIndicator(c)) {
+			loaded = loadConcept(c, t.getBranchPath());
+		}
+		
 		for (final Description d : c.getDescriptions()) {
 			final InactivationIndicatorEntry[] diis = getDuplicateInactivationIndicators(d, d.getInactivationIndicatorEntries(), t);
 			for (final InactivationIndicatorEntry dii : diis) {
@@ -87,6 +94,19 @@ public class DuplicateInactAssocFix extends BatchFix {
 				}
 				changesMade++;
 			}
+			
+			if (!c.isActive() && d.isActive() && isMissingConceptInactiveIndicator(d)) {
+				Description dLoaded = loaded.getDescription(d.getDescriptionId());
+				//We'll set the indicator directly on the description in the browser object
+				//and let the TS work out if it needs to add a new refset member or reactive one
+				dLoaded.setInactivationIndicator(InactivationIndicator.CONCEPT_NON_CURRENT);
+				report(t, c, Severity.LOW, ReportActionType.INACT_IND_ADDED, "ConceptNonCurrent", dLoaded);
+				changesMade++;
+			}
+		}
+		
+		if (loaded != null && changesMade > 0) {
+			updateConcept(t, loaded, "");
 		}
 		return changesMade;
 	}
@@ -119,12 +139,40 @@ public class DuplicateInactAssocFix extends BatchFix {
 						}
 					} else {
 						processMe.add(c);
+						continue;
+					}
+				}
+				
+				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+					if (isMissingConceptInactiveIndicator(d)) {
+						processMe.add(c);
+						break;
 					}
 				}
 			}
 		}
 		info("Identified " + processMe.size() + " concepts to process");
 		return processMe;
+	}
+	
+	private boolean hasMissingConceptInactiveIndicator(Concept c) {
+		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+			if (isMissingConceptInactiveIndicator(d)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private boolean isMissingConceptInactiveIndicator(Description d) {
+		boolean hasConceptInactiveIndicator = false;
+		for (InactivationIndicatorEntry entry : d.getInactivationIndicatorEntries(ActiveState.ACTIVE)) {
+			if (entry.getInactivationReasonId().equals(SCTID_INACT_CONCEPT_NON_CURRENT)) {
+				hasConceptInactiveIndicator = true;
+				break;
+			}
+		}
+		return !hasConceptInactiveIndicator;
 	}
 
 	private InactivationIndicatorEntry[] getDuplicateInactivationIndicators(final Component c,

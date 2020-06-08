@@ -197,7 +197,7 @@ public interface RF2Constants {
 	public static final String SCTID_ASSOC_ALTERNATIVE_REFSETID = "900000000000530003";  //ALTERNATIVE association reference set (foundation metadata concept)
 	public static final String SCTID_ASSOC_ANATOMY_STRUC_ENTIRE_REFSETID = "734138000";  //Anatomy structure and entire association reference set (foundation metadata concept)
 	
-	//Inactivation Indicators
+	//Inactivation Indicator Refsets
 	public static final String SCTID_CON_INACT_IND_REFSET = "900000000000489007";
 	public static final String SCTID_DESC_INACT_IND_REFSET = "900000000000490003";
 	
