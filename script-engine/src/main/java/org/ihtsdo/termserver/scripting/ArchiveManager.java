@@ -63,12 +63,12 @@ public class ArchiveManager implements RF2Constants {
 		if (singleton.ts != ts) {
 			TermServerScript.info("Archive manager under new ownership: " + ts.getReportName() + ".  Resetting load flags");
 			singleton.loadEditionArchive = false;
-			singleton.loadDependencyPlusExtensionArchive = false;
 		} else {
 			TermServerScript.info("Archive manager being reused in: " + ts.getReportName());
 		}
 		singleton.ts = ts;
 		singleton.gl = ts.getGraphLoader();
+		singleton.loadDependencyPlusExtensionArchive = false;
 		return singleton;
 	}
 	

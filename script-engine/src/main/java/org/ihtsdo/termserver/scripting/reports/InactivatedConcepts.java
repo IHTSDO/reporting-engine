@@ -14,7 +14,7 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.scheduler.domain.JobParameter.Type;
 import org.springframework.util.StringUtils;
 
-public class ConceptsInactivated extends TermServerReport implements ReportClass {
+public class InactivatedConcepts extends TermServerReport implements ReportClass {
 	
 	static final String RELEASE = "Release Package";
 	static final String SEMTAG_FILTER_PARAM = "Filter for SemTag";
@@ -25,7 +25,7 @@ public class ConceptsInactivated extends TermServerReport implements ReportClass
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put(RELEASE, "dev_xSnomedCT_InternationalRF2_PREALPHA_20200731T120000Z.zip");
-		TermServerReport.run(ConceptsInactivated.class, args, params);
+		TermServerReport.run(InactivatedConcepts.class, args, params);
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
