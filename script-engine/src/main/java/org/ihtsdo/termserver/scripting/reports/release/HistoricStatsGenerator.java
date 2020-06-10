@@ -31,6 +31,8 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 public class HistoricStatsGenerator extends TermServerReport implements ReportClass {
 	
 	private static final String dataDir = "historic-data/";
+	private static int ACTIVE = 1;
+	private static int INACTIVE = 0;
 	
 	public HistoricStatsGenerator() {
 	}
@@ -91,13 +93,16 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 				String IP = IPs.contains(c) ? "Y" : "N";
 				String sdDescendant = hasSdDescendant(tc, c);
 				String sdAncestor = hasSdAncestor(tc, c);
-				String relIds = getRelIds(c);
-				String descIds = getDescIds(c);
-				String axiomIds = getAxiomIds(c);
-				String langRefSetIds = getLangRefsetIds(c);
-				String inactivationIds = getInactivationIds(c);
-				String histAssocIds = getHistAssocIds(c);
-				ouput(fw, c.getConceptId(), active, defStatus, hierarchy, IP, sdDescendant, sdAncestor, relIds, descIds, axiomIds, langRefSetIds, inactivationIds, histAssocIds);
+				String[] relIds = getRelIds(c);
+				String[] descIds = getDescIds(c);
+				String[] axiomIds = getAxiomIds(c);
+				String[] langRefSetIds = getLangRefsetIds(c);
+				String[] inactivationIds = getInactivationIds(c);
+				String[] histAssocIds = getHistAssocIds(c);
+				ouput(fw, c.getConceptId(), active, defStatus, hierarchy, IP, sdDescendant, sdAncestor, 
+						relIds[ACTIVE], relIds[INACTIVE], descIds[ACTIVE], descIds[INACTIVE], 
+						axiomIds[ACTIVE], axiomIds[INACTIVE], langRefSetIds[ACTIVE], langRefSetIds[INACTIVE],
+						inactivationIds[ACTIVE], inactivationIds[INACTIVE], histAssocIds[ACTIVE], histAssocIds[INACTIVE]);
 			}
 		} catch (Exception e) {
 			throw new TermServerScriptException(e);
@@ -112,49 +117,104 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 		}
 	}
 
-	private String getRelIds(Concept c) {
-		return c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)
+	private String[] getRelIds(Concept c) {
+		String[] results = new String[2];
+		
+		results[ACTIVE] = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)
 		.stream()
 		.map(r -> r.getId())
 		.collect(Collectors.joining(","));
+	
+		results[INACTIVE] = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.INACTIVE)
+		.stream()
+		.map(r -> r.getId())
+		.collect(Collectors.joining(","));
+		return results;
 	}
 	
-	private String getDescIds(Concept c) {
-		return c.getDescriptions(ActiveState.ACTIVE)
+	private String[] getDescIds(Concept c) {
+		String[] results = new String[2];
+		
+		results[ACTIVE] = c.getDescriptions(ActiveState.ACTIVE)
 		.stream()
 		.map(d -> d.getId())
 		.collect(Collectors.joining(","));
+		
+		results[INACTIVE] = c.getDescriptions(ActiveState.INACTIVE)
+			.stream()
+			.map(d -> d.getId())
+			.collect(Collectors.joining(","));
+		
+		return results;
 	}
 	
-	private String getAxiomIds(Concept c) {
-		return c.getAxiomEntries().stream()
+	private String[] getAxiomIds(Concept c) {
+		String[] results = new String[2];
+		
+		results[ACTIVE] = c.getAxiomEntries().stream()
 		.filter(a -> a.isActive())
 		.map(a -> a.getId())
 		.collect(Collectors.joining(","));
+		
+		results[INACTIVE] = c.getAxiomEntries().stream()
+		.filter(a -> a.isActive() == false)
+		.map(a -> a.getId())
+		.collect(Collectors.joining(","));
+		
+		return results;
 	}
 	
-	private String getLangRefsetIds(Concept c) {
+	private String[] getLangRefsetIds(Concept c) {
+		String[] results = new String[2];
+		
 		List<String> langRefsetIds = new ArrayList<>();
 		for (Description d : c.getDescriptions()) {
 			for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.ACTIVE)) {
 				langRefsetIds.add(l.getId());
 			}
 		}
-		return String.join(",", langRefsetIds);
+		results[ACTIVE] = String.join(",", langRefsetIds);
+		
+		langRefsetIds.clear();
+		for (Description d : c.getDescriptions()) {
+			for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.INACTIVE)) {
+				langRefsetIds.add(l.getId());
+			}
+		}
+		results[INACTIVE] = String.join(",", langRefsetIds);
+		return results;
 	}
 	
-	private String getInactivationIds(Concept c) {
-		return c.getInactivationIndicatorEntries(ActiveState.ACTIVE)
+	private String[] getInactivationIds(Concept c) {
+		String[] results = new String[2];
+		
+		results[ACTIVE] = c.getInactivationIndicatorEntries(ActiveState.ACTIVE)
 		.stream()
 		.map(i -> i.getId())
 		.collect(Collectors.joining(","));
+		
+		results[ACTIVE] = c.getInactivationIndicatorEntries(ActiveState.INACTIVE)
+		.stream()
+		.map(i -> i.getId())
+		.collect(Collectors.joining(","));
+		
+		return results;
 	}
 
-	private String getHistAssocIds(Concept c) {
-		return c.getAssociations(ActiveState.ACTIVE)
+	private String[] getHistAssocIds(Concept c) {
+		String[] results = new String[2];
+		
+		results[ACTIVE] = c.getAssociations(ActiveState.ACTIVE)
 		.stream()
 		.map(h -> h.getId())
 		.collect(Collectors.joining(","));
+		
+		results[INACTIVE] = c.getAssociations(ActiveState.INACTIVE)
+		.stream()
+		.map(h -> h.getId())
+		.collect(Collectors.joining(","));
+		
+		return results;
 	}
 
 	private String getHierarchy(TransitiveClosure tc, Concept c) throws TermServerScriptException {

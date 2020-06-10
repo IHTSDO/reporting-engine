@@ -35,10 +35,10 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 	String thisEffectiveTime;
 	int topLevelHierarchyCount = 0;
 	String complexName;
-	static final int TAB_CONCEPTS = 0, TAB_DESCS = 1, TAB_AXIOMS = 2, TAB_RELS = 3,
+	static final int TAB_CONCEPTS = 0, TAB_DESCS = 1, TAB_RELS = 2, TAB_AXIOMS = 3,
 			TAB_LANG = 4, TAB_INACT_IND = 5, TAB_HIST = 6, TAB_TEXT_DEFN = 7;
 	static final int COMPONENT_COUNT = 8;
-	static final int DATA_WIDTH = 20;  //New, Changed, Inactivated, Reactivated, New with New Concept, extra1, extra2, Total, next 11 fields are the inactivation reason, concept affected
+	static final int DATA_WIDTH = 20;  //New, Changed, Inactivated, Reactivated, New with New Concept, extra1, extra2, Total, next 11 fields are the inactivation reason, concept affected, reactivated
 	static final int IDX_NEW = 0, IDX_CHANGED = 1, IDX_INACT = 2, IDX_REACTIVATED = 3, IDX_NEW_NEW = 4, IDX_NEW_P = 5, IDX_NEW_SD = 6,
 			IDX_TOTAL = 7, IDX_INACT_AMBIGUOUS = 8,  IDX_INACT_MOVED_ELSEWHERE = 9, IDX_INACT_CONCEPT_NON_CURRENT = 10,
 			IDX_INACT_DUPLICATE = 11, IDX_INACT_ERRONEOUS = 12, IDX_INACT_INAPPROPRIATE = 13, IDX_INACT_LIMITED = 14,
@@ -126,7 +126,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 			setProject(new Project(projectKey));
 			getArchiveManager().loadProjectSnapshot(false);
 			//Descriptions for the root concept are a quick way to find the effeciveTime
-			thisEffectiveTime = ROOT_CONCEPT.getFSNDescription().getEffectiveTime();
+			thisEffectiveTime = gl.getCurrentEffectiveTime();
 			info ("Detected this effective time as " + thisEffectiveTime);
 		} else {
 			//Now we can carry on an add the delta on top
@@ -139,13 +139,13 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 	
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {"Sctid, Hierarchy, SemTag, New, Changed DefnStatus, Inactivated, Reactivated, New with New Concept, New SD, New P, Total",
-												"Sctid, Hierarchy, SemTag, New / Reactivated, Changed, Inactivated, New with New Concept, Total, Concepts Affected",
-												"Sctid, Hierarchy, SemTag, New Inferred Rels, Changed Inferred Rels, Inactivated Inferred Rels, New with New Concept, Total, Concepts Affected",
-												"Sctid, Hierarchy, SemTag, New Axioms, Changed Axioms, Inactivated Axioms, New with New Concept, Total, Concepts Affected",
-												"Sctid, Hierarchy, SemTag, New / Reactivated, Changed, Inactivated, New with New Concept, Concepts Affected",
-												"Sctid, Hierarchy, SemTag, Inactivations New / Reactivated, Changed, Inactivations Inactivated, New with New Concept, Ambiguous, Moved Elsewhere, Concept Non Current, Duplicate, Erroneous, Inappropriate, Limited, Outdated, Pending Move, Non Conformance, Not Equivalent, Concepts Affected",
-												"Sctid, Hierarchy, SemTag, Assoc New / Reactivated, Changed, Assoc Inactivated, New with New Concept, Concepts Affected",
-												"Sctid, Hierarchy, SemTag, New / Reactivated, Changed, Inactivated, New with New Concept, Total, Concepts Affected"
+												"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New with New Concept, Total, Concepts Affected",
+												"Sctid, Hierarchy, SemTag, New Inferred Rels, Changed Inferred Rels, Inactivated Inferred Rels, Reactivated, New with New Concept, Total, Concepts Affected",
+												"Sctid, Hierarchy, SemTag, New Axioms, Changed Axioms, Inactivated Axioms, Reactivated, New with New Concept, Total, Concepts Affected",
+												"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New with New Concept, Concepts Affected",
+												"Sctid, Hierarchy, SemTag, Inactivations New / Reactivated, Changed, Inactivations Inactivated, Reactivated, New with New Concept, Ambiguous, Moved Elsewhere, Concept Non Current, Duplicate, Erroneous, Inappropriate, Limited, Outdated, Pending Move, Non Conformance, Not Equivalent, Concepts Affected",
+												"Sctid, Hierarchy, SemTag, Assoc New, Changed, Assoc Inactivated, Reactivated, New with New Concept, Concepts Affected",
+												"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New with New Concept, Total, Concepts Affected"
 												};
 		String[] tabNames = new String[] {	"Concepts",
 											"Descriptions",
@@ -192,6 +192,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 					topLevel = gl.getConcept(prevData.get(c.getConceptId()).hierarchy);
 				} else {
 					//If not, it's been inactivate for a while, nothing more to say
+					warn("Unexpected data state, failure to retrieve top level: " + c);
 					break;
 				}
 			}
@@ -208,16 +209,16 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 			Boolean wasActive = datum==null?null:datum.isActive;
 			analyzeConcept(c, wasSD, wasActive, summaryData[TAB_CONCEPTS]);
 			//Component changes
-			analyzeComponents(isNewConcept, (datum==null?null:datum.descIds), summaryData[TAB_DESCS], c.getDescriptions(ActiveState.BOTH, NOT_TEXT_DEFN));
-			analyzeComponents(isNewConcept, (datum==null?null:datum.descIds), summaryData[TAB_TEXT_DEFN], c.getDescriptions(ActiveState.BOTH, TEXT_DEFN));
-			analyzeComponents(isNewConcept, (datum==null?null:datum.relIds), summaryData[TAB_RELS], c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.BOTH));
-			analyzeComponents(isNewConcept, (datum==null?null:datum.axiomIds), summaryData[TAB_AXIOMS], c.getAxiomEntries());
-			analyzeComponents(isNewConcept, (datum==null?null:datum.inactivationIds), summaryData[TAB_INACT_IND], c.getInactivationIndicatorEntries());
-			analyzeComponents(isNewConcept, (datum==null?null:datum.histAssocIds), summaryData[TAB_HIST], c.getAssociations());
+			analyzeComponents(isNewConcept, (datum==null?null:datum.descIds), (datum==null?null:datum.descIdsInact), summaryData[TAB_DESCS], c.getDescriptions(ActiveState.BOTH, NOT_TEXT_DEFN));
+			analyzeComponents(isNewConcept, (datum==null?null:datum.descIds), (datum==null?null:datum.descIdsInact), summaryData[TAB_TEXT_DEFN], c.getDescriptions(ActiveState.BOTH, TEXT_DEFN));
+			analyzeComponents(isNewConcept, (datum==null?null:datum.relIds), (datum==null?null:datum.relIdsInact), summaryData[TAB_RELS], c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.BOTH));
+			analyzeComponents(isNewConcept, (datum==null?null:datum.axiomIds), (datum==null?null:datum.axiomIdsInact), summaryData[TAB_AXIOMS], c.getAxiomEntries());
+			analyzeComponents(isNewConcept, (datum==null?null:datum.inactivationIds), (datum==null?null:datum.inactivationIdsInact), summaryData[TAB_INACT_IND], c.getInactivationIndicatorEntries());
+			analyzeComponents(isNewConcept, (datum==null?null:datum.histAssocIds), (datum==null?null:datum.histAssocIdsInact), summaryData[TAB_HIST], c.getAssociations());
 			List<LangRefsetEntry> langRefsetEntries = c.getDescriptions().stream()
 					.flatMap(d -> d.getLangRefsetEntries().stream())
 					.collect(Collectors.toList());
-			analyzeComponents(isNewConcept, (datum==null?null:datum.langRefsetIds), summaryData[TAB_LANG], langRefsetEntries);
+			analyzeComponents(isNewConcept, (datum==null?null:datum.langRefsetIds), (datum==null?null:datum.langRefsetIdsInact), summaryData[TAB_LANG], langRefsetEntries);
 		}
 	}
 	
@@ -251,18 +252,24 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		counts[IDX_TOTAL]++;
 	}
 
-	private void analyzeComponents(boolean isNewConcept, List<String> ids, int[] counts, List<? extends Component> components) throws TermServerScriptException {
+	private void analyzeComponents(boolean isNewConcept, List<String> ids, List<String> idsInactive, int[] counts, List<? extends Component> components) throws TermServerScriptException {
 		//If we have no previous data, then the concept is new
-		boolean conceptIsNew = (ids == null);
+		boolean conceptIsNew = (ids == null && idsInactive == null);
 		boolean conceptAffected = false;
 		for (Component c : components) {
 			//Was the description present in the previous data?
 			boolean existedPreviously = false;
+			boolean existedPreviouslyInactive = false;
 			if (!conceptIsNew) {
 				existedPreviously = ids.contains(c.getId());
+				existedPreviouslyInactive = idsInactive.contains(c.getId());
 			}
 			if (c.isActive()) {
-				if (!existedPreviously) {
+				if (existedPreviouslyInactive) {
+					counts[IDX_REACTIVATED]++;
+					debugToFile(c, "Reactivated");
+					conceptAffected = true;
+				} else if(!existedPreviously) {
 					counts[IDX_NEW]++;
 					debugToFile(c, "New");
 					conceptAffected = true;
@@ -285,7 +292,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 					conceptAffected = true;
 				}
 			} else if (existedPreviously) {
-				//We only stored active IDs so if we had it previously, it has since become inactive
+				//Existed previously active and is now inactive, mark as inactivated
 				counts[IDX_INACT]++;
 				debugToFile(c, "Inactivated");
 				conceptAffected = true;
@@ -363,7 +370,8 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 	private void outputResults() throws TermServerScriptException {
 		Concept totalConcept = new Concept("","Total");
 		int[][] totals = new int[COMPONENT_COUNT][DATA_WIDTH];
-		for (Concept hierarchy : topLevelHierarchies) {
+		//for (Concept hierarchy : topLevelHierarchies) {
+		for (Concept hierarchy : summaryDataMap.keySet()) {
 			int[][] summaryData = summaryDataMap.get(hierarchy);
 			for (int idxTab = 0; idxTab < COMPONENT_COUNT; idxTab++) {
 				report(idxTab, hierarchy, summaryData[idxTab]);
@@ -389,17 +397,17 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 
 		sheetFieldsByIndex.put(TAB_CONCEPTS, new LinkedList(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_NEW, IDX_NEW_P, IDX_NEW_SD, IDX_TOTAL)));
 
-		Arrays.asList(TAB_DESCS, TAB_AXIOMS, TAB_RELS, TAB_TEXT_DEFN).stream().forEach(index -> {
-			sheetFieldsByIndex.put(index, new LinkedList(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_NEW_NEW, IDX_TOTAL, IDX_CONCEPTS_AFFECTED)));
+		Arrays.asList(TAB_DESCS, TAB_RELS, TAB_AXIOMS, TAB_TEXT_DEFN).stream().forEach(index -> {
+			sheetFieldsByIndex.put(index, new LinkedList(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_NEW, IDX_TOTAL, IDX_CONCEPTS_AFFECTED)));
 		});
 
-		sheetFieldsByIndex.put(TAB_INACT_IND, new LinkedList(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_NEW_NEW, IDX_INACT_AMBIGUOUS,
+		sheetFieldsByIndex.put(TAB_INACT_IND, new LinkedList(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_NEW, IDX_INACT_AMBIGUOUS,
 				IDX_INACT_MOVED_ELSEWHERE, IDX_INACT_CONCEPT_NON_CURRENT, IDX_INACT_DUPLICATE, IDX_INACT_ERRONEOUS,
 				IDX_INACT_INAPPROPRIATE, IDX_INACT_LIMITED, IDX_INACT_OUTDATED, IDX_INACT_PENDING_MOVE, IDX_INACT_NON_CONFORMANCE,
 				IDX_INACT_NOT_EQUIVALENT, IDX_CONCEPTS_AFFECTED)));
 
 		Arrays.asList(TAB_LANG, TAB_HIST).stream().forEach(index -> {
-			sheetFieldsByIndex.put(index, new LinkedList((Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_NEW_NEW, IDX_CONCEPTS_AFFECTED))));
+			sheetFieldsByIndex.put(index, new LinkedList((Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_NEW, IDX_CONCEPTS_AFFECTED))));
 		});
 
 		return sheetFieldsByIndex;
@@ -485,6 +493,12 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		List<String> langRefsetIds;
 		List<String> inactivationIds;
 		List<String> histAssocIds;
+		List<String> relIdsInact;
+		List<String> descIdsInact;
+		List<String> axiomIdsInact;
+		List<String> langRefsetIdsInact;
+		List<String> inactivationIdsInact;
+		List<String> histAssocIdsInact;
 		
 		@Override
 		public int hashCode () {
@@ -501,22 +515,29 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 	}
 	
 	Datum fromLine (String line) {
+		int idx = 0;
 		Datum datum = new Datum();
 		String[] lineItems = line.split(TAB, -1);
-		datum.conceptId = Long.parseLong(lineItems[0]);
-		datum.isActive = lineItems[1].equals("Y");
-		datum.isSD = lineItems[2].equals("SD");
-		datum.hierarchy = lineItems[3];
-		datum.isIP = lineItems[4].equals("Y");
-		datum.hasSdAncestor = lineItems[5].equals("Y");
-		datum.hasSdDescendant = lineItems[6].equals("Y");
+		datum.conceptId = Long.parseLong(lineItems[idx]);
+		datum.isActive = lineItems[++idx].equals("Y");
+		datum.isSD = lineItems[++idx].equals("SD");
+		datum.hierarchy = lineItems[++idx];
+		datum.isIP = lineItems[++idx].equals("Y");
+		datum.hasSdAncestor = lineItems[++idx].equals("Y");
+		datum.hasSdDescendant = lineItems[++idx].equals("Y");
 		datum.hashCode = Long.hashCode(datum.conceptId);
-		datum.relIds = Arrays.asList(lineItems[7].split(","));
-		datum.descIds = Arrays.asList(lineItems[8].split(","));
-		datum.axiomIds = Arrays.asList(lineItems[9].split(","));
-		datum.langRefsetIds = Arrays.asList(lineItems[10].split(","));
-		datum.inactivationIds = Arrays.asList(lineItems[11].split(","));
-		datum.histAssocIds = Arrays.asList(lineItems[12].split(","));
+		datum.relIds = Arrays.asList(lineItems[++idx].split(","));
+		datum.relIdsInact = Arrays.asList(lineItems[++idx].split(","));
+		datum.descIds = Arrays.asList(lineItems[++idx].split(","));
+		datum.descIdsInact = Arrays.asList(lineItems[++idx].split(","));
+		datum.axiomIds = Arrays.asList(lineItems[++idx].split(","));
+		datum.axiomIdsInact = Arrays.asList(lineItems[++idx].split(","));
+		datum.langRefsetIds = Arrays.asList(lineItems[++idx].split(","));
+		datum.langRefsetIdsInact = Arrays.asList(lineItems[++idx].split(","));
+		datum.inactivationIds = Arrays.asList(lineItems[++idx].split(","));
+		datum.inactivationIdsInact = Arrays.asList(lineItems[++idx].split(","));
+		datum.histAssocIds = Arrays.asList(lineItems[++idx].split(","));
+		datum.histAssocIdsInact = Arrays.asList(lineItems[++idx].split(","));
 		return datum;
 	}
 	

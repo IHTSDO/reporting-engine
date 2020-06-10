@@ -1103,7 +1103,7 @@ public class GraphLoader implements RF2Constants {
 				return d.getEffectiveTime();
 			}
 		}
-		return "UNKNOWN";
+		return "UNKNOWN EFFECTIVE TIME";
 	}
 
 }
