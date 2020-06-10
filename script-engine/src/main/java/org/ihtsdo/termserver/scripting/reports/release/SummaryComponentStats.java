@@ -370,8 +370,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 	private void outputResults() throws TermServerScriptException {
 		Concept totalConcept = new Concept("","Total");
 		int[][] totals = new int[COMPONENT_COUNT][DATA_WIDTH];
-		//for (Concept hierarchy : topLevelHierarchies) {
-		for (Concept hierarchy : summaryDataMap.keySet()) {
+		for (Concept hierarchy : topLevelHierarchies) {
 			int[][] summaryData = summaryDataMap.get(hierarchy);
 			for (int idxTab = 0; idxTab < COMPONENT_COUNT; idxTab++) {
 				report(idxTab, hierarchy, summaryData[idxTab]);
@@ -461,7 +460,11 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 	}
 	
 	private Concept getHierarchy(TransitiveClosure tc, Concept c) throws TermServerScriptException {
-		if (!c.isActive() || c.equals(ROOT_CONCEPT) || c.getDepth() == NOT_SET) {
+		if (c.equals(ROOT_CONCEPT)) {
+			return c;
+		}
+
+		if (!c.isActive() || c.getDepth() == NOT_SET) {
 			return null;  //Hopefully the previous release will know
 		} 
 		
