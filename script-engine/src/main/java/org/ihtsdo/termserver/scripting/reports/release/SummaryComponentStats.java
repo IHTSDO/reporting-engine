@@ -4,6 +4,7 @@ import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import org.apache.commons.io.FileUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Project;
@@ -36,7 +37,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 	String complexName;
 	static final int TAB_CONCEPTS = 0, TAB_DESCS = 1, TAB_AXIOMS = 2, TAB_RELS = 3,
 			TAB_LANG = 4, TAB_INACT_IND = 5, TAB_HIST = 6, TAB_TEXT_DEFN = 7;
-	static final int COMPONENT_COUNT = 7;
+	static final int COMPONENT_COUNT = 8;
 	static final int DATA_WIDTH = 20;  //New, Changed, Inactivated, Reactivated, New with New Concept, extra1, extra2, Total, next 11 fields are the inactivation reason, concept affected
 	static final int IDX_NEW = 0, IDX_CHANGED = 1, IDX_INACT = 2, IDX_REACTIVATED = 3, IDX_NEW_NEW = 4, IDX_NEW_P = 5, IDX_NEW_SD = 6,
 			IDX_TOTAL = 7, IDX_INACT_AMBIGUOUS = 8,  IDX_INACT_MOVED_ELSEWHERE = 9, IDX_INACT_CONCEPT_NON_CURRENT = 10,
@@ -44,15 +45,19 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 			IDX_INACT_OUTDATED = 15, IDX_INACT_PENDING_MOVE = 16, IDX_INACT_NON_CONFORMANCE = 17,
 			IDX_INACT_NOT_EQUIVALENT = 18, IDX_CONCEPTS_AFFECTED = 19;
 	static Map<Integer, List<Integer>> sheetFieldsByIndex = getSheetFieldsMap();
-
-	List<Concept> topLevelHierarchies; 
+	static List<DescriptionType> TEXT_DEFN;
+	static List<DescriptionType> NOT_TEXT_DEFN;
+	List<Concept> topLevelHierarchies;
+	File debugFile;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		//params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20200309T120000Z.zip");
-		//params.put(THIS_RELEASE, "xSnomedCT_InternationalRF2_ALPHA_20200731T120000Z.zip");
+		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20200309T120000Z.zip");
+		params.put(THIS_RELEASE, "xSnomedCT_InternationalRF2_ALPHA_20200731T120000Z.zip");
 		params.put(REPORT_OUTPUT_TYPES, ReportOutputType.GOOGLE.name());
 		params.put(REPORT_FORMAT_TYPE, ReportFormatType.CSV.name());
+		//params.put(REPORT_OUTPUT_TYPES, ReportOutputType.S3.name());
+		//params.put(REPORT_FORMAT_TYPE, ReportFormatType.JSON.name());
 		TermServerReport.run(SummaryComponentStats.class, args, params);
 	}
 
@@ -82,6 +87,14 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		prevData = new HashMap<>();
 		summaryDataMap = new HashMap<>();
 		manyTabWideOutput = true;
+		
+		TEXT_DEFN = new ArrayList<>();
+		TEXT_DEFN.add(DescriptionType.TEXT_DEFINITION);
+		
+		NOT_TEXT_DEFN = new ArrayList<>();
+		NOT_TEXT_DEFN.add(DescriptionType.FSN);
+		NOT_TEXT_DEFN.add(DescriptionType.SYNONYM);
+		
 		super.init(run);
 	}
 
@@ -97,6 +110,10 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		if (getJobRun().getParamValue(THIS_RELEASE) != null) {
 			compareTwoSnapshots = true;
 			projectKey = getJobRun().getParamValue(THIS_RELEASE);
+			//If this release has been specified, the previous must also be, explicitly
+			if (StringUtils.isEmpty(getJobRun().getParamValue(PREV_RELEASE))) {
+				throw new TermServerScriptException("Previous release must be specified if current release is");
+			}
 		}
 		getProject().setKey(prevRelease);
 		getArchiveManager().setLoadEditionArchive(true);
@@ -127,7 +144,8 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 												"Sctid, Hierarchy, SemTag, New Axioms, Changed Axioms, Inactivated Axioms, New with New Concept, Total, Concepts Affected",
 												"Sctid, Hierarchy, SemTag, New / Reactivated, Changed, Inactivated, New with New Concept, Concepts Affected",
 												"Sctid, Hierarchy, SemTag, Inactivations New / Reactivated, Changed, Inactivations Inactivated, New with New Concept, Ambiguous, Moved Elsewhere, Concept Non Current, Duplicate, Erroneous, Inappropriate, Limited, Outdated, Pending Move, Non Conformance, Not Equivalent, Concepts Affected",
-												"Sctid, Hierarchy, SemTag, Assoc New / Reactivated, Changed, Assoc Inactivated, New with New Concept, Concepts Affected"
+												"Sctid, Hierarchy, SemTag, Assoc New / Reactivated, Changed, Assoc Inactivated, New with New Concept, Concepts Affected",
+												"Sctid, Hierarchy, SemTag, New / Reactivated, Changed, Inactivated, New with New Concept, Total, Concepts Affected"
 												};
 		String[] tabNames = new String[] {	"Concepts",
 											"Descriptions",
@@ -135,7 +153,8 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 											"Axioms",
 											"LangRefSet",
 											"Inactivations",
-											"Hist Assoc"};
+											"Hist Assoc",
+											"Text Defn"};
 		topLevelHierarchies = new ArrayList<Concept>(ROOT_CONCEPT.getChildren(CharacteristicType.INFERRED_RELATIONSHIP));
 		topLevelHierarchies.sort(Comparator.comparing(Concept::getFsn));
 		super.postInit(tabNames, columnHeadings, false);
@@ -162,6 +181,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 
 	private void analyzeConcepts() throws TermServerScriptException {
 		TransitiveClosure tc = gl.generateTransativeClosure();
+		info ("Analysing concepts");
 		Concept topLevel;
 		for (Concept c : gl.getAllConcepts()) {
 			if (c.isActive()) {	
@@ -188,7 +208,8 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 			Boolean wasActive = datum==null?null:datum.isActive;
 			analyzeConcept(c, wasSD, wasActive, summaryData[TAB_CONCEPTS]);
 			//Component changes
-			analyzeComponents(isNewConcept, (datum==null?null:datum.descIds), summaryData[TAB_DESCS], c.getDescriptions());
+			analyzeComponents(isNewConcept, (datum==null?null:datum.descIds), summaryData[TAB_DESCS], c.getDescriptions(ActiveState.BOTH, NOT_TEXT_DEFN));
+			analyzeComponents(isNewConcept, (datum==null?null:datum.descIds), summaryData[TAB_TEXT_DEFN], c.getDescriptions(ActiveState.BOTH, TEXT_DEFN));
 			analyzeComponents(isNewConcept, (datum==null?null:datum.relIds), summaryData[TAB_RELS], c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.BOTH));
 			analyzeComponents(isNewConcept, (datum==null?null:datum.axiomIds), summaryData[TAB_AXIOMS], c.getAxiomEntries());
 			analyzeComponents(isNewConcept, (datum==null?null:datum.inactivationIds), summaryData[TAB_INACT_IND], c.getInactivationIndicatorEntries());
@@ -230,7 +251,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		counts[IDX_TOTAL]++;
 	}
 
-	private void analyzeComponents(boolean isNewConcept, List<String> ids, int[] counts, List<? extends Component> components) {
+	private void analyzeComponents(boolean isNewConcept, List<String> ids, int[] counts, List<? extends Component> components) throws TermServerScriptException {
 		//If we have no previous data, then the concept is new
 		boolean conceptIsNew = (ids == null);
 		boolean conceptAffected = false;
@@ -243,12 +264,14 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 			if (c.isActive()) {
 				if (!existedPreviously) {
 					counts[IDX_NEW]++;
+					debugToFile(c, "New");
 					conceptAffected = true;
 					if (isNewConcept) {
 						//This component is new because it was created as part of a new concept
 						//so it's not been 'added' as such.  Well, we might want to count additions
 						//to existing concepts separately.
 						counts[IDX_NEW_NEW]++;
+						debugToFile(c, "NewNew");
 					}
 					// find out the reason
 					if (c instanceof InactivationIndicatorEntry) {
@@ -258,16 +281,44 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 				} else if (StringUtils.isEmpty(c.getEffectiveTime()) || c.getEffectiveTime().equals(thisEffectiveTime)) {
 					//Did it change in this release?
 					counts[IDX_CHANGED]++;
+					debugToFile(c, "Changed");
 					conceptAffected = true;
 				}
 			} else if (existedPreviously) {
+				//We only stored active IDs so if we had it previously, it has since become inactive
 				counts[IDX_INACT]++;
+				debugToFile(c, "Inactivated");
 				conceptAffected = true;
 			}
 			counts[IDX_TOTAL]++;
+			//debugToFile(c, "Total");
 		}
 		if (conceptAffected) {
 			counts[IDX_CONCEPTS_AFFECTED]++;
+		}
+	}
+
+	private void debugToFile(Component c, String statType) throws TermServerScriptException {
+		if (!(c instanceof Description)) {
+			return;
+		} else {
+			Description d =  (Description)c;
+			if (d.getType().equals(DescriptionType.TEXT_DEFINITION)) {
+				return;
+			}
+		}
+		
+		try {
+			//If this is our first write, do not append.
+			Boolean append = true;
+			if (debugFile == null) {
+				debugFile = new File("summary_component_debug.txt");
+				append = false;
+			}
+			String line = c.getId() + TAB + statType + "\n";
+			FileUtils.writeStringToFile(debugFile, line, append);
+		} catch (IOException e) {
+			throw new TermServerScriptException(e);
 		}
 	}
 
@@ -338,7 +389,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 
 		sheetFieldsByIndex.put(TAB_CONCEPTS, new LinkedList(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_NEW, IDX_NEW_P, IDX_NEW_SD, IDX_TOTAL)));
 
-		Arrays.asList(TAB_DESCS, TAB_AXIOMS, TAB_RELS).stream().forEach(index -> {
+		Arrays.asList(TAB_DESCS, TAB_AXIOMS, TAB_RELS, TAB_TEXT_DEFN).stream().forEach(index -> {
 			sheetFieldsByIndex.put(index, new LinkedList(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_NEW_NEW, IDX_TOTAL, IDX_CONCEPTS_AFFECTED)));
 		});
 
