@@ -66,12 +66,15 @@ public class EclCache implements RF2Constants {
 		}
 		
 		ecl = ecl.trim();
-		//Have we been passed some partial ecl that begins and ends with a bracket?
-		if (ecl.startsWith("(") && ecl.endsWith(")")) {
-			ecl = ecl.substring(1, ecl.length() -1).trim();
-		}
 		String machineEcl = SnomedUtils.makeMachineReadable(ecl);
 		Collection<Concept> allConcepts;
+		
+		//Have we been passed some partial ecl that begins and ends with a bracket?
+		//However if we contain OR or MINUS then this is not safe to do
+		if ( (ecl.startsWith("(") && ecl.endsWith(")")) && 
+				!(ecl.contains("AND") || ecl.contains("OR") || ecl.contains("MINUS") )) {
+			ecl = ecl.substring(1, ecl.length() -1).trim();
+		}
 		
 		//Have we already recovered this ECL?
 		if (expansionCache.containsKey(ecl)) {
