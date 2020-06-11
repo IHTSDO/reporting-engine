@@ -25,6 +25,7 @@ public class InactivatedConcepts extends TermServerReport implements ReportClass
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put(RELEASE, "dev_xSnomedCT_InternationalRF2_PREALPHA_20200731T120000Z.zip");
+		params.put(SEMTAG_FILTER_PARAM, "(procedure)");
 		TermServerReport.run(InactivatedConcepts.class, args, params);
 	}
 	
@@ -102,8 +103,8 @@ public class InactivatedConcepts extends TermServerReport implements ReportClass
 	@Override
 	protected void loadProjectSnapshot(boolean fsnOnly) throws TermServerScriptException, InterruptedException, IOException {
 		prevRelease = getJobRun().getParamValue(RELEASE);
-		info ("Loading previously published package " + prevRelease);
-		if (prevRelease != null) {
+		if (!StringUtils.isEmpty(prevRelease)) {
+			info ("Loading previously published package: " + prevRelease);
 			getProject().setKey(prevRelease);
 			super.loadProjectSnapshot(fsnOnly);
 			thisEffectiveTime = gl.getCurrentEffectiveTime();
