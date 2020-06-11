@@ -256,49 +256,49 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		//If we have no previous data, then the concept is new
 		boolean conceptIsNew = (ids == null && idsInactive == null);
 		boolean conceptAffected = false;
-		for (Component c : components) {
+		for (Component component : components) {
 			//Was the description present in the previous data?
-			boolean existedPreviously = false;
-			boolean existedPreviouslyInactive = false;
+			boolean previouslyExistedActive = false;
+			boolean previouslyExistedInactive = false;
 			if (!conceptIsNew) {
-				existedPreviously = ids.contains(c.getId());
-				existedPreviouslyInactive = idsInactive.contains(c.getId());
+				previouslyExistedActive = ids.contains(component.getId());
+				previouslyExistedInactive = idsInactive.contains(component.getId());
 			}
-			if (c.isActive()) {
-				if (existedPreviouslyInactive) {
+			if (component.isActive()) {
+				if (previouslyExistedInactive) {
 					counts[IDX_REACTIVATED]++;
-					debugToFile(c, "Reactivated");
+					debugToFile(component, "Reactivated");
 					conceptAffected = true;
-				} else if(!existedPreviously) {
+				} else if(!previouslyExistedActive) {
 					counts[IDX_NEW]++;
-					debugToFile(c, "New");
+					debugToFile(component, "New");
 					conceptAffected = true;
 					if (isNewConcept) {
 						//This component is new because it was created as part of a new concept
 						//so it's not been 'added' as such.  Well, we might want to count additions
 						//to existing concepts separately.
 						counts[IDX_NEW_NEW]++;
-						debugToFile(c, "NewNew");
+						debugToFile(component, "NewNew");
 					}
 					// find out the reason
-					if (c instanceof InactivationIndicatorEntry) {
-						InactivationIndicatorEntry inactivationIndicatorEntry = (InactivationIndicatorEntry) c;
+					if (component instanceof InactivationIndicatorEntry) {
+						InactivationIndicatorEntry inactivationIndicatorEntry = (InactivationIndicatorEntry) component;
 						incrementInactivationReason (counts, inactivationIndicatorEntry.getInactivationReasonId());
 					}
-				} else if (StringUtils.isEmpty(c.getEffectiveTime()) || c.getEffectiveTime().equals(thisEffectiveTime)) {
+				} else if (StringUtils.isEmpty(component.getEffectiveTime()) || component.getEffectiveTime().equals(thisEffectiveTime)) {
 					//Did it change in this release?
 					counts[IDX_CHANGED]++;
-					debugToFile(c, "Changed");
+					debugToFile(component, "Changed");
 					conceptAffected = true;
 				}
-			} else if (existedPreviously) {
+			} else if (previouslyExistedActive) {
 				//Existed previously active and is now inactive, mark as inactivated
 				counts[IDX_INACT]++;
-				debugToFile(c, "Inactivated");
+				debugToFile(component, "Inactivated");
 				conceptAffected = true;
 			}
 			counts[IDX_TOTAL]++;
-			//debugToFile(c, "Total");
+			//debugToFile(component, "Total");
 		}
 		if (conceptAffected) {
 			counts[IDX_CONCEPTS_AFFECTED]++;

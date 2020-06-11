@@ -192,8 +192,8 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 		.stream()
 		.map(i -> i.getId())
 		.collect(Collectors.joining(","));
-		
-		results[ACTIVE] = c.getInactivationIndicatorEntries(ActiveState.INACTIVE)
+
+		results[INACTIVE] = c.getInactivationIndicatorEntries(ActiveState.INACTIVE)
 		.stream()
 		.map(i -> i.getId())
 		.collect(Collectors.joining(","));
