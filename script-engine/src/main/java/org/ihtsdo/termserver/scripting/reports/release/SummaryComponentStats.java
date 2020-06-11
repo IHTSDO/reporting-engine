@@ -26,7 +26,11 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 	
 	public static final String PREV_RELEASE = "Previous Release";
 	public static final String THIS_RELEASE = "This Release";
-	
+
+	public static final Concept UNKNOWN_CONCEPT = new Concept("54690008", "Unknown (origin) (qualifier value)");
+
+	public static final boolean debugToFile = false;
+
 	String prevRelease;
 	String projectKey;
 	Map<String, Datum> prevData;
@@ -156,6 +160,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 											"Hist Assoc",
 											"Text Defn"};
 		topLevelHierarchies = new ArrayList<Concept>(ROOT_CONCEPT.getChildren(CharacteristicType.INFERRED_RELATIONSHIP));
+		topLevelHierarchies.add(UNKNOWN_CONCEPT); // Add this a we might not always be able to get the top level hierarchy
 		topLevelHierarchies.sort(Comparator.comparing(Concept::getFsn));
 		super.postInit(tabNames, columnHeadings, false);
 	}
@@ -306,6 +311,12 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 	}
 
 	private void debugToFile(Component c, String statType) throws TermServerScriptException {
+
+		// Only debug if we enable it (for testing really).
+		if (!debugToFile) {
+			return;
+		}
+
 		if (!(c instanceof Description)) {
 			return;
 		} else {
@@ -444,7 +455,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 					Datum datum = fromLine(line);
 					
 					if (datum.hierarchy.isEmpty()){
-						datum.hierarchy = "54690008 |Unknown (origin) (qualifier value)|";
+						datum.hierarchy = UNKNOWN_CONCEPT.getConceptId();
 					}
 					prevData.put(Long.toString(datum.conceptId), datum);
 				}
