@@ -219,7 +219,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 			analyzeComponents(isNewConcept, (datum==null?null:datum.relIds), (datum==null?null:datum.relIdsInact), summaryData[TAB_RELS], c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.BOTH));
 			analyzeComponents(isNewConcept, (datum==null?null:datum.axiomIds), (datum==null?null:datum.axiomIdsInact), summaryData[TAB_AXIOMS], c.getAxiomEntries());
 			analyzeComponents(isNewConcept, (datum==null?null:datum.inactivationIds), (datum==null?null:datum.inactivationIdsInact), summaryData[TAB_INACT_IND], c.getInactivationIndicatorEntries());
-			analyzeComponents(isNewConcept, (datum==null?null:datum.histAssocIds), (datum==null?null:datum.histAssocIdsInact), summaryData[TAB_HIST], c.getAssociations());
+			analyzeComponents(isNewConcept, (datum==null?null:datum.histAssocIds), (datum==null?null:datum.histAssocIdsInact), summaryData[TAB_HIST], c.getAssociations(ActiveState.BOTH, true));
 			List<LangRefsetEntry> langRefsetEntries = c.getDescriptions().stream()
 					.flatMap(d -> d.getLangRefsetEntries().stream())
 					.collect(Collectors.toList());
@@ -453,8 +453,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 				while ((line = br.readLine()) != null) {
 					lineNumber++;
 					Datum datum = fromLine(line);
-					
-					if (datum.hierarchy.isEmpty()){
+					if (StringUtils.isEmpty(datum.hierarchy)){
 						datum.hierarchy = UNKNOWN_CONCEPT.getConceptId();
 					}
 					prevData.put(Long.toString(datum.conceptId), datum);

@@ -1021,7 +1021,14 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 
 	public List<AssociationEntry> getAssociations(ActiveState activeState, boolean historicalAssociationsOnly) {
 		if (activeState.equals(ActiveState.BOTH)) {
-			return getAssociations();
+			List<AssociationEntry> selectedAssociations = new ArrayList<AssociationEntry>();
+			for (AssociationEntry h : getAssociations()) {
+				//TODO Find a better way of working out if an association is a historical association
+				if ((!historicalAssociationsOnly ||	h.getRefsetId().startsWith("9000000"))) {
+					selectedAssociations.add(h);
+				}
+			}
+			return selectedAssociations;
 		} else {
 			boolean isActive = activeState.equals(ActiveState.ACTIVE);
 			List<AssociationEntry> selectedAssociations = new ArrayList<AssociationEntry>();
