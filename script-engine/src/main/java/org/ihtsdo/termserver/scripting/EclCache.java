@@ -91,32 +91,15 @@ public class EclCache implements RF2Constants {
 				TermServerScript.debug ("Recovering cached " + cached.size() + " concepts matching '" + ecl +"'");
 			}
 			return cached;
-		} else if (ecl.contains(" MINUS ") || (ecl.contains(" OR ") && !machineEcl.contains("(") && !machineEcl.contains(" AND "))) {
-			//Can this ecl be broken down into cheaper, requestable chunks?  
-			if (ecl.contains(" MINUS ")) {
-				String[] minusStatements = ecl.split(" MINUS ");
-				//The first one we taken and the all subsequent calls are subtracted
-				allConcepts = new ArrayList<>();
-				boolean isFirst = true;
-				for (String eclPart : minusStatements) {
-					if (isFirst) {
-						//We need a copy of the list here because we're going to remove items from it!
-						allConcepts = new ArrayList<>(findConcepts(branch, eclPart, expectLargeResults, useLocalStoreIfSimple));
-						isFirst = false;
-					} else {
-						allConcepts.removeAll(findConcepts(branch, eclPart, expectLargeResults, useLocalStoreIfSimple));
-					}
-				}
-			} else {
-				//TODO Create class that holds these collections and can 
-				//iterate through them without copying the objects
-				Collection<Concept> combinedSet = new HashSet<>();
-				for (String eclFragment : ecl.split(" OR ")) {
-					TermServerScript.debug("Combining request for: " + eclFragment);
-					combinedSet.addAll(findConcepts(branch, eclFragment, expectLargeResults, useLocalStoreIfSimple));
-				}
-				allConcepts = combinedSet;
+		} else if (machineEcl.contains(" OR ") && !machineEcl.contains("(")) {
+			//TODO Create class that holds these collections and can 
+			//iterate through them without copying the objects
+			Collection<Concept> combinedSet = new HashSet<>();
+			for (String eclFragment : ecl.split(" OR ")) {
+				TermServerScript.debug("Combining request for: " + eclFragment);
+				combinedSet.addAll(findConcepts(branch, eclFragment, expectLargeResults, useLocalStoreIfSimple));
 			}
+			allConcepts = combinedSet;
 		} else {
 			if (useLocalStoreIfSimple && ecl.equals("*")) {
 				allConcepts = gl.getAllConcepts();
@@ -169,7 +152,7 @@ public class EclCache implements RF2Constants {
 			//Need to strip out all FSNs that might contain odd characters
 			ecl = SnomedUtils.makeMachineReadable(ecl);
 			if (ecl.contains("{") || ecl.contains(",") || ecl.contains("^") || ecl.contains("(") ||
-					ecl.contains(" AND ") || ecl.contains(":")) {
+					ecl.contains(" MINUS ") || ecl.contains(" AND ") || ecl.contains(":")) {
 				isSimple = false;
 			}
 		}
