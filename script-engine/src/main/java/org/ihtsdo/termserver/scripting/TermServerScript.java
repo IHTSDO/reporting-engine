@@ -294,7 +294,7 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 		
 		if (!loadingRelease) {
-			info("Full path for projected determined to be: " + project.getBranchPath());
+			info("Full path for project " + project.getKey() + " determined to be: " + project.getBranchPath() );
 		}
 		
 		// Configure the type(s) and locations(s) for processing report output.
@@ -402,7 +402,8 @@ public abstract class TermServerScript implements RF2Constants {
 				throw new TermServerScriptException("Failed to recover project " + projectName, e);
 			}
 		}
-
+		
+		info ("Project Key: " + project.getKey());
 	}
 	
 	private String getEnv(String terminologyServerUrl) throws TermServerScriptException {
