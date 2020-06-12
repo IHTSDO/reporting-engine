@@ -14,6 +14,7 @@ import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 
 /**
  * INFRA-5176 Add an attribute to a given ECL substrate where required
+ * INFRA-5236 Add DueTo to Abrasions
  */
 public class AddAttributeIfRequired extends BatchFix {
 	
@@ -42,8 +43,12 @@ public class AddAttributeIfRequired extends BatchFix {
 	}
 
 	private void postLoadInit() throws TermServerScriptException {
-		//INFRA-5176
+		/*INFRA-5176
 		subHierarchyECL = "<< 312608009 |Laceration - injury (disorder)| MINUS << 262541004 |Superficial laceration (disorder)|";
+		relTemplate = new RelationshipTemplate(DUE_TO,  gl.getConcept("773760007 |Traumatic event (event)|"));
+		*/
+		//INFRA-5236
+		subHierarchyECL = "<<399963005 |Abrasion (disorder)|";
 		relTemplate = new RelationshipTemplate(DUE_TO,  gl.getConcept("773760007 |Traumatic event (event)|"));
 		
 		exclusions = new HashSet<>();
