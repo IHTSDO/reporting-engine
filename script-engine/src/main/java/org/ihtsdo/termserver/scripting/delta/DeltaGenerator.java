@@ -10,6 +10,7 @@ import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component.ComponentType;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.AxiomUtils;
 import org.ihtsdo.termserver.scripting.IdGenerator;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -160,7 +161,11 @@ public abstract class DeltaGenerator extends TermServerScript {
 	}
 	
 	public void finish() {
-		super.finish();
+		try {
+			super.finish();
+		} catch (Exception e) {
+			error("Failed to flush files.", e);
+		}
 		try {
 			if (conIdGenerator != null) {
 				info(conIdGenerator.finish());
@@ -288,10 +293,23 @@ public abstract class DeltaGenerator extends TermServerScript {
 			outputRF2(d);  //Will output langrefset in turn
 		}
 		
-		for (Relationship r : c.getRelationships()) {
-			//Don't output relationships that are part of an axiom
-			if (!r.fromAxiom()) {
-				outputRF2(r);
+		//Do we have Stated Relationships that need to be converted to axioms?
+		//We'll try merging those with any existing axioms.
+		if (hasDirtyNotFromAxiomRelationships(c)) {
+			convertStatedRelationshipsToAxioms(c, true);
+			for (AxiomEntry a : AxiomUtils.convertClassAxiomsToAxiomEntries(c)) {
+				//If we're moving relationships into a new mudule but not the concept, we 
+				//might have a wrong module id here
+				a.setModuleId(moduleId);
+				a.setDirty();
+				c.getAxiomEntries().add(a);
+			}
+		} else {
+			for (Relationship r : c.getRelationships()) {
+				//Don't output relationships that are part of an axiom
+				if (!r.fromAxiom()) {
+					outputRF2(r);
+				}
 			}
 		}
 		
@@ -309,6 +327,15 @@ public abstract class DeltaGenerator extends TermServerScript {
 	}
 
 	
+	private boolean hasDirtyNotFromAxiomRelationships(Concept c) {
+		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
+			if (r.isActive() && !r.fromAxiom() && r.isDirty()) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	protected void outputRF2(Concept c) throws TermServerScriptException {
 		//By default, check for modified descriptions and relationships 
 		//even if the concept has not been modified.

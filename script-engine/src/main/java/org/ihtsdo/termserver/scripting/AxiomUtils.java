@@ -9,9 +9,17 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Axiom;
 import org.ihtsdo.termserver.scripting.domain.AxiomEntry;
 import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants;
+import org.snomed.otf.owltoolkit.conversion.AxiomRelationshipConversionService;
 import org.snomed.otf.owltoolkit.domain.AxiomRepresentation;
 
-public class AxiomUtils {
+/**
+ * TODO Enhance GraphLoader to read in MRCM to determine never grouped attributes
+ * to pass in to axiomService constructor
+ */
+public class AxiomUtils implements RF2Constants {
+	
+	static AxiomRelationshipConversionService axiomService = new AxiomRelationshipConversionService (new HashSet<>());
 
 	public static List<org.ihtsdo.termserver.scripting.domain.Relationship> getRHSRelationships(Concept c, AxiomRepresentation axiom) throws TermServerScriptException {
 		List<org.ihtsdo.termserver.scripting.domain.Relationship> relationships = new ArrayList<>();
@@ -78,6 +86,46 @@ public class AxiomUtils {
 			}
 		}
 		return relationships;
+	}
+	
+	static public Map<Integer, List<Relationship>> convertRelationshipsToMap(List<org.ihtsdo.termserver.scripting.domain.Relationship> relationships) {
+		Map<Integer, List<Relationship>> relationshipMap = new HashMap<>();
+		for (org.ihtsdo.termserver.scripting.domain.Relationship r : relationships) {
+			List<Relationship> group = relationshipMap.get(r.getGroupId());
+			if (group == null) {
+				group = new ArrayList<>();
+				relationshipMap.put(r.getGroupId(), group);
+			}
+			group.add(toRelationship(r));
+		}
+		return relationshipMap;
+	}
+
+	private static Relationship toRelationship(org.ihtsdo.termserver.scripting.domain.Relationship r) {
+		return new Relationship(Long.parseLong(r.getType().getId()), 
+				Long.parseLong(r.getTarget().getId()));
+	}
+
+	public static List<AxiomEntry> convertClassAxiomsToAxiomEntries(Concept c) {
+		List<AxiomEntry> axiomEntries = new ArrayList<>();
+		for (Axiom axiom : c.getClassAxioms()) {
+			AxiomEntry a = new AxiomEntry();
+			a.setId(UUID.randomUUID().toString());
+			a.setEffectiveTime(axiom.getEffectiveTime());
+			a.setActive(true);
+			a.setModuleId(c.getModuleId());
+			a.setReferencedComponentId(c.getId());
+			a.setRefsetId(SCTID_OWL_AXIOM_REFSET);
+			AxiomRepresentation axiomRep = new AxiomRepresentation();
+			axiomRep.setLeftHandSideNamedConcept(Long.parseLong(c.getConceptId()));
+			axiomRep.setRightHandSideRelationships(convertRelationshipsToMap(axiom.getRelationships()));
+			axiomRep.setPrimitive(c.getDefinitionStatus().equals(DefinitionStatus.PRIMITIVE));
+			String owl = axiomService.convertRelationshipsToAxiom(axiomRep);
+			a.setOwlExpression(owl);
+			a.setDirty();
+			axiomEntries.add(a);
+		}
+		return axiomEntries;
 	}
 
 }

@@ -63,12 +63,12 @@ public class ArchiveManager implements RF2Constants {
 		if (singleton.ts != ts) {
 			TermServerScript.info("Archive manager under new ownership: " + ts.getReportName() + ".  Resetting load flags");
 			singleton.loadEditionArchive = false;
-			singleton.loadDependencyPlusExtensionArchive = false;
 		} else {
 			TermServerScript.info("Archive manager being reused in: " + ts.getReportName());
 		}
 		singleton.ts = ts;
 		singleton.gl = ts.getGraphLoader();
+		singleton.loadDependencyPlusExtensionArchive = false;
 		return singleton;
 	}
 	
@@ -197,6 +197,7 @@ public class ArchiveManager implements RF2Constants {
 			//If the project specifies its a .zip file, that's another way to know we're loading an edition
 			String fileExt = ".zip";
 			if (ts.getProject().getKey().endsWith(fileExt)) {
+				info("Project key ('" + ts.getProject().getKey() + "') identified as zip archive, loading Edition Archive");
 				loadEditionArchive = true;
 			}
 			
@@ -240,7 +241,7 @@ public class ArchiveManager implements RF2Constants {
 					TermServerScript.debug(ts.getProject() + " snapshot held locally is sufficiently recent");
 				}
 			}
-			if (true);
+
 			if (!snapshot.exists() || 
 					(isStale && !allowStaleData) || 
 					(populateReleasedFlag && !releasedFlagPopulated && !loadEditionArchive) ||
@@ -425,6 +426,7 @@ public class ArchiveManager implements RF2Constants {
 			//Do we have a release effective time as a project?  Or a branch release
 			String releaseBranch = detectReleaseBranch(projectKey);
 			if (releaseBranch != null) {
+				info ("Release branch determined to be numeric: " + releaseBranch);
 				return new File (dataStoreRoot + "releases/" + releaseBranch + ".zip");
 			} else  {
 				return new File (dataStoreRoot + "snapshots/" + projectKey + "_" + ts.getEnv());

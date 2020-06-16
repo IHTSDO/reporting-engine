@@ -17,7 +17,6 @@ public class AxiomEntry extends Component implements RF2Constants {
 	private String refsetId;
 	private String referencedComponentId;
 	private String owlExpression;
-	private boolean dirty = false;
 	private boolean isGCI = false;
 	
 	public AxiomEntry clone(String newComponentSctId) {
@@ -29,7 +28,7 @@ public class AxiomEntry extends Component implements RF2Constants {
 		clone.refsetId = this.refsetId;
 		clone.referencedComponentId = newComponentSctId;
 		clone.owlExpression = this.owlExpression;
-		clone.dirty = true; //New components need to be written to any delta
+		clone.isDirty = true; //New components need to be written to any delta
 		return clone;
 	}
 	
@@ -70,7 +69,7 @@ public class AxiomEntry extends Component implements RF2Constants {
 	public void setEffectiveTime(String effectiveTime) {
 		if (this.effectiveTime != null && !this.effectiveTime.isEmpty() && effectiveTime == null) {
 			//Are we resetting this component to mark a change?
-			dirty = true;
+			setDirty();
 		}
 		
 		if (StringUtils.isEmpty(effectiveTime)) {
@@ -116,17 +115,9 @@ public class AxiomEntry extends Component implements RF2Constants {
 	}
 	public void setOwlExpression(String owlExpression) {
 		if (this.owlExpression != null && !this.owlExpression.equals(owlExpression)) {
-			dirty = true;
+			setDirty();
 		}
 		this.owlExpression = owlExpression;
-	}
-
-	public boolean isDirty() {
-		return dirty;
-	}
-	
-	public void setDirty() {
-		dirty = true;
 	}
 	
 	public static AxiomEntry fromRf2(String[] lineItems) {

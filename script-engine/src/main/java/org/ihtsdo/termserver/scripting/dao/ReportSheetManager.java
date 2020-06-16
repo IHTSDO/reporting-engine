@@ -22,7 +22,7 @@ import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
 import org.ihtsdo.termserver.scripting.util.StringUtils;
 
-public class ReportSheetManager implements RF2Constants {
+public class ReportSheetManager implements RF2Constants, ReportProcessor {
 
 	private static final String DOMAIN = "ihtsdo.org";
 	private static final String RAW = "RAW";
@@ -30,8 +30,10 @@ public class ReportSheetManager implements RF2Constants {
 	private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
 	private static final String CLIENT_SECRET_DIR = "secure/google-api-secret.json";
 	private static int DEFAULT_MAX_ROWS = 42000;
+	private static int REDUCED_MAX_ROWS = 5000;
 	private static int DEFAULT_MAX_COLUMNS = 19;
 	private static int REDUCED_MAX_COLUMNS = 9;
+	private static int WIDE_MAX_COLUMNS = 20;
 	private static int MAX_ROWS = DEFAULT_MAX_ROWS;
 	private static int MAX_COLUMNS = DEFAULT_MAX_COLUMNS;
 	private static String MAX_COLUMN_STR = Character.toString((char)('A' + MAX_COLUMNS));
@@ -52,13 +54,17 @@ public class ReportSheetManager implements RF2Constants {
 	Map<Integer, Integer> linesWrittenPerTab = new HashMap<>();
 	
 	public ReportSheetManager(ReportManager owner) {
-		if (!owner.getScript().safetyProtocolsEnabled() && owner.getScript().getManyTabOutput()) {
+		if (!owner.getScript().safetyProtocolsEnabled() && owner.getScript().getManyTabOutput() ||
+				!owner.getScript().safetyProtocolsEnabled() && owner.getScript().getManyTabWideOutput()) {
 			throw new IllegalArgumentException("Can't specify safety disabled and manyTabs - one is saying more rows, and the other is saying less");
 		}
 		this.owner = owner;
 		if (!this.owner.getScript().safetyProtocolsEnabled()) {
 			MAX_ROWS = 99999;
 			setMaxColumns(REDUCED_MAX_COLUMNS);
+		} else if (this.owner.getScript().getManyTabWideOutput()) {
+			MAX_ROWS = REDUCED_MAX_ROWS;
+			setMaxColumns(WIDE_MAX_COLUMNS);
 		} else if (this.owner.getScript().getManyTabOutput()) {
 			MAX_ROWS = 9999;
 			setMaxColumns(REDUCED_MAX_COLUMNS);
@@ -95,7 +101,7 @@ public class ReportSheetManager implements RF2Constants {
 	public static void main(String... args) throws Exception {
 		ReportManager rm = ReportManager.create(null);
 		rm.setTabNames(new String[] {"first tab", "second tab", "third tab"});
-		ReportSheetManager rsm = new ReportSheetManager(rm);
+		ReportProcessor rsm = new ReportSheetManager(rm);
 		rsm.initialiseReportFiles(new String[] { "foo, bar" , "bar, boo", "tim ,tum"});
 	}
 	
@@ -153,6 +159,7 @@ public class ReportSheetManager implements RF2Constants {
 		
 	}
 
+	@Override
 	public void initialiseReportFiles(String[] columnHeaders) throws TermServerScriptException {
 		tabLineCount = new HashMap<>();
 		init();
@@ -199,6 +206,7 @@ public class ReportSheetManager implements RF2Constants {
 		}
 	}
 
+	@Override
 	public void writeToReportFile(int tabIdx, String line, boolean delayWrite) throws TermServerScriptException {
 		if (lastWriteTime == null) {
 			lastWriteTime = new Date();
@@ -220,7 +228,9 @@ public class ReportSheetManager implements RF2Constants {
 		
 		//Do we have a total count for this tab?
 		linesWrittenPerTab.merge(tabIdx, 1, Integer::sum);
-		if (linesWrittenPerTab.get(tabIdx).intValue() > MAX_ROWS) {
+		if (linesWrittenPerTab.get(tabIdx).intValue() >= MAX_ROWS) {
+			//Try to finish off what we've received so far
+			flushWithWait();
 			throw new TermServerScriptException("Number of rows written to tab idx " + tabIdx + " hit limit of " + MAX_ROWS);
 		}
 		
@@ -314,5 +324,4 @@ public class ReportSheetManager implements RF2Constants {
 	public String getUrl() {
 		return sheet == null ? null : sheet.getSpreadsheetUrl();
 	}
-
 }

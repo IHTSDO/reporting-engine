@@ -1,0 +1,7 @@
+{
+  "name": "Traumatic lesion during delivery",
+  "documentation": "https://confluence.ihtsdotools.org/display/SCTEMPLATES/Subtypes+of+Traumatic+lesion+during+delivery",
+  "version": 1,
+  "domain":"<< 64229006 |Traumatic lesion during delivery (disorder)|",
+  "logicalTemplate": "199745000 |Complication occurring during labor and delivery (disorder)| : [[~1..1]] { [[~1..1]] 42752001 |Due to (attribute)| = [[ +id( <<773760007 |Traumatic event (event)| ) @due]] } , [[~1..1]] { [[~1..1]]371881003 |During (attribute)| = 700000006 |Vaginal delivery of fetus (procedure)| } , [[~1..*]] { [[~0..1]] 363698007 |Finding site (attribute)| = [[ +id( < 91723000 |Anatomical structure (body structure)| ) @site ]], [[~1..1]] 116676008 |Associated morphology (attribute)| = [[ +id( <<37782003 |Damage (morphologic abnormality)| ) @morph]] }"
+}

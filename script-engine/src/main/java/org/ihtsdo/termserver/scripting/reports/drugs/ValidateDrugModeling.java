@@ -187,8 +187,8 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 			//DRUGS-288
 			validateAttributeValueCardinality(c, HAS_ACTIVE_INGRED);
 			
-			//DRUGS-93, DRUGS-759
-			checkForBadWords(c);  
+			//DRUGS-93, DRUGS-759, DRUGS-803
+			checkForBadWords(c);
 			
 			//DRUGS-629, RP-187
 			checkForSemTagViolations(c);
@@ -555,12 +555,18 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		product (except in the semantic tag)
 	 */
 	private void checkForBadWords(Concept concept) throws TermServerScriptException {
+		String issueStr2 = "Non-FSN starts with 'Product'";
+		initialiseSummary(issueStr2);
 		//Check if we're product containing and then look for bad words
 		for (Description d : concept.getDescriptions(ActiveState.ACTIVE)) {
 			String term = d.getTerm();
+			
 			if (d.getType().equals(DescriptionType.FSN)) {
 				term = SnomedUtils.deconstructFSN(term)[0];
+			} else if (term.startsWith("Product")) {
+				report(concept, issueStr2, d);
 			}
+			
 			for (String badWord : badWords ) {
 				String issueStr = "Term contains bad word: " + badWord;
 				initialiseSummary(issueStr);

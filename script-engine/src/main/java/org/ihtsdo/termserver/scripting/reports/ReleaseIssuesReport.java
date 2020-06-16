@@ -47,6 +47,7 @@ import com.google.common.io.Files;
  RP-180 Check for subHierarchies that should not use specific attribute types
  RP-202 Check for MsWord style double hyphen "—" (as opposed to "-")
  RP-241 Check axioms for correct module.  In fact, existing code is sufficient here.
+ MAINT-1295 Report concepts with no semantic tag where modified in current release
  */
 public class ReleaseIssuesReport extends TermServerReport implements ReportClass {
 	
@@ -71,10 +72,14 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	private Set<Concept> deprecatedHierarchies;
 	private String defaultModule = SCTID_CORE_MODULE;
 	private List<Concept> allActiveConcepts;
+	private Set<Concept> recentlyTouched;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put(INCLUDE_ALL_LEGACY_ISSUES, "N");
+		/*params.put(REPORT_OUTPUT_TYPES, ReportConfiguration.ReportOutputType.S3.toString());
+		params.put(REPORT_FORMAT_TYPE, ReportConfiguration.ReportFormatType.JSON.toString());
+		params.put(REPORT_TYPE, ReportConfiguration.ReportType.USER.toString());*/
 		TermServerReport.run(ReleaseIssuesReport.class, args, params);
 	}
 	
@@ -112,6 +117,12 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				.add(INCLUDE_ALL_LEGACY_ISSUES)
 					.withType(JobParameter.Type.BOOLEAN)
 					.withDefaultValue(false)
+				.add(REPORT_OUTPUT_TYPES)
+					.withType(JobParameter.Type.HIDDEN)
+					.withDefaultValue(false)
+				.add(REPORT_FORMAT_TYPE)
+					.withType(JobParameter.Type.HIDDEN)
+					.withDefaultValue(false)
 				.build();
 
 		return new Job()
@@ -130,6 +141,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	public void runJob() throws TermServerScriptException {
 		info("Checking...");
 		
+		info("Detecting recently touched concepts");
+		populateRecentlyTouched();
+		
 		info("...modules are appropriate (~10 seconds)");
 		parentsInSameModule();
 		if (isMS()) {
@@ -145,6 +159,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		inactiveMissingFSN_PT();
 		unexpectedCharacters();
 		spaceBracket();
+		missingSemanticTag();
 		
 		info("...duplicate semantic tags");
 		duplicateSemanticTags();
@@ -386,6 +401,60 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		}
 	}
 	
+	private void missingSemanticTag() throws TermServerScriptException {
+		String issueStr = "Concept (recently touched) with invalid FSN";
+		initialiseSummary(issueStr);
+		for (Concept c : gl.getAllConcepts()) {
+			if (inScope(c) && recentlyTouched.contains(c)) {
+				if (SnomedUtils.deconstructFSN(c.getFsn(), includeLegacyIssues)[1] == null) {
+					report(c, issueStr, "N", isActive(c,c.getFSNDescription()), c.getFsn());
+				}
+			}
+		}
+	
+	}
+	
+	private void populateRecentlyTouched() {
+		if (recentlyTouched == null) {
+			recentlyTouched = new HashSet<>();
+			nextConcept:
+			for (Concept c : gl.getAllConcepts()) {
+				if (StringUtils.isEmpty(c.getEffectiveTime())) {
+					recentlyTouched.add(c);
+					continue nextConcept;
+				}
+				for (Description d: c.getDescriptions()) {
+					if (StringUtils.isEmpty(d.getEffectiveTime())) {
+						recentlyTouched.add(c);
+						continue nextConcept;
+					}
+				}
+				//We won't check inferred modelling since that can change without an author
+				//touching the concept
+				for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH)) {
+					if (StringUtils.isEmpty(r.getEffectiveTime())) {
+						recentlyTouched.add(c);
+						continue nextConcept;
+					}
+				}
+				
+				for (AssociationEntry a : c.getAssociations(ActiveState.ACTIVE)) {
+					if (StringUtils.isEmpty(a.getEffectiveTime())) {
+						recentlyTouched.add(c);
+						continue nextConcept;
+					}
+				}
+				
+				for (InactivationIndicatorEntry i : c.getInactivationIndicatorEntries(ActiveState.ACTIVE)) {
+					if (StringUtils.isEmpty(i.getEffectiveTime())) {
+						recentlyTouched.add(c);
+						continue nextConcept;
+					}
+				}
+			}
+		}
+	}
+
 	private boolean isInternational(Concept c) {
 		return c.getModuleId().equals(SCTID_CORE_MODULE) || c.getModuleId().equals(SCTID_MODEL_MODULE);
 	}

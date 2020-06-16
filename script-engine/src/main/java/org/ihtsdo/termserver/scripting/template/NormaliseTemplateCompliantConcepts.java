@@ -305,10 +305,28 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		
 		subHierarchyECL = "<<  282100009 |Adverse reaction caused by substance (disorder)|";
 		templateNames = new String[] {	"templates/Adverse Reaction.json"};
-		*/
 		
 		subHierarchyECL = "<<  419199007 |Allergy to substance (disorder)|";  //QI-609
 		templateNames = new String[] {	"templates/Allergy to Substance.json"};
+		
+		subHierarchyECL = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 449735000 |Structural change due to ischemia (morphologic abnormality)|"; //QI-544
+		templateNames = new String[] {	"templates/morphologies/Structural Change.json"};
+		
+		subHierarchyECL = "<< 404684003 |Clinical finding (finding)| : 116676008 |Associated morphology (attribute)| = << 112639008 |Protrusion (morphologic abnormality)|"; //QI-556
+		templateNames = new String[] {	"templates/morphologies/Protrusion.json"};
+		
+		subHierarchyECL = "< 128139000 |Inflammatory disorder (disorder)| "; //QI-619
+		templateNames = new String[] {	"templates/inflammatory/General Inflammatory Disorder.json" };
+		 
+		subHierarchyECL = "<< 363346000 |Malignant neoplastic disease (disorder)|  MINUS (<< 372087000 |Primary malignant neoplasm (disorder)|  OR <<  128462008 |Secondary malignant neoplastic disease (disorder)| ) "; //QI-387
+		templateNames = new String[] {	"templates/neoplasm/Malignant Neoplasm.json" };
+		
+		subHierarchyECL = "<< 64229006 |Traumatic lesion during delivery (disorder)| "; //QI-631
+		templateNames = new String[] {	"templates/Traumatic lesion.json" };
+		includeComplexTemplates = true;
+		*/
+		subHierarchyECL = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 41010001 |Maturation defect (morphologic abnormality)|"; //QI-565
+		templateNames = new String[] { "templates/morphologies/Maturation defect.json" };
 		
 		super.init(args);
 		//Ensure our ECL matches more than 0 concepts.  This will also cache the result

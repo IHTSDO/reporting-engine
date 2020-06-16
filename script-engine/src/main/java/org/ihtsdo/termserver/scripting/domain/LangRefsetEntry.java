@@ -18,7 +18,6 @@ public class LangRefsetEntry extends Component implements RF2Constants{
 	private String refsetId;
 	private String referencedComponentId;
 	private String acceptabilityId;
-	private boolean dirty = false;
 	private boolean isDeleted = false;
 	private String deletionEffectiveTime;
 	
@@ -31,7 +30,7 @@ public class LangRefsetEntry extends Component implements RF2Constants{
 		clone.refsetId = this.refsetId;
 		clone.referencedComponentId = newDescriptionSctId;
 		clone.acceptabilityId = this.acceptabilityId;
-		clone.dirty = true; //New components need to be written to any delta
+		clone.setDirty(); //New components need to be written to any delta
 		return clone;
 	}
 	
@@ -69,7 +68,7 @@ public class LangRefsetEntry extends Component implements RF2Constants{
 	public void setEffectiveTime(String effectiveTime) {
 		if (this.effectiveTime != null && !this.effectiveTime.isEmpty() && effectiveTime == null) {
 			//Are we resetting this component to mark a change?
-			dirty = true;
+			setDirty();
 		}
 		this.effectiveTime = effectiveTime;
 	}
@@ -110,21 +109,9 @@ public class LangRefsetEntry extends Component implements RF2Constants{
 	}
 	public void setAcceptabilityId(String acceptabilityId) {
 		if (this.acceptabilityId != null && !this.acceptabilityId.equals(acceptabilityId)) {
-			dirty = true;
+			setDirty();
 		}
 		this.acceptabilityId = acceptabilityId;
-	}
-
-	public boolean isDirty() {
-		return dirty;
-	}
-	
-	public void setDirty() {
-		dirty = true;
-	}
-	
-	public void setClean() {
-		dirty = false;
 	}
 
 	public boolean isDeleted() {

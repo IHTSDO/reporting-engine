@@ -1,0 +1,19 @@
+[ {
+  "Stat" : "All Concepts",
+  "count" : "477957"
+}, {
+  "Stat" : "Active Concepts",
+  "count" : "354391"
+}, {
+  "Stat" : "Sufficiently Defined",
+  "count" : "117296"
+}, {
+  "Stat" : "Primitive",
+  "count" : "360661"
+}, {
+  "Stat" : "Active Descriptions + TextDefn",
+  "count" : "1235071"
+}, {
+  "Stat" : "Active Relationships",
+  "count" : "1164123"
+} ]

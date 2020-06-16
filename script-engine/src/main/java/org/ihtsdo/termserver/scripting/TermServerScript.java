@@ -4,6 +4,8 @@ import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import org.ihtsdo.termserver.scripting.dao.ReportConfiguration;
+import org.ihtsdo.termserver.scripting.dao.ReportDataUploader;
 import org.slf4j.*;
 
 import org.apache.commons.lang.time.DurationFormatUtils;
@@ -21,6 +23,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.ihtsdo.termserver.scripting.util.StringUtils;
 import org.snomed.otf.scheduler.domain.*;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 
 import com.google.common.base.Charsets;
@@ -29,7 +32,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import us.monoid.json.JSONException;
-import us.monoid.json.JSONObject;
 import us.monoid.web.Resty;
 
 public abstract class TermServerScript implements RF2Constants {
@@ -67,6 +69,7 @@ public abstract class TermServerScript implements RF2Constants {
 	private String reportName;
 	protected boolean safetyProtocols = true;  //Switch off to bypass all limits
 	protected boolean manyTabOutput = false;
+	protected boolean manyTabWideOutput = false;
 	protected boolean includeSummaryTab = false;
 	protected boolean reportNullConcept = true;
 	
@@ -115,6 +118,13 @@ public abstract class TermServerScript implements RF2Constants {
 	protected static final String TEMPLATE2 = "Template 2";
 	protected static final String TEMPLATE_NAME = "TemplateName";
 	protected static final String SERVER_URL = "ServerUrl";
+
+	@Autowired
+	protected ReportDataUploader reportDataUploader;
+	protected static final String REPORT_OUTPUT_TYPES = "ReportOutputTypes";
+	protected static final String REPORT_FORMAT_TYPE = "ReportFormatType";
+	protected ReportConfiguration reportConfiguration;
+
 
 	public static Gson gson;
 	static {
@@ -282,9 +292,13 @@ public abstract class TermServerScript implements RF2Constants {
 			}
 			project.setKey(projectName);
 		}
+		
 		if (!loadingRelease) {
-			info("Full path for projected determined to be: " + project.getBranchPath());
+			info("Full path for project " + project.getKey() + " determined to be: " + project.getBranchPath() );
 		}
+		
+		// Configure the type(s) and locations(s) for processing report output.
+		initialiseReportConfiguration();
 	}
 
 	protected void checkSettingsWithUser(JobRun jobRun) throws TermServerScriptException {
@@ -388,6 +402,8 @@ public abstract class TermServerScript implements RF2Constants {
 				throw new TermServerScriptException("Failed to recover project " + projectName, e);
 			}
 		}
+		
+		info ("Project Key: " + project.getKey());
 	}
 	
 	private String getEnv(String terminologyServerUrl) throws TermServerScriptException {
@@ -428,6 +444,7 @@ public abstract class TermServerScript implements RF2Constants {
 			if (csvOutput) {
 				reportManager.setWriteToFile(true);
 				reportManager.setWriteToSheet(false);
+				reportManager.setWriteToS3(false);
 			}
 			if (this.wideOutput ) {
 				ReportSheetManager.setMaxColumns(25);
@@ -445,12 +462,12 @@ public abstract class TermServerScript implements RF2Constants {
 			init(jobRun);
 			loadProjectSnapshot(false);  //Load all descriptions
 			postInit();
+			runJob();
+			flushFilesWithWait(false);
+			finish();
+
 			if (!suppressOutput) {
 				jobRun.setResultUrl(getReportManager().getUrl());
-			}
-			runJob();
-			if (!suppressOutput) {
-				flushFilesWithWait(false);  //Make sure we successfully write the last of the data before considering ourselves "Complete"
 				jobRun.setStatus(JobStatus.Complete);
 				Object issueCountObj = summaryDetails.get(ISSUE_COUNT);
 				int issueCount = 0;
@@ -464,15 +481,13 @@ public abstract class TermServerScript implements RF2Constants {
 			jobRun.setStatus(JobStatus.Failed);
 			jobRun.setDebugInfo(msg);
 			error(msg, e);
-		} finally {
-			finish();
 		}
 	}
 	
 	protected void runJob () throws TermServerScriptException {
 		throw new TermServerScriptException("Override this method in concrete class");
 	}
-	
+
 	protected static JobRun createJobRunFromArgs(String jobName, String[] args) {
 		JobRun jobRun = JobRun.create(jobName, null);
 		if (args.length < 3) {
@@ -629,7 +644,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected Concept updateConcept(Task t, Concept c, String info) throws TermServerScriptException {
 		try {
 			if (!dryRun) {
-				convertStatedRelationshipsToAxioms(c);
+				convertStatedRelationshipsToAxioms(c, false);
 				if (validateConceptOnUpdate) {
 					validateConcept(t, c);
 				}
@@ -653,6 +668,15 @@ public abstract class TermServerScript implements RF2Constants {
 		//We need to populate new components with UUIDs for validation
 		Concept uuidClone = c.cloneWithUUIDs();
 		debug("Validating " + c);
+		
+		//We should not be modifying any stated relationships
+		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH)) {
+			if (StringUtils.isEmpty(r.getEffectiveTime())) {
+				throw new IllegalStateException("Stated Relationship Updated");
+			}
+		}
+		
+		
 		DroolsResponse[] validations = tsClient.validateConcept(uuidClone, t.getBranchPath());
 		if (validations.length == 0) {
 			debug("Validation clear: " + c);
@@ -737,7 +761,7 @@ public abstract class TermServerScript implements RF2Constants {
 	
 	private Concept attemptConceptCreation(Task t, Concept c, String info) throws Exception {
 		debug ((dryRun ?"Dry run creating ":"Creating ") + c + info);
-		convertStatedRelationshipsToAxioms(c);
+		convertStatedRelationshipsToAxioms(c, false);
 		if (!dryRun) {
 			validateConcept(t, c);
 			c = tsClient.createConcept(c, t.getBranchPath());
@@ -748,12 +772,17 @@ public abstract class TermServerScript implements RF2Constants {
 		return c;
 	}
 
-	private void convertStatedRelationshipsToAxioms(Concept c) {
+	protected void convertStatedRelationshipsToAxioms(Concept c, boolean mergeExistingAxioms) {
 		//We might have already done this if an error condition has occurred.
 		//Skip if there are not stated relationships
 		if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH).size() == 0) {
 			return;
 		}
+		
+		if (c.getConceptId().equals("2301000004107")) {
+			debug("Here");
+		}
+		
 		//In the case of an inactive concept, we'll inactivate any axioms
 		if (c.isActive()) {
 			for (Axiom a : c.getClassAxioms()) {
@@ -763,17 +792,26 @@ public abstract class TermServerScript implements RF2Constants {
 			//Do we have an existing axiom to use by default?
 			Axiom a = c.getFirstActiveClassAxiom();
 			a.setModuleId(c.getModuleId());
+			
+			//If we're merging with existing axioms, remove any Axiom Entries
+			//and pinch the UUID
+			if (a.getId() == null && c.getAxiomEntries().size() > 0 && mergeExistingAxioms) {
+				a.setAxiomId(c.getAxiomEntries().get(0).getId());
+				c.getAxiomEntries().clear();
+			}
 	
 			//We'll remove the stated relationships as they get converted to the axiom
 			List<Relationship> rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH);
 			for (Relationship rel : rels) {
-				//Did this relationship already come from an axiom?
-				//If not and it's inactive, leave it be
-				if (!rel.fromAxiom() && !rel.isActive()) {
+				//Ignore inactive rels
+				if (!rel.isActive()) {
 					continue;
 				}
-				//If so (or if active), put it back into one
-				Axiom thisAxiom = rel.getAxiom() == null ? a : rel.getAxiom();
+
+				Axiom thisAxiom  = a; 
+				if (!mergeExistingAxioms) {
+					thisAxiom = rel.getAxiom() == null ? a : rel.getAxiom();
+				}
 				
 				//The definition status of the axiom needs to match that of the concept
 				thisAxiom.setDefinitionStatus(c.getDefinitionStatus());
@@ -787,7 +825,7 @@ public abstract class TermServerScript implements RF2Constants {
 					}
 				}
 				thisAxiom.getRelationships().add(rel);
-				c.removeRelationship(rel);
+				c.removeRelationship(rel, true);  //Safe to remove it even if published - will exist in axiom
 			}
 			
 			for (Axiom thisAxiom : new ArrayList<>(c.getClassAxioms())) {
@@ -1077,7 +1115,7 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 	}
 	
-	public void finish() {
+	public void finish() throws TermServerScriptException {
 		info (BREAK);
 
 		Date endTime = new Date();
@@ -1123,7 +1161,10 @@ public abstract class TermServerScript implements RF2Constants {
 			}
 			recordSummaryText("Total Critical Issues Encountered: " + criticalIssues.size());
 		}
-		flushFilesSafely(true);
+		
+		info(BREAK);
+		
+		flushFiles(true, false);
 	}
 	
 	private synchronized void recordSummaryText(String msg) {
@@ -1351,6 +1392,7 @@ public abstract class TermServerScript implements RF2Constants {
 					boolean isNestedNumeric = false;
 					if (str != null) {
 						isNestedNumeric = StringUtils.isNumeric(str) || str.startsWith(QUOTE);
+						str = isNestedNumeric ? str : str.replaceAll("\"", "\"\"");
 					}
 					sb.append((isNestedNumeric?"":prefix) + str + (isNestedNumeric?"":QUOTE));
 					prefix = COMMA_QUOTE;
@@ -1366,13 +1408,16 @@ public abstract class TermServerScript implements RF2Constants {
 					sb.append(prefix + i );
 					isNestedFirst = false;
 				}
-				
+			} else if (detail instanceof String) {
+				String str = (String) detail;
+				str = isNumeric ? str : str.replaceAll("\"", "\"\"");
+				sb.append(prefix + str + (isNumeric?"":QUOTE));
 			} else {
 				sb.append(prefix + detail + (isNumeric?"":QUOTE));
 			}
 			isFirst = false;
 		}
-		
+
 		writeToReportFile (reportIdx, sb.toString());
 		incrementSummaryInformation("Report lines written");
 	}
@@ -1391,6 +1436,7 @@ public abstract class TermServerScript implements RF2Constants {
 					obj = ((Boolean)obj)?"Y":"N";
 				}
 				String data = (obj==null?"":obj.toString());
+				data = isNumeric ? data : data.replaceAll("\"", "\"\"");
 				sb.append(prefix + data + (isNumeric?"":QUOTE));
 				prefix = COMMA_QUOTE;
 			}
@@ -1512,6 +1558,12 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	protected boolean inScope(Component c) {
+		//RP-349 Allow MS customers to run reports against MAIN.
+		//In this case all concepts are "in scope" to allow MS customers to see
+		//what changes to international concepts might affect them
+		if (project.getKey().equals("MAIN")) {
+			return true;
+		}
 		//Do we have a default module id ie for a managed service project?
 		if (project.getMetadata() != null && project.getMetadata().getDefaultModuleId() != null) {
 			return c.getModuleId().equals(project.getMetadata().getDefaultModuleId());
@@ -1548,8 +1600,53 @@ public abstract class TermServerScript implements RF2Constants {
 		return manyTabOutput;
 	}
 
+	public boolean getManyTabWideOutput() {
+		return manyTabWideOutput;
+	}
+
 	protected  String getDependencyArchive() {
 		return dependencyArchive;
 	}
-	
+
+	private void initialiseReportConfiguration() {
+		try {
+			reportConfiguration = new ReportConfiguration(
+					jobRun.getParamValue(REPORT_OUTPUT_TYPES),
+					jobRun.getParamValue(REPORT_FORMAT_TYPE));
+		} catch (Exception e) {
+			// In case of any error we don't care as this is not default for the reports.
+		}
+
+		// if it's not valid default to the the current mode of operation
+		if (reportConfiguration == null || !reportConfiguration.isValid()) {
+			TermServerScript.info("Using default ReportConfiguration (Google/Sheet)...");
+			reportConfiguration = new ReportConfiguration(
+					ReportConfiguration.ReportOutputType.GOOGLE,
+					ReportConfiguration.ReportFormatType.CSV);
+		}
+	}
+
+	public ReportDataUploader getReportDataUploader() throws TermServerScriptException {
+		if (reportDataUploader == null) {
+			if (appContext == null) {
+				TermServerScript.info("No ReportDataUploader loader configured, creating one locally...");
+				reportDataUploader = ReportDataUploader.create();
+			} else {
+				reportDataUploader = appContext.getBean(ReportDataUploader.class);
+			}
+		}
+		return reportDataUploader;
+	}
+
+	// This is used for reports that might want to return a complex name
+	// i.e say two released so r1-r2 (so we have projects/branches and now a complex name)
+	// It is only used Summary Component as we are not dealing with just a simple name (different releases)
+	public String getReportComplexName() {
+		// default is nothing.
+		return "";
+	}
+
+	public ReportConfiguration getReportConfiguration() {
+		return reportConfiguration;
+	}
 }

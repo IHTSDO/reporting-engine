@@ -41,7 +41,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
-		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
+		ReportSheetManager.targetFolderId = "1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"; //Release Stats
 		ReportSheetManager.setMaxColumns(18);
 		getArchiveManager().setPopulateReleasedFlag(true);
 		subHierarchyECL = run.getParamValue(ECL);
@@ -73,7 +73,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 				.add(ECL).withType(JobParameter.Type.ECL).withDefaultValue("<< " + ROOT_CONCEPT)
 				.build();
 		return new Job()
-				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION))
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_STATS))
 				.withName("Concepts Changed")
 				.withDescription("This report lists all concepts changed in the current release cycle, optionally restricted to a subset defined by an ECL expression.  The issue count here is the total number of concepts featuring one change or another.")
 				.withProductionStatus(ProductionStatus.PROD_READY)

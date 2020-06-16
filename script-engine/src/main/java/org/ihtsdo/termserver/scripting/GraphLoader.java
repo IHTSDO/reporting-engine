@@ -582,9 +582,9 @@ public class GraphLoader implements RF2Constants {
 				Description d = getDescription(lineItems[LANG_IDX_REFCOMPID]);
 				LangRefsetEntry langRefsetEntry = LangRefsetEntry.fromRf2(lineItems);
 				
-				if (langRefsetEntry.getId().equals("1ee09ebd-f9cc-57f6-9850-ceea87310e68")) {
+				/*if (langRefsetEntry.getId().equals("1ee09ebd-f9cc-57f6-9850-ceea87310e68")) {
 					TermServerScript.debug("here");
-				}
+				}*/
 				
 				//Are we adding or replacing this entry?
 				if (d.getLangRefsetEntries().contains(langRefsetEntry)) {
@@ -1071,6 +1071,14 @@ public class GraphLoader implements RF2Constants {
 		return false;
 	}
 	
+	public String convertRelationshipsToOwlExpression(Concept c, List<Relationship> relationships) {
+		AxiomRepresentation axiom = new AxiomRepresentation();
+		//Assuming a normal RHS definition
+		axiom.setLeftHandSideNamedConcept(Long.parseLong(c.getId()));
+		axiom.setRightHandSideRelationships(AxiomUtils.convertRelationshipsToMap(relationships));
+		return axiomService.convertRelationshipsToAxiom(axiom);
+	}
+	
 	public class DuplicatePair {
 		private Component keep;
 		private Component inactivate;
@@ -1086,6 +1094,16 @@ public class GraphLoader implements RF2Constants {
 		public Component getInactivate() {
 			return inactivate;
 		}
+	}
+
+	public String getCurrentEffectiveTime() {
+		//Quick way is to find the description on the root concept that has 'version' in it.
+		for (Description d : ROOT_CONCEPT.getDescriptions(ActiveState.ACTIVE)) {
+			if (d.getTerm().contains("version")) {
+				return d.getEffectiveTime();
+			}
+		}
+		return "UNKNOWN EFFECTIVE TIME";
 	}
 
 }

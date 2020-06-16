@@ -1,8 +1,8 @@
 #!/bin/bash
 
-#Variables to be set by calling script: RPW_Environment, RPW_Version
+#Variables to be set by calling script: RPW_Environment, RPW_Version, RPW_Env
 echo "****************************************"
-echo "Reporting Platform Worker installation for environment: $RPW_Environment and version: $RPW_Version"
+echo "Reporting Platform Worker installation for environment: $RPW_Environment ($RPW_Env) and version: $RPW_Version"
 echo "Time is now: `date`"
 echo "****************************************"
 echo
@@ -49,6 +49,7 @@ if [ -e  $rp_config ];then
 	sed -i "/schedule.manager.queue.request/c\schedule.manager.queue.request = ${RPW_Environment}.schedule-manager.request" ${rp_config}
 	sed -i "/schedule.manager.queue.response/c\schedule.manager.queue.response = ${RPW_Environment}.schedule-manager.response" ${rp_config}
 	sed -i "/schedule.manager.queue.metadata/c\schedule.manager.queue.metadata = ${RPW_Environment}.schedule-manager.metadata" ${rp_config}
+	sed -i "/reports.s3.cloud.path=/c\reports.s3.cloud.path=authoring/reporting-service/${RPW_Env}" ${rp_config}
 else
 	echo "$rp_config not found"
 fi

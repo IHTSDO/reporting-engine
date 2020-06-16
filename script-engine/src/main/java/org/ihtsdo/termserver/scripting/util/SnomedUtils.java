@@ -1,6 +1,8 @@
 package org.ihtsdo.termserver.scripting.util;
 
 import java.io.*;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -16,7 +18,8 @@ import org.ihtsdo.termserver.scripting.*;
 import org.ihtsdo.termserver.scripting.domain.*;
 
 public class SnomedUtils implements RF2Constants {
-	
+
+	private static final SimpleDateFormat EFFECTIVE_DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
 	private static VerhoeffCheckDigit verhoeffCheck = new VerhoeffCheckDigit();
 	
 	public static String isValid(String sctId, PartitionIdentifier partitionIdentifier) {
@@ -1468,6 +1471,21 @@ public class SnomedUtils implements RF2Constants {
 		String[] parts = str.split(SPACE);
 		String errMsg = isValid(parts[0], null);
 		return errMsg == null;
+	}
+
+	public static String getAssociationType(AssociationEntry a) throws TermServerScriptException {
+		Concept assocType = GraphLoader.getGraphLoader().getConcept(a.getRefsetId());
+		return assocType.getPreferredSynonym().replace(" association reference set", "");
+	}
+
+	public static Integer compareEffectiveDate(String effectiveDate1, String effectiveDate2) {
+		try {
+			Date date = EFFECTIVE_DATE_FORMAT.parse ( effectiveDate1);
+			Date date2 = EFFECTIVE_DATE_FORMAT.parse ( effectiveDate2 );
+			return date.compareTo(date2);
+		} catch (ParseException e) {
+		}
+		return null;
 	}
 
 }
