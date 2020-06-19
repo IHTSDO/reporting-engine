@@ -107,7 +107,7 @@ public class InitialAnalysis extends TermServerReport implements org.ihtsdo.term
 				.build();
 		
 		return new Job()
-				.withCategory(new JobCategory(JobType.REPORT, JobCategory.GENERAL_QA))
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.QI))
 				.withName("Initial Analysis")
 				.withDescription("This report lists intermediate primitives and how often attribute types are used in the specified sub-hierarchy. " +
 						"Note that the 'Issues' count here refers to the number of intermediate primitives reported in the 2nd tab.")
