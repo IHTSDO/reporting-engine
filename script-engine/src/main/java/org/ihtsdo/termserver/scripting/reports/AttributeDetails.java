@@ -56,7 +56,7 @@ public class AttributeDetails extends TermServerReport implements ReportClass {
 	@Override
 	public Job getJob() {
 		JobParameters params = new JobParameters()
-				.add(ECL).withType(JobParameter.Type.ECL)
+				.add(ECL).withType(JobParameter.Type.ECL).withMandatory()
 				.add(COMPACT).withType(JobParameter.Type.BOOLEAN).withMandatory().withDefaultValue(true)
 				.add(INCLUDE_WORD).withType(JobParameter.Type.STRING)
 				.add(EXCLUDE_WORD).withType(JobParameter.Type.STRING)
