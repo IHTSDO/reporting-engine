@@ -38,14 +38,14 @@ public class InitialAnalysis extends TermServerReport implements org.ihtsdo.term
 	//QI-222  Multi-ecl report runner
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		//TermServerScript.runHeadless(3);
-		String[] morphologies = new String[] {
-			/*	"11889001|Abiotrophy (morphologic abnormality)|",
+		/*String[] morphologies = new String[] {
+				"11889001|Abiotrophy (morphologic abnormality)|",
 				"13331008|Atrophy (morphologic abnormality)|",
 				"33359002|Degeneration (morphologic abnormality)|",
 				"32693004|Demyelination (morphologic abnormality)|",
-				"69251000|Depletion (morphologic abnormality)|",*/
+				"69251000|Depletion (morphologic abnormality)|",
 				"46595003|Deposition (morphologic abnormality)|",
-			/*	"4720007|Dystrophy (morphologic abnormality)|",
+				"4720007|Dystrophy (morphologic abnormality)|",
 				"2218006|Endothelial degeneration (morphologic abnormality)|",
 				"47939006|Etat criblé (morphologic abnormality)|",
 				"66984008|Etat lacunaire (morphologic abnormality)|",
@@ -55,13 +55,16 @@ public class InitialAnalysis extends TermServerReport implements org.ihtsdo.term
 				"107670002|Lysis AND/OR resorbed tissue (morphologic abnormality)|",
 				"35828005|Malacia (morphologic abnormality)|",
 				"15524008|Obliteration (morphologic abnormality)|",
-				"107671003|Vascular sclerosis (morphologic abnormality)|"*/};
+				"107671003|Vascular sclerosis (morphologic abnormality)|"};
 		for (String morphology : morphologies) {
 			String ecl = "<< 404684003 |Clinical finding (finding)| : 116676008 |Associated morphology (attribute)| = << " + morphology;
 			Map<String, String> params = new HashMap<>();
 			params.put(ECL, ecl);
 			TermServerReport.run(InitialAnalysis.class, args, params);
-		}
+		} */
+		Map<String, String> params = new HashMap<>();
+		params.put(ECL, "<< " + ROOT_CONCEPT);
+		TermServerReport.run(InitialAnalysis.class, args, params);
 	}
 	
 /*	public static void main(String[] args) throws TermServerScriptException, IOException {
@@ -137,6 +140,10 @@ public class InitialAnalysis extends TermServerReport implements org.ihtsdo.term
 		subHierarchyECL = this.jobRun.getParamValue(ECL);
 		
 		if (subHierarchyStr != null && (subHierarchyECL == null || subHierarchyECL.trim().isEmpty())) {
+			Concept subHierarchyConcept = gl.getConcept(subHierarchyStr, false, true);  //Validate concept exists
+			if (subHierarchyConcept.getDepth() <= 1 ) {
+				throw new TermServerScriptException("Report cannot be run on top level hierarchies");
+			}
 			subHierarchyECL = "<<" + subHierarchyStr;
 		} else if (subHierarchyStr == null && subHierarchyECL == null ) {
 			throw new TermServerScriptException("Either subhierarchy or ECL must be specified");
@@ -176,7 +183,7 @@ public class InitialAnalysis extends TermServerReport implements org.ihtsdo.term
 	}
 	
 	public void setSubHierarchy() throws TermServerScriptException {
-		this.conceptsToAnalyse = findConcepts(subHierarchyECL);
+		this.conceptsToAnalyse = new ArrayList<>(findConcepts(subHierarchyECL));
 		intermediatePrimitives = new HashMap<>();
 		attributeUsage = new HashMap<>();
 		attributeExamples = new HashMap<>();
