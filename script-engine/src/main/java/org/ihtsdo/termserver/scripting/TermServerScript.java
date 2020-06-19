@@ -1222,7 +1222,12 @@ public abstract class TermServerScript implements RF2Constants {
 						}
 						reportName += spacer + subHierarchyECL.subSequence(0, cutPoint);
 					} else {
-						reportName += spacer + gl.getConcept(subHierarchyECL.replaceAll("<", "").trim()).toStringPref();
+						Concept simpleECLRoot = gl.getConcept(subHierarchyECL.replaceAll("<", "").trim());
+						if (simpleECLRoot.getDescriptions().size() > 0) {
+							reportName += spacer + simpleECLRoot.toStringPref();
+						} else {
+							reportName += spacer + SnomedUtils.deconstructFSN(simpleECLRoot.getFsn())[0];
+						}
 					}
 				}
 				
@@ -1230,9 +1235,9 @@ public abstract class TermServerScript implements RF2Constants {
 				error ("Recoverable hiccup while setting report name",e);
 			}
 		}
-		//Can't work out why we're seeing null in filenames here
+		
 		if (reportName.contains("null")) {
-			debug ("TODO: Work out why we're seeing a null when we've recovered the concept from the GL?!");
+			warn ("Report name contains 'null' did you specify to load FSNs only?");
 		}
 		
 		return reportName;
