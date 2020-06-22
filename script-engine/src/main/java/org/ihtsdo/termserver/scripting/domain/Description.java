@@ -5,6 +5,7 @@ import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.ActiveState;
 import org.ihtsdo.termserver.scripting.util.AcceptabilityMode;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
@@ -69,6 +70,8 @@ public class Description extends Component implements RF2Constants {
 	//Note that these values are used when loading from RF2 where multiple entries can exist.
 	//When interacting with the TS, only one inactivation indicator is used (see above).
 	private transient List<InactivationIndicatorEntry> inactivationIndicatorEntries;
+	
+	private transient List<AssociationEntry> associationEntries;
 	
 	/**
 	 * No args constructor for use in serialization
@@ -627,6 +630,59 @@ public class Description extends Component implements RF2Constants {
 			differences.add("CaseSig is different in " + name + ": " + this.getCaseSignificance() + " vs " + otherD.getCaseSignificance());
 		}
 		return differences;
+	}
+	
+	public List<AssociationEntry> getAssociationEntries() {
+		if (associationEntries == null) {
+			associationEntries = new ArrayList<AssociationEntry>();
+		}
+		return associationEntries;
+	}
+	
+	public List<AssociationEntry> getAssociationEntries(ActiveState activeState) {
+		return getAssociationEntries(activeState, false); //All associations by default
+	}
+
+	public List<AssociationEntry> getAssociationEntries(ActiveState activeState, boolean historicalAssociationsOnly) {
+		if (activeState.equals(ActiveState.BOTH)) {
+			List<AssociationEntry> selectedAssociations = new ArrayList<AssociationEntry>();
+			for (AssociationEntry h : getAssociationEntries()) {
+				//TODO Find a better way of working out if an association is a historical association
+				if ((!historicalAssociationsOnly ||	h.getRefsetId().startsWith("9000000"))) {
+					selectedAssociations.add(h);
+				}
+			}
+			return selectedAssociations;
+		} else {
+			boolean isActive = activeState.equals(ActiveState.ACTIVE);
+			List<AssociationEntry> selectedAssociations = new ArrayList<AssociationEntry>();
+			for (AssociationEntry h : getAssociationEntries()) {
+				//TODO Find a better way of working out if an association is a historical association
+				if (h.isActive() == isActive && (!historicalAssociationsOnly ||
+					(h.getRefsetId().startsWith("9000000")))) {
+					selectedAssociations.add(h);
+				}
+			}
+			return selectedAssociations;
+		}
+	}
+
+	public InactivationIndicatorEntry getInactivationIndicatorEntry(String indicatorId) {
+		for (InactivationIndicatorEntry i : getInactivationIndicatorEntries()) {
+			if (i.getId().equals(indicatorId)) {
+				return i;
+			}
+		}
+		return null;
+	}
+
+	public AssociationEntry getAssociationEntry(String assocId) {
+		for (AssociationEntry i : associationEntries) {
+			if (i.getId().equals(assocId)) {
+				return i;
+			}
+		}
+		return null;
 	}
 
 }

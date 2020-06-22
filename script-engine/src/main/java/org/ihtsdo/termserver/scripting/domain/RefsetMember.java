@@ -2,42 +2,49 @@ package org.ihtsdo.termserver.scripting.domain;
 
 import java.util.Map;
 
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
-public class RefsetMember {
+//TODO Move common fields and methods into Component itself
+public abstract class RefsetMember extends Component {
 
 	@SerializedName("active")
 	@Expose
-	private Boolean active;
+	protected  Boolean active;
 	@SerializedName("released")
 	@Expose
-	private Boolean released;
+	protected  Boolean released;
 	@SerializedName("releasedEffectiveTime")
 	@Expose
-	private Integer releasedEffectiveTime;
+	protected  Integer releasedEffectiveTime;
 	@SerializedName("memberId")
 	@Expose
-	private String memberId;
+	protected  String id;
 	@SerializedName("moduleId")
 	@Expose
-	private String moduleId;
+	protected  String moduleId;
 	@SerializedName("refsetId")
 	@Expose
-	private String refsetId;
+	protected  String refsetId;
 	@SerializedName("referencedComponentId")
 	@Expose
-	private String referencedComponentId;
+	protected  String referencedComponentId;
 	@SerializedName("additionalFields")
 	@Expose
-	private Map<String, String> additionalFields;
+	protected  Map<String, String> additionalFields;
 	@SerializedName("referencedComponent")
 	@Expose
-	private ReferencedComponent referencedComponent;
+	protected  ReferencedComponent referencedComponent;
 	@SerializedName("effectiveTime")
 	@Expose
-	private String effectiveTime;
-
+	protected  String effectiveTime;
+	
+	protected String deletionEffectiveTime;
+	
+	protected boolean isDeleted = false;
+	
 	public Boolean getActive() {
 		return active;
 	}
@@ -65,12 +72,12 @@ public class RefsetMember {
 		this.releasedEffectiveTime = releasedEffectiveTime;
 	}
 
-	public String getMemberId() {
-		return memberId;
+	public String getId() {
+		return id;
 	}
 
-	public void setMemberId(String memberId) {
-		this.memberId = memberId;
+	public void setId(String id) {
+		this.id = id;
 	}
 
 	public String getModuleId() {
@@ -123,5 +130,9 @@ public class RefsetMember {
 
 	public void setEffectiveTime(String effectiveTime) {
 		this.effectiveTime = effectiveTime;
+	}
+	
+	public boolean isDeleted() {
+		return isDeleted;
 	}
 }

@@ -8,18 +8,9 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 
 //TODO Make this extend RefsetEntry
 //id	effectiveTime	active	moduleId	refsetId	referencedComponentId	inactivationReasonId
-public class InactivationIndicatorEntry extends Component implements RF2Constants {
+public class InactivationIndicatorEntry extends RefsetMember implements RF2Constants {
 
-	private String id;
-	private String effectiveTime;
-	private String moduleId;
-	private Boolean active;
-	private String refsetId;
-	private String referencedComponentId;
 	private String inactivationReasonId;
-	private boolean dirty = false;
-	private boolean isDeleted = false;
-	private String deletionEffectiveTime;
 	
 	public InactivationIndicatorEntry clone(String newComponentSctId) {
 		InactivationIndicatorEntry clone = new InactivationIndicatorEntry();
@@ -30,7 +21,7 @@ public class InactivationIndicatorEntry extends Component implements RF2Constant
 		clone.refsetId = this.refsetId;
 		clone.referencedComponentId = newComponentSctId;
 		clone.inactivationReasonId = this.inactivationReasonId;
-		clone.dirty = true; //New components need to be written to any delta
+		clone.isDirty = true; //New components need to be written to any delta
 		return clone;
 	}
 	private static InactivationIndicatorEntry withDefaults() {
@@ -96,7 +87,7 @@ public class InactivationIndicatorEntry extends Component implements RF2Constant
 	public void setEffectiveTime(String effectiveTime) {
 		if (this.effectiveTime != null && !this.effectiveTime.isEmpty() && effectiveTime == null) {
 			//Are we resetting this component to mark a change?
-			dirty = true;
+			isDirty = true;
 		}
 		this.effectiveTime = effectiveTime;
 	}
@@ -133,28 +124,11 @@ public class InactivationIndicatorEntry extends Component implements RF2Constant
 	}
 	public void setInactivationReasonId(String inactivationReasonId) {
 		if (this.inactivationReasonId != null && !this.inactivationReasonId.equals(inactivationReasonId)) {
-			dirty = true;
+			isDirty = true;
 		}
 		this.inactivationReasonId = inactivationReasonId;
 	}
 
-	public boolean isDirty() {
-		return dirty;
-	}
-	
-	public void setDirty() {
-		dirty = true;
-	}
-
-	public boolean isDeleted() {
-		return isDeleted;
-	}
-
-	public void delete(String deletionEffectiveTime) {
-		this.isDeleted = true;
-		this.deletionEffectiveTime = deletionEffectiveTime;
-	}
-	
 	public static InactivationIndicatorEntry fromRf2(String[] lineItems) {
 		InactivationIndicatorEntry i = new InactivationIndicatorEntry();
 		i.setId(lineItems[INACT_IDX_ID]);

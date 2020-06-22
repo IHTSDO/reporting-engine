@@ -300,7 +300,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 				}
 			}
 			
-			for (AssociationEntry a : concept.getAssociations()) {
+			for (AssociationEntry a : concept.getAssociationEntries()) {
 				if (StringUtils.isEmpty(a.getEffectiveTime())) {
 					return false;
 				}

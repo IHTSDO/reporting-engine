@@ -9,18 +9,9 @@ import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 //id	effectiveTime	active	moduleId 	refsetId 	referencedComponentId	targetComponentId
-public class AssociationEntry extends Component implements RF2Constants {
+public class AssociationEntry extends RefsetMember implements RF2Constants {
 
-	private String id;
-	private String effectiveTime;
-	private String moduleId;
-	private Boolean active;
-	private String refsetId;
-	private String referencedComponentId;
 	private String targetComponentId;
-	private boolean dirty = false;
-	private boolean isDeleted = false;
-	private String deletionEffectiveTime;
 	
 	public AssociationEntry clone(String newComponentSctId) {
 		AssociationEntry clone = new AssociationEntry();
@@ -31,7 +22,7 @@ public class AssociationEntry extends Component implements RF2Constants {
 		clone.refsetId = this.refsetId;
 		clone.referencedComponentId = newComponentSctId;
 		clone.targetComponentId = this.targetComponentId;
-		clone.dirty = true; //New components need to be written to any delta
+		clone.isDirty = true; //New components need to be written to any delta
 		return clone;
 	}
 	
@@ -101,7 +92,7 @@ public class AssociationEntry extends Component implements RF2Constants {
 	public void setEffectiveTime(String effectiveTime) {
 		if (this.effectiveTime != null && !this.effectiveTime.isEmpty() && effectiveTime == null) {
 			//Are we resetting this component to mark a change?
-			dirty = true;
+			isDirty = true;
 		}
 		this.effectiveTime = effectiveTime;
 	}
@@ -138,17 +129,9 @@ public class AssociationEntry extends Component implements RF2Constants {
 	}
 	public void setTargetComponentId(String targetComponentId) {
 		if (this.targetComponentId != null && !this.targetComponentId.equals(targetComponentId)) {
-			dirty = true;
+			isDirty = true;
 		}
 		this.targetComponentId = targetComponentId;
-	}
-
-	public boolean isDirty() {
-		return dirty;
-	}
-	
-	public void setDirty() {
-		dirty = true;
 	}
 
 	public boolean isDeleted() {

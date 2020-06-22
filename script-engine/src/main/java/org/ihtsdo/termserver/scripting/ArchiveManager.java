@@ -553,16 +553,16 @@ public class ArchiveManager implements RF2Constants {
 					gl.loadDescriptionFile(is, fsnOnly, isReleased);
 				} else if (fileName.contains("der2_cRefset_ConceptInactivationIndicatorReferenceSet" )) {
 					info("Loading Concept Inactivation Indicator " + fileType + " file.");
-					gl.loadInactivationIndicatorFile(is);
+					gl.loadInactivationIndicatorFile(is, isReleased);
 				} else if (fileName.contains("der2_cRefset_DescriptionInactivationIndicatorReferenceSet" )) {
 					info("Loading Description Inactivation Indicator " + fileType + " file.");
-					gl.loadInactivationIndicatorFile(is);
+					gl.loadInactivationIndicatorFile(is, isReleased);
 				} else if (fileName.contains("der2_cRefset_AttributeValue" )) {
 					info("Loading Concept/Description Inactivation Indicators " + fileType + " file.");
-					gl.loadInactivationIndicatorFile(is);
+					gl.loadInactivationIndicatorFile(is, isReleased);
 				} else if (fileName.contains("Association" ) || fileName.contains("AssociationReferenceSet" )) {
 					info("Loading Historical Association File: " + fileName);
-					gl.loadHistoricalAssociationFile(is);
+					gl.loadHistoricalAssociationFile(is, isReleased);
 				}
 				//If we're loading all terms, load the language refset as well
 				if (!fsnOnly && (fileName.contains("English" ) || fileName.contains("Language"))) {

@@ -45,7 +45,7 @@ public class RecreateComponent extends DeltaGenerator {
 		h.setDirty();
 		
 		Concept c = gl.getConcept("376166005");
-		c.getAssociations().add(h);
+		c.getAssociationEntries().add(h);
 		outputRF2(c);
 	}
 

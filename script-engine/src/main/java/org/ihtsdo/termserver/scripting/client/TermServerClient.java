@@ -546,7 +546,7 @@ public class TermServerClient {
 	}
 	
 	public RefsetMember updateRefsetMember(RefsetMember rm, String branchPath) {
-		String url = getRefsetMemberUrl(rm.getMemberId(), branchPath);
+		String url = getRefsetMemberUrl(rm.getId(), branchPath);
 		ResponseEntity<RefsetMember> response = restTemplate.exchange(
 				url,
 				HttpMethod.PUT,

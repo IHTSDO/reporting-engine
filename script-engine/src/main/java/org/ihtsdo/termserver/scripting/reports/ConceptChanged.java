@@ -175,7 +175,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 					}
 				}
 				
-				for (AssociationEntry a : c.getAssociations()) {
+				for (AssociationEntry a : c.getAssociationEntries()) {
 					if (a.getEffectiveTime() == null || a.getEffectiveTime().isEmpty()) {
 						hasChangedAssociations.add(c);
 					}

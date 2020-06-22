@@ -13,6 +13,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.validator.routines.checkdigit.VerhoeffCheckDigit;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component.ComponentType;
 import org.ihtsdo.termserver.scripting.*;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -1484,6 +1485,26 @@ public class SnomedUtils implements RF2Constants {
 			Date date2 = EFFECTIVE_DATE_FORMAT.parse ( effectiveDate2 );
 			return date.compareTo(date2);
 		} catch (ParseException e) {
+		}
+		return null;
+	}
+
+	public static boolean isConceptSctid(String componentId) {
+		//A zero in the penultimate character indicates a concept SCTID
+		if (StringUtils.isEmpty(componentId)) {
+			return false;
+		}
+		return componentId.charAt(componentId.length()-2) == '0';
+	}
+
+	public static Component getParentComponent(RefsetMember rm, GraphLoader gl) throws TermServerScriptException {
+		if (rm == null || StringUtils.isEmpty(rm.getReferencedComponentId())) {
+			if (isConceptSctid(rm.getReferencedComponentId())) {
+				//Don't validate, don't create if required
+				return gl.getConcept(rm.getReferencedComponentId(), false, false);
+			} else {
+				return gl.getDescription(rm.getReferencedComponentId(), false, false);
+			}
 		}
 		return null;
 	}

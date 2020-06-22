@@ -10,6 +10,8 @@ public abstract class RefsetComponent extends Component {
 	
 	public abstract String getReferencedComponentId();
 	
+	protected String deletionEffectiveTime;
+	
 	protected void commonFieldComparison(RefsetComponent other, List<String> differences) {
 		super.commonFieldComparison(other, differences);
 		String name = this.getClass().getSimpleName(); 

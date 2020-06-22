@@ -614,7 +614,7 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	protected RefsetMember updateRefsetMember(RefsetMember rm) throws TermServerScriptException {
-		debug((dryRun?"Dry run update of":"Updating") + " refset member " + rm.getMemberId());
+		debug((dryRun?"Dry run update of":"Updating") + " refset member " + rm.getId());
 		if (dryRun) {
 			return rm;
 		} else {

@@ -68,7 +68,7 @@ public class DuplicateInactAssocFix extends BatchFix {
 			changesMade++;
 		}
 		
-		final AssociationEntry[] as = getDuplicateAssociations(c, c.getAssociations(), t);
+		final AssociationEntry[] as = getDuplicateAssociations(c, c.getAssociationEntries(), t);
 		for (final AssociationEntry a : as) {
 			debug((dryRun?"Dry Run, not ":"") + "Removing duplicate: " + a);
 			report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, a);
@@ -124,7 +124,7 @@ public class DuplicateInactAssocFix extends BatchFix {
 			}*/
 			 
 			if (!c.isActive()) {
-				final AssociationEntry[] as = getDuplicateAssociations(c, c.getAssociations(), null);
+				final AssociationEntry[] as = getDuplicateAssociations(c, c.getAssociationEntries(), null);
 				if (as.length > 0) {
 					processMe.add(c);
 				} else {

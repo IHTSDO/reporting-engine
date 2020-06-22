@@ -533,7 +533,7 @@ public class GraphLoader implements RF2Constants {
 				
 				if (!fsnOnly) {
 					//We might already have information about this description, eg langrefset entries
-					Description d = getDescription (lineItems[DES_IDX_ID]);
+					Description d = getDescription(lineItems[DES_IDX_ID]);
 					
 					//But if the module is not known, it's new
 					String revertEffectiveTime = null;
@@ -705,7 +705,7 @@ public class GraphLoader implements RF2Constants {
 		}
 	}
 
-	public void loadInactivationIndicatorFile(InputStream is) throws IOException, TermServerScriptException {
+	public void loadInactivationIndicatorFile(InputStream is, boolean isReleased) throws IOException, TermServerScriptException {
 		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 		boolean isHeaderLine = true;
 		String line;
@@ -716,7 +716,23 @@ public class GraphLoader implements RF2Constants {
 				if (isExcluded(lineItems[IDX_MODULEID])) {
 					continue;
 				}
+				
+				String revertEffectiveTime = null;
+				if (detectNoChangeDelta && !isReleased) {
+					//Recover this entry for the component - concept or description
+					InactivationIndicatorEntry i = getInactivationIndicatorEntry(lineItems[REF_IDX_REFCOMPID], lineItems[IDX_ID]);
+					if (i != null) {
+						Component c = SnomedUtils.getParentComponent(i, this);
+						revertEffectiveTime = detectNoChangeDelta(c, i, lineItems);
+					}
+				}
+
 				InactivationIndicatorEntry inactivation = InactivationIndicatorEntry.fromRf2(lineItems);
+				
+				if (revertEffectiveTime != null) {
+					inactivation.setEffectiveTime(revertEffectiveTime);
+				}
+				
 				if (inactivation.getRefsetId().equals(SCTID_CON_INACT_IND_REFSET)) {
 					Concept c = getConcept(lineItems[INACT_IDX_REFCOMPID]);
 					/*if (c.getConceptId().equals("198308002")) {
@@ -736,7 +752,22 @@ public class GraphLoader implements RF2Constants {
 		}
 	}
 	
-	public void loadHistoricalAssociationFile(InputStream is) throws IOException, TermServerScriptException {
+	private InactivationIndicatorEntry getInactivationIndicatorEntry(String componentId, String indicatorId) throws TermServerScriptException {
+		if (SnomedUtils.isConceptSctid(componentId)) {
+			Concept c = getConcept(componentId, false, false);
+			if (c != null) {
+				return c.getInactivationIndicatorEntry(indicatorId);
+			}
+		} else {
+			Description d = getDescription(componentId);
+			if (d != null) {
+				return d.getInactivationIndicatorEntry(indicatorId);
+			}
+		}
+		return null;
+	}
+
+	public void loadHistoricalAssociationFile(InputStream is, boolean isReleased) throws IOException, TermServerScriptException {
 		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 		boolean isHeaderLine = true;
 		String line;
@@ -749,11 +780,29 @@ public class GraphLoader implements RF2Constants {
 				}
 				String referencedComponent = lineItems[INACT_IDX_REFCOMPID];
 				if (isConcept(referencedComponent)) {
+					//TODO Descriptions can also have associations
 					Concept c = getConcept(referencedComponent);
+					
+					String revertEffectiveTime = null;
+					if (detectNoChangeDelta && !isReleased) {
+						//Recover this entry for the component - concept or description
+						AssociationEntry a = getAssociationEntry(lineItems[REF_IDX_REFCOMPID], lineItems[IDX_ID]);
+						if (a != null) {
+							Component comp = SnomedUtils.getParentComponent(a, this);
+							revertEffectiveTime = detectNoChangeDelta(comp, a, lineItems);
+						}
+					}
+
 					AssociationEntry historicalAssociation = AssociationEntry.fromRf2(lineItems);
+					
+					if (revertEffectiveTime != null) {
+						historicalAssociation.setEffectiveTime(revertEffectiveTime);
+					}
+					
+					
 					//Remove first in case we're replacing
-					c.getAssociations().remove(historicalAssociation);
-					c.getAssociations().add(historicalAssociation);
+					c.getAssociationEntries().remove(historicalAssociation);
+					c.getAssociationEntries().add(historicalAssociation);
 					if (historicalAssociation.isActive()) {
 						addHistoricalAssociationInTsForm(c, historicalAssociation);
 						recordHistoricalAssociation(historicalAssociation);
@@ -763,6 +812,22 @@ public class GraphLoader implements RF2Constants {
 				isHeaderLine = false;
 			}
 		}
+	}
+	
+	
+	private AssociationEntry getAssociationEntry(String componentId, String assocId) throws TermServerScriptException {
+		if (SnomedUtils.isConceptSctid(componentId)) {
+			Concept c = getConcept(componentId, false, false);
+			if (c != null) {
+				return c.getAssociationEntry(assocId);
+			}
+		} else {
+			Description d = getDescription(componentId, false, false);
+			if (d != null) {
+				return d.getAssociationEntry(assocId);
+			}
+		}
+		return null;
 	}
 	
 	/*
@@ -872,7 +937,7 @@ public class GraphLoader implements RF2Constants {
 				componentOwnerMap.put(i,  c);
 			}
 			
-			for (AssociationEntry h : c.getAssociations()) {
+			for (AssociationEntry h : c.getAssociationEntries()) {
 				allComponents.put(h.getId(), h);
 				componentOwnerMap.put(h,  c);
 			}
@@ -1042,7 +1107,7 @@ public class GraphLoader implements RF2Constants {
 	 * @return the effective time to revert back to if a no change delta is detected
 	 * @throws TermServerScriptException
 	 */
-	private String detectNoChangeDelta(Concept parent, Component c, String[] lineItems) throws TermServerScriptException {
+	private String detectNoChangeDelta(Component parent, Component c, String[] lineItems) throws TermServerScriptException {
 		try {
 			//If the parent or the component itself was not previously known, 
 			//then it's brand new, so not a no-change delta

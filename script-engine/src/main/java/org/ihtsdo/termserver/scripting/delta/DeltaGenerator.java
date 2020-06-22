@@ -317,7 +317,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 			outputRF2(i);
 		}
 		
-		for (AssociationEntry h: c.getAssociations()) {
+		for (AssociationEntry h: c.getAssociationEntries()) {
 			outputRF2(h);
 		}
 		

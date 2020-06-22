@@ -51,7 +51,7 @@ public class RevertInactiveAxioms extends BatchFix implements RF2Constants{
 				String prev = previousMember.getField("owlExpression");
 				String current = currentMember.getField("owlExpression");
 
-				if (!currentMember.getMemberId().equals(previousMember.getMemberId())) {
+				if (!currentMember.getId().equals(previousMember.getId())) {
 					throw new TermServerScriptException("Member id mismatch at " + c);
 				} else if (prev.equals(current)) {
 					throw new TermServerScriptException("No changed detectded at " + c);
@@ -59,7 +59,7 @@ public class RevertInactiveAxioms extends BatchFix implements RF2Constants{
 				previousMember.setActive(false);
 				//Overwrite the current RefsetMember with this one, reverting the axiom 
 				updateRefsetMember(previousMember);
-				report (t, c, Severity.LOW, ReportActionType.AXIOM_CHANGE_MADE, currentMember.getMemberId(), prev, current);
+				report (t, c, Severity.LOW, ReportActionType.AXIOM_CHANGE_MADE, currentMember.getId(), prev, current);
 				changesMade++;
 			}
 		}

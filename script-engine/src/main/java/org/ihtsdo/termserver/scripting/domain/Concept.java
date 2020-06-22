@@ -94,7 +94,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	//Note that these values are used when loading from RF2 where multiple entries can exist.
 	//When interacting with the TS, only one inactivation indicator is used (see above).
 	List<InactivationIndicatorEntry> inactivationIndicatorEntries;
-	List<AssociationEntry> associations;
+	List<AssociationEntry> associationEntries;
 	List<AxiomEntry> axiomEntries;
 	ObjectPropertyAxiomRepresentation objectPropertyAxiom;
 
@@ -1007,11 +1007,11 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		}
 	}
 	
-	public List<AssociationEntry> getAssociations() {
-		if (associations == null) {
-			associations = new ArrayList<AssociationEntry>();
+	public List<AssociationEntry> getAssociationEntries() {
+		if (associationEntries == null) {
+			associationEntries = new ArrayList<AssociationEntry>();
 		}
-		return associations;
+		return associationEntries;
 	}
 	
 	public List<AssociationEntry> getAssociations(ActiveState activeState) {
@@ -1022,7 +1022,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	public List<AssociationEntry> getAssociations(ActiveState activeState, boolean historicalAssociationsOnly) {
 		if (activeState.equals(ActiveState.BOTH)) {
 			List<AssociationEntry> selectedAssociations = new ArrayList<AssociationEntry>();
-			for (AssociationEntry h : getAssociations()) {
+			for (AssociationEntry h : getAssociationEntries()) {
 				//TODO Find a better way of working out if an association is a historical association
 				if ((!historicalAssociationsOnly ||	h.getRefsetId().startsWith("9000000"))) {
 					selectedAssociations.add(h);
@@ -1032,7 +1032,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		} else {
 			boolean isActive = activeState.equals(ActiveState.ACTIVE);
 			List<AssociationEntry> selectedAssociations = new ArrayList<AssociationEntry>();
-			for (AssociationEntry h : getAssociations()) {
+			for (AssociationEntry h : getAssociationEntries()) {
 				//TODO Find a better way of working out if an association is a historical association
 				if (h.isActive() == isActive && (!historicalAssociationsOnly ||
 					(h.getRefsetId().startsWith("9000000")))) {
@@ -1252,7 +1252,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		//If we're keeping IDs, copy any inactivation indicators and historical associations also.
 		if (keepIds) {
 			clone.inactivationIndicatorEntries = new ArrayList<>(getInactivationIndicatorEntries());
-			clone.associations = new ArrayList<>(getAssociations());
+			clone.associationEntries = new ArrayList<>(getAssociationEntries());
 		}
 		
 		return clone;
@@ -1492,6 +1492,24 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 			this.objectPropertyAxiom.mergeProperties(rep);
 		}
 		
+	}
+
+	public InactivationIndicatorEntry getInactivationIndicatorEntry(String indicatorId) {
+		for (InactivationIndicatorEntry i : getInactivationIndicatorEntries()) {
+			if (i.getId().equals(indicatorId)) {
+				return i;
+			}
+		}
+		return null;
+	}
+
+	public AssociationEntry getAssociationEntry(String assocId) {
+		for (AssociationEntry a : getAssociationEntries()) {
+			if (a.getId().equals(assocId)) {
+				return a;
+			}
+		}
+		return null;
 	}
 
 }
