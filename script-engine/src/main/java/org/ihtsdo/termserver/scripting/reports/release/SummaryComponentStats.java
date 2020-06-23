@@ -27,7 +27,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 	public static final String PREV_RELEASE = "Previous Release";
 	public static final String THIS_RELEASE = "This Release";
 
-	public static final Concept UNKNOWN_CONCEPT = new Concept("54690008", "Unknown (origin) (qualifier value)");
+	public static final Concept UNKNOWN_CONCEPT = new Concept("54690008", "Unknown");
 
 	public static final boolean debugToFile = false;
 
@@ -42,12 +42,12 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 	static final int TAB_CONCEPTS = 0, TAB_DESCS = 1, TAB_RELS = 2, TAB_AXIOMS = 3,
 			TAB_LANG = 4, TAB_INACT_IND = 5, TAB_HIST = 6, TAB_TEXT_DEFN = 7;
 	static final int COMPONENT_COUNT = 8;
-	static final int DATA_WIDTH = 20;  //New, Changed, Inactivated, Reactivated, New with New Concept, extra1, extra2, Total, next 11 fields are the inactivation reason, concept affected, reactivated
+	static final int DATA_WIDTH = 21;  //New, Changed, Inactivated, Reactivated, New with New Concept, extra1, extra2, Total, next 11 fields are the inactivation reason, concept affected, reactivated
 	static final int IDX_NEW = 0, IDX_CHANGED = 1, IDX_INACT = 2, IDX_REACTIVATED = 3, IDX_NEW_NEW = 4, IDX_NEW_P = 5, IDX_NEW_SD = 6,
 			IDX_TOTAL = 7, IDX_INACT_AMBIGUOUS = 8,  IDX_INACT_MOVED_ELSEWHERE = 9, IDX_INACT_CONCEPT_NON_CURRENT = 10,
 			IDX_INACT_DUPLICATE = 11, IDX_INACT_ERRONEOUS = 12, IDX_INACT_INAPPROPRIATE = 13, IDX_INACT_LIMITED = 14,
 			IDX_INACT_OUTDATED = 15, IDX_INACT_PENDING_MOVE = 16, IDX_INACT_NON_CONFORMANCE = 17,
-			IDX_INACT_NOT_EQUIVALENT = 18, IDX_CONCEPTS_AFFECTED = 19;
+			IDX_INACT_NOT_EQUIVALENT = 18, IDX_CONCEPTS_AFFECTED = 19, IDX_TOTAL_ACTIVE = 20;
 	static Map<Integer, List<Integer>> sheetFieldsByIndex = getSheetFieldsMap();
 	static List<DescriptionType> TEXT_DEFN;
 	static List<DescriptionType> NOT_TEXT_DEFN;
@@ -142,14 +142,14 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 	};
 	
 	public void postInit() throws TermServerScriptException {
-		String[] columnHeadings = new String[] {"Sctid, Hierarchy, SemTag, New, Changed DefnStatus, Inactivated, Reactivated, New with New Concept, New SD, New P, Total",
-												"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New with New Concept, Total, Concepts Affected",
-												"Sctid, Hierarchy, SemTag, New Inferred Rels, Changed Inferred Rels, Inactivated Inferred Rels, Reactivated, New with New Concept, Total, Concepts Affected",
-												"Sctid, Hierarchy, SemTag, New Axioms, Changed Axioms, Inactivated Axioms, Reactivated, New with New Concept, Total, Concepts Affected",
-												"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New with New Concept, Concepts Affected",
-												"Sctid, Hierarchy, SemTag, Inactivations New / Reactivated, Changed, Inactivations Inactivated, Reactivated, New with New Concept, Ambiguous, Moved Elsewhere, Concept Non Current, Duplicate, Erroneous, Inappropriate, Limited, Outdated, Pending Move, Non Conformance, Not Equivalent, Concepts Affected",
-												"Sctid, Hierarchy, SemTag, Assoc New, Changed, Assoc Inactivated, Reactivated, New with New Concept, Concepts Affected",
-												"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New with New Concept, Total, Concepts Affected"
+		String[] columnHeadings = new String[] {"Sctid, Hierarchy, SemTag, New, Changed DefnStatus, Inactivated, Reactivated, New with New Concept, New SD, New P, Total Active, Total",
+												"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New with New Concept, Total Active, Total, Concepts Affected",
+												"Sctid, Hierarchy, SemTag, New Inferred Rels, Changed Inferred Rels, Inactivated Inferred Rels, Reactivated, New with New Concept, Total Active, Total, Concepts Affected",
+												"Sctid, Hierarchy, SemTag, New Axioms, Changed Axioms, Inactivated Axioms, Reactivated, New with New Concept, Total Active, Total, Concepts Affected",
+												"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New with New Concept, Concepts Affected, Total Active",
+												"Sctid, Hierarchy, SemTag, Inactivations New / Reactivated, Changed, Inactivations Inactivated, Reactivated, New with New Concept, Ambiguous, Moved Elsewhere, Concept Non Current, Duplicate, Erroneous, Inappropriate, Limited, Outdated, Pending Move, Non Conformance, Not Equivalent, Concepts Affected, Total Active",
+												"Sctid, Hierarchy, SemTag, Assoc New, Changed, Assoc Inactivated, Reactivated, New with New Concept, Concepts Affected, Total Active",
+												"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New with New Concept, Total, Concepts Affected, Total Active"
 												};
 		String[] tabNames = new String[] {	"Concepts",
 											"Descriptions",
@@ -231,7 +231,8 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 	private void analyzeConcept(Concept c, Boolean wasSD, Boolean wasActive, int[] counts) throws TermServerScriptException {
 		//If we have no previous data, then the concept is new
 		boolean conceptIsNew = (wasSD == null);
-		if (c.isActive()) {	
+		if (c.isActive()) {
+			counts[IDX_TOTAL_ACTIVE]++;
 			boolean isSD = c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED);
 			if (conceptIsNew) {
 				if (isSD) {
@@ -270,6 +271,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 				previouslyExistedInactive = idsInactive.contains(component.getId());
 			}
 			if (component.isActive()) {
+				counts[IDX_TOTAL_ACTIVE]++;
 				if (previouslyExistedInactive) {
 					counts[IDX_REACTIVATED]++;
 					debugToFile(component, "Reactivated");
@@ -405,19 +407,19 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		// set up the report sheets and the fields they contain
 		final Map<Integer, List<Integer>> sheetFieldsByIndex = new HashMap<>();
 
-		sheetFieldsByIndex.put(TAB_CONCEPTS, new LinkedList(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_NEW, IDX_NEW_P, IDX_NEW_SD, IDX_TOTAL)));
+		sheetFieldsByIndex.put(TAB_CONCEPTS, new LinkedList(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_NEW, IDX_NEW_P, IDX_NEW_SD, IDX_TOTAL_ACTIVE, IDX_TOTAL)));
 
 		Arrays.asList(TAB_DESCS, TAB_RELS, TAB_AXIOMS, TAB_TEXT_DEFN).stream().forEach(index -> {
-			sheetFieldsByIndex.put(index, new LinkedList(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_NEW, IDX_TOTAL, IDX_CONCEPTS_AFFECTED)));
+			sheetFieldsByIndex.put(index, new LinkedList(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_NEW, IDX_TOTAL_ACTIVE, IDX_TOTAL, IDX_CONCEPTS_AFFECTED)));
 		});
 
 		sheetFieldsByIndex.put(TAB_INACT_IND, new LinkedList(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_NEW, IDX_INACT_AMBIGUOUS,
 				IDX_INACT_MOVED_ELSEWHERE, IDX_INACT_CONCEPT_NON_CURRENT, IDX_INACT_DUPLICATE, IDX_INACT_ERRONEOUS,
 				IDX_INACT_INAPPROPRIATE, IDX_INACT_LIMITED, IDX_INACT_OUTDATED, IDX_INACT_PENDING_MOVE, IDX_INACT_NON_CONFORMANCE,
-				IDX_INACT_NOT_EQUIVALENT, IDX_CONCEPTS_AFFECTED)));
+				IDX_INACT_NOT_EQUIVALENT, IDX_CONCEPTS_AFFECTED, IDX_TOTAL_ACTIVE)));
 
 		Arrays.asList(TAB_LANG, TAB_HIST).stream().forEach(index -> {
-			sheetFieldsByIndex.put(index, new LinkedList((Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_NEW, IDX_CONCEPTS_AFFECTED))));
+			sheetFieldsByIndex.put(index, new LinkedList((Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_NEW, IDX_CONCEPTS_AFFECTED, IDX_TOTAL_ACTIVE))));
 		});
 
 		return sheetFieldsByIndex;

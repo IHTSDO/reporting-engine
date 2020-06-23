@@ -1,7 +1,6 @@
 package org.ihtsdo.termserver.scripting;
 
 import java.io.*;
-import java.net.SocketTimeoutException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -27,7 +26,6 @@ import org.snomed.otf.scheduler.domain.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 
-import com.google.api.services.sheets.v4.model.BatchUpdateSpreadsheetResponse;
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 import com.google.gson.Gson;
