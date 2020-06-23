@@ -92,13 +92,22 @@ public class TermServerClient {
 	}
 	
 	public Branch getBranch(String branchPath) throws TermServerScriptException {
-		try {
-			String url = getBranchesPath(branchPath);
-			logger.debug("Recovering branch information from " + url);
-			return restTemplate.getForObject(url, Branch.class);
-		} catch (RestClientException e) {
-			throw new TermServerScriptException(translateRestClientException(e));
+		int retry = 0;
+		while (retry < 3) {
+			try {
+				String url = getBranchesPath(branchPath);
+				logger.debug("Recovering branch information from " + url);
+				return restTemplate.getForObject(url, Branch.class);
+			} catch (RestClientException e) {
+				if (++retry < 3) {
+					System.err.println("Problem recovering branch information.   Retrying after a nap...");
+					try { Thread.sleep(1000 * 5); } catch (Exception i) {}
+				} else {
+					throw new TermServerScriptException(translateRestClientException(e));
+				}
+			}
 		}
+		return null;
 	}
 	
 	public List<Branch> getBranchChildren(String branchPath) throws TermServerScriptException {

@@ -13,6 +13,7 @@ import com.google.api.services.sheets.v4.SheetsScopes;
 import com.google.api.services.sheets.v4.model.*;
 
 import java.io.*;
+import java.net.SocketTimeoutException;
 import java.security.GeneralSecurityException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -198,7 +199,19 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 			//Execute creation of tabs
 			BatchUpdateSpreadsheetRequest batch = new BatchUpdateSpreadsheetRequest();
 			batch.setRequests(requests);
-			BatchUpdateSpreadsheetResponse responses = sheetsService.spreadsheets().batchUpdate(sheet.getSpreadsheetId(), batch).execute();
+			int retry = 0;
+			boolean createdOK = false;
+			while (!createdOK && retry < 3) {
+				try {
+					BatchUpdateSpreadsheetResponse responses = sheetsService.spreadsheets().batchUpdate(sheet.getSpreadsheetId(), batch).execute();
+					createdOK = true;
+				} catch (SocketTimeoutException e) {
+					if (++retry < 3) {
+						System.err.println("Timeout received from Google. Retrying after short nap.");
+						Thread.sleep(1000 * 10);
+					}
+				}
+			}
 			flush();
 			moveFile(sheet.getSpreadsheetId());
 		} catch (Exception e) {

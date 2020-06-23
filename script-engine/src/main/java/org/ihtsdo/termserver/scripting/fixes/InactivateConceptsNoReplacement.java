@@ -96,9 +96,11 @@ public class InactivateConceptsNoReplacement extends BatchFix implements RF2Cons
 			//Split the line up on tabs
 			String[] items = line.split(TAB);
 			//We're only populating where we have a replacements
-			if (items.length == 3) {
+			if (items.length >= 3) {
 				Concept inactivatedConcept = gl.getConcept(items[0], false, true);
 				String replacementSCTID = items[2];
+				
+				
 				
 				//Does it even have an SCTID in it?   Try a description look up if not
 				if (!SnomedUtils.startsWithSCTID(replacementSCTID)) {

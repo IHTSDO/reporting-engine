@@ -705,7 +705,7 @@ public class GraphLoader implements RF2Constants {
 		}
 	}
 
-	public void loadInactivationIndicatorFile(InputStream is, boolean isReleased) throws IOException, TermServerScriptException {
+	public void loadInactivationIndicatorFile(InputStream is, Boolean isReleased) throws IOException, TermServerScriptException {
 		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 		boolean isHeaderLine = true;
 		String line;
@@ -718,7 +718,7 @@ public class GraphLoader implements RF2Constants {
 				}
 				
 				String revertEffectiveTime = null;
-				if (detectNoChangeDelta && !isReleased) {
+				if (detectNoChangeDelta && isReleased != null && !isReleased) {
 					//Recover this entry for the component - concept or description
 					InactivationIndicatorEntry i = getInactivationIndicatorEntry(lineItems[REF_IDX_REFCOMPID], lineItems[IDX_ID]);
 					if (i != null) {
@@ -767,7 +767,7 @@ public class GraphLoader implements RF2Constants {
 		return null;
 	}
 
-	public void loadHistoricalAssociationFile(InputStream is, boolean isReleased) throws IOException, TermServerScriptException {
+	public void loadHistoricalAssociationFile(InputStream is, Boolean isReleased) throws IOException, TermServerScriptException {
 		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 		boolean isHeaderLine = true;
 		String line;
@@ -784,7 +784,7 @@ public class GraphLoader implements RF2Constants {
 					Concept c = getConcept(referencedComponent);
 					
 					String revertEffectiveTime = null;
-					if (detectNoChangeDelta && !isReleased) {
+					if (detectNoChangeDelta && isReleased != null && !isReleased) {
 						//Recover this entry for the component - concept or description
 						AssociationEntry a = getAssociationEntry(lineItems[REF_IDX_REFCOMPID], lineItems[IDX_ID]);
 						if (a != null) {

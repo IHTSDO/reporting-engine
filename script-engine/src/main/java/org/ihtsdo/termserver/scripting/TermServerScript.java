@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting;
 
 import java.io.*;
+import java.net.SocketTimeoutException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -26,6 +27,7 @@ import org.snomed.otf.scheduler.domain.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 
+import com.google.api.services.sheets.v4.model.BatchUpdateSpreadsheetResponse;
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 import com.google.gson.Gson;
@@ -397,8 +399,23 @@ public abstract class TermServerScript implements RF2Constants {
 		} else if (!StringUtils.isNumeric(projectName)) {
 			//Not if we're loading a release or extension
 			try {
-				project = scaClient.getProject(projectName);
-			} catch (RestClientException e) {
+				int retry = 0;
+				boolean ok = false;
+				while (!ok && retry < 3) {
+					try {
+						project = scaClient.getProject(projectName);
+						ok = true;
+					} catch (Exception e) {
+						if (++retry < 3) {
+							System.err.println("Timeout received from Google. Retrying after short nap.");
+							Thread.sleep(1000 * 10);
+						} else {
+							throw new TermServerScriptException("Failed to recover project " + projectName, e);
+						}
+					}
+				}
+				
+			} catch (InterruptedException e) {
 				throw new TermServerScriptException("Failed to recover project " + projectName, e);
 			}
 		}
@@ -747,11 +764,9 @@ public abstract class TermServerScript implements RF2Constants {
 				if (attempt <= 2) {
 					incrementSummaryInformation("Concepts creation exceptions");
 					warn (msg + " retrying...");
-					/*try {
-						//Thread.sleep(30 * 1000);
-					} catch(InterruptedException ie) {
-						throw new TermServerScriptException("Interruption during recovery of :" + msg ,e);
-					}*/
+					try {
+						Thread.sleep(5 * 1000);
+					} catch(InterruptedException ie) {}
 				} else {
 					throw new TermServerScriptException(msg ,e);
 				}
@@ -779,9 +794,9 @@ public abstract class TermServerScript implements RF2Constants {
 			return;
 		}
 		
-		if (c.getConceptId().equals("2301000004107")) {
+		/*if (c.getConceptId().equals("2301000004107")) {
 			debug("Here");
-		}
+		}*/
 		
 		//In the case of an inactive concept, we'll inactivate any axioms
 		if (c.isActive()) {

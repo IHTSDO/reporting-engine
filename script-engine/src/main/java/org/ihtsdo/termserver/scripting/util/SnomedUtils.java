@@ -229,8 +229,8 @@ public class SnomedUtils implements RF2Constants {
 		}
 		parts[0] = file.getAbsolutePath().substring(0, file.getAbsolutePath().lastIndexOf(File.separator));
 		if (file.getName().lastIndexOf(".") > 0) {
-			parts[1] = file.getName().substring(0, file.getName().lastIndexOf("."));
-			parts[2] = file.getName().substring(file.getName().lastIndexOf(".") + 1);
+			parts[1] = file.getAbsolutePath().substring(parts[0].length() + 1, file.getAbsolutePath().lastIndexOf("."));
+			parts[2] = file.getAbsolutePath().substring(file.getAbsolutePath().lastIndexOf(".") + 1);
 		} else {
 			parts[1] = file.getName();
 		}
