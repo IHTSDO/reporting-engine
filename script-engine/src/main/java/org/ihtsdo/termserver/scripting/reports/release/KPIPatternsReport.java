@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.reports;
+package org.ihtsdo.termserver.scripting.reports.release;
 
 import java.io.IOException;
 import java.util.*;
@@ -12,6 +12,7 @@ import org.ihtsdo.termserver.scripting.TransitiveClosure;
 
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.ihtsdo.termserver.scripting.util.StringUtils;
 import org.snomed.otf.scheduler.domain.*;
@@ -49,8 +50,7 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 			try {
 				previousPreviousRelease = getArchiveManager().getPreviousPreviousBranch(project);
 			} catch (Exception e) {
-				error ("Failed to recover previous branch, falling back to hard coded 20190131", e);
-				previousPreviousRelease = "MAIN/2019-01-31";
+				throw new TermServerScriptException("Failed to recover previous previous branch", e);
 			}
 		}
 	}
