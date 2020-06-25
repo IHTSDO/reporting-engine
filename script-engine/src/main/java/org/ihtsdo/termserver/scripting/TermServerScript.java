@@ -1628,9 +1628,11 @@ public abstract class TermServerScript implements RF2Constants {
 
 	private void initialiseReportConfiguration() {
 		try {
-			reportConfiguration = new ReportConfiguration(
-					jobRun.getParamValue(REPORT_OUTPUT_TYPES),
-					jobRun.getParamValue(REPORT_FORMAT_TYPE));
+			if (jobRun != null) {
+				reportConfiguration = new ReportConfiguration(
+						jobRun.getParamValue(REPORT_OUTPUT_TYPES),
+						jobRun.getParamValue(REPORT_FORMAT_TYPE));
+			}
 		} catch (Exception e) {
 			// In case of any error we don't care as this is not default for the reports.
 		}
