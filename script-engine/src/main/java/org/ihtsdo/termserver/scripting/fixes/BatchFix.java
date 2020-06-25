@@ -448,7 +448,6 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			taskSize = Integer.parseInt(response);
 		}
 		
-		
 		if (taskThrottle > 0) {
 			print ("Time delay between tasks (throttle) seconds [" +taskThrottle + "]: ");
 			response = STDIN.nextLine().trim();

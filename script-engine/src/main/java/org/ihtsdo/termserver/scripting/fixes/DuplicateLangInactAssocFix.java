@@ -18,15 +18,16 @@ import org.springframework.util.StringUtils;
  * and remove the unpublished version
  * INFRA-5156 Add ability to delete duplicated historic associations at the same time
  * Also we'll add/re-active any missing concept inactivation indicators on active descriptions
+ * INFRA-5274 Also fix up multiple language reference set entries for the same description/dialect
 */
-public class DuplicateInactAssocFix extends BatchFix {
+public class DuplicateLangInactAssocFix extends BatchFix {
 	
-	protected DuplicateInactAssocFix(final BatchFix clone) {
+	protected DuplicateLangInactAssocFix(final BatchFix clone) {
 		super(clone);
 	}
 
 	public static void main(final String[] args) throws TermServerScriptException, IOException, InterruptedException {
-		final DuplicateInactAssocFix fix = new DuplicateInactAssocFix(null);
+		final DuplicateLangInactAssocFix fix = new DuplicateLangInactAssocFix(null);
 		try {
 			fix.selfDetermining = true;
 			fix.init(args);
@@ -47,16 +48,27 @@ public class DuplicateInactAssocFix extends BatchFix {
 		// the full array of inactivation indicators
 		int changesMade = 0;
 		try {
-			changesMade = fixDuplicateInactivationIndicators(task, concept, false);
+			changesMade = fixDuplicates(task, concept, false);
 		} catch (final TermServerScriptException e) {
 			throw new TermServerScriptException("Failed to remove duplicate inactivation indicator on " + concept, e);
 		}
 		return changesMade;
 	}
 
-	private int fixDuplicateInactivationIndicators(final Task t, final Concept c, final boolean trialRun)
+	private int fixDuplicates(final Task t, final Concept c, final boolean trialRun)
 			throws TermServerScriptException {
 		int changesMade = 0;
+		
+		final List<LangRefsetEntry> ls = getMultipleLangRefsetEntries(c, t);
+		for (final LangRefsetEntry l : ls) {
+			debug((dryRun?"Dry Run, not ":"") + "Removing duplicate: " + l);
+			report(t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, l);
+			changesMade++;
+			if (!dryRun) {
+				tsClient.deleteRefsetMember(l.getId(), t.getBranchPath(), false);
+			}
+			changesMade++;
+		}
 		
 		final InactivationIndicatorEntry[] ciis = getDuplicateInactivationIndicators(c, c.getInactivationIndicatorEntries(), t);
 		for (final InactivationIndicatorEntry cii : ciis) {
@@ -117,11 +129,17 @@ public class DuplicateInactAssocFix extends BatchFix {
 		// active descriptions
 		info("Identifying concepts to process");
 		final List<Component> processMe = new ArrayList<Component>();
+		
+		nextConcept:
 		for (final Concept c : gl.getAllConcepts()) {
-			/*if (c.getConceptId().equals("519811015")) 
-			{ 
-				debug ("Check me"); 
-			}*/
+			for (String dialectRefset : ENGLISH_DIALECTS) {
+				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+					if (d.getLangRefsetEntries(ActiveState.ACTIVE, dialectRefset).size() > 1) {
+						processMe.add(c);
+						continue nextConcept;
+					}
+				}
+			}
 			 
 			if (!c.isActive()) {
 				final AssociationEntry[] as = getDuplicateAssociations(c, c.getAssociationEntries(), null);
@@ -134,19 +152,19 @@ public class DuplicateInactAssocFix extends BatchFix {
 							final InactivationIndicatorEntry[] diis = getDuplicateInactivationIndicators(d, d.getInactivationIndicatorEntries(), null);
 							if (diis.length > 0) {
 								processMe.add(c);
-								break;
+								continue nextConcept;
 							}
 						}
 					} else {
 						processMe.add(c);
-						continue;
+						continue nextConcept;
 					}
 				}
 				
 				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 					if (isMissingConceptInactiveIndicator(d)) {
 						processMe.add(c);
-						break;
+						continue nextConcept;
 					}
 				}
 			}
@@ -221,6 +239,54 @@ public class DuplicateInactAssocFix extends BatchFix {
 			}
 		}
 		return duplicates.toArray(new InactivationIndicatorEntry[] {});
+	}
+	
+	
+	/*
+	 * This is less about duplicates as it is about having more than one active entry for a given
+	 * description in a given dialect, so the values may be different
+	 */
+	private List<LangRefsetEntry> getMultipleLangRefsetEntries(Concept c, Task t) throws TermServerScriptException {
+		List<LangRefsetEntry> forDeletion = new ArrayList<>();
+		for (String dialectRefset : ENGLISH_DIALECTS) {
+			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+				LangRefsetEntry keep = null;
+				for (LangRefsetEntry thisEntry : d.getLangRefsetEntries(ActiveState.ACTIVE, dialectRefset)) {
+					if (keep == null) {
+						keep = thisEntry;
+					} else {
+						if (!keep.getAcceptabilityId().equals(thisEntry.getAcceptabilityId())) {
+							report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "LangRefsetEntries have conflicting acceptability", d, keep, thisEntry);
+						}
+						debug("Found duplicates for " + c + ": " + thisEntry + " + " + keep);
+						// Delete the unpublished one.   If they're both unpublished, get that refset entry 
+						// directly to check the published flag.
+						if (StringUtils.isEmpty(thisEntry.getEffectiveTime()) && StringUtils.isEmpty(keep.getEffectiveTime())) {
+							warn("Both entries look modified, checking TS for published status of " + thisEntry);
+							RefsetMember r = tsClient.getRefsetMember(thisEntry.getId(), getBranchPath(t));
+							warn("Result: Is " + (r.getReleased()?"":"not ") + "published.");
+							if (r.getReleased()) {
+								forDeletion.add(keep);
+								keep = thisEntry;
+							} else {
+								forDeletion.add(thisEntry);
+							}
+						} else if (StringUtils.isEmpty(thisEntry.getEffectiveTime())) {
+							forDeletion.add(thisEntry);
+						} else if (StringUtils.isEmpty(keep.getEffectiveTime())) {
+							forDeletion.add(keep);
+							keep = thisEntry;
+						} else {
+							// Only a problem historically if they're both active
+							if (thisEntry.isActive() && keep.isActive()) {
+								warn("Both entries look published! " + thisEntry.getEffectiveTime());
+							}
+						}
+					}
+				}
+			}
+		}
+		return forDeletion; 
 	}
 	
 	private String getBranchPath(Task t) {
