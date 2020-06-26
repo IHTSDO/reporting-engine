@@ -585,6 +585,9 @@ public class GraphLoader implements RF2Constants {
 				/*if (langRefsetEntry.getId().equals("1ee09ebd-f9cc-57f6-9850-ceea87310e68")) {
 					TermServerScript.debug("here");
 				}*/
+				if (langRefsetEntry.getReferencedComponentId().equals("255227015")) {
+					TermServerScript.debug("here");
+				}
 				
 				//Are we adding or replacing this entry?
 				if (d.getLangRefsetEntries().contains(langRefsetEntry)) {
@@ -624,7 +627,7 @@ public class GraphLoader implements RF2Constants {
 						checkForActiveDuplication(d, existing, langRefsetEntry);
 					}
 					
-					if (existing.getEffectiveTime().compareTo(langRefsetEntry.getEffectiveTime()) > 1) {
+					if (existing.getEffectiveTime().compareTo(langRefsetEntry.getEffectiveTime()) <= 1) {
 						clearToAdd = false;
 						issue = "Existing " + (existing.isActive()? "active":"inactive") +  " langrefset entry taking priority over incoming " + (langRefsetEntry.isActive()? "active":"inactive") + " as later : " + existing;
 					} else if (existing.getEffectiveTime().equals(langRefsetEntry.getEffectiveTime())) {
@@ -638,6 +641,7 @@ public class GraphLoader implements RF2Constants {
 						//New entry is later or same effective time as one we already know about
 						d.getLangRefsetEntries().remove(existing);
 						issue = "Existing " + (existing.isActive()? "active":"inactive") + " langrefset entry being overwritten by subsequent " + (langRefsetEntry.isActive()? "active":"inactive") + " value " + existing;
+						System.err.println(issue);
 					}
 				}
 				
@@ -645,8 +649,11 @@ public class GraphLoader implements RF2Constants {
 					TermServerScript.warn(issue);
 				}
 				
+				//INFRA-5274 We're going to add the entry in all cases so we can detect duplicates,
+				//but we'll only set the acceptability on the description if the above code decided it was safe
+				d.getLangRefsetEntries().add(langRefsetEntry);
+				
 				if (clearToAdd) {
-					d.getLangRefsetEntries().add(langRefsetEntry);
 					if (lineItems[LANG_IDX_ACTIVE].equals("1")) {
 						Acceptability a = SnomedUtils.translateAcceptability(lineItems[LANG_IDX_ACCEPTABILITY_ID]);
 						d.setAcceptablity(lineItems[LANG_IDX_REFSETID], a);
@@ -664,8 +671,8 @@ public class GraphLoader implements RF2Constants {
 	private void checkForActiveDuplication(Description d, LangRefsetEntry l1, LangRefsetEntry l2) throws TermServerScriptException {
 		if (l1.isActive() && l2.isActive()) {
 			Set<DuplicatePair> duplicates = getLangRefsetDuplicates(d);
-			duplicates.add(new DuplicatePair(l1, l2));  //Keep the first, inactivate (or delete) the second
-			System.out.println("Noting langrefset as duplicate with " + l1.getId() + " : " + l2);
+			duplicates.add(new DuplicatePair(l1, l2));  //Keep the first, with the intention to inactivate (or delete) the second
+			System.err.println("Noting langrefset as duplicate with " + l1.getId() + " : " + l2);
 		}
 	}
 	

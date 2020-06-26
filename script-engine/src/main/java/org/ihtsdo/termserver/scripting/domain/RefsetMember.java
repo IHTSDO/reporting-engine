@@ -1,14 +1,16 @@
 package org.ihtsdo.termserver.scripting.domain;
 
+import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang.NotImplementedException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
 //TODO Move common fields and methods into Component itself
-public abstract class RefsetMember extends Component {
+public class RefsetMember extends Component {
 
 	@SerializedName("active")
 	@Expose
@@ -44,6 +46,8 @@ public abstract class RefsetMember extends Component {
 	protected String deletionEffectiveTime;
 	
 	protected boolean isDeleted = false;
+	
+	public RefsetMember() {}
 	
 	public Boolean getActive() {
 		return active;
@@ -134,5 +138,36 @@ public abstract class RefsetMember extends Component {
 	
 	public boolean isDeleted() {
 		return isDeleted;
+	}
+
+	@Override
+	public boolean isActive() {
+		//TODO Allow te base class to return this;
+		return active;
+	}
+
+	@Override
+	public String getReportedName() {
+		throw new NotImplementedException();
+	}
+
+	@Override
+	public String getReportedType() {
+		throw new NotImplementedException();
+	}
+
+	@Override
+	public ComponentType getComponentType() {
+		throw new NotImplementedException();
+	}
+
+	@Override
+	public String[] toRF2() throws Exception {
+		throw new NotImplementedException();
+	}
+
+	@Override
+	public List<String> fieldComparison(Component other) {
+		throw new NotImplementedException();
 	}
 }
