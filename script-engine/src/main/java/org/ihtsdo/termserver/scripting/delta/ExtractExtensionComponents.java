@@ -332,12 +332,12 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		} else {
 			throw new TermServerScriptException("Unable to find replacement for " + inactiveConcept + " due to " + assocs.size() + " associations");
 		}*/
-		List<String> assocs = inactiveConcept.getAssociationTargets().getReplacedBy();
+		Set<String> assocs = inactiveConcept.getAssociationTargets().getReplacedBy();
 		if (assocs.size() != 1) {
 			throw new TermServerScriptException("Unable to find replacement for " + inactiveConcept + " due to " + assocs.size() + " associations");
 		} else {
-			//We will probably not have loaded this concept via RF2 if the target has been replaced, so load from seconardy source
-			return loadConcept(gl.getConcept(assocs.get(0)));
+			//We will probably not have loaded this concept via RF2 if the target has been replaced, so load from secondary source
+			return loadConcept(gl.getConcept(assocs.iterator().next()));
 		}
 	}
 

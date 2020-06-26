@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.fixes;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
@@ -29,7 +30,7 @@ public class InactivateConceptsNoReplacement extends BatchFix implements RF2Cons
 	
 	Set<String> searchTerms = new HashSet<>();
 	Set<Concept> targetHierarchies = new HashSet<>();
-	Map<Concept, Concept> incomingHistAssocReplacements;
+	Map<Concept, Set<Concept>> incomingHistAssocReplacements;
 	Set<Concept> unsafeToProcess = new HashSet<>();
 	Map<Concept, Task> processed = new HashMap<>();
 	
@@ -97,28 +98,33 @@ public class InactivateConceptsNoReplacement extends BatchFix implements RF2Cons
 			String[] items = line.split(TAB);
 			//We're only populating where we have a replacements
 			if (items.length >= 3) {
-				Concept inactivatedConcept = gl.getConcept(items[0], false, true);
-				String replacementSCTID = items[2];
-				
-				
-				
-				//Does it even have an SCTID in it?   Try a description look up if not
-				if (!SnomedUtils.startsWithSCTID(replacementSCTID)) {
-					Concept conceptFromDesc = gl.findConcept(replacementSCTID);
-					if (conceptFromDesc != null) {
-						replacementSCTID = conceptFromDesc.getConceptId();
-						warn("Looked up replacement " + conceptFromDesc);
-					} else {
-						report ((Task)null, inactivatedConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "FSN of replacement doesn't exist in current environment. ", replacementSCTID);
-						continue;
+				for (int replacementIdx = 2; replacementIdx < items.length; replacementIdx++) {
+					Concept inactivatedConcept = gl.getConcept(items[0], false, true);
+					String replacementSCTID = items[replacementIdx];
+					
+					//Does it even have an SCTID in it?   Try a description look up if not
+					if (!SnomedUtils.startsWithSCTID(replacementSCTID)) {
+						Concept conceptFromDesc = gl.findConcept(replacementSCTID);
+						if (conceptFromDesc != null) {
+							replacementSCTID = conceptFromDesc.getConceptId();
+							warn("Looked up replacement " + conceptFromDesc);
+						} else {
+							report ((Task)null, inactivatedConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "FSN of replacement doesn't exist in current environment. ", replacementSCTID);
+							continue;
+						}
 					}
-				}
-				
-				Concept replacement = gl.getConcept(replacementSCTID, false, false);
-				if (replacement == null) {
-					report ((Task)null, inactivatedConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "suggested replacement doesn't exist in current environment. ", replacementSCTID);
-				} else {
-					incomingHistAssocReplacements.put(inactivatedConcept, replacement);
+					
+					Concept replacement = gl.getConcept(replacementSCTID, false, false);
+					if (replacement == null) {
+						report ((Task)null, inactivatedConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "suggested replacement doesn't exist in current environment. ", replacementSCTID);
+					} else {
+						Set<Concept> replacements = incomingHistAssocReplacements.get(inactivatedConcept);
+						if (replacements == null) {
+							replacements = new HashSet<>();
+							incomingHistAssocReplacements.put(inactivatedConcept, replacements);
+						}
+						replacements.add(replacement);
+					}
 				}
 			}
 		}
@@ -207,7 +213,7 @@ public class InactivateConceptsNoReplacement extends BatchFix implements RF2Cons
 			Concept incoming = gl.getConcept(assoc.getReferencedComponentId());
 			//Does the concept we're inactivating have a concepts designated to rewire to?
 			if (incomingHistAssocReplacements.containsKey(c)) {
-				replacements = Collections.singleton(incomingHistAssocReplacements.get(c));
+				replacements = incomingHistAssocReplacements.get(c);
 				//For INFRA-4865 we can't re-jig the incoming associations, so we'll use AMBIGUOUS
 				//so the suggested replacement is PossEquivTo
 				reason = InactivationIndicator.AMBIGUOUS;
@@ -219,7 +225,7 @@ public class InactivateConceptsNoReplacement extends BatchFix implements RF2Cons
 		}
 	}
 
-	private void inactivateHistoricalAssociation(Task t, AssociationEntry assoc, Concept c, InactivationIndicator reason, Set<Concept> replacements) throws TermServerScriptException {
+	private void inactivateHistoricalAssociation(Task t, AssociationEntry assoc, Concept inactivatingConcept, InactivationIndicator reason, Set<Concept> replacements) throws TermServerScriptException {
 		//The source concept can no longer have this historical association, and its
 		//inactivation reason must also change.
 		Concept originalTarget = gl.getConcept(assoc.getTargetComponentId());
@@ -228,7 +234,7 @@ public class InactivateConceptsNoReplacement extends BatchFix implements RF2Cons
 		incomingConcept.setInactivationIndicator(reason);
 		if ((replacements == null || replacements.size() == 0) && 
 				!reason.equals(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY)) {
-			throw new ValidationFailure(t, c, "Hist Assoc rewiring attempted wtih no replacement offered.");
+			throw new ValidationFailure(t, inactivatingConcept, "Hist Assoc rewiring attempted wtih no replacement offered.");
 		}
 		replacements = new HashSet<>(replacements);
 		
@@ -246,11 +252,15 @@ public class InactivateConceptsNoReplacement extends BatchFix implements RF2Cons
 			if (newAssocs == null) {
 				newAssocs = new HashSet<>();
 			} else {
-				report(t, c, Severity.NONE, ReportActionType.INFO, "Concept has previously rewired associations", newAssocs.toString());
+				report(t, inactivatingConcept, Severity.NONE, ReportActionType.INFO, "Concept has previously rewired associations", newAssocs.toString());
 			}
 			replacements.addAll(newAssocs);
 			assocType = "PossEquivTo";
-			incomingConcept.setAssociationTargets(AssociationTargets.possEquivTo(replacements));
+			//There may be other potential equivalents we don't want to remove, so just take out the one we're inactiving 
+			//and add in the new ones.
+			//incomingConcept.setAssociationTargets(AssociationTargets.possEquivTo(replacements));
+			modifyPossEquivAssocs(incomingConcept, inactivatingConcept, replacements);
+			
 			//Store the complete set away so if we see that concept again, we maintain a complete set
 			historicallyRewiredPossEquivTo.put(incomingConcept,replacements);
 		} else if (reason.equals(InactivationIndicator.MOVED_ELSEWHERE)) {
@@ -273,6 +283,15 @@ public class InactivateConceptsNoReplacement extends BatchFix implements RF2Cons
 		updateConcept(t, incomingConcept, "");
 	}
 
+	private void modifyPossEquivAssocs(Concept incomingConcept, Concept inactivatingConcept,
+			Set<Concept> replacements) {
+		List<String> replacementSCTIDs = replacements.stream()
+				.map(c -> c.getId())
+				.collect(Collectors.toList());
+		incomingConcept.getAssociationTargets().getPossEquivTo().remove(inactivatingConcept.getId());
+		incomingConcept.getAssociationTargets().getPossEquivTo().addAll(replacementSCTIDs);
+	}
+
 	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		info ("Identifying concepts to process");
@@ -289,7 +308,6 @@ public class InactivateConceptsNoReplacement extends BatchFix implements RF2Cons
 	
 	private void addComponentsToProcess(Concept c, Set<Concept> processMe) throws TermServerScriptException {
 		if (c.isActive() && containsSearchTerm(c)) {
-			
 			if (!isSafeToInactivate(c)) {
 				report ((Task)null, c, Severity.HIGH, ReportActionType.INFO, "Concept has incoming historical association and no replacement.");
 				unsafeToProcess.add(c);

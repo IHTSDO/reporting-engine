@@ -1,8 +1,8 @@
 package org.ihtsdo.termserver.scripting.domain;
 
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Collections;
-import java.util.List;
+import java.util.Set;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -17,57 +17,57 @@ public class AssociationTargets {
 
 	@SerializedName("REPLACED_BY")
 	@Expose
-	private List<String> replacedBy = new ArrayList<>();
+	private Set<String> replacedBy = new HashSet<>();
 	
 	@SerializedName("POSSIBLY_EQUIVALENT_TO")
 	@Expose
-	private List<String> possEquivTo = new ArrayList<>();
+	private Set<String> possEquivTo = new HashSet<>();
 	
 	@SerializedName("SAME_AS")
 	@Expose
-	private List<String> sameAs = new ArrayList<>();
+	private Set<String> sameAs = new HashSet<>();
 	
 	@SerializedName("WAS_A")
 	@Expose
-	private List<String> wasA = new ArrayList<>();
+	private Set<String> wasA = new HashSet<>();
 	
 	@SerializedName("MOVED_TO")
 	@Expose
-	private List<String> movedTo = new ArrayList<>();
+	private Set<String> movedTo = new HashSet<>();
 
-	public List<String> getReplacedBy() {
+	public Set<String> getReplacedBy() {
 		return replacedBy;
 	}
 
-	public void setReplacedBy(List<String> replacedBy) {
+	public void setReplacedBy(Set<String> replacedBy) {
 		this.replacedBy = replacedBy;
 	}
 	
-	public List<String> getPossEquivTo() {
+	public Set<String> getPossEquivTo() {
 		return possEquivTo;
 	}
 
-	public void setPossEquivTo(List<String> possEquivTo) {
+	public void setPossEquivTo(Set<String> possEquivTo) {
 		this.possEquivTo = possEquivTo;
 	}
 	
-	public List<String> getSameAs() {
+	public Set<String> getSameAs() {
 		return sameAs;
 	}
 
-	public void setSameAs(List<String> sameAs) {
+	public void setSameAs(Set<String> sameAs) {
 		this.sameAs = sameAs;
 	}
 	
-	public List<String> getWasA() {
+	public Set<String> getWasA() {
 		return wasA;
 	}
 
-	public void setWasA(List<String> wasA) {
+	public void setWasA(Set<String> wasA) {
 		this.wasA = wasA;
 	}
 	
-	public void setMovedTo(List<String> movedTo) {
+	public void setMovedTo(Set<String> movedTo) {
 		this.movedTo = movedTo;
 	}
 
@@ -78,42 +78,42 @@ public class AssociationTargets {
 
 	public static AssociationTargets possEquivTo(Set<Concept> replacements) {
 		AssociationTargets targets = new AssociationTargets();
-		List<String> targetList = replacements.stream()
+		Set<String> targetSet = replacements.stream()
 				.map(c -> c.getId())
-				.collect(Collectors.toList());
-		targets.setPossEquivTo(targetList);
+				.collect(Collectors.toSet());
+		targets.setPossEquivTo(targetSet);
 		return targets;
 	}
 	
 	public static AssociationTargets sameAs(Concept c) {
 		AssociationTargets targets = new AssociationTargets();
-		List<String> targetList = new ArrayList<>();
-		targetList.add(c.getId());
-		targets.setSameAs(targetList);
+		Set<String> targetSet = new HashSet<>();
+		targetSet.add(c.getId());
+		targets.setSameAs(targetSet);
 		return targets;
 	}
 	
 	public static AssociationTargets replacedBy(Concept c) {
 		AssociationTargets targets = new AssociationTargets();
-		List<String> targetList = new ArrayList<>();
-		targetList.add(c.getId());
-		targets.setReplacedBy(targetList);
+		Set<String> targetSet = new HashSet<>();
+		targetSet.add(c.getId());
+		targets.setReplacedBy(targetSet);
 		return targets;
 	}
 	
 	public static AssociationTargets wasA(Concept c) {
 		AssociationTargets targets = new AssociationTargets();
-		List<String> targetList = new ArrayList<>();
-		targetList.add(c.getId());
-		targets.setWasA(targetList);
+		Set<String> targetSet = new HashSet<>();
+		targetSet.add(c.getId());
+		targets.setWasA(targetSet);
 		return targets;
 	}
 	
 	public static AssociationTargets movedTo(Concept c) {
 		AssociationTargets targets = new AssociationTargets();
-		List<String> targetList = new ArrayList<>();
-		targetList.add(c.getId());
-		targets.setMovedTo(targetList);
+		Set<String> targetSet = new HashSet<>();
+		targetSet.add(c.getId());
+		targets.setMovedTo(targetSet);
 		return targets;
 	}
 	
