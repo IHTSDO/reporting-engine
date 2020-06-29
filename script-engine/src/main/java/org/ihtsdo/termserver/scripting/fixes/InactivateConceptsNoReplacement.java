@@ -178,6 +178,22 @@ public class InactivateConceptsNoReplacement extends BatchFix implements RF2Cons
 			}
 		}
 		
+		//It might also be that our concept is used as the target of some other relationship, like an associated finding attribute
+		//find all of these and check we're also expecting to inactivate the source of the incoming relationship
+		Set<Concept> sources = getIncomingAttributeSources(c);
+		for (Concept source : sources) {
+			if (!allComponentsToProcess.contains(source)) {
+				report(t, c, Severity.HIGH, ReportActionType.INFO, "Incoming attribute source not scheduled for inactivation.  Cannot inactivate concept", source);
+				return NO_CHANGES_MADE; 
+			}
+			//This will call recursively and we'll add into this task
+			if (doFix(t, source, null) > 0) {
+				report(t, source, Severity.HIGH, ReportActionType.INFO, "Incoming attribute inactivation squeezed into same task as " + c);
+				t.remove(source);
+				t.addAfter(source, c);
+			}
+		}
+		
 		c.setActive(false);  //Function also inactivates all relationships
 		c.setEffectiveTime(null);
 		c.setInactivationIndicator(inactivationIndicator);
@@ -195,6 +211,20 @@ public class InactivateConceptsNoReplacement extends BatchFix implements RF2Cons
 
 
 	
+	private Set<Concept> getIncomingAttributeSources(Concept c) {
+		Set<Concept> incomingAttributeSources = new HashSet<>();
+		for (Concept source : gl.getAllConcepts()) {
+			if (source.isActive()) {
+				for (Relationship r : source.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
+					if (!r.getType().equals(IS_A) && r.getTarget().equals(c)) {
+						incomingAttributeSources.add(source);
+					}
+				}
+			}
+		}
+		return incomingAttributeSources;
+	}
+
 	protected int deleteConcept(Task t, Concept c) throws TermServerScriptException {
 		//Check for this concept being the target of any historical associations and rewire them to the replacement
 		checkAndInactivatateIncomingAssociations(t, c, InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY, null);
