@@ -174,6 +174,8 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		for (Task task : batch.getTasks()) {
 			try {
 				currentTaskNum++;
+				onNewTask(task);
+				
 				//If we don't have any concepts in this task eg this is 100% ME file, then skip
 				if (task.size() == 0) {
 					info ("Skipping Task " + task.getSummary() + " - no concepts to process");
@@ -241,6 +243,10 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 				break;
 			}
 		}
+	}
+
+	protected void onNewTask(Task task) {
+		// Override to do some processing for each new task;
 	}
 
 	private void createTask(Task task) throws TermServerScriptException, InterruptedException {

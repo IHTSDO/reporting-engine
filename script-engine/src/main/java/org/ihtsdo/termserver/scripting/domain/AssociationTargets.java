@@ -67,6 +67,10 @@ public class AssociationTargets {
 		this.wasA = wasA;
 	}
 	
+	public Set<String> getMovedTo() {
+		return movedTo;
+	}
+	
 	public void setMovedTo(Set<String> movedTo) {
 		this.movedTo = movedTo;
 	}

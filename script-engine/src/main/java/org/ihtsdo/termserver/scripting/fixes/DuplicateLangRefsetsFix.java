@@ -26,9 +26,6 @@ public class DuplicateLangRefsetsFix extends BatchFix {
 			fix.getArchiveManager().setPopulateReleasedFlag(true);
 			fix.init(args);
 			fix.loadProjectSnapshot(false);  //Load all descriptions
-			if (fix.gl.getDuplicateLangRefsetEntriesMap() == null) {
-				throw new TermServerScriptException("Graph Loader did not detect any duplicate LangRefsetEntries");
-			}
 			fix.postInit();
 			fix.processFile();
 		} finally {

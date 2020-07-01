@@ -1215,6 +1215,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 			if (populateUUIDs && d.getId() == null) {
 				dClone.setDescriptionId(UUID.randomUUID().toString());
 			}
+			dClone.setInactivationIndicator(d.getInactivationIndicator());
 		}
 		
 		//Copy all stated relationships, or in the case of an exact clone (keepIds = true) also inferred
@@ -1253,6 +1254,9 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		if (keepIds) {
 			clone.inactivationIndicatorEntries = new ArrayList<>(getInactivationIndicatorEntries());
 			clone.associationEntries = new ArrayList<>(getAssociationEntries());
+			for (AssociationEntry entry : clone.getAssociationEntries()) {
+				SnomedUtils.addHistoricalAssociationInTsForm(clone, entry);
+			}
 		}
 		
 		return clone;

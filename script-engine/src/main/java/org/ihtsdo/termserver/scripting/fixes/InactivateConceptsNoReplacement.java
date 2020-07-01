@@ -40,10 +40,21 @@ public class InactivateConceptsNoReplacement extends BatchFix implements RF2Cons
 	//However, the source of that association might also point to some OTHER concept that we're
 	//inactivating, in which case we need to leave that rewiring in place ie for a single given concept
 	//we can't just wipe out all existing historical associations.  We need to maintain a new set of them.
+	
+	//It got trickier.  If we add historical associations in one task and then need to do it AGAIN in 
+	//another task, they get new UUIDs and when we come to promote to the project we end up with the same
+	//associations having different UUIDs being merged and appearing to be duplicates.   So we'll wipe this
+	//map after every task.
 	Map<Concept, Set<Concept>> historicallyRewiredPossEquivTo = new HashMap<>();
 	
 	protected InactivateConceptsNoReplacement(BatchFix clone) {
 		super(clone);
+	}
+	
+	@Override
+	protected void onNewTask(Task task) {
+		//See long winded explanation above
+		historicallyRewiredPossEquivTo.clear();
 	}
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
@@ -172,7 +183,7 @@ public class InactivateConceptsNoReplacement extends BatchFix implements RF2Cons
 		for (Concept child : children) {
 			//This will call recursively and we'll add into this task
 			if (doFix(t, child, null) > 0) {
-				report(t, child, Severity.HIGH, ReportActionType.INFO, "Child inactivation squeezed into same task as " + c);
+				report(t, child, Severity.LOW, ReportActionType.INFO, "Child inactivation squeezed into same task as " + c);
 				t.remove(child);
 				t.addAfter(child, c);
 			}
@@ -241,6 +252,9 @@ public class InactivateConceptsNoReplacement extends BatchFix implements RF2Cons
 		
 		for (AssociationEntry assoc : gl.usedAsHistoricalAssociationTarget(c)) {
 			Concept incoming = gl.getConcept(assoc.getReferencedComponentId());
+			if (incoming.getId().equals("140506004")) {
+				debug("here");
+			}
 			//Does the concept we're inactivating have a concepts designated to rewire to?
 			if (incomingHistAssocReplacements.containsKey(c)) {
 				replacements = incomingHistAssocReplacements.get(c);
@@ -277,19 +291,19 @@ public class InactivateConceptsNoReplacement extends BatchFix implements RF2Cons
 			throw new NotImplementedException();
 			//incomingConcept.setAssociationTargets(AssociationTargets.sameAs(replacements));
 		} else if  (reason.equals(InactivationIndicator.AMBIGUOUS)) {
-			//Have we seen this concept before?
+			//Have we seen this concept before...in this task?
 			Set<Concept> newAssocs = historicallyRewiredPossEquivTo.get(incomingConcept);
 			if (newAssocs == null) {
 				newAssocs = new HashSet<>();
 			} else {
-				report(t, inactivatingConcept, Severity.NONE, ReportActionType.INFO, "Concept has previously rewired associations", newAssocs.toString());
+				report(t, inactivatingConcept, Severity.MEDIUM, ReportActionType.INFO, "Concept has previously rewired associations", newAssocs.toString());
 			}
 			replacements.addAll(newAssocs);
 			assocType = "PossEquivTo";
 			//There may be other potential equivalents we don't want to remove, so just take out the one we're inactiving 
 			//and add in the new ones.
 			//incomingConcept.setAssociationTargets(AssociationTargets.possEquivTo(replacements));
-			modifyPossEquivAssocs(incomingConcept, inactivatingConcept, replacements);
+			modifyPossEquivAssocs(t, incomingConcept, inactivatingConcept, replacements);
 			
 			//Store the complete set away so if we see that concept again, we maintain a complete set
 			historicallyRewiredPossEquivTo.put(incomingConcept,replacements);
@@ -306,20 +320,62 @@ public class InactivateConceptsNoReplacement extends BatchFix implements RF2Cons
 		}
 		Severity severity = replacements.size() == 0 ? Severity.CRITICAL : Severity.MEDIUM;
 		for (Concept replacement : replacements) {
-			report(t, originalTarget, severity, ReportActionType.CONCEPT_CHANGE_MADE, "Historical incoming association from " + incomingConcept, " rewired as " + assocType, replacement);
+			report(t, originalTarget, severity, ReportActionType.ASSOCIATION_CHANGED, "Historical incoming association from " + incomingConcept, " rewired as " + assocType, replacement);
 		};
 			//Add this concept into our task so we know it's been updated
 		t.addAfter(incomingConcept, gl.getConcept(assoc.getTargetComponentId()));
 		updateConcept(t, incomingConcept, "");
 	}
 
-	private void modifyPossEquivAssocs(Concept incomingConcept, Concept inactivatingConcept,
-			Set<Concept> replacements) {
+	private void modifyPossEquivAssocs(Task t, Concept incomingConcept, Concept inactivatingConcept,
+			Set<Concept> replacements) throws TermServerScriptException {
+		
+		if (incomingConcept.getId().equals("140506004")) {
+			debug("here");
+		}
+		
+		Set<String> possEquivs = incomingConcept.getAssociationTargets().getPossEquivTo();
 		List<String> replacementSCTIDs = replacements.stream()
 				.map(c -> c.getId())
 				.collect(Collectors.toList());
-		incomingConcept.getAssociationTargets().getPossEquivTo().remove(inactivatingConcept.getId());
-		incomingConcept.getAssociationTargets().getPossEquivTo().addAll(replacementSCTIDs);
+		possEquivs.remove(inactivatingConcept.getId());
+		possEquivs.addAll(replacementSCTIDs);
+		
+		//Check out any other historical associations we might have
+		for (String sctId : incomingConcept.getAssociationTargets().getWasA()) {
+			reworkOtherAssociations(t, incomingConcept, possEquivs, sctId, "Was A");
+		}
+		incomingConcept.getAssociationTargets().getWasA().clear();
+		
+		for (String sctId : incomingConcept.getAssociationTargets().getSameAs()) {
+			reworkOtherAssociations(t, incomingConcept, possEquivs, sctId, "Same As");
+		}
+		incomingConcept.getAssociationTargets().getSameAs().clear();
+		
+		for (String sctId : incomingConcept.getAssociationTargets().getReplacedBy()) {
+			reworkOtherAssociations(t, incomingConcept, possEquivs, sctId, "Replaced By");
+		}
+		incomingConcept.getAssociationTargets().getReplacedBy().clear();
+	}
+
+	private void reworkOtherAssociations(Task t, Concept c, Set<String> possEquivs, String sctId,
+			String assocType) throws TermServerScriptException {
+		//Is this concept already inactive or are we planning on inactivating it?  Can just allow
+		//that to happen if so
+		Concept assocSource = gl.getConcept(sctId);
+		if (!assocSource.isActive()) {
+			report(t, c, Severity.HIGH, ReportActionType.NO_CHANGE, "Inactivating Historical association incoming from inactive concept.", assocSource);
+			return;
+		}
+			
+		if (allComponentsToProcess.contains(assocSource)) {
+			report(t, c, Severity.HIGH, ReportActionType.NO_CHANGE, "Inactivating Historical association incoming from concept scheduled for inactivation", assocSource);
+			return;
+		}
+		
+		//Otherwise we're going to have to make this hist assoc a possEquiv because we can't have multiple types used
+		possEquivs.add(sctId);
+		report(t, c, Severity.HIGH, ReportActionType.ASSOCIATION_CHANGED, "Changing incoming historical assocation from " + assocType + " to PossEquivTo", assocSource);
 	}
 
 	@Override

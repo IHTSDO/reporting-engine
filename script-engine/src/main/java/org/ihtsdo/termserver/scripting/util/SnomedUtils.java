@@ -1509,4 +1509,23 @@ public class SnomedUtils implements RF2Constants {
 		return null;
 	}
 
+	/*
+	 * Adds a historical association using the string based map format as per the Terminology Server's API
+	 */
+	public static void addHistoricalAssociationInTsForm(Concept c, AssociationEntry historicalAssociation) {
+		AssociationTargets targets = c.getAssociationTargets();
+		String target = historicalAssociation.getTargetComponentId();
+		switch (historicalAssociation.getRefsetId()) {
+			case (SCTID_ASSOC_MOVED_TO_REFSETID) : targets.getMovedTo().add(target);
+													break;
+			case (SCTID_ASSOC_WAS_A_REFSETID) : targets.getWasA().add(target);
+													break;
+			case (SCTID_ASSOC_REPLACED_BY_REFSETID) : targets.getReplacedBy().add(target);
+													break;
+			case (SCTID_ASSOC_SAME_AS_REFSETID) : targets.getSameAs().add(target);
+													break;	
+			case (SCTID_ASSOC_POSS_EQUIV_REFSETID) : targets.getPossEquivTo().add(target);
+													break;	
+		}
+	}
 }

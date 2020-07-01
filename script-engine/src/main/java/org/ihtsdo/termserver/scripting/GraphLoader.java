@@ -38,7 +38,7 @@ public class GraphLoader implements RF2Constants {
 	private Map<Concept, List<AssociationEntry>> historicalAssociations =  new HashMap<Concept, List<AssociationEntry>>();
 	private TransitiveClosure previousTransativeClosure;
 	private Map<Concept, Set<DuplicatePair>> duplicateLangRefsetEntriesMap;
-	private Set<LangRefsetEntry> duplicateLangRefsetIdsReported;
+	private Set<LangRefsetEntry> duplicateLangRefsetIdsReported = new HashSet<>();
 
 	private boolean detectNoChangeDelta = false;
 	
@@ -584,10 +584,10 @@ public class GraphLoader implements RF2Constants {
 				
 				/*if (langRefsetEntry.getId().equals("1ee09ebd-f9cc-57f6-9850-ceea87310e68")) {
 					TermServerScript.debug("here");
-				}*/
+				}
 				if (langRefsetEntry.getReferencedComponentId().equals("255227015")) {
 					TermServerScript.debug("here");
-				}
+				}*/
 				
 				//Are we adding or replacing this entry?
 				if (d.getLangRefsetEntries().contains(langRefsetEntry)) {
@@ -597,10 +597,6 @@ public class GraphLoader implements RF2Constants {
 					//then there's two copies of this langrefset entry in a delta
 					if (!isReleased && StringUtils.isEmpty(original.getEffectiveTime())) {
 						//Have we already reported this duplicate?
-						if (duplicateLangRefsetIdsReported == null ) {
-							duplicateLangRefsetIdsReported = new HashSet<>();
-						}
-						
 						if (duplicateLangRefsetIdsReported.contains(original)) {
 							TermServerScript.warn("Seeing additional duplication for " + original.getId());
 						} else {
@@ -790,6 +786,10 @@ public class GraphLoader implements RF2Constants {
 					//TODO Descriptions can also have associations
 					Concept c = getConcept(referencedComponent);
 					
+					/*if (c.getId().equals("140506004")) {
+						System.out.println("here");
+					}*/
+					
 					String revertEffectiveTime = null;
 					if (detectNoChangeDelta && isReleased != null && !isReleased) {
 						//Recover this entry for the component - concept or description
@@ -806,12 +806,11 @@ public class GraphLoader implements RF2Constants {
 						historicalAssociation.setEffectiveTime(revertEffectiveTime);
 					}
 					
-					
 					//Remove first in case we're replacing
 					c.getAssociationEntries().remove(historicalAssociation);
 					c.getAssociationEntries().add(historicalAssociation);
 					if (historicalAssociation.isActive()) {
-						addHistoricalAssociationInTsForm(c, historicalAssociation);
+						SnomedUtils.addHistoricalAssociationInTsForm(c, historicalAssociation);
 						recordHistoricalAssociation(historicalAssociation);
 					}
 				}
@@ -837,27 +836,6 @@ public class GraphLoader implements RF2Constants {
 		return null;
 	}
 	
-	/*
-	 * Adds a historical association using the string based map format as per the Terminology Server's API
-	 */
-	private void addHistoricalAssociationInTsForm(Concept c, AssociationEntry historicalAssociation) {
-		AssociationTargets targets = c.getAssociationTargets();
-		if (targets == null) {
-			targets = new AssociationTargets();
-			c.setAssociationTargets(targets);
-		}
-		String target = historicalAssociation.getTargetComponentId();
-		switch (historicalAssociation.getRefsetId()) {
-			case (SCTID_ASSOC_REPLACED_BY_REFSETID) : targets.getReplacedBy().add(target);
-													break;
-			case (SCTID_ASSOC_SAME_AS_REFSETID) : targets.getSameAs().add(target);
-													break;	
-			case (SCTID_ASSOC_POSS_EQUIV_REFSETID) : targets.getPossEquivTo().add(target);
-													break;	
-		}
-		
-	}
-
 	private void recordHistoricalAssociation(AssociationEntry h) throws TermServerScriptException {
 		//Remember we're using the target of the association as the map key here
 		Concept target = getConcept(h.getTargetComponentId());
