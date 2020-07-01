@@ -112,7 +112,11 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		for (Concept c : subHierarchy) {
 			DrugUtils.setConceptType(c);
 			
-			//INFRA-4159 Seeing impossible situation of no stated parents
+			/*if (c.getId().equals("108725001")) {
+				debug ("here");
+			}*/
+			
+			//INFRA-4159 Seeing impossible situation of no stated parents.  Also DRUGS-895
 			if (c.getParents(CharacteristicType.STATED_RELATIONSHIP).size() == 0) {
 				String issueStr = "Concept appears to have no stated parents";
 				initialiseSummaryInformation(issueStr);

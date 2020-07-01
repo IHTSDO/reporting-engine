@@ -330,13 +330,13 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		
 		subHierarchyECL = "<<404684003 |Clinical finding (finding)| : 116676008 |Associated morphology (attribute)| = << 25723000 |Dysplasia (morphologic abnormality)|";
 		templateNames = new String[] { "templates/morphologies/Dysplasia.json" };
-		
-		subHierarchyECL = "(<<404684003 |Clinical finding (finding)| : 116676008 |Associated morphology (attribute)| = ( << 4147007 |Mass (morphologic abnormality)| MINUS <<416939005 |Proliferative mass (morphologic abnormality)| ) ) MINUS ( <<2775001 OR <<3723001 OR <<5294002 OR <<7890003 OR <<8098009 OR <<40733004 OR <<52515009 OR <<85828009 OR <<125605004 OR <<125643001 OR <<125666000 OR <<125667009 OR <<125670008 OR <<128139000 OR <<128477000 OR <<131148009 OR <<193570009 OR <<233776003 OR <<247441003 OR <<276654001 OR <<298180004 OR <<307824009 OR <<362975008 OR <<399981008 OR <<416462003 OR <<417893002 OR <<419199007 OR <<428794004 OR <<429040005 OR <<432119003 OR <<441457006 OR <<282100009)";
-		templateNames = new String[] { "templates/morphologies/Mass.json" };
 		*/
+		subHierarchyECL = "(<<404684003 |Clinical finding (finding)| : 116676008 |Associated morphology (attribute)| = ( << 4147007 |Mass (morphologic abnormality)| MINUS <<416939005 |Proliferative mass (morphologic abnormality)| ) )";
+		templateNames = new String[] { "templates/morphologies/Mass.json" };
+		/*
 		subHierarchyECL = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)|  = <<  30217000 |Proliferation (morphologic abnormality)|";
 		templateNames = new String[] { "templates/morphologies/Proliferation.json" };
-		
+		*/
 		//TODO We're seeing 'HIGH' warnings about existing parents being redundant in presence of PPP but before the PPP gets added. Investigate
 		
 		super.init(args);

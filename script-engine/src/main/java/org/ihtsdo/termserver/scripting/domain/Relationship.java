@@ -208,7 +208,8 @@ public class Relationship extends Component implements IRelationshipTemplate, RF
 		String charType = characteristicType.equals(CharacteristicType.STATED_RELATIONSHIP)?"S":"I";
 		String activeIndicator = this.isActive()?"":"*";
 		String relId = includeRelIds ? ":" + relationshipId : "";
-		return "[" + activeIndicator +  charType + groupId + relId + "] " + type + " -> " + target;
+		String axiomIdPart = getAxiomEntry() == null ? "" : ":" + getAxiomEntry().getId().substring(0,6);
+		return "[" + activeIndicator +  charType + groupId + relId + axiomIdPart + "] " + type + " -> " + target;
 	}
 
 	@Override
@@ -235,6 +236,14 @@ public class Relationship extends Component implements IRelationshipTemplate, RF
 		if (this.getRelationshipId() != null && rhs.getRelationshipId() != null) {
 			return this.getRelationshipId().equals(rhs.getRelationshipId());
 		}
+		
+		//If we have two rels the same but coming from different axioms, they should be handled separately
+		if (this.getAxiomEntry() != null && 
+				rhs.getAxiomEntry() != null && 
+				!this.getAxiomEntry().getId().equals(rhs.getAxiomEntry().getId())) {
+			return false;
+		}
+		
 		//Otherwise compare type / target / group 
 		return (this.type.equals(rhs.type) && this.target.equals(rhs.target) && this.groupId == rhs.groupId);
 	}

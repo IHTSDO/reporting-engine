@@ -202,8 +202,8 @@ public class GraphLoader implements RF2Constants {
 				Long conceptId = Long.parseLong(lineItems[REF_IDX_REFCOMPID]);
 				Concept c = getConcept(conceptId);
 
-/*				if (c.getConceptId().equals("714771003")) {
-					TermServerScript.debug("Debug Here");
+				/*if (c.getId().equals("108725001")) {
+					TermServerScript.debug ("here");
 				}*/
 				
 				try {
@@ -367,27 +367,36 @@ public class GraphLoader implements RF2Constants {
 		}*/
 		
 		boolean relationshipAdded = addRelationshipToConcept(charType, r, isDelta);
-		
-		//Consider adding or removing parents if the relationship is ISA
-		//But only remove items if we're processing a delta
-		//Don't modify our loaded hierarchy if we're loading a single concept from the TS
-		if (relationshipAdded && r.getType().equals(IS_A) && r.getTarget() != null) {
-			if (r.isActive()) {
-				r.getSource().addParent(r.getCharacteristicType(),r.getTarget());
-				r.getTarget().addChild(r.getCharacteristicType(),r.getSource());
-			} else if (isDelta) {
-				r.getSource().removeParent(r.getCharacteristicType(),r.getTarget());
-				r.getTarget().removeChild(r.getCharacteristicType(),r.getSource());
-			}
-		} 
-		
 		return relationshipAdded ? 0 : 1; //If ignored, increase count
 	}
 	
 	public boolean  addRelationshipToConcept(CharacteristicType charType, Relationship r, boolean isDelta) throws TermServerScriptException {
 		//In the case of importing an Inferred Delta, we could end up adding a relationship instead of replacing
 		//if it has a different SCTID.  We need to check for equality using triple, not SCTID in that case.
-		return r.getSource().addRelationship(r, isDelta);
+		boolean relationshipAdded = r.getSource().addRelationship(r, isDelta);
+		
+		//Consider adding or removing parents if the relationship is ISA
+		//But only remove items if we're processing a delta
+		//Don't modify our loaded hierarchy if we're loading a single concept from the TS
+		if (relationshipAdded && r.getType().equals(IS_A) && r.getTarget() != null) {
+			Concept source = r.getSource();
+			Concept target = r.getTarget();
+			if (r.isActive()) {
+				source.addParent(r.getCharacteristicType(),r.getTarget());
+				target.addChild(r.getCharacteristicType(),r.getSource());
+			} else if (isDelta) {
+				//Ah this gets tricky.  We only remove the parent child relationship if
+				//the source concept has no other relationships with the same triple
+				//because the relationship might exist in another axiom
+				if (source.getRelationships(r.getCharacteristicType(), r).size() == 0) {
+					source.removeParent(r.getCharacteristicType(),r.getTarget());
+					target.removeChild(r.getCharacteristicType(),r.getSource());
+				} else {
+					TermServerScript.warn("Not removing parent/child relationship as exists in other axiom: " + r);
+				}
+			}
+		} 
+		return relationshipAdded;
 	}
 	public Concept getConcept(String identifier) throws TermServerScriptException {
 		return getConcept(identifier.trim(), true, true);
