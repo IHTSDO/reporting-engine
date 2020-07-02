@@ -4,16 +4,16 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.AncestorsCache;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
-
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
+import org.ihtsdo.termserver.scripting.reports.TermContainsXReport;
+import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.*;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
@@ -64,21 +64,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 	}
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
-		CreateMissingDrugConcepts fix = new CreateMissingDrugConcepts(null);
-		try {
-			ReportSheetManager.targetFolderId="1SQw8vYXeB-LYPfoVzWwyGFjGp1yre2cT";  //Content Reporting Artefacts/Drugs/CreateMissingDrugConcepts
-			fix.populateEditPanel = true;
-			fix.populateTaskDescription = true;
-			fix.selfDetermining = true;
-			fix.classifyTasks = false;
-			fix.init(args);
-			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
-			fix.loadProjectSnapshot(false); //Load all descriptions
-			fix.postInit();
-			fix.processFile();
-		} finally {
-			fix.finish();
-		}
+		TermServerReport.run(CreateMissingDrugConcepts.class, args, new HashMap<>());
 	}
 	
 	public void runJob() throws TermServerScriptException {
@@ -96,17 +82,13 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 				.build();
 	}
 	
-	protected void init(JobRun jobRun) throws TermServerScriptException {
+	@Override
+	protected void preInit() throws TermServerScriptException {
 		ReportSheetManager.targetFolderId="1SQw8vYXeB-LYPfoVzWwyGFjGp1yre2cT";  //Content Reporting Artefacts/Drugs/CreateMissingDrugConcepts
 		populateEditPanel = true;
 		populateTaskDescription = true;
 		selfDetermining = true;
 		classifyTasks = false;
-		
-		//Have we been called via the reporting platform?
-		if (jobRun != null) {
-			super.init(jobRun);
-		}
 	}
 	
 	public void postInit() throws TermServerScriptException {

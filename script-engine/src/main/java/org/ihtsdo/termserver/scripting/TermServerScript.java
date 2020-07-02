@@ -475,31 +475,47 @@ public abstract class TermServerScript implements RF2Constants {
 			debug ("Instantiating " + this.getClass().getName() + " to process request for " + jobRun.getJobName());
 			debug ("Application context has " + (appContext == null?"not " : "") + "been supplied");
 			this.appContext = appContext;
+			preInit();
+			//Are we running locally?
+			if (appContext == null) {
+				checkSettingsWithUser(jobRun);
+			}
 			init(jobRun);
 			loadProjectSnapshot(false);  //Load all descriptions
 			postInit();
 			runJob();
 			flushFilesWithWait(false);
 			finish();
-
-			if (!suppressOutput) {
-				jobRun.setResultUrl(getReportManager().getUrl());
-				jobRun.setStatus(JobStatus.Complete);
-				Object issueCountObj = summaryDetails.get(ISSUE_COUNT);
-				int issueCount = 0;
-				if (issueCountObj != null && StringUtils.isNumeric(issueCountObj.toString())) {
-					issueCount = Integer.parseInt(issueCountObj.toString());
-				}
-				jobRun.setIssuesReported(issueCount);
-			}
+			jobRun.setStatus(JobStatus.Complete);
 		} catch (Exception e) {
 			String msg = "Failed to complete " + jobRun.getJobName() + ExceptionUtils.getExceptionCause("", e);
 			jobRun.setStatus(JobStatus.Failed);
 			jobRun.setDebugInfo(msg);
 			error(msg, e);
+		} finally {
+			try {
+				if (!suppressOutput) {
+					if (getReportManager() != null) {
+						jobRun.setResultUrl(getReportManager().getUrl());
+					}
+					Object issueCountObj = summaryDetails.get(ISSUE_COUNT);
+					int issueCount = 0;
+					if (issueCountObj != null && StringUtils.isNumeric(issueCountObj.toString())) {
+						issueCount = Integer.parseInt(issueCountObj.toString());
+					}
+					jobRun.setIssuesReported(issueCount);
+				}
+			} catch (Exception e2) {
+				error("Failed to set result URL in final block", e2);
+			}
 		}
 	}
 	
+	protected void preInit() throws TermServerScriptException {
+		//Override this method in concrete class to set flags that affect checkSettingsWithUser
+		//like selfDetermining = true;
+	}
+
 	protected void runJob () throws TermServerScriptException {
 		throw new TermServerScriptException("Override this method in concrete class");
 	}
@@ -1608,7 +1624,6 @@ public abstract class TermServerScript implements RF2Constants {
 		JobClass job = null;
 		try {
 			job = jobClazz.newInstance();
-			((TermServerScript)job).checkSettingsWithUser(jobRun);
 		} catch ( InstantiationException | IllegalAccessException e) {
 			throw new TermServerScriptException("Unable to instantiate " + jobClazz.getSimpleName(), e);
 		}
