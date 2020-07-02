@@ -215,6 +215,9 @@ public abstract class TermServerScript implements RF2Constants {
 		Throwable cause = e.getCause();
 		if (cause != null) {
 			msg += " caused by " + cause.getMessage();
+			if (cause.getMessage().length() < 6) {
+				msg += " @ " + cause.getStackTrace()[0];
+			}
 		}
 		return msg;
 	}
@@ -775,7 +778,7 @@ public abstract class TermServerScript implements RF2Constants {
 				return createdConcept;
 			} catch (Exception e) {
 				attempt++;
-				String msg = "Failed to create " + c + " in TS due to " + e.getMessage();
+				String msg = "Failed to create " + c + " in TS due to " + getMessage(e);
 				if (attempt <= 2) {
 					incrementSummaryInformation("Concepts creation exceptions");
 					warn (msg + " retrying...");
