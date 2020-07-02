@@ -217,8 +217,7 @@ public class Relationship extends Component implements IRelationshipTemplate, RF
 		return  toString().hashCode();
 	}
 
-	@Override
-	public boolean equals(Object other) {
+	public boolean equals(Object other, boolean ignoreAxiom) {
 		if (other == this) {
 			return true;
 		}
@@ -238,7 +237,8 @@ public class Relationship extends Component implements IRelationshipTemplate, RF
 		}
 		
 		//If we have two rels the same but coming from different axioms, they should be handled separately
-		if (this.getAxiomEntry() != null && 
+		if (ignoreAxiom == false &&
+				this.getAxiomEntry() != null && 
 				rhs.getAxiomEntry() != null && 
 				!this.getAxiomEntry().getId().equals(rhs.getAxiomEntry().getId())) {
 			return false;
@@ -246,6 +246,11 @@ public class Relationship extends Component implements IRelationshipTemplate, RF
 		
 		//Otherwise compare type / target / group 
 		return (this.type.equals(rhs.type) && this.target.equals(rhs.target) && this.groupId == rhs.groupId);
+	}
+	
+	@Override
+	public boolean equals(Object other) {
+		return equals(other, false);  //By default, include Axiom comparison
 	}
 	
 	public Relationship clone(String newSCTID) {

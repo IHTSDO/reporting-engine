@@ -89,7 +89,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	private String deletionEffectiveTime;
 	private boolean isDeleted = false;
 	private int depth = NOT_SET;
-	private Long statedRelSum = null;  //Allows cached quick comparison of relationships
+	private Long statedAttribSum = null;  //Allows cached quick comparison of relationships
 	
 	//Note that these values are used when loading from RF2 where multiple entries can exist.
 	//When interacting with the TS, only one inactivation indicator is used (see above).
@@ -1412,17 +1412,19 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	/**
 	 * Cache a sum of relationship target / values for quick comparison
 	 */
-	public long getStatedRelSum() {
-		if (statedRelSum == null) {
-			statedRelSum = 0L;
+	public long getStatedAttribSum() {
+		if (statedAttribSum == null) {
+			statedAttribSum = 0L;
 			for (Relationship r : getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
 				//Drugs modelling doesn't consider 766939001 |Plays role (attribute)|
-				if (!r.getType().equals(PLAYS_ROLE)) {
-					statedRelSum += Long.parseLong(r.getType().getId()) + Long.parseLong(r.getTarget().getId());
+				//Don't add IS_A because we pick up extra of those when processing additional attributes
+				//which throws this calculation out
+				if (!r.getType().equals(PLAYS_ROLE) && !r.getType().equals(IS_A)) {
+					statedAttribSum += Long.parseLong(r.getType().getId()) + Long.parseLong(r.getTarget().getId());
 				}
 			}
 		}
-		return statedRelSum;
+		return statedAttribSum;
 	}
 
 	public Axiom getFirstActiveClassAxiom() {

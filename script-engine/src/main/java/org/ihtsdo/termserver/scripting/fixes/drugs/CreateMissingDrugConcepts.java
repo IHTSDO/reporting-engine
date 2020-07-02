@@ -197,12 +197,12 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 		List<Relationship> needleRels = needle.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
 		nextStraw:
 		for (Concept straw : haystack) {
-			/*if (straw.getConceptId().equals("332998007")) {
+		/*	if (straw.getConceptId().equals("332998007")) {
 				debug ("debug here also");
 			}*/
 			
 			//Do a simple sum check to see if we can rule out a match early doors
-			if (straw.getStatedRelSum() != needle.getStatedRelSum()) {
+			if (straw.getStatedAttribSum() != needle.getStatedAttribSum()) {
 				continue;
 			}
 			
@@ -217,7 +217,9 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 				for (Relationship thatRel : strawRels) {
 					//Active ingredient is now self-grouped, so just check type/value in that case
 					//Since we can't be sure what group number will be used for multi-ingredients
-					if (thisRel.equals(thatRel)) {
+					//Don't worry about matching with the originating axiom as well because
+					//the IS A that's in the same axiom as the Role will throw this check out.
+					if (thisRel.equals(thatRel, true)) {
 						relMatchFound = true;
 						break;
 					} else if (thisRel.getType().equals(HAS_ACTIVE_INGRED) || thisRel.getType().equals(HAS_PRECISE_INGRED)) {
@@ -274,6 +276,9 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 		for (Concept base : baseIngredients) {
 			Relationship ingredRel = new Relationship (drug, HAS_ACTIVE_INGRED, base, ++groupId);
 			drug.addRelationship(ingredRel);
+			/*if (base.getId().equals("391769002")) {
+				debug("here");
+			}*/
 		}
 		return drug;
 	}
