@@ -12,7 +12,6 @@ import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
-import org.ihtsdo.termserver.scripting.reports.TermContainsXReport;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.*;
 import org.snomed.otf.scheduler.domain.*;
@@ -150,6 +149,9 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 			if (targetType.equals(ConceptType.MEDICINAL_PRODUCT) && isContained(required, knownMPs)) {
 				continue;
 			}
+			if (targetType.equals(ConceptType.MEDICINAL_PRODUCT_ONLY) && isContained(required, knownMPOs)) {
+				continue;
+			}
 			conceptsRequired.add(required);
 		}
 		
@@ -195,7 +197,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 		List<Relationship> needleRels = needle.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
 		nextStraw:
 		for (Concept straw : haystack) {
-/*			if (straw.getConceptId().equals("41193000")) {
+			/*if (straw.getConceptId().equals("332998007")) {
 				debug ("debug here also");
 			}*/
 			
