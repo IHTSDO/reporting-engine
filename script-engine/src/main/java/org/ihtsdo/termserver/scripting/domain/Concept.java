@@ -790,13 +790,20 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	}
 	
 	public Description getDescription(String term, ActiveState a) {
-		//Return a
+		Description bestMatch = null;
 		for (Description d : getDescriptions(a)) {
 			if (d.getTerm().equals(term)) {
-				return d;
+				//In the case of both active states, return the active one by preference
+				if (a.equals(ActiveState.BOTH)) {
+					if (d.isActive() || bestMatch == null) {
+						bestMatch = d;
+					} 
+				} else {
+					return d;
+				}
 			}
 		}
-		return null;
+		return bestMatch;
 	}
 
 	public Description getDescription(String descriptionId) {

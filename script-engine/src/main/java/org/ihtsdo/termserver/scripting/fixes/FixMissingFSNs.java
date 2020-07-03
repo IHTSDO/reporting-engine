@@ -78,7 +78,14 @@ public class FixMissingFSNs extends BatchFix implements RF2Constants{
 		
 		//If we have an FSN, we don't need to do this step
 		if (c.getDescriptions(ActiveState.ACTIVE, fsnOnly).size() > 0) {
-			return NO_CHANGES_MADE;
+			//Just check that the FSN is preferred in both dialects
+			Description fsn = c.getFSNDescription();
+			if (!fsn.isPreferred(US_ENG_LANG_REFSET) || !fsn.isPreferred(GB_ENG_LANG_REFSET)) {
+				report(t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_ACCEPTABILIY_CHANGED, c.isActive(), "FSN was not preferred in both dialects.  Setting.");
+				fsn.setAcceptabilityMap(preferredBoth);
+				changesMade++;
+			}
+			return changesMade;
 		}
 		
 		//Best thing would be a preferred term with a recognisable semantic tag
@@ -106,7 +113,7 @@ public class FixMissingFSNs extends BatchFix implements RF2Constants{
 			if (knownTags.contains(parts[1])) {
 				//The TypeId is not mutable according to https://confluence.ihtsdotools.org/display/WIPRELFMT/4.2.2+Description+File+Specification
 				report(t, c, Severity.LOW, ReportActionType.DESCRIPTION_ADDED, c.isActive(), "PT with SemTag recreated as FSN", fsn.getTerm());
-				replaceDescription(t, c, pt, parts[0], InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
+				replaceDescription(t, c, pt, parts[0], InactivationIndicator.ERRONEOUS);
 				c.addDescription(fsn);
 				return CHANGE_MADE;
 			} else {
@@ -164,7 +171,7 @@ public class FixMissingFSNs extends BatchFix implements RF2Constants{
 		
 		if (semTag != null) {
 			String newFSN = c.getFsn() + " " + semTag;
-			replaceDescription (t, c, c.getFSNDescription(), newFSN, InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
+			replaceDescription (t, c, c.getFSNDescription(), newFSN, InactivationIndicator.ERRONEOUS);
 			return CHANGE_MADE;
 		} else {
 			report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, c.isActive(), "Can't even get a Semantic Tag from a Historical association.  I give up!");
@@ -189,10 +196,21 @@ public class FixMissingFSNs extends BatchFix implements RF2Constants{
 		} if (usPT == null && gbPT == null) {
 			//We'll use the FSN with the SemTag stripped in this case
 			String term = SnomedUtils.deconstructFSN(c.getFsn(), true)[0];
-			Description pt = Description.withDefaults(term, DescriptionType.SYNONYM, preferredBoth);
-			pt.setAcceptabilityMap(preferredBoth);
-			c.addDescription(pt);
-			report(t, c, Severity.LOW, ReportActionType.DESCRIPTION_ADDED, c.isActive(), "New PT created based on FSN minus SemTag", term);
+			
+			//Do we in fact already have this description and just need to promote it?
+			Description existing = c.getDescription(term, ActiveState.BOTH);
+			if (existing != null) {
+				if (!existing.isActive()) {
+					existing.setActive(true);
+				}
+				existing.setAcceptabilityMap(preferredBoth);
+				report(t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_ACCEPTABILIY_CHANGED, c.isActive(), "Existing Synonym promoted to PT", term);
+			} else {
+				Description pt = Description.withDefaults(term, DescriptionType.SYNONYM, preferredBoth);
+				pt.setAcceptabilityMap(preferredBoth);
+				c.addDescription(pt);
+				report(t, c, Severity.LOW, ReportActionType.DESCRIPTION_ADDED, c.isActive(), "New PT created based on FSN minus SemTag", term);
+			}
 			return CHANGE_MADE;
 		}
 		return NO_CHANGES_MADE;

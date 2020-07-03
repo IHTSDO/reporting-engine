@@ -79,7 +79,7 @@ public class HistAssocUtils {
 
 	public Set<Concept> getReplacements(Concept c) throws TermServerScriptException {
 		Set<Concept> replacements = new HashSet<>();
-		//We'll recover concept from local store again, incase we're working with one loaded from TS
+		//We'll recover concept from local store again, in case we're working with one loaded from TS
 		c = gl.getConcept(c.getId());
 		for (AssociationEntry entry : c.getAssociations(ActiveState.ACTIVE, true)) {
 			replacements.add(gl.getConcept(entry.getTargetComponentId()));
