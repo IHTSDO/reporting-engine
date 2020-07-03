@@ -1317,4 +1317,8 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		
 	}
 
+	public List<Concept> getAllComponentsToProcess() {
+		return asConcepts(allComponentsToProcess);
+	}
+
 }

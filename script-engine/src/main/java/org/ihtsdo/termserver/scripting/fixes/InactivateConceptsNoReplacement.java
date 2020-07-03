@@ -11,6 +11,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.util.HistAssocUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 import com.google.common.base.Charsets;
@@ -33,6 +34,7 @@ public class InactivateConceptsNoReplacement extends BatchFix implements RF2Cons
 	Map<Concept, Set<Concept>> incomingHistAssocReplacements;
 	Set<Concept> unsafeToProcess = new HashSet<>();
 	Map<Concept, Task> processed = new HashMap<>();
+	HistAssocUtils histAssocUtils = new HistAssocUtils(this);
 	
 	//This is tricky to explain.  I will attempt:
 	//When we inactivate a concept, it might be the target of an existing incoming historical association.
@@ -303,7 +305,7 @@ public class InactivateConceptsNoReplacement extends BatchFix implements RF2Cons
 			//There may be other potential equivalents we don't want to remove, so just take out the one we're inactiving 
 			//and add in the new ones.
 			//incomingConcept.setAssociationTargets(AssociationTargets.possEquivTo(replacements));
-			modifyPossEquivAssocs(t, incomingConcept, inactivatingConcept, replacements);
+			histAssocUtils.modifyPossEquivAssocs(t, incomingConcept, inactivatingConcept, replacements);
 			
 			//Store the complete set away so if we see that concept again, we maintain a complete set
 			historicallyRewiredPossEquivTo.put(incomingConcept,replacements);
@@ -325,57 +327,6 @@ public class InactivateConceptsNoReplacement extends BatchFix implements RF2Cons
 			//Add this concept into our task so we know it's been updated
 		t.addAfter(incomingConcept, gl.getConcept(assoc.getTargetComponentId()));
 		updateConcept(t, incomingConcept, "");
-	}
-
-	private void modifyPossEquivAssocs(Task t, Concept incomingConcept, Concept inactivatingConcept,
-			Set<Concept> replacements) throws TermServerScriptException {
-		
-		if (incomingConcept.getId().equals("140506004")) {
-			debug("here");
-		}
-		
-		Set<String> possEquivs = incomingConcept.getAssociationTargets().getPossEquivTo();
-		List<String> replacementSCTIDs = replacements.stream()
-				.map(c -> c.getId())
-				.collect(Collectors.toList());
-		possEquivs.remove(inactivatingConcept.getId());
-		possEquivs.addAll(replacementSCTIDs);
-		
-		//Check out any other historical associations we might have
-		for (String sctId : incomingConcept.getAssociationTargets().getWasA()) {
-			reworkOtherAssociations(t, incomingConcept, possEquivs, sctId, "Was A");
-		}
-		incomingConcept.getAssociationTargets().getWasA().clear();
-		
-		for (String sctId : incomingConcept.getAssociationTargets().getSameAs()) {
-			reworkOtherAssociations(t, incomingConcept, possEquivs, sctId, "Same As");
-		}
-		incomingConcept.getAssociationTargets().getSameAs().clear();
-		
-		for (String sctId : incomingConcept.getAssociationTargets().getReplacedBy()) {
-			reworkOtherAssociations(t, incomingConcept, possEquivs, sctId, "Replaced By");
-		}
-		incomingConcept.getAssociationTargets().getReplacedBy().clear();
-	}
-
-	private void reworkOtherAssociations(Task t, Concept c, Set<String> possEquivs, String sctId,
-			String assocType) throws TermServerScriptException {
-		//Is this concept already inactive or are we planning on inactivating it?  Can just allow
-		//that to happen if so
-		Concept assocSource = gl.getConcept(sctId);
-		if (!assocSource.isActive()) {
-			report(t, c, Severity.HIGH, ReportActionType.NO_CHANGE, "Inactivating Historical association incoming from inactive concept.", assocSource);
-			return;
-		}
-			
-		if (allComponentsToProcess.contains(assocSource)) {
-			report(t, c, Severity.HIGH, ReportActionType.NO_CHANGE, "Inactivating Historical association incoming from concept scheduled for inactivation", assocSource);
-			return;
-		}
-		
-		//Otherwise we're going to have to make this hist assoc a possEquiv because we can't have multiple types used
-		possEquivs.add(sctId);
-		report(t, c, Severity.HIGH, ReportActionType.ASSOCIATION_CHANGED, "Changing incoming historical assocation from " + assocType + " to PossEquivTo", assocSource);
 	}
 
 	@Override

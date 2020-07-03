@@ -1688,4 +1688,5 @@ public abstract class TermServerScript implements RF2Constants {
 	public ReportConfiguration getReportConfiguration() {
 		return reportConfiguration;
 	}
+
 }
