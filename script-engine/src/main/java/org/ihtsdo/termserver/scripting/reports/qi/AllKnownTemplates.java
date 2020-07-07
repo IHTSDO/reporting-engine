@@ -265,11 +265,11 @@ public abstract class AllKnownTemplates extends TermServerReport {
 		templateNames = new String[] {	"templates/morphologies/Narrowing.json"};
 		populateTemplates(subHierarchyECL, templateNames);
 
-		subHierarchyECL = "<<  64572001 |Disease (disorder)|  :  116676008 |Associated morphology (attribute)|  = <<  79644001 |Pigment alteration (morphologic abnormality)|"; //QI-518
+		subHierarchyECL = "<< 64572001 |Disease (disorder)|  :  116676008 |Associated morphology (attribute)|  = <<  79644001 |Pigment alteration (morphologic abnormality)|"; //QI-518
 		templateNames = new String[] {	"templates/Pigmentation.json"};
 		populateTemplates(subHierarchyECL, templateNames);
 
-		subHierarchyECL = "<<  64572001 |Disease (disorder)|  :  116676008 |Associated morphology (attribute)|  = <<  68790008 |Amyloid deposition (morphologic abnormality)|"; //QI-225
+		subHierarchyECL = "<< 64572001 |Disease (disorder)|  :  116676008 |Associated morphology (attribute)|  = <<  68790008 |Amyloid deposition (morphologic abnormality)|"; //QI-225
 		templateNames = new String[] {	"templates/Amyloid.json"};
 		populateTemplates(subHierarchyECL, templateNames);
 
@@ -281,15 +281,15 @@ public abstract class AllKnownTemplates extends TermServerReport {
 		templateNames = new String[] {	"templates/neoplasm/primary malignant neoplasm.json"};
 		populateTemplates(subHierarchyECL, templateNames);
 
-		subHierarchyECL = "<<  64572001 |Disease (disorder)|  :  116676008 |Associated morphology (attribute)|  = <<  107666005 |Fluid disturbance (morphologic abnormality)|"; //QI-525
-		templateNames = new String[] {	"templates/fluid disturbance.json"};
+		subHierarchyECL = "<< 64572001 |Disease (disorder)|  :  116676008 |Associated morphology (attribute)| = << 107666005 |Fluid disturbance (morphologic abnormality)|"; //QI-525
+		templateNames = new String[] {	"templates/morphologies/Fluid disturbance.json"};
 		populateTemplates(subHierarchyECL, templateNames);
 
-		subHierarchyECL = "<<  282100009 |Adverse reaction caused by substance (disorder)|";
+		subHierarchyECL = "<< 282100009 |Adverse reaction caused by substance (disorder)|";
 		templateNames = new String[] {	"templates/Adverse Reaction.json"};
 		populateTemplates(subHierarchyECL, templateNames);
 
-		subHierarchyECL = "<<  419199007 |Allergy to substance (disorder)|";  //QI-609
+		subHierarchyECL = "<< 419199007 |Allergy to substance (disorder)|";  //QI-609
 		templateNames = new String[] {	"templates/Allergy to Substance.json"};
 		populateTemplates(subHierarchyECL, templateNames);
 
