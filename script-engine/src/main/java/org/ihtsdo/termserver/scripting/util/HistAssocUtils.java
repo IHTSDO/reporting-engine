@@ -8,15 +8,15 @@ import java.util.stream.Collectors;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.termserver.scripting.GraphLoader;
-import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TermServerScript.ReportActionType;
 import org.ihtsdo.termserver.scripting.TermServerScript.Severity;
-import org.ihtsdo.termserver.scripting.domain.AssociationEntry;
-import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants.ActiveState;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.InactivationIndicator;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 
-public class HistAssocUtils {
+public class HistAssocUtils implements RF2Constants {
 	
 	private BatchFix ts;
 	private GraphLoader gl;
@@ -29,8 +29,19 @@ public class HistAssocUtils {
 	public void modifyPossEquivAssocs(Task t, Concept incomingConcept, Concept inactivatingConcept,
 			Set<Concept> replacements) throws TermServerScriptException {
 		
-		if (incomingConcept.getId().equals("140506004")) {
+		/*if (incomingConcept.getId().equals("140506004")) {
 			TermServerScript.debug("here");
+		}*/
+		//If the replacements are inactive, then try and find a best fit replacement for that
+		Set<Concept> originalReplacements = new HashSet<>(replacements);
+		for (Concept replacement : originalReplacements) {
+			if (!replacement.isActive()) {
+				replacements.remove(replacement);
+				//What is the replacement for the replacement?
+				Set<Concept> replacementReplacements = getActiveReplacementsOrCommonParent(replacement, incomingConcept);
+				ts.report(t, incomingConcept, Severity.MEDIUM, ReportActionType.INFO, "Inactive replacement " + replacement, " in turn replaced with " + replacementReplacements);
+				replacements.addAll(replacementReplacements);
+			}
 		}
 		
 		Set<String> possEquivs = incomingConcept.getAssociationTargets().getPossEquivTo();
@@ -55,6 +66,49 @@ public class HistAssocUtils {
 			reworkOtherAssociations(t, incomingConcept, possEquivs, sctId, "Replaced By");
 		}
 		incomingConcept.getAssociationTargets().getReplacedBy().clear();
+	}
+
+	private Set<Concept> getActiveReplacementsOrCommonParent(Concept replacement, Concept comingFrom) throws TermServerScriptException {
+		Set<Concept> activeReplacements = new HashSet<>();
+		Set<Concept> initiallySuggestedReplacements = getReplacements(replacement);
+		//Don't want to get into an infinite loop
+		if (comingFrom != null) {
+			initiallySuggestedReplacements.remove(comingFrom);
+		}
+		
+		if (initiallySuggestedReplacements.size() == 0) {
+			initiallySuggestedReplacements = getMostRecentlyActiveParents(replacement);
+		}
+		
+		for (Concept c : initiallySuggestedReplacements) {
+			if (c.isActive()) {
+				activeReplacements.add(c);
+			} else {
+				activeReplacements.addAll(getActiveReplacementsOrCommonParent(c, replacement));
+			}
+		}
+		return activeReplacements;
+	}
+
+	private Set<Concept> getMostRecentlyActiveParents(Concept c) {
+		Set<Concept> mostRecentParents = new HashSet<>();
+		String mostRecentEffectiveDate = getMostRecentEffectiveDate(c);
+		for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, IS_A, ActiveState.BOTH)) {
+			if (r.getEffectiveTime().equals(mostRecentEffectiveDate)) {
+				mostRecentParents.add(r.getTarget());
+			}
+		}
+		return mostRecentParents;
+	}
+
+	private String getMostRecentEffectiveDate(Concept c) {
+		String mostRecentEffectiveDate = null;
+		for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, IS_A, ActiveState.BOTH)) {
+			if (mostRecentEffectiveDate == null || r.getEffectiveTime().compareTo(mostRecentEffectiveDate) > 1) {
+				mostRecentEffectiveDate = r.getEffectiveTime();
+			}
+		}
+		return mostRecentEffectiveDate;
 	}
 
 	public void reworkOtherAssociations(Task t, Concept c, Set<String> possEquivs, String sctId,
@@ -85,5 +139,22 @@ public class HistAssocUtils {
 			replacements.add(gl.getConcept(entry.getTargetComponentId()));
 		}
 		return replacements;
+	}
+
+	public InactivationIndicator getIndicatorFromAssocs(Concept c) {
+		InactivationIndicator currentIndicator = c.getInactivationIndicator();
+		AssociationTargets targets = c.getAssociationTargets();
+		//Get inactivation indicator that's appropriate for the associations
+		if (targets.getSameAs().size() > 0) {
+			return InactivationIndicator.DUPLICATE;
+		} else if (targets.getMovedTo().size() > 0) {
+			return InactivationIndicator.MOVED_ELSEWHERE;
+		} else if (targets.getReplacedBy().size() > 0) {
+			return InactivationIndicator.OUTDATED;
+		} else if (targets.getPossEquivTo().size() > 0) {
+			return InactivationIndicator.AMBIGUOUS;
+		}
+		//Haven't found what we're looking for?  Keep whatever is current
+		return currentIndicator;
 	}
 }

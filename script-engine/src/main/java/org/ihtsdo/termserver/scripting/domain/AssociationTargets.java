@@ -1,10 +1,10 @@
 package org.ihtsdo.termserver.scripting.domain;
 
-import java.util.HashSet;
-import java.util.Collections;
-import java.util.Set;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
+
+import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.GraphLoader;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
@@ -160,5 +160,57 @@ public class AssociationTargets {
 		return beforeCount - afterCount;
 	}
 
+	public void clear() {
+		replacedBy.clear();
+		possEquivTo.clear();
+		sameAs.clear();
+		wasA.clear();
+		movedTo.clear();
+	}
+
+	public String toString(GraphLoader gl) throws TermServerScriptException {
+		String str = "";
+		str += toString("WasA: ", wasA, gl, true);
+		str += toString("PossEquvTo: ", possEquivTo, gl, (str.isEmpty()));
+		str += toString("SameAs: ", sameAs, gl, (str.isEmpty()));
+		str += toString("ReplacedBy: ", replacedBy, gl, (str.isEmpty()));
+		str += toString("Moved To: ", movedTo, gl, (str.isEmpty()));
+		return str;
+	}
+
+	private String toString(String assocType, Set<String> associations, GraphLoader gl, boolean firstRow) throws TermServerScriptException {
+		String str = "";
+		boolean isFirst = true;
+		for (String association : associations) {
+			if (!isFirst) {
+				str += "\n    ";
+			} else {
+				isFirst = false;
+				str = (firstRow?"":"\n") + assocType;
+			}
+			str += gl.getConcept(association).toStringWithIndicator();
+		}
+		return str;
+	}
+
+	public boolean isWasACombo() {
+		//Return true if we have a WAS A association in combination with another association type
+		return (wasA.size() > 0 && (
+				sameAs.size() > 0 ||
+				replacedBy.size() > 0 ||
+				possEquivTo.size() > 0));
+	}
+
+	public void clearWasA() {
+		wasA.clear();
+	}
+
+	public Set<Concept> getWasAConcepts(GraphLoader gl) throws TermServerScriptException {
+		Set<Concept> wasAConcepts = new HashSet<>();
+		for (String wasAId : wasA) {
+			wasAConcepts.add(gl.getConcept(wasAId));
+		}
+		return wasAConcepts;
+	}
 
 }

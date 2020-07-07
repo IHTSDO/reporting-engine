@@ -946,6 +946,15 @@ public abstract class TermServerScript implements RF2Constants {
 		return findConcepts(project.getBranchPath(), ecl, false, !safetyProtocolsEnabled(), true);
 	}
 	
+	public Collection<Concept> findConceptsSafely(String ecl) {
+		try {
+			return findConcepts(project.getBranchPath(), ecl, true, !safetyProtocolsEnabled(), true);
+		} catch (Exception e) {
+			error("Exception while recovering " + ecl + " skipping.", e);
+		}
+		return new HashSet<>();
+	}
+	
 	public Collection<Concept> findConcepts(String ecl, boolean quiet, boolean expectLargeResults) throws TermServerScriptException {
 		return findConcepts(ecl, quiet, expectLargeResults, true);
 	}
@@ -961,8 +970,8 @@ public abstract class TermServerScript implements RF2Constants {
 		Collection<Concept> concepts = cache.findConcepts(branch, ecl, expectLargeResults, useLocalStoreIfSimple); 
 		int retry = 0;
 		if (concepts.size() == 0 && ++retry < 3) {
-			debug("No concepts returned. Double checking that result in 30s...");
-			try { Thread.sleep(30*1000); } catch (Exception e) {}
+			debug("No concepts returned. Double checking that result...");
+			try { Thread.sleep(3*1000); } catch (Exception e) {}
 			concepts = cache.findConcepts(branch, ecl, expectLargeResults, useLocalStoreIfSimple); 
 		}
 		

@@ -445,6 +445,11 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	public String toString() {
 		return conceptId + " |" + getFsn() + "|";
 	}
+	
+	public String toStringWithIndicator() {
+		return (isActive()?"":"*") + conceptId + " |" + getFsn() + "|";
+	}
+
 
 	public String toStringPref() {
 		return conceptId + " |" + getPreferredSynonym() + "|";
