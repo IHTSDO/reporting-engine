@@ -439,6 +439,11 @@ public class GraphLoader implements RF2Constants {
 				throw new IllegalArgumentException("Request made for non concept sctid: '" + sctId + "'");
 			}
 		}
+		
+		//Seeing a concept appear from somewhere that fails Verhoeff.  Blow up if this happens, we
+		//need to know what file it's in and deal with it as a P1
+		SnomedUtils.isValid(sctId, PartitionIdentifier.CONCEPT, true);
+		
 		Concept c = concepts.get(sctId);
 		if (c == null) {
 			if (createIfRequired) {
