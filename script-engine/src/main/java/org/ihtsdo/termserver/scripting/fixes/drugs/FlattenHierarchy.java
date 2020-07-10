@@ -80,9 +80,9 @@ public class FlattenHierarchy extends BatchFix implements RF2Constants{
 		return modifiedConcepts.size();
 	}
 
-	private void flattenHierarchy(Task task, Concept loadedConcept, Concept expectedTarget, List<Concept> modifiedConcepts, List<Relationship> potentialGrandParentRels, List<Concept> dispositions) throws TermServerScriptException {
+	private void flattenHierarchy(Task task, Concept loadedConcept, Concept expectedTarget, List<Concept> modifiedConcepts, Set<Relationship> potentialGrandParentRels, List<Concept> dispositions) throws TermServerScriptException {
 		
-		List<Relationship> parentRels = new ArrayList<Relationship> (loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
+		Set<Relationship> parentRels = new HashSet<Relationship> (loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
 																		IS_A,
 																		ActiveState.ACTIVE));
 		String parentCount = Integer.toString(parentRels.size());
@@ -95,7 +95,7 @@ public class FlattenHierarchy extends BatchFix implements RF2Constants{
 		
 		//Does our target have a disposition we need to copy to all modified descendants?
 		if (dispositions == null) {
-			List<Relationship> dispositionRels = expectedTarget.getRelationships(CharacteristicType.STATED_RELATIONSHIP, hasDisposition, ActiveState.ACTIVE);
+			Set<Relationship> dispositionRels = expectedTarget.getRelationships(CharacteristicType.STATED_RELATIONSHIP, hasDisposition, ActiveState.ACTIVE);
 			dispositions = new ArrayList<>();
 			for (Relationship r : dispositionRels) {
 				dispositions.add(r.getTarget());
@@ -111,7 +111,7 @@ public class FlattenHierarchy extends BatchFix implements RF2Constants{
 			String msg = parentRels.size() + " parents encountered";
 			report (task, loadedConcept, Severity.LOW, ReportActionType.VALIDATION_CHECK, msg);
 		} else {
-			Concept actualTarget = parentRels.get(0).getTarget();
+			Concept actualTarget = parentRels.iterator().next().getTarget();
 			if (!actualTarget.equals(expectedTarget)) {
 				String msg = "Expected target " + expectedTarget + " did not match actual: " + actualTarget;
 				report (task, loadedConcept, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, msg);
@@ -122,12 +122,12 @@ public class FlattenHierarchy extends BatchFix implements RF2Constants{
 		//to use as new parents (ie not redundant)
 		if (potentialGrandParentRels == null) {
 			//We'll take the grand parents (via expectedTarget) as the new parents...unless they're redundant due to the ancestors of any other parents.
-			potentialGrandParentRels = new ArrayList<Relationship> (expectedTarget.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
+			potentialGrandParentRels = new HashSet<Relationship> (expectedTarget.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
 																				IS_A,
 																				ActiveState.ACTIVE));
 		}
 		
-		List<Relationship> ancestorRels = determineNonRedundantAncestors(task, loadedConcept, expectedTarget, parentRels, potentialGrandParentRels);
+		Set<Relationship> ancestorRels = determineNonRedundantAncestors(task, loadedConcept, expectedTarget, parentRels, potentialGrandParentRels);
 		
 		String grandParentsDesc;
 		if (ancestorRels.size() > 1) {
@@ -139,7 +139,7 @@ public class FlattenHierarchy extends BatchFix implements RF2Constants{
 			report (task, loadedConcept, Severity.HIGH, ReportActionType.INFO, msg);
 			grandParentsDesc = "N/A";
 		} else {
-			grandParentsDesc = ancestorRels.get(0).getTarget().toString();
+			grandParentsDesc = ancestorRels.iterator().next().getTarget().toString();
 		}
 		
 		for (Relationship parentRel : parentRels) {
@@ -220,9 +220,9 @@ public class FlattenHierarchy extends BatchFix implements RF2Constants{
 		c.addRelationship(newRel);
 	}
 
-	private List<Relationship> determineNonRedundantAncestors(Task task, Concept loadedConcept, Concept expectedTarget, List<Relationship> parentRels, List<Relationship> potentialGrandParentRels) throws TermServerScriptException {
+	private Set<Relationship> determineNonRedundantAncestors(Task task, Concept loadedConcept, Concept expectedTarget, Set<Relationship> parentRels, Set<Relationship> potentialGrandParentRels) throws TermServerScriptException {
 		//Remove any grand parents that are already represented through other parents
-		List<Relationship> grandParentRels = new ArrayList<>();
+		Set<Relationship> grandParentRels = new HashSet<>();
 		for (Relationship potentialGrandParentRel : potentialGrandParentRels) {
 			boolean isAlreadyRepresented = false;
 			for (Relationship parentRel : parentRels) {

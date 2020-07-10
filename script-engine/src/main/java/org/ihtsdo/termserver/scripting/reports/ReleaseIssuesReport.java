@@ -975,7 +975,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	 */
 	private void validateTypeValueCombo(Concept c, Concept type, Set<Concept> values, String issueStr,
 			boolean mustBeIn) throws TermServerScriptException {
-		List<Relationship> relsWithType = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, type, ActiveState.ACTIVE);
+		Set<Relationship> relsWithType = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, type, ActiveState.ACTIVE);
 		for (Relationship relWithType : relsWithType) {
 			//Must the value be in, or must the value be NOT in our list of values?
 			boolean isIn = values.contains(relWithType.getTarget());

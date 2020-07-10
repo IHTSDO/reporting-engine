@@ -1,5 +1,6 @@
 package org.ihtsdo.termserver.scripting.util;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -65,10 +66,19 @@ public class HistAssocUtils implements RF2Constants {
 		for (String sctId : incomingConcept.getAssociationTargets().getReplacedBy()) {
 			reworkOtherAssociations(t, incomingConcept, possEquivs, sctId, "Replaced By");
 		}
+		
+		for (String sctId : incomingConcept.getAssociationTargets().getAlternatives()) {
+			reworkOtherAssociations(t, incomingConcept, possEquivs, sctId, "Alternative");
+		}
 		incomingConcept.getAssociationTargets().getReplacedBy().clear();
 	}
 
-	private Set<Concept> getActiveReplacementsOrCommonParent(Concept replacement, Concept comingFrom) throws TermServerScriptException {
+	public Set<Concept> getActiveReplacementsOrCommonParent(Concept replacement, Concept comingFrom) throws TermServerScriptException {
+		//If our replacement is active, then that's cool, no need to do anything else
+		if (replacement.isActive()) {
+			return Collections.singleton(replacement);
+		}
+		
 		Set<Concept> activeReplacements = new HashSet<>();
 		Set<Concept> initiallySuggestedReplacements = getReplacements(replacement);
 		//Don't want to get into an infinite loop

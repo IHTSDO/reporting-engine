@@ -51,7 +51,7 @@ public class RelationshipsWithType extends TermServerScript{
 				warn(msg);
 			}
 			
-			List<Relationship> allConceptRelationships = thisConcept.getRelationships(filterOnCharacteristicType, filterOnActiveState);
+			Set<Relationship> allConceptRelationships = thisConcept.getRelationships(filterOnCharacteristicType, filterOnActiveState);
 			for(Relationship thisRel : allConceptRelationships) {
 				if ((filterOnType.contains(thisRel.getType()) && !reverse) || 
 					(!filterOnType.contains(thisRel.getType()) && reverse)){

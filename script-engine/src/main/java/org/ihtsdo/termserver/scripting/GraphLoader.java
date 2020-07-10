@@ -132,7 +132,6 @@ public class GraphLoader implements RF2Constants {
 		String line;
 		boolean isHeaderLine = true;
 		long relationshipsLoaded = 0;
-		int ignoredRelationships = 0;
 		while ((line = br.readLine()) != null) {
 			if (!isHeaderLine) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
@@ -157,7 +156,7 @@ public class GraphLoader implements RF2Constants {
 				}
 				Concept thisConcept = getConcept(lineItems[REL_IDX_SOURCEID]);
 				if (addRelationshipsToConcepts) {
-					ignoredRelationships += addRelationshipToConcept(characteristicType, lineItems, isDelta, isReleased);
+					addRelationshipToConcept(characteristicType, lineItems, isDelta, isReleased);
 				}
 				concepts.add(thisConcept);
 				relationshipsLoaded++;
@@ -166,9 +165,6 @@ public class GraphLoader implements RF2Constants {
 			}
 		}
 		log.append("\tLoaded " + relationshipsLoaded + " relationships of type " + characteristicType + " which were " + (addRelationshipsToConcepts?"":"not ") + "added to concepts\n");
-		if (isDelta) {
-			TermServerScript.info (ignoredRelationships + " inactivating relationships were ignored as activating ones received in same delta");
-		}
 		return concepts;
 	}
 	
@@ -221,7 +217,7 @@ public class GraphLoader implements RF2Constants {
 						AxiomRepresentation replacedAxiom = axiomService.convertAxiomToRelationships(replacedAxiomEntry.getOwlExpression());
 						//Filter out any additional statements such as TransitiveObjectProperty(:123005000)]
 						if (replacedAxiom != null) {
-							List<Relationship> replacedRelationships = AxiomUtils.getRHSRelationships(c, replacedAxiom);
+							Set<Relationship> replacedRelationships = AxiomUtils.getRHSRelationships(c, replacedAxiom);
 							alignAxiomRelationships(c, replacedRelationships, replacedAxiomEntry, false);
 							for (Relationship r : replacedRelationships) {
 								addRelationshipToConcept(CharacteristicType.STATED_RELATIONSHIP, r, isDelta);
@@ -249,7 +245,7 @@ public class GraphLoader implements RF2Constants {
 							throw new IllegalArgumentException("Axiom LHS != RefCompId: " + line);
 						}
 						
-						List<Relationship> relationships = AxiomUtils.getRHSRelationships(c, axiom);
+						Set<Relationship> relationships = AxiomUtils.getRHSRelationships(c, axiom);
 						if (relationships.size() == 0) {
 							log.append("Checkhere");
 						}
@@ -279,7 +275,7 @@ public class GraphLoader implements RF2Constants {
 		log.append("\tLoaded " + axiomsLoaded + " axioms");
 	}
 	
-	private void alignAxiomRelationships(Concept c, List<Relationship> relationships, AxiomEntry axiomEntry, boolean active) {
+	private void alignAxiomRelationships(Concept c, Set<Relationship> relationships, AxiomEntry axiomEntry, boolean active) {
 		//Do the groups already exist in the concept?  Give them that groupId if so
 		int nextFreeGroup = 1;
 		for (RelationshipGroup g : SnomedUtils.toGroups(relationships)) {
@@ -353,34 +349,46 @@ public class GraphLoader implements RF2Constants {
 
 	/**
 	 * @param isReleased 
-	 * @return ignored count (ie 1 if relationship addition was ignored)
 	 * @throws TermServerScriptException
 	 */
-	public int addRelationshipToConcept(CharacteristicType charType, String[] lineItems, boolean isDelta, Boolean isReleased) throws TermServerScriptException {
+	public void addRelationshipToConcept(CharacteristicType charType, String[] lineItems, boolean isDelta, Boolean isReleased) throws TermServerScriptException {
 		Relationship r = createRelationshipFromRF2(charType, lineItems);
-		if (r.isReleased() == null) {
-			r.setReleased(isReleased);
+		r.setReleased(isReleased);
+		
+		String revertEffectiveTime = null;
+		if (detectNoChangeDelta && isReleased != null && !isReleased && r.getId() != null) {
+			//Do we already have this relationship from the snapshot?  
+			//Only interested if we have an id as axioms handled separately
+			Relationship existing = r.getSource().getRelationship(r.getId());
+			revertEffectiveTime = detectNoChangeDelta(r.getSource(), existing, lineItems);
 		}
 		
+		if (revertEffectiveTime != null) {
+			r.setEffectiveTime(revertEffectiveTime);
+		}
 /*		if (r.getType().equals(IS_A) && r.getSourceId().equals("555621000005106")) {
 			TermServerScript.debug("here");
 		}*/
 		
-		boolean relationshipAdded = addRelationshipToConcept(charType, r, isDelta);
-		return relationshipAdded ? 0 : 1; //If ignored, increase count
+		addRelationshipToConcept(charType, r, isDelta);
 	}
 	
-	public boolean  addRelationshipToConcept(CharacteristicType charType, Relationship r, boolean isDelta) throws TermServerScriptException {
-		//In the case of importing an Inferred Delta, we could end up adding a relationship instead of replacing
-		//if it has a different SCTID.  We need to check for equality using triple, not SCTID in that case.
-		boolean relationshipAdded = r.getSource().addRelationship(r, isDelta);
+	public void addRelationshipToConcept(CharacteristicType charType, Relationship r, boolean isDelta) throws TermServerScriptException {
+		r.getSource().addRelationship(r);
 		
 		//Consider adding or removing parents if the relationship is ISA
-		//But only remove items if we're processing a delta
+		//But only remove items if we're processing a delta and there aren't any remaining
 		//Don't modify our loaded hierarchy if we're loading a single concept from the TS
-		if (relationshipAdded && r.getType().equals(IS_A) && r.getTarget() != null) {
+		if (r.getType().equals(IS_A) && r.getTarget() != null) {
 			Concept source = r.getSource();
 			Concept target = r.getTarget();
+			
+			if (r.getCharacteristicType().equals(CharacteristicType.INFERRED_RELATIONSHIP) && 
+					r.getSourceId().contentEquals("21731004") && !r.isActive()) {
+				TermServerScript.debug("here");
+				if(true);
+			}
+			
 			if (r.isActive()) {
 				source.addParent(r.getCharacteristicType(),r.getTarget());
 				target.addChild(r.getCharacteristicType(),r.getSource());
@@ -392,11 +400,10 @@ public class GraphLoader implements RF2Constants {
 					source.removeParent(r.getCharacteristicType(),r.getTarget());
 					target.removeChild(r.getCharacteristicType(),r.getSource());
 				} else {
-					TermServerScript.warn("Not removing parent/child relationship as exists in other axiom: " + r);
+					TermServerScript.warn("Not removing parent/child relationship as exists in other axiom / alternative relationship: " + r);
 				}
 			}
 		} 
-		return relationshipAdded;
 	}
 	public Concept getConcept(String identifier) throws TermServerScriptException {
 		return getConcept(identifier.trim(), true, true);
@@ -1135,7 +1142,7 @@ public class GraphLoader implements RF2Constants {
 		return false;
 	}
 	
-	public String convertRelationshipsToOwlExpression(Concept c, List<Relationship> relationships) {
+	public String convertRelationshipsToOwlExpression(Concept c, Set<Relationship> relationships) {
 		AxiomRepresentation axiom = new AxiomRepresentation();
 		//Assuming a normal RHS definition
 		axiom.setLeftHandSideNamedConcept(Long.parseLong(c.getId()));

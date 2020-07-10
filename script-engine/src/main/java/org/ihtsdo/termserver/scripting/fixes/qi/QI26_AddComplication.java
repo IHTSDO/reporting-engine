@@ -82,7 +82,7 @@ public class QI26_AddComplication extends BatchFix {
 					if (ppps.size() != 1) {
 						incrementSummaryInformation("Multiple proximal primitive parents");
 					} else {
-						Concept ppp = ppps.get(0);
+						Concept ppp = ppps.iterator().next();
 						if (acceptablePPPs.contains(ppp)) {
 							processMe.add(c);
 						} else {

@@ -154,7 +154,7 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 		child = loadConcept(child, t.getBranchPath());
 		report(t, child, Severity.MEDIUM, ReportActionType.INFO, "Rewiring child of " + parent + " to grandparents");
 		
-		List<Relationship> parentRels = child.getRelationships(CharacteristicType.STATED_RELATIONSHIP, IS_A, ActiveState.ACTIVE);
+		Set<Relationship> parentRels = child.getRelationships(CharacteristicType.STATED_RELATIONSHIP, IS_A, ActiveState.ACTIVE);
 		for (Relationship parentRel : parentRels) {
 			if (parentRel.getTarget().equals(parent)) {
 				changesMade += removeRelationship(t, child, parentRel);
@@ -181,7 +181,7 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 		
 		child = loadConcept(child, task.getBranchPath());
 		//Check we've got more than one stated parent!
-		List<Relationship> parentRels = child.getRelationships(CharacteristicType.STATED_RELATIONSHIP, IS_A, ActiveState.ACTIVE);
+		Set<Relationship> parentRels = child.getRelationships(CharacteristicType.STATED_RELATIONSHIP, IS_A, ActiveState.ACTIVE);
 		if (parentRels.size() < 2) {
 			throw new TermServerScriptException("Cannot inactivate " + parent + " it is the sole parent of " + child);
 		}

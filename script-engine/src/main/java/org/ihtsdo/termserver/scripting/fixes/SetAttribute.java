@@ -60,7 +60,7 @@ public class SetAttribute extends BatchFix implements RF2Constants{
 		Concept targetValue = targetValues.get(loadedConcept); 
 		
 		//Get the target attribute relationship and ensure there is 0 or 1
-		List<Relationship> attributesOfType = loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
+		Set<Relationship> attributesOfType = loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
 		int attributeCount = countAttributes(loadedConcept, CharacteristicType.STATED_RELATIONSHIP);
 		if (!loadedConcept.isActive()) {
 			String msg = "Concept now inactive ";
@@ -69,7 +69,7 @@ public class SetAttribute extends BatchFix implements RF2Constants{
 			String msg = "Concept stating multiple " + attributeType;
 			report (task, loadedConcept, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, msg, loadedConcept.getDefinitionStatus().toString(), countParents(loadedConcept), attributeCount);
 		} else if (relationshipExists(loadedConcept, targetValue)) {
-			List<Relationship> allExisting = loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
+			Set<Relationship> allExisting = loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
 					attributeType,
 					targetValue,
 					ActiveState.BOTH);
@@ -77,7 +77,7 @@ public class SetAttribute extends BatchFix implements RF2Constants{
 				String msg = "Mix of active / inactive existing relationship with same type/value";
 				report (task, loadedConcept, Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, msg, loadedConcept.getDefinitionStatus().toString(), countParents(loadedConcept), attributeCount);
 			} else {
-				Relationship existing = allExisting.get(0);
+				Relationship existing = allExisting.iterator().next();
 				//If this rel is active, nothing to do.  Otherwise, activate
 				if (!existing.isActive()) {
 					existing.setActive(true);
@@ -103,7 +103,7 @@ public class SetAttribute extends BatchFix implements RF2Constants{
 			report (task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_ADDED, targetValues.get(loadedConcept).toString(), loadedConcept.getDefinitionStatus().toString(), countParents(loadedConcept), attributeCount);
 		} else {
 			//Case where yes we have 1 existing active relationship, but not with the correct target value
-			Relationship current = attributesOfType.get(0);
+			Relationship current = attributesOfType.iterator().next();
 			//Are we deleting or inactivating the current relationship?
 			if (current.getEffectiveTime() == null || current.getEffectiveTime().isEmpty()) {
 				//Delete unpublished relationship - we can just hijack it 
@@ -123,7 +123,7 @@ public class SetAttribute extends BatchFix implements RF2Constants{
 	}
 
 	private boolean relationshipExists(Concept loadedConcept, Concept targetValue) {
-		List<Relationship> existing = loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
+		Set<Relationship> existing = loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
 															attributeType,
 															targetValue,
 															ActiveState.BOTH);
@@ -166,8 +166,8 @@ public class SetAttribute extends BatchFix implements RF2Constants{
 		
 		//If the concept has exactly one active relationship of the specified type, and the target is as desired, then 
 		//we don't need to make any changes
-		List<Relationship> existingTypes = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
-		if (existingTypes.size() == 1 && existingTypes.get(0).getTarget().equals(targetValue)) {
+		Set<Relationship> existingTypes = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
+		if (existingTypes.size() == 1 && existingTypes.iterator().next().getTarget().equals(targetValue)) {
 			String msg = "Concept appears to be in desired state already";
 			report ((Concept)null, c, Severity.LOW, ReportActionType.NO_CHANGE, msg, targetValue.toString());
 			c = null;

@@ -66,7 +66,7 @@ public class DrugsReTerming extends DrugBatchFix implements RF2Constants{
 			report(task, tsConcept, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Existing FSN did not meet change input file expectations: " + change.getCurrentTerm());
 		} else {
 			//Firstly, inactivate and replace the FSN
-			Description fsn = tsConcept.getDescriptions(Acceptability.PREFERRED, DescriptionType.FSN, ActiveState.ACTIVE).get(0);
+			Description fsn = tsConcept.getDescriptions(Acceptability.PREFERRED, DescriptionType.FSN, ActiveState.ACTIVE).iterator().next();
 			Description replacement = fsn.clone(null);
 			replacement.setTerm(change.getFsn());
 			String termPart = SnomedUtils.deconstructFSN(change.getFsn())[0];

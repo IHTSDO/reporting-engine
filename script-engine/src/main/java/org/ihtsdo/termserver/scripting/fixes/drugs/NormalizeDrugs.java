@@ -53,7 +53,7 @@ public class NormalizeDrugs extends DrugBatchFix implements RF2Constants{
 	public int doFix(Task t, Concept concept, String info) throws TermServerScriptException {
 		
 		Concept loadedConcept = loadConcept(concept, t.getBranchPath());
-		List<Relationship> parentRels = new ArrayList<Relationship> (loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
+		Set<Relationship> parentRels = new HashSet<Relationship> (loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
 				IS_A,
 				ActiveState.ACTIVE));
 		String parentCount = Integer.toString(parentRels.size());

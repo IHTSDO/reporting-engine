@@ -258,7 +258,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		counts[IDX_TOTAL]++;
 	}
 
-	private void analyzeComponents(boolean isNewConcept, List<String> ids, List<String> idsInactive, int[] counts, List<? extends Component> components) throws TermServerScriptException {
+	private void analyzeComponents(boolean isNewConcept, Collection<String> ids, Collection<String> idsInactive, int[] counts, Collection<? extends Component> components) throws TermServerScriptException {
 		//If we have no previous data, then the concept is new
 		boolean conceptIsNew = (ids == null && idsInactive == null);
 		boolean conceptAffected = false;

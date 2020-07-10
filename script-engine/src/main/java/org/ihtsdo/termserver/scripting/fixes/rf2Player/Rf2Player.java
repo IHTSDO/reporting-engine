@@ -299,7 +299,7 @@ public class Rf2Player extends BatchFix {
 	}
 	
 
-	private void fixRelationships(Task task, Concept loadedConcept, List<Relationship> relationships) throws TermServerScriptException {
+	private void fixRelationships(Task task, Concept loadedConcept, Set<Relationship> relationships) throws TermServerScriptException {
 		for (Relationship r : relationships) {
 			//Are we adding or deleting a Relationship?
 			if (r.isActive()) {

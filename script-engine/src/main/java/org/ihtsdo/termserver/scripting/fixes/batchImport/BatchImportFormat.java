@@ -5,7 +5,6 @@ import java.util.*;
 import org.apache.commons.csv.CSVRecord;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.GraphLoader;
-import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.*;
 import org.slf4j.Logger;
@@ -237,7 +236,7 @@ public class BatchImportFormat implements RF2Constants {
 			throw new TermServerScriptException("Unable to determine a parent for concept from expression");
 		} 
 		GraphLoader gl = GraphLoader.getGraphLoader();
-		List<Relationship> relationships = new ArrayList<>();
+		Set<Relationship> relationships = new HashSet<>();
 		for (String parentId : expression.getFocusConcepts()) {
 			//SnomedUtils.isValid(parentId, PartitionIdentifier.CONCEPT, true);
 			//Concept parent = new Concept(parentId);

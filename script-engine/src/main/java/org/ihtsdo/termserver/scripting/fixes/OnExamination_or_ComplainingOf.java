@@ -78,7 +78,7 @@ public class OnExamination_or_ComplainingOf extends BatchFix implements RF2Const
 			return 0;
 		}
 		
-		List<Relationship> parentRels = new ArrayList<Relationship> (loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
+		Set<Relationship> parentRels = new HashSet<Relationship> (loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
 																				IS_A,
 																				ActiveState.ACTIVE));
 		
@@ -109,7 +109,7 @@ public class OnExamination_or_ComplainingOf extends BatchFix implements RF2Const
 	 */
 	private List<Concept> getParents(Concept loadedConcept) throws TermServerScriptException {
 		List<Concept> parents = new ArrayList<>();
-		List<Relationship> parentRels = loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
+		Set<Relationship> parentRels = loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
 										IS_A,
 										ActiveState.ACTIVE);
 		for (Relationship r : parentRels) {

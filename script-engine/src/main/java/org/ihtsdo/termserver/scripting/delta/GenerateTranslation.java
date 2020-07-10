@@ -180,7 +180,7 @@ public class GenerateTranslation extends DeltaGenerator {
 			//throw new TermServerScriptException("Expected to find 1 x US preferred term, found " + terms.size() + msg);
 			warn(currentState + " - expected to find 1 x US preferred term, found " + terms.size() + msg);
 		}
-		return terms.get(0);
+		return terms.iterator().next();
 	}
 
 	@Override

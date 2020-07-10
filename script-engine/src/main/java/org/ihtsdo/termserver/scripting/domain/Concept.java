@@ -50,7 +50,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	
 	@SerializedName("relationships")
 	@Expose
-	private List<Relationship> relationships = new ArrayList<Relationship>();
+	private Set<Relationship> relationships = new HashSet<Relationship>();
 	
 	@SerializedName("isLeafStated")
 	@Expose
@@ -111,7 +111,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		statedRelationshipGroups = null;
 		inferredRelationshipGroups = null;
 		descriptions = new ArrayList<Description>();
-		relationships = new ArrayList<Relationship>();
+		relationships = new HashSet<Relationship>();
 		statedParents = new HashSet<>();
 		inferredParents = new HashSet<>();
 		statedChildren = new HashSet<>();
@@ -258,14 +258,14 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	
 	public Description getPreferredSynonym(String refsetId) throws TermServerScriptException {
 		List<Description> pts = getDescriptions(refsetId, Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE);
-		return pts.size() == 0 ? null : pts.get(0);
+		return pts.size() == 0 ? null : pts.iterator().next();
 	}
 	
 	public Description getPreferredSynonymSafely(String refsetId) {
 		String debug = "";
 		try {
 			List<Description> pts = getDescriptions(refsetId, Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE);
-			return pts.size() == 0 ? null : pts.get(0);
+			return pts.size() == 0 ? null : pts.iterator().next();
 		} catch (Exception e) {
 			e.printStackTrace();
 			debug = e.getMessage();
@@ -285,12 +285,12 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		this.descriptions = descriptions;
 	}
 
-	public List<Relationship> getRelationships() {
+	public Set<Relationship> getRelationships() {
 		return relationships;
 	}
 	
-	public List<Relationship> getRelationships(CharacteristicType characteristicType, ActiveState state, String effectiveTime) {
-		List<Relationship> matches = new ArrayList<Relationship>();
+	public Set<Relationship> getRelationships(CharacteristicType characteristicType, ActiveState state, String effectiveTime) {
+		Set<Relationship> matches = new HashSet<Relationship>();
 		for (Relationship r : relationships) {
 			if (effectiveTime == null || r.getEffectiveTime().equals(effectiveTime)) {
 				if (characteristicType.equals(CharacteristicType.ALL) || r.getCharacteristicType().equals(characteristicType)) {
@@ -304,45 +304,45 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		return matches;
 	}
 	
-	public List<Relationship> getRelationships(CharacteristicType characteristicType, ActiveState activeState) {
+	public Set<Relationship> getRelationships(CharacteristicType characteristicType, ActiveState activeState) {
 		return getRelationships(characteristicType, activeState, null);
 	}
 	
 	//Gets relationships that match the triple + group + charType
-	public List<Relationship> getRelationships(Relationship r) {
+	public Set<Relationship> getRelationships(Relationship r) {
 		return getRelationships(r.getCharacteristicType(), r.getType(), r.getTarget(), r.getGroupId(), ActiveState.ACTIVE);
 	}
 	
 	//Gets relationships that match the triple + group
-	public List<Relationship> getRelationships(CharacteristicType charType, Relationship r) {
+	public Set<Relationship> getRelationships(CharacteristicType charType, Relationship r) {
 		return getRelationships(charType, r.getType(), r.getTarget(), r.getGroupId(), ActiveState.ACTIVE);
 	}
 	
-	public List<Relationship> getRelationships(CharacteristicType characteristicType, RelationshipTemplate t) {
+	public Set<Relationship> getRelationships(CharacteristicType characteristicType, RelationshipTemplate t) {
 		return getRelationships(characteristicType, t.getType(), t.getTarget(), ActiveState.ACTIVE);
 	}
 	
 	public Relationship getRelationship(RelationshipTemplate r, int groupId) {
-		List<Relationship> rels = getRelationships(r.getCharacteristicType(), r.getType(), r.getTarget(), groupId, ActiveState.ACTIVE);
+		Set<Relationship> rels = getRelationships(r.getCharacteristicType(), r.getType(), r.getTarget(), groupId, ActiveState.ACTIVE);
 		if (rels == null || rels.size() == 0) {
 			return null;
 		} else if (groupId != NOT_SET && rels.size() > 1) {
 			throw new IllegalArgumentException(this + " group " + groupId + " contained > 1 " + r);
 		}
-		return rels.get(0);
+		return rels.iterator().next();
 	}
 	
-	public List<Relationship> getRelationships(Relationship r, ActiveState activeState) {
+	public Set<Relationship> getRelationships(Relationship r, ActiveState activeState) {
 		return getRelationships(r.getCharacteristicType(), r.getType(), r.getTarget(), r.getGroupId(), activeState);
 	}
 	
-	public List<Relationship> getRelationships(RelationshipTemplate r, ActiveState activeState) {
+	public Set<Relationship> getRelationships(RelationshipTemplate r, ActiveState activeState) {
 		return getRelationships(r.getCharacteristicType(), r.getType(), r.getTarget(), activeState);
 	}
 	
-	public List<Relationship> getRelationships(CharacteristicType characteristicType, Concept type, ActiveState activeState) {
-		List<Relationship> potentialMatches = getRelationships(characteristicType, activeState);
-		List<Relationship> matches = new ArrayList<Relationship>();
+	public Set<Relationship> getRelationships(CharacteristicType characteristicType, Concept type, ActiveState activeState) {
+		Set<Relationship> potentialMatches = getRelationships(characteristicType, activeState);
+		Set<Relationship> matches = new HashSet<Relationship>();
 		for (Relationship r : potentialMatches) {
 			if (type == null || r.getType().equals(type)) {
 				matches.add(r);
@@ -351,17 +351,17 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		return matches;
 	}
 
-	public List<Relationship> getRelationships(CharacteristicType charType, Concept[] targets, ActiveState state) {
-		List<Relationship> matchingRels = new ArrayList<>();
+	public Set<Relationship> getRelationships(CharacteristicType charType, Concept[] targets, ActiveState state) {
+		Set<Relationship> matchingRels = new HashSet<>();
 		for (Concept target : targets) {
 			matchingRels.addAll(getRelationships(charType, null, target, state));
 		}
 		return matchingRels;
 	}
 	
-	public List<Relationship> getRelationships(CharacteristicType characteristicType, Concept type, Concept target, ActiveState activeState) {
-		List<Relationship> potentialMatches = getRelationships(characteristicType, type, activeState);
-		List<Relationship> matches = new ArrayList<Relationship>();
+	public Set<Relationship> getRelationships(CharacteristicType characteristicType, Concept type, Concept target, ActiveState activeState) {
+		Set<Relationship> potentialMatches = getRelationships(characteristicType, type, activeState);
+		Set<Relationship> matches = new HashSet<Relationship>();
 		for (Relationship r : potentialMatches) {
 			if (target == null || r.getTarget().equals(target)) {
 				matches.add(r);
@@ -370,9 +370,9 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		return matches;
 	}
 
-	public List<Relationship> getRelationships(CharacteristicType characteristicType, Concept type, Concept target, int groupId, ActiveState activeState) {
-		List<Relationship> potentialMatches = getRelationships(characteristicType, type, target, activeState);
-		List<Relationship> matches = new ArrayList<Relationship>();
+	public Set<Relationship> getRelationships(CharacteristicType characteristicType, Concept type, Concept target, int groupId, ActiveState activeState) {
+		Set<Relationship> potentialMatches = getRelationships(characteristicType, type, target, activeState);
+		Set<Relationship> matches = new HashSet<Relationship>();
 		for (Relationship r : potentialMatches) {
 			if (groupId == NOT_SET || r.getGroupId() == groupId) {
 				matches.add(r);
@@ -381,9 +381,9 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		return matches;
 	}
 	
-	public List<Relationship> getRelationships(CharacteristicType characteristicType, Concept type, int groupId) {
-		List<Relationship> potentialMatches = getRelationships(characteristicType, type, ActiveState.ACTIVE);
-		List<Relationship> matches = new ArrayList<Relationship>();
+	public Set<Relationship> getRelationships(CharacteristicType characteristicType, Concept type, int groupId) {
+		Set<Relationship> potentialMatches = getRelationships(characteristicType, type, ActiveState.ACTIVE);
+		Set<Relationship> matches = new HashSet<Relationship>();
 		for (Relationship r : potentialMatches) {
 			if (r.getGroupId() == groupId) {
 				matches.add(r);
@@ -394,14 +394,14 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 
 	public Relationship getRelationship(String id) {
 		for (Relationship r : relationships) {
-			if (r.getRelationshipId().equals(id)) {
+			if (r.getRelationshipId() != null && r.getRelationshipId().equals(id)) {
 				return r;
 			}
 		}
 		return null;
 	}
 
-	public void setRelationships(List<Relationship> relationships) {
+	public void setRelationships(Set<Relationship> relationships) {
 		this.relationships = relationships;
 	}
 	
@@ -539,18 +539,14 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		return originalFileLineNumber;
 	}
 	
-	public boolean addRelationship(Relationship r) {
-		return addRelationship(r, false);
-	}
-	
 	public int addOrReactivateRelationship(Relationship r) {
 		//Do we already have an inactive version of this relationship to reactivate?
 		//Only relevant if this relationship is new
 		if (r.getId() == null) {
 			//Before considering inactive rels, check we don't already have this relationship
-			List<Relationship> activeRels = getRelationships(r);
+			Set<Relationship> activeRels = getRelationships(r);
 			if (activeRels.size() > 0) {
-				System.out.println ("Ignoring relationship add in " + this + ", triple + group already present and active " + activeRels.get(0));
+				System.out.println ("Ignoring relationship add in " + this + ", triple + group already present and active " + activeRels.iterator().next());
 				return NO_CHANGES_MADE;
 			}
 			for (Relationship match : getRelationships(r, ActiveState.INACTIVE)) {
@@ -563,70 +559,12 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		return CHANGE_MADE;
 	}
 	
-	/**
-	 * @return true if the relationship was successfully added, or false if it was ignored
-	 */
-	public boolean addRelationship(Relationship r, boolean replaceTripleMatch) {
-		//Do we already had a relationship with this id?  Replace if so.
-		//Actually since delta files from the TS could have different SCTIDs
-		//Null out the ID temporarily to force a triple + groupId comparison
-		String id = r.getRelationshipId();
-		if (replaceTripleMatch) {
-			r.setRelationshipId(null);
-		}
-		
-/*		if (r.getType().equals(IS_A) && this.getConceptId().equals("277301002")) {
-			TermServerScript.debug("here");
-		}*/
-		Relationship allowableDuplicate = null;
-		if (relationships.contains(r)) {
-			//Might match more than one if we have historical overlapping triples
-			
-			//Special case were we receive conflicting rows for the same triple in a delta.
-			//keep the active row in that case.
-			//It might alternatively be that we have a 2nd axiom maintaining an is-a relationship
-			//avoid removing the parent/child link if we have another axiom with this rel
-			if (!r.isActive() && replaceTripleMatch && r.getEffectiveTime() == null) {
-				for (Relationship match : getRelationships(r)) {
-					if (match.isActive() && 
-							(match.getEffectiveTime() == null || !match.fromSameAxiom(r))) {
-						//System.out.println ("Ignoring inactivation in " + this + " between already received active " + match + " and incoming inactive " + r);
-						return false;
-					}
-				}
-			}
-			
-			//Seeing an issue where a row from the snapshot stated relationships file is
-			//wiping out an axiom relationship.  Axioms always trump.
-			if (r.getCharacteristicType().equals(CharacteristicType.STATED_RELATIONSHIP) && !r.isActive() && !r.fromAxiom()) {
-				for (Relationship match : getRelationships(r)) {
-					if (match.isActive() && match.fromAxiom()) {
-						return false;
-					}
-				}
-			}
-			
-			//We may encounter the same active relationship from both stated (eek!) and an axiom
-			//Allow this situation to exist, so that we can detect this anomaly in the ReleaseIssuesReport
-			if (r.getCharacteristicType().equals(CharacteristicType.STATED_RELATIONSHIP) && r.isActive()) {
-				for (Relationship match : getRelationships(r)) {
-					if (match.isActive() && match.fromAxiom() != r.fromAxiom()) {
-						allowableDuplicate = match;
-					}
-				}
-			}
-			relationships.removeAll(Collections.singleton(r));
-		}
-		r.setRelationshipId(id);
-		
-		//Now we might need to remove a relationship with the same id if it also moved group
-		relationships.removeAll(Collections.singleton(r));
+	public void addRelationship(Relationship r) {
+		//Interesting.  If a relationship has a new active state, then "add"
+		//may not replace it, because it thinks its the same object.  Remove first.
+		relationships.remove(r);
 		relationships.add(r);
-		if (allowableDuplicate != null) {
-			relationships.add(allowableDuplicate);
-		}
 		recalculateGroups();
-		return true;
 	}
 	
 	public void addChild(CharacteristicType charType, Concept c) {
@@ -1231,7 +1169,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		}
 		
 		//Copy all stated relationships, or in the case of an exact clone (keepIds = true) also inferred
-		List<Relationship> selectedRelationships = keepIds ? relationships : getRelationships(CharacteristicType.STATED_RELATIONSHIP, activeState);
+		Set<Relationship> selectedRelationships = keepIds ? relationships : getRelationships(CharacteristicType.STATED_RELATIONSHIP, activeState);
 		for (Relationship r : selectedRelationships) {
 			//We need to null out the sourceId since the clone is a new concept
 			Relationship rClone = r.clone(keepIds?r.getRelationshipId():null);
@@ -1331,7 +1269,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		return relationshipGroups;
 	}
 
-	public int addRelationshipGroup(RelationshipGroup group, List<Relationship> availableForReuse) {
+	public int addRelationshipGroup(RelationshipGroup group, Set<Relationship> availableForReuse) {
 		int changesMade = 0;
 		for (Relationship r : group.getRelationships()) {
 			//Do we have one of these relationships available to be reused?

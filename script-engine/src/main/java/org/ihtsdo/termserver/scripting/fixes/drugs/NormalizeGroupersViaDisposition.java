@@ -79,7 +79,7 @@ public class NormalizeGroupersViaDisposition extends DrugBatchFix implements RF2
 	private int setProximalPrimitiveParent(Task task, Concept loadedConcept) throws TermServerScriptException {
 		
 		int changeCount = 0;
-		List<Relationship> parentRels = new ArrayList<Relationship> (loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
+		Set<Relationship> parentRels = new HashSet<Relationship> (loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
 																	IS_A,
 																	ActiveState.ACTIVE));
 		
@@ -108,19 +108,19 @@ public class NormalizeGroupersViaDisposition extends DrugBatchFix implements RF2
 		//What is our new active ingredient?   Do we have that relationship already?  If not, add ungrouped.
 		Concept target = getTarget(loadedConcept);
 		Relationship targetRel = new Relationship (loadedConcept, HAS_ACTIVE_INGRED, target, 0);
-		List<Relationship> existingRels = loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
+		Set<Relationship> existingRels = loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
 				HAS_ACTIVE_INGRED,
 				target,
 				ActiveState.BOTH);
 		
 		if (existingRels.size() > 0) {
 			//If the existing relationship is active then we have nothing more to do
-			if (existingRels.get(0).isActive()) {
+			if (existingRels.iterator().next().isActive()) {
 				report(task, loadedConcept, Severity.LOW, ReportActionType.NO_CHANGE, "Specified relationship already exists: " + targetRel);
 				return 0;
 			} else {
 				//Otherwise, we'll activate it
-				existingRels.get(0).setActive(true);
+				existingRels.iterator().next().setActive(true);
 				String msg = "Reactivating inactive relationshiop - active ingredient " + target;
 				report (task, loadedConcept, Severity.LOW, ReportActionType.RELATIONSHIP_MODIFIED, msg, attributeCount);
 			}

@@ -345,9 +345,9 @@ abstract public class TemplateFix extends BatchFix {
 	protected int removeRedundandRelationships(Task t, Concept c) throws TermServerScriptException {
 		int changesMade = 0;
 		AncestorsCache cache = gl.getAncestorsCache();
-		List<Relationship> removedRels = new ArrayList<>();
+		Set<Relationship> removedRels = new HashSet<>();
 		for (RelationshipGroup group : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
-			List<Relationship> originalRels = group.getRelationships();
+			Set<Relationship> originalRels = group.getRelationships();
 			for (Relationship originalRel : originalRels) {
 				if (removedRels.contains(originalRel)) {
 					continue;
@@ -434,11 +434,11 @@ abstract public class TemplateFix extends BatchFix {
 				int reuseCount = 0;
 				for (Relationship moved : new ArrayList<>(group.getRelationships())) {
 					if (StringUtils.isEmpty(moved.getId())) {
-						List<Relationship> existingInactives = c.getRelationships(moved, ActiveState.INACTIVE);
+						Set<Relationship> existingInactives = c.getRelationships(moved, ActiveState.INACTIVE);
 						if (existingInactives.size() > 0) {
 							group.removeRelationship(moved);
 							c.removeRelationship(moved, true);  //It's OK to force removal, the axiom will still exist.
-							Relationship reuse = existingInactives.get(0);
+							Relationship reuse = existingInactives.iterator().next();
 							reuse.setActive(true);
 							group.addRelationship(reuse);
 							c.addRelationship(reuse);

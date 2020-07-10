@@ -500,7 +500,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	}
 	
 	protected int ensureAcceptableParent(Task task, Concept c, Concept acceptableParent) throws TermServerScriptException {
-		List<Relationship> statedParents = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, IS_A, ActiveState.ACTIVE);
+		Set<Relationship> statedParents = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, IS_A, ActiveState.ACTIVE);
 		boolean hasAcceptableParent = false;
 		int changesMade = 0;
 		for (Relationship thisParent : statedParents) {
@@ -530,7 +530,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	protected int validateAttributeValues(Task task, Concept concept,
 			Concept attributeType, Concept descendentsOfValue, CardinalityExpressions cardinality) throws TermServerScriptException {
 		
-		List<Relationship> attributes = concept.getRelationships(CharacteristicType.ALL, attributeType, ActiveState.ACTIVE);
+		Set<Relationship> attributes = concept.getRelationships(CharacteristicType.ALL, attributeType, ActiveState.ACTIVE);
 		Set<Concept> descendents = ClosureCache.getClosureCache().getClosure(descendentsOfValue);
 		for (Relationship thisAttribute : attributes) {
 			Concept value = thisAttribute.getTarget();
@@ -574,7 +574,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 
 	private int transferInferredRelationshipsToStated(Task task,
 			Concept concept, Concept attributeType, CardinalityExpressions cardinality) throws TermServerScriptException {
-		List<Relationship> replacements = concept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
+		Set<Relationship> replacements = concept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
 		int changesMade = 0;
 		if (replacements.size() == 0) {
 			String msg = "Unable to find any inferred " + attributeType + " relationships to state.";
@@ -643,7 +643,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	
 	protected int replaceParents(Task t, Concept c, Relationship oldParentRel, Relationship newParentRel, Object[] additionalDetails) throws TermServerScriptException {
 		int changesMade = 0;
-		List<Relationship> parentRels = new ArrayList<Relationship> (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
+		Set<Relationship> parentRels = new HashSet<Relationship> (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
 																	IS_A,
 																	ActiveState.ACTIVE));
 		for (Relationship parentRel : parentRels) {
@@ -658,13 +658,13 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 
 	protected int removeParentRelationship(Task t, Relationship removeMe, Concept c, String retained, Object[] additionalDetails) throws TermServerScriptException {
 		//Does this concept in fact have this relationship to remove?
-		List<Relationship> matchingRels = c.getRelationships(removeMe, ActiveState.ACTIVE);
+		Set<Relationship> matchingRels = c.getRelationships(removeMe, ActiveState.ACTIVE);
 		if (matchingRels.size() > 1) {
 			throw new IllegalStateException(c + " has multiple parent relationships to " + removeMe.getTarget());
 		} else if (matchingRels.size() == 0) {
 			return NO_CHANGES_MADE;
 		}
-		Relationship r = matchingRels.get(0);
+		Relationship r = matchingRels.iterator().next();
 		
 		//Are we inactivating or deleting this relationship?
 		String msg;
@@ -817,7 +817,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			return NO_CHANGES_MADE;
 		}
 		//Do we already have this relationship active in the target group (or at all if self grouped)?
-		List<Relationship> rels;
+		Set<Relationship> rels;
 		if (groupId == SELFGROUPED) {
 			rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
 					type,
@@ -834,7 +834,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			report (t, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Found two active relationships for " + type + " -> " + value);
 			return NO_CHANGES_MADE;
 		} else if (rels.size() == 1) {
-			report (t, c, Severity.LOW, ReportActionType.NO_CHANGE, "Active relationship already exists ", rels.get(0));
+			report (t, c, Severity.LOW, ReportActionType.NO_CHANGE, "Active relationship already exists ", rels.iterator().next());
 			return NO_CHANGES_MADE;
 		}
 		
@@ -852,7 +852,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 														ActiveState.INACTIVE);
 		}
 		if (rels.size() >= 1) {
-			Relationship rel = rels.get(0);
+			Relationship rel = rels.iterator().next();
 			report (t, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_REACTIVATED, rel);
 			rel.setActive(true);
 			return CHANGE_MADE;
@@ -889,9 +889,9 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		int changesMade = 0;
 		
 		//Do we have any inactive relationships that we could reactivate, rather than creating new ones?
-		List<Relationship> inactiveRels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, to.getType(), to.getTarget(), ActiveState.INACTIVE);
+		Set<Relationship> inactiveRels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, to.getType(), to.getTarget(), ActiveState.INACTIVE);
 
-		List<Relationship> originalRels;
+		Set<Relationship> originalRels;
 		//If our 'from' is a full relationship, then only replace within that groupId
 		if (from instanceof Relationship) {
 			originalRels = c.getRelationships((Relationship)from, ActiveState.ACTIVE);
@@ -924,14 +924,14 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		return changesMade;
 	}
 	
-	private Relationship getBestReactivation(List<Relationship> rels, int targetGroupId) {
+	private Relationship getBestReactivation(Set<Relationship> rels, int targetGroupId) {
 		for (Relationship r : rels) {
 			if (r.getGroupId() == targetGroupId) {
 				return r;
 			}
 		}
 		//If not found in the same group, return the first one
-		return rels.get(0);
+		return rels.iterator().next();
 	}
 
 	protected void removeRedundancy(Task t, Concept c, Concept type, int groupNum) throws TermServerScriptException {
@@ -1140,7 +1140,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		c.setDefinitionStatus(DefinitionStatus.PRIMITIVE);
 		
 		//Need to also remove any unpublished relationships
-		List<Relationship> allRelationships = new ArrayList<>(c.getRelationships());
+		Set<Relationship> allRelationships = new HashSet<>(c.getRelationships());
 		for (Relationship r : allRelationships) {
 			if (r.isActive() && (r.getEffectiveTime() == null || r.getEffectiveTime().isEmpty())) {
 				c.removeRelationship(r);
@@ -1200,7 +1200,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 					.collect(Collectors.joining(",\n"));
 			report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept found to have " + ppps.size() + " proximal primitive parents.  Cannot state parent as: " + newPPP, pppsStr);
 		} else {
-			Concept ppp = ppps.get(0);
+			Concept ppp = ppps.iterator().next();
 			//We need to either calculate the ppp as the intended one, or higher than it eg calculated PPP of Disease is OK if we're setting the more specific "Complication"
 			if (ppp.equals(newPPP) || gl.getAncestorsCache().getAncestors(newPPP).contains(ppp)) {
 				if (!checkOnly) {
@@ -1218,9 +1218,9 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 
 	private int setProximalPrimitiveParent(Task t, Concept c, Concept newParent) throws TermServerScriptException {
 		int changesMade = 0;
-		List<Relationship> parentRels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, IS_A, ActiveState.ACTIVE);
+		Set<Relationship> parentRels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, IS_A, ActiveState.ACTIVE);
 		//Do we in fact need to do anything?
-		if (parentRels.size() == 1 && parentRels.get(0).getTarget().equals(newParent)) {
+		if (parentRels.size() == 1 && parentRels.iterator().next().getTarget().equals(newParent)) {
 			report (t, c, Severity.NONE, ReportActionType.NO_CHANGE, "Concept already has template PPP: " + newParent);
 		} else {
 			boolean doAddition = true;
@@ -1273,7 +1273,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 
 	public int applyRemodelledGroups(Task t, Concept c, List<RelationshipGroup> groups) throws TermServerScriptException {
 		int changesMade = 0;
-		List<Relationship> availableForReuse = new ArrayList<>();
+		Set<Relationship> availableForReuse = new HashSet<>();
 		Set<String> idsUsed = new HashSet<>();
 		for (RelationshipGroup group : groups) {
 			if (group != null) {

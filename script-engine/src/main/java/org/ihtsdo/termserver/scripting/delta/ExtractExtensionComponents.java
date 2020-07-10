@@ -324,7 +324,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	private Concept getReplacement(Concept inactiveConcept) throws TermServerScriptException {
 		/*List<HistoricalAssociation> assocs =  inactiveConcept.getHistorialAssociations(ActiveState.ACTIVE);
 		if (assocs.size() == 1) {
-			HistoricalAssociation assoc = assocs.get(0);
+			HistoricalAssociation assoc = assocs.iterator().next();
 			Concept assocType = gl.getConcept(assoc.getRefsetId());
 			Concept assocTarget = gl.getConcept(assoc.getTargetComponentId());
 			println (inactiveConcept + " is " + assocType.getPreferredSynonym() + " " + assocTarget);

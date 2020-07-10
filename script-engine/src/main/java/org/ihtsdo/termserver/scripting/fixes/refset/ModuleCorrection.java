@@ -60,7 +60,7 @@ public class ModuleCorrection extends TermServerScript/*extends RefsetFixer*/ {
 			throw new TermServerScriptException("Unable to fix " + descId + " as has " + refset.getItems().size() + " refset entries");
 		}
 		
-		RefsetEntry refsetEntry = refset.getItems().get(0);
+		RefsetEntry refsetEntry = refset.getItems().iterator().next();
 		if (forceEffectiveTime != null || refsetEntry.getModuleId().equals(wrongModule)) {
 			if (forceEffectiveTime != null) {
 				refsetEntry.setEffectiveTime(forceEffectiveTime);

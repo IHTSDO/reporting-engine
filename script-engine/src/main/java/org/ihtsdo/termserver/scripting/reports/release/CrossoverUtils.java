@@ -163,7 +163,7 @@ public class CrossoverUtils implements RF2Constants {
 		boolean equal=false;
 		boolean oneSubsTwo=false;
 		boolean twoSubsOne=false;
-		List<Relationship> tupleToTestSwitch=new ArrayList<Relationship>();
+		Set<Relationship> tupleToTestSwitch=new HashSet<Relationship>();
 		Set<Relationship> tupleTested=new HashSet<Relationship>();
 		for (Relationship role1: rolegroup1.getRelationships()){
 			for (Relationship role2:rolegroup2.getRelationships()){

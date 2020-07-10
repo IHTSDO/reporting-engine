@@ -43,7 +43,7 @@ public class RelationshipReport extends TermServerScript{
 				String msg = "Concept " + thisConcept.getConceptId() + " has no FSN";
 				warn(msg);
 			}
-			List<Relationship> allConceptRelationships = thisConcept.getRelationships(filterOnCharacteristicType, filterOnActiveState);
+			Set<Relationship> allConceptRelationships = thisConcept.getRelationships(filterOnCharacteristicType, filterOnActiveState);
 			
 			for(Relationship thisRel : allConceptRelationships) {
 				if (filterOnType == null || thisRel.getType().equals(filterOnType)){

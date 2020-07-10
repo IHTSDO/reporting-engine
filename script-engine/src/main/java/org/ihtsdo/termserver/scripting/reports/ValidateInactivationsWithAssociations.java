@@ -110,7 +110,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 					report (c, c.getEffectiveTime(), "Concept has multiple inactivation indicators", isLegacy, data);
 					countIssue(c);
 				} else {
-					InactivationIndicatorEntry i = c.getInactivationIndicatorEntries(ActiveState.ACTIVE).get(0); 
+					InactivationIndicatorEntry i = c.getInactivationIndicatorEntries(ActiveState.ACTIVE).iterator().next(); 
 					switch (i.getInactivationReasonId()) {
 						case SCTID_INACT_AMBIGUOUS : 
 							validate(c, i, "1..*", SCTID_ASSOC_POSS_EQUIV_REFSETID, isLegacy);
@@ -168,7 +168,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 						report (c, c.getEffectiveTime(), "Active description of inactive concept is missing 'Concept non-current' indicator", cdLegacy, d);
 						countIssue(c);
 					} else {
-						InactivationIndicatorEntry i = d.getInactivationIndicatorEntries(ActiveState.ACTIVE).get(0); 
+						InactivationIndicatorEntry i = d.getInactivationIndicatorEntries(ActiveState.ACTIVE).iterator().next(); 
 						if (!i.getInactivationReasonId().equals(SCTID_INACT_CONCEPT_NON_CURRENT)) {
 							report (c, c.getEffectiveTime(), "Active description of inactive concept has something other than a 'Concept non-current' indicator", cdLegacy, d, i);
 							countIssue(c);
@@ -186,7 +186,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 						//report (c, c.getEffectiveTime(), d, "Inactive description of active concept should have an inactivation indicator", cdLegacy, d);
 						incrementSummaryInformation("Inactive description of active concept should have an inactivation indicator");
 					} else {
-						InactivationIndicatorEntry i = d.getInactivationIndicatorEntries(ActiveState.ACTIVE).get(0); 
+						InactivationIndicatorEntry i = d.getInactivationIndicatorEntries(ActiveState.ACTIVE).iterator().next(); 
 						if (i.getInactivationReasonId().equals(SCTID_INACT_CONCEPT_NON_CURRENT)) {
 							report (c, c.getEffectiveTime(), d, "Inactive description of an active concept should not have a 'Concept non-current' indicator", cdLegacy, d, i);
 							countIssue(c);

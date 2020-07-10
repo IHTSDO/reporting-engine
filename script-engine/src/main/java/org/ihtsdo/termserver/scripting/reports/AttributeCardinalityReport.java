@@ -58,8 +58,8 @@ public class AttributeCardinalityReport extends TermServerScript{
 		Concept typeOfInterest = gl.getConcept(targetAttributeStr);
 		Set<Concept> typesEncountered = new HashSet<Concept>();
 		
-		List<Relationship> statedRelationshipsOfInterest = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, typeOfInterest, ActiveState.ACTIVE);
-		List<Relationship> inferredRelationshipsOfInterest = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, typeOfInterest, ActiveState.ACTIVE);
+		Set<Relationship> statedRelationshipsOfInterest = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, typeOfInterest, ActiveState.ACTIVE);
+		Set<Relationship> inferredRelationshipsOfInterest = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, typeOfInterest, ActiveState.ACTIVE);
 		if (statedRelationshipsOfInterest.size() != inferredRelationshipsOfInterest.size()) {
 			String msg = "Cardinality mismatch between stated and inferred relationships - (S: " + statedRelationshipsOfInterest.size() + " I: " + inferredRelationshipsOfInterest.size() + ")";
 			report(c, msg);

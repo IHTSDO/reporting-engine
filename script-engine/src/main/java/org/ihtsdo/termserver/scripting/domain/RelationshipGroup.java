@@ -1,12 +1,10 @@
 package org.ihtsdo.termserver.scripting.domain;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class RelationshipGroup {
-	List<Relationship> relationships = new ArrayList<>();
+	Set<Relationship> relationships = new HashSet<>();
 	int groupId;
 	
 	//Generic flag to say if group should be highlighted for some reason, eg cause a template match to fail
@@ -24,25 +22,25 @@ public class RelationshipGroup {
 	
 	public RelationshipGroup (int groupId) {
 		this.groupId = groupId;
-		this.relationships = new ArrayList<>();
+		this.relationships = new HashSet<>();
 	}
 	
-	public RelationshipGroup (int groupId, List<Relationship> relationships) {
+	public RelationshipGroup (int groupId, Set<Relationship> relationships) {
 		this.groupId = groupId;
 		this.relationships = relationships;
 	}
 	
 	public RelationshipGroup(int groupId, Relationship r) {
-		relationships = new ArrayList<>();
+		relationships = new HashSet<>();
 		this.groupId = groupId;
 		relationships.add(r);
 	}
 
-	public List<Relationship> getRelationships() {
+	public Set<Relationship> getRelationships() {
 		return relationships;
 	}
 	
-	public void setRelationships(List<Relationship> relationships) {
+	public void setRelationships(Set<Relationship> relationships) {
 		this.relationships = relationships;
 	}
 	
@@ -132,14 +130,14 @@ public class RelationshipGroup {
 		return false;
 	}
 	
-	public List<Relationship> getType(Concept t) {
+	public Set<Relationship> getType(Concept t) {
 		return relationships.stream()
 		.filter(r -> r.getType().equals(t))
-		.collect(Collectors.toList());
+		.collect(Collectors.toSet());
 	}
 	
 	public Relationship getTypeValue(Relationship r1) {
-		List<Relationship> matches = new ArrayList<>();
+		Set<Relationship> matches = new HashSet<>();
 		for (Relationship r2 : relationships) {
 			if (r2.equalsTypeValue(r1)) {
 				matches.add(r2);
@@ -148,7 +146,7 @@ public class RelationshipGroup {
 		if (matches.size() == 0) {
 			return null;
 		} else if (matches.size() == 1) {
-			return matches.get(0);
+			return matches.iterator().next();
 		} else {
 			throw new IllegalArgumentException("More than one matching relationship found");
 		}

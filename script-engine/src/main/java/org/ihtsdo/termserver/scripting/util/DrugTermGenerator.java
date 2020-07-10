@@ -453,7 +453,7 @@ public class DrugTermGenerator extends TermGenerator {
 
 	private Boolean checkTypeValueVariance(Concept c, Concept relType, CharacteristicType charType) throws TermServerScriptException {
 		Boolean relTypeVariance = null;  
-		List<Relationship> presentationRels = c.getRelationships(charType, relType, ActiveState.ACTIVE);
+		Set<Relationship> presentationRels = c.getRelationships(charType, relType, ActiveState.ACTIVE);
 		if (presentationRels.size() > 0) {
 			relTypeVariance = false;
 		}
@@ -473,7 +473,7 @@ public class DrugTermGenerator extends TermGenerator {
 	private boolean checkIngredientVariance(Concept c, CharacteristicType charType) throws TermServerScriptException {
 		boolean ingredientVariance = false;
 		//Now check the ingredients
-		List<Relationship> ingredients = c.getRelationships(charType, HAS_ACTIVE_INGRED, ActiveState.ACTIVE);
+		Set<Relationship> ingredients = c.getRelationships(charType, HAS_ACTIVE_INGRED, ActiveState.ACTIVE);
 		ingredients.addAll( c.getRelationships(charType, HAS_PRECISE_INGRED, ActiveState.ACTIVE));
 		for (Relationship r : ingredients) {
 			Concept ingredient = GraphLoader.getGraphLoader().getConcept(r.getTarget().getConceptId());
@@ -519,7 +519,7 @@ public class DrugTermGenerator extends TermGenerator {
 		if (preferredTerms.size() != 1) {
 			report (t, c, Severity.CRITICAL, ReportActionType.API_ERROR, "Unexpected number of preferred terms: " + preferredTerms.size());
 		} else {
-			Description usPT = preferredTerms.get(0);
+			Description usPT = preferredTerms.iterator().next();
 			usPT.setAcceptabilityMap(SnomedUtils.createPreferredAcceptableMap(US_ENG_LANG_REFSET, GB_ENG_LANG_REFSET));
 			Description gbPT = usPT.clone(null);
 			gbPT.setTerm("GBTERM:" + gbPT.getTerm());
@@ -548,7 +548,7 @@ public class DrugTermGenerator extends TermGenerator {
 	}
 	
 	private Set<String> getIngredientsWithStrengths(Concept c, boolean isFSN, String langRefset, CharacteristicType charType) throws TermServerScriptException {
-		List<Relationship> ingredientRels = c.getRelationships(charType, HAS_ACTIVE_INGRED, ActiveState.ACTIVE);
+		Set<Relationship> ingredientRels = c.getRelationships(charType, HAS_ACTIVE_INGRED, ActiveState.ACTIVE);
 		ingredientRels.addAll(c.getRelationships(charType, HAS_PRECISE_INGRED, ActiveState.ACTIVE));
 		Set<String> ingredientsWithStrengths = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);  //Will naturally sort in alphabetical order
 		
@@ -586,7 +586,7 @@ public class DrugTermGenerator extends TermGenerator {
 	}
 
 	private List<Description> getOrderedIngredientDescriptions(Concept c, String langRefset, CharacteristicType charType) {
-		List<Relationship> ingredientRels = c.getRelationships(charType, HAS_ACTIVE_INGRED, ActiveState.ACTIVE);
+		Set<Relationship> ingredientRels = c.getRelationships(charType, HAS_ACTIVE_INGRED, ActiveState.ACTIVE);
 		ingredientRels.addAll(c.getRelationships(charType, HAS_PRECISE_INGRED, ActiveState.ACTIVE));
 		return ingredientRels.stream()
 				.map(r -> GraphLoader.getGraphLoader().getConceptSafely(r.getTarget().getConceptId()))

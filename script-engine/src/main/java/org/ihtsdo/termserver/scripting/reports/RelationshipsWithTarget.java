@@ -50,7 +50,7 @@ public class RelationshipsWithTarget extends TermServerScript{
 				warn(msg);
 			}
 			
-			List<Relationship> allConceptRelationships = thisConcept.getRelationships(filterOnCharacteristicType, filterOnActiveState);
+			Set<Relationship> allConceptRelationships = thisConcept.getRelationships(filterOnCharacteristicType, filterOnActiveState);
 			for(Relationship thisRel : allConceptRelationships) {
 				if (filterOnTarget.contains(thisRel.getTarget())) {
 					report (thisConcept, thisRel);

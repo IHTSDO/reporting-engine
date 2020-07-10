@@ -205,7 +205,7 @@ public class DispositionsArchive extends Rf2Player implements RF2Constants{
 	}
 
 	private List<String> getDispositions(Concept c) {
-		List<Relationship> dispositions = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, hasDisposition, ActiveState.ACTIVE);
+		Set<Relationship> dispositions = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, hasDisposition, ActiveState.ACTIVE);
 		List<String> dispositionIds = new ArrayList<String>();
 		for (Relationship r : dispositions) {
 			dispositionIds.add(r.getTarget().getConceptId());

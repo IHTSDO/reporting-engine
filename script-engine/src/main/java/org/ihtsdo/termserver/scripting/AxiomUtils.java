@@ -21,8 +21,8 @@ public class AxiomUtils implements RF2Constants {
 	
 	static AxiomRelationshipConversionService axiomService = new AxiomRelationshipConversionService (new HashSet<>());
 
-	public static List<org.ihtsdo.termserver.scripting.domain.Relationship> getRHSRelationships(Concept c, AxiomRepresentation axiom) throws TermServerScriptException {
-		List<org.ihtsdo.termserver.scripting.domain.Relationship> relationships = new ArrayList<>();
+	public static Set<org.ihtsdo.termserver.scripting.domain.Relationship> getRHSRelationships(Concept c, AxiomRepresentation axiom) throws TermServerScriptException {
+		Set<org.ihtsdo.termserver.scripting.domain.Relationship> relationships = new HashSet<>();
 		if (axiom.getRightHandSideRelationships() != null) {
 			relationships = convertMapToRelationship(c, axiom.getRightHandSideRelationships());
 		} else {
@@ -32,8 +32,8 @@ public class AxiomUtils implements RF2Constants {
 		return relationships;
 	}
 	
-	public static List<org.ihtsdo.termserver.scripting.domain.Relationship> getLHSRelationships(Concept c, AxiomRepresentation axiom) throws TermServerScriptException {
-		List<org.ihtsdo.termserver.scripting.domain.Relationship> relationships = new ArrayList<>();
+	public static Set<org.ihtsdo.termserver.scripting.domain.Relationship> getLHSRelationships(Concept c, AxiomRepresentation axiom) throws TermServerScriptException {
+		Set<org.ihtsdo.termserver.scripting.domain.Relationship> relationships = new HashSet<>();
 		if (axiom.getLeftHandSideRelationships() != null) {
 			relationships = convertMapToRelationship(c, axiom.getLeftHandSideRelationships());
 		} else {
@@ -51,7 +51,7 @@ public class AxiomUtils implements RF2Constants {
 		return axiom;
 	}
 
-	private static List<org.ihtsdo.termserver.scripting.domain.Relationship> extractRelationships(
+	private static Set<org.ihtsdo.termserver.scripting.domain.Relationship> extractRelationships(
 			Concept c,
 			AxiomRepresentation axiomRepresentation) throws TermServerScriptException {
 		Map<Integer, List<Relationship>> relationshipMap = null;
@@ -72,9 +72,9 @@ public class AxiomUtils implements RF2Constants {
 		return map != null && !map.isEmpty();
 	}
 
-	static private List<org.ihtsdo.termserver.scripting.domain.Relationship> convertMapToRelationship(Concept c, Map<Integer, List<Relationship>> relationshipMap) throws TermServerScriptException {
+	static private Set<org.ihtsdo.termserver.scripting.domain.Relationship> convertMapToRelationship(Concept c, Map<Integer, List<Relationship>> relationshipMap) throws TermServerScriptException {
 		GraphLoader gl = GraphLoader.getGraphLoader();
-		List<org.ihtsdo.termserver.scripting.domain.Relationship> relationships = new ArrayList<>();
+		Set<org.ihtsdo.termserver.scripting.domain.Relationship> relationships = new HashSet<>();
 		for (Entry<Integer, List<Relationship>> entry : relationshipMap.entrySet()) {
 			int groupId = entry.getKey();
 			for (Relationship axiomRelationship : entry.getValue()) {
@@ -88,12 +88,12 @@ public class AxiomUtils implements RF2Constants {
 		return relationships;
 	}
 	
-	static public Map<Integer, List<Relationship>> convertRelationshipsToMap(List<org.ihtsdo.termserver.scripting.domain.Relationship> relationships) {
+	static public Map<Integer, List<Relationship>> convertRelationshipsToMap(Set<org.ihtsdo.termserver.scripting.domain.Relationship> relationships) {
 		Map<Integer, List<Relationship>> relationshipMap = new HashMap<>();
 		for (org.ihtsdo.termserver.scripting.domain.Relationship r : relationships) {
 			List<Relationship> group = relationshipMap.get(r.getGroupId());
 			if (group == null) {
-				group = new ArrayList<>();
+				group = new ArrayList<Relationship>();
 				relationshipMap.put(r.getGroupId(), group);
 			}
 			group.add(toRelationship(r));

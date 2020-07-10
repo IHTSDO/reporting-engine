@@ -358,7 +358,7 @@ public class GroupRemodel extends TemplateFix {
 		for (RelationshipGroup group : groups) {
 			if (group.getGroupId() != UNGROUPED) {
 				if (group.getRelationships().size() == 1) {
-					Relationship lonelyRelationship = group.getRelationships().get(0);
+					Relationship lonelyRelationship = group.getRelationships().iterator().next();
 					groups.set(group.getGroupId(), new RelationshipGroup(group.getGroupId()));
 					lonelyRelationship.setGroupId(UNGROUPED);
 					if (!groups.get(UNGROUPED).containsTypeValue(lonelyRelationship)) {
@@ -528,7 +528,7 @@ public class GroupRemodel extends TemplateFix {
 			}
 		}
 		removeTypes.removeAll(allowTypes);
-		for (Relationship r : new ArrayList<Relationship>(group0.getRelationships())) {
+		for (Relationship r : new HashSet<Relationship>(group0.getRelationships())) {
 			if (removeTypes.contains(r.getType())) {
 				group0.removeRelationship(r);
 			}
@@ -586,12 +586,12 @@ public class GroupRemodel extends TemplateFix {
 		} else if (values.size() == 1) {
 			//If we're pulling from stated rels, move any group 0 instances to the new group id
 			if (charType.equals(CharacteristicType.STATED_RELATIONSHIP)) {
-				//List<Relationship> ungroupedRels = c.getRelationships(charType, type, UNGROUPED); <- Was allowing same rel into mutiple groups
-				List<Relationship> ungroupedRels = groups.get(UNGROUPED).getRelationships().stream()
+				//Set<Relationship> ungroupedRels = c.getRelationships(charType, type, UNGROUPED); <- Was allowing same rel into mutiple groups
+				Set<Relationship> ungroupedRels = groups.get(UNGROUPED).getRelationships().stream()
 						.filter(r -> r.getType().equals(type))
-						.collect(Collectors.toList());
+						.collect(Collectors.toSet());
 				if (ungroupedRels.size() == 1) {
-					Relationship ungroupedRel = ungroupedRels.get(0);
+					Relationship ungroupedRel = ungroupedRels.iterator().next();
 					groups.get(UNGROUPED).removeRelationship(ungroupedRel);
 					//Make a clone so we're not immediately affecting the underlying concept
 					ungroupedRel = ungroupedRel.clone(ungroupedRel.getId());

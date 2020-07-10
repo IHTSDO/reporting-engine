@@ -73,7 +73,7 @@ public class ReplaceSematicTags extends BatchFix implements RF2Constants{
 		if (fsnList.size() != 1) {
 			report(task, concept, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Number of active FSNs encountered was: " + fsnList.size());
 		} else {
-			Description fsn = fsnList.get(0);
+			Description fsn = fsnList.iterator().next();
 			String[] fsnParts = SnomedUtils.deconstructFSN(fsn.getTerm());
 			String newFSN = null;
 			for (Map.Entry<String, String> entry : replacementMap.entrySet()) {

@@ -65,14 +65,14 @@ public class CDUpdate extends DrugBatchFix implements RF2Constants {
 		int changesMade = 0;
 		
 		//Throw an error if the number of inferred and stated relationships are different
-		List<Relationship> stated = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
+		Set<Relationship> stated = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
 		if (stated.size() < MINIMAL_DRUG_MODELLING) {
 			throw new TermServerScriptException("Insufficient attributes for correct modelling");
 		}
 		
 		//Copy the dose form as a unit of presentation, if we don't have any
 		if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_UNIT_OF_PRESENTATION, ActiveState.ACTIVE).size() == 0) {
-			Relationship doseFormRel = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_MANUFACTURED_DOSE_FORM, ActiveState.ACTIVE).get(0);
+			Relationship doseFormRel = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_MANUFACTURED_DOSE_FORM, ActiveState.ACTIVE).iterator().next();
 			Relationship unitPresRel = doseFormRel.clone(null);
 			//incrementSummaryInformation("Dose form: " + unitPres.getTarget().getFsn());
 			unitPresRel.setType(HAS_UNIT_OF_PRESENTATION);
@@ -119,7 +119,7 @@ public class CDUpdate extends DrugBatchFix implements RF2Constants {
 	private int setSingleParent(Task t, Concept c, Concept parent) throws TermServerScriptException {
 		int changesMade = 0;
 		Relationship newParentRel = new Relationship (c, IS_A, parent, UNGROUPED);
-		List<Relationship> parentRels = new ArrayList<> (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
+		Set<Relationship> parentRels = new HashSet<> (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
 														IS_A,
 														ActiveState.ACTIVE));
 		boolean replacementNeeded = true;
@@ -171,7 +171,7 @@ public class CDUpdate extends DrugBatchFix implements RF2Constants {
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		List<Concept> processMe = new ArrayList<>();  //We want to process in the same order each time, in case we restart and skip some.
 		for (Concept c : PHARM_BIO_PRODUCT.getDescendents(NOT_SET)) {
-			List<Relationship> bossRels = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HAS_BOSS, ActiveState.ACTIVE);
+			Set<Relationship> bossRels = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HAS_BOSS, ActiveState.ACTIVE);
 			if (bossRels.size() > 0 && !c.getFsn().contains("precisely") && c.getFsn().contains("(clinical drug)")) {
 				c.setConceptType(ConceptType.CLINICAL_DRUG);
 				processMe.add(c);

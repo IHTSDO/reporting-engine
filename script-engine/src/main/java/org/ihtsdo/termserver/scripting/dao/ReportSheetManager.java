@@ -81,6 +81,10 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 		MAX_COLUMN_STR = Character.toString((char)('A' + MAX_COLUMNS));
 	}
 
+	public static void setMaxRows(int maxRows) {
+		MAX_ROWS = maxRows;
+	}
+
 	/**
 	 * Creates an authorized Credential object.
 	 * @param HTTP_TRANSPORT The network HTTP Transport.

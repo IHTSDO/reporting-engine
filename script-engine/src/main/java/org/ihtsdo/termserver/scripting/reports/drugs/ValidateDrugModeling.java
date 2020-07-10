@@ -231,8 +231,8 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		//Before checking for equivalence
 		String issueStr = "Stated attributes not identical to inferred";
 		initialiseSummary(issueStr);
-		List<Relationship> statedAttribs = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
-		List<Relationship> inferredAttribs = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE);
+		Set<Relationship> statedAttribs = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
+		Set<Relationship> inferredAttribs = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE);
 		
 		Relationship isA = new Relationship(IS_A, null);
 		removeRels(isA, statedAttribs, true); //remove all instances
@@ -252,11 +252,11 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		}
 		
 		if (inferredAttribs.size() > 0) {
-			report(c, issueStr, inferredAttribs.get(0));
+			report(c, issueStr, inferredAttribs.iterator().next());
 		}
 	}
 
-	private boolean removeRels(Relationship removeMe, List<Relationship> rels, boolean removeAll) {
+	private boolean removeRels(Relationship removeMe, Set<Relationship> rels, boolean removeAll) {
 		Set<Relationship> forRemoval = new HashSet<>();
 		for (Relationship r : rels) {
 			if (r.getType().equals(removeMe.getType()) &&
@@ -364,10 +364,10 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		
 		for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP)) {
 			if (g.isGrouped()) {
-				List<Relationship> ps = g.getType(HAS_PRES_STRENGTH_VALUE);
-				List<Relationship> psdu = g.getType(HAS_PRES_STRENGTH_DENOM_UNIT);
-				List<Relationship> csdu = g.getType(HAS_CONC_STRENGTH_DENOM_UNIT);
-				List<Relationship> csnu = g.getType(HAS_CONC_STRENGTH_UNIT);
+				Set<Relationship> ps = g.getType(HAS_PRES_STRENGTH_VALUE);
+				Set<Relationship> psdu = g.getType(HAS_PRES_STRENGTH_DENOM_UNIT);
+				Set<Relationship> csdu = g.getType(HAS_CONC_STRENGTH_DENOM_UNIT);
+				Set<Relationship> csnu = g.getType(HAS_CONC_STRENGTH_UNIT);
 				if (psdu.size() > 1 || csdu.size() > 1) {
 					report(c, issueStr, g);
 					return;
@@ -378,23 +378,23 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 						return;
 					}
 				}
-				if (psdu.size() == 1 && psdu.get(0).getTarget().equals(MILLILITER)) {
-					report (c, issue3Str, psdu.get(0));
+				if (psdu.size() == 1 && psdu.iterator().next().getTarget().equals(MILLILITER)) {
+					report (c, issue3Str, psdu.iterator().next());
 				}
-				if (csdu.size() == 1 && csdu.get(0).getTarget().equals(gl.getConcept("732936001|Tablet|"))) {
-					report (c, issue3Str, csdu.get(0));
+				if (csdu.size() == 1 && csdu.iterator().next().getTarget().equals(gl.getConcept("732936001|Tablet|"))) {
+					report (c, issue3Str, csdu.iterator().next());
 				}
-				if (psdu.size() == 1 && psdu.get(0).getTarget().equals(MILLIGRAM)) {
-					report (c, issue3Str, psdu.get(0));
+				if (psdu.size() == 1 && psdu.iterator().next().getTarget().equals(MILLIGRAM)) {
+					report (c, issue3Str, psdu.iterator().next());
 				}
-				if (csnu.size() == 1 && csnu.get(0).getTarget().equals(gl.getConcept("258727004|milliequivalent|"))) {
-					report (c, issue3Str, csdu.get(0));
+				if (csnu.size() == 1 && csnu.iterator().next().getTarget().equals(gl.getConcept("258727004|milliequivalent|"))) {
+					report (c, issue3Str, csdu.iterator().next());
 				}
-				if (csnu.size() == 1 && csnu.get(0).getTarget().equals(gl.getConcept("258728009|microequivalent|"))) {
-					report (c, issue3Str, csdu.get(0));
+				if (csnu.size() == 1 && csnu.iterator().next().getTarget().equals(gl.getConcept("258728009|microequivalent|"))) {
+					report (c, issue3Str, csdu.iterator().next());
 				}
-				if (csnu.size() == 1 && csnu.get(0).getTarget().equals(gl.getConcept("258718000|millimole|"))) {
-					report (c, issue3Str, csdu.get(0));
+				if (csnu.size() == 1 && csnu.iterator().next().getTarget().equals(gl.getConcept("258718000|millimole|"))) {
+					report (c, issue3Str, csdu.iterator().next());
 				}
 			}
 		}
@@ -610,8 +610,8 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		initialiseSummary(issue2Str);
 		
 		if (drugTypes==null || SnomedUtils.isConceptType(concept, drugTypes)) {
-			List<Relationship> statedAttributes = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
-			List<Relationship> infAttributes = concept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
+			Set<Relationship> statedAttributes = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
+			Set<Relationship> infAttributes = concept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, attributeType, ActiveState.ACTIVE);
 			if (statedAttributes.size() != infAttributes.size()) {
 				String data = "(s" + statedAttributes.size() + " i" + infAttributes.size() + ")";
 				report (concept, issueStr, data);
@@ -640,9 +640,9 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		initialiseSummary(issueStr);
 		initialiseSummary(issue2Str);
 		
-		List<Relationship> bossAttributes = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_BOSS, ActiveState.ACTIVE);
+		Set<Relationship> bossAttributes = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_BOSS, ActiveState.ACTIVE);
 		//Check BOSS attributes against active ingredients - must be in the same relationship group
-		List<Relationship> ingredientRels = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_PRECISE_INGRED, ActiveState.ACTIVE);
+		Set<Relationship> ingredientRels = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_PRECISE_INGRED, ActiveState.ACTIVE);
 		for (Relationship bRel : bossAttributes) {
 			incrementSummaryInformation("BoSS attributes checked");
 			boolean matchFound = false;
@@ -784,7 +784,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		
 		if (unmatchedGroup != null) {
 			//Which inferred relationship is not also stated?
-			List<Relationship> unmatched = new ArrayList<>();
+			Set<Relationship> unmatched = new HashSet<>();
 			for (Relationship r : unmatchedGroup.getRelationships()) {
 				if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, r.getType(), r.getTarget(), ActiveState.ACTIVE).size() == 0) {
 					unmatched.add(r);
@@ -938,7 +938,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 				if (g.getGroupId() == UNGROUPED) {
 					continue;
 				}
-				if (g.size() == 1 && g.getRelationships().get(0).getType().equals(HAS_ACTIVE_INGRED)) {
+				if (g.size() == 1 && g.getRelationships().iterator().next().getType().equals(HAS_ACTIVE_INGRED)) {
 					continue;
 				}
 				report(c, issueStr, g);
@@ -1059,19 +1059,19 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		initialiseSummary(issueStr3);
 		
 		//Do we have a unit of presentation?
-		List<Relationship> unitsOfPres = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_UNIT_OF_PRESENTATION, ActiveState.ACTIVE);
+		Set<Relationship> unitsOfPres = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_UNIT_OF_PRESENTATION, ActiveState.ACTIVE);
 		if (unitsOfPres.size() > 1) {
 			report (c, issueStr1);
 		} else if (unitsOfPres.size() == 1) {
-			Concept unitOfPres = unitsOfPres.get(0).getTarget();
+			Concept unitOfPres = unitsOfPres.iterator().next().getTarget();
 			for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
 				if (!g.isGrouped() || g.size() == 1) {
 					continue;
 				}
-				List<Relationship> presDenomUnits = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_PRES_STRENGTH_DENOM_UNIT, g.getGroupId());
+				Set<Relationship> presDenomUnits = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_PRES_STRENGTH_DENOM_UNIT, g.getGroupId());
 				if (presDenomUnits.size() != 1) {
 					report (c, issueStr2, g);
-				} else if (!unitOfPres.equals(presDenomUnits.get(0).getTarget())) {
+				} else if (!unitOfPres.equals(presDenomUnits.iterator().next().getTarget())) {
 					report (c, issueStr3, unitOfPres, g);
 				}
 				incrementSummaryInformation("CD groups checked for presentation unit consistency");

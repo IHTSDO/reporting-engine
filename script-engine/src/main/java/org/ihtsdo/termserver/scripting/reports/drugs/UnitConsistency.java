@@ -87,7 +87,7 @@ public class UnitConsistency extends TermServerReport {
 	}
 	
 	private Concept getTarget(Concept c, Concept[] types, int groupId, CharacteristicType charType) throws TermServerScriptException {
-		List<Relationship> rels = new ArrayList<>();
+		Set<Relationship> rels = new HashSet<>();
 		String typeString = "";
 		for (Concept type : types) {
 			rels.addAll(c.getRelationships(charType, type, groupId));
@@ -96,7 +96,7 @@ public class UnitConsistency extends TermServerReport {
 		if (rels.size() > 1) {
 			TermServerScript.warn(c + " has multiple " + typeString + " in group " + groupId);
 		} else if (rels.size() == 1) {
-			Concept target = rels.get(0).getTarget();
+			Concept target = rels.iterator().next().getTarget();
 			//This might not be the full concept, so recover it fully from our loaded cache
 			return gl.getConcept(target.getConceptId());
 		}

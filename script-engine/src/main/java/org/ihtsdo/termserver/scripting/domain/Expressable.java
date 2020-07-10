@@ -1,7 +1,7 @@
 package org.ihtsdo.termserver.scripting.domain;
 
 import java.util.Collection;
-import java.util.List;
+import java.util.Set;
 
 import org.ihtsdo.termserver.scripting.domain.RF2Constants.ActiveState;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
@@ -13,7 +13,7 @@ public interface Expressable {
 	
 	Collection<RelationshipGroup> getRelationshipGroups(CharacteristicType characteristicType);
 
-	List<Relationship> getRelationships(CharacteristicType charType, ActiveState active);
+	Set<Relationship> getRelationships(CharacteristicType charType, ActiveState active);
 
 	Collection<Concept> getParents(CharacteristicType charType);
 	

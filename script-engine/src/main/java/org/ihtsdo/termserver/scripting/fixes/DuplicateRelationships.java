@@ -51,13 +51,13 @@ public class DuplicateRelationships extends BatchFix implements RF2Constants{
 	private int removeRedundantRelationships(Task t, Concept c) throws TermServerScriptException {
 		int changesMade = 0;
 		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
-			List<Relationship> duplicates = c.getRelationships(r, ActiveState.BOTH);
+			Set<Relationship> duplicates = c.getRelationships(r, ActiveState.BOTH);
 			if (duplicates.size() > 1) {
 				//Has one been released?
-				List<Relationship> released = duplicates.stream().filter(l -> l.isReleased()).collect(Collectors.toList());
+				Set<Relationship> released = duplicates.stream().filter(l -> l.isReleased()).collect(Collectors.toSet());
 				Relationship champion = null;
 				if (released.size() == 1) {
-					champion = released.get(0);
+					champion = released.iterator().next();
 				} else if (released.size() > 1) {
 					Severity severity = duplicates.size() == released.size() ? Severity.LOW : Severity.HIGH;
 					report(t, c, severity, ReportActionType.VALIDATION_CHECK, "Concept has > 1 release duplicate relationships", r);

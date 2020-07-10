@@ -56,14 +56,14 @@ public class AddRemoveParents extends BatchFix implements RF2Constants{
 	private int addRemoveParents(Task t, Concept c) throws TermServerScriptException {
 		
 		int changesMade = 0;
-		List<Relationship> parentRels = new ArrayList<Relationship> (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, IS_A, ActiveState.ACTIVE));
+		Set<Relationship> parentRels = new HashSet<Relationship> (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, IS_A, ActiveState.ACTIVE));
 		//Work through the relationship changes we have for this concept and decide if we're adding or inactivating
 		for (Relationship r : changeMap.get(c).getRelationships()) {
 			if (r.isActive()) {
 				if (c.getRelationships(r, ActiveState.ACTIVE).size() > 0 ) {
 					report (t, c, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Relationship already present: " + r);
 				} else if (c.getRelationships(r, ActiveState.INACTIVE).size() > 0 ) {
-					Relationship inactive = c.getRelationships(r, ActiveState.INACTIVE).get(0);
+					Relationship inactive = c.getRelationships(r, ActiveState.INACTIVE).iterator().next();
 					report (t, c, Severity.MEDIUM, ReportActionType.INFO, "Relationship already present, but inactive: " + inactive);
 					inactive.setActive(true);
 					report (t, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_REACTIVATED, inactive);

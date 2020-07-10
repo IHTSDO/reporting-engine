@@ -102,6 +102,7 @@ public class Relationship extends Component implements IRelationshipTemplate, RF
 			this.effectiveTime = null;
 		} else {
 			this.effectiveTime = effectiveTime;
+			this.setDirty();
 		}
 	}
 
@@ -214,7 +215,11 @@ public class Relationship extends Component implements IRelationshipTemplate, RF
 
 	@Override
 	public int hashCode() {
-		return  toString().hashCode();
+		if (StringUtils.isEmpty(relationshipId)) {
+			return toString().hashCode();
+		} else {
+			return relationshipId.hashCode();
+		}
 	}
 
 	public boolean equals(Object other, boolean ignoreAxiom) {
@@ -237,10 +242,12 @@ public class Relationship extends Component implements IRelationshipTemplate, RF
 		}
 		
 		//If we have two rels the same but coming from different axioms, they should be handled separately
-		if (ignoreAxiom == false &&
-				this.getAxiomEntry() != null && 
+		if (ignoreAxiom == false && (
+				(this.getAxiomEntry() != null && rhs.getAxiomEntry() == null) ||
+				(this.getAxiomEntry() == null && rhs.getAxiomEntry() != null) ||
+				(this.getAxiomEntry() != null && 
 				rhs.getAxiomEntry() != null && 
-				!this.getAxiomEntry().getId().equals(rhs.getAxiomEntry().getId())) {
+				!this.getAxiomEntry().getId().equals(rhs.getAxiomEntry().getId())))) {
 			return false;
 		}
 		

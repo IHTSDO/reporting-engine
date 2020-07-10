@@ -34,6 +34,10 @@ public class AssociationTargets {
 	@SerializedName("MOVED_TO")
 	@Expose
 	private Set<String> movedTo = new HashSet<>();
+	
+	@SerializedName("ALTERNATIVE")
+	@Expose
+	private Set<String> alternative = new HashSet<>();
 
 	public Set<String> getReplacedBy() {
 		return replacedBy;
@@ -73,6 +77,14 @@ public class AssociationTargets {
 	
 	public void setMovedTo(Set<String> movedTo) {
 		this.movedTo = movedTo;
+	}
+	
+	public Set<String> getAlternatives() {
+		return alternative;
+	}
+
+	public void setAlternatives(Set<String> alternative) {
+		this.alternative = alternative;
 	}
 
 	public static AssociationTargets possEquivTo(Concept c) {
@@ -121,6 +133,14 @@ public class AssociationTargets {
 		return targets;
 	}
 	
+	public static AssociationTargets Alternative(Concept c) {
+		AssociationTargets targets = new AssociationTargets();
+		Set<String> targetSet = new HashSet<>();
+		targetSet.add(c.getId());
+		targets.setAlternatives(targetSet);
+		return targets;
+	}
+	
 	public int size() {
 		int total = 0;
 		
@@ -143,6 +163,10 @@ public class AssociationTargets {
 		if (movedTo != null) {
 			total += movedTo.size();
 		}
+		
+		if (alternative != null) {
+			total += alternative.size();
+		}
 		return total;
 	}
 
@@ -156,6 +180,7 @@ public class AssociationTargets {
 		sameAs.remove(conceptId);
 		wasA.remove(conceptId);
 		movedTo.remove(conceptId);
+		alternative.remove(conceptId);
 		int afterCount = size();
 		return beforeCount - afterCount;
 	}
@@ -166,6 +191,7 @@ public class AssociationTargets {
 		sameAs.clear();
 		wasA.clear();
 		movedTo.clear();
+		alternative.clear();
 	}
 
 	public String toString(GraphLoader gl) throws TermServerScriptException {
@@ -175,6 +201,7 @@ public class AssociationTargets {
 		str += toString("SameAs: ", sameAs, gl, (str.isEmpty()));
 		str += toString("ReplacedBy: ", replacedBy, gl, (str.isEmpty()));
 		str += toString("Moved To: ", movedTo, gl, (str.isEmpty()));
+		str += toString("Alternative: ", alternative, gl, (str.isEmpty()));
 		return str;
 	}
 
@@ -211,6 +238,10 @@ public class AssociationTargets {
 			wasAConcepts.add(gl.getConcept(wasAId));
 		}
 		return wasAConcepts;
+	}
+
+	public void addPossEquivTo(Set<String> equivs) {
+		possEquivTo.addAll(equivs);
 	}
 
 }

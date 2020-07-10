@@ -163,7 +163,7 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 			if (!c.isActive() || c.getRelationshipGroup(CharacteristicType.INFERRED_RELATIONSHIP, UNGROUPED) == null) {
 				continue;
 			}
-			List<Relationship> ungroupedRels = c.getRelationshipGroup(CharacteristicType.INFERRED_RELATIONSHIP, UNGROUPED).getRelationships();
+			Set<Relationship> ungroupedRels = c.getRelationshipGroup(CharacteristicType.INFERRED_RELATIONSHIP, UNGROUPED).getRelationships();
 			for (Relationship ungroupedRel : ungroupedRels) {
 				//Is our ungrouped relationship more specific than any grouped relationship?
 				for (RelationshipGroup group : c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP)) {

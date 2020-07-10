@@ -2,12 +2,10 @@ package org.ihtsdo.termserver.scripting.reports.drugs;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Relationship;
+import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 
 /**
@@ -44,11 +42,11 @@ public class ModifiedActiveIngredients extends TermServerReport {
 			//We're only interested in Medicinal Products 
 			if (c.isActive() && c.getFsn().contains("(medicinal product)")) {
 				//Get all active ingredients and check them for having "Is Modification Of"
-				List<Relationship> ingredRels = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE);
+				Set<Relationship> ingredRels = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE);
 				for (Relationship ingredRel : ingredRels) {
 					Concept ingred = ingredRel.getTarget();
 					//Does that ingredient declare that it's a modification of something?
-					List<Relationship> modRels = ingred.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, IS_MODIFICATION_OF, ActiveState.ACTIVE);
+					Set<Relationship> modRels = ingred.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, IS_MODIFICATION_OF, ActiveState.ACTIVE);
 					for (Relationship modRel : modRels) {
 						report (c, modRel.getSource().toString(), modRel.getTarget().toString());
 						incrementSummaryInformation("Modifications");

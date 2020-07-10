@@ -3,13 +3,11 @@ package org.ihtsdo.termserver.scripting.reports;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.TermServerScript;
-import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.Relationship;
+import org.ihtsdo.termserver.scripting.domain.*;
 
 public class MismatchedRelationships extends TermServerScript{
 	
@@ -43,8 +41,8 @@ public class MismatchedRelationships extends TermServerScript{
 				String msg = "Concept " + thisConcept.getConceptId() + " has no FSN";
 				warn(msg);
 			}
-			List<Relationship> statedRelationships = thisConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, targetAttribute, ActiveState.ACTIVE);
-			List<Relationship> inferredRelationships = thisConcept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, targetAttribute, ActiveState.ACTIVE);
+			Set<Relationship> statedRelationships = thisConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, targetAttribute, ActiveState.ACTIVE);
+			Set<Relationship> inferredRelationships = thisConcept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, targetAttribute, ActiveState.ACTIVE);
 			
 			if (statedRelationships.size() == 0) {
 				//Nothing to do here, concept not relevant
@@ -52,12 +50,12 @@ public class MismatchedRelationships extends TermServerScript{
 			} else if (statedRelationships.size() > 1) {
 				report (thisConcept, null, "multiple stated attributes of specified type detected");
 			} else {
-				Relationship stated = statedRelationships.get(0);
+				Relationship stated = statedRelationships.iterator().next();
 				if (inferredRelationships.size() != 1) {
 					report (thisConcept, stated, "Stated relationship has " + inferredRelationships.size() + " inferred counterparts");
 					mismatchedRelationships++;
 				} else {
-					Relationship inferred = inferredRelationships.get(0);
+					Relationship inferred = inferredRelationships.iterator().next();
 					if (!stated.getTarget().equals(inferred.getTarget())) {
 						String msg = "Stated target does not equal inferred target " + inferred.getTarget();
 						report (thisConcept, stated, msg);

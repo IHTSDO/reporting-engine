@@ -57,7 +57,7 @@ public class RemoveRedundantParents extends BatchFix implements RF2Constants{
 			return 0;
 		}
 		
-		List<Relationship> parentRels = new ArrayList<Relationship> (loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
+		Set<Relationship> parentRels = new HashSet<Relationship> (loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
 																				IS_A,
 																				ActiveState.ACTIVE));
 		
@@ -88,7 +88,7 @@ public class RemoveRedundantParents extends BatchFix implements RF2Constants{
 	 */
 	private List<Concept> getParents(Concept loadedConcept) throws TermServerScriptException {
 		List<Concept> parents = new ArrayList<>();
-		List<Relationship> parentRels = loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
+		Set<Relationship> parentRels = loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
 										IS_A,
 										ActiveState.ACTIVE);
 		for (Relationship r : parentRels) {
@@ -133,7 +133,7 @@ public class RemoveRedundantParents extends BatchFix implements RF2Constants{
 				info ("Concept " + c.getConceptId() + " not properly imported");
 			} else {
 				if (c.isActive()) {
-					List<Relationship> parentRels = new ArrayList<Relationship> (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
+					Set<Relationship> parentRels = new HashSet<Relationship> (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
 													IS_A,
 													ActiveState.ACTIVE));
 	

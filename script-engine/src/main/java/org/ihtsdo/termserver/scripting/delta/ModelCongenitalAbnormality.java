@@ -123,7 +123,7 @@ public class ModelCongenitalAbnormality extends DeltaGenerator {
 	private int moveGroup0Attribute(Concept concept, Concept type, int targetGroup) throws TermServerScriptException {
 		int changesMade = 0;
 		//Now find our attributes of interest
-		List<Relationship> matchingGroup0Attribs = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, type, ActiveState.ACTIVE);
+		Set<Relationship> matchingGroup0Attribs = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, type, ActiveState.ACTIVE);
 
 		//Move any group 0 finding site into its own group where it will pick up 
 		//occurrence and pathological process
@@ -144,7 +144,7 @@ public class ModelCongenitalAbnormality extends DeltaGenerator {
 	private int checkFindingSite(Concept concept) throws TermServerScriptException {
 		int changesMade = 0;
 		//Check each finding site has a pathological process, add one if not
-		List<Relationship>findingSites = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, findingSite, ActiveState.ACTIVE);
+		Set<Relationship>findingSites = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, findingSite, ActiveState.ACTIVE);
 		for (Relationship f : findingSites) {
 			if (!existsInGroup(concept, pathologicalProcess, f.getGroupId())) {
 				for (RelationshipTemplate addMe : addRelationships) {
@@ -161,10 +161,10 @@ public class ModelCongenitalAbnormality extends DeltaGenerator {
 
 	private int processRelationships(Concept concept, List<RelationshipTemplate> findRelationships, boolean replace) throws TermServerScriptException {
 		int changesMade = 0;
-		List<Relationship> rels = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
+		Set<Relationship> rels = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
 		
 		//Work through the relationships looking for matches
-		List<Relationship> matchedRelationships = new ArrayList<Relationship>();
+		Set<Relationship> matchedRelationships = new HashSet<Relationship>();
 		Set<Integer>groupsAffected = new HashSet<Integer>();
 		for (Relationship rel : rels) {
 			for (RelationshipTemplate findRel : findRelationships) {

@@ -157,7 +157,7 @@ public class InferredGroupsNotStated extends TermServerReport {
 		//Is every relationship in group a equal or more specific than one in b?
 		for (Relationship ra : a.getRelationships()) {
 			//First find types that match, then check for values
-			List<Relationship> subsumingTypes = getSubsumingTypes(ra.getType(), b);
+			Set<Relationship> subsumingTypes = getSubsumingTypes(ra.getType(), b);
 			if (getSubsumingValues(ra.getTarget(), subsumingTypes).size() == 0 ) {
 				return false;
 			}
@@ -165,8 +165,8 @@ public class InferredGroupsNotStated extends TermServerReport {
 		return true;
 	}
 
-	private List<Relationship> getSubsumingTypes(Concept type, RelationshipGroup group) throws TermServerScriptException {
-		List<Relationship> subsumingTypes = new ArrayList<>();
+	private Set<Relationship> getSubsumingTypes(Concept type, RelationshipGroup group) throws TermServerScriptException {
+		Set<Relationship> subsumingTypes = new HashSet<>();
 		Set<Concept> typeAncestorsOrSelf = type.getAncestors(NOT_SET, 
 				CharacteristicType.INFERRED_RELATIONSHIP, 
 				true);
@@ -178,8 +178,8 @@ public class InferredGroupsNotStated extends TermServerReport {
 		return subsumingTypes;
 	}
 	
-	private List<Relationship> getSubsumingValues(Concept value, List<Relationship> relationships) throws TermServerScriptException {
-		List<Relationship> subsumingValues = new ArrayList<>();
+	private Set<Relationship> getSubsumingValues(Concept value, Set<Relationship> relationships) throws TermServerScriptException {
+		Set<Relationship> subsumingValues = new HashSet<>();
 		Set<Concept> typeAncestorsOrSelf = value.getAncestors(NOT_SET, 
 				CharacteristicType.INFERRED_RELATIONSHIP, 
 				true);

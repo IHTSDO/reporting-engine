@@ -32,7 +32,7 @@ public class Axiom extends Component implements RF2Constants, Expressable {
 	private DefinitionStatus definitionStatus;
 	@SerializedName("relationships")
 	@Expose
-	private List<Relationship> relationships = new ArrayList<Relationship>();
+	private Set<Relationship> relationships = new HashSet<Relationship>();
 	@SerializedName("namedConceptOnLeft")
 	@Expose
 	private Boolean namedConceptOnLeft;
@@ -67,10 +67,10 @@ public class Axiom extends Component implements RF2Constants, Expressable {
 	public void setDefinitionStatus(DefinitionStatus definitionStatus) {
 		this.definitionStatus = definitionStatus;
 	}
-	public List<Relationship> getRelationships() {
+	public Set<Relationship> getRelationships() {
 		return relationships;
 	}
-	public void setRelationships(List<Relationship> relationships) {
+	public void setRelationships(Set<Relationship> relationships) {
 		this.relationships = relationships;
 	}
 	public Boolean getNamedConceptOnLeft() {
@@ -138,7 +138,7 @@ public class Axiom extends Component implements RF2Constants, Expressable {
 	}
 
 	public void clearRelationships() {
-		relationships = new ArrayList<>();
+		relationships.clear();
 	}
 	
 	public String toString() {
@@ -184,7 +184,7 @@ public class Axiom extends Component implements RF2Constants, Expressable {
 	}
 
 	@Override
-	public List<Relationship> getRelationships(CharacteristicType charType, ActiveState active) {
+	public Set<Relationship> getRelationships(CharacteristicType charType, ActiveState active) {
 		return relationships;
 	}
 

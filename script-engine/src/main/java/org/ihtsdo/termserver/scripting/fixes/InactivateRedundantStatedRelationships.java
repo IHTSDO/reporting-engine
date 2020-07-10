@@ -44,7 +44,7 @@ public class InactivateRedundantStatedRelationships extends BatchFix implements 
 
 	private int inactivateRedundantStatedRelationships(Task task, Concept loadedConcept) throws TermServerScriptException {
 		int changesMade = 0;
-		List<Relationship> activeISAs = loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, IS_A, ActiveState.ACTIVE);
+		Set<Relationship> activeISAs = loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, IS_A, ActiveState.ACTIVE);
 		for (Relationship moreSpecificISA : activeISAs) {
 			//Do we have another IS A that is parent of this relationship?  Inactivate it if so.
 			for (Relationship lessSpecificISA : activeISAs) {
@@ -77,7 +77,7 @@ public class InactivateRedundantStatedRelationships extends BatchFix implements 
 			if (concept.isActive()) {
 				//We're working with concepts which have multiple stated parents.
 				if (concept.getParents(CharacteristicType.STATED_RELATIONSHIP).size() > 1) {
-					List<Relationship> activeISAs = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, IS_A, ActiveState.ACTIVE);
+					Set<Relationship> activeISAs = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, IS_A, ActiveState.ACTIVE);
 					for (Relationship moreSpecificISA : activeISAs) {
 						//Do we have another IS A that is parent of this relationship?  Inactivate it if so.
 						for (Relationship lessSpecificISA : activeISAs) {

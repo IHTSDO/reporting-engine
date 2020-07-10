@@ -2,10 +2,9 @@ package org.ihtsdo.termserver.scripting.template;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.List;
+import java.util.*;
 
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.snomed.authoringtemplate.domain.logical.*;
@@ -61,7 +60,7 @@ public class AlignToTemplate extends TemplateFix {
 	}
 	
 	private int alignConceptToTemplate(Task t, Concept c) throws TermServerScriptException {
-		Template template = templates.get(0);
+		Template template = templates.iterator().next();
 		int changesMade = alignParent(t, c, template);
 		changesMade += alignUngroupedAttributes(t, c, template.getLogicalTemplate().getUngroupedAttributes());
 		for (AttributeGroup g : template.getLogicalTemplate().getAttributeGroups()) {
@@ -109,7 +108,7 @@ public class AlignToTemplate extends TemplateFix {
 		Concept chronicInflammation = gl.getConcept("84499006");
 		//Does this group have any of those?
 		if (a.getType().equals(ASSOC_MORPH.getConceptId())) {
-			List<Relationship> specialRels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
+			Set<Relationship> specialRels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,
 																ASSOC_MORPH,
 																ActiveState.ACTIVE);
 			for (Relationship r : specialRels) {

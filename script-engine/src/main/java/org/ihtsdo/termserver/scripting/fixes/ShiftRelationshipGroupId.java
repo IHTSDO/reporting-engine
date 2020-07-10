@@ -51,12 +51,12 @@ public class ShiftRelationshipGroupId extends BatchFix implements RF2Constants{
 		//in another group.  
 		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
 			if (!r.isReleased()) {
-				List<Relationship> inactiveMatches = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, r.getType(), r.getTarget(), ActiveState.INACTIVE);
+				Set<Relationship> inactiveMatches = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, r.getType(), r.getTarget(), ActiveState.INACTIVE);
 				if (inactiveMatches.size() > 1) {
 					warn (c + " has multiple inactive matching relationships");
 					//TODO If we have a few of these, we could select the brand new one
 				} else if (inactiveMatches.size() == 1) {
-					Relationship inactiveMatch = inactiveMatches.get(0);
+					Relationship inactiveMatch = inactiveMatches.iterator().next();
 					//Delete the new relationship, and move/re-activate the inactive one
 					report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_REACTIVATED, "Moved + Reactivated from " + inactiveMatch.getGroupId() + " to " + r.getGroupId() + ": " + r);
 					if (inactiveMatch.getEffectiveTime() != null  && !inactiveMatch.getEffectiveTime().isEmpty()) {

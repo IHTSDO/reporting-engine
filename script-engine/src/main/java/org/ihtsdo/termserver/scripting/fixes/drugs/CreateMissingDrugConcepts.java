@@ -194,7 +194,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 	private boolean isContained(Concept needle, Set<Concept> haystack) {
 		//Do all parents and stated relationships have an equivalent?
 		//Check all stated attributes (this will include IS A rels)
-		List<Relationship> needleRels = needle.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
+		Set<Relationship> needleRels = needle.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
 		nextStraw:
 		for (Concept straw : haystack) {
 		/*	if (straw.getConceptId().equals("332998007")) {
@@ -208,9 +208,9 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 			
 			//We need to filter out the "Plays role" attribute since we don't know when those might pop up and we
 			//don't model them for our missing concepts
-			List<Relationship> strawRels = straw.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE).stream()
+			Set<Relationship> strawRels = straw.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE).stream()
 											.filter(r -> !r.getType().equals(PLAYS_ROLE))
-											.collect(Collectors.toList());
+											.collect(Collectors.toSet());
 
 			for (Relationship thisRel : needleRels) {
 				boolean relMatchFound = false;

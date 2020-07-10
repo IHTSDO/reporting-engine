@@ -53,7 +53,7 @@ public class LostRelationships extends TermServerScript{
 			}
 			//Only looking at relationships that have changed in this release, so pass current effective time
 			for(Relationship thisRel : thisConcept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.INACTIVE, transientEffectiveDate)) {
-				List<Relationship> replacements = thisConcept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, thisRel.getType(), ActiveState.ACTIVE);
+				Set<Relationship> replacements = thisConcept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, thisRel.getType(), ActiveState.ACTIVE);
 				if (replacements.size() == 0) {
 					String msg = thisConcept + " has no replacement for lost relationship " + thisRel;
 					if (!thisConcept.isActive()) {

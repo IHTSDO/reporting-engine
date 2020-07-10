@@ -31,6 +31,7 @@ public class HistoricalHistoricalIssues extends BatchFix implements RF2Constants
 			fix.reportNoChange = true;
 			fix.selfDetermining = true;
 			fix.runStandAlone = true;
+			fix.outputWidth = 12;
 			fix.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			fix.loadProjectSnapshot(true); 
@@ -111,7 +112,6 @@ public class HistoricalHistoricalIssues extends BatchFix implements RF2Constants
 			throw new TermServerScriptException("Inactive concepts encountered without inactivation indicators " + a + " " + b);
 		}
 		
-		
 		//If we've a "limited" indicator, work out what it should be instead
 		if (inactivationIndicatorA.equals(InactivationIndicator.LIMITED)) {
 			inactivationIndicatorA = histAssocUtils.getIndicatorFromAssocs(a);
@@ -119,6 +119,10 @@ public class HistoricalHistoricalIssues extends BatchFix implements RF2Constants
 		
 		if (inactivationIndicatorB.equals(InactivationIndicator.LIMITED)) {
 			inactivationIndicatorB = histAssocUtils.getIndicatorFromAssocs(b);
+		}
+		
+		if (a.getId().equals("141350007")) {
+			debug ("here");
 		}
 		
 		if (inactivationIndicatorA.equals(InactivationIndicator.AMBIGUOUS)) {
@@ -175,15 +179,44 @@ public class HistoricalHistoricalIssues extends BatchFix implements RF2Constants
 				if (b.getAssociationTargets().getSameAs().contains(a.getId())) {
 					addressCircularReferencing(t, a, b);
 				} else {
-					a.getAssociationTargets().setSameAs(b.getAssociationTargets().getSameAs());
-					report (t, a, Severity.LOW, ReportActionType.ASSOCIATION_CHANGED, "Same As target inactive, taking target's associations over for self", h);
+					//If we've got an active SAME_AS then we can stay duplicate, but if we need to 
+					//look further afield, then we need to drop back down to Ambiguous
+					boolean activeSameAsFound = false;
+					a.getAssociationTargets().remove(b.getId());
+					Set<String> origSameAs = b.getAssociationTargets().getSameAs();
+					for (String same : origSameAs) {
+						if (gl.getConcept(same, false, false).isActive()) {
+							activeSameAsFound = true;
+							report (t, a, Severity.LOW, ReportActionType.ASSOCIATION_CHANGED, "Same As target inactive, taking target's associations over for self", h);
+						} 
+					}
+					
+					if (!activeSameAsFound) {
+						a.setInactivationIndicator(InactivationIndicator.AMBIGUOUS);
+						for (String same : origSameAs) {
+							Set<Concept> bestActiveAlternatives = histAssocUtils.getActiveReplacementsOrCommonParent(gl.getConcept(same, false, false), b);
+							a.getAssociationTargets().addPossEquivTo(toIdSet(bestActiveAlternatives));
+							report (t, a, Severity.LOW, ReportActionType.ASSOCIATION_CHANGED, "Same As target inactive, finding best replacements as PossEquivTo", h, bestActiveAlternatives);
+						}
+					}
 				}
 			} else {
 				report (t, a, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Developer intervention required - unexpected combination", h);
 			}
+		} else {
+			report (t, a, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Developer intervention required - unexpected inactivation indicator", a.getInactivationIndicator());
 		}
 		
 		return CHANGE_MADE;
+	}
+
+	private Set<String> toIdSet(Set<Concept> concepts) {
+		if (concepts == null || concepts.size() == 0) {
+			return new HashSet<>();
+		}
+		return concepts.stream()
+				.map(c -> c.getId())
+				.collect(Collectors.toSet());
 	}
 
 	private void addressCircularReferencing(Task t, Concept a, Concept b) throws TermServerScriptException {
@@ -217,10 +250,15 @@ public class HistoricalHistoricalIssues extends BatchFix implements RF2Constants
 			//Attempt to fix any issues as a first pass
 			if (!c.isActive() && fixHistoricalIssues(null, c, c) > 0) {
 				allAffected.add(c);
+			} else if (c.getInactivationIndicator() != null && c.getInactivationIndicator().equals(InactivationIndicator.LIMITED)) {
+				allAffected.add(c);
 			}
 		}
 		setQuiet(false);
 		return new ArrayList<Component>(allAffected);
 	}
 	
+	public void report(Task t, Component c, Severity s, ReportActionType a, Object... details) throws TermServerScriptException {
+		super.report (t, c, s, a, c.getEffectiveTime(), details);
+	}
 }

@@ -55,7 +55,7 @@ public class NormalizeDoseForms extends DrugBatchFix implements RF2Constants{
 	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
 		
 		Concept loadedConcept = loadConcept(concept, task.getBranchPath());
-		List<Relationship> parentRels = new ArrayList<Relationship> (loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
+		Set<Relationship> parentRels = new HashSet<Relationship> (loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
 				IS_A,
 				ActiveState.ACTIVE));
 		String parentCount = Integer.toString(parentRels.size());
@@ -92,7 +92,7 @@ public class NormalizeDoseForms extends DrugBatchFix implements RF2Constants{
 
 	private int replaceDoseForm(Task t, Concept c) throws TermServerScriptException {
 		//Not sure if this is even needed yet?
-		List<Relationship> doseForms = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_MANUFACTURED_DOSE_FORM, ActiveState.ACTIVE);
+		Set<Relationship> doseForms = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_MANUFACTURED_DOSE_FORM, ActiveState.ACTIVE);
 		if (doseForms.size() > 1) {
 			report (t, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, doseForms.size() + " dose forms detected");
 		}

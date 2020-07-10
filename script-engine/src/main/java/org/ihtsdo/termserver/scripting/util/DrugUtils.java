@@ -207,14 +207,14 @@ public class DrugUtils implements RF2Constants {
 	}
 
 	public static  String getDosageForm(Concept concept, boolean isFSN, String langRefset) throws TermServerScriptException {
-		List<Relationship> doseForms = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_MANUFACTURED_DOSE_FORM, ActiveState.ACTIVE);
+		Set<Relationship> doseForms = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_MANUFACTURED_DOSE_FORM, ActiveState.ACTIVE);
 		if (doseForms.size() == 0) {
 			return "NO STATED DOSE FORM DETECTED";
 		} else if (doseForms.size() > 1) {
 			return "MULTIPLE DOSE FORMS";
 		} else {
 			//Load full locally cached object since we may be working with some minimally defined thing
-			Concept doseForm = GraphLoader.getGraphLoader().getConcept(doseForms.get(0).getTarget().getConceptId());
+			Concept doseForm = GraphLoader.getGraphLoader().getConcept(doseForms.iterator().next().getTarget().getConceptId());
 			String doseFormStr;
 			if (isFSN) {
 				doseFormStr = SnomedUtils.deconstructFSN(doseForm.getFsn())[0];
@@ -226,20 +226,20 @@ public class DrugUtils implements RF2Constants {
 	}
 	
 	public static  String getAttributeType(Concept concept, Concept type, boolean isFSN, String langRefset) throws TermServerScriptException {
-		List<Relationship> rels = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, type, ActiveState.ACTIVE);
+		Set<Relationship> rels = concept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, type, ActiveState.ACTIVE);
 		Concept value;
 		if (rels.size() == 0) {
 			return "NO " + SnomedUtils.getPT(type.getConceptId()) + "DETECTED";
 		} else if (rels.size() > 1) {
 			//OK to return a value as long as they're all the same 
-			value = rels.get(0).getTarget();
+			value = rels.iterator().next().getTarget();
 			for (Relationship rel : rels) {
 				if (!rel.getTarget().equals(value)) {
 					return "MULTIPLE DIFFERENT" + SnomedUtils.getPT(type.getConceptId()) + "DETECTED";
 				}
 			}
 		} else {
-			value = rels.get(0).getTarget();
+			value = rels.iterator().next().getTarget();
 		}
 
 		//Load full locally cached object since we may be working with some minimally defined thing
@@ -256,7 +256,7 @@ public class DrugUtils implements RF2Constants {
 	public static boolean isModificationOf(Concept specific, Concept general) {
 		//Check if the specific concept has a modification attribute of the more general substance
 		//and if there is a Modification Of attribute, can also call recursively
-		List<Relationship> modifications = specific.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, IS_MODIFICATION_OF, ActiveState.ACTIVE);
+		Set<Relationship> modifications = specific.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, IS_MODIFICATION_OF, ActiveState.ACTIVE);
 		for (Relationship modification : modifications) {
 			if (modification.getTarget().equals(general) || isModificationOf(specific, modification.getTarget())) {
 				return true;

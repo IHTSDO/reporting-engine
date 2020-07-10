@@ -108,7 +108,7 @@ public class QIPatternsReport extends TermServerReport implements ReportClass {
 					//We'll have to work through all axioms to find where this came from
 					List<AxiomEntry> axiomsContaining = findAxiomsContaining(c);
 					if (axiomsContaining.size() > 0) {
-						detail = "In " + axiomsContaining.size() + " axioms eg " + axiomsContaining.get(0);
+						detail = "In " + axiomsContaining.size() + " axioms eg " + axiomsContaining.iterator().next();
 					}
 				}
 				report (c, issueStr, detail);
@@ -189,7 +189,7 @@ public class QIPatternsReport extends TermServerReport implements ReportClass {
 			if (!c.isActive() || c.getRelationshipGroup(CharacteristicType.INFERRED_RELATIONSHIP, UNGROUPED) == null) {
 				continue;
 			}
-			List<Relationship> ungroupedRels = c.getRelationshipGroup(CharacteristicType.INFERRED_RELATIONSHIP, UNGROUPED).getRelationships();
+			Set<Relationship> ungroupedRels = c.getRelationshipGroup(CharacteristicType.INFERRED_RELATIONSHIP, UNGROUPED).getRelationships();
 			for (Relationship ungroupedRel : ungroupedRels) {
 				//Is our ungrouped relationship more specific than any grouped relationship?
 				for (RelationshipGroup group : c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP)) {

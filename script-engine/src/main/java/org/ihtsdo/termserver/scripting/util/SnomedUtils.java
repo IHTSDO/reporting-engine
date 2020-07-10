@@ -849,12 +849,12 @@ public class SnomedUtils implements RF2Constants {
 	//order specified by the array
 	public static Concept getTarget(Concept c, Concept[] types, int groupId, CharacteristicType charType) throws TermServerScriptException {
 		for (Concept type : types) {
-			List<Relationship> rels = c.getRelationships(charType, type, groupId);
+			Set<Relationship> rels = c.getRelationships(charType, type, groupId);
 			if (rels.size() > 1) {
 				TermServerScript.warn(c + " has multiple " + type + " in group " + groupId);
 			} else if (rels.size() == 1) {
 				//This might not be the full concept, so recover it fully from our loaded cache
-				return GraphLoader.getGraphLoader().getConcept(rels.get(0).getTarget().getConceptId());
+				return GraphLoader.getGraphLoader().getConcept(rels.iterator().next().getTarget().getConceptId());
 			}
 		}
 		return null;
@@ -863,7 +863,7 @@ public class SnomedUtils implements RF2Constants {
 	public static Set<Concept> getTargets(Concept c, Concept[] types, CharacteristicType charType) throws TermServerScriptException {
 		Set<Concept> targets = new HashSet<>();
 		for (Concept type : types) {
-			List<Relationship> rels = c.getRelationships(charType, type, ActiveState.ACTIVE);
+			Set<Relationship> rels = c.getRelationships(charType, type, ActiveState.ACTIVE);
 			targets.addAll(rels.stream().map(r -> r.getTarget()).collect(Collectors.toSet()));
 		}
 		return targets;
@@ -989,11 +989,11 @@ public class SnomedUtils implements RF2Constants {
 			//Filter for matching types (same or less specific) and values (same or less specific)
 			//If the relationship is not identical, then it's more specific
 			//TODO Strictly we should consider the RELS in equivalent groups
-			List<Relationship> matchingRels = b.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)
+			Set<Relationship> matchingRels = b.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)
 												.stream()
 												.filter(br -> cache.getAncestorsOrSelfSafely(r.getType()).contains(br.getType()))
 												.filter(br -> cache.getAncestorsOrSelfSafely(r.getTarget()).contains(br.getTarget()))
-												.collect(Collectors.toList());
+												.collect(Collectors.toSet());
 			//If there are no matching rels, then these concept models are disjoint
 			if (matchingRels.size() == 0) {
 				return false;
@@ -1110,9 +1110,9 @@ public class SnomedUtils implements RF2Constants {
 	/*
 	 * Get active relationships which are the same as, or descendants of the stated types and values
 	 */
-	public static List<Relationship> getSubsumedRelationships(Concept c, Concept type, Concept target,
+	public static Set<Relationship> getSubsumedRelationships(Concept c, Concept type, Concept target,
 			CharacteristicType charType, AncestorsCache cache) throws TermServerScriptException {
-		List<Relationship> matchedRelationships = new ArrayList<>();
+		Set<Relationship> matchedRelationships = new HashSet<>();
 		for (Relationship r : c.getRelationships(charType, ActiveState.ACTIVE)) {
 			//Does this type have the desired type as self or ancestor?  Need local copies to do subsumption testing
 			Concept rType = GraphLoader.getGraphLoader().getConcept(r.getType().getConceptId());
@@ -1351,7 +1351,7 @@ public class SnomedUtils implements RF2Constants {
 		return appearances;
 	}
 
-	public static Collection<RelationshipGroup> toGroups(List<Relationship> relationships) {
+	public static Collection<RelationshipGroup> toGroups(Collection<Relationship> relationships) {
 		Map<Integer, RelationshipGroup> groupMap = new HashMap<>();
 		for (Relationship r : relationships) {
 			RelationshipGroup g = groupMap.get(r.getGroupId());

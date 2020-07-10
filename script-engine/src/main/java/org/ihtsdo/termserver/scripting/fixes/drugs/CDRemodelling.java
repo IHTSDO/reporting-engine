@@ -135,7 +135,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 	private int remodelConcept(Task t, Concept c) throws TermServerScriptException, ValidationFailure {
 		int changesMade = 0;
 		//The number of ingredients in this drug must match the number we have to model
-		List<Relationship> ingredientRels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE);
+		Set<Relationship> ingredientRels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_ACTIVE_INGRED, ActiveState.ACTIVE);
 		List<Ingredient> ingredients = spreadsheet.get(c);
 		//Only worry about this if the model has more ingredients than the concept.  Otherwise we'll probably find them in the inferred form, 
 		//and if not, we'll throw an error at the time.
@@ -249,7 +249,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 	}
 
 	private Relationship getSubstanceRel(Task t, Concept c, Concept targetSubstance, Concept secondarySubstance) throws TermServerScriptException {
-		List<Relationship> matchingRels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_ACTIVE_INGRED, targetSubstance, ActiveState.ACTIVE);
+		Set<Relationship> matchingRels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_ACTIVE_INGRED, targetSubstance, ActiveState.ACTIVE);
 		matchingRels.addAll( c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, HAS_PRECISE_INGRED, targetSubstance, ActiveState.ACTIVE));
 
 		if (matchingRels.size()==0) {
@@ -257,7 +257,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 			matchingRels = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, targetSubstance, ActiveState.ACTIVE);
 			matchingRels.addAll( c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HAS_PRECISE_INGRED, targetSubstance, ActiveState.ACTIVE));
 			if (matchingRels.size() > 0) {
-				Relationship clone = matchingRels.get(0).clone(null);
+				Relationship clone = matchingRels.iterator().next().clone(null);
 				clone.setCharacteristicType(CharacteristicType.STATED_RELATIONSHIP);
 				clone.setGroupId(0);  //It'll get moved by the calling code
 				return clone;
@@ -270,7 +270,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 					matchingRels = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HAS_ACTIVE_INGRED, secondarySubstance, ActiveState.ACTIVE);
 					matchingRels.addAll( c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, HAS_PRECISE_INGRED, secondarySubstance, ActiveState.ACTIVE));
 					if (matchingRels.size() > 0) {
-						Relationship clone = matchingRels.get(0).clone(null);
+						Relationship clone = matchingRels.iterator().next().clone(null);
 						clone.setCharacteristicType(CharacteristicType.STATED_RELATIONSHIP);
 						clone.setGroupId(0);  //It'll get moved by the calling code
 						return clone;
@@ -285,7 +285,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 			}
 			return null;
 		}
-		return matchingRels.get(0);
+		return matchingRels.iterator().next();
 	}
 	
 

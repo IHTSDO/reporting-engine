@@ -63,7 +63,7 @@ public class RequiringProxPrimModellingReport extends TermServerReport{
 					}
 				}
 				
-				List<Relationship> attributes = thisConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
+				Set<Relationship> attributes = thisConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
 				if (attributes.size() == 0) {
 					noDifferentia = true;
 					noDifferentiaCount++;

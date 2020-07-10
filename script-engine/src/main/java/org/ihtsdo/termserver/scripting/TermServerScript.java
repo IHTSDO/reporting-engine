@@ -154,6 +154,8 @@ public abstract class TermServerScript implements RF2Constants {
 
 	protected boolean wideOutput = false;
 
+	protected Integer outputWidth = null;  //Custom width.  Uses 5M / width to calculate rows
+
 	public String getScriptName() {
 		return this.getClass().getSimpleName();
 	}
@@ -467,6 +469,12 @@ public abstract class TermServerScript implements RF2Constants {
 			}
 			if (this.wideOutput ) {
 				ReportSheetManager.setMaxColumns(25);
+			}
+			
+			if (this.outputWidth  != null ) {
+				ReportSheetManager.setMaxColumns(this.outputWidth);
+				//For some reason I can't get near the limit of 5M
+				ReportSheetManager.setMaxRows(2500000 / this.outputWidth);
 			}
 			getReportManager().initialiseReportFiles(columnHeadings);
 			debug ("Report Manager initialisation complete");
@@ -834,7 +842,7 @@ public abstract class TermServerScript implements RF2Constants {
 			}
 	
 			//We'll remove the stated relationships as they get converted to the axiom
-			List<Relationship> rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH);
+			Set<Relationship> rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH);
 			for (Relationship rel : rels) {
 				//Ignore inactive rels
 				if (!rel.isActive()) {

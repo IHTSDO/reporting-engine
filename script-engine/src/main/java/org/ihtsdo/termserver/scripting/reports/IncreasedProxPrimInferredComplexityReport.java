@@ -69,7 +69,7 @@ public class IncreasedProxPrimInferredComplexityReport extends TermServerScript{
 
 	private int countGroups(Concept c, CharacteristicType cType) {
 		Set<Integer> groupNumbersActive = new HashSet<Integer>();
-		List<Relationship> attributes = c.getRelationships(cType, ActiveState.ACTIVE) ;
+		Set<Relationship> attributes = c.getRelationships(cType, ActiveState.ACTIVE) ;
 		for (Relationship r : attributes){
 			Integer groupNum = new Integer((int)r.getGroupId());
 			if (!groupNumbersActive.contains(groupNum)) {

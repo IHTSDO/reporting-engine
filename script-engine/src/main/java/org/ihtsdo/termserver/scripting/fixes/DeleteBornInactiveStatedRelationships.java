@@ -65,7 +65,7 @@ public class DeleteBornInactiveStatedRelationships extends BatchFix implements R
 			return NO_CHANGES_MADE;
 		}
 		Concept loadedConcept = loadConcept(relationshipMap.get(r.getId()), t.getBranchPath());
-		List<Relationship> inactiveRels = loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.INACTIVE);
+		Set<Relationship> inactiveRels = loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.INACTIVE);
 		for (Relationship rLoaded : inactiveRels) {
 			if (rLoaded.getId().equals(r.getId()) && !rLoaded.isActive() && !rLoaded.isReleased()) {
 				loadedConcept.removeRelationship(rLoaded);

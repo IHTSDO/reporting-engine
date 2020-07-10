@@ -97,7 +97,7 @@ public class MoveConcepts extends BatchFix implements RF2Constants{
 			}
 		}
 		
-		List<Relationship> parentRels = new ArrayList<Relationship> (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
+		Set<Relationship> parentRels = new HashSet<Relationship> (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
 																		IS_A,
 																		ActiveState.ACTIVE));
 		if (parentRels.size() > 1) {
@@ -150,13 +150,13 @@ public class MoveConcepts extends BatchFix implements RF2Constants{
 
 	/*private void replaceParentWithGrandparents(Task task, Concept child,
 			Concept parent, 
-			List<Relationship> grandParentRels,
+			Set<Relationship> grandParentRels,
 			List<Concept> modifiedConcepts) throws TermServerScriptException {
 		Concept loadedConcept = loadConcept(child, task.getBranchPath());
 		modifiedConcepts.add(loadedConcept);
 		
 		//Remove the current parent and add in all the grandparents
-		List<Relationship> parentRels = new ArrayList<Relationship> (loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
+		Set<Relationship> parentRels = new HashSet<Relationship> (loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
 																	IS_A,
 																	ActiveState.ACTIVE));
 		String replacementsAsList = toString(grandParentRels);
@@ -209,7 +209,7 @@ public class MoveConcepts extends BatchFix implements RF2Constants{
 		modifiedConcepts.add(loadedConcept);
 		
 		//Remove the current parents and add in the specified new location
-		List<Relationship> parentRels = loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
+		Set<Relationship> parentRels = loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
 																	IS_A,
 																	ActiveState.ACTIVE);
 		
@@ -218,7 +218,7 @@ public class MoveConcepts extends BatchFix implements RF2Constants{
 			report (task, child, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Child concept has more than one parent. Removing all." );
 		}
 		
-		List<Relationship> allRels = loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
+		Set<Relationship> allRels = loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
 		if (allRels.size() - parentRels.size() == 0) {
 			report (task, child, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Child concept has no attributes!" );
 		}
@@ -235,7 +235,7 @@ public class MoveConcepts extends BatchFix implements RF2Constants{
 		
 		//If the target exists but inactive, then reactivate that relationship
 		if (replacementRequired) {
-			List<Relationship> inactiveRels = loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, IS_A, ActiveState.INACTIVE);
+			Set<Relationship> inactiveRels = loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, IS_A, ActiveState.INACTIVE);
 			for (Relationship thisInactiveRel : inactiveRels) {
 				if (thisInactiveRel.getTarget().getConceptId().equals(childNewLocation)) {
 					thisInactiveRel.setActive(true);
@@ -254,7 +254,7 @@ public class MoveConcepts extends BatchFix implements RF2Constants{
 		}
 	}
 
-	/*private String toString(List<Relationship> relationships) {
+	/*private String toString(Set<Relationship> relationships) {
 		StringBuffer buff = new StringBuffer();
 		boolean isFirst = true;
 		for (Relationship r : relationships) {

@@ -132,7 +132,7 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 					//We'll have to work through all axioms to find where this came from
 					List<AxiomEntry> axiomsContaining = findAxiomsContaining(c);
 					if (axiomsContaining.size() > 0) {
-						detail = "In " + axiomsContaining.size() + " axioms eg " + axiomsContaining.get(0);
+						detail = "In " + axiomsContaining.size() + " axioms eg " + axiomsContaining.iterator().next();
 					}
 				}
 				report (c, issueStr, detail);

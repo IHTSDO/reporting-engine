@@ -444,9 +444,9 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		}
 		
 		int changesMade = 0;
-		List<Relationship> ungrouped = c.getRelationshipGroup(CharacteristicType.STATED_RELATIONSHIP, UNGROUPED).getRelationships();
+		Set<Relationship> ungrouped = c.getRelationshipGroup(CharacteristicType.STATED_RELATIONSHIP, UNGROUPED).getRelationships();
 		for (Relationship r : ungrouped) {
-			List<Relationship> inferredMatches = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, r);
+			Set<Relationship> inferredMatches = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, r);
 			if (inferredMatches.size() == 0) {
 				removeRelationship(t, c, r, "Redundant ungrouped stated: ");
 				changesMade++;

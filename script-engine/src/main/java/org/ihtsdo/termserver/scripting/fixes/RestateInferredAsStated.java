@@ -79,11 +79,11 @@ public class RestateInferredAsStated extends BatchFix implements RF2Constants{
 
 
 	private int restateInferredRelationships(Task task, Concept loadedConcept) throws TermServerScriptException {
-		List<Relationship> missingFromStated = determineInferredMissingFromStated(loadedConcept);
+		Set<Relationship> missingFromStated = determineInferredMissingFromStated(loadedConcept);
 		int changesMade = 0;
 		for (Relationship inferred : missingFromStated) {
 			//Does this inferred type exist as stated, just with a different value?
-			List<Relationship> alreadyExists = loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, inferred.getType(), ActiveState.ACTIVE);
+			Set<Relationship> alreadyExists = loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, inferred.getType(), ActiveState.ACTIVE);
 			if (alreadyExists.isEmpty()) {
 				Relationship stated = inferred.clone(null);
 				stated.setCharacteristicType(CharacteristicType.STATED_RELATIONSHIP);
@@ -100,7 +100,7 @@ public class RestateInferredAsStated extends BatchFix implements RF2Constants{
 				report(task, loadedConcept, Severity.MEDIUM, ReportActionType.RELATIONSHIP_ADDED, msg);
 				changesMade++;
 			} else {
-				String msg = "Attribute type exists as stated, but with a different value - inferred " + inferred.getTarget() + " vs stated " + alreadyExists.get(0).getTarget();
+				String msg = "Attribute type exists as stated, but with a different value - inferred " + inferred.getTarget() + " vs stated " + alreadyExists.iterator().next().getTarget();
 				report(task, loadedConcept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, msg);
 			}
 		}
@@ -123,7 +123,7 @@ public class RestateInferredAsStated extends BatchFix implements RF2Constants{
 		for (Concept thisConcept : allPotential) {
 			String semTag = SnomedUtils.deconstructFSN(thisConcept.getFsn())[1];
 			if (semTag.equals(targetSemanticTag)) {
-				List<Relationship> missingFromStated = determineInferredMissingFromStated(thisConcept);
+				Set<Relationship> missingFromStated = determineInferredMissingFromStated(thisConcept);
 				if (missingFromStated.size() > 0) {
 					allAffected.add(thisConcept);
 				}
@@ -133,10 +133,10 @@ public class RestateInferredAsStated extends BatchFix implements RF2Constants{
 		return new ArrayList<Component>(allAffected);
 	}
 
-	private List<Relationship> determineInferredMissingFromStated(
+	private Set<Relationship> determineInferredMissingFromStated(
 			Concept thisConcept) {
 		//Work through all inferred attributes of interest and see if they have no stated counterpart
-		List<Relationship> missingFromStated = new ArrayList<Relationship>();
+		Set<Relationship> missingFromStated = new HashSet<Relationship>();
 		for (Relationship inferred : thisConcept.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
 			if (attributesOfInterest.contains(inferred.getType())) {
 				if (inferred.getGroupId() != 0) {

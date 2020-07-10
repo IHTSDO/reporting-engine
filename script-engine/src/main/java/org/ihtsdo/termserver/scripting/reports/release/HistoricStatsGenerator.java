@@ -247,7 +247,7 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 	private Concept getParentByISARelationships(Concept concept) throws TermServerScriptException {
 		Concept parent = null;
 
-		List<Relationship> relationships = gl.getConcept(concept.getId()).getRelationships();
+		Set<Relationship> relationships = gl.getConcept(concept.getId()).getRelationships();
 
 		// look for the ISA relationships
 		for (Relationship relationship : relationships) {

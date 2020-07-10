@@ -2,13 +2,11 @@ package org.ihtsdo.termserver.scripting.reports;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.TermServerScript;
-import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.domain.*;
 
 /**
@@ -40,8 +38,8 @@ public class ValidateLateralityReport extends TermServerScript{
 		Concept side = gl.getConcept("182353008");
 		for (Concept c : gl.getAllConcepts()) {
 			if (c.isActive()) {
-				List<Relationship> lateralized = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,  laterality, ActiveState.ACTIVE);
-				if (lateralized.size() > 0 && lateralized.get(0).getTarget().equals(side)) {
+				Set<Relationship> lateralized = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP,  laterality, ActiveState.ACTIVE);
+				if (lateralized.size() > 0 && lateralized.iterator().next().getTarget().equals(side)) {
 					if (!lateralizable.contains(c)) {
 						report (c);
 					}

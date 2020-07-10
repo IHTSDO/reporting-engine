@@ -70,7 +70,7 @@ public class ReplaceParents extends BatchFix implements RF2Constants{
 	private int replaceParents(Task task, Concept loadedConcept) throws TermServerScriptException {
 		
 		int changesMade = 0;
-		List<Relationship> parentRels = new ArrayList<Relationship> (loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
+		Set<Relationship> parentRels = new HashSet<Relationship> (loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, 
 																		IS_A,
 																		ActiveState.ACTIVE));
 		String parentCount = Integer.toString(parentRels.size());
