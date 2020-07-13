@@ -1,6 +1,5 @@
 package org.ihtsdo.termserver.scripting.template;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.*;
@@ -20,9 +19,6 @@ import org.snomed.authoringtemplate.domain.ConceptTemplate;
 import org.snomed.authoringtemplate.domain.logical.LogicalTemplate;
 import org.snomed.otf.scheduler.domain.*;
 import org.springframework.util.StringUtils;
-
-import com.google.common.base.Charsets;
-import com.google.common.io.Files;
 
 /**
  * See https://confluence.ihtsdotools.org/display/IAP/Quality+Improvements+2018

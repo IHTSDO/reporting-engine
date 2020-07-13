@@ -91,6 +91,11 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 	}
 	
 	public void postInit() throws TermServerScriptException {
+		String[] columnHeadings = new String[] {"Task, Desc, SctId, FSN, ConceptType, Severity, ActionType, Details",
+				"Suppressed Concepts"};
+		String[] tabNames = new String[] {	"Missing MP/MPF Concepts",
+				"Suppressed Concepts"};
+		
 		for (Concept c : MEDICINAL_PRODUCT.getDescendents(NOT_SET)) {
 			/*if (c.getConceptId().equals("774313006")) {
 				debug("Here");
@@ -119,7 +124,23 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 		suppress.add("Product containing amino acid (medicinal product)");
 		suppress.add("Product containing pituitary follicle stimulating hormone (medicinal product)");
 		suppress.add("Product containing recombinant antihemophilic factor (medicinal product)");
-		super.postInit();
+		suppress.add("Product containing only adenosine deaminase in parenteral dose form (medicinal product form)");
+		suppress.add("Product containing only pibrentasvir (medicinal product)");
+		suppress.add("Product containing only bictegravir (medicinal product)");
+		suppress.add("Product containing only elbasvir (medicinal product)");
+		suppress.add("Product containing only glecaprevir (medicinal product)");
+		suppress.add("Product containing only grazoprevir (medicinal product)");
+		suppress.add("Product containing only velpatasvir (medicinal product)");
+		suppress.add("Product containing only voxilaprevir (medicinal product)");
+		suppress.add("Product containing only antigen of bacteria and antigen of virus (medicinal product)");
+		suppress.add("Product containing only antigen of bacteria (medicinal product)");
+		suppress.add("Product containing only antigen of virus (medicinal product)");
+		
+		super.postInit(tabNames, columnHeadings, false);
+		
+		for (String suppressedConcept : suppress) {
+			report (SECONDARY_REPORT, suppressedConcept);
+		}
 	}
 
 	@Override
