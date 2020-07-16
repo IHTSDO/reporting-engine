@@ -336,12 +336,16 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		
 		subHierarchyECL = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)|  = <<  30217000 |Proliferation (morphologic abnormality)|";
 		templateNames = new String[] { "templates/morphologies/Proliferation.json" };
-		*/
-		//TODO We're seeing 'HIGH' warnings about existing parents being redundant in presence of PPP but before the PPP gets added. Investigate
-		//I think this might happen when we set a PPP which is lower than the existing parent.
 		
 		subHierarchyECL = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 76197007 |Hyperplasia (morphologic abnormality)|";
 		templateNames = new String[] { "templates/morphologies/Hyperplasia.json" };
+		*/
+		
+		subHierarchyECL = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = <<  56246009 |Hypertrophy (morphologic abnormality)|";
+		templateNames = new String[] { "templates/morphologies/Hypertrophy.json" };
+		
+		//TODO We're seeing 'HIGH' warnings about existing parents being redundant in presence of PPP but before the PPP gets added. Investigate
+		//I think this might happen when we set a PPP which is lower than the existing parent.
 		
 		super.init(args);
 		//Ensure our ECL matches more than 0 concepts.  This will also cache the result
