@@ -161,6 +161,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 											"Text Defn"};
 		topLevelHierarchies = new ArrayList<Concept>(ROOT_CONCEPT.getChildren(CharacteristicType.INFERRED_RELATIONSHIP));
 		topLevelHierarchies.add(UNKNOWN_CONCEPT); // Add this a we might not always be able to get the top level hierarchy
+		topLevelHierarchies.add(ROOT_CONCEPT);
 		topLevelHierarchies.sort(Comparator.comparing(Concept::getFsn));
 		super.postInit(tabNames, columnHeadings, false);
 	}
@@ -196,7 +197,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 				if (prevData.containsKey(c.getConceptId())) {
 					topLevel = gl.getConcept(prevData.get(c.getConceptId()).hierarchy);
 				} else {
-					//If not, it's been inactivate for a while, nothing more to say
+					//If not, it's been inactive for a while, nothing more to say
 					warn("Unexpected data state, failure to retrieve top level: " + c);
 					break;
 				}
