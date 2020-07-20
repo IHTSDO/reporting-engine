@@ -53,7 +53,8 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 	SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
 	Map<Integer, Integer> tabLineCount;
 	Map<Integer, Integer> linesWrittenPerTab = new HashMap<>();
-	
+	int numberOfSheets = 0;
+
 	public ReportSheetManager(ReportManager owner) {
 		if (!owner.getScript().safetyProtocolsEnabled() && owner.getScript().getManyTabOutput() ||
 				!owner.getScript().safetyProtocolsEnabled() && owner.getScript().getManyTabWideOutput()) {
@@ -198,6 +199,7 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 				requests.add(request);
 				writeToReportFile(tabIdx, header, true);
 				tabIdx++;
+				numberOfSheets++;
 			}
 			
 			//Execute creation of tabs
@@ -340,5 +342,45 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 
 	public String getUrl() {
 		return sheet == null ? null : sheet.getSpreadsheetUrl();
+	}
+
+	public boolean formatSpreadSheetColumns() {
+		boolean writeSuccess = false;
+		BatchUpdateSpreadsheetRequest batch = new BatchUpdateSpreadsheetRequest();
+		List<Request> requests = new ArrayList<>();
+
+		for (int sheetIndex = 0; sheetIndex < numberOfSheets; sheetIndex++) {
+			// set the columns to be auto sized
+			AutoResizeDimensionsRequest autoResizeDimensionsRequest = new AutoResizeDimensionsRequest();
+			DimensionRange dimensionRange = new DimensionRange();
+			dimensionRange.setDimension("COLUMNS");
+			dimensionRange.setSheetId(sheetIndex);
+			dimensionRange.setStartIndex(0);
+			dimensionRange.setEndIndex(MAX_COLUMNS);
+
+			autoResizeDimensionsRequest.setDimensions(dimensionRange);
+			requests.add(new Request().setAutoResizeDimensions(autoResizeDimensionsRequest));
+		}
+		batch.setRequests(requests);
+
+		TermServerScript.info("Formatting Goggle SpreadSheet Sheet/s (Columns to auto size).");
+		int writeAttempts = 0;
+		while (!writeSuccess && writeAttempts <= MAX_WRITE_ATTEMPTS) {
+			try {
+				sheetsService.spreadsheets().batchUpdate(sheet.getSpreadsheetId(), batch).execute();
+				writeSuccess = true;
+			} catch (Exception e) {
+				if (writeAttempts <= MAX_WRITE_ATTEMPTS) {
+					try {
+						TermServerScript.warn("Exception from Google Sheets, sleeping then trying again");
+						Thread.sleep(30 * 1000);
+					} catch (InterruptedException e1) {
+					}
+					TermServerScript.info(e.getMessage() + " trying again...");
+				}
+			}
+			writeAttempts++;
+		}
+		return writeSuccess;
 	}
 }

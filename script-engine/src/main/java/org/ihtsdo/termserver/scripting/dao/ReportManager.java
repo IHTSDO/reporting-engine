@@ -100,6 +100,8 @@ public class ReportManager implements RF2Constants {
 		if (writeToSheet) {
 			reportSheetManager.flushWithWait();
 			if (andClose) {
+				// format the columns in the spreadsheet
+				reportSheetManager.formatSpreadSheetColumns();
 				System.out.println("See Google Sheet: " + reportSheetManager.getUrl());
 			}
 		}
