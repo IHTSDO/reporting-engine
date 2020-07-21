@@ -1468,4 +1468,17 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		return null;
 	}
 
+	public boolean fsnContainsAny(List<String> words) {
+		if (words == null) {
+			return false;
+		}
+		String lowerFsn = getFsn().toLowerCase();
+		for (String word : words) {
+			if (lowerFsn.contains(word)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 }
