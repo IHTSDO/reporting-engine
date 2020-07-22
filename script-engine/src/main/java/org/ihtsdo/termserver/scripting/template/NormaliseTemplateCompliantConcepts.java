@@ -339,10 +339,13 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		
 		subHierarchyECL = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 76197007 |Hyperplasia (morphologic abnormality)|";
 		templateNames = new String[] { "templates/morphologies/Hyperplasia.json" };
-		*/
 		
 		subHierarchyECL = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = <<  56246009 |Hypertrophy (morphologic abnormality)|";
 		templateNames = new String[] { "templates/morphologies/Hypertrophy.json" };
+		*/
+		
+		subHierarchyECL = "<< 55342001 |Neoplastic disease (disorder)|";
+		templateNames = new String[] { "templates/neoplasm/Neoplastic Disease.json" };
 		
 		//TODO We're seeing 'HIGH' warnings about existing parents being redundant in presence of PPP but before the PPP gets added. Investigate
 		//I think this might happen when we set a PPP which is lower than the existing parent.

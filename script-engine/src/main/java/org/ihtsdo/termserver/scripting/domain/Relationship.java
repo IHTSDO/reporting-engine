@@ -202,21 +202,36 @@ public class Relationship extends Component implements IRelationshipTemplate, RF
 	}
 	
 	public String toString(boolean includeRelIds) {
+		return toString(includeRelIds, true);
+	}
+	
+	public String toString(boolean includeRelIds, boolean includeInactiveIndicator) {
 		//Is this just a reference to a relationship?  Just use ID if so
 		if (type==null && target==null) {
 			return relationshipId;
 		}
 		String charType = characteristicType.equals(CharacteristicType.STATED_RELATIONSHIP)?"S":"I";
-		String activeIndicator = this.isActive()?"":"*";
-		String relId = includeRelIds ? ":" + relationshipId : "";
+		String activeIndicator = "";
+		if (includeInactiveIndicator && !this.isActive()) {
+			activeIndicator = "*";
+		}
+		String relId = "";
+		if (includeRelIds && relationshipId != null) {
+			relId = ":" + relationshipId;
+		}
 		String axiomIdPart = getAxiomEntry() == null ? "" : ":" + getAxiomEntry().getId().substring(0,6);
+		if (axiomIdPart.isEmpty() && getAxiom() != null && getAxiom().getId() != null) {
+			axiomIdPart = ":" + getAxiom().getId().substring(0,6);
+		}
 		return "[" + activeIndicator +  charType + groupId + relId + axiomIdPart + "] " + type + " -> " + target;
 	}
 
 	@Override
 	public int hashCode() {
 		if (StringUtils.isEmpty(relationshipId)) {
-			return toString().hashCode();
+			//Do not include the inactivation indicator, otherwise we might not
+			//be able to recognise the object in a set if it changes after being created.
+			return toString(true, false).hashCode();
 		} else {
 			return relationshipId.hashCode();
 		}
@@ -274,6 +289,7 @@ public class Relationship extends Component implements IRelationshipTemplate, RF
 		clone.source = this.source;
 		clone.characteristicType = this.characteristicType;
 		clone.isDirty = true;
+		clone.axiom = this.axiom;
 		return clone;
 	}
 	

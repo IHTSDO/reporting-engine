@@ -5,6 +5,7 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.apache.commons.lang.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 
 import com.google.gson.annotations.Expose;
@@ -109,8 +110,7 @@ public class Axiom extends Component implements RF2Constants, Expressable {
 	}
 	@Override
 	public String getId() {
-		// TODO Auto-generated method stub
-		return null;
+		return axiomId;
 	}
 	@Override
 	public boolean isActive() {
@@ -118,23 +118,19 @@ public class Axiom extends Component implements RF2Constants, Expressable {
 	}
 	@Override
 	public String getReportedName() {
-		// TODO Auto-generated method stub
-		return null;
+		throw new NotImplementedException();
 	}
 	@Override
 	public String getReportedType() {
-		// TODO Auto-generated method stub
-		return null;
+		throw new NotImplementedException();
 	}
 	@Override
 	public ComponentType getComponentType() {
-		// TODO Auto-generated method stub
-		return null;
+		return ComponentType.AXIOM;
 	}
 	@Override
 	public String[] toRF2() throws TermServerScriptException {
-		// TODO Auto-generated method stub
-		return null;
+		throw new NotImplementedException();
 	}
 
 	public void clearRelationships() {
@@ -147,6 +143,7 @@ public class Axiom extends Component implements RF2Constants, Expressable {
 
 	public Axiom clone(String id, Concept c) {
 		Axiom clone = new Axiom(c);
+		clone.setAxiomId(id);
 		clone.setModuleId(this.getModuleId());
 		clone.setActive(this.isActive());
 		for (Relationship r : this.getRelationships()) {

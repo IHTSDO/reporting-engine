@@ -413,7 +413,19 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		if (r.getEffectiveTime() != null && !force) {
 			throw new IllegalArgumentException("Attempt to deleted published relationship " + r);
 		}
-		this.relationships.removeAll(Collections.singleton(r));
+		/*boolean removed = this.relationships.removeAll(Collections.singleton(r));
+		if (!removed) {
+			TermServerScript.debug("Failed to remove relationship: " + r);
+		}*/
+		int sizeBefore = relationships.size();
+		Set<Relationship> newRelationshipSet = relationships.stream()
+				.filter(rel -> !rel.equals(r))
+				.collect(Collectors.toSet());
+		this.relationships = newRelationshipSet;
+		if (this.relationships.size() == sizeBefore) {
+			TermServerScript.debug("Failed to remove relationship: " + r);
+		}
+		
 		recalculateGroups();
 	}
 
@@ -1177,7 +1189,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 			rClone.setSourceId(null);
 			//We don't want any hierarchy modifications done, so just add the clone directly
 			clone.relationships.add(rClone);
-			if (populateUUIDs && r.getId() == null) {
+			if (populateUUIDs && StringUtils.isEmpty(r.getId())) {
 				rClone.setRelationshipId(UUID.randomUUID().toString());
 			}
 		}

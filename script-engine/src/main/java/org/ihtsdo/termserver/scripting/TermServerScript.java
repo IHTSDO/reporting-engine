@@ -474,7 +474,7 @@ public abstract class TermServerScript implements RF2Constants {
 			if (this.outputWidth  != null ) {
 				ReportSheetManager.setMaxColumns(this.outputWidth);
 				//For some reason I can't get near the limit of 5M
-				ReportSheetManager.setMaxRows(2500000 / this.outputWidth);
+				ReportSheetManager.setMaxRows(1500000 / this.outputWidth);
 			}
 			getReportManager().initialiseReportFiles(columnHeadings);
 			debug ("Report Manager initialisation complete");
@@ -715,10 +715,9 @@ public abstract class TermServerScript implements RF2Constants {
 		//We should not be modifying any stated relationships
 		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH)) {
 			if (StringUtils.isEmpty(r.getEffectiveTime())) {
-				throw new IllegalStateException("Stated Relationship Updated");
+				throw new IllegalStateException("Stated Relationship update attempt (during validation): " + r);
 			}
 		}
-		
 		
 		DroolsResponse[] validations = tsClient.validateConcept(uuidClone, t.getBranchPath());
 		if (validations.length == 0) {
@@ -846,6 +845,11 @@ public abstract class TermServerScript implements RF2Constants {
 			for (Relationship rel : rels) {
 				//Ignore inactive rels
 				if (!rel.isActive()) {
+					//...unless it came from an axiom in which case it's no longer required
+					//and causes confusion for a validation check due to having no effective time
+					if (rel.getAxiom() != null) {
+						c.removeRelationship(rel);
+					}
 					continue;
 				}
 
