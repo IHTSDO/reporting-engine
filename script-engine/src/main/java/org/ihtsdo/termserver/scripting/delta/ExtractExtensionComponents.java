@@ -85,9 +85,9 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		for (Component thisComponent : allIdentifiedConcepts) {
 			Concept thisConcept = (Concept)thisComponent;
 			
-			if (thisConcept.getConceptId().equals("2301000004107")) {
+			/*if (thisConcept.getConceptId().equals("2301000004107")) {
 				debug("Here");
-			}
+			}*/
 			
 			//If we don't have a module id for this identified concept, then it doesn't properly exist in this release
 			if (thisConcept.getModuleId() == null) {

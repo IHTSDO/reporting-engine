@@ -63,12 +63,12 @@ public class ArchiveManager implements RF2Constants {
 		if (singleton.ts != ts) {
 			TermServerScript.info("Archive manager under new ownership: " + ts.getClass().getSimpleName() + ".  Resetting load flags");
 			singleton.loadEditionArchive = false;
+			singleton.loadDependencyPlusExtensionArchive = false;
+			singleton.ts = ts;
+			singleton.gl = ts.getGraphLoader();
 		} else {
 			TermServerScript.info("Archive manager being reused in: " + ts.getClass().getSimpleName());
 		}
-		singleton.ts = ts;
-		singleton.gl = ts.getGraphLoader();
-		singleton.loadDependencyPlusExtensionArchive = false;
 		return singleton;
 	}
 	
@@ -184,6 +184,7 @@ public class ArchiveManager implements RF2Constants {
 				if (StringUtils.isEmpty(ts.getDependencyArchive())) {
 					throw new TermServerScriptException("Told to load dependency + extension but no dependency package specified");
 				} else {
+					TermServerScript.info("Loading dependency plus extension archives");
 					File dependency = new File ("releases/" + ts.getDependencyArchive());
 					if (dependency.exists()) {
 						loadArchive(dependency, fsnOnly, "Snapshot", true);
