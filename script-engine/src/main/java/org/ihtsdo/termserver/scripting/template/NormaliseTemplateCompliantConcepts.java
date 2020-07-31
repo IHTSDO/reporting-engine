@@ -334,19 +334,21 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		subHierarchyECL = "(<<404684003 |Clinical finding (finding)| : 116676008 |Associated morphology (attribute)| = ( << 4147007 |Mass (morphologic abnormality)| MINUS <<416939005 |Proliferative mass (morphologic abnormality)| ) )";
 		templateNames = new String[] { "templates/morphologies/Mass.json" };
 		
-		subHierarchyECL = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)|  = <<  30217000 |Proliferation (morphologic abnormality)|";
+		subHierarchyECL = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)|  = << 30217000 |Proliferation (morphologic abnormality)|";
 		templateNames = new String[] { "templates/morphologies/Proliferation.json" };
 		
 		subHierarchyECL = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 76197007 |Hyperplasia (morphologic abnormality)|";
 		templateNames = new String[] { "templates/morphologies/Hyperplasia.json" };
 		
-		subHierarchyECL = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = <<  56246009 |Hypertrophy (morphologic abnormality)|";
+		subHierarchyECL = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 56246009 |Hypertrophy (morphologic abnormality)|";
 		templateNames = new String[] { "templates/morphologies/Hypertrophy.json" };
-		*/
 		
 		subHierarchyECL = "<< 55342001 |Neoplastic disease (disorder)|";
 		templateNames = new String[] { "templates/neoplasm/Neoplastic Disease.json" };
-		
+		*/
+		subHierarchyECL = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 308492005 |Contusion - lesion (morphologic abnormality)|";
+		templateNames = new String[] { "templates/morphologies/Contusion.json" };
+		includeComplexTemplates = true;
 		//TODO We're seeing 'HIGH' warnings about existing parents being redundant in presence of PPP but before the PPP gets added. Investigate
 		//I think this might happen when we set a PPP which is lower than the existing parent.
 		

@@ -141,11 +141,11 @@ public class GraphLoader implements RF2Constants {
 					continue;
 				}
 				
-/*				if (lineItems[REL_IDX_ID].equals("16101000172123")) {
+				/*if (lineItems[REL_IDX_ID].equals("12957831022")) {
 					TermServerScript.debug ("Debug Here");
-				}
+				}*/
 				
-				if (characteristicType.equals(CharacteristicType.STATED_RELATIONSHIP) && 
+				/*if (characteristicType.equals(CharacteristicType.STATED_RELATIONSHIP) && 
 						lineItems[REL_IDX_SOURCEID].equals("108554009") && 
 						lineItems[REL_IDX_TYPEID].equals("726542003")) {
 					TermServerScript.debug ("Debug Here");
@@ -383,11 +383,10 @@ public class GraphLoader implements RF2Constants {
 			Concept source = r.getSource();
 			Concept target = r.getTarget();
 			
-			if (r.getCharacteristicType().equals(CharacteristicType.INFERRED_RELATIONSHIP) && 
+			/*if (r.getCharacteristicType().equals(CharacteristicType.INFERRED_RELATIONSHIP) && 
 					r.getSourceId().contentEquals("21731004") && !r.isActive()) {
 				TermServerScript.debug("here");
-				if(true);
-			}
+			}*/
 			
 			if (r.isActive()) {
 				source.addParent(r.getCharacteristicType(),r.getTarget());
