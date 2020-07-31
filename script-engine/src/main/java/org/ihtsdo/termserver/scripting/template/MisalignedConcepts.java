@@ -113,7 +113,7 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 			super.init(jobRun);
 			includeComplexTemplates = jobRun.getParameters().getMandatoryBoolean(INCLUDE_COMPLEX);
 			safetyProtocols = !jobRun.getParameters().getMandatoryBoolean(ALLOW_LARGE_RESULTS);
-			subHierarchyECL = jobRun.getMandatoryParamValue(ECL);
+			subsetECL = jobRun.getMandatoryParamValue(ECL);
 
 			String templateServerUrl = jobRun.getMandatoryParamValue(SERVER_URL);
 			//Do we have a template name to load, or some actual template language?
@@ -374,7 +374,7 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		templateNames = new String[] { "templates/Developmental disorder.json"};
 		*/
 		
-		subHierarchyECL = "(<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 30217000 |Proliferation (morphologic abnormality)|) MINUS (<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 400177003 |Neoplasm and/or hamartoma (morphologic abnormality)|)";
+		subsetECL = "(<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 30217000 |Proliferation (morphologic abnormality)|) MINUS (<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 400177003 |Neoplasm and/or hamartoma (morphologic abnormality)|)";
 		templateNames = new String[] { "templates/Proliferation.json"};
 		super.init(args);
 	}
@@ -408,7 +408,7 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		
 		//Start with the whole subHierarchy and remove concepts that match each of our templates
-		Collection<Concept> potentiallyMisaligned = findConcepts(subHierarchyECL);
+		Collection<Concept> potentiallyMisaligned = findConcepts(subsetECL);
 		//Set<Concept> unalignedConcepts = Collections.singleton(gl.getConcept("58660009"));
 		Set<Concept> ignoredConcepts = new HashSet<>();
 		

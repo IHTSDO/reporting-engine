@@ -48,7 +48,7 @@ public class AddAttributeIfRequired extends BatchFix {
 		relTemplate = new RelationshipTemplate(DUE_TO,  gl.getConcept("773760007 |Traumatic event (event)|"));
 		*/
 		//INFRA-5236
-		subHierarchyECL = "<<399963005 |Abrasion (disorder)|";
+		subsetECL = "<<399963005 |Abrasion (disorder)|";
 		relTemplate = new RelationshipTemplate(DUE_TO,  gl.getConcept("773760007 |Traumatic event (event)|"));
 		
 		exclusions = new HashSet<>();
@@ -94,6 +94,6 @@ public class AddAttributeIfRequired extends BatchFix {
 
 	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		return new ArrayList<>(findConcepts(subHierarchyECL));
+		return new ArrayList<>(findConcepts(subsetECL));
 	}
 }

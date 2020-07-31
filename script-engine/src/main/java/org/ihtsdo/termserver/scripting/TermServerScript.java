@@ -74,7 +74,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected boolean reportNullConcept = true;
 	
 	protected String subHierarchyStr;
-	protected String subHierarchyECL;
+	protected String subsetECL;
 	protected Concept subHierarchy;
 	protected String[] excludeHierarchies;
 	
@@ -1266,17 +1266,17 @@ public abstract class TermServerScript implements RF2Constants {
 					reportName += spacer + subHierarchy.toStringPref();
 				}
 				
-				if (subHierarchy == null && subHierarchyStr == null && subHierarchyECL != null) {
+				if (subHierarchy == null && subHierarchyStr == null && subsetECL != null) {
 					//Take the first focus concept
-					int cutPoint = subHierarchyECL.indexOf(":");
+					int cutPoint = subsetECL.indexOf(":");
 					if (cutPoint > NOT_SET) {
-						int potentialCut = subHierarchyECL.indexOf("MINUS");
+						int potentialCut = subsetECL.indexOf("MINUS");
 						if (potentialCut > NOT_SET && potentialCut < cutPoint) {
 							cutPoint = potentialCut;
 						}
-						reportName += spacer + subHierarchyECL.subSequence(0, cutPoint);
+						reportName += spacer + subsetECL.subSequence(0, cutPoint);
 					} else {
-						Concept simpleECLRoot = gl.getConcept(subHierarchyECL.replaceAll("<", "").trim());
+						Concept simpleECLRoot = gl.getConcept(subsetECL.replaceAll("<", "").trim());
 						if (simpleECLRoot.getDescriptions().size() > 0) {
 							reportName += spacer + simpleECLRoot.toStringPref();
 						} else {

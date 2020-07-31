@@ -33,7 +33,7 @@ public class AttributeDetails extends TermServerReport implements ReportClass {
 	
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
-		subHierarchyECL = run.getMandatoryParamValue(ECL);
+		subsetECL = run.getMandatoryParamValue(ECL);
 		compactReport = run.getParameters().getMandatoryBoolean(COMPACT);
 		includeWord = run.getParamValue(INCLUDE_WORD);
 		if (includeWord != null) {
@@ -74,7 +74,7 @@ public class AttributeDetails extends TermServerReport implements ReportClass {
 	}
 	
 	public void runJob() throws TermServerScriptException {
-		ArrayList<Concept> subset = new ArrayList<>(findConcepts(subHierarchyECL));
+		ArrayList<Concept> subset = new ArrayList<>(findConcepts(subsetECL));
 		subset.sort(Comparator.comparing(Concept::getFsn));
 		for (Concept c : subset) {
 			if (!isLexicalMatch(c) || countAttributes(c, CharacteristicType.INFERRED_RELATIONSHIP) == 0) {

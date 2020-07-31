@@ -44,7 +44,7 @@ public class ListAllAttributes extends TermServerReport implements ReportClass {
 	
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
-		subHierarchyECL = run.getMandatoryParamValue(ECL);
+		subsetECL = run.getMandatoryParamValue(ECL);
 		compactReport = run.getParameters().getMandatoryBoolean(COMPACT);
 		includeIsA = run.getParameters().getMandatoryBoolean(INCLUDE_IS_A);
 		String targetValuePropertyStr = run.getParamValue(TARGET_VALUE_PROPERTY);
@@ -82,7 +82,7 @@ public class ListAllAttributes extends TermServerReport implements ReportClass {
 	}
 	
 	public void runJob() throws TermServerScriptException {
-		ArrayList<Concept> subset = new ArrayList<>(findConcepts(subHierarchyECL));
+		ArrayList<Concept> subset = new ArrayList<>(findConcepts(subsetECL));
 		subset.sort(Comparator.comparing(Concept::getFsnSafely));
 		for (Concept c : subset) {
 			if (!includeIsA && countAttributes(c, CharacteristicType.INFERRED_RELATIONSHIP) == 0) {

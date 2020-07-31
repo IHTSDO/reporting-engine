@@ -44,7 +44,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		ReportSheetManager.targetFolderId = "1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"; //Release Stats
 		ReportSheetManager.setMaxColumns(18);
 		getArchiveManager().setPopulateReleasedFlag(true);
-		subHierarchyECL = run.getParamValue(ECL);
+		subsetECL = run.getParamValue(ECL);
 		super.init(run);
 	}
 	
@@ -95,8 +95,8 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		int conceptsExamined = 0;
 		Collection<Concept> conceptsOfInterest;
 		
-		if (subHierarchyECL != null && !subHierarchyECL.isEmpty()) {
-			conceptsOfInterest = findConcepts(subHierarchyECL);
+		if (subsetECL != null && !subsetECL.isEmpty()) {
+			conceptsOfInterest = findConcepts(subsetECL);
 		} else {
 			conceptsOfInterest = gl.getAllConcepts();
 		}

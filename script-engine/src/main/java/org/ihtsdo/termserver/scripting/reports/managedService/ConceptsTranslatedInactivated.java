@@ -28,7 +28,7 @@ public class ConceptsTranslatedInactivated extends TermServerReport implements R
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA Reports
 		includeLegacyIssues = run.getParameters().getMandatoryBoolean(INCLUDE_ALL_LEGACY_ISSUES);
-		subHierarchyECL = run.getParamValue(ECL);
+		subsetECL = run.getParamValue(ECL);
 		super.init(run);
 		if (project.getKey().equals("MAIN")) {
 			throw new TermServerScriptException("Inactivated Translated Concepts report cannot be run against MAIN");
@@ -69,8 +69,8 @@ public class ConceptsTranslatedInactivated extends TermServerReport implements R
 	
 	public void runJob() throws TermServerScriptException {
 		Collection<Concept> conceptsOfInterest;
-		if (subHierarchyECL != null && !subHierarchyECL.isEmpty()) {
-			conceptsOfInterest = findConcepts(subHierarchyECL);
+		if (subsetECL != null && !subsetECL.isEmpty()) {
+			conceptsOfInterest = findConcepts(subsetECL);
 		} else {
 			conceptsOfInterest = gl.getAllConcepts();
 		}

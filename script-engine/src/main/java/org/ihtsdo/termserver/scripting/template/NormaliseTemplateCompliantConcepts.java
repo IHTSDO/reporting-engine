@@ -346,7 +346,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		subHierarchyECL = "<< 55342001 |Neoplastic disease (disorder)|";
 		templateNames = new String[] { "templates/neoplasm/Neoplastic Disease.json" };
 		*/
-		subHierarchyECL = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 308492005 |Contusion - lesion (morphologic abnormality)|";
+		subsetECL = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 308492005 |Contusion - lesion (morphologic abnormality)|";
 		templateNames = new String[] { "templates/morphologies/Contusion.json" };
 		includeComplexTemplates = true;
 		//TODO We're seeing 'HIGH' warnings about existing parents being redundant in presence of PPP but before the PPP gets added. Investigate
@@ -356,8 +356,8 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		//Ensure our ECL matches more than 0 concepts.  This will also cache the result
 		boolean expectLargeResults = !safetyProtocols;
 		boolean useLocalStoreIfSimple = false;
-		if (!getArchiveManager().isAllowStaleData() && findConcepts(subHierarchyECL, false, expectLargeResults, useLocalStoreIfSimple).size() == 0) {
-			throw new TermServerScriptException(subHierarchyECL + " returned 0 rows");
+		if (!getArchiveManager().isAllowStaleData() && findConcepts(subsetECL, false, expectLargeResults, useLocalStoreIfSimple).size() == 0) {
+			throw new TermServerScriptException(subsetECL + " returned 0 rows");
 		}
 	}
 	
@@ -488,7 +488,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		//Start with the whole subHierarchy and remove concepts that match each of our templates
 		Set<Concept> alignedConcepts = new HashSet<>();
-		Collection<Concept> potentialMatches = findConcepts(subHierarchyECL);
+		Collection<Concept> potentialMatches = findConcepts(subsetECL);
 		//Collection<Concept> potentialMatches = Collections.singleton(gl.getConcept("7890003 |Contracture of Joint|"));
 		addSummaryInformation("Concepts matching ECL", potentialMatches.size());
 		Set<Concept> misalignedConcepts = new HashSet<>();

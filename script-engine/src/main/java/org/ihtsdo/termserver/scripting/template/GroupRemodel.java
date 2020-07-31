@@ -180,7 +180,7 @@ public class GroupRemodel extends TemplateFix {
 		templateNames = new String[] { "templates/Bleeding - disorder.json"};
 		inclusionWords.add("disorder");
 		*/
-		subHierarchyECL = "<<362975008 |Degenerative disorder (disorder)|: 116676008 |Associated morphology (attribute)| = << 46595003 |Deposition (morphologic abnormality)| ";
+		subsetECL = "<<362975008 |Degenerative disorder (disorder)|: 116676008 |Associated morphology (attribute)| = << 46595003 |Deposition (morphologic abnormality)| ";
 		templateNames = new String[] {	"templates/Degenerative disorder.json"};
 		includeComplexTemplates = true;
 		
@@ -189,8 +189,8 @@ public class GroupRemodel extends TemplateFix {
 		//Ensure our ECL matches more than 0 concepts.  This will also cache the result
 		boolean expectLargeResults = !safetyProtocols;
 		boolean useLocalStoreIfSimple = false;
-		if (!getArchiveManager().isAllowStaleData() && findConcepts(subHierarchyECL, false, expectLargeResults, useLocalStoreIfSimple).size() == 0) {
-			throw new TermServerScriptException(subHierarchyECL + " returned 0 rows");
+		if (!getArchiveManager().isAllowStaleData() && findConcepts(subsetECL, false, expectLargeResults, useLocalStoreIfSimple).size() == 0) {
+			throw new TermServerScriptException(subsetECL + " returned 0 rows");
 		}
 	}
 	
@@ -821,7 +821,7 @@ public class GroupRemodel extends TemplateFix {
 			info ("Skipping " + alreadyProcessed.size() + " concepts declared as already processed in " + alreadyProcessedFile);
 		}
 		
-		for (Concept c : findConcepts(subHierarchyECL)) {
+		for (Concept c : findConcepts(subsetECL)) {
 		//for (Concept c : Collections.singleton(gl.getConcept("231937002"))) {
 			if (inclusionWords.size() > 0) {
 				if (!containsInclusionWord(c)) {

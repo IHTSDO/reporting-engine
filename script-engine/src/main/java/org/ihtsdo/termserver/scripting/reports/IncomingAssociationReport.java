@@ -59,7 +59,7 @@ public class IncomingAssociationReport extends TermServerScript implements Repor
 		ReportSheetManager.targetFolderId = "1PWtDYFfqLoUwk17HlFgNK648Mmra-1GA"; //General QA
 		textMatches = Arrays.asList(run.getParamValue(TEXT_MATCH, "").toLowerCase().split(COMMA));
 		textMatches.replaceAll(String::trim);
-		subHierarchyECL = run.getMandatoryParamValue(ECL);
+		subsetECL = run.getMandatoryParamValue(ECL);
 		super.init(run);
 		additionalReportColumns = "FSN (Inactive Concept), SemTag, EffectiveTime, Assoc Type, Target (Active Concept), Details";
 	}
@@ -73,7 +73,7 @@ public class IncomingAssociationReport extends TermServerScript implements Repor
 
 	public void runJob() throws TermServerScriptException {
 		info ("Scanning concepts...");
-		for (Concept c : findConcepts(subHierarchyECL)) {
+		for (Concept c : findConcepts(subsetECL)) {
 			if (inScope(c)) {
 				for (AssociationEntry entry : gl.usedAsHistoricalAssociationTarget(c)) {
 					Concept source = gl.getConcept(entry.getReferencedComponentId());

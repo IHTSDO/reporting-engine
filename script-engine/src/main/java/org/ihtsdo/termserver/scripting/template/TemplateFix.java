@@ -241,7 +241,7 @@ abstract public class TemplateFix extends BatchFix {
 			}
 		}
 		println("");
-		addSummaryInformation("Concepts in \"" + subHierarchyECL + "\" matching template: " + t.getId(), matches.size());
+		addSummaryInformation("Concepts in \"" + subsetECL + "\" matching template: " + t.getId(), matches.size());
 		return matches;
 	}
 	
@@ -467,9 +467,9 @@ abstract public class TemplateFix extends BatchFix {
 		info("Outputting metadata tab");
 		String user = jobRun == null ? "System" : jobRun.getUser();
 		writeToReportFile (SECONDARY_REPORT, "Requested by: " + user);
-		writeToReportFile (SECONDARY_REPORT, "Ran against: " + subHierarchyECL);
+		writeToReportFile (SECONDARY_REPORT, "Ran against: " + subsetECL);
 		writeToReportFile (SECONDARY_REPORT, "Project: " + project);
-		writeToReportFile (SECONDARY_REPORT, "Concepts considered: " + findConcepts(subHierarchyECL).size());
+		writeToReportFile (SECONDARY_REPORT, "Concepts considered: " + findConcepts(subsetECL).size());
 		writeToReportFile (SECONDARY_REPORT, "Templates: " );
 		
 		for (Template t : templates) {

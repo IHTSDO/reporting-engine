@@ -62,7 +62,7 @@ public class AttributeValueCounts extends TermServerReport implements ReportClas
 			targetAttributeType = gl.getConcept(attribStr);
 		}
 		
-		subHierarchyECL = run.getMandatoryParamValue(ECL);
+		subsetECL = run.getMandatoryParamValue(ECL);
 		ignoreConceptsECL = run.getParamValue(IGNORE_ECL);
 	}
 	
@@ -88,9 +88,9 @@ public class AttributeValueCounts extends TermServerReport implements ReportClas
 		Concept[] types = new Concept[] {targetAttributeType};
 		ancestorCache = gl.getAncestorsCache();
 		descendentCache = gl.getDescendantsCache();
-		info ("Analyzing " + subHierarchyECL);
+		info ("Analyzing " + subsetECL);
 		ignoreConcepts = new HashSet<>(findConcepts(ignoreConceptsECL));
-		for (Concept c : findConcepts(subHierarchyECL)) {
+		for (Concept c : findConcepts(subsetECL)) {
 			//Find all the target values for the specified attribute type
 			Set<Concept> targets = SnomedUtils.getTargets(c, types, CharacteristicType.INFERRED_RELATIONSHIP);
 			for (Concept target : targets) {

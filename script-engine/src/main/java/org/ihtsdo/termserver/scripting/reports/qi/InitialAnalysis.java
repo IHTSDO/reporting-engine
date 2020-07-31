@@ -137,15 +137,15 @@ public class InitialAnalysis extends TermServerReport implements org.ihtsdo.term
 		ReportSheetManager.targetFolderId = "1m7MVhMePldYrNjOvsE_WTAYcowZ4ps50";  // QI/Initial Analysis
 		
 		subHierarchyStr = this.jobRun.getParamValue(SUB_HIERARCHY);
-		subHierarchyECL = this.jobRun.getParamValue(ECL);
+		subsetECL = this.jobRun.getParamValue(ECL);
 		
-		if (subHierarchyStr != null && (subHierarchyECL == null || subHierarchyECL.trim().isEmpty())) {
+		if (subHierarchyStr != null && (subsetECL == null || subsetECL.trim().isEmpty())) {
 			Concept subHierarchyConcept = gl.getConcept(subHierarchyStr, false, true);  //Validate concept exists
 			if (subHierarchyConcept.getDepth() <= 1 ) {
 				throw new TermServerScriptException("Report cannot be run on top level hierarchies");
 			}
-			subHierarchyECL = "<<" + subHierarchyStr;
-		} else if (subHierarchyStr == null && subHierarchyECL == null ) {
+			subsetECL = "<<" + subHierarchyStr;
+		} else if (subHierarchyStr == null && subsetECL == null ) {
 			throw new TermServerScriptException("Either subhierarchy or ECL must be specified");
 		}
 		
@@ -169,21 +169,21 @@ public class InitialAnalysis extends TermServerReport implements org.ihtsdo.term
 	}
 	
 	public String getReportName() {
-		if (subHierarchyECL == null) {
+		if (subsetECL == null) {
 			return "Report name not yet known";
 		} else {
 			String itemOfInterest;
-			if (subHierarchyECL.contains(":")) {
-				itemOfInterest = subHierarchyECL.substring(subHierarchyECL.indexOf(":") + 1).trim();
+			if (subsetECL.contains(":")) {
+				itemOfInterest = subsetECL.substring(subsetECL.indexOf(":") + 1).trim();
 			} else {
-				itemOfInterest = subHierarchyECL.replaceAll("<",""); 
+				itemOfInterest = subsetECL.replaceAll("<",""); 
 			}
 			return itemOfInterest + " - Initial Analysis";
 		}
 	}
 	
 	public void setSubHierarchy() throws TermServerScriptException {
-		this.conceptsToAnalyse = new ArrayList<>(findConcepts(subHierarchyECL));
+		this.conceptsToAnalyse = new ArrayList<>(findConcepts(subsetECL));
 		intermediatePrimitives = new HashMap<>();
 		attributeUsage = new HashMap<>();
 		attributeExamples = new HashMap<>();

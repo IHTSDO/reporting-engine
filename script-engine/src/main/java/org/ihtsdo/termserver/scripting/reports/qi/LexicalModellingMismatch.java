@@ -61,7 +61,7 @@ public class LexicalModellingMismatch extends TermServerReport implements Report
 		
 		fsnOnly = run.getParameters().getMandatoryBoolean(FSN_ONLY);
 		
-		subHierarchyECL = run.getMandatoryParamValue(ECL);
+		subsetECL = run.getMandatoryParamValue(ECL);
 		String attribStr = run.getParamValue(ATTRIBUTE_TYPE);
 		if (attribStr != null && !attribStr.isEmpty()) {
 			targetAttribute.setType(gl.getConcept(attribStr));
@@ -103,7 +103,7 @@ public class LexicalModellingMismatch extends TermServerReport implements Report
 	
 	public void runJob() throws TermServerScriptException {
 		DescendantsCache cache = gl.getDescendantsCache();
-		for (Concept c : findConcepts(subHierarchyECL)) {
+		for (Concept c : findConcepts(subsetECL)) {
 			boolean containsWord = false;
 			boolean containsAttribute = false;
 			if (c.isActive()) {
