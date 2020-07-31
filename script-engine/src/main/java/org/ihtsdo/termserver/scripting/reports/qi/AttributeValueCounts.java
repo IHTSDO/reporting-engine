@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting.reports.qi;
 
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -14,6 +15,7 @@ import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
+import org.springframework.util.StringUtils;
 
 import com.google.common.util.concurrent.AtomicLongMap;
 
@@ -24,15 +26,20 @@ public class AttributeValueCounts extends TermServerReport implements ReportClas
 	
 	public static final String ATTRIBUTE_TYPE = "Attribute Type";
 	public static final String IGNORE_ECL = "Ignore Concepts ECL";
+	public static final String MIN_SIZE_INTEREST = "Minimum Size";
 	Concept targetAttributeType;
 	String ignoreConceptsECL;
 	AncestorsCache ancestorCache;
 	DescendantsCache descendentCache;
 	AtomicLongMap<Concept> valueCounts = AtomicLongMap.create();
+	AtomicLongMap<Concept> recentActivity = AtomicLongMap.create();
 	AtomicLongMap<Concept> valueCountsFiltered = AtomicLongMap.create();
+	Map<Concept, AtomicLongMap<Concept>> combinationCounts = new HashMap<>();
 	Set<Concept> alreadyReported = new HashSet<>();
-	int minimumSizeOfInterest = 150;
+	int minimumSizeOfInterest = 50;
 	Set<Concept>ignoreConcepts;
+	String recentEffectiveTime;
+	DecimalFormat df = new DecimalFormat("0.0");
 	
 	static String qiProjectAlreadyProcessed = "<<2775001 OR <<3218000 OR <<3723001 OR <<5294002 OR <<7890003 OR <<8098009 OR <<17322007 " +
 	" OR <<20376005 OR <<34014006 OR <<40733004 OR <<52515009 OR <<85828009 OR <<87628006 OR <<95896000 OR <<109355002 OR <<118616009 " + 
@@ -44,16 +51,15 @@ public class AttributeValueCounts extends TermServerReport implements ReportClas
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		//params.put(ECL, "<< 64572001 |Disease (disorder)|");
 		params.put(ECL, "<< 404684003 |Clinical finding (finding)|");
 		params.put(ATTRIBUTE_TYPE, ASSOC_MORPH.toString());
-		params.put(IGNORE_ECL, qiProjectAlreadyProcessed);
+		//params.put(IGNORE_ECL, qiProjectAlreadyProcessed);
 		TermServerReport.run(AttributeValueCounts.class, args, params);
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
-		additionalReportColumns = "FSN, SemTag, Depth, Raw Concept Count, Adjusted Concept Count, Not-Including Descendants, Adjusted Not-Including Descendants, Parents, GrandParents";
+		additionalReportColumns = "FSN, SemTag, Depth, Total Concept Count, Filtered Concept Count, Not-Including Descendants, Filtered Not-Including Descendants, Parents, GrandParents, Seen Together With, Recent Activity";
 		getArchiveManager().setPopulateHierarchyDepth(true);
 		super.init(run);
 		
@@ -64,20 +70,32 @@ public class AttributeValueCounts extends TermServerReport implements ReportClas
 		
 		subsetECL = run.getMandatoryParamValue(ECL);
 		ignoreConceptsECL = run.getParamValue(IGNORE_ECL);
+		
+		if (run.getParamValue(MIN_SIZE_INTEREST) != null) {
+			minimumSizeOfInterest = Integer.parseInt(run.getParamValue(MIN_SIZE_INTEREST));
+		}
+	}
+	
+	@Override
+	public void postInit() throws TermServerScriptException {
+		super.postInit();
+		recentEffectiveTime = project.getMetadata().getPreviousRelease();
 	}
 	
 	@Override
 	public Job getJob() {
 		JobParameters params = new JobParameters()
 				.add(ECL).withType(JobParameter.Type.ECL).withMandatory()
+				.add(IGNORE_ECL).withType(JobParameter.Type.ECL)
 				.add(ATTRIBUTE_TYPE).withType(JobParameter.Type.CONCEPT)
+				.add(MIN_SIZE_INTEREST).withType(JobParameter.Type.STRING).withDefaultValue("50")
 				//TODO Add the characteristic type dropdown
 				.build();
 		
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.QI))
 				.withName("Attribute Value Counts")
-				.withDescription("This report counts of attribute values used for concepts matching the specified ECL.")
+				.withDescription("This report counts of attribute values used for concepts matching the specified ECL, with optionally some specified concepts filtered out.  Additionally, an indicator is given of how much activity there has been against the conepts using this attribtue value, and what other attribute value(s) it is most often seen in combination with.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(INT)
@@ -99,6 +117,23 @@ public class AttributeValueCounts extends TermServerReport implements ReportClas
 				if (!ignoreConcepts.contains(c)) {
 					valueCountsFiltered.getAndIncrement(target);
 				}
+				
+				//Has this concept been 'touched' recently? Indcates work in this area
+				if (wasTouchedRecently(c)) {
+					recentActivity.getAndIncrement(target);
+				}
+				
+				//Increment the counts of all the other morphology types used here
+				AtomicLongMap<Concept> comboCount = combinationCounts.get(target);
+				if (comboCount == null) {
+					comboCount = AtomicLongMap.create();
+					combinationCounts.put(target, comboCount);
+				}
+				for (Concept combo : targets) {
+					if (!combo.equals(target)) {
+						comboCount.getAndIncrement(combo);
+					}
+				}
 			}
 		}
 		
@@ -110,6 +145,15 @@ public class AttributeValueCounts extends TermServerReport implements ReportClas
 		targets.add(top);
 		//Go go go recursive programming!
 		reportCounts(top, targets, true);
+	}
+
+	private boolean wasTouchedRecently(Concept c) {
+		for (Relationship r : c.getRelationships()) {
+			if (StringUtils.isEmpty(r.getEffectiveTime()) || r.getEffectiveTime().equals(recentEffectiveTime)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private void reportCounts(Concept c, Set<Concept> targets, boolean isTop) throws TermServerScriptException {
@@ -134,14 +178,26 @@ public class AttributeValueCounts extends TermServerReport implements ReportClas
 			int countNotIncludingDescendants = (int)valueCounts.get(c);
 			int countNotIncludingDescendantsFiltered = (int)valueCountsFiltered.get(c);
 			if (countFiltered > minimumSizeOfInterest) {
-				report(c, getDepthIndicator(c), count, countFiltered, countNotIncludingDescendants, countNotIncludingDescendantsFiltered, parentsStr, parentsParentsStr);
+				double recentActivityPercentage = 100 * ((double) recentActivity.get(c) / count);
+				report(c, getDepthIndicator(c), count, countFiltered, countNotIncludingDescendants, countNotIncludingDescendantsFiltered, parentsStr, parentsParentsStr, getUsedInCombination(c), df.format(recentActivityPercentage));
 			}
-		}	
-			
+		}
+
 		//Now report all of my children, and their children, if they exist.
 		for (Concept child : c.getChildren(CharacteristicType.INFERRED_RELATIONSHIP)) {
 			reportCounts(child, targets, false);
 		}
+	}
+
+	private String getUsedInCombination(Concept c) {
+		AtomicLongMap<Concept> combinationCount = combinationCounts.get(c);
+		List<Map.Entry<Concept, Long>> sorted = new ArrayList<>(combinationCount.asMap().entrySet());
+		Collections.sort(sorted, Collections.reverseOrder(Map.Entry.comparingByValue()));
+		return sorted.stream()
+			.limit(3)
+			.map(cb -> cb.toString())
+			.collect(Collectors.joining(", \n"));
+
 	}
 
 	private Object getDepthIndicator(Concept c) {
