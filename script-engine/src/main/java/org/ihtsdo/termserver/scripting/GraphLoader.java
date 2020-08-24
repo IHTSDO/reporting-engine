@@ -200,6 +200,10 @@ public class GraphLoader implements RF2Constants {
 
 				/*if (c.getId().equals("108725001")) {
 					TermServerScript.debug ("here");
+				}
+				
+				if (lineItems[IDX_ID].equals("a4271895-d420-4209-9487-57bb361905bd")) {
+					TermServerScript.debug ("here");
 				}*/
 				
 				try {
@@ -227,6 +231,11 @@ public class GraphLoader implements RF2Constants {
 						isAdditionalAxiom = true;
 					}
 					c.getAxiomEntries().add(axiomEntry);
+					
+					//Only set the released flag if it's not set already
+					if (axiomEntry.isReleased() == null) {
+						axiomEntry.setReleased(isReleased);
+					}
 				
 					AxiomRepresentation axiom = axiomService.convertAxiomToRelationships(lineItems[REF_IDX_AXIOM_STR]);
 					//Filter out any additional statements such as TransitiveObjectProperty(:123005000)]
@@ -752,6 +761,11 @@ public class GraphLoader implements RF2Constants {
 
 				InactivationIndicatorEntry inactivation = InactivationIndicatorEntry.fromRf2(lineItems);
 				
+				//Only set the released flag if it's not set already
+				if (inactivation.isReleased() == null) {
+					inactivation.setReleased(isReleased);
+				}
+				
 				if (revertEffectiveTime != null) {
 					inactivation.setEffectiveTime(revertEffectiveTime);
 				}
@@ -820,18 +834,23 @@ public class GraphLoader implements RF2Constants {
 						}
 					}
 
-					AssociationEntry historicalAssociation = AssociationEntry.fromRf2(lineItems);
+					AssociationEntry association = AssociationEntry.fromRf2(lineItems);
+					
+					//Only set the released flag if it's not set already
+					if (association.isReleased() == null) {
+						association.setReleased(isReleased);
+					}
 					
 					if (revertEffectiveTime != null) {
-						historicalAssociation.setEffectiveTime(revertEffectiveTime);
+						association.setEffectiveTime(revertEffectiveTime);
 					}
 					
 					//Remove first in case we're replacing
-					c.getAssociationEntries().remove(historicalAssociation);
-					c.getAssociationEntries().add(historicalAssociation);
-					if (historicalAssociation.isActive()) {
-						SnomedUtils.addHistoricalAssociationInTsForm(c, historicalAssociation);
-						recordHistoricalAssociation(historicalAssociation);
+					c.getAssociationEntries().remove(association);
+					c.getAssociationEntries().add(association);
+					if (association.isActive()) {
+						SnomedUtils.addHistoricalAssociationInTsForm(c, association);
+						recordHistoricalAssociation(association);
 					}
 				}
 			} else {

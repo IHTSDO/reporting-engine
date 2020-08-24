@@ -266,9 +266,14 @@ public class Description extends Component implements RF2Constants {
 		.append(descriptionId==null?"NEW":descriptionId)
 		.append(" [")
 		.append(conceptId)
-		.append( "] ")
-		.append(SnomedUtils.toString(acceptabilityMap))
-		.append(": ")
+		.append( "] ");
+		
+		if (lang.contentEquals("en")) {
+			sb.append(SnomedUtils.toString(acceptabilityMap));
+		} else {
+			sb.append(lang);
+		}
+		sb.append(": ")
 		.append(term)
 		.append(" [")
 		.append(caseSig)

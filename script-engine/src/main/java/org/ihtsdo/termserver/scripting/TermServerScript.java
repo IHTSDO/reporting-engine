@@ -1240,15 +1240,15 @@ public abstract class TermServerScript implements RF2Constants {
 		getRF2Manager().writeToRF2File(fileName, columns);
 	}
 	
-	protected void writeToReportFile(int reportIdx, String line) throws TermServerScriptException {
+	protected boolean writeToReportFile(int reportIdx, String line) throws TermServerScriptException {
 		if (getReportManager() == null) {
 			throw new TermServerScriptException("Attempted to write to report before Report Manager is available. Check postInit() has been called.\n Message was " + line);
 		}
-		getReportManager().writeToReportFile(reportIdx, line);
+		return getReportManager().writeToReportFile(reportIdx, line);
 	}
 	
-	protected void writeToReportFile(String line) throws TermServerScriptException {
-		writeToReportFile(0, line);
+	protected boolean writeToReportFile(String line) throws TermServerScriptException {
+		return writeToReportFile(0, line);
 	}
 	
 
@@ -1430,7 +1430,7 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 	}
 	
-	protected void report (int reportIdx, Object...details) throws TermServerScriptException {
+	protected boolean report (int reportIdx, Object...details) throws TermServerScriptException {
 		StringBuffer sb = new StringBuffer();
 		boolean isFirst = true;
 		for (Object detail : details) {
@@ -1477,8 +1477,11 @@ public abstract class TermServerScript implements RF2Constants {
 			isFirst = false;
 		}
 
-		writeToReportFile (reportIdx, sb.toString());
-		incrementSummaryInformation("Report lines written");
+		boolean writeSuccess = writeToReportFile (reportIdx, sb.toString());
+		if (writeSuccess) {
+			incrementSummaryInformation("Report lines written");
+		}
+		return writeSuccess;
 	}
 	
 	private void addObjectArray(StringBuffer sb, Object detail, String prefix, boolean isNumeric) {

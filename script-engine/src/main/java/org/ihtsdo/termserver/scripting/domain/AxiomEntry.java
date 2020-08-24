@@ -18,6 +18,7 @@ public class AxiomEntry extends Component implements RF2Constants {
 	private String referencedComponentId;
 	private String owlExpression;
 	private boolean isGCI = false;
+	private Boolean released = null;
 	
 	public AxiomEntry clone(String newComponentSctId) {
 		AxiomEntry clone = new AxiomEntry();
@@ -182,5 +183,16 @@ public class AxiomEntry extends Component implements RF2Constants {
 
 	public void setGCI(boolean isGCI) {
 		this.isGCI = isGCI;
+	}
+	
+	public Boolean isReleased() {
+		if (released == null) {
+			return !(effectiveTime == null || effectiveTime.isEmpty());
+		}
+		return released;
+	}
+
+	public void setReleased(Boolean released) {
+		this.released = released;
 	}
 }

@@ -170,4 +170,11 @@ public class RefsetMember extends Component {
 	public List<String> fieldComparison(Component other) {
 		throw new NotImplementedException();
 	}
+	
+	public Boolean isReleased() {
+		if (released == null) {
+			return !(effectiveTime == null || effectiveTime.isEmpty());
+		}
+		return released;
+	}
 }

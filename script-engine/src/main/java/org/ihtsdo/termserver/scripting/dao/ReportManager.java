@@ -73,18 +73,20 @@ public class ReportManager implements RF2Constants {
 		tabNames = Arrays.asList(new String[] {"Sheet1"});
 	}
 	
-	public void writeToReportFile(int reportIdx, String line) throws TermServerScriptException {
+	public boolean writeToReportFile(int reportIdx, String line) throws TermServerScriptException {
+		boolean writeSuccess = false;
 		if (writeToFile) {
-			reportFileManager.writeToReportFile(reportIdx, line, false);
+			writeSuccess = reportFileManager.writeToReportFile(reportIdx, line, false);
 		}
 		
 		if (writeToSheet) {
-			reportSheetManager.writeToReportFile(reportIdx, line, false);
+			writeSuccess = reportSheetManager.writeToReportFile(reportIdx, line, false);
 		}
 
 		if (writeToS3) {
-			reportS3FileManager.writeToReportFile(reportIdx, line, false);
+			writeSuccess = reportS3FileManager.writeToReportFile(reportIdx, line, false);
 		}
+		return writeSuccess;
 	}
 	
 	PrintWriter getPrintWriter(String fileName) throws TermServerScriptException {

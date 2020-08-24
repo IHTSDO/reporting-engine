@@ -79,13 +79,14 @@ public class ReportFileManager implements RF2Constants, ReportProcessor {
 	}
 
 	@Override
-	public void writeToReportFile(int reportIdx, String line, boolean delayWrite) throws TermServerScriptException {
+	public boolean writeToReportFile(int reportIdx, String line, boolean delayWrite) throws TermServerScriptException {
 		try {
 			PrintWriter pw = getPrintWriter(reportFiles[reportIdx].getAbsolutePath());
 			pw.println(line);
 		} catch (Exception e) {
 			throw new IllegalStateException("Unable to output report line: " + line, e);
 		}
+		return true;
 	}
 
 	public Map<String, PrintWriter> getPrintWriterMap() {

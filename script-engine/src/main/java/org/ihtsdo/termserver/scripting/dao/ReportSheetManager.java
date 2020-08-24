@@ -187,13 +187,13 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 				if (tabIdx == 0) {
 					SheetProperties properties = new SheetProperties()
 							.setTitle(owner.getTabNames().get(tabIdx))
-							.setGridProperties(new GridProperties().setRowCount(MAX_ROWS).setColumnCount(MAX_COLUMNS));
+							.setGridProperties(new GridProperties().setRowCount(MAX_ROWS + 1).setColumnCount(MAX_COLUMNS));
 					request = new Request().setUpdateSheetProperties(new UpdateSheetPropertiesRequest().setProperties(properties).setFields("title, gridProperties"));
 				} else {
 					SheetProperties properties = new SheetProperties()
 							.setTitle(owner.getTabNames().get(tabIdx))
 							.setSheetId(new Integer(tabIdx))
-							.setGridProperties(new GridProperties().setRowCount(MAX_ROWS).setColumnCount(MAX_COLUMNS));
+							.setGridProperties(new GridProperties().setRowCount(MAX_ROWS + 1).setColumnCount(MAX_COLUMNS));
 					request = new Request().setAddSheet(new AddSheetRequest().setProperties(properties));
 				}
 				requests.add(request);
@@ -226,18 +226,18 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 	}
 
 	@Override
-	public void writeToReportFile(int tabIdx, String line, boolean delayWrite) throws TermServerScriptException {
+	public boolean writeToReportFile(int tabIdx, String line, boolean delayWrite) throws TermServerScriptException {
+		if (linesWrittenPerTab.get(tabIdx) != null && linesWrittenPerTab.get(tabIdx).intValue() > MAX_ROWS) {
+			//We're already hit the max and will have reported failure
+			//Do not attempt to add any more data.
+			return false;
+		}
+		
 		if (lastWriteTime == null) {
 			lastWriteTime = new Date();
 		}
-		List<Object> data = StringUtils.csvSplitAsObject(line);
-		List<List<Object>> cells = Arrays.asList(data);
-		//Increment the current row position so we create the correct range
-		tabLineCount.merge(tabIdx, 1, Integer::sum);
-		String range = "'" + owner.getTabNames().get(tabIdx) + "'!A" + tabLineCount.get(tabIdx) + ":" + MAX_COLUMN_STR +  tabLineCount.get(tabIdx); 
-		dataToBeWritten.add(new ValueRange()
-					.setRange(range)
-					.setValues(cells));
+		
+		addDataToBWritten(tabIdx, line);
 		
 		//Are we getting close to the limits of what can be written?
 		if (dataToBeWritten.size() > 2000) {
@@ -249,15 +249,32 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 		linesWrittenPerTab.merge(tabIdx, 1, Integer::sum);
 		if (linesWrittenPerTab.get(tabIdx).intValue() >= MAX_ROWS) {
 			//Try to finish off what we've received so far
+			if (linesWrittenPerTab.get(tabIdx).intValue() == MAX_ROWS) {
+				addDataToBWritten(tabIdx, "Data truncated at " + MAX_ROWS + " rows");
+				TermServerScript.warn("Number of rows written to tab idx " + tabIdx + " hit limit of " + MAX_ROWS);
+			}
 			flushWithWait();
-			throw new TermServerScriptException("Number of rows written to tab idx " + tabIdx + " hit limit of " + MAX_ROWS);
+			return false;
 		}
 		
 		if (!delayWrite) {
 			flushSoft();
 		}
+		return true;
 	}
 	
+	private void addDataToBWritten(int tabIdx, String line) {
+		List<Object> data = StringUtils.csvSplitAsObject(line);
+		List<List<Object>> cells = Arrays.asList(data);
+		//Increment the current row position so we create the correct range
+		tabLineCount.merge(tabIdx, 1, Integer::sum);
+		String range = "'" + owner.getTabNames().get(tabIdx) + "'!A" + tabLineCount.get(tabIdx) + ":" + MAX_COLUMN_STR +  tabLineCount.get(tabIdx); 
+		dataToBeWritten.add(new ValueRange()
+					.setRange(range)
+					.setValues(cells));
+		
+	}
+
 	public void flushWithWait() throws TermServerScriptException {
 		flush(false, true);  //Not optional, also wait
 	}

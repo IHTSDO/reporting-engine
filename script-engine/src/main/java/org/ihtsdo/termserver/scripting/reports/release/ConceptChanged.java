@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.reports;
+package org.ihtsdo.termserver.scripting.reports.release;
 
 import java.io.IOException;
 import java.util.*;
@@ -8,6 +8,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.service.TraceabilityService;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.ihtsdo.termserver.scripting.util.StringUtils;
