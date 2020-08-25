@@ -148,6 +148,14 @@ public class BatchImport extends BatchFix implements BatchJobClass {
 			SnomedUtils.isValid(concept.getId(), PartitionIdentifier.CONCEPT, true);
 		}
 		SnomedUtils.isValid(concept.getFirstParent().getId(), PartitionIdentifier.CONCEPT, true);
+		
+		//Do we already have a concept with this FSN?
+		Concept alreadyExists = gl.findConcept(concept.getFsn());
+		if (alreadyExists != null) {
+			report ((Task)null, concept, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Concept with this FSN already exists", alreadyExists);
+			return false;
+		}
+		
 		return true;
 	}
 
