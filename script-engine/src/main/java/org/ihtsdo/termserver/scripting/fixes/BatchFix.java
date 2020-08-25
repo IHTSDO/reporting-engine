@@ -757,6 +757,10 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		if (reuseMe != null) {
 			if (reuseMe.isActive()) {
 				report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Replacement term already exists active: " + reuseMe);
+				//Have we in fact asked for no change? Return unchanged if so
+				if (d.equals(reuseMe)) {
+					return reuseMe;
+				}
 			} else {
 				report(t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Replacement term already exists inactive.  Reactivating: " + reuseMe);
 				reuseMe.setActive(true);

@@ -90,9 +90,13 @@ public class NUTRITION50_ReplaceAttributeAndReterm extends BatchFix {
 				default : 
 			}*/
 			if (d.isPreferred() && !d.getTerm().contains("quantity of")) {
-				String replacement = d.getTerm().replace("intake", "quantity of intake");
-				replaceDescription(t, c, d, replacement, null);
-				changesMade++;
+				if (!d.getTerm().contains("intake")) {
+					report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Preferred description did not contain target word 'intake' to which to add 'quantity of'", d);
+				} else {
+					String replacement = d.getTerm().replace("intake", "quantity of intake");
+					replaceDescription(t, c, d, replacement, null);
+					changesMade++;
+				}
 			}
 		}
 		return changesMade;
