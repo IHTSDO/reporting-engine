@@ -102,7 +102,8 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 				ouput(fw, c.getConceptId(), active, defStatus, hierarchy, IP, sdDescendant, sdAncestor, 
 						relIds[ACTIVE], relIds[INACTIVE], descIds[ACTIVE], descIds[INACTIVE], 
 						axiomIds[ACTIVE], axiomIds[INACTIVE], langRefSetIds[ACTIVE], langRefSetIds[INACTIVE],
-						inactivationIds[ACTIVE], inactivationIds[INACTIVE], histAssocIds[ACTIVE], histAssocIds[INACTIVE]);
+						inactivationIds[ACTIVE], inactivationIds[INACTIVE], histAssocIds[ACTIVE], histAssocIds[INACTIVE],
+						c.getModuleId());
 			}
 		} catch (Exception e) {
 			throw new TermServerScriptException(e);
