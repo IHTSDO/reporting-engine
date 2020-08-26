@@ -99,6 +99,8 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 				report (null, "Skipping Patterns 11 & 21", "No previous previous release available");
 			}
 			
+		} else {
+			report (null, "Structural integrity test failed.  Report execution terminated early");
 		}
 		info("Checks complete, creating summary tag");
 		populateSummaryTab();
@@ -124,6 +126,9 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 		//Don't initialise, we won't mention the check if there's no problem.
 		boolean isOK = true;
 		for (Concept c : gl.getAllConcepts()) {
+			if (c.getId().equals("897596000")) {
+				debug("here");
+			}
 			if (c.isReleased() == null) {
 				String detail = "";
 				if (c.getAxiomEntries() != null && c.getAxiomEntries().size() > 0) {
@@ -133,6 +138,14 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 					List<AxiomEntry> axiomsContaining = findAxiomsContaining(c);
 					if (axiomsContaining.size() > 0) {
 						detail = "In " + axiomsContaining.size() + " axioms eg " + axiomsContaining.iterator().next();
+					} else {
+						if (c.getFSNDescription() == null) {
+							detail = "Concept referenced in relationship, but without description or axiom";
+						} else if (c.getModuleId() == null) {
+							detail = "Concept exists only as orphaned descriptions";
+						} else {
+							detail = "Concept exists with description but no relationships?";
+						}
 					}
 				}
 				report (c, issueStr, detail);
