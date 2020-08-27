@@ -604,4 +604,13 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		return datum;
 	}
 	
+	@Override
+	public String getReportName() {
+		String reportName = super.getReportName();
+		if (jobRun != null && jobRun.getParamValue(MODULES) != null) {
+			reportName += "_" + jobRun.getParamValue(MODULES);
+		}
+		return reportName;
+	}
+	
 }
