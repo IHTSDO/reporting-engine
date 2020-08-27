@@ -116,7 +116,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		boolean compareTwoSnapshots = false; 
 		projectKey = getProject().getKey();
 		prevRelease = getJobRun().getParamValue(PREV_RELEASE);
-		if (prevRelease == null) {
+		if (StringUtils.isEmpty(prevRelease)) {
 			prevRelease = getProject().getMetadata().getPreviousPackage();
 		}
 		
