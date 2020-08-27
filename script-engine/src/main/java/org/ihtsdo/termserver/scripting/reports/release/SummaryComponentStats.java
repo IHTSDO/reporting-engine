@@ -120,14 +120,15 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 			prevRelease = getProject().getMetadata().getPreviousPackage();
 		}
 		
-		if (getJobRun().getParamValue(THIS_RELEASE) != null) {
+		if (!StringUtils.isEmpty(getJobRun().getParamValue(THIS_RELEASE))) {
 			compareTwoSnapshots = true;
 			projectKey = getJobRun().getParamValue(THIS_RELEASE);
 			//If this release has been specified, the previous must also be, explicitly
 			if (StringUtils.isEmpty(getJobRun().getParamValue(PREV_RELEASE))) {
-				throw new TermServerScriptException("Previous release must be specified if current release is");
+				throw new TermServerScriptException("Previous release must be specified if current release is.");
 			}
 		}
+		
 		getProject().setKey(prevRelease);
 		getArchiveManager().setLoadEditionArchive(true);
 		getArchiveManager().loadProjectSnapshot(fsnOnly);
