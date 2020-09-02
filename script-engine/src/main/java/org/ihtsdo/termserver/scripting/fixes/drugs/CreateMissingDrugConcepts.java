@@ -135,7 +135,23 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 		suppress.add("Product containing only antigen of bacteria and antigen of virus (medicinal product)");
 		suppress.add("Product containing only antigen of bacteria (medicinal product)");
 		suppress.add("Product containing only antigen of virus (medicinal product)");
-		
+		suppress.add("Product containing only antigen of bacteria and botulinum toxoid (medicinal product)");
+		suppress.add("Product containing only antigen of Rickettsia (medicinal product)");
+		suppress.add("Product containing only antigen of Bordetella pertussis and antigen of Clostridium tetani and antigen of Corynebacterium diphtheriae and antigen of Hepatitis B virus (medicinal product)");
+		suppress.add("Product containing only antigen of Bordetella pertussis and antigen of Clostridium tetani and antigen of Corynebacterium diphtheriae and antigen of Hepatitis B virus and antigen of Human poliovirus (medicinal product)");
+		suppress.add("Product containing only antigen of Bordetella pertussis and antigen of Clostridium tetani toxoid and antigen of Corynebacterium diphtheriae toxoid and antigen of Haemophilus influenzae type B and antigen of Hepatitis B virus and antigen of Human poliovirus (medicinal product)");
+		suppress.add("Product containing only antigen of Clostridium tetani and antigen of Corynebacterium diphtheriae and antigen of Haemophilus influenzae type B (medicinal product)");
+		suppress.add("Product containing only antigen of Clostridium tetani and antigen of Haemophilus influenzae type B (medicinal product)");
+		suppress.add("Product containing only antigen of Clostridium tetani toxoid adsorbed and antigen of Corynebacterium diphtheriae toxoid (medicinal product)");
+		suppress.add("Product containing only antigen of Clostridium tetani toxoid adsorbed (medicinal product)");
+		suppress.add("Product containing only antigen of Corynebacterium diphtheriae toxoid (medicinal product)");
+		suppress.add("Product containing only antigen of Haemophilus influenzae type B and antigen of Hepatitis B virus (medicinal product)");
+		suppress.add("Product containing only antigen of Junin virus (medicinal product)");
+		suppress.add("Product containing only antigen of Leptospira (medicinal product)");
+		suppress.add("Product containing only antigen of Measles morbillivirus and antigen of Mumps orthorubulavirus (medicinal product)");
+		suppress.add("Product containing only antigen of Mumps orthorubulavirus and antigen of Rubella virus (medicinal product)");
+		suppress.add("Product containing only antigen of Clostridium tetani toxoid adsorbed and antigen of Corynebacterium diphtheriae toxoid and antigen of whole cell Bordetella pertussis (medicinal product)");
+
 		super.postInit(tabNames, columnHeadings, false);
 		
 		for (String suppressedConcept : suppress) {
