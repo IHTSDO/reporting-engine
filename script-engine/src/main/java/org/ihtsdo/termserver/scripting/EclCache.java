@@ -95,11 +95,12 @@ public class EclCache implements RF2Constants {
 			//TODO Create class that holds these collections and can 
 			//iterate through them without copying the objects
 			Collection<Concept> combinedSet = new HashSet<>();
-			for (String eclFragment : ecl.split(" OR ")) {
+			for (String eclFragment : machineEcl.split(" OR ")) {
 				TermServerScript.debug("Combining request for: " + eclFragment);
 				combinedSet.addAll(findConcepts(branch, eclFragment, expectLargeResults, useLocalStoreIfSimple));
 			}
 			allConcepts = combinedSet;
+			expansionCache.put(ecl, combinedSet);
 		} else {
 			if (useLocalStoreIfSimple && ecl.equals("*")) {
 				allConcepts = gl.getAllConcepts();

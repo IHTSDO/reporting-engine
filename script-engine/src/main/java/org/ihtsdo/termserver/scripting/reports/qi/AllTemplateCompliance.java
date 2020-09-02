@@ -72,7 +72,7 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 		for (String invalidTemplateDomain : invalidTemplateDomains) {
 			List<Template> templates = domainTemplates.get(invalidTemplateDomain);
 			for (Template t : templates) {
-				warn ("Inactive or Non-existent domain " + gl.getConcept(invalidTemplateDomain) + ": " + t.getName());
+				warn ("Inactive or Non-existent domain: " + invalidTemplateDomain + " in template: " + t.getName());
 			}
 			domainTemplates.remove(invalidTemplateDomain);
 		}
