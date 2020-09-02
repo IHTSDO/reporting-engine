@@ -79,6 +79,11 @@ public class CaseSignificanceFix_INFRA_5421 extends BatchFix implements RF2Const
 			String before = SnomedUtils.translateCaseSignificanceFromEnum(fsnCaseSig);
 			//In this case change the FSN to match the PT
 			List<Description> pts = c.getDescriptions(Acceptability.PREFERRED, DescriptionType.SYNONYM, ActiveState.ACTIVE);
+			if (pts == null || pts.size() == 0) {
+				report (t, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Preferred synonym not recovered");
+				return NO_CHANGES_MADE;
+			}
+			
 			if (pts.size() > 1 && !pts.get(0).getCaseSignificance().equals(pts.get(1).getCaseSignificance())) {
 				report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Multiple PTs inconsistent CaseSig");
 				for (Description d : pts) {
