@@ -97,6 +97,9 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 			String dir = System.getProperty("user.dir");
 			File secret = new File (dir + File.separator + CLIENT_SECRET_DIR);
 			System.out.print("Looking for client secret file " + secret + "...");
+			if (!secret.canRead()) {
+				throw new IllegalStateException("Unable to read " + secret);
+			}
 			//return GoogleCredential.fromStream(new FileInputStream(secret)).createScoped(SCOPES);
 			credential = GoogleCredential.fromStream(new FileInputStream(secret)).createScoped(SheetsScopes.all());
 			System.out.println ("found.");

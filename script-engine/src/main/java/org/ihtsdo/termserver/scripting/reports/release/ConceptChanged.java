@@ -96,28 +96,40 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		int conceptsExamined = 0;
 		Collection<Concept> conceptsOfInterest;
 		
-		if (subsetECL != null && !subsetECL.isEmpty()) {
+		if (!StringUtils.isEmpty(subsetECL)) {
+			info("Running Concepts Changed report against subset: " + subsetECL);
 			conceptsOfInterest = findConcepts(subsetECL);
 		} else {
 			conceptsOfInterest = gl.getAllConcepts();
 		}
 		
 		double lastPercentageReported = 0;
+		long notReleased = 0;
+		long notChanged = 0;
+		long notInScope = 0;
 		for (Concept c : conceptsOfInterest) {
+			if (c.getConceptId().equals("53726008")) {
+				debug("here");
+			}
+			
 			if (c.isReleased() == null) {
 				throw new IllegalStateException ("Malformed snapshot. Released status not populated at " + c);
 			} else if (!c.isReleased()) {
 				//We will not service.populateTraceabilityAndReport any changes on brand new concepts
 				//Or (in managed service) concepts from other modules
+				notReleased++;
 				continue;
-			} else if (inScope(c) && 
-					(c.getEffectiveTime() == null || c.getEffectiveTime().isEmpty())) {
+			} else if (inScope(c) && StringUtils.isEmpty(c.getEffectiveTime())) {
 				//Only want to log def status change if the concept has not been made inactive
 				if (c.isActive()) {
 					defStatusChanged.add(c);
 				} else {
 					inactivatedConcepts.add(c);
 				}
+			} else if (inScope(c)) {
+				notChanged++;
+			} else {
+				notInScope++;
 			}
 			
 			for (Description d : c.getDescriptions()) {
@@ -190,6 +202,11 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 				lastPercentageReported = perc;
 			}
 		}
+		
+		info ("Not Released: " + notReleased);
+		info ("Not Changed: " + notChanged);
+		info ("Not In Scope " +  notInScope);
+		info ("Total examined: " + conceptsOfInterest.size());
 	}
 	
 	private void reportConceptsChanged() throws TermServerScriptException {
