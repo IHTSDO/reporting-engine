@@ -27,7 +27,7 @@ public class SnomedUtils implements RF2Constants {
 		String errorMsg=null;
 		
 		if (!StringUtils.isNumeric(sctId)) {
-			return "SCTID is not entirely numeric";
+			return "SCTID is not entirely numeric: '" + sctId + "'";
 		}
 		
 		//Are we checking a specific partition?
