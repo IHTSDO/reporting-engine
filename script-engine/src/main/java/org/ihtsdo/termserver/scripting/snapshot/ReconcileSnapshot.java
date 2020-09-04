@@ -28,7 +28,7 @@ import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 
 /**
- * RP-262 Reconcile an exported snapshot against a generated one
+ * RP-272 Reconcile an exported snapshot against a generated one
  */
 public class ReconcileSnapshot extends TermServerReport implements ReportClass {
 	
@@ -44,7 +44,7 @@ public class ReconcileSnapshot extends TermServerReport implements ReportClass {
 	public void init (JobRun run) throws TermServerScriptException {
 		//safetyProtocols = false;   
 		manyTabOutput = true;
-		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA
+		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release Validation
 		super.init(run);
 	}
 	
