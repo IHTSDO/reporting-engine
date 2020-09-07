@@ -104,7 +104,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		NOT_TEXT_DEFN.add(DescriptionType.FSN);
 		NOT_TEXT_DEFN.add(DescriptionType.SYNONYM);
 		
-		if (run.getParamValue(MODULES) != null) {
+		if (!StringUtils.isEmpty(run.getParamValue(MODULES))) {
 			moduleFilter = Stream.of(run.getParamValue(MODULES).split(",", -1))
 					.collect(Collectors.toList());
 		}
