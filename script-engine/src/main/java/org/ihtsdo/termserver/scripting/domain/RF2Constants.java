@@ -100,7 +100,7 @@ public interface RF2Constants {
 	static Concept NAMESPACE_CONCEPT = new Concept("370136006", "Namespace concept (nameespace concept)");
 	static Concept SPECIAL_CONCEPT = new Concept("370115009", "Special concept (special concept)");
 	static Concept HAS_DEVICE_CHARAC = new Concept("840562008", "Has device characteristic (attribute)");
-	//
+	static Concept HAS_COMP_MATERIAL = new Concept("840560000", "Has compositional material (attribute)|");
 	
 	//Drug Terms
 	static String ACETAMINOPHEN = "acetaminophen";

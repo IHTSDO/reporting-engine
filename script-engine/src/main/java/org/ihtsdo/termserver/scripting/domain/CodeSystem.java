@@ -9,79 +9,24 @@ public class CodeSystem {
 	@SerializedName("shortName")
 	@Expose
 	private String shortName;
-	@SerializedName("importDate")
+	@SerializedName("latestVersion")
 	@Expose
-	private String importDate;
-	@SerializedName("parentBranchPath")
-	@Expose
-	private String parentBranchPath;
-	@SerializedName("effectiveDate")
-	@Expose
-	private Integer effectiveDate;
-	@SerializedName("version")
-	@Expose
-	private String version;
-	@SerializedName("description")
-	@Expose
-	private String description;
-	@SerializedName("branchPath")
-	@Expose
-	private String branchPath;
+	private CodeSystemVersion latestVersion;
 
 	public String getShortName() {
-	return shortName;
+		return shortName;
 	}
 
 	public void setShortName(String shortName) {
-	this.shortName = shortName;
+		this.shortName = shortName;
 	}
 
-	public String getImportDate() {
-	return importDate;
+	public CodeSystemVersion getLatestVersion() {
+		return latestVersion;
 	}
 
-	public void setImportDate(String importDate) {
-	this.importDate = importDate;
-	}
-
-	public String getParentBranchPath() {
-	return parentBranchPath;
-	}
-
-	public void setParentBranchPath(String parentBranchPath) {
-	this.parentBranchPath = parentBranchPath;
-	}
-
-	public Integer getEffectiveDate() {
-	return effectiveDate;
-	}
-
-	public void setEffectiveDate(Integer effectiveDate) {
-	this.effectiveDate = effectiveDate;
-	}
-
-	public String getVersion() {
-	return version;
-	}
-
-	public void setVersion(String version) {
-	this.version = version;
-	}
-
-	public String getDescription() {
-	return description;
-	}
-
-	public void setDescription(String description) {
-	this.description = description;
-	}
-
-	public String getBranchPath() {
-	return branchPath;
-	}
-
-	public void setBranchPath(String branchPath) {
-	this.branchPath = branchPath;
+	public void setLatestVersion(CodeSystemVersion latestVersion) {
+		this.latestVersion = latestVersion;
 	}
 
 }

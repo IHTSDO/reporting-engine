@@ -138,10 +138,10 @@ public class ArchiveManager implements RF2Constants {
 		Branch branch = loadBranch(project);
 		String previousRelease = branch.getMetadata().getPreviousRelease();
 		try {
-			List<CodeSystem> codeSystems = ts.getTSClient().getCodeSystemVersions();
+			List<CodeSystemVersion> codeSystems = ts.getTSClient().getCodeSystemVersions();
 			//Filter out anything that's not a release date, then sort descending
-			List<CodeSystem> releases = codeSystems.stream()
-			.sorted(Comparator.comparing(CodeSystem::getEffectiveDate).reversed())
+			List<CodeSystemVersion> releases = codeSystems.stream()
+			.sorted(Comparator.comparing(CodeSystemVersion::getEffectiveDate).reversed())
 			.collect(Collectors.toList());
 			
 			if (releases.size() < 2) {
@@ -160,10 +160,10 @@ public class ArchiveManager implements RF2Constants {
 		Branch branch = loadBranch(project);
 		String previousRelease = branch.getMetadata().getPreviousRelease();
 		try {
-			List<CodeSystem> codeSystems = ts.getTSClient().getCodeSystemVersions();
+			List<CodeSystemVersion> codeSystems = ts.getTSClient().getCodeSystemVersions();
 			//Filter out anything that's not a release date, then sort descending
-			List<CodeSystem> releases = codeSystems.stream()
-			.sorted(Comparator.comparing(CodeSystem::getEffectiveDate).reversed())
+			List<CodeSystemVersion> releases = codeSystems.stream()
+			.sorted(Comparator.comparing(CodeSystemVersion::getEffectiveDate).reversed())
 			.collect(Collectors.toList());
 			
 			if (releases.size() < 2) {

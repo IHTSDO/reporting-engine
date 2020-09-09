@@ -8,7 +8,7 @@ public class CodeSystemCollection {
 	
 	@SerializedName("items")
 	@Expose
-	List<CodeSystem> items = new ArrayList<>();
+	List<CodeSystemVersion> items = new ArrayList<>();
 	
 	@SerializedName("limit")
 	@Expose
@@ -50,11 +50,11 @@ public class CodeSystemCollection {
 		this.total = total;
 	}
 	
-	public List<CodeSystem> getItems() {
+	public List<CodeSystemVersion> getItems() {
 		return items;
 	}
 
-	public void setItems(List<CodeSystem> items) {
+	public void setItems(List<CodeSystemVersion> items) {
 		this.items = items;
 	}
 

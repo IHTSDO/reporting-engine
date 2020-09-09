@@ -10,7 +10,6 @@ import org.ihtsdo.otf.rest.client.ExpressiveErrorHandler;
 import org.ihtsdo.otf.rest.client.Status;
 import org.ihtsdo.otf.rest.client.authoringservices.RestyOverrideAccept;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Classification;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -44,6 +43,7 @@ public class TermServerClient {
 	public static SimpleDateFormat YYYYMMDD = new SimpleDateFormat("yyyyMMdd");
 	public static final int MAX_TRIES = 3;
 	public static final int retry = 15;
+	public static final int MAX_PAGE_SIZE = 10000; 
 	
 	protected static Gson gson;
 	static {
@@ -125,7 +125,7 @@ public class TermServerClient {
 		}
 	}
 	
-	public List<CodeSystem> getCodeSystemVersions() throws TermServerScriptException {
+	public List<CodeSystemVersion> getCodeSystemVersions() throws TermServerScriptException {
 		try {
 			String url = this.url + "/codesystems/SNOMEDCT/versions?showFutureVersions=true";
 			logger.debug("Recovering codesystem versions from " + url);
@@ -209,7 +209,7 @@ public class TermServerClient {
 		//RestTemplate will attempt to expand out any curly braces, and we can't URLEncode
 		//because RestTemplate does that for us.  So use curly braces to substitute in our ecl
 		url += "&ecl={ecl}";
-		System.out.println("Calling " + url + ecl);
+		System.out.println("Calling " + url + " with ecl parameter: " + ecl);
 		return restTemplate.getForObject(url, ConceptCollection.class, ecl);
 	}
 
@@ -562,6 +562,30 @@ public class TermServerClient {
 				new HttpEntity<>(rm, headers),
 				RefsetMember.class);
 		return response.getBody();
+	}
+
+	public CodeSystem getCodeSystem(String codeSystemName) throws TermServerScriptException {
+		try {
+			String url = this.url + "/codesystems/" + codeSystemName;
+			logger.debug("Recovering codesystem from " + url);
+			return restTemplate.getForObject(url, CodeSystem.class);
+		} catch (RestClientException e) {
+			throw new TermServerScriptException(translateRestClientException(e));
+		}
+	}
+
+	//Watch that this POST operation is not available in read-only instances
+	public List<Concept> filterConcepts(ConceptSearchRequest searchRequest, String branchPath) throws TermServerScriptException {
+		try {
+			String url = this.url + "/" + branchPath + "/concepts/search";
+			ConceptCollection collection = restTemplate.postForObject(
+								url,
+								searchRequest,
+								ConceptCollection.class);
+			return collection.getItems();
+		} catch (RestClientException e) {
+			throw new TermServerScriptException(translateRestClientException(e));
+		}
 	}
 
 }
