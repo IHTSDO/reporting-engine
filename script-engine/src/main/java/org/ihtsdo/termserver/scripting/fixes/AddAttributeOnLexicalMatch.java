@@ -144,7 +144,13 @@ public class AddAttributeOnLexicalMatch extends BatchFix {
 						//c.getFsn().toLowerCase().contains(searchTerm.replaceAll("-", " ")) ||
 						//c.getFsn().toLowerCase().contains(searchTerm.replaceAll("-", ""))
 						) {
-					processMe.add(c);
+					//Does the concept already feature the attribute being added?
+					Set<Relationship> existing = c.getRelationships(searchTermAttributeMap.get(searchTerm), ActiveState.ACTIVE);
+					if (existing.size() > 0) {
+						report ((Task)null, c, Severity.LOW, ReportActionType.NO_CHANGE, "Relationship already present", existing.iterator().next());
+					} else {
+						processMe.add(c);
+					}
 					break;
 				}
 			}
