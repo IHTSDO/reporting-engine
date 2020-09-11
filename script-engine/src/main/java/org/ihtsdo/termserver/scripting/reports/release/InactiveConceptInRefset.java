@@ -69,7 +69,7 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 				"Id, FSN, SemTag, Detail"};
 		String[] tabNames = new String[] {	
 				"Summary",
-				"Concepts"};
+				"Concepts Inactivated in Refsets"};
 		super.postInit(tabNames, columnHeadings, false);
 	}
 	
@@ -99,6 +99,7 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 		
 		//Now loop through all the referencesets and filter the inactivated concepts
 		for (Concept refset : referenceSets) {
+			refsetSummary.put(refset, 0);
 			Iterator<String> i = inactivatedConcepts.iterator();
 			String eclPartial = "^" + refset.getId() + " AND (";
 			String ecl = eclPartial;
