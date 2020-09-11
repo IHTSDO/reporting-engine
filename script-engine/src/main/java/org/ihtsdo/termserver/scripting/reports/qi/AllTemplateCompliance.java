@@ -32,7 +32,17 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put(SERVER_URL, "https://authoring.ihtsdotools.org/template-service");
-		TermServerReport.run(AllTemplateCompliance.class, args, params);
+		
+		List<String> argList = new ArrayList<>(Arrays.asList(args));
+		argList.add("-p");
+		argList.add("SnomedCT_InternationalRF2_PRODUCTION_20170731T150000Z.zip");
+		TermServerReport.run(AllTemplateCompliance.class, argList.toArray(args), params);
+		
+		argList.remove(argList.size() - 1);
+		argList.add("SnomedCT_InternationalRF2_Production_20180131T120000Z.zip");
+		TermServerReport.run(AllTemplateCompliance.class, argList.toArray(args), params);
+		
+		//TermServerReport.run(AllTemplateCompliance.class,args, params);
 	}
 	
 	public void postInit() throws TermServerScriptException {

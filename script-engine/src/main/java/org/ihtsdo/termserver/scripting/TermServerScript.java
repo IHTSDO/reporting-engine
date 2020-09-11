@@ -400,7 +400,7 @@ public abstract class TermServerScript implements RF2Constants {
 		if (projectName.equals("MAIN")) {
 			//MAIN is not a project.  Recover Main metadata from branch
 			project.setMetadata(tsClient.getBranch("MAIN").getMetadata());
-		} else if (!StringUtils.isNumeric(projectName)) {
+		} else if (!StringUtils.isNumeric(projectName) && !projectName.endsWith(".zip")) {
 			//Not if we're loading a release or extension
 			try {
 				int retry = 0;

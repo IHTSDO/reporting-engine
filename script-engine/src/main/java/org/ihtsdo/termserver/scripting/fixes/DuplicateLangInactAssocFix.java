@@ -29,7 +29,6 @@ public class DuplicateLangInactAssocFix extends BatchFix {
 	public static void main(final String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		final DuplicateLangInactAssocFix fix = new DuplicateLangInactAssocFix(null);
 		try {
-			RefsetMember checkMe = new RefsetMember();
 			fix.selfDetermining = true;
 			fix.init(args);
 			// Recover the current project state from TS (or local cached archive) to allow
