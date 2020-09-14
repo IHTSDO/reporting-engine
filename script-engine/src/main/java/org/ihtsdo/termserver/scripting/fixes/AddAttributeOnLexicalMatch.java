@@ -48,6 +48,9 @@ public class AddAttributeOnLexicalMatch extends BatchFix {
 		exclusions.add(" kit");
 		exclusions.add(" set");
 		exclusions.add("(product)");
+		exclusions.add("non-metallic");
+		exclusions.add("software");
+		
 		//Order of terms is important since we'll search for the longest first to prevent
 		//partial matches
 		searchTermAttributeMap = new LinkedHashMap<>();
@@ -68,11 +71,26 @@ public class AddAttributeOnLexicalMatch extends BatchFix {
 		searchTermAttributeMap.put("custom-made", new RelationshipTemplate(HAS_DEVICE_CHARAC, gl.getConcept("860573009 |Custom-made (qualifier value)| ")));
 		*/
 		
-		//DEVICES-122
+		/*DEVICES-12 
 		searchTermAttributeMap.put("uncoated", new RelationshipTemplate(HAS_DEVICE_CHARAC, gl.getConcept("860575002 |Not coated with material (qualifier value)|")));
 		searchTermAttributeMap.put("coated", new RelationshipTemplate(HAS_DEVICE_CHARAC, gl.getConcept("866168000 |Coated with material (qualifier value)|")));
 		searchTermAttributeMap.put("-on-", new RelationshipTemplate(HAS_DEVICE_CHARAC, gl.getConcept("866168000 |Coated with material (qualifier value)|")));
 		
+		//DEVICES-139
+		searchTermAttributeMap.put("metal", new RelationshipTemplate(HAS_COMP_MATERIAL, gl.getConcept("425620007 |Metal (substance)|")));
+		searchTermAttributeMap.put("metallic", new RelationshipTemplate(HAS_COMP_MATERIAL, gl.getConcept("425620007 |Metal (substance)|")));
+		
+		//DEVICES-140
+		searchTermAttributeMap.put("synthetic polymer", new RelationshipTemplate(HAS_COMP_MATERIAL, gl.getConcept("272167000 |Synthetic polymer (substance)|")));
+		searchTermAttributeMap.put("synthetic polymeric", new RelationshipTemplate(HAS_COMP_MATERIAL, gl.getConcept("272167000 |Synthetic polymer (substance)|")));
+		searchTermAttributeMap.put("polymer", new RelationshipTemplate(HAS_COMP_MATERIAL, gl.getConcept("412155002 |Polymer (substance)|")));
+		searchTermAttributeMap.put("polymeric", new RelationshipTemplate(HAS_COMP_MATERIAL, gl.getConcept("412155002 |Polymer (substance)|")));
+		*/
+		
+		//DEVICES-141
+		searchTermAttributeMap.put("silicone-gel", new RelationshipTemplate(HAS_COMP_MATERIAL, gl.getConcept("860705001 |Silicone gel (substance)|")));
+		searchTermAttributeMap.put("silicone", new RelationshipTemplate(HAS_COMP_MATERIAL, gl.getConcept("13652007 |Silicone (substance)|")));
+				
 		super.postInit();
 	}
 
