@@ -57,6 +57,8 @@ public class UntranslatedConcepts extends TermServerReport implements ReportClas
 				.add(INCLUDE_ALL_LEGACY_ISSUES)
 					.withType(JobParameter.Type.BOOLEAN)
 					.withDefaultValue(false)
+				.add(ECL)
+					.withType(JobParameter.Type.ECL)
 				.build();
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION))
