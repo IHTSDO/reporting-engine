@@ -13,7 +13,8 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 
 /**
- * Devices-99 A set of tickets adding attributes to concepts based on matching terms in the FSN
+ * DEVICES-99 A set of tickets adding attributes to concepts based on matching terms in the FSN
+ * DEVICES-121 Likewise
  */
 public class AddAttributeOnLexicalMatch extends BatchFix {
 	
@@ -85,12 +86,16 @@ public class AddAttributeOnLexicalMatch extends BatchFix {
 		searchTermAttributeMap.put("synthetic polymeric", new RelationshipTemplate(HAS_COMP_MATERIAL, gl.getConcept("272167000 |Synthetic polymer (substance)|")));
 		searchTermAttributeMap.put("polymer", new RelationshipTemplate(HAS_COMP_MATERIAL, gl.getConcept("412155002 |Polymer (substance)|")));
 		searchTermAttributeMap.put("polymeric", new RelationshipTemplate(HAS_COMP_MATERIAL, gl.getConcept("412155002 |Polymer (substance)|")));
-		*/
 		
 		//DEVICES-141
 		searchTermAttributeMap.put("silicone-gel", new RelationshipTemplate(HAS_COMP_MATERIAL, gl.getConcept("860705001 |Silicone gel (substance)|")));
 		searchTermAttributeMap.put("silicone", new RelationshipTemplate(HAS_COMP_MATERIAL, gl.getConcept("13652007 |Silicone (substance)|")));
-				
+		*/
+		
+		//DEVICES=142
+		searchTermAttributeMap.put("polyurethane-foam", new RelationshipTemplate(HAS_COMP_MATERIAL, gl.getConcept("878817006 |Polyurethane foam (substance)|")));
+		searchTermAttributeMap.put("polyurethane", new RelationshipTemplate(HAS_COMP_MATERIAL, gl.getConcept("876840000 |Polyurethane (substance)|")));
+		
 		super.postInit();
 	}
 
