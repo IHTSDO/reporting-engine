@@ -58,7 +58,7 @@ public class UniqueAttributePairs extends TermServerReport implements ReportClas
 	@Override
 	public Job getJob() {
 		return new Job()
-				.withCategory(new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES))
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.DRUGS))
 				.withName("Unique Attribute Pairs")
 				.withDescription("This report lists combinations of dose forms and quantities along with usage counts and examples.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
