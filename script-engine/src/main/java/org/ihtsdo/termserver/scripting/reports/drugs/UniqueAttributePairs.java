@@ -60,7 +60,7 @@ public class UniqueAttributePairs extends TermServerReport implements ReportClas
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.DRUGS))
 				.withName("Unique Attribute Pairs")
-				.withDescription("This report lists combinations of dose forms and quantities along with usage counts and examples.")
+				.withDescription("This report lists combinations of dose forms and units along with usage counts and examples.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(new JobParameters())
 				.withTag(INT)
