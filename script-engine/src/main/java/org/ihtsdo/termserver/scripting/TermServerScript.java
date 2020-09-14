@@ -105,6 +105,8 @@ public abstract class TermServerScript implements RF2Constants {
 	protected static final String AUTHOR = "Author";
 	public static final String Reviewer = "Reviewer";
 	public static final String CONCEPTS_PER_TASK = "Concepts per task";
+	public static final String RESTART_FROM_TASK = "Restart from task";
+	
 	public static final String FILE = "File";
 	//public static final String PROJECT = "Project";
 	protected static final String DRY_RUN = "Dry Run";
@@ -553,6 +555,8 @@ public abstract class TermServerScript implements RF2Constants {
 				jobRun.setUser(args[i+1]);
 			} else if (args[i].equals("-n")) {
 				jobRun.setParameter(CONCEPTS_PER_TASK, args[i+1]);
+			} else if (args[i].equals("-r2")) {
+				jobRun.setParameter(RESTART_FROM_TASK, args[i+1]);
 			} else if (args[i].equals("-c")) {
 				jobRun.setAuthToken(args[i+1]);
 			}

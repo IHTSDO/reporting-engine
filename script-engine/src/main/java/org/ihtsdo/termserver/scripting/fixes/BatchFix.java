@@ -382,6 +382,9 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		if (jobRun.getParamValue(CONCEPTS_PER_TASK) != null) {
 			taskSize = Integer.parseInt(jobRun.getParamValue(CONCEPTS_PER_TASK));
 		}
+		if (jobRun.getParamValue(RESTART_FROM_TASK) != null) {
+			restartFromTask = Integer.parseInt(jobRun.getParamValue(RESTART_FROM_TASK));
+		}
 		author_reviewer = new String[] { jobRun.getUser() };
 	}
 
@@ -423,7 +426,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			} else if (isRestartFromTask) {
 				restartFromTask = Integer.parseInt(thisArg);
 				isRestartFromTask = false;
-			}else if (isAuthor) {
+			} else if (isAuthor) {
 				targetAuthor = thisArg.toLowerCase();
 				isAuthor = false;
 			} else if (isReviewer) {
@@ -448,6 +451,11 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	
 	protected void checkSettingsWithUser(JobRun jobRun) throws TermServerScriptException {
 		super.checkSettingsWithUser(jobRun);
+		
+		if (jobRun != null && jobRun.getParamValue(CONCEPTS_PER_TASK) != null) {
+			taskSize = Integer.parseInt(jobRun.getParamValue(CONCEPTS_PER_TASK));
+		}
+		
 		print ("Number of concepts per task [" + taskSize + "]: ");
 		String response = STDIN.nextLine().trim();
 		if (!response.isEmpty()) {
