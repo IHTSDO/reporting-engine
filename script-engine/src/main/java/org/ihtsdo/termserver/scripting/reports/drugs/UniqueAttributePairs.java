@@ -146,6 +146,7 @@ public class UniqueAttributePairs extends TermServerReport implements ReportClas
 	private void reportData(int tabIdx, AtomicLongMap<String> data) throws TermServerScriptException {
 		for (Map.Entry<String, Long> entry : data.asMap().entrySet()) {
 			report (tabIdx, entry.getKey().split("~"), entry.getValue(), examples.get(entry.getKey()));
+			countIssue(null);
 		}
 	}
 }
