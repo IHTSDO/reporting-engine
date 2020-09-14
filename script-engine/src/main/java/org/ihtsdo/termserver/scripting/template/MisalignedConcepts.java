@@ -408,7 +408,11 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		
 		//Start with the whole subHierarchy and remove concepts that match each of our templates
-		Collection<Concept> potentiallyMisaligned = findConcepts(subsetECL);
+		Collection<Concept> potentiallyMisaligned = new ArrayList<>(findConcepts(subsetECL));
+		
+		if (potentiallyMisaligned == null || potentiallyMisaligned.size() == 0) {
+			throw new TermServerScriptException("Failed to find any concepts matching ECL: '" + subsetECL + "'");
+		}
 		//Set<Concept> unalignedConcepts = Collections.singleton(gl.getConcept("58660009"));
 		Set<Concept> ignoredConcepts = new HashSet<>();
 		
