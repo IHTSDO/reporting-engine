@@ -30,6 +30,14 @@ public class TemplateList extends AllKnownTemplates implements ReportClass {
 		additionalReportColumns = "Domain, SemTag, Template Name / QI Path, Source, Documentation";
 		super.init(jobRun);
 	}
+	
+	public void postInit() throws TermServerScriptException {
+		String[] columnHeadings = new String[] {"Template Domain, Template Name / QI Path, Source, Documentation", 
+												""};
+		String[] tabNames = new String[] {	"Template List", 
+											"Invalid Templates"};
+		super.postInit(tabNames, columnHeadings, false);
+	}
 
 	@Override
 	public Job getJob() {
@@ -52,22 +60,20 @@ public class TemplateList extends AllKnownTemplates implements ReportClass {
 	
 	public void runJob() throws TermServerScriptException {
 		
-		//Check all of our domain points are still active concepts, or we'll have trouble with them!
-		Set<String> invalidTemplateDomains = domainTemplates.keySet().stream()
-			.filter(d -> !gl.getConceptSafely(d).isActive())
-			.collect(Collectors.toSet());
-		
-		for (String invalidTemplateDomain : invalidTemplateDomains) {
-			List<Template> templates = domainTemplates.get(invalidTemplateDomain);
-			for (Template t : templates) {
-				warn ("Inactive domain " + gl.getConcept(invalidTemplateDomain) + ": " + t.getName());
+		//Weed out invalid templates ie where the domain no longer exists
+		for (String subSetECL : new ArrayList<>(domainTemplates.keySet())) {
+			//Does the ECL identify any concepts?
+			if (findConcepts(subSetECL).size() == 0) {
+				List<Template> invalidTemplates= domainTemplates.get(subSetECL);
+				for (Template t : invalidTemplates) {
+					report (SECONDARY_REPORT, t.getName(), "Template domain/subset did not identify any concepts" , t.getDomain());
+				}
+				domainTemplates.remove(subSetECL);
 			}
-			domainTemplates.remove(invalidTemplateDomain);
 		}
 		
 		//We're going to sort by the top level domain and the domain's FSN
 		Comparator<Entry<String, List<Template>>> comparator = (e1, e2) -> compare(e1, e2);
-
 		Map<String, List<Template>> sortedDomainTemplates = domainTemplates.entrySet().stream()
 				.sorted(comparator)
 				.collect(Collectors.toMap(Entry::getKey, Entry::getValue, (k, v) -> k, LinkedHashMap::new));
@@ -77,30 +83,33 @@ public class TemplateList extends AllKnownTemplates implements ReportClass {
 			String domainStr = entry.getKey();
 			for (Template template : entry.getValue()) {
 				try {
-					Concept domain = gl.getConcept(domainStr);
 					//Did this template come from QI or the Template Service
-					report (domain, template.getName(), template.getSource(), template.getDocumentation());
+					report (PRIMARY_REPORT, domainStr, template.getName(), template.getSource(), template.getDocumentation());
 				} catch (Exception e) {
 					error ("Exception while processing template " + domainStr, e);
+					report (SECONDARY_REPORT, template, e);
 				}
 			}
 		}
 	}
 	
 	private int compare(Entry<String, List<Template>> entry1, Entry<String, List<Template>> entry2) {
-		//First sort on top level hierarchy
-		Concept c1 = gl.getConceptSafely(entry1.getKey());
-		Concept c2 = gl.getConceptSafely(entry2.getKey());
 		
-		Concept top1 = SnomedUtils.getHighestAncestorBefore(c1, ROOT_CONCEPT);
-		Concept top2 = SnomedUtils.getHighestAncestorBefore(c2, ROOT_CONCEPT);
+		try {
+			//First sort on top level hierarchy
+			Collection<Concept> c1 = findConcepts(entry1.getKey());
+			Collection<Concept> c2 = findConcepts(entry2.getKey());
+			
+			Concept top1 = SnomedUtils.getHighestAncestorBefore(c1.iterator().next(), ROOT_CONCEPT);
+			Concept top2 = SnomedUtils.getHighestAncestorBefore(c2.iterator().next(), ROOT_CONCEPT);
+			
+			if (top1.equals(top2)) {
+				return top1.getFsn().compareTo(top2.getFsn());
+			}
+		} catch (Exception e) {}
 		
-		if (top1.equals(top2)) {
-			//In the same major hierarchy, sort on the domain fsn
-			return c1.getFsn().compareTo(c2.getFsn());
-		} else {
-			return top1.getFsn().compareTo(top2.getFsn());
-		}
+		//In the same major hierarchy or if we have any problems, 
+		return entry1.getKey().compareTo(entry2.getKey());
 	}
 
 }
