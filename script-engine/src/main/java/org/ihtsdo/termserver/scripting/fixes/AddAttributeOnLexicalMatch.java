@@ -99,10 +99,13 @@ public class AddAttributeOnLexicalMatch extends BatchFix {
 		
 		//DEVICES=143
 		searchTermAttributeMap.put("ceramic", new RelationshipTemplate(HAS_COMP_MATERIAL, gl.getConcept("261253002 |Ceramic (substance)|")));
+		
+		//DEVICES=150
+		searchTermAttributeMap.put("plastic", new RelationshipTemplate(HAS_COMP_MATERIAL, gl.getConcept("61088005 |Plastic (substance)|")));
 		*/
 		
 		searchTermAttributeMap.put("idiopathic", new RelationshipTemplate(IS_A, gl.getConcept("41969006 |Idiopathic disease (disorder)|")));
-		
+				
 		super.postInit();
 	}
 
