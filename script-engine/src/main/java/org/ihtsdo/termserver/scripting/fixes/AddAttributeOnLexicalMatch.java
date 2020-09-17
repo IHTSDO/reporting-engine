@@ -90,12 +90,15 @@ public class AddAttributeOnLexicalMatch extends BatchFix {
 		//DEVICES-141
 		searchTermAttributeMap.put("silicone-gel", new RelationshipTemplate(HAS_COMP_MATERIAL, gl.getConcept("860705001 |Silicone gel (substance)|")));
 		searchTermAttributeMap.put("silicone", new RelationshipTemplate(HAS_COMP_MATERIAL, gl.getConcept("13652007 |Silicone (substance)|")));
-		*/
 		
 		//DEVICES=142
 		searchTermAttributeMap.put("polyurethane-foam", new RelationshipTemplate(HAS_COMP_MATERIAL, gl.getConcept("878817006 |Polyurethane foam (substance)|")));
 		searchTermAttributeMap.put("polyurethane", new RelationshipTemplate(HAS_COMP_MATERIAL, gl.getConcept("876840000 |Polyurethane (substance)|")));
+		*/
 		
+		//DEVICES=143
+		searchTermAttributeMap.put("ceramic", new RelationshipTemplate(HAS_COMP_MATERIAL, gl.getConcept("261253002 |Ceramic (substance)|")));
+				
 		super.postInit();
 	}
 
@@ -120,7 +123,7 @@ public class AddAttributeOnLexicalMatch extends BatchFix {
 		int changesMade = NO_CHANGES_MADE;
 		String fsn = " " + c.getFsn().toLowerCase();
 		if (isExcluded(fsn)) {
-			report(t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept Excluded due to lexical rule");
+			report(t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Concept excluded due to lexical rule");
 		} else {
 			for (Map.Entry<String, RelationshipTemplate> entry : searchTermAttributeMap.entrySet()) {
 				String searchTerm = entry.getKey();
