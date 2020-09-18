@@ -18,7 +18,8 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
  * Update: https://confluence.ihtsdotools.org/pages/viewpage.action?pageId=61155633
  */
 public class TemplateList extends AllKnownTemplates implements ReportClass {
-	final static String defaultTemplateServiceUrl = "https://authoring.ihtsdotools.org/template-service";
+	final static String defaultTemplateServiceUrl = "https://dev-snowstorm.ihtsdotools.org/template-service";
+	//final static String defaultTemplateServiceUrl = "https://authoring.ihtsdotools.org/template-service";
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
@@ -63,10 +64,18 @@ public class TemplateList extends AllKnownTemplates implements ReportClass {
 		//Weed out invalid templates ie where the domain no longer exists
 		for (String subSetECL : new ArrayList<>(domainTemplates.keySet())) {
 			//Does the ECL identify any concepts?
-			if (findConcepts(subSetECL).size() == 0) {
+			try {
+				if (findConcepts(subSetECL).size() == 0) {
+					List<Template> invalidTemplates= domainTemplates.get(subSetECL);
+					for (Template t : invalidTemplates) {
+						report (SECONDARY_REPORT, t.getName(), "Template domain/subset did not identify any concepts" , t.getDomain());
+					}
+					domainTemplates.remove(subSetECL);
+				}
+			} catch (Exception e) {
 				List<Template> invalidTemplates= domainTemplates.get(subSetECL);
 				for (Template t : invalidTemplates) {
-					report (SECONDARY_REPORT, t.getName(), "Template domain/subset did not identify any concepts" , t.getDomain());
+					report (SECONDARY_REPORT, t.getName(), "Exception while recovering domain/subset: " + e.getMessage() , t.getDomain());
 				}
 				domainTemplates.remove(subSetECL);
 			}
