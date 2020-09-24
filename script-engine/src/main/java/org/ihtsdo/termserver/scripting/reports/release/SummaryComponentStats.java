@@ -182,6 +182,11 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		analyzeConcepts();
 		info ("Outputting Results");
 		outputResults();
+		info ("Cleaning Up");
+		prevData = null;
+		summaryDataMap = null;
+		System.gc();
+		info ("Complete");
 	}
 
 	@Override

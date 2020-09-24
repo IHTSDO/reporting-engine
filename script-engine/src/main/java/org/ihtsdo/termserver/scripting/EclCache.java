@@ -48,6 +48,7 @@ public class EclCache implements RF2Constants {
 	}
 	
 	public static void reset() {
+		TermServerScript.info("Resetting ECL Cache - all branches wipe");
 		branchCaches = new HashMap<>();
 	}
 	

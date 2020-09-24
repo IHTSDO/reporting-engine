@@ -254,6 +254,7 @@ public class ArchiveManager implements RF2Constants {
 					info("Generating fresh snapshot because previous transative closure must be populated");
 				}
 				gl.reset();
+				System.gc();
 				generateSnapshot (ts.getProject());
 				releasedFlagPopulated=true;
 				//We don't need to load the snapshot if we've just generated it

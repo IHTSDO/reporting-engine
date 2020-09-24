@@ -2,7 +2,6 @@ package org.ihtsdo.termserver.scripting.service;
 
 import java.time.ZoneId;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.traceability.TraceabilityServiceClient;
@@ -11,9 +10,7 @@ import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.JobRun;
-import org.snomed.otf.traceability.domain.Activity;
-import org.snomed.otf.traceability.domain.ActivityType;
-import org.snomed.otf.traceability.domain.ConceptChange;
+import org.snomed.otf.traceability.domain.*;
 
 public class TraceabilityService {
 	
