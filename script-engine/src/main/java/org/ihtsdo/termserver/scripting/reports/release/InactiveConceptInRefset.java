@@ -109,7 +109,7 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 					ecl += " OR ";
 				}
 				
-				if (ecl.length() > 2005) {
+				if (ecl.length() >= 2000 && !ecl.endsWith("OR ")) {
 					recoverAndReport(refset, ecl);
 					ecl = eclPartial;
 				}
