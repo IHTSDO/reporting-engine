@@ -13,7 +13,7 @@ import org.springframework.util.StringUtils;
  * INFRA-4196 When an axiom has been inactivated in this release, revert it to its
  * previous state from the previous release
  */
-public class RevertInactiveAxioms extends BatchFix implements RF2Constants{
+public class RevertInactiveAxioms extends BatchFix implements RF2Constants {
 	
 	Map<String, RefsetMember> changeMap = new HashMap<>();
 

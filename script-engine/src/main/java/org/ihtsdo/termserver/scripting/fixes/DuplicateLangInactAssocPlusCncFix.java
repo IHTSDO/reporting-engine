@@ -20,15 +20,16 @@ import org.springframework.util.StringUtils;
  * Also we'll add/re-active any missing concept inactivation indicators on active descriptions
  * INFRA-5274 Also fix up multiple language reference set entries for the same description/dialect
 */
-public class DuplicateLangInactAssocFix extends BatchFix {
+public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 	
-	protected DuplicateLangInactAssocFix(final BatchFix clone) {
+	protected DuplicateLangInactAssocPlusCncFix(final BatchFix clone) {
 		super(clone);
 	}
 
 	public static void main(final String[] args) throws TermServerScriptException, IOException, InterruptedException {
-		final DuplicateLangInactAssocFix fix = new DuplicateLangInactAssocFix(null);
+		final DuplicateLangInactAssocPlusCncFix fix = new DuplicateLangInactAssocPlusCncFix(null);
 		try {
+			fix.runStandAlone = false;  //We need to look up the project path for MS projects
 			fix.selfDetermining = true;
 			fix.init(args);
 			// Recover the current project state from TS (or local cached archive) to allow
