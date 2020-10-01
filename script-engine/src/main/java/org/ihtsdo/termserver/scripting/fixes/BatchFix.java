@@ -806,6 +806,10 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		String msg = change + " " + d + (newTerm == null? "" : " replaced with: " + newTerm);
 		report(t, c, Severity.MEDIUM, action, msg);
 	}
+	
+	protected int addRelationship(Task t, Concept c, IRelationshipTemplate r, int groupId) throws TermServerScriptException {
+		return replaceRelationship(t, c, r.getType(), r.getTarget(), groupId, false, false);  //Don't allow other relationships of the same type
+	}
 
 	protected int addRelationship(Task t, Concept c, Relationship r) throws TermServerScriptException {
 		return replaceRelationship(t, c, r.getType(), r.getTarget(), r.getGroupId(), false, true); //Allow other relationships of the same type
