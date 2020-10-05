@@ -1528,4 +1528,13 @@ public class SnomedUtils implements RF2Constants {
 													break;	
 		}
 	}
+
+	public static boolean inModule(Concept c, String[] modules) {
+		for (String module : modules) {
+			if (c.getModuleId().equals(module)) {
+				return true;
+			}
+		}
+		return false;
+	}
 }

@@ -109,6 +109,7 @@ public interface RF2Constants {
 	
 	static String SCTID_CORE_MODULE = "900000000000207008";
 	static String SCTID_MODEL_MODULE = "900000000000012004"; // |SNOMED CT model component module (core metadata concept)|
+	static String[] INTERNATIONAL_MODULES = new String[] { SCTID_CORE_MODULE, SCTID_MODEL_MODULE };
 	static String SCTID_US_MODULE = "731000124108";
 	static String SCTID_LOINC_MODULE = "715515008";
 	static String SCTID_OWL_AXIOM_REFSET = "733073007"; // |OWL axiom reference set (foundation metadata concept)|"

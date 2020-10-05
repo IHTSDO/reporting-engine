@@ -89,8 +89,9 @@ public class UntranslatedConcepts extends TermServerReport implements ReportClas
 		//For this report we're interested in International Concepts 
 		//(optionally in the last (dependency) release) which have no translations 
 		//in the target module
-		return (c.isActive() 
-			&& (c.getEffectiveTime().equals(intEffectiveTime) || includeLegacyIssues)
+		return (c.isActive()
+			&& SnomedUtils.inModule(c, INTERNATIONAL_MODULES)
+			&& (c.getEffectiveTime() == null || c.getEffectiveTime().equals(intEffectiveTime) || includeLegacyIssues)
 			&& !hasTranslation(c));
 	}
 	
