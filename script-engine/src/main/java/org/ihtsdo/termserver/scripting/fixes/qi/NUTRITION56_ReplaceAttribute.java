@@ -19,6 +19,7 @@ public class NUTRITION56_ReplaceAttribute extends BatchFix {
 	//private RelationshipTemplate addTemplate;
 	private RelationshipTemplate matchTemplate;
 	private RelationshipTemplate replaceTemplate;
+	private List<RelationshipTemplate> groupWith;
 	
 	protected NUTRITION56_ReplaceAttribute(BatchFix clone) {
 		super(clone);
@@ -28,7 +29,7 @@ public class NUTRITION56_ReplaceAttribute extends BatchFix {
 		NUTRITION56_ReplaceAttribute fix = new NUTRITION56_ReplaceAttribute(null);
 		try {
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
-			fix.populateEditPanel = false;
+			fix.populateEditPanel = true;
 			fix.selfDetermining = true;
 			fix.reportNoChange = true;
 			fix.additionalReportColumns = "Action Detail";
@@ -46,6 +47,9 @@ public class NUTRITION56_ReplaceAttribute extends BatchFix {
 		matchTemplate = new RelationshipTemplate(gl.getConcept("424361007 |Using substance (attribute)|"), null);
 		replaceTemplate = new RelationshipTemplate(gl.getConcept("260686004 |Method (attribute)| "), 
 				gl.getConcept("129445006 |Administration - action (qualifier value)|"));
+		groupWith = new ArrayList<>();
+		groupWith.add(new RelationshipTemplate(gl.getConcept("363701004 |Direct substance (attribute)|"), null));
+		groupWith.add(new RelationshipTemplate(gl.getConcept("363702006 |Has focus (attribute)|"), null));
 		super.postInit();
 	}
 
@@ -68,19 +72,31 @@ public class NUTRITION56_ReplaceAttribute extends BatchFix {
 
 	private int addAttribute(Task t, Concept c) throws TermServerScriptException {
 		int changesMade = 0;
-		//Find the groupId of the matching relationship template
 		
+		//Actually we'll remove this relationship anyway and then protentially add 
+		//the replacment in a different group if we have a groupWith attribute available
 		for (Relationship r : c.getRelationships(matchTemplate, ActiveState.ACTIVE)) {
-			if (replaceTemplate != null) {
-				Relationship replaceAttrib = replaceTemplate.createRelationship(c, r.getGroupId(), null);
-				changesMade += replaceRelationship(t, c, r, replaceAttrib);
-			} 
+			changesMade += removeRelationship(t, c, r);
 		}
 		//If the match is not found, we will add in the new attribute anyway, if it does not exist.
-		if (changesMade == NO_CHANGES_MADE) {
-			changesMade += addRelationship(t, c, replaceTemplate, SELFGROUPED);
-		}
+		int bestTargetGroup = getBestTargetGroup(t, c);
+		changesMade += addRelationship(t, c, replaceTemplate, bestTargetGroup);
 		return changesMade;
+	}
+
+	private int getBestTargetGroup(Task t, Concept c) throws TermServerScriptException {
+		//If we have any of the "groupWith" attributes present then pitch in with that.
+		//otherwise the default is to self group
+		for (RelationshipTemplate potentialGroupWith : groupWith) {
+			Set<Relationship> matches = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, potentialGroupWith);
+			if (matches.size() > 0) {
+				if (matches.size() > 1) {
+					report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Please check - multiple potential groups for new attribute");
+				}
+				return matches.iterator().next().getGroupId();
+			}
+		}
+		return SELFGROUPED;
 	}
 
 	@Override
