@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.reports;
+package org.ihtsdo.termserver.scripting.reports.release;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,6 +12,7 @@ import org.ihtsdo.termserver.scripting.AxiomUtils;
 import org.ihtsdo.termserver.scripting.DescendantsCache;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.owltoolkit.conversion.ConversionException;
 import org.snomed.otf.owltoolkit.domain.AxiomRepresentation;
@@ -48,6 +49,7 @@ import com.google.common.io.Files;
  RP-202 Check for MsWord style double hyphen "—" (as opposed to "-")
  RP-241 Check axioms for correct module.  In fact, existing code is sufficient here.
  MAINT-1295 Report concepts with no semantic tag where modified in current release
+ RP-414 Add check for repeated word groups
  */
 public class ReleaseIssuesReport extends TermServerReport implements ReportClass {
 	
@@ -55,6 +57,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	private static final String FULL_STOP = ".";
 	String[] knownAbbrevs = new String[] {	"ser","ss","subsp",
 											"f","E", "var", "St"};
+	Set<String> stopWords = new HashSet<>();
 	char NBSP = 255;
 	String NBSPSTR = "\u00A0";
 	String LONG_DASH = "—";
@@ -90,6 +93,22 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		additionalReportColumns = "FSN, Semtag, Issue, Legacy, C/D/R Active, Detail";
 		cache = gl.getDescendantsCache();
 		getArchiveManager().setPopulateReleasedFlag(true);
+		
+		stopWords.add("of");
+		stopWords.add("Product");
+		stopWords.add("the");
+		stopWords.add("The");
+		stopWords.add("mg");
+		stopWords.add("left");
+		stopWords.add("right");
+		stopWords.add("and");
+		stopWords.add("with");
+		stopWords.add("bone");
+		stopWords.add("from");
+		stopWords.add("blood");
+		stopWords.add("NOS]");
+		stopWords.add("disorder");
+		stopWords.add("disease");
 	}
 	
 	public void postInit() throws TermServerScriptException {
@@ -160,6 +179,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		unexpectedCharacters();
 		spaceBracket();
 		missingSemanticTag();
+		repeatedWordGroups();
 		
 		info("...duplicate semantic tags");
 		duplicateSemanticTags();
@@ -411,9 +431,94 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				}
 			}
 		}
-	
 	}
 	
+	private void repeatedWordGroups() throws TermServerScriptException {
+		String issueStr = "Description uses repeating word group";
+		initialiseSummary(issueStr);
+		nextConcept:
+		for (Concept c : gl.getAllConcepts()) {
+			if (inScope(c) && recentlyTouched.contains(c)) {
+				//We're going to skip concepts with clinical drugs
+				if (c.getFsn().contains("(medicinal") || 
+						c.getFsn().contains("(clinical") ||
+						c.getFsn().contains("(product")) {
+					continue nextConcept;
+				}
+				
+				boolean compoundCounted = false;
+				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+					if (!d.isReleased()) {
+						int concern = 0;
+						//If this is a text definition, that's less concerning
+						if (d.getType().equals(DescriptionType.TEXT_DEFINITION)) {
+							concern--;
+						}
+						
+						String[] words = d.getTerm().split(" ");
+						for (int x=0; x < words.length; x++) {
+							if (stopWords.contains(words[x]) || words[x].length() <= 2) {
+								continue;
+							}
+
+							for (int y=0; y < words.length; y++) {
+								if (x != y && words[x].equalsIgnoreCase(words[y])) {
+									concern++;
+									//If we have an 'and' or 'width' to the left that we haven't counted, that's 
+									//less of a concern
+									if (compoundToTheLeftOf(words, x)) {
+										if (!compoundCounted) {
+											concern--;
+										} else {
+											compoundCounted = true;
+										}
+									}
+	
+									if (concern > 1) {
+										//For a text definition we also need a word left or right 
+										//of X to be the same as a word to the left or right of Y
+										if (d.getType().equals(DescriptionType.TEXT_DEFINITION) && 
+												!alsoHasSameWordToLeftOrRight(words, x, y)) {
+											continue;
+										}
+										report (c, issueStr, "Repeated word: " + words[x], d);
+										continue nextConcept;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	private boolean alsoHasSameWordToLeftOrRight(String[] words, int x, int y) {
+		//So we're looking to see if a word left of X is the same as a word to the left of Y
+		if (x > 0 && y > 0 && words[x-1].equalsIgnoreCase(words[y-1])) {
+			return true;
+		}
+		
+		if (x <= words.length && y <= words.length && words[x+1].equalsIgnoreCase(words[y+1])) {
+			return true;
+		}
+		
+		return false;
+	}
+
+	private boolean compoundToTheLeftOf(String[] words, int x) {
+		//Is there a 'and' or 'width' to the left of x?
+		for (int y=0; y < x ; y++) {
+			if (words[y].equalsIgnoreCase("and") || 
+					words[y].equalsIgnoreCase("with") || 
+					words[y].equalsIgnoreCase("of") || 
+					words[y].equalsIgnoreCase("to")) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	private void populateRecentlyTouched() {
 		if (recentlyTouched == null) {
 			recentlyTouched = new HashSet<>();
