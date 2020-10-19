@@ -138,7 +138,7 @@ public class BatchImportFormat implements RF2Constants {
 		}
 		
 		if (definesByExpression) {
-			newConcept = new BatchImportConcept (sctid, row, requiresNewSCTID, moduleId);
+			newConcept = new BatchImportConcept(sctid, row, requiresNewSCTID, moduleId);
 			populateExpression(newConcept, row.get(getIndex(FIELD.EXPRESSION)).trim(), moduleId);
 		} else {
 			ArrayList<String> parents = new ArrayList<>();
@@ -147,7 +147,7 @@ public class BatchImportFormat implements RF2Constants {
 			if (parent2Idx != FIELD_NOT_FOUND && !row.get(parent2Idx).isEmpty()) {
 				parents.add(row.get(parent2Idx));
 			}
-			newConcept = new BatchImportConcept (sctid, parents, row, requiresNewSCTID);
+			newConcept = new BatchImportConcept(sctid, parents, row, requiresNewSCTID);
 		}
 		
 		if (multipleTerms) {
@@ -238,10 +238,13 @@ public class BatchImportFormat implements RF2Constants {
 		GraphLoader gl = GraphLoader.getGraphLoader();
 		Set<Relationship> relationships = new HashSet<>();
 		for (String parentId : expression.getFocusConcepts()) {
-			//SnomedUtils.isValid(parentId, PartitionIdentifier.CONCEPT, true);
-			//Concept parent = new Concept(parentId);
 			//Do not create parent, validate that it exists
 			Concept parent = gl.getConcept(parentId, false, true);
+			
+			//Parents must be active concepts of course!
+			if (!parent.isActive()) {
+				throw new TermServerScriptException("Specified parent " + parent + " is inactive");
+			}
 			source.addParent(CharacteristicType.STATED_RELATIONSHIP, parent);
 			Relationship isA = new Relationship(source, IS_A, parent, UNGROUPED);
 			relationships.add(isA);
