@@ -100,7 +100,7 @@ public class NewComponents extends TermServerReport implements ReportClass {
 			
 			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 				if (!d.isReleased() && inScope(d)) {
-					report(TERTIARY_REPORT, c, d);
+					report(TERTIARY_REPORT, c, d.getTerm(), d);
 					componentCounts.getAndIncrement("Descriptions");
 					countIssue(c);
 				}

@@ -190,13 +190,13 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 				if (tabIdx == 0) {
 					SheetProperties properties = new SheetProperties()
 							.setTitle(owner.getTabNames().get(tabIdx))
-							.setGridProperties(new GridProperties().setRowCount(MAX_ROWS + 1).setColumnCount(MAX_COLUMNS));
+							.setGridProperties(new GridProperties().setRowCount(MAX_ROWS + 3).setColumnCount(MAX_COLUMNS));
 					request = new Request().setUpdateSheetProperties(new UpdateSheetPropertiesRequest().setProperties(properties).setFields("title, gridProperties"));
 				} else {
 					SheetProperties properties = new SheetProperties()
 							.setTitle(owner.getTabNames().get(tabIdx))
 							.setSheetId(new Integer(tabIdx))
-							.setGridProperties(new GridProperties().setRowCount(MAX_ROWS + 1).setColumnCount(MAX_COLUMNS));
+							.setGridProperties(new GridProperties().setRowCount(MAX_ROWS + 3).setColumnCount(MAX_COLUMNS));
 					request = new Request().setAddSheet(new AddSheetRequest().setProperties(properties));
 				}
 				requests.add(request);
