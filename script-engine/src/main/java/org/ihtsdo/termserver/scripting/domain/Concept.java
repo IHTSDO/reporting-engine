@@ -727,7 +727,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		List<Description> results = new ArrayList<Description>();
 		for (Description d : descriptions) {
 			if (SnomedUtils.descriptionHasActiveState(d, a)) {
-					results.add(d);
+				results.add(d);
 			}
 		}
 		return results;
@@ -1145,8 +1145,8 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	}
 	
 	private Concept clone(String sctid, boolean keepIds) {
-		//Don't include inactive components by default
-		return clone(sctid, keepIds, false, false);
+		//Do include inactive components by default - never know what we might want this for
+		return clone(sctid, keepIds, true, false);
 	}
 	
 	private Concept clone(String sctid, boolean keepIds, boolean includeInactiveComponents, boolean populateUUIDs) {

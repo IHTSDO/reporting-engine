@@ -15,6 +15,7 @@ import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 /**
  * DEVICES-99 A set of tickets adding attributes to concepts based on matching terms in the FSN
  * DEVICES-121 Likewise
+ * INFRA-5794 Add parent to 'Idiopathic' if required
  */
 public class AddAttributeOnLexicalMatch extends BatchFix {
 	
@@ -44,13 +45,14 @@ public class AddAttributeOnLexicalMatch extends BatchFix {
 	}
 
 	private void postLoadInit() throws TermServerScriptException {
-		subHierarchy = gl.getConcept("260787004 |Physical object (physical object)|");
+		//subHierarchy = gl.getConcept("260787004 |Physical object (physical object)|");
+		subHierarchy = gl.getConcept("64572001 |Disease (disorder)|");
 		exclusions = new HashSet<>();
-		exclusions.add(" kit");
+		/*exclusions.add(" kit");
 		exclusions.add(" set");
 		exclusions.add("(product)");
 		exclusions.add("non-metallic");
-		exclusions.add("software");
+		exclusions.add("software");*/
 		
 		//Order of terms is important since we'll search for the longest first to prevent
 		//partial matches
@@ -94,11 +96,13 @@ public class AddAttributeOnLexicalMatch extends BatchFix {
 		//DEVICES=142
 		searchTermAttributeMap.put("polyurethane-foam", new RelationshipTemplate(HAS_COMP_MATERIAL, gl.getConcept("878817006 |Polyurethane foam (substance)|")));
 		searchTermAttributeMap.put("polyurethane", new RelationshipTemplate(HAS_COMP_MATERIAL, gl.getConcept("876840000 |Polyurethane (substance)|")));
-		*/
 		
 		//DEVICES=143
 		searchTermAttributeMap.put("ceramic", new RelationshipTemplate(HAS_COMP_MATERIAL, gl.getConcept("261253002 |Ceramic (substance)|")));
-				
+		*/
+		
+		searchTermAttributeMap.put("idiopathic", new RelationshipTemplate(IS_A, gl.getConcept("41969006 |Idiopathic disease (disorder)|")));
+		
 		super.postInit();
 	}
 

@@ -541,7 +541,7 @@ public abstract class TermServerScript implements RF2Constants {
 			System.exit(-1);
 		}
 		
-		for (int i=0; i<args.length; i++) {
+		for (int i=0; i < args.length; i++) {
 			if (args[i].equals("-p")) {
 				jobRun.setProject(args[i+1]);
 			} else if (args[i].equals("-c")) {
