@@ -261,8 +261,13 @@ public class GraphLoader implements RF2Constants {
 						
 						Set<Relationship> relationships = AxiomUtils.getRHSRelationships(c, axiom);
 						if (relationships.size() == 0) {
-							log.append("Checkhere");
+							log.append("Check here - zero RHS relationships");
 						}
+						
+						//If we already have relationships loaded from this axiom then it may be that 
+						//a subsequent version does not feature them, and we'll have to remove them.
+						removeRelsNoLongerFeaturedInAxiom(c, axiomEntry.getId(), relationships);
+						
 						//Now we might need to adjust the active flag if the axiom is being inactivated
 						//Or juggle the groupId, since individual axioms don't know about each other's existence
 						alignAxiomRelationships(c, relationships, axiomEntry, axiomEntry.isActive());
@@ -289,6 +294,15 @@ public class GraphLoader implements RF2Constants {
 		log.append("\tLoaded " + axiomsLoaded + " axioms");
 	}
 	
+	private void removeRelsNoLongerFeaturedInAxiom(Concept c, String axiomId, Set<Relationship> currentAxiomRels) {
+		List<Relationship> origSameAxiomRels = c.getRelationshipsFromAxiom(axiomId, ActiveState.ACTIVE);
+		//Remove those still part of the axiom to leave the ones that have been removed
+		origSameAxiomRels.removeAll(currentAxiomRels);
+		for (Relationship removeMe : origSameAxiomRels) {
+			c.removeRelationship(removeMe, true);  //Force removal.  Deletion of published component doesn't apply to axiom changes.
+		}
+	}
+
 	private void alignAxiomRelationships(Concept c, Set<Relationship> relationships, AxiomEntry axiomEntry, boolean active) {
 		//Do the groups already exist in the concept?  Give them that groupId if so
 		int nextFreeGroup = 1;

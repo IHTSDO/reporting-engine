@@ -410,13 +410,11 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	}
 	
 	public void removeRelationship(Relationship r, boolean force) {
+		CharacteristicType charType = r.getCharacteristicType();
 		if (r.getEffectiveTime() != null && !force) {
 			throw new IllegalArgumentException("Attempt to deleted published relationship " + r);
 		}
-		/*boolean removed = this.relationships.removeAll(Collections.singleton(r));
-		if (!removed) {
-			TermServerScript.debug("Failed to remove relationship: " + r);
-		}*/
+
 		int sizeBefore = relationships.size();
 		Set<Relationship> newRelationshipSet = relationships.stream()
 				.filter(rel -> !rel.equals(r))
@@ -424,6 +422,14 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		this.relationships = newRelationshipSet;
 		if (this.relationships.size() == sizeBefore) {
 			TermServerScript.debug("Failed to remove relationship: " + r);
+		}
+		
+		//Do I need to adjust parent/child?  Might still exist in another axiom
+		if (r.getType().equals(IS_A) && 
+				getRelationships(charType, IS_A, r.getTarget(), ActiveState.ACTIVE).size() == 0) {
+			Concept parent = r.getTarget();
+			parent.removeChild(charType, this);
+			removeParent(charType, parent);
 		}
 		
 		recalculateGroups();
@@ -1491,6 +1497,22 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 			}
 		}
 		return false;
+	}
+
+	public List<Relationship> getRelationshipsFromAxiom(String axiomId, ActiveState activeState) {
+		List<Relationship> fromAxiom = new ArrayList<>();
+		for (Relationship r : relationships) {
+			if (activeState.equals(ActiveState.BOTH) || 
+					(activeState.equals(ActiveState.ACTIVE) && r.isActive()) ||
+					(activeState.equals(ActiveState.INACTIVE) && !r.isActive())) {
+				if (r.getAxiom() != null && r.getAxiom().getId().equals(axiomId)) {
+					fromAxiom.add(r);
+				} else if (r.getAxiomEntry() != null && r.getAxiomEntry().getId().equals(axiomId)) {
+					fromAxiom.add(r);
+				}
+			}
+		}
+		return fromAxiom;
 	}
 
 }
