@@ -109,6 +109,8 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		stopWords.add("NOS]");
 		stopWords.add("disorder");
 		stopWords.add("disease");
+		stopWords.add("[in");
+		stopWords.add("cell");
 	}
 	
 	public void postInit() throws TermServerScriptException {
@@ -452,7 +454,8 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 						int concern = 0;
 						//If this is a text definition, that's less concerning
 						if (d.getType().equals(DescriptionType.TEXT_DEFINITION)) {
-							concern--;
+							//Turning down the sensitivity here, lots of words makes for more repetition.
+							concern -= 2;
 						}
 						
 						String[] words = d.getTerm().split(" ");
@@ -473,14 +476,14 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 											compoundCounted = true;
 										}
 									}
+									
+									//We'll also check a word left or right 
+									//of X to be the same as a word to the left or right of Y
+									if (!alsoHasSameWordToLeftOrRight(words, x, y)) {
+										concern--;
+									}
 	
-									if (concern > 1) {
-										//For a text definition we also need a word left or right 
-										//of X to be the same as a word to the left or right of Y
-										if (d.getType().equals(DescriptionType.TEXT_DEFINITION) && 
-												!alsoHasSameWordToLeftOrRight(words, x, y)) {
-											continue;
-										}
+									if (concern > 2) {
 										report (c, issueStr, "Repeated word: " + words[x], d);
 										continue nextConcept;
 									}
@@ -499,7 +502,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			return true;
 		}
 		
-		if (x <= words.length && y <= words.length && words[x+1].equalsIgnoreCase(words[y+1])) {
+		if (x+1 < words.length && y+1 < words.length && words[x+1].equalsIgnoreCase(words[y+1])) {
 			return true;
 		}
 		
