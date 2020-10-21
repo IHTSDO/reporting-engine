@@ -2,6 +2,7 @@ package org.ihtsdo.termserver.scripting.fixes.qi;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
@@ -43,7 +44,16 @@ public class NUTRITION56_ReplaceAttribute extends BatchFix {
 	}
 
 	private void postLoadInit() throws TermServerScriptException {
-		subsetECL = "<< 182922004 |Dietary regime (regime/therapy)| : 424361007 |Using substance (attribute)| = *";
+		//subsetECL = "<< 182922004 |Dietary regime (regime/therapy)| : 424361007 |Using substance (attribute)| = *";
+		subsetECL = " << 435581000124102 |Carbohydrate modified diet (regime/therapy)| OR " + 
+				" << 435671000124101 |Cholesterol modified diet (regime/therapy)| OR " + 
+				" << 435711000124102 |Fat modified diet (regime/therapy)| OR " + 
+				" << 435721000124105 |Fiber modified diet (regime/therapy)| OR " + 
+				" << 435781000124109 |Mineral modified diet (regime/therapy)| OR " + 
+				" << 435691000124100 |Diet modified for specific foods or ingredients (regime/therapy)| OR " + 
+				" << 762104002 |Modified fluid diet (regime/therapy)| OR " + 
+				" << 435791000124107 |Protein modified diet (regime/therapy)| OR " + 
+				" << 435811000124106 |Vitamin modified diet (regime/therapy)|";
 		matchTemplate = new RelationshipTemplate(gl.getConcept("424361007 |Using substance (attribute)|"), null);
 		replaceTemplate = new RelationshipTemplate(gl.getConcept("260686004 |Method (attribute)| "), 
 				gl.getConcept("129445006 |Administration - action (qualifier value)|"));
@@ -101,6 +111,8 @@ public class NUTRITION56_ReplaceAttribute extends BatchFix {
 
 	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		return new ArrayList<>(findConcepts(subsetECL));
+		return new ArrayList<>(findConcepts(subsetECL).stream()
+				.filter(c -> c.getRelationships(replaceTemplate, ActiveState.ACTIVE).size() == 0)
+				.collect(Collectors.toList()));
 	}
 }
