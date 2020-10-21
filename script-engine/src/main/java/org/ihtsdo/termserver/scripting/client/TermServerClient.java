@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting.client;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -20,6 +21,8 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.http.client.*;
 import org.springframework.http.converter.json.GsonHttpMessageConverter;
+import org.springframework.util.StreamUtils;
+import org.springframework.web.client.RequestCallback;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
@@ -370,56 +373,64 @@ public class TermServerClient {
 
 	public File export(String branchPath, String effectiveDate, ExportType exportType, ExtractType extractType, File saveLocation)
 			throws TermServerScriptException {
-		JSONObject jsonObj = prepareExportJSON(branchPath, effectiveDate, exportType, extractType);
-		logger.info ("Initiating export with {}",jsonObj.toString());
-		String exportLocationURL = initiateExport(jsonObj);
+		Map<String, Object> exportRequest = prepareExportRequest(branchPath, effectiveDate, exportType, extractType);
+		logger.info ("Initiating export with {}", exportRequest);
+		String exportLocationURL = initiateExport(exportRequest);
+		//INFRA-1489 Workaround
+		if (!exportLocationURL.startsWith("https://")) {
+			exportLocationURL = exportLocationURL.replace("http:/", "https://");
+			System.err.println("Malformed export location received, corrected to https://");
+		}
+		if (saveLocation == null) {
+			try {
+				saveLocation = File.createTempFile("ts-extract", ".zip");
+			} catch (IOException e) {
+				throw new TermServerScriptException(e);
+			}
+		}
 		File recoveredArchive = recoverExportedArchive(exportLocationURL, saveLocation);
 		return recoveredArchive;
 	}
 	
-	private JSONObject prepareExportJSON(String branchPath, String effectiveDate, ExportType exportType, ExtractType extractType)
+	private Map<String, Object> prepareExportRequest(String branchPath, String effectiveDate, ExportType exportType, ExtractType extractType)
 			throws TermServerScriptException {
-		JSONObject jsonObj = new JSONObject();
-		try {
-			jsonObj.put("type", extractType);
-			jsonObj.put("branchPath", branchPath);
-			switch (exportType) {
-				case MIXED:  //Snapshot allows for both published and unpublished, where unpublished
-					//content would get the transient effective Date
-					if (!extractType.equals(ExtractType.SNAPSHOT)) {
-						throw new TermServerScriptException("Export type " + exportType + " not recognised");
-					}
-					if (supportsIncludeUnpublished) {
-						jsonObj.put("includeUnpublished", true);
-					}
-				case UNPUBLISHED:
-					//Now leaving effective date blank if not specified
-					if (effectiveDate != null) {
-						//String tet = (effectiveDate == null) ?YYYYMMDD.format(new Date()) : effectiveDate;
-						jsonObj.put("transientEffectiveTime", effectiveDate);
-					}
-					break;
-				case PUBLISHED:
-					if (effectiveDate == null) {
-						throw new TermServerScriptException("Cannot export published data without an effective date");
-					}
-					jsonObj.put("deltaStartEffectiveTime", effectiveDate);
-					jsonObj.put("deltaEndEffectiveTime", effectiveDate);
-					jsonObj.put("transientEffectiveTime", effectiveDate);
-					break;
-				
-				default:
+		Map<String, Object> exportRequest = new HashMap<>();
+		exportRequest.put("type", extractType);
+		exportRequest.put("branchPath", branchPath);
+		switch (exportType) {
+			case MIXED:  //Snapshot allows for both published and unpublished, where unpublished
+				//content would get the transient effective Date
+				if (!extractType.equals(ExtractType.SNAPSHOT)) {
 					throw new TermServerScriptException("Export type " + exportType + " not recognised");
-			}
-		} catch (JSONException e) {
-			throw new TermServerScriptException("Failed to prepare JSON for export request.", e);
+				}
+				if (supportsIncludeUnpublished) {
+					exportRequest.put("includeUnpublished", true);
+				}
+			case UNPUBLISHED:
+				//Now leaving effective date blank if not specified
+				if (effectiveDate != null) {
+					//String tet = (effectiveDate == null) ?YYYYMMDD.format(new Date()) : effectiveDate;
+					exportRequest.put("transientEffectiveTime", effectiveDate);
+				}
+				break;
+			case PUBLISHED:
+				if (effectiveDate == null) {
+					throw new TermServerScriptException("Cannot export published data without an effective date");
+				}
+				exportRequest.put("deltaStartEffectiveTime", effectiveDate);
+				exportRequest.put("deltaEndEffectiveTime", effectiveDate);
+				exportRequest.put("transientEffectiveTime", effectiveDate);
+				break;
+			
+			default:
+				throw new TermServerScriptException("Export type " + exportType + " not recognised");
 		}
-		return jsonObj;
+		return exportRequest;
 	}
 
-	private String initiateExport(JSONObject jsonObj) throws TermServerScriptException {
+	private String initiateExport(Map<String, Object> exportRequest) throws TermServerScriptException {
 		try {
-			JSONResource jsonResponse = resty.json(url + "/exports", RestyHelper.content(jsonObj, SNOWOWL_CONTENT_TYPE));
+			/*JSONResource jsonResponse = resty.json(url + "/exports", RestyHelper.content(jsonObj, SNOWOWL_CONTENT_TYPE));
 			Object exportLocationURLObj = jsonResponse.getUrlConnection().getHeaderField("Location");
 			if (exportLocationURLObj == null) {
 				String actualResponse = "Unable to parse response";
@@ -430,25 +441,32 @@ public class TermServerClient {
 			} else {
 				logger.info ("Export location recovered: {}",exportLocationURLObj.toString());
 			}
-			return exportLocationURLObj.toString() + "/archive";
+			return exportLocationURLObj.toString() + "/archive";*/
+			
+			HttpEntity<?> entity = new HttpEntity<>(exportRequest, headers ); // for request
+			HttpEntity<String> response = restTemplate.exchange(url + "/exports", HttpMethod.POST, entity, String.class);
+			return response.getHeaders().get("Location").get(0);
 		} catch (Exception e) {
 			throw new TermServerScriptException("Failed to initiate export", e);
 		}
 	}
-
-	private File recoverExportedArchive(String exportLocationURL, File saveLocation) throws TermServerScriptException {
+	
+	private File recoverExportedArchive(String exportLocationURL,  final File saveLocation) throws TermServerScriptException {
 		try {
 			logger.info("Recovering exported archive from {}", exportLocationURL);
 			logger.info("Saving exported archive to {}", saveLocation);
-			resty.withHeader("Accept", ALL_CONTENT_TYPE);
-			BinaryResource archiveResource = resty.bytes(exportLocationURL);
-			if (saveLocation == null) {
-				saveLocation = File.createTempFile("ts-extract", ".zip");
+			RequestCallback requestCallback = request -> request.getHeaders()
+					.setAccept(Arrays.asList(MediaType.APPLICATION_OCTET_STREAM, MediaType.ALL));
+			restTemplate.execute(exportLocationURL + "/archive", HttpMethod.GET, requestCallback, clientHttpResponse -> {
+				StreamUtils.copy(clientHttpResponse.getBody(), new FileOutputStream(saveLocation));
+				return null;
+			});
+			if (saveLocation.length() == 0) {
+				throw new RestClientException("Archive recovered as 0 bytes");
 			}
-			archiveResource.save(saveLocation);
 			logger.debug("Extract recovery complete");
 			return saveLocation;
-		} catch (IOException e) {
+		} catch (RestClientException e) {
 			throw new TermServerScriptException("Unable to recover exported archive from " + exportLocationURL, e);
 		}
 	}
