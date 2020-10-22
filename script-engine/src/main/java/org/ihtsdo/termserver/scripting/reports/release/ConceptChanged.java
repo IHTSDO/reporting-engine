@@ -34,6 +34,10 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 	private Set<Concept> isTargetOfNewInferredRelationship = new HashSet<>();
 	private Set<Concept> wasTargetOfLostInferredRelationship = new HashSet<>();
 	
+	//RP-398
+	private Set<Concept> hasChangedAcceptability = new HashSet<>();
+	private Set<Description> descChangedAcceptability = new HashSet<>();
+	
 	TraceabilityService traceability;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
@@ -51,12 +55,12 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 	
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
-				"Id, FSN, SemTag, Active, DefStatusChanged, Author, Task, Creation Date",
+				"Id, FSN, SemTag, Active, DefStatusChanged, Languages, Author, Task, Creation Date",
 				"Id, FSN, SemTag, Active, hasNewStatedRelationships, hasNewInferredRelationships, hasLostStatedRelationships, hasLostInferredRelationships, Author, Task, Creation Date",
-				"Id, FSN, SemTag, Active, hasNewDescriptions, hasChangedDescriptions, hasLostDescriptions, Author, Task, Creation Date",
+				"Id, FSN, SemTag, Active, hasNewDescriptions, hasChangedDescriptions, hasLostDescriptions, hasChangedAcceptability, Author, Task, Creation Date",
 				"Id, FSN, SemTag, Active, hasChangedAssociations, hasChangedInactivationIndicators, Author, Task, Creation Date",
 				"Id, FSN, SemTag, Active, isTargetOfNewStatedRelationship, isTargetOfNewInferredRelationship, wasTargetOfLostStatedRelationship, wasTargetOfLostInferredRelationship, Author, Task, Creation Date",
-				"Id, FSN, SemTag, Description, isNew, isChanged, wasInactivated"};
+				"Id, FSN, SemTag, Language, Description, isNew, isChanged, wasInactivated, changedAcceptability"};
 		String[] tabNames = new String[] {	
 				"Concept Changes",
 				"Relationship Changes",
@@ -136,11 +140,12 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 				boolean isNew = false;
 				boolean isChanged = false;
 				boolean wasInactivated = false;
+				boolean changedAcceptability = false;
 				if (inScope(d)) {
 					if (!d.isReleased()) {
 						hasNewDescriptions.add(c);
 						isNew = true;
-					} else if (d.getEffectiveTime() == null || d.getEffectiveTime().isEmpty()) {
+					} else if (StringUtils.isEmpty(d.getEffectiveTime())) {
 						if (!d.isActive()) {
 							hasLostDescriptions.add(c);
 							wasInactivated = true;
@@ -149,10 +154,20 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 							isChanged = true;
 						}
 					}
+					
+					//Has it changed acceptability?
+					if (!isNew) {
+						for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.ACTIVE)) {
+							if (StringUtils.isEmpty(l.getEffectiveTime())) {
+								hasChangedAcceptability.add(c);
+								changedAcceptability = true;
+							}
+						}
+					}
 				}
 				
-				if (isNew || isChanged || wasInactivated) {
-					report (SENARY_REPORT, c, d, isNew, isChanged, wasInactivated);
+				if (isNew || isChanged || wasInactivated || changedAcceptability) {
+					report (SENARY_REPORT, c, d.getLang(), d, isNew, isChanged, wasInactivated, changedAcceptability);
 				}
 			}
 			
@@ -218,7 +233,8 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		for (Concept c : sort(superSet)) {
 			traceability.populateTraceabilityAndReport (PRIMARY_REPORT, c,
 				c.isActive()?"Y":"N",
-				defStatusChanged.contains(c)?"Y":"N");
+				defStatusChanged.contains(c)?"Y":"N",
+				getLanguages(c));
 		}
 		traceability.flush();
 		superSet.clear();
@@ -241,13 +257,15 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		superSet.addAll(hasNewDescriptions);
 		superSet.addAll(hasChangedDescriptions);
 		superSet.addAll(hasLostDescriptions);
+		superSet.addAll(hasChangedAcceptability);
 		debug ("Creating description report for " + superSet.size() + " concepts");
 		for (Concept c : sort(superSet)) {
 			traceability.populateTraceabilityAndReport (TERTIARY_REPORT, c,
 				c.isActive()?"Y":"N",
 				hasNewDescriptions.contains(c)?"Y":"N",
 				hasChangedDescriptions.contains(c)?"Y":"N",
-				hasLostDescriptions.contains(c)?"Y":"N");
+				hasLostDescriptions.contains(c)?"Y":"N",
+				hasChangedAcceptability.contains(c)?"Y":"N");
 		}
 		superSet.clear();
 		
@@ -279,6 +297,14 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		traceability.flush();
 	}
 	
+	private String getLanguages(Concept c) {
+		Set<String> langs = new TreeSet<>();
+		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+			langs.add(d.getLang());
+		}
+		return String.join(", ", langs);
+	}
+
 	private void determineUniqueCountAndTraceability() {
 		debug ("Determining unique count");
 		HashSet<Concept> superSet = new HashSet<>();
@@ -298,11 +324,11 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		superSet.addAll(wasTargetOfLostStatedRelationship);
 		superSet.addAll(isTargetOfNewInferredRelationship);
 		superSet.addAll(wasTargetOfLostInferredRelationship);
+		superSet.addAll(hasChangedAcceptability);
 		
 		for (Concept c : superSet) {
 			countIssue(c);
 		}
-		
 	}
 	
 	private List<Concept> sort(Set<Concept> superSet) {
