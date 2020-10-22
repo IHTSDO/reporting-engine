@@ -364,8 +364,13 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 					}
 					//Do we already know about this concept or already have a plan to create it?
 					if (!isContained(mp, knownMPs) && !isContained(mp, createMPs)) {
-						createMPs.add(mp);
-						allAffected.add(c);
+						//RP-401 Only consider creating concepts for MPFs where there is an underlying clinical drug
+						if (hasClinicalDrugDescendant(c)) {
+							createMPs.add(mp);
+							allAffected.add(c);
+						} else {
+							report ((Task)null, c, Severity.LOW, ReportActionType.VALIDATION_CHECK, "No underlying CD detected for MP", mp.toExpression(CharacteristicType.STATED_RELATIONSHIP));
+						}
 					}
 					
 					//For a given MPF, as well as looking for an MP, we may also need a sibling MPFO
@@ -375,9 +380,14 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 					Concept mpfo = calculateDrugRequired(c, ConceptType.MEDICINAL_PRODUCT_FORM_ONLY);
 					//Do we already know about this concept or already have a plan to create it?
 					if (!isContained(mpfo, knownMPFOs) && !isContained(mpfo, createMPFOs)) {
-						createMPFOs.add(mpfo);
-						if (!allAffected.contains(c)) {
-							allAffected.add(c);
+						//RP-401 Only consider creating concepts for MPFs where there is an underlying clinical drug
+						if (hasClinicalDrugDescendant(c)) {
+							createMPFOs.add(mpfo);
+							if (!allAffected.contains(c)) {
+								allAffected.add(c);
+							}
+						} else {
+							report ((Task)null, c, Severity.LOW, ReportActionType.VALIDATION_CHECK, "No underlying CD detected for MPFO", mpfo.toExpression(CharacteristicType.STATED_RELATIONSHIP));
 						}
 					}
 				} else if (c.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT)) {
@@ -387,8 +397,13 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 					Concept mpo = calculateDrugRequired(c, ConceptType.MEDICINAL_PRODUCT_ONLY);
 					//Do we already know about this concept or already have a plan to create it?
 					if (!isContained(mpo, knownMPOs) && !isContained(mpo, createMPOs)) {
-						createMPOs.add(mpo);
-						allAffected.add(c);
+						//RP-401 Only consider creating concepts for MPFs where there is an underlying clinical drug
+						if (hasClinicalDrugDescendant(c)) {
+							createMPOs.add(mpo);
+							allAffected.add(c);
+						} else {
+							report ((Task)null, c, Severity.LOW, ReportActionType.VALIDATION_CHECK, "No underlying CD detected for MPO", mpo.toExpression(CharacteristicType.STATED_RELATIONSHIP));
+						}
 					}
 				} 
 			} catch (Exception e) {
@@ -398,6 +413,15 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 		info ("Identified " + allAffected.size() + " concepts to process");
 		allAffected.sort(Comparator.comparing(Concept::getFsn));
 		return new ArrayList<Component>(allAffected);
+	}
+
+	private boolean hasClinicalDrugDescendant(Concept c) throws TermServerScriptException {
+		for (Concept descendant : gl.getDescendantsCache().getDescendents(c)) {
+			if (descendant.getConceptType().equals(ConceptType.CLINICAL_DRUG)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private boolean containsExceptionSubstance(Concept c) throws TermServerScriptException {
