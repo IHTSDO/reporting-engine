@@ -1,0 +1,152 @@
+package org.ihtsdo.termserver.scripting.reports;
+
+import java.io.IOException;
+import java.util.*;
+
+import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.termserver.scripting.ReportClass;
+import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
+import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.snomed.otf.scheduler.domain.*;
+import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
+
+/**
+ * RP-403 Report concepts that have laterality in their attributes but not in their
+ * FSN or visa versa
+ */
+public class MismatchedLaterality extends TermServerReport implements ReportClass {
+	Set<String> hierarchies = new HashSet<>();
+	Set<Concept> reportedSuspect = new HashSet<>();
+	
+	public static void main(String[] args) throws TermServerScriptException, IOException {
+		Map<String, String> params = new HashMap<>();
+		TermServerReport.run(MismatchedLaterality.class, args, params);
+	}
+	
+	public void init (JobRun run) throws TermServerScriptException {
+		getArchiveManager().setPopulateReleasedFlag(true);
+		ReportSheetManager.targetFolderId = "1F-KrAwXrXbKj5r-HBLM0qI5hTzv-JgnU"; //Ad-hoc Reports
+		super.init(run);
+	}
+	
+	@Override
+	public Job getJob() {
+		return new Job()
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES))
+				.withName("Laterality Mismatch")
+				.withDescription("This report lists concepts that have laterality indicated in their attributes but not in their " + 
+						"FSN or visa versa")
+				.withProductionStatus(ProductionStatus.PROD_READY)
+				.withParameters(new JobParameters())
+				.withTag(INT)
+				.build();
+	}
+	
+	public void postInit() throws TermServerScriptException {
+		String[] tabNames = new String[] {"Lateralized FSN No Model",
+				"Lateralized Model No FSN", 
+				"Suspect Lateralization",
+				"Bilateralized FSN No Model",
+				"Bilateralized Model No FSN"};
+		String[] columnHeadings = new String[] {"Concept, FSN, SemTag, Expression",
+		"Concept, FSN, SemTag, Expression",
+		"Concept, FSN, SemTag, Expression",
+		"Concept, FSN, SemTag, Expression",
+		"Concept, FSN, SemTag, Expression"};
+		super.postInit(tabNames, columnHeadings, false);
+		hierarchies.add("< 71388002 |Procedure (procedure)|");
+		hierarchies.add("< 404684003 |Clinical finding (finding)| ");
+		hierarchies.add("< 123037004 |Body structure (body structure)|");
+	}
+	
+	public void runJob() throws TermServerScriptException {
+		for (String hierarchy : hierarchies) {
+			for (Concept c : findConcepts(hierarchy)) {
+				boolean hasLateralizedFSN = hasLateralizedFSN(c);
+				boolean hasBilateralFSN = hasBilateralFSN(c);
+				boolean hasLateralizedModel = hasLateralizedModel(c, 0);  //Only check 1 level downs
+				boolean hasBilaterlizedModel = hasBilateralizedModel(c, 0);
+				if (hasBilateralFSN && !hasBilaterlizedModel) {
+					report (QUATERNARY_REPORT, c, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+				} else if (!hasBilateralFSN && hasBilaterlizedModel) {
+					report (QUINARY_REPORT, c, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+				} else if (hasBilateralFSN && hasBilaterlizedModel) {
+					//All good here
+				} else if (hasLateralizedFSN && !hasLateralizedModel) {
+					report (PRIMARY_REPORT, c, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+				} else if (!hasLateralizedFSN && hasLateralizedModel) {
+					report (SECONDARY_REPORT, c, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+				}
+			}
+		}
+	}
+
+	private boolean hasLateralizedFSN(Concept c) {
+		String fsn = " " + c.getFsn().toLowerCase();
+		return fsn.contains(" left ") || fsn.contains(" right ");
+	}
+	
+	private boolean hasBilateralFSN(Concept c) {
+		String fsn = " " + c.getFsn().toLowerCase();
+		return fsn.contains(" bilateral ");
+	}
+
+
+	private boolean hasLateralizedModel(Concept c, int level) throws TermServerScriptException {
+		//So either a target value is a type of laterality or it is itself 
+		//lateralized - but we're only expecting that in a body structure
+		for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
+			if (r.getTarget().equals(LEFT) || r.getTarget().equals(RIGHT)) {
+				String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
+				if (!semTag.equals("(body structure)") && !reportedSuspect.contains(c)) {
+					report (TERTIARY_REPORT, c ,c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+					reportedSuspect.add(c);
+				}
+				return true;
+			} else if (level == 0 && hasLateralizedModel(r.getTarget(), 1)) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	private boolean hasBilateralizedModel(Concept c, int level) throws TermServerScriptException {
+		//So either a target value is a type of laterality or it is itself 
+		//lateralized - but we're only expecting that in a body structure
+		//Both must be present
+		boolean leftPresent = false;
+		boolean rightPresent = false;
+		for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
+			if (r.getTarget().equals(LEFT)) {
+				String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
+				if (!semTag.equals("(body structure)") && !reportedSuspect.contains(c)) {
+					report (TERTIARY_REPORT, c ,c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+					reportedSuspect.add(c);
+				}
+				leftPresent = true;
+			} if (r.getTarget().equals(RIGHT)) {
+				String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
+				if (!semTag.equals("(body structure)") && !reportedSuspect.contains(c)) {
+					report (TERTIARY_REPORT, c ,c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+					reportedSuspect.add(c);
+				}
+				rightPresent = true;
+			} else if (level == 0 && hasLaterality(r.getTarget(), LEFT)) {
+				leftPresent = true;
+			} else if (level == 0 && hasLaterality(r.getTarget(), RIGHT)) {
+				rightPresent = true;
+			}
+		}
+		return leftPresent && rightPresent;
+	}
+
+	private boolean hasLaterality(Concept c, Concept laterality) {
+		for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
+			if (r.getTarget().equals(laterality)) {
+				return true;
+			}
+		}
+		return false;
+	}
+}
