@@ -25,7 +25,7 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
  * 3.  Definition Status
  * 4.  Does the concept have SD descendants (inferred)
  * 5.  Does the concept have SD ancestors
- * 
+ * 6.  For QI, does the concept have attributes?
  * See HistoricStatsAnalyzer for analysis.
   * */
 public class HistoricStatsGenerator extends TermServerReport implements ReportClass {
@@ -99,11 +99,12 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 				String[] langRefSetIds = getLangRefsetIds(c);
 				String[] inactivationIds = getInactivationIds(c);
 				String[] histAssocIds = getHistAssocIds(c);
+				String hasAttributes = SnomedUtils.countAttributes(c, CharacteristicType.INFERRED_RELATIONSHIP) > 0 ? "Y" : "N";
 				ouput(fw, c.getConceptId(), active, defStatus, hierarchy, IP, sdDescendant, sdAncestor, 
 						relIds[ACTIVE], relIds[INACTIVE], descIds[ACTIVE], descIds[INACTIVE], 
 						axiomIds[ACTIVE], axiomIds[INACTIVE], langRefSetIds[ACTIVE], langRefSetIds[INACTIVE],
 						inactivationIds[ACTIVE], inactivationIds[INACTIVE], histAssocIds[ACTIVE], histAssocIds[INACTIVE],
-						c.getModuleId());
+						c.getModuleId(), hasAttributes);
 			}
 		} catch (Exception e) {
 			throw new TermServerScriptException(e);

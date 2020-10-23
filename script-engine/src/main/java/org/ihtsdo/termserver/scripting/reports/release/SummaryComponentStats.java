@@ -16,6 +16,7 @@ import org.ihtsdo.termserver.scripting.dao.ReportConfiguration.ReportFormatType;
 import org.ihtsdo.termserver.scripting.dao.ReportConfiguration.ReportOutputType;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.springframework.util.StringUtils;
@@ -43,27 +44,37 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 	int topLevelHierarchyCount = 0;
 	String complexName;
 	static final int TAB_CONCEPTS = 0, TAB_DESCS = 1, TAB_RELS = 2, TAB_AXIOMS = 3,
-			TAB_LANG = 4, TAB_INACT_IND = 5, TAB_HIST = 6, TAB_TEXT_DEFN = 7;
-	static final int COMPONENT_COUNT = 8;
-	static final int DATA_WIDTH = 22;  //New, Changed, Inactivated, Reactivated, New with New Concept, extra1, extra2, Total, next 11 fields are the inactivation reason, concept affected, reactivated
+			TAB_LANG = 4, TAB_INACT_IND = 5, TAB_HIST = 6, TAB_TEXT_DEFN = 7, TAB_QI = 8;
+	static final int COMPONENT_COUNT = 9;
+	static final int DATA_WIDTH = 25;  //New, Changed, Inactivated, Reactivated, New with New Concept, extra1, extra2, Total, next 11 fields are the inactivation reason, concept affected, reactivated
 	static final int IDX_NEW = 0, IDX_CHANGED = 1, IDX_INACT = 2, IDX_REACTIVATED = 3, IDX_NEW_NEW = 4, IDX_NEW_P = 5, IDX_NEW_SD = 6,
 			IDX_TOTAL = 7, IDX_INACT_AMBIGUOUS = 8,  IDX_INACT_MOVED_ELSEWHERE = 9, IDX_INACT_CONCEPT_NON_CURRENT = 10,
 			IDX_INACT_DUPLICATE = 11, IDX_INACT_ERRONEOUS = 12, IDX_INACT_INAPPROPRIATE = 13, IDX_INACT_LIMITED = 14,
 			IDX_INACT_OUTDATED = 15, IDX_INACT_PENDING_MOVE = 16, IDX_INACT_NON_CONFORMANCE = 17,
-			IDX_INACT_NOT_EQUIVALENT = 18, IDX_CONCEPTS_AFFECTED = 19, IDX_TOTAL_ACTIVE = 20, IDX_PROMOTED=21;
+			IDX_INACT_NOT_EQUIVALENT = 18, IDX_CONCEPTS_AFFECTED = 19, IDX_TOTAL_ACTIVE = 20, IDX_PROMOTED=21,
+			IDX_NEW_IN_QI_SCOPE = 22, IDX_GAINED_ATTRIBUTES = 23, IDX_LOST_ATTRIBUTES = 24; 
 	static Map<Integer, List<Integer>> sheetFieldsByIndex = getSheetFieldsMap();
 	static List<DescriptionType> TEXT_DEFN;
 	static List<DescriptionType> NOT_TEXT_DEFN;
 	List<Concept> topLevelHierarchies;
 	File debugFile;
 	
+	Concept[] QIScope = new Concept[] { BODY_STRUCTURE, CLINICAL_FINDING,
+			PHARM_BIO_PRODUCT, PROCEDURE,
+			SITN_WITH_EXP_CONTXT, SPECIMEN,
+			OBSERVABLE_ENTITY, EVENT, 
+			PHARM_DOSE_FORM};
+	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		params.put(PREV_RELEASE, "SnomedCT_USEditionRF2_PRODUCTION_20200301T120000Z.zip");
-		params.put(THIS_RELEASE, "SnomedCT_USEditionRF2_PRODUCTION_20200901T120000Z.zip");
-		params.put(MODULES, "731000124108");
-		params.put(REPORT_OUTPUT_TYPES, ReportOutputType.GOOGLE.name());
-		params.put(REPORT_FORMAT_TYPE, ReportFormatType.CSV.name());
+		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20200309T120000Z.zip");
+		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20200731T120000Z.zip");
+
+		//params.put(PREV_RELEASE, "SnomedCT_USEditionRF2_PRODUCTION_20200301T120000Z.zip");
+		//params.put(THIS_RELEASE, "SnomedCT_USEditionRF2_PRODUCTION_20200901T120000Z.zip");
+		//params.put(MODULES, "731000124108");
+		//params.put(REPORT_OUTPUT_TYPES, ReportOutputType.GOOGLE.name());
+		//params.put(REPORT_FORMAT_TYPE, ReportFormatType.CSV.name());
 		//params.put(REPORT_OUTPUT_TYPES, ReportOutputType.S3.name());
 		//params.put(REPORT_FORMAT_TYPE, ReportFormatType.JSON.name());
 		TermServerReport.run(SummaryComponentStats.class, args, params);
@@ -159,7 +170,8 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 												"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New with New Concept, Concepts Affected, Total Active",
 												"Sctid, Hierarchy, SemTag, Inactivations New / Reactivated, Changed, Inactivations Inactivated, Reactivated, New with New Concept, Ambiguous, Moved Elsewhere, Concept Non Current, Duplicate, Erroneous, Inappropriate, Limited, Outdated, Pending Move, Non Conformance, Not Equivalent, Concepts Affected, Total Active",
 												"Sctid, Hierarchy, SemTag, Assoc New, Changed, Assoc Inactivated, Reactivated, New with New Concept, Concepts Affected, Total Active",
-												"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New with New Concept, Total, Concepts Affected, Total Active"
+												"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New with New Concept, Total, Concepts Affected, Total Active",
+												"Sctid, Hierarchy, SemTag, In Scope New, Attributes Added, Model Removed, Model Inactivated, Total In Scope" 
 												};
 		String[] tabNames = new String[] {	"Concepts",
 											"Descriptions",
@@ -168,7 +180,8 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 											"LangRefSet",
 											"Inactivations",
 											"Hist Assoc",
-											"Text Defn"};
+											"Text Defn",
+											"QI Scope"};
 		topLevelHierarchies = new ArrayList<Concept>(ROOT_CONCEPT.getChildren(CharacteristicType.INFERRED_RELATIONSHIP));
 		topLevelHierarchies.add(UNKNOWN_CONCEPT); // Add this a we might not always be able to get the top level hierarchy
 		topLevelHierarchies.add(ROOT_CONCEPT);
@@ -232,7 +245,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 			boolean isNewConcept = datum==null;
 			Boolean wasSD = datum==null?null:datum.isSD;
 			Boolean wasActive = datum==null?null:datum.isActive;
-			analyzeConcept(c, wasSD, wasActive, summaryData[TAB_CONCEPTS]);
+			analyzeConcept(c, topLevel, wasSD, wasActive, summaryData[TAB_CONCEPTS], summaryData[TAB_QI]);
 			
 			//Only analyze concepts that are in scope for this extension
 			if (moduleFilter == null || moduleFilter.contains(c.getModuleId())) {
@@ -271,7 +284,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		return false;
 	}
 	
-	private void analyzeConcept(Concept c, Boolean wasSD, Boolean wasActive, int[] counts) throws TermServerScriptException {
+	private void analyzeConcept(Concept c, Concept topLevel, Boolean wasSD, Boolean wasActive, int[] counts, int[] qiCounts) throws TermServerScriptException {
 		//If we have no previous data, then the concept is new
 		boolean conceptIsNew = (wasSD == null);
 		
@@ -306,6 +319,39 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 			counts[IDX_INACT]++;
 		}
 		counts[IDX_TOTAL]++;
+		
+		//Check state change for QI tab
+		//Are we in scope for QI?
+		if (inQIScope(topLevel)) {
+			//Does it have a model?
+			boolean hasModel = SnomedUtils.countAttributes(c, CharacteristicType.INFERRED_RELATIONSHIP) > 0;
+			boolean hadModel = prevData.containsKey(c.getConceptId()) && prevData.get(c.getConceptId()).hasAttributes;
+			//Is it new with a model ?
+			//Or Has it gained a model since we last saw it?
+			if (conceptIsNew && hasModel) {
+				qiCounts[IDX_NEW_IN_QI_SCOPE]++;
+			} else if (!conceptIsNew && !hadModel && hasModel) {
+				qiCounts[IDX_GAINED_ATTRIBUTES]++;
+			} else if (c.isActive() && !conceptIsNew && hadModel && !hasModel) {
+				qiCounts[IDX_LOST_ATTRIBUTES]++;
+			} else if (!c.isActive() && hadModel) {
+				qiCounts[IDX_INACT]++;
+			}
+			
+			if (hasModel) {
+				qiCounts[IDX_TOTAL_ACTIVE]++;
+			}
+		}
+		
+	}
+
+	private boolean inQIScope(Concept topLevel) {
+		for (Concept scope : QIScope) {
+			if (topLevel.equals(scope)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private void analyzeComponents(boolean isNewConcept, Collection<String> ids, Collection<String> idsInactive, int[] counts, Collection<? extends Component> components) throws TermServerScriptException {
@@ -459,20 +505,23 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		// set up the report sheets and the fields they contain
 		final Map<Integer, List<Integer>> sheetFieldsByIndex = new HashMap<>();
 
-		sheetFieldsByIndex.put(TAB_CONCEPTS, new LinkedList(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_NEW, IDX_NEW_SD, IDX_NEW_P, IDX_TOTAL_ACTIVE, IDX_TOTAL, IDX_PROMOTED)));
+		sheetFieldsByIndex.put(TAB_CONCEPTS, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_NEW, IDX_NEW_SD, IDX_NEW_P, IDX_TOTAL_ACTIVE, IDX_TOTAL, IDX_PROMOTED)));
 
 		Arrays.asList(TAB_DESCS, TAB_RELS, TAB_AXIOMS, TAB_TEXT_DEFN).stream().forEach(index -> {
-			sheetFieldsByIndex.put(index, new LinkedList(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_NEW, IDX_TOTAL_ACTIVE, IDX_TOTAL, IDX_CONCEPTS_AFFECTED)));
+			sheetFieldsByIndex.put(index, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_NEW, IDX_TOTAL_ACTIVE, IDX_TOTAL, IDX_CONCEPTS_AFFECTED)));
 		});
 
-		sheetFieldsByIndex.put(TAB_INACT_IND, new LinkedList(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_NEW, IDX_INACT_AMBIGUOUS,
+		sheetFieldsByIndex.put(TAB_INACT_IND, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_NEW, IDX_INACT_AMBIGUOUS,
 				IDX_INACT_MOVED_ELSEWHERE, IDX_INACT_CONCEPT_NON_CURRENT, IDX_INACT_DUPLICATE, IDX_INACT_ERRONEOUS,
 				IDX_INACT_INAPPROPRIATE, IDX_INACT_LIMITED, IDX_INACT_OUTDATED, IDX_INACT_PENDING_MOVE, IDX_INACT_NON_CONFORMANCE,
 				IDX_INACT_NOT_EQUIVALENT, IDX_CONCEPTS_AFFECTED, IDX_TOTAL_ACTIVE)));
 
 		Arrays.asList(TAB_LANG, TAB_HIST).stream().forEach(index -> {
-			sheetFieldsByIndex.put(index, new LinkedList((Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_NEW, IDX_CONCEPTS_AFFECTED, IDX_TOTAL_ACTIVE))));
+			sheetFieldsByIndex.put(index, new LinkedList<Integer>((Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_NEW, IDX_CONCEPTS_AFFECTED, IDX_TOTAL_ACTIVE))));
 		});
+		
+		sheetFieldsByIndex.put(TAB_QI, new LinkedList<Integer>(Arrays.asList(IDX_NEW_IN_QI_SCOPE, IDX_GAINED_ATTRIBUTES, IDX_LOST_ATTRIBUTES, IDX_INACT, IDX_TOTAL_ACTIVE)));
+
 
 		return sheetFieldsByIndex;
 	}
@@ -567,6 +616,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		List<String> langRefsetIdsInact;
 		List<String> inactivationIdsInact;
 		List<String> histAssocIdsInact;
+		boolean hasAttributes;
 		
 		@Override
 		public int hashCode () {
@@ -607,6 +657,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		datum.histAssocIds = Arrays.asList(lineItems[++idx].split(","));
 		datum.histAssocIdsInact = Arrays.asList(lineItems[++idx].split(","));
 		datum.moduleId = lineItems[++idx];
+		datum.hasAttributes = lineItems[++idx].equals("Y");
 		return datum;
 	}
 	

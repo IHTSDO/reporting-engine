@@ -7,7 +7,6 @@ import java.util.*;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.AncestorsCache;
-import org.ihtsdo.termserver.scripting.dao.ReportConfiguration;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
@@ -21,10 +20,12 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
  * */
 public class ReleaseStats extends TermServerReport implements ReportClass {
 	
+	Set<Concept> statedIntermediatePrimitives;
+	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		params.put(REPORT_OUTPUT_TYPES, ReportConfiguration.ReportOutputType.S3.toString());
-		params.put(REPORT_FORMAT_TYPE, ReportConfiguration.ReportFormatType.JSON.toString());
+		//params.put(REPORT_OUTPUT_TYPES, ReportConfiguration.ReportOutputType.S3.toString());
+		//params.put(REPORT_FORMAT_TYPE, ReportConfiguration.ReportFormatType.JSON.toString());
 		TermServerReport.run(ReleaseStats.class, args, params);
 	}
 
@@ -57,11 +58,11 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 		info("Checking for ungrouped crossovers");
 		reportUngroupedCrossovers();
 		
-		info("Checking for Intermediate Primitives");
-		countIPs(CharacteristicType.INFERRED_RELATIONSHIP, QUINARY_REPORT);
-		
 		info("Checking for Stated Intermediate Primitives");
 		countIPs(CharacteristicType.STATED_RELATIONSHIP, SENARY_REPORT);
+		
+		info("Checking for Intermediate Primitives");
+		countIPs(CharacteristicType.INFERRED_RELATIONSHIP, QUINARY_REPORT);
 		
 		info("Calculating Fully Defined %");
 		countSD(CharacteristicType.STATED_RELATIONSHIP, QUINARY_REPORT);
@@ -97,6 +98,7 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA
+		manyTabWideOutput = true;
 		super.init(run);
 	}
 	
@@ -106,13 +108,15 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 												"SCTID, FSN, SemTag, Crossover",
 												"SCTID, FSN, SemTag, Crossover",
 												"SCTID, FSN, SemTag",
+												"SCTID, FSN, SemTag",
 												"SCTID, FSN, SemTag"};
 		String[] tabNames = new String[] {	"Summary Release Stats",
 											"Summary KPI Counts", 
 											"Role group crossovers",
 											"Ungrouped crossovers",
 											"Intermediate Primitives",
-											"Stated Intermediate Primitives"};
+											"Stated Intermediate Primitives",
+											"IP Inferred not Stated"};
 		super.postInit(tabNames, columnHeadings, false);
 	}
 
@@ -188,13 +192,24 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 	public void countIPs (CharacteristicType charType, int reportIdx) throws TermServerScriptException {
 		int ipCount = 0;
 		int orphanetIPs = 0;
-		//Pre-load Orphanet concepts incase in case it causes another concept to be created
+		//Pre-load Orphanet concepts in case in case it causes another concept to be created
 		gl.getOrphanetConcepts();
-		for (Concept c : identifyIntermediatePrimitives(gl.getAllConcepts(), charType)) {
+		Set<Concept> intermediatePrimitives = identifyIntermediatePrimitives(gl.getAllConcepts(), charType);
+		if (charType.equals(CharacteristicType.STATED_RELATIONSHIP)) {
+			statedIntermediatePrimitives = intermediatePrimitives;
+		}
+		for (Concept c : intermediatePrimitives) {
 			ipCount++;
 			report(reportIdx, c);
+			
 			if (gl.isOrphanetConcept(c)) {
 				orphanetIPs++;
+			}
+			
+			//Are we an IP in the inferred view but not the stated?
+			if (charType.equals(CharacteristicType.INFERRED_RELATIONSHIP) && 
+					!statedIntermediatePrimitives.contains(c)) {
+				report (SEPTENARY_REPORT, c);
 			}
 		}
 		String statedIndicator = charType.equals(CharacteristicType.STATED_RELATIONSHIP)?" stated":"";
