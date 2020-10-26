@@ -18,6 +18,10 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 public class MismatchedLaterality extends TermServerReport implements ReportClass {
 	Set<String> hierarchies = new HashSet<>();
 	Set<Concept> reportedSuspect = new HashSet<>();
+	Map<String, Concept> fsnMap = new HashMap<>();
+	
+	public static String STR_LEFT = "left";
+	public static String STR_RIGHT = "right";
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
@@ -44,20 +48,31 @@ public class MismatchedLaterality extends TermServerReport implements ReportClas
 	}
 	
 	public void postInit() throws TermServerScriptException {
-		String[] tabNames = new String[] {"Lateralized FSN No Model",
+		String[] tabNames = new String[] {
+				"Missing Concepts",
+				"Lateralized FSN No Model",
 				"Lateralized Model No FSN", 
 				"Suspect Lateralization",
 				"Bilateralized FSN No Model",
 				"Bilateralized Model No FSN"};
-		String[] columnHeadings = new String[] {"Concept, FSN, SemTag, Expression",
-		"Concept, FSN, SemTag, Expression",
-		"Concept, FSN, SemTag, Expression",
-		"Concept, FSN, SemTag, Expression",
-		"Concept, FSN, SemTag, Expression"};
+		String[] columnHeadings = new String[] {
+			"Concept, FSN, SemTag, Missing Concept",
+			"Concept, FSN, SemTag, Expression",
+			"Concept, FSN, SemTag, Expression",
+			"Concept, FSN, SemTag, Expression",
+			"Concept, FSN, SemTag, Expression",
+			"Concept, FSN, SemTag, Expression"};
 		super.postInit(tabNames, columnHeadings, false);
 		hierarchies.add("< 71388002 |Procedure (procedure)|");
 		hierarchies.add("< 404684003 |Clinical finding (finding)| ");
 		hierarchies.add("< 123037004 |Body structure (body structure)|");
+		
+		info("Populating FSN map for all concepts");
+		for (Concept c : gl.getAllConcepts()) {
+			if (c.isActive()) {
+				fsnMap.put(c.getFsn().toLowerCase(), c);
+			}
+		}
 	}
 	
 	public void runJob() throws TermServerScriptException {
@@ -68,23 +83,49 @@ public class MismatchedLaterality extends TermServerReport implements ReportClas
 				boolean hasLateralizedModel = hasLateralizedModel(c, 0);  //Only check 1 level downs
 				boolean hasBilaterlizedModel = hasBilateralizedModel(c, 0);
 				if (hasBilateralFSN && !hasBilaterlizedModel) {
-					report (QUATERNARY_REPORT, c, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
-				} else if (!hasBilateralFSN && hasBilaterlizedModel) {
 					report (QUINARY_REPORT, c, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+				} else if (!hasBilateralFSN && hasBilaterlizedModel) {
+					report (SENARY_REPORT, c, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 				} else if (hasBilateralFSN && hasBilaterlizedModel) {
 					//All good here
 				} else if (hasLateralizedFSN && !hasLateralizedModel) {
-					report (PRIMARY_REPORT, c, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
-				} else if (!hasLateralizedFSN && hasLateralizedModel) {
 					report (SECONDARY_REPORT, c, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+				} else if (!hasLateralizedFSN && hasLateralizedModel) {
+					report (TERTIARY_REPORT, c, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+				}
+				
+				if (hasLateralizedFSN && !hasBilateralFSN) {
+					checkForCounterpartLaterality(c);
 				}
 			}
 		}
 	}
 
+	private void checkForCounterpartLaterality(Concept c) throws TermServerScriptException {
+		if (hasLateralizedFSN(c, STR_LEFT)) {
+			checkForCounterpartLaterality(c, STR_LEFT, STR_RIGHT);
+		} else {
+			checkForCounterpartLaterality(c, STR_RIGHT, STR_LEFT);
+		}
+	}
+
+	private void checkForCounterpartLaterality(Concept c, String current, String siblingLaterality) throws TermServerScriptException {
+		//What would the name of the sibling concept be?
+		String origFSN = " " + c.getFsn().toLowerCase();
+		String targetFSN = origFSN.replace(" " + current + " ", " " + siblingLaterality + " ").trim();
+		Concept sibling = fsnMap.get(targetFSN);
+		if (sibling == null) {
+			report (PRIMARY_REPORT, c, targetFSN);
+		}
+	}
+
 	private boolean hasLateralizedFSN(Concept c) {
+		return hasLateralizedFSN(c, STR_LEFT) || hasLateralizedFSN(c, STR_RIGHT);
+	}
+	
+	private boolean hasLateralizedFSN(Concept c, String laterality) {
 		String fsn = " " + c.getFsn().toLowerCase();
-		return fsn.contains(" left ") || fsn.contains(" right ");
+		return fsn.contains(" " + laterality + " ");
 	}
 	
 	private boolean hasBilateralFSN(Concept c) {
@@ -100,7 +141,7 @@ public class MismatchedLaterality extends TermServerReport implements ReportClas
 			if (r.getTarget().equals(LEFT) || r.getTarget().equals(RIGHT)) {
 				String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
 				if (!semTag.equals("(body structure)") && !reportedSuspect.contains(c)) {
-					report (TERTIARY_REPORT, c ,c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+					report (QUATERNARY_REPORT, c ,c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 					reportedSuspect.add(c);
 				}
 				return true;
