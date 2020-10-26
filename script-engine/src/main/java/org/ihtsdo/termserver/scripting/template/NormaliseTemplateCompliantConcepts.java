@@ -357,9 +357,13 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		subsetECL = "< 238575004 |Allergic contact dermatitis (disorder)|";
 		templateNames = new String[] { "templates/Allergic Contact Dermatitis.json" };
 		includeComplexTemplates = true;
-		*/
+		
 		subsetECL = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 31883006 |Fused structure (morphologic abnormality)|";
 		templateNames = new String[] { "templates/morphologies/Fused.json" };
+		*/
+		
+		subsetECL = "<< 66091009 |Congenital disease (disorder)|| : 116676008 |Associated morphology (attribute)| = << 399984000 |Abnormal shape (morphologic abnormality)|";
+		templateNames = new String[] { "templates/morphologies/Abnormal Shape.json" };
 		
 		//TODO We're seeing 'HIGH' warnings about existing parents being redundant in presence of PPP but before the PPP gets added. Investigate
 		//I think this might happen when we set a PPP which is lower than the existing parent.
