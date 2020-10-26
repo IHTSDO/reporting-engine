@@ -475,7 +475,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		initialiseSummary(issueStr);
 		nextConcept:
 		for (Concept c : gl.getAllConcepts()) {
-			if (includeLegacyIssues || (inScope(c) && recentlyTouched.contains(c))) {
+			if (inScope(c) && (includeLegacyIssues || recentlyTouched.contains(c))) {
 				//We're going to skip concepts with clinical drugs
 				if (c.getFsn().contains("(medicinal") || 
 						c.getFsn().contains("(clinical") ||
@@ -552,7 +552,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		initialiseSummary(issueStr);
 
 		for (Concept c : gl.getAllConcepts()) {
-			if (includeLegacyIssues || recentlyTouched.contains(c)) {
+			if (inScope(c) && (includeLegacyIssues || recentlyTouched.contains(c))) {
 				ActiveState activeState = includeLegacyIssues ? ActiveState.BOTH : ActiveState.ACTIVE;
 				for (Description d : c.getDescriptions(activeState)) {
 					boolean descriptionNotReported = true;
@@ -587,7 +587,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		initialiseSummary(issueStr);
 
 		for (Concept c : gl.getAllConcepts()) {
-			if (includeLegacyIssues || recentlyTouched.contains(c)) {
+			if (inScope(c) && (includeLegacyIssues || recentlyTouched.contains(c))) {
 				ActiveState activeState = includeLegacyIssues ? ActiveState.BOTH : ActiveState.ACTIVE;
 				for (Description d : c.getDescriptions(activeState)) {
 					boolean descriptionNotReported = true;
