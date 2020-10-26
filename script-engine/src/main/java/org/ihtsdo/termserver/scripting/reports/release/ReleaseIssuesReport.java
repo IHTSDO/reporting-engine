@@ -50,6 +50,7 @@ import com.google.common.io.Files;
  RP-241 Check axioms for correct module.  In fact, existing code is sufficient here.
  MAINT-1295 Report concepts with no semantic tag where modified in current release
  RP-414 Add check for repeated word groups
+ RP-397 Check for duplicated words, words often typed in reverse, and highlight possible contraction changes
  */
 public class ReleaseIssuesReport extends TermServerReport implements ReportClass {
 	
@@ -58,6 +59,8 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	String[] knownAbbrevs = new String[] {	"ser","ss","subsp",
 											"f","E", "var", "St"};
 	Set<String> stopWords = new HashSet<>();
+	List<String> wordsOftenTypedInReverse = new ArrayList<>();
+	List<String> wordsOftenTypedTwice = new ArrayList<>();
 	char NBSP = 255;
 	String NBSPSTR = "\u00A0";
 	String LONG_DASH = "—";
@@ -111,6 +114,36 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		stopWords.add("disease");
 		stopWords.add("[in");
 		stopWords.add("cell");
+
+		Collections.addAll(
+				wordsOftenTypedInReverse,
+				"To",
+				"to",
+				"Of",
+				"of"
+		);
+
+		Collections.addAll(
+				wordsOftenTypedTwice,
+				"To",
+				"to",
+				"Of",
+				"of",
+				"About",
+				"about",
+				"Not",
+				"not",
+				"For",
+				"for",
+				"And",
+				"and",
+				"Or",
+				"or",
+				"With",
+				"with",
+				"Be",
+				"be"
+		);
 	}
 	
 	public void postInit() throws TermServerScriptException {
@@ -182,7 +215,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		spaceBracket();
 		missingSemanticTag();
 		repeatedWordGroups();
-		
+		reviewContractions();
+		wordsInReverse();
+
 		info("...duplicate semantic tags");
 		duplicateSemanticTags();
 		
@@ -440,7 +475,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		initialiseSummary(issueStr);
 		nextConcept:
 		for (Concept c : gl.getAllConcepts()) {
-			if (inScope(c) && recentlyTouched.contains(c)) {
+			if (includeLegacyIssues || (inScope(c) && recentlyTouched.contains(c))) {
 				//We're going to skip concepts with clinical drugs
 				if (c.getFsn().contains("(medicinal") || 
 						c.getFsn().contains("(clinical") ||
@@ -449,8 +484,11 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				}
 				
 				boolean compoundCounted = false;
-				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-					if (!d.isReleased()) {
+				ActiveState activeState = includeLegacyIssues ? ActiveState.BOTH : ActiveState.ACTIVE;
+				for (Description d : c.getDescriptions(activeState)) {
+					boolean descriptionNotChecked = true;
+					boolean includeLegacyIssuesOrNonReleasedIssues = includeLegacyIssues ? true : !d.isReleased();
+					if (includeLegacyIssuesOrNonReleasedIssues) {
 						int concern = 0;
 						//If this is a text definition, that's less concerning
 						if (d.getType().equals(DescriptionType.TEXT_DEFINITION)) {
@@ -464,7 +502,20 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 								continue;
 							}
 
-							for (int y=0; y < words.length; y++) {
+                            for (int y=0; y < words.length; y++) {
+								//Check for duplicate words that are side-by-side.
+								if(y + 1 < words.length){
+									String currentWord = words[y];
+									String nextWord = words[y + 1];
+									boolean wordsEqual = currentWord.equalsIgnoreCase(nextWord);
+									boolean wordOftenTypedTwice = wordsOftenTypedTwice.contains(currentWord);
+									if(descriptionNotChecked && wordsEqual && wordOftenTypedTwice){
+										descriptionNotChecked = false;
+										report (c, "Description uses repeating words", "Repeated word: " + currentWord, d);
+									}
+								}
+
+								//Check for duplicated word groups.
 								if (x != y && words[x].equalsIgnoreCase(words[y])) {
 									concern++;
 									//If we have an 'and' or 'width' to the left that we haven't counted, that's 
@@ -488,6 +539,69 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 										continue nextConcept;
 									}
 								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	private void reviewContractions() throws TermServerScriptException {
+		String issueStr = "Contraction(s) to be reviewed for Description";
+		initialiseSummary(issueStr);
+
+		for (Concept c : gl.getAllConcepts()) {
+			if (includeLegacyIssues || recentlyTouched.contains(c)) {
+				ActiveState activeState = includeLegacyIssues ? ActiveState.BOTH : ActiveState.ACTIVE;
+				for (Description d : c.getDescriptions(activeState)) {
+					boolean descriptionNotReported = true;
+					String[] words = d.getTerm().split(" ");
+					int wordsLength = words.length;
+					for (int x = 0; x < wordsLength; x++) {
+						String currentWord = words[x];
+						if (descriptionNotReported) {
+							if (x + 1 < wordsLength) {
+								String nextWord = words[x + 1];
+								if ("can".equalsIgnoreCase(currentWord) && "not".equalsIgnoreCase(nextWord)) {
+									descriptionNotReported = false;
+									String issueHelp = String.format("Option to use contraction for '%s' and '%s'.", currentWord, nextWord);
+									report(c, issueStr, issueHelp, d);
+								}
+							}
+
+							if ("cannot".equalsIgnoreCase(currentWord)) {
+								descriptionNotReported = false;
+								String issueHelp = String.format("Option to remove contraction '%s'.", currentWord);
+								report(c, issueStr, issueHelp, d);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	private void wordsInReverse() throws TermServerScriptException {
+		String issueStr = "Potential mistyped word in Description";
+		initialiseSummary(issueStr);
+
+		for (Concept c : gl.getAllConcepts()) {
+			if (includeLegacyIssues || recentlyTouched.contains(c)) {
+				ActiveState activeState = includeLegacyIssues ? ActiveState.BOTH : ActiveState.ACTIVE;
+				for (Description d : c.getDescriptions(activeState)) {
+					boolean descriptionNotReported = true;
+					String[] words = d.getTerm().split(" ");
+					int wordsLength = words.length;
+					for (int x = 0; x < wordsLength; x++) {
+						if (descriptionNotReported) {
+							String currentWord = words[x];
+							String currentWordInReverse = new StringBuilder(currentWord).reverse().toString();
+							int indexOf = wordsOftenTypedInReverse.indexOf(currentWordInReverse);
+							if (indexOf != -1) {
+								descriptionNotReported = false;
+								String issueHelp = String.format("The word '%s' looks to be '%s' in reverse.", currentWord, wordsOftenTypedInReverse.get(indexOf));
+								report(c, issueStr, issueHelp, d);
 							}
 						}
 					}
