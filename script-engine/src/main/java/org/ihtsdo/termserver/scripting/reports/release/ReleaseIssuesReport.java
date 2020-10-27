@@ -575,20 +575,16 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		for (Concept c : gl.getAllConcepts()) {
 			if (inScope(c) && (includeLegacyIssues || recentlyTouched.contains(c))) {
 				ActiveState activeState = includeLegacyIssues ? ActiveState.BOTH : ActiveState.ACTIVE;
+				nextDescription:
 				for (Description d : c.getDescriptions(activeState)) {
-					boolean descriptionNotReported = true;
 					String[] words = d.getTerm().split(" ");
-					int wordsLength = words.length;
-					for (int x = 0; x < wordsLength; x++) {
-						if (descriptionNotReported) {
-							String currentWord = words[x];
-							String currentWordInReverse = new StringBuilder(currentWord).reverse().toString();
-							int indexOf = wordsOftenTypedInReverse.indexOf(currentWordInReverse);
-							if (indexOf != -1) {
-								descriptionNotReported = false;
-								String issueHelp = String.format("The word '%s' looks to be '%s' in reverse.", currentWord, wordsOftenTypedInReverse.get(indexOf));
-								report(c, issueStr, issueHelp, d);
-							}
+					for (String currentWord : words) {
+						String currentWordInReverse = new StringBuilder(currentWord).reverse().toString();
+						int indexOf = wordsOftenTypedInReverse.indexOf(currentWordInReverse);
+						if (indexOf != -1) {
+							String detailStr = String.format("The word '%s' looks to be '%s' in reverse.", currentWord, wordsOftenTypedInReverse.get(indexOf));
+							report(c, issueStr, isLegacy(d), isActive(c, d), detailStr, d);
+							continue nextDescription;
 						}
 					}
 				}
