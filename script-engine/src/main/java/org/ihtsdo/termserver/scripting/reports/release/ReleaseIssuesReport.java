@@ -463,20 +463,23 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			}
 		}
 	}
-	
+
 	private void repeatedWordGroups() throws TermServerScriptException {
-		String issueStr = "Description uses repeating word group";
-		initialiseSummary(issueStr);
+		String wordGroupIssueStr = "Description uses repeating word group";
+		String wordIssueStr = "Description uses repeating words";
+		initialiseSummary(wordGroupIssueStr);
+		initialiseSummary(wordIssueStr);
+
 		nextConcept:
 		for (Concept c : gl.getAllConcepts()) {
 			if (inScope(c) && (includeLegacyIssues || recentlyTouched.contains(c))) {
 				//We're going to skip concepts with clinical drugs
-				if (c.getFsn().contains("(medicinal") || 
+				if (c.getFsn().contains("(medicinal") ||
 						c.getFsn().contains("(clinical") ||
 						c.getFsn().contains("(product")) {
 					continue nextConcept;
 				}
-				
+
 				boolean compoundCounted = false;
 				ActiveState activeState = includeLegacyIssues ? ActiveState.BOTH : ActiveState.ACTIVE;
 				for (Description d : c.getDescriptions(activeState)) {
@@ -489,23 +492,23 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 							//Turning down the sensitivity here, lots of words makes for more repetition.
 							concern -= 2;
 						}
-						
+
 						String[] words = d.getTerm().split(" ");
-						for (int x=0; x < words.length; x++) {
+						for (int x = 0; x < words.length; x++) {
 							if (stopWords.contains(words[x]) || words[x].length() <= 2) {
 								continue;
 							}
 
-                            for (int y=0; y < words.length; y++) {
+							for (int y = 0; y < words.length; y++) {
 								//Check for duplicate words that are side-by-side.
-								if(y + 1 < words.length){
+								if (y + 1 < words.length) {
 									String currentWord = words[y];
 									String nextWord = words[y + 1];
 									boolean wordsEqual = currentWord.equalsIgnoreCase(nextWord);
 									boolean wordOftenTypedTwice = wordsOftenTypedTwice.contains(currentWord);
-									if(descriptionNotChecked && wordsEqual && wordOftenTypedTwice){
+									if (descriptionNotChecked && wordsEqual && wordOftenTypedTwice) {
 										descriptionNotChecked = false;
-										report (c, "Description uses repeating words", "Repeated word: " + currentWord, d);
+										report(c, wordIssueStr, isLegacy(d), isActive(c, d), "Repeated word: " + currentWord, d);
 									}
 								}
 
@@ -521,15 +524,15 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 											compoundCounted = true;
 										}
 									}
-									
+
 									//We'll also check a word left or right 
 									//of X to be the same as a word to the left or right of Y
 									if (!alsoHasSameWordToLeftOrRight(words, x, y)) {
 										concern--;
 									}
-	
+
 									if (concern > 2) {
-										report (c, issueStr, "Repeated word: " + words[x], d);
+										report(c, wordGroupIssueStr, isLegacy(d), isActive(c, d), "Repeated word: " + words[x], d);
 										continue nextConcept;
 									}
 								}
