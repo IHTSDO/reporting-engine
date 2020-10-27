@@ -545,33 +545,22 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	}
 
 	private void reviewContractions() throws TermServerScriptException {
-		String issueStr = "Contraction(s) to be reviewed for Description";
+		String issueStr = "Contraction(s) to be reviewed for Concept";
+		String detailStr = "Option to add/remove contraction(s)";
 		initialiseSummary(issueStr);
 
+		nextConcept:
 		for (Concept c : gl.getAllConcepts()) {
 			if (inScope(c) && (includeLegacyIssues || recentlyTouched.contains(c))) {
 				ActiveState activeState = includeLegacyIssues ? ActiveState.BOTH : ActiveState.ACTIVE;
 				for (Description d : c.getDescriptions(activeState)) {
-					boolean descriptionNotReported = true;
 					String[] words = d.getTerm().split(" ");
 					int wordsLength = words.length;
 					for (int x = 0; x < wordsLength; x++) {
 						String currentWord = words[x];
-						if (descriptionNotReported) {
-							if (x + 1 < wordsLength) {
-								String nextWord = words[x + 1];
-								if ("can".equalsIgnoreCase(currentWord) && "not".equalsIgnoreCase(nextWord)) {
-									descriptionNotReported = false;
-									String issueHelp = String.format("Option to use contraction for '%s' and '%s'.", currentWord, nextWord);
-									report(c, issueStr, issueHelp, d);
-								}
-							}
-
-							if ("cannot".equalsIgnoreCase(currentWord)) {
-								descriptionNotReported = false;
-								String issueHelp = String.format("Option to remove contraction '%s'.", currentWord);
-								report(c, issueStr, issueHelp, d);
-							}
+						if ("cannot".equalsIgnoreCase(currentWord) || (x + 1 < wordsLength && "can".equalsIgnoreCase(currentWord) && "not".equalsIgnoreCase(words[x + 1]))) {
+							report(c, issueStr, isLegacy(d), isActive(c, d), detailStr, d);
+							continue nextConcept;
 						}
 					}
 				}
