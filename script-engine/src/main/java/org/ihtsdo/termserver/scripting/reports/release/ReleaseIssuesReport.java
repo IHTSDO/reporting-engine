@@ -115,35 +115,29 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		stopWords.add("[in");
 		stopWords.add("cell");
 
-		Collections.addAll(
-				wordsOftenTypedInReverse,
-				"To",
-				"to",
-				"Of",
-				"of"
-		);
+		wordsOftenTypedInReverse.add("To");
+		wordsOftenTypedInReverse.add("to");
+		wordsOftenTypedInReverse.add("Of");
+		wordsOftenTypedInReverse.add("of");
 
-		Collections.addAll(
-				wordsOftenTypedTwice,
-				"To",
-				"to",
-				"Of",
-				"of",
-				"About",
-				"about",
-				"Not",
-				"not",
-				"For",
-				"for",
-				"And",
-				"and",
-				"Or",
-				"or",
-				"With",
-				"with",
-				"Be",
-				"be"
-		);
+		wordsOftenTypedTwice.add("To");
+		wordsOftenTypedTwice.add("to");
+		wordsOftenTypedTwice.add("Of");
+		wordsOftenTypedTwice.add("of");
+		wordsOftenTypedTwice.add("About");
+		wordsOftenTypedTwice.add("about");
+		wordsOftenTypedTwice.add("Not");
+		wordsOftenTypedTwice.add("not");
+		wordsOftenTypedTwice.add("For");
+		wordsOftenTypedTwice.add("for");
+		wordsOftenTypedTwice.add("And");
+		wordsOftenTypedTwice.add("and");
+		wordsOftenTypedTwice.add("Or");
+		wordsOftenTypedTwice.add("or");
+		wordsOftenTypedTwice.add("With");
+		wordsOftenTypedTwice.add("with");
+		wordsOftenTypedTwice.add("Be");
+		wordsOftenTypedTwice.add("be");
 	}
 	
 	public void postInit() throws TermServerScriptException {
