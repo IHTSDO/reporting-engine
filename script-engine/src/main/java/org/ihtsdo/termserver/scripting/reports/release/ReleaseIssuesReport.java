@@ -470,8 +470,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		initialiseSummary(wordGroupIssueStr);
 		initialiseSummary(wordIssueStr);
 
+		final Collection<Concept> concepts = includeLegacyIssues ? gl.getAllConcepts() : allActiveConcepts;
 		nextConcept:
-		for (Concept c : gl.getAllConcepts()) {
+		for (Concept c : concepts) {
 			if (inScope(c) && (includeLegacyIssues || recentlyTouched.contains(c))) {
 				//We're going to skip concepts with clinical drugs
 				String fsn = c.getFsnSafely();
@@ -482,8 +483,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				}
 
 				boolean compoundCounted = false;
-				ActiveState activeState = includeLegacyIssues ? ActiveState.BOTH : ActiveState.ACTIVE;
-				for (Description d : c.getDescriptions(activeState)) {
+				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 					boolean descriptionNotChecked = true;
 					boolean includeLegacyIssuesOrNonReleasedIssues = includeLegacyIssues ? true : !d.isReleased();
 					if (includeLegacyIssuesOrNonReleasedIssues) {
