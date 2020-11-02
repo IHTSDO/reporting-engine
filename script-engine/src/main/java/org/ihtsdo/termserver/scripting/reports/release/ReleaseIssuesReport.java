@@ -551,10 +551,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		initialiseSummary(issueStr);
 
 		nextConcept:
-		for (Concept c : gl.getAllConcepts()) {
+		for (Concept c : allActiveConcepts) {
 			if (inScope(c) && (includeLegacyIssues || recentlyTouched.contains(c))) {
-				ActiveState activeState = includeLegacyIssues ? ActiveState.BOTH : ActiveState.ACTIVE;
-				for (Description d : c.getDescriptions(activeState)) {
+				for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 					String[] words = d.getTerm().split(" ");
 					int wordsLength = words.length;
 					for (int x = 0; x < wordsLength; x++) {
