@@ -474,9 +474,10 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		for (Concept c : gl.getAllConcepts()) {
 			if (inScope(c) && (includeLegacyIssues || recentlyTouched.contains(c))) {
 				//We're going to skip concepts with clinical drugs
-				if (c.getFsn().contains("(medicinal") ||
-						c.getFsn().contains("(clinical") ||
-						c.getFsn().contains("(product")) {
+				String fsn = c.getFsnSafely();
+				if (fsn.contains("(medicinal") ||
+						fsn.contains("(clinical") ||
+						fsn.contains("(product")) {
 					continue nextConcept;
 				}
 
