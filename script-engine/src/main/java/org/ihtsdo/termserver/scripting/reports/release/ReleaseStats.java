@@ -3,6 +3,8 @@ package org.ihtsdo.termserver.scripting.reports.release;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
@@ -13,6 +15,7 @@ import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
+import org.springframework.util.StringUtils;
 
 /**
  * Reports concepts that are intermediate primitives from point of view of some subhierarchy
@@ -20,20 +23,23 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
  * */
 public class ReleaseStats extends TermServerReport implements ReportClass {
 	
-	Set<Concept> statedIntermediatePrimitives;
-	
+	public static final String THIS_RELEASE = "This Release";
+	public static final String MODULES = "Modules";
+	protected Set<Concept> statedIntermediatePrimitives;
+	protected List<String> moduleFilter;
+
+
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		//params.put(REPORT_OUTPUT_TYPES, ReportConfiguration.ReportOutputType.S3.toString());
-		//params.put(REPORT_FORMAT_TYPE, ReportConfiguration.ReportFormatType.JSON.toString());
+		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20200731T120000Z.zip");
 		TermServerReport.run(ReleaseStats.class, args, params);
 	}
 
 	@Override
 	public Job getJob() {
 		JobParameters params = new JobParameters()
-				.add(REPORT_OUTPUT_TYPES).withType(JobParameter.Type.HIDDEN)
-				.add(REPORT_FORMAT_TYPE).withType(JobParameter.Type.HIDDEN)
+				.add(THIS_RELEASE).withType(JobParameter.Type.STRING)
+				.add(MODULES).withType(JobParameter.Type.STRING)
 				.build();
 
 		return new Job()
@@ -71,9 +77,6 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 
 
 	private void reportGeneralReleaseStats() throws TermServerScriptException {
-		/* Double check these with SQL:
-		 * 
-		 */
 		int allConcepts = 0, activeConcepts = 0, sd = 0, p = 0, activeDesc = 0, activeInf = 0;
 		for (Concept c : gl.getAllConcepts()) {
 			allConcepts++;
@@ -99,6 +102,17 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA
 		manyTabWideOutput = true;
+		
+		if (!StringUtils.isEmpty(run.getParamValue(THIS_RELEASE))) {
+			projectName = run.getParamValue(THIS_RELEASE);
+			run.setProject(projectName);
+		}
+		
+		if (!StringUtils.isEmpty(run.getParamValue(MODULES))) {
+			moduleFilter = Stream.of(run.getParamValue(MODULES).split(",", -1))
+					.collect(Collectors.toList());
+		}
+		
 		super.init(run);
 	}
 	
@@ -124,38 +138,52 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 		int roleGroupCrossOvers = 0;
 		Set<GroupPair> processedPairs = new HashSet<>();
 		for (Concept c : gl.getAllConcepts()) {
-			Collection<RelationshipGroup> groups = c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP);
-			//We only need to worry about concepts with >1 role group
-			if (c.isActive() && groups.size() > 1) {
-				processedPairs.clear();
-				//Test every group against every other group
-				for (RelationshipGroup left : groups) {
-					if (!left.isGrouped()) {
-						continue;
-					}
-					for (RelationshipGroup right : groups) {
-						if (left.getGroupId()==right.getGroupId() || !right.isGrouped()) {
+			if (inScope(c)) {
+				Collection<RelationshipGroup> groups = c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP);
+				//We only need to worry about concepts with >1 role group
+				if (c.isActive() && groups.size() > 1) {
+					processedPairs.clear();
+					//Test every group against every other group
+					for (RelationshipGroup left : groups) {
+						if (!left.isGrouped()) {
 							continue;
 						}
-						//Have we already processed this combination in the opposite order?
-						if (processedPairs.contains(new GroupPair(right, left))) {
-							continue;
+						for (RelationshipGroup right : groups) {
+							if (left.getGroupId()==right.getGroupId() || !right.isGrouped()) {
+								continue;
+							}
+							//Have we already processed this combination in the opposite order?
+							if (processedPairs.contains(new GroupPair(right, left))) {
+								continue;
+							}
+							switch (CrossoverUtils.subsumptionRoleGroupTest(left, right)) {
+								case ROLEGROUPS_CROSSOVER :
+								case ROLES_CROSSOVER:	
+													roleGroupCrossOvers++;
+													String msg = "Crossover between groups #" + left.getGroupId() + " and #" + right.getGroupId();
+													report (TERTIARY_REPORT, c, msg);
+													break;
+								default:
+							}
+							processedPairs.add(new GroupPair(left, right));
 						}
-						switch (CrossoverUtils.subsumptionRoleGroupTest(left, right)) {
-							case ROLEGROUPS_CROSSOVER :
-							case ROLES_CROSSOVER:	
-												roleGroupCrossOvers++;
-												String msg = "Crossover between groups #" + left.getGroupId() + " and #" + right.getGroupId();
-												report (TERTIARY_REPORT, c, msg);
-												break;
-							default:
-						}
-						processedPairs.add(new GroupPair(left, right));
 					}
 				}
 			}
 		}
 		report (SECONDARY_REPORT, "Role group crossovers", roleGroupCrossOvers);
+	}
+	
+	@Override
+	public String getReportName() {
+		String reportName = super.getReportName();
+		if (jobRun != null && jobRun.getParamValue(THIS_RELEASE) != null) {
+			reportName += "_" + jobRun.getParamValue(THIS_RELEASE);
+		}
+		if (jobRun != null && jobRun.getParamValue(MODULES) != null) {
+			reportName += "_" + jobRun.getParamValue(MODULES);
+		}
+		return reportName;
 	}
 	
 	//Report cases where an ungrouped attribute also appears in a more general 
@@ -164,29 +192,45 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 		int ungroupedCrossovers = 0;
 		AncestorsCache cache = gl.getAncestorsCache();
 		for (Concept c : gl.getAllConcepts()) {
-			if (!c.isActive() || c.getRelationshipGroup(CharacteristicType.INFERRED_RELATIONSHIP, UNGROUPED) == null) {
-				continue;
-			}
-			Set<Relationship> ungroupedRels = c.getRelationshipGroup(CharacteristicType.INFERRED_RELATIONSHIP, UNGROUPED).getRelationships();
-			for (Relationship ungroupedRel : ungroupedRels) {
-				//Is our ungrouped relationship more specific than any grouped relationship?
-				for (RelationshipGroup group : c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP)) {
-					if (!group.isGrouped()) {
-						continue;
-					}
-					for (Relationship groupedRel : group.getRelationships()) {
-						if (SnomedUtils.isMoreSpecific(ungroupedRel, groupedRel, cache)) {
-							report (QUATERNARY_REPORT, c, "More Specific", ungroupedRel, groupedRel);
-							ungroupedCrossovers++;
-						} else if (SnomedUtils.inconsistentSubsumption(ungroupedRel, groupedRel, cache)) {
-							report (QUATERNARY_REPORT, c, "Inconsistent", ungroupedRel, groupedRel);
-							ungroupedCrossovers++;
+			if (inScope(c)) {
+				if (!c.isActive() || c.getRelationshipGroup(CharacteristicType.INFERRED_RELATIONSHIP, UNGROUPED) == null) {
+					continue;
+				}
+				Set<Relationship> ungroupedRels = c.getRelationshipGroup(CharacteristicType.INFERRED_RELATIONSHIP, UNGROUPED).getRelationships();
+				for (Relationship ungroupedRel : ungroupedRels) {
+					//Is our ungrouped relationship more specific than any grouped relationship?
+					for (RelationshipGroup group : c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP)) {
+						if (!group.isGrouped()) {
+							continue;
+						}
+						for (Relationship groupedRel : group.getRelationships()) {
+							if (SnomedUtils.isMoreSpecific(ungroupedRel, groupedRel, cache)) {
+								report (QUATERNARY_REPORT, c, "More Specific", ungroupedRel, groupedRel);
+								ungroupedCrossovers++;
+							} else if (SnomedUtils.inconsistentSubsumption(ungroupedRel, groupedRel, cache)) {
+								report (QUATERNARY_REPORT, c, "Inconsistent", ungroupedRel, groupedRel);
+								ungroupedCrossovers++;
+							}
 						}
 					}
 				}
 			}
 		}
 		report (SECONDARY_REPORT, "Role group ungrouped inconsistencies", ungroupedCrossovers);
+	}
+	
+	private boolean inScope (Concept c) {
+		//Are we doing any module filtering?
+		if (moduleFilter == null) {
+			return true;
+		}
+		
+		//Is this concept in modules of interest or did it use to be?
+		if (moduleFilter.contains(c.getModuleId())) {
+			return true;
+		}
+		
+		return false;
 	}
 
 	public void countIPs (CharacteristicType charType, int reportIdx) throws TermServerScriptException {
@@ -199,17 +243,19 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 			statedIntermediatePrimitives = intermediatePrimitives;
 		}
 		for (Concept c : intermediatePrimitives) {
-			ipCount++;
-			report(reportIdx, c);
-			
-			if (gl.isOrphanetConcept(c)) {
-				orphanetIPs++;
-			}
-			
-			//Are we an IP in the inferred view but not the stated?
-			if (charType.equals(CharacteristicType.INFERRED_RELATIONSHIP) && 
-					!statedIntermediatePrimitives.contains(c)) {
-				report (SEPTENARY_REPORT, c);
+			if (inScope(c)) {
+				ipCount++;
+				report(reportIdx, c);
+				
+				if (gl.isOrphanetConcept(c)) {
+					orphanetIPs++;
+				}
+				
+				//Are we an IP in the inferred view but not the stated?
+				if (charType.equals(CharacteristicType.INFERRED_RELATIONSHIP) && 
+						!statedIntermediatePrimitives.contains(c)) {
+					report (SEPTENARY_REPORT, c);
+				}
 			}
 		}
 		String statedIndicator = charType.equals(CharacteristicType.STATED_RELATIONSHIP)?" stated":"";
