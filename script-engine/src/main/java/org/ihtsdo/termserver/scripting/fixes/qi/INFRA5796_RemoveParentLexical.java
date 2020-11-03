@@ -2,8 +2,8 @@ package org.ihtsdo.termserver.scripting.fixes.qi;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
-import org.apache.commons.lang.NotImplementedException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -18,8 +18,6 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  *  12456005 |Iatrogenic disorder (disorder)| and should have that IS-A parent 
  *  relationship inactivated.  There are 27 of these. 
  *
- * Secondly, for the remaining concepts after the first request has been 
- * processed, these concepts should all be made primitive if not already.
  */
 public class INFRA5796_RemoveParentLexical extends BatchFix {
 	
@@ -35,6 +33,7 @@ public class INFRA5796_RemoveParentLexical extends BatchFix {
 		try {
 			fix.selfDetermining = true;
 			fix.reportNoChange = true;
+			fix.populateTaskDescription = false;
 			fix.additionalReportColumns = "Action Detail";
 			fix.init(args);
 			fix.loadProjectSnapshot(true);
@@ -49,15 +48,15 @@ public class INFRA5796_RemoveParentLexical extends BatchFix {
 	public int doFix(Task t, Concept c, String info) throws TermServerScriptException {
 		int changesMade = 0;
 		Concept loadedConcept = loadConcept(c, t.getBranchPath());
+		changesMade += removeParent(t, loadedConcept, gl.getConcept("12456005 |Iatrogenic disorder (disorder)|"));
 		
-		if (containsTargetTerm(loadedConcept)) {
-			if (loadedConcept.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {
-				loadedConcept.setDefinitionStatus(DefinitionStatus.PRIMITIVE);
-				report (t, c, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "DefnStatus SD -> P");
-				changesMade++;
-			}
-		} else {
-			changesMade += removeParent(t, loadedConcept, gl.getConcept("12456005 |Iatrogenic disorder (disorder)|"));
+		if (changesMade > 0 
+				&& loadedConcept.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED) 
+				&& SnomedUtils.countAttributes(loadedConcept, CharacteristicType.STATED_RELATIONSHIP) == 0 
+				&& loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, IS_A, ActiveState.ACTIVE).size() == 1) {
+			
+			loadedConcept.setDefinitionStatus(DefinitionStatus.PRIMITIVE);
+			report(t, c, Severity.MEDIUM, ReportActionType.CONCEPT_CHANGE_MADE, "Single parent and no attributes must be Primitive");
 		}
 		
 		if (changesMade > 0) {
@@ -88,7 +87,11 @@ public class INFRA5796_RemoveParentLexical extends BatchFix {
 
 	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
-		return new ArrayList<>(findConcepts(ecl));
+		List<Concept> concepts = findConcepts(ecl).stream()
+				.filter(c -> !containsTargetTerm(c))
+				.collect(Collectors.toList());
+		
+		return new ArrayList<>(concepts);
 	}
 
 }
