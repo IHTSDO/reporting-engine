@@ -41,16 +41,18 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 		browser = new TermServerClient(browserUrl, authenticatedCookie);
 		CodeSystem codeSystem = browser.getCodeSystem(codeSystemName);
 		browserPath = codeSystem.getLatestVersion().getBranchPath();
-		ConceptCollection refsetWrapper = browser.getConcepts("< 446609009 |Simple type reference set (foundation metadata concept)|",
+		ConceptCollection refsetWrapper = browser.getConcepts("< 446609009 |Simple type reference set| OR < 900000000000496009 |Simple map type reference set|",
 				browserPath, null, TermServerClient.MAX_PAGE_SIZE);
 		referenceSets = removeEmptyRefsets(refsetWrapper);
-		debug ("Recovered " + referenceSets.size() + " simple reference sets");
+		debug ("Recovered " + referenceSets.size() + " simple reference sets and maps");
 	}
 
 
 	private List<Concept> removeEmptyRefsets(ConceptCollection refsetWrapper) throws TermServerScriptException {
 		List<Concept> populatedRefsets = new ArrayList<>();
 		emptyReferenceSets = new ArrayList<>();
+		//Remove known problem or unwanted refsets
+		refsetWrapper.getItems().remove(gl.getConcept("900000000000497000 |CTV3 simple map reference set (foundation metadata concept)|"));
 		for (Concept refset : refsetWrapper.getItems()) {
 			if (browser.getConcepts("^" + refset, browserPath, null, 1).getTotal() > 0) {
 				populatedRefsets.add(refset);
@@ -143,7 +145,5 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 		try {
 			Thread.sleep(1 * 1000);  //Trying to avoid rate limiting lockout
 		} catch (Exception e) {}
-		
 	}
-
 }
