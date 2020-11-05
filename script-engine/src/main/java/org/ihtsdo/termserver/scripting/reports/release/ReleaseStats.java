@@ -27,6 +27,7 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 	public static final String MODULES = "Modules";
 	protected Set<Concept> statedIntermediatePrimitives;
 	protected List<String> moduleFilter;
+	String origProject; //We need to save this because visibility is decided per project so zip files don't get picked up.
 
 
 	public static void main(String[] args) throws TermServerScriptException, IOException {
@@ -105,6 +106,7 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 		
 		if (!StringUtils.isEmpty(run.getParamValue(THIS_RELEASE))) {
 			projectName = run.getParamValue(THIS_RELEASE);
+			origProject = run.getProject();
 			run.setProject(projectName);
 		}
 		
@@ -117,6 +119,12 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 	}
 	
 	public void postInit() throws TermServerScriptException {
+		//Need to set the original project back, otherwise it'll get filtered
+		//out by the security of which projects a user can see
+		if (getJobRun() != null) {
+			getJobRun().setProject(origProject);
+		}
+		
 		String[] columnHeadings = new String[] {"Stat, count",
 												"KPI, count, of which Orphanet", 
 												"SCTID, FSN, SemTag, Crossover",
