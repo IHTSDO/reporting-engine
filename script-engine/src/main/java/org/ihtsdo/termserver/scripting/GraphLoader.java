@@ -641,6 +641,10 @@ public class GraphLoader implements RF2Constants {
 				if (d.getLangRefsetEntries().contains(langRefsetEntry)) {
 					LangRefsetEntry original = d.getLangRefsetEntry(langRefsetEntry.getId());
 					
+					//Set Released Flag if our existing entry has it
+					if (original.isReleased()) {
+						langRefsetEntry.setReleased(true);
+					}
 					//If we're working with not-released data and we already have a not-released entry
 					//then there's two copies of this langrefset entry in a delta
 					if (!isReleased && StringUtils.isEmpty(original.getEffectiveTime())) {
@@ -652,7 +656,11 @@ public class GraphLoader implements RF2Constants {
 							duplicateLangRefsetIdsReported.add(original);
 						}
 					}
-					d.getLangRefsetEntries().remove(langRefsetEntry);
+					d.getLangRefsetEntries().remove(original);
+				}
+				
+				if (langRefsetEntry.isReleased() == null) {
+					langRefsetEntry.setReleased(isReleased);
 				}
 				
 				//Complexity here that we've historically had language refset entries

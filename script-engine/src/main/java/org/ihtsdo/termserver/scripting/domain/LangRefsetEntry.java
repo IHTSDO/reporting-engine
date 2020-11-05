@@ -21,6 +21,8 @@ public class LangRefsetEntry extends Component implements RF2Constants{
 	private boolean isDeleted = false;
 	private String deletionEffectiveTime;
 	
+	private Boolean released;
+	
 	public LangRefsetEntry clone(String newDescriptionSctId) {
 		LangRefsetEntry clone = new LangRefsetEntry();
 		clone.id = UUID.randomUUID().toString();
@@ -222,6 +224,14 @@ public class LangRefsetEntry extends Component implements RF2Constants{
 		entry.acceptabilityId = acceptabilityId;
 		entry.moduleId = SCTID_CORE_MODULE;
 		return entry;
+	}
+	
+	public Boolean isReleased() {
+		return released;
+	}
+
+	public void setReleased(Boolean released) {
+		this.released = released;
 	}
 
 }
