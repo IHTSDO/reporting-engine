@@ -15,6 +15,7 @@ import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 /**
  * INFRA-5176 Add an attribute to a given ECL substrate where required
  * INFRA-5236 Add DueTo to Abrasions
+ * QI-731 Add DueTo = Traumatic Event for all open fractures
  */
 public class AddAttributeIfRequired extends BatchFix {
 	
@@ -30,6 +31,7 @@ public class AddAttributeIfRequired extends BatchFix {
 		try {
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
 			fix.populateEditPanel = false;
+			fix.populateTaskDescription = false;
 			fix.selfDetermining = true;
 			fix.reportNoChange = true;
 			fix.additionalReportColumns = "Action Detail";
@@ -46,9 +48,13 @@ public class AddAttributeIfRequired extends BatchFix {
 		/*INFRA-5176
 		subHierarchyECL = "<< 312608009 |Laceration - injury (disorder)| MINUS << 262541004 |Superficial laceration (disorder)|";
 		relTemplate = new RelationshipTemplate(DUE_TO,  gl.getConcept("773760007 |Traumatic event (event)|"));
-		*/
+		
 		//INFRA-5236
 		subsetECL = "<<399963005 |Abrasion (disorder)|";
+		relTemplate = new RelationshipTemplate(DUE_TO,  gl.getConcept("773760007 |Traumatic event (event)|"));
+		*/
+		//QI-731
+		subsetECL = "<< 439987009 |Open fracture of bone (disorder)| : [0..0] 42752001 |Due to (attribute)| = 773760007 |Traumatic event (event)|";
 		relTemplate = new RelationshipTemplate(DUE_TO,  gl.getConcept("773760007 |Traumatic event (event)|"));
 		
 		exclusions = new HashSet<>();
