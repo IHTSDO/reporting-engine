@@ -962,6 +962,14 @@ public abstract class TermServerScript implements RF2Constants {
 		return findConcepts(project.getBranchPath(), ecl, false, !safetyProtocolsEnabled(), true);
 	}
 	
+	public Collection<RefsetMember> findRefsetMembers(Concept c, String refsetFilter) throws TermServerScriptException {
+		return tsClient.findRefsetMembers(project.getBranchPath(), c, refsetFilter);
+	}
+	
+	public int getConceptsCount(String ecl) throws TermServerScriptException {
+		return tsClient.getConceptsCount(ecl, project.getBranchPath());
+	}
+	
 	public Collection<Concept> findConceptsSafely(String ecl) {
 		try {
 			return findConcepts(project.getBranchPath(), ecl, true, !safetyProtocolsEnabled(), true);

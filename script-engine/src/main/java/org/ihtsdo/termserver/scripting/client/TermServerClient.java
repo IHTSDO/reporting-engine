@@ -22,9 +22,7 @@ import org.springframework.http.*;
 import org.springframework.http.client.*;
 import org.springframework.http.converter.json.GsonHttpMessageConverter;
 import org.springframework.util.StreamUtils;
-import org.springframework.web.client.RequestCallback;
-import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.*;
 
 import us.monoid.json.*;
 import us.monoid.web.*;
@@ -214,6 +212,16 @@ public class TermServerClient {
 		url += "&ecl={ecl}";
 		System.out.println("Calling " + url + " with ecl parameter: " + ecl);
 		return restTemplate.getForObject(url, ConceptCollection.class, ecl);
+	}
+	
+	public int getConceptsCount(String ecl, String branchPath) throws TermServerScriptException {
+		String url = getConceptsPath(branchPath) + "?active=true&limit=1";
+		ecl = SnomedUtils.makeMachineReadable(ecl);
+		//RestTemplate will attempt to expand out any curly braces, and we can't URLEncode
+		//because RestTemplate does that for us.  So use curly braces to substitute in our ecl
+		url += "&ecl={ecl}";
+		System.out.println("Calling " + url + " with ecl parameter: " + ecl);
+		return restTemplate.getForObject(url, ConceptCollection.class, ecl).getTotal();
 	}
 
 	private String getBranchesPath(String branchPath) {
@@ -500,6 +508,10 @@ public class TermServerClient {
 		return this.url + "/" + branch + "/members/" + refSetMemberId;
 	}
 	
+	private String getRefsetMemberUrl(String branch) {
+		return this.url + "/" + branch + "/members";
+	}
+	
 	private String getRefsetMemberUpdateUrl(String refSetMemberId, String branch, boolean toForce) {
 		return getRefsetMemberUrl(refSetMemberId, branch) + "?force=" + toForce;
 	}
@@ -569,6 +581,20 @@ public class TermServerClient {
 				return null;
 			}
 			throw e;
+		}
+	}
+	
+	public Collection<RefsetMember> findRefsetMembers(String branchPath, Concept c, String refsetFilter) throws TermServerScriptException {
+		try {
+			String url = getRefsetMemberUrl(branchPath);
+			url += "?referencedComponentId=" + c.getId();
+			if (refsetFilter != null) {
+				url += "&referenceSet=" + refsetFilter;
+			}
+			RefsetMemberCollection members = restTemplate.getForObject(url, RefsetMemberCollection.class);
+			return members.getItems();
+		} catch (Exception e) {
+			throw new TermServerScriptException(e);
 		}
 	}
 	

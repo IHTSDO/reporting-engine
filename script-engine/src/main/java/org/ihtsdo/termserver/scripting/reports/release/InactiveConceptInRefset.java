@@ -2,10 +2,10 @@ package org.ihtsdo.termserver.scripting.reports.release;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
-import org.ihtsdo.termserver.scripting.client.TermServerClient;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
@@ -20,11 +20,8 @@ import com.google.common.util.concurrent.AtomicLongMap;
  */
 public class InactiveConceptInRefset extends TermServerReport implements ReportClass {
 	
-	private String browserUrl = "https://browser.ihtsdotools.org/snowstorm/snomed-ct";
-	private String codeSystemName = "SNOMEDCT";
-	private TermServerClient browser;
-	private String browserPath;
-	private List<Concept> referenceSets;
+	static public String REFSET_ECL = "(< 446609009 |Simple type reference set| OR < 900000000000496009 |Simple map type reference set|) MINUS 900000000000497000 |CTV3 simple map reference set (foundation metadata concept)|";
+	private Collection<Concept> referenceSets;
 	private List<Concept> emptyReferenceSets;
 	private AtomicLongMap<Concept> refsetSummary = AtomicLongMap.create();
 	
@@ -37,36 +34,25 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 		getArchiveManager().setPopulateReleasedFlag(true);
 		ReportSheetManager.targetFolderId = "1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"; //Release Stats
 		super.init(run);
-		
-		browser = new TermServerClient(browserUrl, authenticatedCookie);
-		CodeSystem codeSystem = browser.getCodeSystem(codeSystemName);
-		browserPath = codeSystem.getLatestVersion().getBranchPath();
-		info("Browser path identified as: " + browserPath);
-		ConceptCollection refsetWrapper = browser.getConcepts("< 446609009 |Simple type reference set| OR < 900000000000496009 |Simple map type reference set|",
-				browserPath, null, TermServerClient.MAX_PAGE_SIZE);
-		referenceSets = removeEmptyRefsets(refsetWrapper);
-		debug ("Recovered " + referenceSets.size() + " simple reference sets and maps");
 	}
 
 
-	private List<Concept> removeEmptyRefsets(ConceptCollection refsetWrapper) throws TermServerScriptException {
-		List<Concept> populatedRefsets = new ArrayList<>();
+	private void removeEmptyRefsets() throws TermServerScriptException {
 		emptyReferenceSets = new ArrayList<>();
-		//Remove known problem or unwanted refsets
-		refsetWrapper.getItems().remove(gl.getConcept("900000000000497000 |CTV3 simple map reference set (foundation metadata concept)|"));
-		for (Concept refset : refsetWrapper.getItems()) {
-			if (browser.getConcepts("^" + refset, browserPath, null, 1).getTotal() > 0) {
-				populatedRefsets.add(refset);
-			} else {
-				//Can't report on this until postInit complete
+		for (Concept refset : referenceSets) {
+			if (getConceptsCount("^" + refset) == 0) {
 				emptyReferenceSets.add(refset);
 			}
 			try { Thread.sleep(1 * 1000); } catch (Exception e) {}
 		}
-		return populatedRefsets;
+		referenceSets.removeAll(emptyReferenceSets);
 	}
 
 	public void postInit() throws TermServerScriptException {
+		referenceSets = findConcepts(REFSET_ECL);
+		removeEmptyRefsets();
+		info ("Recovered " + referenceSets.size() + " simple reference sets and maps");
+
 		String[] columnHeadings = new String[] {
 				"Id, FSN, SemTag, Detail",
 				"Id, FSN, SemTag, Detail"};
@@ -91,37 +77,28 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 	public void runJob() throws TermServerScriptException {
 		//We're looking for concepts which are inactive and have no effective time
 		//TODO Also allow running against published packages, at which point we'll be checking for a known effective time
-		List<String> inactivatedConcepts = new ArrayList<>();
-		for (Concept c : gl.getAllConcepts()) {
-			if (!c.isActive() && StringUtils.isEmpty(c.getEffectiveTime())) {
-				inactivatedConcepts.add(c.getId());
-			}
-		}
-		
+		List<Concept> inactivatedConcepts = gl.getAllConcepts().stream()
+				.filter(c -> !c.isActive())
+				.filter(c -> StringUtils.isEmpty(c.getEffectiveTime()))
+				.collect(Collectors.toList());
 		debug ("Checking " + inactivatedConcepts.size() + " inactivated concepts against " + referenceSets.size() + " refsets");
-		
-		//Now loop through all the referencesets and filter the inactivated concepts
-		for (Concept refset : referenceSets) {
-			refsetSummary.put(refset, 0);
-			Iterator<String> i = inactivatedConcepts.iterator();
-			String eclPartial = "^" + refset.getId() + " AND (";
-			String ecl = eclPartial;
-			while (i.hasNext()) {
-				ecl += i.next();
-				if (i.hasNext() && ecl.length() < 2000) {
-					ecl += " OR ";
-				}
-				
-				if (ecl.length() >= 2000 && !ecl.endsWith("OR ")) {
-					recoverAndReport(refset, ecl);
-					ecl = eclPartial;
+		int count = 0;
+		for (Concept c : inactivatedConcepts) {
+			if (++count % 100 == 0) {
+				debug ("Checked " + count + " inactive concepts");
+			}
+			Collection<RefsetMember> members = findRefsetMembers(c, REFSET_ECL);
+			for (RefsetMember m : members) {
+				Concept refset = gl.getConcept(m.getRefsetId());
+				if (referenceSets.contains(refset)) {
+					report (SECONDARY_REPORT, c, refset);
+					refsetSummary.getAndIncrement(refset);
+					countIssue(c);
 				}
 			}
-			
-			//Any final to finish off?
-			if (ecl.length() > eclPartial.length()) {
-				recoverAndReport(refset, ecl);
-			}
+			try {
+				Thread.sleep(1 * 200);
+			} catch (Exception e) {}
 		}
 		
 		//Output summary counts
@@ -131,20 +108,8 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 		
 		
 		for (Concept emptyRefset : emptyReferenceSets) {
-			report(PRIMARY_REPORT, emptyRefset, " not populated at " + browserUrl + "/" + browserPath);
+			report(PRIMARY_REPORT, emptyRefset, " not populated in project: " + getProject().getKey());
 		}
 	}
 
-	private void recoverAndReport(Concept refset, String ecl) throws TermServerScriptException {
-		ecl += " )";
-		incrementSummaryInformation("ECL queries excecuted");
-		for (Concept c : browser.getConcepts(ecl, browserPath, null, TermServerClient.MAX_PAGE_SIZE).getItems()) {
-			report (SECONDARY_REPORT, refset, c);
-			refsetSummary.getAndIncrement(refset);
-			countIssue(c);
-		}
-		try {
-			Thread.sleep(1 * 1000);  //Trying to avoid rate limiting lockout
-		} catch (Exception e) {}
-	}
 }
