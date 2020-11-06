@@ -41,6 +41,7 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 		browser = new TermServerClient(browserUrl, authenticatedCookie);
 		CodeSystem codeSystem = browser.getCodeSystem(codeSystemName);
 		browserPath = codeSystem.getLatestVersion().getBranchPath();
+		info("Browser path identified as: " + browserPath);
 		ConceptCollection refsetWrapper = browser.getConcepts("< 446609009 |Simple type reference set| OR < 900000000000496009 |Simple map type reference set|",
 				browserPath, null, TermServerClient.MAX_PAGE_SIZE);
 		referenceSets = removeEmptyRefsets(refsetWrapper);
@@ -130,7 +131,7 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 		
 		
 		for (Concept emptyRefset : emptyReferenceSets) {
-			report(PRIMARY_REPORT, emptyRefset, " not populated at " + browserUrl);
+			report(PRIMARY_REPORT, emptyRefset, " not populated at " + browserUrl + "/" + browserPath);
 		}
 	}
 
