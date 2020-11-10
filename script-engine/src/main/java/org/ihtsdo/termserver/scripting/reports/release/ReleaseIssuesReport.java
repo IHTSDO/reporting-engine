@@ -141,7 +141,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	}
 	
 	public void postInit() throws TermServerScriptException {
-		String[] columnHeadings = new String[] { "SCTID, FSN, Semtag, Issue, Legacy, C/D/R Active, Detail",
+		String[] columnHeadings = new String[] { "SCTID, FSN, Semtag, Issue, Legacy, C/D/R Active, Detail, Additional Detail",
 				"Issue, Count"};
 		String[] tabNames = new String[] {	"Issues",
 				"Summary"};
