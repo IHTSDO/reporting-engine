@@ -16,7 +16,6 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.dao.RF2Manager;
 import org.ihtsdo.termserver.scripting.dao.ReportManager;
-import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -469,15 +468,7 @@ public abstract class TermServerScript implements RF2Constants {
 				reportManager.setWriteToSheet(false);
 				reportManager.setWriteToS3(false);
 			}
-			if (this.wideOutput ) {
-				ReportSheetManager.setMaxColumns(25);
-			}
 			
-			if (this.outputWidth  != null ) {
-				ReportSheetManager.setMaxColumns(this.outputWidth);
-				//For some reason I can't get near the limit of 5M
-				ReportSheetManager.setMaxRows(1500000 / this.outputWidth);
-			}
 			getReportManager().initialiseReportFiles(columnHeadings);
 			debug ("Report Manager initialisation complete");
 		}

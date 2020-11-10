@@ -30,16 +30,14 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 	private static final String APPLICATION_NAME = "SI Reporting Engine";
 	private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
 	private static final String CLIENT_SECRET_DIR = "secure/google-api-secret.json";
-	private static int DEFAULT_MAX_ROWS = 42000;
-	private static int REDUCED_MAX_ROWS = 5000;
-	private static int DEFAULT_MAX_COLUMNS = 19;
-	private static int REDUCED_MAX_COLUMNS = 9;
-	private static int WIDE_MAX_COLUMNS = 20;
-	private static int MAX_ROWS = DEFAULT_MAX_ROWS;
-	private static int MAX_COLUMNS = DEFAULT_MAX_COLUMNS;
-	private static String MAX_COLUMN_STR = Character.toString((char)('A' + MAX_COLUMNS));
 	private static final int MAX_REQUEST_RATE = 10;
 	private static final int MAX_WRITE_ATTEMPTS = 3;
+	
+	Map<Integer, Integer> tabRowsCount;
+	Map<Integer, Integer> maxTabColumns;
+	private static int MAX_CELLS = 5000000 - 5000;
+	private static int MAX_ROW_INCREMENT = 10000;
+	int currentCellCount = 0;
 
 	Credential credential;
 	ReportManager owner;
@@ -61,29 +59,7 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 			throw new IllegalArgumentException("Can't specify safety disabled and manyTabs - one is saying more rows, and the other is saying less");
 		}
 		this.owner = owner;
-		if (!this.owner.getScript().safetyProtocolsEnabled()) {
-			MAX_ROWS = 99999;
-			setMaxColumns(REDUCED_MAX_COLUMNS);
-		} else if (this.owner.getScript().getManyTabWideOutput()) {
-			MAX_ROWS = REDUCED_MAX_ROWS;
-			setMaxColumns(WIDE_MAX_COLUMNS);
-		} else if (this.owner.getScript().getManyTabOutput()) {
-			MAX_ROWS = 9999;
-			setMaxColumns(REDUCED_MAX_COLUMNS);
-		} else {
-			MAX_ROWS = DEFAULT_MAX_ROWS;
-			setMaxColumns(DEFAULT_MAX_COLUMNS);
-		}
-		TermServerScript.info("Google Sheet size set to " + MAX_ROWS + " x " + MAX_COLUMNS);
-	}
-	
-	public static void setMaxColumns (int maxCols) {
-		MAX_COLUMNS = maxCols;
-		MAX_COLUMN_STR = Character.toString((char)('A' + MAX_COLUMNS));
-	}
-
-	public static void setMaxRows(int maxRows) {
-		MAX_ROWS = maxRows;
+		//TermServerScript.info("Google Sheet size set to " + MAX_ROWS + " x " + MAX_COLUMNS);
 	}
 
 	/**
@@ -183,20 +159,28 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 							.setProperties(new SpreadsheetProperties()
 									.setTitle(titleStr))
 									.setFields("title")));
+			
+			tabRowsCount = new HashMap<>();
+			populateColumnsPerTab(columnHeaders);
 			int tabIdx = 0;
 			for (String header : columnHeaders) {
 				Request request = null;
+				//Calculate the number of columns from the header, 
+				//divide the total max cells by both columns and tab count
+				int maxColumns = header.split(COMMA).length;
+				int maxRows = MAX_ROW_INCREMENT ;
+				tabRowsCount.put(tabIdx, maxRows);
+				currentCellCount += maxColumns * maxRows;
+				TermServerScript.debug("Tab " + tabIdx + " rows/cols set to " + maxRows + "/" + maxColumns);
+				SheetProperties properties = new SheetProperties()
+						.setTitle(owner.getTabNames().get(tabIdx))
+						.setGridProperties(new GridProperties().setRowCount(maxRows).setColumnCount(maxColumns));
+				
 				//Sheet 0 already exists, just update - it it's been specified
 				if (tabIdx == 0) {
-					SheetProperties properties = new SheetProperties()
-							.setTitle(owner.getTabNames().get(tabIdx))
-							.setGridProperties(new GridProperties().setRowCount(MAX_ROWS + 3).setColumnCount(MAX_COLUMNS));
 					request = new Request().setUpdateSheetProperties(new UpdateSheetPropertiesRequest().setProperties(properties).setFields("title, gridProperties"));
 				} else {
-					SheetProperties properties = new SheetProperties()
-							.setTitle(owner.getTabNames().get(tabIdx))
-							.setSheetId(new Integer(tabIdx))
-							.setGridProperties(new GridProperties().setRowCount(MAX_ROWS + 3).setColumnCount(MAX_COLUMNS));
+					properties.setSheetId(new Integer(tabIdx));
 					request = new Request().setAddSheet(new AddSheetRequest().setProperties(properties));
 				}
 				requests.add(request);
@@ -205,22 +189,8 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 				numberOfSheets++;
 			}
 			
-			//Execute creation of tabs
-			BatchUpdateSpreadsheetRequest batch = new BatchUpdateSpreadsheetRequest();
-			batch.setRequests(requests);
-			int retry = 0;
-			boolean createdOK = false;
-			while (!createdOK && retry < 3) {
-				try {
-					BatchUpdateSpreadsheetResponse responses = sheetsService.spreadsheets().batchUpdate(sheet.getSpreadsheetId(), batch).execute();
-					createdOK = true;
-				} catch (SocketTimeoutException e) {
-					if (++retry < 3) {
-						System.err.println("Timeout received from Google. Retrying after short nap.");
-						Thread.sleep(1000 * 10);
-					}
-				}
-			}
+			executeRequests(requests);
+
 			flush();
 			moveFile(sheet.getSpreadsheetId());
 		} catch (Exception e) {
@@ -228,9 +198,39 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 		}
 	}
 
+	private void executeRequests(List<Request> requests) throws IOException, InterruptedException {
+		//Execute creation of tabs
+		BatchUpdateSpreadsheetRequest batch = new BatchUpdateSpreadsheetRequest();
+		batch.setRequests(requests);
+		int retry = 0;
+		boolean createdOK = false;
+		while (!createdOK && retry < 3) {
+			try {
+				BatchUpdateSpreadsheetResponse responses = sheetsService.spreadsheets().batchUpdate(sheet.getSpreadsheetId(), batch).execute();
+				createdOK = true;
+			} catch (SocketTimeoutException e) {
+				if (++retry < 3) {
+					System.err.println("Timeout received from Google. Retrying after short nap.");
+					Thread.sleep(1000 * 10);
+				}
+			}
+		}
+	}
+
+	private int populateColumnsPerTab(String[] columnHeaders) {
+		maxTabColumns = new HashMap<>();
+		int totalColumns = 0;
+		for (int tabIdx = 0; tabIdx < columnHeaders.length; tabIdx++) {
+			int tabColumns = columnHeaders[tabIdx].split(COMMA).length;
+			maxTabColumns.put(tabIdx, tabColumns);
+			totalColumns += tabColumns;
+		}
+		return totalColumns;
+	}
+
 	@Override
 	public boolean writeToReportFile(int tabIdx, String line, boolean delayWrite) throws TermServerScriptException {
-		if (linesWrittenPerTab.get(tabIdx) != null && linesWrittenPerTab.get(tabIdx).intValue() > MAX_ROWS) {
+		if (linesWrittenPerTab.get(tabIdx) != null && linesWrittenPerTab.get(tabIdx).intValue() > tabRowsCount.get(tabIdx)) {
 			//We're already hit the max and will have reported failure
 			//Do not attempt to add any more data.
 			return false;
@@ -248,13 +248,21 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 			try { Thread.sleep(MAX_REQUEST_RATE*1000); } catch (Exception e) {}
 		}
 		
-		//Do we have a total count for this tab?
+		//Do we have a total count for this tab?  Save 3 to allow for Data truncated message
+		int maxRows = tabRowsCount.get(tabIdx);
 		linesWrittenPerTab.merge(tabIdx, 1, Integer::sum);
-		if (linesWrittenPerTab.get(tabIdx).intValue() >= MAX_ROWS) {
-			//Try to finish off what we've received so far
-			if (linesWrittenPerTab.get(tabIdx).intValue() == MAX_ROWS) {
-				addDataToBWritten(tabIdx, "Data truncated at " + MAX_ROWS + " rows");
-				TermServerScript.warn("Number of rows written to tab idx " + tabIdx + " hit limit of " + MAX_ROWS);
+		
+		if (linesWrittenPerTab.get(tabIdx).intValue() >= maxRows) {
+			//Do we have sufficient cells left to extend this tab further?
+			int requestCellIncrement = maxTabColumns.get(tabIdx) * MAX_ROW_INCREMENT;
+			if (currentCellCount + requestCellIncrement < MAX_CELLS) {
+				currentCellCount += requestCellIncrement;
+				tabRowsCount.put(tabIdx, maxRows + MAX_ROW_INCREMENT);
+				TermServerScript.debug("Expanding rows in tabIdx " + tabIdx + " to " + tabRowsCount.get(tabIdx));
+				expandTabRows(tabIdx);
+			} else if (linesWrittenPerTab.get(tabIdx).intValue() == maxRows) {
+				addDataToBWritten(tabIdx, "Data truncated at " + maxRows + " rows");
+				TermServerScript.warn("Number of rows written to tab idx " + tabIdx + " hit limit of " + maxRows);
 			}
 			flushWithWait();
 			return false;
@@ -266,12 +274,30 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 		return true;
 	}
 	
+	private void expandTabRows(int tabIdx) throws TermServerScriptException {
+		AppendDimensionRequest dimRequest = new AppendDimensionRequest();
+		dimRequest.setDimension("ROWS")
+			.setSheetId(tabIdx)
+			.setLength(MAX_ROW_INCREMENT);
+		
+		Request request = new Request();
+		request.setAppendDimension(dimRequest);
+		try {
+			executeRequests(Collections.singletonList(request));
+		} catch (InterruptedException | IOException e) {
+			throw new TermServerScriptException("Unable to expand rows in tabIdx: " + tabIdx, e);
+		}
+		
+	}
+
 	private void addDataToBWritten(int tabIdx, String line) {
 		List<Object> data = StringUtils.csvSplitAsObject(line);
 		List<List<Object>> cells = Arrays.asList(data);
 		//Increment the current row position so we create the correct range
 		tabLineCount.merge(tabIdx, 1, Integer::sum);
-		String range = "'" + owner.getTabNames().get(tabIdx) + "'!A" + tabLineCount.get(tabIdx) + ":" + MAX_COLUMN_STR +  tabLineCount.get(tabIdx); 
+		int maxColumn = maxTabColumns.get(tabIdx);
+		String maxColumnStr = Character.toString((char)('A' + maxColumn));
+		String range = "'" + owner.getTabNames().get(tabIdx) + "'!A" + tabLineCount.get(tabIdx) + ":" + maxColumnStr +  tabLineCount.get(tabIdx); 
 		dataToBeWritten.add(new ValueRange()
 					.setRange(range)
 					.setValues(cells));
@@ -369,14 +395,15 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 		BatchUpdateSpreadsheetRequest batch = new BatchUpdateSpreadsheetRequest();
 		List<Request> requests = new ArrayList<>();
 
-		for (int sheetIndex = 0; sheetIndex < numberOfSheets; sheetIndex++) {
+		for (int tabIdx = 0; tabIdx < numberOfSheets; tabIdx++) {
+			int maxColumn = maxTabColumns.get(tabIdx);
 			// set the columns to be auto sized
 			AutoResizeDimensionsRequest autoResizeDimensionsRequest = new AutoResizeDimensionsRequest();
 			DimensionRange dimensionRange = new DimensionRange();
 			dimensionRange.setDimension("COLUMNS");
-			dimensionRange.setSheetId(sheetIndex);
+			dimensionRange.setSheetId(tabIdx);
 			dimensionRange.setStartIndex(0);
-			dimensionRange.setEndIndex(MAX_COLUMNS);
+			dimensionRange.setEndIndex(maxColumn);
 
 			autoResizeDimensionsRequest.setDimensions(dimensionRange);
 			requests.add(new Request().setAutoResizeDimensions(autoResizeDimensionsRequest));

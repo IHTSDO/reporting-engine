@@ -47,7 +47,6 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 	
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"; //Release Stats
-		ReportSheetManager.setMaxColumns(18);
 		getArchiveManager().setPopulateReleasedFlag(true);
 		subsetECL = run.getParamValue(ECL);
 		super.init(run);
