@@ -40,11 +40,6 @@ public class HistoricStatsAnalyzer extends TermServerReport implements ReportCla
 		TermServerReport.run(HistoricStatsAnalyzer.class, args, params);
 	}
 	
-	public void init (JobRun run) throws TermServerScriptException {
-		wideOutput = true;
-		super.init(run);
-	}
-
 	@Override
 	public Job getJob() {
 		return new Job()

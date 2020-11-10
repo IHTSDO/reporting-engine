@@ -67,11 +67,8 @@ public abstract class TermServerScript implements RF2Constants {
 	protected String projectName;
 	private String reportName;
 	protected boolean safetyProtocols = true;  //Switch off to bypass all limits
-	protected boolean manyTabOutput = false;
-	protected boolean manyTabWideOutput = false;
 	protected boolean includeSummaryTab = false;
 	protected boolean reportNullConcept = true;
-	
 	protected String subHierarchyStr;
 	protected String subsetECL;
 	protected Concept subHierarchy;
@@ -152,10 +149,6 @@ public abstract class TermServerScript implements RF2Constants {
 	public enum Severity { NONE, LOW, MEDIUM, HIGH, CRITICAL }; 
 	
 	public Concept[] selfGroupedAttributes = new Concept[] { FINDING_SITE, CAUSE_AGENT, ASSOC_MORPH };
-
-	protected boolean wideOutput = false;
-
-	protected Integer outputWidth = null;  //Custom width.  Uses 5M / width to calculate rows
 
 	public String getScriptName() {
 		return this.getClass().getSimpleName();
@@ -1658,14 +1651,6 @@ public abstract class TermServerScript implements RF2Constants {
 			throw new TermServerScriptException("Unable to instantiate " + jobClazz.getSimpleName(), e);
 		}
 		job.instantiate(jobRun, (ApplicationContext)null);
-	}
-
-	public boolean getManyTabOutput() {
-		return manyTabOutput;
-	}
-
-	public boolean getManyTabWideOutput() {
-		return manyTabWideOutput;
 	}
 
 	protected  String getDependencyArchive() {

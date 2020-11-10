@@ -34,7 +34,6 @@ public class NewComponents extends TermServerReport implements ReportClass {
 		getArchiveManager().setPopulateReleasedFlag(true);
 		ReportSheetManager.targetFolderId = "1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"; //Release Stats
 		subsetECL = run.getParamValue(ECL);
-		manyTabWideOutput = true;
 		super.init(run);
 	}
 	

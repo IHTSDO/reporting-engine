@@ -41,16 +41,9 @@ public class ReconcileSnapshot extends TermServerReport implements ReportClass {
 		TermServerReport.run(ReconcileSnapshot.class, args, params);
 	}
 	
-	public void init (JobRun run) throws TermServerScriptException {
-		//safetyProtocols = false;   
-		manyTabOutput = true;
-		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release Validation
-		super.init(run);
-	}
-	
 	@Override
 	public void postInit() throws TermServerScriptException {
-		
+		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release Validation
 		String[] tabNames = new String[] {	"Concept", "Desc", "Stated", 
 				"Inferred", "Lang", "InactInd", "HistAssoc",
 				"TDefn", "Axioms"};

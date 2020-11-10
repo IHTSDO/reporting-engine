@@ -54,12 +54,7 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 	int numberOfSheets = 0;
 
 	public ReportSheetManager(ReportManager owner) {
-		if (!owner.getScript().safetyProtocolsEnabled() && owner.getScript().getManyTabOutput() ||
-				!owner.getScript().safetyProtocolsEnabled() && owner.getScript().getManyTabWideOutput()) {
-			throw new IllegalArgumentException("Can't specify safety disabled and manyTabs - one is saying more rows, and the other is saying less");
-		}
 		this.owner = owner;
-		//TermServerScript.info("Google Sheet size set to " + MAX_ROWS + " x " + MAX_COLUMNS);
 	}
 
 	/**
