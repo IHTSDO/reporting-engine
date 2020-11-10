@@ -67,7 +67,9 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_STATS))
 				.withName("Inactivated Concepts in Refsets")
-				.withDescription("This report lists concepts inactivated in the current authoring cycle which are members of a published International reference set.")
+				.withDescription("This report lists concepts inactivated in the current authoring cycle" + 
+				" which are members of a published International reference set." +
+				" Warning: because this report involves inactive concepts, it cannot use ECL and therefore takes ~30 minutes to run.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(new JobParameters())
 				.withTag(INT)
