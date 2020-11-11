@@ -122,17 +122,17 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 			}
 			System.out.println("Created: " + sheet.getSpreadsheetUrl());
 			
-			//And share it with everyone in the company
+			//And share it with everyone everywhere
+			//See https://developers.google.com/drive/api/v2/reference/permissions/insert
 			Permission perm = new Permission()
 				.setKind("drive#permission")
 				.setRole("writer")
-				.setType("domain")
-				.setDomain(DOMAIN);
+				.setType("anyone");
 			driveService.permissions()
 				.create(sheet.getSpreadsheetId(), perm)
 				.setSupportsTeamDrives(true)
 				.execute();
-			System.out.println("Spreadsheet shared with domain - " + DOMAIN);
+			System.out.println("Spreadsheet shared");
 		} catch (IOException | GeneralSecurityException e) {
 			throw new IllegalStateException("Unable to initialise Google Sheets connection",e);
 		}
