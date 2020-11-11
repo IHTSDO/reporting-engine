@@ -366,10 +366,13 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		
 		subsetECL = "(<< 404684003 |Clinical finding (finding)| : 116676008 |Associated morphology (attribute)| = << 1806006 |Eruption (morphologic abnormality)|) MINUS (<< 64572001 |Disease (disorder)|)";
 		templateNames = new String[] { "templates/morphologies/Eruption - finding.json" };
-		*/
 		
 		subsetECL = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 1806006 |Eruption (morphologic abnormality)|";
 		templateNames = new String[] { "templates/morphologies/Eruption - disorder.json" };
+		*/
+		subsetECL = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 36191001 |Perforation (morphologic abnormality)|";
+		templateNames = new String[] { "templates/morphologies/Perforation.json" };
+		
 		
 		//TODO We're seeing 'HIGH' warnings about existing parents being redundant in presence of PPP but before the PPP gets added. Investigate
 		//I think this might happen when we set a PPP which is lower than the existing parent.
@@ -384,8 +387,8 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 	}
 	
 	public void postInit() throws TermServerScriptException {
-		String[] columnHeadings = new String[] {"TASK_KEY, TASK_DESC, SCTID, FSN, ConceptType, Severity, ActionType, CharacteristicType, MatchedTemplate, Detail",
-				"Report Metadata", 
+		String[] columnHeadings = new String[] {"TASK_KEY, TASK_DESC, SCTID, FSN, ConceptType, Severity, ActionType, CharacteristicType, MatchedTemplate, Detail, Detail, Detail",
+				"Report Metadata, Detail, Detail", 
 				"SCTID, FSN, SemTag, Reason",
 				"SCTID, FSN, SemTag"};
 		String[] tabNames = new String[] {	"Normalization Processing",
