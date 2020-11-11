@@ -56,9 +56,9 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 	}
 	
 	public void postInit() throws TermServerScriptException {
-		String[] columnHeadings = new String[] { "SCTID, FSN, Semtag, Issue, Details",
-				"Issue, Count",
-				"SCTID, FSN, Semtag, Lost Concept Id, Lost Concept FSN"};
+		String[] columnHeadings = new String[] { "SCTID, FSN, Semtag, Issue, Details, Details, Details, Details, Details",
+				"Issue, Count, Details, Details, Details",
+				"SCTID, FSN, Semtag, Lost Concept Id, Lost Concept FSN, Details, Details, Details"};
 		String[] tabNames = new String[] {	"Issues",
 				"Summary",
 				"Pattern 11 Detail"};
