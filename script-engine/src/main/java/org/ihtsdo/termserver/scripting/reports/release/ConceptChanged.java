@@ -64,7 +64,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 				"Id, FSN, SemTag, Active, hasChangedAssociations, hasChangedInactivationIndicators, Author, Task, Creation Date",
 				"Id, FSN, SemTag, Active, isTargetOfNewStatedRelationship, isTargetOfNewInferredRelationship, wasTargetOfLostStatedRelationship, wasTargetOfLostInferredRelationship, Author, Task, Creation Date",
 				"Id, FSN, SemTag, Language, Description, isNew, isChanged, wasInactivated, changedAcceptability",
-				"Id, FSN, SemTag, LangRefsetId, LangRefset, isNew, isChanged, wasInactivated, Details, Details"
+				"Id, FSN, SemTag, LangRefsetId, LangRefset, isNew, isChanged, wasInactivated, Author, Task, Creation Date"
 		};
 		String[] tabNames = new String[] {
 				"Concept Changes",
