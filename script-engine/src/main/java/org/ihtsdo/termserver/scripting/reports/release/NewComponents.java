@@ -19,6 +19,7 @@ import com.google.common.util.concurrent.AtomicLongMap;
 /**
  * RP-166 List all new concepts
  * RP-386 Update to include all new components
+ * RP-387 Update to include new Language Refsets
  */
 public class NewComponents extends TermServerReport implements ReportClass {
 	
@@ -45,15 +46,19 @@ public class NewComponents extends TermServerReport implements ReportClass {
 				"Id, FSN, SemTag, Detail",
 				"Id, FSN, SemTag, Detail",
 				"Id, FSN, SemTag, Detail",
-				"Id, FSN, SemTag, Detail"};
-		String[] tabNames = new String[] {	
+				"Id, FSN, SemTag, Detail",
+				"Id, FSN, SemTag, Detail",
+		};
+		String[] tabNames = new String[] {
 				"Summary",
 				"Concepts",
 				"Description",
 				"Relationships",
 				"Axioms",
 				"Associations",
-				"Inactivations"};
+				"Inactivations",
+				"Language Refsets",
+		};
 		super.postInit(tabNames, columnHeadings, false);
 	}
 	
@@ -90,7 +95,6 @@ public class NewComponents extends TermServerReport implements ReportClass {
 		}
 		
 		for (Concept c : conceptsOfInterest) {
-		//for (Concept c : testData) {
 			if (!c.isReleased() && inScope(c)) {
 				service.populateTraceabilityAndReport(SECONDARY_REPORT, c, (Object[])null);
 				componentCounts.getAndIncrement("Concepts");
@@ -98,10 +102,20 @@ public class NewComponents extends TermServerReport implements ReportClass {
 			}
 			
 			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-				if (!d.isReleased() && inScope(d)) {
-					report(TERTIARY_REPORT, c, d.getTerm(), d);
-					componentCounts.getAndIncrement("Descriptions");
-					countIssue(c);
+				if (inScope(d)) {
+					if (!d.isReleased()) {
+						report(TERTIARY_REPORT, c, d.getTerm(), d);
+						componentCounts.getAndIncrement("Descriptions");
+						countIssue(c);
+					}
+
+					for (LangRefsetEntry langRefsetEntry : d.getLangRefsetEntries()) {
+						if (inScope(langRefsetEntry) && !langRefsetEntry.isReleased()) {
+							report(OCTONARY_REPORT, c, langRefsetEntry);
+							componentCounts.getAndIncrement("Language Refsets");
+							countIssue(c);
+						}
+					}
 				}
 			}
 			

@@ -36,7 +36,11 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 	
 	//RP-398
 	private Set<Concept> hasChangedAcceptability = new HashSet<>();
-	private Set<Description> descChangedAcceptability = new HashSet<>();
+
+	//RP-387
+	private Set<Concept> hasNewLanguageRefSets = new HashSet<>();
+	private Set<Concept> hasLostLanguageRefSets = new HashSet<>();
+	private Set<Concept> hasChangedLanguageRefSets = new HashSet<>();
 	
 	TraceabilityService traceability;
 	
@@ -59,14 +63,18 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 				"Id, FSN, SemTag, Active, hasNewDescriptions, hasChangedDescriptions, hasLostDescriptions, hasChangedAcceptability, Author, Task, Creation Date",
 				"Id, FSN, SemTag, Active, hasChangedAssociations, hasChangedInactivationIndicators, Author, Task, Creation Date",
 				"Id, FSN, SemTag, Active, isTargetOfNewStatedRelationship, isTargetOfNewInferredRelationship, wasTargetOfLostStatedRelationship, wasTargetOfLostInferredRelationship, Author, Task, Creation Date",
-				"Id, FSN, SemTag, Language, Description, isNew, isChanged, wasInactivated, changedAcceptability"};
-		String[] tabNames = new String[] {	
+				"Id, FSN, SemTag, Language, Description, isNew, isChanged, wasInactivated, changedAcceptability",
+				"Id, FSN, SemTag, LangRefsetId, LangRefset, isNew, isChanged, wasInactivated, Details, Details"
+		};
+		String[] tabNames = new String[] {
 				"Concept Changes",
 				"Relationship Changes",
 				"Description Changes",
 				"Association Changes",
 				"Incoming Relationship Changes",
-				"Description Change Details"};
+				"Description Change Details",
+				"Language Refset Changes"
+		};
 		super.postInit(tabNames, columnHeadings, false);
 		traceability = new TraceabilityService(jobRun, this, "pdat");  //Matching Updating and updated
 	}
@@ -160,6 +168,30 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 							if (StringUtils.isEmpty(l.getEffectiveTime())) {
 								hasChangedAcceptability.add(c);
 								changedAcceptability = true;
+							}
+						}
+					}
+
+					boolean langRefSetIsNew = false;
+					boolean langRefSetIsLost = false;
+					boolean langRefSetIsChanged = false;
+					for (LangRefsetEntry langRefsetEntry : d.getLangRefsetEntries(ActiveState.ACTIVE)) {
+						if (inScope(langRefsetEntry)) {
+							if (!langRefsetEntry.isReleased()) {
+								langRefSetIsNew = true;
+								hasNewLanguageRefSets.add(c);
+							} else if (StringUtils.isEmpty(langRefsetEntry.getEffectiveTime())) {
+								if (!langRefsetEntry.isActive()) {
+									hasLostLanguageRefSets.add(c);
+									langRefSetIsLost = true;
+								} else {
+									hasChangedLanguageRefSets.add(c);
+									langRefSetIsChanged = true;
+								}
+							}
+
+							if (langRefSetIsNew || langRefSetIsLost || langRefSetIsChanged) {
+								report(SEPTENARY_REPORT, c, langRefsetEntry.getRefsetId(), langRefsetEntry, langRefSetIsNew, langRefSetIsChanged, langRefSetIsLost);
 							}
 						}
 					}
@@ -267,6 +299,19 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 				hasChangedAcceptability.contains(c)?"Y":"N");
 		}
 		superSet.clear();
+
+		superSet.addAll(hasNewLanguageRefSets);
+		superSet.addAll(hasChangedLanguageRefSets);
+		superSet.addAll(hasLostLanguageRefSets);
+		debug("Creating language refsets report for " + superSet.size() + " concepts");
+		for (Concept c : sort(superSet)) {
+			traceability.populateTraceabilityAndReport(SEPTENARY_REPORT, c,
+					c.isActive() ? "Y" : "N",
+					hasNewLanguageRefSets.contains(c) ? "Y" : "N",
+					hasChangedLanguageRefSets.contains(c) ? "Y" : "N",
+					hasLostLanguageRefSets.contains(c) ? "Y" : "N");
+		}
+		superSet.clear();
 		
 		superSet.addAll(hasChangedAssociations);
 		superSet.addAll(hasChangedInactivationIndicators);
@@ -305,7 +350,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 	}
 
 	private void determineUniqueCountAndTraceability() {
-		debug ("Determining unique count");
+		debug("Determining unique count");
 		HashSet<Concept> superSet = new HashSet<>();
 		superSet.addAll(newConcepts);
 		superSet.addAll(inactivatedConcepts);
@@ -324,7 +369,10 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		superSet.addAll(isTargetOfNewInferredRelationship);
 		superSet.addAll(wasTargetOfLostInferredRelationship);
 		superSet.addAll(hasChangedAcceptability);
-		
+		superSet.addAll(hasNewLanguageRefSets);
+		superSet.addAll(hasLostLanguageRefSets);
+		superSet.addAll(hasChangedLanguageRefSets);
+
 		for (Concept c : superSet) {
 			countIssue(c);
 		}
