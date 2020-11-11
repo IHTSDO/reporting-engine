@@ -45,7 +45,7 @@ public class QIPatternsReport extends TermServerReport implements ReportClass {
 	}
 	
 	public void postInit() throws TermServerScriptException {
-		String[] columnHeadings = new String[] { "SCTID, FSN, Semtag, Issue, Details",
+		String[] columnHeadings = new String[] { "SCTID, FSN, Semtag, Issue, Details, Details",
 				"Issue, Count"};
 		String[] tabNames = new String[] {	"Issues",
 				"Summary"};
