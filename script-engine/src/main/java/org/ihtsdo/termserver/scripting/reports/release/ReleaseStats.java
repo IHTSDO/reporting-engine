@@ -103,9 +103,9 @@ public class ReleaseStats extends TermServerReport implements ReportClass {
 	public void init (JobRun run) throws TermServerScriptException {
 		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA
 		
+		origProject = run.getProject();
 		if (!StringUtils.isEmpty(run.getParamValue(THIS_RELEASE))) {
 			projectName = run.getParamValue(THIS_RELEASE);
-			origProject = run.getProject();
 			run.setProject(projectName);
 		}
 		
