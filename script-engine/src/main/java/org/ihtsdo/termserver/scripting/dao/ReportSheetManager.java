@@ -385,7 +385,7 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 		return sheet == null ? null : sheet.getSpreadsheetUrl();
 	}
 
-	/*public boolean formatSpreadSheetColumns() {
+	public boolean formatSpreadSheetColumns() {
 		boolean writeSuccess = false;
 		BatchUpdateSpreadsheetRequest batch = new BatchUpdateSpreadsheetRequest();
 		List<Request> requests = new ArrayList<>();
@@ -424,5 +424,5 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 			writeAttempts++;
 		}
 		return writeSuccess;
-	}*/
+	}
 }
