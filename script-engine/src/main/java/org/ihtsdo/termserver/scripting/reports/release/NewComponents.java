@@ -43,7 +43,7 @@ public class NewComponents extends TermServerReport implements ReportClass {
 		String[] columnHeadings = new String[] {
 				"Component Type, New Count",
 				"Id, FSN, SemTag, Detail, Author, Task, Creation Date",
-				"Id, FSN, SemTag, Detail",
+				"Id, FSN, SemTag, Detail, Detail",
 				"Id, FSN, SemTag, Detail",
 				"Id, FSN, SemTag, Detail",
 				"Id, FSN, SemTag, Detail",
