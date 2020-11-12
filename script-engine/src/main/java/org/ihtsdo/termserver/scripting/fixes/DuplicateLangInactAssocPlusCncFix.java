@@ -31,6 +31,7 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 		try {
 			fix.runStandAlone = false;  //We need to look up the project path for MS projects
 			fix.selfDetermining = true;
+			fix.populateEditPanel = false;
 			fix.init(args);
 			// Recover the current project state from TS (or local cached archive) to allow
 			// quick searching of all concepts
