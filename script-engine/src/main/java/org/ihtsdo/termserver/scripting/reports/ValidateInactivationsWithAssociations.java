@@ -49,7 +49,7 @@ public class ValidateInactivationsWithAssociations extends TermServerReport impl
 	public void init (JobRun run) throws TermServerScriptException {
 		includeLegacyIssues = run.getParameters().getMandatoryBoolean(INCLUDE_ALL_LEGACY_ISSUES);
 		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA
-		additionalReportColumns="FSN, SemTag, Concept EffectiveTime, Issue, isLegacy (C/D), Data";
+		additionalReportColumns="FSN, SemTag, Concept EffectiveTime, Issue, isLegacy (C/D), Data, Data";
 		super.init(run);
 	}
 
