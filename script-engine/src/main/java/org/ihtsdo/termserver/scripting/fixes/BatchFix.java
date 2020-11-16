@@ -59,7 +59,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			this.tsClient = clone.tsClient;
 			this.scaClient = clone.scaClient;
 		}
-		this.headers = "TASK_KEY, TASK_DESC, SCTID, FSN, CONCEPT_TYPE, SEVERITY, ACTION_TYPE, ";
+		this.headers = "TaskKey, TaskDesc, SCTID, FSN, ConceptType, Severity, ActionType, ";
 	}
 	
 	public void runJob() throws TermServerScriptException {

@@ -31,6 +31,7 @@ public class HistoricalHistoricalIssues extends BatchFix implements RF2Constants
 			fix.reportNoChange = true;
 			fix.selfDetermining = true;
 			fix.runStandAlone = true;
+			fix.additionalReportColumns = "EffectiveDate, Issue, Detail, Detail, Detail";
 			fix.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			fix.loadProjectSnapshot(true); 

@@ -81,7 +81,7 @@ public abstract class TermServerScript implements RF2Constants {
 	private RF2Manager rf2Manager;
 	protected ApplicationContext appContext;
 	protected String headers = "Concept SCTID,";
-	protected String additionalReportColumns = "ActionDetail";
+	protected String additionalReportColumns = "ActionDetail, AdditionalDetail";
 	protected String secondaryReportColumns = "ActionDetail";
 	protected String tertiaryReportColumns = "ActionDetail";
 	protected boolean expectNullConcepts = false; //Set to true to avoid warning about rows in input file that result in no concept to modify

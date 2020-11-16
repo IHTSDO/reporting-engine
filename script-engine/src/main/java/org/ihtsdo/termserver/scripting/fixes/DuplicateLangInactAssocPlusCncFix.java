@@ -8,7 +8,7 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
-
+import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.springframework.util.StringUtils;
@@ -29,6 +29,7 @@ public class DuplicateLangInactAssocPlusCncFix extends BatchFix {
 	public static void main(final String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		final DuplicateLangInactAssocPlusCncFix fix = new DuplicateLangInactAssocPlusCncFix(null);
 		try {
+			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
 			fix.runStandAlone = false;  //We need to look up the project path for MS projects
 			fix.selfDetermining = true;
 			fix.populateEditPanel = false;
