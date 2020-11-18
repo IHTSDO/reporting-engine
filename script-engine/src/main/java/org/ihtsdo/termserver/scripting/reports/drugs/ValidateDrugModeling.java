@@ -60,7 +60,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 	}
 	
 	public void postInit() throws TermServerScriptException {
-		String[] columnHeadings = new String[] { "SCTID, FSN, Semtag, Issue, Detail",
+		String[] columnHeadings = new String[] { "SCTID, FSN, Semtag, Issue, Details, Details, Details",
 				"Issue, Count"};
 		String[] tabNames = new String[] {	"Issues",
 				"Summary"};

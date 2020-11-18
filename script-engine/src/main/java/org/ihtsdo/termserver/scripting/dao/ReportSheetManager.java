@@ -340,7 +340,8 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 						.execute();
 						writeSuccess = true;
 					}catch(Exception e) {
-						if (writeAttempts <= MAX_WRITE_ATTEMPTS) {
+						//If we're told about an invalid argument, trying again won't improve the situation!
+						if (writeAttempts <= MAX_WRITE_ATTEMPTS && !e.getMessage().contains("INVALID_ARGUMENT")) {
 							try {
 								TermServerScript.warn("Exception from Google Sheets, sleeping then trying again");
 								Thread.sleep(30*1000);
