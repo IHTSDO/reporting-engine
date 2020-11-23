@@ -160,6 +160,18 @@ public class GraphLoader implements RF2Constants {
 					TermServerScript.debug (characteristicType + " relationship " + lineItems[REL_IDX_ID] + " referenced a non concept identifier: " + lineItems[REL_IDX_SOURCEID]);
 				}
 				Concept thisConcept = getConcept(lineItems[REL_IDX_SOURCEID]);
+				
+				//If we've already received a newer version of this component, say
+				//by loading INT first and a published MS 2nd, then skip
+				Relationship existing = thisConcept.getRelationship(lineItems[IDX_ID]);
+				if (existing != null &&
+						!StringUtils.isEmpty(existing.getEffectiveTime()) 
+						&& isReleased
+						&& (existing.getEffectiveTime().compareTo(lineItems[IDX_EFFECTIVETIME]) >= 1)) {
+					System.out.println("Skipping incoming published relationship row, older than that held");
+					continue;
+				}
+				
 				if (addRelationshipsToConcepts) {
 					addRelationshipToConcept(characteristicType, lineItems, isDelta, isReleased);
 				}
@@ -536,7 +548,16 @@ public class GraphLoader implements RF2Constants {
 				if (detectNoChangeDelta && !isReleased && c.getModuleId() != null) {
 					revertEffectiveTime = detectNoChangeDelta(c, c, lineItems);
 				}
-
+				
+				//If we've already received a newer version of this component, say
+				//by loading INT first and a published MS 2nd, then skip
+				if (!StringUtils.isEmpty(c.getEffectiveTime()) 
+						&& isReleased
+						&& (c.getEffectiveTime().compareTo(lineItems[IDX_EFFECTIVETIME]) >= 1)) {
+					System.out.println("Skipping incoming published concept row, older than that held");
+					continue;
+				}
+				
 				Concept.fillFromRf2(c, lineItems);
 				
 				if (revertEffectiveTime != null) {
@@ -582,6 +603,15 @@ public class GraphLoader implements RF2Constants {
 				if (!fsnOnly) {
 					//We might already have information about this description, eg langrefset entries
 					Description d = getDescription(lineItems[DES_IDX_ID]);
+					
+					//If we've already received a newer version of this component, say
+					//by loading INT first and a published MS 2nd, then skip
+					if (!StringUtils.isEmpty(d.getEffectiveTime()) 
+							&& isReleased
+							&& (d.getEffectiveTime().compareTo(lineItems[IDX_EFFECTIVETIME]) >= 1)) {
+						System.out.println("Skipping incoming published description row, older than that held");
+						continue;
+					}
 					
 					//But if the module is not known, it's new
 					String revertEffectiveTime = null;
@@ -640,6 +670,15 @@ public class GraphLoader implements RF2Constants {
 				//Are we adding or replacing this entry?
 				if (d.getLangRefsetEntries().contains(langRefsetEntry)) {
 					LangRefsetEntry original = d.getLangRefsetEntry(langRefsetEntry.getId());
+					
+					//If we've already received a newer version of this component, say
+					//by loading INT first and a published MS 2nd, then skip
+					if (!StringUtils.isEmpty(original.getEffectiveTime()) 
+							&& isReleased
+							&& (original.getEffectiveTime().compareTo(lineItems[IDX_EFFECTIVETIME]) >= 1)) {
+						System.out.println("Skipping incoming published langrefset row, older than that held");
+						continue;
+					}
 					
 					//Set Released Flag if our existing entry has it
 					if (original.isReleased()) {

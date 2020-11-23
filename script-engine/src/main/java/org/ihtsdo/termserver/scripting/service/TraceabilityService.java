@@ -1,6 +1,7 @@
 package org.ihtsdo.termserver.scripting.service;
 
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
@@ -11,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.JobRun;
 import org.snomed.otf.traceability.domain.*;
+import org.springframework.util.StringUtils;
 
 public class TraceabilityService {
 	
@@ -45,37 +47,72 @@ public class TraceabilityService {
 	}
 	
 	public void flush() throws TermServerScriptException {
-		populateReportRowsWithTraceabilityInfo();
+		populateReportRowsWithTraceabilityInfo(ts.getProject().getKey());
 		report();
 		batchedReportRowMap.clear();
 	}
 
-	private void populateReportRowsWithTraceabilityInfo() {
+	private void populateReportRowsWithTraceabilityInfo(String branchFilter) {
+		branchFilter = "/" + branchFilter;
 		List<Long> conceptIds = new ArrayList<>(batchedReportRowMap.keySet());
 		List<Activity> traceabilityInfo = client.getConceptActivity(conceptIds, areaOfInterest, ActivityType.CONTENT_CHANGE);
 		if (traceabilityInfo.size() == 0) {
 			logger.warn("Failed to recover any traceability information for {} concepts", conceptIds.size());
 		}
 		for (Activity activity : traceabilityInfo) {
-			String[] info = new String[3];
+			Object[] info = new Object[3];
 			info[0] = activity.getUser().getUsername();
 			info[1] = activity.getBranch().getBranchPath();
-			info[2] = activity.getCommitDate().toInstant().atZone(ZoneId.systemDefault()).toString();
-			for (ReportRow row : batchedReportRowMap.get(getConceptId(activity, conceptIds))) {
-				row.traceabilityInfo = info;
+			info[2] = activity.getCommitDate().toInstant().atZone(ZoneId.systemDefault());
+			
+			if (StringUtils.isEmpty(info[1])) {
+				continue;  //Skip blanks
+			}
+			for (ReportRow row : getRelevantReportRows(activity, conceptIds)) {
+				//Preference for any branch that matches our filter, or the more recent update if both do
+				if (row.traceabilityInfo != null && !StringUtils.isEmpty(row.traceabilityInfo[1])) {
+					if (row.traceabilityInfo[1].toString().contains(branchFilter) &&
+							!info[1].toString().contains(branchFilter)) {
+						//Keep the one we've got
+					} else if (!row.traceabilityInfo[1].toString().contains(branchFilter) &&
+							info[1].toString().contains(branchFilter)) {
+						row.traceabilityInfo = info;
+					} else if (row.traceabilityInfo[1].toString().contains(branchFilter) &&
+						info[1].toString().contains(branchFilter)) {
+						//Both are a match, take whatever is newer!
+						if (((ZonedDateTime)row.traceabilityInfo[2]).isAfter((ZonedDateTime)info[2])) {
+							//Keep the one we've got
+						} else {
+							row.traceabilityInfo = info;
+						}
+					} else {
+						//Nothing matches, we'll take what we can get
+						row.traceabilityInfo = info;
+					}
+				} else {
+					row.traceabilityInfo = info;
+				}
 			}
 		}
 	}
 	
-	private Long getConceptId(Activity activity, List<Long> conceptsOfInterest) {
-		Long conceptId = null;
+	private List<ReportRow> getRelevantReportRows(Activity activity, List<Long> conceptIds) {
+		List<ReportRow> reportRows = new ArrayList<>();
+		for (Long id : getConceptIds(activity, conceptIds)) {
+			reportRows.addAll(batchedReportRowMap.get(id));
+		}
+		return reportRows;
+	}
+	
+	private Set<Long> getConceptIds(Activity activity, List<Long> conceptsOfInterest) {
+		Set<Long> conceptIds = new HashSet<>();
 		for (ConceptChange change : activity.getConceptChanges()) {
 			//If the data coming back wasn't about a concept we're interested in, ignore it
 			if (change.getConceptId() != null && conceptsOfInterest.contains(change.getConceptId())) {
-				conceptId = change.getConceptId(); 
+				conceptIds.add(change.getConceptId()); 
 			}
 		}
-		return conceptId;
+		return conceptIds;
 	}
 
 	private void report() throws TermServerScriptException {

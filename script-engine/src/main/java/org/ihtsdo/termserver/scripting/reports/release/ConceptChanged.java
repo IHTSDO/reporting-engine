@@ -49,7 +49,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		params.put(ECL, "<< 420040002|Fluoroscopic angiography (procedure)|");
+		//params.put(ECL, "<< 420040002|Fluoroscopic angiography (procedure)|");
 		TermServerReport.run(ConceptChanged.class, args, params);
 	}
 	
@@ -69,7 +69,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 				"Id, FSN, SemTag, Active, hasChangedAssociations, hasChangedInactivationIndicators, Author, Task, Creation Date",
 				"Id, FSN, SemTag, Active, isTargetOfNewStatedRelationship, isTargetOfNewInferredRelationship, wasTargetOfLostStatedRelationship, wasTargetOfLostInferredRelationship, Author, Task, Creation Date",
 				"Id, FSN, SemTag, Language, Description, isNew, isChanged, wasInactivated, changedAcceptability",
-				"Id, FSN, SemTag, Description, LangRefset, isNew, isChanged, wasInactivated, Author, Task, Creation Date"
+				"Id, FSN, SemTag, Description, LangRefset, isNew, isChanged, wasInactivated"
 		};
 		String[] tabNames = new String[] {
 				"Summary Counts",
@@ -128,7 +128,6 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		long notInScope = 0;
 		
 		for (Concept c : conceptsOfInterest) {
-			
 			SummaryCount summaryCount = getSummaryCount(ComponentType.CONCEPT.name());
 			if (c.isReleased() == null) {
 				throw new IllegalStateException ("Malformed snapshot. Released status not populated at " + c);
@@ -209,7 +208,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 							}
 
 							if (langRefSetIsNew || langRefSetIsLost || langRefSetIsChanged) {
-								traceability.populateTraceabilityAndReport(OCTONARY_REPORT, c, d, langRefsetEntry, langRefSetIsNew, langRefSetIsChanged, langRefSetIsLost);
+								report(OCTONARY_REPORT, c, d, langRefsetEntry, langRefSetIsNew, langRefSetIsChanged, langRefSetIsLost);
 							}
 						}
 					}

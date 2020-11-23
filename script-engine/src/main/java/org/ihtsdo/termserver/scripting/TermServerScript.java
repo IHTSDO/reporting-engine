@@ -338,6 +338,9 @@ public abstract class TermServerScript implements RF2Constants {
 			String response = STDIN.nextLine().trim();
 			if (!response.isEmpty()) {
 				projectName = response;
+				if (jobRun != null) {
+					jobRun.setProject(response);
+				}
 			}
 		
 			if (restartPosition != NOT_SET) {
