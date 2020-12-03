@@ -290,6 +290,7 @@ public class Relationship extends Component implements IRelationshipTemplate, RF
 		clone.characteristicType = this.characteristicType;
 		clone.isDirty = true;
 		clone.axiom = this.axiom;
+		clone.axiomEntry = this.axiomEntry;
 		return clone;
 	}
 	

@@ -161,6 +161,10 @@ public class GraphLoader implements RF2Constants {
 				}
 				Concept thisConcept = getConcept(lineItems[REL_IDX_SOURCEID]);
 				
+				/*if (thisConcept.getId().equals("714209004")) {
+					TermServerScript.debug ("here");
+				}*/
+				
 				//If we've already received a newer version of this component, say
 				//by loading INT first and a published MS 2nd, then skip
 				Relationship existing = thisConcept.getRelationship(lineItems[IDX_ID]);
@@ -214,8 +218,8 @@ public class GraphLoader implements RF2Constants {
 				
 				Long conceptId = Long.parseLong(lineItems[REF_IDX_REFCOMPID]);
 				Concept c = getConcept(conceptId);
-
-				/*if (c.getId().equals("108725001")) {
+				/*
+				if (c.getId().equals("714209004")) {
 					TermServerScript.debug ("here");
 				}
 				

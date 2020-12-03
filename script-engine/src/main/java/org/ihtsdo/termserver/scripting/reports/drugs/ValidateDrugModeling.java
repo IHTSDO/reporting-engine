@@ -112,7 +112,7 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		for (Concept c : subHierarchy) {
 			DrugUtils.setConceptType(c);
 			
-			/*if (c.getId().equals("108725001")) {
+			/*if (c.getId().equals("714209004")) {
 				debug ("here");
 			}*/
 			
