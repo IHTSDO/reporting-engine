@@ -590,7 +590,9 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	}
 	
 	public void removeChild(CharacteristicType charType, Concept c) {
-		getChildren(charType).remove(c);
+		if (getChildren(charType) != null) {
+			getChildren(charType).remove(c);
+		}
 	}
 	
 	public void addParent(CharacteristicType charType, Concept p) {

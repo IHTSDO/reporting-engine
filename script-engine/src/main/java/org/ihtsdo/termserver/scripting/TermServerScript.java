@@ -211,7 +211,7 @@ public abstract class TermServerScript implements RF2Constants {
 		Throwable cause = e.getCause();
 		if (cause != null) {
 			msg += " caused by " + cause.getMessage();
-			if (cause.getMessage().length() < 6) {
+			if (cause.getMessage() != null && cause.getMessage().length() < 6) {
 				msg += " @ " + cause.getStackTrace()[0];
 			}
 		}
