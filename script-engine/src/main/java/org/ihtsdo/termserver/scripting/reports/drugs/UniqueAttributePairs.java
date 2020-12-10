@@ -25,6 +25,7 @@ public class UniqueAttributePairs extends TermServerReport implements ReportClas
 	private AtomicLongMap<String> presNumDenomUnits = AtomicLongMap.create();
 	private AtomicLongMap<String> concNumDenomUnits = AtomicLongMap.create();
 	private AtomicLongMap<String> boSSPai = AtomicLongMap.create();
+	private AtomicLongMap<String> boSSPaiMDF = AtomicLongMap.create();
 	
 	Map<String, Concept> examples = new HashMap<>();
 	
@@ -43,14 +44,15 @@ public class UniqueAttributePairs extends TermServerReport implements ReportClas
 				"DoseForm, Conc DenomUnit, Count, Example",
 				"Pres Num Unit, Pres Den Unit, Count, Example",
 				"Conc Num Unit, Conc Den Unit, Count, Example",
-				"BoSS, PAI, Count, Example"
-				};
+				"BoSS, PAI, Count, Example",
+				"BoSS, PAI, MDF, Count, Example"};
 		String[] tabNames = new String[] {	
 				"Pres Form/Unit",
 				"Conc Form/Unit",
 				"Pres Num/Denom Units",
 				"Conc Num/Denom Units",
-				"Boss/PAI"
+				"BoSS/PAI",
+				"BoSS/PAI/MDF"
 				};
 		super.postInit(tabNames, columnHeadings, false);
 	}
@@ -60,7 +62,7 @@ public class UniqueAttributePairs extends TermServerReport implements ReportClas
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.DRUGS))
 				.withName("Unique Attribute Pairs")
-				.withDescription("This report lists combinations of dose forms and units along with usage counts and examples.")
+				.withDescription("This report lists combinations of dose forms and units along with usage counts and examples.  Also BoSS/PAI/MDF combinations.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(new JobParameters())
 				.withTag(INT)
@@ -77,6 +79,7 @@ public class UniqueAttributePairs extends TermServerReport implements ReportClas
 		reportData(TERTIARY_REPORT, presNumDenomUnits);
 		reportData(QUATERNARY_REPORT,concNumDenomUnits );
 		reportData(QUINARY_REPORT,boSSPai);
+		reportData(SENARY_REPORT,boSSPaiMDF);
 	}
 
 	private void analyzeConcept(Concept c) throws TermServerScriptException {
@@ -108,9 +111,14 @@ public class UniqueAttributePairs extends TermServerReport implements ReportClas
 				
 				Concept boSS = getRelationshipValue(c, HAS_BOSS, group.getGroupId());
 				Concept pAI = getRelationshipValue(c, HAS_PRECISE_INGRED, group.getGroupId());
-				if (boSS != null && pAI != null && !boSS.equals(pAI)) {
-					countInstance(boSSPai, c, boSS, pAI);
+				if (boSS != null && pAI != null) {
+					countInstance(boSSPaiMDF, c, boSS, pAI, doseForm);
+					if (!boSS.equals(pAI)) {
+						countInstance(boSSPai, c, boSS, pAI);
+					}
 				}
+				
+				
 			}
 		}
 		
