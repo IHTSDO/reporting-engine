@@ -40,12 +40,12 @@ public class UniqueAttributePairs extends TermServerReport implements ReportClas
 	
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
-				"Dose Form, Denom Unit, Unit Pres, Count, Example",
-				"DoseForm, Conc DenomUnit, Count, Example",
-				"Pres Num Unit, Pres Den Unit, Count, Example",
-				"Conc Num Unit, Conc Den Unit, Count, Example",
-				"BoSS, PAI, Count, Example",
-				"BoSS, PAI, MDF, Count, Example"};
+				"SCTID, Dose Form, SCTID, Denom Unit, SCTID,Unit Pres, Count, Example",
+				"SCTID,DoseForm, SCTID, Conc DenomUnit, Count, Example",
+				"SCTID,Pres Num Unit, SCTID, Pres Den Unit, Count, Example",
+				"SCTID,Conc Num Unit, SCTID, Conc Den Unit, Count, Example",
+				"SCTID,BoSS, SCTID, PAI, Count, Example",
+				"SCTID,BoSS, SCTID, PAI, SCTID, MDF, Count, Example"};
 		String[] tabNames = new String[] {	
 				"Pres Form/Unit",
 				"Conc Form/Unit",
@@ -153,8 +153,18 @@ public class UniqueAttributePairs extends TermServerReport implements ReportClas
 
 	private void reportData(int tabIdx, AtomicLongMap<String> data) throws TermServerScriptException {
 		for (Map.Entry<String, Long> entry : data.asMap().entrySet()) {
-			report (tabIdx, entry.getKey().split("~"), entry.getValue(), examples.get(entry.getKey()));
+			report (tabIdx, splitEntry(entry.getKey()), entry.getValue(), examples.get(entry.getKey()));
 			countIssue(null);
 		}
+	}
+	
+	private String[] splitEntry(String entry) {
+		List<String> columns = new ArrayList<>();
+		for (String conceptStr : entry.split("~")) {
+			int cutIdx = conceptStr.indexOf(PIPE_CHAR);
+			columns.add(conceptStr.substring(0, cutIdx));
+			columns.add(conceptStr.substring(cutIdx +1).replace("|", ""));
+		}
+		return columns.toArray(new String[] {});
 	}
 }

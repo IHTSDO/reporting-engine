@@ -11,7 +11,6 @@ import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
-import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.ihtsdo.termserver.scripting.util.StringUtils;
 
 /**
