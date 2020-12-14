@@ -22,6 +22,7 @@ public class AddAttributeOnLexicalMatch extends BatchFix {
 	private Concept subHierarchy;
 	private Map<String, RelationshipTemplate> searchTermAttributeMap;
 	private Set<String> exclusions;
+	private Set<Concept> acceptableAlternatives;
 
 	protected AddAttributeOnLexicalMatch(BatchFix clone) {
 		super(clone);
@@ -105,7 +106,7 @@ public class AddAttributeOnLexicalMatch extends BatchFix {
 		*/
 		
 		searchTermAttributeMap.put("idiopathic", new RelationshipTemplate(IS_A, gl.getConcept("41969006 |Idiopathic disease (disorder)|")));
-				
+		acceptableAlternatives = gl.getConcept("41969006").getDescendents(NOT_SET);
 		super.postInit();
 	}
 
@@ -182,12 +183,25 @@ public class AddAttributeOnLexicalMatch extends BatchFix {
 					if (existing.size() > 0) {
 						report ((Task)null, c, Severity.LOW, ReportActionType.NO_CHANGE, "Relationship already present", existing.iterator().next());
 					} else {
-						processMe.add(c);
+						if (ensureNoAlternativesPresent(c)) {
+							processMe.add(c);
+						}
 					}
 					break;
 				}
 			}
 		}
 		return processMe;
+	}
+
+	private boolean ensureNoAlternativesPresent(Concept c) throws TermServerScriptException {
+		for (Concept target : acceptableAlternatives) {
+			for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
+				if (r.getTarget().equals(target)) {
+					report ((Task)null, c, Severity.LOW, ReportActionType.NO_CHANGE, "More specific relationship already present ", target);
+				}
+			}
+		}
+		return true;
 	}
 }
