@@ -242,25 +242,30 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 		//RP-231 Pattern 21 Newly inactivatated duplicate was created in previous release
 		String issueStr = "Pattern 21: Newly inactivatated duplicate was created in previous release.";
 		initialiseSummary(issueStr);
+		String issue2Str = "Assertion: Inactivate concept is missing inactivation indicator";
+		initialiseSummary(issue2Str);
 		int errorCount = 0;
 		for (Concept c : gl.getAllConcepts()) {
 			if (!c.isActive() && 
-				(c.getEffectiveTime() == null || c.getEffectiveTime().isEmpty()) &&
-				c.getInactivationIndicator().equals(InactivationIndicator.DUPLICATE)) {
-				//Did this concept exist in the previous previous release?
-				//If not, then it was created in the previous release and immediately retired
-				try {
-					Concept loadedConcept = loadConcept(c, previousPreviousRelease);
-					if (loadedConcept == null) {
-						report (c, issueStr);
+				(c.getEffectiveTime() == null || c.getEffectiveTime().isEmpty())) {
+				if (c.getInactivationIndicator() == null) {
+					report (c, issue2Str);
+				} else if (c.getInactivationIndicator().equals(InactivationIndicator.DUPLICATE)) {
+					//Did this concept exist in the previous previous release?
+					//If not, then it was created in the previous release and immediately retired
+					try {
+						Concept loadedConcept = loadConcept(c, previousPreviousRelease);
+						if (loadedConcept == null) {
+							report (c, issueStr);
+						}
+					} catch (Exception e) {
+						report (c, "API ERROR", "Failed to check previous previous release due to " + e.getMessage());
+						if (++errorCount == 5) {
+							report (c, "API ERROR", "Maximum failures reached, giving up on Pattern 21");
+							break;
+						}
 					}
-				} catch (Exception e) {
-					report (c, "API ERROR", "Failed to check previous previous release due to " + e.getMessage());
-					if (++errorCount == 5) {
-						report (c, "API ERROR", "Maximum failures reached, giving up on Pattern 21");
-						break;
-					}
-				}
+			}
 			}
 		}
 	}
