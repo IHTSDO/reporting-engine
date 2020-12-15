@@ -242,7 +242,7 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 		//RP-231 Pattern 21 Newly inactivatated duplicate was created in previous release
 		String issueStr = "Pattern 21: Newly inactivatated duplicate was created in previous release.";
 		initialiseSummary(issueStr);
-		String issue2Str = "Assertion: Inactivate concept is missing inactivation indicator";
+		String issue2Str = "Assertion: Inactive concept is missing inactivation indicator";
 		initialiseSummary(issue2Str);
 		int errorCount = 0;
 		for (Concept c : gl.getAllConcepts()) {

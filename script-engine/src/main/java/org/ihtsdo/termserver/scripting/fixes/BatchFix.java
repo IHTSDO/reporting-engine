@@ -760,6 +760,11 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	}
 	
 	protected Description replaceDescription(Task t, Concept c, Description d, String newTerm, InactivationIndicator indicator) throws TermServerScriptException {
+		//Do not perform a demotion by default
+		return replaceDescription(t, c, d, newTerm, indicator, false);
+	}
+	
+	protected Description replaceDescription(Task t, Concept c, Description d, String newTerm, InactivationIndicator indicator, boolean demotePT) throws TermServerScriptException {
 		Description replacement = null;
 		Description reuseMe = c.findTerm(newTerm);
 		if (reuseMe != null) {
@@ -782,9 +787,15 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			c.addDescription(replacement);
 		}
 		
-		//Are we deleting or inactivating this term?
+		//Are we deleting, demoting or inactivating this term?
 		if (d != null) {
-			removeDescription(t, c, d, newTerm, indicator);
+			if (d.isPreferred() && demotePT && d.getType().equals(DescriptionType.SYNONYM)) {
+				SnomedUtils.demoteAcceptabilityMap(d);
+				report(t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_ADDED, replacement);
+				report(t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Existing PT demoted to acceptable", d);
+			} else {
+				removeDescription(t, c, d, newTerm, indicator);
+			}
 		}
 		return replacement == null ? reuseMe : replacement;  //WATCH THAT THE CALLING CODE IS RESPONSIBLE FOR CHECKING THE CASE SIGNIFICANCE - copied from original
 	}

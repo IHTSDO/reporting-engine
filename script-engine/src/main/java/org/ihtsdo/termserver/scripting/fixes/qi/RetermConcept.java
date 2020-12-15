@@ -11,21 +11,22 @@ import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.ihtsdo.termserver.scripting.util.StringUtils;
 
 /**
  * SCTQA-321 reaplce teletherapy with "external beam radiation therapy" in FSNs
  */
-public class RetermFSN extends BatchFix {
+public class RetermConcept extends BatchFix {
 
 	private Map<String, String> termMap = new HashMap<>();
 	
-	protected RetermFSN(BatchFix clone) {
+	protected RetermConcept(BatchFix clone) {
 		super(clone);
 	}
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
-		RetermFSN fix = new RetermFSN(null);
+		RetermConcept fix = new RetermConcept(null);
 		try {
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
 			fix.populateEditPanel = true;
@@ -52,6 +53,9 @@ public class RetermFSN extends BatchFix {
 	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
 		int changesMade = 0;
 		try {
+			/*if (concept.getId().equals("399116007")) {
+				debug("here");
+			}*/
 			Concept loadedConcept = loadConcept(concept, task.getBranchPath());
 			changesMade = modifyDescriptions(task, loadedConcept);
 			if (changesMade > 0) {
@@ -69,42 +73,48 @@ public class RetermFSN extends BatchFix {
 		int changesMade = 0;
 		List<Description> originalDescriptions = new ArrayList<>(c.getDescriptions(ActiveState.ACTIVE));
 		for (Description d : originalDescriptions) {
-			switch (d.getType()) {
-				case FSN : changesMade += modifyFSN(t, c);
-							break;
-				/*case SYNONYM :  if (!isExcluded(d.getTerm().toLowerCase())) {
-									String replacement = d.getTerm() + " with contrast";
-									replaceDescription(t, c, d, replacement, null);
-									changesMade++;
-								};
-								break;*/
-				default : 
+			if (d.isPreferred() && !d.getType().equals(DescriptionType.TEXT_DEFINITION)) {
+				changesMade += modifyDescription(t,c,d);
 			}
 		}
 		return changesMade;
 	}
 
-	private int modifyFSN(Task t, Concept c) throws TermServerScriptException {
-		String replacement = c.getFsn();
+	private int modifyDescription(Task t, Concept c, Description d) throws TermServerScriptException {
+		String origTerm = d.getTerm();
+		String replacement = origTerm;
+		
+		//We're not going to modify the PT, we're going to replace it with the modified FSN minus semtag
+		if (d.getType().equals(DescriptionType.SYNONYM)) {
+			origTerm = SnomedUtils.deconstructFSN(c.getFsn())[0];
+			replacement = origTerm;
+			if (d.getAcceptabilityMap().size() < 2) {
+				report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "PT marked for replacment has dialect variation");
+			}
+		}
+		
 		for (String term : termMap.keySet()) {
-			if (c.getFsn().contains(term)) {
-				replacement = c.getFsn().replace(term, termMap.get(term));
+			if (origTerm.contains(term)) {
+				replacement = origTerm.replace(term, termMap.get(term));
 				break;
 			} else {
 				//Try a capitalized version
 				String capTerm = StringUtils.capitalizeFirstLetter(term);
-				if (c.getFsn().contains(capTerm)) {
+				if (origTerm.contains(capTerm)) {
 					String capReplacement =  StringUtils.capitalizeFirstLetter(termMap.get(term));
-					replacement = c.getFsn().replace(capTerm, capReplacement);
+					replacement = origTerm.replace(capTerm, capReplacement);
 					break;
 				}
 			}
 		}
-		if (replacement.equals(c.getFsn())) {
+		
+		if (replacement.equals(d.getTerm())) {
 			debug("Failed to replace term in " + c);
+		} else {
+			replaceDescription(t, c, d, replacement, null, true);  //Yes demote PTs
+			return CHANGE_MADE;
 		}
-		replaceDescription(t, c, c.getFSNDescription(), replacement, null);
-		return CHANGE_MADE;
+		return NO_CHANGES_MADE;
 	}
 
 	@Override

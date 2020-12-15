@@ -191,6 +191,12 @@ public class SnomedUtils implements RF2Constants {
 		return merged;
 	}
 	
+	public static void demoteAcceptabilityMap (Description d) {
+		for (String refset : d.getAcceptabilityMap().keySet()) {
+			d.getAcceptabilityMap().put(refset, Acceptability.ACCEPTABLE);
+		}
+	}
+	
 	public static Map<String, Acceptability> mergeAcceptabilityMap (Description left,Description right) {
 		return mergeAcceptabilityMap(left.getAcceptabilityMap(), right.getAcceptabilityMap());
 	}
