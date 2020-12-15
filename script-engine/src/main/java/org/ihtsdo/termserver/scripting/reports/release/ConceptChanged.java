@@ -107,7 +107,9 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		determineUniqueCountAndTraceability();
 		traceability.flush();
 		report (PRIMARY_REPORT, "");
-		report (PRIMARY_REPORT, "Run against", subsetECL);
+		if (!StringUtils.isEmpty(subsetECL)) {
+			report (PRIMARY_REPORT, "Run against", subsetECL);
+		}
 		info ("Job complete");
 	}
 	
