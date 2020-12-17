@@ -1,4 +1,4 @@
-package org.ihtsdo.termserver.scripting.reports;
+package org.ihtsdo.termserver.scripting.reports.drugs;
 
 import java.io.IOException;
 import java.io.PrintStream;
