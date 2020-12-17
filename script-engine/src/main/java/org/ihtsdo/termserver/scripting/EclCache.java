@@ -20,10 +20,8 @@ public class EclCache implements RF2Constants {
 	
 	private static Map <String, EclCache> branchCaches;
 	private static int PAGING_LIMIT = 1000;
-	private static int MAX_RESULTS = 9999;
 	private TermServerClient tsClient;
 	private GraphLoader gl;
-	boolean safetyProtocolEngaged = true;
 	boolean quiet = false;
 	
 	Map <String, Collection<Concept>> expansionCache = new HashMap<>();
@@ -53,14 +51,14 @@ public class EclCache implements RF2Constants {
 	}
 	
 	protected Collection<Concept> findConcepts(String branch, String ecl) throws TermServerScriptException {
-		return findConcepts(branch, ecl, !safetyProtocolEngaged, true);
+		return findConcepts(branch, ecl, true);
 	}
 	
 	protected boolean isCached(String ecl) {
 		return expansionCache.containsKey(ecl);
 	}
 	
-	protected Collection<Concept> findConcepts(String branch, String ecl, boolean expectLargeResults, boolean useLocalStoreIfSimple) throws TermServerScriptException {
+	protected Collection<Concept> findConcepts(String branch, String ecl, boolean useLocalStoreIfSimple) throws TermServerScriptException {
 		if (StringUtils.isEmpty(ecl)) {
 			TermServerScript.warn("EclCache asked to find concepts but not ecl specified.  Returning empty set");
 			return new ArrayList<>();
@@ -98,7 +96,7 @@ public class EclCache implements RF2Constants {
 			Collection<Concept> combinedSet = new HashSet<>();
 			for (String eclFragment : machineEcl.split(" OR ")) {
 				TermServerScript.debug("Combining request for: " + eclFragment);
-				combinedSet.addAll(findConcepts(branch, eclFragment, expectLargeResults, useLocalStoreIfSimple));
+				combinedSet.addAll(findConcepts(branch, eclFragment, useLocalStoreIfSimple));
 			}
 			allConcepts = combinedSet;
 			expansionCache.put(ecl, combinedSet);
@@ -129,7 +127,7 @@ public class EclCache implements RF2Constants {
 				}
 				TermServerScript.debug("Recovered " + allConcepts.size() + " concepts for simple ecl from local memory: " + ecl);
 			} else {
-				allConcepts = recoverConceptsFromTS(branch, ecl, expectLargeResults);
+				allConcepts = recoverConceptsFromTS(branch, ecl);
 			}
 		}
 		
@@ -161,15 +159,7 @@ public class EclCache implements RF2Constants {
 		return isSimple;
 	}
 
-	public void engageSafetyProtocol(boolean engaged) {
-		boolean changed = (safetyProtocolEngaged != engaged);
-		safetyProtocolEngaged = engaged;
-		if (!engaged && changed) {
-			TermServerScript.warn ("ECL cache safety protocols have been disengaged. There's no limit");
-		}
-	}
-	
-	private Set<Concept> recoverConceptsFromTS(String branch, String ecl, boolean expectLargeResults) throws TermServerScriptException {
+	private Set<Concept> recoverConceptsFromTS(String branch, String ecl) throws TermServerScriptException {
 		Set<Concept> allConcepts = new HashSet<>();
 		boolean allRecovered = false;
 		String searchAfter = null;
@@ -181,13 +171,6 @@ public class EclCache implements RF2Constants {
 					if (searchAfter == null) {
 						//First time round, report how many we're receiving.
 						TermServerScript.debug ("Recovering " + collection.getTotal() + " concepts matching '" + ecl +"'");
-						if (collection.getTotal() > 2000 && !expectLargeResults) {
-							TermServerScript.info ("...which seems rather large, don't you think?");
-						}
-						
-						if (!expectLargeResults && collection.getTotal() > MAX_RESULTS) {
-							throw new TermServerScriptException("ECL returned " + collection.getTotal() + " concepts, exceeding limit of " + MAX_RESULTS);
-						}
 					}
 					
 					//Recover our locally held copy of these concepts so that we have the full hierarchy populated

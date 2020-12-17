@@ -66,7 +66,6 @@ public abstract class TermServerScript implements RF2Constants {
 	protected String dependencyArchive;
 	protected String projectName;
 	private String reportName;
-	protected boolean safetyProtocols = true;  //Switch off to bypass all limits
 	protected boolean includeSummaryTab = false;
 	protected boolean reportNullConcept = true;
 	protected String subHierarchyStr;
@@ -946,7 +945,7 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	public Collection<Concept> findConcepts(String ecl) throws TermServerScriptException {
-		return findConcepts(project.getBranchPath(), ecl, false, !safetyProtocolsEnabled(), true);
+		return findConcepts(project.getBranchPath(), ecl, false, true);
 	}
 	
 	public Collection<RefsetMember> findRefsetMembers(Concept c, String refsetFilter) throws TermServerScriptException {
@@ -959,31 +958,30 @@ public abstract class TermServerScript implements RF2Constants {
 	
 	public Collection<Concept> findConceptsSafely(String ecl) {
 		try {
-			return findConcepts(project.getBranchPath(), ecl, true, !safetyProtocolsEnabled(), true);
+			return findConcepts(project.getBranchPath(), ecl, true, true);
 		} catch (Exception e) {
 			error("Exception while recovering " + ecl + " skipping.", e);
 		}
 		return new HashSet<>();
 	}
 	
-	public Collection<Concept> findConcepts(String ecl, boolean quiet, boolean expectLargeResults) throws TermServerScriptException {
-		return findConcepts(ecl, quiet, expectLargeResults, true);
+	public Collection<Concept> findConcepts(String ecl, boolean quiet) throws TermServerScriptException {
+		return findConcepts(ecl, quiet, true);
 	}
 	
-	public Collection<Concept> findConcepts(String ecl, boolean quiet, boolean expectLargeResults, boolean useLocalStoreIfSimple) throws TermServerScriptException {
-		return findConcepts(project.getBranchPath(), ecl, quiet, expectLargeResults, useLocalStoreIfSimple);
+	public Collection<Concept> findConcepts(String ecl, boolean quiet, boolean useLocalStoreIfSimple) throws TermServerScriptException {
+		return findConcepts(project.getBranchPath(), ecl, quiet, useLocalStoreIfSimple);
 	}
 	
-	public Collection<Concept> findConcepts(String branch, String ecl, boolean quiet, boolean expectLargeResults, boolean useLocalStoreIfSimple) throws TermServerScriptException {
+	public Collection<Concept> findConcepts(String branch, String ecl, boolean quiet, boolean useLocalStoreIfSimple) throws TermServerScriptException {
 		EclCache cache = EclCache.getCache(branch, tsClient, gson, gl, quiet);
-		cache.engageSafetyProtocol(safetyProtocols);
 		boolean wasCached = cache.isCached(ecl);
-		Collection<Concept> concepts = cache.findConcepts(branch, ecl, expectLargeResults, useLocalStoreIfSimple); 
+		Collection<Concept> concepts = cache.findConcepts(branch, ecl, useLocalStoreIfSimple); 
 		int retry = 0;
 		if (concepts.size() == 0 && ++retry < 3) {
 			debug("No concepts returned. Double checking that result...");
 			try { Thread.sleep(3*1000); } catch (Exception e) {}
-			concepts = cache.findConcepts(branch, ecl, expectLargeResults, useLocalStoreIfSimple); 
+			concepts = cache.findConcepts(branch, ecl, useLocalStoreIfSimple); 
 		}
 		
 		//If this is the first time we've seen these results, check for duplicates
@@ -1609,10 +1607,6 @@ public abstract class TermServerScript implements RF2Constants {
 	
 	public void setReportName(String reportName) {
 		this.reportName = reportName;
-	}
-	
-	public boolean safetyProtocolsEnabled() {
-		return safetyProtocols;
 	}
 	
 	public void offlineMode(boolean offline) {

@@ -81,7 +81,7 @@ public abstract class TermServerReport extends TermServerScript {
 			report (reportIdx, c, details);
 		} catch (TermServerScriptException e) {
 			throw new IllegalStateException("Failed to write to report", e);
-	}
+		}
 	}
 	
 	protected void report (Component c, Object... details) throws TermServerScriptException {

@@ -25,7 +25,8 @@ abstract public class TemplateFix extends BatchFix {
 	protected Set<Concept> exclusions;
 	protected List<String> exclusionWords;
 	protected List<String> inclusionWords;
-	protected boolean includeComplexTemplates = false;
+	protected boolean includeComplexTemplates = true;
+	protected boolean includeOrphanet = true;
 	protected List<Concept> complexTemplateAttributes;
 	protected boolean includeDueTos = false;
 	protected boolean excludeSdMultiRG = false;
@@ -275,7 +276,7 @@ abstract public class TemplateFix extends BatchFix {
 			}
 		}
 		
-		if (gl.isOrphanetConcept(c)) {
+		if (!includeOrphanet && gl.isOrphanetConcept(c)) {
 			if (exclusionReport != null) {
 				incrementSummaryInformation("Orphanet concepts excluded");
 				report (exclusionReport, c, "Orphanet exclusion");
@@ -312,22 +313,27 @@ abstract public class TemplateFix extends BatchFix {
 		}
 		
 		//We're excluding complex templates that have a due to, or "after" attribute
-		if (!includeComplexTemplates) {
-			for (Concept excludedType : complexTemplateAttributes) {
-				for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
-					if (r.getType().equals(excludedType)) {
-						if (exclusionReport != null) {
-							incrementSummaryInformation("Concepts excluded due to complexity");
-							report (exclusionReport, c, "Complex templates excluded");
-						}
-						return true;
-					}
+		if (!includeComplexTemplates && isComplex(c)) {
+			if (exclusionReport != null) {
+				incrementSummaryInformation("Concepts excluded due to complexity");
+				report (exclusionReport, c, "Complex templates excluded");
+			}
+			return true;
+		}
+		return false;
+	}
+	
+	protected boolean isComplex(Concept c) {
+		for (Concept excludedType : complexTemplateAttributes) {
+			for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
+				if (r.getType().equals(excludedType)) {
+					return true;
 				}
 			}
 		}
 		return false;
 	}
-	
+
 	@Override
 	public void report (Task task, Component component, Severity severity, ReportActionType actionType, Object... details) throws TermServerScriptException {
 		Concept c = (Concept)component;

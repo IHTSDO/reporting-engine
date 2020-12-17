@@ -43,19 +43,11 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 	}
 	
 	protected void init(String[] args) throws TermServerScriptException {
-		//safetyProtocols = false;
 		reportNoChange = false;
 		selfDetermining = true;
 		runStandAlone = true;
 		classifyTasks = true;
 		includeSummaryTab = true;
-		//offlineMode(true);
-		
-		if (!safetyProtocols) {
-			//We're expecting to exceed limits if the safeties are off
-			populateEditPanel = false;
-			populateTaskDescription = false;
-		}
 		
 		if (exclusionWords == null) {
 			exclusionWords = new ArrayList<>();
@@ -378,10 +370,8 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		//I think this might happen when we set a PPP which is lower than the existing parent.
 		
 		super.init(args);
-		//Ensure our ECL matches more than 0 concepts.  This will also cache the result
-		boolean expectLargeResults = !safetyProtocols;
 		boolean useLocalStoreIfSimple = false;
-		if (!getArchiveManager().isAllowStaleData() && findConcepts(subsetECL, false, expectLargeResults, useLocalStoreIfSimple).size() == 0) {
+		if (!getArchiveManager().isAllowStaleData() && findConcepts(subsetECL, false, useLocalStoreIfSimple).size() == 0) {
 			throw new TermServerScriptException(subsetECL + " returned 0 rows");
 		}
 	}

@@ -28,7 +28,7 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 	
 	private Map<Concept, List<String>> conceptDiagnostics = new HashMap<>();
 	public static final String INCLUDE_COMPLEX = "Include complex cases";
-	public static final String ALLOW_LARGE_RESULTS= "Allow large results";
+	public static final String INCLUDE_ORPHANET = "Include Orphanet";
 	
 	public MisalignedConcepts() {
 		super(null);
@@ -65,10 +65,10 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 					.withMandatory()
 				.add(INCLUDE_COMPLEX)
 					.withType(JobParameter.Type.BOOLEAN)
-					.withDefaultValue(false)
-				.add(ALLOW_LARGE_RESULTS)
+					.withDefaultValue(true)
+				.add(INCLUDE_ORPHANET)
 					.withType(JobParameter.Type.BOOLEAN)
-					.withDefaultValue(false)
+					.withDefaultValue(true)
 				.add(TEMPLATE)
 					.withType(JobParameter.Type.TEMPLATE)
 				.add(TEMPLATE2)
@@ -112,7 +112,7 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		if (jobRun != null) {
 			super.init(jobRun);
 			includeComplexTemplates = jobRun.getParameters().getMandatoryBoolean(INCLUDE_COMPLEX);
-			safetyProtocols = !jobRun.getParameters().getMandatoryBoolean(ALLOW_LARGE_RESULTS);
+			includeOrphanet = jobRun.getParameters().getMandatoryBoolean(INCLUDE_ORPHANET);
 			subsetECL = jobRun.getMandatoryParamValue(ECL);
 
 			String templateServerUrl = jobRun.getMandatoryParamValue(SERVER_URL);
@@ -380,9 +380,13 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 	}
 	
 	public void postInit() throws TermServerScriptException {
-		String[] columnHeadings = new String[] {"TASK_KEY, TASK_DESC, SCTID, FSN, CONCEPT_TYPE, SEVERITY, ACTION_TYP, CharacteristicType, MatchedTemplate, Template Diagnostic",
-				"Report Metadata", "SCTID, FSN, SemTag, Reason", "SCTID, FSN, SemTag, Template Aligned"};
-		String[] tabNames = new String[] {	"Misaligned Concepts",
+		String[] columnHeadings = new String[] {
+				"TASK_KEY, TASK_DESC, SCTID, FSN, CONCEPT_TYPE, SEVERITY, ACTION_TYPE, DefnStatus, TemplateMatched, IsComplex, IsOrphanet, Template Diagnostic",
+				"Report Metadata", 
+				"SCTID, FSN, SemTag, Reason", 
+				"SCTID, FSN, SemTag, Template Aligned"};
+		String[] tabNames = new String[] {
+				"Misaligned Concepts",
 				"Metadata",
 				"Excluded Concepts",
 				"Aligned Concepts"};
@@ -402,7 +406,7 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		if (conceptDiagnostics.get(c) != null) {
 			diagnosticStr = String.join("\n", conceptDiagnostics.get(c));
 		}
-		report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, diagnosticStr);
+		report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, isComplex(c)?"Y":"N", gl.isOrphanetConcept(c)?"Y":"N", diagnosticStr);
 	}
 
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {

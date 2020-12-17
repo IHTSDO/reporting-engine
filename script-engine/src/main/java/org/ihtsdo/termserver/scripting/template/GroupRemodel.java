@@ -187,9 +187,8 @@ public class GroupRemodel extends TemplateFix {
 		super.init(args);
 		
 		//Ensure our ECL matches more than 0 concepts.  This will also cache the result
-		boolean expectLargeResults = !safetyProtocols;
 		boolean useLocalStoreIfSimple = false;
-		if (!getArchiveManager().isAllowStaleData() && findConcepts(subsetECL, false, expectLargeResults, useLocalStoreIfSimple).size() == 0) {
+		if (!getArchiveManager().isAllowStaleData() && findConcepts(subsetECL, false, useLocalStoreIfSimple).size() == 0) {
 			throw new TermServerScriptException(subsetECL + " returned 0 rows");
 		}
 	}

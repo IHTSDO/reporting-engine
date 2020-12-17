@@ -63,7 +63,6 @@ public class GenerateWorkDoneStatsWithTempateTypes extends TermServerReport {
 	private void postLoadInit() throws TermServerScriptException, IOException {
 		subHierarchies = new ArrayList<>();
 		targetValues = new ArrayList<>();
-		safetyProtocols = false;
 		
 		info ("Loading " + inputFile);
 		if (!inputFile.canRead()) {
