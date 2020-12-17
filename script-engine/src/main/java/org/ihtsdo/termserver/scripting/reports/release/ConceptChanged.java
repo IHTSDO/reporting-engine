@@ -154,9 +154,9 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 				notInScope++;
 			}
 			
-			summaryCount = getSummaryCount(ComponentType.DESCRIPTION.name());
-			SummaryCount summaryCountLRF = getSummaryCount(ComponentType.LANGREFSET.name());
 			for (Description d : c.getDescriptions()) {
+				summaryCount = getSummaryCount(ComponentType.DESCRIPTION.name() + " - " + d.getLang());
+				SummaryCount summaryCountLRF = getSummaryCount(ComponentType.LANGREFSET.name() + " - " + d.getLang());
 				boolean isNew = false;
 				boolean isChanged = false;
 				boolean wasInactivated = false;
@@ -375,7 +375,9 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		traceability.flush();
 		
 		//Populate the summary numbers for each type of component
-		for (String componentType : summaryCounts.keySet()) {
+		List<String> summaryCountKeys = new ArrayList<>(summaryCounts.keySet());
+		Collections.sort(summaryCountKeys);
+		for (String componentType : summaryCountKeys) {
 			SummaryCount sc = summaryCounts.get(componentType);
 			String componentName = StringUtils.capitalizeFirstLetter(componentType.toString().toLowerCase());
 			report (PRIMARY_REPORT, componentName, sc.isNew, sc.isChanged, sc.isInactivated);

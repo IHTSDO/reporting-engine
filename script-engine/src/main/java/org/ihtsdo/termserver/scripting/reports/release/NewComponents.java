@@ -106,14 +106,14 @@ public class NewComponents extends TermServerReport implements ReportClass {
 				if (inScope(d)) {
 					if (!d.isReleased()) {
 						report(TERTIARY_REPORT, c, d.getTerm(), d);
-						componentCounts.getAndIncrement("Descriptions");
+						componentCounts.getAndIncrement("Descriptions - " + d.getLang());
 						countIssue(c);
 					}
 
 					for (LangRefsetEntry langRefsetEntry : d.getLangRefsetEntries()) {
 						if (inScope(langRefsetEntry) && !langRefsetEntry.isReleased()) {
 							report(OCTONARY_REPORT, c, langRefsetEntry);
-							componentCounts.getAndIncrement("Language Refsets");
+							componentCounts.getAndIncrement("Language Refsets - " + d.getLang());
 							countIssue(c);
 						}
 					}
@@ -153,9 +153,10 @@ public class NewComponents extends TermServerReport implements ReportClass {
 			}
 		}
 		
-		for (Map.Entry<String, Long> entry : componentCounts.asMap().entrySet()) {
-			report (PRIMARY_REPORT, entry.getKey(), entry.getValue());
-		}
+		componentCounts.asMap().entrySet().stream()
+		.sorted(Map.Entry.<String,Long> comparingByKey())
+		.forEach(entry -> reportSafely (PRIMARY_REPORT, entry.getKey(), entry.getValue()));
+		
 		//Finish off adding traceability and reporting out any remaining concepts that 
 		//haven't filed a batch
 		service.flush();

@@ -1433,6 +1433,14 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 	}
 	
+	protected void reportSafely (int reportIdx, Object... details) {
+		try {
+			report (reportIdx, details);
+		} catch (TermServerScriptException e) {
+			throw new IllegalStateException("Failed to write to report", e);
+		}
+	}
+	
 	protected boolean report (int reportIdx, Object...details) throws TermServerScriptException {
 		StringBuffer sb = new StringBuffer();
 		boolean isFirst = true;
