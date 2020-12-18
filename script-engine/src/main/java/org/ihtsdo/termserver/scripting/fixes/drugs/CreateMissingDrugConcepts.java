@@ -196,33 +196,27 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 			termGenerator.ensureTermsConform(task, required, CharacteristicType.STATED_RELATIONSHIP);
 			required.setDefinitionStatus(DefinitionStatus.FULLY_DEFINED);
 			report (task, concept, Severity.NONE, ReportActionType.INFO, "Concepts suggests need for :" + required);
-			
-			//Are we suppressing this concept?
-			if (suppress.contains(required.getFsn())) {
-				report (task, concept, Severity.MEDIUM, ReportActionType.INFO, "Concept suppressed", required);
-				//And remove from the task
-				task.remove(loadedConcept);
-			} else {
-				String expression = required.toExpression(CharacteristicType.STATED_RELATIONSHIP);
-				required = createConcept(task, required, info);
-				if (required.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT) || 
-					required.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM)) {
-					ConceptType invalidParentType = required.getConceptType();  //Up a level should have different type
-					String currentParents = concept.getParents(CharacteristicType.INFERRED_RELATIONSHIP)
-							.stream()
-							.filter(parent -> parent.getConceptType().equals(invalidParentType))
-							.map(parent -> parent.toString())
-							.collect(Collectors.joining(",\n"));
-					report (task, concept, Severity.LOW, ReportActionType.INFO, "Existing parents considered insufficient: " + (currentParents.isEmpty() ? "None detected" : currentParents));
-				}
-				task.addAfter(required, concept);
-				//With the CD reported, we don't actually need to load it in the edit panel
-				task.remove(concept);
-				report (task, required, Severity.LOW, ReportActionType.CONCEPT_ADDED, required);
-				addSummaryInformation("Concept created: " +required, "");
-				incrementSummaryInformation(ISSUE_COUNT);
-				report (task, required, Severity.LOW, ReportActionType.INFO, expression);
+
+			String expression = required.toExpression(CharacteristicType.STATED_RELATIONSHIP);
+			required = createConcept(task, required, info);
+			if (required.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT) || 
+				required.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT_FORM)) {
+				ConceptType invalidParentType = required.getConceptType();  //Up a level should have different type
+				String currentParents = concept.getParents(CharacteristicType.INFERRED_RELATIONSHIP)
+						.stream()
+						.filter(parent -> parent.getConceptType().equals(invalidParentType))
+						.map(parent -> parent.toString())
+						.collect(Collectors.joining(",\n"));
+				report (task, concept, Severity.LOW, ReportActionType.INFO, "Existing parents considered insufficient: " + (currentParents.isEmpty() ? "None detected" : currentParents));
 			}
+			task.addAfter(required, concept);
+			//With the CD reported, we don't actually need to load it in the edit panel
+			task.remove(concept);
+			report (task, required, Severity.LOW, ReportActionType.CONCEPT_ADDED, required);
+			addSummaryInformation("Concept created: " +required, "");
+			incrementSummaryInformation(ISSUE_COUNT);
+			report (task, required, Severity.LOW, ReportActionType.INFO, expression);
+		
 			return CHANGE_MADE; 
 		}
 		return NO_CHANGES_MADE;
@@ -322,7 +316,8 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 	
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		debug("Identifying concepts to process");
-		List<Concept> allAffected = new ArrayList<Concept>(); 
+		List<Concept> allAffected = new ArrayList<Concept>();
+		termGenerator.setQuiet(true);
 		nextConcept:
 		for (Concept c : MEDICINAL_PRODUCT.getDescendents(NOT_SET)) {
 		//for (Concept c : Collections.singleton(gl.getConcept("350210009"))) {
@@ -345,7 +340,9 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 						}
 					}
 					//Do we already know about this concept or plan to create it?
-					if (!isContained(mpf, knownMPFs) && !isContained(mpf, createMPFs)) {
+					if (!isContained(mpf, knownMPFs) && 
+							!isContained(mpf, createMPFs) &&
+							!isSuppressed(mpf)) {
 						createMPFs.add(mpf);
 						allAffected.add(c);
 					}
@@ -366,8 +363,10 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 					if (!isContained(mp, knownMPs) && !isContained(mp, createMPs)) {
 						//RP-401 Only consider creating concepts for MPFs where there is an underlying clinical drug
 						if (hasClinicalDrugDescendant(c)) {
-							createMPs.add(mp);
-							allAffected.add(c);
+							if (!isSuppressed(mp)) {
+								createMPs.add(mp);
+								allAffected.add(c);
+							}
 						} else {
 							report ((Task)null, c, Severity.LOW, ReportActionType.VALIDATION_CHECK, "No underlying CD detected for MP", mp.toExpression(CharacteristicType.STATED_RELATIONSHIP));
 						}
@@ -382,9 +381,11 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 					if (!isContained(mpfo, knownMPFOs) && !isContained(mpfo, createMPFOs)) {
 						//RP-401 Only consider creating concepts for MPFs where there is an underlying clinical drug
 						if (hasClinicalDrugDescendant(c)) {
-							createMPFOs.add(mpfo);
-							if (!allAffected.contains(c)) {
-								allAffected.add(c);
+							if (!isSuppressed(mpfo)) {
+								createMPFOs.add(mpfo);
+								if (!allAffected.contains(c)) {
+									allAffected.add(c);
+								}
 							}
 						} else {
 							report ((Task)null, c, Severity.LOW, ReportActionType.VALIDATION_CHECK, "No underlying CD detected for MPFO", mpfo.toExpression(CharacteristicType.STATED_RELATIONSHIP));
@@ -399,8 +400,10 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 					if (!isContained(mpo, knownMPOs) && !isContained(mpo, createMPOs)) {
 						//RP-401 Only consider creating concepts for MPFs where there is an underlying clinical drug
 						if (hasClinicalDrugDescendant(c)) {
-							createMPOs.add(mpo);
-							allAffected.add(c);
+							if (!isSuppressed(mpo)) {
+								createMPOs.add(mpo);
+								allAffected.add(c);
+							}
 						} else {
 							report ((Task)null, c, Severity.LOW, ReportActionType.VALIDATION_CHECK, "No underlying CD detected for MPO", mpo.toExpression(CharacteristicType.STATED_RELATIONSHIP));
 						}
@@ -412,6 +415,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 		}
 		info ("Identified " + allAffected.size() + " concepts to process");
 		allAffected.sort(Comparator.comparing(Concept::getFsn));
+		termGenerator.setQuiet(false);
 		return new ArrayList<Component>(allAffected);
 	}
 
@@ -420,6 +424,16 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 			if (descendant.getConceptType().equals(ConceptType.CLINICAL_DRUG)) {
 				return true;
 			}
+		}
+		return false;
+	}
+	
+	private boolean isSuppressed (Concept c) throws TermServerScriptException {
+		termGenerator.ensureTermsConform(null, c, CharacteristicType.STATED_RELATIONSHIP);
+		//Are we suppressing this concept?
+		if (suppress.contains(c.getFsn())) {
+			report ((Task)null, c, Severity.MEDIUM, ReportActionType.INFO, "Concept suppressed");
+			return true;
 		}
 		return false;
 	}
