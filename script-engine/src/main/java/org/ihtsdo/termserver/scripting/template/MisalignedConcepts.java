@@ -29,6 +29,8 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 	private Map<Concept, List<String>> conceptDiagnostics = new HashMap<>();
 	public static final String INCLUDE_COMPLEX = "Include complex cases";
 	public static final String INCLUDE_ORPHANET = "Include Orphanet";
+	public static final String KNOWN_COMPLETE = "Skip Known Complete";
+	public static final String KNOWN_COMPLETE_ECL = " <<2775001 OR <<3218000 OR <<3723001 OR <<5294002 OR <<7890003 OR <<8098009 OR <<17322007 OR <<20376005 OR <<34014006 OR <<40733004 OR <<52515009 OR <<85828009 OR <<87628006 OR <<95896000 OR <<109355002 OR <<118616009 OR <<125605004 OR <<125643001 OR <<125666000 OR <<125667009 OR <<125670008 OR <<126537000 OR <<128139000 OR <<128294001 OR <<128477000 OR <<128482007 OR <<131148009 OR <<193570009 OR <<233776003 OR <<247441003 OR <<276654001 OR <<283682007 OR <<298180004 OR <<307824009 OR <<312608009 OR <<362975008 OR <<399963005 OR <<399981008 OR <<400006008 OR <<400178008 OR <<416462003 OR <<416886008 OR <<417893002 OR <<419199007 OR <<428794004 OR <<429040005 OR <<432119003 OR <<441457006 OR <<419199007 OR <<282100009 OR <<55342001 OR <<128462008 OR <<363346000 OR <<372087000 OR <<785851003 OR <<308492005";
 	
 	public MisalignedConcepts() {
 		super(null);
@@ -67,6 +69,9 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 					.withType(JobParameter.Type.BOOLEAN)
 					.withDefaultValue(true)
 				.add(INCLUDE_ORPHANET)
+					.withType(JobParameter.Type.BOOLEAN)
+					.withDefaultValue(true)
+				.add(KNOWN_COMPLETE)
 					.withType(JobParameter.Type.BOOLEAN)
 					.withDefaultValue(true)
 				.add(TEMPLATE)
@@ -114,6 +119,10 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 			includeComplexTemplates = jobRun.getParameters().getMandatoryBoolean(INCLUDE_COMPLEX);
 			includeOrphanet = jobRun.getParameters().getMandatoryBoolean(INCLUDE_ORPHANET);
 			subsetECL = jobRun.getMandatoryParamValue(ECL);
+			
+			if (jobRun.getParameters().getMandatoryBoolean(KNOWN_COMPLETE)) {
+				subsetECL = "( " + subsetECL + " ) MINUS ( " + KNOWN_COMPLETE_ECL + " )";
+			}
 
 			String templateServerUrl = jobRun.getMandatoryParamValue(SERVER_URL);
 			//Do we have a template name to load, or some actual template language?
