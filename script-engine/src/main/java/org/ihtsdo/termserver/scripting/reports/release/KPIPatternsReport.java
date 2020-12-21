@@ -71,7 +71,7 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION))
 				.withName("KPI Patterns Report")
-				.withDescription("This report identifies a number of potentially problematic patters, many of which are tracked as KPIs ")
+				.withDescription("This report identifies a number of potentially problematic patterns, many of which are tracked as KPIs ")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withTag(INT)
 				.build();
