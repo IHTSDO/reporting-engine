@@ -146,16 +146,6 @@ public class GraphLoader implements RF2Constants {
 					continue;
 				}
 				
-				/*if (lineItems[REL_IDX_ID].equals("12957831022")) {
-					TermServerScript.debug ("Debug Here");
-				}*/
-				
-				/*if (characteristicType.equals(CharacteristicType.STATED_RELATIONSHIP) && 
-						lineItems[REL_IDX_SOURCEID].equals("108554009") && 
-						lineItems[REL_IDX_TYPEID].equals("726542003")) {
-					TermServerScript.debug ("Debug Here");
-				}*/
-				
 				if (!isConcept(lineItems[REL_IDX_SOURCEID])) {
 					TermServerScript.debug (characteristicType + " relationship " + lineItems[REL_IDX_ID] + " referenced a non concept identifier: " + lineItems[REL_IDX_SOURCEID]);
 				}
@@ -219,7 +209,7 @@ public class GraphLoader implements RF2Constants {
 				Long conceptId = Long.parseLong(lineItems[REF_IDX_REFCOMPID]);
 				Concept c = getConcept(conceptId);
 				/*
-				if (c.getId().equals("714209004")) {
+				if (c.getId().equals("332753005")) {
 					TermServerScript.debug ("here");
 				}
 				
@@ -370,17 +360,31 @@ public class GraphLoader implements RF2Constants {
 	private Relationship createRelationshipFromRF2(CharacteristicType charType, String[] lineItems) throws TermServerScriptException {
 		String sourceId = lineItems[REL_IDX_SOURCEID];
 		Concept source = getConcept(sourceId);
-		String destId = lineItems[REL_IDX_DESTINATIONID];
 		String typeId = lineItems[REL_IDX_TYPEID];
 		
-		if (sourceId.length() < 4 || destId.length() < 4 || typeId.length() < 4 ) {
-			TermServerScript.debug("*** Invalid SCTID encountered in relationship " + lineItems[REL_IDX_ID] + ": s" + sourceId + " d" + destId + " t" + typeId);
+		if (sourceId.length() < 4 || typeId.length() < 4 ) {
+			TermServerScript.debug("*** Invalid SCTID encountered in relationship " + lineItems[REL_IDX_ID] + ": s" + sourceId + " t" + typeId);
 		}
-		Concept type = getConcept(lineItems[REL_IDX_TYPEID]);
-		Concept destination = getConcept(lineItems[REL_IDX_DESTINATIONID]);
+		Concept type = getConcept(typeId);
 		int groupNum = Integer.parseInt(lineItems[REL_IDX_RELATIONSHIPGROUP]);
 		
-		Relationship r = new Relationship(source, type, destination, groupNum);
+		Relationship r;
+		if (lineItems[REL_IDX_VALUE].startsWith("#")) {
+			//Trim leading hash symbol. Leave as string to preserve DPs
+			String value = lineItems[REL_IDX_VALUE].substring(1);
+			r = new Relationship(source, type, value, groupNum, Relationship.CdType.DECIMAL);
+		} else if (lineItems[REL_IDX_VALUE].startsWith("\"")) {
+			//Trim of start and ending quote
+			String value = lineItems[REL_IDX_VALUE].substring(1, lineItems[REL_IDX_VALUE].length()-1);
+			r = new Relationship(source, type, value, groupNum, Relationship.CdType.STRING);
+		} else {
+			String destId = lineItems[REL_IDX_DESTINATIONID];
+			if (destId.length() < 4 ) {
+				TermServerScript.debug("*** Invalid SCTID encountered in relationship " + lineItems[REL_IDX_ID] + ": d" + destId );
+			}
+			Concept destination = getConcept(lineItems[REL_IDX_DESTINATIONID]);
+			r = new Relationship(source, type, destination, groupNum);
+		}
 		r.setRelationshipId(lineItems[REL_IDX_ID].isEmpty()?null:lineItems[REL_IDX_ID]);
 		r.setCharacteristicType(charType);
 		r.setActive(lineItems[REL_IDX_ACTIVE].equals("1"));
@@ -452,6 +456,7 @@ public class GraphLoader implements RF2Constants {
 			}
 		} 
 	}
+	
 	public Concept getConcept(String identifier) throws TermServerScriptException {
 		return getConcept(identifier.trim(), true, true);
 	}
@@ -1245,12 +1250,16 @@ public class GraphLoader implements RF2Constants {
 		return false;
 	}
 	
-	public String convertRelationshipsToOwlExpression(Concept c, Set<Relationship> relationships) {
-		AxiomRepresentation axiom = new AxiomRepresentation();
-		//Assuming a normal RHS definition
-		axiom.setLeftHandSideNamedConcept(Long.parseLong(c.getId()));
-		axiom.setRightHandSideRelationships(AxiomUtils.convertRelationshipsToMap(relationships));
-		return axiomService.convertRelationshipsToAxiom(axiom);
+	public String convertRelationshipsToOwlExpression(Concept c, Set<Relationship> relationships) throws TermServerScriptException {
+		try {
+			AxiomRepresentation axiom = new AxiomRepresentation();
+			//Assuming a normal RHS definition
+			axiom.setLeftHandSideNamedConcept(Long.parseLong(c.getId()));
+			axiom.setRightHandSideRelationships(AxiomUtils.convertRelationshipsToMap(relationships));
+			return axiomService.convertRelationshipsToAxiom(axiom);
+		} catch (ConversionException e) {
+			throw new TermServerScriptException(e);
+		}
 	}
 	
 	public class DuplicatePair {

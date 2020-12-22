@@ -14,7 +14,7 @@ public interface IRelationshipTemplate {
 	public CharacteristicType getCharacteristicType();
 	public void setCharacteristicType(CharacteristicType characteristicType);
 
-	public boolean equalsTypeValue(Relationship rel);
+	public boolean equalsTypeAndTargetValue(Relationship rel);
 	
 	public String toString();
 

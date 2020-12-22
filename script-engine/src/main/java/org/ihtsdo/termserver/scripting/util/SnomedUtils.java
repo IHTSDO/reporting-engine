@@ -866,6 +866,19 @@ public class SnomedUtils implements RF2Constants {
 		return null;
 	}
 	
+	public static Object getConcreteValue (Concept c, Concept[] types, int groupId, CharacteristicType charType) throws TermServerScriptException {
+		for (Concept type : types) {
+			Set<Relationship> rels = c.getRelationships(charType, type, groupId);
+			if (rels.size() > 1) {
+				TermServerScript.warn(c + " has multiple " + type + " in group " + groupId);
+			} else if (rels.size() == 1) {
+				//This might not be the full concept, so recover it fully from our loaded cache
+				return rels.iterator().next().getValue();
+			}
+		}
+		return null;
+	}
+	
 	public static Set<Concept> getTargets(Concept c, Concept[] types, CharacteristicType charType) throws TermServerScriptException {
 		Set<Concept> targets = new HashSet<>();
 		for (Concept type : types) {
@@ -1099,7 +1112,7 @@ public class SnomedUtils implements RF2Constants {
 		for (Relationship rb : b.getRelationships()) {
 			boolean matchFound = false;
 			for (Relationship ra : a.getRelationships()) {
-				if (ra.equalsTypeValue(rb) || isMoreSpecific(ra, rb, cache)) {
+				if (ra.equalsTypeAndTargetValue(rb) || isMoreSpecific(ra, rb, cache)) {
 					matchFound = true;
 					break;
 				}
@@ -1136,14 +1149,14 @@ public class SnomedUtils implements RF2Constants {
 	 * @return true if r1 and r2 can be found grouped together in the specified characteristic type
 	 */
 	public static boolean isGroupedWith(Relationship r1, Relationship r2, Concept c, CharacteristicType charType) {
-		if (r1.equalsTypeValue(r2)) {
+		if (r1.equalsTypeAndTargetValue(r2)) {
 			throw new IllegalArgumentException("Cannot answer if " + r1 + " is grouped with itself");
 		}
 		
 		for (RelationshipGroup group : c.getRelationshipGroups(charType)) {
 			boolean foundFirst = false;
 			for (Relationship r : group.getRelationships()) {
-				if (r.equalsTypeValue(r1) || r.equalsTypeValue(r2)) {
+				if (r.equalsTypeAndTargetValue(r1) || r.equalsTypeAndTargetValue(r2)) {
 					if (foundFirst) { //already seen one
 						return true;
 					} else {
@@ -1162,7 +1175,7 @@ public class SnomedUtils implements RF2Constants {
 		nextGroup:
 		for (RelationshipGroup group : c.getRelationshipGroups(charType)) {
 			for (Relationship r : group.getRelationships()) {
-				if (r.equalsTypeValue(findMe)) {
+				if (r.equalsTypeAndTargetValue(findMe)) {
 					groups.add(group);
 					continue nextGroup;
 				}

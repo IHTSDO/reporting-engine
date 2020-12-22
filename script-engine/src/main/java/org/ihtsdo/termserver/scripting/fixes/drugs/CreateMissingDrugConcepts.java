@@ -254,7 +254,7 @@ public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Consta
 						relMatchFound = true;
 						break;
 					} else if (thisRel.getType().equals(HAS_ACTIVE_INGRED) || thisRel.getType().equals(HAS_PRECISE_INGRED)) {
-						if (thisRel.equalsTypeValue(thatRel)) {
+						if (thisRel.equalsTypeAndTargetValue(thatRel)) {
 							relMatchFound = true;
 							break;
 						}

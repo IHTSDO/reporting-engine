@@ -59,6 +59,15 @@ public interface RF2Constants {
 	static Concept COUNT_OF_BASE_AND_MODIFICATION = new Concept ("766954007", "Count of base and modification pair (attribute)");
 	static Concept PLAYS_ROLE = new Concept("766939001","Plays role (attribute)");
 
+	//Concrete Domain Attributes
+	static Concept CD_HAS_PRES_STRENGTH_VALUE = new Concept ("3311481003","Has presentation strength numerator value (attribute)");
+	static Concept CD_HAS_PRES_STRENGTH_DENOM_VALUE = new Concept ("3311482005","Has presentation strength denominator value (attribute)");
+	static Concept CD_HAS_CONC_STRENGTH_VALUE = new Concept ("3311484006","Has concentration strength numerator value (attribute)");
+	static Concept CD_HAS_CONC_STRENGTH_DENOM_VALUE = new Concept ("3311483000","Has concentration strength denominator value (attribute)");
+	static Concept CD_COUNT_BASE_ACTIVE_INGREDIENT = new Concept ("3311485007", "Count of base of active ingredient (attribute)");
+	static Concept CD_COUNT_OF_BASE_AND_MODIFICATION = new Concept ("3311487004", "Count of base and modification pair (attribute)");
+	
+	
 	static Concept PATHOLOGICAL_PROCESS = new Concept ("370135005", "Pathological process (attribute)");
 	
 	static Concept NUMBER = new Concept("260299005", "Number (qualifier value)");
@@ -273,6 +282,7 @@ public interface RF2Constants {
 	public static final int REL_IDX_MODULEID = 3;
 	public static final int REL_IDX_SOURCEID = 4;
 	public static final int REL_IDX_DESTINATIONID = 5;
+	public static final int REL_IDX_VALUE = 5;
 	public static final int REL_IDX_RELATIONSHIPGROUP = 6;
 	public static final int REL_IDX_TYPEID = 7;
 	public static final int REL_IDX_CHARACTERISTICTYPEID = 8;

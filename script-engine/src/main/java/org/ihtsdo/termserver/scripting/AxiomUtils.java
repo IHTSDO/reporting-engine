@@ -5,12 +5,15 @@ import java.util.Map.Entry;
 
 //import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.snomed.otf.owltoolkit.domain.Relationship;
+import org.snomed.otf.owltoolkit.domain.Relationship.ConcreteValue;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Axiom;
 import org.ihtsdo.termserver.scripting.domain.AxiomEntry;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.RF2Constants;
+import org.ihtsdo.termserver.scripting.domain.Relationship.CdType;
 import org.snomed.otf.owltoolkit.conversion.AxiomRelationshipConversionService;
+import org.snomed.otf.owltoolkit.conversion.ConversionException;
 import org.snomed.otf.owltoolkit.domain.AxiomRepresentation;
 
 /**
@@ -78,16 +81,45 @@ public class AxiomUtils implements RF2Constants {
 		for (Entry<Integer, List<Relationship>> entry : relationshipMap.entrySet()) {
 			int groupId = entry.getKey();
 			for (Relationship axiomRelationship : entry.getValue()) {
-				relationships.add(new org.ihtsdo.termserver.scripting.domain.Relationship (
-						c,
-						gl.getConcept(axiomRelationship.getTypeId()),
-						gl.getConcept(axiomRelationship.getDestinationId()),
-						groupId));
+				//Is this a traditional or a concrete value relationship?
+				ConcreteValue value = axiomRelationship.getValue();
+				if (axiomRelationship.isConcrete()) {
+					relationships.add(new org.ihtsdo.termserver.scripting.domain.Relationship (
+							c,
+							gl.getConcept(axiomRelationship.getTypeId()),
+							value.asString(), //String preserves DPs
+							groupId,
+							getConcreteType(value)));
+				} else {
+					relationships.add(new org.ihtsdo.termserver.scripting.domain.Relationship (
+							c,
+							gl.getConcept(axiomRelationship.getTypeId()),
+							gl.getConcept(axiomRelationship.getDestinationId()),
+							groupId));
+				}
 			}
 		}
 		return relationships;
 	}
 	
+	private static CdType getConcreteType(ConcreteValue value) {
+		switch (value.getType()) {
+			case DECIMAL : return CdType.DECIMAL;
+			case INTEGER : return CdType.INTEGER;
+			case STRING : return CdType.STRING;
+			default : throw new IllegalArgumentException("Unexpected concrete value type: " + value);
+		}
+	}
+
+	private static Object getValue(ConcreteValue value) {
+		switch (getConcreteType(value)) {
+			case DECIMAL : return value.asDecimal();
+			case INTEGER : return value.asInt();
+			case STRING : return value.asString();
+			default : throw new IllegalArgumentException("Unexpected concrete value type: " + value);
+		}
+	}
+
 	static public Map<Integer, List<Relationship>> convertRelationshipsToMap(Set<org.ihtsdo.termserver.scripting.domain.Relationship> relationships) {
 		Map<Integer, List<Relationship>> relationshipMap = new HashMap<>();
 		for (org.ihtsdo.termserver.scripting.domain.Relationship r : relationships) {
@@ -106,7 +138,7 @@ public class AxiomUtils implements RF2Constants {
 				Long.parseLong(r.getTarget().getId()));
 	}
 
-	public static List<AxiomEntry> convertClassAxiomsToAxiomEntries(Concept c) {
+	public static List<AxiomEntry> convertClassAxiomsToAxiomEntries(Concept c) throws TermServerScriptException {
 		List<AxiomEntry> axiomEntries = new ArrayList<>();
 		for (Axiom axiom : c.getClassAxioms()) {
 			AxiomEntry a = new AxiomEntry();
@@ -120,7 +152,12 @@ public class AxiomUtils implements RF2Constants {
 			axiomRep.setLeftHandSideNamedConcept(Long.parseLong(c.getConceptId()));
 			axiomRep.setRightHandSideRelationships(convertRelationshipsToMap(axiom.getRelationships()));
 			axiomRep.setPrimitive(c.getDefinitionStatus().equals(DefinitionStatus.PRIMITIVE));
-			String owl = axiomService.convertRelationshipsToAxiom(axiomRep);
+			String owl;
+			try {
+				owl = axiomService.convertRelationshipsToAxiom(axiomRep);
+			} catch (ConversionException e) {
+				throw new TermServerScriptException(e);
+			}
 			a.setOwlExpression(owl);
 			a.setDirty();
 			axiomEntries.add(a);

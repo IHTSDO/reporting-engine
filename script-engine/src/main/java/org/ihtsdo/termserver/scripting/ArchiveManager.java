@@ -543,6 +543,9 @@ public class ArchiveManager implements RF2Constants {
 				} else if (fileName.contains("sct2_StatedRelationship_" )) {
 					info("Loading StatedRelationship " + fileType + " file.");
 					gl.loadRelationships(CharacteristicType.STATED_RELATIONSHIP, is, true, isDelta, isReleased);
+				} else if (fileName.contains("sct2_RelationshipConcrete" )) {
+					info("Loading Concrete Relationship " + fileType + " file.");
+					gl.loadRelationships(CharacteristicType.INFERRED_RELATIONSHIP, is, true, isDelta, isReleased);
 				} else if (fileName.contains("sct2_sRefset_OWLExpression" ) ||
 						   fileName.contains("sct2_sRefset_OWLAxiom" )) {
 					info("Loading Axiom " + fileType + " refset file.");

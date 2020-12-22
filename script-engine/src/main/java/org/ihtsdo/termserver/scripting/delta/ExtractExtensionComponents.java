@@ -219,21 +219,25 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		return true;
 	}
 
-	private void convertInferredRelsToAxiomEntry(Concept c) {
-		AxiomRepresentation axiom = new AxiomRepresentation();
-		axiom.setLeftHandSideNamedConcept(Long.parseLong(c.getConceptId()));
-		axiom.setPrimitive(c.getDefinitionStatus().equals(DefinitionStatus.PRIMITIVE));
-		Map<Integer, List<org.snomed.otf.owltoolkit.domain.Relationship>> relationshipMap = new HashMap<>();
-		boolean includeIsA = true;
-		for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP, includeIsA)) {
-			relationshipMap.put(g.getGroupId(), g.getToolKitRelationships());
+	private void convertInferredRelsToAxiomEntry(Concept c) throws TermServerScriptException {
+		try {
+			AxiomRepresentation axiom = new AxiomRepresentation();
+			axiom.setLeftHandSideNamedConcept(Long.parseLong(c.getConceptId()));
+			axiom.setPrimitive(c.getDefinitionStatus().equals(DefinitionStatus.PRIMITIVE));
+			Map<Integer, List<org.snomed.otf.owltoolkit.domain.Relationship>> relationshipMap = new HashMap<>();
+			boolean includeIsA = true;
+			for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP, includeIsA)) {
+				relationshipMap.put(g.getGroupId(), g.getToolKitRelationships());
+			}
+			axiom.setRightHandSideRelationships(relationshipMap);
+			String axiomStr = axiomService.convertRelationshipsToAxiom(axiom);
+			AxiomEntry axiomEntry = AxiomEntry.withDefaults(c, axiomStr);
+			axiomEntry.setModuleId(targetModuleId);
+			axiomEntry.setDirty();
+			c.getAxiomEntries().add(axiomEntry);
+		} catch (ConversionException e) {
+			throw new TermServerScriptException(e);
 		}
-		axiom.setRightHandSideRelationships(relationshipMap);
-		String axiomStr = axiomService.convertRelationshipsToAxiom(axiom);
-		AxiomEntry axiomEntry = AxiomEntry.withDefaults(c, axiomStr);
-		axiomEntry.setModuleId(targetModuleId);
-		axiomEntry.setDirty();
-		c.getAxiomEntries().add(axiomEntry);
 	}
 
 	private String parentsToString(Concept c) {

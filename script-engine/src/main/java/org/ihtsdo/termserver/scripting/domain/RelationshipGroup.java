@@ -123,7 +123,7 @@ public class RelationshipGroup {
 
 	public boolean containsTypeValue(Relationship r1) {
 		for (Relationship r2 : relationships) {
-			if (r2.equalsTypeValue(r1)) {
+			if (r2.equalsTypeAndTargetValue(r1)) {
 				return true;
 			}
 		}
@@ -139,7 +139,7 @@ public class RelationshipGroup {
 	public Relationship getTypeValue(Relationship r1) {
 		Set<Relationship> matches = new HashSet<>();
 		for (Relationship r2 : relationships) {
-			if (r2.equalsTypeValue(r1)) {
+			if (r2.equalsTypeAndTargetValue(r1)) {
 				matches.add(r2);
 			}
 		}

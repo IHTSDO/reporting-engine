@@ -8,8 +8,10 @@ import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.DrugTermGenerator;
+import org.ihtsdo.termserver.scripting.util.DrugTermGeneratorCD;
 import org.ihtsdo.termserver.scripting.util.DrugUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.ihtsdo.termserver.scripting.util.TermGenerator;
 
 public abstract class DrugBatchFix extends BatchFix implements RF2Constants{
 	
@@ -32,10 +34,31 @@ public abstract class DrugBatchFix extends BatchFix implements RF2Constants{
 	
 	List<String> doseForms = new ArrayList<String>();
 	
-	DrugTermGenerator termGenerator = new DrugTermGenerator(this);
+	TermGenerator termGenerator;
 
 	protected DrugBatchFix(BatchFix clone) {
 		super(clone);
+	}
+	
+	public void postInit() throws TermServerScriptException {
+		//Are we living in a post concrete domains era?
+		boolean useConcreteValues = false;
+		Concept random = gl.getConcept("774966003 |Product containing only caffeine (medicinal product)|");
+		loop:
+		for (Concept c : random.getDescendents(NOT_SET)) {
+			for (Relationship r : c.getRelationships()) {
+				if (r.isConcrete()) {
+					useConcreteValues = true;
+					break loop;
+				}
+			}
+		}
+		
+		if (useConcreteValues) {
+			termGenerator = new DrugTermGeneratorCD(this);
+		} else {
+			termGenerator = new DrugTermGenerator(this);
+		}
 	}
 
 	public int assignIngredientCounts(Task t, Concept c, CharacteristicType charType) throws TermServerScriptException {

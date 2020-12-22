@@ -42,7 +42,7 @@ public class RelationshipTemplate implements IRelationshipTemplate {
 		this.characteristicType = characteristicType;
 	}
 
-	public boolean equalsTypeValue(Relationship rel) {
+	public boolean equalsTypeAndTargetValue(Relationship rel) {
 		if (this.type.equals(rel.getType()) && this.target.equals(rel.getTarget())) {
 			return true;
 		}

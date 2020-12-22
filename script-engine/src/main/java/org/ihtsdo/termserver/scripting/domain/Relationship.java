@@ -59,11 +59,21 @@ public class Relationship extends Component implements IRelationshipTemplate, RF
 	
 	private String deletionEffectiveTime;
 	
+	private CdType cdType;
+	
+	private Object value;
+	
+	public boolean isConcrete() {
+		return value != null;
+	}
+	
 	public static final String[] rf2Header = new String[] {"id","effectiveTime","active","moduleId","sourceId","destinationId",
 															"relationshipGroup","typeId","characteristicTypeId","modifierId"};
 
 	public Relationship() {
 	}
+	
+	public enum CdType { INTEGER, DECIMAL, STRING }
 
 	public Relationship(Concept source, Concept type, Concept target, int groupId) {
 		this.type = type;
@@ -87,6 +97,24 @@ public class Relationship extends Component implements IRelationshipTemplate, RF
 		
 		//Default values
 		this.groupId = UNGROUPED;
+		this.active = true;
+		this.characteristicType = CharacteristicType.STATED_RELATIONSHIP;
+		this.modifier = Modifier.EXISTENTIAL;
+		this.moduleId = SCTID_CORE_MODULE;
+	}
+
+	public Relationship(Concept source, Concept type, Object value, int groupId, CdType cdType) {
+		this.type = type;
+		this.value = value;
+		this.cdType = cdType;
+		this.source = source;
+		
+		if (source != null) {
+			this.sourceId = source.getConceptId();
+		}
+		this.groupId = groupId;
+		
+		//Default values
 		this.active = true;
 		this.characteristicType = CharacteristicType.STATED_RELATIONSHIP;
 		this.modifier = Modifier.EXISTENTIAL;
@@ -223,6 +251,10 @@ public class Relationship extends Component implements IRelationshipTemplate, RF
 		if (axiomIdPart.isEmpty() && getAxiom() != null && getAxiom().getId() != null) {
 			axiomIdPart = ":" + getAxiom().getId().substring(0,6);
 		}
+		
+		if (isConcrete()) {
+			return "[" + activeIndicator +  charType + groupId + relId + axiomIdPart + "] " + type + " -> " + valueAsRF2();
+		}
 		return "[" + activeIndicator +  charType + groupId + relId + axiomIdPart + "] " + type + " -> " + target;
 	}
 
@@ -266,7 +298,10 @@ public class Relationship extends Component implements IRelationshipTemplate, RF
 			return false;
 		}
 		
-		//Otherwise compare type / target / group 
+		//Otherwise compare type / target (or Value) / group 
+		if (isConcrete()) {
+			return (this.type.equals(rhs.type) && this.value.equals(rhs.value) && this.groupId == rhs.groupId);
+		}
 		return (this.type.equals(rhs.type) && this.target.equals(rhs.target) && this.groupId == rhs.groupId);
 	}
 	
@@ -282,6 +317,8 @@ public class Relationship extends Component implements IRelationshipTemplate, RF
 		clone.relationshipId = newSCTID; 
 		clone.moduleId = this.moduleId;
 		clone.target = this.target;
+		clone.value = this.value;
+		clone.cdType = this.cdType;
 		clone.active = this.active;
 		clone.effectiveTime = null; //New relationship is unpublished
 		clone.type = this.type;
@@ -330,12 +367,20 @@ public class Relationship extends Component implements IRelationshipTemplate, RF
 	//"characteristicTypeId","modifierId"};
 	public String[] toRF2() throws TermServerScriptException {
 		return new String[] {relationshipId, effectiveTime, (active?"1":"0"), 
-							moduleId, sourceId, target.getConceptId(),
+							moduleId, sourceId, 
+							isConcrete()?valueAsRF2() : target.getConceptId(),
 							Long.toString(groupId), type.getConceptId(), 
 							SnomedUtils.translateCharacteristicType(characteristicType), 
 							SnomedUtils.translateModifier(modifier)};
 	}
 	
+	private String valueAsRF2() {
+		switch (cdType) {
+			case STRING : return "\"" + value.toString() + "\"";
+			default : return "#" + value.toString();
+		}
+	}
+
 	public String[] toRF2Deletion() throws TermServerScriptException {
 		return new String[] {relationshipId, effectiveTime, deletionEffectiveTime,
 							(active?"1":"0"), 
@@ -403,9 +448,20 @@ public class Relationship extends Component implements IRelationshipTemplate, RF
 		this.released = released;
 	}
 
-	public boolean equalsTypeValue(Relationship rhs) {
-		return this.type.equals(rhs.type) && this.target.equals(rhs.target);
+	public boolean equalsTypeAndTargetValue(Relationship rhs) {
+		return this.type.equals(rhs.type) && equalsTargetOrValue(rhs);
 	}
+	
+	public boolean equalsTargetOrValue(Relationship b) {
+		if (isConcrete() && b.isConcrete()) {
+			return getValue().equals(b.getValue());
+		} else if (!isConcrete() && !b.isConcrete()) {
+			return getTarget().equals(b.getTarget());
+		} else {
+			return false;
+		}
+	}
+
 	
 	public boolean fromAxiom() {
 		return axiomEntry != null || axiom != null;
@@ -425,6 +481,22 @@ public class Relationship extends Component implements IRelationshipTemplate, RF
 
 	public void setAxiom(Axiom axiom) {
 		this.axiom = axiom;
+	}
+	
+	public CdType getCdType() {
+		return cdType;
+	}
+
+	public void setCdType(CdType cdType) {
+		this.cdType = cdType;
+	}
+
+	public Object getValue() {
+		return value;
+	}
+
+	public void setValue(Object value) {
+		this.value = value;
 	}
 
 	public boolean fromSameAxiom(Relationship r) {

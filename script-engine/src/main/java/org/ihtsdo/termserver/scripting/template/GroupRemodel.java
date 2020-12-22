@@ -333,7 +333,7 @@ public class GroupRemodel extends TemplateFix {
 		for (Relationship removeRel : removeRelationships) {
 			for (RelationshipGroup group : groups) {
 				for (Relationship r : new ArrayList<>(group.getRelationships())) {
-					if (r.equalsTypeValue(removeRel)) {
+					if (r.equalsTypeAndTargetValue(removeRel)) {
 						group.removeRelationship(r);
 						report (t, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_INACTIVATED, "Removed unwanted: " + r);
 					}
@@ -405,7 +405,7 @@ public class GroupRemodel extends TemplateFix {
 			int thisMatchCount = 0;
 			for (Relationship conceptR : g.getRelationships()) {
 				for (Relationship additionalR : additionalGroup.getRelationships()) {
-					if (conceptR.equalsTypeValue(additionalR)) {
+					if (conceptR.equalsTypeAndTargetValue(additionalR)) {
 						thisMatchCount++;
 					}
 				}
@@ -752,7 +752,7 @@ public class GroupRemodel extends TemplateFix {
 					RelationshipGroup group = groups.get(groupId);
 					if (group != null && !group.isEmpty()) {
 						for (Relationship r : group.getRelationships()) {
-							if (!r.equalsTypeValue(proposedRel) && SnomedUtils.isGroupedWith(r, proposedRel, c, CharacteristicType.INFERRED_RELATIONSHIP)) {
+							if (!r.equalsTypeAndTargetValue(proposedRel) && SnomedUtils.isGroupedWith(r, proposedRel, c, CharacteristicType.INFERRED_RELATIONSHIP)) {
 								//adjust the target stated group Id to account for gaps in inferred group numbering
 								int statedGroupId = shuffDownInferredGroupId(r.getGroupId(), c);
 								if (sortedValues[statedGroupId] == null) {
