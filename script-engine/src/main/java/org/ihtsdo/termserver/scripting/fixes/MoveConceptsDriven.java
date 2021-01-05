@@ -18,7 +18,7 @@ import com.google.common.io.Files;
  */
 public class MoveConceptsDriven extends BatchFix implements RF2Constants {
 	
-	private String moveListFileStr = "G:/My Drive/020_BatchScripting/2020/infra-6069.txt";
+	private String moveListFileStr = "G:/My Drive/020_BatchScripting/2020/infra-6069-mkii.txt";
 	private String newLocationStr = "416516009|Extension Namespace {1000009} (namespace concept)|";
 	private Set<String> moveList = new HashSet<>();
 	private InactivationIndicator inactivationIndicator = InactivationIndicator.MOVED_ELSEWHERE;
@@ -38,7 +38,6 @@ public class MoveConceptsDriven extends BatchFix implements RF2Constants {
 			fix.maxFailures = Integer.MAX_VALUE;
 			fix.getArchiveManager().setPopulateReleasedFlag(true);
 			fix.init(args);
-			//fix.getArchiveManager().setPopulateReleasedFlag(true);
 			fix.loadProjectSnapshot(true);
 			fix.postInit();
 			fix.processFile();
