@@ -60,12 +60,12 @@ public interface RF2Constants {
 	static Concept PLAYS_ROLE = new Concept("766939001","Plays role (attribute)");
 
 	//Concrete Domain Attributes
-	static Concept CD_HAS_PRES_STRENGTH_VALUE = new Concept ("3311481003","Has presentation strength numerator value (attribute)");
-	static Concept CD_HAS_PRES_STRENGTH_DENOM_VALUE = new Concept ("3311482005","Has presentation strength denominator value (attribute)");
-	static Concept CD_HAS_CONC_STRENGTH_VALUE = new Concept ("3311484006","Has concentration strength numerator value (attribute)");
-	static Concept CD_HAS_CONC_STRENGTH_DENOM_VALUE = new Concept ("3311483000","Has concentration strength denominator value (attribute)");
-	static Concept CD_COUNT_BASE_ACTIVE_INGREDIENT = new Concept ("3311485007", "Count of base of active ingredient (attribute)");
-	static Concept CD_COUNT_OF_BASE_AND_MODIFICATION = new Concept ("3311487004", "Count of base and modification pair (attribute)");
+	static Concept CD_HAS_PRES_STRENGTH_VALUE = new Concept ("1142135004","Has presentation strength numerator value (attribute)");
+	static Concept CD_HAS_PRES_STRENGTH_DENOM_VALUE = new Concept ("1142136003","Has presentation strength denominator value (attribute)");
+	static Concept CD_HAS_CONC_STRENGTH_VALUE = new Concept ("1142138002","Has concentration strength numerator value (attribute)");
+	static Concept CD_HAS_CONC_STRENGTH_DENOM_VALUE = new Concept ("1142137007","Has concentration strength denominator value (attribute)");
+	static Concept CD_COUNT_BASE_ACTIVE_INGREDIENT = new Concept ("1142139005", "Count of base of active ingredient (attribute)");
+	static Concept CD_COUNT_OF_BASE_AND_MODIFICATION = new Concept ("1142141006", "Count of base and modification pair (attribute)");
 	
 	
 	static Concept PATHOLOGICAL_PROCESS = new Concept ("370135005", "Pathological process (attribute)");
