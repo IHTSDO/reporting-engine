@@ -199,6 +199,7 @@ public class AddAttributeOnLexicalMatch extends BatchFix {
 			for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
 				if (r.getTarget().equals(target)) {
 					report ((Task)null, c, Severity.LOW, ReportActionType.NO_CHANGE, "More specific relationship already present ", target);
+					return false;
 				}
 			}
 		}
