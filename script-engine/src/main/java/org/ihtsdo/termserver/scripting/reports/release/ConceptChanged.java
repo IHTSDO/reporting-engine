@@ -257,11 +257,13 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 						if (i.isReleased()) {
 							if (i.isActive()) {
 								summaryCount.isChanged++;
+							}
+						} else {
+							if (i.isActive()) {
+								summaryCount.isNew++;
 							} else {
 								summaryCount.isInactivated++;
 							}
-						} else {
-							summaryCount.isChanged++;
 						}
 					}
 				}
@@ -273,11 +275,13 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 						if (a.isReleased()) {
 							if (a.isActive()) {
 								summaryCount.isChanged++;
+							}
+						} else {
+							if (a.isActive()) {
+								summaryCount.isNew++;
 							} else {
 								summaryCount.isInactivated++;
 							}
-						} else {
-							summaryCount.isChanged++;
 						}
 					}
 				}
