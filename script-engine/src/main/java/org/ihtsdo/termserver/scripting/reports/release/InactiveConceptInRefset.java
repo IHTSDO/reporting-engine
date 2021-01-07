@@ -23,6 +23,7 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 	static public String REFSET_ECL = "(< 446609009 |Simple type reference set| OR < 900000000000496009 |Simple map type reference set|) MINUS 900000000000497000 |CTV3 simple map reference set (foundation metadata concept)|";
 	private Collection<Concept> referenceSets;
 	private List<Concept> emptyReferenceSets;
+	private List<Concept> outOfScopeReferenceSets;
 	private AtomicLongMap<Concept> refsetSummary = AtomicLongMap.create();
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
@@ -37,9 +38,14 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 	}
 
 
-	private void removeEmptyRefsets() throws TermServerScriptException {
+	private void removeEmptyAndNoScopeRefsets() throws TermServerScriptException {
 		emptyReferenceSets = new ArrayList<>();
+		outOfScopeReferenceSets = new ArrayList<>();
 		for (Concept refset : referenceSets) {
+			if (!inScope(refset)) {
+				outOfScopeReferenceSets.add(refset);
+				continue;
+			}
 			if (getConceptsCount("^" + refset) == 0) {
 				emptyReferenceSets.add(refset);
 			}
@@ -50,7 +56,7 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 
 	public void postInit() throws TermServerScriptException {
 		referenceSets = findConcepts(REFSET_ECL);
-		removeEmptyRefsets();
+		removeEmptyAndNoScopeRefsets();
 		info ("Recovered " + referenceSets.size() + " simple reference sets and maps");
 
 		String[] columnHeadings = new String[] {
@@ -68,11 +74,12 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_STATS))
 				.withName("Inactivated Concepts in Refsets")
 				.withDescription("This report lists concepts inactivated in the current authoring cycle" + 
-				" which are members of a published International reference set." +
+				" which are members of a published reference set." +
 				" Warning: because this report involves inactive concepts, it cannot use ECL and therefore takes ~30 minutes to run.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(new JobParameters())
 				.withTag(INT)
+				.withTag(MS)
 				.build();
 	}
 	
@@ -81,6 +88,7 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 		//TODO Also allow running against published packages, at which point we'll be checking for a known effective time
 		List<Concept> inactivatedConcepts = gl.getAllConcepts().stream()
 				.filter(c -> !c.isActive())
+				.filter(c -> inScope(c))
 				.filter(c -> StringUtils.isEmpty(c.getEffectiveTime()))
 				.collect(Collectors.toList());
 		debug ("Checking " + inactivatedConcepts.size() + " inactivated concepts against " + referenceSets.size() + " refsets");
@@ -108,9 +116,12 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 			report (PRIMARY_REPORT, entry.getKey(), entry.getValue());
 		}
 		
-		
 		for (Concept emptyRefset : emptyReferenceSets) {
 			report(PRIMARY_REPORT, emptyRefset, " not populated in project: " + getProject().getKey());
+		}
+		
+		for (Concept outOfScopeReferenceSet : outOfScopeReferenceSets) {
+			report(PRIMARY_REPORT, outOfScopeReferenceSet, " out of scope in project: " + getProject().getKey());
 		}
 	}
 
