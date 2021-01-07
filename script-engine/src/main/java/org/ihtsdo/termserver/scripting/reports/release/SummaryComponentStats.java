@@ -68,8 +68,8 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20200309T120000Z.zip");
-		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20200731T120000Z.zip");
+		params.put(THIS_RELEASE, "prod_main_2021-01-31_20201124120000.zip");
+		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20200731T120000Z.zip");
 		TermServerReport.run(SummaryComponentStats.class, args, params);
 	}
 
@@ -164,7 +164,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 												"Sctid, Hierarchy, SemTag, Assoc New, Changed, Assoc Inactivated, Reactivated, New with New Concept, Concepts Affected, Total Active",
 												"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New with New Concept, Total, Concepts Affected, Total Active",
 												"Sctid, Hierarchy, SemTag, In Scope New, Attributes Added, Model Removed, Model Inactivated, Total In Scope",
-												"Sctid, Hierarchy, SemTag, New, Inactivated, Total, Total Active",
+												"Sctid, Hierarchy, SemTag, New, Inactivated, Reactivated, Total, Total Active",
 												};
 		String[] tabNames = new String[] {	"Concepts",
 											"Descriptions",
@@ -341,7 +341,6 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 	}
 	
 	private void analyzeDescriptions(Concept c, Concept topLevel, Boolean wasActive, int[] counts) throws TermServerScriptException {
-		
 		//If the concept is no longer in the target module, we'll count that and ignore the rest
 		if (moduleFilter != null && !moduleFilter.contains(c.getModuleId())) {
 			return;
@@ -356,10 +355,13 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 					//Have we see this Id before?  If not, it's new
 					if (datum != null && !datum.descHistAssocIds.contains(a.getId())) {
 						counts[IDX_NEW]++;
+					} else if (datum != null && datum.descHistAssocIdsInact.contains(a.getId())) {
+						//If previously inactive and now active, then it's reactivated
+						counts[IDX_REACTIVATED]++;
 					}
 				} else {
 					//If we saw this previously active, then it's been inactivated
-					if (datum != null && !datum.descHistAssocIds.contains(a.getId())) {
+					if (datum != null && datum.descHistAssocIds.contains(a.getId())) {
 						counts[IDX_INACT]++;
 					}
 				}
@@ -544,7 +546,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		
 		sheetFieldsByIndex.put(TAB_QI, new LinkedList<Integer>(Arrays.asList(IDX_NEW_IN_QI_SCOPE, IDX_GAINED_ATTRIBUTES, IDX_LOST_ATTRIBUTES, IDX_INACT, IDX_TOTAL_ACTIVE)));
 
-		sheetFieldsByIndex.put(TAB_DESC_HIST, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_INACT, IDX_TOTAL, IDX_TOTAL_ACTIVE)));
+		sheetFieldsByIndex.put(TAB_DESC_HIST, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_INACT, IDX_REACTIVATED, IDX_TOTAL, IDX_TOTAL_ACTIVE)));
 
 		return sheetFieldsByIndex;
 	}
