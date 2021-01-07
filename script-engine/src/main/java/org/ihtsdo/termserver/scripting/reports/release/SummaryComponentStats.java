@@ -44,8 +44,9 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 	int topLevelHierarchyCount = 0;
 	String complexName;
 	static final int TAB_CONCEPTS = 0, TAB_DESCS = 1, TAB_RELS = 2, TAB_AXIOMS = 3,
-			TAB_LANG = 4, TAB_INACT_IND = 5, TAB_HIST = 6, TAB_TEXT_DEFN = 7, TAB_QI = 8;
-	static final int COMPONENT_COUNT = 9;
+			TAB_LANG = 4, TAB_INACT_IND = 5, TAB_HIST = 6, TAB_TEXT_DEFN = 7, TAB_QI = 8,
+			TAB_DESC_HIST = 9;
+	static final int COMPONENT_COUNT = 10;
 	static final int DATA_WIDTH = 25;  //New, Changed, Inactivated, Reactivated, New with New Concept, extra1, extra2, Total, next 11 fields are the inactivation reason, concept affected, reactivated
 	static final int IDX_NEW = 0, IDX_CHANGED = 1, IDX_INACT = 2, IDX_REACTIVATED = 3, IDX_NEW_NEW = 4, IDX_NEW_P = 5, IDX_NEW_SD = 6,
 			IDX_TOTAL = 7, IDX_INACT_AMBIGUOUS = 8,  IDX_INACT_MOVED_ELSEWHERE = 9, IDX_INACT_CONCEPT_NON_CURRENT = 10,
@@ -69,14 +70,6 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		Map<String, String> params = new HashMap<>();
 		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20200309T120000Z.zip");
 		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20200731T120000Z.zip");
-
-		//params.put(PREV_RELEASE, "SnomedCT_USEditionRF2_PRODUCTION_20200301T120000Z.zip");
-		//params.put(THIS_RELEASE, "SnomedCT_USEditionRF2_PRODUCTION_20200901T120000Z.zip");
-		//params.put(MODULES, "731000124108");
-		//params.put(REPORT_OUTPUT_TYPES, ReportOutputType.GOOGLE.name());
-		//params.put(REPORT_FORMAT_TYPE, ReportFormatType.CSV.name());
-		//params.put(REPORT_OUTPUT_TYPES, ReportOutputType.S3.name());
-		//params.put(REPORT_FORMAT_TYPE, ReportFormatType.JSON.name());
 		TermServerReport.run(SummaryComponentStats.class, args, params);
 	}
 
@@ -170,7 +163,8 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 												"Sctid, Hierarchy, SemTag, Inactivations New / Reactivated, Changed, Inactivations Inactivated, Reactivated, New with New Concept, Ambiguous, Moved Elsewhere, Concept Non Current, Duplicate, Erroneous, Inappropriate, Limited, Outdated, Pending Move, Non Conformance, Not Equivalent, Concepts Affected, Total Active",
 												"Sctid, Hierarchy, SemTag, Assoc New, Changed, Assoc Inactivated, Reactivated, New with New Concept, Concepts Affected, Total Active",
 												"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New with New Concept, Total, Concepts Affected, Total Active",
-												"Sctid, Hierarchy, SemTag, In Scope New, Attributes Added, Model Removed, Model Inactivated, Total In Scope" 
+												"Sctid, Hierarchy, SemTag, In Scope New, Attributes Added, Model Removed, Model Inactivated, Total In Scope",
+												"Sctid, Hierarchy, SemTag, New, Inactivated, Total, Total Active",
 												};
 		String[] tabNames = new String[] {	"Concepts",
 											"Descriptions",
@@ -180,7 +174,8 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 											"Inactivations",
 											"Hist Assoc",
 											"Text Defn",
-											"QI Scope"};
+											"QI Scope",
+											"Hist Desc Assoc"};
 		topLevelHierarchies = new ArrayList<Concept>(ROOT_CONCEPT.getChildren(CharacteristicType.INFERRED_RELATIONSHIP));
 		topLevelHierarchies.add(UNKNOWN_CONCEPT); // Add this a we might not always be able to get the top level hierarchy
 		topLevelHierarchies.add(ROOT_CONCEPT);
@@ -245,6 +240,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 			Boolean wasSD = datum==null?null:datum.isSD;
 			Boolean wasActive = datum==null?null:datum.isActive;
 			analyzeConcept(c, topLevel, wasSD, wasActive, summaryData[TAB_CONCEPTS], summaryData[TAB_QI]);
+			analyzeDescriptions(c, topLevel, wasActive, summaryData[TAB_DESC_HIST]);
 			
 			//Only analyze concepts that are in scope for this extension
 			if (moduleFilter == null || moduleFilter.contains(c.getModuleId())) {
@@ -342,6 +338,33 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 			}
 		}
 		
+	}
+	
+	private void analyzeDescriptions(Concept c, Concept topLevel, Boolean wasActive, int[] counts) throws TermServerScriptException {
+		
+		//If the concept is no longer in the target module, we'll count that and ignore the rest
+		if (moduleFilter != null && !moduleFilter.contains(c.getModuleId())) {
+			return;
+		}
+		
+		Datum datum = prevData.get(c.getConceptId());
+		for (Description d : c.getDescriptions()) {
+			for (AssociationEntry a : d.getAssociationEntries()) {
+				counts[IDX_TOTAL]++;
+				if (a.isActive()) {
+					counts[IDX_TOTAL_ACTIVE]++;
+					//Have we see this Id before?  If not, it's new
+					if (datum != null && !datum.descHistAssocIds.contains(a.getId())) {
+						counts[IDX_NEW]++;
+					}
+				} else {
+					//If we saw this previously active, then it's been inactivated
+					if (datum != null && !datum.descHistAssocIds.contains(a.getId())) {
+						counts[IDX_INACT]++;
+					}
+				}
+			}
+		} 
 	}
 
 	private boolean inQIScope(Concept topLevel) {
@@ -521,6 +544,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		
 		sheetFieldsByIndex.put(TAB_QI, new LinkedList<Integer>(Arrays.asList(IDX_NEW_IN_QI_SCOPE, IDX_GAINED_ATTRIBUTES, IDX_LOST_ATTRIBUTES, IDX_INACT, IDX_TOTAL_ACTIVE)));
 
+		sheetFieldsByIndex.put(TAB_DESC_HIST, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_INACT, IDX_TOTAL, IDX_TOTAL_ACTIVE)));
 
 		return sheetFieldsByIndex;
 	}
@@ -616,6 +640,8 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		List<String> inactivationIdsInact;
 		List<String> histAssocIdsInact;
 		boolean hasAttributes;
+		List<String> descHistAssocIds;
+		List<String> descHistAssocIdsInact;
 		
 		@Override
 		public int hashCode () {
@@ -657,6 +683,8 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		datum.histAssocIdsInact = Arrays.asList(lineItems[++idx].split(","));
 		datum.moduleId = lineItems[++idx];
 		datum.hasAttributes = lineItems[++idx].equals("Y");
+		datum.descHistAssocIds = Arrays.asList(lineItems[++idx].split(","));
+		datum.descHistAssocIdsInact = Arrays.asList(lineItems[++idx].split(","));
 		return datum;
 	}
 	

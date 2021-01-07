@@ -351,6 +351,10 @@ public class GraphLoader implements RF2Constants {
 		return sctId.charAt(sctId.length()-2) == '0';
 	}
 	
+	private boolean isDescription(String sctId) {
+		return sctId.charAt(sctId.length()-2) == '1';
+	}
+	
 	public Concept findConcept (String fsn) {
 		//Populate the fsn map if required
 		if (fsnMap == null) {
@@ -887,7 +891,6 @@ public class GraphLoader implements RF2Constants {
 				}
 				String referencedComponent = lineItems[INACT_IDX_REFCOMPID];
 				if (isConcept(referencedComponent)) {
-					//TODO Descriptions can also have associations
 					Concept c = getConcept(referencedComponent);
 					
 					/*if (c.getId().equals("140506004")) {
@@ -922,6 +925,18 @@ public class GraphLoader implements RF2Constants {
 						SnomedUtils.addHistoricalAssociationInTsForm(c, association);
 						recordHistoricalAssociation(association);
 					}
+				} else if (isDescription(referencedComponent)) {
+					Description d = getDescription(referencedComponent);
+					AssociationEntry association = AssociationEntry.fromRf2(lineItems);
+					
+					//Only set the released flag if it's not set already
+					if (association.isReleased() == null) {
+						association.setReleased(isReleased);
+					}
+					
+					//Remove first in case we're replacing
+					d.getAssociationEntries().remove(association);
+					d.getAssociationEntries().add(association);
 				}
 			} else {
 				isHeaderLine = false;

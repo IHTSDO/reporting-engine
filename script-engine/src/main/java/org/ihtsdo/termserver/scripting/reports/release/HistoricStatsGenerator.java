@@ -99,12 +99,13 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 				String[] langRefSetIds = getLangRefsetIds(c);
 				String[] inactivationIds = getInactivationIds(c);
 				String[] histAssocIds = getHistAssocIds(c);
+				String[] descHistAssocIds = getDescHistAssocIds(c);
 				String hasAttributes = SnomedUtils.countAttributes(c, CharacteristicType.INFERRED_RELATIONSHIP) > 0 ? "Y" : "N";
 				ouput(fw, c.getConceptId(), active, defStatus, hierarchy, IP, sdDescendant, sdAncestor, 
 						relIds[ACTIVE], relIds[INACTIVE], descIds[ACTIVE], descIds[INACTIVE], 
 						axiomIds[ACTIVE], axiomIds[INACTIVE], langRefSetIds[ACTIVE], langRefSetIds[INACTIVE],
 						inactivationIds[ACTIVE], inactivationIds[INACTIVE], histAssocIds[ACTIVE], histAssocIds[INACTIVE],
-						c.getModuleId(), hasAttributes);
+						c.getModuleId(), hasAttributes, descHistAssocIds[ACTIVE], descHistAssocIds[INACTIVE]);
 			}
 		} catch (Exception e) {
 			throw new TermServerScriptException(e);
@@ -184,6 +185,27 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 			}
 		}
 		results[INACTIVE] = String.join(",", langRefsetIds);
+		return results;
+	}
+	
+	private String[] getDescHistAssocIds(Concept c) {
+		String[] results = new String[2];
+		
+		List<String> histAssocIds = new ArrayList<>();
+		for (Description d : c.getDescriptions()) {
+			for (AssociationEntry a : d.getAssociationEntries(ActiveState.ACTIVE)) {
+				histAssocIds.add(a.getId());
+			}
+		}
+		results[ACTIVE] = String.join(",", histAssocIds);
+		
+		histAssocIds.clear();
+		for (Description d : c.getDescriptions()) {
+			for (AssociationEntry a : d.getAssociationEntries(ActiveState.INACTIVE)) {
+				histAssocIds.add(a.getId());
+			}
+		}
+		results[INACTIVE] = String.join(",", histAssocIds);
 		return results;
 	}
 	
