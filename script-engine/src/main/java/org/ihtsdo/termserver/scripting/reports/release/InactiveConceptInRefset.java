@@ -37,23 +37,6 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 		super.init(run);
 	}
 
-
-	private void removeEmptyAndNoScopeRefsets() throws TermServerScriptException {
-		emptyReferenceSets = new ArrayList<>();
-		outOfScopeReferenceSets = new ArrayList<>();
-		for (Concept refset : referenceSets) {
-			if (!inScope(refset)) {
-				outOfScopeReferenceSets.add(refset);
-				continue;
-			}
-			if (getConceptsCount("^" + refset) == 0) {
-				emptyReferenceSets.add(refset);
-			}
-			try { Thread.sleep(1 * 1000); } catch (Exception e) {}
-		}
-		referenceSets.removeAll(emptyReferenceSets);
-	}
-
 	public void postInit() throws TermServerScriptException {
 		referenceSets = findConcepts(REFSET_ECL);
 		removeEmptyAndNoScopeRefsets();
@@ -66,6 +49,24 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 				"Summary",
 				"Concepts Inactivated in Refsets"};
 		super.postInit(tabNames, columnHeadings, false);
+	}
+
+	private void removeEmptyAndNoScopeRefsets() throws TermServerScriptException {
+		emptyReferenceSets = new ArrayList<>();
+		outOfScopeReferenceSets = new ArrayList<>();
+		for (Concept refset : referenceSets) {
+			if (!inScope(refset)) {
+				outOfScopeReferenceSets.add(refset);
+				continue;
+			}
+			if (getConceptsCount("^" + refset) == 0) {
+				emptyReferenceSets.add(refset);
+			} else {
+				refsetSummary.put(refset, 0);
+			}
+			try { Thread.sleep(1 * 1000); } catch (Exception e) {}
+		}
+		referenceSets.removeAll(emptyReferenceSets);
 	}
 	
 	@Override
@@ -113,7 +114,7 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 		
 		//Output summary counts
 		for (Map.Entry<Concept, Long> entry : refsetSummary.asMap().entrySet()) {
-			report (PRIMARY_REPORT, entry.getKey(), entry.getValue());
+			report(PRIMARY_REPORT, entry.getKey(), entry.getValue());
 		}
 		
 		for (Concept emptyRefset : emptyReferenceSets) {
