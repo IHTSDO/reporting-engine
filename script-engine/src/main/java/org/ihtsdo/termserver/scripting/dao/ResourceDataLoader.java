@@ -4,7 +4,6 @@ import java.io.*;
 
 import org.apache.commons.io.IOUtils;
 import org.ihtsdo.otf.resourcemanager.ResourceManager;
-import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.slf4j.Logger;
@@ -29,7 +28,8 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 public class ResourceDataLoader {
 	private static final String[] fileNames = new String[] { 	"cs_words.tsv",
 																"acceptable_dose_forms.tsv",
-																"us-to-gb-terms-map.txt" };
+																"us-to-gb-terms-map.txt",
+																"HighVolumeSCTIDs.txt"};
 	
 	@Autowired
 	private ResourceLoaderConfig resourceConfig;

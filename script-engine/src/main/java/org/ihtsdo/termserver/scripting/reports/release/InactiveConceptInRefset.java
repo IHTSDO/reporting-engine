@@ -1,5 +1,6 @@
 package org.ihtsdo.termserver.scripting.reports.release;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -13,6 +14,8 @@ import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.springframework.util.StringUtils;
 
+import com.google.common.base.Charsets;
+import com.google.common.io.Files;
 import com.google.common.util.concurrent.AtomicLongMap;
 
 /**
@@ -75,7 +78,7 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_STATS))
 				.withName("Inactivated Concepts in Refsets")
 				.withDescription("This report lists concepts inactivated in the current authoring cycle" + 
-				" which are members of a published reference set." +
+				" which are members of a published reference set, or in a list of high usage concepts." +
 				" Warning: because this report involves inactive concepts, it cannot use ECL and therefore takes ~30 minutes to run.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(new JobParameters())
@@ -92,6 +95,13 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 				.filter(c -> inScope(c))
 				.filter(c -> StringUtils.isEmpty(c.getEffectiveTime()))
 				.collect(Collectors.toList());
+		
+		debug ("Checking " + inactivatedConcepts.size() + " inactivated concepts against High Usage SCTIDs");
+		List<String> inactivatedConceptIds = inactivatedConcepts.stream().
+				map(c -> c.getId())
+				.collect(Collectors.toList());
+		checkHighVolumeUsage(inactivatedConceptIds);
+		
 		debug ("Checking " + inactivatedConcepts.size() + " inactivated concepts against " + referenceSets.size() + " refsets");
 		int count = 0;
 		for (Concept c : inactivatedConcepts) {
@@ -123,6 +133,23 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 		
 		for (Concept outOfScopeReferenceSet : outOfScopeReferenceSets) {
 			report(PRIMARY_REPORT, outOfScopeReferenceSet, " out of scope in project: " + getProject().getKey());
+		}
+	}
+	
+	private void checkHighVolumeUsage(List<String> inactivatedIds) throws TermServerScriptException {
+		String fileName = "resources/HighVolumeSCTIDs.txt";
+		debug ("Loading " + fileName );
+		try {
+			List<String> lines = Files.readLines(new File(fileName), Charsets.UTF_8);
+			for (String line : lines) {
+				String id = line.split(TAB)[0];
+				if (inactivatedIds.contains(id)) {
+					report (SECONDARY_REPORT, gl.getConcept(id), "High Volume Usage");
+					refsetSummary.getAndIncrement(new Concept("0","High Volume Usage (UK)"));
+				}
+			}
+		} catch (IOException e) {
+			throw new TermServerScriptException("Unable to read " + fileName, e);
 		}
 	}
 

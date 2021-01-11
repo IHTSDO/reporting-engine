@@ -1118,7 +1118,6 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 			throw new TermServerScriptException("Unable to read " + fileName, e);
 		}
 	}
-	
 
 	private boolean isMP(Concept concept) {
 		return concept.getConceptType().equals(ConceptType.MEDICINAL_PRODUCT) || 

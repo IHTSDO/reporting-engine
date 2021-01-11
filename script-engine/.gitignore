@@ -2,3 +2,4 @@ secure/*
 application-local.properties
 historic-data
 reports/*.json
+resources/*
