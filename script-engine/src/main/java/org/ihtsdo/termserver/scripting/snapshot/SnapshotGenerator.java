@@ -18,6 +18,7 @@ public class SnapshotGenerator extends TermServerScript {
 	protected String packageDir;
 	protected String conSnapshotFilename;
 	protected String relSnapshotFilename;
+	protected String relConcreteFilename;
 	protected String attribValSnapshotFilename;
 	protected String assocSnapshotFilename;
 	protected String owlSnapshotFilename;
@@ -38,6 +39,7 @@ public class SnapshotGenerator extends TermServerScript {
 	protected String[] conHeader = new String[] {"id","effectiveTime","active","moduleId","definitionStatusId"};
 	protected String[] descHeader = new String[] {"id","effectiveTime","active","moduleId","conceptId","languageCode","typeId","term","caseSignificanceId"};
 	protected String[] relHeader = new String[] {"id","effectiveTime","active","moduleId","sourceId","destinationId","relationshipGroup","typeId","characteristicTypeId","modifierId"};
+	protected String[] relConcreteHeader = new String[] {"id","effectiveTime","active","moduleId","sourceId","value","relationshipGroup","typeId","characteristicTypeId","modifierId"};
 	protected String[] langHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","acceptabilityId"};
 	protected String[] attribValHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","valueId"};
 	protected String[] assocHeader = new String[] {"id","effectiveTime","active","moduleId","refsetId","referencedComponentId","targetComponentId"};
@@ -114,6 +116,9 @@ public class SnapshotGenerator extends TermServerScript {
 		
 		relSnapshotFilename = termDir + "sct2_Relationship_Snapshot_"+edition+"_" + today + ".txt";
 		writeToRF2File(relSnapshotFilename, relHeader);
+		
+		relSnapshotFilename = termDir + "sct2_RelationshipConcreteValues_Snapshot_"+edition+"_" + today + ".txt";
+		writeToRF2File(relSnapshotFilename, relConcreteHeader);
 
 		sRelSnapshotFilename = termDir + "sct2_StatedRelationship_Snapshot_"+edition+"_" + today + ".txt";
 		writeToRF2File(sRelSnapshotFilename, relHeader);
@@ -194,10 +199,18 @@ public class SnapshotGenerator extends TermServerScript {
 			case STATED_RELATIONSHIP : writeToRF2File(sRelSnapshotFilename, r.toRF2());
 			break;
 			case INFERRED_RELATIONSHIP : 
-			default: writeToRF2File(relSnapshotFilename, r.toRF2());
+			default: outputRF2InferredRel(r);
 		}
 	}
 	
+	private void outputRF2InferredRel(Relationship r) throws TermServerScriptException {
+		if (r.isConcrete()) {
+			writeToRF2File(relConcreteFilename, r.toRF2());
+		} else {
+			writeToRF2File(relSnapshotFilename, r.toRF2());
+		}
+	}
+
 	public void leaveArchiveUncompressed() {
 		leaveArchiveUncompressed = true;
 	}

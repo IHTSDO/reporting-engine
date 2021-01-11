@@ -866,14 +866,17 @@ public class SnomedUtils implements RF2Constants {
 		return null;
 	}
 	
-	public static Object getConcreteValue (Concept c, Concept[] types, int groupId, CharacteristicType charType) throws TermServerScriptException {
+	public static String getConcreteValue(Concept c, Concept[] types, int groupId, CharacteristicType charType) throws TermServerScriptException {
 		for (Concept type : types) {
 			Set<Relationship> rels = c.getRelationships(charType, type, groupId);
 			if (rels.size() > 1) {
 				TermServerScript.warn(c + " has multiple " + type + " in group " + groupId);
 			} else if (rels.size() == 1) {
-				//This might not be the full concept, so recover it fully from our loaded cache
-				return rels.iterator().next().getValue();
+				Relationship r = rels.iterator().next();
+				if (!r.isConcrete()) {
+					throw new IllegalArgumentException("Attempt to recover concrete value from non-concrete relationship: " + r);
+				}
+				return r.getValue().toString();
 			}
 		}
 		return null;

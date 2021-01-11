@@ -13,10 +13,10 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.fixes.drugs.Ingredient;
+import org.ihtsdo.termserver.scripting.fixes.drugs.ConcreteIngredient;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.DrugTermGeneratorCD;
-import org.ihtsdo.termserver.scripting.util.DrugUtils;
+import org.ihtsdo.termserver.scripting.util.ConcreteDrugUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.ihtsdo.termserver.scripting.util.TermGenerator;
 import org.snomed.otf.scheduler.domain.*;
@@ -108,9 +108,9 @@ public class ValidateConcreteDrugModeling extends TermServerReport implements Re
 		ConceptType[] allDrugTypes = new ConceptType[] { ConceptType.MEDICINAL_PRODUCT, ConceptType.MEDICINAL_PRODUCT_ONLY, ConceptType.MEDICINAL_PRODUCT_FORM, ConceptType.MEDICINAL_PRODUCT_FORM_ONLY, ConceptType.CLINICAL_DRUG };
 		ConceptType[] cds = new ConceptType[] { ConceptType.CLINICAL_DRUG };  //DRUGS-267
 		
-		for (Concept c : Collections.singleton(gl.getConcept("332753005"))) {
-		//for (Concept c : subHierarchy) {
-			DrugUtils.setConceptType(c);
+		//for (Concept c : Collections.singleton(gl.getConcept("776935006"))) {
+		for (Concept c : subHierarchy) {
+			ConcreteDrugUtils.setConceptType(c);
 			
 			/*if (c.getId().equals("714209004")) {
 				debug ("here");
@@ -275,9 +275,9 @@ public class ValidateConcreteDrugModeling extends TermServerReport implements Re
 		//DRUGS-793 Ingredients of "(product)" Medicinal products will be
 		//considered 'grouper substances' that should not be used as BoSS 
 		for (Concept c : gl.getDescendantsCache().getDescendents(MEDICINAL_PRODUCT)) {
-			DrugUtils.setConceptType(c);
+			ConcreteDrugUtils.setConceptType(c);
 			if (c.getConceptType().equals(ConceptType.PRODUCT)) {
-				for (Concept substance : DrugUtils.getIngredients(c, CharacteristicType.INFERRED_RELATIONSHIP)) {
+				for (Concept substance : ConcreteDrugUtils.getIngredients(c, CharacteristicType.INFERRED_RELATIONSHIP)) {
 					if (!grouperSubstanceUsage.containsKey(substance)) {
 						grouperSubstanceUsage.put(substance, c);
 					}
@@ -453,7 +453,7 @@ public class ValidateConcreteDrugModeling extends TermServerReport implements Re
 		initialiseSummary(issueStr);
 		//For each group, do we have both a concentration and a presentation?
 		for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
-			Ingredient i = DrugUtils.getIngredientDetails(c, g.getGroupId(), CharacteristicType.STATED_RELATIONSHIP);
+			ConcreteIngredient i = ConcreteDrugUtils.getIngredientDetails(c, g.getGroupId(), CharacteristicType.STATED_RELATIONSHIP);
 			if (i.presStrength != null && i.concStrength != null) {
 				boolean unitsChange = false;
 				boolean issueDetected = false;
@@ -463,14 +463,14 @@ public class ValidateConcreteDrugModeling extends TermServerReport implements Re
 				}
 				
 				//Normalise the numbers
-				BigDecimal presStrength = new BigDecimal(DrugUtils.getConceptAsNumber(i.presStrength));
-				BigDecimal concStrength = new BigDecimal(DrugUtils.getConceptAsNumber(i.concStrength));
+				BigDecimal presStrength = new BigDecimal(i.presStrength);
+				BigDecimal concStrength = new BigDecimal(i.concStrength);
 				if (!i.presNumeratorUnit.equals(i.concNumeratorUnit)) {
 					concStrength = concStrength.multiply(calculateUnitFactor (i.presNumeratorUnit, i.concNumeratorUnit));
 				}
 				
-				BigDecimal presDenomQuantity = new BigDecimal (DrugUtils.getConceptAsNumber(i.presDenomQuantity));
-				BigDecimal concDenomQuantity = new BigDecimal (DrugUtils.getConceptAsNumber(i.concDenomQuantity));
+				BigDecimal presDenomQuantity = new BigDecimal (i.presDenomQuantity);
+				BigDecimal concDenomQuantity = new BigDecimal (i.concDenomQuantity);
 				if (!i.presDenomUnit.equals(i.concDenomUnit)) {
 					concDenomQuantity = concDenomQuantity.multiply(calculateUnitFactor (i.presDenomUnit, i.concDenomUnit));
 				}
@@ -519,7 +519,7 @@ public class ValidateConcreteDrugModeling extends TermServerReport implements Re
 	private void validateStrengthNormalization(Concept c) throws TermServerScriptException {
 		//For each group, validate any relevant units
 		for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.STATED_RELATIONSHIP)) {
-			Ingredient i = DrugUtils.getIngredientDetails(c, g.getGroupId(), CharacteristicType.STATED_RELATIONSHIP);
+			ConcreteIngredient i = ConcreteDrugUtils.getIngredientDetails(c, g.getGroupId(), CharacteristicType.STATED_RELATIONSHIP);
 			if (i.presStrength != null) {
 				validateStrengthNormalization(c, i.presNumeratorUnit, i.presStrength);
 				validateStrengthNormalization(c, i.presDenomUnit, i.presDenomQuantity);
@@ -533,7 +533,7 @@ public class ValidateConcreteDrugModeling extends TermServerReport implements Re
 	}
 	
 
-	private void validateStrengthNormalization(Concept c, Concept unit, Concept strengthConcept) throws TermServerScriptException {
+	private void validateStrengthNormalization(Concept c, Concept unit, String strengthStr) throws TermServerScriptException {
 		String issueStr = "Strength Normalization Issue";
 		initialiseSummary(issueStr);
 		//Are we working with a known solid or liquid unit?
@@ -543,7 +543,7 @@ public class ValidateConcreteDrugModeling extends TermServerReport implements Re
 		}
 		
 		if (unitIdx != -1) {
-			Double strength = DrugUtils.getConceptAsNumber(strengthConcept);
+			Double strength = Double.parseDouble(strengthStr);
 			if (strength > 1000 || strength < 1) {
 				report(c, issueStr, strength + unit.getPreferredSynonym());
 			}
@@ -652,7 +652,7 @@ public class ValidateConcreteDrugModeling extends TermServerReport implements Re
 				if (bRel.getGroupId() == iRel.getGroupId()) {
 					boolean isSelf = boSS.equals(ingred);
 					boolean isSubType = gl.getDescendantsCache().getDescendents(boSS).contains(ingred);
-					boolean isModificationOf = DrugUtils.isModificationOf(ingred, boSS);
+					boolean isModificationOf = ConcreteDrugUtils.isModificationOf(ingred, boSS);
 					
 					if (isSelf || isSubType || isModificationOf) {
 						matchFound = true;
