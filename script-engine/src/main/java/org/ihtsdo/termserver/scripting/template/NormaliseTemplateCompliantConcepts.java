@@ -364,10 +364,19 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		
 		subsetECL = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 36191001 |Perforation (morphologic abnormality)|";
 		templateNames = new String[] { "templates/morphologies/Perforation.json" };
-		*/
 		
-		subsetECL = "	<< 404684003 |Clinical finding (finding)| : 116676008 |Associated morphology (attribute)| = << 107682006 |Fibrosis AND/OR repair abnormality";
-		templateNames = new String[] { "templates/morphologies/Fibrosis.json" };
+		subsetECL = "(<< 404684003 |Clinical finding (finding)| : 116676008 |Associated morphology (attribute)| = << 107682006 |Fibrosis AND/OR repair abnormality | ) MINUS ( << 64572001 |Disease (disorder)| )";
+		templateNames = new String[] { "templates/morphologies/Fibrosis - finding.json" };
+		
+		subsetECL = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 107682006 |Fibrosis AND/OR repair abnormality |  ";
+		templateNames = new String[] { "templates/morphologies/Fibrosis - disorder.json" };
+		
+		subsetECL = "<< 371136004 |Disorder of tooth development (disorder)| ";
+		templateNames = new String[] { "templates/pathological process/Developmental.json" };
+		*/
+		subsetECL = "(<< 371521007 |Disorder of bone development (disorder)|) MINUS ( << 19579005 |Juvenile osteochondritis (disorder)| )";
+		templateNames = new String[] { "templates/pathological process/Developmental.json" };
+		
 		
 		//TODO We're seeing 'HIGH' warnings about existing parents being redundant in presence of PPP but before the PPP gets added. Investigate
 		//I think this might happen when we set a PPP which is lower than the existing parent.
