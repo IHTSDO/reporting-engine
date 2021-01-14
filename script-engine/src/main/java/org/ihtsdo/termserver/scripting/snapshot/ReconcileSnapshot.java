@@ -132,10 +132,10 @@ public class ReconcileSnapshot extends TermServerReport implements ReportClass {
 					validateComponentFile(is, ComponentType.CONCEPT);
 /*				} else if (fileName.contains("StatedRelationship_" )) {
 					info("Validating " + fileName);
-					validateComponentFile(is, ComponentType.STATED_RELATIONSHIP);
+					validateComponentFile(is, ComponentType.STATED_RELATIONSHIP);*/
 				} else if (fileName.contains("Relationship_" )) {
 					info("Validating " + fileName);
-					validateComponentFile(is, ComponentType.INFERRED_RELATIONSHIP); */
+					validateComponentFile(is, ComponentType.INFERRED_RELATIONSHIP);
 				} else if (fileName.contains("sct2_sRefset_OWLExpression" ) ||
 						   fileName.contains("sct2_sRefset_OWLAxiom" )) {
 					info("Validating Axiom " + fileType + " refset file: " + fileName);
@@ -198,6 +198,7 @@ public class ReconcileSnapshot extends TermServerReport implements ReportClass {
 			if (!c.isActive() && 
 					(c.getComponentType().equals(ComponentType.STATED_RELATIONSHIP) ||
 					c.getComponentType().equals(ComponentType.INFERRED_RELATIONSHIP))) {
+				remainingComponents.remove(c.getId());
 				//TODO Investigate here. I think we're replacing duplicate triples when importing
 				//perhaps we can stop doing that.
 				return NO_CHANGES_MADE;
@@ -220,11 +221,14 @@ public class ReconcileSnapshot extends TermServerReport implements ReportClass {
 	
 	private void reportRemainder() throws TermServerScriptException {
 		for (Map.Entry<String, Component> entry : remainingComponents.entrySet()) {
-			Concept owner = gl.getComponentOwner(entry.getValue().getId());
+			Component c = entry.getValue();
+			if (c.getComponentType().equals(ComponentType.STATED_RELATIONSHIP)) {
+				continue;
+			}
+			Concept owner = gl.getComponentOwner(c.getId());
 			int reportTabIdx = entry.getValue().getComponentType().ordinal();
-			report (reportTabIdx, owner, entry.getKey(), "Component from generated snapshot not present in export", entry.getValue());
+			report (reportTabIdx, owner, entry.getKey(), c.isActive()?"Y":"N", "Component from generated snapshot not present in export", c);
 		}
-		
 	}
 
 	public Component createComponent(ComponentType componentType, String[] lineItems) throws TermServerScriptException {

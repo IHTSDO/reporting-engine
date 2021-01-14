@@ -146,6 +146,9 @@ public class GraphLoader implements RF2Constants {
 					continue;
 				}
 				
+				//Might need to modify the characteristic type for Additional Relationships
+				characteristicType = SnomedUtils.translateCharacteristicType(lineItems[REL_IDX_CHARACTERISTICTYPEID]);
+				
 				if (!isConcept(lineItems[REL_IDX_SOURCEID])) {
 					TermServerScript.debug (characteristicType + " relationship " + lineItems[REL_IDX_ID] + " referenced a non concept identifier: " + lineItems[REL_IDX_SOURCEID]);
 				}
@@ -160,7 +163,7 @@ public class GraphLoader implements RF2Constants {
 				Relationship existing = thisConcept.getRelationship(lineItems[IDX_ID]);
 				if (existing != null &&
 						!StringUtils.isEmpty(existing.getEffectiveTime()) 
-						&& isReleased
+						&& (isReleased != null && isReleased)
 						&& (existing.getEffectiveTime().compareTo(lineItems[IDX_EFFECTIVETIME]) >= 1)) {
 					System.out.println("Skipping incoming published relationship row, older than that held");
 					continue;
