@@ -1411,7 +1411,7 @@ public abstract class TermServerScript implements RF2Constants {
 	public void report (int reportIdx, Concept c, Object...details) throws TermServerScriptException {
 		//Have we whiteListed this concept?
 		if (whiteListedConcepts.contains(c)) {
-			String detailsStr = (details == null || details.length == 0) ? "No Details" : Arrays.asList(details).stream().map(o -> o.toString()).collect(Collectors.joining(", "));
+			String detailsStr = writeToString(details);
 			warn ("Ignoring whiteListed concept: " + c + " :  " + detailsStr);
 			incrementSummaryInformation(WHITE_LISTED_COUNT);
 		} else {
@@ -1440,6 +1440,14 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	protected boolean report (int reportIdx, Object...details) throws TermServerScriptException {
+		boolean writeSuccess = writeToReportFile (reportIdx, writeToString(details));
+		if (writeSuccess) {
+			incrementSummaryInformation("Report lines written");
+		}
+		return writeSuccess;
+	}
+	
+	protected String writeToString(Object[] details) {
 		StringBuffer sb = new StringBuffer();
 		boolean isFirst = true;
 		for (Object detail : details) {
@@ -1485,14 +1493,9 @@ public abstract class TermServerScript implements RF2Constants {
 			}
 			isFirst = false;
 		}
-
-		boolean writeSuccess = writeToReportFile (reportIdx, sb.toString());
-		if (writeSuccess) {
-			incrementSummaryInformation("Report lines written");
-		}
-		return writeSuccess;
+		return sb.toString();
 	}
-	
+
 	private void addObjectArray(StringBuffer sb, Object detail, String prefix, boolean isNumeric) {
 		Object[] arr = (Object[]) detail;
 		for (Object obj : arr) {

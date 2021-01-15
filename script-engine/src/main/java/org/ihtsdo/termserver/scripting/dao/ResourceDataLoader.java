@@ -90,6 +90,7 @@ public class ResourceDataLoader {
 				final String errorMsg = "Error when trying to download the us-to-gb-terms-map.txt file from S3 via :" +  resourceConfig;
 				LOGGER.error(errorMsg, t);
 			}
+			TermServerScript.info ("Resources download complete");
 		} else {
 			LOGGER.info("AWS S3 marked as local due to 'resources.useCloud=false' setting.");
 		}
