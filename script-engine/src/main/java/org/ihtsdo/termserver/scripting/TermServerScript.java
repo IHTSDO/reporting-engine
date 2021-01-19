@@ -74,6 +74,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected String[] excludeHierarchies;
 	
 	protected Set<Concept> whiteListedConcepts = new HashSet<>();
+	protected Set<String> archiveEclWarningGiven = new HashSet<>();
 
 	protected GraphLoader gl = GraphLoader.getGraphLoader();
 	private ReportManager reportManager;
@@ -974,6 +975,22 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	public Collection<Concept> findConcepts(String branch, String ecl, boolean quiet, boolean useLocalStoreIfSimple) throws TermServerScriptException {
+		//If we're working from a zip file, then use MAIN instead
+		if (branch.endsWith(".zip")) {
+			String historicECLBranch = "MAIN";
+			//TODO Better regex to work out the correct branch for historic ECL
+			if (branch.contains("20200731")) {
+				historicECLBranch = "MAIN/2020-07-31";
+			} else if (branch.contains("2021-01-31") || branch.contains("20210131")) {
+				historicECLBranch = "MAIN/2021-01-31";
+			}
+			if (!archiveEclWarningGiven.contains(branch)) {
+				warn ("Not using " + branch + " to recover ECL.  Using " + historicECLBranch + " instead.");
+				archiveEclWarningGiven.add(branch);
+			}
+			branch = historicECLBranch;
+		}
+		
 		EclCache cache = EclCache.getCache(branch, tsClient, gson, gl, quiet);
 		boolean wasCached = cache.isCached(ecl);
 		Collection<Concept> concepts = cache.findConcepts(branch, ecl, useLocalStoreIfSimple); 

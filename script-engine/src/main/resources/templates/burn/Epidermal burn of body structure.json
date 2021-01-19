@@ -2,5 +2,5 @@
   "name": "Epidermal burn of body structure",
   "documentation": "https://confluence.ihtsdotools.org/pages/viewpage.action?pageId=63275278",
   "version": 1,
-  "logicalTemplate": "64572001 |Disease (disorder)|: {\n\t\t116676008 |Associated morphology (attribute)| = 77140003 |First degree burn injury (morphologic abnormality)|, 363698007 |Finding site (attribute)|  = [[+id(<< 39937001 |Skin structure (body structure)|) @skin]]\n\t}"
+  "logicalTemplate": "64572001 |Disease (disorder)|: [[~0..1]] { [[~0..1]] 42752001 |Due to (attribute)| = 773760007 |Traumatic event (event)| } ,  {\n\t\t116676008 |Associated morphology (attribute)| = 77140003 |First degree burn injury (morphologic abnormality)|, 363698007 |Finding site (attribute)|  = [[+id(<< 39937001 |Skin structure (body structure)|) @skin]]\n\t}"
 }

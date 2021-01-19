@@ -373,8 +373,12 @@ public abstract class AllKnownTemplates extends TermServerReport {
 		templateNames = new String[] { "templates/morphologies/Perforation.json" };
 		populateTemplates(subsetECL, templateNames);
 		
-		subsetECL = "	<< 404684003 |Clinical finding (finding)| : 116676008 |Associated morphology (attribute)| = << 107682006 |Fibrosis AND/OR repair abnormality";
-		templateNames = new String[] { "templates/morphologies/Fibrosis.json" };
+		subsetECL = "(<< 404684003 |Clinical finding (finding)| : 116676008 |Associated morphology (attribute)| = << 107682006 |Fibrosis AND/OR repair abnormality | ) MINUS ( << 64572001 |Disease (disorder)| )";
+		templateNames = new String[] { "templates/morphologies/Fibrosis - finding.json" };
+		populateTemplates(subsetECL, templateNames);
+		
+		subsetECL = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 107682006 |Fibrosis AND/OR repair abnormality |  ";
+		templateNames = new String[] { "templates/morphologies/Fibrosis - disorder.json" };
 		populateTemplates(subsetECL, templateNames);
 		
 		populateTemplatesFromTS();
