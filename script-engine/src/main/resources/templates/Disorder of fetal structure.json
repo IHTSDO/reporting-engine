@@ -1,0 +1,7 @@
+{
+  "name": "Disorder of fetal structrue",
+  "documentation": "",
+  "version": 1,
+  "domain":"<<  609520005 |Disorder of fetal structure (disorder)|",
+  "logicalTemplate": "64572001 |Disease (disorder)| : [[~0..1]] { [[~0..1]]   42752001 |Due to (attribute)| = [[+id (<  404684003 |Clinical finding (finding)|  OR <<  71388002 |Procedure (procedure)| ) @dueto ]]}, [[~1..1 @rolegroup]]{[[~1..1]]  116676008 |Associated morphology (attribute)|  = [[+id(<<  49755003 |Morphologically abnormal structure (morphologic abnormality)| ) @morphology ]], [[~0..1]]    363698007 |Finding site (attribute)|  = [[+id(<<  123037004 |Body structure (body structure)| )]], [[~1..1]]  246454002 |Occurrence (attribute)|  =  303112003 |Fetal period (qualifier value)| , [[~1..1]]  370135005 |Pathological process (attribute)|  =  308490002 |Pathological developmental process (qualifier value)| , [[~0..1]]  246075003 |Causative agent (attribute)|  = [[+id (<  410607006 |Organism (organism)|  OR <  105590001 |Substance (substance)|  OR <  78621006 |Physical force (physical force)| ) @causative]]} "
+}
