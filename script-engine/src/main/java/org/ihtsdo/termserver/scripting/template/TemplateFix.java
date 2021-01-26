@@ -162,14 +162,14 @@ abstract public class TemplateFix extends BatchFix {
 		for (AttributeGroup g : t.getAttributeGroups()) {
 			for (Attribute a : g.getAttributes()) {
 				//Does this attribute have a named slot?
-				if (!StringUtils.isEmpty(a.getSlotName())) {
-					String attributeClause = a.getType().trim() + " = " + StringUtils.safelyTrim(a.getAllowableRangeECL()) + StringUtils.safelyTrim(a.getValue()); 
-					if (namedSlots.containsKey(a.getSlotName())) {
-						if (!attributeClause.equals(namedSlots.get(a.getSlotName()))) {
+				if (!StringUtils.isEmpty(a.getValueSlotName())) {
+					String attributeClause = a.toString();
+					if (namedSlots.containsKey(a.getValueSlotName())) {
+						if (!attributeClause.equals(namedSlots.get(a.getValueSlotName()))) {
 							throw new IllegalArgumentException("Named slots sharing the same name must be identical: " + attributeClause);
 						}
 					} else {
-						namedSlots.put(a.getSlotName(), attributeClause);
+						namedSlots.put(a.getValueSlotName(), attributeClause);
 					}
 				}
 			}

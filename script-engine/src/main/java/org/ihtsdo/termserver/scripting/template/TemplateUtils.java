@@ -29,14 +29,14 @@ public class TemplateUtils implements RF2Constants {
 		
 		//Now add the ungrouped attributes
 		sb.append(template.getUngroupedAttributes().stream()
-				.map( a -> a.getType() + "=" + (a.getAllowableRangeECL() == null? a.getValue(): a.getAllowableRangeECL()))
+				.map( a -> a.getType() + "=" + (a.getValueAllowableRangeECL() == null? a.getValue(): a.getValueAllowableRangeECL()))
 				.collect (Collectors.joining(",")));
 		
 		//Now add the grouped attributes
 		for (AttributeGroup group : template.getAttributeGroups()) {
 			sb.append("{")
 				.append(group.getAttributes().stream()
-					.map( a -> a.getType() + "=" + (a.getAllowableRangeECL() == null? a.getValue(): a.getAllowableRangeECL()))
+					.map( a -> a.getType() + "=" + (a.getValueAllowableRangeECL() == null? a.getValue(): a.getValueAllowableRangeECL()))
 					.collect (Collectors.joining(",")))
 				.append("}");
 		}
@@ -144,11 +144,11 @@ public class TemplateUtils implements RF2Constants {
 		for (AttributeGroup g : t.getAttributeGroups()) {
 			for (Attribute a : g.getAttributes()) {
 				//Does this attribute have a named slot?
-				if (!StringUtils.isEmpty(a.getSlotName())) {
-					if (namedSlots.contains(a.getSlotName())) {
-						repeatedSlots.add(a.getSlotName());
+				if (!StringUtils.isEmpty(a.getValueSlotName())) {
+					if (namedSlots.contains(a.getValueSlotName())) {
+						repeatedSlots.add(a.getValueSlotName());
 					} else {
-						namedSlots.add(a.getSlotName());
+						namedSlots.add(a.getValueSlotName());
 					}
 				}
 			}
@@ -231,13 +231,13 @@ public class TemplateUtils implements RF2Constants {
 
 	public static boolean matchesAttribute(Relationship r, Attribute a, Map<String, List<Concept>> namedSlots, TermServerScript ts) throws TermServerScriptException {
 		boolean matchesAttributeValue = false;
-		if (matchesAttributeType(r.getType(), a.getType())) {
+		if (matchesAttributeType(r.getType(), a, ts)) {
 			//Is the value within the allowable ECL, or do we have a fixed value?
-			if (a.getAllowableRangeECL() != null) {
-				matchesAttributeValue = matchesAttributeValue(r.getTarget(), a.getAllowableRangeECL().trim(), ts);
+			if (a.getValueAllowableRangeECL() != null) {
+				matchesAttributeValue = matchesAttributeValue(r.getTarget(), a.getValueAllowableRangeECL().trim(), ts);
 			} else if (a.getValue() != null) {
 				matchesAttributeValue = r.getTarget().getConceptId().equals(a.getValue());
-			} else if (a.getSlotReference() != null) {
+			} else if (a.getValueSlotReference() != null) {
 				if (!SLOT_NAME_WARNING_MADE) {
 					TermServerScript.warn("TODO - maintain list of matched slot name values to pass in");
 					SLOT_NAME_WARNING_MADE = true;
@@ -249,11 +249,11 @@ public class TemplateUtils implements RF2Constants {
 		}
 		
 		//If we got a match, record that this slot has been filled
-		if (namedSlots != null && matchesAttributeValue && !StringUtils.isEmpty(a.getSlotName())) {
-			List<Concept> slotValues = namedSlots.get(a.getSlotName());
+		if (namedSlots != null && matchesAttributeValue && !StringUtils.isEmpty(a.getValueSlotName())) {
+			List<Concept> slotValues = namedSlots.get(a.getValueSlotName());
 			if (slotValues == null) {
 				slotValues = new ArrayList<>();
-				namedSlots.put(a.getSlotName(), slotValues);
+				namedSlots.put(a.getValueSlotName(), slotValues);
 			}
 			slotValues.add(r.getTarget());
 		}
@@ -275,9 +275,19 @@ public class TemplateUtils implements RF2Constants {
 		return permittedConcepts.contains(target);
 	}
 
-	private static boolean matchesAttributeType(Concept c1, String c2Str) throws TermServerScriptException {
-		Concept c2 = GraphLoader.getGraphLoader().getConcept(c2Str);
-		return c1.equals(c2);
+	private static boolean matchesAttributeType(Concept c1, Attribute a, TermServerScript ts) throws TermServerScriptException {
+		//Are we matching a simple type, or a range?
+		if (a.getType() != null) {
+			return c1.equals(GraphLoader.getGraphLoader().getConcept(a.getType()));
+		} else {
+			String ecl = a.getTypeAllowableRangeECL();
+			for (Concept c2 : ts.findConcepts(ecl, true, true)) {
+				if (c1.equals(c2)) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 
 	public static Cardinality getCardinality(AttributeGroup g) {
