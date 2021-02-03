@@ -15,6 +15,7 @@ import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
+import org.springframework.util.StringUtils;
 
 /**
  * Generates a file of data based on a release so that we can do investigations 
@@ -33,6 +34,7 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 	private static final String dataDir = "historic-data/";
 	private static int ACTIVE = 1;
 	private static int INACTIVE = 0;
+	private Map<String, String> semTagHierarchyMap;
 	
 	public HistoricStatsGenerator() {
 	}
@@ -65,6 +67,12 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 	public void runJob() throws TermServerScriptException {
 		FileWriter fw = null;
 		try {
+			info("Generating Transitive Closure");
+			TransitiveClosure tc = gl.generateTransativeClosure();
+			
+			info("Creating map of semantic tag hierarchies");
+			populateSemTagHierarchyMap(tc);
+			
 			//Create the historic-data directory if required
 			File dataDirFile = new File(dataDir);
 			if (!dataDirFile.exists()) {
@@ -79,8 +87,6 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 			info("Creating dataFile: " + f.getAbsolutePath());
 			f.createNewFile();
 			fw = new FileWriter(f);
-			
-			TransitiveClosure tc = gl.generateTransativeClosure();
 			
 			debug ("Determining all IPs");
 			Set<Concept> IPs = identifyIntermediatePrimitives(gl.getAllConcepts(), CharacteristicType.INFERRED_RELATIONSHIP);
@@ -116,6 +122,23 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 				}
 			} catch (IOException e) {
 				e.printStackTrace();
+			}
+		}
+	}
+
+	private void populateSemTagHierarchyMap(TransitiveClosure tc) throws TermServerScriptException {
+		semTagHierarchyMap = new HashMap<>();
+		for (Concept c : gl.getAllConcepts()) {
+			if (c.isActive()) {
+				String[] parts = SnomedUtils.deconstructFSN(c.getFsnSafely(), true);
+				if (parts.length == 2 && 
+						!StringUtils.isEmpty(parts[1]) && 
+						!semTagHierarchyMap.containsKey(parts[1])) {
+					String hierarchySCTID = getHierarchy(tc, c);
+					if (!StringUtils.isEmpty(hierarchySCTID)) {
+						semTagHierarchyMap.put(parts[1], hierarchySCTID);
+					}
+				}	
 			}
 		}
 	}
@@ -244,7 +267,11 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 	private String getHierarchy(TransitiveClosure tc, Concept c) throws TermServerScriptException {
 
 		if (c.equals(ROOT_CONCEPT)) {
-			return  "";
+			return ROOT_CONCEPT.getConceptId();
+		}
+		
+		if (c.isActive() && c.getDepth() == 1) {
+			return c.getConceptId();
 		}
 
 		if (!c.isActive() || c.getDepth() == NOT_SET) {
@@ -252,13 +279,17 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 			if (parent != null) {
 				return getHierarchy(tc, parent);
 			}
+			
+			//Attempt to determine hierarchy from the semantic tag
+			String[] parts = SnomedUtils.deconstructFSN(c.getFsnSafely(), true);
+			if (parts.length == 2 && 
+					!StringUtils.isEmpty(parts[1]) && 
+					semTagHierarchyMap.containsKey(parts[1])) {
+				return semTagHierarchyMap.get(parts[1]);
+			}
 			return "";  //Hopefully the previous release will know
 		}
 
-		if (c.getDepth() == 1) {
-			return c.getConceptId();
-		} 
-		
 		for (Long sctId : tc.getAncestors(c)) {
 			Concept a = gl.getConcept(sctId);
 			if (a.getDepth() == 1) {
