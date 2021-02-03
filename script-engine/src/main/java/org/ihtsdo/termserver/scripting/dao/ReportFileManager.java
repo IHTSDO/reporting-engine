@@ -66,10 +66,10 @@ public class ReportFileManager implements RF2Constants, ReportProcessor {
 	public void initialiseReportFiles(String[] columnHeaders) throws TermServerScriptException {
 		currentTimeStamp = df.format(new Date());
 		reportFiles = new File[owner.getNumberOfDistinctReports()];
+		String reportName = getReportName();
+		String directory = REPORTS_DIRECTORY + File.separator + owner.env + File.separator;
 		for (int reportIdx = 0; reportIdx < owner.getNumberOfDistinctReports(); reportIdx++) {
 			String idxStr = reportIdx == 0 ? "" : "_" + reportIdx;
-			String reportName = getReportName();
-			String directory = REPORTS_DIRECTORY + File.separator + owner.env + File.separator;
 			String reportFilename = directory + "results_" + reportName + "_" + currentTimeStamp + "_" + owner.getEnv()  + idxStr + ".csv";
 			reportFiles[reportIdx] = new File(reportFilename);
 			TermServerScript.info("Outputting Report to " + reportFiles[reportIdx].getAbsolutePath());
@@ -102,6 +102,6 @@ public class ReportFileManager implements RF2Constants, ReportProcessor {
 	}
 
 	public String getReportName() {
-		return owner.getScript().getReportName().replaceAll(" ", "_");
+		return owner.getScript().getClass().getSimpleName().replaceAll(" ", "_");
 	}
 }

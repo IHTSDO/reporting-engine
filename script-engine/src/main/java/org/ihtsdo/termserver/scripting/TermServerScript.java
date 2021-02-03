@@ -1299,6 +1299,10 @@ public abstract class TermServerScript implements RF2Constants {
 					}
 				}
 				
+				if (project != null && !StringUtils.isEmpty(project.getKey())) {
+					reportName += "_" + project.getKey();
+				}
+				
 			} catch (Exception e) {
 				error ("Recoverable hiccup while setting report name",e);
 			}
@@ -1306,10 +1310,6 @@ public abstract class TermServerScript implements RF2Constants {
 		
 		if (reportName.contains("null")) {
 			warn ("Report name contains 'null' did you specify to load FSNs only?");
-		}
-		
-		if (project != null && !StringUtils.isEmpty(project.getKey())) {
-			reportName += "_" + project.getKey();
 		}
 		
 		return reportName;

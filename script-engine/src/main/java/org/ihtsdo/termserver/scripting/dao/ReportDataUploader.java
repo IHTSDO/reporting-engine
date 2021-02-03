@@ -47,7 +47,9 @@ public class ReportDataUploader {
 
     public void upload(File outputFile, File inputFile) throws TermServerScriptException {
         try {
-            s3Manager.getResourceManager().writeResource(outputFile.getPath(),
+            //In case we're running on a PC we need to convert backslashes to forward
+            String filePath = outputFile.getPath().replaceAll("\\\\", "/");
+            s3Manager.getResourceManager().writeResource(filePath,
                     new BufferedInputStream(new FileInputStream(inputFile)));
         } catch (Exception e) {
             throw new TermServerScriptException(e);

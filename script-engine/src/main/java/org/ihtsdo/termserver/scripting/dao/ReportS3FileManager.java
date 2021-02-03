@@ -111,9 +111,8 @@ public class ReportS3FileManager extends ReportFileManager {
                 // transform form the reports
                 locals3ReportFile = entry.getKey();
                 s3ReportFile = entry.getValue();
-                String targetS3Path = reportDataUploader.getUploadLocation(S3_BUCKET_PROTOCOL, S3_BUCKET_DOMAIN) +
-                        File.separator +
-                        s3ReportFile.getPath();
+                String filePath = File.separator + s3ReportFile.getPath();
+                String targetS3Path = reportDataUploader.getUploadLocation(S3_BUCKET_PROTOCOL, S3_BUCKET_DOMAIN) + filePath;
                 TermServerScript.info("Outputting Report to " + cleanFileName(targetS3Path));
                 reportDataUploader.upload(s3ReportFile, locals3ReportFile);
             } catch (Exception e) {
