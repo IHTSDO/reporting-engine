@@ -152,8 +152,11 @@ public class Description extends Component implements RF2Constants {
 		return moduleId;
 	}
 
-	public void setModuleId(String moduleId) {
-		if (this.moduleId != null && !this.moduleId.equals(moduleId)) {
+	public void setModuleId(String moduleId) { 
+		setModuleId(moduleId, false);
+	}
+	public void setModuleId(String moduleId, boolean isPublished) {
+		if (this.moduleId != null && !this.moduleId.equals(moduleId) && !isPublished) {
 			setDirty();
 			this.effectiveTime = null;
 		}
@@ -504,7 +507,8 @@ public class Description extends Component implements RF2Constants {
 		if (d.getEffectiveTime() != null) {
 			d.setReleased(true);
 		}
-		d.setModuleId(lineItems[DES_IDX_MODULID]);
+		boolean isPublished = d.isReleased() == null ? false :  d.isReleased();
+		d.setModuleId(lineItems[DES_IDX_MODULID], isPublished);
 		d.setCaseSignificance(SnomedUtils.translateCaseSignificanceToEnum(lineItems[DES_IDX_CASESIGNIFICANCEID]));
 		d.setConceptId(lineItems[DES_IDX_CONCEPTID]);
 		d.setLang(lineItems[DES_IDX_LANGUAGECODE]);
