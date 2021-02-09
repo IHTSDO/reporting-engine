@@ -68,10 +68,10 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20210131T120000Z.zip");
+		/*params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20210131T120000Z.zip");
 		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20200731T120000Z.zip");
 		params.put(REPORT_OUTPUT_TYPES, "S3");
-		params.put(REPORT_FORMAT_TYPE, "JSON");
+		params.put(REPORT_FORMAT_TYPE, "JSON");*/
 		TermServerReport.run(SummaryComponentStats.class, args, params);
 	}
 
@@ -140,6 +140,8 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		HistoricStatsGenerator statsGenerator = new HistoricStatsGenerator(this);
 		statsGenerator.runJob();
 		
+		info ("Previous Data Generated, now loading 'current' position");
+		
 		if (compareTwoSnapshots) {
 			getArchiveManager().setLoadEditionArchive(true);
 			setProject(new Project(projectKey));
@@ -148,11 +150,11 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 			thisEffectiveTime = gl.getCurrentEffectiveTime();
 			info ("Detected this effective time as " + thisEffectiveTime);
 		} else {
-			//Now we can carry on an add the delta on top
+			//We cannot just add in the project delta because it might be that - for an extension
+			//the international edition has also been updated.   So recreate the whole snapshot
 			getArchiveManager().setLoadEditionArchive(false);
 			getProject().setKey(projectKey);
-			File delta = getArchiveManager().generateDelta(project);
-			loadArchive(delta, false, "Delta", false);
+			getArchiveManager().loadProjectSnapshot(fsnOnly);
 		}
 	};
 	
@@ -616,9 +618,16 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 			Concept a = gl.getConcept(sctId);
 			if (a.getDepth() == 1) {
 				return a;
+			} else if (a.getDepth() == NOT_SET) {
+				//Is this a full concept or have we picked it up from a relationship?
+				if (a.getFsn() == null) {
+					warn (a + " encountered as ancestor of " + c + " has partial existence");
+				} else {
+					throw new TermServerScriptException ("Depth not populated in Hierarchy for " + a.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+				}
 			}
 		}
-		throw new TermServerScriptException("Unable to determine hierarchy for " + c);
+		throw new TermServerScriptException("Unable to determine hierarchy for " + c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 	}
 	
 	protected class Datum {
