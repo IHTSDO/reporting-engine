@@ -40,6 +40,16 @@ public class RelationshipGroup {
 		return relationships;
 	}
 	
+	public Set<Relationship> getRelationships(Concept type) {
+		Set<Relationship> matching = new HashSet<>();
+		for (Relationship r : relationships) {
+			if (r.getType().equals(type)) {
+				matching.add(r);
+			}
+		}
+		return matching;
+	}
+	
 	public void setRelationships(Set<Relationship> relationships) {
 		this.relationships = relationships;
 	}

@@ -854,13 +854,40 @@ public class SnomedUtils implements RF2Constants {
 	//Where we have multiple potential responses eg concentration or presentation strength, return the first one found given the 
 	//order specified by the array
 	public static Concept getTarget(Concept c, Concept[] types, int groupId, CharacteristicType charType) throws TermServerScriptException {
+		return getTarget(c, types, groupId, charType, false);
+	}
+	
+	//Where we have multiple potential responses eg concentration or presentation strength, return the first one found given the 
+	//order specified by the array
+	public static Concept getTarget(Concept c, Concept[] types, int groupId, CharacteristicType charType, boolean allowNewConcepts) throws TermServerScriptException {
 		for (Concept type : types) {
 			Set<Relationship> rels = c.getRelationships(charType, type, groupId);
 			if (rels.size() > 1) {
 				TermServerScript.warn(c + " has multiple " + type + " in group " + groupId);
 			} else if (rels.size() == 1) {
-				//This might not be the full concept, so recover it fully from our loaded cache
-				return GraphLoader.getGraphLoader().getConcept(rels.iterator().next().getTarget().getConceptId());
+				if (allowNewConcepts) {
+					return rels.iterator().next().getTarget();
+				} else {
+					//This might not be the full concept, so recover it fully from our loaded cache
+					return GraphLoader.getGraphLoader().getConcept(rels.iterator().next().getTarget().getConceptId());
+				}
+			}
+		}
+		return null;
+	}
+	
+	public static Concept getTarget(RelationshipGroup g, Concept[] types, boolean allowNewConcepts) throws TermServerScriptException {
+		for (Concept type : types) {
+			Set<Relationship> rels = g.getRelationships(type);
+			if (rels.size() > 1) {
+				TermServerScript.warn(g + " has multiple " + type);
+			} else if (rels.size() == 1) {
+				if (allowNewConcepts) {
+					return rels.iterator().next().getTarget();
+				} else {
+					//This might not be the full concept, so recover it fully from our loaded cache
+					return GraphLoader.getGraphLoader().getConcept(rels.iterator().next().getTarget().getConceptId());
+				}
 			}
 		}
 		return null;
@@ -1556,6 +1583,31 @@ public class SnomedUtils implements RF2Constants {
 			if (c.getModuleId().equals(module)) {
 				return true;
 			}
+		}
+		return false;
+	}
+
+	/**
+	 * Search concept for a group which features the same relationship 
+	 * as that of "type" that can be found in the specfied group
+	 * @throws TermServerScriptException 
+	 */
+	public static RelationshipGroup findMatchingGroup(Concept c, RelationshipGroup g,
+			Concept type, CharacteristicType charType, boolean allowNewConcepts) throws TermServerScriptException {
+		Concept targetValue = getTarget(g, new Concept[] { type }, allowNewConcepts);
+		//Do we have that same type/value in concept?
+		for (RelationshipGroup checkGroup : c.getRelationshipGroups(charType)) {
+			Concept matchedValue =  getTarget(checkGroup, new Concept[] { type }, allowNewConcepts);
+			if (matchedValue != null && matchedValue.equals(targetValue)) {
+				return checkGroup;
+			}
+		}
+		return null;
+	}
+
+	public static boolean isECL(String ecl) {
+		if (ecl.contains("<") || ecl.contains("{") || ecl.contains(":") || ecl.toUpperCase().contains("MINUS")) {
+			return true;
 		}
 		return false;
 	}
