@@ -12,7 +12,11 @@ import org.ihtsdo.otf.rest.client.Status;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.*;
+import org.ihtsdo.termserver.scripting.TermServerScript.ReportActionType;
+import org.ihtsdo.termserver.scripting.TermServerScript.Severity;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.InactivationIndicator;
+import org.ihtsdo.termserver.scripting.util.HistAssocUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.JobParameters;
 import org.snomed.otf.scheduler.domain.JobRun;
@@ -50,6 +54,9 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	protected int priorityBatchSize = 10;
 	private boolean firstTaskCreated = false;
 	public static String DEFAULT_TASK_DESCRIPTION = "Batch Updates - see spreadsheet for details";
+	
+	protected Map<Concept, Set<Concept>> historicallyRewiredPossEquivTo = new HashMap<>();
+	protected HistAssocUtils histAssocUtils = new HistAssocUtils(this);
 	
 	protected BatchFix (BatchFix clone) {
 		if (clone != null) {
@@ -175,7 +182,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			try {
 				currentTaskNum++;
 				onNewTask(task);
-				
+
 				//If we don't have any concepts in this task eg this is 100% ME file, then skip
 				if (task.size() == 0) {
 					info ("Skipping Task " + task.getSummary() + " - no concepts to process");
@@ -289,7 +296,8 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			}
 		} else {
 			task.setKey(project + "-" + getNextDryRunNum());
-			task.setBranchPath(project.getBranchPath() + "/" + task.getKey());
+			//If we're running in debug mode, the task path will not exist so use the project instead
+			task.setBranchPath(project.getBranchPath());
 		}
 	}
 
@@ -1348,4 +1356,64 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		return asConcepts(allComponentsToProcess);
 	}
 
+	protected void inactivateHistoricalAssociation(Task t, AssociationEntry assoc, Concept inactivatingConcept, InactivationIndicator reason, Set<Concept> replacements) throws TermServerScriptException {
+		//The source concept can no longer have this historical association, and its
+		//inactivation reason must also change.
+		Concept originalTarget = gl.getConcept(assoc.getTargetComponentId());
+		Concept incomingConcept = loadConcept(assoc.getReferencedComponentId(), t.getBranchPath());
+		String assocType = "Unknown";
+		incomingConcept.setInactivationIndicator(reason);
+		if ((replacements == null || replacements.size() == 0) && 
+				!reason.equals(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY)) {
+			throw new ValidationFailure(t, inactivatingConcept, "Hist Assoc rewiring attempted wtih no replacement offered.");
+		}
+		replacements = new HashSet<>(replacements);
+		
+		if (reason.equals(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY)) {
+			incomingConcept.setAssociationTargets(null);
+		} else if (reason.equals(InactivationIndicator.OUTDATED)) {
+			throw new NotImplementedException();
+			//incomingConcept.setAssociationTargets(AssociationTargets.replacedBy(replacements));
+		} else if (reason.equals(InactivationIndicator.DUPLICATE)) {
+			assocType = "SameAs";
+			if (replacements.size() != 1) {
+				throw new IllegalArgumentException("Attempted to set SameAs with " + replacements.size() + " replacments.  Must be 1.");
+			}
+			incomingConcept.setAssociationTargets(AssociationTargets.sameAs(replacements.iterator().next()));
+		} else if  (reason.equals(InactivationIndicator.AMBIGUOUS)) {
+			//Have we seen this concept before...in this task?
+			Set<Concept> newAssocs = historicallyRewiredPossEquivTo.get(incomingConcept);
+			if (newAssocs == null) {
+				newAssocs = new HashSet<>();
+			} else {
+				report(t, inactivatingConcept, Severity.MEDIUM, ReportActionType.INFO, "Concept has previously rewired associations", newAssocs.toString());
+			}
+			replacements.addAll(newAssocs);
+			assocType = "PossEquivTo";
+			//There may be other potential equivalents we don't want to remove, so just take out the one we're inactiving 
+			//and add in the new ones.
+			//incomingConcept.setAssociationTargets(AssociationTargets.possEquivTo(replacements));
+			histAssocUtils.modifyPossEquivAssocs(t, incomingConcept, inactivatingConcept, replacements);
+			
+			//Store the complete set away so if we see that concept again, we maintain a complete set
+			historicallyRewiredPossEquivTo.put(incomingConcept,replacements);
+		} else if (reason.equals(InactivationIndicator.MOVED_ELSEWHERE)) {
+			//We can only move to one location
+			if (replacements.size() != 1) {
+				throw new IllegalArgumentException("Moved_Elsewhere expects a single MovedTo association.  Found " + replacements.size());
+			}
+			assocType = "MovedTo";
+			Concept replacement = replacements.iterator().next();
+			incomingConcept.setAssociationTargets(AssociationTargets.movedTo(replacement));
+		} else {
+			throw new IllegalArgumentException("Don't know what historical association to use with " + reason);
+		}
+		Severity severity = replacements.size() == 0 ? Severity.CRITICAL : Severity.MEDIUM;
+		for (Concept replacement : replacements) {
+			report(t, originalTarget, severity, ReportActionType.ASSOCIATION_CHANGED, "Historical incoming association from " + incomingConcept, " rewired as " + assocType, replacement);
+		};
+			//Add this concept into our task so we know it's been updated
+		t.addAfter(incomingConcept, gl.getConcept(assoc.getTargetComponentId()));
+		updateConcept(t, incomingConcept, "");
+	}
 }

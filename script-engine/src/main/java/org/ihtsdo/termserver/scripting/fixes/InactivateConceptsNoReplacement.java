@@ -270,64 +270,6 @@ public class InactivateConceptsNoReplacement extends BatchFix implements RF2Cons
 		}
 	}
 
-	private void inactivateHistoricalAssociation(Task t, AssociationEntry assoc, Concept inactivatingConcept, InactivationIndicator reason, Set<Concept> replacements) throws TermServerScriptException {
-		//The source concept can no longer have this historical association, and its
-		//inactivation reason must also change.
-		Concept originalTarget = gl.getConcept(assoc.getTargetComponentId());
-		Concept incomingConcept = loadConcept(assoc.getReferencedComponentId(), t.getBranchPath());
-		String assocType = "Unknown";
-		incomingConcept.setInactivationIndicator(reason);
-		if ((replacements == null || replacements.size() == 0) && 
-				!reason.equals(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY)) {
-			throw new ValidationFailure(t, inactivatingConcept, "Hist Assoc rewiring attempted wtih no replacement offered.");
-		}
-		replacements = new HashSet<>(replacements);
-		
-		if (reason.equals(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY)) {
-			incomingConcept.setAssociationTargets(null);
-		} else if (reason.equals(InactivationIndicator.OUTDATED)) {
-			throw new NotImplementedException();
-			//incomingConcept.setAssociationTargets(AssociationTargets.replacedBy(replacements));
-		} else if (reason.equals(InactivationIndicator.DUPLICATE)) {
-			throw new NotImplementedException();
-			//incomingConcept.setAssociationTargets(AssociationTargets.sameAs(replacements));
-		} else if  (reason.equals(InactivationIndicator.AMBIGUOUS)) {
-			//Have we seen this concept before...in this task?
-			Set<Concept> newAssocs = historicallyRewiredPossEquivTo.get(incomingConcept);
-			if (newAssocs == null) {
-				newAssocs = new HashSet<>();
-			} else {
-				report(t, inactivatingConcept, Severity.MEDIUM, ReportActionType.INFO, "Concept has previously rewired associations", newAssocs.toString());
-			}
-			replacements.addAll(newAssocs);
-			assocType = "PossEquivTo";
-			//There may be other potential equivalents we don't want to remove, so just take out the one we're inactiving 
-			//and add in the new ones.
-			//incomingConcept.setAssociationTargets(AssociationTargets.possEquivTo(replacements));
-			histAssocUtils.modifyPossEquivAssocs(t, incomingConcept, inactivatingConcept, replacements);
-			
-			//Store the complete set away so if we see that concept again, we maintain a complete set
-			historicallyRewiredPossEquivTo.put(incomingConcept,replacements);
-		} else if (reason.equals(InactivationIndicator.MOVED_ELSEWHERE)) {
-			//We can only move to one location
-			if (replacements.size() != 1) {
-				throw new IllegalArgumentException("Moved_Elsewhere expects a single MovedTo association.  Found " + replacements.size());
-			}
-			assocType = "MovedTo";
-			Concept replacement = replacements.iterator().next();
-			incomingConcept.setAssociationTargets(AssociationTargets.movedTo(replacement));
-		} else {
-			throw new IllegalArgumentException("Don't know what historical association to use with " + reason);
-		}
-		Severity severity = replacements.size() == 0 ? Severity.CRITICAL : Severity.MEDIUM;
-		for (Concept replacement : replacements) {
-			report(t, originalTarget, severity, ReportActionType.ASSOCIATION_CHANGED, "Historical incoming association from " + incomingConcept, " rewired as " + assocType, replacement);
-		};
-			//Add this concept into our task so we know it's been updated
-		t.addAfter(incomingConcept, gl.getConcept(assoc.getTargetComponentId()));
-		updateConcept(t, incomingConcept, "");
-	}
-
 	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		info ("Identifying concepts to process");
