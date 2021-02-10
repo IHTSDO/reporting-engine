@@ -396,7 +396,7 @@ public class CDRemodelling extends DrugBatchFix implements RF2Constants {
 		if (parts.length > 1) {
 			doseForm = gl.getConcept(parts[0].trim(), false, true); //Don't create if not already known
 		} else {
-			doseForm = DrugUtils.findDoseForm(doseFormStr);
+			doseForm = DrugUtils.findDoseFormFromFSN(doseFormStr);
 		}
 		return doseForm;
 	}

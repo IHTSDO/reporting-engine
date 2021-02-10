@@ -1,5 +1,7 @@
 package org.ihtsdo.termserver.scripting.fixes.drugs;
 
+import java.util.List;
+
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.util.DrugUtils;
@@ -21,6 +23,8 @@ public class Ingredient {
 	public Concept concDenomUnit;
 	
 	public Concept unitOfPresentation;
+	
+	public List<String> issues;
 
 	public String presToString() throws TermServerScriptException {
 		String str = "";

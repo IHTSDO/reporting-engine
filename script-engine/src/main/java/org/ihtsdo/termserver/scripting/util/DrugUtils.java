@@ -3,7 +3,6 @@ package org.ihtsdo.termserver.scripting.util;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang.ArrayUtils;
@@ -25,7 +24,8 @@ public class DrugUtils implements RF2Constants {
 	public static final Concept [] equivUnits = new Concept [] { UEQ, MEQ };
 	
 	static Map<String, Concept> numberConceptMap;
-	static Map<String, Concept> doseFormConceptMap;
+	static Map<String, Concept> doseFormFSNConceptMap;
+	static Map<String, Concept> doseFormSynonymConceptMap;
 	static Map<String, Concept> unitOfPresentationConceptMap;
 	static Map<String, Concept> unitOfMeasureConceptMap;
 	static Map<String, Concept> substanceMap;
@@ -90,21 +90,46 @@ public class DrugUtils implements RF2Constants {
 		}
 	}
 	
-	public static Concept findDoseForm(String fsn) throws TermServerScriptException {
-		if (doseFormConceptMap == null) {
+	public static Concept findDoseFormFromFSN(String fsn) throws TermServerScriptException {
+		if (doseFormFSNConceptMap == null) {
 			populateDoseFormConceptMap();
 		}
-		if (!doseFormConceptMap.containsKey(fsn)) {
+		if (!doseFormFSNConceptMap.containsKey(fsn)) {
 			throw new TermServerScriptException("Unable to identify dose form : " + fsn);
 		}
-		return doseFormConceptMap.get(fsn);
+		return doseFormFSNConceptMap.get(fsn);
 	}
 
 	private static void populateDoseFormConceptMap() throws TermServerScriptException {
-		doseFormConceptMap = new HashMap<>();
+		doseFormFSNConceptMap = new HashMap<>();
 		Concept doseFormSubHierarchy = GraphLoader.getGraphLoader().getConcept("736542009", false, true); // |Pharmaceutical dose form (dose form)|
 		for (Concept doseForm : doseFormSubHierarchy.getDescendents(NOT_SET)) {
-			doseFormConceptMap.put(doseForm.getFsn(), doseForm);
+			doseFormFSNConceptMap.put(doseForm.getFsn(), doseForm);
+		}
+	}
+	
+	public static Concept findDoseFormFromSynonym(String term) throws TermServerScriptException {
+		if (doseFormSynonymConceptMap == null) {
+			populateDoseFormSynonymMap();
+		}
+		if (!doseFormSynonymConceptMap.containsKey(term)) {
+			throw new TermServerScriptException("Unable to identify dose form : " + term);
+		}
+		return doseFormSynonymConceptMap.get(term);
+	}
+
+	private static void populateDoseFormSynonymMap() throws TermServerScriptException {
+		doseFormSynonymConceptMap = new HashMap<>();
+		Concept doseFormSubHierarchy = GraphLoader.getGraphLoader().getConcept("736542009", false, true); // |Pharmaceutical dose form (dose form)|
+		for (Concept doseForm : doseFormSubHierarchy.getDescendents(NOT_SET)) {
+			for (Description d : doseForm.getDescriptions(ActiveState.ACTIVE, Collections.singletonList(DescriptionType.SYNONYM))) {
+				String term = d.getTerm().toLowerCase();
+				if (!doseFormSynonymConceptMap.containsKey(term)) {
+					doseFormSynonymConceptMap.put(term, doseForm);
+				} else {
+					TermServerScript.warn("Dose form map contains two concepts with term " + term + ": " + doseForm + " and " + doseFormSynonymConceptMap.get(term));
+				}
+			}
 		}
 	}
 	
