@@ -1,22 +1,23 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
-
+import com.google.common.base.Charsets;
+import com.google.common.io.Files;
+import com.google.common.util.concurrent.AtomicLongMap;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
-import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.domain.AssociationEntry;
+import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.scheduler.domain.JobParameter.Type;
 
-import com.google.common.base.Charsets;
-import com.google.common.io.Files;
-import com.google.common.util.concurrent.AtomicLongMap;
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * DEVICES-92, QI-784
@@ -156,10 +157,8 @@ public class InactivationImpactAssessment extends TermServerReport implements Re
 			if (c.isActive() && !inactivatingConcepts.contains(c)) {
 				Set<Relationship> rels = includeInferred ? c.getRelationships() : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
 				for (Relationship r : rels) {
-					if (r.isActive() && 
-						!r.getType().equals(IS_A) && 
-						inactivatingConcepts.contains(r.getTarget())) {
-						report (r.getTarget(), "used as attribute target value", c, r);
+					if (r.isActive() && !r.getType().equals(IS_A) && inactivatingConcepts.contains(r.getIntent())) {
+						report(r.getIntent(), "used as attribute target value", c, r);
 					}
 				}
 			}
