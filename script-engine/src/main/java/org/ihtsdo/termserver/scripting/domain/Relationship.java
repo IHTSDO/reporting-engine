@@ -65,6 +65,10 @@ public class Relationship extends Component implements IRelationshipTemplate, RF
 	public boolean isConcrete() {
 		return value != null;
 	}
+
+	public boolean isNotConcrete() {
+		return !isConcrete();
+	}
 	
 	public static final String[] rf2Header = new String[] {"id","effectiveTime","active","moduleId","sourceId","destinationId",
 															"relationshipGroup","typeId","characteristicTypeId","modifierId"};

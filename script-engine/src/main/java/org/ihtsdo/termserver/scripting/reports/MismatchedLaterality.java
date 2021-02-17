@@ -1,19 +1,24 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.IOException;
-import java.util.*;
-
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
-import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 /**
  * RP-403 Report concepts that have laterality in their attributes but not in their
  * FSN or visa versa
+ * CDI-52 Update report to successfully run against projects with concrete values.
  */
 public class MismatchedLaterality extends TermServerReport implements ReportClass {
 	Set<String> hierarchies = new HashSet<>();
@@ -138,10 +143,10 @@ public class MismatchedLaterality extends TermServerReport implements ReportClas
 		//So either a target value is a type of laterality or it is itself 
 		//lateralized - but we're only expecting that in a body structure
 		for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
-			if (r.getTarget().equals(LEFT) || r.getTarget().equals(RIGHT)) {
+			if ((r.isNotConcrete()) && (r.getTarget().equals(LEFT) || r.getTarget().equals(RIGHT))) {
 				String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
 				if (!semTag.equals("(body structure)") && !reportedSuspect.contains(c)) {
-					report (QUATERNARY_REPORT, c ,c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+					report(QUATERNARY_REPORT, c, c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 					reportedSuspect.add(c);
 				}
 				return true;
@@ -184,7 +189,7 @@ public class MismatchedLaterality extends TermServerReport implements ReportClas
 
 	private boolean hasLaterality(Concept c, Concept laterality) {
 		for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
-			if (r.getTarget().equals(laterality)) {
+			if (r.isNotConcrete() && r.getTarget().equals(laterality)) {
 				return true;
 			}
 		}
