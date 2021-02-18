@@ -899,7 +899,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 					if (!r.getType().isActive()) {
 						report(c, issueStr, legacy, isActive(c,r), r);
 					}
-					if (!r.getTarget().isActive()) {
+					if (!r.getIntent().isActive()) {
 						report(c, issue2Str, legacy, isActive(c,r), r);
 					}
 				}
@@ -918,7 +918,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 							if (!r.getType().isActive()) {
 								report(c, issue3Str, legacy, isActive(c,r), r);
 							}
-							if (!r.getTarget().isActive()) {
+							if (!r.getIntent().isActive()) {
 								report(c, issue4Str, legacy, isActive(c,r), r);
 							}
 						}
