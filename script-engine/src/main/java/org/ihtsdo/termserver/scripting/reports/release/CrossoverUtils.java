@@ -89,7 +89,7 @@ public class CrossoverUtils implements RF2Constants {
 	 * @throws TermServerScriptException 
 	 */
 	public static TEST_RESULTS subsumptionRoleTest(Relationship role1, Relationship role2) throws TermServerScriptException{
-		TEST_RESULTS relTargetSubSum=subsumptionConceptTest(role1.getTarget(),role2.getTarget());
+		TEST_RESULTS relTargetSubSum=subsumptionConceptTest(role1.getIntent(),role2.getIntent());
 		TEST_RESULTS relTypeSubsum;
 		switch(relTargetSubSum){
 			case CONCEPT1_ANCESTOROF_CONCEPT2:
