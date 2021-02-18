@@ -1524,11 +1524,17 @@ public class SnomedUtils implements RF2Constants {
 		//If there's no attribute value specified, we'll match on just the target type
 		Set<Concept> values = targetAttribute.getTarget() == null ? null : cache.getDescendentsOrSelf(targetAttribute.getTarget());
 		return c.getRelationships().stream()
-			.filter(r -> r.isActive())
-			.filter(r -> r.getCharacteristicType().equals(targetAttribute.getCharacteristicType()))
-			.filter(r -> types.contains(r.getType()))
-			.filter(r -> values == null || values.contains(r.getTarget()))
-			.collect(Collectors.toList()).size() > 0;
+				.filter(r -> r.isActive())
+				.filter(r -> r.getCharacteristicType().equals(targetAttribute.getCharacteristicType()))
+				.filter(r -> types.contains(r.getType()))
+				.filter(r -> {
+					if (r.isNotConcrete()) {
+						return values == null || values.contains(r.getTarget());
+					} else {
+						return r.getValue().equals(targetAttribute.getValue());
+					}
+				})
+				.collect(Collectors.toList()).size() > 0;
 	}
 
 	public static boolean startsWithSCTID(String str) {
