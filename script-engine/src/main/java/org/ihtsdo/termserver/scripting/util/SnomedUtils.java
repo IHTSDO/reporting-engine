@@ -917,7 +917,7 @@ public class SnomedUtils implements RF2Constants {
 		Set<Concept> targets = new HashSet<>();
 		for (Concept type : types) {
 			Set<Relationship> rels = c.getRelationships(charType, type, ActiveState.ACTIVE);
-			targets.addAll(rels.stream().map(r -> r.getTarget()).collect(Collectors.toSet()));
+			targets.addAll(rels.stream().map(Relationship::getIntent).collect(Collectors.toSet()));
 		}
 		return targets;
 	}
