@@ -16,6 +16,8 @@ import org.ihtsdo.termserver.scripting.fixes.BatchFix;
  * INFRA-5176 Add an attribute to a given ECL substrate where required
  * INFRA-5236 Add DueTo to Abrasions
  * QI-731 Add DueTo = Traumatic Event for all open fractures
+ * QI-802 Add 42752001 |Due to (attribute)| = 1148742001 |Intentional event (event)|
+ *    to all << 59274003 |Intentional drug overdose (disorder)| 
  */
 public class AddAttributeIfRequired extends BatchFix {
 	
@@ -47,15 +49,32 @@ public class AddAttributeIfRequired extends BatchFix {
 	private void postLoadInit() throws TermServerScriptException {
 		/*INFRA-5176
 		subHierarchyECL = "<< 312608009 |Laceration - injury (disorder)| MINUS << 262541004 |Superficial laceration (disorder)|";
-		relTemplate = new RelationshipTemplate(DUE_TO,  gl.getConcept("773760007 |Traumatic event (event)|"));
+		relTemplate = new RelationshipTemplate(DUE_TO, gl.getConcept("773760007 |Traumatic event (event)|"));
 		
 		//INFRA-5236
 		subsetECL = "<<399963005 |Abrasion (disorder)|";
-		relTemplate = new RelationshipTemplate(DUE_TO,  gl.getConcept("773760007 |Traumatic event (event)|"));
-		*/
+		relTemplate = new RelationshipTemplate(DUE_TO, gl.getConcept("773760007 |Traumatic event (event)|"));
+		
 		//QI-731
 		subsetECL = "<< 439987009 |Open fracture of bone (disorder)| : [0..0] 42752001 |Due to (attribute)| = 773760007 |Traumatic event (event)|";
-		relTemplate = new RelationshipTemplate(DUE_TO,  gl.getConcept("773760007 |Traumatic event (event)|"));
+		relTemplate = new RelationshipTemplate(DUE_TO, gl.getConcept("773760007 |Traumatic event (event)|"));
+		
+		//QI-799
+		//subsetECL = "214503008 OR 214504002 OR 214507009 OR 214509007 OR 214505001 OR 214508004 OR 214511003 OR 214512005 OR 214510002 OR 242188004 OR 274917005 OR 216233003 OR 216237002 OR 216243000 OR 216239004 OR 216236006 OR 216241003 OR 216242005";
+		subsetECL = "<< 72431002 |Accidental poisoning (disorder)| MINUS (214503008 OR 214504002 OR 214507009 OR 214509007 OR 214505001 OR 214508004 OR 214511003 OR 214512005 OR 214510002 OR 242188004 OR 274917005 OR 216233003 OR 216237002 OR 216243000 OR 216239004 OR 216236006 OR 216241003 OR 216242005)";
+		relTemplate = new RelationshipTemplate(DUE_TO, gl.getConcept("418019003 |Accidental event (event)|"));
+		
+		//QI-800
+		subsetECL = "<< 410061008 |Intentional poisoning (disorder)|";
+		relTemplate = new RelationshipTemplate(DUE_TO, gl.getConcept("1148742001 |Intentional event (event)|"));
+		
+		//QI-801
+		subsetECL = "<< 59369008 |Accidental drug overdose (disorder)|";
+		relTemplate = new RelationshipTemplate(DUE_TO, gl.getConcept("418019003 |Accidental event (event)|"));
+		*/	
+		//QI-802
+		subsetECL = "<< 59274003 |Intentional drug overdose (disorder)|";
+		relTemplate = new RelationshipTemplate(DUE_TO, gl.getConcept("1148742001 |Intentional event (event)|"));
 		
 		exclusions = new HashSet<>();
 		super.postInit();
