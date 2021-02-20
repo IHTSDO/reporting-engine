@@ -165,7 +165,7 @@ public class GraphLoader implements RF2Constants {
 						!StringUtils.isEmpty(existing.getEffectiveTime()) 
 						&& (isReleased != null && isReleased)
 						&& (existing.getEffectiveTime().compareTo(lineItems[IDX_EFFECTIVETIME]) >= 1)) {
-					System.out.println("Skipping incoming published relationship row, older than that held");
+					//System.out.println("Skipping incoming published relationship row, older than that held");
 					continue;
 				}
 				
@@ -196,10 +196,6 @@ public class GraphLoader implements RF2Constants {
 			if (!isHeaderLine) {
 				String[] lineItems = line.split(FIELD_DELIMITER);
 				
-				/*if (lineItems[REF_IDX_ID].equals("8016bcd2-83e7-47c1-a998-8f9c6d3a97b4")) {
-					TermServerScript.debug("Debug Here");
-				}*/
-				
 				//Only load OWL Expressions
 				if (!lineItems[REF_IDX_REFSETID].equals(SCTID_OWL_AXIOM_REFSET)) {
 					continue;
@@ -211,8 +207,8 @@ public class GraphLoader implements RF2Constants {
 				
 				Long conceptId = Long.parseLong(lineItems[REF_IDX_REFCOMPID]);
 				Concept c = getConcept(conceptId);
-				/*
-				if (c.getId().equals("332753005")) {
+				
+				/*if (c.getId().equals("119491000119108")) {
 					TermServerScript.debug ("here");
 				}
 				
@@ -570,7 +566,7 @@ public class GraphLoader implements RF2Constants {
 				if (!StringUtils.isEmpty(c.getEffectiveTime()) 
 						&& isReleased
 						&& (c.getEffectiveTime().compareTo(lineItems[IDX_EFFECTIVETIME]) >= 1)) {
-					System.out.println("Skipping incoming published concept row, older than that held");
+					//System.out.println("Skipping incoming published concept row, older than that held");
 					continue;
 				}
 				
@@ -625,7 +621,7 @@ public class GraphLoader implements RF2Constants {
 					if (!StringUtils.isEmpty(d.getEffectiveTime()) 
 							&& isReleased
 							&& (d.getEffectiveTime().compareTo(lineItems[IDX_EFFECTIVETIME]) >= 1)) {
-						System.out.println("Skipping incoming published description row, older than that held");
+						//System.out.println("Skipping incoming published description row, older than that held");
 						continue;
 					}
 					
@@ -692,7 +688,7 @@ public class GraphLoader implements RF2Constants {
 					if (!StringUtils.isEmpty(original.getEffectiveTime()) 
 							&& isReleased
 							&& (original.getEffectiveTime().compareTo(lineItems[IDX_EFFECTIVETIME]) >= 1)) {
-						System.out.println("Skipping incoming published langrefset row, older than that held");
+						//System.out.println("Skipping incoming published langrefset row, older than that held");
 						continue;
 					}
 					
@@ -736,24 +732,24 @@ public class GraphLoader implements RF2Constants {
 					
 					if (existing.getEffectiveTime().compareTo(langRefsetEntry.getEffectiveTime()) <= 1) {
 						clearToAdd = false;
-						issue = "Existing " + (existing.isActive()? "active":"inactive") +  " langrefset entry taking priority over incoming " + (langRefsetEntry.isActive()? "active":"inactive") + " as later : " + existing;
+						//issue = "Existing " + (existing.isActive()? "active":"inactive") +  " langrefset entry taking priority over incoming " + (langRefsetEntry.isActive()? "active":"inactive") + " as later : " + existing;
 					} else if (existing.getEffectiveTime().equals(langRefsetEntry.getEffectiveTime())) {
 						//As long as they have different UUIDs, it's OK to have the same effective time
 						//But we'll ignore the inactivation
 						if (!langRefsetEntry.isActive()) {
 							clearToAdd = false;
-							issue = "Ignoring inactive langrefset entry with same effective time as active : " + existing;
+							//issue = "Ignoring inactive langrefset entry with same effective time as active : " + existing;
 						}
 					} else {
 						//New entry is later or same effective time as one we already know about
 						d.getLangRefsetEntries().remove(existing);
-						issue = "Existing " + (existing.isActive()? "active":"inactive") + " langrefset entry being overwritten by subsequent " + (langRefsetEntry.isActive()? "active":"inactive") + " value " + existing;
-						System.err.println(issue);
+						//issue = "Existing " + (existing.isActive()? "active":"inactive") + " langrefset entry being overwritten by subsequent " + (langRefsetEntry.isActive()? "active":"inactive") + " value " + existing;
+						//System.err.println(issue);
 					}
 				}
 				
 				if (!issue.isEmpty()) {
-					TermServerScript.warn(issue);
+					//TermServerScript.warn(issue);
 				}
 				
 				//INFRA-5274 We're going to add the entry in all cases so we can detect duplicates,

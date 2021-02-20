@@ -1608,7 +1608,7 @@ public class SnomedUtils implements RF2Constants {
 		}
 	}
 
-	public static boolean inModule(Concept c, String[] modules) {
+	public static boolean inModule(Component c, String[] modules) {
 		for (String module : modules) {
 			if (c.getModuleId().equals(module)) {
 				return true;
