@@ -119,9 +119,9 @@ public class InactivationImpactAssessment extends TermServerReport implements Re
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.ADHOC_QUERIES))
 				.withName("Inactivation Impact Assessment")
-				.withDescription("This report takes in a list of concepts (comma separated SCTIDs or ECL) to be inactivated and " +
-				"reports if they're current used as attribute values or parents of other concepts " +
-				" (not being inactivated) or in refsets or as historical association targets")
+				.withDescription("This report takes in a list of concepts (comma separated SCTIDs or ECL) " +
+						"to be inactivated and reports if they're current used as attribute values, parents of other "+
+						"concepts (not being inactivated), in refsets or as historical association targets.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(INT)
@@ -223,6 +223,11 @@ public class InactivationImpactAssessment extends TermServerReport implements Re
 		} catch (IOException e) {
 			throw new TermServerScriptException("Unable to read " + fileName, e);
 		}
+	}
+	
+	protected void report (Concept c, Object...details) throws TermServerScriptException {
+		countIssue(c);
+		super.report (PRIMARY_REPORT, c, details);
 	}
 
 }
