@@ -385,20 +385,15 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		
 		subsetECL = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 76093008 |Anterior displacement (morphologic abnormality)|";
 		templateNames = new String[] { "templates/morphologies/Anterior displacement.json" };
-		*/
 		
 		subsetECL = "<< 417746004 |Traumatic injury (disorder)|";
 		templateNames = new String[] { "templates/Traumatic injury.json" };
-		
+		*/
+		templateNames = new String[] { "templates/morphologies/Posterior displacement.json" };
 		
 		//TODO We're seeing 'HIGH' warnings about existing parents being redundant in presence of PPP but before the PPP gets added. Investigate
 		//I think this might happen when we set a PPP which is lower than the existing parent.
-		
 		super.init(args);
-		boolean useLocalStoreIfSimple = false;
-		if (!getArchiveManager().isAllowStaleData() && findConcepts(subsetECL, false, useLocalStoreIfSimple).size() == 0) {
-			throw new TermServerScriptException(subsetECL + " returned 0 rows");
-		}
 	}
 	
 	public void postInit() throws TermServerScriptException {
@@ -528,23 +523,21 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		//Start with the whole subHierarchy and remove concepts that match each of our templates
 		Set<Concept> alignedConcepts = new HashSet<>();
-		Collection<Concept> potentialMatches = findConcepts(subsetECL);
-		//Collection<Concept> potentialMatches = Collections.singleton(gl.getConcept("7890003 |Contracture of Joint|"));
-		addSummaryInformation("Concepts matching ECL", potentialMatches.size());
 		Set<Concept> misalignedConcepts = new HashSet<>();
 		
 		info ("Identifying concepts aligned to template");
 		for (Template template : templates) {
+			Collection<Concept> potentialMatches = findConcepts(template.getDomain());
+			addSummaryInformation("Concepts matching ECL", potentialMatches.size());
 			//Only concepts that are misaligned against *all* templates should be counted
 			//But in the case of Normalise, we only use a single template
 			alignedConcepts.addAll(findTemplateMatches(template, potentialMatches, misalignedConcepts, TERTIARY_REPORT));
+			//So how many did NOT align? Total rejections minus those excluded for other reasons
+			int rejected = potentialMatches.size() - alignedConcepts.size();
+			int misalignedCount = rejected - getSummaryInformationInt("Concepts excluded");
+			addSummaryInformation("Concepts misaligned ", misalignedCount);
+			addSummaryInformation("Concepts misaligned (verification check)", misalignedConcepts.size());
 		}
-		
-		//So how many did NOT align? Total rejections minus those excluded for other reasons
-		int rejected = potentialMatches.size() - alignedConcepts.size();
-		int misalignedCount = rejected - getSummaryInformationInt("Concepts excluded");
-		addSummaryInformation("Concepts misaligned ", misalignedCount);
-		addSummaryInformation("Concepts misaligned (verification check)", misalignedConcepts.size());
 		
 		//RP-242 Report the concepts that are misaligned in a new tab
 		for (Concept misaligned : misalignedConcepts) {

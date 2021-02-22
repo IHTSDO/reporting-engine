@@ -43,6 +43,8 @@ abstract public class TemplateFix extends BatchFix {
 	}
 	
 	protected void init(String[] args) throws TermServerScriptException {
+		super.init(args);
+		
 		AttributeGroup.useDefaultValues = true;
 		//We'll check these now so we know if there's some parsing error
 		char id = 'A';
@@ -51,7 +53,6 @@ abstract public class TemplateFix extends BatchFix {
 			validateTemplate(t);
 			info ("Validated template: " + templateNames[x]);
 		}
-		super.init(args);
 	}
 	
 	public void postInit(String[] tabNames, String[] columnHeadings, boolean csvOutput) throws TermServerScriptException {
@@ -156,7 +157,14 @@ abstract public class TemplateFix extends BatchFix {
 		
 	}
 	
-	private void validateTemplate(Template t) {
+	private void validateTemplate(Template t) throws TermServerScriptException {
+		//Is the Domain specified by the template valid?  No point running if it selects no rows
+		boolean useLocalStoreIfSimple = false;
+		String ecl = t.getDomain();
+		if (!getArchiveManager().isAllowStaleData() && findConcepts(ecl, false, useLocalStoreIfSimple).size() == 0) {
+			throw new TermServerScriptException("Template domain: " + ecl + " returned 0 rows");
+		}
+		
 		//Ensure that any repeated instances of identically named slots are the same
 		Map<String, String> namedSlots = new HashMap<>();
 		for (AttributeGroup g : t.getAttributeGroups()) {
@@ -242,7 +250,7 @@ abstract public class TemplateFix extends BatchFix {
 			}
 		}
 		println("");
-		addSummaryInformation("Concepts in \"" + subsetECL + "\" matching template: " + t.getId(), matches.size());
+		addSummaryInformation("Concepts in \"" + t.getDomain() + "\" matching template: " + t.getId(), matches.size());
 		return matches;
 	}
 	
