@@ -12,6 +12,7 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
+import org.snomed.otf.scheduler.domain.JobParameter.Type;
 import org.springframework.util.StringUtils;
 
 import com.google.common.base.Charsets;
@@ -28,9 +29,15 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 	private List<Concept> emptyReferenceSets;
 	private List<Concept> outOfScopeReferenceSets;
 	private AtomicLongMap<Concept> refsetSummary = AtomicLongMap.create();
+	private static String INCLUDE_LAST_RELEASE = "Include latest Int release";
+	private String lastReleaseEffectiveTime = null;
+	private static String EXT_REF_ONLY = "Extension Refsets Only";
+	private boolean extensionRefsetOnly = false;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
+		params.put(INCLUDE_LAST_RELEASE, "true");
+		params.put(EXT_REF_ONLY, "true");
 		TermServerReport.run(InactiveConceptInRefset.class, args, params);
 	}
 	
@@ -41,13 +48,18 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 	}
 
 	public void postInit() throws TermServerScriptException {
+		if (getJobRun().getParameters().getMandatoryBoolean(INCLUDE_LAST_RELEASE)) {
+			lastReleaseEffectiveTime = project.getMetadata().getDependencyRelease();
+		}
+		extensionRefsetOnly = getJobRun().getParameters().getMandatoryBoolean(EXT_REF_ONLY);
+		
 		referenceSets = findConcepts(REFSET_ECL);
 		removeEmptyAndNoScopeRefsets();
 		info ("Recovered " + referenceSets.size() + " simple reference sets and maps");
 
 		String[] columnHeadings = new String[] {
-				"Id, FSN, SemTag, Detail",
-				"Id, FSN, SemTag, Detail"};
+				"Id, FSN, SemTag, Detail, Refset Module",
+				"Id, FSN, SemTag, Detail, Concept Module, Refset Module"};
 		String[] tabNames = new String[] {	
 				"Summary",
 				"Concepts Inactivated in Refsets"};
@@ -58,7 +70,7 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 		emptyReferenceSets = new ArrayList<>();
 		outOfScopeReferenceSets = new ArrayList<>();
 		for (Concept refset : referenceSets) {
-			if (!inScope(refset)) {
+			if (extensionRefsetOnly && !inScope(refset)) {
 				outOfScopeReferenceSets.add(refset);
 				continue;
 			}
@@ -70,18 +82,23 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 			try { Thread.sleep(1 * 1000); } catch (Exception e) {}
 		}
 		referenceSets.removeAll(emptyReferenceSets);
+		referenceSets.removeAll(outOfScopeReferenceSets);
 	}
 	
 	@Override
 	public Job getJob() {
+		JobParameters params = new JobParameters()
+				.add(INCLUDE_LAST_RELEASE).withType(Type.BOOLEAN).withMandatory().withDefaultValue("false")
+				.add(EXT_REF_ONLY).withType(Type.BOOLEAN).withMandatory().withDefaultValue("false")
+				.build();
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_STATS))
 				.withName("Inactivated Concepts in Refsets")
 				.withDescription("This report lists concepts inactivated in the current authoring cycle" + 
 				" which are members of a published reference set, or in a list of high usage concepts." +
-				" Warning: because this report involves inactive concepts, it cannot use ECL and therefore takes ~30 minutes to run.")
+				" Warning: because this report involves inactive concepts, it cannot use ECL and therefore takes ~40 minutes to run.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
-				.withParameters(new JobParameters())
+				.withParameters(params)
 				.withTag(INT)
 				.withTag(MS)
 				.withExpectedDuration(40)
@@ -89,31 +106,45 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 	}
 	
 	public void runJob() throws TermServerScriptException {
-		//We're looking for concepts which are inactive and have no effective time
-		//TODO Also allow running against published packages, at which point we'll be checking for a known effective time
-		List<Concept> inactivatedConcepts = gl.getAllConcepts().stream()
-				.filter(c -> !c.isActive())
-				.filter(c -> inScope(c))
-				.filter(c -> StringUtils.isEmpty(c.getEffectiveTime()))
-				.collect(Collectors.toList());
+		//If we are including the last release then all concepts are in scope and
+		//inactivations from the previous international release are included
+		List<Concept> inactivatedConcepts;
+		if (lastReleaseEffectiveTime == null) {
+			//We're looking for concepts which are inactive and have no effective time
+			inactivatedConcepts = gl.getAllConcepts().stream()
+					.filter(c -> !c.isActive())
+					.filter(c -> inScope(c))
+					.filter(c -> StringUtils.isEmpty(c.getEffectiveTime()))
+					.collect(Collectors.toList());
+		} else {
+			inactivatedConcepts = gl.getAllConcepts().stream()
+					.filter(c -> !c.isActive())
+					.filter(c -> (StringUtils.isEmpty(c.getEffectiveTime()) || c.getEffectiveTime().equals(lastReleaseEffectiveTime)))
+					.collect(Collectors.toList());
+		}
 		
-		debug ("Checking " + inactivatedConcepts.size() + " inactivated concepts against High Usage SCTIDs");
-		List<String> inactivatedConceptIds = inactivatedConcepts.stream().
-				map(c -> c.getId())
-				.collect(Collectors.toList());
-		checkHighVolumeUsage(inactivatedConceptIds);
+		if (!extensionRefsetOnly) {
+			debug ("Checking " + inactivatedConcepts.size() + " inactivated concepts against High Usage SCTIDs");
+			List<String> inactivatedConceptIds = inactivatedConcepts.stream().
+					map(c -> c.getId())
+					.collect(Collectors.toList());
+			checkHighVolumeUsage(inactivatedConceptIds);
+		}
 		
 		debug ("Checking " + inactivatedConcepts.size() + " inactivated concepts against " + referenceSets.size() + " refsets");
+		String viableRefsetECL = referenceSets.stream()
+				.map(r -> r.getId())
+				.collect(Collectors.joining(" OR "));
 		int count = 0;
 		for (Concept c : inactivatedConcepts) {
 			if (++count % 100 == 0) {
 				debug ("Checked " + count + " inactive concepts");
 			}
-			Collection<RefsetMember> members = findRefsetMembers(c, REFSET_ECL);
+			Collection<RefsetMember> members = findRefsetMembers(c, viableRefsetECL);
 			for (RefsetMember m : members) {
 				Concept refset = gl.getConcept(m.getRefsetId());
 				if (referenceSets.contains(refset)) {
-					report (SECONDARY_REPORT, c, refset);
+					report (SECONDARY_REPORT, c, refset, c.getModuleId(), refset.getModuleId());
 					refsetSummary.getAndIncrement(refset);
 					countIssue(c);
 				}
@@ -125,28 +156,32 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 		
 		//Output summary counts
 		for (Map.Entry<Concept, Long> entry : refsetSummary.asMap().entrySet()) {
-			report(PRIMARY_REPORT, entry.getKey(), entry.getValue());
+			Concept refset = entry.getKey();
+			report(PRIMARY_REPORT, refset, entry.getValue(), refset.getModuleId());
 		}
 		
 		for (Concept emptyRefset : emptyReferenceSets) {
-			report(PRIMARY_REPORT, emptyRefset, " not populated in project: " + getProject().getKey());
+			report(PRIMARY_REPORT, emptyRefset, " not populated in project: " + getProject().getKey(), emptyRefset.getModuleId());
 		}
 		
 		for (Concept outOfScopeReferenceSet : outOfScopeReferenceSets) {
-			report(PRIMARY_REPORT, outOfScopeReferenceSet, " out of scope in project: " + getProject().getKey());
+			report(PRIMARY_REPORT, outOfScopeReferenceSet, " out of scope in project: " + getProject().getKey(), outOfScopeReferenceSet.getModuleId());
 		}
 	}
 	
 	private void checkHighVolumeUsage(List<String> inactivatedIds) throws TermServerScriptException {
 		String fileName = "resources/HighVolumeSCTIDs.txt";
+		Concept hvu = new Concept("0","High Volume Usage (UK)");
+		hvu.setModuleId(SCTID_CORE_MODULE);
 		debug ("Loading " + fileName );
 		try {
 			List<String> lines = Files.readLines(new File(fileName), Charsets.UTF_8);
 			for (String line : lines) {
 				String id = line.split(TAB)[0];
 				if (inactivatedIds.contains(id)) {
-					report (SECONDARY_REPORT, gl.getConcept(id), "High Volume Usage");
-					refsetSummary.getAndIncrement(new Concept("0","High Volume Usage (UK)"));
+					Concept concept = gl.getConcept(id);
+					report (SECONDARY_REPORT, concept, "High Volume Usage", concept.getModuleId(), "N/A");
+					refsetSummary.getAndIncrement(hvu);
 				}
 			}
 		} catch (IOException e) {
