@@ -101,9 +101,10 @@ public class ListAllAttributes extends TermServerReport implements ReportClass {
 				String expression = c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP);
 				if (targetValueProperty != null) {
 					targetValuePropertyPresent = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE).stream()
-							.map(r -> checkTargetValuePropertyPresent(r.getIntent()))
-									.filter (b -> (b == true))
-									.count() > 0;
+							.filter(Relationship::isNotConcrete)
+							.map(r -> checkTargetValuePropertyPresent(r.getTarget()))
+							.filter(b -> (b == true))
+							.count() > 0;
 				}
 				report (c, defStatus, expression, targetValuePropertyPresent?"Y":"N");
 				countIssue(c);
@@ -133,12 +134,9 @@ public class ListAllAttributes extends TermServerReport implements ReportClass {
 	}
 
 	private void report(Concept c, Relationship r, String defStatus, String characteristicStr) throws TermServerScriptException {
-		Concept intent = r.getIntent();
-		String targetAttribPresent = checkTargetValuePropertyPresent(intent) ? "Y" : "N";
-		String typePT = r.getType().getPreferredSynonym();
-		String fsn = intent.getFsn();
-		String semTag = SnomedUtils.deconstructFSN(fsn)[1];
-		report(c, defStatus, typePT, targetAttribPresent, characteristicStr, intent.getConceptId(), fsn, semTag);
+		Concept target = r.getTarget();
+		String fsn = target.getFsn();
+		report(c, defStatus, r.getType().getPreferredSynonym(), checkTargetValuePropertyPresent(target) ? "Y" : "N", characteristicStr, target.getConceptId(), fsn, SnomedUtils.deconstructFSN(fsn)[1]);
 		countIssue(c);
 	}
 

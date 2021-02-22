@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 
 /**
  * DEVICES-92, QI-784
+ * CDI-52 Update to run successfully against projects with concrete values
  */
 public class InactivationImpactAssessment extends TermServerReport implements ReportClass {
 	
@@ -157,8 +158,8 @@ public class InactivationImpactAssessment extends TermServerReport implements Re
 			if (c.isActive() && !inactivatingConcepts.contains(c)) {
 				Set<Relationship> rels = includeInferred ? c.getRelationships() : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
 				for (Relationship r : rels) {
-					if (r.isActive() && !r.getType().equals(IS_A) && inactivatingConcepts.contains(r.getIntent())) {
-						report(r.getIntent(), "used as attribute target value", c, r);
+					if (r.isNotConcrete() && r.isActive() && !r.getType().equals(IS_A) && inactivatingConcepts.contains(r.getTarget())) {
+						report(r.getTarget(), "used as attribute target value", c, r);
 					}
 				}
 			}

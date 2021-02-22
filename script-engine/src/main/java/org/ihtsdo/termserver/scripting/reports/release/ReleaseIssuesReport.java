@@ -51,6 +51,7 @@ import com.google.common.io.Files;
  MAINT-1295 Report concepts with no semantic tag where modified in current release
  RP-414 Add check for repeated word groups
  RP-397 Check for duplicated words, words often typed in reverse, and highlight possible contraction changes
+ CDI-52 Update to run successfully against projects with concrete values
  */
 public class ReleaseIssuesReport extends TermServerReport implements ReportClass {
 	
@@ -899,7 +900,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 					if (!r.getType().isActive()) {
 						report(c, issueStr, legacy, isActive(c,r), r);
 					}
-					if (!r.getIntent().isActive()) {
+					if (r.isNotConcrete() && !r.getTarget().isActive()) {
 						report(c, issue2Str, legacy, isActive(c,r), r);
 					}
 				}
@@ -918,7 +919,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 							if (!r.getType().isActive()) {
 								report(c, issue3Str, legacy, isActive(c,r), r);
 							}
-							if (!r.getIntent().isActive()) {
+							if (r.isNotConcrete() && !r.getTarget().isActive()) {
 								report(c, issue4Str, legacy, isActive(c,r), r);
 							}
 						}

@@ -12,12 +12,16 @@
  */
 package org.ihtsdo.termserver.scripting.reports.release;
 
-import java.util.*;
-
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.AncestorsCache;
 import org.ihtsdo.termserver.scripting.GraphLoader;
-import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants;
+import org.ihtsdo.termserver.scripting.domain.Relationship;
+import org.ihtsdo.termserver.scripting.domain.RelationshipGroup;
+
+import java.util.HashSet;
+import java.util.Set;
 
 public class CrossoverUtils implements RF2Constants {
 
@@ -89,7 +93,7 @@ public class CrossoverUtils implements RF2Constants {
 	 * @throws TermServerScriptException 
 	 */
 	public static TEST_RESULTS subsumptionRoleTest(Relationship role1, Relationship role2) throws TermServerScriptException{
-		TEST_RESULTS relTargetSubSum=subsumptionConceptTest(role1.getIntent(),role2.getIntent());
+		TEST_RESULTS relTargetSubSum=subsumptionConceptTest(role1.getTarget(),role2.getTarget());
 		TEST_RESULTS relTypeSubsum;
 		switch(relTargetSubSum){
 			case CONCEPT1_ANCESTOROF_CONCEPT2:
@@ -166,7 +170,13 @@ public class CrossoverUtils implements RF2Constants {
 		Set<Relationship> tupleToTestSwitch=new HashSet<Relationship>();
 		Set<Relationship> tupleTested=new HashSet<Relationship>();
 		for (Relationship role1: rolegroup1.getRelationships()){
+			if (role1.isConcrete()) {
+				continue;
+			}
 			for (Relationship role2:rolegroup2.getRelationships()){
+				if (role2.isConcrete()) {
+					continue;
+				}
 				roleTestResult = subsumptionRoleTest(role1, role2);
 				switch(roleTestResult){
 				case ROLES_CROSSOVER:

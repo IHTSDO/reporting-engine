@@ -181,20 +181,6 @@ public class Relationship extends Component implements IRelationshipTemplate, RF
 		return target;
 	}
 
-	/**
-	 * Return the Concept that best describes
-	 * the Relationship's intent.
-	 *
-	 * @return Intent of Relationship.
-	 */
-	public Concept getIntent() {
-		if (this.isNotConcrete()) {
-			return getTarget();
-		}
-
-		return getType();
-	}
-
 	public void setTarget(Concept target) {
 		this.target = target;
 	}
