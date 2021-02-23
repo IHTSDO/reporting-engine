@@ -12,6 +12,7 @@ import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -79,16 +80,7 @@ public class AttributeDetails extends TermServerReport implements ReportClass {
 	
 	public void runJob() throws TermServerScriptException {
 		ArrayList<Concept> subset = new ArrayList<>(findConcepts(subsetECL));
-		subset.sort((o1, o2) -> {
-			String fsn1 = o1.getFsn();
-			String fsn2 = o2.getFsn();
-
-			if (fsn1 == null || fsn2 == null) {
-				return -1;
-			}
-
-			return fsn1.compareTo(fsn2);
-		});
+		subset.sort(Comparator.comparing(Concept::getFsn));
 		for (Concept c : subset) {
 			if (!isLexicalMatch(c) || countAttributes(c, CharacteristicType.INFERRED_RELATIONSHIP) == 0) {
 				continue;
