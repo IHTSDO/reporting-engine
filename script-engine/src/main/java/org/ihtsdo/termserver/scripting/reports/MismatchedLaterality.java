@@ -150,7 +150,7 @@ public class MismatchedLaterality extends TermServerReport implements ReportClas
 					reportedSuspect.add(c);
 				}
 				return true;
-			} else if (level == 0 && hasLateralizedModel(r.getTarget(), 1)) {
+			} else if (level == 0 && r.isNotConcrete() && hasLateralizedModel(r.getTarget(), 1)) {
 				return true;
 			}
 		}
@@ -164,6 +164,9 @@ public class MismatchedLaterality extends TermServerReport implements ReportClas
 		boolean leftPresent = false;
 		boolean rightPresent = false;
 		for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
+			if (r.isConcrete()) {
+				continue;
+			}
 			if (r.getTarget().equals(LEFT)) {
 				String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
 				if (!semTag.equals("(body structure)") && !reportedSuspect.contains(c)) {
