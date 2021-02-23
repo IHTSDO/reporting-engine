@@ -1,21 +1,23 @@
 package org.ihtsdo.termserver.scripting.reports.qi;
 
-import java.io.IOException;
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.stream.Collectors;
-
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
-import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.domain.Template;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 
+import java.io.IOException;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
+
 /**
  * See https://confluence.ihtsdotools.org/display/IAP/Quality+Improvements+2018
  * Update: https://confluence.ihtsdotools.org/pages/viewpage.action?pageId=61155633
+ * CDI-52 Update report to successfully run against projects with concrete values.
  */
 public class TemplateList extends AllKnownTemplates implements ReportClass {
 	final static String defaultTemplateServiceUrl = "https://dev-snowstorm.ihtsdotools.org/template-service";
@@ -34,7 +36,7 @@ public class TemplateList extends AllKnownTemplates implements ReportClass {
 	
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {"Template Domain, Template Name / QI Path, Source, Documentation", 
-												""};
+												"Template Name, Invalid Reason"};
 		String[] tabNames = new String[] {	"Template List", 
 											"Invalid Templates"};
 		super.postInit(tabNames, columnHeadings, false);
@@ -115,10 +117,11 @@ public class TemplateList extends AllKnownTemplates implements ReportClass {
 			if (top1.equals(top2)) {
 				return top1.getFsn().compareTo(top2.getFsn());
 			}
-		} catch (Exception e) {}
-		
-		//In the same major hierarchy or if we have any problems, 
-		return entry1.getKey().compareTo(entry2.getKey());
+		} catch (Exception e) {
+			//ignore
+		}
+
+		return -1;
 	}
 
 }
