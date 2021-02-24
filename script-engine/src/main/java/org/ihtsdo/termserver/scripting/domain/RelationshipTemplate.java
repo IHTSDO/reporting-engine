@@ -6,7 +6,8 @@ public class RelationshipTemplate implements IRelationshipTemplate {
 	private Concept type;
 	private Concept target;
 	private CharacteristicType characteristicType;
-	
+	private String value;
+
 	public RelationshipTemplate (Concept type, Concept target, CharacteristicType characteristicType) {
 		this.type = type;
 		this.target = target;
@@ -40,6 +41,14 @@ public class RelationshipTemplate implements IRelationshipTemplate {
 	}
 	public void setCharacteristicType(CharacteristicType characteristicType) {
 		this.characteristicType = characteristicType;
+	}
+
+	public String getValue() {
+		return value;
+	}
+
+	public void setValue(String value) {
+		this.value = value;
 	}
 
 	public boolean equalsTypeAndTargetValue(Relationship rel) {

@@ -1,5 +1,17 @@
 package org.ihtsdo.termserver.scripting.util;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.validator.routines.checkdigit.VerhoeffCheckDigit;
+import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component.ComponentType;
+import org.ihtsdo.termserver.scripting.AncestorsCache;
+import org.ihtsdo.termserver.scripting.DescendantsCache;
+import org.ihtsdo.termserver.scripting.GraphLoader;
+import org.ihtsdo.termserver.scripting.TermServerScript;
+import org.ihtsdo.termserver.scripting.domain.*;
+
 import java.io.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -7,16 +19,8 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.zip.*;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.validator.routines.checkdigit.VerhoeffCheckDigit;
-import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component.ComponentType;
-import org.ihtsdo.termserver.scripting.*;
-import org.ihtsdo.termserver.scripting.domain.*;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 public class SnomedUtils implements RF2Constants {
 
@@ -913,7 +917,7 @@ public class SnomedUtils implements RF2Constants {
 		Set<Concept> targets = new HashSet<>();
 		for (Concept type : types) {
 			Set<Relationship> rels = c.getRelationships(charType, type, ActiveState.ACTIVE);
-			targets.addAll(rels.stream().map(r -> r.getTarget()).collect(Collectors.toSet()));
+			targets.addAll(rels.stream().filter(Relationship::isNotConcrete).map(Relationship::getTarget).collect(Collectors.toSet()));
 		}
 		return targets;
 	}
@@ -1076,12 +1080,18 @@ public class SnomedUtils implements RF2Constants {
 		//If type is same or more specific, how does value compare?
 		boolean sameValue = false;
 		boolean moreSpecificValue = false;
-		if (a.getTarget().equals(b.getTarget())) {
-			sameValue = true;
-		} else if (cache.getAncestors(a.getTarget()).contains(b.getTarget())) {
-			moreSpecificValue = true;
+		if (a.isConcrete() && b.isConcrete()) {
+			if (a.getValue().equals(b.getValue())) {
+				sameValue = true;
+			}
 		} else {
-			return false;
+			if (a.getTarget().equals(b.getTarget())) {
+				sameValue = true;
+			} else if (cache.getAncestors(a.getTarget()).contains(b.getTarget())) {
+				moreSpecificValue = true;
+			} else {
+				return false;
+			}
 		}
 		
 		//If they're exactly the same, then it's not MORE specific
@@ -1114,13 +1124,19 @@ public class SnomedUtils implements RF2Constants {
 		//If type has some subsumption relationship how does value compare?
 		boolean sameValue = false;
 		boolean subsumptionRelationshipValue = false;
-		if (a.getTarget().equals(b.getTarget())) {
-			sameValue = true;
-		} else if (cache.getAncestors(a.getTarget()).contains(b.getTarget()) ||
-				cache.getAncestors(b.getTarget()).contains(a.getTarget())) {
-			subsumptionRelationshipValue = true;
+		if (a.isConcrete() && b.isConcrete()) {
+			if (a.getValue().equals(b.getValue())) {
+				sameValue = true;
+			}
 		} else {
-			return false;
+			if (a.getTarget().equals(b.getTarget())) {
+				sameValue = true;
+			} else if (cache.getAncestors(a.getTarget()).contains(b.getTarget()) ||
+					cache.getAncestors(b.getTarget()).contains(a.getTarget())) {
+				subsumptionRelationshipValue = true;
+			} else {
+				return false;
+			}
 		}
 		
 		//If they're exactly the same, then it's not MORE specific
@@ -1508,11 +1524,17 @@ public class SnomedUtils implements RF2Constants {
 		//If there's no attribute value specified, we'll match on just the target type
 		Set<Concept> values = targetAttribute.getTarget() == null ? null : cache.getDescendentsOrSelf(targetAttribute.getTarget());
 		return c.getRelationships().stream()
-			.filter(r -> r.isActive())
-			.filter(r -> r.getCharacteristicType().equals(targetAttribute.getCharacteristicType()))
-			.filter(r -> types.contains(r.getType()))
-			.filter(r -> values == null || values.contains(r.getTarget()))
-			.collect(Collectors.toList()).size() > 0;
+				.filter(r -> r.isActive())
+				.filter(r -> r.getCharacteristicType().equals(targetAttribute.getCharacteristicType()))
+				.filter(r -> types.contains(r.getType()))
+				.filter(r -> {
+					if (r.isNotConcrete()) {
+						return values == null || values.contains(r.getTarget());
+					} else {
+						return r.getValue().equals(targetAttribute.getValue());
+					}
+				})
+				.collect(Collectors.toList()).size() > 0;
 	}
 
 	public static boolean startsWithSCTID(String str) {

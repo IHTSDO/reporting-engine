@@ -1,20 +1,25 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.IOException;
-import java.util.*;
-
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
-import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.springframework.util.StringUtils;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * RP-285
-**/
+ * CDI-25 Add column for concrete values.
+ **/
 public class AttributeDetails extends TermServerReport implements ReportClass {
 		public static final String COMPACT = "Compact Report Format";
 		public static final String INCLUDE_WORD = "Include word";
@@ -48,7 +53,7 @@ public class AttributeDetails extends TermServerReport implements ReportClass {
 		if (compactReport) {
 			additionalReportColumns = "FSN,SemTag,DefStatus,SCT Expression";
 		} else {
-			additionalReportColumns = "FSN,SemTag,DefStatus,RelType,Stated/Inferred,Value SCTID,Value FSN,Value SemTag";
+			additionalReportColumns = "FSN,SemTag,DefStatus,RelType,Stated/Inferred,Destination SCTID,Destination FSN,Destination SemTag, Concrete Value";
 		}
 		super.init(run);
 	}
@@ -135,11 +140,13 @@ public class AttributeDetails extends TermServerReport implements ReportClass {
 		return true;
 	}
 
-	private void report (Concept c, Relationship r, String defStatus, String characteristicStr) throws TermServerScriptException {
+	private void report(Concept c, Relationship r, String defStatus, String characteristicStr) throws TermServerScriptException {
 		String typePT = r.getType().getPreferredSynonym();
-		String fsn = r.getTarget().getFsn();
-		String semTag = SnomedUtils.deconstructFSN(fsn)[1];
-		report (c, defStatus, typePT, characteristicStr, r.getTarget().getConceptId(), fsn, semTag);
+		if (r.isConcrete()) {
+			report(c, defStatus, typePT, characteristicStr, "-", "-", "-", r.getValue());
+		} else {
+			report(c, defStatus, typePT, characteristicStr, r.getTarget().getConceptId(), r.getTarget().getFsn(), SnomedUtils.deconstructFSN(r.getTarget().getFsn())[1], "-");
+		}
 		countIssue(c);
 	}
 

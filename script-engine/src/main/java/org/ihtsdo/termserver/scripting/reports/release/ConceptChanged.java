@@ -1,9 +1,5 @@
 package org.ihtsdo.termserver.scripting.reports.release;
 
-import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
-
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component.ComponentType;
 import org.ihtsdo.termserver.scripting.ReportClass;
@@ -15,6 +11,10 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.ihtsdo.termserver.scripting.util.StringUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
+
+import java.io.IOException;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class ConceptChanged extends TermServerReport implements ReportClass {
 	
@@ -229,19 +229,27 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 						if (r.isActive()) {
 							if (isStated) {
 								hasNewStatedRelationships.add(c);
-								isTargetOfNewStatedRelationship.add(r.getTarget());
+								if (r.isNotConcrete()) {
+									isTargetOfNewStatedRelationship.add(r.getTarget());
+								}
 							} else {
 								hasNewInferredRelationships.add(c);
-								isTargetOfNewInferredRelationship.add(r.getTarget());
-								summaryCountInferred.isNew++;
+								if (r.isNotConcrete()) {
+									isTargetOfNewInferredRelationship.add(r.getTarget());
+									summaryCountInferred.isNew++;
+								}
 							}
 						} else {
 							if (isStated) {
 								hasLostStatedRelationships.add(c);
-								wasTargetOfLostStatedRelationship.add(r.getTarget());
+								if (r.isNotConcrete()) {
+									wasTargetOfLostStatedRelationship.add(r.getTarget());
+								}
 							} else {
 								hasLostInferredRelationships.add(c);
-								wasTargetOfLostInferredRelationship.add(r.getTarget());
+								if (r.isNotConcrete()) {
+									wasTargetOfLostInferredRelationship.add(r.getTarget());
+								}
 								summaryCountInferred.isInactivated++;
 							}
 						}

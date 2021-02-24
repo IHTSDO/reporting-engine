@@ -1,29 +1,34 @@
 package org.ihtsdo.termserver.scripting.reports.drugs;
 
-import java.io.File;
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.*;
-import java.util.stream.Collectors;
-
+import com.google.common.base.Charsets;
+import com.google.common.io.Files;
 import org.apache.commons.lang.ArrayUtils;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
-import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.domain.Description;
+import org.ihtsdo.termserver.scripting.domain.Relationship;
+import org.ihtsdo.termserver.scripting.domain.RelationshipGroup;
 import org.ihtsdo.termserver.scripting.fixes.drugs.Ingredient;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.DrugTermGenerator;
 import org.ihtsdo.termserver.scripting.util.DrugUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.ihtsdo.termserver.scripting.util.TermGenerator;
-import org.snomed.otf.scheduler.domain.*;
+import org.snomed.otf.scheduler.domain.Job;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
+import org.snomed.otf.scheduler.domain.JobCategory;
+import org.snomed.otf.scheduler.domain.JobRun;
+import org.snomed.otf.scheduler.domain.JobType;
 
-import com.google.common.base.Charsets;
-import com.google.common.io.Files;
+import java.io.File;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class ValidateDrugModeling extends TermServerReport implements ReportClass {
 	
@@ -812,9 +817,14 @@ public class ValidateDrugModeling extends TermServerReport implements ReportClas
 		nextRelationship:
 		for (Relationship relA : a.getRelationships()) {
 			for (Relationship relB : b.getRelationships()) {
-				if (relA.getType().equals(relB.getType()) && 
-					relA.getTarget().equals(relB.getTarget())) {
-					continue nextRelationship;
+				if (relA.isNotConcrete() && relB.isNotConcrete()) {
+					if (relA.getType().equals(relB.getType()) && relA.getTarget().equals(relB.getTarget())) {
+						continue nextRelationship;
+					}
+				} else if (relA.isConcrete() && relB.isConcrete()) {
+					if (relA.getType().equals(relB.getType()) && relA.getValue().equals(relB.getValue())) {
+						continue nextRelationship;
+					}
 				}
 			}
 			//If we get here then we've failed to find a match for relA

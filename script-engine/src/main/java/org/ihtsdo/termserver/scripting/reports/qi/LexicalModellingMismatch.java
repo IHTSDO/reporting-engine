@@ -1,18 +1,22 @@
 package org.ihtsdo.termserver.scripting.reports.qi;
 
-import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
-
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.DescendantsCache;
+import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
-import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.domain.RelationshipTemplate;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * INFRA-
@@ -69,7 +73,12 @@ public class LexicalModellingMismatch extends TermServerReport implements Report
 		
 		attribStr = run.getParamValue(ATTRIBUTE_VALUE);
 		if (attribStr != null && !attribStr.isEmpty()) {
-			targetAttribute.setTarget(gl.getConcept(attribStr));
+			try {
+				targetAttribute.setTarget(gl.getConcept(attribStr));
+			} catch (final IllegalArgumentException e) {
+				//Presumed to be concrete value.
+				targetAttribute.setValue(attribStr);
+			}
 		}
 	}
 	

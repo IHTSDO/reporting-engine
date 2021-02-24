@@ -1,16 +1,20 @@
 package org.ihtsdo.termserver.scripting.reports;
 
-import java.io.IOException;
-import java.util.*;
-
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
-import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.springframework.util.StringUtils;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * RP-276 
@@ -21,6 +25,7 @@ import org.springframework.util.StringUtils;
  * Rel Type (stated only)
  * AttValueSCTID
  * AttValueFSN (where semantic tag is substance, medicinal product, medicinal product form, product, or clinical drug) - note that the initial reports will only have substance semantic tag
+ * CD-52 Update report to run support concrete values.
  */
 public class ListAllAttributes extends TermServerReport implements ReportClass {
 		public static final String COMPACT = "Compact Report Format";
@@ -96,9 +101,10 @@ public class ListAllAttributes extends TermServerReport implements ReportClass {
 				String expression = c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP);
 				if (targetValueProperty != null) {
 					targetValuePropertyPresent = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE).stream()
+							.filter(Relationship::isNotConcrete)
 							.map(r -> checkTargetValuePropertyPresent(r.getTarget()))
-									.filter (b -> (b == true))
-									.count() > 0;
+							.filter(b -> (b == true))
+							.count() > 0;
 				}
 				report (c, defStatus, expression, targetValuePropertyPresent?"Y":"N");
 				countIssue(c);
@@ -126,13 +132,11 @@ public class ListAllAttributes extends TermServerReport implements ReportClass {
 			}
 		}
 	}
-	
-	private void report (Concept c, Relationship r, String defStatus, String characteristicStr) throws TermServerScriptException {
-		String targetAttribPresent = checkTargetValuePropertyPresent(r.getTarget())?"Y":"N";
-		String typePT = r.getType().getPreferredSynonym();
-		String fsn = r.getTarget().getFsn();
-		String semTag = SnomedUtils.deconstructFSN(fsn)[1];
-		report (c, defStatus, typePT, targetAttribPresent, characteristicStr, r.getTarget().getConceptId(), fsn, semTag);
+
+	private void report(Concept c, Relationship r, String defStatus, String characteristicStr) throws TermServerScriptException {
+		Concept target = r.getTarget();
+		String fsn = target.getFsn();
+		report(c, defStatus, r.getType().getPreferredSynonym(), checkTargetValuePropertyPresent(target) ? "Y" : "N", characteristicStr, target.getConceptId(), fsn, SnomedUtils.deconstructFSN(fsn)[1]);
 		countIssue(c);
 	}
 

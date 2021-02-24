@@ -1,17 +1,16 @@
 
 package org.ihtsdo.termserver.scripting.domain;
 
-import java.util.ArrayList;
-import java.util.List;
-
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
 import org.apache.commons.lang.NotImplementedException;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.ihtsdo.termserver.scripting.util.StringUtils;
 
-import com.google.gson.annotations.Expose;
-import com.google.gson.annotations.SerializedName;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Relationship extends Component implements IRelationshipTemplate, RF2Constants, Comparable<Relationship> {
 
@@ -65,6 +64,10 @@ public class Relationship extends Component implements IRelationshipTemplate, RF
 	
 	public boolean isConcrete() {
 		return value != null;
+	}
+
+	public boolean isNotConcrete() {
+		return !isConcrete();
 	}
 	
 	public static final String[] rf2Header = new String[] {"id","effectiveTime","active","moduleId","sourceId","destinationId",
