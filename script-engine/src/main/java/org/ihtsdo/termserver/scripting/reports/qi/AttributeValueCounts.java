@@ -1,23 +1,23 @@
 package org.ihtsdo.termserver.scripting.reports.qi;
 
-import java.io.IOException;
-import java.text.DecimalFormat;
-import java.util.*;
-import java.util.stream.Collectors;
-
+import com.google.common.util.concurrent.AtomicLongMap;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.AncestorsCache;
 import org.ihtsdo.termserver.scripting.DescendantsCache;
+import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
-import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.domain.Concept;
+import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.springframework.util.StringUtils;
 
-import com.google.common.util.concurrent.AtomicLongMap;
+import java.io.IOException;
+import java.text.DecimalFormat;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * INFRA-
@@ -140,11 +140,13 @@ public class AttributeValueCounts extends TermServerReport implements ReportClas
 		//TODO We're also interested in the primitive concepts above this attribute value.
 		info ("Outputting counts");
 		Set<Concept> targets = new HashSet<>(valueCounts.asMap().keySet());
-		//Now work through the list, from top to bottom
-		Concept top = calculateHighestConceptOrParent(targets);
-		targets.add(top);
-		//Go go go recursive programming!
-		reportCounts(top, targets, true);
+		if (!targets.isEmpty()) {
+			//Now work through the list, from top to bottom
+			Concept top = calculateHighestConceptOrParent(targets);
+			targets.add(top);
+			//Go go go recursive programming!
+			reportCounts(top, targets, true);
+		}
 	}
 
 	private boolean wasTouchedRecently(Concept c) {
@@ -191,6 +193,9 @@ public class AttributeValueCounts extends TermServerReport implements ReportClas
 
 	private String getUsedInCombination(Concept c) {
 		AtomicLongMap<Concept> combinationCount = combinationCounts.get(c);
+		if (combinationCount == null) {
+			return null;
+		}
 		List<Map.Entry<Concept, Long>> sorted = new ArrayList<>(combinationCount.asMap().entrySet());
 		Collections.sort(sorted, Collections.reverseOrder(Map.Entry.comparingByValue()));
 		return sorted.stream()
