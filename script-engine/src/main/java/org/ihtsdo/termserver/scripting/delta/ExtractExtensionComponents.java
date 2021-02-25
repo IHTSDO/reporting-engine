@@ -42,7 +42,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			delta.loadProjectSnapshot(false);  //Not just FSN, load all terms with lang refset also
 			//We won't incude the project export in our timings
-			delta.additionalReportColumns = "FSN, Semtag, Severity, Action, Info, Details";
+			delta.additionalReportColumns = "FSN, Semtag, Severity, Action, Info, Details, Details";
 			delta.postInit();
 			delta.startTimer();
 			delta.processFile();
@@ -119,6 +119,10 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			report (c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Concept does not specify a module!  Unable to switch.");
 			return false;
 		}
+		//It's possible that this concept has already been transferred by an earlier run if it was identified as a dependency, so 
+		//we have to check every concept.
+		Concept conceptOnTS = loadConcept(c);
+		
 		//Switch the module of this concept, then all active descriptions and relationships
 		//As long as the current module is not equal to the target module, we'll switch it
 		if (!c.getModuleId().equals(targetModuleId) && !c.getModuleId().equals(SCTID_MODEL_MODULE)) {
@@ -127,10 +131,6 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			}
 			//Was this concept originally specified, or picked up as a dependency?
 			String parents = parentsToString(c);
-			
-			//It's possible that this concept has already been transferred by an earlier run if it was identified as a dependency, so 
-			//we have to check every concept.
-			Concept conceptOnTS = loadConcept(c);
 			
 			if (!conceptOnTS.equals(NULL_CONCEPT)) {
 				conceptAlreadyTransferred = true;
@@ -165,7 +165,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		boolean subComponentsMoved = false;
 		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 			if (!d.getModuleId().equals(targetModuleId) && !d.getModuleId().equals(SCTID_MODEL_MODULE)) {
-				if (moveDescriptionToTargetModule(d, conceptAlreadyTransferred)) {
+				if (moveDescriptionToTargetModule(d, conceptOnTS)) {
 					subComponentsMoved = true;
 				}
 			}
@@ -180,7 +180,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 				if (r.isActive() && !r.fromAxiom()) {
 					info ("Unexpected active stated relationship: "+ r);
 				}
-				if (moveRelationshipToTargetModule(r, conceptAlreadyTransferred)) {
+				if (moveRelationshipToTargetModule(r, conceptOnTS)) {
 					subComponentsMoved = true;
 					relationshipMoved = true;
 				}
@@ -202,7 +202,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		
 		for (AxiomEntry a : c.getAxiomEntries()) {
 			if ((!a.getModuleId().equals(targetModuleId) && !a.getModuleId().equals(SCTID_MODEL_MODULE))) {
-				moveAxiomToTargetModule(c, a, conceptAlreadyTransferred);
+				moveAxiomToTargetModule(c, a, conceptOnTS);
 				subComponentsMoved = true;
 			}
 		}
@@ -252,24 +252,50 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		return parentsStr.toString();
 	}
 	
-	private void moveAxiomToTargetModule(Concept c, AxiomEntry a, boolean conceptAlreadyTransferred) throws TermServerScriptException {
+	private boolean moveAxiomToTargetModule(Concept c, AxiomEntry a, Concept conceptOnTS) throws TermServerScriptException {
 		try {
+			
+			if (a.getModuleId().equals(targetModuleId)) {
+				return false;
+			}
+			
+			//If we already have the concept on the Terminology Server, perhaps we already have the description too,
+			//Despite what the local file claims
+			if (!conceptOnTS.equals(NULL_CONCEPT)) {
+				Axiom relOnTS = conceptOnTS.getClassAxiom(a.getId());
+				if (relOnTS != null) {
+					report (conceptOnTS, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Content already on server", a.getId());
+					return false;
+				}
+			} 
+			
 			a.setModuleId(targetModuleId);
 			AxiomRepresentation axiomRepresentation = axiomService.convertAxiomToRelationships(a.getOwlExpression());
 			for (Relationship r : AxiomUtils.getRHSRelationships(c, axiomRepresentation)) {
 				//This is only needed to include dependencies. 
 				//The relationship itself is not attached to the concept
-				moveRelationshipToTargetModule(r, conceptAlreadyTransferred);
+				moveRelationshipToTargetModule(r, conceptOnTS);
 			}
 		} catch (ConversionException e) {
 			throw new TermServerScriptException("Failed to convert axiom for " + c , e);
 		}
+		return true;
 	}
 
-	private boolean moveRelationshipToTargetModule(Relationship r, boolean conceptAlreadyTransferred) throws TermServerScriptException {
+	private boolean moveRelationshipToTargetModule(Relationship r, Concept conceptOnTS) throws TermServerScriptException {
 		if (r.getModuleId().equals(targetModuleId)) {
 			return false;
 		}
+		
+		//If we already have the concept on the Terminology Server, perhaps we already have the description too,
+		//Despite what the local file claims
+		if (!conceptOnTS.equals(NULL_CONCEPT)) {
+			Relationship relOnTS = conceptOnTS.getRelationship(r.getId());
+			if (relOnTS != null) {
+				report (conceptOnTS, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Content already on server", r);
+				return false;
+			}
+		} 
 		//Switch the relationship.   Also switch both the type and the destination - will return if not needed
 		r.setModuleId(targetModuleId);
 		if (switchModule(r.getType())) {
@@ -317,7 +343,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		}
 		
 		//If we didn't need to transfer the concept, then do report the movement of it's sub components.
-		if (conceptAlreadyTransferred) {
+		if (!conceptOnTS.equals(NULL_CONCEPT)) {
 			report (r.getSource(), Severity.MEDIUM, ReportActionType.MODULE_CHANGE_MADE, r, r.getId());
 		}
 		return true;
@@ -357,9 +383,25 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		return loadedConcept;
 	}
 
-	private boolean moveDescriptionToTargetModule(Description d, boolean conceptAlreadyTransferred) throws TermServerScriptException {
+	private boolean moveDescriptionToTargetModule(Description d, Concept conceptOnTS) throws TermServerScriptException {
 		if (d.getModuleId().equals(targetModuleId)) {
 			return false;
+		}
+		
+		//If we already have the concept on the Terminology Server, perhaps we already have the description too,
+		//Despite what the local file claims
+		if (!conceptOnTS.equals(NULL_CONCEPT)) {
+			Description descriptionOnTS = findMatchingDescription(d, conceptOnTS);
+			if (descriptionOnTS != null) {
+				report (conceptOnTS, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Content already on server", d);
+				return false;
+			}
+			
+			//If we already have this concept on the server, then we can't have another FSN
+			if (d.getType().equals(DescriptionType.FSN)) {
+				d.setType(DescriptionType.SYNONYM);
+				report (conceptOnTS, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Demoted term to Synonym due to existing FSN", d);
+			}
 		}
 		
 		//First swap the module id, then add in the GB refset 
@@ -382,6 +424,11 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		} else {
 			for (LangRefsetEntry usEntry : d.getLangRefsetEntries(ActiveState.ACTIVE, US_ENG_LANG_REFSET)) {
 				usEntry.setModuleId(targetModuleId);
+				//If we already have this concept on the server, then we'll already have a preferred term
+				if (!conceptOnTS.equals(NULL_CONCEPT) && usEntry.getAcceptabilityId().equals(SCTID_PREFERRED_TERM)) {
+					usEntry.setAcceptabilityId(SCTID_ACCEPTABLE_TERM);
+					report (conceptOnTS, Severity.MEDIUM, ReportActionType.DESCRIPTION_ACCEPTABILIY_CHANGED, "Demoted term to acceptable due to existing PT", usEntry);
+				}
 				LangRefsetEntry gbEntry = usEntry.clone(d.getDescriptionId());
 				gbEntry.setRefsetId(GB_ENG_LANG_REFSET);
 				d.addAcceptability(gbEntry);
@@ -389,12 +436,26 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		}
 		
 		//If we didn't need to transfer the concept, then do report the movement of it's sub components.
-		if (conceptAlreadyTransferred) {
+		if (!conceptOnTS.equals(NULL_CONCEPT)) {
 			Concept c = gl.getConcept(d.getConceptId());
 			report (c, Severity.MEDIUM, ReportActionType.MODULE_CHANGE_MADE, d, d.getId());
 		}
 		
 		return true;
+	}
+
+	private Description findMatchingDescription(Description d, Concept conceptOnTS) {
+		Description match = conceptOnTS.getDescription(d.getId());
+		if (match != null) {
+			return match;
+		}
+		
+		for (Description m : conceptOnTS.getDescriptions()) {
+			if (d.getTerm().contentEquals(m.getTerm()) ) {
+				return m;
+			}
+		}
+		return null;
 	}
 
 	@Override

@@ -1347,6 +1347,15 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	public void setClassAxioms(List<Axiom> classAxioms) {
 		this.classAxioms = classAxioms;
 	}
+	
+	public Axiom getClassAxiom(String id) {
+		for (Axiom a : classAxioms) {
+			if (a.getId().equals(id)) {
+				return a;
+			}
+		}
+		return null;
+	}
 
 	public List<Axiom> getAdditionalAxioms() {
 		if (additionalAxioms == null) {
@@ -1371,9 +1380,11 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	}
 
 	public AxiomEntry getAxiom(String id) {
-		for (AxiomEntry e : axiomEntries) {
-			if (e.getId().equals(id)) {
-				return e;
+		if (axiomEntries != null) {
+			for (AxiomEntry e : axiomEntries) {
+				if (e.getId().equals(id)) {
+					return e;
+				}
 			}
 		}
 		return null;
