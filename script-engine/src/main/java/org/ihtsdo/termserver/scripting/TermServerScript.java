@@ -937,7 +937,7 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 	}
 	
-	protected int inactivateRefsetMember(Task t, Concept c, RefsetEntry r, String info) throws JSONException, TermServerScriptException {
+	protected int updateRefsetMember(Task t, Concept c, RefsetEntry r, String info) throws JSONException, TermServerScriptException {
 		debug ( (dryRun? "Dry run ":"") + "Updating state of " + r + info);
 		if (!dryRun) {
 			tsClient.updateRefsetMember(t.getBranchPath(), r, false); //Don't force delete

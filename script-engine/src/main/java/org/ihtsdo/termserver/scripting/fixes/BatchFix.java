@@ -271,8 +271,9 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 						taskDescription = task.getDescriptionHTML();
 					} else {
 						taskDescription = DEFAULT_TASK_DESCRIPTION;
-						if (task.size() > 150) {
+						if (task.size() > 150 && populateTaskDescription) {
 							warn ("Task size " + task.size() + ", cannot populate Jira ticket description, even though populateTaskDescription flag set to true.");
+							populateTaskDescription = false;
 						}
 					}
 					task.setKey(scaClient.createTask(project.getKey(), task.getSummary(), taskDescription));

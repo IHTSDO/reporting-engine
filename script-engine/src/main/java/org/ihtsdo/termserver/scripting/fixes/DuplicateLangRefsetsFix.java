@@ -48,7 +48,7 @@ public class DuplicateLangRefsetsFix extends BatchFix {
 					changesMade += deleteRefsetMember(t, l2.getId());
 				} else {
 					l2.setActive(false);
-					changesMade += inactivateRefsetMember(t, c, l2.toRefsetEntry(), info);
+					changesMade += updateRefsetMember(t, c, l2.toRefsetEntry(), info);
 				}
 			}
 		} catch (Exception e) {

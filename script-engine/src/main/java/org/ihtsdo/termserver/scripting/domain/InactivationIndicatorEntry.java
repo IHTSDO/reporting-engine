@@ -1,7 +1,9 @@
 package org.ihtsdo.termserver.scripting.domain;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -148,7 +150,9 @@ public class InactivationIndicatorEntry extends RefsetMember implements RF2Const
 		re.setRefsetId(refsetId);
 		re.setActive(active);
 		re.setReferencedComponentId(referencedComponentId);
-		re.setValueId(inactivationReasonId);
+		Map<String, String> additionalFields = new HashMap<>();
+		additionalFields.put("valueId", inactivationReasonId);
+		re.setAdditionalFields(additionalFields);
 		return re;
 	}
 

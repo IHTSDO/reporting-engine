@@ -2,6 +2,7 @@
 package org.ihtsdo.termserver.scripting.domain;
 
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang.NotImplementedException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -40,9 +41,9 @@ public class RefsetEntry extends Component {
 	@Expose
 	private String refsetId;
 	
-	@SerializedName("valueId")
+	@SerializedName("additionalFields")
 	@Expose
-	private String valueId;
+	private Map<String, String> additionalFields;
 	
 	@SerializedName("commitComment")
 	@Expose
@@ -65,7 +66,7 @@ public class RefsetEntry extends Component {
 	 * @param active
 	 * @param referencedComponent
 	 */
-	public RefsetEntry(String id, Boolean released, Boolean active, String moduleId, String referencedComponentId, String refsetId, String valueId) {
+	public RefsetEntry(String id, Boolean released, Boolean active, String moduleId, String referencedComponentId, String refsetId, Map<String, String> additionalFields) {
 		super();
 		this.id = id;
 		this.released = released;
@@ -73,7 +74,7 @@ public class RefsetEntry extends Component {
 		this.moduleId = moduleId;
 		this.referencedComponentId = referencedComponentId;
 		this.refsetId = refsetId;
-		this.valueId = valueId;
+		this.additionalFields = additionalFields;
 	}
 
 	public String getId() {
@@ -128,12 +129,12 @@ public class RefsetEntry extends Component {
 		this.refsetId = refsetId;
 	}
 
-	public String getValueId() {
-		return valueId;
+	public Map<String, String> getAddtionalFields() {
+		return additionalFields;
 	}
 
-	public void setValueId(String valueId) {
-		this.valueId = valueId;
+	public void setAdditionalFields(Map<String, String> additionalFields) {
+		this.additionalFields = additionalFields;
 	}
 
 	@Override

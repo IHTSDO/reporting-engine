@@ -54,7 +54,7 @@ public class InactivateDuplicateInactivationIndicators_fail extends BatchFix imp
 			for (InactivationIndicatorEntry i : c.getInactivationIndicatorEntries()) {
 				if (i.isDirty() && !i.isActive()) {
 					try {
-						inactivateRefsetMember(t, c, i.toRefsetEntry(), info);
+						updateRefsetMember(t, c, i.toRefsetEntry(), info);
 					} catch (Exception e) {
 						report(t, c, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed inactivation indicator " + i + " to TS: " + ExceptionUtils.getStackTrace(e));
 					}
