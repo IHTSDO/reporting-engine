@@ -33,7 +33,6 @@ public abstract class DeltaGenerator extends TermServerScript {
 	protected String textDfnDeltaFilename;
 	protected String langDeltaFilename;
 	protected String edition = "INT";
-	protected String additionalReportColumns = "ActionDetail";
 	
 	protected String languageCode = "en";
 	protected boolean isExtension = false;

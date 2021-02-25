@@ -29,7 +29,6 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	TermServerClient secondaryConnection;
 	String targetModuleId = SCTID_CORE_MODULE;
 	private static String secondaryCheckPath = "MAIN";
-	//private static String secondaryCheckPath = "MAIN/2019-07-31";
 	private AxiomRelationshipConversionService axiomService = new AxiomRelationshipConversionService (new HashSet<Long>());
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
@@ -43,7 +42,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			delta.loadProjectSnapshot(false);  //Not just FSN, load all terms with lang refset also
 			//We won't incude the project export in our timings
-			delta.additionalReportColumns = "ACTION_DETAIL, DEF_STATUS, PARENT";
+			delta.additionalReportColumns = "FSN, Semtag, Severity, Action, Info, Details";
 			delta.postInit();
 			delta.startTimer();
 			delta.processFile();
@@ -57,7 +56,6 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	
 	protected void init (String[] args) throws TermServerScriptException {
 		super.init(args);
-		additionalReportColumns = "FSN, Semtag, Severity, Action, Info, Details";
 		info ("Select an environment for live secondary checking ");
 		for (int i=0; i < environments.length; i++) {
 			println ("  " + i + ": " + environments[i]);

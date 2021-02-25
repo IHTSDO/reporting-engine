@@ -1203,13 +1203,15 @@ public abstract class TermServerScript implements RF2Constants {
 			String key = summaryDetail.getKey();
 			Object value = summaryDetail.getValue();
 			String display = "";
-			if (value instanceof Collection) {
-				display += ((Collection<?>)value).size();
-			} else if (key.startsWith(CRITICAL_ISSUE)) {
-				criticalIssues.add(key + ": " + value.toString());
-				continue;
-			} else {
-				display = value.toString();
+			if (value != null) {
+				if (value instanceof Collection) {
+					display += ((Collection<?>)value).size();
+				} else if (key.startsWith(CRITICAL_ISSUE)) {
+					criticalIssues.add(key + ": " + value.toString());
+					continue;
+				} else {
+					display = value.toString();
+				}
 			}
 			recordSummaryText (key + (display.isEmpty()?"":": ") + display);
 		}
