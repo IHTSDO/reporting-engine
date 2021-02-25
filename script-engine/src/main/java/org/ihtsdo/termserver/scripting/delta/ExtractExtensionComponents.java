@@ -42,7 +42,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			delta.loadProjectSnapshot(false);  //Not just FSN, load all terms with lang refset also
 			//We won't incude the project export in our timings
-			delta.additionalReportColumns = "FSN, Semtag, Severity, Action, Info, Details, Details";
+			delta.additionalReportColumns = "ACTION_DETAIL, DEF_STATUS, PARENT, Detail, Additional Detail";
 			delta.postInit();
 			delta.startTimer();
 			delta.processFile();
