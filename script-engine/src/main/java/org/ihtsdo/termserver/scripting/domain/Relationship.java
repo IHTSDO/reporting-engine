@@ -377,7 +377,7 @@ public class Relationship extends Component implements IRelationshipTemplate, RF
 							SnomedUtils.translateModifier(modifier)};
 	}
 	
-	private String valueAsRF2() {
+	public String valueAsRF2() {
 		switch (cdType) {
 			case STRING : return "\"" + value.toString() + "\"";
 			default : return "#" + value.toString();

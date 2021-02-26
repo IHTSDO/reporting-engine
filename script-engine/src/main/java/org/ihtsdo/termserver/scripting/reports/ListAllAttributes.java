@@ -59,7 +59,7 @@ public class ListAllAttributes extends TermServerReport implements ReportClass {
 		if (compactReport) {
 			additionalReportColumns = "FSN,SemTag,DefStatus,SCT Expression,Target Property Present";
 		} else {
-			additionalReportColumns = "FSN,SemTag,DefStatus,RelType,Target Property Present,Stated/Inferred,Value SCTID,Value FSN,Value SemTag";
+			additionalReportColumns = "FSN,SemTag,DefStatus,RelType,Target Property Present,Stated/Inferred,Target SCTID / Value,Target FSN,Target SemTag";
 		}
 		super.init(run);
 	}
@@ -111,22 +111,30 @@ public class ListAllAttributes extends TermServerReport implements ReportClass {
 			} else {
 				String characteristicStr = "";
 				for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
-					if (!includeIsA && r.getType().equals(IS_A)) {
-						continue;
-					}
 					characteristicStr = "I";
-					if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, r.getType(), r.getTarget(), ActiveState.ACTIVE).size() > 0) {
-						characteristicStr += " + S";
+					if (r.isNotConcrete()) {
+						if (!includeIsA && r.getType().equals(IS_A)) {
+							continue;
+						}
+						if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, r.getType(), r.getTarget(), ActiveState.ACTIVE).size() > 0) {
+							characteristicStr += " + S";
+						}
+						report(c, r, defStatus, characteristicStr);
+					} else {
+						report(c, r, defStatus, r.getCharacteristicType().name().substring(0, 1));
 					}
-					report (c, r, defStatus, characteristicStr);
 				}
 				//Are there any relationships which are only stated?
 				for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
-					if (!includeIsA && r.getType().equals(IS_A)) {
-						continue;
-					}
-					if (c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, r.getType(), r.getTarget(), ActiveState.ACTIVE).size() == 0) {
-						report (c, r, defStatus, "S");
+					if (r.isNotConcrete()) {
+						if (!includeIsA && r.getType().equals(IS_A)) {
+							continue;
+						}
+						if (c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, r.getType(), r.getTarget(), ActiveState.ACTIVE).size() == 0) {
+							report(c, r, defStatus, "S");
+						}
+					} else {
+						report(c, r, defStatus, r.getCharacteristicType().name().substring(0, 1));
 					}
 				}
 			}
@@ -134,10 +142,15 @@ public class ListAllAttributes extends TermServerReport implements ReportClass {
 	}
 
 	private void report(Concept c, Relationship r, String defStatus, String characteristicStr) throws TermServerScriptException {
-		Concept target = r.getTarget();
-		String fsn = target.getFsn();
-		report(c, defStatus, r.getType().getPreferredSynonym(), checkTargetValuePropertyPresent(target) ? "Y" : "N", characteristicStr, target.getConceptId(), fsn, SnomedUtils.deconstructFSN(fsn)[1]);
-		countIssue(c);
+		if (r.isNotConcrete()) {
+			Concept target = r.getTarget();
+			String fsn = target.getFsn();
+			report(c, defStatus, r.getType().getPreferredSynonym(), checkTargetValuePropertyPresent(target) ? "Y" : "N", characteristicStr, target.getConceptId(), fsn, SnomedUtils.deconstructFSN(fsn)[1]);
+			countIssue(c);
+		} else {
+			report(c, defStatus, r.getType().getPreferredSynonym(), "N/A", characteristicStr, r.valueAsRF2(), "", "");
+			countIssue(c);
+		}
 	}
 
 	private boolean checkTargetValuePropertyPresent(Concept v) {
