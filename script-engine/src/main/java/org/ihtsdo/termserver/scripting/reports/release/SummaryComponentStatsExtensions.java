@@ -32,10 +32,10 @@ public class SummaryComponentStatsExtensions extends SummaryComponentStats {
 	@Override
 	public Job getJob() {
 		JobParameters params = new JobParameters()
-				.add(PREV_RELEASE).withType(JobParameter.Type.STRING)
-				.add(PREV_DEPENDENCY).withType(JobParameter.Type.STRING)
-				.add(THIS_DEPENDENCY).withType(JobParameter.Type.STRING)
-				.add(THIS_RELEASE).withType(JobParameter.Type.STRING)
+				.add(PREV_RELEASE).withType(JobParameter.Type.STRING).withMandatory()
+				.add(PREV_DEPENDENCY).withType(JobParameter.Type.STRING).withMandatory()
+				.add(THIS_DEPENDENCY).withType(JobParameter.Type.STRING).withMandatory()
+				.add(THIS_RELEASE).withType(JobParameter.Type.STRING).withMandatory()
 				.add(MODULES).withType(JobParameter.Type.STRING)
 				.add(REPORT_OUTPUT_TYPES).withType(JobParameter.Type.HIDDEN).withDefaultValue(ReportOutputType.GOOGLE.name())
 				.add(REPORT_FORMAT_TYPE).withType(JobParameter.Type.HIDDEN).withDefaultValue(ReportFormatType.CSV.name())
