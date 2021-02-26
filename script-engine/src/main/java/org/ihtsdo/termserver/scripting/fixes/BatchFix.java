@@ -1414,4 +1414,28 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		t.addAfter(incomingConcept, gl.getConcept(assoc.getTargetComponentId()));
 		updateConcept(t, incomingConcept, "");
 	}
+	
+	//Were a concept (due to be removed) is the target value of some relationship, rewire it to the 
+	//replacement
+	protected void rewireRelationshipsUsingTargetValue(Task t, Concept removing, Concept replacement) throws TermServerScriptException {
+		nextConcept:
+		for (Concept c : gl.getAllConcepts()) {
+			if (c.isActive() && !c.equals(replacement)) {
+				for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
+					if (r.getTarget().equals(removing)) {
+						Concept loadedConcept = loadConcept(c, t.getBranchPath());
+						if (loadedConcept.isActive()) {
+							for (Relationship rLoaded : loadedConcept.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
+								rLoaded.setTarget(replacement);
+								report(t, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_MODIFIED, r, rLoaded);
+							}
+							updateConcept(t, loadedConcept, null);
+							t.addAfter(removing, loadedConcept);
+							continue nextConcept;
+						}
+					}
+				}
+			}
+		}
+	}
 }

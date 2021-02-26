@@ -14,11 +14,14 @@ import org.ihtsdo.termserver.scripting.domain.*;
 /*
  * QI-784 Inactivate concepts with the historical association being chosen as 
  * one of the existing parents of the concept.
+ * QI-778 - Overdose of undetermined intent
  */
 public class InactivateConceptsAssocParent extends BatchFix implements RF2Constants {
 
 	private InactivationIndicator inactivationIndicator = InactivationIndicator.DUPLICATE;
-	private static String eclSubset = "<< 269736006 |Poisoning of undetermined intent (disorder)| ";
+	//private static String eclSubset = "<< 269736006 |Poisoning of undetermined intent (disorder)| ";
+	private static String eclSubset = "<< 371341003 |Drug overdose of undetermined intent (disorder) OR 788105001 |Excessive dose of antiserum administered with undetermined intent (event)| OR 788101005 |Excessive dose of gamma globulin administered with undetermined intent (event)| OR 788097001 |Excessive dose of vaccine administered with undetermined intent (event)| OR 296528006 |Alternative medicine overdose of undetermined intent (navigational concept)| OR 295532006 |Ether overdose of undetermined intent (disorder)|";
+	
 	private Set<String> searchTerms = new HashSet<>();
 	private Map<Concept, Task> processed = new HashMap<>();
 	
@@ -127,7 +130,7 @@ public class InactivateConceptsAssocParent extends BatchFix implements RF2Consta
 		c.setInactivationIndicator(inactivationIndicator);
 		c.setAssociationTargets(AssociationTargets.sameAs(replacement));
 		String histAssocType = " same as ";
-		report(t, c, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept inactivated as " + inactivationIndicator + histAssocType + (replacement.equals(NULL_CONCEPT)?"":replacement));
+		report(t, c, Severity.LOW, ReportActionType.CONCEPT_INACTIVATED, "Concept inactivated as " + inactivationIndicator + histAssocType + (replacement.equals(NULL_CONCEPT)?"":replacement));
 		return CHANGE_MADE;
 	}
 
@@ -188,14 +191,15 @@ public class InactivateConceptsAssocParent extends BatchFix implements RF2Consta
 	}
 
 	protected int deleteConcept(Task t, Concept c) throws TermServerScriptException {
-		throw new NotImplementedException("TODO Search all existing concepts for relationships pointing to the concept being deleted and either delete or rewire");
+		//Check for this concept being the target of any existing relationships and rewire
+		Concept replacement = chooseParentForAssociation(t, c, false);
+		rewireRelationshipsUsingTargetValue(t, c, replacement);
 		
 		//Check for this concept being the target of any historical associations and rewire them to the replacement
-		/*Concept replacement = chooseParentForAssociation(t, c, false);
 		Set<Concept> replacements = Collections.singleton(replacement);
 		checkAndInactivatateIncomingAssociations(t, c, inactivationIndicator, replacements);
 		report (t, c, Severity.MEDIUM, ReportActionType.CONCEPT_DELETED);
-		return super.deleteConcept(t, c);*/
+		return super.deleteConcept(t, c);
 	}
 
 	private void checkAndInactivatateIncomingAssociations(Task task, Concept c, InactivationIndicator reason, Set<Concept> replacements) throws TermServerScriptException {
