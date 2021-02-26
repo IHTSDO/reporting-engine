@@ -137,7 +137,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 			throw new TermServerScriptException("Command line arguments must supply a list of available sctid using the -iC/D/R option, or specify newIdsRequired=false");
 		}
 		
-		boolean dependencySpecified = (dependencyArchive != null);
+		boolean dependencySpecified = (getDependencyArchive() != null);
 		String choice = (project != null) ? "Y":"N";
 		if (!dependencySpecified && project != null) {
 			info ("Is " + project + " an extension that requires a dependant edition to be loaded first?");
@@ -145,13 +145,13 @@ public abstract class DeltaGenerator extends TermServerScript {
 			choice = STDIN.nextLine().trim();
 		}
 		if (choice.toUpperCase().equals("Y")) {
-			print ("Please enter the name of a dependent release archive (in releases or S3) [" + dependencyArchive + "]: ");
+			print ("Please enter the name of a dependent release archive (in releases or S3) [" + getDependencyArchive() + "]: ");
 			response = STDIN.nextLine().trim();
 			if (!response.isEmpty()) {
-				dependencyArchive = response;
+				setDependencyArchive(response);
 			}
 		}
-		getArchiveManager().setLoadDependencyPlusExtensionArchive(dependencyArchive != null);
+		getArchiveManager().setLoadDependencyPlusExtensionArchive(getDependencyArchive() != null);
 	}
 	
 	public void postInit() throws TermServerScriptException {

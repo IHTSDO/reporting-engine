@@ -7,6 +7,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.TransitiveClosure;
@@ -35,6 +36,7 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 	private static int ACTIVE = 1;
 	private static int INACTIVE = 0;
 	private Map<String, String> semTagHierarchyMap;
+	private List<String> moduleFilter;
 	
 	public HistoricStatsGenerator() {
 	}
@@ -67,7 +69,6 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 	public void runJob() throws TermServerScriptException {
 		FileWriter fw = null;
 		try {
-			info("Generating Transitive Closure");
 			TransitiveClosure tc = gl.generateTransativeClosure();
 			
 			info("Creating map of semantic tag hierarchies");
@@ -148,11 +149,13 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 		
 		results[ACTIVE] = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)
 		.stream()
+		.filter(r -> inScope(r))
 		.map(r -> r.getId())
 		.collect(Collectors.joining(","));
 	
 		results[INACTIVE] = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.INACTIVE)
 		.stream()
+		.filter(r -> inScope(r))
 		.map(r -> r.getId())
 		.collect(Collectors.joining(","));
 		return results;
@@ -163,11 +166,13 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 		
 		results[ACTIVE] = c.getDescriptions(ActiveState.ACTIVE)
 		.stream()
+		.filter(d -> inScope(d))
 		.map(d -> d.getId())
 		.collect(Collectors.joining(","));
 		
 		results[INACTIVE] = c.getDescriptions(ActiveState.INACTIVE)
 			.stream()
+			.filter(d -> inScope(d))
 			.map(d -> d.getId())
 			.collect(Collectors.joining(","));
 		
@@ -179,11 +184,13 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 		
 		results[ACTIVE] = c.getAxiomEntries().stream()
 		.filter(a -> a.isActive())
+		.filter(a -> inScope(a))
 		.map(a -> a.getId())
 		.collect(Collectors.joining(","));
 		
 		results[INACTIVE] = c.getAxiomEntries().stream()
 		.filter(a -> a.isActive() == false)
+		.filter(a -> inScope(a))
 		.map(a -> a.getId())
 		.collect(Collectors.joining(","));
 		
@@ -195,16 +202,20 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 		
 		List<String> langRefsetIds = new ArrayList<>();
 		for (Description d : c.getDescriptions()) {
-			for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.ACTIVE)) {
-				langRefsetIds.add(l.getId());
+			if (inScope(d)) {
+				for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.ACTIVE)) {
+					langRefsetIds.add(l.getId());
+				}
 			}
 		}
 		results[ACTIVE] = String.join(",", langRefsetIds);
 		
 		langRefsetIds.clear();
 		for (Description d : c.getDescriptions()) {
-			for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.INACTIVE)) {
-				langRefsetIds.add(l.getId());
+			if (inScope(d)) {
+				for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.INACTIVE)) {
+					langRefsetIds.add(l.getId());
+				}
 			}
 		}
 		results[INACTIVE] = String.join(",", langRefsetIds);
@@ -216,16 +227,20 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 		
 		List<String> histAssocIds = new ArrayList<>();
 		for (Description d : c.getDescriptions()) {
-			for (AssociationEntry a : d.getAssociationEntries(ActiveState.ACTIVE)) {
-				histAssocIds.add(a.getId());
+			if (inScope(d)) {
+				for (AssociationEntry a : d.getAssociationEntries(ActiveState.ACTIVE)) {
+					histAssocIds.add(a.getId());
+				}
 			}
 		}
 		results[ACTIVE] = String.join(",", histAssocIds);
 		
 		histAssocIds.clear();
 		for (Description d : c.getDescriptions()) {
-			for (AssociationEntry a : d.getAssociationEntries(ActiveState.INACTIVE)) {
-				histAssocIds.add(a.getId());
+			if (inScope(d)) { 
+				for (AssociationEntry a : d.getAssociationEntries(ActiveState.INACTIVE)) {
+					histAssocIds.add(a.getId());
+				}
 			}
 		}
 		results[INACTIVE] = String.join(",", histAssocIds);
@@ -237,11 +252,13 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 		
 		results[ACTIVE] = c.getInactivationIndicatorEntries(ActiveState.ACTIVE)
 		.stream()
+		.filter(i -> inScope(i))
 		.map(i -> i.getId())
 		.collect(Collectors.joining(","));
 
 		results[INACTIVE] = c.getInactivationIndicatorEntries(ActiveState.INACTIVE)
 		.stream()
+		.filter(i -> inScope(i))
 		.map(i -> i.getId())
 		.collect(Collectors.joining(","));
 		
@@ -253,11 +270,13 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 		
 		results[ACTIVE] = c.getAssociations(ActiveState.ACTIVE)
 		.stream()
+		.filter(h -> inScope(h))
 		.map(h -> h.getId())
 		.collect(Collectors.joining(","));
 		
 		results[INACTIVE] = c.getAssociations(ActiveState.INACTIVE)
 		.stream()
+		.filter(h -> inScope(h))
 		.map(h -> h.getId())
 		.collect(Collectors.joining(","));
 		
@@ -361,5 +380,22 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 			}
 		}
 		return "N";
-	}	
+	}
+
+	public void setModuleFilter(List<String> moduleFilter) {
+		this.moduleFilter = moduleFilter;
+	}
+	
+	protected boolean inScope (Component c) {
+		if (moduleFilter == null || moduleFilter.size() == 0) {
+			return true;
+		}
+		
+		for (String module : moduleFilter) {
+			if (c.getModuleId().equals(module)) {
+				return true;
+			}
+		}
+		return false;
+	}
 }

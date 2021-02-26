@@ -191,6 +191,9 @@ public class ArchiveManager implements RF2Constants {
 					} else {
 						throw new TermServerScriptException("Dependency Package " + dependency.getAbsolutePath() + " does not exist");
 					}
+					//Now lets not pretend we're holding anything in memory at this point, because we still have to load in
+					//the extension before we have that.
+					currentlyHeldInMemory = null;
 				}
 			}
 			

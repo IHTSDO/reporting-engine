@@ -28,6 +28,9 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 	
 	public static final String PREV_RELEASE = "Previous Release";
 	public static final String THIS_RELEASE = "This Release";
+	
+	public static final String PREV_DEPENDENCY = "Previous Dependency";
+	public static final String THIS_DEPENDENCY = "This Dependency";
 	public static final String MODULES = "Modules";
 
 	public static final Concept UNKNOWN_CONCEPT = new Concept("54690008", "Unknown");
@@ -36,6 +39,9 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 	protected List<String> moduleFilter;
 
 	String prevRelease;
+	String prevDependency;
+	String thisDependency;
+	
 	String projectKey;
 	Map<String, Datum> prevData;
 	//2D data structure Concepts, Descriptions, Relationships, Axioms, LangRefset, Inactivation Indicators, Historical Associations
@@ -138,10 +144,14 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		getArchiveManager().setLoadEditionArchive(true);
 		getArchiveManager().loadProjectSnapshot(fsnOnly);
 		HistoricStatsGenerator statsGenerator = new HistoricStatsGenerator(this);
+		statsGenerator.setModuleFilter(moduleFilter);
 		statsGenerator.runJob();
-		
+		gl.reset();
+		loadCurrentPosition(compareTwoSnapshots, fsnOnly);
+	};
+	
+	protected void loadCurrentPosition(boolean compareTwoSnapshots, boolean fsnOnly) throws TermServerScriptException {
 		info ("Previous Data Generated, now loading 'current' position");
-		
 		if (compareTwoSnapshots) {
 			getArchiveManager().setLoadEditionArchive(true);
 			setProject(new Project(projectKey));
@@ -156,8 +166,8 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 			getProject().setKey(projectKey);
 			getArchiveManager().loadProjectSnapshot(fsnOnly);
 		}
-	};
-	
+	}
+
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {"Sctid, Hierarchy, SemTag, New, Changed DefnStatus, Inactivated, Reactivated, New with New Concept, New SD, New P, Total Active, Total, Promoted",
 												"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New with New Concept, Total Active, Total, Concepts Affected",
@@ -216,10 +226,8 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		info ("Analysing concepts");
 		Concept topLevel;
 		for (Concept c : gl.getAllConcepts()) {
-			//Is this concept in scope
-			if (!inScope(c)) {
-				continue;
-			}
+			//Is this concept in scope?  Even if its not, some of its components might be.
+
 			if (c.isActive()) {	
 				topLevel = getHierarchy(tc, c);
 			} else {
@@ -232,6 +240,11 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 					break;
 				}
 			}
+			
+			if (topLevel == null) {
+				debug("Check concept with no top level here: " + c);
+			}
+			
 			//Have we seen this hierarchy before?
 			int[][] summaryData = summaryDataMap.get(topLevel);
 			if (summaryData == null) {
@@ -243,55 +256,36 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 			boolean isNewConcept = datum==null;
 			Boolean wasSD = datum==null?null:datum.isSD;
 			Boolean wasActive = datum==null?null:datum.isActive;
-			analyzeConcept(c, topLevel, wasSD, wasActive, summaryData[TAB_CONCEPTS], summaryData[TAB_QI]);
+			
+			//If the concept is no longer in the target module, we'll count that and ignore the rest
+			if (moduleFilter != null && !moduleFilter.contains(c.getModuleId())) {
+				//Was it in the target module last time?
+				if (datum != null && moduleFilter.contains(datum.moduleId)) {
+					summaryData[TAB_CONCEPTS][IDX_PROMOTED]++;
+				}
+			} else {
+				analyzeConcept(c, topLevel, wasSD, wasActive, summaryData[TAB_CONCEPTS], summaryData[TAB_QI]);
+			}
+			
 			analyzeDescriptions(c, topLevel, wasActive, summaryData[TAB_DESC_HIST]);
 			
-			//Only analyze concepts that are in scope for this extension
-			if (moduleFilter == null || moduleFilter.contains(c.getModuleId())) {
 				//Component changes
-				analyzeComponents(isNewConcept, (datum==null?null:datum.descIds), (datum==null?null:datum.descIdsInact), summaryData[TAB_DESCS], c.getDescriptions(ActiveState.BOTH, NOT_TEXT_DEFN));
-				analyzeComponents(isNewConcept, (datum==null?null:datum.descIds), (datum==null?null:datum.descIdsInact), summaryData[TAB_TEXT_DEFN], c.getDescriptions(ActiveState.BOTH, TEXT_DEFN));
-				analyzeComponents(isNewConcept, (datum==null?null:datum.relIds), (datum==null?null:datum.relIdsInact), summaryData[TAB_RELS], c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.BOTH));
-				analyzeComponents(isNewConcept, (datum==null?null:datum.axiomIds), (datum==null?null:datum.axiomIdsInact), summaryData[TAB_AXIOMS], c.getAxiomEntries());
-				analyzeComponents(isNewConcept, (datum==null?null:datum.inactivationIds), (datum==null?null:datum.inactivationIdsInact), summaryData[TAB_INACT_IND], c.getInactivationIndicatorEntries());
-				analyzeComponents(isNewConcept, (datum==null?null:datum.histAssocIds), (datum==null?null:datum.histAssocIdsInact), summaryData[TAB_HIST], c.getAssociations(ActiveState.BOTH, true));
-				List<LangRefsetEntry> langRefsetEntries = c.getDescriptions().stream()
-						.flatMap(d -> d.getLangRefsetEntries().stream())
-						.collect(Collectors.toList());
-				analyzeComponents(isNewConcept, (datum==null?null:datum.langRefsetIds), (datum==null?null:datum.langRefsetIdsInact), summaryData[TAB_LANG], langRefsetEntries);
-			}
+			analyzeComponents(isNewConcept, (datum==null?null:datum.descIds), (datum==null?null:datum.descIdsInact), summaryData[TAB_DESCS], c.getDescriptions(ActiveState.BOTH, NOT_TEXT_DEFN));
+			analyzeComponents(isNewConcept, (datum==null?null:datum.descIds), (datum==null?null:datum.descIdsInact), summaryData[TAB_TEXT_DEFN], c.getDescriptions(ActiveState.BOTH, TEXT_DEFN));
+			analyzeComponents(isNewConcept, (datum==null?null:datum.relIds), (datum==null?null:datum.relIdsInact), summaryData[TAB_RELS], c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.BOTH));
+			analyzeComponents(isNewConcept, (datum==null?null:datum.axiomIds), (datum==null?null:datum.axiomIdsInact), summaryData[TAB_AXIOMS], c.getAxiomEntries());
+			analyzeComponents(isNewConcept, (datum==null?null:datum.inactivationIds), (datum==null?null:datum.inactivationIdsInact), summaryData[TAB_INACT_IND], c.getInactivationIndicatorEntries());
+			analyzeComponents(isNewConcept, (datum==null?null:datum.histAssocIds), (datum==null?null:datum.histAssocIdsInact), summaryData[TAB_HIST], c.getAssociations(ActiveState.BOTH, true));
+			List<LangRefsetEntry> langRefsetEntries = c.getDescriptions().stream()
+					.flatMap(d -> d.getLangRefsetEntries().stream())
+					.collect(Collectors.toList());
+			analyzeComponents(isNewConcept, (datum==null?null:datum.langRefsetIds), (datum==null?null:datum.langRefsetIdsInact), summaryData[TAB_LANG], langRefsetEntries);
 		}
-	}
-	
-	private boolean inScope (Concept c) {
-		//Are we doing any module filtering?
-		if (moduleFilter == null) {
-			return true;
-		}
-		
-		//Is this concept in modules of interest or did it use to be?
-		if (moduleFilter.contains(c.getModuleId())) {
-			return true;
-		}
-		
-		Datum datum = prevData.get(c.getConceptId());
-		if (datum == null) {
-			return false;
-		} else if (moduleFilter.contains(datum.moduleId)) {
-			return true;
-		}
-		return false;
 	}
 	
 	private void analyzeConcept(Concept c, Concept topLevel, Boolean wasSD, Boolean wasActive, int[] counts, int[] qiCounts) throws TermServerScriptException {
 		//If we have no previous data, then the concept is new
 		boolean conceptIsNew = (wasSD == null);
-		
-		//If the concept is no longer in the target module, we'll count that and ignore the rest
-		if (moduleFilter != null && !moduleFilter.contains(c.getModuleId())) {
-			counts[IDX_PROMOTED]++;
-			return;
-		}
 		
 		if (c.isActive()) {
 			counts[IDX_TOTAL_ACTIVE]++;
@@ -345,13 +339,13 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 	}
 	
 	private void analyzeDescriptions(Concept c, Concept topLevel, Boolean wasActive, int[] counts) throws TermServerScriptException {
-		//If the concept is no longer in the target module, we'll count that and ignore the rest
-		if (moduleFilter != null && !moduleFilter.contains(c.getModuleId())) {
-			return;
-		}
-		
 		Datum datum = prevData.get(c.getConceptId());
 		for (Description d : c.getDescriptions()) {
+			//If the description is not in the target module, skip it.
+			//TODO We can count promoted descriptions also
+			if (moduleFilter != null && !moduleFilter.contains(d.getModuleId())) {
+				continue;
+			}
 			for (AssociationEntry a : d.getAssociationEntries()) {
 				counts[IDX_TOTAL]++;
 				if (a.isActive()) {
@@ -387,6 +381,9 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		boolean conceptIsNew = (ids == null && idsInactive == null);
 		boolean conceptAffected = false;
 		for (Component component : components) {
+			if (moduleFilter != null && !moduleFilter.contains(component.getModuleId())) {
+				continue;
+			}
 			//Was the description present in the previous data?
 			boolean previouslyExistedActive = false;
 			boolean previouslyExistedInactive = false;
