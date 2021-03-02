@@ -6,7 +6,6 @@ import java.util.concurrent.*;
 import javax.annotation.PostConstruct;
 
 import org.ihtsdo.termserver.job.JobManager;
-import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.otf.scheduler.domain.*;
@@ -31,6 +30,9 @@ public class Transmitter {
 	
 	@Value("${schedule.manager.queue.metadata}")
 	String metadataQueueName;
+	
+	@Value("${reporting.worker.queue.service-alert}")
+	String serviceAlertQueueName;
 	
 	ExecutorService executorService;
 	
@@ -79,6 +81,11 @@ public class Transmitter {
 			}
 		}
 		jmsTemplate.convertAndSend(metadataQueueName, metadata);
+	}
+	
+	public void send (SnomedServiceException serviceAlert) {
+		logger.info("Transmitting service alert: " + serviceAlert);
+		jmsTemplate.convertAndSend(serviceAlertQueueName, serviceAlert);
 	}
 
 }

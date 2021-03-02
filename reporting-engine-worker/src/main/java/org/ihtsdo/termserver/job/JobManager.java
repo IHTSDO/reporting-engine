@@ -27,6 +27,7 @@ public class JobManager {
 	
 	Map<String, Class<? extends JobClass>> knownJobs = new HashMap<>();
 	Map<String, JobType> knownJobTypes = new HashMap<>();
+	Map<String, Integer> expectedDurations = new HashMap<>();
 	
 	@Autowired(required = false)
 	private BuildProperties buildProperties;
@@ -58,6 +59,7 @@ public class JobManager {
 					Job thisJob = jobClass.newInstance().getJob();
 					logger.info("Registering known job: {}", thisJob.getName());
 					knownJobs.put(thisJob.getName(), jobClass);
+					expectedDurations.put(thisJob.getName(), thisJob.getExpectedDuration());
 				} else {
 					logger.info("Ignoring interface {}", jobClass);
 				}
@@ -86,6 +88,7 @@ public class JobManager {
 
 	public void run(JobRun jobRun) {
 		boolean metadataRequest = false;
+		Thread watcherThread = null;
 		try {
 			//Is this a special metadata request?
 			if (jobRun.getJobName().equals(METADATA)) {
@@ -106,6 +109,11 @@ public class JobManager {
 							JobClass thisJob = jobClass.newInstance();
 							jobRun.setStatus(JobStatus.Running);
 							transmitter.send(jobRun);
+							
+							JobWatcher watcher = new JobWatcher(expectedDurations.get(jobRun.getJobName()), jobRun, transmitter);
+							watcherThread = new Thread(watcher, jobRun.getJobName() + " watcher thread");
+							watcherThread.start();
+							
 							thisJob.instantiate(jobRun, applicationContext);
 						} else {
 							jobRun.setStatus(JobStatus.Failed);
@@ -121,6 +129,9 @@ public class JobManager {
 				jobRun.setResultTime(new Date());
 				transmitter.send(jobRun);
 			}
+			try {
+				watcherThread.interrupt();
+			} catch (Exception e) {}
 		}
 	}
 

@@ -84,6 +84,7 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 				.withParameters(new JobParameters())
 				.withTag(INT)
 				.withTag(MS)
+				.withExpectedDuration(40)
 				.build();
 	}
 	

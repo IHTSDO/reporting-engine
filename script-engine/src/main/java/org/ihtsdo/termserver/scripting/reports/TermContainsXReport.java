@@ -121,6 +121,16 @@ public class TermContainsXReport extends TermServerReport implements ReportClass
 				}
 			}
 		}
+	
+		if (Arrays.asList(textsToMatch).contains("TEST_WATCHER")) {
+			info("Testing watcher functionality.  Pausing for 15 minutes");
+			try {
+				Thread.sleep(15 * 60 * 1000);
+			} catch(Exception e) {
+				info("Watcher Testing interrupted prematurely");
+			}
+		}
+	
 	}
 	
 	private String getAttributeDetail(Concept c) throws TermServerScriptException {
