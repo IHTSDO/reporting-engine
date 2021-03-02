@@ -117,8 +117,8 @@ public class SnapshotGenerator extends TermServerScript {
 		relSnapshotFilename = termDir + "sct2_Relationship_Snapshot_"+edition+"_" + today + ".txt";
 		writeToRF2File(relSnapshotFilename, relHeader);
 		
-		relSnapshotFilename = termDir + "sct2_RelationshipConcreteValues_Snapshot_"+edition+"_" + today + ".txt";
-		writeToRF2File(relSnapshotFilename, relConcreteHeader);
+		relConcreteFilename = termDir + "sct2_RelationshipConcreteValues_Snapshot_"+edition+"_" + today + ".txt";
+		writeToRF2File(relConcreteFilename, relConcreteHeader);
 
 		sRelSnapshotFilename = termDir + "sct2_StatedRelationship_Snapshot_"+edition+"_" + today + ".txt";
 		writeToRF2File(sRelSnapshotFilename, relHeader);

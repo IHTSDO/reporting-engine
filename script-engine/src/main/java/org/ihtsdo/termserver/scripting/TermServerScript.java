@@ -1253,6 +1253,9 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	protected void writeToRF2File(String fileName, Object[] columns) throws TermServerScriptException {
+		if (StringUtils.isEmpty(fileName)) {
+			throw new TermServerScriptException("Request to write to RF2 file with no filename specified");
+		}
 		getRF2Manager().writeToRF2File(fileName, columns);
 	}
 	

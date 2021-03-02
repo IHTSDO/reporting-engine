@@ -640,6 +640,10 @@ public class SnomedUtils implements RF2Constants {
 	}
 	
 	public static File ensureFileExists(String fileName) throws TermServerScriptException {
+		if (StringUtils.isEmpty(fileName)) {
+			throw new TermServerScriptException ("Blank file name specified");
+		}
+		
 		File file = new File(fileName);
 		try {
 			if (!file.exists()) {

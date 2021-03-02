@@ -74,10 +74,10 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		/*params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20210131T120000Z.zip");
+		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20210131T120000Z.zip");
 		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20200731T120000Z.zip");
 		params.put(REPORT_OUTPUT_TYPES, "S3");
-		params.put(REPORT_FORMAT_TYPE, "JSON");*/
+		params.put(REPORT_FORMAT_TYPE, "JSON");
 		TermServerReport.run(SummaryComponentStats.class, args, params);
 	}
 
@@ -95,7 +95,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_STATS))
 				.withName("Summary Component Stats")
 				.withDescription("This report lists component changes per major hierarchy, optionally filtered by moduleId (comma separate if multiple).   You can either specify two releases to compare as archives stored in S3 " + 
-				"(eg SnomedCT_InternationalRF2_PRODUCTION_20200131T120000Z.zip) or leave them blank to compare the current delta to the previous release as specified " +
+				"(eg SnomedCT_InternationalRF2_PRODUCTION_20210131T120000Z.zip) or leave them blank to compare the current delta to the previous release as specified " +
 				"by that branch.")
 				.withParameters(params)
 				.withTag(INT)
