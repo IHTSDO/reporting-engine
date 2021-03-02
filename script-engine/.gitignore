@@ -4,3 +4,7 @@ historic-data
 reports/*
 resources/*
 *.txt
+releases/*
+csr.txt
+output*
+running_id_config.txt
