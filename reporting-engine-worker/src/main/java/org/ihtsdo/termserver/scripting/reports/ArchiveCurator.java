@@ -34,12 +34,6 @@ public class ArchiveCurator extends TermServerReport implements ReportClass {
     private ApplicationProperties applicationPropertiesSource;
     private ApplicationProperties applicationPropertiesTarget;
 
-    public static void main(String[] args) throws TermServerScriptException, IOException {
-        Map<String, String> params = new HashMap<>();
-        params.put(PARAM_NUMBER_OF_VERSIONS, "-1"); // Special character: all versions
-        TermServerReport.run(ArchiveCurator.class, args, params);
-    }
-
     @Override
     public void postInit() throws TermServerScriptException {
         String[] spreadsheetTabNames = new String[]{
@@ -150,24 +144,6 @@ public class ArchiveCurator extends TermServerReport implements ReportClass {
         } finally {
             curator.finish();
         }
-    }
-
-    private Set<String> extractPotentialPackages(String shortName, String effectiveTime, Set<String> potentialPackages) {
-        Set<String> potentials = new HashSet<>();
-
-        for (String potentialPackage : potentialPackages) {
-            String shorterName = shortName == "INT" ? "International" : shortName;
-            boolean containsShortName = potentialPackage.contains(shorterName);
-            boolean containsEffectiveTime = potentialPackage.contains(effectiveTime);
-
-            if (containsShortName && containsEffectiveTime) {
-                // e.g. xx/rf2.zip => rf2.zip
-                potentialPackage = potentialPackage.substring(potentialPackage.lastIndexOf('/') + 1);
-                potentials.add(potentialPackage);
-            }
-        }
-
-        return potentials;
     }
 
     private void curateArchives() throws ScriptException, ModuleStorageCoordinatorException.OperationFailedException, ModuleStorageCoordinatorException.ResourceNotFoundException, ModuleStorageCoordinatorException.InvalidArgumentsException, ModuleStorageCoordinatorException.DuplicateResourceException, IOException {
@@ -447,7 +423,7 @@ public class ArchiveCurator extends TermServerReport implements ReportClass {
 
             return output;
         } catch (Exception e) {
-            logger.info("Using fallback as count as {} cannot be converted to integer.", input);
+            LOGGER.info("Using fallback as count as {} cannot be converted to integer.", input);
             return fallback;
         }
     }
