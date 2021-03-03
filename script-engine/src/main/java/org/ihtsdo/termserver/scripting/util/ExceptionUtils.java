@@ -12,7 +12,9 @@ public class ExceptionUtils {
 		}
 		msg += reason;
 		if (t.getCause() != null) {
-			msg = getExceptionCause(msg, t.getCause());
+			if (t.getCause().getMessage() == null || (t.getCause().getMessage() != null && !t.getCause().getMessage().equals(reason))) {
+				msg = getExceptionCause(msg, t.getCause());
+			}
 		}
 		return msg;
 	}

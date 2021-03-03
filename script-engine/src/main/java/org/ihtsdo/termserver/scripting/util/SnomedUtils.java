@@ -1637,4 +1637,11 @@ public class SnomedUtils implements RF2Constants {
 		}
 		return false;
 	}
+
+	public static String formatReleaseDate(String effectiveTime) throws TermServerScriptException {
+		if (effectiveTime.length() != 8) {
+			throw new TermServerScriptException("Malformed effectiveTime '" + effectiveTime + "'");
+		}
+		return effectiveTime.substring(0,4) + "-" + effectiveTime.substring(4,6) + "-" + effectiveTime.substring(6,8);
+	}
 }
