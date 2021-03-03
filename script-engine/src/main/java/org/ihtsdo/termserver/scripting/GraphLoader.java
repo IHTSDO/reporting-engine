@@ -1067,6 +1067,7 @@ public class GraphLoader implements ScriptConstants {
 			//LOGGER.debug ("Checkpoint");
 		}*/
 		
+		startingPoint.setMaxDepth(currentDepth);
 		for (Concept child : startingPoint.getChildren(CharacteristicType.INFERRED_RELATIONSHIP)) {
 			if (currentDepth >= MAX_DEPTH) {
 				throw new TermServerScriptException("Maximum depth exceeded from " + startingPoint + " and inferred child " + child);
