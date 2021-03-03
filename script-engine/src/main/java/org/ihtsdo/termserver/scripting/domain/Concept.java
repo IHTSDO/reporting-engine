@@ -82,6 +82,7 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 	private String deletionEffectiveTime;
 	private boolean isDeleted = false;
 	private int depth = NOT_SET;
+	private int maxDepth = NOT_SET;
 	private Long statedAttribSum = null;  //Allows cached quick comparison of relationships
 	
 	//Note that these values are used when loading from RF2 where multiple entries can exist.
@@ -1011,6 +1012,17 @@ public class Concept extends Expressable implements ScriptConstants, Comparable<
 		// We'll maintain the shortest possible path, so don't allow depth to increase
 		if (this.depth == NOT_SET || depth < this.depth) {
 			this.depth = depth;
+		}
+	}
+	
+	public int getMaxDepth() {
+		return maxDepth;
+	}
+	
+	public void setMaxDepth(int maxDepth) {
+		// We'll maintain the shortest possible path, so don't allow depth to increase
+		if (this.maxDepth == NOT_SET || maxDepth > this.maxDepth) {
+			this.maxDepth = maxDepth;
 		}
 	}
 
