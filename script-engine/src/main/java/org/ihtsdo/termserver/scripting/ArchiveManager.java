@@ -189,14 +189,21 @@ public class ArchiveManager implements RF2Constants {
 					if (dependency.exists()) {
 						loadArchive(dependency, fsnOnly, "Snapshot", true);
 					} else {
-						throw new TermServerScriptException("Dependency Package " + dependency.getAbsolutePath() + " does not exist");
+						//Can we find it in S3?
+						String cwd = new File("").getAbsolutePath();
+						TermServerScript.info(ts.getDependencyArchive() + " not found locally in " + cwd + ", attempting to download from S3.");
+						getArchiveDataLoader().download(dependency);
+						if (dependency.exists()) {
+							loadArchive(dependency, fsnOnly, "Snapshot", true);
+						} else {
+							throw new TermServerScriptException("Dependency Package " + dependency.getAbsolutePath() + " does not exist and was not recovered from S3.");
+						}
 					}
 					//Now lets not pretend we're holding anything in memory at this point, because we still have to load in
 					//the extension before we have that.
 					currentlyHeldInMemory = null;
 				}
 			}
-			
 			
 			//If the project specifies its a .zip file, that's another way to know we're loading an edition
 			String fileExt = ".zip";
