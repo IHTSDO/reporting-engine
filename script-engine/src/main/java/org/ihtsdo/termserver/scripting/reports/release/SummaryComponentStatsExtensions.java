@@ -5,9 +5,7 @@ import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.dao.ReportConfiguration.*;
-import org.ihtsdo.termserver.scripting.domain.Branch;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
-import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.springframework.util.StringUtils;
@@ -45,11 +43,11 @@ public class SummaryComponentStatsExtensions extends SummaryComponentStats {
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_STATS))
 				.withName("Summary Component Stats for Extensions")
-				.withDescription("This report lists component changes per major hierarchy, optionally filtered by moduleId (comma separate if multiple).   You can either specify two releases to compare as archives stored in S3 " + 
-				"(eg SnomedCT_InternationalRF2_PRODUCTION_20200131T120000Z.zip) or leave them blank to compare the current delta to the previous release as specified " +
-				"by that branch.   Note that extensions require dependency packages to also be stated.  Use 'Summary Component Stats' for the US Edition, however.")
+				.withDescription("This report lists component changes per major hierarchy, optionally filtered by moduleId (comma separate if multiple). You can either specify two releases (with their dependencies) to compare as archives stored in S3 " + 
+				"or leave blank to compare the current delta to the previous release as specified " +
+				"by that project branch.  The previous package's dependency is always required to be specified as it is not available in system metadata.  " + 
+				"This report is for extensions packaged as extensions only.  Use 'Summary Component Stats' for the US Edition.")
 				.withParameters(params)
-				.withTag(MS)
 				.withTag(INT)
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.build();
