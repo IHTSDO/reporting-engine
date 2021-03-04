@@ -1349,7 +1349,7 @@ public class SnomedUtils implements RF2Constants {
 		return null;
 	}
 
-	public static String populateFSNs(String stl) {
+	public static String populateFSNs(String stl) throws TermServerScriptException {
 		//Loop through string and replace any numbers that aren't followed by a pipe
 		//with the full string
 		GraphLoader gl = GraphLoader.getGraphLoader();
@@ -1360,7 +1360,11 @@ public class SnomedUtils implements RF2Constants {
 		StringBuffer sb = new StringBuffer();
 		while (m.find()) {
 			String sctId = m.group();
-			m.appendReplacement(sb, gl.getConceptSafely(sctId).toString());
+			Concept c = gl.getConceptSafely(sctId);
+			if (c == null) {
+				throw new TermServerScriptException("Unknown concept encountered in STL: " + sctId);
+			}
+			m.appendReplacement(sb, c.toString());
 		}
 		m.appendTail(sb);
 		return sb.toString();
