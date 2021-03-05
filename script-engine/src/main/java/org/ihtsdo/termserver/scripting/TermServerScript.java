@@ -1693,6 +1693,7 @@ public abstract class TermServerScript implements RF2Constants {
 	
 	protected void setDependencyArchive(String dependencyArchive) {
 		this.dependencyArchive = dependencyArchive;
+		getArchiveManager().setLoadDependencyPlusExtensionArchive(true);
 	}
 
 	private void initialiseReportConfiguration() {

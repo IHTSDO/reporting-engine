@@ -112,6 +112,7 @@ public class SummaryComponentStatsExtensions extends SummaryComponentStats {
 
 	@Override
 	protected void loadCurrentPosition(boolean compareTwoSnapshots, boolean fsnOnly) throws TermServerScriptException {
+		info("Setting dependency archive: " + thisDependency);
 		setDependencyArchive(thisDependency);
 		super.loadCurrentPosition(compareTwoSnapshots, fsnOnly);
 	}
