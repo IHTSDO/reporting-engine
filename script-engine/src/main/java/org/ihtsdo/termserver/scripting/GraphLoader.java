@@ -1283,13 +1283,26 @@ public class GraphLoader implements RF2Constants {
 	}
 
 	public String getCurrentEffectiveTime() {
-		//Quick way is to find the description on the root concept that has 'version' in it.
-		for (Description d : ROOT_CONCEPT.getDescriptions(ActiveState.ACTIVE)) {
-			if (d.getTerm().contains("version")) {
-				return d.getEffectiveTime();
+		//Loop through all components to fine the latest effective time
+		String maxEffectiveTime = "0";
+		
+		//Populating componentMap proved too expensive.  Loop through manually.
+		for (Concept c : getAllConcepts()) {
+			if (c.getEffectiveTime() != null && c.getEffectiveTime().compareTo(maxEffectiveTime) > 1)  {
+				maxEffectiveTime = c.getEffectiveTime();
+			}
+			for (Description d : c.getDescriptions()) {
+				if (d.getEffectiveTime() != null && d.getEffectiveTime().compareTo(maxEffectiveTime) > 1)  {
+					maxEffectiveTime = d.getEffectiveTime();
+				}
+			}
+			for (Relationship r : c.getRelationships()) {
+				if (r.getEffectiveTime() != null && r.getEffectiveTime().compareTo(maxEffectiveTime) > 1)  {
+					maxEffectiveTime = r.getEffectiveTime();
+				}
 			}
 		}
-		return "UNKNOWN EFFECTIVE TIME";
+		return maxEffectiveTime;
 	}
 
 }

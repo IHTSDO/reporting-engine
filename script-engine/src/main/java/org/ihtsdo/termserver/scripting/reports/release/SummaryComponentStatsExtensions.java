@@ -17,12 +17,12 @@ public class SummaryComponentStatsExtensions extends SummaryComponentStats {
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20200731T120000Z.zip");
-		//params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20200731T120000Z.zip");
-		//params.put(THIS_RELEASE, "SnomedCT_BelgiumExtensionRF2_PRODUCTION_20200915T120000Z.zip");
-		//params.put(PREV_RELEASE, "SnomedCT_BelgiumExtensionRF2_PRODUCTION_20200315T120000Z.zip");
-		//params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20200131T120000Z.zip");
-		//params.put(MODULES, "11000172109");
+		//params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20200731T120000Z.zip");
+		params.put(THIS_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20200731T120000Z.zip");
+		params.put(THIS_RELEASE, "SnomedCT_BelgiumExtensionRF2_PRODUCTION_20200915T120000Z.zip");
+		params.put(PREV_RELEASE, "SnomedCT_BelgiumExtensionRF2_PRODUCTION_20200315T120000Z.zip");
+		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20200131T120000Z.zip");
+		params.put(MODULES, "11000172109");
 		//params.put(REPORT_OUTPUT_TYPES, "S3");
 		//params.put(REPORT_FORMAT_TYPE, "JSON");
 		TermServerReport.run(SummaryComponentStatsExtensions.class, args, params);
