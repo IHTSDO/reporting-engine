@@ -24,6 +24,7 @@ public class DuplicateLangRefsetsFix extends BatchFix {
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
 			fix.selfDetermining = true;
 			fix.populateEditPanel = false;
+			fix.runStandAlone = false;  //Need to look up the project for MS extensions
 			fix.getArchiveManager().setPopulateReleasedFlag(true);
 			fix.init(args);
 			fix.loadProjectSnapshot(false);  //Load all descriptions
