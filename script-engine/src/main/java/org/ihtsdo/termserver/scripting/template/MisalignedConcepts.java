@@ -381,10 +381,12 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		
 		subHierarchyECL = "<< 5294002 |Developmental disorder (disorder)| MINUS << 276654001 |Congenital malformation (disorder)|";
 		templateNames = new String[] { "templates/Developmental disorder.json"};
-		*/
 		
 		subsetECL = "(<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 30217000 |Proliferation (morphologic abnormality)|) MINUS (<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 400177003 |Neoplasm and/or hamartoma (morphologic abnormality)|)";
 		templateNames = new String[] { "templates/Proliferation.json"};
+		*/
+		subsetECL = "<< 7895008 |Poisoning caused by drug AND/OR medicinal substance (disorder)| OR << 441952005 |Poisoning caused by chemical substance (disorder)|";
+		templateNames = new String[] { "templates/Poisoning.json"};
 		super.init(args);
 	}
 	
