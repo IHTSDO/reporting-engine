@@ -661,7 +661,9 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 																	IS_A,
 																	ActiveState.ACTIVE));
 		for (Relationship parentRel : parentRels) {
-			if ((oldParentRel == null || parentRel.equals(oldParentRel)) && !parentRel.equals(newParentRel)) {
+			//Ignore axiom in these checks since the replacement relationship won't know about them.
+			if ((oldParentRel == null || 
+					parentRel.equals(oldParentRel, true)) && !parentRel.equals(newParentRel, true)) {
 				changesMade += removeParentRelationship (t, parentRel, c, newParentRel.getTarget().toString(), additionalDetails);
 			} 
 		}

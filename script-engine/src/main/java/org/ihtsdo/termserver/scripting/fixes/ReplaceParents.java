@@ -30,6 +30,7 @@ public class ReplaceParents extends BatchFix implements RF2Constants{
 			fix.selfDetermining = true;
 			fix.keepIssuesTogether = true;
 			fix.init(args);
+			fix.getArchiveManager().setPopulateReleasedFlag(true);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			fix.loadProjectSnapshot(true); 
 			fix.postLoadInit();
@@ -87,12 +88,11 @@ public class ReplaceParents extends BatchFix implements RF2Constants{
 		}
 		
 		boolean replacementMade = false;
-		
 		//TODO This is a special situation as we're forcing the map to a single value
 		for (Relationship parentRel : parentRels) {
 			if (replacementMade) {
 				c.removeRelationship(parentRel);
-				report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_INACTIVATED, parentRel);
+				report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_DELETED, parentRel);
 			} else {
 				changesMade += replaceParent(t, c, parentRel.getTarget(), replacementParent);
 				replacementMade = true;
@@ -110,7 +110,12 @@ public class ReplaceParents extends BatchFix implements RF2Constants{
 			Set<Concept> parents = c.getParents(CharacteristicType.STATED_RELATIONSHIP);
 			if (!Collections.disjoint(parents, targetParents)) {
 				//If we have a causative agent, add that as an issue
-				SnomedUtils.getTargets(c, types, CharacteristicType.INFERRED_RELATIONSHIP);
+				Set<Concept> causeAgents = SnomedUtils.getTargets(c, types, CharacteristicType.INFERRED_RELATIONSHIP);
+				if (causeAgents.size() > 0) {
+					c.setIssue(causeAgents.iterator().next().getFsn());
+				} else {
+					c.setIssue(c.getParents(CharacteristicType.INFERRED_RELATIONSHIP).iterator().next().getFsn());
+				}
 				toProcess.add(c);
 			}
 		}
