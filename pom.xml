@@ -24,8 +24,8 @@
 		<packageName>${project.artifactId}</packageName>
 		<execFinalName>${project.build.finalName}.jar</execFinalName>
 		<snowowl.version>4.8.0</snowowl.version>
-		<otf.common.version>4.3.1-SNAPSHOT</otf.common.version>
-		<snomed-template-parser.version>2.0.0-SNAPSHOT</snomed-template-parser.version>
+		<otf.common.version>4.3.1</otf.common.version>
+		<snomed-template-parser.version>2.0.0</snomed-template-parser.version>
 		<spring.activeMQ.version>5.15.0</spring.activeMQ.version>
 		<springfox-swagger.version>2.7.0</springfox-swagger.version>
 		<maven.test.skip>false</maven.test.skip>
