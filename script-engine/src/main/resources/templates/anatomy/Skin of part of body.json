@@ -1,0 +1,7 @@
+{
+  "name": "Skin of part of Body Region",
+  "documentation": "https://confluence.ihtsdotools.org/pages/viewpage.action?pageId=113411655",
+  "version": 1,
+  "domain": "<<  20795001 |Structure of skin region (body structure)|  ",
+  "logicalTemplate": "123037004 |Body structure (body structure)| : [[~1..1]]  774081006 |Proper part of (attribute)|  =  181469002 |Entire skin (body structure)| , [[~1..1]]  733930001 |Regional part of (attribute)|  = [[+id(<<  243928005 |Entire body region (body structure)| )]], [[~0..1]]  272741003 |Laterality (attribute)|  = [[+id(<<  182353008 |Side (qualifier value)|)  @laterality ]]"
+}

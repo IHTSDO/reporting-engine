@@ -1,0 +1,7 @@
+{
+  "name": "Entity in Body Region",
+  "documentation": "https://confluence.ihtsdotools.org/pages/viewpage.action?pageId=113410688",
+  "version": 1,
+  "domain": "<<  698967008 |Material anatomical entity (body structure)|",
+  "logicalTemplate": "698967008 |Material anatomical entity (body structure)| : [[~1..1]]  733930001 |Regional part of (attribute)|  = [[+id(< 698967008 |Material anatomical entity (body structure)|) ]] , [[~1..1]]  733931002 |Constitutional part of (attribute)|  = [[+id(<<  243928005 |Entire body region (body structure)| ) @entireBodyRegion ]],[[~0..1]]  272741003 |Laterality (attribute)|  = [[+id(<<  182353008 |Side (qualifier value)| ) @laterality ]]"
+}

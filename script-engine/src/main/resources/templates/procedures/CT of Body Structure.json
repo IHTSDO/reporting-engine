@@ -1,0 +1,7 @@
+{
+  "name": "CT of [body structure] (disorder)",
+  "documentation": "https://confluence.ihtsdotools.org/display/AUTHS/Abscess+and+cellulitis+of+%5Bbody+structure%5D+-+Ready+for+implementation",
+  "version": 1,
+  "domain": "<< 77477000 |Computerized axial tomography (procedure)|",
+  "logicalTemplate": "71388002 |Procedure (procedure)|: [[~1..1]] { 260686004 |Method (attribute)| = 312251004 |Computed tomography imaging - action (qualifier value)|, [[~1..1]] [[+id(<<363704007 |Procedure site (attribute)|) @procSite]] = [[+id(<< 442083009 |Anatomical or acquired body structure (body structure)| ) @procSite]] }"
+}

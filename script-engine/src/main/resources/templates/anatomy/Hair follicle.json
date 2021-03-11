@@ -1,0 +1,7 @@
+{
+  "name": "Hair follicle",
+  "documentation": "https://confluence.ihtsdotools.org/pages/viewpage.action?pageId=113416446",
+  "version": 1,
+  "domain": "<<  280830006 |Entire hair follicle (body structure)| ",
+  "logicalTemplate": "280830006 |Entire hair follicle (body structure)| : [[~1..1]]  733931002 |Constitutional part of (attribute)|  = [[+id(<<  243928005 |Entire body region (body structure)| ) @entireBodyRegion ]], [[~0..1]]  272741003 |Laterality (attribute)|  = [[+id(<< 182353008 |Side (qualifier value)| ) @laterality ]]"
+}

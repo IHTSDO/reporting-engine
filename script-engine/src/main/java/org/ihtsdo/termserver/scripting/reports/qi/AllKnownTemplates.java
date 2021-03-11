@@ -10,6 +10,7 @@ import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.snomed.authoringtemplate.domain.ConceptTemplate;
 import org.snomed.authoringtemplate.domain.logical.LogicalTemplate;
 import org.snomed.otf.scheduler.domain.JobRun;
+import org.springframework.util.StringUtils;
 
 public abstract class AllKnownTemplates extends TermServerReport {
 	
@@ -381,6 +382,56 @@ public abstract class AllKnownTemplates extends TermServerReport {
 		templateNames = new String[] { "templates/morphologies/Fibrosis - disorder.json" };
 		populateTemplates(subsetECL, templateNames);
 		
+		subsetECL = "<< 371136004 |Disorder of tooth development (disorder)| ";
+		templateNames = new String[] { "templates/pathological process/Developmental.json" };
+		populateTemplates(subsetECL, templateNames);
+		
+		subsetECL = "(<< 371521007 |Disorder of bone development (disorder)|) MINUS ( << 19579005 |Juvenile osteochondritis (disorder)| )";
+		templateNames = new String[] { "templates/pathological process/Developmental.json" };
+		populateTemplates(subsetECL, templateNames);
+		
+		subsetECL = "<<  609520005 |Disorder of fetal structure (disorder)|";
+		templateNames = new String[] { "templates/Disorder of fetal structure.json" };
+		populateTemplates(subsetECL, templateNames);
+		
+		subsetECL = "<<  40445007 |Heart valve regurgitation (disorder)|";
+		templateNames = new String[] { "templates/Heart valve insufficiency.json" };
+		populateTemplates(subsetECL, templateNames);
+		
+		subsetECL = "<< 64572001 |Disease (disorder)| : 116676008 |Associated morphology (attribute)| = << 76093008 |Anterior displacement (morphologic abnormality)|";
+		templateNames = new String[] { "templates/morphologies/Anterior displacement.json" };
+		populateTemplates(subsetECL, templateNames);
+		
+		templateNames = new String[] { "templates/Traumatic injury.json" };
+		populateTemplates(null, templateNames);
+		
+		templateNames = new String[] { "templates/morphologies/Posterior displacement.json" };
+		populateTemplates(null, templateNames);
+		
+		templateNames = new String[] { "templates/morphologies/Separation.json" };
+		populateTemplates(null, templateNames);
+		
+		templateNames = new String[] { "templates/morphologies/Retention.json" };
+		populateTemplates(null, templateNames);
+		
+		templateNames = new String[] { "templates/anatomy/Anatomical Parts.json" };
+		populateTemplates(null, templateNames);
+		
+		templateNames = new String[] { "templates/anatomy/Entity in region.json" };
+		populateTemplates(null, templateNames);
+		
+		templateNames = new String[] { "templates/anatomy/Hair follicle.json" };
+		populateTemplates(null, templateNames);
+		
+		templateNames = new String[] { "templates/anatomy/Region of region.json" };
+		populateTemplates(null, templateNames);
+		
+		templateNames = new String[] { "templates/anatomy/Skin of body.json" };
+		populateTemplates(null, templateNames);
+		
+		templateNames = new String[] { "templates/anatomy/Skin of part of body.json" };
+		populateTemplates(null, templateNames);
+		
 		populateTemplatesFromTS();
 		super.init(run);
 	}
@@ -429,7 +480,14 @@ public abstract class AllKnownTemplates extends TermServerReport {
 					Template template = new Template(id, lt, templateNames[x]);
 					template.setSource(QI);
 					template.setDocumentation(ct.getDocumentation());
+					template.setDomain(ct.getDomain());
 					templates.add(template);
+					//Is the ECL part of the template?
+					if (ecl == null) {
+						ecl = template.getDomain();
+					} else if (StringUtils.isEmpty(template.getDomain())) {
+						template.setDomain(ecl);
+					}
 				} catch (Exception e) {
 					throw new TermServerScriptException("Unable to load " + ecl + " template " + templateNames[x] + " from local resources", e);
 				}

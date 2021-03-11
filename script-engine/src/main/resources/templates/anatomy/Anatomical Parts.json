@@ -1,0 +1,7 @@
+{
+  "name": "Anatomical Parts",
+  "documentation": "https://confluence.ihtsdotools.org/pages/viewpage.action?pageId=113411653",
+  "version": 1,
+  "domain": "<<  38866009 |Body part structure (body structure)|  ",
+  "logicalTemplate": "123037004 |Body structure (body structure)| : [[~1..1]]  774081006 |Proper part of (attribute)|  = [[+id(<<  91722005 |Entire physical anatomical entity (body structure)|)]], [[~0..1]] 272741003| Laterality (attribute) |= [[+id(<< 182353008| Side (qualifier value) |) @laterality ]]"
+}
