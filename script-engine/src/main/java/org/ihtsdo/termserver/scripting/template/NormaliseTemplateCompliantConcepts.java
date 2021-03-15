@@ -22,7 +22,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  */
 public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 
-	protected NormaliseTemplateCompliantConcepts(BatchFix clone) {
+	public NormaliseTemplateCompliantConcepts(BatchFix clone) {
 		super(clone);
 	}
 	
@@ -454,7 +454,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		return changesMade;
 	}
 	
-	private int restateInferredRelationships(Task t, Concept c) throws TermServerScriptException {
+	public int restateInferredRelationships(Task t, Concept c) throws TermServerScriptException {
 		//Work through all inferred groups and collect any that aren't also stated, to state
 		int changesMade = 0;
 		List<RelationshipGroup> toBeStated = new ArrayList<>();

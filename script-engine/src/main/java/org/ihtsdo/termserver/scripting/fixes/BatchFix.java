@@ -336,10 +336,14 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	private void populateEditPanel(Task task) throws TermServerScriptException {
 		//Prefill the Edit Panel
 		try {
-			if (populateEditPanel) {
-				scaClient.setEditPanelUIState(project.getKey(), task.getKey(), task.toQuotedList());
+			if (task.size() < 25) {
+				if (populateEditPanel) {
+					scaClient.setEditPanelUIState(project.getKey(), task.getKey(), task.toQuotedList());
+				}
+				scaClient.setSavedListUIState(project.getKey(), task.getKey(), convertToSavedListJson(task));
+			} else if (populateEditPanel) {
+				debug("Unable to populate edit panel due to high task size: " + task.size());
 			}
-			scaClient.setSavedListUIState(project.getKey(), task.getKey(), convertToSavedListJson(task));
 		} catch (Exception e) {
 			String msg = "Failed to preload edit-panel ui state: " + e.getMessage();
 			warn (msg);
