@@ -15,7 +15,8 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.ihtsdo.termserver.scripting.util.StringUtils;
 
 /**
- * SCTQA-321 reaplce teletherapy with "external beam radiation therapy" in FSNs
+ * SCTQA-321 replace teletherapy with "external beam radiation therapy" in FSNs
+ * INFRA-6454 replace "anulus fibrosus" with "annulus fibrosus" and retain original as synonym
  */
 public class RetermConcept extends BatchFix {
 
@@ -44,8 +45,9 @@ public class RetermConcept extends BatchFix {
 	}
 
 	private void postLoadInit() throws TermServerScriptException {
-		termMap.put("teletherapy", "external beam radiation therapy");
-		termMap.put("teleradiotherapy", "external beam radiation therapy");
+		//termMap.put("teletherapy", "external beam radiation therapy");
+		//termMap.put("teleradiotherapy", "external beam radiation therapy");
+		termMap.put("anulus fibrosus","annulus fibrosus");
 		super.postInit();
 	}
 
@@ -71,6 +73,13 @@ public class RetermConcept extends BatchFix {
 
 	private int modifyDescriptions(Task t, Concept c) throws TermServerScriptException {
 		int changesMade = 0;
+		
+		//Validate that PT conforms to pattern of FSN minus SemTag
+		String expectedOrigPT = SnomedUtils.deconstructFSN(c.getFsn())[0];
+		if (!c.getPreferredSynonym().equals(expectedOrigPT)) {
+			report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Existing PT does not fit expected pattern", c.getPreferredSynonym());
+		}
+		
 		List<Description> originalDescriptions = new ArrayList<>(c.getDescriptions(ActiveState.ACTIVE));
 		for (Description d : originalDescriptions) {
 			if (d.isPreferred() && !d.getType().equals(DescriptionType.TEXT_DEFINITION)) {
@@ -128,8 +137,12 @@ public class RetermConcept extends BatchFix {
 
 	private boolean containsMatchingTerm(Concept c) {
 		String fsn = c.getFsn().toLowerCase();
+		String pt = c.getPreferredSynonym().toLowerCase();
 		for (String term : termMap.keySet()) {
 			if (fsn.contains(term)) {
+				return true;
+			}
+			if (pt.contains(term)) {
 				return true;
 			}
 		}
