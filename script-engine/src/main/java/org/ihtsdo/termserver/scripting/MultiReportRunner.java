@@ -10,12 +10,9 @@ import org.ihtsdo.termserver.scripting.client.JiraHelper;
 
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
-import org.ihtsdo.termserver.scripting.reports.qi.InitialAnalysis;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
-
-import net.rcarz.jiraclient.Issue;
 
 /**
  * QI-76 Add support for running a report multiple times for different subhierarchies
@@ -45,12 +42,6 @@ public class MultiReportRunner extends TermServerReport {
 		return report.getReportName();
 	}
 	
-	public void init (String[] args) throws TermServerScriptException {
-		report = new InitialAnalysis(this);
-		super.init(args); 
-		jira = new JiraHelper();
-	}
-
 	private void runMultipleReports() throws TermServerScriptException, IOException {
 		report.setReportManager(getReportManager());
 		info("Loading " + inputFile);
