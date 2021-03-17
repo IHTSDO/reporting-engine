@@ -170,6 +170,11 @@ public class JobManager {
 				
 				//Some jobs shouldn't see the light of day.
 				//TODO Make this code environment aware so it allows testing status in Dev and UAT
+				if (thisJob.getProductionStatus() == null) {
+					TermServerScript.info(thisJob.getName() + " does not indicate its production status.  Skipping");
+					continue;
+				}
+				
 				if (thisJob.getProductionStatus().equals(Job.ProductionStatus.HIDEME)) {
 					continue;
 				}

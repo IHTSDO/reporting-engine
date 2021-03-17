@@ -11,6 +11,7 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
+import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 import org.snomed.otf.scheduler.domain.JobParameter.Type;
 
 /**
@@ -59,6 +60,7 @@ public class MultipleModuleAxioms extends TermServerReport implements ReportClas
 				.withDescription("This report lists concepts with active axioms in multiple modules")
 				.withParameters(params)
 				.withTag(MS)
+				.withProductionStatus(ProductionStatus.PROD_READY)
 				.build();
 	}
 	
