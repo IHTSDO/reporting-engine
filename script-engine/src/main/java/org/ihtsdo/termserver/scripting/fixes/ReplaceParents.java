@@ -134,7 +134,8 @@ public class ReplaceParents extends BatchFix implements RF2Constants{
 		//String subsetECL = "420057003 |Accidental poisoning caused by carbon monoxide (disorder)|";
 		for (Concept c : findConcepts(subsetECL, true, true)) {
 			Set<Concept> parents = c.getParents(CharacteristicType.STATED_RELATIONSHIP);
-			if (!Collections.disjoint(parents, targetParents)) {
+			Set<Concept> sdParents = c.getParents(CharacteristicType.STATED_RELATIONSHIP, DefinitionStatus.FULLY_DEFINED);
+			if (sdParents.size() > 0 || !Collections.disjoint(parents, targetParents)) {
 				//If we have a causative agent, add that as an issue so we can keep them together in tasks
 				Set<Concept> causeAgents = SnomedUtils.getTargets(c, types, CharacteristicType.INFERRED_RELATIONSHIP);
 				if (causeAgents.size() > 0) {

@@ -234,9 +234,10 @@ public abstract class AllKnownTemplates extends TermServerReport {
 		templateNames = new String[] {	"templates/Degenerative disorder.json"};
 		populateTemplates(subsetECL, templateNames);
 
-		subsetECL = "<< 276654001 |Congenital malformation (disorder)|"; //QI-287
+		//Replaced with production template Congenital [morphology] of [body structure] 
+		/*subsetECL = "<< 276654001 |Congenital malformation (disorder)|"; //QI-287
 		templateNames = new String[] {	"templates/Congenital Malformation.json"};
-		populateTemplates(subsetECL, templateNames);
+		populateTemplates(subsetECL, templateNames);*/
 		
 		subsetECL = "<< 131148009|Bleeding|"; //QI-319
 		templateNames = new String[] { "templates/Bleeding - disorder.json"};

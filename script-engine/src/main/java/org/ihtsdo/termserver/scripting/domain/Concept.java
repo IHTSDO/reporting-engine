@@ -823,6 +823,13 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		return parents;
 	}
 	
+	public Set<Concept> getParents(CharacteristicType characteristicType, DefinitionStatus defStatus) {
+		Set<Concept> parents = new HashSet<>(getParents(characteristicType));
+		return parents.stream()
+				.filter(p -> p.getDefinitionStatus().equals(defStatus))
+				.collect(Collectors.toSet());
+	}
+	
 	private void populateParents(Set<Concept> parents, CharacteristicType characteristicType) {
 		parents.clear();
 		for (Relationship parentRel : getRelationships(characteristicType, IS_A, ActiveState.ACTIVE)) {
