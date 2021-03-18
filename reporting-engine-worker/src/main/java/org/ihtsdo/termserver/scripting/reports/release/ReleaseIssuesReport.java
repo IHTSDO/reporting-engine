@@ -52,6 +52,7 @@ import com.google.common.io.Files;
  RP-414 Add check for repeated word groups
  RP-397 Check for duplicated words, words often typed in reverse, and highlight possible contraction changes
  CDI-52 Update to run successfully against projects with concrete values
+ RP-465 Add check for regime/theraphy semtag not under 243120004|Regimes and therapies (regime/therapy)|
  */
 public class ReleaseIssuesReport extends TermServerReport implements ReportClass {
 	
@@ -80,6 +81,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	private String defaultModule = SCTID_CORE_MODULE;
 	private List<Concept> allActiveConcepts;
 	private Set<Concept> recentlyTouched;
+	Map<String, Concept> semTagHierarchyMap = new HashMap<>();
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
@@ -158,6 +160,8 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		if (isMS()) {
 			defaultModule = project.getMetadata().getDefaultModuleId();
 		}
+		
+		semTagHierarchyMap.put("(regime/therapy)", gl.getConcept("243120004|Regimes and therapies (regime/therapy)|"));
 	}
 
 	@Override
@@ -209,6 +213,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		unexpectedCharacters();
 		spaceBracket();
 		missingSemanticTag();
+		semTagInCorrectHierarchy();
 		repeatedWordGroups();
 		reviewContractions();
 		wordsInReverse();
@@ -460,6 +465,23 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 			if (inScope(c) && recentlyTouched.contains(c)) {
 				if (SnomedUtils.deconstructFSN(c.getFsn(), includeLegacyIssues)[1] == null) {
 					report(c, issueStr, "N", isActive(c,c.getFSNDescription()), c.getFsn());
+				}
+			}
+		}
+	}
+	
+	private void semTagInCorrectHierarchy() throws TermServerScriptException {
+		String issueStr = "SemTag used outside of expected hierarchy";
+		for (Concept c : allActiveConcepts) {
+			if (inScope(c) && !semTagHierarchyMap.containsValue(c)) {
+				for (Map.Entry<String, Concept> entry : semTagHierarchyMap.entrySet()) {
+					String semTag = SnomedUtils.deconstructFSN(c.getFsn(), true)[1];
+					if (semTag != null && semTag.equals(entry.getKey())) {
+						//Are we in the appropriate Hierarchy?
+						if (!c.getAncestors(NOT_SET).contains(entry.getValue())) {
+							report(c, issueStr, "-", isActive(c,c.getFSNDescription()), entry.getValue());
+						}
+					}
 				}
 			}
 		}
