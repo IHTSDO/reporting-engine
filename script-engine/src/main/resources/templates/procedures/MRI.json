@@ -1,0 +1,7 @@
+{
+  "name": "CT of [body structure] (disorder)",
+  "documentation": "https://confluence.ihtsdotools.org/display/SCTEMPLATES/MRI+of+%5Bbody+structure%5D+with+%5Bcontrast%5D+v2.0",
+  "version": 2,
+  "domain": "<<  113091000 |Magnetic resonance imaging (procedure)|  MINUS (<<  258177008 |Magnetic resonance imaging guidance (procedure)| OR <<  241671007 |Magnetic resonance spectroscopy (procedure)| )",
+  "logicalTemplate": "71388002 |Procedure (procedure)| : [[~0..1]]{[[~0..1]]  363702006 |Has focus (attribute)|  = [[+id(<<  404684003 |Clinical finding (finding)|  OR <<  71388002 |Procedure (procedure)| ) @focus]]}, [[~1..1]]{ [[~1..1]]  260686004 |Method (attribute)|  =  312250003 |Magnetic resonance imaging - action (qualifier value)| ,[[~0..1]]  405813007 |Procedure site - Direct (attribute)|  = [[+id(<<  442083009 |Anatomical or acquired body structure (body structure)| ) @bodyStructure]],[[~0..1]]  424361007 |Using substance (attribute)|  = [[+id(<<  385420005 |Contrast media (substance)| ) @contrast]]}"
+}
