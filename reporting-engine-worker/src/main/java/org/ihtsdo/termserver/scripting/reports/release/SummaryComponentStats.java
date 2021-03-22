@@ -193,7 +193,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 											"Hist Assoc",
 											"Text Defn",
 											"QI Scope",
-											"Hist Desc Assoc",
+											"Desc Assoc",
 											"Desc Inact",
 											"Refsets"};
 		topLevelHierarchies = new ArrayList<Concept>(ROOT_CONCEPT.getChildren(CharacteristicType.INFERRED_RELATIONSHIP));
