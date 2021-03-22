@@ -9,7 +9,6 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
-//TODO Move common fields and methods into Component itself
 public class RefsetMember extends Component {
 
 	@SerializedName("active")
@@ -49,17 +48,38 @@ public class RefsetMember extends Component {
 	
 	public RefsetMember() {}
 	
-	public Boolean getActive() {
+	public void setEffectiveTime(String effectiveTime) {
+		if (this.effectiveTime != null && !this.effectiveTime.isEmpty() && effectiveTime == null) {
+			//Are we resetting this component to mark a change?
+			setDirty();
+		}
+		this.effectiveTime = effectiveTime;
+	}
+	
+	public String getModuleId() {
+		return moduleId;
+	}
+	
+	public void setModuleId(String moduleId) {
+		if (this.moduleId != null && !this.moduleId.equals(moduleId)) {
+			setDirty();
+			this.effectiveTime = null;
+		}
+		this.moduleId = moduleId;
+	}
+	public boolean isActive() {
 		return active;
 	}
-
-	public void setActive(Boolean newActiveState) {
-		if (this.active != null && !this.active == newActiveState) {
-			this.effectiveTime = null;
+	public void setActive(boolean newActiveState) {
+		if (this.active != null && this.active != newActiveState) {
+			setDirty();
+			setEffectiveTime(null);
 		}
 		this.active = newActiveState;
 	}
-
+	public boolean isDeleted() {
+		return isDeleted;
+	}
 	public Boolean getReleased() {
 		return released;
 	}
@@ -82,14 +102,6 @@ public class RefsetMember extends Component {
 
 	public void setId(String id) {
 		this.id = id;
-	}
-
-	public String getModuleId() {
-		return moduleId;
-	}
-
-	public void setModuleId(String moduleId) {
-		this.moduleId = moduleId;
 	}
 
 	public String getRefsetId() {
@@ -130,20 +142,6 @@ public class RefsetMember extends Component {
 
 	public String getEffectiveTime() {
 		return effectiveTime;
-	}
-
-	public void setEffectiveTime(String effectiveTime) {
-		this.effectiveTime = effectiveTime;
-	}
-	
-	public boolean isDeleted() {
-		return isDeleted;
-	}
-
-	@Override
-	public boolean isActive() {
-		//TODO Allow te base class to return this;
-		return active;
 	}
 
 	@Override

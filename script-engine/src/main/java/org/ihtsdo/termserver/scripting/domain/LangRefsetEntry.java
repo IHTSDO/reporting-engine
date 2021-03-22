@@ -9,14 +9,9 @@ import java.util.UUID;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
-//TODO Make this extend RefsetEntry
 //id	effectiveTime	active	moduleId	refsetId	referencedComponentId	acceptabilityId
-public class LangRefsetEntry extends Component implements RF2Constants{
+public class LangRefsetEntry extends RefsetMember implements RF2Constants{
 
-	private String id;
-	private String effectiveTime;
-	private String moduleId;
-	private Boolean active;
 	private String refsetId;
 	private String referencedComponentId;
 	private String acceptabilityId;
@@ -60,42 +55,7 @@ public class LangRefsetEntry extends Component implements RF2Constants{
 		};
 	}
 
-	public String getId() {
-		return id;
-	}
-	public void setId(String id) {
-		this.id = id;
-	}
-	public String getEffectiveTime() {
-		return effectiveTime;
-	}
-	public void setEffectiveTime(String effectiveTime) {
-		if (this.effectiveTime != null && !this.effectiveTime.isEmpty() && effectiveTime == null) {
-			//Are we resetting this component to mark a change?
-			setDirty();
-		}
-		this.effectiveTime = effectiveTime;
-	}
-	public String getModuleId() {
-		return moduleId;
-	}
-	public void setModuleId(String moduleId) {
-		if (this.moduleId != null && !this.moduleId.equals(moduleId)) {
-			setDirty();
-			this.effectiveTime = null;
-		}
-		this.moduleId = moduleId;
-	}
-	public boolean isActive() {
-		return active;
-	}
-	public void setActive(boolean newActiveState) {
-		if (this.active != null && this.active != newActiveState) {
-			setDirty();
-			setEffectiveTime(null);
-		}
-		this.active = newActiveState;
-	}
+
 	public String getRefsetId() {
 		return refsetId;
 	}

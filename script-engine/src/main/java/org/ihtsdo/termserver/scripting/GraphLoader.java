@@ -1284,20 +1284,21 @@ public class GraphLoader implements RF2Constants {
 		
 		//Populating componentMap proved too expensive.  Loop through manually.
 		for (Concept c : getAllConcepts()) {
-			if (c.getEffectiveTime() != null && c.getEffectiveTime().compareTo(maxEffectiveTime) > 1)  {
+			if (c.getEffectiveTime() != null && c.getEffectiveTime().compareTo(maxEffectiveTime) > 0)  {
 				maxEffectiveTime = c.getEffectiveTime();
 			}
 			for (Description d : c.getDescriptions()) {
-				if (d.getEffectiveTime() != null && d.getEffectiveTime().compareTo(maxEffectiveTime) > 1)  {
+				if (d.getEffectiveTime() != null && d.getEffectiveTime().compareTo(maxEffectiveTime) > 0)  {
 					maxEffectiveTime = d.getEffectiveTime();
 				}
 			}
 			for (Relationship r : c.getRelationships()) {
-				if (r.getEffectiveTime() != null && r.getEffectiveTime().compareTo(maxEffectiveTime) > 1)  {
+				if (r.getEffectiveTime() != null && r.getEffectiveTime().compareTo(maxEffectiveTime) > 0)  {
 					maxEffectiveTime = r.getEffectiveTime();
 				}
 			}
 		}
+		if (true);
 		return maxEffectiveTime;
 	}
 

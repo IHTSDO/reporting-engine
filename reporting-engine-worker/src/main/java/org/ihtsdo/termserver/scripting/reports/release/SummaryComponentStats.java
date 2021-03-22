@@ -46,13 +46,14 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 	Map<String, Datum> prevData;
 	//2D data structure Concepts, Descriptions, Relationships, Axioms, LangRefset, Inactivation Indicators, Historical Associations
 	Map<Concept, int[][]> summaryDataMap;
+	Map<String, int[]> refsetDataMap;
 	String thisEffectiveTime;
 	int topLevelHierarchyCount = 0;
 	String complexName;
 	static final int TAB_CONCEPTS = 0, TAB_DESCS = 1, TAB_RELS = 2, TAB_AXIOMS = 3,
 			TAB_LANG = 4, TAB_INACT_IND = 5, TAB_HIST = 6, TAB_TEXT_DEFN = 7, TAB_QI = 8,
-			TAB_DESC_HIST = 9;
-	static final int COMPONENT_COUNT = 10;
+			TAB_DESC_HIST = 9, TAB_REFSET = 10;
+	static final int MAX_REPORT_TABS = 11;
 	static final int DATA_WIDTH = 25;  //New, Changed, Inactivated, Reactivated, New with New Concept, extra1, extra2, Total, next 11 fields are the inactivation reason, concept affected, reactivated
 	static final int IDX_NEW = 0, IDX_CHANGED = 1, IDX_INACT = 2, IDX_REACTIVATED = 3, IDX_NEW_NEW = 4, IDX_NEW_P = 5, IDX_NEW_SD = 6,
 			IDX_TOTAL = 7, IDX_INACT_AMBIGUOUS = 8,  IDX_INACT_MOVED_ELSEWHERE = 9, IDX_INACT_CONCEPT_NON_CURRENT = 10,
@@ -76,8 +77,8 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		Map<String, String> params = new HashMap<>();
 		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20210131T120000Z.zip");
 		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20200731T120000Z.zip");
-		params.put(REPORT_OUTPUT_TYPES, "S3");
-		params.put(REPORT_FORMAT_TYPE, "JSON");
+		//params.put(REPORT_OUTPUT_TYPES, "S3");
+		//params.put(REPORT_FORMAT_TYPE, "JSON");
 		TermServerReport.run(SummaryComponentStats.class, args, params);
 	}
 
@@ -107,6 +108,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		ReportSheetManager.targetFolderId = "15WXT1kov-SLVi4cvm2TbYJp_vBMr4HZJ"; //Release QA
 		prevData = new HashMap<>();
 		summaryDataMap = new HashMap<>();
+		refsetDataMap = new HashMap<>();
 		
 		TEXT_DEFN = new ArrayList<>();
 		TEXT_DEFN.add(DescriptionType.TEXT_DEFINITION);
@@ -179,6 +181,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 												"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New with New Concept, Total, Concepts Affected, Total Active",
 												"Sctid, Hierarchy, SemTag, In Scope New, Attributes Added, Model Removed, Model Inactivated, Total In Scope",
 												"Sctid, Hierarchy, SemTag, New, Inactivated, Reactivated, Total, Total Active",
+												"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New with New Concept, Total Active, Total"
 												};
 		String[] tabNames = new String[] {	"Concepts",
 											"Descriptions",
@@ -189,7 +192,8 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 											"Hist Assoc",
 											"Text Defn",
 											"QI Scope",
-											"Hist Desc Assoc"};
+											"Hist Desc Assoc",
+											"Refsets"};
 		topLevelHierarchies = new ArrayList<Concept>(ROOT_CONCEPT.getChildren(CharacteristicType.INFERRED_RELATIONSHIP));
 		topLevelHierarchies.add(UNKNOWN_CONCEPT); // Add this a we might not always be able to get the top level hierarchy
 		topLevelHierarchies.add(ROOT_CONCEPT);
@@ -248,7 +252,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 			//Have we seen this hierarchy before?
 			int[][] summaryData = summaryDataMap.get(topLevel);
 			if (summaryData == null) {
-				summaryData = new int[COMPONENT_COUNT][DATA_WIDTH];
+				summaryData = new int[MAX_REPORT_TABS][DATA_WIDTH];
 				summaryDataMap.put(topLevel, summaryData);
 			}
 			
@@ -338,6 +342,15 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		
 	}
 	
+	private int[] getRefsetData (String refsetId) {
+		int[] refsetCounts = refsetDataMap.get(refsetId);
+		if (refsetCounts == null) {
+			refsetCounts = new int[DATA_WIDTH];
+			refsetDataMap.put(refsetId, refsetCounts);
+		}
+		return refsetCounts;
+	}
+	
 	private void analyzeDescriptions(Concept c, Concept topLevel, Boolean wasActive, int[] counts) throws TermServerScriptException {
 		Datum datum = prevData.get(c.getConceptId());
 		for (Description d : c.getDescriptions()) {
@@ -346,21 +359,28 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 			if (moduleFilter != null && !moduleFilter.contains(d.getModuleId())) {
 				continue;
 			}
+			
 			for (AssociationEntry a : d.getAssociationEntries()) {
+				int[] refsetData = getRefsetData(a.getRefsetId());
 				counts[IDX_TOTAL]++;
+				refsetData[IDX_TOTAL]++;
 				if (a.isActive()) {
 					counts[IDX_TOTAL_ACTIVE]++;
+					refsetData[IDX_TOTAL_ACTIVE]++;
 					//Have we see this Id before?  If not, it's new
 					if (datum != null && !datum.descHistAssocIds.contains(a.getId())) {
 						counts[IDX_NEW]++;
+						refsetData[IDX_NEW]++;
 					} else if (datum != null && datum.descHistAssocIdsInact.contains(a.getId())) {
 						//If previously inactive and now active, then it's reactivated
 						counts[IDX_REACTIVATED]++;
+						refsetData[IDX_REACTIVATED]++;
 					}
 				} else {
 					//If we saw this previously active, then it's been inactivated
 					if (datum != null && datum.descHistAssocIds.contains(a.getId())) {
 						counts[IDX_INACT]++;
+						refsetData[IDX_INACT]++;
 					}
 				}
 			}
@@ -392,20 +412,20 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 				previouslyExistedInactive = idsInactive.contains(component.getId());
 			}
 			if (component.isActive()) {
-				counts[IDX_TOTAL_ACTIVE]++;
+				incrementCounts(component, counts, IDX_TOTAL_ACTIVE);
 				if (previouslyExistedInactive) {
-					counts[IDX_REACTIVATED]++;
+					incrementCounts(component, counts, IDX_REACTIVATED);
 					debugToFile(component, "Reactivated");
 					conceptAffected = true;
 				} else if(!previouslyExistedActive) {
-					counts[IDX_NEW]++;
+					incrementCounts(component, counts, IDX_NEW);
 					debugToFile(component, "New");
 					conceptAffected = true;
 					if (isNewConcept) {
 						//This component is new because it was created as part of a new concept
 						//so it's not been 'added' as such.  Well, we might want to count additions
 						//to existing concepts separately.
-						counts[IDX_NEW_NEW]++;
+						incrementCounts(component, counts, IDX_NEW_NEW);;
 						debugToFile(component, "NewNew");
 					}
 					// find out the reason
@@ -415,21 +435,30 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 					}
 				} else if (StringUtils.isEmpty(component.getEffectiveTime()) || component.getEffectiveTime().equals(thisEffectiveTime)) {
 					//Did it change in this release?
-					counts[IDX_CHANGED]++;
+					incrementCounts(component, counts, IDX_CHANGED);
 					debugToFile(component, "Changed");
 					conceptAffected = true;
 				}
 			} else if (previouslyExistedActive) {
 				//Existed previously active and is now inactive, mark as inactivated
-				counts[IDX_INACT]++;
+				incrementCounts(component, counts, IDX_INACT);
 				debugToFile(component, "Inactivated");
 				conceptAffected = true;
 			}
-			counts[IDX_TOTAL]++;
+			incrementCounts(component, counts, IDX_TOTAL);
 			//debugToFile(component, "Total");
 		}
 		if (conceptAffected) {
 			counts[IDX_CONCEPTS_AFFECTED]++;
+		}
+	}
+
+	private void incrementCounts(Component component, int[] counts, int idx) {
+		counts[idx]++;
+		//If this component is a refset member, then also increment our refset data
+		if (component instanceof RefsetMember) {
+			RefsetMember refsetMember = (RefsetMember) component;
+			getRefsetData(refsetMember.getRefsetId())[idx]++;
 		}
 	}
 
@@ -503,11 +532,11 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 
 	private void outputResults() throws TermServerScriptException {
 		Concept totalConcept = new Concept("","Total");
-		int[][] totals = new int[COMPONENT_COUNT][DATA_WIDTH];
+		int[][] totals = new int[MAX_REPORT_TABS][DATA_WIDTH];
 		for (Concept hierarchy : topLevelHierarchies) {
 			int[][] summaryData = summaryDataMap.get(hierarchy);
 			if (summaryData != null) {
-				for (int idxTab = 0; idxTab < COMPONENT_COUNT; idxTab++) {
+				for (int idxTab = 0; idxTab < MAX_REPORT_TABS - 1; idxTab++) {
 					report(idxTab, hierarchy, summaryData[idxTab]);
 					for (int idxMovement = 0; idxMovement < DATA_WIDTH; idxMovement++) {
 						totals[idxTab][idxMovement] += summaryData[idxTab][idxMovement];
@@ -516,11 +545,34 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 			}
 		}
 		
-		for (int idxTab = 0; idxTab < COMPONENT_COUNT; idxTab++) {
+		//Refset data is not broken down by major hierarchy
+		//Split into each type of refset with sub totals
+		outputRefsetData("association", totals);
+		outputRefsetData("language", totals);
+		outputRefsetData("indicator", totals);
+		
+		for (int idxTab = 0; idxTab < MAX_REPORT_TABS; idxTab++) {
 			report (idxTab, totalConcept, totals[idxTab]);
 		}
 	}
 	
+	private void outputRefsetData(String filter, int[][] totals) throws TermServerScriptException {
+		int[] subTotals = new int[DATA_WIDTH];
+		Concept subTotalConcept = new Concept("","  SubTotal");
+		for (Map.Entry<String, int[]> entry : refsetDataMap.entrySet()) {
+			Concept refset = gl.getConcept(entry.getKey());
+			if (refset.getFsn().contains(filter)) {
+				report(MAX_REPORT_TABS -1, refset, entry.getValue());
+				for (int idxMovement = 0; idxMovement < DATA_WIDTH; idxMovement++) {
+					subTotals[idxMovement] += entry.getValue()[idxMovement];
+					totals[MAX_REPORT_TABS -1][idxMovement] +=  entry.getValue()[idxMovement];
+				}
+			}
+		}
+		report(MAX_REPORT_TABS -1, subTotalConcept, subTotals);
+		report(MAX_REPORT_TABS -1, "");
+	}
+
 	protected void report (int idxTab, Concept c, int[] data) throws TermServerScriptException {
 		super.report(idxTab, c, getReportData(idxTab, data));
 		countIssue(c);
@@ -532,7 +584,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 
 		sheetFieldsByIndex.put(TAB_CONCEPTS, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_NEW, IDX_NEW_SD, IDX_NEW_P, IDX_TOTAL_ACTIVE, IDX_TOTAL, IDX_PROMOTED)));
 
-		Arrays.asList(TAB_DESCS, TAB_RELS, TAB_AXIOMS, TAB_TEXT_DEFN).stream().forEach(index -> {
+		Arrays.asList(TAB_DESCS, TAB_RELS, TAB_AXIOMS, TAB_TEXT_DEFN, TAB_REFSET).stream().forEach(index -> {
 			sheetFieldsByIndex.put(index, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_NEW, IDX_TOTAL_ACTIVE, IDX_TOTAL, IDX_CONCEPTS_AFFECTED)));
 		});
 
