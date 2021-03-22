@@ -686,7 +686,7 @@ public class GraphLoader implements RF2Constants {
 					//If we've already received a newer version of this component, say
 					//by loading INT first and a published MS 2nd, then skip
 					if (!StringUtils.isEmpty(original.getEffectiveTime()) 
-							&& isReleased
+							&& (isReleased != null && isReleased)
 							&& (original.getEffectiveTime().compareTo(lineItems[IDX_EFFECTIVETIME]) >= 1)) {
 						//System.out.println("Skipping incoming published langrefset row, older than that held");
 						continue;

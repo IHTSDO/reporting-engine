@@ -52,8 +52,8 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 	String complexName;
 	static final int TAB_CONCEPTS = 0, TAB_DESCS = 1, TAB_RELS = 2, TAB_AXIOMS = 3,
 			TAB_LANG = 4, TAB_INACT_IND = 5, TAB_HIST = 6, TAB_TEXT_DEFN = 7, TAB_QI = 8,
-			TAB_DESC_HIST = 9, TAB_REFSET = 10;
-	static final int MAX_REPORT_TABS = 11;
+			TAB_DESC_HIST = 9, TAB_DESC_INACT = 10, TAB_REFSET = 11;  //Ensure refset tab is the last one as it's written at the end.
+	static final int MAX_REPORT_TABS = 12;
 	static final int DATA_WIDTH = 25;  //New, Changed, Inactivated, Reactivated, New with New Concept, extra1, extra2, Total, next 11 fields are the inactivation reason, concept affected, reactivated
 	static final int IDX_NEW = 0, IDX_CHANGED = 1, IDX_INACT = 2, IDX_REACTIVATED = 3, IDX_NEW_NEW = 4, IDX_NEW_P = 5, IDX_NEW_SD = 6,
 			IDX_TOTAL = 7, IDX_INACT_AMBIGUOUS = 8,  IDX_INACT_MOVED_ELSEWHERE = 9, IDX_INACT_CONCEPT_NON_CURRENT = 10,
@@ -181,6 +181,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 												"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New with New Concept, Total, Concepts Affected, Total Active",
 												"Sctid, Hierarchy, SemTag, In Scope New, Attributes Added, Model Removed, Model Inactivated, Total In Scope",
 												"Sctid, Hierarchy, SemTag, New, Inactivated, Reactivated, Total, Total Active",
+												"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New with New Concept, Total Active, Total",
 												"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New with New Concept, Total Active, Total"
 												};
 		String[] tabNames = new String[] {	"Concepts",
@@ -193,6 +194,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 											"Text Defn",
 											"QI Scope",
 											"Hist Desc Assoc",
+											"Desc Inact",
 											"Refsets"};
 		topLevelHierarchies = new ArrayList<Concept>(ROOT_CONCEPT.getChildren(CharacteristicType.INFERRED_RELATIONSHIP));
 		topLevelHierarchies.add(UNKNOWN_CONCEPT); // Add this a we might not always be able to get the top level hierarchy
@@ -271,7 +273,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 				analyzeConcept(c, topLevel, wasSD, wasActive, summaryData[TAB_CONCEPTS], summaryData[TAB_QI]);
 			}
 			
-			analyzeDescriptions(c, topLevel, wasActive, summaryData[TAB_DESC_HIST]);
+			analyzeDescriptions(c, topLevel, wasActive, summaryData[TAB_DESC_HIST], summaryData[TAB_DESC_INACT]);
 			
 				//Component changes
 			analyzeComponents(isNewConcept, (datum==null?null:datum.descIds), (datum==null?null:datum.descIdsInact), summaryData[TAB_DESCS], c.getDescriptions(ActiveState.BOTH, NOT_TEXT_DEFN));
@@ -351,7 +353,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		return refsetCounts;
 	}
 	
-	private void analyzeDescriptions(Concept c, Concept topLevel, Boolean wasActive, int[] counts) throws TermServerScriptException {
+	private void analyzeDescriptions(Concept c, Concept topLevel, Boolean wasActive, int[] counts, int[] inactCounts) throws TermServerScriptException {
 		Datum datum = prevData.get(c.getConceptId());
 		for (Description d : c.getDescriptions()) {
 			//If the description is not in the target module, skip it.
@@ -360,27 +362,42 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 				continue;
 			}
 			
+			//Descriptions have historic associations if the refer to other concepts
 			for (AssociationEntry a : d.getAssociationEntries()) {
-				int[] refsetData = getRefsetData(a.getRefsetId());
-				counts[IDX_TOTAL]++;
-				refsetData[IDX_TOTAL]++;
+				incrementCounts(a, counts, IDX_TOTAL);
 				if (a.isActive()) {
-					counts[IDX_TOTAL_ACTIVE]++;
-					refsetData[IDX_TOTAL_ACTIVE]++;
+					incrementCounts(a, counts, IDX_TOTAL_ACTIVE);
 					//Have we see this Id before?  If not, it's new
 					if (datum != null && !datum.descHistAssocIds.contains(a.getId())) {
-						counts[IDX_NEW]++;
-						refsetData[IDX_NEW]++;
+						incrementCounts(a, counts, IDX_NEW);
 					} else if (datum != null && datum.descHistAssocIdsInact.contains(a.getId())) {
 						//If previously inactive and now active, then it's reactivated
-						counts[IDX_REACTIVATED]++;
-						refsetData[IDX_REACTIVATED]++;
+						incrementCounts(a, counts, IDX_REACTIVATED);
 					}
 				} else {
 					//If we saw this previously active, then it's been inactivated
 					if (datum != null && datum.descHistAssocIds.contains(a.getId())) {
-						counts[IDX_INACT]++;
-						refsetData[IDX_INACT]++;
+						incrementCounts(a, counts, IDX_INACT);
+					}
+				}
+			}
+			
+			//Descriptions can also have inactivation indicators if their concept is inactive
+			for (InactivationIndicatorEntry i : d.getInactivationIndicatorEntries()) {
+				incrementCounts(i, inactCounts, IDX_TOTAL);
+				if (i.isActive()) {
+					incrementCounts(i, inactCounts, IDX_TOTAL_ACTIVE);
+					//Have we see this Id before?  If not, it's new
+					if (datum != null && !datum.descInactivationIds.contains(i.getId())) {
+						incrementCounts(i, inactCounts, IDX_NEW);
+					} else if (datum != null && datum.descInactivationIdsInact.contains(i.getId())) {
+						//If previously inactive and now active, then it's reactivated
+						incrementCounts(i, inactCounts, IDX_REACTIVATED);
+					}
+				} else {
+					//If we saw this previously active, then it's been inactivated
+					if (datum != null && datum.descInactivationIds.contains(i.getId())) {
+						incrementCounts(i, inactCounts, IDX_INACT);
 					}
 				}
 			}
@@ -584,7 +601,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 
 		sheetFieldsByIndex.put(TAB_CONCEPTS, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_NEW, IDX_NEW_SD, IDX_NEW_P, IDX_TOTAL_ACTIVE, IDX_TOTAL, IDX_PROMOTED)));
 
-		Arrays.asList(TAB_DESCS, TAB_RELS, TAB_AXIOMS, TAB_TEXT_DEFN, TAB_REFSET).stream().forEach(index -> {
+		Arrays.asList(TAB_DESCS, TAB_RELS, TAB_AXIOMS, TAB_TEXT_DEFN, TAB_DESC_INACT, TAB_REFSET).stream().forEach(index -> {
 			sheetFieldsByIndex.put(index, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_NEW, IDX_TOTAL_ACTIVE, IDX_TOTAL, IDX_CONCEPTS_AFFECTED)));
 		});
 
@@ -704,6 +721,8 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		boolean hasAttributes;
 		List<String> descHistAssocIds;
 		List<String> descHistAssocIdsInact;
+		List<String> descInactivationIds;
+		List<String> descInactivationIdsInact;
 		
 		@Override
 		public int hashCode () {
@@ -747,6 +766,8 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		datum.hasAttributes = lineItems[++idx].equals("Y");
 		datum.descHistAssocIds = Arrays.asList(lineItems[++idx].split(","));
 		datum.descHistAssocIdsInact = Arrays.asList(lineItems[++idx].split(","));
+		datum.descInactivationIds = Arrays.asList(lineItems[++idx].split(","));
+		datum.descInactivationIdsInact = Arrays.asList(lineItems[++idx].split(","));
 		return datum;
 	}
 	

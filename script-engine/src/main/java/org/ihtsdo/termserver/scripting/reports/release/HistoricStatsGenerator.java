@@ -105,6 +105,7 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 				String[] axiomIds = getAxiomIds(c);
 				String[] langRefSetIds = getLangRefsetIds(c);
 				String[] inactivationIds = getInactivationIds(c);
+				String[] descInactivationIds = getDescInactivationIds(c);
 				String[] histAssocIds = getHistAssocIds(c);
 				String[] descHistAssocIds = getDescHistAssocIds(c);
 				String hasAttributes = SnomedUtils.countAttributes(c, CharacteristicType.INFERRED_RELATIONSHIP) > 0 ? "Y" : "N";
@@ -112,7 +113,8 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 						relIds[ACTIVE], relIds[INACTIVE], descIds[ACTIVE], descIds[INACTIVE], 
 						axiomIds[ACTIVE], axiomIds[INACTIVE], langRefSetIds[ACTIVE], langRefSetIds[INACTIVE],
 						inactivationIds[ACTIVE], inactivationIds[INACTIVE], histAssocIds[ACTIVE], histAssocIds[INACTIVE],
-						c.getModuleId(), hasAttributes, descHistAssocIds[ACTIVE], descHistAssocIds[INACTIVE]);
+						c.getModuleId(), hasAttributes, descHistAssocIds[ACTIVE], descHistAssocIds[INACTIVE],
+						descInactivationIds[ACTIVE], descInactivationIds[INACTIVE]);
 			}
 		} catch (Exception e) {
 			throw new TermServerScriptException(e);
@@ -263,6 +265,32 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 		.collect(Collectors.joining(","));
 		
 		return results;
+	}
+	
+	private String[] getDescInactivationIds(Concept c) {
+		String[] results = new String[2];
+		
+		results[ACTIVE] = getDescriptionInactivationIndicatorEntries(c, ActiveState.ACTIVE)
+		.stream()
+		.filter(i -> inScope(i))
+		.map(i -> i.getId())
+		.collect(Collectors.joining(","));
+
+		results[INACTIVE] = getDescriptionInactivationIndicatorEntries(c, ActiveState.INACTIVE)
+		.stream()
+		.filter(i -> inScope(i))
+		.map(i -> i.getId())
+		.collect(Collectors.joining(","));
+		
+		return results;
+	}
+
+	private Collection<InactivationIndicatorEntry> getDescriptionInactivationIndicatorEntries(Concept c, ActiveState activeState) {
+		List<InactivationIndicatorEntry> indicators = new ArrayList<>();
+		for (Description d : c.getDescriptions()) {
+			indicators.addAll(d.getInactivationIndicatorEntries(activeState));
+		}
+		return indicators;
 	}
 
 	private String[] getHistAssocIds(Concept c) {
