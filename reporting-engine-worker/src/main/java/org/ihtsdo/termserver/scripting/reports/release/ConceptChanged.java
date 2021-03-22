@@ -187,6 +187,24 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 							}
 						}
 					}
+					
+					//Description inactivation indicators
+					summaryCount = getSummaryCount(ComponentType.ATTRIBUTE_VALUE.name() + " - Descriptions");
+					for (InactivationIndicatorEntry i : d.getInactivationIndicatorEntries()) {
+						if (i.getEffectiveTime() == null || i.getEffectiveTime().isEmpty()) {
+							if (i.isReleased()) {
+								if (i.isActive()) {
+									summaryCount.isChanged++;
+								}
+							} else {
+								if (i.isActive()) {
+									summaryCount.isNew++;
+								} else {
+									summaryCount.isInactivated++;
+								}
+							}
+						}
+					}
 
 					boolean langRefSetIsNew = false;
 					boolean langRefSetIsLost = false;
@@ -258,7 +276,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 			}
 			
 			if (inScope(c)) {
-				summaryCount = getSummaryCount(ComponentType.ATTRIBUTE_VALUE.name());
+				summaryCount = getSummaryCount(ComponentType.ATTRIBUTE_VALUE.name() + " - Concepts");
 				for (InactivationIndicatorEntry i : c.getInactivationIndicatorEntries()) {
 					if (i.getEffectiveTime() == null || i.getEffectiveTime().isEmpty()) {
 						hasChangedInactivationIndicators.add(c);
