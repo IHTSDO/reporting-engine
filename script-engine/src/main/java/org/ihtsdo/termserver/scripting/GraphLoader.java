@@ -603,7 +603,7 @@ public class GraphLoader implements RF2Constants {
 					continue;
 				}
 				
-				/*if (lineItems[DES_IDX_ID].equals("3851000119110")) {
+				/*if (lineItems[DES_IDX_ID].equals("3770564011")) {
 					TermServerScript.debug("Debug Here");
 				}*/
 				
@@ -674,8 +674,8 @@ public class GraphLoader implements RF2Constants {
 				
 				/*if (langRefsetEntry.getId().equals("1ee09ebd-f9cc-57f6-9850-ceea87310e68")) {
 					TermServerScript.debug("here");
-				}
-				if (langRefsetEntry.getReferencedComponentId().equals("255227015")) {
+				}*/
+				/*if (langRefsetEntry.getReferencedComponentId().equals("3770564011")) {
 					TermServerScript.debug("here");
 				}*/
 				
@@ -698,7 +698,9 @@ public class GraphLoader implements RF2Constants {
 					}
 					//If we're working with not-released data and we already have a not-released entry
 					//then there's two copies of this langrefset entry in a delta
-					if (!isReleased && StringUtils.isEmpty(original.getEffectiveTime())) {
+					//We don't have to worry about this when loading a pre-created snapshot as the duplicates
+					//will already have been removed.
+					if (isReleased != null && !isReleased && StringUtils.isEmpty(original.getEffectiveTime())) {
 						//Have we already reported this duplicate?
 						if (duplicateLangRefsetIdsReported.contains(original)) {
 							TermServerScript.warn("Seeing additional duplication for " + original.getId());

@@ -26,7 +26,8 @@ public class SummaryComponentStatsExtensions extends SummaryComponentStats {
 		//params.put(REPORT_OUTPUT_TYPES, "S3");
 		//params.put(REPORT_FORMAT_TYPE, "JSON");
 		
-		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20210131T120000Z.zip");
+		//params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20210131T120000Z.zip");
+		params.put(PREV_DEPENDENCY, "SnomedCT_InternationalRF2_PRODUCTION_20200731T120000Z.zip");
 		TermServerReport.run(SummaryComponentStatsExtensions.class, args, params);
 	}
 
@@ -88,7 +89,7 @@ public class SummaryComponentStatsExtensions extends SummaryComponentStats {
 		
 		if (StringUtils.isEmpty(getJobRun().getParamValue(MODULES))) {
 			String defaultModule = project.getMetadata().getDefaultModuleId();
-			if (defaultModule == null) {
+			if (StringUtils.isEmpty(defaultModule)) {
 				throw new TermServerScriptException("Unable to recover default moduleId from project: " + project.getKey());
 			}
 			moduleFilter = Collections.singletonList(defaultModule);

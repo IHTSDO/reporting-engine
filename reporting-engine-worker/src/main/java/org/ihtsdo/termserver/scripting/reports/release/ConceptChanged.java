@@ -205,6 +205,24 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 							}
 						}
 					}
+					
+					//Description hist assocs
+					summaryCount = getSummaryCount(ComponentType.HISTORICAL_ASSOCIATION.name() + " - Descriptions");
+					for (AssociationEntry h : d.getAssociationEntries()) {
+						if (h.getEffectiveTime() == null || h.getEffectiveTime().isEmpty()) {
+							if (h.isReleased()) {
+								if (h.isActive()) {
+									summaryCount.isChanged++;
+								}
+							} else {
+								if (h.isActive()) {
+									summaryCount.isNew++;
+								} else {
+									summaryCount.isInactivated++;
+								}
+							}
+						}
+					}
 
 					boolean langRefSetIsNew = false;
 					boolean langRefSetIsLost = false;
@@ -294,7 +312,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 					}
 				}
 				
-				summaryCount = getSummaryCount(ComponentType.HISTORICAL_ASSOCIATION.name());
+				summaryCount = getSummaryCount(ComponentType.HISTORICAL_ASSOCIATION.name() + " - Concepts");
 				for (AssociationEntry a : c.getAssociationEntries()) {
 					if (a.getEffectiveTime() == null || a.getEffectiveTime().isEmpty()) {
 						hasChangedAssociations.add(c);

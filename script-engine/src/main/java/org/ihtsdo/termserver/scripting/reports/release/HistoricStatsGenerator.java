@@ -94,6 +94,9 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 		
 			debug ("Outputting Data to " + f.getAbsolutePath());
 			for (Concept c : gl.getAllConcepts()) {
+				/*if (c.getId().equals("16711071000119107")) {
+					debug("here");
+				}*/
 				String active = c.isActive() ? "Y" : "N";
 				String defStatus = SnomedUtils.translateDefnStatus(c.getDefinitionStatus());
 				String hierarchy = getHierarchy(tc, c);
@@ -204,8 +207,10 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 		
 		List<String> langRefsetIds = new ArrayList<>();
 		for (Description d : c.getDescriptions()) {
-			if (inScope(d)) {
-				for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.ACTIVE)) {
+			//An international scope description might have langrefset entries in another module
+			//Check the scope of the refset entry rather than the description.
+			for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.ACTIVE)) {
+				if (inScope(l)) {
 					langRefsetIds.add(l.getId());
 				}
 			}
@@ -214,8 +219,8 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 		
 		langRefsetIds.clear();
 		for (Description d : c.getDescriptions()) {
-			if (inScope(d)) {
-				for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.INACTIVE)) {
+			for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.INACTIVE)) {
+				if (inScope(l)) {
 					langRefsetIds.add(l.getId());
 				}
 			}
@@ -229,8 +234,8 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 		
 		List<String> histAssocIds = new ArrayList<>();
 		for (Description d : c.getDescriptions()) {
-			if (inScope(d)) {
-				for (AssociationEntry a : d.getAssociationEntries(ActiveState.ACTIVE)) {
+			for (AssociationEntry a : d.getAssociationEntries(ActiveState.ACTIVE)) {
+				if (inScope(a)) {
 					histAssocIds.add(a.getId());
 				}
 			}
@@ -239,8 +244,8 @@ public class HistoricStatsGenerator extends TermServerReport implements ReportCl
 		
 		histAssocIds.clear();
 		for (Description d : c.getDescriptions()) {
-			if (inScope(d)) { 
-				for (AssociationEntry a : d.getAssociationEntries(ActiveState.INACTIVE)) {
+			for (AssociationEntry a : d.getAssociationEntries(ActiveState.INACTIVE)) {
+				if (inScope(a)) {
 					histAssocIds.add(a.getId());
 				}
 			}

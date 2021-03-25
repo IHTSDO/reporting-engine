@@ -356,6 +356,9 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 	private void analyzeDescriptions(Concept c, Concept topLevel, Boolean wasActive, int[] counts, int[] inactCounts) throws TermServerScriptException {
 		Datum datum = prevData.get(c.getConceptId());
 		for (Description d : c.getDescriptions()) {
+			/*if (d.getId().equals("3770564011")) {
+				debug("here");
+			}*/
 			//If the description is not in the target module, skip it.
 			//TODO We can count promoted descriptions also
 			if (moduleFilter != null && !moduleFilter.contains(d.getModuleId())) {
@@ -435,6 +438,13 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 					debugToFile(component, "Reactivated");
 					conceptAffected = true;
 				} else if(!previouslyExistedActive) {
+					
+					if (component instanceof RefsetMember) {
+						RefsetMember refsetMember = (RefsetMember) component;
+						if (refsetMember.getRefsetId().equals("900000000000509007")) {
+							debug("here");
+						}
+					}
 					incrementCounts(component, counts, IDX_NEW);
 					debugToFile(component, "New");
 					conceptAffected = true;
@@ -480,7 +490,6 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 	}
 
 	private void debugToFile(Component c, String statType) throws TermServerScriptException {
-
 		// Only debug if we enable it (for testing really).
 		if (!debugToFile) {
 			return;
