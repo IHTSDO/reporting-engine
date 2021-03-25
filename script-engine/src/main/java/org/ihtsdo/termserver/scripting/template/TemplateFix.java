@@ -481,18 +481,18 @@ abstract public class TemplateFix extends BatchFix {
 		info("Outputting metadata tab");
 		String user = jobRun == null ? "System" : jobRun.getUser();
 		writeToReportFile (SECONDARY_REPORT, "Requested by: " + user);
-		writeToReportFile (SECONDARY_REPORT, "Ran against: " + subsetECL);
+		writeToReportFile (SECONDARY_REPORT, QUOTE + "Run against: " + subsetECL + QUOTE);
 		writeToReportFile (SECONDARY_REPORT, "Project: " + project);
 		writeToReportFile (SECONDARY_REPORT, "Concepts considered: " + findConcepts(subsetECL).size());
 		writeToReportFile (SECONDARY_REPORT, "Templates: " );
 		
 		for (Template t : templates) {
 			writeToReportFile (SECONDARY_REPORT,TAB + "Name: " + t.getName());
-			writeToReportFile (SECONDARY_REPORT,TAB + "Domain: " + t.getDomain());
+			writeToReportFile (SECONDARY_REPORT,QUOTE + TAB  + "Domain: " + t.getDomain() + QUOTE);
 			writeToReportFile (SECONDARY_REPORT,TAB + "Documentation: " + t.getDocumentation());
 			String stl = t.getLogicalTemplate().toString();
 			stl = SnomedUtils.populateFSNs(stl);
-			writeToReportFile (SECONDARY_REPORT,TAB + "STL: " + QUOTE +  stl + QUOTE);
+			writeToReportFile (SECONDARY_REPORT,QUOTE + TAB + "STL: " +  stl + QUOTE);
 			writeToReportFile (SECONDARY_REPORT,TAB);
 		}
 	}
