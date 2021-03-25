@@ -296,6 +296,8 @@ public class ArchiveManager implements RF2Constants {
 							//We only know if the components are released when loading an edition archive
 							Boolean isReleased = loadEditionArchive ? true : null;
 							loadArchive(snapshot, fsnOnly, "Snapshot", isReleased);
+						} catch (UnrecoverableTermServerScriptException unrecoverable) {
+							throw unrecoverable;
 						} catch (Exception e) {
 							TermServerScript.error ("Non-viable snapshot encountered (Exception: " + e.getMessage()  +").", e);
 							if (!snapshot.getName().startsWith("releases/")) {
@@ -465,6 +467,30 @@ public class ArchiveManager implements RF2Constants {
 			
 			if (gl.getAllConcepts().size() < 300000) {
 				throw new TermServerScriptException("Insufficient number of concepts loaded " + gl.getAllConcepts().size() + " - Snapshot archive damaged?");
+			}
+			
+			//Ensure that every active parent other than root has at least one parent in both views
+			debug("Ensuring all concepts have parents...");
+			String integrityFailureMessage = "";
+			boolean firstFailure = true;
+			for (Concept c : gl.getAllConcepts()) {
+				/*if (c.getId().equals("551000220107")) {
+					debug("here");
+				}*/
+				if (c.isActive() && !c.equals(ROOT_CONCEPT)) {
+					if (c.getParents(CharacteristicType.INFERRED_RELATIONSHIP).size() == 0) {
+						integrityFailureMessage += (firstFailure ? "":",\n") + c + " has no inferred parents";
+						firstFailure = false;
+					}
+					
+					if (c.getParents(CharacteristicType.STATED_RELATIONSHIP).size() == 0) {
+						integrityFailureMessage += (firstFailure ? "":",\n") + c + " has no stated parents";
+						firstFailure = false;
+					}
+				}
+			}
+			if (integrityFailureMessage.length() > 0) {
+				throw new UnrecoverableTermServerScriptException(integrityFailureMessage);
 			}
 			
 			if (!fsnOnly) {  

@@ -441,9 +441,9 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 					
 					if (component instanceof RefsetMember) {
 						RefsetMember refsetMember = (RefsetMember) component;
-						if (refsetMember.getRefsetId().equals("900000000000509007")) {
+						/*if (refsetMember.getRefsetId().equals("900000000000509007")) {
 							debug("here");
-						}
+						}*/
 					}
 					incrementCounts(component, counts, IDX_NEW);
 					debugToFile(component, "New");
@@ -702,7 +702,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 				}
 			}
 		}
-		throw new TermServerScriptException("Unable to determine hierarchy for " + c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+		throw new TermServerScriptException("Unable to determine hierarchy for " + c.toString() + "\n"+ c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 	}
 	
 	protected class Datum {

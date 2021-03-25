@@ -154,7 +154,7 @@ public class GraphLoader implements RF2Constants {
 				}
 				Concept thisConcept = getConcept(lineItems[REL_IDX_SOURCEID]);
 				
-				/*if (thisConcept.getId().equals("714209004")) {
+				/*if (thisConcept.getId().equals("551000220107") && lineItems[REL_IDX_TYPEID].equals("116680003")) {
 					TermServerScript.debug ("here");
 				}*/
 				

@@ -273,9 +273,6 @@ public class Relationship extends Component implements IRelationshipTemplate, RF
 	}
 
 	public boolean equals(Object other, boolean ignoreAxiom) {
-		if (other == this) {
-			return true;
-		}
 		if ((other instanceof Relationship) == false) {
 			return false;
 		}
