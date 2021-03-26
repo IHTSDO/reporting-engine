@@ -49,6 +49,7 @@ public class NewComponents extends TermServerReport implements ReportClass {
 				"Id, FSN, SemTag, Detail",
 				"Id, FSN, SemTag, Detail",
 				"Id, FSN, SemTag, Detail",
+				"Id, FSN, SemTag, Detail",
 		};
 		String[] tabNames = new String[] {
 				"Summary",
@@ -59,6 +60,7 @@ public class NewComponents extends TermServerReport implements ReportClass {
 				"Associations",
 				"Inactivations",
 				"Language Refsets",
+				"Text Defn"
 		};
 		super.postInit(tabNames, columnHeadings, false);
 	}
@@ -104,9 +106,13 @@ public class NewComponents extends TermServerReport implements ReportClass {
 			
 			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 				if (inScope(d)) {
+					boolean isTextDefn = d.getType().equals(DescriptionType.TEXT_DEFINITION);
+					int reportTab = isTextDefn ? NONARY_REPORT : TERTIARY_REPORT;
+					String componentTypeStr = isTextDefn ? "Text Defn" : "Description";
+							
 					if (!d.isReleased()) {
-						report(TERTIARY_REPORT, c, d.getTerm(), d);
-						componentCounts.getAndIncrement("Descriptions - " + d.getLang());
+						report(reportTab, c, d.getTerm(), d);
+						componentCounts.getAndIncrement(componentTypeStr + " - " + d.getLang());
 						countIssue(c);
 					}
 
@@ -114,6 +120,22 @@ public class NewComponents extends TermServerReport implements ReportClass {
 						if (inScope(langRefsetEntry) && !langRefsetEntry.isReleased()) {
 							report(OCTONARY_REPORT, c, langRefsetEntry);
 							componentCounts.getAndIncrement("Language Refsets - " + d.getLang());
+							countIssue(c);
+						}
+					}
+					
+					for (InactivationIndicatorEntry i : d.getInactivationIndicatorEntries()) {
+						if (inScope(i) && !i.isReleased()) {
+							report(SEPTENARY_REPORT, c, i);
+							componentCounts.getAndIncrement( componentTypeStr + " Inactivations - " + d.getLang());
+							countIssue(c);
+						}
+					}
+					
+					for (AssociationEntry assocEntry : d.getAssociationEntries()) {
+						if (inScope(assocEntry) && !assocEntry.isReleased()) {
+							report(SENARY_REPORT, c, assocEntry);
+							componentCounts.getAndIncrement(componentTypeStr + " Associations - " + d.getLang());
 							countIssue(c);
 						}
 					}
