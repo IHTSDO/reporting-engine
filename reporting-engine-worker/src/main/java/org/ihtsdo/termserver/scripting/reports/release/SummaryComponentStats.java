@@ -52,8 +52,8 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 	String complexName;
 	static final int TAB_CONCEPTS = 0, TAB_DESCS = 1, TAB_RELS = 2, TAB_AXIOMS = 3,
 			TAB_LANG = 4, TAB_INACT_IND = 5, TAB_HIST = 6, TAB_TEXT_DEFN = 7, TAB_QI = 8,
-			TAB_DESC_HIST = 9, TAB_DESC_INACT = 10, TAB_REFSET = 11;  //Ensure refset tab is the last one as it's written at the end.
-	static final int MAX_REPORT_TABS = 12;
+			TAB_DESC_HIST = 9, TAB_DESC_INACT = 10, TAB_CD = 11, TAB_REFSET = 12;  //Ensure refset tab is the last one as it's written at the end.
+	static final int MAX_REPORT_TABS = 13;
 	static final int DATA_WIDTH = 25;  //New, Changed, Inactivated, Reactivated, New with New Concept, extra1, extra2, Total, next 11 fields are the inactivation reason, concept affected, reactivated
 	static final int IDX_NEW = 0, IDX_CHANGED = 1, IDX_INACT = 2, IDX_REACTIVATED = 3, IDX_NEW_NEW = 4, IDX_NEW_P = 5, IDX_NEW_SD = 6,
 			IDX_TOTAL = 7, IDX_INACT_AMBIGUOUS = 8,  IDX_INACT_MOVED_ELSEWHERE = 9, IDX_INACT_CONCEPT_NON_CURRENT = 10,
@@ -75,8 +75,8 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20210131T120000Z.zip");
-		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20200731T120000Z.zip");
+		//params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20210131T120000Z.zip");
+		//params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20200731T120000Z.zip");
 		//params.put(REPORT_OUTPUT_TYPES, "S3");
 		//params.put(REPORT_FORMAT_TYPE, "JSON");
 		TermServerReport.run(SummaryComponentStats.class, args, params);
@@ -182,6 +182,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 												"Sctid, Hierarchy, SemTag, In Scope New, Attributes Added, Model Removed, Model Inactivated, Total In Scope",
 												"Sctid, Hierarchy, SemTag, New, Inactivated, Reactivated, Total, Total Active",
 												"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New with New Concept, Total Active, Total",
+												"Sctid, Hierarchy, SemTag, New Inferred Rels, Changed Inferred Rels, Inactivated Inferred Rels, Reactivated, New with New Concept, Total Active, Total, Concepts Affected",
 												"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New with New Concept, Total Active, Total"
 												};
 		String[] tabNames = new String[] {	"Concepts",
@@ -195,6 +196,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 											"QI Scope",
 											"Desc Assoc",
 											"Desc Inact",
+											"Concrete Rels",
 											"Refsets"};
 		topLevelHierarchies = new ArrayList<Concept>(ROOT_CONCEPT.getChildren(CharacteristicType.INFERRED_RELATIONSHIP));
 		topLevelHierarchies.add(UNKNOWN_CONCEPT); // Add this a we might not always be able to get the top level hierarchy
@@ -232,8 +234,10 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		info ("Analysing concepts");
 		Concept topLevel;
 		for (Concept c : gl.getAllConcepts()) {
+			/*if (c.getId().equals("322236009")) {
+				debug("here");
+			}*/
 			//Is this concept in scope?  Even if its not, some of its components might be.
-
 			if (c.isActive()) {	
 				topLevel = getHierarchy(tc, c);
 			} else {
@@ -275,10 +279,21 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 			
 			analyzeDescriptions(c, topLevel, wasActive, summaryData[TAB_DESC_HIST], summaryData[TAB_DESC_INACT]);
 			
-				//Component changes
+			List<Relationship> normalRels = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.BOTH)
+					.stream()
+					.filter(r -> !r.isConcrete())
+					.collect(Collectors.toList());
+			
+			List<Relationship> concreteRels = c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.BOTH)
+					.stream()
+					.filter(r -> r.isConcrete())
+					.collect(Collectors.toList());
+			
+			//Component changes
 			analyzeComponents(isNewConcept, (datum==null?null:datum.descIds), (datum==null?null:datum.descIdsInact), summaryData[TAB_DESCS], c.getDescriptions(ActiveState.BOTH, NOT_TEXT_DEFN));
 			analyzeComponents(isNewConcept, (datum==null?null:datum.descIds), (datum==null?null:datum.descIdsInact), summaryData[TAB_TEXT_DEFN], c.getDescriptions(ActiveState.BOTH, TEXT_DEFN));
-			analyzeComponents(isNewConcept, (datum==null?null:datum.relIds), (datum==null?null:datum.relIdsInact), summaryData[TAB_RELS], c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.BOTH));
+			analyzeComponents(isNewConcept, (datum==null?null:datum.relIds), (datum==null?null:datum.relIdsInact), summaryData[TAB_RELS], normalRels);
+			analyzeComponents(isNewConcept, (datum==null?null:datum.relIds), (datum==null?null:datum.relIdsInact), summaryData[TAB_CD], concreteRels);
 			analyzeComponents(isNewConcept, (datum==null?null:datum.axiomIds), (datum==null?null:datum.axiomIdsInact), summaryData[TAB_AXIOMS], c.getAxiomEntries());
 			analyzeComponents(isNewConcept, (datum==null?null:datum.inactivationIds), (datum==null?null:datum.inactivationIdsInact), summaryData[TAB_INACT_IND], c.getInactivationIndicatorEntries());
 			analyzeComponents(isNewConcept, (datum==null?null:datum.histAssocIds), (datum==null?null:datum.histAssocIdsInact), summaryData[TAB_HIST], c.getAssociations(ActiveState.BOTH, true));
@@ -439,12 +454,12 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 					conceptAffected = true;
 				} else if(!previouslyExistedActive) {
 					
-					if (component instanceof RefsetMember) {
+					/*if (component instanceof RefsetMember) {
 						RefsetMember refsetMember = (RefsetMember) component;
-						/*if (refsetMember.getRefsetId().equals("900000000000509007")) {
+						if (refsetMember.getRefsetId().equals("900000000000509007")) {
 							debug("here");
-						}*/
-					}
+						}
+					}*/
 					incrementCounts(component, counts, IDX_NEW);
 					debugToFile(component, "New");
 					conceptAffected = true;
@@ -610,7 +625,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 
 		sheetFieldsByIndex.put(TAB_CONCEPTS, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_NEW, IDX_NEW_SD, IDX_NEW_P, IDX_TOTAL_ACTIVE, IDX_TOTAL, IDX_PROMOTED)));
 
-		Arrays.asList(TAB_DESCS, TAB_RELS, TAB_AXIOMS, TAB_TEXT_DEFN, TAB_DESC_INACT, TAB_REFSET).stream().forEach(index -> {
+		Arrays.asList(TAB_DESCS, TAB_RELS, TAB_CD, TAB_AXIOMS, TAB_TEXT_DEFN, TAB_DESC_INACT, TAB_REFSET).stream().forEach(index -> {
 			sheetFieldsByIndex.put(index, new LinkedList<Integer>(Arrays.asList(IDX_NEW, IDX_CHANGED, IDX_INACT, IDX_REACTIVATED, IDX_NEW_NEW, IDX_TOTAL_ACTIVE, IDX_TOTAL, IDX_CONCEPTS_AFFECTED)));
 		});
 
