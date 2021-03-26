@@ -28,6 +28,9 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 	private Set<Concept> hasNewDescriptions = new HashSet<>();
 	private Set<Concept> hasChangedDescriptions = new HashSet<>();
 	private Set<Concept> hasLostDescriptions = new HashSet<>();
+	private Set<Concept> hasNewTextDefn = new HashSet<>();
+	private Set<Concept> hasChangedTextDefn = new HashSet<>();
+	private Set<Concept> hasLostTextDefn = new HashSet<>();
 	private Set<Concept> hasChangedAssociations = new HashSet<>();
 	private Set<Concept> hasChangedInactivationIndicators = new HashSet<>();
 	private Set<Concept> isTargetOfNewStatedRelationship = new HashSet<>();
@@ -36,7 +39,9 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 	private Set<Concept> wasTargetOfLostInferredRelationship = new HashSet<>();
 	
 	//RP-398
-	private Set<Concept> hasChangedAcceptability = new HashSet<>();
+	private Set<Concept> hasChangedAcceptabilityDesc = new HashSet<>();
+	//RP-452
+	private Set<Concept> hasChangedAcceptabilityTextDefn = new HashSet<>();
 
 	//RP-387
 	private Set<Concept> hasNewLanguageRefSets = new HashSet<>();
@@ -68,8 +73,10 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 				"Id, FSN, SemTag, Active, hasNewDescriptions, hasChangedDescriptions, hasLostDescriptions, hasChangedAcceptability, Author, Task, Creation Date",
 				"Id, FSN, SemTag, Active, hasChangedAssociations, hasChangedInactivationIndicators, Author, Task, Creation Date",
 				"Id, FSN, SemTag, Active, isTargetOfNewStatedRelationship, isTargetOfNewInferredRelationship, wasTargetOfLostStatedRelationship, wasTargetOfLostInferredRelationship, Author, Task, Creation Date",
-				"Id, FSN, SemTag, Language, Description, isNew, isChanged, wasInactivated, changedAcceptability",
-				"Id, FSN, SemTag, Description, LangRefset, isNew, isChanged, wasInactivated"
+				"Id, FSN, SemTag, Language, Description, isNew, isChanged, wasInactivated, changedAcceptability,Description Type",
+				"Id, FSN, SemTag, Description, LangRefset, isNew, isChanged, wasInactivated",
+				"Id, FSN, SemTag, Active, hasNewTextDefn, hasChangedTextDefn, hasLostTextDefn, hasChangedAcceptability, Author, Task, Creation Date",
+				
 		};
 		String[] tabNames = new String[] {
 				"Summary Counts",
@@ -79,7 +86,8 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 				"Association Changes",
 				"Incoming Relationship Changes",
 				"Description Change Details",
-				"Language Refset Details"
+				"Language Refset Details",
+				"TextDefn Changes"
 		};
 		super.postInit(tabNames, columnHeadings, false);
 		traceability = new TraceabilityService(jobRun, this, "pdat");  //Matching Updating and updated
@@ -155,7 +163,15 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 			}
 			
 			for (Description d : c.getDescriptions()) {
-				summaryCount = getSummaryCount(ComponentType.DESCRIPTION.name() + " - " + d.getLang());
+				//Report FSN/Synonyms and TextDefinition separately.
+				boolean isTextDefn = d.getType().equals(DescriptionType.TEXT_DEFINITION);
+				ComponentType componentType = isTextDefn ? ComponentType.TEXT_DEFINITION : ComponentType.DESCRIPTION;
+				Set<Concept> hasNew = isTextDefn ? hasNewTextDefn : hasNewDescriptions;
+				Set<Concept> hasLost = isTextDefn ? hasLostTextDefn : hasLostDescriptions;
+				Set<Concept> hasChanged = isTextDefn ? hasChangedTextDefn : hasChangedDescriptions;
+				Set<Concept> hasChangedAcceptability = isTextDefn ? hasChangedAcceptabilityTextDefn : hasChangedAcceptabilityDesc;
+				
+				summaryCount = getSummaryCount(componentType.name() + " - " + d.getLang());
 				SummaryCount summaryCountLRF = getSummaryCount(ComponentType.LANGREFSET.name() + " - " + d.getLang());
 				boolean isNew = false;
 				boolean isChanged = false;
@@ -163,16 +179,16 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 				boolean changedAcceptability = false;
 				if (inScope(d)) {
 					if (!d.isReleased()) {
-						hasNewDescriptions.add(c);
+						hasNew.add(c);
 						isNew = true;
 						summaryCount.isNew++;
 					} else if (StringUtils.isEmpty(d.getEffectiveTime())) {
 						if (!d.isActive()) {
-							hasLostDescriptions.add(c);
+							hasLost.add(c);
 							wasInactivated = true;
 							summaryCount.isInactivated++;
 						} else {
-							hasChangedDescriptions.add(c);
+							hasChanged.add(c);
 							isChanged = true;
 							summaryCount.isChanged++;
 						}
@@ -253,7 +269,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 				}
 				
 				if (isNew || isChanged || wasInactivated || changedAcceptability) {
-					report (SEPTENARY_REPORT, c, d.getLang(), d, isNew, isChanged, wasInactivated, changedAcceptability);
+					report (SEPTENARY_REPORT, c, d.getLang(), d, isNew, isChanged, wasInactivated, changedAcceptability, d.getType());
 				}
 			}
 			
@@ -380,7 +396,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		superSet.addAll(hasNewDescriptions);
 		superSet.addAll(hasChangedDescriptions);
 		superSet.addAll(hasLostDescriptions);
-		superSet.addAll(hasChangedAcceptability);
+		superSet.addAll(hasChangedAcceptabilityDesc);
 		debug ("Creating description report for " + superSet.size() + " concepts");
 		for (Concept c : sort(superSet)) {
 			traceability.populateTraceabilityAndReport (QUATERNARY_REPORT, c,
@@ -388,7 +404,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 				hasNewDescriptions.contains(c)?"Y":"N",
 				hasChangedDescriptions.contains(c)?"Y":"N",
 				hasLostDescriptions.contains(c)?"Y":"N",
-				hasChangedAcceptability.contains(c)?"Y":"N");
+				hasChangedAcceptabilityDesc.contains(c)?"Y":"N");
 		}
 		getSummaryCount("Concept Descriptions Changed").isNew = hasNewDescriptions.size();
 		getSummaryCount("Concept Descriptions Changed").isChanged = hasChangedDescriptions.size();
@@ -410,7 +426,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		superSet.addAll(wasTargetOfLostStatedRelationship);
 		superSet.addAll(isTargetOfNewInferredRelationship);
 		superSet.addAll(wasTargetOfLostInferredRelationship);
-		debug ("Creating incoming relatonshiip report for " + superSet.size() + " concepts");
+		debug ("Creating incoming relationship report for " + superSet.size() + " concepts");
 		for (Concept c : sort(superSet)) {
 			traceability.populateTraceabilityAndReport (SENARY_REPORT, c,
 				c.isActive()?"Y":"N",
@@ -419,6 +435,25 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 				isTargetOfNewInferredRelationship.contains(c)?"Y":"N",
 				wasTargetOfLostInferredRelationship.contains(c)?"Y":"N");
 		}
+		superSet.clear();
+		
+		superSet.addAll(hasNewTextDefn);
+		superSet.addAll(hasChangedTextDefn);
+		superSet.addAll(hasLostTextDefn);
+		superSet.addAll(hasChangedAcceptabilityTextDefn);
+		debug ("Creating text defn report for " + superSet.size() + " concepts");
+		for (Concept c : sort(superSet)) {
+			traceability.populateTraceabilityAndReport (NONARY_REPORT, c,
+				c.isActive()?"Y":"N",
+				hasNewTextDefn.contains(c)?"Y":"N",
+				hasChangedTextDefn.contains(c)?"Y":"N",
+				hasLostTextDefn.contains(c)?"Y":"N",
+				hasChangedAcceptabilityTextDefn.contains(c)?"Y":"N");
+		}
+		getSummaryCount("Concept TextDefn Changed").isNew = hasNewTextDefn.size();
+		getSummaryCount("Concept TextDefn Changed").isChanged = hasChangedTextDefn.size();
+		getSummaryCount("Concept TextDefn Changed").isInactivated = hasLostTextDefn.size();
+		superSet.clear();
 		
 		traceability.flush();
 		
@@ -459,7 +494,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		superSet.addAll(wasTargetOfLostStatedRelationship);
 		superSet.addAll(isTargetOfNewInferredRelationship);
 		superSet.addAll(wasTargetOfLostInferredRelationship);
-		superSet.addAll(hasChangedAcceptability);
+		superSet.addAll(hasChangedAcceptabilityDesc);
 		superSet.addAll(hasNewLanguageRefSets);
 		superSet.addAll(hasLostLanguageRefSets);
 		superSet.addAll(hasChangedLanguageRefSets);
