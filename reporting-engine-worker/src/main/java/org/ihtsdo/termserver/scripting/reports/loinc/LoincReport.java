@@ -9,6 +9,7 @@ import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.service.TraceabilityService;
+import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
 
@@ -17,6 +18,8 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
  * and << 386053000 | Evaluation procedure (procedure)
  */
 public class LoincReport extends TermServerReport implements ReportClass {
+	
+	Set<String> semTagExclusions = new HashSet<>();
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		TermServerReport.run(LoincReport.class, args, new HashMap<>());
@@ -33,7 +36,7 @@ public class LoincReport extends TermServerReport implements ReportClass {
 				"SCTID, FSN, SemTag, Author, Task, Creation Date"};
 		String[] tabNames = new String[] {	"New Observable Entities",
 				"New Evaluation Procedures"};
-		
+		semTagExclusions.add("(regime/therapy)");
 		super.postInit(tabNames, columnHeadings, false);
 	}
 	
@@ -52,18 +55,28 @@ public class LoincReport extends TermServerReport implements ReportClass {
 		TraceabilityService traceability = new TraceabilityService(jobRun, this, "reating concept");
 		
 		for (Concept c : gl.getConcept("363787002 | Observable entity (observable entity)").getDescendents(NOT_SET)) {
-			if (!c.isReleased()) {
+			if (!c.isReleased() && !isExcluded(c)) {
 				traceability.populateTraceabilityAndReport(PRIMARY_REPORT, c);
 				countIssue(c);
 			}
 		}
 		
 		for (Concept c : gl.getConcept("386053000 | Evaluation procedure (procedure)").getDescendents(NOT_SET)) {
-			if (!c.isReleased()) {
-				traceability.populateTraceabilityAndReport (SECONDARY_REPORT, c);
+			if (!c.isReleased() && !isExcluded(c)) {
+				traceability.populateTraceabilityAndReport(SECONDARY_REPORT, c);
 				countIssue(c);
 			}
 		}
 		traceability.flush();
+	}
+
+	private boolean isExcluded(Concept c) {
+		String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
+		for (String semTagExclusion : semTagExclusions) {
+			if (semTag.equals(semTagExclusion)) {
+				return true;
+			}
+		}
+		return false;
 	}
 }
