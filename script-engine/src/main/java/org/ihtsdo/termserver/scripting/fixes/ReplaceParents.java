@@ -113,7 +113,8 @@ public class ReplaceParents extends BatchFix implements RF2Constants{
 			if (replacementMade) {
 				//Don't remove the targetPPP - it might already be there!
 				if (!parentRel.getTarget().equals(ppps.get(0))) {
-					c.removeRelationship(parentRel);
+					//Safe to force the removal of this relationship because it's in a axiom, so that will be modified rather than deleted.
+					c.removeRelationship(parentRel, true);
 					changesMade ++;
 					report (t, c, Severity.LOW, ReportActionType.RELATIONSHIP_DELETED, parentRel);
 				}
