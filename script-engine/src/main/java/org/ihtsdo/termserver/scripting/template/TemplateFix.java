@@ -212,7 +212,7 @@ abstract public class TemplateFix extends BatchFix {
 		}
 	}
 	
-	protected Set<Concept> findTemplateMatches(Template t, Collection<Concept> concepts, Set<Concept> misalignedConcepts, Integer exclusionReport) throws TermServerScriptException {
+	protected Set<Concept> findTemplateMatches(Template t, Collection<Concept> concepts, Set<Concept> misalignedConcepts, Integer exclusionReport, CharacteristicType charType) throws TermServerScriptException {
 		Set<Concept> matches = new HashSet<Concept>();
 		info ("Examining " + concepts.size() + " concepts against template " + t);
 		int conceptsExamined = 0;
@@ -222,7 +222,7 @@ abstract public class TemplateFix extends BatchFix {
 				continue;
 			}
 			if (!isExcluded(c, exclusionReport)) {
-				if (TemplateUtils.matchesTemplate(c, t, this, CharacteristicType.INFERRED_RELATIONSHIP)) {
+				if (TemplateUtils.matchesTemplate(c, t, this, charType)) {
 					//Do we already have a template for this concept?  
 					//Assign the most specific template if so (TODO Don't assume order indicates complexity!)
 					if (conceptToTemplateMap.containsKey(c)) {

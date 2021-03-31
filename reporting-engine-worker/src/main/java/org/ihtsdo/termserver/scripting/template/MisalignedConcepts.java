@@ -26,11 +26,15 @@ import org.springframework.util.StringUtils;
  */
 public class MisalignedConcepts extends TemplateFix implements ReportClass {
 	
-	private Map<Concept, List<String>> conceptDiagnostics = new HashMap<>();
+	private Map<Concept, List<String>> conceptDiagnosticsInferred = new HashMap<>();
+	private Map<Concept, List<String>> conceptDiagnosticsStated = new HashMap<>();
 	public static final String INCLUDE_COMPLEX = "Include complex cases";
 	public static final String INCLUDE_ORPHANET = "Include Orphanet";
 	public static final String KNOWN_COMPLETE = "Skip Known Complete";
 	public static final String KNOWN_COMPLETE_ECL = " <<2775001 OR <<3218000 OR <<3723001 OR <<5294002 OR <<7890003 OR <<8098009 OR <<17322007 OR <<20376005 OR <<34014006 OR <<40733004 OR <<52515009 OR <<85828009 OR <<87628006 OR <<95896000 OR <<109355002 OR <<118616009 OR <<125605004 OR <<125643001 OR <<125666000 OR <<125667009 OR <<125670008 OR <<126537000 OR <<128139000 OR <<128294001 OR <<128477000 OR <<128482007 OR <<131148009 OR <<193570009 OR <<233776003 OR <<247441003 OR <<276654001 OR <<283682007 OR <<298180004 OR <<307824009 OR <<312608009 OR <<362975008 OR <<399963005 OR <<399981008 OR <<400006008 OR <<400178008 OR <<416462003 OR <<416886008 OR <<417893002 OR <<419199007 OR <<428794004 OR <<429040005 OR <<432119003 OR <<441457006 OR <<419199007 OR <<282100009 OR <<55342001 OR <<128462008 OR <<363346000 OR <<372087000 OR <<785851003 OR <<308492005";
+	
+	List<Concept> alreadyReportAligned = new ArrayList<>();
+	List<Concept> alreadyReportedExcluded = new ArrayList<>();
 	
 	public MisalignedConcepts() {
 		super(null);
@@ -394,11 +398,15 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		String[] columnHeadings = new String[] {
 				"TASK_KEY, TASK_DESC, SCTID, FSN, CONCEPT_TYPE, SEVERITY, ACTION_TYPE, DefnStatus, TemplateMatched, IsComplex, IsOrphanet, Template Diagnostic",
 				"Report Metadata", 
+				"TASK_KEY, TASK_DESC, SCTID, FSN, CONCEPT_TYPE, SEVERITY, ACTION_TYPE, DefnStatus, TemplateMatched, IsComplex, IsOrphanet, Template Diagnostic",
+				"TASK_KEY, TASK_DESC, SCTID, FSN, CONCEPT_TYPE, SEVERITY, ACTION_TYPE, DefnStatus, TemplateMatched, IsComplex, IsOrphanet, Template Diagnostic",
 				"SCTID, FSN, SemTag, Reason", 
 				"SCTID, FSN, SemTag, Template Aligned"};
 		String[] tabNames = new String[] {
-				"Misaligned Concepts",
+				"Misaligned Inferred",
 				"Metadata",
+				"Misaligned Stated",
+				"Misaligned Both",
 				"Excluded Concepts",
 				"Aligned Concepts"};
 		super.postInit(tabNames, columnHeadings, false);
@@ -414,14 +422,40 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 	private void report(Task t, Concept c) throws TermServerScriptException {
 		//Collect the diagnostic information about why this concept didn't match any templates as a string
 		String diagnosticStr = "No diagnostic information available";
-		if (conceptDiagnostics.get(c) != null) {
-			diagnosticStr = String.join("\n", conceptDiagnostics.get(c));
+		if (conceptDiagnosticsInferred.get(c) != null) {
+			diagnosticStr = String.join("\n", conceptDiagnosticsInferred.get(c));
 		}
 		report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, isComplex(c)?"Y":"N", gl.isOrphanetConcept(c)?"Y":"N", diagnosticStr);
 	}
-
+	
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
+	
+		List<Component> inferredMisaligned = identifyComponentsToProcess(CharacteristicType.INFERRED_RELATIONSHIP);
 		
+		//Inferred misaligned will be processed into tasks, so still need to report on stated and both
+		List<Component> statedMisaligned = identifyComponentsToProcess(CharacteristicType.STATED_RELATIONSHIP);
+		reportMisaligned(statedMisaligned, TERTIARY_REPORT, conceptDiagnosticsStated);
+		
+		statedMisaligned.retainAll(inferredMisaligned);
+		reportMisaligned(statedMisaligned, QUATERNARY_REPORT, conceptDiagnosticsInferred);
+		
+		//We'll continue to put the inferred view misaligned concepts into tasks
+		return inferredMisaligned;
+	}
+
+	private void reportMisaligned(List<Component> misaligned, int tabIdx, Map<Concept, List<String>> conceptDiagnostics) throws TermServerScriptException {
+		for (Component thisMisaligned : misaligned) {
+			Concept c = (Concept) thisMisaligned;
+			String diagnosticStr = "No diagnostic information available";
+			if (conceptDiagnostics.get(c) != null) {
+				diagnosticStr = String.join("\n", conceptDiagnostics.get(c));
+			}
+			report (tabIdx, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, isComplex(c)?"Y":"N", gl.isOrphanetConcept(c)?"Y":"N", diagnosticStr);
+		}
+	}
+
+	protected List<Component> identifyComponentsToProcess(CharacteristicType charType) throws TermServerScriptException {
+		Map<Concept, List<String>> conceptDiagnostics = charType.equals(CharacteristicType.INFERRED_RELATIONSHIP) ? conceptDiagnosticsInferred : conceptDiagnosticsStated;
 		//Start with the whole subHierarchy and remove concepts that match each of our templates
 		Collection<Concept> potentiallyMisaligned = new ArrayList<>(findConcepts(subsetECL));
 		
@@ -433,13 +467,14 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		
 		//Remove all exclusions before we look for matches
 		for (Concept c : potentiallyMisaligned) {
-			if (whiteListedConcepts.contains(c)) {
+			if (whiteListedConcepts.contains(c) && !alreadyReportedExcluded.contains(c)) {
 				incrementSummaryInformation(WHITE_LISTED_COUNT);
-				report (TERTIARY_REPORT, c, "White listed");
+				report (QUINARY_REPORT, c, "White listed");
 				ignoredConcepts.add(c);
+				alreadyReportedExcluded.add(c);
 				continue;
 			}
-			if (isExcluded(c, TERTIARY_REPORT)) {
+			if (alreadyReportedExcluded.contains(c) || isExcluded(c, TERTIARY_REPORT)) {
 				ignoredConcepts.add(c);
 			}
 		}
@@ -447,18 +482,21 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		
 		//Find matches against all templates
 		for (Template template : templates) {
-			Set<Concept> matches = findTemplateMatches(template, potentiallyMisaligned, null, TERTIARY_REPORT);
+			Set<Concept> matches = findTemplateMatches(template, potentiallyMisaligned, null, TERTIARY_REPORT, charType);
 			incrementSummaryInformation("Matched templates",matches.size());
 			for (Concept match : matches) {
-				//Which template did we match?
-				char templateId = conceptToTemplateMap.get(match).getId();
-				report (QUATERNARY_REPORT, match, templateId);
+				if (!alreadyReportAligned.contains(match)) {
+					//Which template did we match?
+					char templateId = conceptToTemplateMap.get(match).getId();
+					report (SENARY_REPORT, match, templateId);
+					alreadyReportAligned.add(match);
+				}
 			}
 			potentiallyMisaligned.removeAll(matches);
 			int beforeCount = potentiallyMisaligned.size();
 			potentiallyMisaligned.removeAll(exclusions);
 			int afterCount = potentiallyMisaligned.size();
-			addSummaryInformation("Excluded due to subHierarchy rules", (beforeCount - afterCount));
+			addSummaryInformation("Excluded due to subHierarchy rules - " + charType, (beforeCount - afterCount));
 		}
 		
 		//Record diagnostics for all concepts that failed to align to a template
@@ -468,14 +506,17 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 			String msg = "Cardinality mismatch: " +  (StringUtils.isEmpty(c.getIssues())?" N/A" : c.getIssues());
 			diagnostics.add(msg);
 			diagnostics.add("Relationship Group mismatches:");
-			for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP)) {
+			for (RelationshipGroup g : c.getRelationshipGroups(charType)) {
 				//is this group purely inferred?  Add an indicator if so 
 				String purelyInferredIndicator = groupPurelyInferred(c,g)?"^":"";
 				msg = "    " + purelyInferredIndicator + g;
 				diagnostics.add(msg);
 			}
-			incrementSummaryInformation("Concepts identified as not matching any template");
-			countIssue(c);
+			
+			if (charType.equals(CharacteristicType.INFERRED_RELATIONSHIP)) {
+				incrementSummaryInformation("Concepts identified as not matching any template in inferred view");
+				countIssue(c);
+			}
 		}
 		return asComponents(potentiallyMisaligned);
 	}

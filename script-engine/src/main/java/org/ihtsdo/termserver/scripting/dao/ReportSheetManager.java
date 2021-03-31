@@ -25,7 +25,6 @@ import org.ihtsdo.termserver.scripting.util.StringUtils;
 
 public class ReportSheetManager implements RF2Constants, ReportProcessor {
 
-	private static final String DOMAIN = "ihtsdo.org";
 	private static final String RAW = "RAW";
 	private static final String APPLICATION_NAME = "SI Reporting Engine";
 	private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
@@ -285,11 +284,14 @@ public class ReportSheetManager implements RF2Constants, ReportProcessor {
 		
 	}
 
-	private void addDataToBWritten(int tabIdx, String line) {
+	private void addDataToBWritten(int tabIdx, String line) throws TermServerScriptException {
 		List<Object> data = StringUtils.csvSplitAsObject(line);
 		List<List<Object>> cells = Arrays.asList(data);
 		//Increment the current row position so we create the correct range
 		tabLineCount.merge(tabIdx, 1, Integer::sum);
+		if (!maxTabColumns.containsKey(tabIdx)) {
+			throw new TermServerScriptException("Attempt to write to sheet " + tabIdx + " but sheet not known to SheetManager. Check list of tab names initialised");
+		}
 		int maxColumn = maxTabColumns.get(tabIdx);
 		String maxColumnStr = Character.toString((char)('A' + maxColumn));
 		String range = "'" + owner.getTabNames().get(tabIdx) + "'!A" + tabLineCount.get(tabIdx) + ":" + maxColumnStr +  tabLineCount.get(tabIdx); 

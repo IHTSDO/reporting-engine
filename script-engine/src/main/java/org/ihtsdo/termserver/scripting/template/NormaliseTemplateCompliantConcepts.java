@@ -534,7 +534,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 			addSummaryInformation("Concepts matching ECL", potentialMatches.size());
 			//Only concepts that are misaligned against *all* templates should be counted
 			//But in the case of Normalise, we only use a single template
-			alignedConcepts.addAll(findTemplateMatches(template, potentialMatches, misalignedConcepts, TERTIARY_REPORT));
+			alignedConcepts.addAll(findTemplateMatches(template, potentialMatches, misalignedConcepts, TERTIARY_REPORT, CharacteristicType.INFERRED_RELATIONSHIP));
 			//So how many did NOT align? Total rejections minus those excluded for other reasons
 			int rejected = potentialMatches.size() - alignedConcepts.size();
 			int misalignedCount = rejected - getSummaryInformationInt("Concepts excluded");
