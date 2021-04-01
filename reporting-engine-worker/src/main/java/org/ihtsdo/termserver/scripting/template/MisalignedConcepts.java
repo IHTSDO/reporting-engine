@@ -179,7 +179,11 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 				templateName = "User supplied template";
 			} 
 			char templateId = (char)('A' + templates.size());
-			templates.add(new Template (templateId, logicalTemplate, templateName));
+			Template t = new Template (templateId, logicalTemplate, templateName);
+			if (t.getDomain() == null) {
+				t.setDomain(subsetECL);
+			}
+			templates.add(t);
 		} catch (Exception e) {
 			throw new TermServerScriptException("Failed to load tempate '" + template + "'", e);
 		}
@@ -398,8 +402,8 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		String[] columnHeadings = new String[] {
 				"TASK_KEY, TASK_DESC, SCTID, FSN, CONCEPT_TYPE, SEVERITY, ACTION_TYPE, DefnStatus, TemplateMatched, IsComplex, IsOrphanet, Template Diagnostic",
 				"Report Metadata", 
-				"TASK_KEY, TASK_DESC, SCTID, FSN, CONCEPT_TYPE, SEVERITY, ACTION_TYPE, DefnStatus, TemplateMatched, IsComplex, IsOrphanet, Template Diagnostic",
-				"TASK_KEY, TASK_DESC, SCTID, FSN, CONCEPT_TYPE, SEVERITY, ACTION_TYPE, DefnStatus, TemplateMatched, IsComplex, IsOrphanet, Template Diagnostic",
+				"SCTID, FSN, SEMTAG, SEVERITY, ACTION_TYPE, IsComplex, IsOrphanet, Template Diagnostic",
+				"SCTID, FSN, SEMTAG, SEVERITY, ACTION_TYPE, IsComplex, IsOrphanet, Template Diagnostic",
 				"SCTID, FSN, SemTag, Reason", 
 				"SCTID, FSN, SemTag, Template Aligned"};
 		String[] tabNames = new String[] {
