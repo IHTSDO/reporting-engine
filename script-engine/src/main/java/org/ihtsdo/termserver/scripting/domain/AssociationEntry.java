@@ -48,6 +48,9 @@ public class AssociationEntry extends RefsetMember implements RF2Constants {
 	
 	public static AssociationEntry fromRf2(String[] lineItems) {
 		AssociationEntry h = new AssociationEntry();
+		if (lineItems.length <= ASSOC_IDX_TARGET) {
+			throw new IllegalArgumentException ("Failure to deserialize HistAssoc " + lineItems[ASSOC_IDX_ID] + " due to missing fields");
+		}
 		h.setId(lineItems[ASSOC_IDX_ID]);
 		h.setEffectiveTime(lineItems[ASSOC_IDX_EFFECTIVETIME]);
 		h.setActive(lineItems[ASSOC_IDX_ACTIVE].equals("1"));
