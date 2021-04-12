@@ -1,0 +1,7 @@
+{
+  "name": "Intoxication (disorder)",
+  "domain": "<< 1149322001 |Intoxication (disorder)|",
+  "documentation": "https://confluence.ihtsdotools.org/pages/viewpage.action?pageId=122721942",
+  "version": 1,
+  "logicalTemplate": "1149322001 |Intoxication (disorder)| : [[~0..1]] {[[~0..1]]  263502005 |Clinical course (attribute)|  = [[ +id ( <  288524001 |Courses (qualifier value)| ) @course]]}, [[~0..* @rolegroup]]{[[~0..1]]  246075003 |Causative agent (attribute)|  = [[+id ( <  105590001 |Substance (substance)|  OR <  373873005 |Pharmaceutical / biologic product (product)| ) @causative]],[[~0..1]]   363698007 |Finding site (attribute)|  = [[+id ( <<  12738006 |Brain structure (body structure)| ) ]] }"
+}
