@@ -9,7 +9,9 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
-public class RefsetMember extends Component {
+public class 
+
+RefsetMember extends Component {
 
 	@SerializedName("active")
 	@Expose
@@ -37,7 +39,7 @@ public class RefsetMember extends Component {
 	protected  Map<String, String> additionalFields;
 	@SerializedName("referencedComponent")
 	@Expose
-	protected  ReferencedComponent referencedComponent;
+	protected Component referencedComponent;
 	@SerializedName("effectiveTime")
 	@Expose
 	protected  String effectiveTime;
@@ -48,6 +50,11 @@ public class RefsetMember extends Component {
 	
 	public RefsetMember() {}
 	
+	public RefsetMember(String refsetId, Concept referencedCompoment, String[] additionalValues) {
+		this.refsetId = refsetId;
+		this.referencedComponent = referencedCompoment;
+	}
+
 	public void setEffectiveTime(String effectiveTime) {
 		if (this.effectiveTime != null && !this.effectiveTime.isEmpty() && effectiveTime == null) {
 			//Are we resetting this component to mark a change?
@@ -132,11 +139,11 @@ public class RefsetMember extends Component {
 		return this.additionalFields.get(key);
 	}
 
-	public ReferencedComponent getReferencedComponent() {
+	public Component getReferencedComponent() {
 		return referencedComponent;
 	}
 
-	public void setReferencedComponent(ReferencedComponent referencedComponent) {
+	public void setReferencedComponent(Component referencedComponent) {
 		this.referencedComponent = referencedComponent;
 	}
 

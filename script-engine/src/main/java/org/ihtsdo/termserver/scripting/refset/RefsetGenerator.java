@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.TermServerScript;
@@ -82,9 +83,10 @@ public abstract class RefsetGenerator extends TermServerScript {
 				columns[REF_IDX_ACTIVE] = "1";
 				columns[REF_IDX_MODULEID] = moduleId;
 				columns[REF_IDX_REFSETID] = member.getRefsetId();
-				columns[REF_IDX_REFCOMPID] = member.getReferencedComponentId().getConceptId();
+				columns[REF_IDX_REFCOMPID] = member.getReferencedComponentId();
 				for (int i = 0; i < additionalColumnsCount ; i++) {
-					columns [REF_IDX_FIRST_ADDITIONAL + i] = member.getAdditionalValues()[i];
+					throw new NotImplementedException("TODO Resolve ordering of additional values columns");
+					//columns [REF_IDX_FIRST_ADDITIONAL + i] = member.getAdditionalValues()[i];
 				}
 				columns[columnCount -1] = LINE_DELIMITER;
 				String line = StringUtils.join(columns, TSV_FIELD_DELIMITER);

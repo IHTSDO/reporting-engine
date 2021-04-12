@@ -528,14 +528,14 @@ public class TermServerClient {
 		}
 	}
 
-	public void updateRefsetMember(String branchPath, RefsetEntry refsetEntry, boolean forceUpdate) throws TermServerScriptException {
+	public void updateRefsetMember(String branchPath, RefsetMember refsetEntry, boolean forceUpdate) throws TermServerScriptException {
 		try {
-			ResponseEntity<RefsetEntry> response = restTemplate.exchange(
+			ResponseEntity<RefsetMember> response = restTemplate.exchange(
 					getRefsetMemberUpdateUrl(refsetEntry.getId(), branchPath, forceUpdate),
 					HttpMethod.PUT,
 					new HttpEntity<>(refsetEntry, headers),
-					RefsetEntry.class);
-			RefsetEntry updatedEntry = response.getBody();
+					RefsetMember.class);
+			RefsetMember updatedEntry = response.getBody();
 			Preconditions.checkNotNull(updatedEntry);
 			logger.info("Updated refset member " + refsetEntry.getId());
 		} catch (Exception e) {

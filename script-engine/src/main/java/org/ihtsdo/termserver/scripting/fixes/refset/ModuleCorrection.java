@@ -8,7 +8,7 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.Refset;
-import org.ihtsdo.termserver.scripting.domain.RefsetEntry;
+import org.ihtsdo.termserver.scripting.domain.RefsetMember;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
@@ -60,20 +60,20 @@ public class ModuleCorrection extends TermServerScript/*extends RefsetFixer*/ {
 			throw new TermServerScriptException("Unable to fix " + descId + " as has " + refset.getItems().size() + " refset entries");
 		}
 		
-		RefsetEntry refsetEntry = refset.getItems().iterator().next();
-		if (forceEffectiveTime != null || refsetEntry.getModuleId().equals(wrongModule)) {
+		RefsetMember r = refset.getItems().iterator().next();
+		if (forceEffectiveTime != null || r.getModuleId().equals(wrongModule)) {
 			if (forceEffectiveTime != null) {
-				refsetEntry.setEffectiveTime(forceEffectiveTime);
+				r.setEffectiveTime(forceEffectiveTime);
 			}
-			refsetEntry.setModuleId(rightModule);
+			r.setModuleId(rightModule);
 		} else {
-			info ("No change required - "+ refsetEntry.getId() + " for " + descId);
+			info ("No change required - "+ r.getId() + " for " + descId);
 			return;
 		}
 		
 		//Save
-		tsClient.updateRefsetMember(project.getBranchPath(), refsetEntry, (forceEffectiveTime != null));
-		info ("Fixed " + refsetEntry.getId() + " for " + descId);
+		tsClient.updateRefsetMember(project.getBranchPath(), r, (forceEffectiveTime != null));
+		info ("Fixed " + r.getId() + " for " + descId);
 	}
 
 	@Override

@@ -45,7 +45,7 @@ public class ActiveLangRefOnInactiveDescFix extends BatchFix {
 					//Does it still have an active language refset?
 					for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.ACTIVE)) {
 						l.setActive(false);
-						changesMade += updateRefsetMember(t, c, l.toRefsetEntry(), info);
+						changesMade += updateRefsetMember(t, l, info);
 						report (t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, l);
 					}
 				}

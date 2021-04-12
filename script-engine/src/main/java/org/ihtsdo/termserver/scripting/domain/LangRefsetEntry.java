@@ -1,10 +1,6 @@
 package org.ihtsdo.termserver.scripting.domain;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -98,19 +94,6 @@ public class LangRefsetEntry extends RefsetMember implements RF2Constants{
 		l.setAcceptabilityId(lineItems[LANG_IDX_ACCEPTABILITY_ID]);
 		l.setClean();
 		return l;
-	}
-	
-	public RefsetEntry toRefsetEntry() {
-		RefsetEntry re = new RefsetEntry();
-		re.setId(id);
-		re.setModuleId(moduleId);
-		re.setRefsetId(refsetId);
-		re.setActive(active);
-		re.setReferencedComponentId(referencedComponentId);
-		Map<String, String> additionalFields = new HashMap<>();
-		additionalFields.put("acceptabilityId", acceptabilityId);
-		re.setAdditionalFields(additionalFields);
-		return re;
 	}
 	
 	@Override

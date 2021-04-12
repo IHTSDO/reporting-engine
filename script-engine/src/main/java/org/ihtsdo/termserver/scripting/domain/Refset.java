@@ -9,7 +9,7 @@ public class Refset {
 
     @SerializedName("items")
     @Expose
-    private List<RefsetEntry> items = null;
+    private List<RefsetMember> items = null;
     @SerializedName("offset")
     @Expose
     private Long offset;
@@ -34,7 +34,7 @@ public class Refset {
      * @param items
      * @param offset
      */
-    public Refset(List<RefsetEntry> items, Long offset, Long limit, Long total) {
+    public Refset(List<RefsetMember> items, Long offset, Long limit, Long total) {
         super();
         this.items = items;
         this.offset = offset;
@@ -42,11 +42,11 @@ public class Refset {
         this.total = total;
     }
 
-    public List<RefsetEntry> getItems() {
+    public List<RefsetMember> getItems() {
         return items;
     }
 
-    public void setItems(List<RefsetEntry> items) {
+    public void setItems(List<RefsetMember> items) {
         this.items = items;
     }
 

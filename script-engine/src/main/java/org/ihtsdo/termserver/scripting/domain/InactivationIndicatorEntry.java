@@ -142,19 +142,6 @@ public class InactivationIndicatorEntry extends RefsetMember implements RF2Const
 		i.setInactivationReasonId(lineItems[INACT_IDX_REASON_ID]);
 		return i;
 	}
-	
-	public RefsetEntry toRefsetEntry() {
-		RefsetEntry re = new RefsetEntry();
-		re.setId(id);
-		re.setModuleId(moduleId);
-		re.setRefsetId(refsetId);
-		re.setActive(active);
-		re.setReferencedComponentId(referencedComponentId);
-		Map<String, String> additionalFields = new HashMap<>();
-		additionalFields.put("valueId", inactivationReasonId);
-		re.setAdditionalFields(additionalFields);
-		return re;
-	}
 
 	@Override
 	public ComponentType getComponentType() {

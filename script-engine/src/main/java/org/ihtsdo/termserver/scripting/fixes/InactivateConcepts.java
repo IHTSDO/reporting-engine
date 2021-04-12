@@ -5,6 +5,7 @@ import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
+import org.apache.commons.lang.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 
@@ -15,15 +16,18 @@ import org.ihtsdo.termserver.scripting.util.StringUtils;
 /*
  * INFRA-2496, QI-135, DRUGS-667, IHTSDO-175
  * Inactivate concepts where a replacement exists - driven by list.
+ * 
+ * DEVICES-92 Straight inactivation, driven by list, no replacement
  */
 public class InactivateConcepts extends BatchFix implements RF2Constants {
 	
 	Map<Concept, Concept> replacements = new HashMap<>();
 	Map<Concept, InactivationIndicator> inactivationIndicators = new HashMap<>();
 	Map<Concept, Task> inactivations = new HashMap<>();
+	Set<Concept> allScheduledInactivations = new HashSet<>();
 	boolean expectReplacements = false;
 	boolean autoInactivateChildren = false;
-	boolean rewireChildrenToGrandparents = true;
+	boolean rewireChildrenToGrandparents = false;
 	
 	protected InactivateConcepts(BatchFix clone) {
 		super(clone);
@@ -35,6 +39,8 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 			ReportSheetManager.targetFolderId = "1fIHGIgbsdSfh5euzO3YKOSeHw4QHCM-m";  //Ad-hoc batch updates
 			fix.inputFileHasHeaderRow = false;
 			fix.expectNullConcepts = false;
+			fix.groupByIssue = true;
+			fix.getArchiveManager().setPopulateReleasedFlag(true);
 			fix.init(args);
 			fix.loadProjectSnapshot(true);
 			fix.postInit();
@@ -82,9 +88,9 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 		checkAndInactivatateIncomingAssociations(t, c, inactivationIndicator, replacement);
 		
 		//How many children do we have to do something different with?
-		//Use locally held concept when traversing transative closure
+		//Use locally held concept when traversing transitive closure
 		Set<Concept> descendants = gl.getConcept(c.getConceptId()).getDescendents(NOT_SET, CharacteristicType.STATED_RELATIONSHIP);
-		descendants.removeAll(inactivations.keySet());
+		descendants.removeAll(allScheduledInactivations);
 		if (descendants.size() > 0) {
 			report (t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Inactivated concept has " + descendants.size() + " descendants not scheduled for inactivation");
 		}
@@ -93,12 +99,14 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 		for (Concept child : gl.getConcept(c.getConceptId()).getDescendents(IMMEDIATE_CHILD, CharacteristicType.STATED_RELATIONSHIP)) {
 			//Have we already inactivated this child
 			if (!inactivations.containsKey(child)) {
+				t.remove(child);
 				t.addAfter(child, c);
+				removeFromLaterTasks(t, child);
 				//Is this a concept we have to inactivate?  Go through whole process if so
-				if (replacements.containsKey(child) || autoInactivateChildren) {
+				if (replacements.containsKey(child) || autoInactivateChildren || allScheduledInactivations.contains(child)) {
 					String extraInfo = " as per file";
 					Severity severity = Severity.LOW;
-					if (!replacements.containsKey(child)) {
+					if (!replacements.containsKey(child) && !allScheduledInactivations.contains(child)) {
 						//In this case, we should inactivate the child with the same details as the parent
 						inactivationIndicators.put(child, inactivationIndicator);
 						replacements.put(child, replacement);
@@ -143,7 +151,11 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 				default : throw new TermServerScriptException("Unexpected inactivation indicator: " + inactivationIndicator);
 			}
 			
-			report(t, c, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept inactivated as " + inactivationIndicator + histAssocType + (replacement.equals(NULL_CONCEPT)?"":replacement));
+			if (replacement != null && !replacement.equals(NULL_CONCEPT)) {
+				report(t, c, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept inactivated as " + inactivationIndicator + histAssocType + replacement);
+			} else {
+				report(t, c, Severity.LOW, ReportActionType.CONCEPT_CHANGE_MADE, "Concept inactivated as " + inactivationIndicator);
+			}
 		}
 		inactivations.put(c, t);
 		return CHANGE_MADE;
@@ -224,7 +236,18 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 		Concept incomingConcept = loadConcept(assoc.getReferencedComponentId(), task.getBranchPath());
 		incomingConcept.setInactivationIndicator(reason);
 		if (reason.equals(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY)) {
-			incomingConcept.setAssociationTargets(null);
+			//In this case the replacement is expected to be null and we will just inactivate that historical association
+			if (assoc.isReleased()) {
+				assoc.setActive(false);
+				updateRefsetMember(task, assoc, "");
+				report(task, incomingConcept, Severity.MEDIUM, ReportActionType.REFSET_MEMBER_REMOVED, "Historical association to " + originalTarget + " inactivated with no replacement");
+				task.addAfter(incomingConcept, gl.getConcept(assoc.getTargetComponentId()));
+			} else {
+				deleteRefsetMember(task, assoc.getId());
+				report(task, incomingConcept, Severity.MEDIUM, ReportActionType.REFSET_MEMBER_REMOVED, "Historical association to " + originalTarget + " inactivated with no deleted");
+				task.addAfter(incomingConcept, gl.getConcept(assoc.getTargetComponentId()));
+			}
+			return;
 		} else if (reason.equals(InactivationIndicator.OUTDATED)) {
 			incomingConcept.setAssociationTargets(AssociationTargets.replacedBy(replacement));
 		} else if (reason.equals(InactivationIndicator.DUPLICATE)) {
@@ -290,8 +313,13 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 		}*/
 		
 		//Specific to IHTSDO-175
-		inactivationIndicators.put(c, InactivationIndicator.AMBIGUOUS);
-		replacement = gl.getConcept(" 782902008 |Implantation procedure (procedure)|");
+		//inactivationIndicators.put(c, InactivationIndicator.AMBIGUOUS);
+		//replacement = gl.getConcept(" 782902008 |Implantation procedure (procedure)|");
+		allScheduledInactivations.add(c);
+		inactivationIndicators.put(c, InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
+		
+		//Give C an issue of one of it's parents to try to batch sibling concepts together
+		c.setIssue(c.getParents(CharacteristicType.STATED_RELATIONSHIP).iterator().next().getId());
 		
 		if (replacement != null) {
 			replacements.put(c, replacement);

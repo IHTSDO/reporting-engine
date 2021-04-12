@@ -30,7 +30,6 @@ import com.google.common.io.Files;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import us.monoid.json.JSONException;
 import us.monoid.web.Resty;
 
 public abstract class TermServerScript implements RF2Constants {
@@ -938,7 +937,7 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 	}
 	
-	protected int updateRefsetMember(Task t, Concept c, RefsetEntry r, String info) throws JSONException, TermServerScriptException {
+	protected int updateRefsetMember(Task t, RefsetMember r, String info) throws TermServerScriptException {
 		debug ( (dryRun? "Dry run ":"") + "Updating state of " + r + info);
 		if (!dryRun) {
 			tsClient.updateRefsetMember(t.getBranchPath(), r, false); //Don't force delete

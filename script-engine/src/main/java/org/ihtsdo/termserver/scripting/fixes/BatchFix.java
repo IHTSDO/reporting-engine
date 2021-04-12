@@ -45,7 +45,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	protected boolean classifyTasks = false;
 	protected boolean validateTasks = false;
 	protected boolean groupByIssue = false;
-	protected boolean keepIssuesTogether = false;
+	protected boolean keepIssuesTogether = true;
 	protected List<Component> allComponentsToProcess = new ArrayList<>();
 	protected List<Component> priorityComponents = new ArrayList<>();
 	protected int priorityBatchSize = 10;
@@ -54,6 +54,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	
 	protected Map<Concept, Set<Concept>> historicallyRewiredPossEquivTo = new HashMap<>();
 	protected HistAssocUtils histAssocUtils = new HistAssocUtils(this);
+	private Batch currentBatch;
 	
 	protected BatchFix (BatchFix clone) {
 		if (clone != null) {
@@ -172,9 +173,25 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		addSummaryInformation(CONCEPTS_TO_PROCESS, componentsToProcess);
 		return batch;
 	}
+	
+	protected void removeFromLaterTasks(Task t, Concept c) {
+		//Loop through all tasks and remove concept from any after that specified
+		boolean taskFound = false;
+		for (Task thisTask : currentBatch.getTasks()) {
+			if (!taskFound) {
+				if (thisTask.equals(t)) {
+					taskFound = true;
+				}
+				continue;
+			}
+			thisTask.remove(c);
+		}
+	}
+
 
 	protected void batchProcess(Batch batch) throws TermServerScriptException {
 		int currentTaskNum = 0;
+		this.currentBatch = batch;
 		for (Task task : batch.getTasks()) {
 			try {
 				currentTaskNum++;
