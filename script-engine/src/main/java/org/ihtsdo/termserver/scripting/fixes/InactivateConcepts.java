@@ -40,6 +40,7 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 			fix.inputFileHasHeaderRow = false;
 			fix.expectNullConcepts = false;
 			fix.groupByIssue = true;
+			fix.reportNoChange = false;
 			fix.getArchiveManager().setPopulateReleasedFlag(true);
 			fix.init(args);
 			fix.loadProjectSnapshot(true);
@@ -78,7 +79,10 @@ public class InactivateConcepts extends BatchFix implements RF2Constants {
 		
 		//Have we already inactivated this concept?
 		if (inactivations.containsKey(c)) {
-			report(t, c, Severity.LOW, ReportActionType.VALIDATION_CHECK, "Concept already inactivated in " + t.getKey());
+			//If it was inactivated already in THIS task, then no need to report that.
+			if (!inactivations.get(c).equals(t)) {
+				report(t, c, Severity.LOW, ReportActionType.VALIDATION_CHECK, "Concept already inactivated in " + inactivations.get(c).getKey());
+			}
 			return NO_CHANGES_MADE;
 		}
 		
