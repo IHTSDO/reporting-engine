@@ -1445,8 +1445,14 @@ public class SnomedUtils implements RF2Constants {
 				for (Relationship r1 : potentialMatch.getRelationships()) {
 					for (Relationship r2 : g.getRelationships()) {
 						if (r1.getType().equals(r2.getType())) {
-							if (r1.getTarget().equals(r2.getTarget())) {
-								continue nextRelationship;
+							if (r1.isConcrete() && r2.isConcrete()) {
+								if (r1.getValue().equals(r2.getValue())) {
+									continue nextRelationship;
+								}
+							} else {
+								if (r1.getTarget().equals(r2.getTarget())) {
+									continue nextRelationship;
+								}
 							}
 						}
 					}
