@@ -25,6 +25,8 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	
 	private List<Component> allIdentifiedConcepts;
 	private List<Component> allModifiedConcepts = new ArrayList<>();
+	private List<Component> noMoveRequired = new ArrayList<>();
+	
 	private Map<String, Concept> loadedConcepts = new HashMap<>();
 	TermServerClient secondaryConnection;
 	String targetModuleId = SCTID_CORE_MODULE;
@@ -42,7 +44,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			delta.loadProjectSnapshot(false);  //Not just FSN, load all terms with lang refset also
 			//We won't incude the project export in our timings
-			delta.additionalReportColumns = "ACTION_DETAIL, DEF_STATUS, PARENT, Detail, Additional Detail";
+			delta.additionalReportColumns = "FSN, SemTag, Severity, ChangeType, Detail, Additional Detail, , ";
 			delta.postInit();
 			delta.startTimer();
 			delta.processFile();
@@ -115,6 +117,12 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	
 	private boolean switchModule(Concept c) throws TermServerScriptException {
 		boolean conceptAlreadyTransferred = false;
+		
+		//Have we already attempted to move this concept?  Don't try again
+		if (noMoveRequired.contains(c)) {
+			return false;
+		}
+		
 		if (c.getModuleId() ==  null) {
 			report (c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Concept does not specify a module!  Unable to switch.");
 			return false;
@@ -174,16 +182,22 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		boolean relationshipMoved = false;
 		boolean relationshipAlreadyMoved = false;
 		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
-			if (r.getModuleId().equals(targetModuleId)) {
+			//If this is an axiom based relationship, then we'll catch that below with an axiom move
+			if (r.fromAxiom()) {
+				continue;
+			}
+			
+			//Rel may already be in the target module, but be missing from the target server
+			if (conceptOnTS.getRelationships(r).size() > 0) {
 				relationshipAlreadyMoved = true;
-			} else if (!r.getModuleId().equals(targetModuleId) && !r.getModuleId().equals(SCTID_MODEL_MODULE)) {
+			} else {
 				if (r.isActive() && !r.fromAxiom()) {
-					info ("Unexpected active stated relationship: "+ r);
+					info ("Unexpected active stated relationship not from axiom: "+ r);
 				}
 				if (moveRelationshipToTargetModule(r, conceptOnTS)) {
 					subComponentsMoved = true;
 					relationshipMoved = true;
-				}
+				} 
 			}
 		}
 		
@@ -201,8 +215,10 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		}*/
 		
 		for (AxiomEntry a : c.getAxiomEntries()) {
-			if ((!a.getModuleId().equals(targetModuleId) && !a.getModuleId().equals(SCTID_MODEL_MODULE))) {
-				moveAxiomToTargetModule(c, a, conceptOnTS);
+			//We have an issue with concepts in the examined space already
+			//having the target module but needing to move anyway.  So
+			//attempt move and see what we're missing.
+			if (moveAxiomToTargetModule(c, a, conceptOnTS)) {
 				subComponentsMoved = true;
 			}
 		}
@@ -212,7 +228,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		}
 		
 		if (conceptAlreadyTransferred && subComponentsMoved) {
-			incrementSummaryInformation("Existing concepts additional modeling moved.");
+			incrementSummaryInformation("Existing concept, additional components moved.");
 		}
 		return true;
 	}
@@ -253,61 +269,76 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	}
 	
 	private boolean moveAxiomToTargetModule(Concept c, AxiomEntry a, Concept conceptOnTS) throws TermServerScriptException {
+		boolean axiomRelationshipMoved = false;
 		try {
 			//Don't trust the local module, we might need to copy the data over anyway
 			//if (a.getModuleId().equals(targetModuleId)) {
 			//	return false;
 			//}
 			
-			//If we already have the concept on the Terminology Server, perhaps we already have the description too,
-			//Despite what the local file claims
+			//If we already have the concept on the Terminology Server, perhaps we already have the axiom too,
+			//despite what the local file claims
 			if (!conceptOnTS.equals(NULL_CONCEPT)) {
-				Axiom relOnTS = conceptOnTS.getClassAxiom(a.getId());
-				if (relOnTS != null) {
-					report (conceptOnTS, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Content already on server", a.getId());
+				Axiom axiomOnTS = conceptOnTS.getClassAxiom(a.getId());
+				//Has this axiom been modified compared to what's on the TS?
+				if (axiomOnTS != null && (axiomOnTS.getEffectiveTime() == null 
+					|| (a.getEffectiveTime() != null && a.getEffectiveTime().equals(axiomOnTS.getEffectiveTime())))) {
+					//Only need to say something if we originally thought we were supposed to move this concept
+					if (allIdentifiedConcepts.contains(c)) {
+						report (conceptOnTS, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Axiom already on server with same (or no) effective time", a.getId());
+					}
 					return false;
 				}
-			} 
+			}
 			
 			a.setModuleId(targetModuleId);
 			AxiomRepresentation axiomRepresentation = axiomService.convertAxiomToRelationships(a.getOwlExpression());
-			for (Relationship r : AxiomUtils.getRHSRelationships(c, axiomRepresentation)) {
-				//This is only needed to include dependencies. 
-				//The relationship itself is not attached to the concept
-				moveRelationshipToTargetModule(r, conceptOnTS);
+			if (axiomRepresentation != null) {
+				for (Relationship r : AxiomUtils.getRHSRelationships(c, axiomRepresentation)) {
+					//This is only needed to include dependencies. 
+					//The relationship itself is not attached to the concept
+					if (moveRelationshipToTargetModule(r, conceptOnTS)) {
+						axiomRelationshipMoved = true;
+						a.setDirty();
+					}
+				}
+			} else {
+				warn ("No Axiom Representation found for : " + a.getOwlExpression());
 			}
 		} catch (ConversionException e) {
 			throw new TermServerScriptException("Failed to convert axiom for " + c , e);
 		}
-		return true;
+		return axiomRelationshipMoved;
 	}
 
 	private boolean moveRelationshipToTargetModule(Relationship r, Concept conceptOnTS) throws TermServerScriptException {
-		if (r.getModuleId().equals(targetModuleId)) {
-			return false;
-		}
-		
-		//If we already have the concept on the Terminology Server, perhaps we already have the description too,
+		//If we already have the concept on the Terminology Server, perhaps we already have the relationship too,
 		//Despite what the local file claims
 		if (!conceptOnTS.equals(NULL_CONCEPT)) {
-			Relationship relOnTS = conceptOnTS.getRelationship(r.getId());
-			if (relOnTS != null) {
-				report (conceptOnTS, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Content already on server", r);
+			//Because axiom relationships don't have IDs we need to search for type/value
+			//Relationship relOnTS = conceptOnTS.getRelationship(r.getId());
+			if (conceptOnTS.getRelationships(r).size() > 0) {
+				report (conceptOnTS, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Relationship already on target server", r);
 				return false;
 			}
 		} 
 		//Switch the relationship.   Also switch both the type and the destination - will return if not needed
 		r.setModuleId(targetModuleId);
+		//And mark the relationship as dirty just in case we're moving content that's already in the target module.  
+		r.setDirty();
+		
 		if (switchModule(r.getType())) {
 			//Is this an unexpected dependency
 			if (!allIdentifiedConcepts.contains(r.getType())) {
 				incrementSummaryInformation("Unexpected dependencies included");
 				addSummaryInformation("Unexpected type dependency: " + r.getType(), "");
 			}
+		} else {
+			//No need to try to switch this concept again
+			noMoveRequired.add(r.getType());
 		}
 		//Note that switching the target will also recursively work up the hierarchy as parents are also switched
 		//up the hierarchy until a concept owned by the core module is encountered.
-		
 		Concept target = r.getTarget();
 		//Don't worry about the target if it's on our to-do list anyway.
 		if (!allIdentifiedConcepts.contains(target)) {
@@ -339,6 +370,9 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 					incrementSummaryInformation("Unexpected dependencies included");
 					addSummaryInformation("Unexpected target dependency: " + target, "");
 				}
+			} else {
+				//No need to try to switch this concept again
+				noMoveRequired.add(r.getType());
 			}
 		}
 		

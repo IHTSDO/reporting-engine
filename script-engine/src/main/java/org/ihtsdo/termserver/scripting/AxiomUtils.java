@@ -29,7 +29,7 @@ public class AxiomUtils implements RF2Constants {
 		if (axiom.getRightHandSideRelationships() != null) {
 			relationships = convertMapToRelationship(c, axiom.getRightHandSideRelationships());
 		} else {
-			//Could be a GCI
+			//Could be a property chain
 			//TermServerScript.warn ("What is this? " + axiom);
 		}
 		return relationships;

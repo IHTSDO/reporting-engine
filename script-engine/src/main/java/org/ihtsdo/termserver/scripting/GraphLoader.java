@@ -728,7 +728,7 @@ public class GraphLoader implements RF2Constants {
 				for (LangRefsetEntry existing : allExisting) {
 					//If we have two active for the same description, and neither has an effectiveTime delete the one that hasn't been published
 					//Only if we're loading a delta, otherwise it's published
-					if (!isReleased) {
+					if (isReleased != null && !isReleased) {
 						checkForActiveDuplication(d, existing, langRefsetEntry);
 					}
 					
