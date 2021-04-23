@@ -286,6 +286,7 @@ public abstract class TermServerScript implements RF2Constants {
 			} else {
 				try {
 					project = scaClient.getProject(projectName);
+					info ("Recovered project " + project.getKey() + " with branch path: " + project.getBranchPath());
 				} catch (RestClientException e) {
 					throw new TermServerScriptException("Unable to recover project: " + projectName,e);
 				}
@@ -421,7 +422,7 @@ public abstract class TermServerScript implements RF2Constants {
 			}
 		}
 		
-		info ("Project Key: " + project.getKey());
+		info ("Init Complete. Project Key determined: " + project.getKey());
 	}
 	
 	private String getEnv(String terminologyServerUrl) throws TermServerScriptException {
