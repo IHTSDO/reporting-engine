@@ -164,6 +164,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		} else {
 			//We cannot just add in the project delta because it might be that - for an extension
 			//the international edition has also been updated.   So recreate the whole snapshot
+			getArchiveManager().setPopulatePreviousTransativeClosure(true);
 			getArchiveManager().setLoadEditionArchive(false);
 			getProject().setKey(projectKey);
 			getArchiveManager().loadProjectSnapshot(fsnOnly);
