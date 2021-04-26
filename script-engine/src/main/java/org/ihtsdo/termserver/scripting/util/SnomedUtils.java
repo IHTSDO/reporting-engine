@@ -1565,9 +1565,13 @@ public class SnomedUtils implements RF2Constants {
 	}
 
 	public static Integer compareEffectiveDate(String effectiveDate1, String effectiveDate2) {
+		if (effectiveDate1 == null || effectiveDate2 == null) {
+			return null;
+		}
+
 		try {
-			Date date = EFFECTIVE_DATE_FORMAT.parse ( effectiveDate1);
-			Date date2 = EFFECTIVE_DATE_FORMAT.parse ( effectiveDate2 );
+			Date date = EFFECTIVE_DATE_FORMAT.parse(effectiveDate1);
+			Date date2 = EFFECTIVE_DATE_FORMAT.parse(effectiveDate2);
 			return date.compareTo(date2);
 		} catch (ParseException e) {
 		}
