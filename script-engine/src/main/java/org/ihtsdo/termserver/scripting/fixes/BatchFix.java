@@ -45,7 +45,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	protected boolean classifyTasks = false;
 	protected boolean validateTasks = false;
 	protected boolean groupByIssue = false;
-	protected boolean keepIssuesTogether = true;
+	protected boolean keepIssuesTogether = false;
 	protected List<Component> allComponentsToProcess = new ArrayList<>();
 	protected List<Component> priorityComponents = new ArrayList<>();
 	protected int priorityBatchSize = 10;
