@@ -385,7 +385,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		Set<Relationship> potentialMatches = getRelationships(characteristicType, type, ActiveState.ACTIVE);
 		Set<Relationship> matches = new HashSet<Relationship>();
 		for (Relationship r : potentialMatches) {
-			if (r.getGroupId() == groupId) {
+			if (groupId == NOT_SET || r.getGroupId() == groupId) {
 				matches.add(r);
 			}
 		}
@@ -1181,7 +1181,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 		ActiveState activeState = includeInactiveComponents ? ActiveState.BOTH : ActiveState.ACTIVE;
 		for (Description d : getDescriptions(activeState)) {
 			//We need to null out the conceptId since the clone is a new concept
-			Description dClone = d.clone(keepIds?d.getDescriptionId():null);
+			Description dClone = d.clone(keepIds?d.getDescriptionId():null, keepIds);
 			dClone.setConceptId(keepIds?conceptId:null);
 			dClone.setEffectiveTime(keepIds?d.getEffectiveTime():null);
 			clone.addDescription(dClone);

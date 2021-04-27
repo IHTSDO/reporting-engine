@@ -11,11 +11,16 @@ public interface IRelationshipTemplate {
 	public Concept getTarget();
 	public void setTarget(Concept target);
 	
+	public Object getValue();
+	public void setValue(Object value);
+	
 	public CharacteristicType getCharacteristicType();
 	public void setCharacteristicType(CharacteristicType characteristicType);
 
-	public boolean equalsTypeAndTargetValue(Relationship rel);
+	public boolean equalsTypeAndTargetValue(IRelationshipTemplate rel);
 	
 	public String toString();
+	
+	public boolean isConcrete();
 
 }

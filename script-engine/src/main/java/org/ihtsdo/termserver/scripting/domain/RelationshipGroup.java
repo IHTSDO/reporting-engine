@@ -131,9 +131,18 @@ public class RelationshipGroup {
 		return groupId > 0;
 	}
 
-	public boolean containsTypeValue(Relationship r1) {
+	public boolean containsTypeValue(IRelationshipTemplate r1) {
 		for (Relationship r2 : relationships) {
 			if (r2.equalsTypeAndTargetValue(r1)) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	public boolean containsType(RelationshipTemplate rt) {
+		for (Relationship r2 : relationships) {
+			if (r2.getType().equals(rt.getType())) {
 				return true;
 			}
 		}
@@ -220,4 +229,6 @@ public class RelationshipGroup {
 		}
 		return toolkitRels;
 	}
+
+
 }

@@ -448,11 +448,11 @@ public class Relationship extends Component implements IRelationshipTemplate, RF
 		this.released = released;
 	}
 
-	public boolean equalsTypeAndTargetValue(Relationship rhs) {
-		return this.type.equals(rhs.type) && equalsTargetOrValue(rhs);
+	public boolean equalsTypeAndTargetValue(IRelationshipTemplate rhs) {
+		return this.type.equals(rhs.getType()) && equalsTargetOrValue(rhs);
 	}
 	
-	public boolean equalsTargetOrValue(Relationship b) {
+	public boolean equalsTargetOrValue(IRelationshipTemplate b) {
 		if (isConcrete() && b.isConcrete()) {
 			return getValue().equals(b.getValue());
 		} else if (!isConcrete() && !b.isConcrete()) {

@@ -104,7 +104,8 @@ public interface RF2Constants {
 	static Concept OBSERVABLE_ENTITY = new Concept("363787002","Observable entity (observable entity)");
 	static Concept DUE_TO = new Concept("42752001", "Due to (attribute)");
 	static Concept METHOD = new Concept("260686004","Method (attribute)");
-	static Concept AFTER = new Concept("255234002", "|After (attribute)|");
+	static Concept AFTER = new Concept("255234002", "After (attribute)");
+	static Concept ASSOC_WITH = new Concept ("47429007", "Associated with (attribute)");
 	static Concept PART_OF = new Concept("123005000"); // |Part of (attribute)|
 	static Concept FINDING_SITE = new Concept ("363698007", "Finding site (attribute)");
 	static Concept ANAT_OR_ACQ_BODY_STRUCT = new Concept("442083009", "Anatomical or acquired body structure (body structure)");

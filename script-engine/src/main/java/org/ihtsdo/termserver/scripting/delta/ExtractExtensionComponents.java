@@ -463,7 +463,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 					usEntry.setAcceptabilityId(SCTID_ACCEPTABLE_TERM);
 					report (conceptOnTS, Severity.MEDIUM, ReportActionType.DESCRIPTION_ACCEPTABILIY_CHANGED, "Demoted term to acceptable due to existing PT", usEntry);
 				}
-				LangRefsetEntry gbEntry = usEntry.clone(d.getDescriptionId());
+				LangRefsetEntry gbEntry = usEntry.clone(d.getDescriptionId(), false);
 				gbEntry.setRefsetId(GB_ENG_LANG_REFSET);
 				d.addAcceptability(gbEntry);
 			}

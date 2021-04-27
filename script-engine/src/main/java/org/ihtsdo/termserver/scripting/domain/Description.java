@@ -312,8 +312,13 @@ public class Description extends Component implements RF2Constants {
 	}
 	
 	public Description clone(String newSCTID) {
+		return clone(newSCTID, false);
+	}
+	
+	public Description clone(String newSCTID, boolean keepIds) {
 		Description clone = new Description();
-		clone.effectiveTime = null; //New description is unpublished.
+		//If we're issuing a new id then description is unpublished.
+		clone.effectiveTime = keepIds ? this.effectiveTime : null; 
 		clone.moduleId = this.moduleId;
 		clone.active = this.active;
 		clone.descriptionId = newSCTID;
@@ -322,7 +327,7 @@ public class Description extends Component implements RF2Constants {
 		clone.lang = this.lang;
 		clone.term = this.term;
 		clone.caseSignificance = this.caseSignificance;
-		clone.setReleased(false);
+		clone.setReleased(keepIds ? this.released : false);
 		clone.acceptabilityMap = new HashMap<String, Acceptability>();
 		if (this.acceptabilityMap != null) { 
 			clone.acceptabilityMap.putAll(this.acceptabilityMap);
@@ -330,7 +335,7 @@ public class Description extends Component implements RF2Constants {
 		if (langRefsetEntries != null) {
 			for (LangRefsetEntry thisDialect : this.getLangRefsetEntries()) {
 				//The lang refset entres for the cloned description should also point to it
-				LangRefsetEntry thisDialectClone = thisDialect.clone(clone.descriptionId); //will create a new UUID and remove EffectiveTime
+				LangRefsetEntry thisDialectClone = thisDialect.clone(clone.descriptionId, keepIds);
 				clone.getLangRefsetEntries().add(thisDialectClone);
 				thisDialectClone.setActive(true);
 			}

@@ -383,7 +383,7 @@ public class SnomedUtils implements RF2Constants {
 			
 			//If we didn't find any existing lang refset for this dialect then copy it from "a"
 			if (!bHasThis) {
-				b.getLangRefsetEntries().add(la.clone(b.getDescriptionId()));
+				b.getLangRefsetEntries().add(la.clone(b.getDescriptionId(), false));
 				changesMade = true;
 			}
 		}

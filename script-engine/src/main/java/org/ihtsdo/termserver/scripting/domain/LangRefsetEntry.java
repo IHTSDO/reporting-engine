@@ -10,14 +10,14 @@ public class LangRefsetEntry extends RefsetMember implements RF2Constants{
 
 	private static String ACCEPTABILITY_ID = "acceptabilityId";
 	
-	public LangRefsetEntry clone(String newDescriptionSctId) {
+	public LangRefsetEntry clone(String descriptionSctId, boolean keepIds) {
 		LangRefsetEntry clone = new LangRefsetEntry();
-		clone.id = UUID.randomUUID().toString();
-		clone.effectiveTime = null;
+		clone.id = keepIds ? this.id : UUID.randomUUID().toString();
+		clone.effectiveTime = keepIds ? this.effectiveTime :null;
 		clone.moduleId = this.moduleId;
 		clone.active = this.active;
 		clone.refsetId = this.refsetId;
-		clone.referencedComponentId = newDescriptionSctId;
+		clone.referencedComponentId = descriptionSctId;
 		clone.setAcceptabilityId(getAcceptabilityId());
 		clone.setDirty(); //New components need to be written to any delta
 		return clone;
