@@ -358,6 +358,19 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		} catch (ConversionException e) {
 			throw new TermServerScriptException("Failed to convert axiom for " + c , e);
 		}
+		
+		//Check if there are axioms inactivated locally that need to be inactivated at the target
+		for (AxiomEntry entry : c.getAxiomEntries()) {
+			if (!entry.isActive()) {
+				if (!conceptOnTS.equals(NULL_CONCEPT)) {
+					Axiom axiomOnTS = conceptOnTS.getClassAxiom(entry.getId());
+					if (axiomOnTS != null && axiomOnTS.isActive()) {
+						entry.setDirty();
+					}
+				}
+			}
+		}
+		
 		return axiomRelationshipMoved;
 	}
 
