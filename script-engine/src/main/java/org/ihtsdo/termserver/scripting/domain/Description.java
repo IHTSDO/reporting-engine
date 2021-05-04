@@ -720,6 +720,7 @@ public class Description extends Component implements RF2Constants {
 		for (String refsetId : refsetIds) {
 			for (LangRefsetEntry l : getLangRefsetEntries(ActiveState.ACTIVE, refsetId)) {
 				l.setDirty();
+				l.setEffectiveTime(null);
 			}
 		}
 	}

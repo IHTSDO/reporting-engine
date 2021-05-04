@@ -50,6 +50,7 @@ public class LangRefsetEntry extends RefsetMember implements RF2Constants{
 	}
 	public void setAcceptabilityId(String acceptabilityId) {
 		if (getAcceptabilityId() != null && !getAcceptabilityId().equals(acceptabilityId)) {
+			setEffectiveTime(null);
 			setDirty();
 		}
 		this.setField(ACCEPTABILITY_ID,acceptabilityId);

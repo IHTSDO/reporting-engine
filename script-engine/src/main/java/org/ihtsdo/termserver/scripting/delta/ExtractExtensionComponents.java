@@ -85,7 +85,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		for (Component thisComponent : allIdentifiedConcepts) {
 			Concept thisConcept = (Concept)thisComponent;
 			
-			if (thisConcept.getConceptId().equals("371513001")) {
+			if (thisConcept.getConceptId().equals("422435005")) {
 				debug("Here");
 			}
 			
@@ -270,6 +270,8 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			}
 		}
 		
+		allModifiedConcepts.add(c);
+		
 		if (conceptAlreadyTransferred && !subComponentsMoved) {
 			return false;
 		}
@@ -277,7 +279,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		if (conceptAlreadyTransferred && subComponentsMoved) {
 			incrementSummaryInformation("Existing concept, additional components moved.");
 		}
-		allModifiedConcepts.add(c);
+		
 		return true;
 	}
 
@@ -424,6 +426,8 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 					if (!allIdentifiedConcepts.contains(target)) {
 						incrementSummaryInformation("Unexpected dependencies included");
 						addSummaryInformation("Unexpected target dependency: " + target, "");
+						report (r.getSource(), Severity.HIGH, ReportActionType.INFO, "Unexpected dependency required in Stated Modeling", target);
+						
 					}
 				} else {
 					//No need to try to switch this concept again
