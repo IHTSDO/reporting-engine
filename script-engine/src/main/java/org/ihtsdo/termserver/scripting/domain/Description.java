@@ -351,11 +351,25 @@ public class Description extends Component implements RF2Constants {
 		this.inactivationIndicator = inactivationIndicator;
 	}
 
-	public void setAcceptablity(String refsetId, Acceptability Acceptability) {
+	public void setAcceptablity(String refsetId, Acceptability acceptability) throws TermServerScriptException {
 		if (acceptabilityMap == null) {
 			acceptabilityMap = new HashMap<String, Acceptability> ();
 		}
-		acceptabilityMap.put(refsetId, Acceptability);
+		acceptabilityMap.put(refsetId, acceptability);
+		
+		//Also if we're working with RF2 loaded content we need to make the same change to the entries
+		boolean refsetEntrySet = false;
+		for (LangRefsetEntry l : getLangRefsetEntries(ActiveState.ACTIVE, refsetId)) {
+			l.setAcceptabilityId(SnomedUtils.translateAcceptabilityToSCTID(acceptability));
+			refsetEntrySet = true;
+		}
+		//If we've not set it, is there an inactive record we could re-use?
+		if (!refsetEntrySet) {
+			for (LangRefsetEntry l : getLangRefsetEntries(ActiveState.INACTIVE, refsetId)) {
+				l.setActive(true);
+				l.setAcceptabilityId(SnomedUtils.translateAcceptabilityToSCTID(acceptability));
+			}
+		}
 	}
 	
 	public void removeAcceptability(String refsetId) {
@@ -698,6 +712,14 @@ public class Description extends Component implements RF2Constants {
 			}
 		}
 		return null;
+	}
+
+	public void setDirty(String[] refsetIds) {
+		for (String refsetId : refsetIds) {
+			for (LangRefsetEntry l : getLangRefsetEntries(ActiveState.ACTIVE, refsetId)) {
+				l.setDirty();
+			}
+		}
 	}
 
 }

@@ -24,7 +24,7 @@ import org.snomed.otf.owltoolkit.domain.AxiomRepresentation;
 public class ExtractExtensionComponents extends DeltaGenerator {
 	
 	private List<Component> allIdentifiedConcepts;
-	private List<Component> allModifiedConcepts = new ArrayList<>();
+	private Set<Component> allModifiedConcepts = new HashSet<>();
 	private List<Component> noMoveRequired = new ArrayList<>();
 	
 	private Map<String, Concept> loadedConcepts = new HashMap<>();
@@ -85,7 +85,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		for (Component thisComponent : allIdentifiedConcepts) {
 			Concept thisConcept = (Concept)thisComponent;
 			
-			/*if (thisConcept.getConceptId().equals("2301000004107")) {
+			/*if (thisConcept.getConceptId().equals("1546591000004100")) {
 				debug("Here");
 			}*/
 			
@@ -97,6 +97,12 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			
 			if (!thisConcept.isActive()) {
 				report (thisConcept, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Concept is inactive, skipping");
+				continue;
+			}
+			
+			//Have we already processed this concept because it was a dependency of another concept?
+			if (allModifiedConcepts.contains(thisConcept)) {
+				report (thisConcept, Severity.LOW, ReportActionType.INFO, "Concept specified for transfer but already processed as a dependency (or is duplicate).");
 				continue;
 			}
 			try {
@@ -133,7 +139,8 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		
 		//Switch the module of this concept, then all active descriptions and relationships
 		//As long as the current module is not equal to the target module, we'll switch it
-		if (!c.getModuleId().equals(targetModuleId) && !c.getModuleId().equals(SCTID_MODEL_MODULE)) {
+		//And even then we might do it, if it's missing from the target server (eg NEBCSR)
+		if (conceptOnTS.equals(NULL_CONCEPT)) {
 			if (!c.getModuleId().equals(moduleId)) {
 				report (c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Specified concept in unexpected module, switching anyway", c.getModuleId());
 			}
@@ -150,6 +157,8 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 					report (c, Severity.MEDIUM, ReportActionType.CONCEPT_CHANGE_MADE, "Dependency concept, module set to " + targetModuleId, c.getDefinitionStatus().toString(), parents);
 				}
 				c.setModuleId(targetModuleId);
+				//mark it as dirty explicitly, just incase it already had this module!
+				c.setDirty();
 				incrementSummaryInformation("Concepts moved");
 			}
 			allModifiedConcepts.add(c);
@@ -165,16 +174,49 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 				if (c.getModuleId().equals(targetModuleId)) {
 					report (c, Severity.HIGH, ReportActionType.NO_CHANGE, "Specified concept already in target module: " + c.getModuleId() + " checking for additional modeling in source module.");
 				} else {
-					throw new IllegalStateException("This should have been picked up in the block above");
+					String msg = "Odd Situation. Concept " + c + " already exists at destinaction in module " + conceptOnTS.getModuleId() + " and also in local content in module " + c.getModuleId();
+					warn(msg);
+					report (c, Severity.HIGH, ReportActionType.INFO, msg + ".  Looking for additional modelling anyway.");
 				}
 			}
 		}
 		
 		boolean subComponentsMoved = false;
 		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-			if (!d.getModuleId().equals(targetModuleId) && !d.getModuleId().equals(SCTID_MODEL_MODULE)) {
+			if (conceptOnTS.equals(NULL_CONCEPT) || (!d.getModuleId().equals(targetModuleId) && !d.getModuleId().equals(SCTID_MODEL_MODULE))) {
 				if (moveDescriptionToTargetModule(d, conceptOnTS)) {
 					subComponentsMoved = true;
+				}
+			} else if (conceptOnTS != null && !conceptOnTS.equals(NULL_CONCEPT)){
+				//Is this description already in the target module but not held on the target server?
+				if (conceptOnTS.getDescription(d.getId()) == null) {
+					if (moveDescriptionToTargetModule(d, conceptOnTS)) {
+						subComponentsMoved = true;
+					}
+					
+					//Do we need to demote existing content to make way for the new?
+					if (d.getType().equals(DescriptionType.FSN)) {
+						String existingFsnId = conceptOnTS.getFSNDescription().getId();
+						Description loadedFSN = c.getDescription(existingFsnId);
+						if (loadedFSN != null) {
+							report (c, Severity.MEDIUM, ReportActionType.DESCRIPTION_INACTIVATED, "Existing FSN on TS inactivated to make way for imported content.", loadedFSN);
+							loadedFSN.setDirty();
+							loadedFSN.setActive(false);
+							subComponentsMoved = true;
+						}
+					} else if (d.isPreferred() && d.getType().equals(DescriptionType.SYNONYM)) {
+						String existingPtId = conceptOnTS.getPreferredSynonym(US_ENG_LANG_REFSET).getId();
+						Description loadedPT = c.getDescription(existingPtId);
+						if (loadedPT != null) {
+							report (c, Severity.MEDIUM, ReportActionType.DESCRIPTION_INACTIVATED, "Existing PT on TS demoted to make way for imported content.", loadedPT);
+							loadedPT.setActive(true); //Will only mark dirty if not already active
+							loadedPT.setAcceptablity(US_ENG_LANG_REFSET, Acceptability.ACCEPTABLE);
+							loadedPT.setAcceptablity(GB_ENG_LANG_REFSET, Acceptability.ACCEPTABLE);
+							//The local copy may already be acceptable, so mark as dirty to force this state to TS
+							loadedPT.setDirty(ENGLISH_DIALECTS);
+							subComponentsMoved = true;
+						}
+					}
 				}
 			}
 		}
@@ -230,6 +272,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		if (conceptAlreadyTransferred && subComponentsMoved) {
 			incrementSummaryInformation("Existing concept, additional components moved.");
 		}
+		allModifiedConcepts.add(c);
 		return true;
 	}
 
@@ -327,52 +370,60 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		//And mark the relationship as dirty just in case we're moving content that's already in the target module.  
 		r.setDirty();
 		
-		if (switchModule(r.getType())) {
-			//Is this an unexpected dependency
-			if (!allIdentifiedConcepts.contains(r.getType())) {
-				incrementSummaryInformation("Unexpected dependencies included");
-				addSummaryInformation("Unexpected type dependency: " + r.getType(), "");
-			}
-		} else {
-			//No need to try to switch this concept again
-			noMoveRequired.add(r.getType());
-		}
-		//Note that switching the target will also recursively work up the hierarchy as parents are also switched
-		//up the hierarchy until a concept owned by the core module is encountered.
-		Concept target = r.getTarget();
-		//Don't worry about the target if it's on our to-do list anyway.
-		if (!allIdentifiedConcepts.contains(target)) {
-			//If our dependency is in the core module, then check - live - if it is active
-			//because if not, we can't take this relationship.  Check we haven't just moved it there.
-			if (target.getModuleId().equals(targetModuleId) && ! allModifiedConcepts.contains(target)) {
-				Concept loadedTarget = loadConcept(target);
-				//If this target is inactive, find an alternative target and create a replacement relationship
-				//TODO in the stated form, we'll need to re-write the axiom if we see this!
-				if (!loadedTarget.isActive()) {
-					String reason = loadedTarget.getInactivationIndicator().toString();
-					Concept replacement = getReplacement(loadedTarget);
-					String msg = "Target of " + r + " is inactive in MAIN due to " + reason;
-					msg += ". Replacing with " + replacement;
-					report (r.getSource(), Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, msg);
-					target = replacement;
-					Relationship newRel = new Relationship(r.getSource(),r.getType(), replacement, r.getGroupId());
-					newRel.setModuleId(targetModuleId);
-					newRel.setDirty();
-					newRel.setRelationshipId(relIdGenerator.getSCTID());
-					r.getSource().removeRelationship(r);
-					r.getSource().addRelationship(newRel);
-				}
-			}
-			//Again will recursively switch all dependencies as we're switching a concept here
-			if (switchModule(target)) {
+		if (!allModifiedConcepts.contains(r.getType())) {
+			if (switchModule(r.getType())) {
 				//Is this an unexpected dependency
-				if (!allIdentifiedConcepts.contains(target)) {
+				if (!allIdentifiedConcepts.contains(r.getType())) {
 					incrementSummaryInformation("Unexpected dependencies included");
-					addSummaryInformation("Unexpected target dependency: " + target, "");
+					addSummaryInformation("Unexpected type dependency: " + r.getType(), "");
 				}
+				//We've moved this concept now, list it so as not to try again
+				allModifiedConcepts.add(r.getType());
 			} else {
 				//No need to try to switch this concept again
 				noMoveRequired.add(r.getType());
+			}
+		}
+		
+		//Note that switching the target will also recursively work up the hierarchy as parents are also switched
+		//up the hierarchy until a concept owned by the core module is encountered.
+		Concept target = r.getTarget();
+		
+		if (!allModifiedConcepts.contains(target)) {
+			//Don't worry about the target if it's on our to-do list anyway.
+			if (!allIdentifiedConcepts.contains(target)) {
+				//If our dependency is in the core module, then check - live - if it is active
+				//because if not, we can't take this relationship.  Check we haven't just moved it there.
+				if (target.getModuleId().equals(targetModuleId) && ! allModifiedConcepts.contains(target)) {
+					Concept loadedTarget = loadConcept(target);
+					//If this target is inactive, find an alternative target and create a replacement relationship
+					//TODO in the stated form, we'll need to re-write the axiom if we see this!
+					if (!loadedTarget.isActive()) {
+						String reason = loadedTarget.getInactivationIndicator().toString();
+						Concept replacement = getReplacement(loadedTarget);
+						String msg = "Target of " + r + " is inactive in MAIN due to " + reason;
+						msg += ". Replacing with " + replacement;
+						report (r.getSource(), Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, msg);
+						target = replacement;
+						Relationship newRel = new Relationship(r.getSource(),r.getType(), replacement, r.getGroupId());
+						newRel.setModuleId(targetModuleId);
+						newRel.setDirty();
+						newRel.setRelationshipId(relIdGenerator.getSCTID());
+						r.getSource().removeRelationship(r);
+						r.getSource().addRelationship(newRel);
+					}
+				}
+				//Again will recursively switch all dependencies as we're switching a concept here
+				if (switchModule(target)) {
+					//Is this an unexpected dependency
+					if (!allIdentifiedConcepts.contains(target)) {
+						incrementSummaryInformation("Unexpected dependencies included");
+						addSummaryInformation("Unexpected target dependency: " + target, "");
+					}
+				} else {
+					//No need to try to switch this concept again
+					noMoveRequired.add(r.getType());
+				}
 			}
 		}
 		
@@ -418,28 +469,21 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	}
 
 	private boolean moveDescriptionToTargetModule(Description d, Concept conceptOnTS) throws TermServerScriptException {
-		if (d.getModuleId().equals(targetModuleId)) {
-			return false;
-		}
 		
 		//If we already have the concept on the Terminology Server, perhaps we already have the description too,
 		//Despite what the local file claims
 		if (!conceptOnTS.equals(NULL_CONCEPT)) {
 			Description descriptionOnTS = findMatchingDescription(d, conceptOnTS);
 			if (descriptionOnTS != null) {
-				report (conceptOnTS, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Content already on server", d);
+				report (conceptOnTS, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Description already on server", d);
 				return false;
-			}
-			
-			//If we already have this concept on the server, then we can't have another FSN
-			if (d.getType().equals(DescriptionType.FSN)) {
-				d.setType(DescriptionType.SYNONYM);
-				report (conceptOnTS, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Demoted term to Synonym due to existing FSN", d);
 			}
 		}
 		
 		//First swap the module id, then add in the GB refset 
 		d.setModuleId(targetModuleId);
+		//Set dirty explicitly in case the source content is already in the expected module
+		d.setDirty();
 		
 		//AU for example doesn't give language refset entries for FSNs
 		if (d.getLangRefsetEntries(ActiveState.ACTIVE, targetLangRefsetIds).size() == 0) {
@@ -458,14 +502,17 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		} else {
 			for (LangRefsetEntry usEntry : d.getLangRefsetEntries(ActiveState.ACTIVE, US_ENG_LANG_REFSET)) {
 				usEntry.setModuleId(targetModuleId);
-				//If we already have this concept on the server, then we'll already have a preferred term
-				if (!conceptOnTS.equals(NULL_CONCEPT) && usEntry.getAcceptabilityId().equals(SCTID_PREFERRED_TERM)) {
-					usEntry.setAcceptabilityId(SCTID_ACCEPTABLE_TERM);
-					report (conceptOnTS, Severity.MEDIUM, ReportActionType.DESCRIPTION_ACCEPTABILIY_CHANGED, "Demoted term to acceptable due to existing PT", usEntry);
+				usEntry.setDirty();
+				if (d.getLangRefsetEntries(ActiveState.ACTIVE, GB_ENG_LANG_REFSET).size() ==0) {
+					LangRefsetEntry gbEntry = usEntry.clone(d.getDescriptionId(), false);
+					gbEntry.setRefsetId(GB_ENG_LANG_REFSET);
+					d.addAcceptability(gbEntry);
 				}
-				LangRefsetEntry gbEntry = usEntry.clone(d.getDescriptionId(), false);
-				gbEntry.setRefsetId(GB_ENG_LANG_REFSET);
-				d.addAcceptability(gbEntry);
+			}
+			
+			for (LangRefsetEntry gbEntry : d.getLangRefsetEntries(ActiveState.ACTIVE, GB_ENG_LANG_REFSET)) {
+				gbEntry.setModuleId(targetModuleId);
+				gbEntry.setDirty(); //Just in case we're missing this component rather than shifting module
 			}
 		}
 		

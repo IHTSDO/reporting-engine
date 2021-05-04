@@ -108,6 +108,17 @@ public class SnomedUtils implements RF2Constants {
 		throw new TermServerScriptException("Unable to translate Acceptability " + a);
 	}
 	
+	public static String translateAcceptabilityToSCTID(Acceptability a) throws TermServerScriptException {
+		if (a.equals(Acceptability.PREFERRED)) {
+			return SCTID_PREFERRED_TERM;
+		}
+		
+		if (a.equals(Acceptability.ACCEPTABLE)) {
+			return SCTID_ACCEPTABLE_TERM;
+		}
+		throw new TermServerScriptException("Unable to translate Acceptability " + a);
+	}
+	
 	public static Acceptability translateAcceptabilityFromChar (char a) throws TermServerScriptException {
 		if (a == 'P') {
 			return Acceptability.PREFERRED;
