@@ -76,8 +76,12 @@ RefsetMember extends Component {
 	public boolean isActive() {
 		return active;
 	}
+	
 	public void setActive(boolean newActiveState) {
-		if (this.active != null && this.active != newActiveState) {
+		setActive(newActiveState, false);
+	}
+	public void setActive(boolean newActiveState, boolean forceDirty) {
+		if (forceDirty || (this.active != null && this.active != newActiveState)) {
 			setDirty();
 			setEffectiveTime(null);
 		}

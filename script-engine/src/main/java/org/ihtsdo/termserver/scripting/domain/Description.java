@@ -4,9 +4,7 @@ package org.ihtsdo.termserver.scripting.domain;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.ActiveState;
 import org.ihtsdo.termserver.scripting.util.AcceptabilityMode;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
@@ -166,15 +164,19 @@ public class Description extends Component implements RF2Constants {
 	public boolean isActive() {
 		return active;
 	}
-
+	
 	public void setActive(boolean newActiveState) {
-		if (this.active != null && !this.active == newActiveState) {
+		setActive(newActiveState, false); //Don't force dirty by default
+	}
+
+	public void setActive(boolean newActiveState, boolean forceDirty) {
+		if (forceDirty || (this.active != null && !this.active == newActiveState)) {
 			setDirty();
 			//If we inactivate a description, inactivate all of its LangRefsetEntriesAlso
 			if (newActiveState == false && this.langRefsetEntries != null) {
 				//If we're working with RF2, modify the lang ref set
 				for (LangRefsetEntry thisDialect : getLangRefsetEntries()) {
-					thisDialect.setActive(false);
+					thisDialect.setActive(false, forceDirty);
 				}
 				//If we're working with TS Concepts, remove the acceptability Map
 				acceptabilityMap = null;

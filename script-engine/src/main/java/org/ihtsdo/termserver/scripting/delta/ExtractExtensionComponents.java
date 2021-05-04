@@ -85,9 +85,9 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		for (Component thisComponent : allIdentifiedConcepts) {
 			Concept thisConcept = (Concept)thisComponent;
 			
-			/*if (thisConcept.getConceptId().equals("1546591000004100")) {
+			if (thisConcept.getConceptId().equals("371513001")) {
 				debug("Here");
-			}*/
+			}
 			
 			//If we don't have a module id for this identified concept, then it doesn't properly exist in this release
 			if (thisConcept.getModuleId() == null) {
@@ -183,41 +183,46 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		
 		boolean subComponentsMoved = false;
 		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+			boolean thisDescMoved = false;
 			if (conceptOnTS.equals(NULL_CONCEPT) || (!d.getModuleId().equals(targetModuleId) && !d.getModuleId().equals(SCTID_MODEL_MODULE))) {
 				if (moveDescriptionToTargetModule(d, conceptOnTS)) {
 					subComponentsMoved = true;
+					thisDescMoved = true;
 				}
 			} else if (conceptOnTS != null && !conceptOnTS.equals(NULL_CONCEPT)){
 				//Is this description already in the target module but not held on the target server?
 				if (conceptOnTS.getDescription(d.getId()) == null) {
 					if (moveDescriptionToTargetModule(d, conceptOnTS)) {
 						subComponentsMoved = true;
-					}
-					
-					//Do we need to demote existing content to make way for the new?
-					if (d.getType().equals(DescriptionType.FSN)) {
-						String existingFsnId = conceptOnTS.getFSNDescription().getId();
-						Description loadedFSN = c.getDescription(existingFsnId);
-						if (loadedFSN != null) {
-							report (c, Severity.MEDIUM, ReportActionType.DESCRIPTION_INACTIVATED, "Existing FSN on TS inactivated to make way for imported content.", loadedFSN);
-							loadedFSN.setDirty();
-							loadedFSN.setActive(false);
-							subComponentsMoved = true;
-						}
-					} else if (d.isPreferred() && d.getType().equals(DescriptionType.SYNONYM)) {
-						String existingPtId = conceptOnTS.getPreferredSynonym(US_ENG_LANG_REFSET).getId();
-						Description loadedPT = c.getDescription(existingPtId);
-						if (loadedPT != null) {
-							report (c, Severity.MEDIUM, ReportActionType.DESCRIPTION_INACTIVATED, "Existing PT on TS demoted to make way for imported content.", loadedPT);
-							loadedPT.setActive(true); //Will only mark dirty if not already active
-							loadedPT.setAcceptablity(US_ENG_LANG_REFSET, Acceptability.ACCEPTABLE);
-							loadedPT.setAcceptablity(GB_ENG_LANG_REFSET, Acceptability.ACCEPTABLE);
-							//The local copy may already be acceptable, so mark as dirty to force this state to TS
-							loadedPT.setDirty(ENGLISH_DIALECTS);
-							subComponentsMoved = true;
-						}
+						thisDescMoved = true;
 					}
 				}
+			}
+			
+			if (thisDescMoved && !conceptOnTS.equals(NULL_CONCEPT)) {
+				//Do we need to demote existing content to make way for the new?
+				if (d.getType().equals(DescriptionType.FSN)) {
+					String existingFsnId = conceptOnTS.getFSNDescription().getId();
+					Description loadedFSN = c.getDescription(existingFsnId);
+					if (loadedFSN != null) {
+						report (c, Severity.MEDIUM, ReportActionType.DESCRIPTION_INACTIVATED, "Existing FSN on TS inactivated to make way for imported content.", loadedFSN);
+						loadedFSN.setActive(false, true); //Force dirty flag
+						subComponentsMoved = true;
+					}
+				} else if (d.isPreferred() && d.getType().equals(DescriptionType.SYNONYM)) {
+					String existingPtId = conceptOnTS.getPreferredSynonym(US_ENG_LANG_REFSET).getId();
+					Description loadedPT = c.getDescription(existingPtId);
+					if (loadedPT != null) {
+						report (c, Severity.MEDIUM, ReportActionType.DESCRIPTION_INACTIVATED, "Existing PT on TS demoted to make way for imported content.", loadedPT);
+						loadedPT.setActive(true); //Will only mark dirty if not already active
+						loadedPT.setAcceptablity(US_ENG_LANG_REFSET, Acceptability.ACCEPTABLE);
+						loadedPT.setAcceptablity(GB_ENG_LANG_REFSET, Acceptability.ACCEPTABLE);
+						//The local copy may already be acceptable, so mark as dirty to force this state to TS
+						loadedPT.setDirty(ENGLISH_DIALECTS);
+						subComponentsMoved = true;
+					}
+				}
+
 			}
 		}
 		
