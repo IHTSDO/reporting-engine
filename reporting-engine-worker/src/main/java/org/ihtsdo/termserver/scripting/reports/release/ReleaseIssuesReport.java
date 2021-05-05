@@ -472,6 +472,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	
 	private void semTagInCorrectHierarchy() throws TermServerScriptException {
 		String issueStr = "SemTag used outside of expected hierarchy";
+		initialiseSummary(issueStr);
 		for (Concept c : allActiveConcepts) {
 			if (inScope(c) && !semTagHierarchyMap.containsValue(c)) {
 				for (Map.Entry<String, Concept> entry : semTagHierarchyMap.entrySet()) {
