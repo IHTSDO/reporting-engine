@@ -23,7 +23,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  */
 public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 	
-	boolean allowCompromisePPP = true;
+	boolean allowCompromisePPP = false;
 
 	public NormaliseTemplateCompliantConcepts(BatchFix clone) {
 		super(clone);
@@ -398,9 +398,10 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		templateNames = new String[] { "templates/morphologies/Calculus.json" };
 		templateNames = new String[] { "templates/morphologies/Lateral displacement.json" };
 		templateNames = new String[] { "templates/morphologies/Medial displacement.json" };
+		templateNames = new String[] { "templates/poisoning caused by substance or product.json" };
 		*/
 		
-		templateNames = new String[] { "templates/poisoning caused by substance or product.json" };
+		templateNames = new String[] { "templates/morphologies/Compression.json" };
 		
 		//TODO We're seeing 'HIGH' warnings about existing parents being redundant in presence of PPP but before the PPP gets added. Investigate
 		//I think this might happen when we set a PPP which is lower than the existing parent.
@@ -417,7 +418,6 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 				"Excluded Concepts",
 				"Misaligned Concepts"};
 		super.postInit(tabNames, columnHeadings, false);
-		outputMetaData();
 	}
 
 	@Override
@@ -569,7 +569,6 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		Set<Concept> changesRequired = new HashSet<>();
 		Set<Concept> noChangesRequired = new HashSet<>();
 		setQuiet(true);
-		
 		//for (Concept alignedConcept : Collections.singletonList(gl.getConcept("48008009"))) {
 		for (Concept alignedConcept : alignedConcepts) {
 			//Make changes to a clone of the concept so we don't affect our local copy
@@ -583,6 +582,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		}
 		setQuiet(false);
 		addSummaryInformation("Concepts matching templates & no change required", noChangesRequired.size());
+		outputMetaData();
 		return asComponents(changesRequired);
 	}
 	
