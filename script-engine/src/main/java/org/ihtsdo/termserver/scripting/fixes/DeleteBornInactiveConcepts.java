@@ -52,10 +52,4 @@ public class DeleteBornInactiveConcepts extends BatchFix implements RF2Constants
 		return CHANGE_MADE;
 	}
 
-	@Override
-	protected List<Component> loadLine(String[] lineItems)
-			throws TermServerScriptException {
-		return Collections.singletonList(gl.getConcept(lineItems[0]));
-	}
-
 }

@@ -1238,10 +1238,10 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	}
 	
 	protected int checkAndSetProximalPrimitiveParent(Task t, Concept c, Concept newPPP) throws TermServerScriptException {
-		return checkAndSetProximalPrimitiveParent(t, c, newPPP, false);
+		return checkAndSetProximalPrimitiveParent(t, c, newPPP, false, false);
 	}
 	
-	protected int checkAndSetProximalPrimitiveParent(Task t, Concept c, Concept newPPP, boolean checkOnly) throws TermServerScriptException {
+	protected int checkAndSetProximalPrimitiveParent(Task t, Concept c, Concept newPPP, boolean checkOnly, boolean allowCompromise) throws TermServerScriptException {
 		int changesMade = 0;
 		
 		//Do we in fact need to make any changes here?
@@ -1262,7 +1262,12 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		} else {
 			Concept ppp = ppps.iterator().next();
 			//We need to either calculate the ppp as the intended one, or higher than it eg calculated PPP of Disease is OK if we're setting the more specific "Complication"
-			if (ppp.equals(newPPP) || gl.getAncestorsCache().getAncestors(newPPP).contains(ppp)) {
+			if (allowCompromise || ppp.equals(newPPP) || gl.getAncestorsCache().getAncestors(newPPP).contains(ppp)) {
+				if (allowCompromise) {
+					report (t, c, Severity.MEDIUM, ReportActionType.INFO, "Calculated PPP " + ppp + " allowed (compromise flag set).");
+					newPPP = ppp;
+				} 
+				
 				if (!checkOnly) {
 					changesMade += setProximalPrimitiveParent(t, c, newPPP);
 				} else {
@@ -1366,7 +1371,9 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	
 	protected List<Component> loadLine(String[] lineItems)
 			throws TermServerScriptException {
-		throw new NotImplementedException("This class self determines concepts to process");
+		//Default implementation is to take the first column and try that as an SCTID
+		//Override for more complex implementation
+		return Collections.singletonList(gl.getConcept(lineItems[0]));
 	}
 	
 	public void setStandardParameters(JobParameters param) {

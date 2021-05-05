@@ -62,7 +62,7 @@ public class ProximatePrimitiveRemodeller extends BatchFix implements RF2Constan
 		List<Component> conceptsToProcess = new ArrayList<>();
 		for (Concept c : gl.getConcept(subHierarchyStr).getDescendents(NOT_SET)) {
 			//This check will report any concepts that cannot have their PPP remodelled.
-			if (checkAndSetProximalPrimitiveParent(null, c.cloneWithIds(), proximalPrimitiveParent, true) != NO_CHANGES_MADE) {
+			if (checkAndSetProximalPrimitiveParent(null, c.cloneWithIds(), proximalPrimitiveParent, true, false) != NO_CHANGES_MADE) {
 				conceptsToProcess.add(c);
 			}
 		}

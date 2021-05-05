@@ -561,9 +561,4 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		return null;
 	}
 
-	@Override
-	protected List<Component> loadLine(String[] lineItems)
-			throws TermServerScriptException {
-		return Collections.singletonList(gl.getConcept(lineItems[0]));
-	}
 }

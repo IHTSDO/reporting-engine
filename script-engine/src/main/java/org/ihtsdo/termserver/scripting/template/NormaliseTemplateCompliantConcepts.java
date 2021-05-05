@@ -3,6 +3,7 @@ package org.ihtsdo.termserver.scripting.template;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
@@ -21,6 +22,8 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * and set the proximal primitive parent - if it matches the template expectation
  */
 public class NormaliseTemplateCompliantConcepts extends TemplateFix {
+	
+	boolean allowCompromisePPP = true;
 
 	public NormaliseTemplateCompliantConcepts(BatchFix clone) {
 		super(clone);
@@ -393,12 +396,11 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		templateNames = new String[] { "templates/morphologies/Retention.json" };
 		templateNames = new String[] { "templates/procedures/MRI.json" };
 		templateNames = new String[] { "templates/morphologies/Calculus.json" };
-		templateNames = new String[] { "templates/poisoning caused by substance or product.json" };
 		templateNames = new String[] { "templates/morphologies/Lateral displacement.json" };
-		
+		templateNames = new String[] { "templates/morphologies/Medial displacement.json" };
 		*/
 		
-		templateNames = new String[] { "templates/morphologies/Medial displacement.json" };
+		templateNames = new String[] { "templates/poisoning caused by substance or product.json" };
 		
 		//TODO We're seeing 'HIGH' warnings about existing parents being redundant in presence of PPP but before the PPP gets added. Investigate
 		//I think this might happen when we set a PPP which is lower than the existing parent.
@@ -444,7 +446,7 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		//If the proximal primitive parent matches that of the matching template, we can set that
 		List<String> focusConceptIds = conceptToTemplateMap.get(c).getLogicalTemplate().getFocusConcepts();
 		if (focusConceptIds.size() == 1) {
-			changesMade += checkAndSetProximalPrimitiveParent(t, c, gl.getConcept(focusConceptIds.get(0)));
+			changesMade += checkAndSetProximalPrimitiveParent(t, c, gl.getConcept(focusConceptIds.get(0)), false, allowCompromisePPP);
 		} else {
 			report (t, c, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Cannot remodel PPP - template specifies multiple focus concepts");
 		}
@@ -536,8 +538,17 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		
 		info ("Identifying concepts aligned to template");
 		for (Template template : templates) {
-			Collection<Concept> potentialMatches = findConcepts(template.getDomain());
-			addSummaryInformation("Concepts matching ECL", potentialMatches.size());
+			
+			//Are we finding concepts to process, or are they stated in a file?
+			Collection<Concept> potentialMatches;
+			if (inputFile == null) {
+				potentialMatches = findConcepts(template.getDomain());
+				addSummaryInformation("Concepts matching ECL", potentialMatches.size());
+			} else {
+				potentialMatches = processFile(inputFile).stream()
+						.map(c -> (Concept)c)
+						.collect(Collectors.toSet());
+			}
 			//Only concepts that are misaligned against *all* templates should be counted
 			//But in the case of Normalise, we only use a single template
 			alignedConcepts.addAll(findTemplateMatches(template, potentialMatches, misalignedConcepts, TERTIARY_REPORT, CharacteristicType.INFERRED_RELATIONSHIP));

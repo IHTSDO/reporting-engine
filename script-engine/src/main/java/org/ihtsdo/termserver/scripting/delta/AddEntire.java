@@ -223,9 +223,4 @@ public class AddEntire extends DeltaGenerator {
 		return "Add Entire";
 	}
 
-	@Override
-	protected List<Component> loadLine(String[] lineItems)
-			throws TermServerScriptException {
-		return Collections.singletonList(gl.getConcept(lineItems[0]));
-	}
 }
