@@ -329,7 +329,9 @@ public class Description extends Component implements RF2Constants {
 		clone.lang = this.lang;
 		clone.term = this.term;
 		clone.caseSignificance = this.caseSignificance;
-		clone.setReleased(keepIds ? this.released : false);
+		if (this.released != null) {
+			clone.setReleased(keepIds ? this.released : false);
+		}
 		clone.acceptabilityMap = new HashMap<String, Acceptability>();
 		if (this.acceptabilityMap != null) { 
 			clone.acceptabilityMap.putAll(this.acceptabilityMap);
