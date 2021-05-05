@@ -450,7 +450,7 @@ public class GraphLoader implements RF2Constants {
 					source.removeParent(r.getCharacteristicType(),r.getTarget());
 					target.removeChild(r.getCharacteristicType(),r.getSource());
 				} else {
-					TermServerScript.warn("Not removing parent/child relationship as exists in other axiom / alternative relationship: " + r);
+					//TermServerScript.warn("Not removing parent/child relationship as exists in other axiom / alternative relationship: " + r);
 				}
 			}
 		} 
