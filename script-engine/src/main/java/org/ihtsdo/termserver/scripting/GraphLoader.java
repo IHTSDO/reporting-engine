@@ -208,7 +208,7 @@ public class GraphLoader implements RF2Constants {
 				Long conceptId = Long.parseLong(lineItems[REF_IDX_REFCOMPID]);
 				Concept c = getConcept(conceptId);
 				
-				/*if (c.getId().equals("119491000119108")) {
+				/*if (c.getId().equals("373120008")) {
 					TermServerScript.debug ("here");
 				}
 				
@@ -217,7 +217,6 @@ public class GraphLoader implements RF2Constants {
 				}*/
 				
 				try {
-					boolean isAdditionalAxiom = false;
 					//Also save data in RF2 form so we can build Snapshot
 					AxiomEntry axiomEntry = AxiomEntry.fromRf2(lineItems);
 					//Are we overwriting an existing axiom?
@@ -237,8 +236,6 @@ public class GraphLoader implements RF2Constants {
 								addRelationshipToConcept(CharacteristicType.STATED_RELATIONSHIP, r, isDelta);
 							}
 						}
-					} else if (c.getAxiomEntries(ActiveState.ACTIVE, false).size() > 0) {
-						isAdditionalAxiom = true;
 					}
 					c.getAxiomEntries().add(axiomEntry);
 					
@@ -258,7 +255,6 @@ public class GraphLoader implements RF2Constants {
 								throw new IllegalArgumentException("GCI Axiom RHS != RefCompId: " + line);
 							}
 							c.getGciAxioms().add(AxiomUtils.toAxiom(c, axiomEntry, axiom));
-							isAdditionalAxiom = false;
 							axiomEntry.setGCI(true);
 						} else if (!conceptId.equals(LHS)) {
 							throw new IllegalArgumentException("Axiom LHS != RefCompId: " + line);
@@ -278,10 +274,6 @@ public class GraphLoader implements RF2Constants {
 						alignAxiomRelationships(c, relationships, axiomEntry, axiomEntry.isActive());
 						for (Relationship r : relationships) {
 							addRelationshipToConcept(CharacteristicType.STATED_RELATIONSHIP, r, isDelta);
-						}
-						
-						if (isAdditionalAxiom) {
-							c.getAdditionalAxioms().add(AxiomUtils.toAxiom(c, axiomEntry, axiom));
 						}
 					} else {
 						//Are we looking at a special axiom: Transitive, Reflexive or RoleChain?

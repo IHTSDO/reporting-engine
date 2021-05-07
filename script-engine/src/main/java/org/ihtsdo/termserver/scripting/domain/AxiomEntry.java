@@ -20,14 +20,14 @@ public class AxiomEntry extends Component implements RF2Constants {
 	private boolean isGCI = false;
 	private Boolean released = null;
 	
-	public AxiomEntry clone(String newComponentSctId) {
+	public AxiomEntry clone(String newComponentSctId, boolean keepIds) {
 		AxiomEntry clone = new AxiomEntry();
-		clone.id = UUID.randomUUID().toString();
-		clone.effectiveTime = null;
+		clone.id = keepIds ? this.id : UUID.randomUUID().toString();
+		clone.effectiveTime = keepIds ? this.effectiveTime :null;
 		clone.moduleId = this.moduleId;
 		clone.active = this.active;
 		clone.refsetId = this.refsetId;
-		clone.referencedComponentId = newComponentSctId;
+		clone.referencedComponentId = keepIds ? this.referencedComponentId : newComponentSctId;
 		clone.owlExpression = this.owlExpression;
 		clone.isDirty = true; //New components need to be written to any delta
 		return clone;

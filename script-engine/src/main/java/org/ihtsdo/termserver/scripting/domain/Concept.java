@@ -1221,6 +1221,14 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 			}
 		}
 		
+		//Copy axioms entries
+		List<AxiomEntry> axiomEntries = getAxiomEntries();
+		for (AxiomEntry axiom : axiomEntries) {
+			//We need to null out the sourceId since the clone is a new concept
+			AxiomEntry aClone = axiom.clone(keepIds?axiom.getId():null, keepIds);
+			clone.getAxiomEntries().add(aClone);
+		}
+		
 		//Copy Parent/Child arrays
 		clone.inferredChildren = inferredChildren == null? new HashSet<>() : new HashSet<>(inferredChildren);
 		clone.statedChildren = statedChildren == null? new HashSet<>() : new HashSet<>(statedChildren);

@@ -665,13 +665,13 @@ public abstract class TermServerScript implements RF2Constants {
 		try {
 			if (axioms != null) {
 				for (Axiom axiom : axioms) {
-					if (axiom.isActive()) {
-						for (Relationship r : axiom.getRelationships()) {
-							r.setAxiom(axiom);
-							r.setSource(gl.getConcept(c.getConceptId()));
-							r.setTarget(gl.getConcept(r.getTarget().getConceptId()));
-							c.addRelationship(r);
-						}
+					for (Relationship r : axiom.getRelationships()) {
+						r.setEffectiveTime(axiom.getEffectiveTime());
+						r.setActive(axiom.isActive());
+						r.setAxiom(axiom);
+						r.setSource(gl.getConcept(c.getConceptId()));
+						r.setTarget(gl.getConcept(r.getTarget().getConceptId()));
+						c.addRelationship(r);
 					}
 				}
 			}
@@ -682,8 +682,8 @@ public abstract class TermServerScript implements RF2Constants {
 
 	protected Concept updateConcept(Task t, Concept c, String info) throws TermServerScriptException {
 		try {
+			convertStatedRelationshipsToAxioms(c, false);
 			if (!dryRun) {
-				convertStatedRelationshipsToAxioms(c, false);
 				if (validateConceptOnUpdate) {
 					validateConcept(t, c);
 				}
@@ -829,22 +829,31 @@ public abstract class TermServerScript implements RF2Constants {
 			Axiom a = c.getFirstActiveClassAxiom();
 			a.setModuleId(c.getModuleId());
 			
-			//If we're merging with existing axioms, remove any Axiom Entries
-			//and pinch the UUID
-			if (a.getId() == null && c.getAxiomEntries().size() > 0 && mergeExistingAxioms) {
-				a.setAxiomId(c.getAxiomEntries().get(0).getId());
+			//If we're working with local concepts, remove any Axiom Entries and pinch their UUID
+			if (a.getId() == null && c.getAxiomEntries().size() > 0) {
+				for (AxiomEntry ae : c.getAxiomEntries()) {
+					if (ae.isActive()) {
+						a.setAxiomId(ae.getId());
+					}
+				}
+			}
+			
+			if (mergeExistingAxioms) {
 				c.getAxiomEntries().clear();
 			}
 	
 			//We'll remove the stated relationships as they get converted to the axiom
 			Set<Relationship> rels = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH);
 			for (Relationship rel : rels) {
-				//Ignore inactive rels
+				//Ignore inactive rels, unless they come from an inactive axiom, in which case leave them there
 				if (!rel.isActive()) {
 					//...unless it came from an axiom in which case it's no longer required
 					//and causes confusion for a validation check due to having no effective time
 					if (rel.getAxiom() != null) {
-						c.removeRelationship(rel);
+						if (!rel.getAxiom().isActive()) {
+							rel.getAxiom().getRelationships().add(rel);
+						}
+						c.removeRelationship(rel, true); //Safe to remove it even if published - will exist in axiom
 					}
 					continue;
 				}
@@ -866,7 +875,11 @@ public abstract class TermServerScript implements RF2Constants {
 					}
 				}
 				thisAxiom.getRelationships().add(rel);
-				c.removeRelationship(rel, true);  //Safe to remove it even if published - will exist in axiom
+				if (!rel.fromAxiom() && !rel.isActive()) {
+					//Historically inactive stated relationship, leave it be
+				} else {
+					c.removeRelationship(rel, true);  //Safe to remove it even if published - will exist in axiom
+				}
 			}
 			
 			for (Axiom thisAxiom : new ArrayList<>(c.getClassAxioms())) {
