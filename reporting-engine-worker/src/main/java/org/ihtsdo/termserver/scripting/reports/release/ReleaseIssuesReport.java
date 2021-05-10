@@ -707,6 +707,9 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				continue;
 			}
 			if (c.isActive()) {
+				if (!inScope(c)) {
+					continue;
+				}
 				String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
 				if (StringUtils.isEmpty(semTag)) {
 					String legacy = isLegacy(c.getFSNDescription());
