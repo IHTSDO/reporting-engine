@@ -62,6 +62,9 @@ public class SnomedUtils implements RF2Constants {
 
 	public static String[] deconstructFSN(String fsn, boolean quiet) {
 		String[] elements = new String[2];
+		if (fsn == null) {
+			return elements;
+		}
 		int cutPoint = fsn.lastIndexOf(SEMANTIC_TAG_START);
 		if (cutPoint == -1) {
 			if (!quiet) {
