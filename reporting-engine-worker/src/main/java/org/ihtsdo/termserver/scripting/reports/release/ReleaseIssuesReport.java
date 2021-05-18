@@ -427,7 +427,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		initialiseSummary(issueStr);
 		initialiseSummary(issue2Str);
 		initialiseSummary(issue3Str);
-		for (Concept c : allActiveConcepts) {
+		for (Concept c : gl.getAllConcepts()) {
 			if (!c.isActive() && inScope(c) && isInternational(c)) {
 				boolean reported = false;
 				if (c.getFSNDescription() == null || !c.getFSNDescription().isActive()) {
@@ -443,7 +443,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 				
 				Description gbPT = c.getPreferredSynonym(GB_ENG_LANG_REFSET);
 				if (gbPT == null || !gbPT.isActive()) {
-					report(c, issue3Str,isLegacy(c), isActive(c,null));
+					report(c, issue3Str, isLegacy(c), isActive(c,null));
 					reported = true;
 				}
 				
@@ -1297,7 +1297,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	}
 
 	private String isLegacy(Component c) {
-		return (c.getEffectiveTime() == null || c.getEffectiveTime().isEmpty()) ? "N" : "Y";
+		return (c.getEffectiveTime() == null || c.getEffectiveTime().isEmpty() || recentlyTouched.contains(c)) ? "N" : "Y";
 	}
 	
 	class DialectPair {
