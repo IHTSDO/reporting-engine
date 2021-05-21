@@ -603,6 +603,12 @@ public class ArchiveManager implements RF2Constants {
 				} else if (fileName.contains("Association" ) || fileName.contains("AssociationReferenceSet" )) {
 					info("Loading Historical Association File: " + fileName);
 					gl.loadHistoricalAssociationFile(is, isReleased);
+				} else if (fileName.contains("MRCMDomain")) {
+					info("Loading MRCM Domain File: " + fileName);
+					gl.loadMRCMDomainFile(is, isReleased);
+				} else if (fileName.contains("MRCMAttributeRange")) {
+					info("Loading MRCM AttributeRange File: " + fileName);
+					gl.loadMRCMAttributeRangeFile(is, isReleased);
 				}
 				//If we're loading all terms, load the language refset as well
 				if (!fsnOnly && (fileName.contains("English" ) || fileName.contains("Language"))) {

@@ -39,6 +39,9 @@ public class GraphLoader implements RF2Constants {
 	private TransitiveClosure previousTransativeClosure;
 	private Map<Concept, Set<DuplicatePair>> duplicateLangRefsetEntriesMap;
 	private Set<LangRefsetEntry> duplicateLangRefsetIdsReported = new HashSet<>();
+	
+	private Map<Concept, MRCMAttributeRange> mrcmAttributeRangeMap = new HashMap<>();
+	private Map<Concept, MRCMDomain> mrcmDomainMap = new HashMap<>();
 
 	private boolean detectNoChangeDelta = false;
 	
@@ -978,6 +981,48 @@ public class GraphLoader implements RF2Constants {
 		}
 		return new ArrayList<AssociationEntry>();
 	}
+	
+	public void loadMRCMAttributeRangeFile(InputStream is, Boolean isReleased) throws IOException, TermServerScriptException {
+		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+		boolean isHeaderLine = true;
+		String line;
+		while ((line = br.readLine()) != null) {
+			if (!isHeaderLine) {
+				String[] lineItems = line.split(FIELD_DELIMITER);
+				MRCMAttributeRange ar = MRCMAttributeRange.fromRf2(lineItems);
+				
+				//Only set the released flag if it's not set already
+				if (ar.isReleased() == null) {
+					ar.setReleased(isReleased);
+				}
+				Concept refComp = getConcept(ar.getReferencedComponentId());
+				mrcmAttributeRangeMap.put(refComp, ar);
+			} else {
+				isHeaderLine = false;
+			}
+		}
+	}
+	
+	public void loadMRCMDomainFile(InputStream is, Boolean isReleased) throws IOException, TermServerScriptException {
+		BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+		boolean isHeaderLine = true;
+		String line;
+		while ((line = br.readLine()) != null) {
+			if (!isHeaderLine) {
+				String[] lineItems = line.split(FIELD_DELIMITER);
+				MRCMDomain d = MRCMDomain.fromRf2(lineItems);
+				
+				//Only set the released flag if it's not set already
+				if (d.isReleased() == null) {
+					d.setReleased(isReleased);
+				}
+				Concept refComp = getConcept(d.getReferencedComponentId());
+				mrcmDomainMap.put(refComp, d);
+			} else {
+				isHeaderLine = false;
+			}
+		}
+	}
 
 	public Component getComponent(String id) {
 		if (allComponents == null) {
@@ -1294,6 +1339,14 @@ public class GraphLoader implements RF2Constants {
 		}
 		if (true);
 		return maxEffectiveTime;
+	}
+
+	public Map<Concept, MRCMAttributeRange> getMrcmAttributeRangeMap() {
+		return mrcmAttributeRangeMap;
+	}
+
+	public Map<Concept, MRCMDomain> getMrcmDomainMap() {
+		return mrcmDomainMap;
 	}
 
 }

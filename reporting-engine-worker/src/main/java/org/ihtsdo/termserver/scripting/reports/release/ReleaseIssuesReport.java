@@ -3,6 +3,8 @@ package org.ihtsdo.termserver.scripting.reports.release;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
@@ -53,6 +55,7 @@ import com.google.common.io.Files;
  RP-397 Check for duplicated words, words often typed in reverse, and highlight possible contraction changes
  CDI-52 Update to run successfully against projects with concrete values
  RP-465 Add check for regime/theraphy semtag not under 243120004|Regimes and therapies (regime/therapy)|
+ INFRA-6817 Check MRCM for term discrepancies
  */
 public class ReleaseIssuesReport extends TermServerReport implements ReportClass {
 	
@@ -72,6 +75,10 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	String LEFT_QUOTE = "\u201C";
 	String GRAVE_ACCENT = "\u0060";
 	String ACUTE_ACCENT = "\u00B4";
+	
+	//See https://regex101.com/r/CAlQjx/1/
+	public static final String SCTID_FSN_REGEX = "(\\d{7,})(\\s+)?\\|(.+?)\\|";
+	private Pattern sctidFsnPattern;
 	
 	boolean includeLegacyIssues = false;
 	private static final int MIN_TEXT_DEFN_LENGTH = 12;
@@ -141,10 +148,12 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		wordsOftenTypedTwice.add("with");
 		wordsOftenTypedTwice.add("Be");
 		wordsOftenTypedTwice.add("be");
+		
+		sctidFsnPattern = Pattern.compile(SCTID_FSN_REGEX, Pattern.MULTILINE);
 	}
 	
 	public void postInit() throws TermServerScriptException {
-		String[] columnHeadings = new String[] { "SCTID, FSN, Semtag, Issue, Legacy, C/D/R Active, Detail, Additional Detail",
+		String[] columnHeadings = new String[] { "SCTID, FSN, Semtag, Issue, Legacy, C/D/R Active, Detail, Additional Detail, Further Detail",
 				"Issue, Count"};
 		String[] tabNames = new String[] {	"Issues",
 				"Summary"};
@@ -247,6 +256,10 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		
 		info("...Deprecation rules");
 		checkDeprecatedHierarchies();
+		
+		info("...MRCM validation");
+		checkMRCMDomain();
+		checkMRCMAttributeRanges();
 		
 		info("Checks complete, creating summary tag");
 		populateSummaryTab();
@@ -1202,6 +1215,60 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		}
 	}
 	
+	private void checkMRCMDomain() throws TermServerScriptException {
+		checkMRCMTerms("MRCM Domain", gl.getMrcmDomainMap().values(), MRCMDomain.additionalFieldNames);
+	}
+
+	private void checkMRCMAttributeRanges() throws TermServerScriptException {
+		checkMRCMTerms("MRCM Attribute Range", gl.getMrcmAttributeRangeMap().values(), MRCMAttributeRange.additionalFieldNames);
+	}
+	
+	private void checkMRCMTerms(String partName, Collection<? extends RefsetMember> refsetMembers, String[] additionalFieldNames) throws TermServerScriptException {
+		for (RefsetMember rm : refsetMembers) {
+			if (rm.isActive()) {
+				Concept c = gl.getConcept(rm.getReferencedComponentId());
+				for (String additionalField : additionalFieldNames) {
+					validateTermsInField(partName, c, rm, additionalField);
+				}
+			}
+		}
+	}
+
+	private void validateTermsInField(String partName, Concept c, RefsetMember rm, String fieldName) throws TermServerScriptException {
+		String issueStr = partName + " refset field " + fieldName + " contains inactive or unknown concept";
+		String issueStr2 = partName + " refset field " + fieldName + " contains out of date FSN";
+		initialiseSummary(issueStr);
+		initialiseSummary(issueStr2);
+		
+		//Is this field all numeric?  Check concept exists if so
+		String field = rm.getField(fieldName);
+		if (org.ihtsdo.termserver.scripting.util.StringUtils.isNumeric(field)) {
+			Concept refConcept = gl.getConcept(field, false, false);
+			if (refConcept == null || !refConcept.isActive()) {
+				report (c, issueStr, isLegacy(c), isActive(c, null), field, rm.getId(), field);
+			}
+			return;
+		}
+		
+		Matcher matcher = sctidFsnPattern.matcher(field);
+		while (matcher.find()) {
+			//Group 1 is the SCTID, group 3 is the FSN. Group 2 is optional whitespace
+			if (matcher.groupCount() == 3) {
+				Concept refConcept = gl.getConcept(matcher.group(1), false, false);
+				if (refConcept == null || !refConcept.isActive()) {
+					report (c, issueStr, isLegacy(c), isActive(c, null), refConcept == null ? matcher.group(1) : refConcept, rm.getId(), field);
+				}
+				String fsn = matcher.group(3);
+				if (!refConcept.getFsn().equals(fsn)) {
+					//Sometimes we use the PT.  Check on the rules for when we use each one.
+					if (!fsn.equals(refConcept.getPreferredSynonym(US_ENG_LANG_REFSET).getTerm())) {
+						report (c, issueStr2, isLegacy(c), isActive(c, null), refConcept, fsn, rm.getId(), field);
+					}
+				}
+			}
+		}
+	}
+
 	/**
 	 * If the given concept uses the particular type, checks if that type is in (or must not be in)
 	 * the list of specified values

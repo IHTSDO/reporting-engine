@@ -10,7 +10,7 @@ import com.google.gson.annotations.SerializedName;
 
 public class 
 
-RefsetMember extends Component {
+RefsetMember extends Component implements RF2Constants {
 
 	@SerializedName("active")
 	@Expose
@@ -174,12 +174,8 @@ RefsetMember extends Component {
 	}
 
 	@Override
-	public String[] toRF2() throws Exception {
-		throw new NotImplementedException();
-	}
-
-	@Override
 	public List<String> fieldComparison(Component other) {
+		//TODO Add generic field comparison based off field names
 		throw new NotImplementedException();
 	}
 	
@@ -193,5 +189,63 @@ RefsetMember extends Component {
 	public void delete (String deletionEffectiveTime) {
 		this.deletionEffectiveTime = deletionEffectiveTime;
 		this.isDeleted = true;
+	}
+	
+	public String[] toRF2(String[] additionalFieldNames) {
+		String[] rf2 =  new String[REF_IDX_FIRST_ADDITIONAL + additionalFieldNames.length];
+		rf2[REF_IDX_ID] = id;
+		rf2[REF_IDX_EFFECTIVETIME] = (effectiveTime==null?"":effectiveTime);
+		rf2[REF_IDX_ACTIVE] = (active?"1":"0");
+		rf2[REF_IDX_MODULEID] = moduleId;
+		rf2[REF_IDX_REFSETID] = refsetId;
+		rf2[REF_IDX_REFCOMPID] = referencedComponentId;
+		for (int i=0; i <= additionalFieldNames.length; i++) {
+			int idx = i + REF_IDX_FIRST_ADDITIONAL;
+			rf2[idx] = getField(additionalFieldNames[i]);
+		}
+		return rf2;
+	}
+	
+	public static void populatefromRf2(RefsetMember m, String[] lineItems, String[] additionalFieldNames) {
+		m.setId(lineItems[REF_IDX_ID]);
+		m.setEffectiveTime(lineItems[REF_IDX_EFFECTIVETIME]);
+		m.setActive(lineItems[REF_IDX_ACTIVE].equals("1"));
+		m.setModuleId(lineItems[REF_IDX_MODULEID]);
+		m.setRefsetId(lineItems[REF_IDX_REFSETID]);
+		m.setReferencedComponentId(lineItems[REF_IDX_REFCOMPID]);
+		for (int i=0; i < additionalFieldNames.length; i++) {
+			int idx = i + REF_IDX_FIRST_ADDITIONAL;
+			m.setField(additionalFieldNames[i], lineItems[idx]);
+		}
+	}
+	
+	public String[] toRF2Deletion() {
+		throw new NotImplementedException();
+	}
+
+	@Override
+	public String[] toRF2() throws Exception {
+		throw new NotImplementedException();
+	}
+	
+	@Override 
+	public boolean equals(Object o) {
+		if (o instanceof RefsetMember) {
+			return this.getId().equals(((RefsetMember)o).getId());
+		}
+		return false;
+	}
+	
+	
+	public String toString() {
+		String additionalStr = "";
+		boolean isFirst = true;
+		for (String key : additionalFields.keySet()) {
+			additionalStr += isFirst ? "" : ", ";
+			additionalStr += key + "=" + additionalFields.get(key);
+			isFirst = false;
+		}
+		String activeIndicator = isActive()?"":"*";
+		return "[" + activeIndicator + "RM]:" + id + " - " + refsetId + " : " + referencedComponentId + " -> " + additionalStr;
 	}
 }
