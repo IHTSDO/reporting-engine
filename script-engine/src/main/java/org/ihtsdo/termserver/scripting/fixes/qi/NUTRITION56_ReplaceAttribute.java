@@ -83,8 +83,8 @@ public class NUTRITION56_ReplaceAttribute extends BatchFix {
 	private int addAttribute(Task t, Concept c) throws TermServerScriptException {
 		int changesMade = 0;
 		
-		//Actually we'll remove this relationship anyway and then protentially add 
-		//the replacment in a different group if we have a groupWith attribute available
+		//Actually we'll remove this relationship anyway and then potentially add 
+		//the replacement in a different group if we have a groupWith attribute available
 		for (Relationship r : c.getRelationships(matchTemplate, ActiveState.ACTIVE)) {
 			changesMade += removeRelationship(t, c, r);
 		}

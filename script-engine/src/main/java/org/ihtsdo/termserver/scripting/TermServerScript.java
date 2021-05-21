@@ -122,6 +122,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected static final String REPORT_FORMAT_TYPE = "ReportFormatType";
 	protected ReportConfiguration reportConfiguration;
 
+	private static int PAGING_LIMIT = 1000;
 
 	public static Gson gson;
 	static {
@@ -1046,6 +1047,52 @@ public abstract class TermServerScript implements RF2Constants {
 			debug("No duplicates detected.");
 		}
 		return concepts; 
+	}
+	
+	protected Set<Concept> findConceptsByCriteria(String criteria, String branch, boolean useLocalCopies) throws TermServerScriptException {
+		Set<Concept> allConcepts = new HashSet<>();
+		boolean allRecovered = false;
+		String searchAfter = null;
+		int totalRecovered = 0;
+		while (!allRecovered) {
+			try {
+					ConceptCollection collection = tsClient.getConceptsMatchingCriteria(criteria, branch, searchAfter, PAGING_LIMIT);
+					totalRecovered += collection.getItems().size();
+					if (searchAfter == null) {
+						//First time round, report how many we're receiving.
+						TermServerScript.debug ("Recovering " + collection.getTotal() + " concepts on " + branch + " matching criteria: '" + criteria +"'");
+					}
+					
+					if (useLocalCopies) {
+						//Recover our locally held copy of these concepts so that we have the full hierarchy populated
+						List<Concept> localCopies = collection.getItems().stream()
+								.map(c -> gl.getConceptSafely(c.getId()))
+								.collect(Collectors.toList());
+						allConcepts.addAll(localCopies);
+					} else {
+						allConcepts.addAll(collection.getItems());
+					}
+					
+					//If we've counted more concepts than we currently have, then some duplicates have been lost in the 
+					//add to the set
+					if (totalRecovered > allConcepts.size()) {
+						TermServerScript.warn ("Duplicates detected");
+					}
+					
+					//Did we get all the concepts that there are?
+					if (totalRecovered < collection.getTotal()) {
+						searchAfter = collection.getSearchAfter();
+						if (searchAfter == null) {
+							throw new TermServerScriptException("More concepts to recover, but TS did not populate the searchAfter field");
+						}
+					} else {
+						allRecovered = true;
+					}
+			} catch (Exception e) {
+				throw new TermServerScriptException("Failed to recover concepts matching criteria '" + criteria + "' due to " + e.getMessage(),e);
+			}
+		}
+		return allConcepts;
 	}
 
 	protected List<Component> processFile() throws TermServerScriptException {

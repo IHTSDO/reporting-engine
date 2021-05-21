@@ -203,16 +203,20 @@ public class TermServerClient {
 	}
 	
 	public ConceptCollection getConcepts(String ecl, String branchPath, String searchAfter, int limit) throws TermServerScriptException {
+		String criteria = "ecl=" + SnomedUtils.makeMachineReadable(ecl);
+		return getConceptsMatchingCriteria(criteria, branchPath, searchAfter, limit);
+	}
+	
+	public ConceptCollection getConceptsMatchingCriteria(String criteria, String branchPath, String searchAfter, int limit) throws TermServerScriptException {
 		String url = getConceptsPath(branchPath) + "?active=true&limit=" + limit;
 		if (!StringUtils.isEmpty(searchAfter)) {
 			url += "&searchAfter=" + searchAfter;
 		}
-		ecl = SnomedUtils.makeMachineReadable(ecl);
 		//RestTemplate will attempt to expand out any curly braces, and we can't URLEncode
-		//because RestTemplate does that for us.  So use curly braces to substitute in our ecl
-		url += "&ecl={ecl}";
-		System.out.println("Calling " + url + " with ecl parameter: " + ecl);
-		return restTemplate.getForObject(url, ConceptCollection.class, ecl);
+		//because RestTemplate does that for us.  So use curly braces to substitute in our criteria
+		url += "&" + criteria;
+		System.out.println("Calling: " + url);
+		return restTemplate.getForObject(url, ConceptCollection.class);
 	}
 	
 	public int getConceptsCount(String ecl, String branchPath) throws TermServerScriptException {
