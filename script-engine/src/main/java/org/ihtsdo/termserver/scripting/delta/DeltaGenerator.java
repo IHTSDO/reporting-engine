@@ -343,8 +343,11 @@ public abstract class DeltaGenerator extends TermServerScript {
 	
 
 	@Override
-	protected List<Component> loadLine(String[] lineItems) throws TermServerScriptException {
-		throw new NotImplementedException("This function should be overridden in the concrete class");
+	protected List<Component> loadLine(String[] lineItems)
+			throws TermServerScriptException {
+		//Default implementation is to take the first column and try that as an SCTID
+		//Override for more complex implementation
+		return Collections.singletonList(gl.getConcept(lineItems[0]));
 	}
 
 }
