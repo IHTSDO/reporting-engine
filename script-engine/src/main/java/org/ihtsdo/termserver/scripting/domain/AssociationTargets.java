@@ -197,7 +197,7 @@ public class AssociationTargets {
 	public String toString(GraphLoader gl) throws TermServerScriptException {
 		String str = "";
 		str += toString("WasA: ", wasA, gl, true);
-		str += toString("PossEquvTo: ", possEquivTo, gl, (str.isEmpty()));
+		str += toString("PossEquivTo: ", possEquivTo, gl, (str.isEmpty()));
 		str += toString("SameAs: ", sameAs, gl, (str.isEmpty()));
 		str += toString("ReplacedBy: ", replacedBy, gl, (str.isEmpty()));
 		str += toString("Moved To: ", movedTo, gl, (str.isEmpty()));

@@ -4,6 +4,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript.ReportActionType;
@@ -22,7 +23,7 @@ public class HistAssocUtils implements RF2Constants {
 	}
 
 	public void modifyPossEquivAssocs(Task t, Concept incomingConcept, Concept inactivatingConcept,
-			Set<Concept> replacements) throws TermServerScriptException {
+			Set<Concept> replacements, RefsetMember h) throws TermServerScriptException {
 		
 		/*if (incomingConcept.getId().equals("140506004")) {
 			TermServerScript.debug("here");
@@ -34,7 +35,7 @@ public class HistAssocUtils implements RF2Constants {
 				replacements.remove(replacement);
 				//What is the replacement for the replacement?
 				Set<Concept> replacementReplacements = getActiveReplacementsOrCommonParent(replacement, incomingConcept);
-				ts.report(t, incomingConcept, Severity.MEDIUM, ReportActionType.INFO, "Inactive replacement " + replacement, " in turn replaced with " + replacementReplacements);
+				report(t, incomingConcept, Severity.MEDIUM, ReportActionType.ASSOCIATION_CHANGED, h, "Inactive replacement " + replacement, " in turn replaced with " + replacementReplacements);
 				replacements.addAll(replacementReplacements);
 			}
 		}
@@ -47,24 +48,25 @@ public class HistAssocUtils implements RF2Constants {
 		possEquivs.addAll(replacementSCTIDs);
 		
 		//Check out any other historical associations we might have
-		for (String sctId : incomingConcept.getAssociationTargets().getWasA()) {
-			reworkOtherAssociations(t, incomingConcept, possEquivs, sctId, "Was A");
+		for (String assocTarget : incomingConcept.getAssociationTargets().getWasA()) {
+			reworkOtherAssociations(t, incomingConcept, possEquivs, assocTarget, "Was A", h);
 		}
 		incomingConcept.getAssociationTargets().getWasA().clear();
 		
 		for (String sctId : incomingConcept.getAssociationTargets().getSameAs()) {
-			reworkOtherAssociations(t, incomingConcept, possEquivs, sctId, "Same As");
+			reworkOtherAssociations(t, incomingConcept, possEquivs, sctId, "Same As", h);
 		}
 		incomingConcept.getAssociationTargets().getSameAs().clear();
 		
 		for (String sctId : incomingConcept.getAssociationTargets().getReplacedBy()) {
-			reworkOtherAssociations(t, incomingConcept, possEquivs, sctId, "Replaced By");
-		}
-		
-		for (String sctId : incomingConcept.getAssociationTargets().getAlternatives()) {
-			reworkOtherAssociations(t, incomingConcept, possEquivs, sctId, "Alternative");
+			reworkOtherAssociations(t, incomingConcept, possEquivs, sctId, "Replaced By", h);
 		}
 		incomingConcept.getAssociationTargets().getReplacedBy().clear();
+		
+		for (String sctId : incomingConcept.getAssociationTargets().getAlternatives()) {
+			reworkOtherAssociations(t, incomingConcept, possEquivs, sctId, "Alternative", h);
+		}
+		incomingConcept.getAssociationTargets().getAlternatives().clear();
 	}
 
 	public Set<Concept> getActiveReplacementsOrCommonParent(Concept replacement, Concept comingFrom) throws TermServerScriptException {
@@ -115,24 +117,24 @@ public class HistAssocUtils implements RF2Constants {
 		return mostRecentEffectiveDate;
 	}
 
-	public void reworkOtherAssociations(Task t, Concept c, Set<String> possEquivs, String sctId,
-			String assocType) throws TermServerScriptException {
+	public void reworkOtherAssociations(Task t, Concept c, Set<String> possEquivs, String assocTargetId,
+			String assocType, RefsetMember h) throws TermServerScriptException {
 		//Is this concept already inactive or are we planning on inactivating it?  Can just allow
 		//that to happen if so
-		Concept assocSource = gl.getConcept(sctId);
-		if (!assocSource.isActive()) {
-			ts.report(t, c, Severity.HIGH, ReportActionType.NO_CHANGE, "Inactivating Historical association incoming from inactive concept.", assocSource);
+		Concept assocTarget = gl.getConcept(assocTargetId);
+		if (!assocTarget.isActive()) {
+			report(t, c, Severity.HIGH, ReportActionType.ASSOCIATION_REMOVED, h, "Inactivating Historical association to inactive concept", assocTarget);
 			return;
 		}
 			
-		if (ts.getAllComponentsToProcess().contains(assocSource)) {
-			ts.report(t, c, Severity.HIGH, ReportActionType.NO_CHANGE, "Inactivating Historical association incoming from concept scheduled for inactivation", assocSource);
+		if (ts.getAllComponentsToProcess().contains(assocTarget)) {
+			report(t, c, Severity.HIGH, ReportActionType.ASSOCIATION_REMOVED, h, "Inactivating Historical association to concept scheduled for inactivation", assocTarget);
 			return;
 		}
 		
 		//Otherwise we're going to have to make this hist assoc a possEquiv because we can't have multiple types used
-		possEquivs.add(sctId);
-		ts.report(t, c, Severity.HIGH, ReportActionType.ASSOCIATION_CHANGED, "Changing incoming historical assocation from " + assocType + " to PossEquivTo", assocSource);
+		possEquivs.add(assocTargetId);
+		report(t, c, Severity.HIGH, ReportActionType.ASSOCIATION_CHANGED, h, "Changing historical association from " + assocType + " to PossEquivTo", assocTarget);
 	}
 
 	public Set<Concept> getReplacements(Concept c) throws TermServerScriptException {
@@ -160,5 +162,12 @@ public class HistAssocUtils implements RF2Constants {
 		}
 		//Haven't found what we're looking for?  Keep whatever is current
 		return currentIndicator;
+	}
+	
+	public void report(Task t, Component c, Severity s, ReportActionType a, RefsetMember r, Object... details) throws TermServerScriptException {
+		ts.report (t, c, s, a, 
+				r == null ? "" : r.getId().subSequence(0, 7), 
+				r == null ? "" :r.getEffectiveTime(), 
+						details);
 	}
 }

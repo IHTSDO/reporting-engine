@@ -31,7 +31,7 @@ public class HistoricalHistoricalIssues extends BatchFix implements RF2Constants
 			fix.reportNoChange = true;
 			fix.selfDetermining = true;
 			fix.runStandAlone = true;
-			fix.additionalReportColumns = "EffectiveDate, Issue, Detail, Detail, Detail";
+			fix.additionalReportColumns = "HistAssocId, HistAssoc ET, Details, , , , ,";
 			fix.init(args);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			fix.loadProjectSnapshot(true); 
@@ -53,7 +53,9 @@ public class HistoricalHistoricalIssues extends BatchFix implements RF2Constants
 			loadedConcept.setInactivationIndicator(histAssocUtils.getIndicatorFromAssocs(loadedConcept));
 			try {
 				updateConcept(task, loadedConcept, "");
-				report (task, c, Severity.NONE, ReportActionType.INFO, "Before: " + origIndicator, assocsBeforeStr, "After: " + loadedConcept.getInactivationIndicator(), assocsAfterStr);
+				String beforeStr = "Before: " + origIndicator + "\n" + assocsBeforeStr;
+				String afterStr = "After: " + loadedConcept.getInactivationIndicator()+ "\n" + assocsAfterStr;
+				report (task, c, Severity.NONE, ReportActionType.INFO, null, beforeStr, afterStr);
 			} catch (Exception e) {
 				report(task, c, Severity.CRITICAL, ReportActionType.API_ERROR, "Failed to save changed concept to TS: " + ExceptionUtils.getStackTrace(e));
 			}
@@ -78,7 +80,7 @@ public class HistoricalHistoricalIssues extends BatchFix implements RF2Constants
 			for (AssociationEntry h : assocs) {
 				//If this is a WAS A as part of a combination with other indicators, remove it
 				if (h.getRefsetId().equals(SCTID_ASSOC_WAS_A_REFSETID) && wasaComboDetected) {
-					report (t, c, Severity.MEDIUM, ReportActionType.ASSOCIATION_REMOVED, "WAS A in combination with other association.  Removing.");
+					report (t, c, Severity.MEDIUM, ReportActionType.ASSOCIATION_REMOVED, h, "WAS A in combination with other association.  Removing.");
 					loadedConcept.getAssociationTargets().clearWasA();
 					changesMade++;
 					continue;
@@ -87,7 +89,7 @@ public class HistoricalHistoricalIssues extends BatchFix implements RF2Constants
 					refsetId = h.getRefsetId();
 				} else if (!h.getRefsetId().equals(refsetId)) {
 					//Is this association type different from the first one we saw?
-					report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "Multiple different association types", toString(assocs));
+					report (t, c, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, h, "Multiple different association types", toString(assocs));
 					changesMade++;
 				}
 				
@@ -127,57 +129,57 @@ public class HistoricalHistoricalIssues extends BatchFix implements RF2Constants
 		
 		if (inactivationIndicatorA.equals(InactivationIndicator.AMBIGUOUS)) {
 			if (inactivationIndicatorB.equals(InactivationIndicator.AMBIGUOUS)) {
-				histAssocUtils.modifyPossEquivAssocs(t, aLoaded, b, histAssocUtils.getReplacements(b));
+				histAssocUtils.modifyPossEquivAssocs(t, aLoaded, b, histAssocUtils.getReplacements(b), h);
 			} else if (inactivationIndicatorB.equals(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY)) {
 				aLoaded.getAssociationTargets().remove(b.getId());
 				//Is this the only one?  We could maybe leave others intact.
 				if (histAssocUtils.getReplacements(a).size() == 1) {
 					report (t, a, Severity.HIGH, ReportActionType.ASSOCIATION_REMOVED, "Removed association as target concept inactivated as NCEP, no other Assocs remain.", b);
 					aLoaded.setInactivationIndicator(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
-					report (t, a, Severity.HIGH, ReportActionType.INACT_IND_MODIFIED, "Inactivation indicator changed to NCEP because association target has NCEP indicator,", b);
+					report (t, a, Severity.HIGH, ReportActionType.INACT_IND_MODIFIED, h, "Inactivation indicator changed to NCEP because association target has NCEP indicator,", b);
 				} else {
 					//OK to leave as is, if there are alternative associations
-					report (t, a, Severity.HIGH, ReportActionType.ASSOCIATION_REMOVED, "Removed association as target concept inactivated as NCEP, other Assocs remain.", b);
+					report (t, a, Severity.HIGH, ReportActionType.ASSOCIATION_REMOVED, h, "Removed association as target concept inactivated as NCEP, other Assocs remain.", b);
 				}
 			} else if (inactivationIndicatorB.equals(InactivationIndicator.MOVED_ELSEWHERE)) {
-				report (t, a, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Association target 'Moved Elsewhere'.  Manual intervention required", h);
+				report (t, a, Severity.HIGH, ReportActionType.VALIDATION_CHECK, h, "Association target 'Moved Elsewhere'.  Manual intervention required", h);
 			} else if (inactivationIndicatorB.equals(InactivationIndicator.DUPLICATE)) {
-				histAssocUtils.modifyPossEquivAssocs(t, aLoaded, b, histAssocUtils.getReplacements(b));
+				histAssocUtils.modifyPossEquivAssocs(t, aLoaded, b, histAssocUtils.getReplacements(b), h);
 			} else {
-				report (t, a, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Developer intervention required - unexpected combination", h);
+				report (t, a, Severity.HIGH, ReportActionType.VALIDATION_CHECK, h, "Developer intervention required - unexpected combination", h);
 			}
 		} else if (inactivationIndicatorA.equals(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY)) {
-			report (t, a, Severity.MEDIUM, ReportActionType.NO_CHANGE, "NCEP does not allow for ABC hop.  Consider lexical/modeling search methods.", h);
+			report (t, a, Severity.MEDIUM, ReportActionType.NO_CHANGE, h, "NCEP does not allow for ABC hop.  Consider lexical/modeling search methods.", h);
 		} else if (inactivationIndicatorA.equals(InactivationIndicator.MOVED_ELSEWHERE)) {
-			report (t, a, Severity.MEDIUM, ReportActionType.NO_CHANGE, "MOVED_ELSEWHERE does not allow for ABC hop.  Consider lexical/modeling search methods.", h);
+			report (t, a, Severity.MEDIUM, ReportActionType.NO_CHANGE, h, "MOVED_ELSEWHERE does not allow for ABC hop.  Consider lexical/modeling search methods.", h);
 			if (histAssocUtils.getReplacements(a).size() > 0) {
-				report (t, a, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, "That said, there do seem to be other associations here.  Please check.", h);
+				report (t, a, Severity.MEDIUM, ReportActionType.VALIDATION_CHECK, h, "That said, there do seem to be other associations here.  Please check.", h);
 			}
 		} else if (inactivationIndicatorA.equals(InactivationIndicator.DUPLICATE)) {
 			if (inactivationIndicatorB.equals(InactivationIndicator.AMBIGUOUS)) {
 				aLoaded.setInactivationIndicator(InactivationIndicator.AMBIGUOUS);
 				aLoaded.getAssociationTargets().clear();
 				aLoaded.getAssociationTargets().setPossEquivTo(b.getAssociationTargets().getPossEquivTo());
-				report (t, a, Severity.MEDIUM, ReportActionType.INACT_IND_MODIFIED, "Inactivation indicator changed to Ambiguous because SAME_AS association target is now inactive with Ambiguous indicator,", b);
+				report (t, a, Severity.MEDIUM, ReportActionType.INACT_IND_MODIFIED, h, "Inactivation indicator changed to Ambiguous because SAME_AS association target is now inactive with Ambiguous indicator,", b);
 			} else if (inactivationIndicatorB.equals(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY)) {
 				aLoaded.getAssociationTargets().remove(b.getId());
 				//Is this the only one?  We could maybe leave others intact.
 				if (histAssocUtils.getReplacements(a).size() == 1) {
-					report (t, a, Severity.HIGH, ReportActionType.ASSOCIATION_REMOVED, "Removed association as target concept inactivated as NCEP, no other Assocs remain.", b);
+					report (t, a, Severity.HIGH, ReportActionType.ASSOCIATION_REMOVED, h, "Removed association as target concept inactivated as NCEP, no other Assocs remain.", b);
 					aLoaded.setInactivationIndicator(InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY);
 					report (t, a, Severity.HIGH, ReportActionType.INACT_IND_MODIFIED, "Inactivation indicator changed to NCEP because association target has NCEP indicator,", b);
 				} else {
 					//OK to leave as is, if there are alternative associations
-					report (t, a, Severity.HIGH, ReportActionType.ASSOCIATION_REMOVED, "Removed association as target concept inactivated as NCEP, other Assocs remain.", b);
+					report (t, a, Severity.HIGH, ReportActionType.ASSOCIATION_REMOVED, h, "Removed association as target concept inactivated as NCEP, other Assocs remain.", b);
 				}
 			} else if (inactivationIndicatorB.equals(InactivationIndicator.MOVED_ELSEWHERE)) {
-				report (t, a, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Association target 'Moved Elsewhere'.  Manual intervention required", h);
+				report (t, a, Severity.HIGH, ReportActionType.VALIDATION_CHECK, h, "Association target 'Moved Elsewhere'.  Manual intervention required", h);
 			} else if (inactivationIndicatorB.equals(InactivationIndicator.DUPLICATE)) {
 				//This is our best case scenario.  We just take B's targets as our own.  Direct A->C hop
 				a.getAssociationTargets().clear();
 				//Now there's a lot of cases where we have two inactive concepts pointing to each other
 				if (b.getAssociationTargets().getSameAs().contains(a.getId())) {
-					addressCircularReferencing(t, a, b);
+					addressCircularReferencing(t, a, b, h);
 				} else {
 					//If we've got an active SAME_AS then we can stay duplicate, but if we need to 
 					//look further afield, then we need to drop back down to Ambiguous
@@ -187,24 +189,24 @@ public class HistoricalHistoricalIssues extends BatchFix implements RF2Constants
 					for (String same : origSameAs) {
 						if (gl.getConcept(same, false, false).isActive()) {
 							activeSameAsFound = true;
-							report (t, a, Severity.LOW, ReportActionType.ASSOCIATION_CHANGED, "Same As target inactive, taking target's associations over for self", h);
+							report (t, a, Severity.LOW, ReportActionType.ASSOCIATION_CHANGED, h, "Same As target inactive, taking target's associations over for self", h);
 						} 
 					}
 					
 					if (!activeSameAsFound) {
-						a.setInactivationIndicator(InactivationIndicator.AMBIGUOUS);
+						aLoaded.setInactivationIndicator(InactivationIndicator.AMBIGUOUS);
 						for (String same : origSameAs) {
 							Set<Concept> bestActiveAlternatives = histAssocUtils.getActiveReplacementsOrCommonParent(gl.getConcept(same, false, false), b);
-							a.getAssociationTargets().addPossEquivTo(toIdSet(bestActiveAlternatives));
-							report (t, a, Severity.LOW, ReportActionType.ASSOCIATION_CHANGED, "Same As target inactive, finding best replacements as PossEquivTo", h, bestActiveAlternatives);
+							aLoaded.getAssociationTargets().addPossEquivTo(toIdSet(bestActiveAlternatives));
+							report (t, a, Severity.LOW, ReportActionType.ASSOCIATION_CHANGED, h, "Same As target inactive, finding best replacements as PossEquivTo", h, bestActiveAlternatives);
 						}
 					}
 				}
 			} else {
-				report (t, a, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Developer intervention required - unexpected combination", h);
+				report (t, a, Severity.HIGH, ReportActionType.VALIDATION_CHECK, h, "Developer intervention required - unexpected combination", h);
 			}
 		} else {
-			report (t, a, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Developer intervention required - unexpected inactivation indicator", a.getInactivationIndicator());
+			report (t, a, Severity.HIGH, ReportActionType.VALIDATION_CHECK, h, "Developer intervention required - unexpected inactivation indicator", a.getInactivationIndicator());
 		}
 		
 		return CHANGE_MADE;
@@ -219,11 +221,11 @@ public class HistoricalHistoricalIssues extends BatchFix implements RF2Constants
 				.collect(Collectors.toSet());
 	}
 
-	private void addressCircularReferencing(Task t, Concept a, Concept b) throws TermServerScriptException {
+	private void addressCircularReferencing(Task t, Concept a, Concept b, RefsetMember h) throws TermServerScriptException {
 		//Think the best thing we can do is say we're ambiguous and point to the WAS A of b
 		if (b.getAssociationTargets().getWasA().size() > 0) {
 			a.setInactivationIndicator(InactivationIndicator.AMBIGUOUS);
-			histAssocUtils.modifyPossEquivAssocs(t, a, b, b.getAssociationTargets().getWasAConcepts(gl));
+			histAssocUtils.modifyPossEquivAssocs(t, a, b, b.getAssociationTargets().getWasAConcepts(gl), h);
 		}
 		report (t, a, Severity.HIGH, ReportActionType.ASSOCIATION_CHANGED, "Circular reference resolved as Ambiguous to common parents", b);
 	}
@@ -244,21 +246,28 @@ public class HistoricalHistoricalIssues extends BatchFix implements RF2Constants
 
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		Collection<Concept> allPotential = gl.getAllConcepts();
+		//allPotential = Collections.singletonList(gl.getConcept("123055008"));
 		Set<Concept> allAffected = new TreeSet<Concept>();  //We want to process in the same order each time, in case we restart and skip some.
 		setQuiet(true);
 		for (Concept c : allPotential) {
+			//Clone the concept so we don't bleed any changes made through into the main run
+			Concept cCopy = c.cloneWithIds();
 			//Attempt to fix any issues as a first pass
-			if (!c.isActive() && fixHistoricalIssues(null, c, c) > 0) {
+			if (!c.isActive() && fixHistoricalIssues(null, cCopy, cCopy) > 0) {
 				allAffected.add(c);
 			} else if (c.getInactivationIndicator() != null && c.getInactivationIndicator().equals(InactivationIndicator.LIMITED)) {
-				allAffected.add(c);
+				//TODO Agree what we're doing with LIMITED inactivations
+				//allAffected.add(c);
 			}
 		}
 		setQuiet(false);
 		return new ArrayList<Component>(allAffected);
 	}
 	
-	public void report(Task t, Component c, Severity s, ReportActionType a, Object... details) throws TermServerScriptException {
-		super.report (t, c, s, a, c.getEffectiveTime(), details);
+	public void report(Task t, Component c, Severity s, ReportActionType a, RefsetMember r, Object... details) throws TermServerScriptException {
+		super.report (t, c, s, a, 
+				r == null ? "" : r.getId().subSequence(0, 7), 
+				r == null ? "" : r.getEffectiveTime(), 
+						details);
 	}
 }

@@ -1422,10 +1422,9 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 			}
 			replacements.addAll(newAssocs);
 			assocType = "PossEquivTo";
-			//There may be other potential equivalents we don't want to remove, so just take out the one we're inactiving 
+			//There may be other potential equivalents we don't want to remove, so just take out the one we're inactivating 
 			//and add in the new ones.
-			//incomingConcept.setAssociationTargets(AssociationTargets.possEquivTo(replacements));
-			histAssocUtils.modifyPossEquivAssocs(t, incomingConcept, inactivatingConcept, replacements);
+			histAssocUtils.modifyPossEquivAssocs(t, incomingConcept, inactivatingConcept, replacements, assoc);
 			
 			//Store the complete set away so if we see that concept again, we maintain a complete set
 			historicallyRewiredPossEquivTo.put(incomingConcept,replacements);
