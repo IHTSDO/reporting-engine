@@ -60,8 +60,12 @@ public class ConceptsUsedAsDefiningAttributes extends TermServerReport implement
 	}
 	
 	public void postInit() throws TermServerScriptException {
+		String tab1Heading = "SCTID, FSN, SemTag, Type, Target";
+		if (!statedViewOnly) {
+			tab1Heading = "SCTID, FSN, SemTag, Inferred Only, Type, Target";
+		}
 		String[] columnHeadings = new String[] { 
-				"SCTID, FSN, SemTag, Type, Target",
+				tab1Heading,
 				"SCTID, FSN, Semtag, Descendent Of"
 		};
 		String[] tabNames = new String[] {	
@@ -118,7 +122,12 @@ public class ConceptsUsedAsDefiningAttributes extends TermServerReport implement
 				}
 				Concept target = r.getTarget();
 				if (!reported.contains(target) && attributeValuesOfInterest.contains(target)) {
-					report (c, r.getType(), target);
+					if (statedViewOnly) {
+						report (c, r.getType(), target);
+					} else {
+						boolean inferredOnly = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, r.getType(), r.getTarget(), ActiveState.ACTIVE).size() == 0;
+						report (c, inferredOnly?"Y":"N", r.getType(), target);
+					}
 					reported.add(target);
 				}
 			}
