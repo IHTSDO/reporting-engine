@@ -21,7 +21,7 @@ public interface RF2Constants {
 	final int SEPTENARY_REPORT = 6;
 	final int OCTONARY_REPORT = 7;
 	final int NONARY_REPORT = 8;
-	//nonary, denary if you need more
+	final int DENARY_REPORT = 9;
 	
 	static Concept IS_A =  new Concept ("116680003");  // | Is a (attribute) |
 	static Concept NULL_CONCEPT = new Concept ("-1");

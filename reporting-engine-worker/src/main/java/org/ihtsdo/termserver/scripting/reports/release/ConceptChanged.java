@@ -21,10 +21,11 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 	private Set<Concept> newConcepts = new HashSet<>();
 	private Set<Concept> inactivatedConcepts = new HashSet<>();
 	private Set<Concept> defStatusChanged = new HashSet<>();
-	private Set<Concept> hasNewStatedRelationships = new HashSet<>();
 	private Set<Concept> hasNewInferredRelationships = new HashSet<>();
-	private Set<Concept> hasLostStatedRelationships = new HashSet<>();
 	private Set<Concept> hasLostInferredRelationships = new HashSet<>();
+	private Set<Concept> hasNewAxioms = new HashSet<>();
+	private Set<Concept> hasChangedAxioms = new HashSet<>();
+	private Set<Concept> hasLostAxioms = new HashSet<>();
 	private Set<Concept> hasNewDescriptions = new HashSet<>();
 	private Set<Concept> hasChangedDescriptions = new HashSet<>();
 	private Set<Concept> hasLostDescriptions = new HashSet<>();
@@ -37,13 +38,8 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 	private Set<Concept> wasTargetOfLostStatedRelationship = new HashSet<>();
 	private Set<Concept> isTargetOfNewInferredRelationship = new HashSet<>();
 	private Set<Concept> wasTargetOfLostInferredRelationship = new HashSet<>();
-	
-	//RP-398
 	private Set<Concept> hasChangedAcceptabilityDesc = new HashSet<>();
-	//RP-452
 	private Set<Concept> hasChangedAcceptabilityTextDefn = new HashSet<>();
-
-	//RP-387
 	private Set<Concept> hasNewLanguageRefSets = new HashSet<>();
 	private Set<Concept> hasLostLanguageRefSets = new HashSet<>();
 	private Set<Concept> hasChangedLanguageRefSets = new HashSet<>();
@@ -54,7 +50,6 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		//params.put(ECL, "<< 420040002|Fluoroscopic angiography (procedure)|");
 		TermServerReport.run(ConceptChanged.class, args, params);
 	}
 	
@@ -69,7 +64,8 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		String[] columnHeadings = new String[] {
 				"Component, New, Changed, Inactivated",
 				"Id, FSN, SemTag, Active, DefStatusChanged, Languages, Author, Task, Creation Date",
-				"Id, FSN, SemTag, Active, hasNewStatedRelationships, hasNewInferredRelationships, hasLostStatedRelationships, hasLostInferredRelationships, Author, Task, Creation Date",
+				"Id, FSN, SemTag, Active, hasNewInferredRelationships, hasLostInferredRelationships, Author, Task, Creation Date",
+				"Id, FSN, SemTag, Active, hasNewAxioms, hasChangedAxioms, hasLostAxioms, Author, Task, Creation Date",
 				"Id, FSN, SemTag, Active, hasNewDescriptions, hasChangedDescriptions, hasLostDescriptions, hasChangedAcceptability, Author, Task, Creation Date",
 				"Id, FSN, SemTag, Active, hasChangedAssociations, hasChangedInactivationIndicators, Author, Task, Creation Date",
 				"Id, FSN, SemTag, Active, isTargetOfNewStatedRelationship, isTargetOfNewInferredRelationship, wasTargetOfLostStatedRelationship, wasTargetOfLostInferredRelationship, Author, Task, Creation Date",
@@ -82,6 +78,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 				"Summary Counts",
 				"Concept Changes",
 				"Relationship Changes",
+				"Axiom Changes",
 				"Description Changes",
 				"Association Changes",
 				"Incoming Relationship Changes",
@@ -118,6 +115,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		if (!StringUtils.isEmpty(subsetECL)) {
 			report (PRIMARY_REPORT, "Run against", subsetECL);
 		}
+		traceability.tidyUp();
 		info ("Job complete");
 	}
 	
@@ -211,13 +209,11 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 							if (i.isReleased()) {
 								if (i.isActive()) {
 									summaryCount.isChanged++;
-								}
-							} else {
-								if (i.isActive()) {
-									summaryCount.isNew++;
 								} else {
 									summaryCount.isInactivated++;
 								}
+							} else if (i.isActive()) {
+								summaryCount.isNew++;
 							}
 						}
 					}
@@ -225,17 +221,15 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 					//Description hist assocs
 					summaryCount = getSummaryCount(ComponentType.HISTORICAL_ASSOCIATION.name() + " - Descriptions");
 					for (AssociationEntry h : d.getAssociationEntries()) {
-						if (h.getEffectiveTime() == null || h.getEffectiveTime().isEmpty()) {
+						if (StringUtils.isEmpty(h.getEffectiveTime())) {
 							if (h.isReleased()) {
 								if (h.isActive()) {
 									summaryCount.isChanged++;
-								}
-							} else {
-								if (h.isActive()) {
-									summaryCount.isNew++;
 								} else {
 									summaryCount.isInactivated++;
 								}
+							} else if (h.isActive()) {
+								summaryCount.isNew++;
 							}
 						}
 					}
@@ -243,67 +237,74 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 					boolean langRefSetIsNew = false;
 					boolean langRefSetIsLost = false;
 					boolean langRefSetIsChanged = false;
-					for (LangRefsetEntry langRefsetEntry : d.getLangRefsetEntries(ActiveState.ACTIVE)) {
-						if (inScope(langRefsetEntry)) {
-							if (!langRefsetEntry.isReleased()) {
-								langRefSetIsNew = true;
-								hasNewLanguageRefSets.add(c);
-								summaryCountLRF.isNew++;
-							} else if (StringUtils.isEmpty(langRefsetEntry.getEffectiveTime())) {
-								if (!langRefsetEntry.isActive()) {
-									hasLostLanguageRefSets.add(c);
-									langRefSetIsLost = true;
-									summaryCountLRF.isInactivated++;
+					for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.ACTIVE)) {
+						if (inScope(l)) {
+							if (StringUtils.isEmpty(l.getEffectiveTime())) {
+								if (l.isReleased()) {
+									if (l.isActive()) {
+										hasChangedLanguageRefSets.add(c);
+										langRefSetIsChanged = true;
+										summaryCountLRF.isChanged++;
+									} else {
+										hasLostLanguageRefSets.add(c);
+										langRefSetIsLost = true;
+										summaryCountLRF.isInactivated++;
+									}
 								} else {
-									hasChangedLanguageRefSets.add(c);
-									langRefSetIsChanged = true;
-									summaryCountLRF.isChanged++;
+									langRefSetIsNew = true;
+									hasNewLanguageRefSets.add(c);
+									summaryCountLRF.isNew++;
 								}
 							}
 
 							if (langRefSetIsNew || langRefSetIsLost || langRefSetIsChanged) {
-								report(OCTONARY_REPORT, c, d, langRefsetEntry, langRefSetIsNew, langRefSetIsChanged, langRefSetIsLost);
+								report(NONARY_REPORT, c, d, l, langRefSetIsNew, langRefSetIsChanged, langRefSetIsLost);
 							}
 						}
 					}
 				}
 				
 				if (isNew || isChanged || wasInactivated || changedAcceptability) {
-					report (SEPTENARY_REPORT, c, d.getLang(), d, isNew, isChanged, wasInactivated, changedAcceptability, d.getType());
+					report (OCTONARY_REPORT, c, d.getLang(), d, isNew, isChanged, wasInactivated, changedAcceptability, d.getType());
 				}
 			}
 			
-			SummaryCount summaryCountInferred = getSummaryCount(ComponentType.INFERRED_RELATIONSHIP.name());
+			summaryCount = getSummaryCount(ComponentType.INFERRED_RELATIONSHIP.name());
 			for (Relationship r : c.getRelationships()) {
 				if (inScope(r)) {
 					if (StringUtils.isEmpty(r.getEffectiveTime())) {
-						boolean isStated = r.getCharacteristicType().equals(CharacteristicType.STATED_RELATIONSHIP);
 						if (r.isActive()) {
-							if (isStated) {
-								hasNewStatedRelationships.add(c);
-								if (r.isNotConcrete()) {
-									isTargetOfNewStatedRelationship.add(r.getTarget());
-								}
-							} else {
-								hasNewInferredRelationships.add(c);
-								if (r.isNotConcrete()) {
-									isTargetOfNewInferredRelationship.add(r.getTarget());
-									summaryCountInferred.isNew++;
-								}
+							hasNewInferredRelationships.add(c);
+							if (r.isNotConcrete()) {
+								isTargetOfNewInferredRelationship.add(r.getTarget());
+								summaryCount.isNew++;
 							}
 						} else {
-							if (isStated) {
-								hasLostStatedRelationships.add(c);
-								if (r.isNotConcrete()) {
-									wasTargetOfLostStatedRelationship.add(r.getTarget());
-								}
-							} else {
-								hasLostInferredRelationships.add(c);
-								if (r.isNotConcrete()) {
-									wasTargetOfLostInferredRelationship.add(r.getTarget());
-								}
-								summaryCountInferred.isInactivated++;
+							if (r.isNotConcrete()) {
+								wasTargetOfLostInferredRelationship.add(r.getTarget());
 							}
+							hasLostInferredRelationships.add(c);
+							summaryCount.isInactivated++;
+						}
+					}
+				}
+			}
+			
+			summaryCount = getSummaryCount(ComponentType.AXIOM.name());
+			for (AxiomEntry a : c.getAxiomEntries()) {
+				if (inScope(a)) {
+					if (StringUtils.isEmpty(a.getEffectiveTime())) {
+						if (a.isReleased()) {
+							if (a.isActive()) {
+								summaryCount.isChanged++;
+								hasChangedAxioms.add(c);
+							} else {
+								summaryCount.isInactivated++;
+								hasLostAxioms.add(c);
+							}
+						} else if (a.isActive()) {
+							summaryCount.isNew++;
+							hasNewAxioms.add(c);
 						}
 					}
 				}
@@ -317,13 +318,11 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 						if (i.isReleased()) {
 							if (i.isActive()) {
 								summaryCount.isChanged++;
-							}
-						} else {
-							if (i.isActive()) {
-								summaryCount.isNew++;
 							} else {
 								summaryCount.isInactivated++;
 							}
+						} else if (i.isActive()) {
+							summaryCount.isNew++;
 						}
 					}
 				}
@@ -335,13 +334,11 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 						if (a.isReleased()) {
 							if (a.isActive()) {
 								summaryCount.isChanged++;
-							}
-						} else {
-							if (a.isActive()) {
-								summaryCount.isNew++;
 							} else {
 								summaryCount.isInactivated++;
 							}
+						} else if (a.isActive()) {
+							summaryCount.isNew++;
 						}
 					}
 				}
@@ -377,20 +374,28 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		traceability.flush();
 		superSet.clear();
 		
-		superSet.addAll(hasNewStatedRelationships);
 		superSet.addAll(hasNewInferredRelationships);
-		superSet.addAll(hasLostStatedRelationships);
 		superSet.addAll(hasLostInferredRelationships);
 		debug ("Creating relationship report for " + superSet.size() + " concepts");
 		for (Concept c : sort(superSet)) {
 			traceability.populateTraceabilityAndReport (TERTIARY_REPORT, c,
 				c.isActive()?"Y":"N",
-				hasNewStatedRelationships.contains(c)?"Y":"N",
 				hasNewInferredRelationships.contains(c)?"Y":"N",
-				hasLostStatedRelationships.contains(c)?"Y":"N",
 				hasLostInferredRelationships.contains(c)?"Y":"N");
 		}
-		getSummaryCount("Concept Model Changed").isChanged = superSet.size();
+		superSet.clear();
+		
+		superSet.addAll(hasNewAxioms);
+		superSet.addAll(hasChangedAxioms);
+		superSet.addAll(hasLostAxioms);
+		debug ("Creating axiom report for " + superSet.size() + " concepts");
+		for (Concept c : sort(superSet)) {
+			traceability.populateTraceabilityAndReport (QUATERNARY_REPORT, c,
+				c.isActive()?"Y":"N",
+				hasNewAxioms.contains(c)?"Y":"N",
+				hasChangedAxioms.contains(c)?"Y":"N",
+				hasLostAxioms.contains(c)?"Y":"N");
+		}
 		superSet.clear();
 		
 		superSet.addAll(hasNewDescriptions);
@@ -399,7 +404,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		superSet.addAll(hasChangedAcceptabilityDesc);
 		debug ("Creating description report for " + superSet.size() + " concepts");
 		for (Concept c : sort(superSet)) {
-			traceability.populateTraceabilityAndReport (QUATERNARY_REPORT, c,
+			traceability.populateTraceabilityAndReport (QUINARY_REPORT, c,
 				c.isActive()?"Y":"N",
 				hasNewDescriptions.contains(c)?"Y":"N",
 				hasChangedDescriptions.contains(c)?"Y":"N",
@@ -415,7 +420,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		superSet.addAll(hasChangedInactivationIndicators);
 		debug ("Creating association report for " + superSet.size() + " concepts");
 		for (Concept c : sort(superSet)) {
-			traceability.populateTraceabilityAndReport (QUINARY_REPORT, c,
+			traceability.populateTraceabilityAndReport (SENARY_REPORT, c,
 				c.isActive()?"Y":"N",
 				hasChangedAssociations.contains(c)?"Y":"N",
 				hasChangedInactivationIndicators.contains(c)?"Y":"N");
@@ -428,7 +433,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		superSet.addAll(wasTargetOfLostInferredRelationship);
 		debug ("Creating incoming relationship report for " + superSet.size() + " concepts");
 		for (Concept c : sort(superSet)) {
-			traceability.populateTraceabilityAndReport (SENARY_REPORT, c,
+			traceability.populateTraceabilityAndReport (SEPTENARY_REPORT, c,
 				c.isActive()?"Y":"N",
 				isTargetOfNewStatedRelationship.contains(c)?"Y":"N",
 				wasTargetOfLostStatedRelationship.contains(c)?"Y":"N",
@@ -443,7 +448,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		superSet.addAll(hasChangedAcceptabilityTextDefn);
 		debug ("Creating text defn report for " + superSet.size() + " concepts");
 		for (Concept c : sort(superSet)) {
-			traceability.populateTraceabilityAndReport (NONARY_REPORT, c,
+			traceability.populateTraceabilityAndReport (DENARY_REPORT, c,
 				c.isActive()?"Y":"N",
 				hasNewTextDefn.contains(c)?"Y":"N",
 				hasChangedTextDefn.contains(c)?"Y":"N",
@@ -481,10 +486,11 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		superSet.addAll(newConcepts);
 		superSet.addAll(inactivatedConcepts);
 		superSet.addAll(defStatusChanged);
-		superSet.addAll(hasNewStatedRelationships);
 		superSet.addAll(hasNewInferredRelationships);
-		superSet.addAll(hasLostStatedRelationships);
 		superSet.addAll(hasLostInferredRelationships);
+		superSet.addAll(hasNewAxioms);
+		superSet.addAll(hasChangedAxioms);
+		superSet.addAll(hasLostAxioms);
 		superSet.addAll(hasNewDescriptions);
 		superSet.addAll(hasChangedDescriptions);
 		superSet.addAll(hasLostDescriptions);
