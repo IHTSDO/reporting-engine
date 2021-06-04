@@ -150,7 +150,7 @@ public class StringUtils implements RF2Constants {
 		for(String item : Splitter.on(csvPattern).split(line)) {
 			//Trim leading and trailing double quotes - not needed as already split
 			if (line.charAt(0)=='"') {
-				item = line.substring(1,item.length()-1);
+				item = item.substring(1,item.length()-1);
 			}
 			list.add(item);
 		}

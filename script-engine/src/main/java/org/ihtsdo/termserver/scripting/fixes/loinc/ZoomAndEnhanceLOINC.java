@@ -30,10 +30,13 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 	
 	private static enum LoincCol { LOINC_NUM,COMPONENT,PROPERTY,TIME_ASPCT,SYSTEM,SCALE_TYP,METHOD_TYP,CLASS,VersionLastChanged,CHNG_TYPE,DefinitionDescription,STATUS,CONSUMER_NAME,CLASSTYPE,FORMULA,EXMPL_ANSWERS,SURVEY_QUEST_TEXT,SURVEY_QUEST_SRC,UNITSREQUIRED,SUBMITTED_UNITS,RELATEDNAMES2,SHORTNAME,ORDER_OBS,CDISC_COMMON_TESTS,HL7_FIELD_SUBFIELD_ID,EXTERNAL_COPYRIGHT_NOTICE,EXAMPLE_UNITS,LONG_COMMON_NAME,UnitsAndRange,EXAMPLE_UCUM_UNITS,EXAMPLE_SI_UCUM_UNITS,STATUS_REASON,STATUS_TEXT,CHANGE_REASON_PUBLIC,COMMON_TEST_RANK,COMMON_ORDER_RANK,COMMON_SI_TEST_RANK,HL7_ATTACHMENT_STRUCTURE,EXTERNAL_COPYRIGHT_LINK,PanelType,AskAtOrderEntry,AssociatedObservations,VersionFirstReleased,ValidHL7AttachmentRequest,DisplayName }
 	private static enum RefsetCol { ID,EFFECTIVETIME,ACTIVE,MODULEID,REFSETID,REFERENCEDCOMPONENTID,MAPTARGET,EXPRESSION,DEFINITIONSTATUSID,CORRELATIONID,CONTENTORIGINID }
-
-	private Map<String, List<String>> loincFileMap = new HashMap<>();
-	private BiMap<String, String> fsnLoincMap = HashBiMap.create();
-	private Map<String, List<String>> refsetFileMap = new HashMap<>();
+	private static String DEPRECATED = "DEPRECATED";
+	private static String ACTIVE = "ACTIVE";
+	
+	private Map<String, List<String>> loincFileMap;
+	private BiMap<String, String> fsnLoincMap;
+	private Map<String, List<String>> refsetFileMap;
+	private Set<String> deprecated;
 	
 	protected ZoomAndEnhanceLOINC(BatchFix clone) {
 		super(clone);
@@ -57,21 +60,42 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 		}
 	}
 	
-	public void init(String[] args) throws TermServerScriptException {
-		
+	public void postInit() throws TermServerScriptException {
+		String[] columnHeadings = new String[] { 
+				"SCTID, FSN, SemTag, ConceptType, Severity, Action, Detail, Details, , , ",
+				"SCTID, FSN, Semtag, Issue, Detail, Pub Expression, LOINC2020",
+				"SCTID, FSN, Semtag, LOINC_Num, Issue",
+				"Issue, FSN, Item 1, Item 2, Detail 1, Detail 2, Additional"
+		};
+		String[] tabNames = new String[] {	
+				"Updates to LOINC2020",
+				"Published vs LOINC2020",
+				"LOINC2020 vs LOINC_2_69",
+				"LOINC_2_69 Issues"
+		};
+		super.postInit(tabNames, columnHeadings, false);
+		loadFiles();
+	}
+
+	private void loadFiles() throws TermServerScriptException {
+		loincFileMap = new HashMap<>();
+		fsnLoincMap = HashBiMap.create();
+		refsetFileMap = new HashMap<>();
+		deprecated = new HashSet<>();
 		try {
 			//Load the LOINC file
 			String fileStr = "G:\\My Drive\\018_Loinc\\2021\\loinc_2_69.csv";
 			info ("Loading " + fileStr);
 			boolean isFirstLine = true;
 			try (BufferedReader br = new BufferedReader(new FileReader(fileStr))) {
-				String line;
-				while ((line = br.readLine()) != null) {
+				String origline;
+				while ((origline = br.readLine()) != null) {
 					if (!isFirstLine) {
+						String line = origline.replaceAll("\"", "");
 						//Parsing the string takes too long, we'll do it JIT
 						int cutOne = line.indexOf(',');
 						String loincNum = line.substring(0,cutOne);
-						loincFileMap.put(loincNum, Collections.singletonList(line));
+						loincFileMap.put(loincNum, Collections.singletonList(origline));
 						
 						//Columns B to G are used to generate the FSN
 						int cutTwo = StringUtils.ordinalIndexOf(line, ",", 7);
@@ -82,7 +106,34 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 						}
 						if (!fsnLoincMap.containsKey(fsn) && !fsnLoincMap.containsValue(loincNum)) {
 							fsnLoincMap.put(fsn, loincNum);
-						} else debug ("Duplicate line " + line);
+						} else {
+							if (fsnLoincMap.containsValue(loincNum)) {
+								debug ("Duplicate keys " + loincNum + "=" + fsn + " with " + fsnLoincMap.inverse().get(loincNum));
+							}
+							
+							//A duplicate FSN will usually have a later replacement with a new LOINCNum
+							if (fsnLoincMap.containsKey(fsn)) {
+								String origLoincNum = fsnLoincMap.get(fsn);
+								String origVersion = get(loincFileMap, origLoincNum, LoincCol.VersionLastChanged.ordinal());
+								String origStatus = get(loincFileMap, origLoincNum, LoincCol.STATUS.ordinal());
+								String thisVersion = get(loincFileMap, loincNum, LoincCol.VersionLastChanged.ordinal());
+								String thisStatus = get(loincFileMap, loincNum, LoincCol.STATUS.ordinal());
+								
+								if (thisStatus.equals(DEPRECATED)) {
+									deprecated.add(loincNum);
+								}
+								//Is the this version newer than what we stored
+								int comparison = thisVersion.compareTo(origVersion);
+								String thisReason = get(loincFileMap, loincNum, LoincCol.STATUS_REASON.ordinal());
+								if (comparison == 0) {
+									report(QUATERNARY_REPORT, "Same Version", fsn, loincNum + " (" + thisVersion + ")", origLoincNum+ " (" + origVersion + ")", origStatus, thisStatus, thisReason);
+								} else if ( comparison > 0) {
+									fsnLoincMap.replace(fsn, loincNum);
+								} else {
+									report(QUATERNARY_REPORT, "Bigger Num Earlier", fsn, loincNum + " (" + thisVersion + ")", origLoincNum+ " (" + origVersion + ")", thisStatus, origStatus, thisReason);
+								}
+							}
+						}
 					} else isFirstLine = false;
 				}
 			}
@@ -108,23 +159,21 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 		} catch (Exception e) {
 			throw new TermServerScriptException(e);
 		}
-		super.init(args);
-	}
-	
-	public void postInit() throws TermServerScriptException {
-		String[] columnHeadings = new String[] { 
-				"SCTID, FSN, SemTag, ConceptType, Severity, Action, Detail, Details, , , ",
-				"SCTID, FSN, Semtag, Descendent Of",
-				"SCTID, FSN, Semtag, LOINC_Num, Issue"
-		};
-		String[] tabNames = new String[] {	
-				"Updates to LOINC2020",
-				"Published vs LOINC2020",
-				"LOINC2020 vs LOINC_2_69"
-		};
-		super.postInit(tabNames, columnHeadings, false);
+		
+		flushFiles(false, false);
 	}
 
+	private String get(Map<String, List<String>> source, String key, int idx) {
+		List<String> row = source.get(key);
+		//Have we yet to expand out this row?  Is costly, so working JIT
+		if (row.size() == 1) {
+			row = org.ihtsdo.termserver.scripting.util.StringUtils.csvSplit(row.get(0));
+			source.put(key, row);
+		}
+		return row.get(idx);
+	}
+
+	
 	@Override
 	public int doFix(Task task, Concept concept, String info) throws TermServerScriptException {
 		int changesMade = 0;
@@ -145,6 +194,7 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 	public void upgradeLOINCConcept(Concept c) throws TermServerScriptException {
 		String loincNum = getLoincNumFromDescription(c);
 		validateAgainstCurrentLOINC(c, loincNum);
+		validateAgainstPublishedLOINC(c, loincNum);
 		
 		Set<Relationship> origRels = new HashSet<>(c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE));
 		for (Relationship r : origRels) {
@@ -170,6 +220,7 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 		}
 	}
 
+
 	private void validateAgainstCurrentLOINC(Concept c, String loincNum) throws TermServerScriptException {
 		//Did LOINC tell us about this loincNum?
 		List<String> loincRow = loincFileMap.get(loincNum);
@@ -191,7 +242,76 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 			}
 			return;
 		}
+	}
+	
+	private void validateAgainstPublishedLOINC(Concept c, String loincNum) throws TermServerScriptException {
+		//Was this item originally published?
+		if (!refsetFileMap.containsKey(loincNum)) {
+			report(SECONDARY_REPORT, c, "Not Yet Published");
+			return;
+		}
+		String loinc2020Exp = c.toExpression(CharacteristicType.STATED_RELATIONSHIP);
+		String expression = get(refsetFileMap, loincNum, RefsetCol.EXPRESSION.ordinal());
+		String workingCopy = expression;
+		//Check the focus concept matches
+		int focusCut = workingCopy.indexOf(":");
+		String focusConcept = workingCopy.substring(0, focusCut);
+		workingCopy = workingCopy.substring(focusCut + 1);
 		
+		//Form a map from attribute types & targets
+		BiMap<String, String> attributeMap = formAttributeMap(c, workingCopy);
+		
+		Set<Concept> parents = c.getParents(CharacteristicType.STATED_RELATIONSHIP);
+		if (parents.size() > 1) {
+			debug ("here");
+		}
+		Concept parent = parents.iterator().next();
+		if (!focusConcept.contentEquals(parent.getConceptId())) {
+			report(SECONDARY_REPORT, c, "Mismatched Focus Concept", focusConcept, parent);
+		}
+		//Check we've got every relationship and nothing left over
+		for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE)) {
+			if (r.getType().equals(IS_A)) {
+				continue;
+			}
+			String relStr = r.getType().getConceptId() + "=" + r.getTarget().getConceptId();
+			if (workingCopy.contains(relStr)) {
+				workingCopy = workingCopy.replace(relStr, "");
+			} else {
+				String targetId = r.getTarget().getConceptId();
+				//Has this attribute type been replaced?  Check for same attribute value
+				if (attributeMap.containsValue(targetId)) {
+					Concept publishedType = gl.getConcept(attributeMap.inverse().get(targetId));
+					String publishedRel = publishedType.getConceptId() + "=" + targetId;
+					if (!publishedType.isActive()) {
+						report (SECONDARY_REPORT, c, "Published REL updated", publishedRel + "\n->\n" + r, expression.replaceAll(",", ",\n"), loinc2020Exp);
+						workingCopy = workingCopy.replace(publishedRel, "");
+					} else {
+						debug ("Check here");
+					}
+				} else {
+					report (SECONDARY_REPORT, c, "REL Not Published", r, expression, loinc2020Exp);
+				}
+			}
+		}
+		if (workingCopy.length() > 16) {
+			report (SECONDARY_REPORT, c, "Published Rel Variance", workingCopy, "", loinc2020Exp);
+		}
+	}
+
+	private BiMap<String, String> formAttributeMap(Concept c, String expression) {
+		BiMap<String, String> attributeMap = HashBiMap.create();
+		for (String pair : expression.split(",")) {
+			String[] parts = pair.split("=");
+			if (attributeMap.containsValue(parts[1])) {
+				debug (c + " has two attributes with target " + parts[1] + ": " + parts[0] + " + " + attributeMap.inverse().get(parts[1]));
+			} else if (attributeMap.containsKey(parts[0])) {
+				debug (c + " has two attribute types " + parts[0]);
+			} else {
+				attributeMap.put(parts[0], parts[1]);
+			}
+		}
+		return attributeMap;
 	}
 
 	private String getLoincNumFromDescription(Concept c) throws TermServerScriptException {
