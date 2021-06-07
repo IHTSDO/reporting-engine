@@ -1214,12 +1214,12 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	public void initialiseSummaryInformation(String key) {
-		summaryDetails.put (key, new Integer(0));
+		summaryDetails.put(key, new Integer(0));
 	}
 	
 	public void incrementSummaryInformation(String key, int incrementAmount) {
 		if (!summaryDetails.containsKey(key)) {
-			summaryDetails.put (key, new Integer(0));
+			summaryDetails.put(key, new Integer(0));
 		}
 		int newValue = ((Integer)summaryDetails.get(key)).intValue() + incrementAmount;
 		summaryDetails.put(key, newValue);
