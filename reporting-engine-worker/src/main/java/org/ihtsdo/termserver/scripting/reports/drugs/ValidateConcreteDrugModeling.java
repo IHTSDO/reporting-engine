@@ -140,7 +140,7 @@ public class ValidateConcreteDrugModeling extends TermServerReport implements Re
 			
 			// DRUGS-281, DRUGS-282, DRUGS-269
 			if (!c.getConceptType().equals(ConceptType.PRODUCT)) {
-				validateTerming(c, allDrugTypes);  
+				validateTerming(c, allDrugTypes);
 			}
 			
 			//DRUGS-267
@@ -184,7 +184,7 @@ public class ValidateConcreteDrugModeling extends TermServerReport implements Re
 				//RP-191
 				ensureStatedInferredAttributesEqual(c);
 				
-				//RP-194
+				//RP-194, RP-484
 				checkForPrimitives(c);
 			}
 			
@@ -218,10 +218,9 @@ public class ValidateConcreteDrugModeling extends TermServerReport implements Re
 	}
 
 	private void checkForPrimitives(Concept c) throws TermServerScriptException {
-		String issueStr = "Primitive concept where FSN starts with 'Product'";
+		String issueStr = "Primitive concept";
 		initialiseSummary(issueStr);
-		if (c.getDefinitionStatus().equals(DefinitionStatus.PRIMITIVE) &&
-				c.getFsn().startsWith("Product")) {
+		if (c.getDefinitionStatus().equals(DefinitionStatus.PRIMITIVE)) {
 			report(c, issueStr);
 		}
 	}
