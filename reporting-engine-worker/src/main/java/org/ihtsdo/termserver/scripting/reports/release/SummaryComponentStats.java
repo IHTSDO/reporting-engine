@@ -50,9 +50,9 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 	String thisEffectiveTime;
 	int topLevelHierarchyCount = 0;
 	String complexName;
-	static final int TAB_CONCEPTS = 0, TAB_DESCS = 1, TAB_RELS = 2, TAB_AXIOMS = 3,
-			TAB_LANG = 4, TAB_INACT_IND = 5, TAB_HIST = 6, TAB_TEXT_DEFN = 7, TAB_QI = 8,
-			TAB_DESC_HIST = 9, TAB_DESC_INACT = 10, TAB_CD = 11, TAB_REFSET = 12;  //Ensure refset tab is the last one as it's written at the end.
+	static final int TAB_CONCEPTS = 0, TAB_DESCS = 1, TAB_RELS = 2, TAB_CD = 3, TAB_AXIOMS = 4,
+			TAB_LANG = 5, TAB_INACT_IND = 6, TAB_HIST = 7, TAB_TEXT_DEFN = 8, TAB_QI = 9,
+			TAB_DESC_HIST = 10, TAB_DESC_INACT = 11, TAB_REFSET = 12;  //Ensure refset tab is the last one as it's written at the end.
 	static final int MAX_REPORT_TABS = 13;
 	static final int DATA_WIDTH = 25;  //New, Changed, Inactivated, Reactivated, New with New Concept, extra1, extra2, Total, next 11 fields are the inactivation reason, concept affected, reactivated
 	static final int IDX_NEW = 0, IDX_CHANGED = 1, IDX_INACT = 2, IDX_REACTIVATED = 3, IDX_NEW_NEW = 4, IDX_NEW_P = 5, IDX_NEW_SD = 6,
@@ -75,8 +75,8 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		params.put(THIS_RELEASE, "xSnomedCT_InternationalRF2_BETA_20210731T120000Z.zip");
-		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20210131T120000Z.zip");
+		//params.put(THIS_RELEASE, "xSnomedCT_InternationalRF2_BETA_20210731T120000Z.zip");
+		//params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20210131T120000Z.zip");
 		//params.put(REPORT_OUTPUT_TYPES, "S3");
 		//params.put(REPORT_FORMAT_TYPE, "JSON");
 		TermServerReport.run(SummaryComponentStats.class, args, params);
@@ -175,6 +175,7 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		String[] columnHeadings = new String[] {"Sctid, Hierarchy, SemTag, New, Changed DefnStatus, Inactivated, Reactivated, New with New Concept, New SD, New P, Total Active, Total, Promoted",
 												"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New with New Concept, Total Active, Total, Concepts Affected",
 												"Sctid, Hierarchy, SemTag, New Inferred Rels, Changed Inferred Rels, Inactivated Inferred Rels, Reactivated, New with New Concept, Total Active, Total, Concepts Affected",
+												"Sctid, Hierarchy, SemTag, New Inferred Rels, Changed Inferred Rels, Inactivated Inferred Rels, Reactivated, New with New Concept, Total Active, Total, Concepts Affected",
 												"Sctid, Hierarchy, SemTag, New Axioms, Changed Axioms, Inactivated Axioms, Reactivated, New with New Concept, Total Active, Total, Concepts Affected",
 												"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New with New Concept, Concepts Affected, Total Active",
 												"Sctid, Hierarchy, SemTag, Inactivations New / Reactivated, Changed, Inactivations Inactivated, Reactivated, New with New Concept, Ambiguous, Moved Elsewhere, Concept Non Current, Duplicate, Erroneous, Inappropriate, Limited, Outdated, Pending Move, Non Conformance, Not Equivalent, Concepts Affected, Total Active",
@@ -183,12 +184,12 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 												"Sctid, Hierarchy, SemTag, In Scope New, Attributes Added, Model Removed, Model Inactivated, Total In Scope",
 												"Sctid, Hierarchy, SemTag, New, Inactivated, Reactivated, Total, Total Active",
 												"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New with New Concept, Total Active, Total",
-												"Sctid, Hierarchy, SemTag, New Inferred Rels, Changed Inferred Rels, Inactivated Inferred Rels, Reactivated, New with New Concept, Total Active, Total, Concepts Affected",
 												"Sctid, Hierarchy, SemTag, New, Changed, Inactivated, Reactivated, New with New Concept, Total Active, Total"
 												};
 		String[] tabNames = new String[] {	"Concepts",
 											"Descriptions",
 											"Relationships",
+											"Concrete Rels",
 											"Axioms",
 											"LangRefSet",
 											"Inactivations",
@@ -197,7 +198,6 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 											"QI Scope",
 											"Desc Assoc",
 											"Desc Inact",
-											"Concrete Rels",
 											"Refsets"};
 		topLevelHierarchies = new ArrayList<Concept>(ROOT_CONCEPT.getChildren(CharacteristicType.INFERRED_RELATIONSHIP));
 		topLevelHierarchies.add(UNKNOWN_CONCEPT); // Add this a we might not always be able to get the top level hierarchy
