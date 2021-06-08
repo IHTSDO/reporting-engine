@@ -85,7 +85,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		for (Component thisComponent : allIdentifiedConcepts) {
 			Concept thisConcept = (Concept)thisComponent;
 			
-			if (thisConcept.getConceptId().equals("422435005")) {
+			if (thisConcept.getConceptId().equals("396464009")) {
 				debug("Here");
 			}
 			
@@ -206,6 +206,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 					Description loadedFSN = c.getDescription(existingFsnId);
 					if (loadedFSN != null) {
 						report (c, Severity.MEDIUM, ReportActionType.DESCRIPTION_INACTIVATED, "Existing FSN on TS inactivated to make way for imported content.", loadedFSN);
+						setDescriptionAndLangRefModule(loadedFSN);
 						loadedFSN.setActive(false, true); //Force dirty flag
 						subComponentsMoved = true;
 					}
@@ -214,6 +215,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 					Description loadedPT = c.getDescription(existingPtId);
 					if (loadedPT != null) {
 						report (c, Severity.MEDIUM, ReportActionType.DESCRIPTION_INACTIVATED, "Existing PT on TS demoted to make way for imported content.", loadedPT);
+						setDescriptionAndLangRefModule(loadedPT);
 						loadedPT.setActive(true); //Will only mark dirty if not already active
 						loadedPT.setAcceptablity(US_ENG_LANG_REFSET, Acceptability.ACCEPTABLE);
 						loadedPT.setAcceptablity(GB_ENG_LANG_REFSET, Acceptability.ACCEPTABLE);
@@ -281,6 +283,15 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		}
 		
 		return true;
+	}
+
+	private void setDescriptionAndLangRefModule(Description d) {
+		d.setModuleId(targetModuleId);
+		d.setDirty();
+		for (LangRefsetEntry l : d.getLangRefsetEntries()) {
+			l.setModuleId(targetModuleId);
+			l.setDirty();
+		}
 	}
 
 	private void convertInferredRelsToAxiomEntry(Concept c) throws TermServerScriptException {
