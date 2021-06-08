@@ -16,7 +16,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class ConceptChanged extends TermServerReport implements ReportClass {
+public class NewAndChangedComponents extends TermServerReport implements ReportClass {
 	
 	private Set<Concept> newConcepts = new HashSet<>();
 	private Set<Concept> inactivatedConcepts = new HashSet<>();
@@ -50,7 +50,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		TermServerReport.run(ConceptChanged.class, args, params);
+		TermServerReport.run(NewAndChangedComponents.class, args, params);
 	}
 	
 	public void init (JobRun run) throws TermServerScriptException {
@@ -63,33 +63,33 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
 				"Component, New, Changed, Inactivated",
-				"Id, FSN, SemTag, Active, DefStatusChanged, Languages, Author, Task, Creation Date",
-				"Id, FSN, SemTag, Active, hasNewInferredRelationships, hasLostInferredRelationships, Author, Task, Creation Date",
-				"Id, FSN, SemTag, Active, hasNewAxioms, hasChangedAxioms, hasLostAxioms, Author, Task, Creation Date",
-				"Id, FSN, SemTag, Active, hasNewDescriptions, hasChangedDescriptions, hasLostDescriptions, hasChangedAcceptability, Author, Task, Creation Date",
+				"Id, FSN, SemTag, Active, isNew, DefStatusChanged, Languages, Author, Task, Creation Date",
+				"Id, FSN, SemTag, Active, newWithNewConcept, hasNewInferredRelationships, hasLostInferredRelationships, Author, Task, Creation Date",
+				"Id, FSN, SemTag, Active, newWithNewConcept, hasNewAxioms, hasChangedAxioms, hasLostAxioms, Author, Task, Creation Date",
+				"Id, FSN, SemTag, Active, newWithNewConcept, hasNewDescriptions, hasChangedDescriptions, hasLostDescriptions, hasChangedAcceptability, Author, Task, Creation Date",
 				"Id, FSN, SemTag, Active, hasChangedAssociations, hasChangedInactivationIndicators, Author, Task, Creation Date",
 				"Id, FSN, SemTag, Active, isTargetOfNewStatedRelationship, isTargetOfNewInferredRelationship, wasTargetOfLostStatedRelationship, wasTargetOfLostInferredRelationship, Author, Task, Creation Date",
 				"Id, FSN, SemTag, Language, Description, isNew, isChanged, wasInactivated, changedAcceptability,Description Type",
 				"Id, FSN, SemTag, Description, LangRefset, isNew, isChanged, wasInactivated",
-				"Id, FSN, SemTag, Active, hasNewTextDefn, hasChangedTextDefn, hasLostTextDefn, hasChangedAcceptability, Author, Task, Creation Date",
+				"Id, FSN, SemTag, Active, newWithNewConcept, hasNewTextDefn, hasChangedTextDefn, hasLostTextDefn, hasChangedAcceptability, Author, Task, Creation Date",
 				
 		};
 		String[] tabNames = new String[] {
 				"Summary Counts",
-				"Concept Changes",
-				"Relationship Changes",
-				"Axiom Changes",
-				"Description Changes",
-				"Association Changes",
-				"Incoming Relationship Changes",
-				"Description Change Details",
+				"Concepts",
+				"Relationships",
+				"Axioms",
+				"Descriptions",
+				"Associations",
+				"Incoming Relationships",
+				"Description Details",
 				"Language Refset Details",
-				"TextDefn Changes"
+				"TextDefns"
 		};
 		super.postInit(tabNames, columnHeadings, false);
 		traceability = new TraceabilityService(jobRun, this, "pdat");  //Matching Updating and updated
 	}
-	
+
 	@Override
 	public Job getJob() {
 		JobParameters params = new JobParameters()
@@ -97,8 +97,8 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 				.build();
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_STATS))
-				.withName("Concepts Changed")
-				.withDescription("This report lists all concepts changed in the current release cycle, optionally restricted to a subset defined by an ECL expression.  The issue count here is the total number of concepts featuring one change or another.")
+				.withName("New And Changed Components")
+				.withDescription("This report lists all components new and changed in the current release cycle, optionally restricted to a subset defined by an ECL expression.  The issue count here is the total number of concepts featuring one change or another.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(INT)
@@ -140,11 +140,9 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 			if (c.isReleased() == null) {
 				throw new IllegalStateException ("Malformed snapshot. Released status not populated at " + c);
 			} else if (!c.isReleased()) {
-				//We will not service.populateTraceabilityAndReport any changes on brand new concepts
-				//Or (in managed service) concepts from other modules
 				notReleased++;
+				newConcepts.add(c);
 				summaryCount.isNew++;
-				continue;
 			} else if (inScope(c) && StringUtils.isEmpty(c.getEffectiveTime())) {
 				//Only want to log def status change if the concept has not been made inactive
 				if (c.isActive()) {
@@ -368,6 +366,7 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		for (Concept c : sort(superSet)) {
 			traceability.populateTraceabilityAndReport (SECONDARY_REPORT, c,
 				c.isActive()?"Y":"N",
+				newConcepts.contains(c)?"Y":"N",
 				defStatusChanged.contains(c)?"Y":"N",
 				getLanguages(c));
 		}
@@ -378,8 +377,10 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		superSet.addAll(hasLostInferredRelationships);
 		debug ("Creating relationship report for " + superSet.size() + " concepts");
 		for (Concept c : sort(superSet)) {
+			String newWithNewConcept = hasNewInferredRelationships.contains(c) && newConcepts.contains(c) ? "Y":"N";
 			traceability.populateTraceabilityAndReport (TERTIARY_REPORT, c,
 				c.isActive()?"Y":"N",
+				newWithNewConcept,
 				hasNewInferredRelationships.contains(c)?"Y":"N",
 				hasLostInferredRelationships.contains(c)?"Y":"N");
 		}
@@ -390,8 +391,10 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		superSet.addAll(hasLostAxioms);
 		debug ("Creating axiom report for " + superSet.size() + " concepts");
 		for (Concept c : sort(superSet)) {
+			String newWithNewConcept = hasNewAxioms.contains(c) && newConcepts.contains(c) ? "Y":"N";
 			traceability.populateTraceabilityAndReport (QUATERNARY_REPORT, c,
 				c.isActive()?"Y":"N",
+				newWithNewConcept,
 				hasNewAxioms.contains(c)?"Y":"N",
 				hasChangedAxioms.contains(c)?"Y":"N",
 				hasLostAxioms.contains(c)?"Y":"N");
@@ -404,16 +407,18 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		superSet.addAll(hasChangedAcceptabilityDesc);
 		debug ("Creating description report for " + superSet.size() + " concepts");
 		for (Concept c : sort(superSet)) {
+			String newWithNewConcept = hasNewDescriptions.contains(c) && newConcepts.contains(c) ? "Y":"N";
 			traceability.populateTraceabilityAndReport (QUINARY_REPORT, c,
 				c.isActive()?"Y":"N",
+				newWithNewConcept,
 				hasNewDescriptions.contains(c)?"Y":"N",
 				hasChangedDescriptions.contains(c)?"Y":"N",
 				hasLostDescriptions.contains(c)?"Y":"N",
 				hasChangedAcceptabilityDesc.contains(c)?"Y":"N");
 		}
-		getSummaryCount("Concept Descriptions Changed").isNew = hasNewDescriptions.size();
-		getSummaryCount("Concept Descriptions Changed").isChanged = hasChangedDescriptions.size();
-		getSummaryCount("Concept Descriptions Changed").isInactivated = hasLostDescriptions.size();
+		getSummaryCount("Concepts with Descriptions").isNew = hasNewDescriptions.size();
+		getSummaryCount("Concepts with Descriptions").isChanged = hasChangedDescriptions.size();
+		getSummaryCount("Concepts with Descriptions").isInactivated = hasLostDescriptions.size();
 		superSet.clear();
 		
 		superSet.addAll(hasChangedAssociations);
@@ -455,9 +460,9 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 				hasLostTextDefn.contains(c)?"Y":"N",
 				hasChangedAcceptabilityTextDefn.contains(c)?"Y":"N");
 		}
-		getSummaryCount("Concept TextDefn Changed").isNew = hasNewTextDefn.size();
-		getSummaryCount("Concept TextDefn Changed").isChanged = hasChangedTextDefn.size();
-		getSummaryCount("Concept TextDefn Changed").isInactivated = hasLostTextDefn.size();
+		getSummaryCount("Concepts with TextDefn").isNew = hasNewTextDefn.size();
+		getSummaryCount("Concepts with TextDefn").isChanged = hasChangedTextDefn.size();
+		getSummaryCount("Concepts with TextDefn").isInactivated = hasLostTextDefn.size();
 		superSet.clear();
 		
 		traceability.flush();
@@ -468,6 +473,9 @@ public class ConceptChanged extends TermServerReport implements ReportClass {
 		for (String componentType : summaryCountKeys) {
 			SummaryCount sc = summaryCounts.get(componentType);
 			String componentName = StringUtils.capitalizeFirstLetter(componentType.toString().toLowerCase());
+			if (!componentName.endsWith("s") && !componentName.contains(" - ")) {
+				componentName += "s";
+			}
 			report (PRIMARY_REPORT, componentName, sc.isNew, sc.isChanged, sc.isInactivated);
 		}
 	}
