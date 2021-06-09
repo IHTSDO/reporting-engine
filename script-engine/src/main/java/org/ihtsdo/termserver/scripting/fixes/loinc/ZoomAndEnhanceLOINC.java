@@ -31,12 +31,14 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 	private static enum LoincCol { LOINC_NUM,COMPONENT,PROPERTY,TIME_ASPCT,SYSTEM,SCALE_TYP,METHOD_TYP,CLASS,VersionLastChanged,CHNG_TYPE,DefinitionDescription,STATUS,CONSUMER_NAME,CLASSTYPE,FORMULA,EXMPL_ANSWERS,SURVEY_QUEST_TEXT,SURVEY_QUEST_SRC,UNITSREQUIRED,SUBMITTED_UNITS,RELATEDNAMES2,SHORTNAME,ORDER_OBS,CDISC_COMMON_TESTS,HL7_FIELD_SUBFIELD_ID,EXTERNAL_COPYRIGHT_NOTICE,EXAMPLE_UNITS,LONG_COMMON_NAME,UnitsAndRange,EXAMPLE_UCUM_UNITS,EXAMPLE_SI_UCUM_UNITS,STATUS_REASON,STATUS_TEXT,CHANGE_REASON_PUBLIC,COMMON_TEST_RANK,COMMON_ORDER_RANK,COMMON_SI_TEST_RANK,HL7_ATTACHMENT_STRUCTURE,EXTERNAL_COPYRIGHT_LINK,PanelType,AskAtOrderEntry,AssociatedObservations,VersionFirstReleased,ValidHL7AttachmentRequest,DisplayName }
 	private static enum RefsetCol { ID,EFFECTIVETIME,ACTIVE,MODULEID,REFSETID,REFERENCEDCOMPONENTID,MAPTARGET,EXPRESSION,DEFINITIONSTATUSID,CORRELATIONID,CONTENTORIGINID }
 	private static String DEPRECATED = "DEPRECATED";
+	private static String DISCOURAGED = "DISCOURAGED";
 	private static String ACTIVE = "ACTIVE";
 	
 	private Map<String, List<String>> loincFileMap;
 	private BiMap<String, String> fsnLoincMap;
 	private Map<String, List<String>> refsetFileMap;
 	private Set<String> deprecated;
+	private Set<String> duplicatedFSNs;
 	private Set<Concept> expectedTypeChanges = new HashSet<>();
 	private Map<String, Integer> issueSummaryMap = new HashMap<>();
 	
@@ -88,6 +90,7 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 		fsnLoincMap = HashBiMap.create();
 		refsetFileMap = new HashMap<>();
 		deprecated = new HashSet<>();
+		duplicatedFSNs = new HashSet<>();
 		try {
 			//Load the LOINC file
 			String fileStr = "G:\\My Drive\\018_Loinc\\2021\\loinc_2_69.csv";
@@ -119,6 +122,7 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 							
 							//A duplicate FSN will usually have a later replacement with a new LOINCNum
 							if (fsnLoincMap.containsKey(fsn)) {
+								duplicatedFSNs.add(fsn);
 								String origLoincNum = fsnLoincMap.get(fsn);
 								String origVersion = get(loincFileMap, origLoincNum, LoincCol.VersionLastChanged.ordinal());
 								String origStatus = get(loincFileMap, origLoincNum, LoincCol.STATUS.ordinal());
@@ -128,18 +132,28 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 								if (thisStatus.equals(DEPRECATED)) {
 									deprecated.add(loincNum);
 								}
+								
 								//Is the this version newer than what we stored
 								int comparison = thisVersion.compareTo(origVersion);
 								String thisReason = get(loincFileMap, loincNum, LoincCol.STATUS_REASON.ordinal());
 								if (comparison == 0) {
-									report(QUATERNARY_REPORT, "Same Version, Same FSN", fsn, loincNum + " (" + thisVersion + ")", origLoincNum+ " (" + origVersion + ")", origStatus, thisStatus, thisReason);
-								} else if ( comparison > 0) {
+									if (thisStatus.equals(DEPRECATED) && (origStatus.equals(ACTIVE) || origStatus.equals(DISCOURAGED))) {
+										increment("Larger loincNum deprecated in same version due to " + thisReason);
+									} else if ((thisStatus.equals(ACTIVE) || thisStatus.equals(DISCOURAGED)) && origStatus.equals(DEPRECATED)) {
+										increment("Smaller loincNum deprecated in same version due to " + thisReason);
+										//In this case we want to replace the originally stored value
+										fsnLoincMap.replace(fsn, loincNum);
+									} else {
+										//TODO Put these into a list to see if there's a third row that replaces both
+										report(QUATERNARY_REPORT, "Same Version, Same FSN", fsn, loincNum + " (" + thisVersion + ")", origLoincNum+ " (" + origVersion + ")", origStatus, thisStatus, thisReason);
+									}
+								} else if (comparison > 0) {
 									fsnLoincMap.replace(fsn, loincNum);
 								} else {
 									//Often the larger loincNum is then Deprecated as a duplicate
-									if (thisStatus.equals(DEPRECATED) && origStatus.equals(ACTIVE)) {
+									if (thisStatus.equals(DEPRECATED) && (origStatus.equals(ACTIVE) || origStatus.equals(DISCOURAGED))) {
 										increment("Larger loincNum deprecated due to " + thisReason);
-									} else if (thisStatus.equals(ACTIVE) && origStatus.equals(DEPRECATED)) {
+									} else if ((thisStatus.equals(ACTIVE) || thisStatus.equals(DISCOURAGED)) && origStatus.equals(DEPRECATED)) {
 										increment("Smaller loincNum deprecated due to " + thisReason);
 										//In this case we want to replace the originally stored value
 										fsnLoincMap.replace(fsn, loincNum);
@@ -245,6 +259,11 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 		List<String> loincRow = loincFileMap.get(loincNum);
 		String fsn = SnomedUtils.deconstructFSN(c.getFsn())[0];
 		
+		//Is this one of the FSNs that appeared twice in LOINC_2_69?
+		if (duplicatedFSNs.contains(fsn)) {
+			report(TERTIARY_REPORT, c, loincNum, "Loinc file featured FSN more than once");
+		}
+		
 		if (loincRow == null) {
 			report(TERTIARY_REPORT, c, loincNum, "Loinc file did not feature LOINC_NUM");
 		} else {
@@ -256,7 +275,6 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 		}
 		
 		//Can we find it, or a newer one via the FSN?
-		
 		String newLoincNum = fsnLoincMap.get(fsn);
 		if (loincRow == null || newLoincNum == null || !loincNum.equals(newLoincNum)) {
 			if (newLoincNum != null) {
