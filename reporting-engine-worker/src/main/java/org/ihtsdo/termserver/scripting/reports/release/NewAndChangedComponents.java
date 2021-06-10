@@ -34,8 +34,6 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 	private Set<Concept> hasLostTextDefn = new HashSet<>();
 	private Set<Concept> hasChangedAssociations = new HashSet<>();
 	private Set<Concept> hasChangedInactivationIndicators = new HashSet<>();
-	private Set<Concept> isTargetOfNewStatedRelationship = new HashSet<>();
-	private Set<Concept> wasTargetOfLostStatedRelationship = new HashSet<>();
 	private Set<Concept> isTargetOfNewInferredRelationship = new HashSet<>();
 	private Set<Concept> wasTargetOfLostInferredRelationship = new HashSet<>();
 	private Set<Concept> hasChangedAcceptabilityDesc = new HashSet<>();
@@ -69,7 +67,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 				"Id, FSN, SemTag, Active, newWithNewConcept, hasNewAxioms, hasChangedAxioms, hasLostAxioms, Author, Task, Date",
 				"Id, FSN, SemTag, Active, newWithNewConcept, hasNewDescriptions, hasChangedDescriptions, hasLostDescriptions, hasChangedAcceptability, Author, Task, Date",
 				"Id, FSN, SemTag, Active, hasChangedAssociations, hasChangedInactivationIndicators, Author, Task, Date",
-				"Id, FSN, SemTag, Active, isTargetOfNewStatedRelationship, isTargetOfNewInferredRelationship, wasTargetOfLostStatedRelationship, wasTargetOfLostInferredRelationship, Author, Task, Date",
+				"Id, FSN, SemTag, Active, isTargetOfNewInferredRelationship, wasTargetOfLostInferredRelationship",
 				"Id, FSN, SemTag, Language, Description, isNew, isChanged, wasInactivated, changedAcceptability,Description Type",
 				"Id, FSN, SemTag, Description, LangRefset, isNew, isChanged, wasInactivated",
 				"Id, FSN, SemTag, Active, newWithNewConcept, hasNewTextDefn, hasChangedTextDefn, hasLostTextDefn, hasChangedAcceptability, Author, Task, Date",
@@ -269,7 +267,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 			}
 			
 			summaryCount = getSummaryCount(ComponentType.INFERRED_RELATIONSHIP.name());
-			for (Relationship r : c.getRelationships()) {
+			for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.BOTH)) {
 				if (inScope(r)) {
 					if (StringUtils.isEmpty(r.getEffectiveTime())) {
 						if (r.isActive()) {
@@ -433,16 +431,12 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 		}
 		superSet.clear();
 		
-		superSet.addAll(isTargetOfNewStatedRelationship);
-		superSet.addAll(wasTargetOfLostStatedRelationship);
 		superSet.addAll(isTargetOfNewInferredRelationship);
 		superSet.addAll(wasTargetOfLostInferredRelationship);
 		debug ("Creating incoming relationship report for " + superSet.size() + " concepts");
 		for (Concept c : sort(superSet)) {
-			populateTraceabilityAndReport (SEPTENARY_REPORT, c,
+			report (SEPTENARY_REPORT, c,
 				c.isActive()?"Y":"N",
-				isTargetOfNewStatedRelationship.contains(c)?"Y":"N",
-				wasTargetOfLostStatedRelationship.contains(c)?"Y":"N",
 				isTargetOfNewInferredRelationship.contains(c)?"Y":"N",
 				wasTargetOfLostInferredRelationship.contains(c)?"Y":"N");
 		}
@@ -514,8 +508,6 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 		superSet.addAll(hasLostDescriptions);
 		superSet.addAll(hasChangedAssociations);
 		superSet.addAll(hasChangedInactivationIndicators);
-		superSet.addAll(isTargetOfNewStatedRelationship);
-		superSet.addAll(wasTargetOfLostStatedRelationship);
 		superSet.addAll(isTargetOfNewInferredRelationship);
 		superSet.addAll(wasTargetOfLostInferredRelationship);
 		superSet.addAll(hasChangedAcceptabilityDesc);
