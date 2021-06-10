@@ -44,7 +44,8 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 	private Set<Concept> hasLostLanguageRefSets = new HashSet<>();
 	private Set<Concept> hasChangedLanguageRefSets = new HashSet<>();
 	
-	TraceabilityService traceability;
+	TraceabilityService updateTraceability;
+	TraceabilityService createTraceability;
 	
 	Map<String, SummaryCount> summaryCounts = new LinkedHashMap<>();  //preserve insertion order for tight report loop
 	
@@ -63,16 +64,15 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
 				"Component, New, Changed, Inactivated",
-				"Id, FSN, SemTag, Active, isNew, DefStatusChanged, Languages, Author, Task, Creation Date",
-				"Id, FSN, SemTag, Active, newWithNewConcept, hasNewInferredRelationships, hasLostInferredRelationships, Author, Task, Creation Date",
-				"Id, FSN, SemTag, Active, newWithNewConcept, hasNewAxioms, hasChangedAxioms, hasLostAxioms, Author, Task, Creation Date",
-				"Id, FSN, SemTag, Active, newWithNewConcept, hasNewDescriptions, hasChangedDescriptions, hasLostDescriptions, hasChangedAcceptability, Author, Task, Creation Date",
-				"Id, FSN, SemTag, Active, hasChangedAssociations, hasChangedInactivationIndicators, Author, Task, Creation Date",
-				"Id, FSN, SemTag, Active, isTargetOfNewStatedRelationship, isTargetOfNewInferredRelationship, wasTargetOfLostStatedRelationship, wasTargetOfLostInferredRelationship, Author, Task, Creation Date",
+				"Id, FSN, SemTag, Active, isNew, DefStatusChanged, Languages, Author, Task, Date",
+				"Id, FSN, SemTag, Active, newWithNewConcept, hasNewInferredRelationships, hasLostInferredRelationships, Author, Task, Date",
+				"Id, FSN, SemTag, Active, newWithNewConcept, hasNewAxioms, hasChangedAxioms, hasLostAxioms, Author, Task, Date",
+				"Id, FSN, SemTag, Active, newWithNewConcept, hasNewDescriptions, hasChangedDescriptions, hasLostDescriptions, hasChangedAcceptability, Author, Task, Date",
+				"Id, FSN, SemTag, Active, hasChangedAssociations, hasChangedInactivationIndicators, Author, Task, Date",
+				"Id, FSN, SemTag, Active, isTargetOfNewStatedRelationship, isTargetOfNewInferredRelationship, wasTargetOfLostStatedRelationship, wasTargetOfLostInferredRelationship, Author, Task, Date",
 				"Id, FSN, SemTag, Language, Description, isNew, isChanged, wasInactivated, changedAcceptability,Description Type",
 				"Id, FSN, SemTag, Description, LangRefset, isNew, isChanged, wasInactivated",
-				"Id, FSN, SemTag, Active, newWithNewConcept, hasNewTextDefn, hasChangedTextDefn, hasLostTextDefn, hasChangedAcceptability, Author, Task, Creation Date",
-				
+				"Id, FSN, SemTag, Active, newWithNewConcept, hasNewTextDefn, hasChangedTextDefn, hasLostTextDefn, hasChangedAcceptability, Author, Task, Date",
 		};
 		String[] tabNames = new String[] {
 				"Summary Counts",
@@ -87,7 +87,8 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 				"TextDefns"
 		};
 		super.postInit(tabNames, columnHeadings, false);
-		traceability = new TraceabilityService(jobRun, this, "pdat");  //Matching Updating and updated
+		updateTraceability = new TraceabilityService(jobRun, this, "pdat");  //Matching Updating and updated
+		createTraceability = new TraceabilityService(jobRun, this, "reating concept");
 	}
 
 	@Override
@@ -110,12 +111,12 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 		examineConcepts();
 		reportConceptsChanged();
 		determineUniqueCountAndTraceability();
-		traceability.flush();
+		updateTraceability.flush();
 		report (PRIMARY_REPORT, "");
 		if (!StringUtils.isEmpty(subsetECL)) {
 			report (PRIMARY_REPORT, "Run against", subsetECL);
 		}
-		traceability.tidyUp();
+		updateTraceability.tidyUp();
 		info ("Job complete");
 	}
 	
@@ -192,7 +193,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 					
 					//Has it changed acceptability?
 					if (!isNew) {
-						for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.ACTIVE)) {
+						for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.BOTH)) {
 							if (StringUtils.isEmpty(l.getEffectiveTime())) {
 								hasChangedAcceptability.add(c);
 								changedAcceptability = true;
@@ -235,7 +236,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 					boolean langRefSetIsNew = false;
 					boolean langRefSetIsLost = false;
 					boolean langRefSetIsChanged = false;
-					for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.ACTIVE)) {
+					for (LangRefsetEntry l : d.getLangRefsetEntries(ActiveState.BOTH)) {
 						if (inScope(l)) {
 							if (StringUtils.isEmpty(l.getEffectiveTime())) {
 								if (l.isReleased()) {
@@ -364,13 +365,13 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 		superSet.addAll(inactivatedConcepts);
 		debug ("Creating concept report for " + superSet.size() + " concepts");
 		for (Concept c : sort(superSet)) {
-			traceability.populateTraceabilityAndReport (SECONDARY_REPORT, c,
+			populateTraceabilityAndReport (SECONDARY_REPORT, c,
 				c.isActive()?"Y":"N",
 				newConcepts.contains(c)?"Y":"N",
 				defStatusChanged.contains(c)?"Y":"N",
 				getLanguages(c));
 		}
-		traceability.flush();
+		updateTraceability.flush();
 		superSet.clear();
 		
 		superSet.addAll(hasNewInferredRelationships);
@@ -378,7 +379,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 		debug ("Creating relationship report for " + superSet.size() + " concepts");
 		for (Concept c : sort(superSet)) {
 			String newWithNewConcept = hasNewInferredRelationships.contains(c) && newConcepts.contains(c) ? "Y":"N";
-			traceability.populateTraceabilityAndReport (TERTIARY_REPORT, c,
+			populateTraceabilityAndReport (TERTIARY_REPORT, c,
 				c.isActive()?"Y":"N",
 				newWithNewConcept,
 				hasNewInferredRelationships.contains(c)?"Y":"N",
@@ -392,7 +393,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 		debug ("Creating axiom report for " + superSet.size() + " concepts");
 		for (Concept c : sort(superSet)) {
 			String newWithNewConcept = hasNewAxioms.contains(c) && newConcepts.contains(c) ? "Y":"N";
-			traceability.populateTraceabilityAndReport (QUATERNARY_REPORT, c,
+			populateTraceabilityAndReport (QUATERNARY_REPORT, c,
 				c.isActive()?"Y":"N",
 				newWithNewConcept,
 				hasNewAxioms.contains(c)?"Y":"N",
@@ -408,7 +409,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 		debug ("Creating description report for " + superSet.size() + " concepts");
 		for (Concept c : sort(superSet)) {
 			String newWithNewConcept = hasNewDescriptions.contains(c) && newConcepts.contains(c) ? "Y":"N";
-			traceability.populateTraceabilityAndReport (QUINARY_REPORT, c,
+			populateTraceabilityAndReport (QUINARY_REPORT, c,
 				c.isActive()?"Y":"N",
 				newWithNewConcept,
 				hasNewDescriptions.contains(c)?"Y":"N",
@@ -425,7 +426,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 		superSet.addAll(hasChangedInactivationIndicators);
 		debug ("Creating association report for " + superSet.size() + " concepts");
 		for (Concept c : sort(superSet)) {
-			traceability.populateTraceabilityAndReport (SENARY_REPORT, c,
+			populateTraceabilityAndReport (SENARY_REPORT, c,
 				c.isActive()?"Y":"N",
 				hasChangedAssociations.contains(c)?"Y":"N",
 				hasChangedInactivationIndicators.contains(c)?"Y":"N");
@@ -438,7 +439,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 		superSet.addAll(wasTargetOfLostInferredRelationship);
 		debug ("Creating incoming relationship report for " + superSet.size() + " concepts");
 		for (Concept c : sort(superSet)) {
-			traceability.populateTraceabilityAndReport (SEPTENARY_REPORT, c,
+			populateTraceabilityAndReport (SEPTENARY_REPORT, c,
 				c.isActive()?"Y":"N",
 				isTargetOfNewStatedRelationship.contains(c)?"Y":"N",
 				wasTargetOfLostStatedRelationship.contains(c)?"Y":"N",
@@ -453,7 +454,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 		superSet.addAll(hasChangedAcceptabilityTextDefn);
 		debug ("Creating text defn report for " + superSet.size() + " concepts");
 		for (Concept c : sort(superSet)) {
-			traceability.populateTraceabilityAndReport (DENARY_REPORT, c,
+			populateTraceabilityAndReport (DENARY_REPORT, c,
 				c.isActive()?"Y":"N",
 				hasNewTextDefn.contains(c)?"Y":"N",
 				hasChangedTextDefn.contains(c)?"Y":"N",
@@ -465,7 +466,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 		getSummaryCount("Concepts with TextDefn").isInactivated = hasLostTextDefn.size();
 		superSet.clear();
 		
-		traceability.flush();
+		updateTraceability.flush();
 		
 		//Populate the summary numbers for each type of component
 		List<String> summaryCountKeys = new ArrayList<>(summaryCounts.keySet());
@@ -480,6 +481,15 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 		}
 	}
 	
+	private void populateTraceabilityAndReport(int tabIdx, Concept c, Object... details) throws TermServerScriptException {
+		//Are we recovering this information as an update or a creation?
+		if (newConcepts.contains(c)) {
+			createTraceability.populateTraceabilityAndReport(tabIdx, c, details);
+		} else {
+			updateTraceability.populateTraceabilityAndReport(tabIdx, c, details);
+		}
+	}
+
 	private String getLanguages(Concept c) {
 		Set<String> langs = new TreeSet<>();
 		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
