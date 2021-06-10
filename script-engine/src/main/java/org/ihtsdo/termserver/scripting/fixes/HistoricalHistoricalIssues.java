@@ -123,9 +123,9 @@ public class HistoricalHistoricalIssues extends BatchFix implements RF2Constants
 			inactivationIndicatorB = histAssocUtils.getIndicatorFromAssocs(b);
 		}
 		
-		if (a.getId().equals("141350007")) {
+		/*if (a.getId().equals("141350007")) {
 			debug ("here");
-		}
+		}*/
 		
 		if (inactivationIndicatorA.equals(InactivationIndicator.AMBIGUOUS)) {
 			if (inactivationIndicatorB.equals(InactivationIndicator.AMBIGUOUS)) {
@@ -179,12 +179,12 @@ public class HistoricalHistoricalIssues extends BatchFix implements RF2Constants
 				a.getAssociationTargets().clear();
 				//Now there's a lot of cases where we have two inactive concepts pointing to each other
 				if (b.getAssociationTargets().getSameAs().contains(a.getId())) {
-					addressCircularReferencing(t, a, b, h);
+					addressCircularReferencing(t, aLoaded, b, h);
 				} else {
 					//If we've got an active SAME_AS then we can stay duplicate, but if we need to 
 					//look further afield, then we need to drop back down to Ambiguous
 					boolean activeSameAsFound = false;
-					a.getAssociationTargets().remove(b.getId());
+					aLoaded.getAssociationTargets().remove(b.getId());
 					Set<String> origSameAs = b.getAssociationTargets().getSameAs();
 					for (String same : origSameAs) {
 						if (gl.getConcept(same, false, false).isActive()) {
