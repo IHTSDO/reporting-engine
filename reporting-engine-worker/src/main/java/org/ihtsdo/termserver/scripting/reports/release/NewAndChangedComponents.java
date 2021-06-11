@@ -97,7 +97,8 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_STATS))
 				.withName("New And Changed Components")
-				.withDescription("This report lists all components new and changed in the current release cycle, optionally restricted to a subset defined by an ECL expression.  The issue count here is the total number of concepts featuring one change or another.")
+				.withDescription("This report lists all components new and changed in the current release cycle, optionally restricted to a subset defined by an ECL expression." +
+				"The issue count here is the total number of concepts featuring one change or another.  Note that specifying ECL means that inactive concepts will not be included, on account of them having no hierarchial position.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(INT)
@@ -110,11 +111,13 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 		reportConceptsChanged();
 		determineUniqueCountAndTraceability();
 		updateTraceability.flush();
+		createTraceability.flush();
 		report (PRIMARY_REPORT, "");
 		if (!StringUtils.isEmpty(subsetECL)) {
 			report (PRIMARY_REPORT, "Run against", subsetECL);
 		}
 		updateTraceability.tidyUp();
+		createTraceability.tidyUp();
 		info ("Job complete");
 	}
 	
@@ -135,6 +138,9 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 		long notInScope = 0;
 		
 		for (Concept c : conceptsOfInterest) {
+			/*if (c.getId().equals("3641486008")) {
+				debug("here");
+			}*/
 			SummaryCount summaryCount = getSummaryCount(ComponentType.CONCEPT.name());
 			if (c.isReleased() == null) {
 				throw new IllegalStateException ("Malformed snapshot. Released status not populated at " + c);
@@ -370,6 +376,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 				getLanguages(c));
 		}
 		updateTraceability.flush();
+		createTraceability.flush();
 		superSet.clear();
 		
 		superSet.addAll(hasNewInferredRelationships);
@@ -461,6 +468,7 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 		superSet.clear();
 		
 		updateTraceability.flush();
+		createTraceability.flush();
 		
 		//Populate the summary numbers for each type of component
 		List<String> summaryCountKeys = new ArrayList<>(summaryCounts.keySet());
