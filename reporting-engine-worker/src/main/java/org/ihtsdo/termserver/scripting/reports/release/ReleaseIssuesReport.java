@@ -442,7 +442,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		initialiseSummary(issue2Str);
 		initialiseSummary(issue3Str);
 		for (Concept c : gl.getAllConcepts()) {
-			if (inScope(c) && isInternational(c)) {
+			if (inScope(c) && isInternational(c) && (includeLegacyIssues || recentlyTouched.contains(c))) {
 				boolean reported = false;
 				if (c.getFSNDescription() == null || !c.getFSNDescription().isActive()) {
 					report(c, issueStr, isLegacy(c), isActive(c,null));
@@ -474,14 +474,10 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	
 	private void missingSemanticTag() throws TermServerScriptException {
 		String issueStr = "Concept (recently touched) with invalid FSN";
-		String issueStr2 = "Concept does not have an FSN";
 		initialiseSummary(issueStr);
-		initialiseSummary(issueStr2);
 		for (Concept c : gl.getAllConcepts()) {
-			if (inScope(c) && recentlyTouched.contains(c)) {
-				if (c.getFsn() == null) {
-					report(c, issueStr2, "N");
-				} else if (SnomedUtils.deconstructFSN(c.getFsn(), includeLegacyIssues)[1] == null) {
+			if (inScope(c) && recentlyTouched.contains(c) && c.getFsn() != null) {
+				if (SnomedUtils.deconstructFSN(c.getFsn(), includeLegacyIssues)[1] == null) {
 					report(c, issueStr, "N", isActive(c,c.getFSNDescription()), c.getFsn());
 				}
 			}
