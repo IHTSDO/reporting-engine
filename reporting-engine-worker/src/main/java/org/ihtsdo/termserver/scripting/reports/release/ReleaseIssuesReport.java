@@ -218,7 +218,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		
 		info("...description rules");
 		fullStopInSynonym();
-		inactiveMissingFSN_PT();
+		missingFSN_PT();
 		unexpectedCharacters();
 		spaceBracket();
 		missingSemanticTag();
@@ -433,15 +433,16 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	}
 	
 	//INFRA-2580, MAINT-342 Inactivated concepts without active PT or synonym – new instances only
-	private void inactiveMissingFSN_PT() throws TermServerScriptException {
-		String issueStr = "Inactive concept without active FSN";
-		String issue2Str = "Inactive concept without active US PT";
-		String issue3Str = "Inactive concept without active GB PT";
+	//RP-478 Broaden to take in all concepts - just in case!
+	private void missingFSN_PT() throws TermServerScriptException {
+		String issueStr = "Concept without active FSN";
+		String issue2Str = "Concept without active US PT";
+		String issue3Str = "Concept without active GB PT";
 		initialiseSummary(issueStr);
 		initialiseSummary(issue2Str);
 		initialiseSummary(issue3Str);
 		for (Concept c : gl.getAllConcepts()) {
-			if (!c.isActive() && inScope(c) && isInternational(c)) {
+			if (inScope(c) && isInternational(c)) {
 				boolean reported = false;
 				if (c.getFSNDescription() == null || !c.getFSNDescription().isActive()) {
 					report(c, issueStr, isLegacy(c), isActive(c,null));
