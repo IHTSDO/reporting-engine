@@ -211,9 +211,11 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		if (isMS()) {
 			unexpectedDescriptionModulesMS();
 			unexpectedRelationshipModulesMS();
+			unexpectedAxiomModulesMS();
 		} else {
 			unexpectedDescriptionModules();
 			unexpectedRelationshipModules();
+			unexpectedAxiomModules();
 		}
 		
 		info("...description rules");
@@ -359,10 +361,10 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 	
 	//ISRS-392 Part II Stated Relationships whose module id does not match that of the component
 	private void unexpectedRelationshipModules() throws TermServerScriptException {
-		String issueStr = "Unexpected Stated Rel Module";
+		String issueStr = "Unexpected Inf Rel Module";
 		initialiseSummary(issueStr);
 		for (Concept c : allActiveConcepts) {
-			for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH)) {
+			for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
 				if (!r.getModuleId().equals(c.getModuleId())) {
 					String msg = "Concept module " + c.getModuleId() + " vs Rel module " + r.getModuleId();
 					report(c, issueStr, isLegacy(r), isActive(c,r), msg, r);
@@ -376,15 +378,51 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		}
 	}
 	
-	private void unexpectedRelationshipModulesMS() throws TermServerScriptException {
-		String issueStr = "Unexpected extension stated rel module";
+	private void unexpectedAxiomModules() throws TermServerScriptException {
+		String issueStr = "Unexpected Axiom Module";
 		initialiseSummary(issueStr);
 		for (Concept c : allActiveConcepts) {
-			for (Relationship r : c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.BOTH)) {
+			for (AxiomEntry a : c.getAxiomEntries()) {
+				if (!a.getModuleId().equals(c.getModuleId())) {
+					String msg = "Concept module " + c.getModuleId() + " vs Axiom module " + a.getModuleId();
+					report(c, issueStr, isLegacy(a), isActive(c,a), msg, a);
+					if (isLegacy(a).equals("Y")) {
+						incrementSummaryInformation("Legacy Issues Reported");
+					}	else {
+						incrementSummaryInformation("Fresh Issues Reported");
+					}
+				}
+			}
+		}
+	}
+	
+	private void unexpectedRelationshipModulesMS() throws TermServerScriptException {
+		String issueStr = "Unexpected extension inf rel module";
+		initialiseSummary(issueStr);
+		for (Concept c : allActiveConcepts) {
+			for (Relationship r : c.getRelationships(CharacteristicType.INFERRED_RELATIONSHIP, ActiveState.ACTIVE)) {
 				if (StringUtils.isEmpty(r.getEffectiveTime()) && !r.getModuleId().equals(defaultModule)) {
 					String msg = "Default module " + defaultModule + " vs Rel module " + r.getModuleId();
 					report(c, issueStr, isLegacy(r), isActive(c,r), msg, r);
 					if (isLegacy(r).equals("Y")) {
+						incrementSummaryInformation("Legacy Issues Reported");
+					}	else {
+						incrementSummaryInformation("Fresh Issues Reported");
+					}
+				}
+			}
+		}
+	}
+	
+	private void unexpectedAxiomModulesMS() throws TermServerScriptException {
+		String issueStr = "Unexpected extension axiom module";
+		initialiseSummary(issueStr);
+		for (Concept c : allActiveConcepts) {
+			for (AxiomEntry a : c.getAxiomEntries()) {
+				if (StringUtils.isEmpty(a.getEffectiveTime()) && !a.getModuleId().equals(defaultModule)) {
+					String msg = "Default module " + defaultModule + " vs Axiom module " + a.getModuleId();
+					report(c, issueStr, isLegacy(a), isActive(c,a), msg, a);
+					if (isLegacy(a).equals("Y")) {
 						incrementSummaryInformation("Legacy Issues Reported");
 					}	else {
 						incrementSummaryInformation("Fresh Issues Reported");
