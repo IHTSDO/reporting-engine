@@ -1754,4 +1754,14 @@ public class SnomedUtils implements RF2Constants {
 		}
 		return descA.isActive() != descB.isActive();
 	}
+	
+	public static String shortestTerm(Concept c) {
+		String shortestTerm = null;
+		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+			if (shortestTerm == null || d.getTerm().length() < shortestTerm.length()) {
+				shortestTerm = d.getTerm();
+			}
+		}
+		return shortestTerm;
+	}
 }
