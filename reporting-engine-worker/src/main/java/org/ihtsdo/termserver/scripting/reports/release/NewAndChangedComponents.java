@@ -75,11 +75,11 @@ public class NewAndChangedComponents extends TermServerReport implements ReportC
 		String[] tabNames = new String[] {
 				"Summary Counts",
 				"Concepts",
-				"Relationships",
+				"Inferred Rels",
 				"Axioms",
 				"Descriptions",
 				"Associations",
-				"Incoming Relationships",
+				"Incoming Rels",
 				"Description Details",
 				"Language Refset Details",
 				"TextDefns"
