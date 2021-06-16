@@ -20,7 +20,7 @@ import com.google.common.io.Files;
 import com.google.common.util.concurrent.AtomicLongMap;
 
 /**
- * RP-370 List concepts being inactivated in this release which 
+ * RP-370 List concepts being inactivated in this release which also appear in known refsets
  */
 public class InactiveConceptInRefset extends TermServerReport implements ReportClass {
 	
@@ -29,6 +29,7 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 	private List<Concept> emptyReferenceSets;
 	private List<Concept> outOfScopeReferenceSets;
 	private AtomicLongMap<Concept> refsetSummary = AtomicLongMap.create();
+	private AtomicLongMap<Concept> moduleSummary = AtomicLongMap.create();
 	private static String INCLUDE_LAST_RELEASE = "Include latest Int release";
 	private String lastReleaseEffectiveTime = null;
 	private static String EXT_REF_ONLY = "Extension Refsets Only";
@@ -58,10 +59,12 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 		info ("Recovered " + referenceSets.size() + " simple reference sets and maps");
 
 		String[] columnHeadings = new String[] {
-				"Id, FSN, SemTag, Detail, Refset Module",
-				"Id, FSN, SemTag, Detail, Concept Module, Refset Module"};
-		String[] tabNames = new String[] {	
-				"Summary",
+				"Id, FSN, SemTag, Count",
+				"Id, FSN, SemTag, Count, Refset Module",
+				"Id, FSN, SemTag, Refset, Concept Module, Refset Module"};
+		String[] tabNames = new String[] {
+				"Module Summary",
+				"Per Refset Counts",
 				"Concepts Inactivated in Refsets"};
 		super.postInit(tabNames, columnHeadings, false);
 	}
@@ -143,9 +146,17 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 			Collection<RefsetMember> members = findRefsetMembers(c, viableRefsetECL);
 			for (RefsetMember m : members) {
 				Concept refset = gl.getConcept(m.getRefsetId());
+				Concept module = gl.getConcept(refset.getModuleId());
+				
+				//Ensure we initialise the module summary to capture 0 counts
+				if (!moduleSummary.containsKey(module)) {
+					moduleSummary.put(module, 0);
+				}
+				
 				if (referenceSets.contains(refset)) {
-					report (SECONDARY_REPORT, c, refset, c.getModuleId(), refset.getModuleId());
+					report (TERTIARY_REPORT, c, refset, c.getModuleId(), refset.getModuleId());
 					refsetSummary.getAndIncrement(refset);
+					moduleSummary.getAndIncrement(module);
 					countIssue(c);
 				}
 			}
@@ -155,17 +166,23 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 		}
 		
 		//Output summary counts
+		for (Map.Entry<Concept, Long> entry : moduleSummary.asMap().entrySet()) {
+			Concept module = entry.getKey();
+			report(PRIMARY_REPORT, module, entry.getValue());
+		}
+		
+		//Output summary counts
 		for (Map.Entry<Concept, Long> entry : refsetSummary.asMap().entrySet()) {
 			Concept refset = entry.getKey();
-			report(PRIMARY_REPORT, refset, entry.getValue(), refset.getModuleId());
+			report(SECONDARY_REPORT, refset, entry.getValue(), refset.getModuleId());
 		}
 		
 		for (Concept emptyRefset : emptyReferenceSets) {
-			report(PRIMARY_REPORT, emptyRefset, " not populated in project: " + getProject().getKey(), emptyRefset.getModuleId());
+			report(SECONDARY_REPORT, emptyRefset, " not populated in project: " + getProject().getKey(), emptyRefset.getModuleId());
 		}
 		
 		for (Concept outOfScopeReferenceSet : outOfScopeReferenceSets) {
-			report(PRIMARY_REPORT, outOfScopeReferenceSet, " out of scope in project: " + getProject().getKey(), outOfScopeReferenceSet.getModuleId());
+			report(SECONDARY_REPORT, outOfScopeReferenceSet, " out of scope in project: " + getProject().getKey(), outOfScopeReferenceSet.getModuleId());
 		}
 	}
 	
@@ -180,7 +197,7 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 				String id = line.split(TAB)[0];
 				if (inactivatedIds.contains(id)) {
 					Concept concept = gl.getConcept(id);
-					report (SECONDARY_REPORT, concept, "High Volume Usage", concept.getModuleId(), "N/A");
+					report (TERTIARY_REPORT, concept, "High Volume Usage", concept.getModuleId(), "N/A");
 					refsetSummary.getAndIncrement(hvu);
 				}
 			}
