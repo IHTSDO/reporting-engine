@@ -10,6 +10,7 @@ import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.rest.client.ExpressiveErrorHandler;
 import org.ihtsdo.otf.rest.client.Status;
 import org.ihtsdo.otf.rest.client.authoringservices.RestyOverrideAccept;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Classification;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
@@ -585,9 +586,22 @@ public class TermServerClient {
 	}
 	
 	public Collection<RefsetMember> findRefsetMembers(String branchPath, Concept c, String refsetFilter) throws TermServerScriptException {
+		return findRefsetMembers(branchPath, Collections.singletonList(c), refsetFilter);
+	}
+	
+	public Collection<RefsetMember> findRefsetMembers(String branchPath, List<Concept> refCompIds, String refsetFilter) throws TermServerScriptException {
 		try {
 			String url = getRefsetMemberUrl(branchPath);
-			url += "?referencedComponentId=" + c.getId();
+			url += "?";
+			boolean isFirst = true;
+			for (Component c : refCompIds) {
+				if (!isFirst) {
+					url += "&";
+				} else {
+					isFirst = false;
+				}
+				url += "referencedComponentId=" + c.getId();
+			}
 			if (refsetFilter != null) {
 				url += "&referenceSet=" + refsetFilter;
 			}

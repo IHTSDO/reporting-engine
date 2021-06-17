@@ -16,6 +16,7 @@ import org.snomed.otf.scheduler.domain.JobParameter.Type;
 import org.springframework.util.StringUtils;
 
 import com.google.common.base.Charsets;
+import com.google.common.collect.Iterables;
 import com.google.common.io.Files;
 import com.google.common.util.concurrent.AtomicLongMap;
 
@@ -34,11 +35,12 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 	private String lastReleaseEffectiveTime = null;
 	private static String EXT_REF_ONLY = "Extension Refsets Only";
 	private boolean extensionRefsetOnly = false;
+	public static final int CLAUSE_LIMIT = 100;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
 		params.put(INCLUDE_LAST_RELEASE, "true");
-		params.put(EXT_REF_ONLY, "true");
+		params.put(EXT_REF_ONLY, "false");
 		TermServerReport.run(InactiveConceptInRefset.class, args, params);
 	}
 	
@@ -138,15 +140,14 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 		String viableRefsetECL = referenceSets.stream()
 				.map(r -> r.getId())
 				.collect(Collectors.joining(" OR "));
+		
 		int count = 0;
-		for (Concept c : inactivatedConcepts) {
-			if (++count % 100 == 0) {
-				debug ("Checked " + count + " inactive concepts");
-			}
-			Collection<RefsetMember> members = findRefsetMembers(c, viableRefsetECL);
+		for (List<Concept> inactiveConceptsSegment : Iterables.partition(inactivatedConcepts, CLAUSE_LIMIT)) {
+			Collection<RefsetMember> members = findRefsetMembers(inactiveConceptsSegment, viableRefsetECL);
 			for (RefsetMember m : members) {
 				Concept refset = gl.getConcept(m.getRefsetId());
 				Concept module = gl.getConcept(refset.getModuleId());
+				Concept c = gl.getConcept(m.getReferencedComponentId());
 				
 				//Ensure we initialise the module summary to capture 0 counts
 				if (!moduleSummary.containsKey(module)) {
@@ -163,6 +164,9 @@ public class InactiveConceptInRefset extends TermServerReport implements ReportC
 			try {
 				Thread.sleep(1 * 200);
 			} catch (Exception e) {}
+			
+			count += inactiveConceptsSegment.size();
+			debug ("Checked " + count + " inactive concepts");
 		}
 		
 		//Output summary counts
