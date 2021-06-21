@@ -672,6 +672,7 @@ public abstract class TermServerScript implements RF2Constants {
 						r.setSource(gl.getConcept(c.getConceptId()));
 						r.setTarget(gl.getConcept(r.getTarget().getConceptId()));
 						c.addRelationship(r);
+						r.setReleased(axiom.getReleased());
 					}
 				}
 			}
@@ -976,10 +977,17 @@ public abstract class TermServerScript implements RF2Constants {
 	}
 	
 	public Collection<Concept> findConceptsSafely(String ecl) {
+		return findConceptsSafely(ecl, null);
+	}
+		
+	
+	public Collection<Concept> findConceptsSafely(String ecl, String info) {
 		try {
 			return findConcepts(project.getBranchPath(), ecl, true, true);
 		} catch (Exception e) {
-			error("Exception while recovering " + ecl + " skipping.", e);
+			error("Exception while recovering " + ecl + 
+			info == null ? "" : " in " + info +
+			". Skipping.", e);
 		}
 		return new HashSet<>();
 	}
