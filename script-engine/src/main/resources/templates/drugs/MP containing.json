@@ -1,6 +1,7 @@
 {
-  "name": "MPF-only",
-  "documentation": "https://confluence.ihtsdotools.org/display/SCTEMPLATES/MPF-only+-+Ready+for+implementation",
+  "name": "MP-containing",
+  "documentation": "",
   "version": 1,
-  "logicalTemplate": "763158003 |Medicinal product (product)| :  [[~1..1]] 411116001 |Has manufactured dose form (attribute)| = [[ +id( < 736542009 |Pharmaceutical dose form (dose form)|) @form]], [[~1..1]] 766952006 |Count of base of active ingredient (attribute)| = [[ +id( < 260299005 |Number (qualifier value)|) @baseCount]], [[~0..1]] 766954007 |Count of base and modification pair (attribute)| = [[ +id( < 260299005 |Number (qualifier value)|) @baseModCount]], [[~0..1]] 766953001 |Count of active ingredient (attribute)| = [[ +id ( < 260299005 |Number (qualifier value)|) @ingredCount]],  [[~0..*]] 766939001 |Plays role (attribute)| = [[ +id( < 766940004 |Role (role)|) @playsRole]], [[~1..*]] { 127489000 |Has active ingredient (attribute)| = [[ +id( < 105590001 |Substance (substance)|) @ingredient]] } "
+  "domain": "<< 763158003 |Medicinal product (product)| : [0..0] 1142139005 |Count of base of active ingredient (attribute)| = *, [0..0] 411116001 |Has manufactured dose form (attribute)| = *, [0..0] 1142137007 |Has concentration strength denominator value (attribute)| = *, [0..0] 1142136003 |Has presentation strength denominator value (attribute)| = * ",
+  "logicalTemplate": "763158003 |Medicinal product (product)| :  [[~0..*]] 766939001 |Plays role (attribute)| = [[ +id( < 766940004 |Role (role)|) @playsRole]], [[~1..*]] { 127489000 |Has active ingredient (attribute)| = [[ +id( < 105590001 |Substance (substance)|) @ingredient]] } "
 }

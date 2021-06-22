@@ -154,15 +154,6 @@ public abstract class AllKnownTemplates extends TermServerReport {
 		templateNames = new String[] {	"templates/neoplasm/Carcinoma in Situ.json" };
 		populateTemplates(subsetECL, templateNames);
 		
-		subsetECL = "<< 763158003 |Medicinal product (product)|"; //RP-135
-		templateNames = new String[] {	"templates/drugs/MP only.json",
-										"templates/drugs/MP containing.json",
-										"templates/drugs/MPF containing.json",
-										"templates/drugs/MPF only.json",
-										"templates/drugs/CD precise discrete.json",
-										"templates/drugs/CD precise continuous.json"};
-		populateTemplates(subsetECL, templateNames);
-		
 		subsetECL = "<< 247441003 |Erythema|"; //QI-240
 		templateNames = new String[] {	"templates/Erythema of body structure.json" };
 		populateTemplates(subsetECL, templateNames);
@@ -403,6 +394,7 @@ public abstract class AllKnownTemplates extends TermServerReport {
 		templateNames = new String[] { "templates/morphologies/Anterior displacement.json" };
 		populateTemplates(subsetECL, templateNames);
 		
+		subsetECL = null;
 		templateNames = new String[] { "templates/Traumatic injury.json" };
 		populateTemplates(null, templateNames);
 		
@@ -415,7 +407,7 @@ public abstract class AllKnownTemplates extends TermServerReport {
 		templateNames = new String[] { "templates/morphologies/Retention.json" };
 		populateTemplates(null, templateNames);
 		
-		templateNames = new String[] { "templates/anatomy/Anatomical Parts.json" };
+		/*templateNames = new String[] { "templates/anatomy/Anatomical Parts.json" };
 		populateTemplates(null, templateNames);
 		
 		templateNames = new String[] { "templates/anatomy/Entity in region.json" };
@@ -431,6 +423,35 @@ public abstract class AllKnownTemplates extends TermServerReport {
 		populateTemplates(null, templateNames);
 		
 		templateNames = new String[] { "templates/anatomy/Skin of part of body.json" };
+		populateTemplates(null, templateNames);*/
+		
+		templateNames = new String[] { "templates/procedures/MRI.json" };
+		populateTemplates(null, templateNames);
+		
+		templateNames = new String[] { "templates/morphologies/Calculus.json" };
+		populateTemplates(null, templateNames);
+		
+		templateNames = new String[] { "templates/morphologies/Lateral displacement.json" };
+		populateTemplates(null, templateNames);
+		
+		templateNames = new String[] { "templates/morphologies/Medial displacement.json" };
+		populateTemplates(null, templateNames);
+		
+		templateNames = new String[] { "templates/poisoning caused by substance or product.json" };
+		populateTemplates(null, templateNames);
+		
+		templateNames = new String[] { "templates/morphologies/Compression.json" };
+		populateTemplates(null, templateNames);
+		
+		templateNames = new String[] { "templates/morphologies/Enlargement.json" };	
+		populateTemplates(null, templateNames);
+		
+		templateNames = new String[] {	"templates/drugs/MP only.json",
+										"templates/drugs/MP containing.json",
+										"templates/drugs/MPF containing.json",
+										"templates/drugs/MPF only.json",
+										"templates/drugs/CD precise discrete.json",
+										"templates/drugs/CD precise continuous.json"};
 		populateTemplates(null, templateNames);
 		
 		populateTemplatesFromTS();
@@ -471,7 +492,6 @@ public abstract class AllKnownTemplates extends TermServerReport {
 
 	private void populateTemplates(String ecl, String[] templateNames) throws TermServerScriptException {
 		
-			List<Template> templates = new ArrayList<>();
 			char id = 'A';
 			for (int x = 0; x < templateNames.length; x++, id++) {
 				info ("Loading template: " + templateNames[x]);
@@ -482,17 +502,21 @@ public abstract class AllKnownTemplates extends TermServerReport {
 					template.setSource(QI);
 					template.setDocumentation(ct.getDocumentation());
 					template.setDomain(ct.getDomain());
-					templates.add(template);
+					
 					//Is the ECL part of the template?
-					if (ecl == null) {
-						ecl = template.getDomain();
-					} else if (StringUtils.isEmpty(template.getDomain())) {
+					if (StringUtils.isEmpty(template.getDomain())) {
 						template.setDomain(ecl);
 					}
+					
+					List<Template> templates = domainTemplates.get(template.getDomain());
+					if (templates == null) {
+						templates = new ArrayList<>();
+						domainTemplates.put(template.getDomain(), templates);
+					}
+					templates.add(template);
 				} catch (Exception e) {
 					throw new TermServerScriptException("Unable to load " + ecl + " template " + templateNames[x] + " from local resources", e);
 				}
 			}
-			domainTemplates.put(ecl, templates);
 	}
 }

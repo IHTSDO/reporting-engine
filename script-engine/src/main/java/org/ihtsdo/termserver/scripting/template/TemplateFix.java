@@ -101,6 +101,11 @@ abstract public class TemplateFix extends BatchFix {
 				validateTemplate(t);
 				templates.add(t);
 				info ("Loaded template: " + t);
+				
+				if (StringUtils.isEmpty(subsetECL)) {
+					subsetECL = t.getDomain();
+					info("Subset ECL set to " + subsetECL);
+				}
 			}
 			info(templates.size() + " Templates loaded successfully");
 		}

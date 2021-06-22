@@ -6,6 +6,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.snomed.authoringtemplate.domain.logical.*;
+import org.apache.commons.lang.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
@@ -234,7 +235,11 @@ public class TemplateUtils implements RF2Constants {
 		if (matchesAttributeType(r.getType(), a, ts)) {
 			//Is the value within the allowable ECL, or do we have a fixed value?
 			if (a.getValueAllowableRangeECL() != null) {
-				matchesAttributeValue = matchesAttributeValue(r.getTarget(), a.getValueAllowableRangeECL().trim(), ts);
+				if (r.isConcrete()) {
+					matchesAttributeValue = matchesAttributeConcreteValue(r.getValue(), a.getValueAllowableRangeECL().trim(), ts);
+				} else {
+					matchesAttributeValue = matchesAttributeValue(r.getTarget(), a.getValueAllowableRangeECL().trim(), ts);
+				}
 			} else if (a.getValue() != null) {
 				matchesAttributeValue = r.getTarget().getConceptId().equals(a.getValue());
 			} else if (a.getValueSlotReference() != null) {
@@ -271,10 +276,19 @@ public class TemplateUtils implements RF2Constants {
 	}
 
 	private static boolean matchesAttributeValue(Concept target, String ecl, TermServerScript ts) throws TermServerScriptException {
+		if (ecl.equals("*")) {
+			return true;
+		}
 		Collection<Concept> permittedConcepts = ts.findConcepts(ecl, true, true);
 		return permittedConcepts.contains(target);
 	}
-
+	
+	private static boolean matchesAttributeConcreteValue(Object value, String ecl, TermServerScript ts) throws TermServerScriptException {
+		if (ecl.equals("*")) {
+			return true;
+		}
+		throw new NotImplementedException("Not yet able to check specific concrete values in templates");
+	}
 	private static boolean matchesAttributeType(Concept c1, Attribute a, TermServerScript ts) throws TermServerScriptException {
 		//Are we matching a simple type, or a range?
 		if (a.getType() != null) {

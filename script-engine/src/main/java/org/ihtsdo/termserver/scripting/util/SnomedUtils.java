@@ -1499,7 +1499,7 @@ public class SnomedUtils implements RF2Constants {
 	public static String makeMachineReadable (String exp) {
 		StringBuffer hrExp = new StringBuffer(exp);
 		makeMachineReadable(hrExp);
-		exp = hrExp.toString();
+		exp = hrExp.toString().toUpperCase();
 		exp = exp.replaceAll("OR", " OR ").replaceAll("AND", " AND ").replaceAll("MINUS", " MINUS ");
 		return exp;
 	}

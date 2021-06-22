@@ -2,5 +2,6 @@
   "name": "MPF-containing",
   "documentation": "https://confluence.ihtsdotools.org/display/SCTEMPLATES/MPF-containing+ingredient+-+Ready+for+implementation",
   "version": 1,
+  "domain": "<< 763158003 |Medicinal product (product)| : 411116001 |Has manufactured dose form (attribute)| = *, [0..0] 1142137007 |Has concentration strength denominator value (attribute)| = *, [0..0] 1142136003 |Has presentation strength denominator value (attribute)| = * ",
   "logicalTemplate": "763158003 |Medicinal product (product)| : [[~1..1]] 411116001 |Has manufactured dose form (attribute)| = [[ +id( < 736542009 |Pharmaceutical dose form (dose form)|) @form]],  [[~0..*]] 766939001 |Plays role (attribute)| = [[ +id( < 766940004 |Role (role)|) @playsRole ]] , [[~1..*]] { [[~1..1]] 127489000 |Has active ingredient (attribute)| = [[ +id( < 105590001 |Substance (substance)|) @ingredient ]] }"
 }

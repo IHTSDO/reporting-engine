@@ -76,7 +76,7 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 		
 		//Check all of our domain points are still active concepts, or we'll have trouble with them!
 		Set<String> invalidTemplateDomains = domainTemplates.keySet().stream()
-			.filter(ecl -> findConceptsSafely(ecl).size() == 0)
+			.filter(ecl -> findConceptsSafely(ecl, toString(domainTemplates.get(ecl))).size() == 0)
 			.collect(Collectors.toSet());
 		
 		for (String invalidTemplateDomain : invalidTemplateDomains) {
@@ -109,6 +109,12 @@ public class AllTemplateCompliance extends AllKnownTemplates implements ReportCl
 		reportKPIs();
 	}
 	
+	private String toString(List<Template> templates) {
+		return templates.stream()
+				.map(t -> t.getName())
+				.collect(Collectors.joining(", "));
+	}
+
 	private void reportKPIs() throws TermServerScriptException {
 		//Total number of active concepts
 		long activeConcepts = gl.getAllConcepts().stream()
