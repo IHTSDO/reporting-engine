@@ -566,6 +566,9 @@ public class GraphLoader implements RF2Constants {
 				}
 				
 				Concept.fillFromRf2(c, lineItems);
+				//Now we might have changed the moduleId if the delta is in another module, but this 
+				//doesn't make the RF2 "dirty" because that change hasn't been made by THIS process
+				c.setClean();
 				
 				if (revertEffectiveTime != null) {
 					c.setEffectiveTime(revertEffectiveTime);
@@ -626,6 +629,9 @@ public class GraphLoader implements RF2Constants {
 						revertEffectiveTime = detectNoChangeDelta(c, d, lineItems);
 					}
 					Description.fillFromRf2(d,lineItems);
+					//Now we might have changed the moduleId if the delta is in another module, but this 
+					//doesn't make the RF2 "dirty" because that change hasn't been made by THIS process
+					d.setClean();
 					
 					if (revertEffectiveTime != null) {
 						d.setEffectiveTime(revertEffectiveTime);
@@ -670,10 +676,9 @@ public class GraphLoader implements RF2Constants {
 				/*if (langRefsetEntry.getId().equals("1ee09ebd-f9cc-57f6-9850-ceea87310e68")) {
 					TermServerScript.debug("here");
 				}*/
-				/*if (langRefsetEntry.getReferencedComponentId().equals("3770564011")) {
+				/*if (langRefsetEntry.getReferencedComponentId().equals("2643877015") || langRefsetEntry.getReferencedComponentId().equals("2643878013")) {
 					TermServerScript.debug("here");
 				}*/
-				
 				//Are we adding or replacing this entry?
 				if (d.getLangRefsetEntries().contains(langRefsetEntry)) {
 					LangRefsetEntry original = d.getLangRefsetEntry(langRefsetEntry.getId());

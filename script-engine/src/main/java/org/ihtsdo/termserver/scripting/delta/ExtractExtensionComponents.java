@@ -10,10 +10,12 @@ import org.ihtsdo.termserver.scripting.AxiomUtils;
 import org.ihtsdo.termserver.scripting.client.TermServerClient;
 
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.snapshot.SnapshotGenerator;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.owltoolkit.conversion.AxiomRelationshipConversionService;
 import org.snomed.otf.owltoolkit.conversion.ConversionException;
 import org.snomed.otf.owltoolkit.domain.AxiomRepresentation;
+import org.springframework.util.StringUtils;
 
 /**
  * Class form a delta of specified concepts from some edition and 
@@ -37,10 +39,12 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		ExtractExtensionComponents delta = new ExtractExtensionComponents();
 		try {
 			delta.runStandAlone = true;
-			delta.moduleId = "911754081000004104"; //Nebraska Lexicon Pathology Synoptic module
+			delta.moduleId = "1145237009"; //NEBCSR
+			//delta.moduleId = "911754081000004104"; //Nebraska Lexicon Pathology Synoptic module
 			//delta.moduleId = "731000124108";  //US Module
 			//delta.moduleId = "32506021000036107"; //AU Module
 			delta.init(args);
+			SnapshotGenerator.setSkipSave(true);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			delta.loadProjectSnapshot(false);  //Not just FSN, load all terms with lang refset also
 			//We won't incude the project export in our timings
@@ -78,17 +82,17 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	}
 
 	protected List<Component> processFile() throws TermServerScriptException {
-		allIdentifiedConcepts = super.processFile();
+		if (StringUtils.isEmpty(eclSubset)) {
+			allIdentifiedConcepts = super.processFile();
+		} else {
+			allIdentifiedConcepts = new ArrayList<>(findConcepts(eclSubset));
+		}
 		addSummaryInformation("Concepts specified", allIdentifiedConcepts.size());
 		initialiseSummaryInformation("Unexpected dependencies included");
 		info ("Extracting specified concepts");
 		for (Component thisComponent : allIdentifiedConcepts) {
 			Concept thisConcept = (Concept)thisComponent;
-			
-			if (thisConcept.getConceptId().equals("396464009")) {
-				debug("Here");
-			}
-			
+
 			//If we don't have a module id for this identified concept, then it doesn't properly exist in this release
 			if (thisConcept.getModuleId() == null) {
 				report (thisConcept, Severity.CRITICAL, ReportActionType.VALIDATION_ERROR, "Concept specified for extract not found in input Snapshot");
@@ -123,6 +127,10 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	
 	private boolean switchModule(Concept c) throws TermServerScriptException {
 		boolean conceptAlreadyTransferred = false;
+		
+		/*if (c.getConceptId().equals("399496002")) {
+			debug("Here");
+		}*/
 		
 		//Have we already attempted to move this concept?  Don't try again
 		if (noMoveRequired.contains(c)) {
@@ -170,6 +178,8 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			}
 		} else {
 			conceptAlreadyTransferred = true;
+			//Changing the moduleId won't mark concept dirty unless it really does change
+			c.setModuleId(targetModuleId);
 			if (allIdentifiedConcepts.contains(c)) {
 				if (c.getModuleId().equals(targetModuleId)) {
 					report (c, Severity.HIGH, ReportActionType.NO_CHANGE, "Specified concept already in target module: " + c.getModuleId() + " checking for additional modeling in source module.");
@@ -182,9 +192,16 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		}
 		
 		boolean subComponentsMoved = false;
-		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
+		for (Description d : c.getDescriptions(ActiveState.BOTH)) {
 			boolean thisDescMoved = false;
-			if (conceptOnTS.equals(NULL_CONCEPT) || (!d.getModuleId().equals(targetModuleId) && !d.getModuleId().equals(SCTID_MODEL_MODULE))) {
+			//Move descriptions if concept doesn't exist in target location, or module id is not target
+			//OR if the concept in the target location doesn't know about this description id.
+			//OR if the description has been inactivated in the new location
+			if (conceptOnTS.equals(NULL_CONCEPT) 
+					|| (!d.getModuleId().equals(targetModuleId) && !d.getModuleId().equals(SCTID_MODEL_MODULE))
+					|| conceptOnTS.getDescription(d.getId()) == null
+					|| SnomedUtils.hasLangRefsetDifference(d.getId(), c, conceptOnTS)
+					|| SnomedUtils.hasDescActiveStateDifference(d.getId(), c, conceptOnTS)) {
 				if (moveDescriptionToTargetModule(d, conceptOnTS)) {
 					subComponentsMoved = true;
 					thisDescMoved = true;
@@ -217,8 +234,15 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 						report (c, Severity.MEDIUM, ReportActionType.DESCRIPTION_INACTIVATED, "Existing PT on TS demoted to make way for imported content.", loadedPT);
 						setDescriptionAndLangRefModule(loadedPT);
 						loadedPT.setActive(true); //Will only mark dirty if not already active
-						loadedPT.setAcceptablity(US_ENG_LANG_REFSET, Acceptability.ACCEPTABLE);
-						loadedPT.setAcceptablity(GB_ENG_LANG_REFSET, Acceptability.ACCEPTABLE);
+						//Only demote to US acceptable if currently preferred in US
+						if (loadedPT.isPreferred(US_ENG_LANG_REFSET)) {
+							loadedPT.setAcceptablity(US_ENG_LANG_REFSET, Acceptability.ACCEPTABLE);
+						}
+						
+						//Only demote to GB acceptable if currently preferred in GB
+						if (loadedPT.isPreferred(GB_ENG_LANG_REFSET)) {
+							loadedPT.setAcceptablity(GB_ENG_LANG_REFSET, Acceptability.ACCEPTABLE);
+						}
 						//The local copy may already be acceptable, so mark as dirty to force this state to TS
 						loadedPT.setDirty(ENGLISH_DIALECTS);
 						subComponentsMoved = true;
@@ -356,6 +380,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			AxiomRepresentation axiomRepresentation = axiomService.convertAxiomToRelationships(a.getOwlExpression());
 			if (axiomRepresentation != null) {
 				for (Relationship r : AxiomUtils.getRHSRelationships(c, axiomRepresentation)) {
+					r.setAxiomEntry(a);
 					//This is only needed to include dependencies. 
 					//The relationship itself is not attached to the concept
 					if (moveRelationshipToTargetModule(r, conceptOnTS)) {
@@ -437,10 +462,15 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 						report (r.getSource(), Severity.CRITICAL, ReportActionType.VALIDATION_CHECK, msg);
 						target = replacement;
 						Relationship newRel = new Relationship(r.getSource(),r.getType(), replacement, r.getGroupId());
+						//Ensure it gets allocated to the same Axiom
+						newRel.setAxiomEntry(r.getAxiomEntry());
 						newRel.setModuleId(targetModuleId);
 						newRel.setDirty();
-						newRel.setRelationshipId(relIdGenerator.getSCTID());
-						r.getSource().removeRelationship(r);
+						//Don't need IDs for axiom based relationships
+						if (!r.fromAxiom()) {
+							newRel.setRelationshipId(relIdGenerator.getSCTID());
+						}
+						r.getSource().removeRelationship(r, r.fromAxiom());
 						r.getSource().addRelationship(newRel);
 					}
 				}
@@ -502,24 +532,39 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	}
 
 	private boolean moveDescriptionToTargetModule(Description d, Concept conceptOnTS) throws TermServerScriptException {
+		Description descriptionOnTS = null;
+		Concept c = gl.getConcept(d.getConceptId());
 		
 		//If we already have the concept on the Terminology Server, perhaps we already have the description too,
 		//Despite what the local file claims
+		boolean doShiftDescription = true;
 		if (!conceptOnTS.equals(NULL_CONCEPT)) {
-			Description descriptionOnTS = findMatchingDescription(d, conceptOnTS);
-			if (descriptionOnTS != null) {
-				report (conceptOnTS, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Description already on server", d);
-				return false;
+			descriptionOnTS = findMatchingDescription(d, conceptOnTS);
+			if (descriptionOnTS != null 
+					&& d.isActive() == descriptionOnTS.isActive()
+					&& d.getTerm().equals(descriptionOnTS.getTerm())) {
+				//Is it just down to a difference in langrefset entries?
+				if (SnomedUtils.hasLangRefsetDifference(d.getId(), c, conceptOnTS)) {
+					doShiftDescription = false;
+				} else {
+					report (conceptOnTS, Severity.MEDIUM, ReportActionType.NO_CHANGE, "Description already on server, identical even down to LangRefset", d);
+					return false;
+				}
 			}
 		}
 		
-		//First swap the module id, then add in the GB refset 
-		d.setModuleId(targetModuleId);
-		//Set dirty explicitly in case the source content is already in the expected module
-		d.setDirty();
+		//If the data we have loaded shows US/GB variance then we don't want to clone&modify the US acceptability
+		boolean usGbVariance = SnomedUtils.hasUsGbVariance(gl.getConcept(d.getConceptId()));
+		
+		if (doShiftDescription) {
+			//First swap the module id, then add in the GB refset 
+			d.setModuleId(targetModuleId);
+			//Set dirty explicitly in case the source content is already in the expected module
+			d.setDirty();
+		}
 		
 		//AU for example doesn't give language refset entries for FSNs
-		if (d.getLangRefsetEntries(ActiveState.ACTIVE, targetLangRefsetIds).size() == 0) {
+		if (d.isActive() && d.getLangRefsetEntries(ActiveState.ACTIVE, targetLangRefsetIds).size() == 0) {
 			//The international edition however, does PREF for FSNs
 			String acceptability = SCTID_PREFERRED_TERM;
 			if (d.getType().equals(DescriptionType.SYNONYM) && !d.isPreferred()) {
@@ -533,26 +578,49 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 				d.addAcceptability(entry);
 			}
 		} else {
-			for (LangRefsetEntry usEntry : d.getLangRefsetEntries(ActiveState.ACTIVE, US_ENG_LANG_REFSET)) {
-				usEntry.setModuleId(targetModuleId);
-				usEntry.setDirty();
-				if (d.getLangRefsetEntries(ActiveState.ACTIVE, GB_ENG_LANG_REFSET).size() ==0) {
-					LangRefsetEntry gbEntry = usEntry.clone(d.getDescriptionId(), false);
-					gbEntry.setRefsetId(GB_ENG_LANG_REFSET);
-					d.addAcceptability(gbEntry);
+			for (LangRefsetEntry usEntry : d.getLangRefsetEntries(ActiveState.BOTH, US_ENG_LANG_REFSET)) {
+				//Only move if there's a difference
+				//Note we cannot get LangRefsetEntries from TS because browser format only uses AcceptabilityMap
+				if (StringUtils.isEmpty(usEntry.getEffectiveTime())) {
+					usEntry.setModuleId(targetModuleId);
+					usEntry.setDirty();
+					if (!usGbVariance && d.getLangRefsetEntries(ActiveState.BOTH, GB_ENG_LANG_REFSET).size() ==0) {
+						LangRefsetEntry gbEntry = usEntry.clone(d.getDescriptionId(), false);
+						gbEntry.setRefsetId(GB_ENG_LANG_REFSET);
+						d.addAcceptability(gbEntry);
+					}
 				}
 			}
 			
-			for (LangRefsetEntry gbEntry : d.getLangRefsetEntries(ActiveState.ACTIVE, GB_ENG_LANG_REFSET)) {
-				gbEntry.setModuleId(targetModuleId);
-				gbEntry.setDirty(); //Just in case we're missing this component rather than shifting module
+			for (LangRefsetEntry gbEntry : d.getLangRefsetEntries(ActiveState.BOTH, GB_ENG_LANG_REFSET)) {
+				if (StringUtils.isEmpty(gbEntry.getEffectiveTime())) {
+					gbEntry.setModuleId(targetModuleId);
+					gbEntry.setDirty(); //Just in case we're missing this component rather than shifting module
+				}
+			}
+		}
+		
+		//If Desc has been made inactive, take over the inactivation indicators
+		if(!d.isActive()) {
+			for (InactivationIndicatorEntry i : d.getInactivationIndicatorEntries()) {
+				if (StringUtils.isEmpty(i.getEffectiveTime())) {
+					i.setModuleId(targetModuleId);
+					i.setDirty(); //Just in case we're missing this component rather than shifting module
+				}
 			}
 		}
 		
 		//If we didn't need to transfer the concept, then do report the movement of it's sub components.
 		if (!conceptOnTS.equals(NULL_CONCEPT)) {
-			Concept c = gl.getConcept(d.getConceptId());
-			report (c, Severity.MEDIUM, ReportActionType.MODULE_CHANGE_MADE, d, d.getId());
+			if (doShiftDescription) {
+				report (c, Severity.MEDIUM, ReportActionType.MODULE_CHANGE_MADE, d, d.getId());
+			} else {
+				for (LangRefsetEntry l : d.getLangRefsetEntries()) {
+					if (l.isDirty()) {
+						report (c, Severity.MEDIUM, ReportActionType.MODULE_CHANGE_MADE, l, d);
+					}
+				}
+			}
 		}
 		
 		return true;

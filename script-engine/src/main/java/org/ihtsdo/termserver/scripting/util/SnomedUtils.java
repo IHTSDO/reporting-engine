@@ -1675,4 +1675,72 @@ public class SnomedUtils implements RF2Constants {
 		}
 		return effectiveTime.substring(0,4) + "-" + effectiveTime.substring(4,6) + "-" + effectiveTime.substring(6,8);
 	}
+
+	public static boolean hasUsGbPtVariance(Concept c) throws TermServerScriptException {
+		Description usPT = c.getPreferredSynonym(US_ENG_LANG_REFSET);
+		Description gbPT = c.getPreferredSynonym(GB_ENG_LANG_REFSET);
+		if (usPT == null || gbPT == null || usPT.equals(gbPT)) {
+			return false;
+		}
+		return true;
+	}
+
+	//Do we in fact have ANY descriptions which are acceptable in US but not in GB AND visa versa
+	public static boolean hasUsGbVariance(Concept c) throws TermServerScriptException {
+		boolean hasUsSpecific = false;
+		for (Description d : c.getDescriptions(US_ENG_LANG_REFSET, Acceptability.BOTH, DescriptionType.SYNONYM, ActiveState.ACTIVE)) {
+			if (!d.isAcceptable(GB_ENG_LANG_REFSET) && !d.isPreferred(GB_ENG_LANG_REFSET)) {
+				hasUsSpecific = true;
+				break;
+			}
+		}
+		
+		boolean hasGbSpecific = false;
+		for (Description d : c.getDescriptions(GB_ENG_LANG_REFSET, Acceptability.BOTH, DescriptionType.SYNONYM, ActiveState.ACTIVE)) {
+			if (!d.isAcceptable(US_ENG_LANG_REFSET) && !d.isPreferred(US_ENG_LANG_REFSET)) {
+				hasGbSpecific = true;
+				break;
+			}
+		}
+		
+		return hasUsSpecific && hasGbSpecific;
+	}
+
+	public static boolean hasLangRefsetDifference(String descId, Concept a, Concept b) {
+		//Check that we have this description in both concepts (eg local and extension branch)
+		Description descA = a.getDescription(descId);
+		Description descB = b.getDescription(descId);
+		if (descA == null || descB == null) {
+			return true;
+		}
+		
+		Map<String, Acceptability> mapAcceptA = descA.getAcceptabilityMap();
+		Map<String, Acceptability> mapAcceptB = descB.getAcceptabilityMap();
+		
+		if ((mapAcceptA == null && mapAcceptB != null) ||
+			(mapAcceptA != null && mapAcceptB == null) ||
+			(mapAcceptA.size() != mapAcceptB.size())) {
+			return true;
+		}
+		
+		for (String refsetId : mapAcceptA.keySet()) {
+			Acceptability acceptA = mapAcceptA.get(refsetId);
+			Acceptability acceptB = mapAcceptB.get(refsetId);
+			if (acceptB == null || !acceptA.equals(acceptB)) {
+				return true;
+			}
+		}
+		
+		return false;
+	}
+
+	public static boolean hasDescActiveStateDifference(String descId, Concept a, Concept b) {
+		//Check that we have this description in both concepts (eg local and extension branch)
+		Description descA = a.getDescription(descId);
+		Description descB = b.getDescription(descId);
+		if (descA == null || descB == null) {
+			return true;
+		}
+		return descA.isActive() != descB.isActive();
+	}
 }

@@ -173,6 +173,9 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	}
 
 	public void setModuleId(String moduleId) {
+		if (this.moduleId != null && !moduleId.equals("900000000000207008")) {
+			TermServerScript.debug("here");
+		}
 		if (this.moduleId != null && !this.moduleId.equals(moduleId)) {
 			setDirty();
 			this.effectiveTime = null;
@@ -186,7 +189,6 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 
 	public void setActive(boolean newActiveState) {
 		this.active = newActiveState;
-		
 		if (newActiveState == false) {
 			//If the concept has been made active, then set DefnStatus
 			setDefinitionStatus(DefinitionStatus.PRIMITIVE);

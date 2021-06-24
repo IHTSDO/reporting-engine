@@ -28,6 +28,9 @@ public class SnapshotGenerator extends TermServerScript {
 	protected String edition = "INT";
 	protected boolean leaveArchiveUncompressed = false;
 	
+	protected static boolean runAsynchronously = true;
+	protected static boolean skipSave = false;
+	
 	protected String languageCode = "en";
 	protected boolean isExtension = false;
 	protected boolean newIdsRequired = true;
@@ -75,7 +78,16 @@ public class SnapshotGenerator extends TermServerScript {
 		loadArchive(delta, false, "Delta", false);
 		//Writing to disk can be done asynchronously and complete at any time.  We have the in-memory copy to work with.
 		//The disk copy will save time when we run again for the same project
-		new Thread(new ArchiveWriter()).start();
+		
+		//Ah, well that's not completely true because sometimes we want to be really careful we've not modified the data
+		//in some process. 
+		if (!skipSave) {
+			if (runAsynchronously) {
+				new Thread(new ArchiveWriter()).start();
+			} else {
+				new ArchiveWriter().run();
+			}
+		}
 		setQuiet(false);
 	}
 	
@@ -86,26 +98,28 @@ public class SnapshotGenerator extends TermServerScript {
 	}
 	
 	protected void init (File newLocation, boolean addTodaysDate) throws TermServerScriptException {
-		File outputDir = new File (outputDirName);
-		int increment = 0;
-		while (outputDir.exists()) {
-			String proposedOutputDirName = outputDirName + "_" + (++increment) ;
-			outputDir = new File(proposedOutputDirName);
-		}
-		
 		//Make sure the Graph Loader is clean
 		gl.reset();
 		System.gc();
 		
-		if (leaveArchiveUncompressed) {
-			packageDir = outputDir.getPath() + File.separator;
-		} else {
-			outputDirName = outputDir.getName();
-			packageRoot = outputDirName + File.separator + newLocation;
-			packageDir = packageRoot + (addTodaysDate?today:"") + File.separator;
+		if (!skipSave) {
+			File outputDir = new File (outputDirName);
+			int increment = 0;
+			while (outputDir.exists()) {
+				String proposedOutputDirName = outputDirName + "_" + (++increment) ;
+				outputDir = new File(proposedOutputDirName);
+			}
+			
+			if (leaveArchiveUncompressed) {
+				packageDir = outputDir.getPath() + File.separator;
+			} else {
+				outputDirName = outputDir.getName();
+				packageRoot = outputDirName + File.separator + newLocation;
+				packageDir = packageRoot + (addTodaysDate?today:"") + File.separator;
+			}
+			info ("Outputting data to " + packageDir);
+			initialiseFileHeaders();
 		}
-		info ("Outputting data to " + packageDir);
-		initialiseFileHeaders();
 	}
 	
 	protected void initialiseFileHeaders() throws TermServerScriptException {
@@ -241,6 +255,14 @@ public class SnapshotGenerator extends TermServerScript {
 				error ("Failed to write archive to disk",e);
 			}
 		}
+	}
+
+	public static void setRunAsynchronously(boolean runAsynchronously) {
+		SnapshotGenerator.runAsynchronously = runAsynchronously;
+	}
+	
+	public static void setSkipSave(boolean skipSave) {
+		SnapshotGenerator.skipSave = skipSave;
 	}
 
 }

@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.util.StringUtils;
 
 //id	effectiveTime	active	moduleId	refsetId	referencedComponentId	owlExpression
@@ -83,6 +84,9 @@ public class AxiomEntry extends Component implements RF2Constants {
 		return moduleId;
 	}
 	public void setModuleId(String moduleId) {
+		if (this.moduleId != null && !moduleId.equals("900000000000207008")) {
+			TermServerScript.debug("here");
+		}
 		if (this.moduleId != null && !this.moduleId.equals(moduleId)) {
 			setDirty();
 			this.effectiveTime = null;

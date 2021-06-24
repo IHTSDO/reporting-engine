@@ -5,7 +5,6 @@ import java.io.FileNotFoundException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component.ComponentType;
@@ -34,13 +33,15 @@ public abstract class DeltaGenerator extends TermServerScript {
 	protected String langDeltaFilename;
 	protected String edition = "INT";
 	
+	protected String eclSubset = null;
+	
 	protected String languageCode = "en";
 	protected boolean isExtension = false;
 	protected boolean newIdsRequired = true;
 	protected String moduleId="900000000000207008";
 	protected String nameSpace="0";
-	protected String[] targetLangRefsetIds = new String[] { "900000000000508004",  //GB
-														"900000000000509007" }; //US
+	protected String[] targetLangRefsetIds = new String[] { "900000000000508004",   //GB
+															"900000000000509007" }; //US
 
 	protected String[] conHeader = new String[] {"id","effectiveTime","active","moduleId","definitionStatusId"};
 	protected String[] descHeader = new String[] {"id","effectiveTime","active","moduleId","conceptId","languageCode","typeId","term","caseSignificanceId"};
@@ -76,6 +77,9 @@ public abstract class DeltaGenerator extends TermServerScript {
 				relIdGenerator = IdGenerator.initiateIdGenerator(args[++x], PartitionIdentifier.RELATIONSHIP);
 				relIdGenerator.setNamespace(nameSpace);
 				relIdGenerator.isExtension(isExtension);
+			}
+			if (args[x].equals("-e")) {
+				eclSubset = args[++x];
 			}
 		}
 		
@@ -224,7 +228,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 		info ("Outputting to RF2...");
 		for (Concept thisConcept : gl.getAllConcepts()) {
 			try {
-				outputRF2((Concept)thisConcept, alwaysCheckSubComponents);  //Don't check desc/rels if concept not modified.
+				outputRF2((Concept)thisConcept, alwaysCheckSubComponents);
 			} catch (TermServerScriptException e) {
 				report ((Concept)thisConcept, null, Severity.CRITICAL, ReportActionType.API_ERROR, "Exception while processing: " + e.getMessage() + " : " + SnomedUtils.getStackTrace(e));
 			}
@@ -289,7 +293,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 		}
 		
 		for (Description d : c.getDescriptions(ActiveState.BOTH)) {
-			outputRF2(d);  //Will output langrefset in turn
+			outputRF2(d);  //Will output langrefset and inactivation indicator in turn
 		}
 		
 		//Do we have Stated Relationships that need to be converted to axioms?
@@ -297,7 +301,7 @@ public abstract class DeltaGenerator extends TermServerScript {
 		if (hasDirtyNotFromAxiomRelationships(c)) {
 			convertStatedRelationshipsToAxioms(c, true);
 			for (AxiomEntry a : AxiomUtils.convertClassAxiomsToAxiomEntries(c)) {
-				//If we're moving relationships into a new mudule but not the concept, we 
+				//If we're moving relationships into a new module but not the concept, we 
 				//might have a wrong module id here
 				a.setModuleId(moduleId);
 				a.setDirty();
