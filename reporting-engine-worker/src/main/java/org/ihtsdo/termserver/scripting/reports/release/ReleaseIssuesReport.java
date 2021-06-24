@@ -1004,7 +1004,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		//Rule 2 All (disorder) concepts must be a descendant of 64572001|Disease (disorder)| 
 		Set<Concept> diseases = DISEASE.getDescendents(NOT_SET);
 		for (Concept c : CLINICAL_FINDING.getDescendents(NOT_SET)) {
-			if (!inScope(c)) {
+			if (!inScope(c) || c.equals(DISEASE)) {
 				continue;
 			}
 			String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
