@@ -15,7 +15,6 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
-
 /**
  * For concepts that align to a given template, we can normalise them.
  * That is to say, copy all the inferred relationships into the stated form
@@ -400,8 +399,9 @@ public class NormaliseTemplateCompliantConcepts extends TemplateFix {
 		templateNames = new String[] { "templates/morphologies/Medial displacement.json" };
 		templateNames = new String[] { "templates/poisoning caused by substance or product.json" };
 		templateNames = new String[] { "templates/morphologies/Compression.json" };
-		*/
 		templateNames = new String[] { "templates/morphologies/Enlargement.json" };
+		*/
+		templateNames = new String[] { "templates/procedures/CT Guided.json" };
 		//TODO We're seeing 'HIGH' warnings about existing parents being redundant in presence of PPP but before the PPP gets added. Investigate
 		//I think this might happen when we set a PPP which is lower than the existing parent.
 		super.init(args);

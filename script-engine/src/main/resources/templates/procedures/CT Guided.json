@@ -1,0 +1,7 @@
+{
+  "name": "CT Guided",
+  "documentation": "https://confluence.ihtsdotools.org/display/SCTEMPLATES/%5BImaging%5D+guided+%5Bprocedure%5D+of+%5Bbody+structure%5D+-+v1.0",
+  "version": 1,
+  "domain": "<< 363679005 |Imaging (procedure)| : 363703001 |Has intent (attribute)| = 429892002 |Guidance intent (qualifier value)|",
+  "logicalTemplate": "71388002 |Procedure (procedure)| : [[~1..1 @imagingGroup]] {[[~1..1]]  260686004 |Method (attribute)|  = [[ +id ( <<  360037004 |Imaging - action (qualifier value)| ) @imagingAction ]],[[~0..1]]  405813007 |Procedure site - Direct (attribute)|  = [[ +id ( <  442083009 |Anatomical or acquired body structure (body structure)| ) @bodyStructure ]],[[~1..1]]  363703001 |Has intent (attribute)|  =  429892002 |Guidance intent (qualifier value)| },[[~1..1 @procedureGroup]] {[[~1..1]]  260686004 |Method (attribute)|  = [[+id ( <  129264002 |Action (qualifier value)| ) @procedure]],[[~0..1]] [[+id (<<  363704007 |Procedure site (attribute)| ) ]] = [[ +id ( <  442083009 |Anatomical or acquired body structure (body structure)|  ) @bodyStructure]],[[~0..1]] [[ +id (<<  405816004 |Procedure morphology (attribute)| ) ]] = [[ +id ( <  118956008 |Body structure, altered from its original anatomical structure (morphologic abnormality)|  ) @morphology ]],[[~0..1]]  260507000 |Access (attribute)|  = [[ +id ( <  309795001 |Surgical access values (qualifier value)|  ) @access ]],[[~0..1]]  363701004 |Direct substance (attribute)|  = [[+id (<  105590001 |Substance (substance)| ) @substance ]]} "
+}

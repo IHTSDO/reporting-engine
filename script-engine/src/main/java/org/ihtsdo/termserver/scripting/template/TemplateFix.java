@@ -165,19 +165,20 @@ abstract public class TemplateFix extends BatchFix {
 			throw new TermServerScriptException("Template domain: " + ecl + " returned 0 rows");
 		}
 		
-		//Ensure that any repeated instances of identically named slots are the same
+		//Ensure that any repeated instances of identically named slots have the same value
 		Map<String, String> namedSlots = new HashMap<>();
 		for (AttributeGroup g : t.getAttributeGroups()) {
 			for (Attribute a : g.getAttributes()) {
 				//Does this attribute have a named slot?
 				if (!StringUtils.isEmpty(a.getValueSlotName())) {
-					String attributeClause = a.toString();
+					String attributeClause = a.toString().replaceAll("  ", " ");
+					String attributeClauseValue = attributeClause.substring(attributeClause.indexOf("=") + 1).trim();
 					if (namedSlots.containsKey(a.getValueSlotName())) {
-						if (!attributeClause.equals(namedSlots.get(a.getValueSlotName()))) {
-							throw new IllegalArgumentException("Named slots sharing the same name must be identical: " + attributeClause);
+						if (!attributeClauseValue.equals(namedSlots.get(a.getValueSlotName()))) {
+							throw new IllegalArgumentException("Named slots sharing the same name must have identical slot definition: " + a.getValueSlotName() + " -> " + attributeClauseValue);
 						}
 					} else {
-						namedSlots.put(a.getValueSlotName(), attributeClause);
+						namedSlots.put(a.getValueSlotName(), attributeClauseValue);
 					}
 				}
 			}
