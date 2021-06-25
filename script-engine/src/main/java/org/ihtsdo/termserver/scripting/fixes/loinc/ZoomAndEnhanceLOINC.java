@@ -1,9 +1,11 @@
 package org.ihtsdo.termserver.scripting.fixes.loinc;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
@@ -15,8 +17,12 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
+import com.google.api.client.util.Charsets;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.google.common.io.CharSink;
+import com.google.common.io.FileWriteMode;
+import com.google.common.io.Files;
 
 /**
  * Look through all LOINC expressions and fix whatever needs worked on
@@ -25,6 +31,7 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 	
 	enum REL_PART {Type, Target};
 	
+	private static String LOINC_CONTENT_FILESTR = "G:\\My Drive\\018_Loinc\\2021\\LOINC_2020_CONTENT.tsv";
 	private static String TARGET_BRANCH = "MAIN/SNOMEDCT-LOINC/LOINC2020";
 	private static String LOINC_NUM_PREFIX = "LOINC Unique ID:";
 	
@@ -35,12 +42,14 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 	private static String ACTIVE = "ACTIVE";
 	
 	private Map<String, List<String>> loincFileMap;
-	private BiMap<String, String> fsnLoincMap;
+	private BiMap<String, String> fsnBestLoincMap;
+	private Map<String, List<String>> fsnAllLoincMap;
 	private Map<String, List<String>> refsetFileMap;
+	private Map<String, Concept> loincConceptMap;
 	private Set<String> deprecated;
-	private Set<String> duplicatedFSNs;
 	private Set<Concept> expectedTypeChanges = new HashSet<>();
 	private Map<String, Integer> issueSummaryMap = new HashMap<>();
+	private boolean createLoincConceptMap = false;
 	
 	protected ZoomAndEnhanceLOINC(BatchFix clone) {
 		super(clone);
@@ -70,30 +79,60 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 				"SCTID, FSN, SemTag, ConceptType, Severity, Action, Detail, Details, , , ",
 				"SCTID, FSN, Semtag, Issue, Detail, Pub Expression, LOINC2020",
 				"SCTID, FSN, Semtag, LOINC_Num, Issue, Detail 1, Detail 2",
-				"Issue, FSN, Item 1, Item 2, Detail 1, Detail 2, Additional",
+				"Issue, FSN, Item 1, Item 2, Usage",
 				"Item, Count"
 		};
 		String[] tabNames = new String[] {
 				"Updates to LOINC2020",
 				"Published vs LOINC2020",
-				"LOINC2020 vs LOINC_2_69",
-				"LOINC_2_69 Issues",
+				"LOINC2020 vs LOINC_2_70",
+				"LOINC_2_70 Issues",
 				"Summary Counts"
 		};
 		super.postInit(tabNames, columnHeadings, false);
+		
+		info("Mapping current LOINC content");
+		mapLoincContent();
+		
 		loadFiles();
 		expectedTypeChanges.add(gl.getConcept("704318007 |Property type (attribute)|"));
 	}
 
-	private void loadFiles() throws TermServerScriptException {
-		loincFileMap = new HashMap<>();
-		fsnLoincMap = HashBiMap.create();
-		refsetFileMap = new HashMap<>();
-		deprecated = new HashSet<>();
-		duplicatedFSNs = new HashSet<>();
+	private void mapLoincContent() throws TermServerScriptException {
 		try {
 			//Load the LOINC file
-			String fileStr = "G:\\My Drive\\018_Loinc\\2021\\loinc_2_69.csv";
+
+			File checkFile = new File(LOINC_CONTENT_FILESTR);
+			if (checkFile.canRead()) {
+				loincConceptMap = new HashMap<>();
+				info ("Loading " + LOINC_CONTENT_FILESTR);
+				try (BufferedReader br = new BufferedReader(new FileReader(LOINC_CONTENT_FILESTR))) {
+					String line;
+					while ((line = br.readLine()) != null) {
+						String[] parts = line.split(TAB);
+						Concept loincConcept = new Concept(parts[1], parts[2]);
+						loincConceptMap.put(parts[0], loincConcept);
+					}
+				}
+			} else {
+				createLoincConceptMap = true;
+				info (LOINC_CONTENT_FILESTR + " not yet available, will create for next time");
+			}
+		} catch (Exception e) {
+			throw new TermServerScriptException(e);
+		}
+	}
+
+	private void loadFiles() throws TermServerScriptException {
+		loincFileMap = new HashMap<>();
+		fsnBestLoincMap = HashBiMap.create();
+		refsetFileMap = new HashMap<>();
+		deprecated = new HashSet<>();
+		fsnAllLoincMap = new HashMap<>();
+		Set<String> checkReplacementAvailable = new HashSet<>();
+		try {
+			//Load the LOINC file
+			String fileStr = "G:\\My Drive\\018_Loinc\\2021\\loinc_2_70.csv";
 			info ("Loading " + fileStr);
 			boolean isFirstLine = true;
 			try (BufferedReader br = new BufferedReader(new FileReader(fileStr))) {
@@ -113,53 +152,56 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 						if (fsn.endsWith(":")) {
 							fsn = fsn.substring(0, fsn.length() - 1);
 						}
-						if (!fsnLoincMap.containsKey(fsn) && !fsnLoincMap.containsValue(loincNum)) {
-							fsnLoincMap.put(fsn, loincNum);
+						
+						//Maintain a map of all loincNums associate with this FSN, although we'll
+						//separately store a map with our preferred row
+						List<String> allLoincNums = fsnAllLoincMap.get(fsn);
+						if (allLoincNums == null) {
+							allLoincNums = new ArrayList<>();
+							fsnAllLoincMap.put(fsn, allLoincNums);
+						}
+						allLoincNums.add(loincNum);
+						
+						String usedHere = "Unknown";
+						if (loincConceptMap != null) {
+							usedHere = loincConceptMap.containsKey(loincNum) ? loincConceptMap.get(loincNum).toString() : "No";
+						}
+						
+						if (!fsnBestLoincMap.containsKey(fsn) && !fsnBestLoincMap.containsValue(loincNum)) {
+							fsnBestLoincMap.put(fsn, loincNum);
 						} else {
-							if (fsnLoincMap.containsValue(loincNum)) {
-								debug ("Duplicate keys " + loincNum + "=" + fsn + " with " + fsnLoincMap.inverse().get(loincNum));
+							if (allLoincNums.size() > 1) {
+								String duplicates = allLoincNums.stream()
+										.filter(s -> !s.equals(loincNum))
+										.collect(Collectors.joining(", "));
+								debug ("Duplicate keys " + loincNum + " = '" + fsn + "' with " + duplicates);
 							}
 							
 							//A duplicate FSN will usually have a later replacement with a new LOINCNum
-							if (fsnLoincMap.containsKey(fsn)) {
-								duplicatedFSNs.add(fsn);
-								String origLoincNum = fsnLoincMap.get(fsn);
-								String origVersion = get(loincFileMap, origLoincNum, LoincCol.VersionLastChanged.ordinal());
+							if (fsnBestLoincMap.containsKey(fsn)) {
+								String origLoincNum = fsnBestLoincMap.get(fsn);
 								String origStatus = get(loincFileMap, origLoincNum, LoincCol.STATUS.ordinal());
-								String thisVersion = get(loincFileMap, loincNum, LoincCol.VersionLastChanged.ordinal());
 								String thisStatus = get(loincFileMap, loincNum, LoincCol.STATUS.ordinal());
+								String thisReason = get(loincFileMap, loincNum, LoincCol.STATUS_REASON.ordinal());
 								
 								if (thisStatus.equals(DEPRECATED)) {
 									deprecated.add(loincNum);
 								}
 								
 								//Is the this version newer than what we stored
-								int comparison = thisVersion.compareTo(origVersion);
-								String thisReason = get(loincFileMap, loincNum, LoincCol.STATUS_REASON.ordinal());
-								if (comparison == 0) {
-									if (thisStatus.equals(DEPRECATED) && (origStatus.equals(ACTIVE) || origStatus.equals(DISCOURAGED))) {
-										increment("Larger loincNum deprecated in same version due to " + thisReason);
-									} else if ((thisStatus.equals(ACTIVE) || thisStatus.equals(DISCOURAGED)) && origStatus.equals(DEPRECATED)) {
-										increment("Smaller loincNum deprecated in same version due to " + thisReason);
-										//In this case we want to replace the originally stored value
-										fsnLoincMap.replace(fsn, loincNum);
-									} else {
-										//TODO Put these into a list to see if there's a third row that replaces both
-										report(QUATERNARY_REPORT, "Same Version, Same FSN", fsn, loincNum + " (" + thisVersion + ")", origLoincNum+ " (" + origVersion + ")", origStatus, thisStatus, thisReason);
-									}
-								} else if (comparison > 0) {
-									fsnLoincMap.replace(fsn, loincNum);
-								} else {
-									//Often the larger loincNum is then Deprecated as a duplicate
-									if (thisStatus.equals(DEPRECATED) && (origStatus.equals(ACTIVE) || origStatus.equals(DISCOURAGED))) {
-										increment("Larger loincNum deprecated due to " + thisReason);
-									} else if ((thisStatus.equals(ACTIVE) || thisStatus.equals(DISCOURAGED)) && origStatus.equals(DEPRECATED)) {
-										increment("Smaller loincNum deprecated due to " + thisReason);
-										//In this case we want to replace the originally stored value
-										fsnLoincMap.replace(fsn, loincNum);
-									} else {
-										report(QUATERNARY_REPORT, "Bigger Num Earlier (Same FSN)", fsn, loincNum + " (" + thisVersion + ")", origLoincNum+ " (" + origVersion + ")", thisStatus, origStatus, thisReason);
-									}
+								//Version doesn't matter as much as which LoincNum is still active
+								if (thisStatus.equals(DEPRECATED) && (origStatus.equals(ACTIVE) || origStatus.equals(DISCOURAGED))) {
+									increment("Larger loincNum deprecated due to " + thisReason);
+									//We can leave our current 'best' loincNum in place
+								} else if ((thisStatus.equals(ACTIVE) || thisStatus.equals(DISCOURAGED)) && origStatus.equals(DEPRECATED)) {
+									increment("Smaller loincNum deprecated due to " + thisReason);
+									//In this case we want to replace the originally stored value
+									fsnBestLoincMap.replace(fsn, loincNum);
+								} else if (thisStatus.equals(ACTIVE) && origStatus.equals(ACTIVE)) {
+									report(QUATERNARY_REPORT, "Same FSN, both Active", fsn, getDetails(loincNum), getDetails(origLoincNum), usedHere);
+								} else if (thisStatus.equals(DEPRECATED) && origStatus.equals(DEPRECATED)) {
+									//Store this FSN to see if we find a replacement before the end of the file
+									checkReplacementAvailable.add(fsn);
 								}
 							}
 						}
@@ -168,6 +210,22 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 			}
 		} catch (Exception e) {
 			throw new TermServerScriptException(e);
+		}
+		
+		for (String fsn : checkReplacementAvailable) {
+			String bestLoincNum = fsnBestLoincMap.get(fsn);
+			String status = get(loincFileMap, bestLoincNum, LoincCol.STATUS.ordinal());
+			if (status.equals(ACTIVE)) {
+				increment("Double deprecated loincNum subsequently replaced");
+			} else {
+				for (String loincNum : fsnAllLoincMap.get(fsn)) {
+					String usedHere = "Unknown";
+					if (loincConceptMap != null) {
+						usedHere = loincConceptMap.containsKey(loincNum) ? loincConceptMap.get(loincNum).toString() : "No";
+					}
+					report(QUATERNARY_REPORT, "No active replacements found", fsn, getDetails(loincNum), "", usedHere);
+				}
+			}
 		}
 		
 		try {
@@ -190,6 +248,14 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 		}
 		
 		flushFiles(false, false);
+	}
+
+	private String getDetails(String loincNum) {
+		String reason = get(loincFileMap, loincNum, LoincCol.STATUS_REASON.ordinal());
+		return loincNum + "\n" +
+		get(loincFileMap, loincNum, LoincCol.VersionLastChanged.ordinal()) + "\n" +
+		get(loincFileMap, loincNum, LoincCol.STATUS.ordinal()) +
+		(StringUtils.isEmpty(reason) ? "" : "\n" + reason);
 	}
 
 	private void increment(String key) {
@@ -259,34 +325,35 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 		List<String> loincRow = loincFileMap.get(loincNum);
 		String fsn = SnomedUtils.deconstructFSN(c.getFsn())[0];
 		
-		//Is this one of the FSNs that appeared twice in LOINC_2_69?
-		if (duplicatedFSNs.contains(fsn)) {
-			report(TERTIARY_REPORT, c, loincNum, "Loinc file featured FSN more than once");
-		}
-		
 		if (loincRow == null) {
 			report(TERTIARY_REPORT, c, loincNum, "Loinc file did not feature LOINC_NUM");
 		} else {
-			//Verify that our FSN matches what's in LOINC_2_69
+			//Verify that our FSN matches what's in LOINC_2_70
 			String loincFSN = formLoincFSN(loincNum);
-			if (!fsn.equals(loincFSN)) {
+			if (!fsn.equalsIgnoreCase(loincFSN)) {
 				report(TERTIARY_REPORT, c, loincNum, "Local/LOINC FSN Mismatch", fsn, loincFSN);
 			}
 		}
 		
 		//Can we find it, or a newer one via the FSN?
-		String newLoincNum = fsnLoincMap.get(fsn);
+		String newLoincNum = fsnBestLoincMap.get(fsn);
 		if (loincRow == null || newLoincNum == null || !loincNum.equals(newLoincNum)) {
 			if (newLoincNum != null) {
 				report(TERTIARY_REPORT, c, loincNum, "Updated LOINC_NUM found via FSN", newLoincNum);
 			} else {
 				//Lets try for a match without the method type
 				String fsnCut = fsn.substring(0, fsn.lastIndexOf(':'));
-				newLoincNum = fsnLoincMap.get(fsnCut);
+				newLoincNum = fsnBestLoincMap.get(fsnCut);
 				if (newLoincNum != null) {
 					report(TERTIARY_REPORT, c, newLoincNum, "Updated LOINC_NUM found via FSN minus MethodType");
 				}
 			}
+		}
+		
+		if (newLoincNum != null && !newLoincNum.equals(loincNum)) {
+			String newTerm = LOINC_NUM_PREFIX + newLoincNum;
+			Description oldDesc = getLoincNumDescription(c);
+			replaceDescription(null, c, oldDesc, newTerm, InactivationIndicator.OUTDATED);
 		}
 	}
 	
@@ -394,9 +461,13 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 	}
 
 	private String getLoincNumFromDescription(Concept c) throws TermServerScriptException {
+		return getLoincNumDescription(c).getTerm().substring(LOINC_NUM_PREFIX.length());
+	}
+	
+	private Description getLoincNumDescription(Concept c) throws TermServerScriptException {
 		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 			if (d.getTerm().startsWith(LOINC_NUM_PREFIX)) {
-				return d.getTerm().substring(LOINC_NUM_PREFIX.length());
+				return d;
 			}
 		}
 		throw new TermServerScriptException(c + " does not specify a LOINC num");
@@ -407,7 +478,7 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 		if (!local.isActive()) {
 			replacement = getReplacement(local);
 			if (local != null) {
-				report((Task)null, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_MODIFIED, relPart.toString() + " " + local + " replaced by " + replacement);
+				report((Task)null, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_MODIFIED, "Inactive rel " + relPart.toString() + " " + local + " replaced by " + replacement);
 			}
 		}
 		return replacement;
@@ -430,9 +501,20 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 	@Override
 	protected List<Component> identifyComponentsToProcess() throws TermServerScriptException {
 		List<Component> componentsToProcess = new ArrayList<>();
+		File loincConceptFile = new File(LOINC_CONTENT_FILESTR);
+		CharSink chs = Files.asCharSink(loincConceptFile, Charsets.UTF_8, FileWriteMode.APPEND);
 		//Don't use local copies of concepts, they might not exist
 		for (Concept c : findConceptsByCriteria("module=715515008", TARGET_BRANCH, false)) {
 			Concept loadedConcept = loadConcept(c, TARGET_BRANCH);
+			if (createLoincConceptMap) {
+				String line = getLoincNumFromDescription(loadedConcept) 
+						+ "\t" + loadedConcept.toString() + "\r\n";
+				try {
+					chs.write(line);
+				} catch (IOException e) {
+					throw new TermServerScriptException("Unable to write to " + LOINC_CONTENT_FILESTR, e);
+				}
+			}
 			upgradeLOINCConcept(loadedConcept);
 		}
 		return componentsToProcess;
