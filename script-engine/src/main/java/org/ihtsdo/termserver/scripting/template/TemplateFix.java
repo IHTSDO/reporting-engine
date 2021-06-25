@@ -484,7 +484,9 @@ abstract public class TemplateFix extends BatchFix {
 		writeToReportFile (SECONDARY_REPORT, "Requested by: " + user);
 		writeToReportFile (SECONDARY_REPORT, QUOTE + "Run against: " + subsetECL + QUOTE);
 		writeToReportFile (SECONDARY_REPORT, "Project: " + project);
-		writeToReportFile (SECONDARY_REPORT, "Concepts considered: " + findConcepts(subsetECL).size());
+		if (!StringUtils.isEmpty(subsetECL)) {
+			writeToReportFile (SECONDARY_REPORT, "Concepts considered: " + findConcepts(subsetECL).size());
+		}
 		writeToReportFile (SECONDARY_REPORT, "Templates: " );
 		
 		for (Template t : templates) {
@@ -494,6 +496,9 @@ abstract public class TemplateFix extends BatchFix {
 			String stl = t.getLogicalTemplate().toString();
 			stl = SnomedUtils.populateFSNs(stl);
 			writeToReportFile (SECONDARY_REPORT,QUOTE + TAB + "STL: " +  stl + QUOTE);
+			if (!StringUtils.isEmpty(t.getDomain())) {
+				writeToReportFile (SECONDARY_REPORT, TAB + "Concepts considered: " + findConcepts(t.getDomain()).size());
+			}
 			writeToReportFile (SECONDARY_REPORT,TAB);
 		}
 	}

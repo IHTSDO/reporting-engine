@@ -1367,6 +1367,9 @@ public class SnomedUtils implements RF2Constants {
 		//Loop through string and replace any numbers that aren't followed by a pipe
 		//with the full string
 		GraphLoader gl = GraphLoader.getGraphLoader();
+		
+		int origLength = stl.length();
+		
 		//Easiest to remove all pipes and then replace all
 		stl = stl.replaceAll("\\|.*?\\|", "").replaceAll("  ", "");
 		Pattern p = Pattern.compile("\\d{8,}");
@@ -1381,6 +1384,10 @@ public class SnomedUtils implements RF2Constants {
 			m.appendReplacement(sb, c.toString());
 		}
 		m.appendTail(sb);
+		
+		if (sb.length() < origLength) {
+			TermServerScript.warn ("Populating FSNs has reduced overall length - check: '" + sb + "'");
+		}
 		return sb.toString();
 	}
 
