@@ -28,6 +28,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	private List<Component> allIdentifiedConcepts;
 	private Set<Component> allModifiedConcepts = new HashSet<>();
 	private List<Component> noMoveRequired = new ArrayList<>();
+	private boolean includeDependencies = true;
 	
 	private Map<String, Concept> loadedConcepts = new HashMap<>();
 	TermServerClient secondaryConnection;
@@ -128,8 +129,8 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	private boolean switchModule(Concept c) throws TermServerScriptException {
 		boolean conceptAlreadyTransferred = false;
 		
-		/*if (c.getConceptId().equals("399496002")) {
-			debug("Here");
+		/*if (c.getConceptId().equals("10200004") || c.getFsn().contains("(qualifier value)")) {
+			debug("Here: " + c);
 		}*/
 		
 		//Have we already attempted to move this concept?  Don't try again
@@ -179,14 +180,17 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		} else {
 			conceptAlreadyTransferred = true;
 			//Changing the moduleId won't mark concept dirty unless it really does change
-			c.setModuleId(targetModuleId);
-			if (allIdentifiedConcepts.contains(c)) {
-				if (c.getModuleId().equals(targetModuleId)) {
-					report (c, Severity.HIGH, ReportActionType.NO_CHANGE, "Specified concept already in target module: " + c.getModuleId() + " checking for additional modeling in source module.");
-				} else {
-					String msg = "Odd Situation. Concept " + c + " already exists at destinaction in module " + conceptOnTS.getModuleId() + " and also in local content in module " + c.getModuleId();
-					warn(msg);
-					report (c, Severity.HIGH, ReportActionType.INFO, msg + ".  Looking for additional modelling anyway.");
+			//Don't move any concepts already in the model module
+			if (!c.getModuleId().equals(SCTID_MODEL_MODULE)) {
+				c.setModuleId(targetModuleId);
+				if (allIdentifiedConcepts.contains(c)) {
+					if (c.getModuleId().equals(targetModuleId)) {
+						report (c, Severity.HIGH, ReportActionType.NO_CHANGE, "Specified concept already in target module: " + c.getModuleId() + " checking for additional modeling in source module.");
+					} else {
+						String msg = "Odd Situation. Concept " + c + " already exists at destinaction in module " + conceptOnTS.getModuleId() + " and also in local content in module " + c.getModuleId();
+						warn(msg);
+						report (c, Severity.HIGH, ReportActionType.INFO, msg + ".  Looking for additional modelling anyway.");
+					}
 				}
 			}
 		}
@@ -296,11 +300,11 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			}
 		}
 		
-		allModifiedConcepts.add(c);
-		
 		if (conceptAlreadyTransferred && !subComponentsMoved) {
 			return false;
 		}
+		
+		allModifiedConcepts.add(c);
 		
 		if (conceptAlreadyTransferred && subComponentsMoved) {
 			incrementSummaryInformation("Existing concept, additional components moved.");
@@ -376,7 +380,10 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 				}
 			}
 			
-			a.setModuleId(targetModuleId);
+			if (!a.getModuleId().equals(SCTID_MODEL_MODULE)) {
+				a.setModuleId(targetModuleId);
+			}
+			
 			AxiomRepresentation axiomRepresentation = axiomService.convertAxiomToRelationships(a.getOwlExpression());
 			if (axiomRepresentation != null) {
 				for (Relationship r : AxiomUtils.getRHSRelationships(c, axiomRepresentation)) {
@@ -389,7 +396,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 					}
 				}
 			} else {
-				warn ("No Axiom Representation found for : " + a.getOwlExpression());
+				warn ("No Axiom Representation found for : " + c + " : " + a.getOwlExpression());
 			}
 		} catch (ConversionException e) {
 			throw new TermServerScriptException("Failed to convert axiom for " + c , e);
@@ -426,7 +433,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		//And mark the relationship as dirty just in case we're moving content that's already in the target module.  
 		r.setDirty();
 		
-		if (!allModifiedConcepts.contains(r.getType())) {
+		if (includeDependencies && !allModifiedConcepts.contains(r.getType())) {
 			if (switchModule(r.getType())) {
 				//Is this an unexpected dependency
 				if (!allIdentifiedConcepts.contains(r.getType())) {
@@ -444,8 +451,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 		//Note that switching the target will also recursively work up the hierarchy as parents are also switched
 		//up the hierarchy until a concept owned by the core module is encountered.
 		Concept target = r.getTarget();
-		
-		if (!allModifiedConcepts.contains(target)) {
+		if (includeDependencies && !allModifiedConcepts.contains(target)) {
 			//Don't worry about the target if it's on our to-do list anyway.
 			if (!allIdentifiedConcepts.contains(target)) {
 				//If our dependency is in the core module, then check - live - if it is active
@@ -481,7 +487,6 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 						incrementSummaryInformation("Unexpected dependencies included");
 						addSummaryInformation("Unexpected target dependency: " + target, "");
 						report (r.getSource(), Severity.HIGH, ReportActionType.INFO, "Unexpected dependency required in Stated Modeling", target);
-						
 					}
 				} else {
 					//No need to try to switch this concept again

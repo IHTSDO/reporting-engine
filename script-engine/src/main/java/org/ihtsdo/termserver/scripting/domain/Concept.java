@@ -173,7 +173,8 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 	}
 
 	public void setModuleId(String moduleId) {
-		if (this.moduleId != null && !moduleId.equals("900000000000207008")) {
+		if (this.moduleId != null && (!moduleId.equals(SCTID_CORE_MODULE) 
+				|| moduleId.equals(SCTID_CORE_MODULE) && this.moduleId.equals(SCTID_MODEL_MODULE))) {
 			TermServerScript.debug("here");
 		}
 		if (this.moduleId != null && !this.moduleId.equals(moduleId)) {
