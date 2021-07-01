@@ -25,6 +25,7 @@ public interface RF2Constants {
 	
 	static Concept IS_A =  new Concept ("116680003");  // | Is a (attribute) |
 	static Concept NULL_CONCEPT = new Concept ("-1");
+	static Concept MULTI_CONCEPT = new Concept ("-2");
 	
 	static final String INT = "INT";
 	static final String MS = "MS";

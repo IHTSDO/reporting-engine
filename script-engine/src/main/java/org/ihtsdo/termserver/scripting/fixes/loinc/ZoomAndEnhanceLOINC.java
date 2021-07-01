@@ -64,6 +64,7 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 			fix.reportNoChange = false;
 			fix.selfDetermining = true;
 			fix.runStandAlone = false;
+			fix.stateComponentType = false;
 			fix.init(args);
 			fix.loadProjectSnapshot(false);
 			fix.postInit();
@@ -76,9 +77,9 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 	
 	public void postInit() throws TermServerScriptException {
 		String[] columnHeadings = new String[] {
-				"SCTID, FSN, SemTag, ConceptType, Severity, Action, Detail, Details, , , ",
+				"TaskId, TaskDesc,SCTID, FSN, SemTag, Severity, Action, Detail, Details, , , ",
 				"SCTID, FSN, Semtag, Issue, Detail, Pub Expression, LOINC2020",
-				"SCTID, FSN, Semtag, LOINC_Num, Issue, Detail 1, Detail 2",
+				"SCTID, FSN, Semtag, LOINC2020 LoincNum, New LoincNum, Issue, Detail 1, Detail 2",
 				"Issue, FSN, Item 1, Item 2, Usage",
 				"Item, Count"
 		};
@@ -249,13 +250,17 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 		
 		flushFiles(false, false);
 	}
-
+	
 	private String getDetails(String loincNum) {
+		return getDetails(loincNum, "\n");
+	}
+
+	private String getDetails(String loincNum, String separator) {
 		String reason = get(loincFileMap, loincNum, LoincCol.STATUS_REASON.ordinal());
-		return loincNum + "\n" +
-		get(loincFileMap, loincNum, LoincCol.VersionLastChanged.ordinal()) + "\n" +
+		return loincNum + separator +
+		get(loincFileMap, loincNum, LoincCol.VersionLastChanged.ordinal()) + separator +
 		get(loincFileMap, loincNum, LoincCol.STATUS.ordinal()) +
-		(StringUtils.isEmpty(reason) ? "" : "\n" + reason);
+		(StringUtils.isEmpty(reason) ? "" : separator + reason);
 	}
 
 	private void increment(String key) {
@@ -299,15 +304,24 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 		for (Relationship r : origRels) {
 			Concept localType = gl.getConcept(r.getType().getId());
 			Concept replaceType = replaceIfRequired(c, r, localType, REL_PART.Type);
+			
 			if (replaceType == null) {
-				report((Task)null, (Concept)r.getSource(), Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Unable to replace " + localType + " due to lack of historical association");
+				report((Task)null, c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Unable to replace type " + localType + " due to lack of historical association");
+				return;
+			} else if (replaceType.equals(MULTI_CONCEPT)) {
+				String alternatives = getReplacements(localType).stream().map(rep -> rep.getFsn()).collect(Collectors.joining(", "));
+				report((Task)null, c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Unable to replace type " + localType + " due to multiple of historical association", alternatives);
 				return;
 			}
 			
 			Concept localTarget = gl.getConcept(r.getTarget().getId());
 			Concept replaceTarget = replaceIfRequired(c, r, localTarget, REL_PART.Target);
 			if (replaceTarget == null) {
-				report((Task)null, (Concept)r.getSource(), Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Unable to replace " + localTarget + " due to lack of historical association");
+				report((Task)null, c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Unable to replace target " + localTarget + " due to lack of historical association");
+				return;
+			} else if (replaceTarget.equals(MULTI_CONCEPT)) {
+				String alternatives = getReplacements(localTarget).stream().map(rep -> rep.getFsn()).collect(Collectors.joining(", "));
+				report((Task)null, c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Unable to replace target " + localTarget + " due to multiple of historical association", alternatives);
 				return;
 			}
 			
@@ -326,34 +340,39 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 		String fsn = SnomedUtils.deconstructFSN(c.getFsn())[0];
 		
 		if (loincRow == null) {
-			report(TERTIARY_REPORT, c, loincNum, "Loinc file did not feature LOINC_NUM");
+			report(TERTIARY_REPORT, c, getDetails(loincNum), "",  "Loinc file did not feature LOINC_NUM");
 		} else {
 			//Verify that our FSN matches what's in LOINC_2_70
 			String loincFSN = formLoincFSN(loincNum);
 			if (!fsn.equalsIgnoreCase(loincFSN)) {
-				report(TERTIARY_REPORT, c, loincNum, "Local/LOINC FSN Mismatch", fsn, loincFSN);
+				report(TERTIARY_REPORT, c, getDetails(loincNum), "", "Local/LOINC FSN Mismatch", fsn, loincFSN);
 			}
+		}
+		
+		//Was there, in fact, more than one row with this FSN?
+		List<String> loincNums = fsnAllLoincMap.get(fsn);
+		if (loincNums.size() > 1) {
+			String details = loincNums.stream()
+					.map(l -> getDetails(l, "|"))
+					.collect(Collectors.joining("\n"));
+			report(TERTIARY_REPORT, c, getDetails(loincNum), details, "Loinc file featured FSN " + loincNums.size() + " times");
 		}
 		
 		//Can we find it, or a newer one via the FSN?
 		String newLoincNum = fsnBestLoincMap.get(fsn);
 		if (loincRow == null || newLoincNum == null || !loincNum.equals(newLoincNum)) {
 			if (newLoincNum != null) {
-				report(TERTIARY_REPORT, c, loincNum, "Updated LOINC_NUM found via FSN", newLoincNum);
+				report(TERTIARY_REPORT, c, getDetails(loincNum), getDetails(newLoincNum), "Updated LOINC_NUM found via FSN");
 			} else {
-				//Lets try for a match without the method type
-				String fsnCut = fsn.substring(0, fsn.lastIndexOf(':'));
-				newLoincNum = fsnBestLoincMap.get(fsnCut);
-				if (newLoincNum != null) {
-					report(TERTIARY_REPORT, c, newLoincNum, "Updated LOINC_NUM found via FSN minus MethodType");
-				}
+				report(TERTIARY_REPORT, c, getDetails(loincNum), "", "FSN could not be found in LOINC_2_70. Instead: ", formLoincFSN(loincNum));
 			}
 		}
 		
 		if (newLoincNum != null && !newLoincNum.equals(loincNum)) {
 			String newTerm = LOINC_NUM_PREFIX + newLoincNum;
 			Description oldDesc = getLoincNumDescription(c);
-			replaceDescription(null, c, oldDesc, newTerm, InactivationIndicator.OUTDATED);
+			String info = getDetails(loincNum);
+			replaceDescription(null, c, oldDesc, newTerm, InactivationIndicator.OUTDATED, info);
 		}
 	}
 	
@@ -441,7 +460,7 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 			}
 		}
 		if (workingCopy.length() > 16) {
-			report (SECONDARY_REPORT, c, "Published Rel Variance", workingCopy, "", loinc2020Exp);
+			report (SECONDARY_REPORT, c, "Published Rel Variance", SnomedUtils.populateFSNs(workingCopy), "", loinc2020Exp);
 		}
 	}
 
@@ -476,26 +495,41 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 	private Concept replaceIfRequired(Concept c, Relationship r, Concept local, REL_PART relPart) throws TermServerScriptException {
 		Concept replacement = local;
 		if (!local.isActive()) {
-			replacement = getReplacement(local);
-			if (local != null) {
-				report((Task)null, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_MODIFIED, "Inactive rel " + relPart.toString() + " " + local + " replaced by " + replacement);
+			List<Concept> replacements = getReplacements(local);
+			if (replacements.size() == 0) {
+				return null;
+			} else if (replacements.size() > 1) {
+				return MULTI_CONCEPT;
 			}
+			replacement = replacements.get(0);
+			report((Task)null, c, Severity.MEDIUM, ReportActionType.RELATIONSHIP_MODIFIED, "Inactive rel " + relPart.toString() + " " + local + " replaced by " + replacement);
 		}
 		return replacement;
 	}
 	
-	private Concept getReplacement(Concept inactiveConcept) throws TermServerScriptException {
+	private List<Concept> getReplacements(Concept inactiveConcept) throws TermServerScriptException {
 		Set<String> assocs = inactiveConcept.getAssociationTargets().getSameAs();
-		if (assocs.size() == 1) {
-			return gl.getConcept(assocs.iterator().next());
+		if (assocs.size() > 0) {
+			return assocs.stream()
+					.map(s -> gl.getConceptSafely(s))
+					.collect(Collectors.toList());
 		}
 		
 		assocs = inactiveConcept.getAssociationTargets().getReplacedBy();
-		if (assocs.size() == 0) {
-			return null;
-		} else {
-			return gl.getConcept(assocs.iterator().next());
+		if (assocs.size() > 0) {
+			return assocs.stream()
+					.map(s -> gl.getConceptSafely(s))
+					.collect(Collectors.toList());
 		}
+		
+		assocs = inactiveConcept.getAssociationTargets().getPossEquivTo();
+		if (assocs.size() > 0) {
+			return assocs.stream()
+					.map(s -> gl.getConceptSafely(s))
+					.collect(Collectors.toList());
+		}
+		
+		return new ArrayList<>();
 	}
 
 	@Override

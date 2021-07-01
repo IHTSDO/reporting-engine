@@ -790,12 +790,17 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		return reuseMe == null ? d : reuseMe;
 	}
 	
-	protected Description replaceDescription(Task t, Concept c, Description d, String newTerm, InactivationIndicator indicator) throws TermServerScriptException {
+	protected Description replaceDescription(Task t, Concept c, Description d, String newTerm, InactivationIndicator indicator, String info) throws TermServerScriptException {
 		//Do not perform a demotion by default
-		return replaceDescription(t, c, d, newTerm, indicator, false);
+		return replaceDescription(t, c, d, newTerm, indicator, false, info);
 	}
 	
-	protected Description replaceDescription(Task t, Concept c, Description d, String newTerm, InactivationIndicator indicator, boolean demotePT) throws TermServerScriptException {
+	protected Description replaceDescription(Task t, Concept c, Description d, String newTerm, InactivationIndicator indicator) throws TermServerScriptException {
+		//Do not perform a demotion by default
+		return replaceDescription(t, c, d, newTerm, indicator, false, "");
+	}
+	
+	protected Description replaceDescription(Task t, Concept c, Description d, String newTerm, InactivationIndicator indicator, boolean demotePT, String info) throws TermServerScriptException {
 		Description replacement = null;
 		Description reuseMe = c.findTerm(newTerm);
 		if (reuseMe != null) {
@@ -805,17 +810,17 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 					Map<String, Acceptability> ptAcceptMap = d.getAcceptabilityMap();
 					d.setAcceptabilityMap(reuseMe.getAcceptabilityMap());
 					reuseMe.setAcceptabilityMap(ptAcceptMap);
-					report(t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_ACCEPTABILIY_CHANGED, "Replacement term already exists, acceptablity swapped: ", reuseMe);
+					report(t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_ACCEPTABILIY_CHANGED, "Replacement term already exists, acceptablity swapped: ", reuseMe, info);
 					return reuseMe;
 				} else {
-					report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Replacement term already exists active", reuseMe);
+					report(t, c, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "Replacement term already exists active", reuseMe, info);
 					//Have we in fact asked for no change? Return unchanged if so
 					if (d.equals(reuseMe)) {
 						return reuseMe;
 					}
 				}
 			} else {
-				report(t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Replacement term already exists inactive.  Reactivating", reuseMe);
+				report(t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Replacement term already exists inactive.  Reactivating", reuseMe, info);
 				reuseMe.setActive(true);
 				reuseMe.setInactivationIndicator(null);
 			}
@@ -831,8 +836,8 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		if (d != null) {
 			if (d.isPreferred() && demotePT && d.getType().equals(DescriptionType.SYNONYM)) {
 				SnomedUtils.demoteAcceptabilityMap(d);
-				report(t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_ADDED, replacement);
-				report(t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Existing PT demoted to acceptable", d);
+				report(t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_ADDED, replacement, info);
+				report(t, c, Severity.MEDIUM, ReportActionType.DESCRIPTION_CHANGE_MADE, "Existing PT demoted to acceptable", d, info);
 			} else {
 				removeDescription(t, c, d, newTerm, indicator);
 			}
