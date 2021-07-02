@@ -48,7 +48,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 			SnapshotGenerator.setSkipSave(true);
 			//Recover the current project state from TS (or local cached archive) to allow quick searching of all concepts
 			delta.loadProjectSnapshot(false);  //Not just FSN, load all terms with lang refset also
-			//We won't incude the project export in our timings
+			//We won't include the project export in our timings
 			delta.additionalReportColumns = "FSN, SemTag, Severity, ChangeType, Detail, Additional Detail, , ";
 			delta.postInit();
 			delta.startTimer();
@@ -129,7 +129,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 	private boolean switchModule(Concept c) throws TermServerScriptException {
 		boolean conceptAlreadyTransferred = false;
 		
-		/*if (c.getConceptId().equals("10200004") || c.getFsn().contains("(qualifier value)")) {
+		/*if (c.getConceptId().equals("10200004")) {
 			debug("Here: " + c);
 		}*/
 		
@@ -207,6 +207,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 					|| SnomedUtils.hasLangRefsetDifference(d.getId(), c, conceptOnTS)
 					|| SnomedUtils.hasDescActiveStateDifference(d.getId(), c, conceptOnTS)) {
 				if (moveDescriptionToTargetModule(d, conceptOnTS)) {
+					if (true);
 					subComponentsMoved = true;
 					thisDescMoved = true;
 				}
@@ -490,7 +491,7 @@ public class ExtractExtensionComponents extends DeltaGenerator {
 					}
 				} else {
 					//No need to try to switch this concept again
-					noMoveRequired.add(r.getType());
+					noMoveRequired.add(target);
 				}
 			}
 		}

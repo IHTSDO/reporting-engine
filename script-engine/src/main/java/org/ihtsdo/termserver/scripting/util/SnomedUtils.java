@@ -1724,9 +1724,13 @@ public class SnomedUtils implements RF2Constants {
 		Map<String, Acceptability> mapAcceptA = descA.getAcceptabilityMap();
 		Map<String, Acceptability> mapAcceptB = descB.getAcceptabilityMap();
 		
-		if ((mapAcceptA == null && mapAcceptB != null) ||
-			(mapAcceptA != null && mapAcceptB == null) ||
-			(mapAcceptA.size() != mapAcceptB.size())) {
+		if ((mapAcceptA == null || mapAcceptA.isEmpty()) && (mapAcceptB == null || mapAcceptB.isEmpty())) {
+			return false;
+		}
+		
+		if ((mapAcceptA == null && (mapAcceptB != null && !mapAcceptB.isEmpty())) ||
+			(mapAcceptA != null && (mapAcceptB == null || mapAcceptB.isEmpty())) ||
+			(mapAcceptA != null && mapAcceptA.size() != mapAcceptB.size())) {
 			return true;
 		}
 		
