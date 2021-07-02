@@ -846,6 +846,10 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 	}
 	
 	protected void removeDescription(Task t, Concept c, Description d, String newTerm, InactivationIndicator indicator) throws TermServerScriptException {
+		removeDescription(t, c, d, newTerm, indicator, "");
+	}
+	
+	protected void removeDescription(Task t, Concept c, Description d, String newTerm, InactivationIndicator indicator, String info) throws TermServerScriptException {
 		String change = "";
 		ReportActionType action = null;
 		String before = d.toString();
@@ -862,7 +866,7 @@ public abstract class BatchFix extends TermServerScript implements RF2Constants 
 		}
 		String msg = change + " " + before;
 		String msg2 = (newTerm == null? "" : "Replaced with: " + newTerm);
-		report(t, c, Severity.MEDIUM, action, msg, msg2);
+		report(t, c, Severity.MEDIUM, action, msg, msg2, info);
 	}
 	
 	protected int addRelationship(Task t, Concept c, IRelationshipTemplate r, int groupId) throws TermServerScriptException {

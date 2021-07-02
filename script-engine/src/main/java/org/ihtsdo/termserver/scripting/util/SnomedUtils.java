@@ -1771,4 +1771,12 @@ public class SnomedUtils implements RF2Constants {
 		}
 		return StringUtils.isEmpty(obj.toString());
 	}
+
+	public static String[] deconstructSCTIDFsn(String sctidFsn) {
+		String[] parts = new String[2];
+		String[] split = sctidFsn.split(ESCAPED_PIPE);
+		parts[0] = split[0].trim();
+		parts[1] = split[1];
+		return parts;
+	}
 }

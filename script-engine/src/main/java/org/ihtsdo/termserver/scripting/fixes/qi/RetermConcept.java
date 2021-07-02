@@ -120,7 +120,7 @@ public class RetermConcept extends BatchFix {
 		if (replacement.equals(d.getTerm())) {
 			debug("Failed to replace term in " + c);
 		} else {
-			replaceDescription(t, c, d, replacement, null, true);  //Yes demote PTs
+			replaceDescription(t, c, d, replacement, null, true, "");  //Yes demote PTs
 			return CHANGE_MADE;
 		}
 		return NO_CHANGES_MADE;

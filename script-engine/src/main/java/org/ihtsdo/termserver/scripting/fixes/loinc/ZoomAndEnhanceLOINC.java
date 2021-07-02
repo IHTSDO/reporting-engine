@@ -79,7 +79,7 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 		String[] columnHeadings = new String[] {
 				"TaskId, TaskDesc,SCTID, FSN, SemTag, Severity, Action, Detail, Details, , , ",
 				"SCTID, FSN, Semtag, Issue, Detail, Pub Expression, LOINC2020",
-				"SCTID, FSN, Semtag, LOINC2020 LoincNum, New LoincNum, Issue, Detail 1, Detail 2",
+				"SCTID, FSN, Semtag, LOINC2020 LoincNum, 2_70 LoincNum, Issue, Detail 1, Detail 2",
 				"Issue, FSN, Item 1, Item 2, Usage",
 				"Item, Count"
 		};
@@ -110,9 +110,10 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 				try (BufferedReader br = new BufferedReader(new FileReader(LOINC_CONTENT_FILESTR))) {
 					String line;
 					while ((line = br.readLine()) != null) {
-						String[] parts = line.split(TAB);
-						Concept loincConcept = new Concept(parts[1], parts[2]);
-						loincConceptMap.put(parts[0], loincConcept);
+						String[] items = line.split(TAB);
+						String[] conceptParts = SnomedUtils.deconstructSCTIDFsn(items[1]);
+						Concept loincConcept = new Concept(conceptParts[0], conceptParts[1]);
+						loincConceptMap.put(items[0], loincConcept);
 					}
 				}
 			} else {
@@ -256,6 +257,9 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 	}
 
 	private String getDetails(String loincNum, String separator) {
+		if (!loincFileMap.containsKey(loincNum)) {
+			return loincNum + " not found in 2_70";
+		}
 		String reason = get(loincFileMap, loincNum, LoincCol.STATUS_REASON.ordinal());
 		return loincNum + separator +
 		get(loincFileMap, loincNum, LoincCol.VersionLastChanged.ordinal()) + separator +
@@ -309,8 +313,8 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 				report((Task)null, c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Unable to replace type " + localType + " due to lack of historical association");
 				return;
 			} else if (replaceType.equals(MULTI_CONCEPT)) {
-				String alternatives = getReplacements(localType).stream().map(rep -> rep.getFsn()).collect(Collectors.joining(", "));
-				report((Task)null, c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Unable to replace type " + localType + " due to multiple of historical association", alternatives);
+				String alternatives = getReplacements(localType).stream().map(rep -> rep.toString()).collect(Collectors.joining(", "));
+				report((Task)null, c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Unable to replace type " + localType + " due to multiple historical associations", alternatives);
 				return;
 			}
 			
@@ -320,8 +324,8 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 				report((Task)null, c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Unable to replace target " + localTarget + " due to lack of historical association");
 				return;
 			} else if (replaceTarget.equals(MULTI_CONCEPT)) {
-				String alternatives = getReplacements(localTarget).stream().map(rep -> rep.getFsn()).collect(Collectors.joining(", "));
-				report((Task)null, c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Unable to replace target " + localTarget + " due to multiple of historical association", alternatives);
+				String alternatives = getReplacements(localTarget).stream().map(rep -> rep.toString()).collect(Collectors.joining(", "));
+				report((Task)null, c, Severity.HIGH, ReportActionType.VALIDATION_ERROR, "Unable to replace target " + localTarget + " due to multiple historical associations", alternatives);
 				return;
 			}
 			
@@ -351,11 +355,13 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 		
 		//Was there, in fact, more than one row with this FSN?
 		List<String> loincNums = fsnAllLoincMap.get(fsn);
-		if (loincNums.size() > 1) {
+		if (loincNums != null && loincNums.size() > 1) {
+			//If the best row is what we've currently got, then it's not a problem.
+			String problemIndicator = fsnBestLoincMap.get(fsn).equals(loincNum) ? " Not a problem." : " Is Problem";
 			String details = loincNums.stream()
 					.map(l -> getDetails(l, "|"))
 					.collect(Collectors.joining("\n"));
-			report(TERTIARY_REPORT, c, getDetails(loincNum), details, "Loinc file featured FSN " + loincNums.size() + " times");
+			report(TERTIARY_REPORT, c, getDetails(loincNum), details, "Loinc file featured FSN " + loincNums.size() + " times." + problemIndicator);
 		}
 		
 		//Can we find it, or a newer one via the FSN?
@@ -364,7 +370,7 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 			if (newLoincNum != null) {
 				report(TERTIARY_REPORT, c, getDetails(loincNum), getDetails(newLoincNum), "Updated LOINC_NUM found via FSN");
 			} else {
-				report(TERTIARY_REPORT, c, getDetails(loincNum), "", "FSN could not be found in LOINC_2_70. Instead: ", formLoincFSN(loincNum));
+				report(TERTIARY_REPORT, c, getDetails(loincNum), "", "FSN could not be found in LOINC_2_70. That loinc num parts: ", formLoincFSN(loincNum));
 			}
 		}
 		
@@ -436,9 +442,9 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 					if (!publishedType.isActive()) {
 						//Is this one of our expected changes?  Just count if so
 						if (expectedTypeChanges.contains(publishedType)) {
-							increment("Published REL updated: " + publishedType);
+							increment("Published Relationship updated: " + publishedType);
 						} else {
-							report (SECONDARY_REPORT, c, "Published REL updated (type change)", publishedRel + "\n->\n" + r, expression.replaceAll(",", ",\n"), loinc2020Exp);
+							report (SECONDARY_REPORT, c, "Published Relationship updated (type change)", SnomedUtils.populateFSNs(publishedRel) + "\n->\n" + r, expression.replaceAll(",", ",\n"), loinc2020Exp);
 						}
 						workingCopy = workingCopy.replace(publishedRel, "");
 					} else {
@@ -450,7 +456,7 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 						Concept publishedValue = gl.getConcept(attributeMap.get(typeId));
 						String publishedRel = typeId + "=" + publishedValue.getConceptId();
 						if (!publishedValue.isActive()) {
-							report (SECONDARY_REPORT, c, "Published REL updated (value change)", publishedRel + "\n->\n" + r, expression.replaceAll(",", ",\n"), loinc2020Exp);
+							report (SECONDARY_REPORT, c, "Published REL updated (value change)", SnomedUtils.populateFSNs(publishedRel) + "\n->\n" + r, expression.replaceAll(",", ",\n"), loinc2020Exp);
 							workingCopy = workingCopy.replace(publishedRel, "");
 						} else {
 							report (SECONDARY_REPORT, c, "Unexpected Situation (value)", r, expression, loinc2020Exp);

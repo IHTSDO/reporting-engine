@@ -60,7 +60,7 @@ public class ReplaceExistingTerms extends BatchFix implements RF2Constants{
 		for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
 			if (d.isPreferred() && d.getTerm().contains(match)) {
 				String newTerm = d.getTerm().replace(match, replace);
-				replaceDescription(t, c, d, newTerm, InactivationIndicator.ERRONEOUS, retainPtAsAcceptable);
+				replaceDescription(t, c, d, newTerm, InactivationIndicator.ERRONEOUS, retainPtAsAcceptable, "");
 				changesMade++;
 			}
 		}
