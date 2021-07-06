@@ -15,9 +15,6 @@ import org.slf4j.LoggerFactory;
 import org.snomed.otf.script.dao.ReportSheetManager;
 import org.springframework.util.StringUtils;
 
-/**
- *INFRA-6637 Re-terming and remodel of AIDS concepts
- */
 public class INFRA7013_Reterm_SubstanceGroupers extends BatchFix {
 
 	Logger logger = LoggerFactory.getLogger(this.getClass());
