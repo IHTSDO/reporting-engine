@@ -276,7 +276,13 @@ public class KPIPatternsReport extends TermServerReport implements ReportClass {
 		//2. lost active inferred descendant(s)
 		String issueStr = "Pattern 11: Existing sufficiently defined concepts that gained a stated intermediate primitive parent and lost active inferred descendant(s)";
 		initialiseSummary(issueStr);
-		for (Concept c : gl.getAllConcepts()) {
+		
+		if (gl.getPreviousTC() == null) {
+			report (null, "Previous Transative Closure is not available.  Unable to check Pattern 11");
+			return;
+		}
+		
+ 		for (Concept c : gl.getAllConcepts()) {
 			//Filter for active concepts that have already been published and are sufficiently defined.
 			if (c.isActive() && c.isReleased() &&
 					c.getDefinitionStatus().equals(DefinitionStatus.FULLY_DEFINED)) {

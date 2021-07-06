@@ -1226,11 +1226,12 @@ public class GraphLoader implements RF2Constants {
 	}
 
 	public void populatePreviousTransativeClosure() throws TermServerScriptException {
+		TermServerScript.info("Populating PREVIOUS transitive closure");
 		previousTransativeClosure = generateTransativeClosure();
 	}
 	
 	public TransitiveClosure generateTransativeClosure() throws TermServerScriptException {
-		TermServerScript.debug ("Calculating transative closure...");
+		TermServerScript.info ("Calculating transative closure...");
 		TransitiveClosure tc = new TransitiveClosure();
 		//For all active concepts, populate their ancestors into the TC
 		getAllConcepts().parallelStream().forEach(c->{
@@ -1240,7 +1241,7 @@ public class GraphLoader implements RF2Constants {
 				e.printStackTrace();
 			} 
 		});
-		TermServerScript.debug ("Completed transative closure: " + tc.size() + " relationships mapped");
+		TermServerScript.info ("Completed transative closure: " + tc.size() + " relationships mapped");
 		return tc;
 	}
 
