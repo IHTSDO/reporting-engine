@@ -482,7 +482,7 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 				alreadyReportedExcluded.add(c);
 				continue;
 			}
-			if (alreadyReportedExcluded.contains(c) || isExcluded(c, TERTIARY_REPORT)) {
+			if (alreadyReportedExcluded.contains(c) || isExcluded(c, QUINARY_REPORT)) {
 				ignoredConcepts.add(c);
 			}
 		}
@@ -490,7 +490,7 @@ public class MisalignedConcepts extends TemplateFix implements ReportClass {
 		
 		//Find matches against all templates
 		for (Template template : templates) {
-			Set<Concept> matches = findTemplateMatches(template, potentiallyMisaligned, null, TERTIARY_REPORT, charType);
+			Set<Concept> matches = findTemplateMatches(template, potentiallyMisaligned, null, QUINARY_REPORT, charType);
 			incrementSummaryInformation("Matched templates",matches.size());
 			for (Concept match : matches) {
 				if (!alreadyReportAligned.contains(match)) {
