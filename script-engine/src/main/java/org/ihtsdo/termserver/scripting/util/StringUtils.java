@@ -70,6 +70,15 @@ public class StringUtils implements RF2Constants {
 			return word.toUpperCase();
 		return Character.toUpperCase(word.charAt(0)) + word.substring(1);
 	}
+	
+	public static String decapitalizeFirstLetter(final String word) {
+		if (isEmpty(word)) return word;
+		if (Character.isLowerCase(word.charAt(0)))
+			return word;
+		if (word.length() == 1)
+			return word.toLowerCase();
+		return Character.toLowerCase(word.charAt(0)) + word.substring(1);
+	}
 
 	public static String deCapitalize (String str) {
 		if (str == null || str.isEmpty() || str.length() < 2) {
