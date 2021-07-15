@@ -20,11 +20,15 @@ import com.google.common.util.concurrent.AtomicLongMap;
  */
 public class NewDescriptions extends TermServerReport implements ReportClass {
 	
+	private static final String UNPROMOTED_CHANGES_ONLY = "Unpromoted changes only";
+	
 	Logger logger = LoggerFactory.getLogger(this.getClass());
 	AtomicLongMap<String> componentCounts = AtomicLongMap.create();
+	boolean unpromotedChangesOnly = false;
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
+		params.put(UNPROMOTED_CHANGES_ONLY, "true");
 		TermServerReport.run(NewDescriptions.class, args, params);
 	}
 	
@@ -33,6 +37,10 @@ public class NewDescriptions extends TermServerReport implements ReportClass {
 		ReportSheetManager.targetFolderId = "1od_0-SCbfRz0MY-AYj_C0nEWcsKrg0XA"; //Release Stats
 		subsetECL = run.getParamValue(ECL);
 		super.init(run);
+		
+		if (run.getParameters().getMandatoryBoolean(UNPROMOTED_CHANGES_ONLY) && project.getKey().equals("MAIN")) {
+			throw new TermServerScriptException("UnpromotedChangesOnly makes no sense when running against MAIN");
+		}
 	}
 	
 	public void postInit() throws TermServerScriptException {
@@ -48,6 +56,7 @@ public class NewDescriptions extends TermServerReport implements ReportClass {
 	public Job getJob() {
 		JobParameters params = new JobParameters()
 				.add(ECL).withType(JobParameter.Type.ECL)
+				.add(UNPROMOTED_CHANGES_ONLY).withType(JobParameter.Type.BOOLEAN).withDefaultValue(false)
 				.build();
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_STATS))
@@ -66,17 +75,29 @@ public class NewDescriptions extends TermServerReport implements ReportClass {
 			logger.warn("No TS specified.  Using localhost");
 			jobRun.setTerminologyServerUrl("http://localhost:8085/");
 		}
-		Collection<Concept> conceptsOfInterest;
+		
+		List<Concept> conceptsOfInterest;
 		if (subsetECL != null && !subsetECL.isEmpty()) {
-			conceptsOfInterest = findConcepts(subsetECL);
+			conceptsOfInterest = new ArrayList(findConcepts(subsetECL));
 		} else {
-			conceptsOfInterest = gl.getAllConcepts();
+			conceptsOfInterest = new ArrayList(gl.getAllConcepts());
+		}
+		
+		conceptsOfInterest.sort(Comparator.comparing(Concept::getSemTag).thenComparing(Concept::getFsn));
+		
+		List<Description> unpromotedDescriptions = null;
+		if (jobRun.getParameters().getMandatoryBoolean(UNPROMOTED_CHANGES_ONLY)) {
+			unpromotedDescriptions = tsClient.getUnpromotedDescriptions(project.getBranchPath(), true);
+			info("Recovered " + unpromotedDescriptions.size() + " unpromoted descriptions");
 		}
 		
 		for (Concept c : conceptsOfInterest) {
-			
 			for (Description d : c.getDescriptions(ActiveState.ACTIVE)) {
-				if (!d.isReleased() && inScope(d)) {
+				if (d.getId().equals("4588845012")) {
+					debug("here");
+				}
+				if (!d.isReleased() && inScope(d) && 
+						(unpromotedDescriptions == null || unpromotedDescriptions.contains(d))) {
 					int tabIdx = d.getType().equals(DescriptionType.TEXT_DEFINITION) ? SECONDARY_REPORT : PRIMARY_REPORT;
 					report(tabIdx, c, d.getLang(), d.getTerm(), d);
 					countIssue(c);

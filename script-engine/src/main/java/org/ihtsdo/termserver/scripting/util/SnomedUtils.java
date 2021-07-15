@@ -1764,4 +1764,11 @@ public class SnomedUtils implements RF2Constants {
 		}
 		return shortestTerm;
 	}
+
+	public static boolean isEmpty(Object obj) {
+		if (obj == null) {
+			return true;
+		}
+		return StringUtils.isEmpty(obj.toString());
+	}
 }

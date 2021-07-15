@@ -31,7 +31,7 @@ public class Description extends Component implements RF2Constants {
 	@Expose
 	private Boolean released;
 	
-	@SerializedName("descriptionId")
+	@SerializedName(value = "descriptionId", alternate = {"id"})
 	@Expose
 	private String descriptionId;
 	
@@ -188,6 +188,10 @@ public class Description extends Component implements RF2Constants {
 
 	public String getDescriptionId() {
 		return descriptionId;
+	}
+	
+	public void setId(String descriptionId) {
+		this.descriptionId = descriptionId;
 	}
 
 	public void setDescriptionId(String descriptionId) {

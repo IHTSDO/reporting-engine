@@ -646,4 +646,16 @@ public class TermServerClient {
 		}
 	}
 
+	public List<Description> getUnpromotedDescriptions(String branchPath, boolean unpromotedChangesOnly) throws TermServerScriptException {
+		try {
+			String url = this.url + "/" + branchPath + "/authoring-stats/new-descriptions?unpromotedChangesOnly=" + (unpromotedChangesOnly?"true":"false");
+			Description[] descriptions = restTemplate.getForObject(
+								url,
+								Description[].class);
+			return Arrays.asList(descriptions);
+		} catch (RestClientException e) {
+			throw new TermServerScriptException(translateRestClientException(e));
+		}
+	}
+
 }

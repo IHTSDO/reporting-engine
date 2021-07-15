@@ -231,6 +231,7 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 
 	public void setFsn(String fsn) {
 		this.fsn = fsn;
+		this.semTag = null;
 	}
 
 	public DefinitionStatus getDefinitionStatus() {
@@ -1544,6 +1545,23 @@ public class Concept extends Component implements RF2Constants, Comparable<Conce
 			}
 		}
 		return fromAxiom;
+	}
+	
+	transient String semTag = null;
+	public String getSemTag() {
+		
+		if (semTag != null) {
+			return semTag;
+		}
+		
+		if (!SnomedUtils.isEmpty(fsn)) {
+			String[] parts = SnomedUtils.deconstructFSN(fsn.toString());
+			if (!StringUtils.isEmpty(parts[1])) {
+				semTag = parts[1];
+				return semTag;
+			}
+		}
+		return "";
 	}
 
 }
