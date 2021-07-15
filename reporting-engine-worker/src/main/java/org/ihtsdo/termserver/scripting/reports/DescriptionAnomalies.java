@@ -50,8 +50,8 @@ public class DescriptionAnomalies extends TermServerReport implements ReportClas
 				.build();
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.GENERAL_QA))
-				.withName("Description Anomanlies")
-				.withDescription("This report checks for a number of known possible issues such as: active descriptiosn with no acceptability and acceptable synonyms that are identical to the preferred term of an ancestor concept.")
+				.withName("Description Anomalies")
+				.withDescription("This report checks for a number of known possible issues such as: active descriptions with no acceptability and acceptable synonyms that are identical to the preferred term of an ancestor concept.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.withParameters(params)
 				.withTag(INT)
