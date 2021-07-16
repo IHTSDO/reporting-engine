@@ -1,0 +1,7 @@
+{
+  "name": "Stoma",
+  "documentation": "https://confluence.ihtsdotools.org/pages/viewpage.action?pageId=129112968",
+  "version": 0.3,
+  "domain": "< 75506009 |Construction of stoma (procedure)|",
+  "logicalTemplate": "71388002 |Procedure (procedure)|  :\n[[~1..1 @rolegroup]] {\n[[~1..1]]  260686004 |Method (attribute)|  = [[+id ( << 129376004 |Construction - action (qualifier value)|  ) ]],\n[[~1..1]]  363700003 |Direct morphology (attribute)|  = [[+id ( <<  245857005 |Stoma (morphologic abnormality)|  ) ]],\n[[~1..1]]  405814001 |Procedure site - Indirect (attribute)|  = [[+id ( <  442083009 |Anatomical or acquired body structure (body structure)|  ) ]] }\n"
+}
