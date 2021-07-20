@@ -44,12 +44,20 @@ public class DuplicateLangRefsetsFix extends BatchFix {
 				LangRefsetEntry l1 = (LangRefsetEntry)dups.getKeep();
 				LangRefsetEntry l2 = (LangRefsetEntry)dups.getInactivate();
 				report (t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REMOVED, l2.toString(true));
-				report (t, c, Severity.LOW, ReportActionType.NO_CHANGE, l1.toString(true));
 				if (StringUtils.isEmpty(l2.getEffectiveTime())) {
 					changesMade += deleteRefsetMember(t, l2.getId());
+					//What if l1 was made inactive?  Need to reactivate
+					if (!l1.isActive() && l2.isActive()) {
+						l1.setActive(true);
+						changesMade += updateRefsetMember(t, l1, info);
+						report (t, c, Severity.LOW, ReportActionType.REFSET_MEMBER_REACTIVATED, l1.toString(true));
+					} else {
+						report (t, c, Severity.LOW, ReportActionType.NO_CHANGE, l1.toString(true));
+					}
 				} else {
 					l2.setActive(false);
 					changesMade += updateRefsetMember(t, l2, info);
+					report (t, c, Severity.LOW, ReportActionType.NO_CHANGE, l1.toString(true));
 				}
 			}
 		} catch (Exception e) {

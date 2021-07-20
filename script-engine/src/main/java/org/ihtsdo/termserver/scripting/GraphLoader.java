@@ -703,7 +703,11 @@ public class GraphLoader implements RF2Constants {
 				Description d = getDescription(lineItems[LANG_IDX_REFCOMPID]);
 				LangRefsetEntry langRefsetEntry = LangRefsetEntry.fromRf2(lineItems);
 				
-				/*if (langRefsetEntry.getId().equals("1ee09ebd-f9cc-57f6-9850-ceea87310e68")) {
+				/*if (langRefsetEntry.getId().equals("85a10b1f-a8ad-4c73-92bd-d6a0ef67cfa8")) {
+					TermServerScript.debug("here");
+				}
+				
+				if (langRefsetEntry.getId().equals("e66a48eb-9824-4a62-99ff-ee7058b878ca")) {
 					TermServerScript.debug("here");
 				}*/
 				/*if (langRefsetEntry.getReferencedComponentId().equals("2643877015") || langRefsetEntry.getReferencedComponentId().equals("2643878013")) {
@@ -774,7 +778,11 @@ public class GraphLoader implements RF2Constants {
 						}
 					} else {
 						//New entry is later or same effective time as one we already know about
-						d.getLangRefsetEntries().remove(existing);
+						if (existing.isReleased() && !existing.getId().equals(langRefsetEntry.getId())) {
+							System.err.println ("Attempt to remove published entry");
+						} else {
+							d.getLangRefsetEntries().remove(existing);
+						}
 						//issue = "Existing " + (existing.isActive()? "active":"inactive") + " langrefset entry being overwritten by subsequent " + (langRefsetEntry.isActive()? "active":"inactive") + " value " + existing;
 						//System.err.println(issue);
 					}
@@ -807,7 +815,23 @@ public class GraphLoader implements RF2Constants {
 		if (l1.isActive() && l2.isActive()) {
 			Set<DuplicatePair> duplicates = getLangRefsetDuplicates(d);
 			duplicates.add(new DuplicatePair(l1, l2));  //Keep the first, with the intention to inactivate (or delete) the second
-			System.err.println("Noting langrefset as duplicate with " + l1.getId() + " : " + l2);
+			System.err.println("Noting langrefset as duplicate with " + l1.getId() + " : " + l2.getId() + " - " + l2);
+		}
+		
+		if (l1.isActive() != l2.isActive()) {
+			Set<DuplicatePair> duplicates = getLangRefsetDuplicates(d);
+			DuplicatePair pair = new DuplicatePair(l1, l2);
+			if (duplicates.contains(pair)) {
+				duplicates.add(pair);  //Keep the first, with the intention to inactivate (or delete) the second
+				System.err.println("Replacing langrefset duplicate (now inactive) " + l1.getId() + " : " + l2.getId() + " - " + l1);
+			}
+			//Or did these two meet in the opposite order last time?s
+			DuplicatePair pair2 = new DuplicatePair(l2, l1);
+			if (duplicates.contains(pair2)) {
+				duplicates.remove(pair2);  //Not quite identical, first one is active
+				duplicates.add(pair2);  //Keep the first, with the intention to inactivate (or delete) the second
+				System.err.println("Replacing langrefset duplicate (now inactive) " + l2.getId() + " : " + l1.getId() + " - " + l1);
+			}
 		}
 	}
 	
@@ -1350,6 +1374,24 @@ public class GraphLoader implements RF2Constants {
 		}
 		public Component getInactivate() {
 			return inactivate;
+		}
+		
+		@Override
+		public int hashCode() {
+			return (keep.getId() + "_" +  inactivate.getId()).hashCode();
+		}
+		
+		@Override
+		public boolean equals(Object obj) {
+			if (!(obj instanceof DuplicatePair)) {
+				return false;
+			}
+			DuplicatePair d2 = (DuplicatePair) obj;
+			if (keep.getId().equals(d2.keep.getId()) &&
+					inactivate.getId().equals(d2.inactivate.getId())) {
+				return true;
+			}
+			return false;
 		}
 	}
 
