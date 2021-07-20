@@ -9,6 +9,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.ihtsdo.termserver.scripting.domain.RF2Constants.Acceptability;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.script.dao.ReportSheetManager;
@@ -76,9 +77,9 @@ public class INFRA7059_SEP_Reterm extends BatchFix {
 			changesMade = modifyDescriptions(task, loadedConcept);
 			String fsnMinusTag = SnomedUtils.deconstructFSN(loadedConcept.getFsn())[0];
 			String usPT = loadedConcept.getPreferredSynonym(US_ENG_LANG_REFSET).getTerm();
-			if (!usPT.equals(fsnMinusTag)) {
+			/*if (!usPT.equals(fsnMinusTag)) {
 				report(task, concept, Severity.HIGH, ReportActionType.VALIDATION_CHECK, "PT is not FSN minus Semtag", usPT);
-			}
+			}*/
 			if (changesMade > 0) {
 				updateConcept(task, loadedConcept, info);
 			} 
@@ -101,6 +102,8 @@ public class INFRA7059_SEP_Reterm extends BatchFix {
 			String term = d.getTerm().toLowerCase();
 			if (d.getType().equals(DescriptionType.FSN)) {
 				term = SnomedUtils.deconstructFSN(term)[0].toLowerCase();
+			} else {
+				continue;  //Only changing FSNs + matching Synonym
 			}
 			
 			String newTerm;
@@ -125,6 +128,12 @@ public class INFRA7059_SEP_Reterm extends BatchFix {
 				//Do not demote the PT, replace absolutely
 				replaceDescription(t, c, d, newTerm, InactivationIndicator.NONCONFORMANCE_TO_EDITORIAL_POLICY, false);
 				changesMade++;
+				
+				//And we're also to add a synonym without the semtag
+				String matchingSynonymTerm = SnomedUtils.deconstructFSN(newTerm)[0];
+				Description matchingSynonym = Description.withDefaults(matchingSynonymTerm, DescriptionType.SYNONYM, Acceptability.ACCEPTABLE);
+				matchingSynonym.setCaseSignificance(d.getCaseSignificance());
+				addDescription(t, c, matchingSynonym);
 			}
 		}
 		return changesMade;
