@@ -4,24 +4,23 @@ import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import org.ihtsdo.termserver.scripting.dao.ReportConfiguration;
 import org.ihtsdo.termserver.scripting.dao.ReportDataUploader;
-import org.slf4j.*;
 
 import org.apache.commons.lang.time.DurationFormatUtils;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.client.authoringservices.AuthoringServicesClient;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
+import org.ihtsdo.otf.utils.ExceptionUtils;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.*;
 import org.ihtsdo.termserver.scripting.dao.RF2Manager;
-import org.ihtsdo.termserver.scripting.dao.ReportManager;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.util.ExceptionUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-import org.ihtsdo.termserver.scripting.util.StringUtils;
 import org.snomed.otf.scheduler.domain.*;
-
+import org.snomed.otf.script.Script;
+import org.snomed.otf.script.dao.ReportConfiguration;
+import org.snomed.otf.script.dao.ReportManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 
@@ -30,11 +29,9 @@ import com.google.common.io.Files;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import us.monoid.web.Resty;
+//import us.monoid.web.Resty;
 
-public abstract class TermServerScript implements RF2Constants {
-	
-	static Logger logger = LoggerFactory.getLogger(TermServerScript.class);
+public abstract class TermServerScript extends Script implements ScriptConstants {
 	
 	protected static boolean debug = true;
 	protected static boolean dryRun = true;
@@ -51,7 +48,7 @@ public abstract class TermServerScript implements RF2Constants {
 	protected TermServerClient tsClient;
 	protected AuthoringServicesClient scaClient;
 	protected String authenticatedCookie;
-	protected Resty resty = new Resty();
+	//protected Resty resty = new Resty();
 	protected Project project;
 	protected int maxFailures = 5;
 	protected int restartPosition = NOT_SET;
@@ -103,7 +100,6 @@ public abstract class TermServerScript implements RF2Constants {
 	public static final String RESTART_FROM_TASK = "Restart from task";
 	
 	public static final String FILE = "File";
-	//public static final String PROJECT = "Project";
 	protected static final String DRY_RUN = "Dry Run";
 	protected static final String INPUT_FILE = "InputFile";
 	protected static final String SUB_HIERARCHY = "Subhierarchy";
@@ -133,24 +129,11 @@ public abstract class TermServerScript implements RF2Constants {
 		gson = gsonBuilder.create();
 	}
 	
-	public enum ReportActionType {	API_ERROR, DEBUG_INFO, INFO, UNEXPECTED_CONDITION,
-									CONCEPT_CHANGE_MADE, CONCEPT_ADDED, CONCEPT_INACTIVATED, CONCEPT_DELETED,
-									AXIOM_CHANGE_MADE,
-									DESCRIPTION_CHANGE_MADE, DESCRIPTION_ACCEPTABILIY_CHANGED, DESCRIPTION_REACTIVATED,
-									DESCRIPTION_ADDED, DESCRIPTION_INACTIVATED, DESCRIPTION_DELETED,
-									CASE_SIGNIFICANCE_CHANGE_MADE, MODULE_CHANGE_MADE, 
-									RELATIONSHIP_ADDED, RELATIONSHIP_REPLACED, RELATIONSHIP_INACTIVATED, RELATIONSHIP_DELETED, RELATIONSHIP_MODIFIED, 
-									RELATIONSHIP_GROUP_ADDED,RELATIONSHIP_GROUP_REMOVED,
-									NO_CHANGE, VALIDATION_ERROR, VALIDATION_CHECK, SKIPPING,
-									REFSET_MEMBER_REMOVED, REFSET_MEMBER_REACTIVATED,
-									UNKNOWN, RELATIONSHIP_REACTIVATED, 
-									ASSOCIATION_ADDED, ASSOCIATION_REMOVED, ASSOCIATION_CHANGED, 
-									INACT_IND_ADDED, INACT_IND_MODIFIED,
-									LANG_REFSET_MODIFIED};
-									
-	public enum Severity { NONE, LOW, MEDIUM, HIGH, CRITICAL }; 
-	
 	public Concept[] selfGroupedAttributes = new Concept[] { FINDING_SITE, CAUSE_AGENT, ASSOC_MORPH };
+
+	public String detectReleaseBranch() {
+		return getArchiveManager().detectReleaseBranch(project.getKey());
+	}
 
 	public String getScriptName() {
 		return this.getClass().getSimpleName();
@@ -181,44 +164,6 @@ public abstract class TermServerScript implements RF2Constants {
 															"https://prod-ms-authoring.ihtsdotools.org/",
 															"https://prod-snowstorm.ihtsdotools.org/"
 	};
-	
-	public static void info (String msg) {
-		logger.info(msg);
-	}
-	
-	public static void debug (Object obj) {
-		logger.debug(obj==null?"NULL":obj.toString());
-	}
-	
-	public static void warn (Object obj) {
-		logger.warn("*** " + (obj==null?"NULL":obj.toString()));
-	}
-	
-	public static void error (Object obj, Exception e) {
-		System.err.println ("*** " + (obj==null?"NULL":obj.toString()));
-		if (e != null) 
-			logger.error(org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(e));
-	}
-	
-	public static void print (Object msg) {
-		System.out.print (msg.toString());
-	}
-	
-	public static void println (Object msg) {
-		System.out.println (msg.toString());
-	}
-	
-	public static String getMessage (Exception e) {
-		String msg = e.getMessage();
-		Throwable cause = e.getCause();
-		if (cause != null) {
-			msg += " caused by " + cause.getMessage();
-			if (cause.getMessage() != null && cause.getMessage().length() < 6) {
-				msg += " @ " + cause.getStackTrace()[0];
-			}
-		}
-		return msg;
-	}
 	
 	protected void init(String[] args) throws TermServerScriptException {
 		
@@ -263,8 +208,9 @@ public abstract class TermServerScript implements RF2Constants {
 			restartPosition = 1;
 		}
 		
-		//TODO Make calls through client objects rather than resty direct and remove this member 
-		resty.withHeader("Cookie", authenticatedCookie);  
+		//TODO Make calls through client objects rather than resty direct and remove this member
+		//TODO May then be able to remove otf-common entirely and just use resource-manager
+		//resty.withHeader("Cookie", authenticatedCookie);  
 		scaClient = new AuthoringServicesClient(url, authenticatedCookie);
 		tsClient = createTSClient(this.url, authenticatedCookie);
 		boolean loadingRelease = false;
@@ -458,7 +404,7 @@ public abstract class TermServerScript implements RF2Constants {
 		}
 		if (!suppressOutput) {
 			debug ("Initialising Report Manager");
-			reportManager = ReportManager.create(this);
+			reportManager = ReportManager.create(this, getReportConfiguration());
 			if (tabNames != null) {
 				reportManager.setTabNames(tabNames);
 			}

@@ -15,7 +15,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 /*
 */
-public class RemoveWAS_A extends BatchFix implements RF2Constants{
+public class RemoveWAS_A extends BatchFix implements ScriptConstants{
 	
 	BrowserClient browserClient;
 	Set<Concept> allActiveConcepts;

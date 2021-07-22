@@ -7,16 +7,16 @@ import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.snomed.otf.script.dao.ReportSheetManager;
 
 /*
  * INFRA-3759 Modify CS settings per supplied spreadsheet
  * INFRA-4166 Same deal, different format
  */
-public class CaseSignificanceFixDriven extends BatchFix implements RF2Constants{
+public class CaseSignificanceFixDriven extends BatchFix implements ScriptConstants{
 	
 	Map<Concept, Map<String, String>> csMap = new HashMap<>();
 	

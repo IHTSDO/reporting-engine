@@ -21,7 +21,7 @@ inactivate the surplus.
 * NB This fix fails because the Refset Endpoint only works for Simple Refsets.
 * Reworking this code to generate an RF2 Delta archive for import.
  */
-public class InactivateDuplicateInactivationIndicators_fail extends BatchFix implements RF2Constants{
+public class InactivateDuplicateInactivationIndicators_fail extends BatchFix implements ScriptConstants{
 	
 	protected InactivateDuplicateInactivationIndicators_fail(BatchFix clone) {
 		super(clone);

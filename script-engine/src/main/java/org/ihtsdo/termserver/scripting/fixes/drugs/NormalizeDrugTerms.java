@@ -6,14 +6,13 @@ import java.util.*;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 //import org.ihtsdo.termserver.scripting.delta.CaseSignificanceFixAll;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.ConceptType;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.DrugTermGenerator;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.ihtsdo.termserver.scripting.util.TermGenerator;
+import org.snomed.otf.script.dao.ReportSheetManager;
 
 /*
  * Combination of DRUGS-363 to remove "/1 each" from preferred terms
@@ -25,7 +24,7 @@ import org.ihtsdo.termserver.scripting.util.TermGenerator;
  * DRUGS-562 - Editorial Guide updated for Structure and Disposition Groupers
  * DRUGS-786 - Batch terming update
  */
-public class NormalizeDrugTerms extends DrugBatchFix implements RF2Constants {
+public class NormalizeDrugTerms extends DrugBatchFix implements ScriptConstants {
 	
 	String subHierarchyStr = MEDICINAL_PRODUCT.getConceptId();
 	//static Map<String, String> replacementMap = new HashMap<String, String>();

@@ -18,7 +18,7 @@ For concepts with the relevant semantic tags,
 find instances of specified attributes which exist as inferred but not as stated, 
 and repeat them as stated relationships
 */
-public class RestateInferredAsStated extends BatchFix implements RF2Constants{
+public class RestateInferredAsStated extends BatchFix implements ScriptConstants{
 	
 	String subHierarchyStr = "373873005"; // |Pharmaceutical / biologic product (product)|
 	String targetSemanticTag = "(medicinal product form)";

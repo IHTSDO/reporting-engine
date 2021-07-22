@@ -12,10 +12,11 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
-import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.snomed.otf.script.dao.ReportSheetManager;
+import org.snomed.otf.script.utils.CVSUtils;
 
 import com.google.api.client.util.Charsets;
 import com.google.common.collect.BiMap;
@@ -275,7 +276,7 @@ public class ZoomAndEnhanceLOINC extends BatchFix {
 		List<String> row = source.get(key);
 		//Have we yet to expand out this row?  Is costly, so working JIT
 		if (row.size() == 1) {
-			row = org.ihtsdo.termserver.scripting.util.StringUtils.csvSplit(row.get(0));
+			row = CVSUtils.csvSplit(row.get(0));
 			source.put(key, row);
 		}
 		return row.get(idx);

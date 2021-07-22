@@ -15,7 +15,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * ISRS-302
  * 
  */
-public class CaseSignificanceSpecified extends DeltaGenerator implements RF2Constants {
+public class CaseSignificanceSpecified extends DeltaGenerator implements ScriptConstants {
 
 	String newEffectiveTime = "20180131";
 	

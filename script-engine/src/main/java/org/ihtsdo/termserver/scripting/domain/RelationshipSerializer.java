@@ -4,7 +4,7 @@ import java.lang.reflect.Type;
 
 import com.google.gson.*;
 
-public class RelationshipSerializer implements JsonSerializer<Relationship>, RF2Constants {
+public class RelationshipSerializer implements JsonSerializer<Relationship>, ScriptConstants {
 
 	@Override
 	public JsonElement serialize(Relationship r, Type typeOfSrc,

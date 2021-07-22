@@ -6,14 +6,14 @@ import java.util.*;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
+import org.snomed.otf.script.dao.ReportSheetManager;
 
 /*
  * INFRA-3926 Modify case significance from CS to cI as per list
  */
-public class CaseSignificanceFixDescIdDriven extends BatchFix implements RF2Constants{
+public class CaseSignificanceFixDescIdDriven extends BatchFix implements ScriptConstants{
 	
 	Map<Concept, List<Description>> changeSet = new HashMap<>();
 	

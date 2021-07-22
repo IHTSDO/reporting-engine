@@ -18,7 +18,7 @@ import com.google.common.io.Files;
 /**
  * Class to reactivate langrefset entries when they have been inactivated after the international edition has activated ones for the same concept
  */
-public class Delete_US_Issues extends NegativeDeltaGenerator implements RF2Constants {
+public class Delete_US_Issues extends NegativeDeltaGenerator implements ScriptConstants {
 	
 	String[] refsets = new String[] {US_ENG_LANG_REFSET};
 

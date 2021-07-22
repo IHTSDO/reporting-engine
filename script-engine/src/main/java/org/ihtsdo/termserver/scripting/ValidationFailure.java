@@ -1,12 +1,11 @@
 package org.ihtsdo.termserver.scripting;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
+import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.TermServerScript.ReportActionType;
-import org.ihtsdo.termserver.scripting.TermServerScript.Severity;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 
-public class ValidationFailure extends TermServerScriptException {
+public class ValidationFailure extends TermServerScriptException implements RF2Constants {
 
 	private static final long serialVersionUID = 9031426261460131112L;
 	

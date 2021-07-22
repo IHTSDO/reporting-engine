@@ -7,10 +7,9 @@ import java.util.*;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
-
-import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.snomed.otf.script.dao.ReportSheetManager;
 
 /*
 	Where a concept is inactive, it's active descriptions should have the inactivation indicator 
@@ -22,7 +21,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 	
 	MAINT-489
 */
-public class FixMissingInactivationIndicators extends DeltaGenerator implements RF2Constants{
+public class FixMissingInactivationIndicators extends DeltaGenerator implements ScriptConstants{
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		FixMissingInactivationIndicators delta = new FixMissingInactivationIndicators();

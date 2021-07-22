@@ -7,16 +7,15 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
-
-import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
+import org.snomed.otf.script.dao.ReportSheetManager;
 
 
 /* INFRA-4133 Fix issue of multiple descriptions with the same term - unpublished and active
  * Also seeing empty terms and "GBTERM:null"
  */
-public class DuplicateDescriptions extends BatchFix implements RF2Constants{
+public class DuplicateDescriptions extends BatchFix implements ScriptConstants{
 	
 	Set<Description> duplicateDescriptions = new HashSet<>();
 	

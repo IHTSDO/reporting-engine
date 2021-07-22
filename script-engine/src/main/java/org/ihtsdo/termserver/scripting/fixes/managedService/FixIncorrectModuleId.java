@@ -20,7 +20,7 @@ moduleid of the concept, descriptions and relationships all match
 the default.   Note that unlike other fixes, this does not create a 
 new task, but targets existing tasks. 
  */
-public class FixIncorrectModuleId extends BatchFix implements RF2Constants{
+public class FixIncorrectModuleId extends BatchFix implements ScriptConstants{
 	
 	Map<String, Task> knownTasks = new HashMap<String, Task>();
 	Set<TaskConcept> processMe = new HashSet<TaskConcept>();

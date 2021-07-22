@@ -6,14 +6,14 @@ import java.util.*;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.snomed.otf.script.dao.ReportSheetManager;
 
 /*
 For APDS-335, QI-234 (QI-99)
 Replace all relationships of one specified type / value for another
 */
-public class ReplaceRelationship extends BatchFix implements RF2Constants{
+public class ReplaceRelationship extends BatchFix implements ScriptConstants{
 	
 	Concept findAttribute;
 	Concept replaceAttribute;

@@ -15,7 +15,7 @@ For DRUG-422, DRUG-431
 Driven by a text file of concepts, move specified concepts to exist under
 a parent concept.
 */
-public class ReplaceParentsDriven extends BatchFix implements RF2Constants{
+public class ReplaceParentsDriven extends BatchFix implements ScriptConstants{
 	
 	Relationship newParentRel;
 	String newParent = "763158003"; // |Medicinal product (product)| 

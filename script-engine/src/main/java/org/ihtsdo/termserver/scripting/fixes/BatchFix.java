@@ -24,7 +24,7 @@ import us.monoid.json.*;
  * Reads in a file containing a list of concept SCTIDs and processes them in batches
  * in tasks created on the specified project
  */
-public abstract class BatchFix extends TermServerScript implements RF2Constants {
+public abstract class BatchFix extends TermServerScript implements ScriptConstants {
 	
 	protected int taskSize = 10;
 	protected int wiggleRoom = 5;

@@ -5,17 +5,17 @@ import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.CaseSensitivityUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.snomed.otf.script.dao.ReportSheetManager;
 
 /*
  * INFRA-5421 'Fix for 7672 instances of:
  * 'An active preferred term matching a FSN on an inactive concept must have same case significance'
  */
-public class CaseSignificanceFix_INFRA_5421 extends BatchFix implements RF2Constants{
+public class CaseSignificanceFix_INFRA_5421 extends BatchFix implements ScriptConstants{
 	
 	String[] knownLowerCase = new String[] { "mm", "nm" };
 	CaseSensitivityUtils csUtils = new CaseSensitivityUtils();

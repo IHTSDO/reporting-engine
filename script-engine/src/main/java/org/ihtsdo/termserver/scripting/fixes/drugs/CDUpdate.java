@@ -21,7 +21,7 @@ DRUGS-481 Update of Clinical Drugs authored for the 20180131 release:
 	Make sufficiently defined
 Select all product concepts that have a Boss but to NOT have "precisely" in the FSN
 */
-public class CDUpdate extends DrugBatchFix implements RF2Constants {
+public class CDUpdate extends DrugBatchFix implements ScriptConstants {
 	
 	static final int MINIMAL_DRUG_MODELLING = 8;
 	DrugTermGenerator termGenerator = new DrugTermGenerator(this);

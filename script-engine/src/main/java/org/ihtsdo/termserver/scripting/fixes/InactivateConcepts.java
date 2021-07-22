@@ -5,13 +5,12 @@ import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.apache.commons.lang.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
-
-import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.util.StringUtils;
+import org.snomed.otf.script.dao.ReportSheetManager;
 
 /*
  * INFRA-2496, QI-135, DRUGS-667, IHTSDO-175
@@ -19,7 +18,7 @@ import org.ihtsdo.termserver.scripting.util.StringUtils;
  * 
  * DEVICES-92 Straight inactivation, driven by list, no replacement
  */
-public class InactivateConcepts extends BatchFix implements RF2Constants {
+public class InactivateConcepts extends BatchFix implements ScriptConstants {
 	
 	Map<Concept, Concept> replacements = new HashMap<>();
 	Map<Concept, InactivationIndicator> inactivationIndicators = new HashMap<>();

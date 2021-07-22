@@ -15,7 +15,7 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Batch;
 import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants;
+import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 
 import com.google.common.collect.HashMultimap;
@@ -25,7 +25,7 @@ import com.google.common.collect.Multimap;
  * Splits an RF2 Archive of changes into tasks by destination of 
  * "Has Disposition" attribute.
  */
-public class DispositionsArchive extends Rf2Player implements RF2Constants{
+public class DispositionsArchive extends Rf2Player implements ScriptConstants{
 	
 	Map<Concept, String> conceptToDispositionMap = new HashMap<Concept, String>();
 	Set<Concept> hasNoDisposition = new HashSet<Concept>();	

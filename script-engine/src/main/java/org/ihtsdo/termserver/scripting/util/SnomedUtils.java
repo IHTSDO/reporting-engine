@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-public class SnomedUtils implements RF2Constants {
+public class SnomedUtils extends org.ihtsdo.otf.utils.SnomedUtils implements ScriptConstants {
 
 	private static final SimpleDateFormat EFFECTIVE_DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
 	private static VerhoeffCheckDigit verhoeffCheck = new VerhoeffCheckDigit();
@@ -667,25 +667,6 @@ public class SnomedUtils implements RF2Constants {
 			}
 		}
 		return associations;
-	}
-	
-	public static File ensureFileExists(String fileName) throws TermServerScriptException {
-		if (StringUtils.isEmpty(fileName)) {
-			throw new TermServerScriptException ("Blank file name specified");
-		}
-		
-		File file = new File(fileName);
-		try {
-			if (!file.exists()) {
-				if (file.getParentFile() != null) {
-					file.getParentFile().mkdirs();
-				}
-				file.createNewFile();
-			}
-		} catch (IOException e) {
-			throw new TermServerScriptException("Failed to create file " + fileName,e);
-		}
-		return file;
 	}
 	
 	public static boolean isConceptType(Concept c, ConceptType conceptType) throws TermServerScriptException {

@@ -3,11 +3,9 @@ package org.ihtsdo.termserver.scripting.domain;
 import java.util.Collection;
 import java.util.Set;
 
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.ActiveState;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.DefinitionStatus;
+import org.ihtsdo.otf.RF2Constants;
 
-public interface Expressable {
+public interface Expressable extends RF2Constants {
 
 	DefinitionStatus getDefinitionStatus();
 	

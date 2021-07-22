@@ -7,10 +7,9 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
-
-import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
+import org.snomed.otf.script.dao.ReportSheetManager;
 
 /* INFRA-2791 Delete relationships marked as inactive that were 
  * created in the current authoring cycle.
@@ -24,7 +23,7 @@ import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 	and r2.effectiveTime < r1.effectiveTime )
 	order by sourceId
 */
-public class DeleteBornInactiveStatedRelationships extends BatchFix implements RF2Constants{
+public class DeleteBornInactiveStatedRelationships extends BatchFix implements ScriptConstants{
 	
 	Map<String, Concept> relationshipMap = new HashMap<>();
 	

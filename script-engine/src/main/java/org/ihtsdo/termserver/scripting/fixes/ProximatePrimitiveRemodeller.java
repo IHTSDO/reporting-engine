@@ -10,7 +10,7 @@ import org.ihtsdo.termserver.scripting.domain.*;
 /*
 Fix identifies concepts that can be safely remodelled using a proximate primitives pattern
  */
-public class ProximatePrimitiveRemodeller extends BatchFix implements RF2Constants {
+public class ProximatePrimitiveRemodeller extends BatchFix implements ScriptConstants {
 	
 	String subHierarchyStr = "282100009 |Adverse reaction caused by substance (disorder)| ";
 	Concept proximalPrimitiveParent = null;

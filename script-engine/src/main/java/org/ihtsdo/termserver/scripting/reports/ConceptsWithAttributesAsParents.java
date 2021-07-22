@@ -5,9 +5,9 @@ import java.io.PrintStream;
 import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.snomed.otf.script.dao.ReportSheetManager;
 
 /**
  * SUBST-235 A report to identify any concepts which have the same concept as both

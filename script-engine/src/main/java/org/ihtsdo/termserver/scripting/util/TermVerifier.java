@@ -6,14 +6,13 @@ import java.util.List;
 import java.util.Map;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
-import org.ihtsdo.termserver.scripting.TermServerScript.ReportActionType;
-import org.ihtsdo.termserver.scripting.TermServerScript.Severity;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.Description;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants;
+import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
@@ -24,7 +23,7 @@ import com.google.common.io.Files;
  * @author Peter
  *
  */
-public class TermVerifier implements RF2Constants {
+public class TermVerifier implements ScriptConstants {
 	
 	Map<Concept, String[]> conceptTermsMap;
 	

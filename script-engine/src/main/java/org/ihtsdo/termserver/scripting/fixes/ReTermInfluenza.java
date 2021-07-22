@@ -5,16 +5,16 @@ import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-import org.ihtsdo.termserver.scripting.util.StringUtils;
+import org.snomed.otf.script.dao.ReportSheetManager;
 
 /*
 SCTQA-135 Address inconsistency in "Influenza Virus" in all major hierarchies
 */
-public class ReTermInfluenza extends BatchFix implements RF2Constants{
+public class ReTermInfluenza extends BatchFix implements ScriptConstants{
 	
 	public static final String INFLUENZA = "Influenza";
 	public static final String PARAINFLUENZA = "Parainfluenza";

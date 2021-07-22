@@ -16,7 +16,7 @@ import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 	Makes modifications to anatomy relationships, driven by an input CSV file
 	See INFRA-1484
 */
-public class AnatomyRemodelling extends BatchFix implements RF2Constants{
+public class AnatomyRemodelling extends BatchFix implements ScriptConstants{
 	
 	Map<String, ConceptChange> conceptsToProcess = new HashMap<String, ConceptChange>();
 	Set<Integer> reportedItems = new HashSet<Integer>();

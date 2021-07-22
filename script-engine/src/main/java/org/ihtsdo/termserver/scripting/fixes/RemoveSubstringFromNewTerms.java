@@ -12,7 +12,7 @@ import org.ihtsdo.termserver.scripting.domain.*;
 /*
  * Removes a substring from all active Terms, where matched in context for a given subHierarchy
  */
-public class RemoveSubstringFromNewTerms extends BatchFix implements RF2Constants{
+public class RemoveSubstringFromNewTerms extends BatchFix implements ScriptConstants{
 	
 	String subHierarchyStr = "373873005"; // |Pharmaceutical / biologic product (product)|
 	static Map<String, String> replacementMap = new HashMap<String, String>();

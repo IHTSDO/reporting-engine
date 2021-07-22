@@ -15,13 +15,13 @@ import java.util.zip.*;
 
 import org.apache.commons.io.FileUtils;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Project;
+import org.ihtsdo.otf.utils.ExceptionUtils;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.TermServerClient.*;
 import org.ihtsdo.termserver.scripting.dao.ArchiveDataLoader;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.snapshot.SnapshotGenerator;
-import org.ihtsdo.termserver.scripting.util.ExceptionUtils;
-import org.ihtsdo.termserver.scripting.util.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationContext;
@@ -29,7 +29,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 @Service
-public class ArchiveManager implements RF2Constants {
+public class ArchiveManager implements ScriptConstants {
 	
 	static ArchiveManager singleton;
 

@@ -18,7 +18,7 @@ For Jim.  In the Clinical Findings hierarchy, find concepts starting "On Examina
 and "Complaining of X" and see if they have X on its own as a parent
 
 */
-public class OnExamination_or_ComplainingOf extends BatchFix implements RF2Constants{
+public class OnExamination_or_ComplainingOf extends BatchFix implements ScriptConstants{
 	
 	String[] itemsOfInterest = new String[] { "On examination - ", "Complaining of "};
 	String targetHierarchy = "404684003"; // |Clinical finding (finding)|

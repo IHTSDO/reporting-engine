@@ -17,7 +17,7 @@ Driven by a text file of concepts, clone concepts - adjusting FSN and attributes
 then inactivate original and add a historical association to the clone
 Edit: Added column to specify inactivation reason on a per concept basis
 */
-public class CloneAndReplace extends BatchFix implements RF2Constants{
+public class CloneAndReplace extends BatchFix implements ScriptConstants{
 	
 	Set<Concept> allStatedTargets = new HashSet<>();
 	Set<Concept> allInferredTargets = new HashSet<>();

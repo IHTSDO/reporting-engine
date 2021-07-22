@@ -3,12 +3,12 @@ package org.ihtsdo.termserver.scripting.creation;
 import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
+import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-import org.ihtsdo.termserver.scripting.util.StringUtils;
 
-public class ConceptCreationPattern {
+public class ConceptCreationPattern implements ScriptConstants {
 	
 	String semTag;
 	String termPattern;

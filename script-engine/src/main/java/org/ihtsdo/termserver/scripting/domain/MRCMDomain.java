@@ -5,7 +5,7 @@ import java.util.*;
 //id,effectiveTime,active,moduleId,refsetId,referencedComponentId
 //domainConstraint,parentDomain,proximalPrimitiveConstraint,proximalPrimitiveRefinement
 //domainTemplateForPrecoordination,domainTemplateForPostcoordination,guideURL
-public class MRCMDomain extends RefsetMember implements RF2Constants {
+public class MRCMDomain extends RefsetMember implements ScriptConstants {
 
 	public static String DOMAIN_CONSTRAINT = "domainConstraint";
 	public static String PARENT_DOMAIN = "parentDomain";

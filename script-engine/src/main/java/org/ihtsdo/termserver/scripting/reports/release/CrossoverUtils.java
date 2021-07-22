@@ -16,14 +16,14 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.AncestorsCache;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants;
+import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.RelationshipGroup;
 
 import java.util.HashSet;
 import java.util.Set;
 
-public class CrossoverUtils implements RF2Constants {
+public class CrossoverUtils implements ScriptConstants {
 
 	 /* The Enum TEST_RESULTS.
 	 */

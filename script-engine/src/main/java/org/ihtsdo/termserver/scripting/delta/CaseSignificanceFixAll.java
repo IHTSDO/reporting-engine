@@ -5,19 +5,19 @@ import java.io.IOException;
 import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-import org.ihtsdo.termserver.scripting.util.StringUtils;
 
 /**
  * Class to fix ALL Case Significance issues.
  * ISRS-302
  * 
  */
-public class CaseSignificanceFixAll extends DeltaGenerator implements RF2Constants {
+public class CaseSignificanceFixAll extends DeltaGenerator implements ScriptConstants {
 	
 	public enum Mode{ REPORT_ONLY, SILENT_CHANGE, REPORT_CHANGE };
 	public Mode mode;

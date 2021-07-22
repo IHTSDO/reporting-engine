@@ -11,7 +11,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
-public class Axiom extends Component implements RF2Constants, Expressable {
+public class Axiom extends Component implements ScriptConstants, Expressable {
 
 	@SerializedName(value="axiomId", alternate="id")
 	@Expose

@@ -25,7 +25,7 @@ Also, if the base has any disposition, this will be copied into the modified con
 Input file structure:  SourceId	SourceTerm	AttributeName	TargetId	TargetTerm
 UPDATE: CONCEPT	FSN	BASE
 */
-public class FlattenHierarchy extends BatchFix implements RF2Constants{
+public class FlattenHierarchy extends BatchFix implements ScriptConstants{
 	
 	Map<String,String> expectedTargetMap = new HashMap<>();
 	Concept isModificationOf;

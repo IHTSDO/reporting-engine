@@ -5,11 +5,11 @@ import java.util.List;
 import java.util.UUID;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.TermServerScript;
-import org.ihtsdo.termserver.scripting.util.StringUtils;
 
 //id	effectiveTime	active	moduleId	refsetId	referencedComponentId	owlExpression
-public class AxiomEntry extends Component implements RF2Constants {
+public class AxiomEntry extends Component implements ScriptConstants {
 
 	private String id;
 	private String effectiveTime;

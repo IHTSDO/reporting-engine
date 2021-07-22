@@ -13,7 +13,7 @@ For SUBST-200, DRUGS-448, DRUGS-451, DRUGS-466, DRUGS-484, SUBST-269, SUBST-271
 Optionally driven by a text file of concepts, check parents for redundancy and - assuming 
 the concept is primitive, retain the more specific parent.
 */
-public class RemoveRedundantParents extends BatchFix implements RF2Constants{
+public class RemoveRedundantParents extends BatchFix implements ScriptConstants{
 	
 	String exclude = null; //"105590001"; // |Substance (substance)|
 	String[] includes = {"373873005", "105590001"}; // Drugs & Substances

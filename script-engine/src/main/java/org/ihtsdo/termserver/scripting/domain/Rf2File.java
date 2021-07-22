@@ -16,7 +16,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component.ComponentType;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
-public class Rf2File implements RF2Constants {
+public class Rf2File implements ScriptConstants {
 
 	static Map<ComponentType, Rf2File> snomedRf2Files = new HashMap<ComponentType,Rf2File>();
 	static {

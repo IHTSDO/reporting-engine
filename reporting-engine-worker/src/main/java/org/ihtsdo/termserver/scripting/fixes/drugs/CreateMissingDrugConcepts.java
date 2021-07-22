@@ -9,13 +9,13 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.AncestorsCache;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
-import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.*;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
+import org.snomed.otf.script.dao.ReportSheetManager;
 
 /**
  * DRUGS-515 - Create MPF-containing concepts where required.  Identify missing MPFs
@@ -31,7 +31,7 @@ import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
  * 
  * DRUGS-814 Changes now that we're working with axioms.  Ingredients self grouped.
  */
-public class CreateMissingDrugConcepts extends DrugBatchFix implements RF2Constants, ReportClass {
+public class CreateMissingDrugConcepts extends DrugBatchFix implements ScriptConstants, ReportClass {
 	
 	DrugTermGenerator termGenerator = new DrugTermGenerator(this);
 	

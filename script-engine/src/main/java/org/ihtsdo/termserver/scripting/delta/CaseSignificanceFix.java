@@ -6,16 +6,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-import org.ihtsdo.termserver.scripting.util.StringUtils;
 
 /**
  * Class to fix Case Significance issues.
  */
-public class CaseSignificanceFix extends DeltaGenerator implements RF2Constants {
+public class CaseSignificanceFix extends DeltaGenerator implements ScriptConstants {
 
 	private List<String> exceptions = new ArrayList<>();
 	

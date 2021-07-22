@@ -12,7 +12,7 @@ import org.ihtsdo.termserver.scripting.domain.*;
 /*
 INFRA-6803 Fix fallout from transfer from other module
 */
-public class FixWrongModuleId extends BatchFix implements RF2Constants{
+public class FixWrongModuleId extends BatchFix implements ScriptConstants{
 	
 	String findModule = "1145237009";
 	String replaceModule = "900000000000207008";

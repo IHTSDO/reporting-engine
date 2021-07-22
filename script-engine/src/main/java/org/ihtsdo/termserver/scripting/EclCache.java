@@ -6,7 +6,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.client.TermServerClient;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.ConceptCollection;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants;
+import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,7 +14,7 @@ import org.springframework.util.StringUtils;
 
 import com.google.gson.Gson;
 
-public class EclCache implements RF2Constants {
+public class EclCache implements ScriptConstants {
 	
 	static Logger logger = LoggerFactory.getLogger(EclCache.class);
 	

@@ -5,6 +5,7 @@ import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
@@ -18,7 +19,7 @@ import org.ihtsdo.termserver.scripting.util.*;
 	Makes modifications to terms, driven by an input CSV file
 	See DRUGS-291
 */
-public class DrugsReTerming extends DrugBatchFix implements RF2Constants{
+public class DrugsReTerming extends DrugBatchFix implements ScriptConstants{
 	
 	String[] author_reviewer = new String[] {targetAuthor};
 	

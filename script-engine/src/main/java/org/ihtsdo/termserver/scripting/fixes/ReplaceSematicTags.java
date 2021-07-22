@@ -14,7 +14,7 @@ Find matching semantic tags and swap for specified replacement
 Currently verifies that the existing FSN is new and unpublished
 -- Also adding in a cheeky fix while we're going through concepts to make GB only preferred terms acceptable in US dialect.
  */
-public class ReplaceSematicTags extends BatchFix implements RF2Constants{
+public class ReplaceSematicTags extends BatchFix implements ScriptConstants{
 	
 	String subHierarchyStr = "373873005"; // |Pharmaceutical / biologic product (product)|
 	static Map<String, String> replacementMap = new HashMap<String, String>();

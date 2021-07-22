@@ -15,7 +15,7 @@ import org.ihtsdo.termserver.scripting.util.DrugUtils;
 For DRUGS-482
 Add ingredient counts where required.  Algorithm described in DRUGS-476.
 */
-public class IngredientCounts extends DrugBatchFix implements RF2Constants{
+public class IngredientCounts extends DrugBatchFix implements ScriptConstants{
 	
 	protected IngredientCounts(BatchFix clone) {
 		super(clone);

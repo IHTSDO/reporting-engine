@@ -14,7 +14,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 Fix identifies otherwise identical lower case and upper case terms and inactivates
 the lower case term
  */
-public class LowerCaseTermInactivation extends BatchFix implements RF2Constants{
+public class LowerCaseTermInactivation extends BatchFix implements ScriptConstants{
 	
 	String subHierarchyStr = "27268008";  //Genus Salmonella (organism)
 	

@@ -17,7 +17,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * Example TS Task: MAIN/2017-01-31/SNOMEDCT-US/USTEST/USTEST-6002
  * INFRA-1232
  */
-public class InactivateDuplicateRelationships extends DeltaGenerator implements RF2Constants {
+public class InactivateDuplicateRelationships extends DeltaGenerator implements ScriptConstants {
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		InactivateDuplicateRelationships delta = new InactivateDuplicateRelationships();

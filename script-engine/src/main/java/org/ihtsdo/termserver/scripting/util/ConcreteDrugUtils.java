@@ -7,11 +7,12 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.*;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.drugs.ConcreteIngredient;
 
-public class ConcreteDrugUtils implements RF2Constants {
+public class ConcreteDrugUtils implements ScriptConstants {
 	
 	public static final String CD = "(clinical drug)";
 	public static final String MP = "(medicinal product)";

@@ -1,9 +1,9 @@
 package org.ihtsdo.termserver.scripting;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.dao.ReportManager;
 import org.snomed.otf.scheduler.domain.Job;
 import org.snomed.otf.scheduler.domain.JobRun;
+import org.snomed.otf.script.dao.ReportManager;
 import org.springframework.context.ApplicationContext;
 
 public interface JobClass {

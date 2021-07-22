@@ -10,7 +10,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Axiom;
 import org.ihtsdo.termserver.scripting.domain.AxiomEntry;
 import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants;
+import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 import org.ihtsdo.termserver.scripting.domain.Relationship.CdType;
 import org.snomed.otf.owltoolkit.conversion.AxiomRelationshipConversionService;
 import org.snomed.otf.owltoolkit.conversion.ConversionException;
@@ -20,7 +20,7 @@ import org.snomed.otf.owltoolkit.domain.AxiomRepresentation;
  * TODO Enhance GraphLoader to read in MRCM to determine never grouped attributes
  * to pass in to axiomService constructor
  */
-public class AxiomUtils implements RF2Constants {
+public class AxiomUtils implements ScriptConstants {
 	
 	static AxiomRelationshipConversionService axiomService = new AxiomRelationshipConversionService (new HashSet<>());
 

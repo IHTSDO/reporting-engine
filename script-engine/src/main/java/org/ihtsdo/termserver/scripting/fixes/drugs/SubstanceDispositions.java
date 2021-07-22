@@ -26,7 +26,7 @@ The next level down get reparented with the grandparent instead of the dispositi
 
 The NEXT level down will keep the existing parents and just gain the disposition attribute.
 */
-public class SubstanceDispositions extends DrugBatchFix implements RF2Constants{
+public class SubstanceDispositions extends DrugBatchFix implements ScriptConstants{
 	
 	Map<Concept, List<Concept>> conceptDispositionMap = new HashMap<>();
 	BiMap<Concept, Concept> topLevelSubstances = HashBiMap.create();

@@ -17,7 +17,7 @@ import org.snomed.otf.owltoolkit.conversion.ConversionException;
 import org.snomed.otf.owltoolkit.domain.AxiomRepresentation;
 import org.springframework.util.StringUtils;
 
-public class GraphLoader implements RF2Constants {
+public class GraphLoader implements ScriptConstants {
 
 	private static GraphLoader singleton = null;
 	private Map<String, Concept> concepts = new HashMap<String, Concept>();

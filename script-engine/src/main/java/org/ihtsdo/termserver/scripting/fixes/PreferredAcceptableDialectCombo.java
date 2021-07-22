@@ -19,7 +19,7 @@ import org.ihtsdo.termserver.scripting.util.*;
  * So P/N will become P/A
  * UPDATE:  Only run against substances that are used as ingredients in products
 */
-public class PreferredAcceptableDialectCombo extends BatchFix implements RF2Constants{
+public class PreferredAcceptableDialectCombo extends BatchFix implements ScriptConstants{
 	
 	String subHierarchy = "105590001 |Substance (substance)|"; 
 	String[] exclusions = new String[] { "312435005 |Industrial and household substance (substance)|",

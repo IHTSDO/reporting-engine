@@ -17,7 +17,7 @@ INFRA-2454 Find issues with historical inactivation reasons and associations and
 fix them
 INFRA-4924 Repair of same
 */
-public class HistoricalHistoricalIssues extends BatchFix implements RF2Constants {
+public class HistoricalHistoricalIssues extends BatchFix implements ScriptConstants {
 	
 	HistAssocUtils histAssocUtils = new HistAssocUtils(this);
 	

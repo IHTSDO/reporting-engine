@@ -6,11 +6,11 @@ import java.util.*;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.reports.CaseSensitivity;
-import org.ihtsdo.termserver.scripting.util.StringUtils;
 
 /*
 SUBST-279 Where a term starts with a number and then a capital letter follows, 
@@ -18,7 +18,7 @@ then as long as that word is not itself case sensitive (as per cs_words.txt)
 then make it small.
 Then check against case significance rules to see if it can be made "ci"
 */
-public class NumberLetterLowerCase extends DrugBatchFix implements RF2Constants{
+public class NumberLetterLowerCase extends DrugBatchFix implements ScriptConstants{
 	
 	CaseSensitivity csReport;
 	

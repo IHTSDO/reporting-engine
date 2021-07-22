@@ -8,12 +8,12 @@ import java.util.stream.Collectors;
 import org.snomed.authoringtemplate.domain.logical.*;
 import org.apache.commons.lang.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.util.StringUtils;
 
-public class TemplateUtils implements RF2Constants {
+public class TemplateUtils implements ScriptConstants {
 	
 	public static Pattern p = Pattern.compile("[0-9]+");
 	

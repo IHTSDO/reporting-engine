@@ -8,14 +8,14 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.apache.commons.lang.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
-import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
+import org.snomed.otf.script.dao.ReportSheetManager;
 
 /*
  * Flip the case of the FSN and back in order to force a concept to show up in review
  */
-public class TouchConceptsInTask extends BatchFix implements RF2Constants{
+public class TouchConceptsInTask extends BatchFix implements ScriptConstants{
 	
 	final static String targetTaskPath = "MAIN/CRSJUL20/CRSJUL20-613";
 	
@@ -64,7 +64,7 @@ public class TouchConceptsInTask extends BatchFix implements RF2Constants{
 				updateConcept(t, loadedConcept, "");
 				report (t, c , Severity.LOW, ReportActionType.CASE_SIGNIFICANCE_CHANGE_MADE, "Flipped case sign on FSN");
 			} catch (Exception e) {
-				report (t, c , Severity.CRITICAL, ReportActionType.API_ERROR, "Some issue saving concept", org.ihtsdo.termserver.scripting.util.ExceptionUtils.getExceptionCause(e.getMessage(), e));
+				report (t, c , Severity.CRITICAL, ReportActionType.API_ERROR, "Some issue saving concept", org.ihtsdo.otf.utils.ExceptionUtils.getExceptionCause(e.getMessage(), e));
 			}
 		}
 		return NO_CHANGES_MADE;

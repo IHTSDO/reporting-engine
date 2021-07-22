@@ -13,7 +13,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 /*
 DRUGS-593 Remove FSN Counterparts ie synonym whihc is the FSN without the semantic tag
 */
-public class RemoveFSNCounterparts extends BatchFix implements RF2Constants{
+public class RemoveFSNCounterparts extends BatchFix implements ScriptConstants{
 	
 	Concept subHierarchy = MEDICINAL_PRODUCT;
 	

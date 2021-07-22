@@ -5,9 +5,9 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants;
+import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 
-public class ConceptCreationSupervisor implements RF2Constants {
+public class ConceptCreationSupervisor implements ScriptConstants {
 
 	private static ConceptCreationSupervisor singleton = null;
 	List<ConceptCreator> creators = new ArrayList<>();

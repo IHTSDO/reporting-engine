@@ -5,8 +5,8 @@ import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
-import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.snomed.otf.script.dao.ReportSheetManager;
 
 /**
  * ISRS-979 Fix for active langrefsetentries being left on inactive descriptions 

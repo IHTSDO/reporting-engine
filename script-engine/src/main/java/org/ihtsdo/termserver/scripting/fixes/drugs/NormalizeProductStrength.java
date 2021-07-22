@@ -24,7 +24,7 @@ Use milligram if value is <1000; if > then convert to gram
 
 Or if value is < 1 switch to the next smaller unit and multiple the value by 1000.
 */
-public class NormalizeProductStrength extends DrugBatchFix implements RF2Constants {
+public class NormalizeProductStrength extends DrugBatchFix implements ScriptConstants {
 	
 	DrugTermGenerator termGenerator = new DrugTermGenerator(this);
 	

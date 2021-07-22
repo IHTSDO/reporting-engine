@@ -13,7 +13,7 @@ import org.snomed.otf.owltoolkit.domain.ObjectPropertyAxiomRepresentation;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
-public class Concept extends Component implements RF2Constants, Comparable<Concept>, Expressable  {
+public class Concept extends Component implements ScriptConstants, Comparable<Concept>, Expressable  {
 
 	@SerializedName("effectiveTime")
 	@Expose

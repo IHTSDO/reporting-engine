@@ -16,7 +16,7 @@ import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 	Script to delete unpublished inactive concepts, checking for incoming historical associations
 	Driven by an input file it's not possible to spot these from only a SNAPSHOT file
 */
-public class DeleteBornInactiveConcepts extends BatchFix implements RF2Constants{
+public class DeleteBornInactiveConcepts extends BatchFix implements ScriptConstants{
 	
 	protected DeleteBornInactiveConcepts(BatchFix clone) {
 		super(clone);

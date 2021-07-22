@@ -4,6 +4,7 @@ import java.util.*;
 
 import org.apache.commons.csv.CSVRecord;
 import org.ihtsdo.otf.exception.TermServerScriptException;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.*;
@@ -16,7 +17,7 @@ import org.slf4j.LoggerFactory;
 //import com.b2international.snowowl.dsl.scg.Expression;
 import com.google.common.primitives.Ints;
 
-public class BatchImportFormat implements RF2Constants {
+public class BatchImportFormat implements ScriptConstants {
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(BatchImportFormat.class);
 

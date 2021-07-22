@@ -6,9 +6,9 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.DescendantsCache;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants;
+import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 	
-public abstract class ConceptCreator implements RF2Constants {
+public abstract class ConceptCreator implements ScriptConstants {
 	
 	ConceptCreationPattern conceptPattern;
 	List<String> inspirations = new ArrayList<>();

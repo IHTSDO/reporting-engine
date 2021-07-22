@@ -14,7 +14,7 @@ import org.ihtsdo.termserver.scripting.domain.*;
  * where we should instead have just modified the group number, deleted the 
  * new relationship and reactivate/shift the original relationship
  */
-public class ShiftRelationshipGroupId extends BatchFix implements RF2Constants{
+public class ShiftRelationshipGroupId extends BatchFix implements ScriptConstants{
 	
 	boolean unpublishedContentOnly = true;
 	

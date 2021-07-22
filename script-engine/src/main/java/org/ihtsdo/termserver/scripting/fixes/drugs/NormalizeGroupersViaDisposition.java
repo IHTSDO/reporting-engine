@@ -5,6 +5,7 @@ import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
@@ -15,7 +16,7 @@ For DRUG-398
 Driven by a text file of concepts, add the active ingredient (disposition) specified in the substance map
 Normalize the terms (using the disposition) and set the semantic tag to (product)
 */
-public class NormalizeGroupersViaDisposition extends DrugBatchFix implements RF2Constants{
+public class NormalizeGroupersViaDisposition extends DrugBatchFix implements ScriptConstants{
 	
 	Map<String, String> substancesMap = new HashMap<>();
 	Relationship newParentRel;

@@ -14,7 +14,7 @@ DRUG-436
 For a specified concept, set the attribute of interest to the value that is also 
 specified in a file.
 */
-public class SetAttribute extends BatchFix implements RF2Constants{
+public class SetAttribute extends BatchFix implements ScriptConstants{
 	
 	Concept attributeType = HAS_MANUFACTURED_DOSE_FORM;
 	Map <Concept, Concept> targetValues = new HashMap<>();

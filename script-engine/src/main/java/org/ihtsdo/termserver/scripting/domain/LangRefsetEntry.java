@@ -6,7 +6,7 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 //id	effectiveTime	active	moduleId	refsetId	referencedComponentId	acceptabilityId
-public class LangRefsetEntry extends RefsetMember implements RF2Constants{
+public class LangRefsetEntry extends RefsetMember implements ScriptConstants{
 
 	private static String ACCEPTABILITY_ID = "acceptabilityId";
 	

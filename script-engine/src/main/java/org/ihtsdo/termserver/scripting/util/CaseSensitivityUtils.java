@@ -12,7 +12,7 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 
-public class CaseSensitivityUtils implements RF2Constants {
+public class CaseSensitivityUtils implements ScriptConstants {
 	Map<String, Description> sourcesOfTruth = new HashMap<>();
 	List<String> properNouns = new ArrayList<>();
 	Map<String, List<String>> properNounPhrases = new HashMap<>();

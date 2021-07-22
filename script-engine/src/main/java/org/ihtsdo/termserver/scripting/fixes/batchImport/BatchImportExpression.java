@@ -6,7 +6,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
-public class BatchImportExpression implements RF2Constants {
+public class BatchImportExpression implements ScriptConstants {
 	
 	public static final String FULLY_DEFINED = "===";
 	public static final String PRIMITVE = "<<<";

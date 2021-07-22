@@ -3,7 +3,7 @@ package org.ihtsdo.termserver.scripting.domain;
 import java.util.*;
 
 //id,effectiveTime,active,moduleId,refsetId,referencedComponentId,rangeConstraint,attributeRule,ruleStrengthId,contentTypeId
-public class MRCMAttributeRange extends RefsetMember implements RF2Constants {
+public class MRCMAttributeRange extends RefsetMember implements ScriptConstants {
 
 	private static String RANGE_CONSTRAINT = "rangeConstraint";
 	private static String ATTRIBUTE_RULE = "attributeRule";

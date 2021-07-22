@@ -8,8 +8,8 @@ import java.util.*;
 
 import org.apache.commons.io.FileUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.snomed.otf.script.dao.ReportSheetManager;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;

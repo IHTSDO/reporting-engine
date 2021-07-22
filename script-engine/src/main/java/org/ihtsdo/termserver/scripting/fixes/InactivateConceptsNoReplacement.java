@@ -8,10 +8,10 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.apache.commons.lang.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
-import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.HistAssocUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.snomed.otf.script.dao.ReportSheetManager;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
@@ -23,7 +23,7 @@ import com.google.common.io.Files;
  * 
  * INFRA-4865 Hist assoc will be MOVED TO -> UK
  */
-public class InactivateConceptsNoReplacement extends BatchFix implements RF2Constants {
+public class InactivateConceptsNoReplacement extends BatchFix implements ScriptConstants {
 	
 	//InactivationIndicator inactivationIndicator = InactivationIndicator.AMBIGUOUS;
 	InactivationIndicator inactivationIndicator = InactivationIndicator.MOVED_ELSEWHERE;

@@ -11,7 +11,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.AssociationTargets;
 import org.ihtsdo.termserver.scripting.domain.Concept;
 import org.ihtsdo.termserver.scripting.domain.AssociationEntry;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants;
+import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 
 import us.monoid.json.JSONObject;
 
@@ -20,7 +20,7 @@ import us.monoid.json.JSONObject;
  * Inactivate concepts (functionality currently broken in production) 
  * and check that the concept is a leaf node, otherwise this is obviously not safe.
  */
-public class InactivateLeafConcepts extends BatchFix implements RF2Constants{
+public class InactivateLeafConcepts extends BatchFix implements ScriptConstants{
 	
 	protected InactivateLeafConcepts(BatchFix clone) {
 		super(clone);

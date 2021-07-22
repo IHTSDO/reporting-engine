@@ -11,7 +11,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
-public class Description extends Component implements RF2Constants {
+public class Description extends Component implements ScriptConstants {
 	
 	public static boolean padTerm = false; //Pads terms front and back with spaces to assist whole word matching.
 

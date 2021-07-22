@@ -11,7 +11,7 @@ import org.ihtsdo.termserver.scripting.domain.*;
 Assertion Failure fix checks a number of known assertion issues and makes
 changes to the concepts if required
  */
-public class AssertionFailureFix extends BatchFix implements RF2Constants{
+public class AssertionFailureFix extends BatchFix implements ScriptConstants{
 	
 	protected AssertionFailureFix(BatchFix clone) {
 		super(clone);

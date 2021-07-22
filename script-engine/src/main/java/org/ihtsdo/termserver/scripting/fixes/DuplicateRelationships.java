@@ -8,15 +8,14 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
-
-import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
+import org.snomed.otf.script.dao.ReportSheetManager;
 
 
 /* INFRA-3449 Fix issue when the same relationship exists as both active and inactive
  */
-public class DuplicateRelationships extends BatchFix implements RF2Constants{
+public class DuplicateRelationships extends BatchFix implements ScriptConstants{
 	
 	protected DuplicateRelationships(BatchFix clone) {
 		super(clone);

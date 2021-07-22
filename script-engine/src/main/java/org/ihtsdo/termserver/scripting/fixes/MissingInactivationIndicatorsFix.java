@@ -17,7 +17,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * We will usually use "Non Conformance to Editorial Policy" as the indicator, since no
  * historical association is required in this case.
  */
-public class MissingInactivationIndicatorsFix extends BatchFix implements RF2Constants{
+public class MissingInactivationIndicatorsFix extends BatchFix implements ScriptConstants{
 	
 	String targetSemanticTag = "(product)";
 	

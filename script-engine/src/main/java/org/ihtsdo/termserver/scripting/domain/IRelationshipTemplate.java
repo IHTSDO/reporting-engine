@@ -1,8 +1,8 @@
 package org.ihtsdo.termserver.scripting.domain;
 
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
+import org.ihtsdo.otf.RF2Constants;
 
-public interface IRelationshipTemplate {
+public interface IRelationshipTemplate extends RF2Constants {
 
 
 	public Concept getType();

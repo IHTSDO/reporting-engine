@@ -12,7 +12,7 @@ import org.ihtsdo.termserver.scripting.domain.*;
  * ORGANISMS-1
  * Inactivate descriptions - driven by list.
  */
-public class InactivateDescriptions extends BatchFix implements RF2Constants {
+public class InactivateDescriptions extends BatchFix implements ScriptConstants {
 	
 	Map<Concept, List<Description>> inactivations = new HashMap<>();
 	

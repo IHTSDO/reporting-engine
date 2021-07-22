@@ -13,7 +13,7 @@ import org.ihtsdo.termserver.scripting.util.DrugUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.ihtsdo.termserver.scripting.util.TermGenerator;
 
-public abstract class DrugBatchFix extends BatchFix implements RF2Constants{
+public abstract class DrugBatchFix extends BatchFix implements ScriptConstants{
 	
 	static Map<String, String> wordSubstitution = new HashMap<String, String>();
 	static {

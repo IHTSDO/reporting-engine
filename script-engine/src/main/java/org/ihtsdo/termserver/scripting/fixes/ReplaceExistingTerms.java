@@ -13,7 +13,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * Removes a substring from all active Terms, where matched in context for a given subHierarchy
  * Updated for INFRA-6959
  */
-public class ReplaceExistingTerms extends BatchFix implements RF2Constants{
+public class ReplaceExistingTerms extends BatchFix implements ScriptConstants{
 	
 	static Map<String, String> replacementMap = new HashMap<String, String>();
 	

@@ -16,7 +16,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 QI-816 Replace Stated Parents where safe to do so
 QI-829 Similar, but also remove sufficiently defined parents where redundant
 */
-public class ReplaceParents extends BatchFix implements RF2Constants{
+public class ReplaceParents extends BatchFix implements ScriptConstants{
 	
 	Map<Concept, Concept> parentReplacementMap = new HashMap<>();
 	

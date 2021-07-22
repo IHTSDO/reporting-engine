@@ -15,7 +15,7 @@ import org.ihtsdo.termserver.scripting.domain.*;
 * ANATOMY-190, ANATOMY-195, ANATOMY-200, ANATOMY-211
 * Driven by a text file of concepts add or remove parent relationships as indicated
 */
-public class AddRemoveParents extends BatchFix implements RF2Constants{
+public class AddRemoveParents extends BatchFix implements ScriptConstants{
 	
 	Map<Concept, RelationshipGroup> changeMap = new HashMap<>();
 	

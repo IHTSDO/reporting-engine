@@ -10,7 +10,7 @@ import org.ihtsdo.termserver.scripting.TermServerScript;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
 //id	effectiveTime	active	moduleId 	refsetId 	referencedComponentId	targetComponentId
-public class AssociationEntry extends RefsetMember implements RF2Constants {
+public class AssociationEntry extends RefsetMember implements ScriptConstants {
 
 	public static String TARGET_COMPONENT_ID = "targetComponentId";
 	

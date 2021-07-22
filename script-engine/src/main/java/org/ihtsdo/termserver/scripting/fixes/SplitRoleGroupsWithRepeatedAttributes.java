@@ -10,7 +10,7 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants;
+import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 import org.ihtsdo.termserver.scripting.domain.Relationship;
 import org.ihtsdo.termserver.scripting.domain.RelationshipGroup;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
@@ -18,7 +18,7 @@ import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 /*
 
 */
-public class SplitRoleGroupsWithRepeatedAttributes extends BatchFix implements RF2Constants{
+public class SplitRoleGroupsWithRepeatedAttributes extends BatchFix implements ScriptConstants{
 	
 	Set<Concept> subHierarchy;
 	List<Concept> attributesToSplit;

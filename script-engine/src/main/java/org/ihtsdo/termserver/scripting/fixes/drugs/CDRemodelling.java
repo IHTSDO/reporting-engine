@@ -8,11 +8,10 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
-
-import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.*;
+import org.snomed.otf.script.dao.ReportSheetManager;
 
 /*
 2018 Work
@@ -28,7 +27,7 @@ DRUGS-496 (Pattern 3b - Creams and Drops)
 2019 Work
 DRUGS-668 
 */
-public class CDRemodelling extends DrugBatchFix implements RF2Constants {
+public class CDRemodelling extends DrugBatchFix implements ScriptConstants {
 	
 	Map<Concept, List<Ingredient>> spreadsheet = new HashMap<>();
 	Map<Description, Concept> substanceMap = new HashMap<>();

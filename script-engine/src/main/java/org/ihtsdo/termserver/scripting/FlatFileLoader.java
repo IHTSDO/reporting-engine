@@ -10,9 +10,9 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants;
+import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 
-public class FlatFileLoader implements RF2Constants {
+public class FlatFileLoader implements ScriptConstants {
 	
 	Map<String, String[]> componentMap = new HashMap<>();
 	

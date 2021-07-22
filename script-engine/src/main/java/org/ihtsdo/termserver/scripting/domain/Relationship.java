@@ -6,13 +6,13 @@ import com.google.gson.annotations.SerializedName;
 import org.apache.commons.lang.NotImplementedException;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-import org.ihtsdo.termserver.scripting.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class Relationship extends Component implements IRelationshipTemplate, RF2Constants, Comparable<Relationship> {
+public class Relationship extends Component implements IRelationshipTemplate, ScriptConstants, Comparable<Relationship> {
 
 	@SerializedName("effectiveTime")
 	@Expose

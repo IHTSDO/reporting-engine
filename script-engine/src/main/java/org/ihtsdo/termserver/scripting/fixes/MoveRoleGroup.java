@@ -5,15 +5,14 @@ import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-
-import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.snomed.otf.script.dao.ReportSheetManager;
 
 /*
  * DEVICES-114 Concepts were given attributes as self grouped, which need to be changed to ungrouped
  */
-public class MoveRoleGroup extends BatchFix implements RF2Constants {
+public class MoveRoleGroup extends BatchFix implements ScriptConstants {
 	Set<Concept> targetAttributeValues;
 	CharacteristicType charType = CharacteristicType.STATED_RELATIONSHIP;
 	

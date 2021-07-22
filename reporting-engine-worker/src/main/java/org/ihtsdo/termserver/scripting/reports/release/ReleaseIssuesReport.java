@@ -12,7 +12,6 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.AxiomUtils;
 import org.ihtsdo.termserver.scripting.DescendantsCache;
-import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
@@ -20,6 +19,7 @@ import org.snomed.otf.owltoolkit.conversion.ConversionException;
 import org.snomed.otf.owltoolkit.domain.AxiomRepresentation;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
+import org.snomed.otf.script.dao.ReportSheetManager;
 import org.springframework.util.StringUtils;
 
 import com.google.common.base.Charsets;
@@ -1277,7 +1277,7 @@ public class ReleaseIssuesReport extends TermServerReport implements ReportClass
 		
 		//Is this field all numeric?  Check concept exists if so
 		String field = rm.getField(fieldName);
-		if (org.ihtsdo.termserver.scripting.util.StringUtils.isNumeric(field)) {
+		if (org.ihtsdo.otf.utils.StringUtils.isNumeric(field)) {
 			Concept refConcept = gl.getConcept(field, false, false);
 			if (refConcept == null || !refConcept.isActive()) {
 				report (c, issueStr, isLegacy(c), isActive(c, null), field, rm.getId(), field);

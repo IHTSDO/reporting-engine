@@ -5,10 +5,10 @@ import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.GraphLoader;
 import org.ihtsdo.termserver.scripting.domain.*;
-import org.ihtsdo.termserver.scripting.util.StringUtils;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
@@ -16,7 +16,7 @@ import com.google.common.io.Files;
 /*
  * Deletes Descriptions and recreates them identically with new SCTIDS
  */
-public class ReplaceDescriptionIds extends BatchFix implements RF2Constants{
+public class ReplaceDescriptionIds extends BatchFix implements ScriptConstants{
 	
 	Set<String> descIds = new HashSet<String>();
 	protected ReplaceDescriptionIds(BatchFix clone) {

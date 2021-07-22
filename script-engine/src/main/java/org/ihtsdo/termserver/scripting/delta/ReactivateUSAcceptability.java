@@ -14,7 +14,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
  * Class to reactivate langrefset entries when they have been inactivated after the international edition has activated ones for the same concept
  */
 @Deprecated
-public class ReactivateUSAcceptability extends DeltaGenerator implements RF2Constants {
+public class ReactivateUSAcceptability extends DeltaGenerator implements ScriptConstants {
 
 	String[] refsets = new String[] {US_ENG_LANG_REFSET};
 	

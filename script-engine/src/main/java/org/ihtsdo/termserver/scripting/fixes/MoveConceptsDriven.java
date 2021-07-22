@@ -7,8 +7,8 @@ import java.util.*;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
+import org.snomed.otf.script.dao.ReportSheetManager;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
@@ -16,7 +16,7 @@ import com.google.common.io.Files;
 /*
  * INFRA-6069 List of organisms to move to Vet extension
  */
-public class MoveConceptsDriven extends BatchFix implements RF2Constants {
+public class MoveConceptsDriven extends BatchFix implements ScriptConstants {
 	
 	private String moveListFileStr = "G:/My Drive/020_BatchScripting/2020/infra-6069-mkii.txt";
 	private String newLocationStr = "416516009|Extension Namespace {1000009} (namespace concept)|";

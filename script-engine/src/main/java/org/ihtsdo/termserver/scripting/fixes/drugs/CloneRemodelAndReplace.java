@@ -8,16 +8,16 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.DrugTermGenerator;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.snomed.otf.script.dao.ReportSheetManager;
 
 /*
 DRUGS-617 For matching concepts, clone, remodel withouse presentation and replace
 */
-public class CloneRemodelAndReplace extends BatchFix implements RF2Constants{
+public class CloneRemodelAndReplace extends BatchFix implements ScriptConstants{
 	
 	//All of SNOMED - see if these concepts are used anywhere
 	Set<Concept> allStatedTargets = new HashSet<>();

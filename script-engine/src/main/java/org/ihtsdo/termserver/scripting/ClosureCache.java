@@ -6,9 +6,9 @@ import java.util.Set;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants;
+import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 
-public class ClosureCache implements RF2Constants{
+public class ClosureCache implements ScriptConstants{
 
 	static ClosureCache singleton = null;
 	private GraphLoader gl = null;

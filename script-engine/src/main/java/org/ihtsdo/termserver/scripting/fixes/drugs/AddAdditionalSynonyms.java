@@ -17,7 +17,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 @Deprecated
 //This class is insufficient because it doesn't account for the substances already
 //having us/gb variance.  We'll need to enhance the TermGenerator class to address this.
-public class AddAdditionalSynonyms extends BatchFix implements RF2Constants{
+public class AddAdditionalSynonyms extends BatchFix implements ScriptConstants{
 	
 	protected AddAdditionalSynonyms(BatchFix clone) {
 		super(clone);

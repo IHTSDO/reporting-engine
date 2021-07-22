@@ -12,7 +12,7 @@ import org.ihtsdo.termserver.scripting.domain.*;
  * SUBST-230
 Inactivates stated relationships where a more specific relationship exists
  */
-public class InactivateRedundantStatedRelationships extends BatchFix implements RF2Constants{
+public class InactivateRedundantStatedRelationships extends BatchFix implements ScriptConstants{
 	
 	
 	protected InactivateRedundantStatedRelationships(BatchFix clone) {

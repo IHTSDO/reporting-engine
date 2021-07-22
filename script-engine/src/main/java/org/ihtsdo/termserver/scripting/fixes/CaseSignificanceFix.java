@@ -9,11 +9,11 @@ import java.util.Map;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
-import org.ihtsdo.termserver.scripting.util.StringUtils;
+import org.snomed.otf.script.dao.ReportSheetManager;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
@@ -27,7 +27,7 @@ import com.google.common.io.Files;
  * SUBST-289 Many substance terms have a single letter - either a single lower 
  * case letter or a single upper case letter - case sensitivity needs to reflect these.
  **/
-public class CaseSignificanceFix extends BatchFix implements RF2Constants{
+public class CaseSignificanceFix extends BatchFix implements ScriptConstants{
 	
 	boolean unpublishedContentOnly = false;
 	Concept subHierarchy = SUBSTANCE;

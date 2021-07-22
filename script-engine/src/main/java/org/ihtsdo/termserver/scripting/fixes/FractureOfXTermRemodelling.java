@@ -12,7 +12,7 @@ import org.ihtsdo.termserver.scripting.domain.*;
 Assertion Failure fix checks a number of known assertion issues and makes
 changes to the concepts if required
  */
-public class FractureOfXTermRemodelling extends BatchFix implements RF2Constants{
+public class FractureOfXTermRemodelling extends BatchFix implements ScriptConstants{
 	
 	String subHierarchyStr = "88230002";  // |Disorder of skeletal system (disorder)|
 	String searchTerm = "fracture";

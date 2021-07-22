@@ -5,9 +5,9 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants;
+import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 
-public class TransitiveClosure implements RF2Constants {
+public class TransitiveClosure implements ScriptConstants {
 
 	Map<Long, Set<Long>> ancestorMap = Collections.synchronizedMap(new HashMap<Long, Set<Long>>());
 	Map<Long, Set<Long>> descendantMap = Collections.synchronizedMap(new HashMap<Long, Set<Long>>());

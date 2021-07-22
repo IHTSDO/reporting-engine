@@ -5,7 +5,7 @@ import java.util.*;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 
 //id	effectiveTime	active	moduleId	refsetId	referencedComponentId	valueId
-public class InactivationIndicatorEntry extends RefsetMember implements RF2Constants {
+public class InactivationIndicatorEntry extends RefsetMember implements ScriptConstants {
 
 	private static String VALUE_ID = "valueId";
 	

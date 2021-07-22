@@ -15,10 +15,10 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.validator.routines.checkdigit.CheckDigitException;
 import org.apache.commons.validator.routines.checkdigit.VerhoeffCheckDigit;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants;
+import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
-public class IdGenerator implements RF2Constants{
+public class IdGenerator implements ScriptConstants{
 	private String fileName;
 	private BufferedReader availableSctIds;
 	private int dummySequence = 100;

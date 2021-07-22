@@ -17,7 +17,7 @@ DRUGS-514
 Replace topical, ophthalmic and respiratory MPFs with cutaneous, ocular and pulmonary
 Inactivate and replace concept
 */
-public class NormalizeDoseForms extends DrugBatchFix implements RF2Constants{
+public class NormalizeDoseForms extends DrugBatchFix implements ScriptConstants{
 	
 	Map<String, Concept> doseFormMap;
 	DrugTermGenerator termGenerator = new DrugTermGenerator(this);

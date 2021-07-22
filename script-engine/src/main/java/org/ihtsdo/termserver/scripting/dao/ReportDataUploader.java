@@ -4,6 +4,7 @@ import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.otf.resourcemanager.ResourceConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.snomed.otf.script.dao.DataUploader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -14,7 +15,7 @@ import java.io.File;
 import java.io.FileInputStream;
 
 @Service
-public class ReportDataUploader {
+public class ReportDataUploader implements DataUploader {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ReportDataUploader.class);
 

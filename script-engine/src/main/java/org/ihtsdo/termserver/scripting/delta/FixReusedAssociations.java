@@ -6,11 +6,10 @@ import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
-
-import org.ihtsdo.termserver.scripting.dao.ReportManager;
-import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.snomed.otf.script.dao.ReportManager;
+import org.snomed.otf.script.dao.ReportSheetManager;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
@@ -32,7 +31,7 @@ import com.google.common.io.Files;
 		and af.effectiveTime = (select max(`effectivetime`) from associationrefset_f af2 where ad.id = af2.id and effectiveTime < 20190131)
 		and ( not ad.refsetid = af.refsetid OR not ad.referencedComponentid = af.referencedComponentid OR not ad.targetComponentid = af.targetComponentid )
 */
-public class FixReusedAssociations extends DeltaGenerator implements RF2Constants{
+public class FixReusedAssociations extends DeltaGenerator implements ScriptConstants{
 	
 	enum IDX { ORIG_ID, NEW_ACTIVE, NEW_REFSETID, NEW_SCTID, NEW_TARGET, ORIG_EFFECTIVE_TIME,
 		ORIG_ACTIVE, ORIG_REFSETID, ORIG_TARGET }

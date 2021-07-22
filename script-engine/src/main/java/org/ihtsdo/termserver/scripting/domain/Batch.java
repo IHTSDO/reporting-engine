@@ -12,11 +12,11 @@ import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.IBatch;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
+import org.ihtsdo.otf.RF2Constants;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.GraphLoader;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants.CharacteristicType;
 
-public class Batch implements IBatch {
+public class Batch implements IBatch, RF2Constants {
 	String batchName;
 	GraphLoader gl;
 	List<Task> tasks = new ArrayList<Task>();

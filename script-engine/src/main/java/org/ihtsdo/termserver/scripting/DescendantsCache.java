@@ -4,12 +4,12 @@ import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.domain.Concept;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants;
+import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
-public class DescendantsCache implements RF2Constants {
+public class DescendantsCache implements ScriptConstants {
 
 	private static DescendantsCache singleton = null;
 	

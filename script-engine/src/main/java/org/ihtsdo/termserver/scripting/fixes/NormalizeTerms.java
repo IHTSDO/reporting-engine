@@ -6,16 +6,16 @@ import java.util.*;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
 import org.ihtsdo.termserver.scripting.util.AntigenTermGenerator;
 import org.ihtsdo.termserver.scripting.util.TermGenerator;
+import org.snomed.otf.script.dao.ReportSheetManager;
 
 /*
  * SUBST-17 for Antigen reterming, but other TermGenerators can be swapped in.
  */
-public class NormalizeTerms extends BatchFix implements RF2Constants{
+public class NormalizeTerms extends BatchFix implements ScriptConstants{
 	
 	TermGenerator termGenerator = new AntigenTermGenerator(this);
 	

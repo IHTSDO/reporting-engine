@@ -10,7 +10,7 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.junit.*;
 
-public class TestHairFollicleCreator implements RF2Constants {
+public class TestHairFollicleCreator implements ScriptConstants {
 	GraphLoader gl = GraphLoader.getGraphLoader();
 	Concept hairFollicle;
 	Concept skin;

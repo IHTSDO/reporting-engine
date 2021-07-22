@@ -4,7 +4,7 @@ import java.util.*;
 import org.snomed.authoringtemplate.domain.logical.*;
 import org.ihtsdo.termserver.scripting.template.TemplateUtils;
 
-public class Template implements RF2Constants {
+public class Template implements ScriptConstants {
 
 	char id;
 	String name;

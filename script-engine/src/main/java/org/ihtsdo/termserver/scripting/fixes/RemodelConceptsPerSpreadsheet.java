@@ -7,16 +7,16 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ValidationFailure;
-import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.util.AcceptabilityMode;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
+import org.snomed.otf.script.dao.ReportSheetManager;
 
 
 /*
  * DEVICES-102
  */
-public class RemodelConceptsPerSpreadsheet extends BatchFix implements RF2Constants {
+public class RemodelConceptsPerSpreadsheet extends BatchFix implements ScriptConstants {
 	
 	private static final int OFFSET = 3;
 	private static final int IDX_SCTID = 0;

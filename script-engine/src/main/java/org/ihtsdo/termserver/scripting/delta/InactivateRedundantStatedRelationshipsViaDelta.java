@@ -14,7 +14,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 /**
  * Class to inactivate redundant IS A relationships where a more specific parent exists
  */
-public class InactivateRedundantStatedRelationshipsViaDelta extends DeltaGenerator implements RF2Constants {
+public class InactivateRedundantStatedRelationshipsViaDelta extends DeltaGenerator implements ScriptConstants {
 
 	public static void main(String[] args) throws TermServerScriptException, IOException, InterruptedException {
 		InactivateRedundantStatedRelationshipsViaDelta delta = new InactivateRedundantStatedRelationshipsViaDelta();

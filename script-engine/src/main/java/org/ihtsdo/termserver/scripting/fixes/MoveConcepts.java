@@ -20,7 +20,7 @@ a parent concept.
 Optionally Reassign orphaned children to their grandparents.
 
 */
-public class MoveConcepts extends BatchFix implements RF2Constants{
+public class MoveConcepts extends BatchFix implements ScriptConstants{
 	
 	String parentNewLocation = "770654000"; // |TEMPORARY parent for CDs that are not updated (product)|
 	//String parentNewLocation = "763087004"; //|TEMPORARY parent for concepts representing roles (product)

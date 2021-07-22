@@ -17,7 +17,7 @@ import com.google.common.collect.HashBiMap;
 /*
 MSSP-860 Address issue with language refset entries referring to description in wrong language
  */
-public class AlignLangRefsetToDescLang extends BatchFix implements RF2Constants {
+public class AlignLangRefsetToDescLang extends BatchFix implements ScriptConstants {
 	
 	BiMap<String, String> refsetLangMap = HashBiMap.create();
 	BiMap<String, String> gpRefsetLangMap = HashBiMap.create();

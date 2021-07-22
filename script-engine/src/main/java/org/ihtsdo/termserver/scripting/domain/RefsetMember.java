@@ -10,7 +10,7 @@ import com.google.gson.annotations.SerializedName;
 
 public class 
 
-RefsetMember extends Component implements RF2Constants {
+RefsetMember extends Component implements ScriptConstants {
 
 	@SerializedName("active")
 	@Expose

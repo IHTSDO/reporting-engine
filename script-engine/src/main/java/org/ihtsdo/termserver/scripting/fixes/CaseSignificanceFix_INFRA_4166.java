@@ -5,16 +5,16 @@ import java.util.*;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Task;
+import org.ihtsdo.otf.utils.StringUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
-import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.fixes.BatchFix;
-import org.ihtsdo.termserver.scripting.util.StringUtils;
+import org.snomed.otf.script.dao.ReportSheetManager;
 
 /*
  * INFRA-4166 Modify case significance from CS to cI where descriptions starts with non-alpha character
  */
-public class CaseSignificanceFix_INFRA_4166 extends BatchFix implements RF2Constants{
+public class CaseSignificanceFix_INFRA_4166 extends BatchFix implements ScriptConstants{
 	
 	String[] knownLowerCase = new String[] { "mm", "nm" };
 	

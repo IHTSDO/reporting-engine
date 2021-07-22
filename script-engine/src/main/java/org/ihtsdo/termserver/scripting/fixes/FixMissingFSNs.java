@@ -14,7 +14,7 @@ import org.ihtsdo.termserver.scripting.util.*;
 INFRA-4924 I'm running into issues where I can't fix historical associations because Drools is objecting
 to concepts that do not have FSNs!   Need to fix those first
 */
-public class FixMissingFSNs extends BatchFix implements RF2Constants{
+public class FixMissingFSNs extends BatchFix implements ScriptConstants{
 	
 	Set<String> knownTags = new HashSet<>();
 	HistAssocUtils histAssocUtils;

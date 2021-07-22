@@ -25,7 +25,7 @@ Can you assign the associated authoring tasks to me for review and promotion (pl
 
 If any of the concepts has description(s) that don't follow the above noted patterns, I would like a report of all of them (including Concept ID, FSN, Description) for manual review.
  */
-public class CTR19_CaseSensitivity extends BatchFix implements RF2Constants{
+public class CTR19_CaseSensitivity extends BatchFix implements ScriptConstants{
 	
 	String[] textsToMatch = new String[] { "Clade","Class","Division",
 			"Domain","Family","Genus","Infraclass",

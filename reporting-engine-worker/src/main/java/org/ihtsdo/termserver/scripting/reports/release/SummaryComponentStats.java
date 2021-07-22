@@ -11,14 +11,14 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Component;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Project;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.TransitiveClosure;
-import org.ihtsdo.termserver.scripting.dao.ReportSheetManager;
-import org.ihtsdo.termserver.scripting.dao.ReportConfiguration.ReportFormatType;
-import org.ihtsdo.termserver.scripting.dao.ReportConfiguration.ReportOutputType;
 import org.ihtsdo.termserver.scripting.domain.*;
 import org.ihtsdo.termserver.scripting.reports.TermServerReport;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 import org.snomed.otf.scheduler.domain.*;
 import org.snomed.otf.scheduler.domain.Job.ProductionStatus;
+import org.snomed.otf.script.dao.ReportSheetManager;
+import org.snomed.otf.script.dao.ReportConfiguration.ReportFormatType;
+import org.snomed.otf.script.dao.ReportConfiguration.ReportOutputType;
 import org.springframework.util.StringUtils;
 
 /**

@@ -13,7 +13,7 @@ import org.ihtsdo.termserver.scripting.domain.*;
 SUBST-267 Remove stated relationships of a given attribute type where the classifier is 
 already removing them.
 */
-public class RemoveRedundantRelationships extends BatchFix implements RF2Constants{
+public class RemoveRedundantRelationships extends BatchFix implements ScriptConstants{
 	
 	Concept subHierarchy = SUBSTANCE;
 	Concept attributeType = HAS_DISPOSITION;

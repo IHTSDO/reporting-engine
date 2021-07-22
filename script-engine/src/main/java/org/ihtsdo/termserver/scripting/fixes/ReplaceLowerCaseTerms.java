@@ -16,7 +16,7 @@ import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 Fix finds terms where the 2nd word is lower case and no equivalent upper case term exists.
 The lower case term is inactivated and replaced with the upper case version.
  */
-public class ReplaceLowerCaseTerms extends BatchFix implements RF2Constants{
+public class ReplaceLowerCaseTerms extends BatchFix implements ScriptConstants{
 	
 	String subHierarchyStr = "27268008";  //Genus Salmonella (organism)
 	String[] exceptions = new String[] {"398393000", "110378009"};

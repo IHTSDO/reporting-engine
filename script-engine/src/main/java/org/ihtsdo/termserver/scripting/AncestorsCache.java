@@ -8,7 +8,7 @@ import org.ihtsdo.termserver.scripting.domain.*;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
-public class AncestorsCache implements RF2Constants {
+public class AncestorsCache implements ScriptConstants {
 	
 	private static AncestorsCache singleton = null;
 	private static AncestorsCache singletonStated = null;

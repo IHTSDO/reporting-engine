@@ -6,10 +6,10 @@ import java.util.*;
 
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.TermServerScript;
-import org.ihtsdo.termserver.scripting.domain.RF2Constants;
+import org.ihtsdo.termserver.scripting.domain.ScriptConstants;
 import org.ihtsdo.termserver.scripting.util.SnomedUtils;
 
-public class RF2Manager implements RF2Constants {
+public class RF2Manager implements ScriptConstants {
 	
 	protected File[] reportFiles;
 	protected Map<String, PrintWriter> printWriterMap = new HashMap<>();
