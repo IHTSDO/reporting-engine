@@ -75,8 +75,8 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 	
 	public static void main(String[] args) throws TermServerScriptException, IOException {
 		Map<String, String> params = new HashMap<>();
-		//params.put(THIS_RELEASE, "xSnomedCT_InternationalRF2_BETA_20210731T120000Z.zip");
-		//params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20210131T120000Z.zip");
+		params.put(THIS_RELEASE, "SnomedCT_InternationalRF2_MEMBER_20210731T120000Z.zip");
+		params.put(PREV_RELEASE, "SnomedCT_InternationalRF2_PRODUCTION_20210131T120000Z.zip");
 		//params.put(REPORT_OUTPUT_TYPES, "S3");
 		//params.put(REPORT_FORMAT_TYPE, "JSON");
 		TermServerReport.run(SummaryComponentStats.class, args, params);
@@ -94,12 +94,12 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		
 		return new Job()
 				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_STATS))
-				.withName("Summary Component Stats")
+				.withName("Summary Component Stats for Editions")
 				.withDescription("This report lists component changes per major hierarchy, optionally filtered by moduleId (comma separate if multiple).   You can either specify two releases to compare as archives stored in S3 " + 
 				"(eg SnomedCT_InternationalRF2_PRODUCTION_20210131T120000Z.zip) or leave them blank to compare the current delta to the previous release as specified " +
-				"by that branch.")
+				"by that branch.  Note that when running against the US edition, a module filter of '731000124108' should be applied.")
 				.withParameters(params)
-				.withTag(INT)
+				.withTag(INT).withTag(MS)
 				.withProductionStatus(ProductionStatus.PROD_READY)
 				.build();
 	}
@@ -217,6 +217,8 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 		info ("Cleaning Up");
 		prevData = null;
 		summaryDataMap = null;
+		refsetDataMap = null;
+		topLevelHierarchies = null;
 		System.gc();
 		info ("Complete");
 	}
@@ -722,11 +724,11 @@ public class SummaryComponentStats extends TermServerReport implements ReportCla
 				if (a.getFsn() == null) {
 					warn (a + " encountered as ancestor of " + c + " has partial existence");
 				} else {
-					throw new TermServerScriptException ("Depth not populated in Hierarchy for " + a.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+					throw new TermServerScriptException ("Depth not populated in Hierarchy for " + c.toString() + "\nDefined as: "+ a.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 				}
 			}
 		}
-		throw new TermServerScriptException("Unable to determine hierarchy for " + c.toString() + "\n"+ c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
+		throw new TermServerScriptException("Unable to determine hierarchy for " + c.toString() + "\nDefined as: "+ c.toExpression(CharacteristicType.INFERRED_RELATIONSHIP));
 	}
 	
 	protected class Datum {
