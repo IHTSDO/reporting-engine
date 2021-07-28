@@ -59,7 +59,7 @@ public class NewDescriptions extends TermServerReport implements ReportClass {
 				.add(UNPROMOTED_CHANGES_ONLY).withType(JobParameter.Type.BOOLEAN).withDefaultValue(false)
 				.build();
 		return new Job()
-				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_STATS))
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION))
 				.withName("New Descriptions")
 				.withDescription("This report lists all discriptions (optionally filtered by ECL) created in the current authoring cycle")
 				.withProductionStatus(ProductionStatus.PROD_READY)
