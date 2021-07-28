@@ -69,7 +69,7 @@ public class ConceptsMovingElsewhere extends TermServerReport implements ReportC
 				.add(THIS_RELEASE).withType(JobParameter.Type.STRING)
 				.build();
 		return new Job()
-				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_VALIDATION))
+				.withCategory(new JobCategory(JobType.REPORT, JobCategory.RELEASE_STATS))
 				.withName("Concepts Moved Elsewhere")
 				.withDescription("This report lists concepts moved or moving to another extension.  Leave the 'This Package' field blank unless querying a published build available in S3.")
 				.withProductionStatus(ProductionStatus.PROD_READY)
