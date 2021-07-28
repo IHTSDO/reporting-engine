@@ -271,8 +271,12 @@ public class Relationship extends Component implements IRelationshipTemplate, Sc
 			return relationshipId.hashCode();
 		}
 	}
-
+	
 	public boolean equals(Object other, boolean ignoreAxiom) {
+		return equals(other, ignoreAxiom, false);  //Include group by default
+	}
+
+	public boolean equals(Object other, boolean ignoreAxiom, boolean ignoreGroup) {
 		if ((other instanceof Relationship) == false) {
 			return false;
 		}
@@ -299,10 +303,11 @@ public class Relationship extends Component implements IRelationshipTemplate, Sc
 		}
 		
 		//Otherwise compare type / target (or Value) / group 
-		if (isConcrete()) {
-			return (this.type.equals(rhs.type) && this.value.equals(rhs.value) && this.groupId == rhs.groupId);
+		if (ignoreGroup) {
+			return this.equalsTypeAndTargetValue(rhs);
+		} else {
+			return this.equalsTypeAndTargetValue(rhs) && (this.groupId == rhs.groupId);
 		}
-		return (this.type.equals(rhs.type) && this.target.equals(rhs.target) && this.groupId == rhs.groupId);
 	}
 	
 	@Override
@@ -454,7 +459,7 @@ public class Relationship extends Component implements IRelationshipTemplate, Sc
 	
 	public boolean equalsTargetOrValue(IRelationshipTemplate b) {
 		if (isConcrete() && b.isConcrete()) {
-			return getValue().equals(b.getValue());
+			return getValue().toString().equals(b.getValue().toString());
 		} else if (!isConcrete() && !b.isConcrete()) {
 			return getTarget().equals(b.getTarget());
 		} else {

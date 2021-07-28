@@ -37,7 +37,7 @@ public class ConcreteDrugUtils implements ScriptConstants {
 			return;
 		}
 		String semTag = SnomedUtils.deconstructFSN(c.getFsn())[1];
-		boolean hasBaseCount = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, CD_COUNT_BASE_ACTIVE_INGREDIENT, ActiveState.ACTIVE).size() > 0;
+		boolean hasBaseCount = c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, COUNT_BASE_ACTIVE_INGREDIENT, ActiveState.ACTIVE).size() > 0;
 		switch (semTag) {
 			case "(medicinal product form)" : c.setConceptType(hasBaseCount ? ConceptType.MEDICINAL_PRODUCT_FORM_ONLY : ConceptType.MEDICINAL_PRODUCT_FORM);
 												break;
@@ -256,14 +256,14 @@ public class ConcreteDrugUtils implements ScriptConstants {
 		ConcreteIngredient i = new ConcreteIngredient();
 		i.substance = SnomedUtils.getTarget(c, new Concept[] { HAS_ACTIVE_INGRED,  HAS_PRECISE_INGRED}, groupId, charType);
 		
-		i.presStrength = SnomedUtils.getConcreteValue(c, new Concept[] { CD_HAS_PRES_STRENGTH_VALUE }, groupId, charType);
+		i.presStrength = SnomedUtils.getConcreteValue(c, new Concept[] { HAS_PRES_STRENGTH_VALUE }, groupId, charType);
 		i.presNumeratorUnit = SnomedUtils.getTarget(c, new Concept[] { HAS_PRES_STRENGTH_UNIT }, groupId, charType);
-		i.presDenomQuantity = SnomedUtils.getConcreteValue(c, new Concept[] { CD_HAS_PRES_STRENGTH_DENOM_VALUE }, groupId, charType);
+		i.presDenomQuantity = SnomedUtils.getConcreteValue(c, new Concept[] { HAS_PRES_STRENGTH_DENOM_VALUE }, groupId, charType);
 		i.presDenomUnit = SnomedUtils.getTarget(c, new Concept[] {HAS_PRES_STRENGTH_DENOM_UNIT }, groupId, charType);
 		
-		i.concStrength = SnomedUtils.getConcreteValue(c, new Concept[] { CD_HAS_CONC_STRENGTH_VALUE }, groupId, charType);
+		i.concStrength = SnomedUtils.getConcreteValue(c, new Concept[] { HAS_CONC_STRENGTH_VALUE }, groupId, charType);
 		i.concNumeratorUnit = SnomedUtils.getTarget(c, new Concept[] { HAS_CONC_STRENGTH_UNIT }, groupId, charType);
-		i.concDenomQuantity = SnomedUtils.getConcreteValue(c, new Concept[] {CD_HAS_CONC_STRENGTH_DENOM_VALUE }, groupId, charType);
+		i.concDenomQuantity = SnomedUtils.getConcreteValue(c, new Concept[] {HAS_CONC_STRENGTH_DENOM_VALUE }, groupId, charType);
 		i.concDenomUnit = SnomedUtils.getTarget(c, new Concept[] {HAS_CONC_STRENGTH_DENOM_UNIT }, groupId, charType);
 		
 		return i;

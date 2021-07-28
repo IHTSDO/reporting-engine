@@ -1,10 +1,12 @@
 package org.ihtsdo.termserver.scripting.fixes.drugs;
 
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.*;
+import org.ihtsdo.otf.utils.ExceptionUtils;
 import org.ihtsdo.otf.exception.TermServerScriptException;
 import org.ihtsdo.termserver.scripting.ReportClass;
 import org.ihtsdo.termserver.scripting.AncestorsCache;
@@ -100,7 +102,7 @@ public class CreateMissingDrugConceptsUsingConcreteValues extends DrugBatchFix i
 				"Suppressed Concepts"};
 		
 		for (Concept c : MEDICINAL_PRODUCT.getDescendents(NOT_SET)) {
-			/*if (c.getConceptId().equals("774313006")) {
+			/*if (c.getConceptId().equals("774384006")) {
 				debug("Here");
 			}*/
 			SnomedUtils.populateConceptType(c);
@@ -231,9 +233,9 @@ public class CreateMissingDrugConceptsUsingConcreteValues extends DrugBatchFix i
 		Set<Relationship> needleRels = needle.getRelationships(CharacteristicType.STATED_RELATIONSHIP, ActiveState.ACTIVE);
 		nextStraw:
 		for (Concept straw : haystack) {
-		/*	if (straw.getConceptId().equals("332998007")) {
+			if (straw.getConceptId().equals("774384006")) {
 				debug ("debug here also");
-			}*/
+			}
 			
 			//Do a simple sum check to see if we can rule out a match early doors
 			if (straw.getStatedAttribSum() != needle.getStatedAttribSum()) {
@@ -253,7 +255,9 @@ public class CreateMissingDrugConceptsUsingConcreteValues extends DrugBatchFix i
 					//Since we can't be sure what group number will be used for multi-ingredients
 					//Don't worry about matching with the originating axiom as well because
 					//the IS A that's in the same axiom as the Role will throw this check out.
+					//Also ignore group as ingredient may not be in expected order
 					if (thisRel.equals(thatRel, true)) {
+						if (true);
 						relMatchFound = true;
 						break;
 					} else if (thisRel.getType().equals(HAS_ACTIVE_INGRED) || thisRel.getType().equals(HAS_PRECISE_INGRED)) {
@@ -301,7 +305,7 @@ public class CreateMissingDrugConceptsUsingConcreteValues extends DrugBatchFix i
 		
 		//Only if we're creating an "Only", include the ingredient count
 		if (targetType.equals(ConceptType.MEDICINAL_PRODUCT_ONLY) || targetType.equals(ConceptType.MEDICINAL_PRODUCT_FORM_ONLY)) {
-			Relationship countRel = new Relationship (drug, CD_COUNT_BASE_ACTIVE_INGREDIENT, baseIngredients.size(), UNGROUPED, CdType.INTEGER);
+			Relationship countRel = new Relationship (drug, COUNT_BASE_ACTIVE_INGREDIENT, baseIngredients.size(), UNGROUPED, CdType.INTEGER);
 			drug.addRelationship(countRel);
 		}
 		
@@ -322,8 +326,8 @@ public class CreateMissingDrugConceptsUsingConcreteValues extends DrugBatchFix i
 		List<Concept> allAffected = new ArrayList<Concept>();
 		termGenerator.setQuiet(true);
 		nextConcept:
-		for (Concept c : MEDICINAL_PRODUCT.getDescendents(NOT_SET)) {
-		//for (Concept c : Collections.singleton(gl.getConcept("350210009"))) {
+		//for (Concept c : MEDICINAL_PRODUCT.getDescendents(NOT_SET)) {
+		for (Concept c : Collections.singleton(gl.getConcept("425226008"))) {
 			try {
 				if (c.getConceptType().equals(ConceptType.CLINICAL_DRUG)) {
 					Concept mpf = calculateDrugRequired(c, ConceptType.MEDICINAL_PRODUCT_FORM);
@@ -413,7 +417,12 @@ public class CreateMissingDrugConceptsUsingConcreteValues extends DrugBatchFix i
 					}
 				} 
 			} catch (Exception e) {
-				warn ("Unable to process " + c + " because " + e.getMessage());
+				String msg = ExceptionUtils.getExceptionCause("Unable to process " + c, e);
+				report ((Task)null, c, Severity.HIGH, ReportActionType.SKIPPING, msg);
+				warn (msg);
+				if (!msg.contains("has multiple modification attributes")) {
+					e.printStackTrace(new PrintStream(System.out));
+				}
 			}
 		}
 		info ("Identified " + allAffected.size() + " concepts to process");

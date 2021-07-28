@@ -368,7 +368,7 @@ public class DrugTermGeneratorCD extends TermGenerator {
 				suffix = " " + DrugUtils.getDosageForm(c, isFSN, langRefset) + " "  + unitOfPresentation;
 			}
 		} else {
-			if (isFSN && !specifyDenominator && !hasAttribute(c, CD_HAS_CONC_STRENGTH_DENOM_VALUE)) {
+			if (isFSN && !specifyDenominator && !hasAttribute(c, HAS_CONC_STRENGTH_DENOM_VALUE)) {
 				suffix = "/1 each "  + doseForm;
 			} else {
 				suffix = " " + doseForm;
@@ -561,16 +561,16 @@ public class DrugTermGeneratorCD extends TermGenerator {
 			
 			//Are we adding the strength?
 			String strength = null;
-			Object strengthObj = SnomedUtils.getConcreteValue(c, new Concept[] {CD_HAS_PRES_STRENGTH_VALUE, CD_HAS_CONC_STRENGTH_VALUE}, r.getGroupId(), charType);
+			Object strengthObj = SnomedUtils.getConcreteValue(c, new Concept[] {HAS_PRES_STRENGTH_VALUE, HAS_CONC_STRENGTH_VALUE}, r.getGroupId(), charType);
 			if (strengthObj != null) {
 				strength = strengthObj.toString();
 			}
 			
 			//Are we adding the denominator strength and units?
 			String denominatorStr = "";
-			if (specifyDenominator || hasAttribute(c, CD_HAS_CONC_STRENGTH_DENOM_VALUE)) {
+			if (specifyDenominator || hasAttribute(c, HAS_CONC_STRENGTH_DENOM_VALUE)) {
 				denominatorStr = "/";
-				String denStrenStr = SnomedUtils.getConcreteValue(c, new Concept[] {CD_HAS_PRES_STRENGTH_DENOM_VALUE, CD_HAS_CONC_STRENGTH_DENOM_VALUE}, r.getGroupId(), charType).toString();
+				String denStrenStr = SnomedUtils.getConcreteValue(c, new Concept[] {HAS_PRES_STRENGTH_DENOM_VALUE, HAS_CONC_STRENGTH_DENOM_VALUE}, r.getGroupId(), charType).toString();
 				if (!denStrenStr.equals("1") || isFSN) {
 					denominatorStr += denStrenStr + " ";
 				}

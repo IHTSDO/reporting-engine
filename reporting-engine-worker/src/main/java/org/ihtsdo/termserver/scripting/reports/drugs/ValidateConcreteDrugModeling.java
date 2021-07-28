@@ -40,8 +40,8 @@ public class ValidateConcreteDrugModeling extends TermServerReport implements Re
 	private Map<Concept,Concept> grouperSubstanceUsage = new HashMap<>();
 	private List<Concept> bannedMpParents;
 	
-	Concept[] mpValidAttributes = new Concept[] { IS_A, HAS_ACTIVE_INGRED, CD_COUNT_BASE_ACTIVE_INGREDIENT, PLAYS_ROLE };
-	Concept[] mpfValidAttributes = new Concept[] { IS_A, HAS_ACTIVE_INGRED, HAS_MANUFACTURED_DOSE_FORM, CD_COUNT_BASE_ACTIVE_INGREDIENT, PLAYS_ROLE };
+	Concept[] mpValidAttributes = new Concept[] { IS_A, HAS_ACTIVE_INGRED, COUNT_BASE_ACTIVE_INGREDIENT, PLAYS_ROLE };
+	Concept[] mpfValidAttributes = new Concept[] { IS_A, HAS_ACTIVE_INGRED, HAS_MANUFACTURED_DOSE_FORM, COUNT_BASE_ACTIVE_INGREDIENT, PLAYS_ROLE };
 	
 	Set<Concept> presAttributes = new HashSet<>();
 	Set<Concept> concAttributes = new HashSet<>();
@@ -68,15 +68,15 @@ public class ValidateConcreteDrugModeling extends TermServerReport implements Re
 		populateGrouperSubstances();
 		super.postInit(tabNames, columnHeadings, false);
 		
-		presAttributes.add(CD_HAS_PRES_STRENGTH_VALUE);
+		presAttributes.add(HAS_PRES_STRENGTH_VALUE);
 		presAttributes.add(HAS_PRES_STRENGTH_UNIT);
 		presAttributes.add(HAS_PRES_STRENGTH_DENOM_UNIT);
-		presAttributes.add(CD_HAS_PRES_STRENGTH_DENOM_VALUE);
+		presAttributes.add(HAS_PRES_STRENGTH_DENOM_VALUE);
 		
-		concAttributes.add(CD_HAS_CONC_STRENGTH_VALUE);
+		concAttributes.add(HAS_CONC_STRENGTH_VALUE);
 		concAttributes.add(HAS_CONC_STRENGTH_UNIT);
 		concAttributes.add(HAS_CONC_STRENGTH_DENOM_UNIT);
-		concAttributes.add(CD_HAS_CONC_STRENGTH_DENOM_VALUE);
+		concAttributes.add(HAS_CONC_STRENGTH_DENOM_VALUE);
 		
 		bannedMpParents = new ArrayList<>();
 		bannedMpParents.add(gl.getConcept("763158003 |Medicinal product (product)|"));
@@ -363,7 +363,7 @@ public class ValidateConcreteDrugModeling extends TermServerReport implements Re
 		
 		for (RelationshipGroup g : c.getRelationshipGroups(CharacteristicType.INFERRED_RELATIONSHIP)) {
 			if (g.isGrouped()) {
-				Set<Relationship> ps = g.getType(CD_HAS_PRES_STRENGTH_VALUE);
+				Set<Relationship> ps = g.getType(HAS_PRES_STRENGTH_VALUE);
 				Set<Relationship> psdu = g.getType(HAS_PRES_STRENGTH_DENOM_UNIT);
 				Set<Relationship> csdu = g.getType(HAS_CONC_STRENGTH_DENOM_UNIT);
 				Set<Relationship> csnu = g.getType(HAS_CONC_STRENGTH_UNIT);
@@ -988,7 +988,7 @@ public class ValidateConcreteDrugModeling extends TermServerReport implements Re
 		issueStr = "Precise MP/MPF must feature exactly one count of base";
 		initialiseSummary(issueStr);
 		if ((isMPOnly(c) || isMPFOnly(c))
-			&& c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, CD_COUNT_BASE_ACTIVE_INGREDIENT, ActiveState.ACTIVE).size() != 1) { 
+			&& c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, COUNT_BASE_ACTIVE_INGREDIENT, ActiveState.ACTIVE).size() != 1) { 
 			report (c, issueStr);
 		}
 		
@@ -999,13 +999,13 @@ public class ValidateConcreteDrugModeling extends TermServerReport implements Re
 		if (isCD(c)) {
 			if (!c.getFsn().contains("only") && !c.getFsn().contains("precisely")) {
 				report (c, "UNEXPECTED CONCEPT TYPE - missing 'only' or 'precisely'");
-			} else if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, CD_COUNT_BASE_ACTIVE_INGREDIENT, ActiveState.ACTIVE).size() != 1) { 
+			} else if (c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, COUNT_BASE_ACTIVE_INGREDIENT, ActiveState.ACTIVE).size() != 1) { 
 				if (true);
 				report (c, issueStr);
 			}
 		} else if ((isMP(c) || isMPF(c)) && 
 				(c.getFsn().contains("only") || c.getFsn().contains("precisely")) &&
-				c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, CD_COUNT_BASE_ACTIVE_INGREDIENT, ActiveState.ACTIVE).size() != 1) {
+				c.getRelationships(CharacteristicType.STATED_RELATIONSHIP, COUNT_BASE_ACTIVE_INGREDIENT, ActiveState.ACTIVE).size() != 1) {
 			report (c, issueStr);
 		}
 		
